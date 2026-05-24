@@ -297,7 +297,7 @@ app.post('/api/contact', async (req, res) => {
   // If no email service configured, log it and return success
   // To enable real email: set RESEND_API_KEY in Railway env vars (free at resend.com)
   const resendKey = process.env.RESEND_API_KEY;
-  const ownerEmail = process.env.OWNER_EMAIL || 'marvinperson@icloud.com';
+  const ownerEmail = process.env.OWNER_EMAIL || 'marvinperson11@gmail.com';
 
   if (resendKey) {
     try {
