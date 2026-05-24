@@ -287,6 +287,55 @@ function getCheckInPrompt() {
   return prompts[Math.floor(Math.random() * prompts.length)];
 }
 
+// ─── API: Contact / Help form ─────────────────────────────────────────────────
+app.post('/api/contact', async (req, res) => {
+  const { name, email, subject, message } = req.body;
+  if (!name || !email || !message) {
+    return res.status(400).json({ error: 'Name, email, and message are required.' });
+  }
+
+  // If no email service configured, log it and return success
+  // To enable real email: set RESEND_API_KEY in Railway env vars (free at resend.com)
+  const resendKey = process.env.RESEND_API_KEY;
+  const ownerEmail = process.env.OWNER_EMAIL || 'marvinperson@icloud.com';
+
+  if (resendKey) {
+    try {
+      const emailRes = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resendKey}`
+        },
+        body: JSON.stringify({
+          from: 'ResumeTailor Support <support@resumetailored.com>',
+          to: ownerEmail,
+          reply_to: email,
+          subject: `[ResumeTailor Support] ${subject || 'New message from ' + name}`,
+          html: `
+            <h2>New Support Message</h2>
+            <p><strong>From:</strong> ${name} (${email})</p>
+            <p><strong>Subject:</strong> ${subject || 'No subject'}</p>
+            <hr />
+            <p>${message.replace(/\n/g, '<br>')}</p>
+            <hr />
+            <p style="color:#888;font-size:12px;">Sent from ResumeTailor AI Help form</p>
+          `
+        })
+      });
+      if (!emailRes.ok) throw new Error('Resend error');
+    } catch (err) {
+      console.error('Email send error:', err);
+      // Still return success to user — don't block them
+    }
+  } else {
+    // Log to console until email is configured
+    console.log(`[SUPPORT MESSAGE] From: ${name} <${email}> | Subject: ${subject} | Message: ${message}`);
+  }
+
+  res.json({ success: true });
+});
+
 // ─── Serve pages ──────────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/app', (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));

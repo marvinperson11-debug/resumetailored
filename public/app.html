@@ -43,6 +43,9 @@
         <button class="sidebar-btn" onclick="showTab('checkin')" id="tab-checkin">
           <span class="sidebar-icon">📋</span> Career Check-In
         </button>
+        <button class="sidebar-btn" onclick="showTab('help')" id="tab-help">
+          <span class="sidebar-icon">💌</span> Help & Support
+        </button>
       </div>
       <div class="sidebar-pro-box" id="sidebarProBox">
         <div class="sidebar-pro-title">✦ Unlock Full Access</div>
@@ -319,6 +322,90 @@
         </div>
       </div>
 
+      <!-- ═══ TAB: HELP & SUPPORT ═══ -->
+      <div class="tab-content" id="panel-help">
+        <div class="panel-header">
+          <h1>Help & Support</h1>
+          <p>Have a question or running into an issue? Send us a message and we'll get back to you within 24 hours.</p>
+        </div>
+
+        <div class="help-grid">
+          <!-- Contact form -->
+          <div class="help-form-card">
+            <h3 style="font-size:18px;font-weight:700;margin-bottom:6px;">Send Us a Message</h3>
+            <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px;">We read every message personally and respond within 24 hours.</p>
+
+            <div class="checkin-fields">
+              <div class="checkin-field">
+                <label>Your Name</label>
+                <input type="text" id="helpName" placeholder="Your name" class="forum-input" />
+              </div>
+              <div class="checkin-field">
+                <label>Your Email</label>
+                <input type="email" id="helpEmail" placeholder="your@email.com" class="forum-input" />
+              </div>
+              <div class="checkin-field" style="grid-column:1/-1;">
+                <label>Subject</label>
+                <input type="text" id="helpSubject" placeholder="e.g. Question about Pro plan, Issue with resume output..." class="forum-input" />
+              </div>
+              <div class="checkin-field" style="grid-column:1/-1;">
+                <label>Message</label>
+                <textarea id="helpMessage" class="forum-textarea" style="min-height:160px;" placeholder="Describe your question or issue in detail. The more info you provide, the faster we can help."></textarea>
+              </div>
+            </div>
+
+            <button class="btn btn-primary btn-lg" onclick="submitHelp()" id="helpBtn" style="margin-top:20px;">
+              Send Message →
+            </button>
+            <div id="helpSuccess" style="display:none;margin-top:20px;padding:16px 20px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:12px;color:#22c55e;font-weight:600;">
+              ✓ Message sent! We'll reply to your email within 24 hours.
+            </div>
+          </div>
+
+          <!-- FAQ + quick answers -->
+          <div>
+            <div class="help-faq-card">
+              <h3 style="font-size:16px;font-weight:700;margin-bottom:18px;">Frequently Asked Questions</h3>
+
+              <div class="faq-item">
+                <div class="faq-q" onclick="toggleFaq(this)">
+                  <span>How does the free tier work?</span><span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">You get 1 free resume tailoring per day — no credit card required. Each day at midnight the counter resets. Upgrade to Pro for unlimited tailorings.</div>
+              </div>
+
+              <div class="faq-item">
+                <div class="faq-q" onclick="toggleFaq(this)">
+                  <span>How do I verify my Pro subscription?</span><span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">After subscribing, enter the email you used at checkout into the email field on the Resume Tailor tab and click away. Your Pro status will activate automatically.</div>
+              </div>
+
+              <div class="faq-item">
+                <div class="faq-q" onclick="toggleFaq(this)">
+                  <span>Will the AI make up experience I don't have?</span><span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">No. Our AI strictly rewrites and reframes your existing experience using the job posting's language and keywords. It never adds skills or experience you didn't include in your original resume.</div>
+              </div>
+
+              <div class="faq-item">
+                <div class="faq-q" onclick="toggleFaq(this)">
+                  <span>How do I cancel my Pro subscription?</span><span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">Send us a message using the form on this page with your email and we'll cancel immediately. No questions asked. You can also reply to any of our emails.</div>
+              </div>
+
+              <div class="faq-item">
+                <div class="faq-q" onclick="toggleFaq(this)">
+                  <span>What format should I paste my resume in?</span><span class="faq-arrow">▾</span>
+                </div>
+                <div class="faq-a">Plain text works best. Open your resume in Word or Google Docs, select all (Ctrl+A), copy (Ctrl+C), and paste into the resume field. The AI handles the formatting.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -589,6 +676,49 @@
     function copyResult() {
       navigator.clipboard.writeText(document.getElementById('outputBox').textContent)
         .then(() => showToast('Copied to clipboard!'));
+    }
+
+    // ── Help / Contact ─────────────────────────────────────────────────────────
+    async function submitHelp() {
+      const name = document.getElementById('helpName').value.trim();
+      const email = document.getElementById('helpEmail').value.trim();
+      const subject = document.getElementById('helpSubject').value.trim();
+      const message = document.getElementById('helpMessage').value.trim();
+
+      if (!name) return showToast('Please enter your name.');
+      if (!email) return showToast('Please enter your email.');
+      if (!message) return showToast('Please enter a message.');
+
+      const btn = document.getElementById('helpBtn');
+      btn.innerHTML = '<span class="spinner"></span>Sending...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, subject, message })
+        });
+        if (!res.ok) throw new Error();
+        document.getElementById('helpSuccess').style.display = 'block';
+        document.getElementById('helpName').value = '';
+        document.getElementById('helpEmail').value = '';
+        document.getElementById('helpSubject').value = '';
+        document.getElementById('helpMessage').value = '';
+        btn.style.display = 'none';
+      } catch(e) {
+        showToast('Could not send message. Please try again.');
+        btn.innerHTML = 'Send Message →';
+        btn.disabled = false;
+      }
+    }
+
+    function toggleFaq(el) {
+      const answer = el.nextElementSibling;
+      const arrow = el.querySelector('.faq-arrow');
+      const isOpen = answer.style.display === 'block';
+      answer.style.display = isOpen ? 'none' : 'block';
+      arrow.textContent = isOpen ? '▾' : '▴';
     }
 
     function showToast(msg) {
