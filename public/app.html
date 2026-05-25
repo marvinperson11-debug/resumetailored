@@ -1,10 +1,10 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ResumeTailored AI — Dashboard</title>
-  <link rel="icon" href="favicon.jpg" type="image/jpeg" />
+  <title>ResumeTailored AI â€” Dashboard</title>
+  <link rel="icon" href="favicon.png" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
@@ -17,7 +17,7 @@
       <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
       <div style="display:flex;gap:12px;align-items:center;">
         <span id="navStatus"></span>
-        <a href="/#pricing" class="btn btn-outline">Go Pro — $19/mo</a>
+        <a href="/#pricing" class="btn btn-outline">Go Pro â€” $19/mo</a>
       </div>
     </div>
   </nav>
@@ -30,44 +30,44 @@
       <div class="sidebar-section">
         <div class="sidebar-label">Job Search</div>
         <button class="sidebar-btn active" onclick="showTab('tailor')" id="tab-tailor">
-          <span class="sidebar-icon">✦</span> Resume Tailor
+          <span class="sidebar-icon">âœ¦</span> Resume Tailor
         </button>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Career Hub</div>
         <button class="sidebar-btn" onclick="showTab('forum')" id="tab-forum">
-          <span class="sidebar-icon">💬</span> Community Forum
+          <span class="sidebar-icon">ðŸ’¬</span> Community Forum
         </button>
         <button class="sidebar-btn" onclick="showTab('salary')" id="tab-salary">
-          <span class="sidebar-icon">💰</span> Salary Guide
+          <span class="sidebar-icon">ðŸ’°</span> Salary Guide
         </button>
         <button class="sidebar-btn" onclick="showTab('checkin')" id="tab-checkin">
-          <span class="sidebar-icon">📋</span> Career Check-In
+          <span class="sidebar-icon">ðŸ“‹</span> Career Check-In
         </button>
         <button class="sidebar-btn" onclick="showTab('help')" id="tab-help">
-          <span class="sidebar-icon">💌</span> Help & Support
+          <span class="sidebar-icon">ðŸ’Œ</span> Help & Support
         </button>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Learn More</div>
         <button class="sidebar-btn" onclick="showTab('about')" id="tab-about">
-          <span class="sidebar-icon">✨</span> How Does It Work?
+          <span class="sidebar-icon">âœ¨</span> How Does It Work?
         </button>
         <button class="sidebar-btn" onclick="showTab('cancel')" id="tab-cancel">
-          <span class="sidebar-icon">🔓</span> Cancel Anytime
+          <span class="sidebar-icon">ðŸ”“</span> Cancel Anytime
         </button>
       </div>
       <div class="sidebar-pro-box" id="sidebarProBox">
-        <div class="sidebar-pro-title">✦ Unlock Full Access</div>
+        <div class="sidebar-pro-title">âœ¦ Unlock Full Access</div>
         <div class="sidebar-pro-text">Career Hub features are available to Pro members.</div>
-        <button class="btn btn-primary" style="width:100%;margin-top:10px;font-size:13px;" onclick="subscribe()">Upgrade — $19/mo</button>
+        <button class="btn btn-primary" style="width:100%;margin-top:10px;font-size:13px;" onclick="subscribe()">Upgrade â€” $19/mo</button>
       </div>
     </aside>
 
     <!-- MAIN CONTENT -->
     <main class="dash-main">
 
-      <!-- ═══ TAB: RESUME TAILOR ═══ -->
+      <!-- â•â•â• TAB: RESUME TAILOR â•â•â• -->
       <div class="tab-content active" id="panel-tailor">
         <div class="panel-header">
           <h1>Tailor Your Resume</h1>
@@ -100,7 +100,7 @@
         </div>
 
         <button class="btn btn-primary btn-full btn-lg" id="tailorBtn" onclick="tailor()">
-          Tailor My Resume →
+          Tailor My Resume â†’
         </button>
 
         <div class="output-wrap" id="outputWrap" style="display:none;">
@@ -112,17 +112,17 @@
         </div>
 
         <div class="upsell" id="upsell" style="display:none;">
-          <p>Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19/month, cancel anytime.</p>
-          <button class="btn btn-primary" onclick="subscribe()">Upgrade to Pro →</button>
+          <p>Want <strong>unlimited tailorings</strong>? Upgrade to Pro â€” $19/month, cancel anytime.</p>
+          <button class="btn btn-primary" onclick="subscribe()">Upgrade to Pro â†’</button>
         </div>
 
         <div class="upsell" id="limitBanner" style="display:none;">
-          <p>You've used your <strong>free daily tailoring</strong>. Upgrade to Pro for unlimited access — $19/month.</p>
-          <button class="btn btn-primary" onclick="subscribe()">Upgrade to Pro →</button>
+          <p>You've used your <strong>free daily tailoring</strong>. Upgrade to Pro for unlimited access â€” $19/month.</p>
+          <button class="btn btn-primary" onclick="subscribe()">Upgrade to Pro â†’</button>
         </div>
       </div>
 
-      <!-- ═══ TAB: COMMUNITY FORUM ═══ -->
+      <!-- â•â•â• TAB: COMMUNITY FORUM â•â•â• -->
       <div class="tab-content" id="panel-forum">
         <div class="panel-header">
           <h1>Community Forum</h1>
@@ -137,7 +137,7 @@
             <input type="text" id="forumRole" placeholder="Your role (e.g. Product Manager)" class="forum-input" />
           </div>
           <textarea id="forumText" class="forum-textarea" placeholder="Share a tip, a win, a question, or words of encouragement..."></textarea>
-          <button class="btn btn-primary" style="margin-top:10px;" onclick="submitPost()">Post to Community →</button>
+          <button class="btn btn-primary" style="margin-top:10px;" onclick="submitPost()">Post to Community â†’</button>
         </div>
 
         <!-- Posts feed -->
@@ -146,7 +146,7 @@
         </div>
       </div>
 
-      <!-- ═══ TAB: SALARY GUIDE ═══ -->
+      <!-- â•â•â• TAB: SALARY GUIDE â•â•â• -->
       <div class="tab-content" id="panel-salary">
         <div class="panel-header">
           <h1>Salary Negotiation Guide</h1>
@@ -156,32 +156,32 @@
         <!-- Salary benchmarks -->
         <div class="salary-grid">
           <div class="salary-resource-card featured-card">
-            <div class="resource-icon">📊</div>
+            <div class="resource-icon">ðŸ“Š</div>
             <h3>Know Your Market Value</h3>
             <p>Before negotiating, research salary ranges for your exact role, location, and experience level. Never go in blind.</p>
             <div class="resource-links">
-              <a href="https://www.levels.fyi" target="_blank" class="resource-link">Levels.fyi →</a>
-              <a href="https://www.glassdoor.com/Salaries" target="_blank" class="resource-link">Glassdoor →</a>
-              <a href="https://www.linkedin.com/salary" target="_blank" class="resource-link">LinkedIn Salary →</a>
-              <a href="https://www.bls.gov/oes" target="_blank" class="resource-link">BLS.gov (official) →</a>
+              <a href="https://www.levels.fyi" target="_blank" class="resource-link">Levels.fyi â†’</a>
+              <a href="https://www.glassdoor.com/Salaries" target="_blank" class="resource-link">Glassdoor â†’</a>
+              <a href="https://www.linkedin.com/salary" target="_blank" class="resource-link">LinkedIn Salary â†’</a>
+              <a href="https://www.bls.gov/oes" target="_blank" class="resource-link">BLS.gov (official) â†’</a>
             </div>
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">🎯</div>
+            <div class="resource-icon">ðŸŽ¯</div>
             <h3>The Negotiation Framework</h3>
             <p style="margin-bottom:12px;">Follow this proven 5-step process for every offer:</p>
             <ol class="salary-steps">
               <li><strong>Never give a number first.</strong> Let them anchor.</li>
               <li><strong>Get the full offer in writing</strong> before responding.</li>
-              <li><strong>Take 24–48 hours</strong> to "review" before countering.</li>
-              <li><strong>Counter 10–20% above</strong> your target number.</li>
-              <li><strong>Negotiate total comp</strong> — salary, equity, PTO, remote days, signing bonus.</li>
+              <li><strong>Take 24â€“48 hours</strong> to "review" before countering.</li>
+              <li><strong>Counter 10â€“20% above</strong> your target number.</li>
+              <li><strong>Negotiate total comp</strong> â€” salary, equity, PTO, remote days, signing bonus.</li>
             </ol>
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">💬</div>
+            <div class="resource-icon">ðŸ’¬</div>
             <h3>Scripts That Work</h3>
             <div class="script-box">
               <div class="script-label">When they ask your number:</div>
@@ -198,45 +198,45 @@
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">📈</div>
+            <div class="resource-icon">ðŸ“ˆ</div>
             <h3>After You Land the Role</h3>
             <p style="margin-bottom:12px;">Salary growth doesn't stop at the offer. Keep advancing:</p>
             <ul class="salary-tips">
               <li>Document every win and contribution from Day 1</li>
               <li>Request a formal performance review at 6 months</li>
-              <li>Benchmark your salary annually — markets shift fast</li>
-              <li>Don't wait for a raise — ask for it proactively</li>
+              <li>Benchmark your salary annually â€” markets shift fast</li>
+              <li>Don't wait for a raise â€” ask for it proactively</li>
               <li>Every new role is a chance to reset your salary ceiling</li>
               <li>Build relationships with recruiters even when employed</li>
             </ul>
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">🛠️</div>
+            <div class="resource-icon">ðŸ› ï¸</div>
             <h3>Free Tools & Calculators</h3>
             <div class="resource-links">
-              <a href="https://www.payscale.com/salary-negotiation-guide" target="_blank" class="resource-link">PayScale Guide →</a>
-              <a href="https://www.negotiatesalary.com" target="_blank" class="resource-link">NegotiateSalary.com →</a>
-              <a href="https://www.calculator.net/salary-calculator.html" target="_blank" class="resource-link">Salary Calculator →</a>
-              <a href="https://www.indeed.com/career/salary-negotiation" target="_blank" class="resource-link">Indeed Guide →</a>
+              <a href="https://www.payscale.com/salary-negotiation-guide" target="_blank" class="resource-link">PayScale Guide â†’</a>
+              <a href="https://www.negotiatesalary.com" target="_blank" class="resource-link">NegotiateSalary.com â†’</a>
+              <a href="https://www.calculator.net/salary-calculator.html" target="_blank" class="resource-link">Salary Calculator â†’</a>
+              <a href="https://www.indeed.com/career/salary-negotiation" target="_blank" class="resource-link">Indeed Guide â†’</a>
             </div>
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">🚀</div>
+            <div class="resource-icon">ðŸš€</div>
             <h3>Growth Resources</h3>
             <p style="margin-bottom:12px;">Keep developing your career capital:</p>
             <div class="resource-links">
-              <a href="https://www.coursera.org" target="_blank" class="resource-link">Coursera (free courses) →</a>
-              <a href="https://www.linkedin.com/learning" target="_blank" class="resource-link">LinkedIn Learning →</a>
-              <a href="https://www.udemy.com" target="_blank" class="resource-link">Udemy →</a>
-              <a href="https://www.toastmasters.org" target="_blank" class="resource-link">Toastmasters (leadership) →</a>
+              <a href="https://www.coursera.org" target="_blank" class="resource-link">Coursera (free courses) â†’</a>
+              <a href="https://www.linkedin.com/learning" target="_blank" class="resource-link">LinkedIn Learning â†’</a>
+              <a href="https://www.udemy.com" target="_blank" class="resource-link">Udemy â†’</a>
+              <a href="https://www.toastmasters.org" target="_blank" class="resource-link">Toastmasters (leadership) â†’</a>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ═══ TAB: CAREER CHECK-IN ═══ -->
+      <!-- â•â•â• TAB: CAREER CHECK-IN â•â•â• -->
       <div class="tab-content" id="panel-checkin">
         <div class="panel-header">
           <h1>Quarterly Career Check-In</h1>
@@ -245,7 +245,7 @@
 
         <!-- Prompt of the quarter -->
         <div class="checkin-prompt-box">
-          <div class="checkin-prompt-label">✦ This Quarter's Reflection Prompt</div>
+          <div class="checkin-prompt-label">âœ¦ This Quarter's Reflection Prompt</div>
           <div class="checkin-prompt-text" id="checkinPrompt">Loading your prompt...</div>
         </div>
 
@@ -272,7 +272,7 @@
             </div>
           </div>
 
-          <button class="btn btn-primary btn-lg" onclick="saveCheckIn()" style="margin-top:16px;">Save My Check-In →</button>
+          <button class="btn btn-primary btn-lg" onclick="saveCheckIn()" style="margin-top:16px;">Save My Check-In â†’</button>
         </div>
 
         <!-- Milestones -->
@@ -280,42 +280,42 @@
           <h3 style="font-size:18px;font-weight:700;margin-bottom:20px;">Career Milestone Checklist</h3>
           <div class="milestone-grid">
             <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
+              <div class="milestone-check">âœ“</div>
               <div class="milestone-text">
                 <strong>Update Your Resume</strong>
                 <span>Reflect your last 3 months of achievements</span>
               </div>
             </div>
             <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
+              <div class="milestone-check">âœ“</div>
               <div class="milestone-text">
                 <strong>Benchmark Your Salary</strong>
                 <span>Check Glassdoor, Levels.fyi, LinkedIn Salary</span>
               </div>
             </div>
             <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
+              <div class="milestone-check">âœ“</div>
               <div class="milestone-text">
                 <strong>Connect With 3 New People</strong>
                 <span>Grow your professional network intentionally</span>
               </div>
             </div>
             <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
+              <div class="milestone-check">âœ“</div>
               <div class="milestone-text">
                 <strong>Complete a New Skill Course</strong>
                 <span>Coursera, LinkedIn Learning, or Udemy</span>
               </div>
             </div>
             <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
+              <div class="milestone-check">âœ“</div>
               <div class="milestone-text">
                 <strong>Request Feedback From Your Manager</strong>
                 <span>Know where you stand before review season</span>
               </div>
             </div>
             <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
+              <div class="milestone-check">âœ“</div>
               <div class="milestone-text">
                 <strong>Set 3 Goals for Next Quarter</strong>
                 <span>Specific, measurable, time-bound targets</span>
@@ -326,13 +326,13 @@
 
         <!-- Next check-in reminder -->
         <div class="checkin-reminder">
-          <div style="font-size:24px;margin-bottom:8px;">⏰</div>
+          <div style="font-size:24px;margin-bottom:8px;">â°</div>
           <h3>Next Check-In: <span id="nextCheckinDate"></span></h3>
           <p>We'll remind you to come back in 90 days. Consistent reflection is what separates good careers from great ones.</p>
         </div>
       </div>
 
-      <!-- ═══ TAB: HELP & SUPPORT ═══ -->
+      <!-- â•â•â• TAB: HELP & SUPPORT â•â•â• -->
       <div class="tab-content" id="panel-help">
         <div class="panel-header">
           <h1>Help & Support</h1>
@@ -365,10 +365,10 @@
             </div>
 
             <button class="btn btn-primary btn-lg" onclick="submitHelp()" id="helpBtn" style="margin-top:20px;">
-              Send Message →
+              Send Message â†’
             </button>
             <div id="helpSuccess" style="display:none;margin-top:20px;padding:16px 20px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:12px;color:#22c55e;font-weight:600;">
-              ✓ Message sent! We'll reply to your email within 24 hours.
+              âœ“ Message sent! We'll reply to your email within 24 hours.
             </div>
           </div>
 
@@ -379,35 +379,35 @@
 
               <div class="faq-item">
                 <div class="faq-q" onclick="toggleFaq(this)">
-                  <span>How does the free tier work?</span><span class="faq-arrow">▾</span>
+                  <span>How does the free tier work?</span><span class="faq-arrow">â–¾</span>
                 </div>
-                <div class="faq-a">You get 1 free resume tailoring per day — no credit card required. Each day at midnight the counter resets. Upgrade to Pro for unlimited tailorings.</div>
+                <div class="faq-a">You get 1 free resume tailoring per day â€” no credit card required. Each day at midnight the counter resets. Upgrade to Pro for unlimited tailorings.</div>
               </div>
 
               <div class="faq-item">
                 <div class="faq-q" onclick="toggleFaq(this)">
-                  <span>How do I verify my Pro subscription?</span><span class="faq-arrow">▾</span>
+                  <span>How do I verify my Pro subscription?</span><span class="faq-arrow">â–¾</span>
                 </div>
                 <div class="faq-a">After subscribing, enter the email you used at checkout into the email field on the Resume Tailor tab and click away. Your Pro status will activate automatically.</div>
               </div>
 
               <div class="faq-item">
                 <div class="faq-q" onclick="toggleFaq(this)">
-                  <span>Will the AI make up experience I don't have?</span><span class="faq-arrow">▾</span>
+                  <span>Will the AI make up experience I don't have?</span><span class="faq-arrow">â–¾</span>
                 </div>
                 <div class="faq-a">No. Our AI strictly rewrites and reframes your existing experience using the job posting's language and keywords. It never adds skills or experience you didn't include in your original resume.</div>
               </div>
 
               <div class="faq-item">
                 <div class="faq-q" onclick="toggleFaq(this)">
-                  <span>How do I cancel my Pro subscription?</span><span class="faq-arrow">▾</span>
+                  <span>How do I cancel my Pro subscription?</span><span class="faq-arrow">â–¾</span>
                 </div>
                 <div class="faq-a">Send us a message using the form on this page with your email and we'll cancel immediately. No questions asked. You can also reply to any of our emails.</div>
               </div>
 
               <div class="faq-item">
                 <div class="faq-q" onclick="toggleFaq(this)">
-                  <span>What format should I paste my resume in?</span><span class="faq-arrow">▾</span>
+                  <span>What format should I paste my resume in?</span><span class="faq-arrow">â–¾</span>
                 </div>
                 <div class="faq-a">Plain text works best. Open your resume in Word or Google Docs, select all (Ctrl+A), copy (Ctrl+C), and paste into the resume field. The AI handles the formatting.</div>
               </div>
@@ -416,7 +416,7 @@
         </div>
       </div>
 
-      <!-- ═══ TAB: ABOUT ═══ -->
+      <!-- â•â•â• TAB: ABOUT â•â•â• -->
       <div class="tab-content" id="panel-about">
         <div class="panel-header">
           <h1>How Does It Work?</h1>
@@ -425,24 +425,24 @@
 
         <!-- How it works -->
         <div class="salary-resource-card featured-card" style="margin-bottom:20px;">
-          <div class="resource-icon">⚡</div>
+          <div class="resource-icon">âš¡</div>
           <h3 style="font-size:20px;margin-bottom:12px;">How It Works</h3>
           <div class="salary-steps" style="list-style:none;padding:0;">
             <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">
               <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
-              <div><strong>Paste your resume</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Copy your existing resume text — Word, PDF, Google Docs, it doesn't matter. Plain text is all we need.</span></div>
+              <div><strong>Paste your resume</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Copy your existing resume text â€” Word, PDF, Google Docs, it doesn't matter. Plain text is all we need.</span></div>
             </div>
             <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">
               <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
-              <div><strong>Paste the job posting</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Copy the full job description from LinkedIn, Indeed, a company website — anywhere you found the role.</span></div>
+              <div><strong>Paste the job posting</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Copy the full job description from LinkedIn, Indeed, a company website â€” anywhere you found the role.</span></div>
             </div>
             <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">
               <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
-              <div><strong>AI rewrites your resume</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Our AI — powered by Claude (Anthropic) — rewrites your bullet points using the job's exact keywords, reorders sections by relevance, and rewrites your summary to speak directly to this role.</span></div>
+              <div><strong>AI rewrites your resume</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Our AI â€” powered by Claude (Anthropic) â€” rewrites your bullet points using the job's exact keywords, reorders sections by relevance, and rewrites your summary to speak directly to this role.</span></div>
             </div>
             <div style="display:flex;gap:16px;align-items:flex-start;">
               <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
-              <div><strong>Get a custom cover letter too</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Optionally generate a full cover letter — a compelling 3–4 paragraph letter that connects your achievements to the job requirements. Ready to submit in under 30 seconds.</span></div>
+              <div><strong>Get a custom cover letter too</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Optionally generate a full cover letter â€” a compelling 3â€“4 paragraph letter that connects your achievements to the job requirements. Ready to submit in under 30 seconds.</span></div>
             </div>
           </div>
         </div>
@@ -451,37 +451,37 @@
         <h2 style="font-size:22px;font-weight:800;margin:32px 0 16px;">Why ResumeTailored AI Beats the Competition</h2>
         <div class="salary-grid">
           <div class="salary-resource-card">
-            <div class="resource-icon">🧠</div>
+            <div class="resource-icon">ðŸ§ </div>
             <h3>Powered by Claude AI</h3>
-            <p>We use Anthropic's Claude — the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.</p>
+            <p>We use Anthropic's Claude â€” the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.</p>
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">🎯</div>
+            <div class="resource-icon">ðŸŽ¯</div>
             <h3>Actually Job-Specific</h3>
             <p>Tools like Jobscan and Resume Worded score your resume for keywords but don't <em>rewrite</em> it. ResumeTailored AI reads both your resume AND the job posting, then rewrites your bullets to mirror the exact language the hiring manager used.</p>
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">✅</div>
+            <div class="resource-icon">âœ…</div>
             <h3>Never Fabricates Experience</h3>
-            <p>Unlike some AI tools, we never invent skills or experience you don't have. We reframe what you already did using the role's language. You stay 100% truthful — you just communicate your value more clearly.</p>
+            <p>Unlike some AI tools, we never invent skills or experience you don't have. We reframe what you already did using the role's language. You stay 100% truthful â€” you just communicate your value more clearly.</p>
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">⚡</div>
+            <div class="resource-icon">âš¡</div>
             <h3>30 Seconds, Not 45 Minutes</h3>
             <p>The average job seeker spends 45 minutes tailoring each application. We do it in under 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it manually.</p>
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">💰</div>
-            <h3>$19/mo vs. $40–$100/mo Elsewhere</h3>
-            <p>Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19 — the most value in the market.</p>
+            <div class="resource-icon">ðŸ’°</div>
+            <h3>$19/mo vs. $40â€“$100/mo Elsewhere</h3>
+            <p>Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19 â€” the most value in the market.</p>
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">🏆</div>
+            <div class="resource-icon">ðŸ†</div>
             <h3>More Than a Resume Tool</h3>
             <p>Pro members get the full Career Hub: salary negotiation guides, word-for-word negotiation scripts, a professional community forum, and quarterly career check-ins. No competitor bundles this much career value at this price.</p>
           </div>
@@ -503,45 +503,45 @@
             <tbody>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
                 <td style="padding:12px 16px;">AI rewrites your resume</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">âœ“</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
                 <td style="padding:12px 16px;text-align:center;color:#f59e0b;">Partial</td>
               </tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
                 <td style="padding:12px 16px;">Custom cover letter AI</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">âœ“</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
                 <td style="padding:12px 16px;text-align:center;color:#f59e0b;">Basic</td>
                 <td style="padding:12px 16px;text-align:center;color:#f59e0b;">Basic</td>
               </tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
                 <td style="padding:12px 16px;">Job-specific keyword matching</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">âœ“</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;">âœ“</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;">âœ“</td>
               </tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
                 <td style="padding:12px 16px;">Salary negotiation guide</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">âœ“</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
               </tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
                 <td style="padding:12px 16px;">Community forum</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">âœ“</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
               </tr>
               <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
                 <td style="padding:12px 16px;">Free tier (no credit card)</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">âœ“</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;">âœ“</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">âœ—</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;">âœ“</td>
               </tr>
               <tr>
                 <td style="padding:12px 16px;font-weight:700;">Monthly price (Pro)</td>
@@ -555,29 +555,29 @@
         </div>
 
         <div style="margin-top:32px;text-align:center;">
-          <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try It Free Now →</button>
-          <p style="color:var(--text-muted,#9490b5);font-size:13px;margin-top:12px;">1 free tailoring per day · No credit card required</p>
+          <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try It Free Now â†’</button>
+          <p style="color:var(--text-muted,#9490b5);font-size:13px;margin-top:12px;">1 free tailoring per day Â· No credit card required</p>
         </div>
       </div>
 
-      <!-- ═══ TAB: CANCEL ANYTIME ═══ -->
+      <!-- â•â•â• TAB: CANCEL ANYTIME â•â•â• -->
       <div class="tab-content" id="panel-cancel">
         <div class="panel-header">
-          <h1>Cancel Anytime — No Questions Asked</h1>
+          <h1>Cancel Anytime â€” No Questions Asked</h1>
           <p>We believe you should only pay for what you love. Canceling is instant and effortless.</p>
         </div>
 
         <!-- Main promise card -->
         <div class="salary-resource-card featured-card" style="margin-bottom:24px;text-align:center;">
-          <div style="font-size:56px;margin-bottom:16px;">🔓</div>
+          <div style="font-size:56px;margin-bottom:16px;">ðŸ”“</div>
           <h2 style="font-size:24px;font-weight:800;margin-bottom:12px;">Your subscription, your rules.</h2>
-          <p style="font-size:16px;line-height:1.8;max-width:560px;margin:0 auto;">Cancel your Pro subscription at any time — in seconds. No cancellation fees. No "are you sure?" hoops. No calling a 1-800 number. Just send us a message and it's done immediately.</p>
+          <p style="font-size:16px;line-height:1.8;max-width:560px;margin:0 auto;">Cancel your Pro subscription at any time â€” in seconds. No cancellation fees. No "are you sure?" hoops. No calling a 1-800 number. Just send us a message and it's done immediately.</p>
         </div>
 
         <!-- How to cancel -->
         <div class="salary-grid" style="grid-template-columns:1fr 1fr;margin-bottom:32px;">
           <div class="salary-resource-card">
-            <div class="resource-icon">💬</div>
+            <div class="resource-icon">ðŸ’¬</div>
             <h3>How to Cancel</h3>
             <ol class="salary-steps">
               <li>Go to the <strong>Help & Support</strong> tab</li>
@@ -585,17 +585,17 @@
               <li>Include the email you used to subscribe</li>
               <li>We'll cancel and confirm within <strong>1 hour</strong></li>
             </ol>
-            <button class="btn btn-outline" style="margin-top:16px;width:100%;" onclick="showTab('help')">Go to Help & Support →</button>
+            <button class="btn btn-outline" style="margin-top:16px;width:100%;" onclick="showTab('help')">Go to Help & Support â†’</button>
           </div>
 
           <div class="salary-resource-card">
-            <div class="resource-icon">📅</div>
+            <div class="resource-icon">ðŸ“…</div>
             <h3>What Happens When You Cancel</h3>
             <ul class="salary-tips">
               <li>Subscription stops at end of current billing period</li>
               <li>You keep full Pro access until then</li>
-              <li>No partial-month charges — ever</li>
-              <li>No data deleted — your check-ins stay saved</li>
+              <li>No partial-month charges â€” ever</li>
+              <li>No data deleted â€” your check-ins stay saved</li>
               <li>Resubscribe anytime at the same $19/mo price</li>
               <li>No penalty, no re-enrollment fee</li>
             </ul>
@@ -607,31 +607,31 @@
         <div class="help-faq-card">
           <div class="faq-item">
             <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Do I get a refund if I cancel mid-month?</span><span class="faq-arrow">▾</span>
+              <span>Do I get a refund if I cancel mid-month?</span><span class="faq-arrow">â–¾</span>
             </div>
             <div class="faq-a">We don't offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.</div>
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="toggleFaq(this)">
-              <span>How fast does cancellation take effect?</span><span class="faq-arrow">▾</span>
+              <span>How fast does cancellation take effect?</span><span class="faq-arrow">â–¾</span>
             </div>
             <div class="faq-a">We process all cancellation requests within 1 hour. You'll receive a confirmation email once it's done. Your Pro access continues until your billing period ends.</div>
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Can I pause instead of cancel?</span><span class="faq-arrow">▾</span>
+              <span>Can I pause instead of cancel?</span><span class="faq-arrow">â–¾</span>
             </div>
-            <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as easy. You'll always get the same $19/month rate — we don't price-lock or penalize returning members.</div>
+            <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as easy. You'll always get the same $19/month rate â€” we don't price-lock or penalize returning members.</div>
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="toggleFaq(this)">
-              <span>What if I was charged but didn't mean to subscribe?</span><span class="faq-arrow">▾</span>
+              <span>What if I was charged but didn't mean to subscribe?</span><span class="faq-arrow">â–¾</span>
             </div>
             <div class="faq-a">Contact us within 7 days of the charge and we'll issue a full refund, no questions asked. We never want anyone paying for something they didn't intend to buy.</div>
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Will my resume history be deleted if I cancel?</span><span class="faq-arrow">▾</span>
+              <span>Will my resume history be deleted if I cancel?</span><span class="faq-arrow">â–¾</span>
             </div>
             <div class="faq-a">No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.</div>
           </div>
@@ -640,8 +640,8 @@
         <!-- Bottom CTA -->
         <div style="margin-top:40px;padding:32px;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:16px;text-align:center;">
           <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;">Still deciding whether to subscribe?</h3>
-          <p style="color:var(--text-muted,#9490b5);margin-bottom:20px;">Try it free first — 1 tailoring per day, no credit card needed. Upgrade only when you're convinced it works.</p>
-          <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try Free First →</button>
+          <p style="color:var(--text-muted,#9490b5);margin-bottom:20px;">Try it free first â€” 1 tailoring per day, no credit card needed. Upgrade only when you're convinced it works.</p>
+          <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try Free First â†’</button>
         </div>
       </div>
 
@@ -655,7 +655,7 @@
     let isSubscriberFlag = false;
     let freeUsesLeft = 1;
 
-    // ── Tab switching ──────────────────────────────────────────────────────────
+    // â”€â”€ Tab switching â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function showTab(name) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.sidebar-btn').forEach(el => el.classList.remove('active'));
@@ -665,7 +665,7 @@
       if (name === 'checkin') loadCheckIn();
     }
 
-    // ── Mode buttons ───────────────────────────────────────────────────────────
+    // â”€â”€ Mode buttons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
@@ -674,7 +674,7 @@
       });
     });
 
-    // ── Status check ───────────────────────────────────────────────────────────
+    // â”€â”€ Status check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     async function checkStatus() {
       const email = document.getElementById('email').value.trim();
       try {
@@ -687,8 +687,8 @@
         const navStatus = document.getElementById('navStatus');
 
         if (isSubscriberFlag) {
-          badge.innerHTML = '<span class="free-badge pro-badge">✦ Pro — Unlimited Tailorings Active</span>';
-          navStatus.innerHTML = '<span class="free-badge pro-badge" style="font-size:12px;">✦ Pro</span>';
+          badge.innerHTML = '<span class="free-badge pro-badge">âœ¦ Pro â€” Unlimited Tailorings Active</span>';
+          navStatus.innerHTML = '<span class="free-badge pro-badge" style="font-size:12px;">âœ¦ Pro</span>';
           document.getElementById('sidebarProBox').style.display = 'none';
         } else {
           badge.innerHTML = `<span class="free-badge">${freeUsesLeft > 0 ? '1 free tailoring available today' : '0 free tailorings left today'}</span>`;
@@ -704,7 +704,7 @@
     document.getElementById('email').addEventListener('blur', checkStatus);
     checkStatus();
 
-    // ── Tailor resume ──────────────────────────────────────────────────────────
+    // â”€â”€ Tailor resume â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     async function tailor() {
       const resume = document.getElementById('resume').value.trim();
       const job = document.getElementById('job').value.trim();
@@ -746,12 +746,12 @@
       } catch (err) {
         showToast(err.message);
       } finally {
-        btn.innerHTML = 'Tailor My Resume →';
+        btn.innerHTML = 'Tailor My Resume â†’';
         btn.disabled = false;
       }
     }
 
-    // ── Forum ──────────────────────────────────────────────────────────────────
+    // â”€â”€ Forum â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     async function loadForum() {
       try {
         const res = await fetch('/api/forum');
@@ -774,13 +774,13 @@
             <div class="post-avatar">${p.author.charAt(0)}</div>
             <div>
               <div class="post-author">${p.author}</div>
-              <div class="post-meta">${p.role} · ${p.time}</div>
+              <div class="post-meta">${p.role} Â· ${p.time}</div>
             </div>
           </div>
           <div class="post-body">${p.text}</div>
           <div class="post-actions">
-            <button class="post-action-btn" onclick="likePost(${p.id}, this)">👍 <span>${p.likes}</span></button>
-            <button class="post-action-btn" onclick="toggleReply(${p.id})">💬 Reply</button>
+            <button class="post-action-btn" onclick="likePost(${p.id}, this)">ðŸ‘ <span>${p.likes}</span></button>
+            <button class="post-action-btn" onclick="toggleReply(${p.id})">ðŸ’¬ Reply</button>
           </div>
           <div class="reply-form" id="reply-${p.id}" style="display:none;">
             <input type="text" placeholder="Your name" class="forum-input" id="reply-author-${p.id}" style="margin-bottom:8px;" />
@@ -851,7 +851,7 @@
       }
     }
 
-    // ── Check-in ───────────────────────────────────────────────────────────────
+    // â”€â”€ Check-in â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     async function loadCheckIn() {
       const email = document.getElementById('email').value.trim();
       try {
@@ -884,7 +884,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, goals, currentRole, targetRole })
         });
-        showToast('Check-in saved! See you in 90 days. 🎯');
+        showToast('Check-in saved! See you in 90 days. ðŸŽ¯');
       } catch(e) {
         showToast('Could not save. Please try again.');
       }
@@ -894,7 +894,7 @@
       el.classList.toggle('completed');
     }
 
-    // ── Subscribe ──────────────────────────────────────────────────────────────
+    // â”€â”€ Subscribe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     async function subscribe() {
       const email = document.getElementById('email').value.trim();
       if (!email) { showToast('Enter your email first.'); showTab('tailor'); document.getElementById('email').focus(); return; }
@@ -917,7 +917,7 @@
         .then(() => showToast('Copied to clipboard!'));
     }
 
-    // ── Help / Contact ─────────────────────────────────────────────────────────
+    // â”€â”€ Help / Contact â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     async function submitHelp() {
       const name = document.getElementById('helpName').value.trim();
       const email = document.getElementById('helpEmail').value.trim();
@@ -947,7 +947,7 @@
         btn.style.display = 'none';
       } catch(e) {
         showToast('Could not send message. Please try again.');
-        btn.innerHTML = 'Send Message →';
+        btn.innerHTML = 'Send Message â†’';
         btn.disabled = false;
       }
     }
@@ -957,7 +957,7 @@
       const arrow = el.querySelector('.faq-arrow');
       const isOpen = answer.style.display === 'block';
       answer.style.display = isOpen ? 'none' : 'block';
-      arrow.textContent = isOpen ? '▾' : '▴';
+      arrow.textContent = isOpen ? 'â–¾' : 'â–´';
     }
 
     function showToast(msg) {
@@ -969,3 +969,4 @@
   </script>
 </body>
 </html>
+
