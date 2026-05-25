@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ResumeTailor AI — Dashboard</title>
+  <title>ResumeTailored AI — Dashboard</title>
+  <link rel="icon" href="favicon.jpg" type="image/jpeg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
@@ -13,7 +14,7 @@
   <!-- NAV -->
   <nav class="nav">
     <div class="nav-inner">
-      <a href="/" class="logo">ResumeTailor <span class="badge-ai">AI</span></a>
+      <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
       <div style="display:flex;gap:12px;align-items:center;">
         <span id="navStatus"></span>
         <a href="/#pricing" class="btn btn-outline">Go Pro — $19/mo</a>
@@ -45,6 +46,12 @@
         </button>
         <button class="sidebar-btn" onclick="showTab('help')" id="tab-help">
           <span class="sidebar-icon">💌</span> Help & Support
+        </button>
+        <button class="sidebar-btn" onclick="showTab('about')" id="tab-about">
+          <span class="sidebar-icon">✨</span> About Us
+        </button>
+        <button class="sidebar-btn" onclick="showTab('cancel')" id="tab-cancel">
+          <span class="sidebar-icon">🔓</span> Cancel Anytime
         </button>
       </div>
       <div class="sidebar-pro-box" id="sidebarProBox">
@@ -403,6 +410,235 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: ABOUT ═══ -->
+      <div class="tab-content" id="panel-about">
+        <div class="panel-header">
+          <h1>About ResumeTailored AI</h1>
+          <p>Built for serious job seekers. Powered by the most advanced AI available.</p>
+        </div>
+
+        <!-- How it works -->
+        <div class="salary-resource-card featured-card" style="margin-bottom:20px;">
+          <div class="resource-icon">⚡</div>
+          <h3 style="font-size:20px;margin-bottom:12px;">How It Works</h3>
+          <div class="salary-steps" style="list-style:none;padding:0;">
+            <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">
+              <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
+              <div><strong>Paste your resume</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Copy your existing resume text — Word, PDF, Google Docs, it doesn't matter. Plain text is all we need.</span></div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">
+              <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
+              <div><strong>Paste the job posting</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Copy the full job description from LinkedIn, Indeed, a company website — anywhere you found the role.</span></div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">
+              <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
+              <div><strong>AI rewrites your resume</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Our AI — powered by Claude (Anthropic) — rewrites your bullet points using the job's exact keywords, reorders sections by relevance, and rewrites your summary to speak directly to this role.</span></div>
+            </div>
+            <div style="display:flex;gap:16px;align-items:flex-start;">
+              <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
+              <div><strong>Get a custom cover letter too</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Optionally generate a full cover letter — a compelling 3–4 paragraph letter that connects your achievements to the job requirements. Ready to submit in under 30 seconds.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Why we're better -->
+        <h2 style="font-size:22px;font-weight:800;margin:32px 0 16px;">Why ResumeTailored AI Beats the Competition</h2>
+        <div class="salary-grid">
+          <div class="salary-resource-card">
+            <div class="resource-icon">🧠</div>
+            <h3>Powered by Claude AI</h3>
+            <p>We use Anthropic's Claude — the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.</p>
+          </div>
+
+          <div class="salary-resource-card">
+            <div class="resource-icon">🎯</div>
+            <h3>Actually Job-Specific</h3>
+            <p>Tools like Jobscan and Resume Worded score your resume for keywords but don't <em>rewrite</em> it. ResumeTailored AI reads both your resume AND the job posting, then rewrites your bullets to mirror the exact language the hiring manager used.</p>
+          </div>
+
+          <div class="salary-resource-card">
+            <div class="resource-icon">✅</div>
+            <h3>Never Fabricates Experience</h3>
+            <p>Unlike some AI tools, we never invent skills or experience you don't have. We reframe what you already did using the role's language. You stay 100% truthful — you just communicate your value more clearly.</p>
+          </div>
+
+          <div class="salary-resource-card">
+            <div class="resource-icon">⚡</div>
+            <h3>30 Seconds, Not 45 Minutes</h3>
+            <p>The average job seeker spends 45 minutes tailoring each application. We do it in under 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it manually.</p>
+          </div>
+
+          <div class="salary-resource-card">
+            <div class="resource-icon">💰</div>
+            <h3>$19/mo vs. $40–$100/mo Elsewhere</h3>
+            <p>Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19 — the most value in the market.</p>
+          </div>
+
+          <div class="salary-resource-card">
+            <div class="resource-icon">🏆</div>
+            <h3>More Than a Resume Tool</h3>
+            <p>Pro members get the full Career Hub: salary negotiation guides, word-for-word negotiation scripts, a professional community forum, and quarterly career check-ins. No competitor bundles this much career value at this price.</p>
+          </div>
+        </div>
+
+        <!-- Comparison table -->
+        <h2 style="font-size:22px;font-weight:800;margin:36px 0 16px;">Head-to-Head Comparison</h2>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr style="background:rgba(245,200,66,0.1);border-bottom:2px solid rgba(245,200,66,0.3);">
+                <th style="padding:12px 16px;text-align:left;font-weight:700;">Feature</th>
+                <th style="padding:12px 16px;text-align:center;color:#f5c842;font-weight:700;">ResumeTailored AI</th>
+                <th style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">Jobscan</th>
+                <th style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">Resume.io</th>
+                <th style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">Teal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+                <td style="padding:12px 16px;">AI rewrites your resume</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#f59e0b;">Partial</td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+                <td style="padding:12px 16px;">Custom cover letter AI</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#f59e0b;">Basic</td>
+                <td style="padding:12px 16px;text-align:center;color:#f59e0b;">Basic</td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+                <td style="padding:12px 16px;">Job-specific keyword matching</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+                <td style="padding:12px 16px;">Salary negotiation guide</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+                <td style="padding:12px 16px;">Community forum</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+              </tr>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
+                <td style="padding:12px 16px;">Free tier (no credit card)</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
+                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
+                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 16px;font-weight:700;">Monthly price (Pro)</td>
+                <td style="padding:12px 16px;text-align:center;color:#f5c842;font-weight:800;">$19</td>
+                <td style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">$49</td>
+                <td style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">$45</td>
+                <td style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">$29</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top:32px;text-align:center;">
+          <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try It Free Now →</button>
+          <p style="color:var(--text-muted,#9490b5);font-size:13px;margin-top:12px;">1 free tailoring per day · No credit card required</p>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: CANCEL ANYTIME ═══ -->
+      <div class="tab-content" id="panel-cancel">
+        <div class="panel-header">
+          <h1>Cancel Anytime — No Questions Asked</h1>
+          <p>We believe you should only pay for what you love. Canceling is instant and effortless.</p>
+        </div>
+
+        <!-- Main promise card -->
+        <div class="salary-resource-card featured-card" style="margin-bottom:24px;text-align:center;">
+          <div style="font-size:56px;margin-bottom:16px;">🔓</div>
+          <h2 style="font-size:24px;font-weight:800;margin-bottom:12px;">Your subscription, your rules.</h2>
+          <p style="font-size:16px;line-height:1.8;max-width:560px;margin:0 auto;">Cancel your Pro subscription at any time — in seconds. No cancellation fees. No "are you sure?" hoops. No calling a 1-800 number. Just send us a message and it's done immediately.</p>
+        </div>
+
+        <!-- How to cancel -->
+        <div class="salary-grid" style="grid-template-columns:1fr 1fr;margin-bottom:32px;">
+          <div class="salary-resource-card">
+            <div class="resource-icon">💬</div>
+            <h3>How to Cancel</h3>
+            <ol class="salary-steps">
+              <li>Go to the <strong>Help & Support</strong> tab</li>
+              <li>Send a message with subject: <strong>"Cancel my subscription"</strong></li>
+              <li>Include the email you used to subscribe</li>
+              <li>We'll cancel and confirm within <strong>1 hour</strong></li>
+            </ol>
+            <button class="btn btn-outline" style="margin-top:16px;width:100%;" onclick="showTab('help')">Go to Help & Support →</button>
+          </div>
+
+          <div class="salary-resource-card">
+            <div class="resource-icon">📅</div>
+            <h3>What Happens When You Cancel</h3>
+            <ul class="salary-tips">
+              <li>Subscription stops at end of current billing period</li>
+              <li>You keep full Pro access until then</li>
+              <li>No partial-month charges — ever</li>
+              <li>No data deleted — your check-ins stay saved</li>
+              <li>Resubscribe anytime at the same $19/mo price</li>
+              <li>No penalty, no re-enrollment fee</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- FAQ section -->
+        <h2 style="font-size:20px;font-weight:800;margin-bottom:16px;">Cancellation FAQs</h2>
+        <div class="help-faq-card">
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Do I get a refund if I cancel mid-month?</span><span class="faq-arrow">▾</span>
+            </div>
+            <div class="faq-a">We don't offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>How fast does cancellation take effect?</span><span class="faq-arrow">▾</span>
+            </div>
+            <div class="faq-a">We process all cancellation requests within 1 hour. You'll receive a confirmation email once it's done. Your Pro access continues until your billing period ends.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Can I pause instead of cancel?</span><span class="faq-arrow">▾</span>
+            </div>
+            <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as easy. You'll always get the same $19/month rate — we don't price-lock or penalize returning members.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>What if I was charged but didn't mean to subscribe?</span><span class="faq-arrow">▾</span>
+            </div>
+            <div class="faq-a">Contact us within 7 days of the charge and we'll issue a full refund, no questions asked. We never want anyone paying for something they didn't intend to buy.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Will my resume history be deleted if I cancel?</span><span class="faq-arrow">▾</span>
+            </div>
+            <div class="faq-a">No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.</div>
+          </div>
+        </div>
+
+        <!-- Bottom CTA -->
+        <div style="margin-top:40px;padding:32px;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:16px;text-align:center;">
+          <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;">Still deciding whether to subscribe?</h3>
+          <p style="color:var(--text-muted,#9490b5);margin-bottom:20px;">Try it free first — 1 tailoring per day, no credit card needed. Upgrade only when you're convinced it works.</p>
+          <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try Free First →</button>
         </div>
       </div>
 
