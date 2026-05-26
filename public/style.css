@@ -600,27 +600,168 @@ textarea:focus { outline: none; border-color: rgba(245,200,66,.4); box-shadow: 0
 .checkin-reminder h3 { font-size: 20px; font-weight: 900; margin-bottom: 10px; color: var(--gold); }
 .checkin-reminder p { font-size: 14px; color: var(--text-muted); line-height: 1.65; }
 
-/* ══ RESPONSIVE ═════════════════════════════════════════════════════════════════ */
+/* ══ RESPONSIVE — TABLET (≤900px) ═══════════════════════════════════════════════ */
 @media (max-width: 900px) {
+  /* Nav */
+  .nav-inner { padding: 0 20px; height: 60px; }
+
+  /* Dashboard layout — sidebar becomes top tab bar */
   .dashboard { grid-template-columns: 1fr; }
   .sidebar {
-    position: static; height: auto;
-    display: flex; flex-wrap: wrap; gap: 6px;
-    padding: 14px; border-right: none; border-bottom: 1px solid var(--glass-border);
+    position: sticky; top: 60px; z-index: 90;
+    height: auto; overflow-x: auto; overflow-y: hidden;
+    display: flex; flex-direction: row; flex-wrap: nowrap; gap: 6px;
+    padding: 10px 16px; border-right: none;
+    border-bottom: 1px solid var(--glass-border);
+    background: rgba(7,7,15,0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    scrollbar-width: none;
   }
-  .sidebar-section { margin-bottom: 0; }
+  .sidebar::-webkit-scrollbar { display: none; }
+  .sidebar-section { margin-bottom: 0; display: contents; }
   .sidebar-label { display: none; }
-  .sidebar-btn { width: auto; padding: 8px 14px; font-size: 13px; }
+  .sidebar-btn {
+    width: auto; flex-shrink: 0;
+    padding: 8px 14px; font-size: 13px;
+    white-space: nowrap;
+  }
+  .sidebar-icon { font-size: 15px; }
   .sidebar-pro-box { display: none; }
+
+  /* Main */
+  .dash-main { padding: 24px 20px 60px; }
+  .panel-header h1 { font-size: 24px; }
+
+  /* Inputs */
+  .inputs { grid-template-columns: 1fr; }
+  .email-row { flex-direction: column; align-items: stretch; gap: 8px; }
+  .email-hint { font-size: 12px; }
+
+  /* Mode buttons */
+  .mode-row { gap: 8px; }
+  .mode-btn { padding: 9px 14px; font-size: 13px; }
+
+  /* Output */
+  .output-header { flex-wrap: wrap; gap: 10px; }
+
+  /* Download row */
+  .download-row { flex-direction: column; gap: 10px; }
+  .download-btn { width: 100%; justify-content: center; }
+
+  /* Field header (upload button) */
+  .field-header { gap: 10px; }
+
+  /* Upsell */
+  .upsell { flex-direction: column; align-items: flex-start; }
+
+  /* Salary guide */
   .salary-grid { grid-template-columns: 1fr; }
   .featured-card { grid-column: 1; }
-  .milestone-grid { grid-template-columns: 1fr; }
+
+  /* Forum */
+  .forum-compose { padding: 20px; }
+
+  /* Check-in */
   .checkin-fields { grid-template-columns: 1fr; }
-  .dash-main { padding: 24px 18px 60px; }
-  .inputs { grid-template-columns: 1fr; }
-  .demo-card { grid-template-columns: 1fr; }
-  .demo-arrow { display: none; }
+  .milestone-grid { grid-template-columns: 1fr; }
+  .checkin-prompt-text { font-size: 20px; }
+  .checkin-prompt-box { padding: 24px; }
+
+  /* Help */
   .help-grid { grid-template-columns: 1fr; }
+
+  /* Landing page */
+  .demo-card { grid-template-columns: 1fr; gap: 12px; }
+  .demo-arrow { display: none; }
+  .hero { padding: 70px 20px 60px; }
+  .hero-sub { font-size: 16px; }
+  .section { padding: 60px 20px; }
+  .section-title { font-size: 28px; margin-bottom: 36px; }
+  .footer-inner { flex-direction: column; align-items: center; text-align: center; gap: 16px; }
+}
+
+/* ══ RESPONSIVE — PHONE (≤480px) ════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  /* Nav */
+  .nav-inner { padding: 0 16px; height: 56px; }
+  .nav-inner .btn { padding: 8px 14px; font-size: 13px; }
+  #navUsername { display: none !important; }
+  #logoutBtn { padding: 8px 12px !important; font-size: 12px !important; }
+
+  /* Sidebar tab bar — tighter */
+  .sidebar { top: 56px; padding: 8px 12px; gap: 5px; }
+  .sidebar-btn { padding: 7px 11px; font-size: 12px; gap: 6px; border-radius: 9px; }
+  .sidebar-icon { font-size: 14px; }
+
+  /* Main */
+  .dash-main { padding: 20px 16px 80px; }
+  .panel-header { margin-bottom: 20px; }
+  .panel-header h1 { font-size: 22px; letter-spacing: -.3px; }
+  .panel-header p { font-size: 14px; }
+
+  /* Mode buttons — wrap nicely */
+  .mode-row { gap: 6px; }
+  .mode-btn { padding: 8px 12px; font-size: 12px; border-radius: 8px; }
+
+  /* Textareas */
+  textarea { min-height: 180px; padding: 13px; font-size: 14px; }
+
+  /* Email row */
+  .email-row input { font-size: 15px; padding: 13px 15px; }
+
+  /* Output */
+  .output-box { padding: 18px; font-size: 13px; }
+  .output-header h2 { font-size: 16px; }
+
+  /* Download */
+  .download-btn { padding: 13px 16px; font-size: 14px; }
+
+  /* Upload button */
+  .upload-btn { padding: 7px 12px; font-size: 12px; }
+
+  /* Buttons */
+  .btn-lg { padding: 14px 28px; font-size: 15px; }
+  .btn-full { padding: 14px; font-size: 15px; }
+
+  /* Forum */
+  .forum-compose { padding: 16px; }
+  .forum-post { padding: 18px 16px; }
+  .post-avatar { width: 38px; height: 38px; font-size: 15px; }
+
+  /* Check-in */
+  .checkin-prompt-text { font-size: 18px; }
+  .checkin-prompt-box { padding: 20px; }
+  .checkin-form { padding: 20px; }
+  .milestone-item { padding: 13px 14px; gap: 11px; }
+
+  /* Salary */
+  .salary-resource-card { padding: 20px; }
+
+  /* Help */
+  .help-form-card, .help-faq-card { padding: 20px; }
+
+  /* Upsell */
+  .upsell { padding: 18px 20px; }
+
+  /* Toast */
+  .toast { bottom: 16px; right: 16px; left: 16px; text-align: center; font-size: 13px; }
+
+  /* Hero */
+  .hero { padding: 56px 16px 48px; }
+  h1 { font-size: clamp(32px, 9vw, 48px); letter-spacing: -1.5px; }
+  .hero-sub { font-size: 15px; margin-bottom: 32px; }
+  .hero-cta .btn-lg { padding: 14px 28px; font-size: 15px; width: 100%; }
+  .demo-card { padding: 18px; }
+  .demo-text { font-size: 12px; }
+  .section { padding: 48px 16px; }
+  .section-title { font-size: 24px; margin-bottom: 28px; }
+  .pricing-card { padding: 28px 22px; }
+  .plan-price { font-size: 52px; }
+
+  /* Auth modal */
+  .auth-card { padding: 28px 22px; border-radius: 16px; }
+  .auth-heading { font-size: 20px; }
 }
 
 /* ── Help & Support ──────────────────────────────────────────────────────── */

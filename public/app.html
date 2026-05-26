@@ -17,6 +17,73 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <style>
+    /* ── Auth Modal ── */
+    .auth-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(7,7,15,0.97);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .auth-card {
+      background: #0f0f1a; border: 1px solid rgba(245,200,66,0.25);
+      border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 440px;
+      box-shadow: 0 0 60px rgba(245,200,66,0.08);
+    }
+    .auth-logo { font-size: 20px; font-weight: 800; color: #f1f0ff; margin-bottom: 24px; text-align: center; }
+    .auth-logo .badge-ai { background: linear-gradient(135deg,#f5c842,#fb923c); color:#07070f; padding:2px 8px; border-radius:6px; font-size:12px; margin-left:4px; }
+    .auth-heading { font-size: 22px; font-weight: 800; color: #f1f0ff; margin-bottom: 6px; text-align: center; }
+    .auth-sub { font-size: 14px; color: #9490b5; text-align: center; margin-bottom: 24px; }
+    .auth-tabs { display: flex; background: rgba(255,255,255,0.04); border-radius: 10px; padding: 4px; margin-bottom: 24px; }
+    .auth-tab-btn {
+      flex: 1; padding: 9px; border: none; border-radius: 8px; font-family: inherit;
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s;
+      background: transparent; color: #9490b5;
+    }
+    .auth-tab-btn.active { background: rgba(245,200,66,0.15); color: #f5c842; }
+    .auth-field { margin-bottom: 14px; }
+    .auth-field input {
+      width: 100%; box-sizing: border-box;
+      background: #16162a; border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 13px 16px; color: #f1f0ff; font-size: 15px;
+      font-family: inherit; outline: none; transition: border-color .2s;
+    }
+    .auth-field input:focus { border-color: #f5c842; }
+    .auth-field input::placeholder { color: #6b6890; }
+    .auth-error { color: #f87171; font-size: 13px; font-weight: 600; min-height: 20px; margin-bottom: 8px; text-align: center; }
+    .auth-switch { text-align: center; margin-top: 18px; font-size: 13px; color: #9490b5; }
+    .auth-switch a { color: #f5c842; cursor: pointer; font-weight: 600; text-decoration: none; }
+    .auth-switch a:hover { text-decoration: underline; }
+    /* ── Upload / Download ── */
+    .upload-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 700;
+      border: 1px dashed rgba(245,200,66,0.5); background: rgba(245,200,66,0.06);
+      color: #f5c842; cursor: pointer; font-family: inherit; transition: all .2s;
+      white-space: nowrap;
+    }
+    .upload-btn:hover { background: rgba(245,200,66,0.12); border-color: #f5c842; }
+    .upload-btn .spinner { width:14px;height:14px;border-width:2px; }
+    .field-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .field-header label { margin-bottom:0; }
+    .download-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .download-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 20px; border-radius: 10px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all .2s; border: none;
+    }
+    .download-btn-txt {
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+      color: #f1f0ff;
+    }
+    .download-btn-txt:hover { background: rgba(255,255,255,0.12); }
+    .download-btn-docx {
+      background: linear-gradient(135deg,#f5c842,#fb923c); color: #07070f;
+    }
+    .download-btn-docx:hover { filter: brightness(1.08); }
+    @media (max-width: 480px) {
+      .auth-overlay { padding: 0; align-items: flex-end; }
+      .auth-card { border-radius: 20px 20px 0 0; max-width: 100%; }
+    }
     /* ── Samples Tab ── */
     .sample-rotator { margin-top: 8px; }
     .sample-toggle { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
@@ -61,13 +128,66 @@
 </head>
 <body>
 
+  <!-- AUTH MODAL -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+      <div class="auth-logo">ResumeTailored <span class="badge-ai">AI</span></div>
+      <h2 class="auth-heading" id="authHeading">Create Your Account</h2>
+      <p class="auth-sub" id="authSubtext">Join thousands of job seekers landing more interviews.</p>
+
+      <div class="auth-tabs" id="authTabs">
+        <button class="auth-tab-btn active" id="authTabSignup" onclick="switchAuthTab('signup')">Sign Up</button>
+        <button class="auth-tab-btn" id="authTabLogin" onclick="switchAuthTab('login')">Log In</button>
+      </div>
+
+      <!-- Sign Up -->
+      <div id="authSignupForm">
+        <div class="auth-field"><input type="email" id="authEmail" placeholder="Email address" /></div>
+        <div class="auth-field"><input type="text" id="authUsername" placeholder="Choose a username" maxlength="30" /></div>
+        <div class="auth-field"><input type="password" id="authPassword" placeholder="Password (min. 6 characters)" /></div>
+        <div class="auth-field"><input type="password" id="authConfirmPw" placeholder="Confirm password" /></div>
+        <div class="auth-error" id="signupError"></div>
+        <button class="btn btn-primary btn-full" id="signupBtn" onclick="doSignup()">Create Account →</button>
+        <div class="auth-switch">Already have an account? <a onclick="switchAuthTab('login')">Log in</a></div>
+      </div>
+
+      <!-- Log In -->
+      <div id="authLoginForm" style="display:none;">
+        <div class="auth-field"><input type="email" id="loginEmail" placeholder="Email address" /></div>
+        <div class="auth-field"><input type="password" id="loginPassword" placeholder="Password" /></div>
+        <div style="text-align:right;margin-bottom:4px;">
+          <a onclick="showForgotPassword()" style="font-size:13px;color:#9490b5;cursor:pointer;font-weight:600;">Forgot password?</a>
+        </div>
+        <div class="auth-error" id="loginError"></div>
+        <button class="btn btn-primary btn-full" id="loginBtn" onclick="doLogin()">Log In →</button>
+        <div class="auth-switch">Don't have an account? <a onclick="switchAuthTab('signup')">Sign up free</a></div>
+      </div>
+
+      <!-- Forgot Password -->
+      <div id="authForgotForm" style="display:none;">
+        <p style="color:#9490b5;font-size:14px;line-height:1.65;margin-bottom:20px;">
+          Enter your email and we'll send you a link to reset your password.
+        </p>
+        <div class="auth-field"><input type="email" id="forgotEmail" placeholder="Email address" /></div>
+        <div class="auth-error" id="forgotError"></div>
+        <div id="forgotSuccess" style="display:none;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:10px;padding:14px 16px;color:#22c55e;font-size:14px;font-weight:600;margin-bottom:12px;text-align:center;">
+          ✓ Check your inbox — a reset link is on its way.
+        </div>
+        <button class="btn btn-primary btn-full" id="forgotBtn" onclick="doForgotPassword()">Send Reset Link →</button>
+        <div class="auth-switch"><a onclick="switchAuthTab('login')">← Back to login</a></div>
+      </div>
+    </div>
+  </div>
+
   <!-- NAV -->
   <nav class="nav">
     <div class="nav-inner">
       <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
       <div style="display:flex;gap:12px;align-items:center;">
         <span id="navStatus"></span>
+        <span id="navUsername" style="color:#9490b5;font-size:13px;font-weight:600;display:none;"></span>
         <a href="/#pricing" class="btn btn-outline">Go Pro — $19/mo</a>
+        <button class="btn btn-outline" id="logoutBtn" onclick="doLogout()" style="display:none;font-size:13px;padding:8px 14px;">Log Out</button>
       </div>
     </div>
   </nav>
@@ -113,7 +233,7 @@
       <div class="sidebar-pro-box" id="sidebarProBox">
         <div class="sidebar-pro-title">✦ Unlock Full Access</div>
         <div class="sidebar-pro-text">Career Hub features are available to Pro members.</div>
-        <button class="btn btn-primary" style="width:100%;margin-top:10px;font-size:13px;" onclick="subscribe()">Upgrade — $19/mo</button>
+        <button class="btn btn-primary" style="width:100%;margin-top:10px;font-size:13px;" onclick="startPro()">Upgrade — $19/mo</button>
       </div>
     </aside>
 
@@ -138,8 +258,14 @@
 
         <div class="inputs">
           <div class="field">
-            <label for="resume">Your Current Resume</label>
-            <textarea id="resume" placeholder="Paste your resume text here...&#10;&#10;(Copy all text from your Word/PDF resume)"></textarea>
+            <div class="field-header">
+              <label for="resume">Your Current Resume</label>
+              <button class="upload-btn" onclick="document.getElementById('resumeFileInput').click()">
+                <span id="uploadBtnText">⬆ Upload File</span>
+              </button>
+              <input type="file" id="resumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleResumeUpload(this)" />
+            </div>
+            <textarea id="resume" placeholder="Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file."></textarea>
           </div>
           <div class="field">
             <label for="job">Job Posting</label>
@@ -162,16 +288,20 @@
             <button class="btn btn-outline copy-btn" onclick="copyResult()">Copy</button>
           </div>
           <div class="output-box" id="outputBox"></div>
+          <div class="download-row">
+            <button class="download-btn download-btn-docx" onclick="downloadDocx()">⬇ Download as Word (.docx)</button>
+            <button class="download-btn download-btn-txt" onclick="downloadTxt()">⬇ Download as Text (.txt)</button>
+          </div>
         </div>
 
         <div class="upsell" id="upsell" style="display:none;">
           <p>Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19/month, cancel anytime.</p>
-          <button class="btn btn-primary" onclick="subscribe()">Upgrade to Pro →</button>
+          <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
 
         <div class="upsell" id="limitBanner" style="display:none;">
           <p>You've used your <strong>free daily tailoring</strong>. Upgrade to Pro for unlimited access — $19/month.</p>
-          <button class="btn btn-primary" onclick="subscribe()">Upgrade to Pro →</button>
+          <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
 
@@ -609,7 +739,7 @@
 
         <div style="margin-top:32px;text-align:center;">
           <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try It Free Now →</button>
-          <p style="color:var(--text-muted,#9490b5);font-size:13px;margin-top:12px;">1 free tailoring per day · No credit card required</p>
+          <p style="color:var(--text-muted,#9490b5);font-size:13px;margin-top:12px;">1 free tailoring per day</p>
         </div>
       </div>
 
@@ -733,7 +863,7 @@
         <!-- Bottom CTA -->
         <div style="margin-top:40px;padding:32px;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:16px;text-align:center;">
           <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;">Still deciding whether to subscribe?</h3>
-          <p style="color:var(--text-muted,#9490b5);margin-bottom:20px;">Try it free first — 1 tailoring per day, no credit card needed. Upgrade only when you're convinced it works.</p>
+          <p style="color:var(--text-muted,#9490b5);margin-bottom:20px;">Try it free first — 1 tailoring per day. Upgrade only when you're convinced it works.</p>
           <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try Free First →</button>
         </div>
       </div>
@@ -747,6 +877,177 @@
     let selectedMode = 'resume';
     let isSubscriberFlag = false;
     let freeUsesLeft = 1;
+    let pendingPro = false;
+
+    // ── Auth helpers ───────────────────────────────────────────────────────────
+    function getToken() { return localStorage.getItem('rt_token') || ''; }
+    function getStoredEmail() { return localStorage.getItem('rt_email') || ''; }
+    function getStoredUsername() { return localStorage.getItem('rt_username') || ''; }
+
+    function authHeaders() {
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() };
+    }
+
+    async function checkAuth() {
+      const token = getToken();
+      if (!token) { showAuthModal(); return; }
+      try {
+        const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!res.ok) { showAuthModal(); return; }
+        const data = await res.json();
+        localStorage.setItem('rt_email', data.email);
+        localStorage.setItem('rt_username', data.username);
+        hideAuthModal();
+      } catch(e) { hideAuthModal(); }
+    }
+
+    function showAuthModal(tab) {
+      document.getElementById('authOverlay').style.display = 'flex';
+      if (tab === 'login') switchAuthTab('login');
+      else switchAuthTab('signup');
+    }
+
+    function hideAuthModal() {
+      document.getElementById('authOverlay').style.display = 'none';
+      const username = getStoredUsername();
+      const navUsername = document.getElementById('navUsername');
+      navUsername.textContent = 'Hi, ' + username;
+      navUsername.style.display = 'inline';
+      document.getElementById('logoutBtn').style.display = 'inline-flex';
+      checkStatus();
+      if (pendingPro) { pendingPro = false; subscribe(); }
+    }
+
+    function switchAuthTab(tab) {
+      const isSignup = tab === 'signup';
+      document.getElementById('authTabSignup').classList.toggle('active', isSignup);
+      document.getElementById('authTabLogin').classList.toggle('active', !isSignup);
+      document.getElementById('authSignupForm').style.display = isSignup ? 'block' : 'none';
+      document.getElementById('authLoginForm').style.display = isSignup ? 'none' : 'block';
+      document.getElementById('authForgotForm').style.display = 'none';
+      document.getElementById('authTabs').style.display = 'flex';
+      document.getElementById('authHeading').textContent = isSignup ? 'Create Your Account' : 'Welcome Back';
+      document.getElementById('authSubtext').textContent = isSignup
+        ? 'Join thousands of job seekers landing more interviews.'
+        : 'Log in to access your dashboard.';
+      document.getElementById('signupError').textContent = '';
+      document.getElementById('loginError').textContent = '';
+    }
+
+    function showForgotPassword() {
+      document.getElementById('authLoginForm').style.display = 'none';
+      document.getElementById('authSignupForm').style.display = 'none';
+      document.getElementById('authForgotForm').style.display = 'block';
+      document.getElementById('authTabs').style.display = 'none';
+      document.getElementById('authHeading').textContent = 'Forgot Password?';
+      document.getElementById('authSubtext').textContent = '';
+      document.getElementById('forgotError').textContent = '';
+      document.getElementById('forgotSuccess').style.display = 'none';
+    }
+
+    async function doForgotPassword() {
+      const email = document.getElementById('forgotEmail').value.trim();
+      const errEl = document.getElementById('forgotError');
+      errEl.textContent = '';
+      if (!email) { errEl.textContent = 'Please enter your email address.'; return; }
+
+      const btn = document.getElementById('forgotBtn');
+      btn.innerHTML = '<span class="spinner"></span>Sending...';
+      btn.disabled = true;
+
+      try {
+        await fetch('/api/auth/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        // Always show success — prevents revealing whether email exists
+        document.getElementById('forgotSuccess').style.display = 'block';
+        btn.style.display = 'none';
+      } catch(e) {
+        errEl.textContent = 'Could not send email. Please try again.';
+        btn.innerHTML = 'Send Reset Link →';
+        btn.disabled = false;
+      }
+    }
+
+    async function doSignup() {
+      const email = document.getElementById('authEmail').value.trim();
+      const username = document.getElementById('authUsername').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const confirm = document.getElementById('authConfirmPw').value;
+      const errEl = document.getElementById('signupError');
+      errEl.textContent = '';
+
+      if (!email || !username || !password) { errEl.textContent = 'All fields are required.'; return; }
+      if (password !== confirm) { errEl.textContent = 'Passwords do not match.'; return; }
+
+      const btn = document.getElementById('signupBtn');
+      btn.innerHTML = '<span class="spinner"></span>Creating account...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || 'Signup failed.'; return; }
+        localStorage.setItem('rt_token', data.token);
+        localStorage.setItem('rt_email', data.email);
+        localStorage.setItem('rt_username', data.username);
+        hideAuthModal();
+      } catch(e) {
+        errEl.textContent = 'Could not connect. Please try again.';
+      } finally {
+        btn.innerHTML = 'Create Account →';
+        btn.disabled = false;
+      }
+    }
+
+    async function doLogin() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      const errEl = document.getElementById('loginError');
+      errEl.textContent = '';
+
+      if (!email || !password) { errEl.textContent = 'Email and password are required.'; return; }
+
+      const btn = document.getElementById('loginBtn');
+      btn.innerHTML = '<span class="spinner"></span>Logging in...';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || 'Login failed.'; return; }
+        localStorage.setItem('rt_token', data.token);
+        localStorage.setItem('rt_email', data.email);
+        localStorage.setItem('rt_username', data.username);
+        hideAuthModal();
+      } catch(e) {
+        errEl.textContent = 'Could not connect. Please try again.';
+      } finally {
+        btn.innerHTML = 'Log In →';
+        btn.disabled = false;
+      }
+    }
+
+    async function doLogout() {
+      try { await fetch('/api/auth/logout', { method: 'POST', headers: authHeaders() }); } catch(e) {}
+      localStorage.removeItem('rt_token');
+      localStorage.removeItem('rt_email');
+      localStorage.removeItem('rt_username');
+      document.getElementById('navUsername').style.display = 'none';
+      document.getElementById('logoutBtn').style.display = 'none';
+      pendingPro = false;
+      showAuthModal('signup');
+    }
 
     // ── Tab switching ──────────────────────────────────────────────────────────
     function showTab(name) {
@@ -756,6 +1057,7 @@
       document.getElementById('tab-' + name).classList.add('active');
       if (name === 'forum') loadForum();
       if (name === 'checkin') loadCheckIn();
+      if (name === 'samples') initSamples();
     }
 
     // ── Mode buttons ───────────────────────────────────────────────────────────
@@ -769,7 +1071,7 @@
 
     // ── Status check ───────────────────────────────────────────────────────────
     async function checkStatus() {
-      const email = document.getElementById('email').value.trim();
+      const email = document.getElementById('email').value.trim() || getStoredEmail();
       try {
         const res = await fetch(`/api/status?email=${encodeURIComponent(email)}`);
         const data = await res.json();
@@ -989,7 +1291,7 @@
 
     // ── Subscribe ──────────────────────────────────────────────────────────────
     async function subscribe() {
-      const email = document.getElementById('email').value.trim();
+      const email = document.getElementById('email').value.trim() || getStoredEmail();
       if (!email) { showToast('Enter your email first.'); showTab('tailor'); document.getElementById('email').focus(); return; }
 
       const res = await fetch('/api/subscribe', {
@@ -1318,11 +1620,91 @@ Aaliyah Washington`
       resetSampleTimer();
     }
 
-    // ── Tab switching (override to init samples) ───────────────────────────────
-    const _origShowTab = showTab;
-    function showTab(name) {
-      _origShowTab(name);
-      if (name === 'samples') initSamples();
+    // ── Resume upload ──────────────────────────────────────────────────────────
+    async function handleResumeUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const btnText = document.getElementById('uploadBtnText');
+      btnText.innerHTML = '<span class="spinner"></span> Reading...';
+
+      const ext = file.name.toLowerCase().split('.').pop();
+
+      // .txt files: read client-side, no server trip needed
+      if (ext === 'txt') {
+        const reader = new FileReader();
+        reader.onload = e => {
+          document.getElementById('resume').value = e.target.result;
+          btnText.textContent = '✓ ' + file.name;
+          showToast('Resume loaded from file!');
+        };
+        reader.onerror = () => { showToast('Could not read file.'); btnText.textContent = '⬆ Upload File'; };
+        reader.readAsText(file);
+        input.value = '';
+        return;
+      }
+
+      // .pdf / .docx: send to server for text extraction
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Extraction failed.');
+        document.getElementById('resume').value = data.text;
+        btnText.textContent = '✓ ' + file.name;
+        showToast('Resume loaded from file!');
+      } catch (err) {
+        showToast(err.message);
+        btnText.textContent = '⬆ Upload File';
+      } finally {
+        input.value = '';
+      }
+    }
+
+    // ── Download helpers ───────────────────────────────────────────────────────
+    function getOutputText() { return document.getElementById('outputBox').textContent; }
+
+    function downloadTxt() {
+      const text = getOutputText();
+      if (!text) return;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (document.getElementById('outputTitle').textContent || 'resume') + '.txt';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    async function downloadDocx() {
+      const text = getOutputText();
+      if (!text) return;
+      const filename = document.getElementById('outputTitle').textContent || 'tailored-resume';
+      try {
+        const res = await fetch('/api/download-docx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, filename })
+        });
+        if (!res.ok) throw new Error('Download failed.');
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename.replace(/[^a-z0-9-_ ]/gi, '_') + '.docx';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch(err) {
+        showToast('Could not generate .docx. Try downloading as .txt instead.');
+      }
+    }
+
+    function startPro() {
+      if (!getToken()) {
+        pendingPro = true;
+        showAuthModal('signup');
+      } else {
+        subscribe();
+      }
     }
 
     function showToast(msg) {
@@ -1331,6 +1713,13 @@ Aaliyah Washington`
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 3000);
     }
+
+    // ── Page load ─────────────────────────────────────────────────────────────
+    // If landing from "Start Pro" on the pricing page, trigger payment after login
+    if (new URLSearchParams(window.location.search).get('plan') === 'pro') {
+      pendingPro = true;
+    }
+    checkAuth();
   </script>
 </body>
 </html>

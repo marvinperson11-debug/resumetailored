@@ -6,16 +6,30 @@ const Anthropic = require('@anthropic-ai/sdk');
 const Stripe = require('stripe');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const crypto = require('crypto');
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
+const { Document, Packer, Paragraph, TextRun, HeadingLevel } = require('docx');
 
 const app = express();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // In-memory store for free-tier usage tracking (keyed by IP)
-// In production, swap this for Redis or a database
 const usageStore = new Map();
 // In-memory store for active subscriptions (email -> customerId)
 const subscribers = new Map();
+// User accounts (email -> { email, username, passwordHash })
+const users = new Map();
+// Active sessions (token -> email)
+const sessions = new Map();
+// Password reset tokens (token -> { email, expiresAt })
+const resetTokens = new Map();
+
+function hashPw(pw) {
+  return crypto.createHash('sha256').update('rta_salt_2026_' + pw).digest('hex');
+}
 
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -31,6 +45,214 @@ const apiLimiter = rateLimit({
   message: { error: 'Too many requests, please slow down.' }
 });
 app.use('/api/', apiLimiter);
+
+// ─── Auth endpoints ───────────────────────────────────────────────────────────
+app.post('/api/auth/signup', (req, res) => {
+  const { email, username, password } = req.body;
+  if (!email || !username || !password) {
+    return res.status(400).json({ error: 'Email, username, and password are required.' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Please enter a valid email address.' });
+  }
+  const key = email.toLowerCase().trim();
+  if (users.has(key)) {
+    return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
+  }
+  const cleanUsername = username.trim().slice(0, 30);
+  users.set(key, { email: key, username: cleanUsername, passwordHash: hashPw(password) });
+  const token = uuidv4();
+  sessions.set(token, key);
+  res.json({ token, username: cleanUsername, email: key });
+});
+
+app.post('/api/auth/login', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'Email and password are required.' });
+  }
+  const key = email.toLowerCase().trim();
+  const user = users.get(key);
+  if (!user || user.passwordHash !== hashPw(password)) {
+    return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+  const token = uuidv4();
+  sessions.set(token, key);
+  res.json({ token, username: user.username, email: key });
+});
+
+app.get('/api/auth/me', (req, res) => {
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  const email = token && sessions.get(token);
+  if (!email) return res.status(401).json({ error: 'Not authenticated.' });
+  const user = users.get(email);
+  res.json({ email, username: user ? user.username : '' });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (token) sessions.delete(token);
+  res.json({ success: true });
+});
+
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email is required.' });
+  const key = email.toLowerCase().trim();
+
+  // Always return success — prevents revealing which emails are registered
+  if (!users.has(key)) return res.json({ success: true });
+
+  const token = uuidv4();
+  resetTokens.set(token, { email: key, expiresAt: Date.now() + 60 * 60 * 1000 }); // 1 hour
+
+  const origin = req.headers.origin || 'https://resumetailored.com';
+  const resetUrl = `${origin}/reset-password.html?token=${token}`;
+  const resendKey = process.env.RESEND_API_KEY;
+
+  if (resendKey) {
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
+        body: JSON.stringify({
+          from: 'ResumeTailor AI <support@resumetailored.com>',
+          to: key,
+          subject: 'Reset your ResumeTailor password',
+          html: `
+            <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#07070f;color:#f1f0ff;padding:40px 32px;border-radius:16px;border:1px solid rgba(245,200,66,0.25);">
+              <div style="font-size:22px;font-weight:900;margin-bottom:8px;">
+                ResumeTailored <span style="background:linear-gradient(135deg,#f5c842,#fb923c);color:#07070f;padding:2px 8px;border-radius:6px;font-size:12px;">AI</span>
+              </div>
+              <h2 style="font-size:22px;font-weight:800;margin:24px 0 12px;">Reset your password</h2>
+              <p style="color:#9490b5;font-size:15px;line-height:1.7;margin-bottom:28px;">
+                We received a request to reset the password for your account (<strong style="color:#f1f0ff;">${key}</strong>).<br/>
+                Click the button below to choose a new password. This link expires in <strong style="color:#f5c842;">1 hour</strong>.
+              </p>
+              <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#f5c842,#fb923c);color:#07070f;font-weight:800;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
+                Reset My Password →
+              </a>
+              <p style="color:#6b6890;font-size:12px;margin-top:28px;line-height:1.6;">
+                If you didn't request this, you can safely ignore this email — your password won't change.<br/>
+                If the button doesn't work, copy and paste this link:<br/>
+                <a href="${resetUrl}" style="color:#f5c842;word-break:break-all;">${resetUrl}</a>
+              </p>
+            </div>
+          `
+        })
+      });
+    } catch (err) {
+      console.error('Reset email send error:', err);
+    }
+  } else {
+    // Resend not configured — log the link so you can test locally
+    console.log(`[PASSWORD RESET] Reset link for ${key}: ${resetUrl}`);
+  }
+
+  res.json({ success: true });
+});
+
+app.post('/api/auth/reset-password', (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: 'Token and new password are required.' });
+  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+
+  const record = resetTokens.get(token);
+  if (!record) return res.status(400).json({ error: 'This reset link is invalid or has already been used.' });
+  if (Date.now() > record.expiresAt) {
+    resetTokens.delete(token);
+    return res.status(400).json({ error: 'This reset link has expired. Please request a new one.' });
+  }
+
+  const user = users.get(record.email);
+  if (!user) return res.status(400).json({ error: 'Account not found.' });
+
+  user.passwordHash = hashPw(password);
+  resetTokens.delete(token);
+
+  // Log out all existing sessions for this user
+  for (const [t, email] of sessions.entries()) {
+    if (email === record.email) sessions.delete(t);
+  }
+
+  res.json({ success: true });
+});
+
+// ─── File upload config ───────────────────────────────────────────────────────
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
+  fileFilter: (req, file, cb) => {
+    const allowed = ['text/plain', 'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword'];
+    const ext = (file.originalname || '').toLowerCase().split('.').pop();
+    if (allowed.includes(file.mimetype) || ['txt','pdf','doc','docx'].includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only .txt, .pdf, .doc, and .docx files are supported.'));
+    }
+  }
+});
+
+// ─── API: Extract text from uploaded resume ───────────────────────────────────
+app.post('/api/extract-text', upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+  const ext = (req.file.originalname || '').toLowerCase().split('.').pop();
+  try {
+    let text = '';
+    if (ext === 'txt') {
+      text = req.file.buffer.toString('utf-8');
+    } else if (ext === 'pdf') {
+      const data = await pdfParse(req.file.buffer);
+      text = data.text;
+    } else if (ext === 'docx' || ext === 'doc') {
+      const result = await mammoth.extractRawText({ buffer: req.file.buffer });
+      text = result.value;
+    } else {
+      return res.status(400).json({ error: 'Unsupported file type.' });
+    }
+    if (!text.trim()) return res.status(400).json({ error: 'Could not extract text from this file.' });
+    res.json({ text: text.trim() });
+  } catch (err) {
+    console.error('Text extraction error:', err);
+    res.status(500).json({ error: 'Failed to read the file. Please paste your resume instead.' });
+  }
+});
+
+// ─── API: Download tailored result as .docx ───────────────────────────────────
+app.post('/api/download-docx', async (req, res) => {
+  const { text, filename } = req.body;
+  if (!text) return res.status(400).json({ error: 'No text provided.' });
+
+  const lines = text.split('\n');
+  const children = lines.map(line => {
+    const trimmed = line.trim();
+    // Lines in ALL CAPS (short) → treat as section heading
+    if (trimmed.length > 0 && trimmed.length <= 40 && trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed)) {
+      return new Paragraph({
+        text: trimmed,
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: 80 }
+      });
+    }
+    return new Paragraph({
+      children: [new TextRun({ text: line, font: 'Calibri', size: 22 })],
+      spacing: { after: 40 }
+    });
+  });
+
+  const doc = new Document({ sections: [{ properties: {}, children }] });
+  const buffer = await Packer.toBuffer(doc);
+
+  const safeName = (filename || 'tailored-resume').replace(/[^a-z0-9-_]/gi, '_');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
+  res.send(buffer);
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getTodayKey(ip) {
