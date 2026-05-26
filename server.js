@@ -7,25 +7,80 @@ const Stripe = require('stripe');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const { Document, Packer, Paragraph, TextRun, HeadingLevel } = require('docx');
+const Database = require('better-sqlite3');
 
 const app = express();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// In-memory store for free-tier usage tracking (keyed by IP)
-const usageStore = new Map();
-// In-memory store for active subscriptions (email -> customerId)
-const subscribers = new Map();
-// User accounts (email -> { email, username, passwordHash })
-const users = new Map();
-// Active sessions (token -> email)
-const sessions = new Map();
-// Password reset tokens (token -> { email, expiresAt })
-const resetTokens = new Map();
+// ─── SQLite database ──────────────────────────────────────────────────────────
+// DATA_DIR defaults to ./data; set DATA_DIR=/data and mount a Railway Volume
+// at /data for full persistence across deploys.
+const dataDir = process.env.DATA_DIR || path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+const db = new Database(path.join(dataDir, 'resumetailor.db'));
+db.pragma('journal_mode = WAL');
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    email         TEXT PRIMARY KEY,
+    username      TEXT NOT NULL,
+    password_hash TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    email TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS reset_tokens (
+    token      TEXT PRIMARY KEY,
+    email      TEXT NOT NULL,
+    expires_at INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS subscribers (
+    email       TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS usage_store (
+    key   TEXT PRIMARY KEY,
+    count INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS check_ins (
+    email        TEXT PRIMARY KEY,
+    last_check_in TEXT,
+    goals        TEXT DEFAULT '',
+    current_role TEXT DEFAULT '',
+    target_role  TEXT DEFAULT '',
+    next_prompt  TEXT DEFAULT ''
+  );
+  CREATE TABLE IF NOT EXISTS forum_posts (
+    id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    author TEXT NOT NULL DEFAULT 'Anonymous',
+    role   TEXT NOT NULL DEFAULT 'Professional',
+    time   TEXT NOT NULL DEFAULT 'just now',
+    text   TEXT NOT NULL,
+    likes  INTEGER NOT NULL DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS forum_replies (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL,
+    author  TEXT NOT NULL DEFAULT 'Anonymous',
+    text    TEXT NOT NULL,
+    time    TEXT NOT NULL DEFAULT 'just now'
+  );
+`);
+
+// Seed default forum posts on first run
+if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
+  const ins = db.prepare('INSERT INTO forum_posts (author, role, time, text, likes) VALUES (?, ?, ?, ?, ?)');
+  ins.run('Sarah M.', 'Software Engineer', '2 hours ago', 'Just accepted an offer at a Fortune 500! ResumeTailor helped me tailor 30+ applications. Happy to answer questions about the process.', 14);
+  ins.run('James R.', 'Marketing Manager', '5 hours ago', 'Salary negotiation tip: always get the offer in writing before negotiating. They said my ask was "too high" verbally but came back with 8% more once I sent a counter via email. Never negotiate on the phone!', 22);
+  ins.run('Priya K.', 'Product Designer', '1 day ago', 'For anyone in tech design — portfolio matters MORE than your resume. But a tailored resume got me the interview so I could show my portfolio. Both matter!', 9);
+}
 
 function hashPw(pw) {
   return crypto.createHash('sha256').update('rta_salt_2026_' + pw).digest('hex');
@@ -59,13 +114,13 @@ app.post('/api/auth/signup', (req, res) => {
     return res.status(400).json({ error: 'Please enter a valid email address.' });
   }
   const key = email.toLowerCase().trim();
-  if (users.has(key)) {
+  if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(key)) {
     return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
   }
   const cleanUsername = username.trim().slice(0, 30);
-  users.set(key, { email: key, username: cleanUsername, passwordHash: hashPw(password) });
+  db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)').run(key, cleanUsername, hashPw(password));
   const token = uuidv4();
-  sessions.set(token, key);
+  db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
   res.json({ token, username: cleanUsername, email: key });
 });
 
@@ -75,26 +130,26 @@ app.post('/api/auth/login', (req, res) => {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
   const key = email.toLowerCase().trim();
-  const user = users.get(key);
-  if (!user || user.passwordHash !== hashPw(password)) {
+  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(key);
+  if (!user || user.password_hash !== hashPw(password)) {
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
   const token = uuidv4();
-  sessions.set(token, key);
+  db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
   res.json({ token, username: user.username, email: key });
 });
 
 app.get('/api/auth/me', (req, res) => {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
-  const email = token && sessions.get(token);
-  if (!email) return res.status(401).json({ error: 'Not authenticated.' });
-  const user = users.get(email);
-  res.json({ email, username: user ? user.username : '' });
+  const row = token && db.prepare('SELECT email FROM sessions WHERE token = ?').get(token);
+  if (!row) return res.status(401).json({ error: 'Not authenticated.' });
+  const user = db.prepare('SELECT username FROM users WHERE email = ?').get(row.email);
+  res.json({ email: row.email, username: user ? user.username : '' });
 });
 
 app.post('/api/auth/logout', (req, res) => {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
-  if (token) sessions.delete(token);
+  if (token) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
   res.json({ success: true });
 });
 
@@ -104,10 +159,11 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   const key = email.toLowerCase().trim();
 
   // Always return success — prevents revealing which emails are registered
-  if (!users.has(key)) return res.json({ success: true });
+  if (!db.prepare('SELECT 1 FROM users WHERE email = ?').get(key)) return res.json({ success: true });
 
   const token = uuidv4();
-  resetTokens.set(token, { email: key, expiresAt: Date.now() + 60 * 60 * 1000 }); // 1 hour
+  const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
+  db.prepare('INSERT OR REPLACE INTO reset_tokens (token, email, expires_at) VALUES (?, ?, ?)').run(token, key, expiresAt);
 
   const origin = req.headers.origin || 'https://resumetailored.com';
   const resetUrl = `${origin}/reset-password.html?token=${token}`;
@@ -147,7 +203,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       if (!emailRes.ok) {
         const errData = await emailRes.json().catch(() => ({}));
         console.error('[Resend] Reset email failed — status:', emailRes.status, JSON.stringify(errData));
-        console.error('[Resend] If status is 403/422, verify resumetailored.com in your Resend dashboard (resend.com/domains)');
+        console.error('[Resend] If status is 403/422, verify resumetailored.com at resend.com/domains');
       } else {
         console.log(`[Resend] Reset email sent to ${key}`);
       }
@@ -155,7 +211,6 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       console.error('Reset email send error:', err);
     }
   } else {
-    // Resend not configured — log the link so you can test locally
     console.log(`[PASSWORD RESET] Reset link for ${key}: ${resetUrl}`);
   }
 
@@ -167,23 +222,20 @@ app.post('/api/auth/reset-password', (req, res) => {
   if (!token || !password) return res.status(400).json({ error: 'Token and new password are required.' });
   if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
 
-  const record = resetTokens.get(token);
+  const record = db.prepare('SELECT email, expires_at FROM reset_tokens WHERE token = ?').get(token);
   if (!record) return res.status(400).json({ error: 'This reset link is invalid or has already been used.' });
-  if (Date.now() > record.expiresAt) {
-    resetTokens.delete(token);
+  if (Date.now() > record.expires_at) {
+    db.prepare('DELETE FROM reset_tokens WHERE token = ?').run(token);
     return res.status(400).json({ error: 'This reset link has expired. Please request a new one.' });
   }
 
-  const user = users.get(record.email);
-  if (!user) return res.status(400).json({ error: 'Account not found.' });
-
-  user.passwordHash = hashPw(password);
-  resetTokens.delete(token);
-
-  // Log out all existing sessions for this user
-  for (const [t, email] of sessions.entries()) {
-    if (email === record.email) sessions.delete(t);
+  if (!db.prepare('SELECT 1 FROM users WHERE email = ?').get(record.email)) {
+    return res.status(400).json({ error: 'Account not found.' });
   }
+
+  db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(hashPw(password), record.email);
+  db.prepare('DELETE FROM reset_tokens WHERE token = ?').run(token);
+  db.prepare('DELETE FROM sessions WHERE email = ?').run(record.email);
 
   res.json({ success: true });
 });
@@ -238,7 +290,6 @@ app.post('/api/download-docx', async (req, res) => {
   const lines = text.split('\n');
   const children = lines.map(line => {
     const trimmed = line.trim();
-    // Lines in ALL CAPS (short) → treat as section heading
     if (trimmed.length > 0 && trimmed.length <= 40 && trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed)) {
       return new Paragraph({
         text: trimmed,
@@ -269,16 +320,17 @@ function getTodayKey(ip) {
 
 function hasFreeTierLeft(ip) {
   const key = getTodayKey(ip);
-  return (usageStore.get(key) || 0) < 1;
+  const row = db.prepare('SELECT count FROM usage_store WHERE key = ?').get(key);
+  return !row || row.count < 1;
 }
 
 function consumeFreeTier(ip) {
   const key = getTodayKey(ip);
-  usageStore.set(key, (usageStore.get(key) || 0) + 1);
+  db.prepare('INSERT INTO usage_store (key, count) VALUES (?, 1) ON CONFLICT(key) DO UPDATE SET count = count + 1').run(key);
 }
 
 function isSubscriber(email) {
-  return email && subscribers.has(email.toLowerCase());
+  return email && !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(email.toLowerCase());
 }
 
 // ─── API: Check usage status ──────────────────────────────────────────────────
@@ -416,91 +468,81 @@ app.post('/webhook', (req, res) => {
     const session = event.data.object;
     const email = (session.metadata?.email || session.customer_email || '').toLowerCase();
     if (email) {
-      subscribers.set(email, session.customer);
+      db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, session.customer);
       console.log(`New subscriber: ${email}`);
     }
   }
 
   if (event.type === 'customer.subscription.deleted') {
-    // Remove subscriber when they cancel
     const customerId = event.data.object.customer;
-    for (const [email, id] of subscribers.entries()) {
-      if (id === customerId) {
-        subscribers.delete(email);
-        console.log(`Removed subscriber: ${email}`);
-        break;
-      }
-    }
+    db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(customerId);
+    console.log(`Removed subscriber with customer_id: ${customerId}`);
   }
 
   res.json({ received: true });
 });
 
-// ─── In-memory forum posts ────────────────────────────────────────────────────
-const forumPosts = [
-  { id: 1, author: 'Sarah M.', role: 'Software Engineer', time: '2 hours ago', text: 'Just accepted an offer at a Fortune 500! ResumeTailor helped me tailor 30+ applications. Happy to answer questions about the process.', replies: [], likes: 14 },
-  { id: 2, author: 'James R.', role: 'Marketing Manager', time: '5 hours ago', text: 'Salary negotiation tip: always get the offer in writing before negotiating. They said my ask was "too high" verbally but came back with 8% more once I sent a counter via email. Never negotiate on the phone!', replies: [], likes: 22 },
-  { id: 3, author: 'Priya K.', role: 'Product Designer', time: '1 day ago', text: 'For anyone in tech design — portfolio matters MORE than your resume. But a tailored resume got me the interview so I could show my portfolio. Both matter!', replies: [], likes: 9 },
-];
-let nextPostId = 4;
-
 // ─── API: Forum ───────────────────────────────────────────────────────────────
 app.get('/api/forum', (req, res) => {
-  res.json(forumPosts.slice().reverse());
+  const posts = db.prepare('SELECT * FROM forum_posts ORDER BY id DESC').all();
+  const replies = db.prepare('SELECT * FROM forum_replies').all();
+  const replyMap = {};
+  for (const r of replies) {
+    if (!replyMap[r.post_id]) replyMap[r.post_id] = [];
+    replyMap[r.post_id].push({ author: r.author, text: r.text, time: r.time });
+  }
+  res.json(posts.map(p => ({ ...p, replies: replyMap[p.id] || [] })));
 });
 
 app.post('/api/forum', (req, res) => {
   const { author, role, text } = req.body;
   if (!text || text.trim().length < 5) return res.status(400).json({ error: 'Post too short.' });
-  const post = {
-    id: nextPostId++,
-    author: author || 'Anonymous',
-    role: role || 'Professional',
-    time: 'just now',
-    text: text.trim(),
-    replies: [],
-    likes: 0
-  };
-  forumPosts.push(post);
-  res.json(post);
+  const result = db.prepare('INSERT INTO forum_posts (author, role, time, text, likes) VALUES (?, ?, ?, ?, 0)')
+    .run(author || 'Anonymous', role || 'Professional', 'just now', text.trim());
+  const post = db.prepare('SELECT * FROM forum_posts WHERE id = ?').get(result.lastInsertRowid);
+  res.json({ ...post, replies: [] });
 });
 
 app.post('/api/forum/:id/like', (req, res) => {
-  const post = forumPosts.find(p => p.id === parseInt(req.params.id));
-  if (!post) return res.status(404).json({ error: 'Not found.' });
-  post.likes++;
-  res.json({ likes: post.likes });
+  const id = parseInt(req.params.id);
+  if (!db.prepare('SELECT 1 FROM forum_posts WHERE id = ?').get(id)) return res.status(404).json({ error: 'Not found.' });
+  db.prepare('UPDATE forum_posts SET likes = likes + 1 WHERE id = ?').run(id);
+  const { likes } = db.prepare('SELECT likes FROM forum_posts WHERE id = ?').get(id);
+  res.json({ likes });
 });
 
 app.post('/api/forum/:id/reply', (req, res) => {
-  const post = forumPosts.find(p => p.id === parseInt(req.params.id));
-  if (!post) return res.status(404).json({ error: 'Not found.' });
+  const id = parseInt(req.params.id);
+  if (!db.prepare('SELECT 1 FROM forum_posts WHERE id = ?').get(id)) return res.status(404).json({ error: 'Not found.' });
   const { author, text } = req.body;
   if (!text || text.trim().length < 2) return res.status(400).json({ error: 'Reply too short.' });
-  const reply = { author: author || 'Anonymous', text: text.trim(), time: 'just now' };
-  post.replies.push(reply);
-  res.json(reply);
+  db.prepare('INSERT INTO forum_replies (post_id, author, text, time) VALUES (?, ?, ?, ?)')
+    .run(id, author || 'Anonymous', text.trim(), 'just now');
+  res.json({ author: author || 'Anonymous', text: text.trim(), time: 'just now' });
 });
 
 // ─── API: Career check-in ─────────────────────────────────────────────────────
-const checkIns = new Map(); // email -> { lastCheckIn, goals }
-
 app.get('/api/checkin', (req, res) => {
   const email = (req.query.email || '').toLowerCase();
-  const data = checkIns.get(email) || { lastCheckIn: null, goals: '', nextPrompt: getCheckInPrompt() };
-  res.json(data);
+  const row = email && db.prepare('SELECT * FROM check_ins WHERE email = ?').get(email);
+  if (row) {
+    res.json({
+      lastCheckIn: row.last_check_in,
+      goals: row.goals,
+      currentRole: row.current_role,
+      targetRole: row.target_role,
+      nextPrompt: row.next_prompt || getCheckInPrompt()
+    });
+  } else {
+    res.json({ lastCheckIn: null, goals: '', nextPrompt: getCheckInPrompt() });
+  }
 });
 
 app.post('/api/checkin', (req, res) => {
   const { email, goals, currentRole, targetRole } = req.body;
   const key = (email || '').toLowerCase();
-  checkIns.set(key, {
-    lastCheckIn: new Date().toISOString(),
-    goals: goals || '',
-    currentRole: currentRole || '',
-    targetRole: targetRole || '',
-    nextPrompt: getCheckInPrompt()
-  });
+  db.prepare('INSERT OR REPLACE INTO check_ins (email, last_check_in, goals, current_role, target_role, next_prompt) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(key, new Date().toISOString(), goals || '', currentRole || '', targetRole || '', getCheckInPrompt());
   res.json({ success: true });
 });
 
@@ -523,8 +565,6 @@ app.post('/api/contact', async (req, res) => {
     return res.status(400).json({ error: 'Name, email, and message are required.' });
   }
 
-  // If no email service configured, log it and return success
-  // To enable real email: set RESEND_API_KEY in Railway env vars (free at resend.com)
   const resendKey = process.env.RESEND_API_KEY;
   const ownerEmail = process.env.OWNER_EMAIL || 'marvinperson11@gmail.com';
 
@@ -555,10 +595,8 @@ app.post('/api/contact', async (req, res) => {
       if (!emailRes.ok) throw new Error('Resend error');
     } catch (err) {
       console.error('Email send error:', err);
-      // Still return success to user — don't block them
     }
   } else {
-    // Log to console until email is configured
     console.log(`[SUPPORT MESSAGE] From: ${name} <${email}> | Subject: ${subject} | Message: ${message}`);
   }
 
