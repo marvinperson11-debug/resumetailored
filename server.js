@@ -115,7 +115,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
   if (resendKey) {
     try {
-      await fetch('https://api.resend.com/emails', {
+      const emailRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
         body: JSON.stringify({
@@ -144,6 +144,13 @@ app.post('/api/auth/forgot-password', async (req, res) => {
           `
         })
       });
+      if (!emailRes.ok) {
+        const errData = await emailRes.json().catch(() => ({}));
+        console.error('[Resend] Reset email failed — status:', emailRes.status, JSON.stringify(errData));
+        console.error('[Resend] If status is 403/422, verify resumetailored.com in your Resend dashboard (resend.com/domains)');
+      } else {
+        console.log(`[Resend] Reset email sent to ${key}`);
+      }
     } catch (err) {
       console.error('Reset email send error:', err);
     }
