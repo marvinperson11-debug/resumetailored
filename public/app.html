@@ -16,6 +16,48 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Samples Tab ── */
+    .sample-rotator { margin-top: 8px; }
+    .sample-toggle { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+    .sample-toggle-btn {
+      padding: 10px 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 14px;
+      font-weight: 700; cursor: pointer; transition: all .2s; font-family: inherit;
+    }
+    .sample-toggle-btn.active {
+      background: linear-gradient(135deg,rgba(245,200,66,.15),rgba(251,146,60,.1));
+      border-color: rgba(245,200,66,.4); color: #f5c842;
+    }
+    .sample-progress-wrap {
+      height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px;
+      margin-bottom: 16px; overflow: hidden;
+    }
+    .sample-progress-bar {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg,#f5c842,#fb923c);
+      border-radius: 2px;
+      transition: width 0.1s linear;
+    }
+    .sample-meta {
+      font-size: 12px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 1.5px; color: #f5c842; margin-bottom: 12px;
+    }
+    .sample-display {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 14px; padding: 28px 32px; font-family: 'Courier New', monospace;
+      font-size: 13px; line-height: 1.75; color: #d4d0f0; white-space: pre-wrap;
+      max-height: 480px; overflow-y: auto; transition: opacity .4s ease;
+    }
+    .sample-display.fade { opacity: 0; }
+    .sample-dots { display:flex; gap:8px; justify-content:center; margin-top:20px; }
+    .sample-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.2); cursor: pointer;
+      transition: background .2s, transform .2s;
+    }
+    .sample-dot.active { background: #f5c842; transform: scale(1.3); }
+  </style>
 </head>
 <body>
 
@@ -54,6 +96,9 @@
         </button>
         <button class="sidebar-btn" onclick="showTab('help')" id="tab-help">
           <span class="sidebar-icon">💌</span> Help & Support
+        </button>
+        <button class="sidebar-btn" onclick="showTab('samples')" id="tab-samples">
+          <span class="sidebar-icon">📄</span> Samples
         </button>
       </div>
       <div class="sidebar-section">
@@ -568,6 +613,46 @@
         </div>
       </div>
 
+      <!-- ═══ TAB: SAMPLES ═══ -->
+      <div class="tab-content" id="panel-samples">
+        <div class="panel-header">
+          <h1>Sample Resumes & Cover Letters</h1>
+          <p>See exactly what ResumeTailored AI produces. Real-world examples across different industries — tailored, polished, and ready to submit.</p>
+        </div>
+
+        <!-- Rotator -->
+        <div class="sample-rotator">
+
+          <!-- Type toggle -->
+          <div class="sample-toggle">
+            <button class="sample-toggle-btn active" id="toggleResumes" onclick="switchSampleType('resumes')">📄 Sample Resumes</button>
+            <button class="sample-toggle-btn" id="toggleCovers" onclick="switchSampleType('covers')">✉️ Sample Cover Letters</button>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="sample-progress-wrap">
+            <div class="sample-progress-bar" id="sampleProgressBar"></div>
+          </div>
+
+          <!-- Slide label -->
+          <div class="sample-meta" id="sampleMeta"></div>
+
+          <!-- Content display -->
+          <div class="sample-display" id="sampleDisplay"></div>
+
+          <!-- Dot nav -->
+          <div class="sample-dots" id="sampleDots"></div>
+
+        </div>
+
+        <!-- CTA -->
+        <div style="text-align:center;margin-top:36px;padding:32px;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:16px;">
+          <h3 style="font-size:18px;font-weight:800;margin-bottom:8px;">Ready to tailor yours?</h3>
+          <p style="color:var(--text-muted);font-size:14px;margin-bottom:16px;">Paste your resume + any job posting and get results like these in 30 seconds.</p>
+          <button class="btn btn-primary" onclick="showTab('tailor')">Tailor My Resume Now →</button>
+        </div>
+      </div>
+
       <!-- ═══ TAB: CANCEL ANYTIME ═══ -->
       <div class="tab-content" id="panel-cancel">
         <div class="panel-header">
@@ -966,6 +1051,278 @@
       const isOpen = answer.style.display === 'block';
       answer.style.display = isOpen ? 'none' : 'block';
       arrow.textContent = isOpen ? '▾' : '▴';
+    }
+
+    // ── Samples Rotator ───────────────────────────────────────────────────────
+    const sampleResumes = [
+      {
+        label: 'Sample Resume 1 of 4 — Software Engineer',
+        content: `JORDAN MITCHELL
+jordan.mitchell@email.com | (312) 555-0192 | GitHub: github.com/jordanmitchell
+
+SUMMARY
+Results-driven Senior Software Engineer with 6+ years of experience building scalable, high-performance web applications using React, Node.js, and AWS. Led cross-functional teams that reduced system latency by 40% and shipped features driving $3.2M in incremental revenue.
+
+EXPERIENCE
+
+Senior Software Engineer — Apex Technologies, Chicago, IL | Mar 2021 – Present
+• Architected a real-time data pipeline using Node.js and Apache Kafka, reducing API response times by 42% and supporting 2M+ daily active users
+• Led a team of 5 engineers to rebuild the core checkout flow in React — increased conversion rate 18%, generating $1.8M in additional annual revenue
+• Reduced cloud infrastructure costs by 31% by migrating legacy monolith to microservices on AWS ECS
+• Mentored 4 junior engineers through code reviews and 1:1s — 2 promoted within 12 months
+• Championed TypeScript adoption across the frontend codebase, reducing production bugs by 27%
+
+Software Engineer — Brightline Software, Chicago, IL | Jun 2019 – Mar 2021
+• Built and maintained RESTful APIs serving 500K+ requests/day using Node.js and PostgreSQL
+• Developed a dynamic reporting dashboard in React that saved the operations team 15 hours/week
+• Implemented CI/CD pipelines using GitHub Actions, cutting deployment time from 45 min to 8 min
+
+EDUCATION
+B.S. Computer Science — University of Illinois at Chicago | 2017
+
+SKILLS
+React, Node.js, TypeScript, Python, AWS (EC2, S3, Lambda), Docker, PostgreSQL, MongoDB`
+      },
+      {
+        label: 'Sample Resume 2 of 4 — Marketing Manager',
+        content: `PRIYA SHARMA
+priya.sharma@email.com | (646) 555-0847 | New York, NY
+
+SUMMARY
+Data-driven Marketing Manager with 7 years scaling demand generation for B2B SaaS. Grew pipeline 220%, managed $1.2M in annual ad spend at 4.1x ROAS, and built an email program from 0 to 85K subscribers. Expert at bridging creative vision with performance analytics.
+
+EXPERIENCE
+
+Marketing Manager — CloudBridge SaaS, New York, NY | Apr 2020 – Present
+• Owned full demand generation strategy — grew qualified pipeline by 220% in 18 months
+• Managed $1.2M paid media budget across Google Ads and LinkedIn at consistent 4.1x ROAS, reducing cost-per-lead by 34%
+• Built email marketing program from 0 to 85K subscribers with 38% open rates (industry avg: 21%)
+• Led brand refresh: new messaging, website redesign, visual identity — drove 52% increase in organic traffic
+• Created 40+ pieces of sales enablement content contributing to 28% increase in Sales-Accepted Leads
+
+Marketing Specialist — Nexlify Inc., New York, NY | Aug 2017 – Apr 2020
+• Executed 6 product launch campaigns each generating 1,000+ MQLs within 30 days
+• A/B tested 200+ email campaigns, improving click-through rates by 41% over 12 months
+• Grew social media following from 4K to 31K across LinkedIn, Twitter, and Instagram
+
+EDUCATION
+B.A. Marketing & Communications — New York University | 2016 | Cum Laude
+
+SKILLS
+Demand Generation | HubSpot | Salesforce | Google Analytics | Paid Media | SEO | Marketo`
+      },
+      {
+        label: 'Sample Resume 3 of 4 — Product Designer',
+        content: `MARCUS CHEN
+marcus.chen@email.com | (415) 555-0374 | Portfolio: marcuschen.design | San Francisco, CA
+
+SUMMARY
+Senior Product Designer with 5 years crafting intuitive digital products for fintech and enterprise SaaS. Led design for products used by 4M+ users, improved onboarding completion 31%, and built a design system that cut handoff time by 50%.
+
+EXPERIENCE
+
+Senior Product Designer — Meridian Financial, San Francisco, CA | Feb 2021 – Present
+• Led UX/UI design for Meridian's mobile banking app (4.2M users) — owned full process from discovery to launch
+• Redesigned onboarding flow from 40+ user interviews: +31% completion rate, -22% support tickets
+• Built Meridian's design system (120+ Figma components, 8 product teams) — cut design-to-dev handoff time by 50%
+• Facilitated 15+ design sprints and co-creation workshops with cross-functional stakeholders
+• Mentored 2 mid-level designers through portfolio reviews and career development sessions
+
+Product Designer — Stackr Enterprise, San Francisco, CA | Jul 2019 – Feb 2021
+• Owned end-to-end design for 3 core product areas of an enterprise PM tool (200K users)
+• Conducted 60+ user interviews, synthesizing insights directly adopted into the product roadmap
+• Designed new dashboard experience that reduced time-on-task by 28% in usability testing
+
+EDUCATION
+B.F.A. Interaction Design — California College of the Arts | 2018
+
+SKILLS
+Figma | Sketch | Adobe Creative Suite | Design Systems | UX Research | Prototyping | WCAG 2.1`
+      },
+      {
+        label: 'Sample Resume 4 of 4 — Data Analyst',
+        content: `AALIYAH WASHINGTON
+aaliyah.washington@email.com | (404) 555-0261 | Atlanta, GA
+
+SUMMARY
+Data Analyst with 4 years turning complex datasets into business decisions for retail and e-commerce. Built dashboards used by C-suite, saved $680K in inventory costs, and automated reporting that freed 22 hours of manual work per week. Expert in SQL, Python, and Tableau.
+
+EXPERIENCE
+
+Data Analyst — TrueCart Retail, Atlanta, GA | May 2021 – Present
+• Built 15+ executive Tableau dashboards tracking sales, inventory, retention, and marketing KPIs
+• Developed predictive inventory model in Python (scikit-learn): -23% overstock, $680K annual savings
+• Wrote complex SQL queries across 10+ tables to analyze purchase behavior — insights drove loyalty program redesign resulting in 19% increase in repeat purchase rate
+• Automated 8 weekly/monthly reports using Python and SQL, saving the team 22 hours/week
+• Analyzed campaign attribution data, informing $200K budget reallocation for 37% ROAS improvement
+
+Junior Data Analyst — GrowthMetrics Agency, Atlanta, GA | Jun 2019 – May 2021
+• Delivered analytics for 12 e-commerce clients including weekly performance reports and ad hoc analysis
+• Built RFM segmentation models enabling personalized email campaigns with 26% better open rates
+
+EDUCATION
+B.S. Statistics & Data Science — Georgia State University | 2019 | GPA: 3.8 | Honors Graduate
+
+SKILLS
+SQL (advanced) | Python (Pandas, scikit-learn) | Tableau | Power BI | BigQuery | Snowflake | dbt`
+      }
+    ];
+
+    const sampleCovers = [
+      {
+        label: 'Sample Cover Letter 1 of 4 — Software Engineer',
+        content: `Jordan Mitchell
+jordan.mitchell@email.com | (312) 555-0192
+
+Dear Hiring Manager,
+
+When I read Apex Technologies' job posting for a Senior Software Engineer, one line stood out: "We're looking for engineers who treat performance as a feature." That philosophy is exactly how I've built my career. Over the past 6 years, I've consistently shipped code that doesn't just work — it scales, and it drives real business outcomes.
+
+At Brightline Software, I architected a real-time data pipeline using Node.js and Apache Kafka that cut API response times by 42% while handling over 2 million daily active users. When I moved into a leadership role, I led a 5-person engineering team that rebuilt our core checkout flow in React, increasing conversion by 18% and adding $1.8M in annual revenue. More recently, I reduced cloud infrastructure costs by 31% by migrating a legacy monolith to microservices on AWS ECS — a project that required deep technical execution and the ability to align stakeholders across product, finance, and engineering.
+
+What excites me most about Apex is your focus on building for scale from day one. Your investment in distributed systems and engineering culture aligns directly with the work I've been doing. I'm confident I can contribute immediately to your backend infrastructure team.
+
+I'd love to connect and discuss how my experience with Node.js, React, and AWS can help Apex ship faster and more reliably. Thank you for your time.
+
+Sincerely,
+Jordan Mitchell`
+      },
+      {
+        label: 'Sample Cover Letter 2 of 4 — Marketing Manager',
+        content: `Priya Sharma
+priya.sharma@email.com | (646) 555-0847
+
+Dear Hiring Manager,
+
+Most marketing teams talk about pipeline. I build it. In my current role, I took a nearly nonexistent demand generation function and scaled it into a full-stack marketing engine driving 220% more qualified pipeline in 18 months. When I saw CloudBridge's opening for a Marketing Manager, I knew immediately this was the challenge I'm built for.
+
+The results I'm most proud of aren't the vanity metrics. Managing $1.2M in annual paid media spend, I maintained a consistent 4.1x ROAS while reducing cost-per-lead by 34% through rigorous audience segmentation and creative testing. I built our email program from zero to 85,000 subscribers — achieving 38% open rates, nearly double the SaaS industry average — by obsessing over list quality and subject line testing. And when Sales needed better tools to close deals, I led a 40-piece sales enablement content initiative that contributed to a 28% increase in Sales-Accepted Leads.
+
+CloudBridge's focus on product-led growth combined with a strong outbound motion is exactly the model I thrive in. I understand how to align marketing with sales, how to build programs that scale efficiently, and how to tell a brand story that resonates with technical buyers.
+
+I'd love to talk about how I can bring that same momentum to CloudBridge's growth goals.
+
+Warm regards,
+Priya Sharma`
+      },
+      {
+        label: 'Sample Cover Letter 3 of 4 — Product Designer',
+        content: `Marcus Chen
+marcus.chen@email.com | (415) 555-0374 | marcuschen.design
+
+Dear Hiring Manager,
+
+Great financial products earn trust — not just by working correctly, but by feeling effortless. I've spent the last five years obsessing over that intersection, and I believe my work at Stackr Enterprise makes me a strong fit for your Senior Product Designer opening.
+
+In my most recent project, I redesigned an onboarding flow for a product with 4 million users. The process started where it always should: with real people. After 40+ user interviews and multiple rounds of usability testing, the redesigned flow achieved a 31% improvement in onboarding completion and reduced support tickets by 22%. The work I'm most proud of, though, was building a design system from the ground up — 120+ Figma components adopted by 8 product teams, cutting design-to-development handoff time in half. A good design system is invisible infrastructure, and getting it right requires craft, documentation, and organizational persuasion in equal measure.
+
+What draws me to your team is your public commitment to accessibility and your engineering team's track record of shipping polished mobile experiences. I know how to write specs that developers actually use and how to advocate for design quality without slowing down the ship cycle.
+
+I've included my portfolio at marcuschen.design. I'd welcome the chance to walk you through my case studies.
+
+Best,
+Marcus Chen`
+      },
+      {
+        label: 'Sample Cover Letter 4 of 4 — Data Analyst',
+        content: `Aaliyah Washington
+aaliyah.washington@email.com | (404) 555-0261
+
+Dear Hiring Manager,
+
+Data is only valuable when someone acts on it. I've built my career around being the person who makes that happen — translating complex analysis into decisions that move the business forward. When I saw TrueCart's Data Analyst opening, I was immediately drawn to your emphasis on cross-functional collaboration and measurable impact.
+
+In my current role, I built a predictive inventory model in Python that identified $680,000 in annual cost savings and reduced overstock by 23% — a project that required not just technical execution, but deep partnership with operations and supply chain teams to understand the real-world constraints the model needed to account for. I also automated eight weekly and monthly reports that were consuming 22+ hours of team time per week, freeing the analytics team for higher-value strategic work. When our marketing team needed help understanding which channels were actually driving revenue, I led a campaign attribution analysis that informed a $200K budget reallocation — resulting in a 37% improvement in ROAS.
+
+I'm most effective when I'm close to the business — understanding what decisions stakeholders are actually trying to make, then building the analysis around those questions. Your emphasis on "analytics that drive action" resonates deeply with how I work.
+
+I would love the opportunity to bring that same approach to TrueCart. Thank you for your consideration.
+
+Sincerely,
+Aaliyah Washington`
+      }
+    ];
+
+    let sampleType = 'resumes';
+    let sampleIndex = 0;
+    let sampleTimer = null;
+    let sampleProgressTimer = null;
+    let sampleProgressWidth = 0;
+    const SAMPLE_INTERVAL = 10000;
+    const SAMPLE_TICK = 100;
+
+    function switchSampleType(type) {
+      sampleType = type;
+      sampleIndex = 0;
+      document.getElementById('toggleResumes').classList.toggle('active', type === 'resumes');
+      document.getElementById('toggleCovers').classList.toggle('active', type === 'covers');
+      renderSample();
+      resetSampleTimer();
+    }
+
+    function getSamples() {
+      return sampleType === 'resumes' ? sampleResumes : sampleCovers;
+    }
+
+    function renderSample(fadeIn) {
+      const samples = getSamples();
+      const s = samples[sampleIndex];
+      const display = document.getElementById('sampleDisplay');
+      const meta = document.getElementById('sampleMeta');
+      const dots = document.getElementById('sampleDots');
+
+      display.classList.add('fade');
+      setTimeout(() => {
+        meta.textContent = s.label;
+        display.textContent = s.content;
+        display.classList.remove('fade');
+        display.scrollTop = 0;
+      }, 350);
+
+      dots.innerHTML = samples.map((_, i) =>
+        `<div class="sample-dot ${i === sampleIndex ? 'active' : ''}" onclick="goToSample(${i})"></div>`
+      ).join('');
+    }
+
+    function goToSample(i) {
+      sampleIndex = i;
+      renderSample();
+      resetSampleTimer();
+    }
+
+    function nextSample() {
+      const samples = getSamples();
+      sampleIndex = (sampleIndex + 1) % samples.length;
+      renderSample();
+    }
+
+    function resetSampleTimer() {
+      clearInterval(sampleTimer);
+      clearInterval(sampleProgressTimer);
+      sampleProgressWidth = 0;
+      document.getElementById('sampleProgressBar').style.width = '0%';
+
+      sampleProgressTimer = setInterval(() => {
+        sampleProgressWidth += (SAMPLE_TICK / SAMPLE_INTERVAL) * 100;
+        document.getElementById('sampleProgressBar').style.width = sampleProgressWidth + '%';
+        if (sampleProgressWidth >= 100) {
+          sampleProgressWidth = 0;
+          document.getElementById('sampleProgressBar').style.width = '0%';
+          nextSample();
+        }
+      }, SAMPLE_TICK);
+    }
+
+    function initSamples() {
+      renderSample();
+      resetSampleTimer();
+    }
+
+    // ── Tab switching (override to init samples) ───────────────────────────────
+    const _origShowTab = showTab;
+    function showTab(name) {
+      _origShowTab(name);
+      if (name === 'samples') initSamples();
     }
 
     function showToast(msg) {
