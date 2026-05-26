@@ -604,14 +604,15 @@ textarea:focus { outline: none; border-color: rgba(245,200,66,.4); box-shadow: 0
 @media (max-width: 900px) {
   /* Nav */
   .nav-inner { padding: 0 20px; height: 60px; }
+  .nav-inner .btn { padding: 8px 14px; font-size: 13px; }
 
   /* Dashboard layout — sidebar becomes top tab bar */
   .dashboard { grid-template-columns: 1fr; }
   .sidebar {
     position: sticky; top: 60px; z-index: 90;
     height: auto; overflow-x: auto; overflow-y: hidden;
-    display: flex; flex-direction: row; flex-wrap: nowrap; gap: 4px;
-    padding: 5px 12px; border-right: none;
+    display: flex; flex-direction: row; flex-wrap: nowrap; gap: 2px;
+    padding: 4px 10px; border-right: none;
     border-bottom: 1px solid var(--glass-border);
     background: rgba(7,7,15,0.95);
     backdrop-filter: blur(20px);
@@ -623,10 +624,10 @@ textarea:focus { outline: none; border-color: rgba(245,200,66,.4); box-shadow: 0
   .sidebar-label { display: none; }
   .sidebar-btn {
     width: auto; flex-shrink: 0;
-    padding: 5px 10px; font-size: 12px;
-    white-space: nowrap;
+    padding: 4px 9px; font-size: 11px;
+    white-space: nowrap; border-radius: 8px;
   }
-  .sidebar-icon { font-size: 15px; }
+  .sidebar-icon { font-size: 13px; }
   .sidebar-pro-box { display: none; }
 
   /* Main */
@@ -685,9 +686,9 @@ textarea:focus { outline: none; border-color: rgba(245,200,66,.4); box-shadow: 0
 @media (max-width: 480px) {
   /* Nav */
   .nav-inner { padding: 0 16px; height: 56px; }
-  .nav-inner .btn { padding: 8px 14px; font-size: 13px; }
+  .nav-inner .btn { padding: 7px 11px; font-size: 12px; }
   #navUsername { display: none !important; }
-  #logoutBtn { padding: 8px 12px !important; font-size: 12px !important; }
+  #logoutBtn { padding: 7px 10px !important; font-size: 12px !important; }
 
   /* Sidebar tab bar — tighter */
   .sidebar { top: 56px; padding: 2px 8px; gap: 2px; }
@@ -762,6 +763,12 @@ textarea:focus { outline: none; border-color: rgba(245,200,66,.4); box-shadow: 0
   /* Auth modal */
   .auth-card { padding: 28px 22px; border-radius: 16px; }
   .auth-heading { font-size: 20px; }
+}
+
+/* ══ RESPONSIVE — SMALL PHONE (≤390px) — icon-only sidebar ══════════════════════ */
+@media (max-width: 390px) {
+  .sidebar-btn { font-size: 0; padding: 6px 9px; gap: 0; }
+  .sidebar-icon { font-size: 16px; }
 }
 
 /* ── Help & Support ──────────────────────────────────────────────────────── */
