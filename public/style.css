@@ -690,10 +690,11 @@ textarea:focus { outline: none; border-color: rgba(245,200,66,.4); box-shadow: 0
   #navUsername { display: none !important; }
   #logoutBtn { padding: 7px 10px !important; font-size: 12px !important; }
 
-  /* Sidebar tab bar — tighter */
+  /* Sidebar tab bar — icon only at phone widths */
   .sidebar { top: 56px; padding: 2px 8px; gap: 2px; }
-  .sidebar-btn { padding: 4px 8px; font-size: 11px; gap: 4px; border-radius: 7px; }
-  .sidebar-icon { font-size: 13px; }
+  .sidebar-btn { font-size: 0; padding: 6px 10px; gap: 0; border-radius: 7px; }
+  .sidebar-icon { font-size: 17px; }
+  .nav-pro-full { display: none; }
 
   /* Main */
   .dash-main { padding: 20px 16px 80px; }
@@ -765,11 +766,6 @@ textarea:focus { outline: none; border-color: rgba(245,200,66,.4); box-shadow: 0
   .auth-heading { font-size: 20px; }
 }
 
-/* ══ RESPONSIVE — SMALL PHONE (≤390px) — icon-only sidebar ══════════════════════ */
-@media (max-width: 390px) {
-  .sidebar-btn { font-size: 0; padding: 6px 9px; gap: 0; }
-  .sidebar-icon { font-size: 16px; }
-}
 
 /* ── Help & Support ──────────────────────────────────────────────────────── */
 .help-grid {
