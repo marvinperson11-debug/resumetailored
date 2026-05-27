@@ -13,10 +13,48 @@ const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const { Document, Packer, Paragraph, TextRun, HeadingLevel } = require('docx');
 const Database = require('better-sqlite3');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+// ─── Email helper ─────────────────────────────────────────────────────────────
+// Priority: Resend (RESEND_API_KEY) → SMTP (SMTP_USER + SMTP_PASS) → console log
+async function sendEmail({ to, subject, html }) {
+  const resendKey = process.env.RESEND_API_KEY;
+  const smtpUser  = process.env.SMTP_USER;
+  const smtpPass  = process.env.SMTP_PASS;
+  const fromAddr  = process.env.EMAIL_FROM || (smtpUser ? smtpUser : 'support@resumetailored.com');
+
+  if (resendKey) {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
+      body: JSON.stringify({ from: `ResumeTailor AI <${fromAddr}>`, to, subject, html })
+    });
+    if (r.ok) { console.log(`[Resend] Email sent to ${to}`); return; }
+    const err = await r.json().catch(() => ({}));
+    console.error('[Resend] Failed:', r.status, JSON.stringify(err));
+    // fall through to SMTP if configured
+  }
+
+  if (smtpUser && smtpPass) {
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: { user: smtpUser, pass: smtpPass }
+    });
+    await transporter.sendMail({ from: `ResumeTailor AI <${fromAddr || smtpUser}>`, to, subject, html });
+    console.log(`[SMTP] Email sent to ${to}`);
+    return;
+  }
+
+  // Neither configured — log the content so it can be found in Railway logs
+  console.log(`[EMAIL] No sender configured. Subject: "${subject}" To: ${to}`);
+  console.log('[EMAIL] Set RESEND_API_KEY or SMTP_USER+SMTP_PASS in Railway env vars to enable real emails.');
+}
 
 // ─── SQLite database ──────────────────────────────────────────────────────────
 // DATA_DIR defaults to ./data; set DATA_DIR=/data and mount a Railway Volume
@@ -167,51 +205,31 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
   const origin = req.headers.origin || 'https://resumetailored.com';
   const resetUrl = `${origin}/reset-password.html?token=${token}`;
-  const resendKey = process.env.RESEND_API_KEY;
 
-  if (resendKey) {
-    try {
-      const emailRes = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
-        body: JSON.stringify({
-          from: 'ResumeTailor AI <support@resumetailored.com>',
-          to: key,
-          subject: 'Reset your ResumeTailor password',
-          html: `
-            <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#07070f;color:#f1f0ff;padding:40px 32px;border-radius:16px;border:1px solid rgba(245,200,66,0.25);">
-              <div style="font-size:22px;font-weight:900;margin-bottom:8px;">
-                ResumeTailored <span style="background:linear-gradient(135deg,#f5c842,#fb923c);color:#07070f;padding:2px 8px;border-radius:6px;font-size:12px;">AI</span>
-              </div>
-              <h2 style="font-size:22px;font-weight:800;margin:24px 0 12px;">Reset your password</h2>
-              <p style="color:#9490b5;font-size:15px;line-height:1.7;margin-bottom:28px;">
-                We received a request to reset the password for your account (<strong style="color:#f1f0ff;">${key}</strong>).<br/>
-                Click the button below to choose a new password. This link expires in <strong style="color:#f5c842;">1 hour</strong>.
-              </p>
-              <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#f5c842,#fb923c);color:#07070f;font-weight:800;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">
-                Reset My Password →
-              </a>
-              <p style="color:#6b6890;font-size:12px;margin-top:28px;line-height:1.6;">
-                If you didn't request this, you can safely ignore this email — your password won't change.<br/>
-                If the button doesn't work, copy and paste this link:<br/>
-                <a href="${resetUrl}" style="color:#f5c842;word-break:break-all;">${resetUrl}</a>
-              </p>
-            </div>
-          `
-        })
-      });
-      if (!emailRes.ok) {
-        const errData = await emailRes.json().catch(() => ({}));
-        console.error('[Resend] Reset email failed — status:', emailRes.status, JSON.stringify(errData));
-        console.error('[Resend] If status is 403/422, verify resumetailored.com at resend.com/domains');
-      } else {
-        console.log(`[Resend] Reset email sent to ${key}`);
-      }
-    } catch (err) {
-      console.error('Reset email send error:', err);
-    }
-  } else {
-    console.log(`[PASSWORD RESET] Reset link for ${key}: ${resetUrl}`);
+  console.log(`[PASSWORD RESET] Link for ${key}: ${resetUrl}`);
+
+  try {
+    await sendEmail({
+      to: key,
+      subject: 'Reset your ResumeTailor password',
+      html: `
+        <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#07070f;color:#f1f0ff;padding:40px 32px;border-radius:16px;border:1px solid rgba(245,200,66,0.25);">
+          <div style="font-size:22px;font-weight:900;margin-bottom:8px;">ResumeTailored <span style="background:linear-gradient(135deg,#f5c842,#fb923c);color:#07070f;padding:2px 8px;border-radius:6px;font-size:12px;">AI</span></div>
+          <h2 style="font-size:22px;font-weight:800;margin:24px 0 12px;">Reset your password</h2>
+          <p style="color:#9490b5;font-size:15px;line-height:1.7;margin-bottom:28px;">
+            We received a request to reset the password for <strong style="color:#f1f0ff;">${key}</strong>.<br/>
+            This link expires in <strong style="color:#f5c842;">1 hour</strong>.
+          </p>
+          <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#f5c842,#fb923c);color:#07070f;font-weight:800;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">Reset My Password →</a>
+          <p style="color:#6b6890;font-size:12px;margin-top:28px;line-height:1.6;">
+            If you didn't request this, ignore this email.<br/>
+            If the button doesn't work: <a href="${resetUrl}" style="color:#f5c842;word-break:break-all;">${resetUrl}</a>
+          </p>
+        </div>
+      `
+    });
+  } catch (err) {
+    console.error('[Email] Failed to send reset email:', err.message);
   }
 
   res.json({ success: true });
@@ -565,23 +583,13 @@ app.post('/api/contact', async (req, res) => {
     return res.status(400).json({ error: 'Name, email, and message are required.' });
   }
 
-  const resendKey = process.env.RESEND_API_KEY;
   const ownerEmail = process.env.OWNER_EMAIL || 'marvinperson11@gmail.com';
 
-  if (resendKey) {
-    try {
-      const emailRes = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${resendKey}`
-        },
-        body: JSON.stringify({
-          from: 'ResumeTailor Support <support@resumetailored.com>',
-          to: ownerEmail,
-          reply_to: email,
-          subject: `[ResumeTailor Support] ${subject || 'New message from ' + name}`,
-          html: `
+  try {
+    await sendEmail({
+      to: ownerEmail,
+      subject: `[ResumeTailor Support] ${subject || 'New message from ' + name}`,
+      html: `
             <h2>New Support Message</h2>
             <p><strong>From:</strong> ${name} (${email})</p>
             <p><strong>Subject:</strong> ${subject || 'No subject'}</p>
@@ -590,14 +598,9 @@ app.post('/api/contact', async (req, res) => {
             <hr />
             <p style="color:#888;font-size:12px;">Sent from ResumeTailor AI Help form</p>
           `
-        })
-      });
-      if (!emailRes.ok) throw new Error('Resend error');
-    } catch (err) {
-      console.error('Email send error:', err);
-    }
-  } else {
-    console.log(`[SUPPORT MESSAGE] From: ${name} <${email}> | Subject: ${subject} | Message: ${message}`);
+    });
+  } catch (err) {
+    console.error('[Email] Contact form send error:', err.message);
   }
 
   res.json({ success: true });
