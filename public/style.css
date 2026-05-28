@@ -510,6 +510,40 @@ textarea:focus { outline: none; border-color: rgba(245,200,66,.4); box-shadow: 0
 .tpl-contemporary .rd-section-title { border-bottom: none; background: #f3f4f6; padding: 3px 8px; border-radius: 4px; color: #374151; }
 .tpl-contemporary .rd-entry-header { color: #0891b2; }
 
+/* ── tpl-academic (pro) ──────────────────── */
+.tpl-academic { font-family: 'Georgia',serif; }
+.tpl-academic .rd-name { text-align: center; font-size: 26px; font-weight: 700; letter-spacing: 1px; color: #1a1a1a; }
+.tpl-academic .rd-contact { text-align: center; color: #4b5563; font-size: 12.5px; }
+.tpl-academic .rd-section-title { font-variant: small-caps; letter-spacing: 1.5px; color: #1a1a1a; border-bottom: 2px solid #1a1a1a; }
+
+/* ── tpl-compact (pro) ───────────────────── */
+.tpl-compact { font-family: 'Inter',sans-serif; padding: 32px 40px; font-size: 12.5px; }
+.tpl-compact .rd-name { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+.tpl-compact .rd-contact { font-size: 11.5px; color: #6b7280; }
+.tpl-compact .rd-section-title { font-size: 10px; letter-spacing: 2px; border-bottom: 1px solid #d1d5db; color: #6b7280; }
+.tpl-compact .rd-entry { margin-bottom: 8px; }
+
+/* ── tpl-sharp (pro) ─────────────────────── */
+.tpl-sharp { font-family: 'Inter',sans-serif; }
+.tpl-sharp .rd-name { color: #dc2626; font-weight: 900; font-size: 28px; }
+.tpl-sharp .rd-contact { color: #374151; font-size: 12px; }
+.tpl-sharp .rd-section-title { color: #dc2626; border-bottom-color: #dc2626; letter-spacing: 1px; }
+.tpl-sharp .rd-entry-header { font-weight: 800; color: #111827; }
+
+/* ── tpl-neutral (pro) ───────────────────── */
+.tpl-neutral { font-family: 'Inter',sans-serif; background: #fafaf9; }
+.tpl-neutral .rd-name { color: #57534e; font-weight: 800; font-size: 26px; }
+.tpl-neutral .rd-contact { color: #78716c; }
+.tpl-neutral .rd-section-title { color: #78716c; border-bottom-color: #d6d3d1; font-weight: 700; letter-spacing: 0.5px; }
+.tpl-neutral .rd-entry-header { color: #44403c; }
+
+/* ── tpl-vivid (pro) ─────────────────────── */
+.tpl-vivid { font-family: 'Inter',sans-serif; }
+.tpl-vivid .rd-name { color: #0d9488; font-weight: 900; font-size: 28px; }
+.tpl-vivid .rd-contact { color: #6b7280; }
+.tpl-vivid .rd-section-title { color: #0d9488; border-bottom: 2px solid #0d9488; }
+.tpl-vivid .rd-entry-header { color: #134e4a; font-weight: 700; }
+
 /* ── Cover Letter template overrides ─────── */
 .tpl-cl-classic-cover { font-family: 'Georgia',serif; }
 .tpl-cl-modern-cover { font-family: 'Inter',sans-serif; font-size: 13.5px; }
@@ -527,6 +561,14 @@ textarea:focus { outline: none; border-color: rgba(245,200,66,.4); box-shadow: 0
 .tpl-cl-bold-cover .cl-para:first-child { font-size: 15px; font-weight: 700; color: #111; }
 .tpl-cl-contemporary-cover { font-family: 'Inter',sans-serif; }
 .tpl-cl-contemporary-cover .cl-para:first-child { background: #f0f9ff; padding: 14px; border-radius: 8px; border-left: 3px solid #0891b2; }
+.tpl-cl-academic-cover { font-family: 'Georgia',serif; line-height: 1.85; }
+.tpl-cl-academic-cover .cl-para:first-child { font-style: italic; color: #374151; }
+.tpl-cl-compact-cover { font-family: 'Inter',sans-serif; font-size: 13px; padding: 40px 52px; line-height: 1.8; }
+.tpl-cl-sharp-cover { font-family: 'Inter',sans-serif; }
+.tpl-cl-sharp-cover .cl-para:first-child { border-left: 3px solid #dc2626; padding-left: 14px; font-weight: 600; }
+.tpl-cl-neutral-cover { font-family: 'Inter',sans-serif; color: #57534e; line-height: 1.9; }
+.tpl-cl-vivid-cover { font-family: 'Inter',sans-serif; }
+.tpl-cl-vivid-cover .cl-para:first-child { border-left: 3px solid #0d9488; padding-left: 14px; }
 
 /* Upsell banner */
 .upsell {

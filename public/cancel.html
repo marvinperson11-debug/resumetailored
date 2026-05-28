@@ -4,236 +4,115 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cancel Anytime — ResumeTailored AI</title>
-  <link rel="icon" href="favicon.png" type="image/png" />
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-JWC76X5X68');
-  </script>
   <meta name="description" content="Cancel your ResumeTailored AI subscription anytime. No questions asked, no fees, no hassle." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
   <style>
-    .cancel-hero {
-      padding: 80px 0 60px;
-      text-align: center;
-    }
-    .cancel-hero h1 {
-      font-size: clamp(36px, 6vw, 64px);
-      font-weight: 900;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-      margin-bottom: 18px;
-    }
-    .cancel-hero p {
-      font-size: 18px;
-      color: var(--text-muted);
-      max-width: 560px;
-      margin: 0 auto;
-      line-height: 1.7;
-    }
-
-    .promise-banner {
-      background: linear-gradient(135deg, rgba(245,200,66,0.08), rgba(251,146,60,0.05));
-      border: 1px solid rgba(245,200,66,0.25);
-      border-radius: 20px;
-      padding: 48px 40px;
-      text-align: center;
-      max-width: 700px;
-      margin: 0 auto 64px;
-    }
-    .promise-banner .big-icon { font-size: 64px; margin-bottom: 20px; }
-    .promise-banner h2 { font-size: 28px; font-weight: 900; margin-bottom: 14px; }
-    .promise-banner p { color: var(--text-muted); font-size: 16px; line-height: 1.8; }
-
-    .cancel-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 64px;
-    }
-    @media (max-width: 700px) { .cancel-grid { grid-template-columns: 1fr; } }
-
-    .cancel-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 16px;
-      padding: 32px;
-    }
-    .cancel-card:hover { border-color: rgba(245,200,66,0.25); }
-    .cancel-icon { font-size: 36px; margin-bottom: 16px; }
-    .cancel-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
-
-    .cancel-steps {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      counter-reset: steps;
-    }
-    .cancel-steps li {
-      counter-increment: steps;
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
-      margin-bottom: 14px;
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--text-muted);
-    }
-    .cancel-steps li::before {
-      content: counter(steps);
-      background: rgba(245,200,66,0.15);
-      border: 1px solid rgba(245,200,66,0.3);
-      color: #f5c842;
-      font-weight: 800;
-      font-size: 12px;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-    .cancel-steps li strong { color: var(--text); }
-
-    .what-happens li {
-      list-style: none;
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      margin-bottom: 12px;
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-    .what-happens li::before { content: "✓"; color: #22c55e; font-weight: 800; flex-shrink: 0; }
-    .what-happens { padding: 0; margin: 0; }
-
-    .section-label {
-      text-align: center;
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: #f5c842;
-      margin-bottom: 16px;
-    }
-    .section-title-lg {
-      text-align: center;
-      font-size: clamp(26px, 4vw, 40px);
-      font-weight: 900;
-      margin-bottom: 48px;
-      letter-spacing: -0.02em;
-    }
-
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{--blue:#2563eb;--blue-dark:#1d4ed8;--blue-light:#eff6ff;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--gray:#f9fafb;}
+    body{font-family:'Inter',sans-serif;background:#fff;color:#111827;line-height:1.6;overflow-x:hidden;}
+    a{text-decoration:none;color:inherit;}
+    /* Nav */
+    .lp-nav{background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+    .lp-nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+    .lp-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;color:var(--text);letter-spacing:-0.3px;}
+    .lp-logo-icon{width:36px;height:36px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;font-weight:900;}
+    .lp-logo-ai{background:var(--blue);color:#fff;font-size:10px;font-weight:900;padding:2px 6px;border-radius:5px;}
+    .lp-btn-nav{display:inline-flex;align-items:center;padding:9px 22px;border:2px solid var(--blue);border-radius:8px;font-weight:700;font-size:15px;color:var(--blue);background:#fff;cursor:pointer;transition:background 0.18s;}
+    .lp-btn-nav:hover{background:var(--blue-light);}
+    /* Page hero */
+    .ph{background:var(--gray);padding:64px 24px;text-align:center;}
+    .ph h1{font-size:clamp(30px,5vw,52px);font-weight:900;letter-spacing:-1.5px;margin-bottom:16px;}
+    .ph p{font-size:17px;color:var(--muted);max-width:560px;margin:0 auto;line-height:1.7;}
+    .lp-blue{color:var(--blue);}
+    /* Sections */
+    .lp-sec{padding:72px 24px;}
+    .lp-sec-gray{background:var(--gray);}
+    .lp-wrap{max-width:1100px;margin:0 auto;}
+    .lp-title{font-size:clamp(24px,3.5vw,36px);font-weight:900;text-align:center;color:var(--text);margin-bottom:12px;letter-spacing:-0.8px;}
+    .lp-sub{text-align:center;color:var(--muted);font-size:15px;margin-bottom:48px;}
+    /* Promise banner */
+    .promise-banner{background:var(--blue-light);border:1px solid #bfdbfe;border-radius:16px;padding:48px 40px;text-align:center;max-width:700px;margin:0 auto;}
+    .promise-banner .big-icon{font-size:56px;margin-bottom:20px;}
+    .promise-banner h2{font-size:26px;font-weight:900;margin-bottom:14px;color:var(--text);}
+    .promise-banner p{color:var(--muted);font-size:16px;line-height:1.8;}
+    /* Badges */
+    .badges{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;}
+    .badge-item{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px 24px;text-align:center;min-width:130px;}
+    .badge-item .badge-icon{font-size:26px;margin-bottom:8px;}
+    .badge-item .badge-label{font-size:13px;font-weight:800;color:var(--text);}
+    .badge-item .badge-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+    /* Cancel grid */
+    .cancel-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+    @media(max-width:700px){.cancel-grid{grid-template-columns:1fr;}}
+    .cancel-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:32px;}
+    .cancel-card:hover{box-shadow:0 4px 20px rgba(37,99,235,0.08);}
+    .cancel-icon{font-size:32px;margin-bottom:16px;}
+    .cancel-card h3{font-size:18px;font-weight:800;margin-bottom:16px;color:var(--text);}
+    /* Steps list */
+    .cancel-steps{list-style:none;padding:0;margin:0;counter-reset:steps;}
+    .cancel-steps li{counter-increment:steps;display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;font-size:14px;line-height:1.6;color:var(--muted);}
+    .cancel-steps li::before{content:counter(steps);background:var(--blue-light);border:1px solid #bfdbfe;color:var(--blue);font-weight:800;font-size:12px;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;}
+    .cancel-steps li strong{color:var(--text);}
+    /* What happens list */
+    .what-happens{padding:0;margin:0;}
+    .what-happens li{list-style:none;display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;font-size:14px;color:var(--muted);line-height:1.6;}
+    .what-happens li::before{content:"✓";color:#22c55e;font-weight:900;flex-shrink:0;}
+    /* Form */
+    .cancel-form-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:36px;max-width:560px;margin:0 auto;}
+    .cancel-form-card h3{font-size:20px;font-weight:800;margin-bottom:8px;color:var(--text);}
+    .cancel-form-card p{color:var(--muted);font-size:14px;margin-bottom:24px;}
+    .cancel-form-card label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+    .cancel-form-card input,.cancel-form-card textarea{width:100%;background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 16px;color:var(--text);font-family:inherit;font-size:14px;margin-bottom:16px;outline:none;transition:border-color .2s;}
+    .cancel-form-card input:focus,.cancel-form-card textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.1);}
+    .btn-primary{display:inline-flex;align-items:center;justify-content:center;padding:14px 32px;background:var(--blue);color:#fff;font-weight:700;font-size:16px;border-radius:8px;cursor:pointer;border:none;transition:background 0.18s;}
+    .btn-primary:hover{background:var(--blue-dark);}
+    .btn-full{width:100%;}
+    #cancelSuccess{display:none;margin-top:16px;padding:16px 20px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;color:#16a34a;font-weight:600;text-align:center;}
     /* FAQ */
-    .faq-section {
-      max-width: 720px;
-      margin: 0 auto 64px;
-    }
-    .faq-section .help-faq-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 16px;
-      padding: 32px;
-    }
-
-    /* Guarantee badges */
-    .badges {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      flex-wrap: wrap;
-      margin-bottom: 64px;
-    }
-    .badge-item {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 12px;
-      padding: 20px 28px;
-      text-align: center;
-      min-width: 140px;
-    }
-    .badge-item .badge-icon { font-size: 28px; margin-bottom: 8px; }
-    .badge-item .badge-label { font-size: 13px; font-weight: 700; }
-    .badge-item .badge-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-
-    .cancel-cta {
-      text-align: center;
-      padding: 64px 0 80px;
-    }
-    .cancel-cta h2 { font-size: 32px; font-weight: 900; margin-bottom: 12px; }
-    .cancel-cta p { color: var(--text-muted); margin-bottom: 28px; font-size: 15px; max-width: 500px; margin-left: auto; margin-right: auto; }
-
-    /* Cancel request form */
-    .cancel-form-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 16px;
-      padding: 36px;
-      max-width: 560px;
-      margin: 0 auto 64px;
-    }
-    .cancel-form-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-    .cancel-form-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
-    .cancel-form-card label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .cancel-form-card input, .cancel-form-card textarea {
-      width: 100%; box-sizing: border-box;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 14px;
-      margin-bottom: 16px;
-      outline: none;
-      transition: border-color .2s;
-    }
-    .cancel-form-card input:focus, .cancel-form-card textarea:focus {
-      border-color: rgba(245,200,66,0.5);
-    }
-    #cancelSuccess {
-      display:none;
-      margin-top:16px;
-      padding:16px 20px;
-      background:rgba(34,197,94,0.1);
-      border:1px solid rgba(34,197,94,0.3);
-      border-radius:12px;
-      color:#22c55e;
-      font-weight:600;
-      text-align:center;
-    }
+    .faq-wrap{max-width:720px;margin:0 auto;}
+    .faq-item{border-bottom:1px solid var(--border);}
+    .faq-item:last-child{border-bottom:none;}
+    .faq-q{display:flex;justify-content:space-between;align-items:center;padding:18px 0;cursor:pointer;font-weight:700;font-size:15px;color:var(--text);}
+    .faq-q:hover{color:var(--blue);}
+    .faq-arrow{color:var(--muted);font-size:14px;flex-shrink:0;margin-left:12px;}
+    .faq-a{display:none;padding:0 0 18px;font-size:14px;color:var(--muted);line-height:1.75;}
+    /* CTA band */
+    .cta-band{background:linear-gradient(135deg,#1e3a8a,#7c3aed);padding:72px 24px;text-align:center;}
+    .cta-band h2{font-size:clamp(24px,4vw,38px);font-weight:900;color:#fff;margin-bottom:16px;letter-spacing:-1px;}
+    .cta-band p{font-size:16px;color:rgba(255,255,255,0.8);margin-bottom:32px;}
+    .lp-btn-white{display:inline-flex;align-items:center;justify-content:center;padding:14px 32px;background:#fff;color:var(--blue);font-weight:700;font-size:16px;border-radius:8px;cursor:pointer;border:none;transition:background 0.18s;}
+    .lp-btn-white:hover{background:var(--blue-light);}
+    /* Footer */
+    .lp-footer{background:var(--gray);border-top:1px solid var(--border);padding:40px 24px 24px;}
+    .lp-footer-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+    .lp-footer-inner span{font-size:13px;color:var(--muted);}
+    .lp-footer-links{display:flex;gap:24px;flex-wrap:wrap;}
+    .lp-footer-links a{font-size:14px;color:var(--muted);font-weight:600;transition:color 0.15s;}
+    .lp-footer-links a:hover{color:var(--blue);}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    @media(max-width:600px){.lp-sec{padding:48px 16px;}.ph{padding:48px 16px;}.promise-banner{padding:32px 24px;}}
   </style>
 </head>
 <body>
-
-  <!-- NAV -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
-      <a href="/app.html" class="btn btn-primary">Try Free →</a>
+  <nav class="lp-nav">
+    <div class="lp-nav-inner">
+      <a href="/" class="lp-logo"><div class="lp-logo-icon">R</div>ResumeTailored <span class="lp-logo-ai">AI</span></a>
+      <a href="/app.html" class="lp-btn-nav">Try Free →</a>
     </div>
   </nav>
 
-  <!-- HERO -->
-  <section class="cancel-hero">
-    <div class="container">
-      <div class="hero-tag">No contracts. No fine print.</div>
-      <h1>Cancel <span class="grad">anytime.</span><br/>We mean it.</h1>
-      <p>Your subscription is month-to-month. Cancel in seconds. No cancellation fees, no run-around, no questions asked.</p>
-    </div>
+  <section class="ph">
+    <h1>Cancel <span class="lp-blue">anytime.</span><br>We mean it.</h1>
+    <p>Your subscription is month-to-month. Cancel in seconds. No cancellation fees, no run-around, no questions asked.</p>
   </section>
 
-  <!-- PROMISE BANNER -->
-  <section class="section" style="padding-top:0;">
-    <div class="container">
+  <section class="lp-sec">
+    <div class="lp-wrap">
       <div class="promise-banner">
         <div class="big-icon">🔓</div>
         <h2>Your subscription. Your rules.</h2>
@@ -242,9 +121,8 @@
     </div>
   </section>
 
-  <!-- GUARANTEE BADGES -->
-  <section class="section" style="padding-top:0;">
-    <div class="container">
+  <section class="lp-sec lp-sec-gray">
+    <div class="lp-wrap">
       <div class="badges">
         <div class="badge-item">
           <div class="badge-icon">⚡</div>
@@ -275,12 +153,10 @@
     </div>
   </section>
 
-  <!-- HOW TO CANCEL + WHAT HAPPENS -->
-  <section class="section section-gray">
-    <div class="container">
-      <div class="section-label">Simple Process</div>
-      <h2 class="section-title-lg">How to cancel in <span class="grad-text">60 seconds</span></h2>
-
+  <section class="lp-sec">
+    <div class="lp-wrap">
+      <h2 class="lp-title">How to cancel in 60 seconds</h2>
+      <p class="lp-sub">Simple, no-hassle process</p>
       <div class="cancel-grid">
         <div class="cancel-card">
           <div class="cancel-icon">💬</div>
@@ -291,9 +167,8 @@
             <li>Submit the form. You'll get a <strong>confirmation email</strong> within 1 hour.</li>
             <li>That's it. <strong>No phone call. No retention agent. No guilt trip.</strong></li>
           </ol>
-          <p style="margin-top:20px;font-size:13px;color:var(--text-muted);">You can also email us directly at <strong style="color:var(--text);">support@resumetailored.com</strong> and we'll handle it right away.</p>
+          <p style="margin-top:20px;font-size:13px;color:var(--muted);">You can also email us directly at <strong style="color:var(--text);">support@resumetailored.com</strong> and we'll handle it right away.</p>
         </div>
-
         <div class="cancel-card">
           <div class="cancel-icon">📋</div>
           <h3>What Happens When You Cancel</h3>
@@ -310,26 +185,20 @@
     </div>
   </section>
 
-  <!-- CANCEL FORM -->
-  <section class="section">
-    <div class="container">
-      <div class="section-label">Cancel Now</div>
-      <h2 class="section-title-lg">Submit your <span class="grad-text">cancellation request</span></h2>
-
+  <section class="lp-sec lp-sec-gray">
+    <div class="lp-wrap">
+      <h2 class="lp-title">Submit your cancellation request</h2>
+      <p class="lp-sub">Fill this out and we'll confirm within 1 hour</p>
       <div class="cancel-form-card">
         <h3>Cancellation Request</h3>
         <p>Fill this out and we'll confirm cancellation within 1 hour. You keep Pro access until your billing period ends.</p>
-
         <label>Your Name</label>
         <input type="text" id="cancelName" placeholder="Your full name" />
-
         <label>Email Used to Subscribe</label>
         <input type="email" id="cancelEmail" placeholder="the@email.com you signed up with" />
-
         <label>Reason (optional — helps us improve)</label>
         <textarea id="cancelReason" rows="3" placeholder="e.g. Found a job! / No longer job searching / Too expensive / etc."></textarea>
-
-        <button class="btn btn-primary btn-full btn-lg" onclick="submitCancel()" id="cancelBtn">
+        <button class="btn-primary btn-full" onclick="submitCancel()" id="cancelBtn">
           Submit Cancellation Request →
         </button>
         <div id="cancelSuccess">
@@ -339,93 +208,75 @@
     </div>
   </section>
 
-  <!-- FAQ -->
-  <section class="section section-gray">
-    <div class="container">
-      <div class="section-label">Questions</div>
-      <h2 class="section-title-lg">Cancellation <span class="grad-text">FAQs</span></h2>
-
-      <div class="faq-section">
-        <div class="help-faq-card">
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Do I get a refund if I cancel mid-month?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">We don't offer prorated refunds for partial months, but you keep full Pro access through the end of your current billing period — so you get every day you paid for. If you were accidentally charged and contact us within 7 days, we'll issue a full refund, no questions asked.</div>
+  <section class="lp-sec">
+    <div class="lp-wrap">
+      <h2 class="lp-title">Cancellation FAQs</h2>
+      <p class="lp-sub">Common questions answered</p>
+      <div class="faq-wrap">
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            <span>Do I get a refund if I cancel mid-month?</span><span class="faq-arrow">▾</span>
           </div>
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>How fast does cancellation take effect?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">We process all cancellation requests within 1 hour and send a confirmation email. Your Pro access continues until your current billing period ends — you're not cut off immediately.</div>
+          <div class="faq-a">We don't offer prorated refunds for partial months, but you keep full Pro access through the end of your current billing period — so you get every day you paid for. If you were accidentally charged and contact us within 7 days, we'll issue a full refund, no questions asked.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            <span>How fast does cancellation take effect?</span><span class="faq-arrow">▾</span>
           </div>
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Can I pause my subscription instead of canceling?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as simple. We never price-lock or penalize returning members — you'll always get the same $19/month rate when you come back.</div>
+          <div class="faq-a">We process all cancellation requests within 1 hour and send a confirmation email. Your Pro access continues until your current billing period ends — you're not cut off immediately.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            <span>Can I pause my subscription instead of canceling?</span><span class="faq-arrow">▾</span>
           </div>
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>What if I was charged but didn't mean to subscribe?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">Contact us within 7 days of the charge using the form above or at support@resumetailored.com and we'll issue a full refund immediately. We never want anyone paying for something they didn't intend to buy.</div>
+          <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as simple. We never price-lock or penalize returning members — you'll always get the same $19/month rate when you come back.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            <span>What if I was charged but didn't mean to subscribe?</span><span class="faq-arrow">▾</span>
           </div>
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Will my data be deleted when I cancel?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">No. Your career check-in data, community posts, and account information stay intact after cancellation. If you resubscribe later, everything is right where you left it. If you'd like your data deleted, just request it and we'll handle it within 48 hours.</div>
+          <div class="faq-a">Contact us within 7 days of the charge using the form above or at support@resumetailored.com and we'll issue a full refund immediately. We never want anyone paying for something they didn't intend to buy.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            <span>Will my data be deleted when I cancel?</span><span class="faq-arrow">▾</span>
           </div>
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Is there a cancellation fee or early termination penalty?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">Absolutely not. There are zero cancellation fees, zero penalties, and zero strings attached. Month-to-month means exactly that — you're never locked in for longer than one month at a time.</div>
+          <div class="faq-a">No. Your career check-in data, community posts, and account information stay intact after cancellation. If you resubscribe later, everything is right where you left it. If you'd like your data deleted, just request it and we'll handle it within 48 hours.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            <span>Is there a cancellation fee or early termination penalty?</span><span class="faq-arrow">▾</span>
           </div>
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Can I resubscribe after canceling?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">Yes, anytime. Just go to the app, enter your email, and click Upgrade. You'll get the same $19/month rate — we don't charge more for returning subscribers or require any re-enrollment process.</div>
+          <div class="faq-a">Absolutely not. There are zero cancellation fees, zero penalties, and zero strings attached. Month-to-month means exactly that — you're never locked in for longer than one month at a time.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">
+            <span>Can I resubscribe after canceling?</span><span class="faq-arrow">▾</span>
           </div>
-
+          <div class="faq-a">Yes, anytime. Just go to the app, enter your email, and click Upgrade. You'll get the same $19/month rate — we don't charge more for returning subscribers or require any re-enrollment process.</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- BOTTOM CTA -->
-  <section class="section">
-    <div class="container">
-      <div class="cancel-cta">
-        <h2>Still deciding whether to <span class="grad">subscribe?</span></h2>
-        <p>Try it free first — 1 tailoring per day, no credit card, no signup required. Upgrade only when you're convinced it works.</p>
-        <a href="/app.html" class="btn btn-primary btn-lg">Try Free First →</a>
-        <p style="margin-top:16px;font-size:13px;">Pro is $19/mo · Cancel anytime · No contracts</p>
-      </div>
+  <section class="cta-band">
+    <div class="lp-wrap">
+      <h2>Still deciding whether to subscribe?</h2>
+      <p>Try it free first — 1 tailoring per day, no credit card, no signup required. Upgrade only when you're convinced it works.</p>
+      <a href="/app.html" class="lp-btn-white">Try Free First →</a>
+      <p style="margin-top:16px;font-size:13px;color:rgba(255,255,255,0.7);">Pro is $19/mo · Cancel anytime · No contracts</p>
     </div>
   </section>
 
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <span class="logo">ResumeTailored <span class="badge-ai">AI</span></span>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
-          <a href="/about.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">How It Works</a>
-          <a href="/cancel.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">Cancel Anytime</a>
-          <a href="/app.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">Dashboard</a>
-        </div>
-        <span style="color:var(--text-muted);font-size:13px;">© 2025 ResumeTailored. All rights reserved.</span>
+  <footer class="lp-footer">
+    <div class="lp-footer-inner">
+      <a href="/" class="lp-logo" style="text-decoration:none;"><div class="lp-logo-icon" style="width:28px;height:28px;font-size:14px;">R</div> ResumeTailored <span class="lp-logo-ai">AI</span></a>
+      <div class="lp-footer-links">
+        <a href="/about.html">How It Works</a>
+        <a href="/cancel.html">Cancel Anytime</a>
+        <a href="/app.html">Dashboard</a>
       </div>
+      <span>© 2026 ResumeTailored AI</span>
     </div>
   </footer>
 
@@ -470,6 +321,5 @@
       }
     }
   </script>
-
 </body>
 </html>

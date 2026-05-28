@@ -910,6 +910,11 @@
       { id:'elegant',      name:'Elegant',      tier:'pro',  swatch:'#4c1d95', desc:'Refined & refined' },
       { id:'bold',         name:'Bold',         tier:'pro',  swatch:'#111827', desc:'Dark header band' },
       { id:'contemporary', name:'Contemporary', tier:'pro',  swatch:'#0891b2', desc:'Sky-blue accents' },
+      { id:'academic',     name:'Academic',     tier:'pro',  swatch:'#1a1a1a', desc:'Serif & scholarly' },
+      { id:'compact',      name:'Compact',      tier:'pro',  swatch:'#6b7280', desc:'Space-efficient' },
+      { id:'sharp',        name:'Sharp',        tier:'pro',  swatch:'#dc2626', desc:'Bold red accents' },
+      { id:'neutral',      name:'Neutral',      tier:'pro',  swatch:'#78716c', desc:'Warm stone tones' },
+      { id:'vivid',        name:'Vivid',        tier:'pro',  swatch:'#0d9488', desc:'Teal & vibrant' },
     ];
 
     const COVER_TEMPLATES = [
@@ -923,6 +928,11 @@
       { id:'elegant-cover',      name:'Elegant',       tier:'pro',  swatch:'#4c1d95' },
       { id:'bold-cover',         name:'Bold',          tier:'pro',  swatch:'#111827' },
       { id:'contemporary-cover', name:'Contemporary',  tier:'pro',  swatch:'#0891b2' },
+      { id:'academic-cover',     name:'Academic',      tier:'pro',  swatch:'#1a1a1a' },
+      { id:'compact-cover',      name:'Compact',       tier:'pro',  swatch:'#6b7280' },
+      { id:'sharp-cover',        name:'Sharp',         tier:'pro',  swatch:'#dc2626' },
+      { id:'neutral-cover',      name:'Neutral',       tier:'pro',  swatch:'#78716c' },
+      { id:'vivid-cover',        name:'Vivid',         tier:'pro',  swatch:'#0d9488' },
     ];
 
     function buildTemplatePicker(containerId, templates, selected, onSelect) {
@@ -931,7 +941,7 @@
         const locked = t.tier === 'pro' && !isSubscriberFlag;
         const active = t.id === selected;
         return `<div class="tpl-card${active?' active':''}${locked?' locked':''}"
-          onclick="${locked ? `showToast('Upgrade to Pro to unlock all 10 templates.')` : `${onSelect}('${t.id}')`}">
+          onclick="${locked ? `showToast('Upgrade to Pro to unlock all 100+ templates.')` : `${onSelect}('${t.id}')`}">
           <div class="tpl-swatch" style="background:${t.swatch};"></div>
           <div class="tpl-card-name">${t.name}</div>
           ${locked ? '<div class="tpl-card-lock">🔒</div>' : (t.tier==='free' ? '<div class="tpl-card-badge">FREE</div>' : '')}
