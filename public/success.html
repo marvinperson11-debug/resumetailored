@@ -4,36 +4,56 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Welcome to Pro — ResumeTailored AI</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="icon" href="favicon.png" type="image/png" />
-  <!-- Google tag (gtag.js) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-JWC76X5X68');
-  </script>
-  <link rel="stylesheet" href="style.css" />
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
   <style>
-    .success-wrap { max-width: 520px; margin: 100px auto; padding: 0 24px; text-align: center; }
-    .checkmark { font-size: 64px; margin-bottom: 24px; }
-    .success-wrap h1 { font-size: 36px; font-weight: 800; margin-bottom: 12px; }
-    .success-wrap p { color: #6b7280; font-size: 17px; margin-bottom: 32px; line-height: 1.7; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;background:#fff;color:#111827;line-height:1.6;min-height:100vh;display:flex;flex-direction:column;}
+    a{text-decoration:none;color:inherit;}
+    .nav{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 24px;}
+    .nav-inner{max-width:1200px;margin:0 auto;height:64px;display:flex;align-items:center;}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;color:#111827;}
+    .logo-icon{width:36px;height:36px;background:#2563eb;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;font-weight:900;}
+    .logo-ai{background:#2563eb;color:#fff;font-size:10px;font-weight:900;padding:2px 6px;border-radius:5px;}
+    .main{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 24px;}
+    .card{max-width:520px;width:100%;text-align:center;padding:56px 48px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;box-shadow:0 8px 40px rgba(37,99,235,0.1);}
+    .checkmark{font-size:72px;margin-bottom:24px;display:block;}
+    h1{font-size:32px;font-weight:900;margin-bottom:12px;color:#111827;letter-spacing:-1px;}
+    p{font-size:16px;color:#6b7280;margin-bottom:32px;line-height:1.7;}
+    .btn{display:inline-flex;align-items:center;justify-content:center;padding:14px 32px;background:#2563eb;color:#fff;font-weight:700;font-size:16px;border-radius:8px;border:none;cursor:pointer;transition:background 0.18s;}
+    .btn:hover{background:#1d4ed8;color:#fff;}
+    .perks{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:32px;text-align:left;}
+    .perk{display:flex;align-items:center;gap:8px;font-size:14px;color:#374151;}
+    .perk::before{content:"✓";color:#22c55e;font-weight:900;flex-shrink:0;}
   </style>
 </head>
 <body>
   <nav class="nav">
     <div class="nav-inner">
-      <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
+      <a href="/" class="logo"><div class="logo-icon">R</div>ResumeTailored <span class="logo-ai">AI</span></a>
     </div>
   </nav>
-  <div class="success-wrap">
-    <div class="checkmark">🎉</div>
-    <h1>You're Pro now!</h1>
-    <p>Your subscription is active. Go tailor as many resumes as you need — no limits, no waiting.</p>
-    <a href="/app.html" class="btn btn-primary btn-lg">Start Tailoring →</a>
-  </div>
+  <main class="main">
+    <div class="card">
+      <span class="checkmark">🎉</span>
+      <h1>You're Pro now!</h1>
+      <p>Your subscription is active. Here's everything that's now unlocked for you:</p>
+      <div class="perks">
+        <div class="perk">Unlimited AI tailorings</div>
+        <div class="perk">AI cover letter generator</div>
+        <div class="perk">100+ resume templates</div>
+        <div class="perk">Career Hub access</div>
+        <div class="perk">Salary negotiation guide</div>
+        <div class="perk">Community forum</div>
+        <div class="perk">Quarterly career check-ins</div>
+        <div class="perk">Priority AI processing</div>
+      </div>
+      <a href="/app.html" class="btn">Start Tailoring My Resume →</a>
+    </div>
+  </main>
 </body>
 </html>
