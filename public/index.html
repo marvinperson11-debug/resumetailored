@@ -60,19 +60,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 
-  <!-- style.css provides the template CSS classes used in the gallery -->
-  <link rel="stylesheet" href="style.css" />
-
   <style>
-    /* ── Reset & override dark theme from style.css ─── */
+    /* ── Reset ───────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Inter', sans-serif !important;
-      background: #fff !important;
-      color: #111827 !important;
-      line-height: 1.6 !important;
-      overflow-x: hidden !important;
-    }
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #111827; line-height: 1.6; overflow-x: hidden; }
     :root {
       --blue:       #2563eb;
       --blue-dark:  #1d4ed8;
@@ -86,7 +77,7 @@
 
     /* ── NAV ─────────────────────────────────────────── */
     .lp-nav {
-      background: #fff !important;
+      background: #fff;
       border-bottom: 1px solid var(--border);
       position: sticky; top: 0; z-index: 100;
     }
@@ -292,30 +283,38 @@
     .lp-tpl-card.locked:hover { transform: none; box-shadow: none; border-color: var(--border); }
 
     .lp-tpl-preview {
-      width: 160px; height: 207px; overflow: hidden;
-      position: relative; background: #f5f5f5;
+      width: 160px; height: 200px; overflow: hidden;
+      position: relative; background: #fff;
+      border-bottom: 1px solid var(--border);
     }
-    .lp-tpl-inner {
-      position: absolute; top: 0; left: 0;
-      width: 794px; transform: scale(0.2015); transform-origin: top left;
-      pointer-events: none;
+    /* Visual resume mockup lines */
+    .lp-tpl-mock { width: 100%; height: 100%; padding: 0; }
+    .lp-tpl-mock-head {
+      height: 52px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 5px;
     }
-    .lp-tpl-label { padding: 8px 10px; font-size: 11px; font-weight: 700; color: var(--text); }
-
+    .lp-tpl-mock-name { height: 9px; border-radius: 4px; background: currentColor; opacity: 0.85; }
+    .lp-tpl-mock-contact { height: 5px; border-radius: 3px; width: 80px; background: currentColor; opacity: 0.35; }
+    .lp-tpl-mock-body { padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .lp-tpl-mock-sec { height: 4px; border-radius: 2px; background: currentColor; opacity: 0.55; margin-bottom: 3px; }
+    .lp-tpl-mock-line { height: 4px; border-radius: 2px; background: #9ca3af; opacity: 0.5; }
+    .lp-tpl-mock-line.s { width: 55%; }
+    .lp-tpl-mock-line.m { width: 80%; }
+    .lp-tpl-mock-line.l { width: 95%; }
+    .lp-tpl-label {
+      padding: 9px 10px 10px; font-size: 12px; font-weight: 700; color: var(--text);
+      display: flex; align-items: center; justify-content: space-between;
+    }
     .lp-free-badge {
-      position: absolute; top: 6px; left: 6px;
       background: #22c55e; color: #fff;
       font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; letter-spacing: 0.3px;
     }
-    .lp-lock-overlay {
-      position: absolute; inset: 0; background: rgba(17,24,39,0.65);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-    }
     .lp-pro-badge {
-      background: linear-gradient(135deg,#f5c842,#fb923c); color: #07070f;
-      font-size: 10px; font-weight: 800; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.4px;
+      background: #2563eb; color: #fff;
+      font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; letter-spacing: 0.3px;
     }
-    .lp-lock-icon { font-size: 18px; }
+    .lp-tpl-card.locked { opacity: 0.75; }
+    .lp-tpl-card.locked:hover { transform: none; box-shadow: none; border-color: var(--border); opacity: 0.75; }
 
     .lp-scroll-btn {
       position: absolute; top: 50%; transform: translateY(-50%);
@@ -579,15 +578,15 @@
 
       <!-- Resume Templates -->
       <div id="galleryResume" class="lp-tpl-scroll-wrap">
-        <button class="lp-scroll-btn lp-scroll-left"  onclick="scroll('rowResume',-1)">‹</button>
-        <button class="lp-scroll-btn lp-scroll-right" onclick="scroll('rowResume', 1)">›</button>
+        <button class="lp-scroll-btn lp-scroll-left"  onclick="scrollGallery('rowResume',-1)">‹</button>
+        <button class="lp-scroll-btn lp-scroll-right" onclick="scrollGallery('rowResume', 1)">›</button>
         <div class="lp-tpl-row" id="rowResume"></div>
       </div>
 
       <!-- Cover Letter Templates -->
       <div id="galleryCover" class="lp-tpl-scroll-wrap" style="display:none;">
-        <button class="lp-scroll-btn lp-scroll-left"  onclick="scroll('rowCover',-1)">‹</button>
-        <button class="lp-scroll-btn lp-scroll-right" onclick="scroll('rowCover', 1)">›</button>
+        <button class="lp-scroll-btn lp-scroll-left"  onclick="scrollGallery('rowCover',-1)">‹</button>
+        <button class="lp-scroll-btn lp-scroll-right" onclick="scrollGallery('rowCover', 1)">›</button>
         <div class="lp-tpl-row" id="rowCover"></div>
       </div>
 
@@ -749,7 +748,7 @@
       </div>
       <div class="lp-fcol">
         <h4>Contact</h4>
-        <a href="mailto:support@resumetailored.com">support@resumetailored.com</a>
+        <a href="mailto:marvinperson11@gmail.com" style="word-break:break-all;">marvinperson11@gmail.com</a>
       </div>
     </div>
     <div class="lp-footer-bot">
@@ -776,42 +775,6 @@
     }
 
     /* ── Template gallery ── */
-    const SAMPLE = `
-      <div class="resume-doc" style="min-height:1123px;">
-        <div class="rd-name">James Appleseed</div>
-        <div class="rd-contact">james@email.com &nbsp;·&nbsp; (555) 123-4567 &nbsp;·&nbsp; San Francisco, CA</div>
-        <div class="rd-section">
-          <div class="rd-section-title">Summary</div>
-          <div class="rd-text">Results-driven professional with 7+ years delivering exceptional performance and proven leadership in fast-paced environments.</div>
-        </div>
-        <div class="rd-section">
-          <div class="rd-section-title">Experience</div>
-          <div class="rd-entry-header">Senior Manager &nbsp;·&nbsp; Acme Corporation &nbsp;·&nbsp; 2020–Present</div>
-          <div class="rd-bullet">• Led cross-functional team of 12, increasing revenue by 34% YoY</div>
-          <div class="rd-bullet">• Streamlined operations reducing costs by $2.1M annually</div>
-          <div class="rd-bullet">• Managed $450K budget across 3 major initiatives</div>
-          <div class="rd-entry-header">Manager &nbsp;·&nbsp; Global Solutions Inc &nbsp;·&nbsp; 2017–2020</div>
-          <div class="rd-bullet">• Drove 28% growth in customer retention through data-driven strategy</div>
-          <div class="rd-bullet">• Coordinated 6 product launches across 4 markets</div>
-        </div>
-        <div class="rd-section">
-          <div class="rd-section-title">Education</div>
-          <div class="rd-entry-header">B.S. Business Administration &nbsp;·&nbsp; Stanford University &nbsp;·&nbsp; 2016</div>
-        </div>
-        <div class="rd-section">
-          <div class="rd-section-title">Skills</div>
-          <div class="rd-text">Leadership &nbsp;·&nbsp; Strategy &nbsp;·&nbsp; Analytics &nbsp;·&nbsp; Project Management &nbsp;·&nbsp; Communication</div>
-        </div>
-      </div>`;
-
-    const SAMPLE_CL = `
-      <div class="cover-doc" style="min-height:1123px;">
-        <div class="cl-para"><strong>Dear Hiring Manager,</strong></div>
-        <div class="cl-para">I am writing to express my strong interest in the Senior Manager position at Acme Corporation. With 7+ years of progressive leadership experience delivering measurable results, I am confident I can make an immediate and lasting impact on your team.</div>
-        <div class="cl-para">In my current role at Global Solutions Inc, I spearheaded a cross-functional initiative that drove 34% YoY revenue growth and reduced operational costs by $2.1M. I thrive in environments that demand both strategic thinking and hands-on execution.</div>
-        <div class="cl-para">I am particularly drawn to Acme's commitment to innovation and customer success. I would welcome the opportunity to discuss how my background aligns with your goals.</div>
-        <div class="cl-para">Sincerely,<br>James Appleseed</div>
-      </div>`;
 
     const RESUME_TPLS = [
       { id:'classic',       name:'Classic',       free:true  },
@@ -849,24 +812,86 @@
       { id:'cl-vivid-cover',        name:'Vivid',         free:false },
     ];
 
+    // Template accent colors — matched to their CSS themes
+    const TPL_COLORS = {
+      'classic':'#374151','modern':'#6d28d9','executive':'#1e3a5f','minimal':'#9ca3af',
+      'creative':'#ea580c','professional':'#7f1d1d','tech':'#059669','elegant':'#4c1d95',
+      'bold':'#111827','contemporary':'#0891b2','academic':'#1a1a1a','compact':'#6b7280',
+      'sharp':'#dc2626','neutral':'#78716c','vivid':'#0d9488',
+      'cl-classic-cover':'#374151','cl-modern-cover':'#6d28d9','cl-executive-cover':'#1e3a5f',
+      'cl-minimal-cover':'#9ca3af','cl-creative-cover':'#ea580c','cl-professional-cover':'#7f1d1d',
+      'cl-tech-cover':'#059669','cl-elegant-cover':'#4c1d95','cl-bold-cover':'#111827',
+      'cl-contemporary-cover':'#0891b2','cl-academic-cover':'#1a1a1a','cl-compact-cover':'#6b7280',
+      'cl-sharp-cover':'#dc2626','cl-neutral-cover':'#78716c','cl-vivid-cover':'#0d9488'
+    };
+
     function buildGallery(tpls, rowId, isCover) {
       const row = document.getElementById(rowId);
       tpls.forEach(t => {
+        const color = TPL_COLORS[t.id] || '#374151';
         const card = document.createElement('div');
         card.className = 'lp-tpl-card' + (t.free ? '' : ' locked');
-        const sample = isCover ? SAMPLE_CL : SAMPLE;
-        card.innerHTML = `
-          <div class="lp-tpl-preview">
-            <div class="lp-tpl-inner tpl-${t.id}">${sample}</div>
-            ${t.free
-              ? '<div class="lp-free-badge">FREE</div>'
-              : '<div class="lp-lock-overlay"><span class="lp-lock-icon">🔒</span><span class="lp-pro-badge">PRO</span></div>'
-            }
-          </div>
-          <div class="lp-tpl-label">${t.name}</div>`;
+        if (!isCover) {
+          card.innerHTML = `
+            <div class="lp-tpl-preview">
+              <div class="lp-tpl-mock" style="color:${color};">
+                <div class="lp-tpl-mock-head" style="background:${color}14;">
+                  <div class="lp-tpl-mock-name" style="width:90px;"></div>
+                  <div class="lp-tpl-mock-contact"></div>
+                </div>
+                <div class="lp-tpl-mock-body">
+                  <div class="lp-tpl-mock-sec" style="width:60px;"></div>
+                  <div class="lp-tpl-mock-line l"></div>
+                  <div class="lp-tpl-mock-line m"></div>
+                  <div class="lp-tpl-mock-line s"></div>
+                  <div class="lp-tpl-mock-line l"></div>
+                  <div class="lp-tpl-mock-line m"></div>
+                  <div style="height:4px;"></div>
+                  <div class="lp-tpl-mock-sec" style="width:50px;"></div>
+                  <div class="lp-tpl-mock-line l"></div>
+                  <div class="lp-tpl-mock-line m"></div>
+                  <div class="lp-tpl-mock-line s"></div>
+                  <div class="lp-tpl-mock-line l"></div>
+                  <div style="height:4px;"></div>
+                  <div class="lp-tpl-mock-sec" style="width:40px;"></div>
+                  <div class="lp-tpl-mock-line m"></div>
+                  <div class="lp-tpl-mock-line s"></div>
+                </div>
+              </div>
+            </div>
+            <div class="lp-tpl-label">${t.name} <span class="${t.free ? 'lp-free-badge' : 'lp-pro-badge'}">${t.free ? 'FREE' : 'PRO'}</span></div>`;
+        } else {
+          card.innerHTML = `
+            <div class="lp-tpl-preview">
+              <div class="lp-tpl-mock" style="color:${color};">
+                <div class="lp-tpl-mock-head" style="background:${color}14;">
+                  <div class="lp-tpl-mock-name" style="width:80px;"></div>
+                  <div class="lp-tpl-mock-contact"></div>
+                </div>
+                <div class="lp-tpl-mock-body">
+                  <div style="height:6px;"></div>
+                  <div class="lp-tpl-mock-line m"></div>
+                  <div style="height:8px;"></div>
+                  <div class="lp-tpl-mock-line l"></div>
+                  <div class="lp-tpl-mock-line l"></div>
+                  <div class="lp-tpl-mock-line m"></div>
+                  <div class="lp-tpl-mock-line l"></div>
+                  <div class="lp-tpl-mock-line s"></div>
+                  <div style="height:8px;"></div>
+                  <div class="lp-tpl-mock-line l"></div>
+                  <div class="lp-tpl-mock-line m"></div>
+                  <div class="lp-tpl-mock-line l"></div>
+                  <div style="height:8px;"></div>
+                  <div class="lp-tpl-mock-sec" style="width:70px;"></div>
+                </div>
+              </div>
+            </div>
+            <div class="lp-tpl-label">${t.name} <span class="${t.free ? 'lp-free-badge' : 'lp-pro-badge'}">${t.free ? 'FREE' : 'PRO'}</span></div>`;
+        }
         if (t.free) {
-          card.style.cursor = 'pointer';
           card.addEventListener('click', () => { window.location.href = '/app.html'; });
+        } else {
+          card.addEventListener('click', () => { window.location.href = '/app.html?plan=pro'; });
         }
         row.appendChild(card);
       });
@@ -882,7 +907,7 @@
       document.getElementById('tabCover').classList.toggle('active',  which === 'cover');
     }
 
-    function scroll(rowId, dir) {
+    function scrollGallery(rowId, dir) {
       const row = document.getElementById(rowId);
       row.scrollBy({ left: dir * 360, behavior: 'smooth' });
     }

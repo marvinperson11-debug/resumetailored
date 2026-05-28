@@ -208,28 +208,61 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
   console.log(`[PASSWORD RESET] Link for ${key}: ${resetUrl}`);
 
+  const ownerEmail = process.env.OWNER_EMAIL || 'marvinperson11@gmail.com';
+  const resetEmailHtml = `
+    <div style="font-family:'Inter',Arial,sans-serif;max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+      <div style="background:#2563eb;padding:28px 32px;">
+        <div style="display:inline-flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;">R</div>
+          <span style="font-size:18px;font-weight:800;color:#fff;">ResumeTailored <span style="background:rgba(255,255,255,0.25);padding:2px 7px;border-radius:5px;font-size:11px;">AI</span></span>
+        </div>
+      </div>
+      <div style="padding:36px 32px;">
+        <div style="font-size:36px;text-align:center;margin-bottom:16px;">🔐</div>
+        <h2 style="font-size:22px;font-weight:800;color:#111827;text-align:center;margin:0 0 12px;">Reset Your Password</h2>
+        <p style="font-size:15px;color:#6b7280;line-height:1.7;text-align:center;margin:0 0 28px;">
+          We received a request to reset the password for <strong style="color:#111827;">${key}</strong>.<br/>
+          This link expires in <strong style="color:#2563eb;">1 hour</strong>.
+        </p>
+        <div style="text-align:center;margin-bottom:28px;">
+          <a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Reset My Password →</a>
+        </div>
+        <p style="font-size:13px;color:#9ca3af;text-align:center;line-height:1.6;margin:0;">
+          If you didn't request this, you can safely ignore this email.<br/>
+          Link not working? <a href="${resetUrl}" style="color:#2563eb;word-break:break-all;">${resetUrl}</a>
+        </p>
+      </div>
+      <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
+        <span style="font-size:12px;color:#9ca3af;">© ResumeTailored AI · <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a></span>
+      </div>
+    </div>
+  `;
+
+  try {
+    await sendEmail({ to: key, subject: 'Reset your ResumeTailored AI password', html: resetEmailHtml });
+  } catch (err) {
+    console.error('[Email] Failed to send reset email to user:', err.message);
+  }
+
+  // Notify owner of every reset request
   try {
     await sendEmail({
-      to: key,
-      subject: 'Reset your ResumeTailor password',
+      to: ownerEmail,
+      subject: `[ResumeTailored] Password reset requested — ${key}`,
       html: `
-        <div style="font-family:Inter,sans-serif;max-width:520px;margin:0 auto;background:#07070f;color:#f1f0ff;padding:40px 32px;border-radius:16px;border:1px solid rgba(245,200,66,0.25);">
-          <div style="font-size:22px;font-weight:900;margin-bottom:8px;">ResumeTailored <span style="background:linear-gradient(135deg,#f5c842,#fb923c);color:#07070f;padding:2px 8px;border-radius:6px;font-size:12px;">AI</span></div>
-          <h2 style="font-size:22px;font-weight:800;margin:24px 0 12px;">Reset your password</h2>
-          <p style="color:#9490b5;font-size:15px;line-height:1.7;margin-bottom:28px;">
-            We received a request to reset the password for <strong style="color:#f1f0ff;">${key}</strong>.<br/>
-            This link expires in <strong style="color:#f5c842;">1 hour</strong>.
-          </p>
-          <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(135deg,#f5c842,#fb923c);color:#07070f;font-weight:800;font-size:15px;padding:14px 32px;border-radius:12px;text-decoration:none;">Reset My Password →</a>
-          <p style="color:#6b6890;font-size:12px;margin-top:28px;line-height:1.6;">
-            If you didn't request this, ignore this email.<br/>
-            If the button doesn't work: <a href="${resetUrl}" style="color:#f5c842;word-break:break-all;">${resetUrl}</a>
-          </p>
+        <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:28px 32px;">
+          <h3 style="color:#111827;margin:0 0 16px;">🔔 Password Reset Request</h3>
+          <p style="color:#374151;font-size:15px;margin:0 0 12px;">A user has requested a password reset on ResumeTailored AI.</p>
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <tr><td style="padding:8px 0;color:#6b7280;width:100px;">Email:</td><td style="padding:8px 0;font-weight:700;color:#111827;">${key}</td></tr>
+            <tr><td style="padding:8px 0;color:#6b7280;">Time:</td><td style="padding:8px 0;color:#374151;">${new Date().toUTCString()}</td></tr>
+          </table>
+          <p style="font-size:13px;color:#9ca3af;margin:16px 0 0;">This is an automated notification from ResumeTailored AI.</p>
         </div>
       `
     });
   } catch (err) {
-    console.error('[Email] Failed to send reset email:', err.message);
+    console.error('[Email] Failed to send owner reset notification:', err.message);
   }
 
   res.json({ success: true });
