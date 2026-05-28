@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ResumeTailored AI — Dashboard</title>
-  <link rel="icon" href="favicon.png" type="image/png" />
+  <link rel="icon"             type="image/svg+xml"  href="favicon.svg" />
+  <link rel="icon"             type="image/png" sizes="32x32" href="favicon-32.png" />
+  <link rel="icon"             type="image/png" sizes="64x64" href="favicon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
   <script>
@@ -111,10 +114,11 @@
       letter-spacing: 1.5px; color: #f5c842; margin-bottom: 12px;
     }
     .sample-display {
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 14px; padding: 28px 32px; font-family: 'Courier New', monospace;
-      font-size: 13px; line-height: 1.75; color: #d4d0f0; white-space: pre-wrap;
-      max-height: 480px; overflow-y: auto; transition: opacity .4s ease;
+      background: #f8f7ff; border-radius: 12px; padding: 32px 36px;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 13.5px; line-height: 1.9; color: #1a1830; white-space: pre-wrap;
+      max-height: 520px; overflow-y: auto; transition: opacity .4s ease;
+      box-shadow: 0 4px 28px rgba(0,0,0,.28);
     }
     .sample-display.fade { opacity: 0; }
     .sample-dots { display:flex; gap:8px; justify-content:center; margin-top:20px; }
@@ -186,7 +190,7 @@
       <div style="display:flex;gap:12px;align-items:center;">
         <span id="navStatus"></span>
         <span id="navUsername" style="color:#9490b5;font-size:13px;font-weight:600;display:none;"></span>
-        <a href="/#pricing" class="btn btn-outline">Go Pro — $19/mo</a>
+        <a href="/#pricing" class="btn btn-outline"><span class="nav-pro-full">Go Pro — </span>$19/mo</a>
         <button class="btn btn-outline" id="logoutBtn" onclick="doLogout()" style="display:none;font-size:13px;padding:8px 14px;">Log Out</button>
       </div>
     </div>
@@ -254,6 +258,18 @@
           <button class="mode-btn active" data-mode="resume">Resume Only</button>
           <button class="mode-btn" data-mode="cover_letter">Cover Letter Only</button>
           <button class="mode-btn" data-mode="both">Resume + Cover Letter</button>
+        </div>
+
+        <!-- Template Picker -->
+        <div class="tpl-picker-section" id="tplPickerSection">
+          <div id="tplPickerResume">
+            <div class="tpl-picker-label">Resume Template</div>
+            <div class="tpl-picker-row" id="tplRowResume"></div>
+          </div>
+          <div id="tplPickerCover" style="display:none;">
+            <div class="tpl-picker-label">Cover Letter Template</div>
+            <div class="tpl-picker-row" id="tplRowCover"></div>
+          </div>
         </div>
 
         <div class="inputs">
@@ -878,6 +894,183 @@
     let isSubscriberFlag = false;
     let freeUsesLeft = 1;
     let pendingPro = false;
+    let lastRawText = '';
+    let selectedResumeTemplate = 'classic';
+    let selectedCoverTemplate = 'classic-cover';
+
+    // ── Template Definitions ────────────────────────────────────────────────────
+    const RESUME_TEMPLATES = [
+      { id:'classic',      name:'Classic',      tier:'free', swatch:'#374151', desc:'Traditional & timeless' },
+      { id:'modern',       name:'Modern',       tier:'free', swatch:'#6d28d9', desc:'Clean purple accents' },
+      { id:'executive',    name:'Executive',    tier:'pro',  swatch:'#1e3a5f', desc:'Navy & authoritative' },
+      { id:'minimal',      name:'Minimal',      tier:'pro',  swatch:'#d1d5db', desc:'Ultra-clean & spacious' },
+      { id:'creative',     name:'Creative',     tier:'pro',  swatch:'#ea580c', desc:'Bold orange energy' },
+      { id:'professional', name:'Traditional',  tier:'pro',  swatch:'#7f1d1d', desc:'Formal & structured' },
+      { id:'tech',         name:'Tech',         tier:'pro',  swatch:'#059669', desc:'Green & modern' },
+      { id:'elegant',      name:'Elegant',      tier:'pro',  swatch:'#4c1d95', desc:'Refined & refined' },
+      { id:'bold',         name:'Bold',         tier:'pro',  swatch:'#111827', desc:'Dark header band' },
+      { id:'contemporary', name:'Contemporary', tier:'pro',  swatch:'#0891b2', desc:'Sky-blue accents' },
+      { id:'academic',     name:'Academic',     tier:'pro',  swatch:'#1a1a1a', desc:'Serif & scholarly' },
+      { id:'compact',      name:'Compact',      tier:'pro',  swatch:'#6b7280', desc:'Space-efficient' },
+      { id:'sharp',        name:'Sharp',        tier:'pro',  swatch:'#dc2626', desc:'Bold red accents' },
+      { id:'neutral',      name:'Neutral',      tier:'pro',  swatch:'#78716c', desc:'Warm stone tones' },
+      { id:'vivid',        name:'Vivid',        tier:'pro',  swatch:'#0d9488', desc:'Teal & vibrant' },
+    ];
+
+    const COVER_TEMPLATES = [
+      { id:'classic-cover',      name:'Classic',       tier:'free', swatch:'#374151' },
+      { id:'modern-cover',       name:'Modern',        tier:'free', swatch:'#6d28d9' },
+      { id:'executive-cover',    name:'Executive',     tier:'pro',  swatch:'#1e3a5f' },
+      { id:'minimal-cover',      name:'Minimal',       tier:'pro',  swatch:'#d1d5db' },
+      { id:'creative-cover',     name:'Creative',      tier:'pro',  swatch:'#ea580c' },
+      { id:'professional-cover', name:'Traditional',   tier:'pro',  swatch:'#7f1d1d' },
+      { id:'tech-cover',         name:'Tech',          tier:'pro',  swatch:'#059669' },
+      { id:'elegant-cover',      name:'Elegant',       tier:'pro',  swatch:'#4c1d95' },
+      { id:'bold-cover',         name:'Bold',          tier:'pro',  swatch:'#111827' },
+      { id:'contemporary-cover', name:'Contemporary',  tier:'pro',  swatch:'#0891b2' },
+      { id:'academic-cover',     name:'Academic',      tier:'pro',  swatch:'#1a1a1a' },
+      { id:'compact-cover',      name:'Compact',       tier:'pro',  swatch:'#6b7280' },
+      { id:'sharp-cover',        name:'Sharp',         tier:'pro',  swatch:'#dc2626' },
+      { id:'neutral-cover',      name:'Neutral',       tier:'pro',  swatch:'#78716c' },
+      { id:'vivid-cover',        name:'Vivid',         tier:'pro',  swatch:'#0d9488' },
+    ];
+
+    function buildTemplatePicker(containerId, templates, selected, onSelect) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = templates.map(t => {
+        const locked = t.tier === 'pro' && !isSubscriberFlag;
+        const active = t.id === selected;
+        return `<div class="tpl-card${active?' active':''}${locked?' locked':''}"
+          onclick="${locked ? `showToast('Upgrade to Pro to unlock all 100+ templates.')` : `${onSelect}('${t.id}')`}">
+          <div class="tpl-swatch" style="background:${t.swatch};"></div>
+          <div class="tpl-card-name">${t.name}</div>
+          ${locked ? '<div class="tpl-card-lock">🔒</div>' : (t.tier==='free' ? '<div class="tpl-card-badge">FREE</div>' : '')}
+        </div>`;
+      }).join('');
+    }
+
+    function initTemplatePickers() {
+      buildTemplatePicker('tplRowResume', RESUME_TEMPLATES, selectedResumeTemplate, 'selectResumeTemplate');
+      buildTemplatePicker('tplRowCover', COVER_TEMPLATES, selectedCoverTemplate, 'selectCoverTemplate');
+    }
+
+    function selectResumeTemplate(id) {
+      selectedResumeTemplate = id;
+      buildTemplatePicker('tplRowResume', RESUME_TEMPLATES, id, 'selectResumeTemplate');
+      if (lastRawText) reRenderOutput();
+    }
+
+    function selectCoverTemplate(id) {
+      selectedCoverTemplate = id;
+      buildTemplatePicker('tplRowCover', COVER_TEMPLATES, id, 'selectCoverTemplate');
+      if (lastRawText) reRenderOutput();
+    }
+
+    function updatePickerVisibility() {
+      const both = selectedMode === 'both';
+      const coverOnly = selectedMode === 'cover_letter';
+      document.getElementById('tplPickerResume').style.display = coverOnly ? 'none' : 'block';
+      document.getElementById('tplPickerCover').style.display = (coverOnly || both) ? 'block' : 'none';
+    }
+
+    // ── Resume Text Parser ──────────────────────────────────────────────────────
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function parseResume(text) {
+      const lines = text.split('\n');
+      let name = '', contact = '';
+      const sections = [];
+      let current = null;
+      let nameFound = false, contactFound = false;
+
+      for (const rawLine of lines) {
+        const line = rawLine.trimEnd();
+        const t = line.trim();
+        if (!t) { if (current) current.lines.push(''); continue; }
+
+        if (!nameFound) { name = t; nameFound = true; continue; }
+
+        if (!contactFound && (t.includes('@') || t.includes('|') || /\(\d{3}\)/.test(t) || /linkedin/i.test(t) || /github/i.test(t))) {
+          contact = t; contactFound = true; continue;
+        }
+
+        const isHeader = /^[A-Z][A-Z &\/\-]{2,}$/.test(t) && t.length < 50 && !t.startsWith('•');
+        if (isHeader) {
+          if (current) sections.push(current);
+          current = { title: t, lines: [] };
+        } else {
+          if (!current) current = { title: '', lines: [] };
+          current.lines.push(rawLine);
+        }
+      }
+      if (current) sections.push(current);
+      return { name, contact, sections };
+    }
+
+    function renderLines(lines) {
+      let html = '';
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t) { html += '<div class="rd-blank"></div>'; continue; }
+        if (t.startsWith('•') || t.startsWith('-') || t.startsWith('*')) {
+          html += `<div class="rd-bullet">${escHtml(t)}</div>`;
+        } else if (/[—\|]/.test(t) && /\d{4}/.test(t)) {
+          html += `<div class="rd-entry-header">${escHtml(t)}</div>`;
+        } else {
+          html += `<div class="rd-text">${escHtml(t)}</div>`;
+        }
+      }
+      return html;
+    }
+
+    function renderResumeDoc(text, tplId) {
+      const { name, contact, sections } = parseResume(text);
+      const sectionsHtml = sections.map(s =>
+        `<div class="rd-section">${s.title ? `<div class="rd-section-title">${escHtml(s.title)}</div>` : ''}<div class="rd-section-body">${renderLines(s.lines)}</div></div>`
+      ).join('');
+
+      if (tplId === 'bold') {
+        return `<div class="resume-doc tpl-bold">
+          <div class="rd-name-band"><div class="rd-name">${escHtml(name)}</div>${contact ? `<div class="rd-contact-in-band">${escHtml(contact)}</div>` : ''}</div>
+          <div style="padding:0 44px 40px">${sectionsHtml}</div></div>`;
+      }
+      return `<div class="resume-doc tpl-${tplId}">
+        <div class="rd-name">${escHtml(name)}</div>
+        ${contact ? `<div class="rd-contact">${escHtml(contact)}</div>` : ''}
+        ${sectionsHtml}
+      </div>`;
+    }
+
+    function renderCoverDoc(text, tplId) {
+      const baseId = tplId.replace('-cover','');
+      const paragraphs = text.split(/\n{2,}/).filter(p => p.trim());
+      const html = paragraphs.map(p =>
+        `<div class="cl-para">${p.split('\n').map(l => escHtml(l.trim())).join('<br>')}</div>`
+      ).join('');
+      return `<div class="cover-doc tpl-cl-${baseId}-cover">${html}</div>`;
+    }
+
+    function renderOutput(text, mode) {
+      if (mode === 'cover_letter') return renderCoverDoc(text, selectedCoverTemplate);
+      if (mode === 'resume') return renderResumeDoc(text, selectedResumeTemplate);
+
+      // both: split on divider
+      const dividerRe = /\n(?:---+|={3,}|COVER LETTER)\n/i;
+      const idx = text.search(dividerRe);
+      if (idx > 0) {
+        const split = text.split(dividerRe);
+        return renderResumeDoc(split[0].trim(), selectedResumeTemplate) +
+          '<div style="margin-top:28px;"></div>' +
+          renderCoverDoc(split.slice(1).join('\n').trim(), selectedCoverTemplate);
+      }
+      return renderResumeDoc(text, selectedResumeTemplate);
+    }
+
+    function reRenderOutput() {
+      document.getElementById('outputBox').innerHTML = renderOutput(lastRawText, selectedMode);
+    }
 
     // ── Auth helpers ───────────────────────────────────────────────────────────
     function getToken() { return localStorage.getItem('rt_token') || ''; }
@@ -1066,6 +1259,7 @@
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selectedMode = btn.dataset.mode;
+        updatePickerVisibility();
       });
     });
 
@@ -1093,6 +1287,7 @@
         if (freeUsesLeft === 0 && !isSubscriberFlag) {
           document.getElementById('limitBanner').style.display = 'flex';
         }
+        initTemplatePickers();
       } catch(e) {}
     }
 
@@ -1131,7 +1326,8 @@
 
         const titles = { resume: 'Tailored Resume', cover_letter: 'Cover Letter', both: 'Tailored Resume + Cover Letter' };
         document.getElementById('outputTitle').textContent = titles[selectedMode];
-        document.getElementById('outputBox').textContent = data.result;
+        lastRawText = data.result;
+        document.getElementById('outputBox').innerHTML = renderOutput(lastRawText, selectedMode);
         document.getElementById('outputWrap').style.display = 'block';
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -1308,7 +1504,7 @@
     }
 
     function copyResult() {
-      navigator.clipboard.writeText(document.getElementById('outputBox').textContent)
+      navigator.clipboard.writeText(lastRawText || document.getElementById('outputBox').textContent)
         .then(() => showToast('Copied to clipboard!'));
     }
 
@@ -1663,7 +1859,7 @@ Aaliyah Washington`
     }
 
     // ── Download helpers ───────────────────────────────────────────────────────
-    function getOutputText() { return document.getElementById('outputBox').textContent; }
+    function getOutputText() { return lastRawText || document.getElementById('outputBox').textContent; }
 
     function downloadTxt() {
       const text = getOutputText();
@@ -1720,6 +1916,8 @@ Aaliyah Washington`
       pendingPro = true;
     }
     checkAuth();
+    initTemplatePickers();
+    updatePickerVisibility();
   </script>
 </body>
 </html>
