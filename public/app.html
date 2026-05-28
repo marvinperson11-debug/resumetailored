@@ -4,10 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ResumeTailored AI — Dashboard</title>
-  <link rel="icon"             type="image/svg+xml"  href="favicon.svg" />
-  <link rel="icon"             type="image/png" sizes="32x32" href="favicon-32.png" />
-  <link rel="icon"             type="image/png" sizes="64x64" href="favicon.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="icon" href="favicon.png" type="image/png" />
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
   <script>
@@ -87,8 +84,7 @@
       .auth-overlay { padding: 0; align-items: flex-end; }
       .auth-card { border-radius: 20px 20px 0 0; max-width: 100%; }
     }
-    /* ── Samples Tab ── */
-    .sample-rotator { margin-top: 8px; }
+    /* ── Template type toggle ── */
     .sample-toggle { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
     .sample-toggle-btn {
       padding: 10px 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
@@ -99,35 +95,6 @@
       background: linear-gradient(135deg,rgba(245,200,66,.15),rgba(251,146,60,.1));
       border-color: rgba(245,200,66,.4); color: #f5c842;
     }
-    .sample-progress-wrap {
-      height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px;
-      margin-bottom: 16px; overflow: hidden;
-    }
-    .sample-progress-bar {
-      height: 100%; width: 0%;
-      background: linear-gradient(90deg,#f5c842,#fb923c);
-      border-radius: 2px;
-      transition: width 0.1s linear;
-    }
-    .sample-meta {
-      font-size: 12px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: 1.5px; color: #f5c842; margin-bottom: 12px;
-    }
-    .sample-display {
-      background: #f8f7ff; border-radius: 12px; padding: 32px 36px;
-      font-family: 'Georgia', 'Times New Roman', serif;
-      font-size: 13.5px; line-height: 1.9; color: #1a1830; white-space: pre-wrap;
-      max-height: 520px; overflow-y: auto; transition: opacity .4s ease;
-      box-shadow: 0 4px 28px rgba(0,0,0,.28);
-    }
-    .sample-display.fade { opacity: 0; }
-    .sample-dots { display:flex; gap:8px; justify-content:center; margin-top:20px; }
-    .sample-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: rgba(255,255,255,0.2); cursor: pointer;
-      transition: background .2s, transform .2s;
-    }
-    .sample-dot.active { background: #f5c842; transform: scale(1.3); }
   </style>
 </head>
 <body>
@@ -190,7 +157,7 @@
       <div style="display:flex;gap:12px;align-items:center;">
         <span id="navStatus"></span>
         <span id="navUsername" style="color:#9490b5;font-size:13px;font-weight:600;display:none;"></span>
-        <a href="/#pricing" class="btn btn-outline"><span class="nav-pro-full">Go Pro — </span>$19/mo</a>
+        <a href="/#pricing" class="btn btn-outline">Go Pro — $19/mo</a>
         <button class="btn btn-outline" id="logoutBtn" onclick="doLogout()" style="display:none;font-size:13px;padding:8px 14px;">Log Out</button>
       </div>
     </div>
@@ -258,18 +225,6 @@
           <button class="mode-btn active" data-mode="resume">Resume Only</button>
           <button class="mode-btn" data-mode="cover_letter">Cover Letter Only</button>
           <button class="mode-btn" data-mode="both">Resume + Cover Letter</button>
-        </div>
-
-        <!-- Template Picker -->
-        <div class="tpl-picker-section" id="tplPickerSection">
-          <div id="tplPickerResume">
-            <div class="tpl-picker-label">Resume Template</div>
-            <div class="tpl-picker-row" id="tplRowResume"></div>
-          </div>
-          <div id="tplPickerCover" style="display:none;">
-            <div class="tpl-picker-label">Cover Letter Template</div>
-            <div class="tpl-picker-row" id="tplRowCover"></div>
-          </div>
         </div>
 
         <div class="inputs">
@@ -762,41 +717,21 @@
       <!-- ═══ TAB: SAMPLES ═══ -->
       <div class="tab-content" id="panel-samples">
         <div class="panel-header">
-          <h1>Sample Resumes & Cover Letters</h1>
-          <p>See exactly what ResumeTailored AI produces. Real-world examples across different industries — tailored, polished, and ready to submit.</p>
+          <h1>Resume & Cover Letter Templates</h1>
+          <p>25 beautifully designed resume templates + 25 cover letter templates. Every style, every industry. Free members get 2 of each — Pro unlocks all 50.</p>
         </div>
 
-        <!-- Rotator -->
-        <div class="sample-rotator">
-
-          <!-- Type toggle -->
-          <div class="sample-toggle">
-            <button class="sample-toggle-btn active" id="toggleResumes" onclick="switchSampleType('resumes')">📄 Sample Resumes</button>
-            <button class="sample-toggle-btn" id="toggleCovers" onclick="switchSampleType('covers')">✉️ Sample Cover Letters</button>
-          </div>
-
-          <!-- Progress bar -->
-          <div class="sample-progress-wrap">
-            <div class="sample-progress-bar" id="sampleProgressBar"></div>
-          </div>
-
-          <!-- Slide label -->
-          <div class="sample-meta" id="sampleMeta"></div>
-
-          <!-- Content display -->
-          <div class="sample-display" id="sampleDisplay"></div>
-
-          <!-- Dot nav -->
-          <div class="sample-dots" id="sampleDots"></div>
-
+        <div class="sample-toggle">
+          <button class="sample-toggle-btn active" id="toggleResumes" onclick="switchTemplateType('resume')">📄 Resume Templates (25)</button>
+          <button class="sample-toggle-btn" id="toggleCovers" onclick="switchTemplateType('cover')">✉️ Cover Letter Templates (25)</button>
         </div>
 
-        <!-- CTA -->
-        <div style="text-align:center;margin-top:36px;padding:32px;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:16px;">
-          <h3 style="font-size:18px;font-weight:800;margin-bottom:8px;">Ready to tailor yours?</h3>
-          <p style="color:var(--text-muted);font-size:14px;margin-bottom:16px;">Paste your resume + any job posting and get results like these in 30 seconds.</p>
-          <button class="btn btn-primary" onclick="showTab('tailor')">Tailor My Resume Now →</button>
+        <div class="tpl-free-note">
+          <span>✦ <strong style="color:#f5c842;">2 free templates</strong> included — upgrade to Pro to unlock all 25 of each type.</span>
+          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">Unlock All 50 →</button>
         </div>
+
+        <div class="template-gallery" id="templateGallery"></div>
       </div>
 
       <!-- ═══ TAB: CANCEL ANYTIME ═══ -->
@@ -889,188 +824,27 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- TEMPLATE PREVIEW MODAL -->
+  <div class="tpl-modal-overlay" id="tplModal" style="display:none;" onclick="closeTplModal(event)">
+    <div class="tpl-modal-box" onclick="event.stopPropagation()">
+      <div class="tpl-modal-header">
+        <span class="tpl-modal-title" id="tplModalTitle">Template Preview</span>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn btn-primary" style="font-size:13px;padding:9px 18px;" onclick="useTplTemplate()">Use This Template →</button>
+          <button onclick="document.getElementById('tplModal').style.display='none'" style="background:none;border:none;color:#9490b5;font-size:28px;cursor:pointer;line-height:1;padding:0 4px;">×</button>
+        </div>
+      </div>
+      <div class="tpl-modal-body">
+        <iframe id="tplFrame" sandbox="allow-same-origin" style="width:794px;min-height:1123px;border:none;display:block;margin:0 auto;background:#fff;"></iframe>
+      </div>
+    </div>
+  </div>
+
   <script>
     let selectedMode = 'resume';
     let isSubscriberFlag = false;
     let freeUsesLeft = 1;
     let pendingPro = false;
-    let lastRawText = '';
-    let selectedResumeTemplate = 'classic';
-    let selectedCoverTemplate = 'classic-cover';
-
-    // ── Template Definitions ────────────────────────────────────────────────────
-    const RESUME_TEMPLATES = [
-      { id:'classic',      name:'Classic',      tier:'free', swatch:'#374151', desc:'Traditional & timeless' },
-      { id:'modern',       name:'Modern',       tier:'free', swatch:'#6d28d9', desc:'Clean purple accents' },
-      { id:'executive',    name:'Executive',    tier:'pro',  swatch:'#1e3a5f', desc:'Navy & authoritative' },
-      { id:'minimal',      name:'Minimal',      tier:'pro',  swatch:'#d1d5db', desc:'Ultra-clean & spacious' },
-      { id:'creative',     name:'Creative',     tier:'pro',  swatch:'#ea580c', desc:'Bold orange energy' },
-      { id:'professional', name:'Traditional',  tier:'pro',  swatch:'#7f1d1d', desc:'Formal & structured' },
-      { id:'tech',         name:'Tech',         tier:'pro',  swatch:'#059669', desc:'Green & modern' },
-      { id:'elegant',      name:'Elegant',      tier:'pro',  swatch:'#4c1d95', desc:'Refined & refined' },
-      { id:'bold',         name:'Bold',         tier:'pro',  swatch:'#111827', desc:'Dark header band' },
-      { id:'contemporary', name:'Contemporary', tier:'pro',  swatch:'#0891b2', desc:'Sky-blue accents' },
-      { id:'academic',     name:'Academic',     tier:'pro',  swatch:'#1a1a1a', desc:'Serif & scholarly' },
-      { id:'compact',      name:'Compact',      tier:'pro',  swatch:'#6b7280', desc:'Space-efficient' },
-      { id:'sharp',        name:'Sharp',        tier:'pro',  swatch:'#dc2626', desc:'Bold red accents' },
-      { id:'neutral',      name:'Neutral',      tier:'pro',  swatch:'#78716c', desc:'Warm stone tones' },
-      { id:'vivid',        name:'Vivid',        tier:'pro',  swatch:'#0d9488', desc:'Teal & vibrant' },
-    ];
-
-    const COVER_TEMPLATES = [
-      { id:'classic-cover',      name:'Classic',       tier:'free', swatch:'#374151' },
-      { id:'modern-cover',       name:'Modern',        tier:'free', swatch:'#6d28d9' },
-      { id:'executive-cover',    name:'Executive',     tier:'pro',  swatch:'#1e3a5f' },
-      { id:'minimal-cover',      name:'Minimal',       tier:'pro',  swatch:'#d1d5db' },
-      { id:'creative-cover',     name:'Creative',      tier:'pro',  swatch:'#ea580c' },
-      { id:'professional-cover', name:'Traditional',   tier:'pro',  swatch:'#7f1d1d' },
-      { id:'tech-cover',         name:'Tech',          tier:'pro',  swatch:'#059669' },
-      { id:'elegant-cover',      name:'Elegant',       tier:'pro',  swatch:'#4c1d95' },
-      { id:'bold-cover',         name:'Bold',          tier:'pro',  swatch:'#111827' },
-      { id:'contemporary-cover', name:'Contemporary',  tier:'pro',  swatch:'#0891b2' },
-      { id:'academic-cover',     name:'Academic',      tier:'pro',  swatch:'#1a1a1a' },
-      { id:'compact-cover',      name:'Compact',       tier:'pro',  swatch:'#6b7280' },
-      { id:'sharp-cover',        name:'Sharp',         tier:'pro',  swatch:'#dc2626' },
-      { id:'neutral-cover',      name:'Neutral',       tier:'pro',  swatch:'#78716c' },
-      { id:'vivid-cover',        name:'Vivid',         tier:'pro',  swatch:'#0d9488' },
-    ];
-
-    function buildTemplatePicker(containerId, templates, selected, onSelect) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = templates.map(t => {
-        const locked = t.tier === 'pro' && !isSubscriberFlag;
-        const active = t.id === selected;
-        return `<div class="tpl-card${active?' active':''}${locked?' locked':''}"
-          onclick="${locked ? `showToast('Upgrade to Pro to unlock all 100+ templates.')` : `${onSelect}('${t.id}')`}">
-          <div class="tpl-swatch" style="background:${t.swatch};"></div>
-          <div class="tpl-card-name">${t.name}</div>
-          ${locked ? '<div class="tpl-card-lock">🔒</div>' : (t.tier==='free' ? '<div class="tpl-card-badge">FREE</div>' : '')}
-        </div>`;
-      }).join('');
-    }
-
-    function initTemplatePickers() {
-      buildTemplatePicker('tplRowResume', RESUME_TEMPLATES, selectedResumeTemplate, 'selectResumeTemplate');
-      buildTemplatePicker('tplRowCover', COVER_TEMPLATES, selectedCoverTemplate, 'selectCoverTemplate');
-    }
-
-    function selectResumeTemplate(id) {
-      selectedResumeTemplate = id;
-      buildTemplatePicker('tplRowResume', RESUME_TEMPLATES, id, 'selectResumeTemplate');
-      if (lastRawText) reRenderOutput();
-    }
-
-    function selectCoverTemplate(id) {
-      selectedCoverTemplate = id;
-      buildTemplatePicker('tplRowCover', COVER_TEMPLATES, id, 'selectCoverTemplate');
-      if (lastRawText) reRenderOutput();
-    }
-
-    function updatePickerVisibility() {
-      const both = selectedMode === 'both';
-      const coverOnly = selectedMode === 'cover_letter';
-      document.getElementById('tplPickerResume').style.display = coverOnly ? 'none' : 'block';
-      document.getElementById('tplPickerCover').style.display = (coverOnly || both) ? 'block' : 'none';
-    }
-
-    // ── Resume Text Parser ──────────────────────────────────────────────────────
-    function escHtml(s) {
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    function parseResume(text) {
-      const lines = text.split('\n');
-      let name = '', contact = '';
-      const sections = [];
-      let current = null;
-      let nameFound = false, contactFound = false;
-
-      for (const rawLine of lines) {
-        const line = rawLine.trimEnd();
-        const t = line.trim();
-        if (!t) { if (current) current.lines.push(''); continue; }
-
-        if (!nameFound) { name = t; nameFound = true; continue; }
-
-        if (!contactFound && (t.includes('@') || t.includes('|') || /\(\d{3}\)/.test(t) || /linkedin/i.test(t) || /github/i.test(t))) {
-          contact = t; contactFound = true; continue;
-        }
-
-        const isHeader = /^[A-Z][A-Z &\/\-]{2,}$/.test(t) && t.length < 50 && !t.startsWith('•');
-        if (isHeader) {
-          if (current) sections.push(current);
-          current = { title: t, lines: [] };
-        } else {
-          if (!current) current = { title: '', lines: [] };
-          current.lines.push(rawLine);
-        }
-      }
-      if (current) sections.push(current);
-      return { name, contact, sections };
-    }
-
-    function renderLines(lines) {
-      let html = '';
-      for (const line of lines) {
-        const t = line.trim();
-        if (!t) { html += '<div class="rd-blank"></div>'; continue; }
-        if (t.startsWith('•') || t.startsWith('-') || t.startsWith('*')) {
-          html += `<div class="rd-bullet">${escHtml(t)}</div>`;
-        } else if (/[—\|]/.test(t) && /\d{4}/.test(t)) {
-          html += `<div class="rd-entry-header">${escHtml(t)}</div>`;
-        } else {
-          html += `<div class="rd-text">${escHtml(t)}</div>`;
-        }
-      }
-      return html;
-    }
-
-    function renderResumeDoc(text, tplId) {
-      const { name, contact, sections } = parseResume(text);
-      const sectionsHtml = sections.map(s =>
-        `<div class="rd-section">${s.title ? `<div class="rd-section-title">${escHtml(s.title)}</div>` : ''}<div class="rd-section-body">${renderLines(s.lines)}</div></div>`
-      ).join('');
-
-      if (tplId === 'bold') {
-        return `<div class="resume-doc tpl-bold">
-          <div class="rd-name-band"><div class="rd-name">${escHtml(name)}</div>${contact ? `<div class="rd-contact-in-band">${escHtml(contact)}</div>` : ''}</div>
-          <div style="padding:0 44px 40px">${sectionsHtml}</div></div>`;
-      }
-      return `<div class="resume-doc tpl-${tplId}">
-        <div class="rd-name">${escHtml(name)}</div>
-        ${contact ? `<div class="rd-contact">${escHtml(contact)}</div>` : ''}
-        ${sectionsHtml}
-      </div>`;
-    }
-
-    function renderCoverDoc(text, tplId) {
-      const baseId = tplId.replace('-cover','');
-      const paragraphs = text.split(/\n{2,}/).filter(p => p.trim());
-      const html = paragraphs.map(p =>
-        `<div class="cl-para">${p.split('\n').map(l => escHtml(l.trim())).join('<br>')}</div>`
-      ).join('');
-      return `<div class="cover-doc tpl-cl-${baseId}-cover">${html}</div>`;
-    }
-
-    function renderOutput(text, mode) {
-      if (mode === 'cover_letter') return renderCoverDoc(text, selectedCoverTemplate);
-      if (mode === 'resume') return renderResumeDoc(text, selectedResumeTemplate);
-
-      // both: split on divider
-      const dividerRe = /\n(?:---+|={3,}|COVER LETTER)\n/i;
-      const idx = text.search(dividerRe);
-      if (idx > 0) {
-        const split = text.split(dividerRe);
-        return renderResumeDoc(split[0].trim(), selectedResumeTemplate) +
-          '<div style="margin-top:28px;"></div>' +
-          renderCoverDoc(split.slice(1).join('\n').trim(), selectedCoverTemplate);
-      }
-      return renderResumeDoc(text, selectedResumeTemplate);
-    }
-
-    function reRenderOutput() {
-      document.getElementById('outputBox').innerHTML = renderOutput(lastRawText, selectedMode);
-    }
 
     // ── Auth helpers ───────────────────────────────────────────────────────────
     function getToken() { return localStorage.getItem('rt_token') || ''; }
@@ -1259,7 +1033,6 @@
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selectedMode = btn.dataset.mode;
-        updatePickerVisibility();
       });
     });
 
@@ -1287,7 +1060,6 @@
         if (freeUsesLeft === 0 && !isSubscriberFlag) {
           document.getElementById('limitBanner').style.display = 'flex';
         }
-        initTemplatePickers();
       } catch(e) {}
     }
 
@@ -1326,8 +1098,7 @@
 
         const titles = { resume: 'Tailored Resume', cover_letter: 'Cover Letter', both: 'Tailored Resume + Cover Letter' };
         document.getElementById('outputTitle').textContent = titles[selectedMode];
-        lastRawText = data.result;
-        document.getElementById('outputBox').innerHTML = renderOutput(lastRawText, selectedMode);
+        document.getElementById('outputBox').textContent = data.result;
         document.getElementById('outputWrap').style.display = 'block';
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -1504,7 +1275,7 @@
     }
 
     function copyResult() {
-      navigator.clipboard.writeText(lastRawText || document.getElementById('outputBox').textContent)
+      navigator.clipboard.writeText(document.getElementById('outputBox').textContent)
         .then(() => showToast('Copied to clipboard!'));
     }
 
@@ -1551,7 +1322,156 @@
       arrow.textContent = isOpen ? '▾' : '▴';
     }
 
-    // ── Samples Rotator ───────────────────────────────────────────────────────
+    // ── Template Gallery ──────────────────────────────────────────────────────
+    const _TC = [
+      {p:'#1a237e',a:'#b8860b',l:'#e8eaf6'},
+      {p:'#1b3a4b',a:'#009688',l:'#e0f2f1'},
+      {p:'#1a1a2e',a:'#c62828',l:'#fff0f0'},
+      {p:'#1b5e20',a:'#558b2f',l:'#f1f8e9'},
+      {p:'#2e1a47',a:'#7b1fa2',l:'#f3e5f5'},
+    ];
+    const _RP = {
+      name:'Jordan Mitchell', title:'Senior Software Engineer',
+      email:'jordan.mitchell@email.com', phone:'(312) 555-0192', location:'Chicago, IL',
+      summary:'Results-driven Senior Software Engineer with 6+ years building scalable, high-performance web applications using React, Node.js, and AWS. Led cross-functional teams driving $3.2M in incremental revenue while cutting infrastructure costs 31%.',
+      jobs:[
+        {title:'Senior Software Engineer',company:'Apex Technologies',period:'Mar 2021 – Present',
+         bullets:['Architected real-time data pipeline (Node.js + Kafka) — 42% faster API response, 2M+ daily users','Led 5-engineer team rebuilding checkout flow in React: +18% conversion, $1.8M revenue','Reduced cloud costs 31% migrating monolith to AWS ECS microservices','Mentored 4 junior engineers; 2 promoted within 12 months']},
+        {title:'Software Engineer',company:'Brightline Software',period:'Jun 2019 – Mar 2021',
+         bullets:['Built RESTful APIs serving 500K+ requests/day (Node.js + PostgreSQL)','Cut deployment time 45 min → 8 min implementing GitHub Actions CI/CD']}
+      ],
+      edu:{deg:'B.S. Computer Science',school:'University of Illinois at Chicago',yr:'2017'},
+      skills:['React','Node.js','TypeScript','Python','AWS','PostgreSQL','Docker']
+    };
+    const _CP = {
+      name:'Priya Sharma', email:'priya.sharma@email.com', phone:'(646) 555-0847',
+      location:'New York, NY', date:'May 26, 2026', company:'CloudBridge SaaS', role:'Marketing Manager',
+      body:[
+        'Most marketing teams talk about pipeline. I build it. In my current role I scaled a nearly nonexistent demand generation function into a full-stack engine driving 220% more qualified pipeline in 18 months — and I\'d love to bring that momentum to CloudBridge.',
+        'The numbers I\'m proudest of: managing $1.2M in annual paid media at a consistent 4.1× ROAS while cutting cost-per-lead 34%; building an email program from zero to 85,000 subscribers with 38% open rates (industry avg: 21%); and leading a 40-piece sales enablement initiative that drove a 28% increase in Sales-Accepted Leads.',
+        'CloudBridge\'s product-led growth model combined with strong outbound is exactly where I thrive. I understand how to align marketing with sales, how to build programs that scale efficiently, and how to tell a brand story that resonates with technical buyers.',
+        'I would love to connect and discuss how I can help CloudBridge hit its next growth milestone.\n\nWarm regards,\nPriya Sharma'
+      ]
+    };
+
+    function _sec(c,label){return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2.5px;color:${c.p};">${label}</span><div style="flex:1;height:1px;background:${c.a};opacity:.5;"></div></div>`;}
+    function _jobs(c,style){return _RP.jobs.map(j=>`<div style="margin-bottom:16px;${style||''}"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;"><span style="font-size:13.5px;font-weight:800;">${j.title}</span><span style="font-size:11.5px;color:#888;font-style:italic;">${j.period}</span></div><div style="font-size:12px;color:${c.a};font-weight:700;margin-bottom:7px;">${j.company}</div><ul style="margin:0 0 0 17px;padding:0;font-size:12px;line-height:1.85;color:#444;">${j.bullets.map(b=>`<li>${b}</li>`).join('')}</ul></div>`).join('');}
+    function _skills(c){return _RP.skills.map(s=>`<span style="background:${c.l};color:${c.p};padding:3px 11px;border-radius:4px;font-size:11.5px;font-weight:700;border:1px solid ${c.a}33;">${s}</span>`).join(' ');}
+
+    // Resume layout 1: Classic (centered, serif)
+    function rClassic(c){const p=_RP;return `<div style="font-family:Georgia,serif;background:#fff;padding:52px 64px;color:#222;max-width:794px;"><div style="text-align:center;padding-bottom:16px;border-bottom:3px solid ${c.p};margin-bottom:24px;"><div style="font-size:33px;font-weight:700;letter-spacing:2px;color:${c.p};text-transform:uppercase;">${p.name}</div><div style="font-size:12px;color:#666;margin-top:7px;letter-spacing:.3px;">${p.email}&nbsp;|&nbsp;${p.phone}&nbsp;|&nbsp;${p.location}</div></div><div style="margin-bottom:20px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:4px;margin-bottom:9px;">Summary</div><p style="font-size:12.5px;line-height:1.8;color:#333;">${p.summary}</p></div><div style="margin-bottom:20px;"><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:4px;margin-bottom:12px;">Experience</div>${_jobs(c)}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;"><div><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:4px;margin-bottom:9px;">Education</div><div style="font-size:13px;font-weight:700;">${p.edu.deg}</div><div style="font-size:12px;color:#666;">${p.edu.school} · ${p.edu.yr}</div></div><div><div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:4px;margin-bottom:9px;">Skills</div><div style="display:flex;flex-wrap:wrap;gap:6px;">${_skills(c)}</div></div></div></div>`;}
+
+    // Resume layout 2: Executive (left border accent)
+    function rExecutive(c){const p=_RP;return `<div style="font-family:Arial,sans-serif;background:#fff;padding:48px 60px;color:#222;max-width:794px;"><div style="border-left:5px solid ${c.p};padding-left:20px;margin-bottom:28px;"><div style="font-size:32px;font-weight:900;color:${c.p};letter-spacing:-1px;">${p.name}</div><div style="font-size:13.5px;color:${c.a};font-weight:700;margin:4px 0 8px;">${p.title}</div><div style="font-size:12px;color:#777;">${p.email}&nbsp;&nbsp;·&nbsp;&nbsp;${p.phone}&nbsp;&nbsp;·&nbsp;&nbsp;${p.location}</div></div>${_sec(c,'Summary')}<p style="font-size:12.5px;line-height:1.8;color:#333;margin-bottom:22px;">${p.summary}</p>${_sec(c,'Experience')}<div style="margin-bottom:22px;">${_jobs(c,'padding-left:14px;border-left:3px solid '+c.l+';')}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">${_sec(c,'Education')}<div><div style="font-size:13px;font-weight:700;">${p.edu.deg}</div><div style="font-size:12px;color:#666;">${p.edu.school} · ${p.edu.yr}</div></div>${_sec(c,'Skills')}<div style="font-size:12px;line-height:2;color:#444;">${p.skills.join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</div></div></div>`;}
+
+    // Resume layout 3: Sidebar (two-column, colored left bar)
+    function rSidebar(c){const p=_RP;return `<div style="font-family:Arial,sans-serif;background:#fff;color:#222;max-width:794px;display:flex;min-height:1000px;"><div style="width:215px;background:${c.p};padding:36px 22px;flex-shrink:0;"><div style="width:66px;height:66px;border-radius:50%;background:${c.a};display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:26px;font-weight:900;color:#fff;">${p.name[0]}</div><div style="color:#fff;text-align:center;margin-bottom:22px;"><div style="font-size:17px;font-weight:800;">${p.name}</div><div style="font-size:10px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:1px;margin-top:5px;">${p.title}</div></div><div style="margin-bottom:18px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;">Contact</div><div style="font-size:11px;color:rgba(255,255,255,.8);line-height:1.9;"><div>${p.email}</div><div>${p.phone}</div><div>${p.location}</div></div></div><div><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;">Skills</div>${p.skills.map(s=>`<div style="background:rgba(255,255,255,.12);color:#fff;font-size:11px;padding:4px 10px;border-radius:4px;margin-bottom:5px;">${s}</div>`).join('')}</div></div><div style="flex:1;padding:36px 36px;"><div style="margin-bottom:18px;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">Summary</div><div style="width:36px;height:3px;background:${c.a};margin-bottom:10px;border-radius:2px;"></div><p style="font-size:12px;line-height:1.8;color:#444;">${p.summary}</p></div><div style="margin-bottom:18px;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">Experience</div><div style="width:36px;height:3px;background:${c.a};margin-bottom:12px;border-radius:2px;"></div>${p.jobs.map(j=>`<div style="margin-bottom:14px;"><div style="font-size:13.5px;font-weight:800;">${j.title}</div><div style="font-size:11px;color:${c.a};font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin:2px 0 6px;">${j.company}&nbsp;·&nbsp;${j.period}</div><ul style="margin:0 0 0 15px;padding:0;font-size:11.5px;line-height:1.85;color:#555;">${j.bullets.map(b=>`<li>${b}</li>`).join('')}</ul></div>`).join('')}</div><div><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">Education</div><div style="width:36px;height:3px;background:${c.a};margin-bottom:10px;border-radius:2px;"></div><div style="font-size:13px;font-weight:700;">${p.edu.deg}</div><div style="font-size:12px;color:#666;">${p.edu.school} · ${p.edu.yr}</div></div></div></div>`;}
+
+    // Resume layout 4: Modern (colored header block)
+    function rModern(c){const p=_RP;return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#222;max-width:794px;"><div style="background:${c.p};padding:38px 56px;color:#fff;"><div style="font-size:36px;font-weight:900;letter-spacing:-1px;">${p.name}</div><div style="font-size:14px;color:${c.a};font-weight:700;margin:5px 0 10px;">${p.title}</div><div style="font-size:12px;color:rgba(255,255,255,.7);display:flex;gap:18px;flex-wrap:wrap;"><span>${p.email}</span><span>${p.phone}</span><span>${p.location}</span></div></div><div style="padding:36px 56px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:9px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">Summary</span></div><p style="font-size:12.5px;line-height:1.8;color:#444;margin-bottom:22px;">${p.summary}</p><div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">Experience</span></div><div style="margin-bottom:22px;">${p.jobs.map(j=>`<div style="margin-bottom:16px;padding:14px;background:${c.l};border-radius:7px;border-left:4px solid ${c.a};"><div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-size:13.5px;font-weight:800;color:${c.p};">${j.title}</span><span style="font-size:11.5px;color:#888;">${j.period}</span></div><div style="font-size:11.5px;color:${c.a};font-weight:700;margin-bottom:7px;">${j.company}</div><ul style="margin:0 0 0 16px;padding:0;font-size:12px;line-height:1.85;color:#444;">${j.bullets.map(b=>`<li>${b}</li>`).join('')}</ul></div>`).join('')}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;"><div><div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">Education</span></div><div style="font-size:13px;font-weight:700;">${p.edu.deg}</div><div style="font-size:12px;color:#666;">${p.edu.school} · ${p.edu.yr}</div></div><div><div style="display:flex;align-items:center;gap:8px;margin-bottom:9px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">Skills</span></div><div style="display:flex;flex-wrap:wrap;gap:6px;">${p.skills.map(s=>`<span style="background:${c.p};color:#fff;font-size:11px;padding:3px 10px;border-radius:20px;">${s}</span>`).join('')}</div></div></div></div></div>`;}
+
+    // Resume layout 5: Minimal (generous whitespace, elegant)
+    function rMinimal(c){const p=_RP;return `<div style="font-family:Georgia,serif;background:#fff;padding:68px 78px;color:#1a1a1a;max-width:794px;"><div style="margin-bottom:34px;"><div style="font-size:38px;font-weight:700;letter-spacing:-1.5px;">${p.name}</div><div style="font-size:12.5px;color:#aaa;margin-top:7px;letter-spacing:.3px;">${p.email}&nbsp;&nbsp;/&nbsp;&nbsp;${p.phone}&nbsp;&nbsp;/&nbsp;&nbsp;${p.location}</div><div style="width:44px;height:3px;background:${c.p};margin-top:14px;border-radius:1px;"></div></div><p style="font-size:13.5px;line-height:1.9;color:#555;font-style:italic;margin-bottom:30px;">${p.summary}</p><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin-bottom:14px;">Experience</div>${p.jobs.map(j=>`<div style="margin-bottom:22px;"><div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:14.5px;font-weight:700;">${j.title}</span><span style="font-size:11px;color:#bbb;letter-spacing:.3px;">${j.period}</span></div><div style="font-size:12px;color:${c.a};letter-spacing:.3px;margin:3px 0 9px;">${j.company}</div><ul style="margin:0 0 0 16px;padding:0;font-size:12.5px;line-height:1.95;color:#666;">${j.bullets.map(b=>`<li>${b}</li>`).join('')}</ul></div>`).join('')}<div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:8px;"><div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin-bottom:9px;">Education</div><div style="font-size:13.5px;font-weight:600;">${p.edu.deg}</div><div style="font-size:12px;color:#999;">${p.edu.school}, ${p.edu.yr}</div></div><div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin-bottom:9px;">Skills</div><div style="font-size:12.5px;color:#666;line-height:1.9;">${p.skills.join('&nbsp;·&nbsp;')}</div></div></div></div>`;}
+
+    // Cover layout 1: Formal (classic letter format)
+    function cFormal(c){const p=_CP;return `<div style="font-family:Georgia,serif;background:#fff;padding:60px 76px;color:#1a1a1a;max-width:794px;"><div style="margin-bottom:32px;"><div style="font-size:22px;font-weight:700;color:${c.p};">${p.name}</div><div style="font-size:12px;color:#888;margin-top:6px;">${p.email}&nbsp;|&nbsp;${p.phone}&nbsp;|&nbsp;${p.location}</div></div><div style="font-size:13px;color:#777;margin-bottom:24px;">${p.date}</div><div style="font-size:14px;font-weight:700;margin-bottom:3px;">${p.role} Hiring Team</div><div style="font-size:13px;color:#666;margin-bottom:28px;">${p.company}</div><div style="font-size:14.5px;font-weight:700;color:${c.p};margin-bottom:22px;">Dear Hiring Manager,</div>${p.body.map(para=>`<p style="font-size:13.5px;line-height:1.9;color:#333;margin-bottom:18px;">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div>`;}
+
+    // Cover layout 2: Bold (strong header, left-border opener)
+    function cBold(c){const p=_CP;return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#1a1a1a;max-width:794px;"><div style="background:${c.p};padding:44px 60px;color:#fff;"><div style="font-size:30px;font-weight:900;letter-spacing:-1px;">${p.name}</div><div style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:8px;">${p.email}&nbsp;·&nbsp;${p.phone}&nbsp;·&nbsp;${p.location}</div><div style="width:44px;height:4px;background:${c.a};margin-top:14px;border-radius:2px;"></div></div><div style="padding:44px 60px;"><div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">${p.date}</div><div style="font-size:17px;font-weight:800;color:${c.p};margin-bottom:26px;">${p.role}&nbsp;·&nbsp;${p.company}</div><div style="font-size:15px;font-weight:700;color:${c.a};margin-bottom:20px;">Dear Hiring Manager,</div>${p.body.map((para,i)=>`<p style="font-size:13.5px;line-height:1.85;color:#333;margin-bottom:18px;${i===0?`border-left:3px solid ${c.a};padding-left:14px;color:#1a1a1a;font-weight:600;`:''}">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div></div>`;}
+
+    // Cover layout 3: Boxed (framed header card)
+    function cBoxed(c){const p=_CP;return `<div style="font-family:Georgia,serif;background:#fff;padding:52px;color:#222;max-width:794px;"><div style="border:2px solid ${c.p};border-radius:8px;padding:26px 34px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:23px;font-weight:800;color:${c.p};">${p.name}</div><div style="font-size:12px;color:#777;margin-top:5px;">${p.email}&nbsp;|&nbsp;${p.phone}&nbsp;|&nbsp;${p.location}</div></div><div style="width:46px;height:46px;border-radius:50%;background:${c.p};display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900;">${p.name[0]}</div></div><div style="font-size:12px;color:#aaa;margin-bottom:4px;">${p.date}</div><div style="font-size:13.5px;color:#555;margin-bottom:26px;">${p.role}&nbsp;—&nbsp;${p.company}</div><div style="font-size:14.5px;font-weight:700;color:${c.p};border-bottom:1px solid ${c.a};padding-bottom:7px;margin-bottom:22px;">Dear Hiring Manager,</div>${p.body.map(para=>`<p style="font-size:13.5px;line-height:1.9;color:#444;margin-bottom:17px;">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div>`;}
+
+    // Cover layout 4: Split (sidebar + body)
+    function cSplit(c){const p=_CP;return `<div style="font-family:Arial,sans-serif;background:#fff;color:#222;max-width:794px;display:flex;min-height:900px;"><div style="width:190px;background:${c.p};padding:44px 22px;flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between;"><div><div style="width:52px;height:52px;border-radius:50%;background:${c.a};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;margin-bottom:18px;">${p.name[0]}</div><div style="font-size:15px;font-weight:800;color:#fff;line-height:1.3;">${p.name}</div><div style="width:28px;height:3px;background:${c.a};margin:10px 0;border-radius:2px;"></div><div style="font-size:10.5px;color:rgba(255,255,255,.72);line-height:1.9;margin-top:14px;"><div>${p.email}</div><div>${p.phone}</div><div>${p.location}</div></div></div><div style="font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:1px;">${p.date}</div></div><div style="flex:1;padding:44px 40px;"><div style="font-size:19px;font-weight:800;color:${c.p};margin-bottom:4px;">${p.role}</div><div style="font-size:12.5px;color:${c.a};font-weight:700;margin-bottom:26px;">${p.company}</div><div style="font-size:14px;font-weight:700;color:#333;margin-bottom:18px;">Dear Hiring Manager,</div>${p.body.map(para=>`<p style="font-size:13px;line-height:1.85;color:#444;margin-bottom:15px;">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div></div>`;}
+
+    // Cover layout 5: Clean (minimal, typographic)
+    function cClean(c){const p=_CP;return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;padding:76px;color:#1a1a1a;max-width:794px;"><div style="margin-bottom:44px;"><div style="font-size:34px;font-weight:900;letter-spacing:-1.5px;">${p.name}</div><div style="display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;"><span style="font-size:12px;color:${c.p};font-weight:700;">${p.email}</span><span style="font-size:12px;color:#ddd;">|</span><span style="font-size:12px;color:${c.p};font-weight:700;">${p.phone}</span></div><div style="height:2px;background:${c.p};margin-top:18px;"></div></div><div style="font-size:11.5px;color:#bbb;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:26px;">${p.date}</div><div style="font-size:17px;font-weight:800;color:#1a1a1a;margin-bottom:26px;">Re: ${p.role} — ${p.company}</div>${p.body.map((para,i)=>`<p style="font-size:13.5px;line-height:1.9;margin-bottom:19px;${i===0?`color:#1a1a1a;font-weight:600;`:'color:#555;'}">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div>`;}
+
+    const _RL=[rClassic,rExecutive,rSidebar,rModern,rMinimal];
+    const _CL=[cFormal,cBold,cBoxed,cSplit,cClean];
+    const _RN=['Executive Classic','Navy Executive','Crimson Classic','Forest Classic','Indigo Classic','Authority Blue','Teal Corporate','Charcoal Executive','Sage Executive','Violet Executive','Classic Sidebar','Teal Sidebar','Bold Sidebar','Forest Sidebar','Purple Sidebar','Navy Modern','Teal Modern','Crimson Modern','Forest Modern','Indigo Modern','Navy Minimal','Teal Minimal','Red Minimal','Green Minimal','Purple Minimal'];
+    const _CN=['Executive Letter','Slate Letter','Crimson Formal','Forest Formal','Indigo Letter','Navy Bold','Teal Bold','Crimson Bold','Forest Bold','Violet Bold','Navy Boxed','Teal Boxed','Red Boxed','Forest Boxed','Purple Boxed','Navy Split','Teal Split','Bold Split','Sage Split','Violet Split','Navy Clean','Teal Clean','Red Clean','Green Clean','Purple Clean'];
+
+    const resumeTemplates=_RL.flatMap((fn,li)=>_TC.map((c,ci)=>({id:li*5+ci+1,name:_RN[li*5+ci],fn,c,free:li===0&&ci<2})));
+    const coverTemplates=_CL.flatMap((fn,li)=>_TC.map((c,ci)=>({id:li*5+ci+1,name:_CN[li*5+ci],fn,c,free:li===0&&ci<2})));
+
+    let _activeType='resume';
+
+    function switchTemplateType(type){
+      _activeType=type;
+      document.getElementById('toggleResumes').classList.toggle('active',type==='resume');
+      document.getElementById('toggleCovers').classList.toggle('active',type==='cover');
+      renderTemplateGallery();
+    }
+
+    function renderTemplateGallery(){
+      const list=_activeType==='resume'?resumeTemplates:coverTemplates;
+      const gallery=document.getElementById('templateGallery');
+      gallery.innerHTML=list.map(tpl=>{
+        const locked=!tpl.free&&!isSubscriberFlag;
+        const html=tpl.fn(tpl.c);
+        const badge=tpl.free
+          ?`<div class="tpl-free-badge">FREE</div>`
+          :`<div class="tpl-lock-overlay"><span style="font-size:20px;">🔒</span><span class="tpl-pro-badge">PRO</span></div>`;
+        return `<div class="tpl-card${locked?' locked':''}" onclick="${locked?'showTplLock()':'openTpl(\''+_activeType+'\','+tpl.id+')'}">
+          <div class="tpl-preview-wrap">
+            <div class="tpl-preview-inner">${html}</div>
+            ${badge}
+          </div>
+          <div class="tpl-card-label">${tpl.name}</div>
+        </div>`;
+      }).join('');
+      updateTplScales();
+    }
+
+    function updateTplScales(){
+      requestAnimationFrame(()=>{
+        document.querySelectorAll('.tpl-card').forEach(card=>{
+          const wrap=card.querySelector('.tpl-preview-wrap');
+          const inner=card.querySelector('.tpl-preview-inner');
+          if(!wrap||!inner)return;
+          const w=wrap.offsetWidth||160;
+          const scale=w/794;
+          inner.style.transform=`scale(${scale})`;
+          wrap.style.height=Math.round(1123*scale)+'px';
+        });
+      });
+    }
+
+    function openTpl(type,id){
+      const list=type==='resume'?resumeTemplates:coverTemplates;
+      const tpl=list.find(t=>t.id===id);
+      if(!tpl)return;
+      document.getElementById('tplModalTitle').textContent=tpl.name;
+      const frame=document.getElementById('tplFrame');
+      const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#fff;}</style></head><body>${tpl.fn(tpl.c)}</body></html>`;
+      frame.srcdoc=html;
+      document.getElementById('tplModal').style.display='flex';
+    }
+
+    function closeTplModal(e){
+      if(e.target===document.getElementById('tplModal'))
+        document.getElementById('tplModal').style.display='none';
+    }
+
+    function showTplLock(){
+      showToast('Upgrade to Pro to unlock all 25 templates!');
+    }
+
+    function useTplTemplate(){
+      document.getElementById('tplModal').style.display='none';
+      showTab('tailor');
+      showToast('Paste your resume and job posting — the AI will tailor it for you!');
+    }
+
+    function initSamples(){
+      renderTemplateGallery();
+      window.removeEventListener('resize',updateTplScales);
+      window.addEventListener('resize',updateTplScales);
+    }
+
+    // ── Samples Rotator (legacy — kept for compatibility) ─────────────────────
     const sampleResumes = [
       {
         label: 'Sample Resume 1 of 4 — Software Engineer',
@@ -1741,80 +1661,6 @@ Aaliyah Washington`
       }
     ];
 
-    let sampleType = 'resumes';
-    let sampleIndex = 0;
-    let sampleTimer = null;
-    let sampleProgressTimer = null;
-    let sampleProgressWidth = 0;
-    const SAMPLE_INTERVAL = 10000;
-    const SAMPLE_TICK = 100;
-
-    function switchSampleType(type) {
-      sampleType = type;
-      sampleIndex = 0;
-      document.getElementById('toggleResumes').classList.toggle('active', type === 'resumes');
-      document.getElementById('toggleCovers').classList.toggle('active', type === 'covers');
-      renderSample();
-      resetSampleTimer();
-    }
-
-    function getSamples() {
-      return sampleType === 'resumes' ? sampleResumes : sampleCovers;
-    }
-
-    function renderSample(fadeIn) {
-      const samples = getSamples();
-      const s = samples[sampleIndex];
-      const display = document.getElementById('sampleDisplay');
-      const meta = document.getElementById('sampleMeta');
-      const dots = document.getElementById('sampleDots');
-
-      display.classList.add('fade');
-      setTimeout(() => {
-        meta.textContent = s.label;
-        display.textContent = s.content;
-        display.classList.remove('fade');
-        display.scrollTop = 0;
-      }, 350);
-
-      dots.innerHTML = samples.map((_, i) =>
-        `<div class="sample-dot ${i === sampleIndex ? 'active' : ''}" onclick="goToSample(${i})"></div>`
-      ).join('');
-    }
-
-    function goToSample(i) {
-      sampleIndex = i;
-      renderSample();
-      resetSampleTimer();
-    }
-
-    function nextSample() {
-      const samples = getSamples();
-      sampleIndex = (sampleIndex + 1) % samples.length;
-      renderSample();
-    }
-
-    function resetSampleTimer() {
-      clearInterval(sampleTimer);
-      clearInterval(sampleProgressTimer);
-      sampleProgressWidth = 0;
-      document.getElementById('sampleProgressBar').style.width = '0%';
-
-      sampleProgressTimer = setInterval(() => {
-        sampleProgressWidth += (SAMPLE_TICK / SAMPLE_INTERVAL) * 100;
-        document.getElementById('sampleProgressBar').style.width = sampleProgressWidth + '%';
-        if (sampleProgressWidth >= 100) {
-          sampleProgressWidth = 0;
-          document.getElementById('sampleProgressBar').style.width = '0%';
-          nextSample();
-        }
-      }, SAMPLE_TICK);
-    }
-
-    function initSamples() {
-      renderSample();
-      resetSampleTimer();
-    }
 
     // ── Resume upload ──────────────────────────────────────────────────────────
     async function handleResumeUpload(input) {
@@ -1859,7 +1705,7 @@ Aaliyah Washington`
     }
 
     // ── Download helpers ───────────────────────────────────────────────────────
-    function getOutputText() { return lastRawText || document.getElementById('outputBox').textContent; }
+    function getOutputText() { return document.getElementById('outputBox').textContent; }
 
     function downloadTxt() {
       const text = getOutputText();
@@ -1916,8 +1762,6 @@ Aaliyah Washington`
       pendingPro = true;
     }
     checkAuth();
-    initTemplatePickers();
-    updatePickerVisibility();
   </script>
 </body>
 </html>
