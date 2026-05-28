@@ -359,6 +359,40 @@
       padding: 9px 10px 10px; font-size: 12px; font-weight: 700; color: var(--text);
       display: flex; align-items: center; justify-content: space-between;
     }
+    .lp-tpl-use-btn {
+      display: block; width: calc(100% - 16px); margin: 0 8px 10px;
+      padding: 7px 0; text-align: center; border-radius: 7px;
+      font-size: 11px; font-weight: 800; cursor: pointer; border: none;
+      transition: all 0.15s; letter-spacing: 0.3px;
+    }
+    .lp-tpl-use-btn.free-btn {
+      background: var(--blue); color: #fff;
+    }
+    .lp-tpl-use-btn.free-btn:hover { background: var(--blue-dark); }
+    .lp-tpl-use-btn.pro-btn {
+      background: #f5f3ff; color: #7c3aed; border: 1.5px solid #ddd6fe;
+    }
+    .lp-tpl-use-btn.pro-btn:hover { background: #ede9fe; }
+    /* Pro upgrade modal */
+    .lp-modal-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 500; align-items: center; justify-content: center; padding: 20px;
+    }
+    .lp-modal-backdrop.open { display: flex; }
+    .lp-modal {
+      background: #fff; border-radius: 20px; padding: 40px 36px;
+      max-width: 440px; width: 100%; text-align: center;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.2);
+    }
+    .lp-modal-icon { font-size: 48px; margin-bottom: 16px; }
+    .lp-modal h3 { font-size: 22px; font-weight: 900; color: var(--text); margin-bottom: 8px; }
+    .lp-modal p { font-size: 15px; color: var(--muted); line-height: 1.65; margin-bottom: 28px; }
+    .lp-modal-tpl { font-weight: 700; color: var(--blue); }
+    .lp-modal-btns { display: flex; flex-direction: column; gap: 10px; }
+    .lp-modal-cta { display: block; padding: 13px; background: var(--blue); color: #fff; font-weight: 700; font-size: 15px; border-radius: 10px; text-decoration: none; }
+    .lp-modal-cta:hover { background: var(--blue-dark); color: #fff; }
+    .lp-modal-cancel { background: none; border: none; color: var(--muted); font-size: 14px; cursor: pointer; padding: 6px; }
+    .lp-modal-cancel:hover { color: var(--text); }
     .lp-free-badge {
       background: #22c55e; color: #fff;
       font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; letter-spacing: 0.3px;
@@ -958,11 +992,20 @@
             </div>
             <div class="lp-tpl-label">${t.name} <span class="${t.free ? 'lp-free-badge' : 'lp-pro-badge'}">${t.free ? 'FREE' : 'PRO'}</span></div>`;
         }
-        if (t.free) {
-          card.addEventListener('click', () => { window.location.href = '/app.html'; });
-        } else {
-          card.addEventListener('click', () => { window.location.href = '/app.html?plan=pro'; });
-        }
+        // Use Template button inside each card
+        const btn = document.createElement('button');
+        btn.className = 'lp-tpl-use-btn ' + (t.free ? 'free-btn' : 'pro-btn');
+        btn.textContent = t.free ? 'Use Template →' : '🔒 Unlock with Pro';
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (t.free) {
+            window.location.href = '/app.html';
+          } else {
+            document.getElementById('modalTplName').textContent = t.name;
+            document.getElementById('tplModal').classList.add('open');
+          }
+        });
+        card.appendChild(btn);
         row.appendChild(card);
       });
     }
@@ -981,6 +1024,26 @@
       const row = document.getElementById(rowId);
       row.scrollBy({ left: dir * 360, behavior: 'smooth' });
     }
+
+    // Pro upgrade modal
+    document.getElementById('tplModal').addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('open');
+    });
+    function closeModal() { document.getElementById('tplModal').classList.remove('open'); }
   </script>
+
+  <!-- Pro Template Modal -->
+  <div class="lp-modal-backdrop" id="tplModal">
+    <div class="lp-modal">
+      <div class="lp-modal-icon">🔒</div>
+      <h3>Pro Template</h3>
+      <p>The <span class="lp-modal-tpl" id="modalTplName"></span> template is included in Pro. Upgrade to unlock all 100+ resume and cover letter templates.</p>
+      <div class="lp-modal-btns">
+        <a href="/app.html?plan=pro" class="lp-modal-cta">Upgrade to Pro — $19/mo →</a>
+        <a href="/app.html" class="lp-modal-cta" style="background:#f3f4f6;color:#374151;">Try Free Templates First</a>
+        <button class="lp-modal-cancel" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
