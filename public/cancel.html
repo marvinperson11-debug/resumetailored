@@ -4,472 +4,291 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cancel Anytime — ResumeTailored AI</title>
-  <link rel="icon" href="favicon.png" type="image/png" />
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-JWC76X5X68');
-  </script>
   <meta name="description" content="Cancel your ResumeTailored AI subscription anytime. No questions asked, no fees, no hassle." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
   <style>
-    .cancel-hero {
-      padding: 80px 0 60px;
-      text-align: center;
-    }
-    .cancel-hero h1 {
-      font-size: clamp(36px, 6vw, 64px);
-      font-weight: 900;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-      margin-bottom: 18px;
-    }
-    .cancel-hero p {
-      font-size: 18px;
-      color: var(--text-muted);
-      max-width: 560px;
-      margin: 0 auto;
-      line-height: 1.7;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #111827; line-height: 1.6; }
+    a { color: inherit; text-decoration: none; }
 
-    .promise-banner {
-      background: linear-gradient(135deg, rgba(245,200,66,0.08), rgba(251,146,60,0.05));
-      border: 1px solid rgba(245,200,66,0.25);
-      border-radius: 20px;
-      padding: 48px 40px;
-      text-align: center;
-      max-width: 700px;
-      margin: 0 auto 64px;
-    }
+    .nav { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 24px; }
+    .nav-inner { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .logo { font-size: 18px; font-weight: 900; color: #111827; }
+    .logo .badge-ai { background: #2563eb; color: #fff; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 5px; vertical-align: middle; margin-left: 4px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; font-family: inherit; font-size: 14px; font-weight: 700; border-radius: 8px; padding: 10px 20px; border: none; cursor: pointer; transition: all .15s; text-decoration: none; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
+    .btn-full { width: 100%; }
+
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    .section { padding: 80px 0; }
+    .section-gray { background: #f9fafb; }
+    .section-eyebrow { text-align: center; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #2563eb; margin-bottom: 14px; }
+    .section-title { text-align: center; font-size: clamp(26px, 4vw, 40px); font-weight: 900; letter-spacing: -0.02em; margin-bottom: 48px; }
+    .section-title span { color: #2563eb; }
+
+    .hero { padding: 80px 0 56px; text-align: center; }
+    .hero h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 900; letter-spacing: -0.03em; margin-bottom: 16px; }
+    .hero h1 span { color: #2563eb; }
+    .hero p { font-size: 18px; color: #4b5563; max-width: 520px; margin: 0 auto; line-height: 1.7; }
+
+    .promise-banner { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 20px; padding: 48px 40px; text-align: center; max-width: 700px; margin: 0 auto 64px; }
     .promise-banner .big-icon { font-size: 64px; margin-bottom: 20px; }
-    .promise-banner h2 { font-size: 28px; font-weight: 900; margin-bottom: 14px; }
-    .promise-banner p { color: var(--text-muted); font-size: 16px; line-height: 1.8; }
+    .promise-banner h2 { font-size: 26px; font-weight: 900; margin-bottom: 12px; }
+    .promise-banner p { color: #4b5563; font-size: 15px; line-height: 1.8; }
 
-    .cancel-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 64px;
-    }
+    .badges { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; margin-bottom: 64px; }
+    .badge-item { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px 24px; text-align: center; min-width: 130px; }
+    .badge-icon { font-size: 28px; margin-bottom: 8px; }
+    .badge-label { font-size: 13px; font-weight: 800; color: #111827; }
+    .badge-sub { font-size: 11px; color: #6b7280; margin-top: 4px; }
+
+    .cancel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 64px; }
     @media (max-width: 700px) { .cancel-grid { grid-template-columns: 1fr; } }
-
-    .cancel-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 16px;
-      padding: 32px;
-    }
-    .cancel-card:hover { border-color: rgba(245,200,66,0.25); }
+    .cancel-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 32px; }
     .cancel-icon { font-size: 36px; margin-bottom: 16px; }
     .cancel-card h3 { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
 
-    .cancel-steps {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      counter-reset: steps;
-    }
-    .cancel-steps li {
-      counter-increment: steps;
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
-      margin-bottom: 14px;
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--text-muted);
-    }
-    .cancel-steps li::before {
-      content: counter(steps);
-      background: rgba(245,200,66,0.15);
-      border: 1px solid rgba(245,200,66,0.3);
-      color: #f5c842;
-      font-weight: 800;
-      font-size: 12px;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-    .cancel-steps li strong { color: var(--text); }
+    .cancel-steps { list-style: none; counter-reset: steps; }
+    .cancel-steps li { counter-increment: steps; display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; font-size: 14px; line-height: 1.6; color: #4b5563; }
+    .cancel-steps li::before { content: counter(steps); background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-weight: 800; font-size: 12px; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+    .cancel-steps li strong { color: #111827; }
 
-    .what-happens li {
-      list-style: none;
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      margin-bottom: 12px;
-      font-size: 14px;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
-    .what-happens li::before { content: "✓"; color: #22c55e; font-weight: 800; flex-shrink: 0; }
-    .what-happens { padding: 0; margin: 0; }
+    .what-happens { list-style: none; }
+    .what-happens li { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; font-size: 14px; color: #4b5563; line-height: 1.6; }
+    .what-happens li::before { content: "✓"; color: #16a34a; font-weight: 800; flex-shrink: 0; }
 
-    .section-label {
-      text-align: center;
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: #f5c842;
-      margin-bottom: 16px;
+    /* Form */
+    .cancel-form-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 36px; max-width: 560px; margin: 0 auto 64px; }
+    .cancel-form-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .cancel-form-card p { color: #6b7280; font-size: 14px; margin-bottom: 24px; }
+    .cancel-form-card label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cancel-form-card input, .cancel-form-card textarea {
+      width: 100%; background: #fff; border: 1px solid #d1d5db; border-radius: 10px;
+      padding: 12px 16px; color: #111827; font-family: inherit; font-size: 14px;
+      margin-bottom: 16px; outline: none; transition: border-color .2s;
     }
-    .section-title-lg {
-      text-align: center;
-      font-size: clamp(26px, 4vw, 40px);
-      font-weight: 900;
-      margin-bottom: 48px;
-      letter-spacing: -0.02em;
-    }
+    .cancel-form-card input:focus, .cancel-form-card textarea:focus { border-color: #2563eb; box-shadow: 0 0 0 3px #eff6ff; }
+    #cancelSuccess { display: none; margin-top: 16px; padding: 16px 20px; background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 12px; color: #16a34a; font-weight: 600; text-align: center; }
 
     /* FAQ */
-    .faq-section {
-      max-width: 720px;
-      margin: 0 auto 64px;
-    }
-    .faq-section .help-faq-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 16px;
-      padding: 32px;
-    }
+    .faq-list { max-width: 720px; margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid #e5e7eb; }
+    .faq-q { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; cursor: pointer; font-size: 15px; font-weight: 600; color: #111827; }
+    .faq-q:hover { color: #2563eb; }
+    .faq-arrow { font-size: 20px; color: #9ca3af; flex-shrink: 0; }
+    .faq-a { font-size: 14px; color: #6b7280; line-height: 1.75; padding-bottom: 20px; display: none; }
 
-    /* Guarantee badges */
-    .badges {
-      display: flex;
-      justify-content: center;
-      gap: 20px;
-      flex-wrap: wrap;
-      margin-bottom: 64px;
-    }
-    .badge-item {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 12px;
-      padding: 20px 28px;
-      text-align: center;
-      min-width: 140px;
-    }
-    .badge-item .badge-icon { font-size: 28px; margin-bottom: 8px; }
-    .badge-item .badge-label { font-size: 13px; font-weight: 700; }
-    .badge-item .badge-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
-
-    .cancel-cta {
-      text-align: center;
-      padding: 64px 0 80px;
-    }
+    .cancel-cta { text-align: center; padding: 64px 0 80px; }
     .cancel-cta h2 { font-size: 32px; font-weight: 900; margin-bottom: 12px; }
-    .cancel-cta p { color: var(--text-muted); margin-bottom: 28px; font-size: 15px; max-width: 500px; margin-left: auto; margin-right: auto; }
+    .cancel-cta h2 span { color: #2563eb; }
+    .cancel-cta p { color: #6b7280; margin-bottom: 28px; font-size: 15px; max-width: 500px; margin-left: auto; margin-right: auto; }
 
-    /* Cancel request form */
-    .cancel-form-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 16px;
-      padding: 36px;
-      max-width: 560px;
-      margin: 0 auto 64px;
-    }
-    .cancel-form-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
-    .cancel-form-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
-    .cancel-form-card label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .cancel-form-card input, .cancel-form-card textarea {
-      width: 100%; box-sizing: border-box;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 10px;
-      padding: 12px 16px;
-      color: var(--text);
-      font-family: inherit;
-      font-size: 14px;
-      margin-bottom: 16px;
-      outline: none;
-      transition: border-color .2s;
-    }
-    .cancel-form-card input:focus, .cancel-form-card textarea:focus {
-      border-color: rgba(245,200,66,0.5);
-    }
-    #cancelSuccess {
-      display:none;
-      margin-top:16px;
-      padding:16px 20px;
-      background:rgba(34,197,94,0.1);
-      border:1px solid rgba(34,197,94,0.3);
-      border-radius:12px;
-      color:#22c55e;
-      font-weight:600;
-      text-align:center;
-    }
+    .footer { background: #111827; color: #9ca3af; padding: 48px 24px; }
+    .footer-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+    .footer .logo { color: #fff; }
+    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+    .footer-links a { font-size: 14px; font-weight: 600; color: #9ca3af; transition: color .15s; }
+    .footer-links a:hover { color: #fff; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
-      <a href="/app.html" class="btn btn-primary">Try Free →</a>
-    </div>
-  </nav>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
+    <a href="/app.html" class="btn btn-primary">Try Free →</a>
+  </div>
+</nav>
 
-  <!-- HERO -->
-  <section class="cancel-hero">
-    <div class="container">
-      <div class="hero-tag">No contracts. No fine print.</div>
-      <h1>Cancel <span class="grad">anytime.</span><br/>We mean it.</h1>
-      <p>Your subscription is month-to-month. Cancel in seconds. No cancellation fees, no run-around, no questions asked.</p>
-    </div>
-  </section>
+<section class="hero">
+  <div class="container">
+    <h1>Cancel <span>anytime.</span><br/>We mean it.</h1>
+    <p>Your subscription is month-to-month. Cancel in seconds. No cancellation fees, no run-around, no questions asked.</p>
+  </div>
+</section>
 
-  <!-- PROMISE BANNER -->
-  <section class="section" style="padding-top:0;">
-    <div class="container">
-      <div class="promise-banner">
-        <div class="big-icon">🔓</div>
-        <h2>Your subscription. Your rules.</h2>
-        <p>We built ResumeTailored AI because we believe great tools should earn your business every single month. If it's not working for you, cancel immediately — no fees, no penalties, no 30-day wait periods. We'll confirm your cancellation within 1 hour and you keep full Pro access through the end of your billing period.</p>
+<section class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="promise-banner">
+      <div class="big-icon">🔓</div>
+      <h2>Your subscription. Your rules.</h2>
+      <p>We built ResumeTailored AI because we believe great tools should earn your business every single month. If it's not working for you, cancel immediately — no fees, no penalties, no 30-day wait periods. We'll confirm your cancellation within 1 hour and you keep full Pro access through the end of your billing period.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0;">
+  <div class="container">
+    <div class="badges">
+      <div class="badge-item"><div class="badge-icon">⚡</div><div class="badge-label">1-Hour</div><div class="badge-sub">cancellation processing</div></div>
+      <div class="badge-item"><div class="badge-icon">💸</div><div class="badge-label">$0 Fees</div><div class="badge-sub">no cancellation charges</div></div>
+      <div class="badge-item"><div class="badge-icon">📅</div><div class="badge-label">Full Access</div><div class="badge-sub">until period ends</div></div>
+      <div class="badge-item"><div class="badge-icon">🔄</div><div class="badge-label">Resubscribe</div><div class="badge-sub">anytime, same price</div></div>
+      <div class="badge-item"><div class="badge-icon">🛡️</div><div class="badge-label">7-Day</div><div class="badge-sub">refund if charged by mistake</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-gray">
+  <div class="container">
+    <div class="section-eyebrow">Simple Process</div>
+    <h2 class="section-title">How to cancel in <span>60 seconds</span></h2>
+    <div class="cancel-grid">
+      <div class="cancel-card">
+        <div class="cancel-icon">💬</div>
+        <h3>How to Cancel</h3>
+        <ol class="cancel-steps">
+          <li>Use the <strong>cancellation form below</strong> on this page — it's the fastest way.</li>
+          <li>Enter the <strong>email you used to subscribe</strong> so we can find your account instantly.</li>
+          <li>Submit the form. You'll get a <strong>confirmation email</strong> within 1 hour.</li>
+          <li>That's it. <strong>No phone call. No retention agent. No guilt trip.</strong></li>
+        </ol>
+        <p style="margin-top:20px;font-size:13px;color:#6b7280;">You can also email us directly at <strong style="color:#111827;">marvinperson11@gmail.com</strong> and we'll handle it right away.</p>
+      </div>
+      <div class="cancel-card">
+        <div class="cancel-icon">📋</div>
+        <h3>What Happens When You Cancel</h3>
+        <ul class="what-happens">
+          <li>Subscription stops at the end of your current billing period</li>
+          <li>You keep <strong>full Pro access</strong> until then — not cut off immediately</li>
+          <li>No partial-month charges or prorated fees — ever</li>
+          <li>Your career check-in data and community posts stay saved</li>
+          <li>Resubscribe anytime at the same $19/mo price — no re-enrollment fee</li>
+          <li>No data deleted unless you specifically request it</li>
+        </ul>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- GUARANTEE BADGES -->
-  <section class="section" style="padding-top:0;">
-    <div class="container">
-      <div class="badges">
-        <div class="badge-item">
-          <div class="badge-icon">⚡</div>
-          <div class="badge-label">1-Hour</div>
-          <div class="badge-sub">cancellation processing</div>
-        </div>
-        <div class="badge-item">
-          <div class="badge-icon">💸</div>
-          <div class="badge-label">$0 Fees</div>
-          <div class="badge-sub">no cancellation charges</div>
-        </div>
-        <div class="badge-item">
-          <div class="badge-icon">📅</div>
-          <div class="badge-label">Full Access</div>
-          <div class="badge-sub">until period ends</div>
-        </div>
-        <div class="badge-item">
-          <div class="badge-icon">🔄</div>
-          <div class="badge-label">Resubscribe</div>
-          <div class="badge-sub">anytime, same price</div>
-        </div>
-        <div class="badge-item">
-          <div class="badge-icon">🛡️</div>
-          <div class="badge-label">7-Day</div>
-          <div class="badge-sub">refund if charged by mistake</div>
-        </div>
+<section class="section">
+  <div class="container">
+    <div class="section-eyebrow">Cancel Now</div>
+    <h2 class="section-title">Submit your <span>cancellation request</span></h2>
+    <div class="cancel-form-card">
+      <h3>Cancellation Request</h3>
+      <p>Fill this out and we'll confirm cancellation within 1 hour. You keep Pro access until your billing period ends.</p>
+      <label>Your Name</label>
+      <input type="text" id="cancelName" placeholder="Your full name" />
+      <label>Email Used to Subscribe</label>
+      <input type="email" id="cancelEmail" placeholder="the@email.com you signed up with" />
+      <label>Reason (optional — helps us improve)</label>
+      <textarea id="cancelReason" rows="3" placeholder="e.g. Found a job! / No longer job searching / Too expensive / etc."></textarea>
+      <button class="btn btn-primary btn-full btn-lg" onclick="submitCancel()" id="cancelBtn">Submit Cancellation Request →</button>
+      <div id="cancelSuccess">✓ Request received! We'll confirm your cancellation within 1 hour via email.</div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-gray">
+  <div class="container">
+    <div class="section-eyebrow">Questions</div>
+    <h2 class="section-title">Cancellation <span>FAQs</span></h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span>Do I get a refund if I cancel mid-month?</span><span class="faq-arrow">+</span></div>
+        <div class="faq-a">We don't offer prorated refunds for partial months, but you keep full Pro access through the end of your current billing period. If you were accidentally charged and contact us within 7 days, we'll issue a full refund, no questions asked.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span>How fast does cancellation take effect?</span><span class="faq-arrow">+</span></div>
+        <div class="faq-a">We process all cancellation requests within 1 hour and send a confirmation email. Your Pro access continues until your current billing period ends — you're not cut off immediately.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span>Can I pause my subscription instead of canceling?</span><span class="faq-arrow">+</span></div>
+        <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as simple. We never price-lock or penalize returning members — you'll always get the same $19/month rate when you come back.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span>What if I was charged but didn't mean to subscribe?</span><span class="faq-arrow">+</span></div>
+        <div class="faq-a">Contact us within 7 days of the charge using the form above or at marvinperson11@gmail.com and we'll issue a full refund immediately.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span>Will my data be deleted when I cancel?</span><span class="faq-arrow">+</span></div>
+        <div class="faq-a">No. Your career check-in data, community posts, and account information stay intact after cancellation. If you'd like your data deleted, just request it and we'll handle it within 48 hours.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span>Is there a cancellation fee or early termination penalty?</span><span class="faq-arrow">+</span></div>
+        <div class="faq-a">Absolutely not. There are zero cancellation fees, zero penalties, and zero strings attached. Month-to-month means exactly that — you're never locked in for longer than one month at a time.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)"><span>Can I resubscribe after canceling?</span><span class="faq-arrow">+</span></div>
+        <div class="faq-a">Yes, anytime. Just go to the app, enter your email, and click Upgrade. You'll get the same $19/month rate — we don't charge more for returning subscribers.</div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- HOW TO CANCEL + WHAT HAPPENS -->
-  <section class="section section-gray">
-    <div class="container">
-      <div class="section-label">Simple Process</div>
-      <h2 class="section-title-lg">How to cancel in <span class="grad-text">60 seconds</span></h2>
-
-      <div class="cancel-grid">
-        <div class="cancel-card">
-          <div class="cancel-icon">💬</div>
-          <h3>How to Cancel</h3>
-          <ol class="cancel-steps">
-            <li>Use the <strong>cancellation form below</strong> on this page — it's the fastest way.</li>
-            <li>Enter the <strong>email you used to subscribe</strong> so we can find your account instantly.</li>
-            <li>Submit the form. You'll get a <strong>confirmation email</strong> within 1 hour.</li>
-            <li>That's it. <strong>No phone call. No retention agent. No guilt trip.</strong></li>
-          </ol>
-          <p style="margin-top:20px;font-size:13px;color:var(--text-muted);">You can also email us directly at <strong style="color:var(--text);">support@resumetailored.com</strong> and we'll handle it right away.</p>
-        </div>
-
-        <div class="cancel-card">
-          <div class="cancel-icon">📋</div>
-          <h3>What Happens When You Cancel</h3>
-          <ul class="what-happens">
-            <li>Subscription stops at the end of your current billing period</li>
-            <li>You keep <strong>full Pro access</strong> until then — not cut off immediately</li>
-            <li>No partial-month charges or prorated fees — ever</li>
-            <li>Your career check-in data and community posts stay saved</li>
-            <li>Resubscribe anytime at the same $19/mo price — no re-enrollment fee</li>
-            <li>No data deleted unless you specifically request it</li>
-          </ul>
-        </div>
-      </div>
+<section class="section">
+  <div class="container">
+    <div class="cancel-cta">
+      <h2>Still deciding whether to <span>subscribe?</span></h2>
+      <p>Try it free first — 1 tailoring per day, no credit card, no signup required. Upgrade only when you're convinced it works.</p>
+      <a href="/app.html" class="btn btn-primary btn-lg">Try Free First →</a>
+      <p style="margin-top:16px;font-size:13px;color:#6b7280;">Pro is $19/mo · Cancel anytime · No contracts</p>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- CANCEL FORM -->
-  <section class="section">
-    <div class="container">
-      <div class="section-label">Cancel Now</div>
-      <h2 class="section-title-lg">Submit your <span class="grad-text">cancellation request</span></h2>
-
-      <div class="cancel-form-card">
-        <h3>Cancellation Request</h3>
-        <p>Fill this out and we'll confirm cancellation within 1 hour. You keep Pro access until your billing period ends.</p>
-
-        <label>Your Name</label>
-        <input type="text" id="cancelName" placeholder="Your full name" />
-
-        <label>Email Used to Subscribe</label>
-        <input type="email" id="cancelEmail" placeholder="the@email.com you signed up with" />
-
-        <label>Reason (optional — helps us improve)</label>
-        <textarea id="cancelReason" rows="3" placeholder="e.g. Found a job! / No longer job searching / Too expensive / etc."></textarea>
-
-        <button class="btn btn-primary btn-full btn-lg" onclick="submitCancel()" id="cancelBtn">
-          Submit Cancellation Request →
-        </button>
-        <div id="cancelSuccess">
-          ✓ Request received! We'll confirm your cancellation within 1 hour via email.
-        </div>
-      </div>
+<footer class="footer">
+  <div class="footer-inner">
+    <span class="logo">ResumeTailored <span class="badge-ai">AI</span></span>
+    <div class="footer-links">
+      <a href="/about.html">How It Works</a>
+      <a href="/cancel.html">Cancel Anytime</a>
+      <a href="/app.html">Dashboard</a>
+      <a href="mailto:marvinperson11@gmail.com">Contact</a>
     </div>
-  </section>
+    <span style="font-size:13px;">© 2025 ResumeTailored AI. All rights reserved.</span>
+  </div>
+</footer>
 
-  <!-- FAQ -->
-  <section class="section section-gray">
-    <div class="container">
-      <div class="section-label">Questions</div>
-      <h2 class="section-title-lg">Cancellation <span class="grad-text">FAQs</span></h2>
+<script>
+  function toggleFaq(el) {
+    const a = el.nextElementSibling;
+    const arrow = el.querySelector('.faq-arrow');
+    const open = a.style.display === 'block';
+    a.style.display = open ? 'none' : 'block';
+    arrow.textContent = open ? '+' : '−';
+  }
 
-      <div class="faq-section">
-        <div class="help-faq-card">
+  async function submitCancel() {
+    const name = document.getElementById('cancelName').value.trim();
+    const email = document.getElementById('cancelEmail').value.trim();
+    const reason = document.getElementById('cancelReason').value.trim();
 
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Do I get a refund if I cancel mid-month?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">We don't offer prorated refunds for partial months, but you keep full Pro access through the end of your current billing period — so you get every day you paid for. If you were accidentally charged and contact us within 7 days, we'll issue a full refund, no questions asked.</div>
-          </div>
+    if (!name) return alert('Please enter your name.');
+    if (!email) return alert('Please enter your email.');
 
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>How fast does cancellation take effect?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">We process all cancellation requests within 1 hour and send a confirmation email. Your Pro access continues until your current billing period ends — you're not cut off immediately.</div>
-          </div>
+    const btn = document.getElementById('cancelBtn');
+    btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;margin-right:8px;vertical-align:middle;"></span>Sending...';
+    btn.disabled = true;
 
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Can I pause my subscription instead of canceling?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as simple. We never price-lock or penalize returning members — you'll always get the same $19/month rate when you come back.</div>
-          </div>
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>What if I was charged but didn't mean to subscribe?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">Contact us within 7 days of the charge using the form above or at support@resumetailored.com and we'll issue a full refund immediately. We never want anyone paying for something they didn't intend to buy.</div>
-          </div>
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Will my data be deleted when I cancel?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">No. Your career check-in data, community posts, and account information stay intact after cancellation. If you resubscribe later, everything is right where you left it. If you'd like your data deleted, just request it and we'll handle it within 48 hours.</div>
-          </div>
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Is there a cancellation fee or early termination penalty?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">Absolutely not. There are zero cancellation fees, zero penalties, and zero strings attached. Month-to-month means exactly that — you're never locked in for longer than one month at a time.</div>
-          </div>
-
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Can I resubscribe after canceling?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">Yes, anytime. Just go to the app, enter your email, and click Upgrade. You'll get the same $19/month rate — we don't charge more for returning subscribers or require any re-enrollment process.</div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- BOTTOM CTA -->
-  <section class="section">
-    <div class="container">
-      <div class="cancel-cta">
-        <h2>Still deciding whether to <span class="grad">subscribe?</span></h2>
-        <p>Try it free first — 1 tailoring per day, no credit card, no signup required. Upgrade only when you're convinced it works.</p>
-        <a href="/app.html" class="btn btn-primary btn-lg">Try Free First →</a>
-        <p style="margin-top:16px;font-size:13px;">Pro is $19/mo · Cancel anytime · No contracts</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <span class="logo">ResumeTailored <span class="badge-ai">AI</span></span>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
-          <a href="/about.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">How It Works</a>
-          <a href="/cancel.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">Cancel Anytime</a>
-          <a href="/app.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">Dashboard</a>
-        </div>
-        <span style="color:var(--text-muted);font-size:13px;">© 2025 ResumeTailored. All rights reserved.</span>
-      </div>
-    </div>
-  </footer>
-
-  <script>
-    function toggleFaq(el) {
-      const answer = el.nextElementSibling;
-      const arrow = el.querySelector('.faq-arrow');
-      const isOpen = answer.style.display === 'block';
-      answer.style.display = isOpen ? 'none' : 'block';
-      arrow.textContent = isOpen ? '▾' : '▴';
+    try {
+      await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          subject: 'CANCELLATION REQUEST',
+          message: `Cancellation request from ${name} (${email}).\n\nReason: ${reason || 'Not provided'}`
+        })
+      });
+      document.getElementById('cancelSuccess').style.display = 'block';
+      btn.style.display = 'none';
+    } catch(e) {
+      btn.innerHTML = 'Submit Cancellation Request →';
+      btn.disabled = false;
+      alert('Could not send request. Please email marvinperson11@gmail.com directly.');
     }
-
-    async function submitCancel() {
-      const name = document.getElementById('cancelName').value.trim();
-      const email = document.getElementById('cancelEmail').value.trim();
-      const reason = document.getElementById('cancelReason').value.trim();
-
-      if (!name) return alert('Please enter your name.');
-      if (!email) return alert('Please enter your email.');
-
-      const btn = document.getElementById('cancelBtn');
-      btn.innerHTML = '<span style="display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;margin-right:8px;vertical-align:middle;"></span>Sending...';
-      btn.disabled = true;
-
-      try {
-        await fetch('/api/contact', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name,
-            email,
-            subject: 'CANCELLATION REQUEST',
-            message: `Cancellation request from ${name} (${email}).\n\nReason: ${reason || 'Not provided'}`
-          })
-        });
-        document.getElementById('cancelSuccess').style.display = 'block';
-        btn.style.display = 'none';
-      } catch(e) {
-        btn.innerHTML = 'Submit Cancellation Request →';
-        btn.disabled = false;
-        alert('Could not send request. Please email support@resumetailored.com directly.');
-      }
-    }
-  </script>
-
+  }
+</script>
 </body>
 </html>

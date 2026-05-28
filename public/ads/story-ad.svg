@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="60%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#bg)"/>
+
+  <!-- Logo top -->
+  <text x="540" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="900" fill="white" opacity="0.8">ResumeTailored AI</text>
+
+  <!-- Main headline -->
+  <text x="540" y="280" text-anchor="middle" font-family="Arial, sans-serif" font-size="96" font-weight="900" fill="white">Stop</text>
+  <text x="540" y="388" text-anchor="middle" font-family="Arial, sans-serif" font-size="96" font-weight="900" fill="white">Getting</text>
+  <text x="540" y="496" text-anchor="middle" font-family="Arial, sans-serif" font-size="96" font-weight="900" fill="#fca5a5">Ghosted.</text>
+
+  <!-- Subhead -->
+  <text x="540" y="600" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="white" opacity="0.85">AI rewrites your resume</text>
+  <text x="540" y="650" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="white" opacity="0.85">for every job posting.</text>
+  <text x="540" y="700" text-anchor="middle" font-family="Arial, sans-serif" font-size="40" fill="#93c5fd" font-weight="700">In 30 seconds.</text>
+
+  <!-- Before/After cards -->
+  <!-- Before -->
+  <rect x="60" y="780" width="440" height="340" rx="24" fill="white" opacity="0.95"/>
+  <rect x="60" y="780" width="440" height="68" rx="24" fill="#f3f4f6"/>
+  <rect x="60" y="828" width="440" height="20" fill="#f3f4f6"/>
+  <text x="280" y="826" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="#dc2626">✕ Before</text>
+  <rect x="88" y="870" width="380" height="12" rx="6" fill="#e5e7eb"/>
+  <rect x="88" y="892" width="350" height="12" rx="6" fill="#e5e7eb"/>
+  <rect x="88" y="914" width="300" height="12" rx="6" fill="#e5e7eb"/>
+  <rect x="88" y="950" width="380" height="12" rx="6" fill="#e5e7eb"/>
+  <rect x="88" y="972" width="320" height="12" rx="6" fill="#e5e7eb"/>
+  <rect x="80" y="1060" width="400" height="44" rx="12" fill="#fee2e2"/>
+  <text x="280" y="1089" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#dc2626">❌ Zero callbacks</text>
+
+  <!-- After -->
+  <rect x="580" y="780" width="440" height="340" rx="24" fill="white" opacity="0.95"/>
+  <rect x="580" y="780" width="440" height="68" rx="24" fill="#2563eb"/>
+  <rect x="580" y="828" width="440" height="20" fill="#2563eb"/>
+  <text x="800" y="826" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="800" fill="white">✓ AI Tailored</text>
+  <rect x="608" y="870" width="380" height="12" rx="6" fill="#bfdbfe"/>
+  <rect x="608" y="892" width="360" height="12" rx="6" fill="#dbeafe"/>
+  <rect x="608" y="914" width="320" height="12" rx="6" fill="#dbeafe"/>
+  <rect x="608" y="950" width="380" height="12" rx="6" fill="#bfdbfe"/>
+  <rect x="608" y="972" width="330" height="12" rx="6" fill="#dbeafe"/>
+  <rect x="600" y="1060" width="400" height="44" rx="12" fill="#dcfce7"/>
+  <text x="800" y="1089" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#16a34a">✅ 3 interviews!</text>
+
+  <!-- Stats row -->
+  <rect x="60" y="1180" width="300" height="140" rx="20" fill="white" opacity="0.12"/>
+  <text x="210" y="1240" text-anchor="middle" font-family="Arial, sans-serif" font-size="56" font-weight="900" fill="white">30s</text>
+  <text x="210" y="1300" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="white" opacity="0.8">per application</text>
+
+  <rect x="390" y="1180" width="300" height="140" rx="20" fill="white" opacity="0.12"/>
+  <text x="540" y="1240" text-anchor="middle" font-family="Arial, sans-serif" font-size="56" font-weight="900" fill="white">3×</text>
+  <text x="540" y="1300" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="white" opacity="0.8">more interviews</text>
+
+  <rect x="720" y="1180" width="300" height="140" rx="20" fill="white" opacity="0.12"/>
+  <text x="870" y="1240" text-anchor="middle" font-family="Arial, sans-serif" font-size="56" font-weight="900" fill="white">$0</text>
+  <text x="870" y="1300" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" fill="white" opacity="0.8">to start</text>
+
+  <!-- Testimonial -->
+  <rect x="60" y="1380" width="960" height="200" rx="20" fill="white" opacity="0.1" stroke="white" stroke-width="1" stroke-opacity="0.2"/>
+  <text x="540" y="1430" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="#fde68a">★★★★★</text>
+  <text x="540" y="1480" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" fill="white" font-style="italic">"Got 3 interviews in my first week."</text>
+  <text x="540" y="1532" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="white" opacity="0.7">— Marcus T., Software Engineer</text>
+
+  <!-- CTA -->
+  <rect x="100" y="1640" width="880" height="100" rx="20" fill="white"/>
+  <text x="540" y="1703" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="900" fill="#2563eb">Tailor My Resume Free →</text>
+
+  <!-- URL -->
+  <text x="540" y="1800" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="700" fill="white" opacity="0.7">resumetailored.com</text>
+  <text x="540" y="1850" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" fill="white" opacity="0.5">1 free tailoring/day · No credit card</text>
+</svg>

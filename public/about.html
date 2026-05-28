@@ -4,455 +4,291 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>How It Works — ResumeTailored AI</title>
-  <link rel="icon" href="favicon.png" type="image/png" />
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-JWC76X5X68');
-  </script>
   <meta name="description" content="See exactly how ResumeTailored AI rewrites your resume and why it beats every competitor on the market." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
   <style>
-    .about-hero {
-      padding: 80px 0 60px;
-      text-align: center;
-    }
-    .about-hero h1 {
-      font-size: clamp(36px, 6vw, 64px);
-      font-weight: 900;
-      line-height: 1.1;
-      letter-spacing: -0.02em;
-      margin-bottom: 18px;
-    }
-    .about-hero p {
-      font-size: 18px;
-      color: var(--text-muted);
-      max-width: 580px;
-      margin: 0 auto;
-      line-height: 1.7;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #111827; line-height: 1.6; }
+    a { color: inherit; text-decoration: none; }
+
+    .nav { position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 24px; }
+    .nav-inner { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; height: 64px; }
+    .logo { font-size: 18px; font-weight: 900; color: #111827; }
+    .logo .badge-ai { background: #2563eb; color: #fff; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 5px; vertical-align: middle; margin-left: 4px; }
+    .btn { display: inline-flex; align-items: center; font-family: inherit; font-size: 14px; font-weight: 700; border-radius: 8px; padding: 10px 20px; border: none; cursor: pointer; transition: all .15s; text-decoration: none; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
+
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    .section { padding: 80px 0; }
+    .section-gray { background: #f9fafb; }
+    .section-eyebrow { text-align: center; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #2563eb; margin-bottom: 14px; }
+    .section-title { text-align: center; font-size: clamp(28px, 4vw, 40px); font-weight: 900; letter-spacing: -0.02em; margin-bottom: 48px; }
+    .section-title span { color: #2563eb; }
+
+    /* Hero */
+    .hero { padding: 80px 0 60px; text-align: center; }
+    .hero h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 900; letter-spacing: -0.03em; margin-bottom: 18px; }
+    .hero h1 span { color: #2563eb; }
+    .hero p { font-size: 18px; color: #4b5563; max-width: 560px; margin: 0 auto; line-height: 1.7; }
 
     /* Steps */
-    .steps-big {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      max-width: 760px;
-      margin: 0 auto 72px;
-    }
-    .step-big {
-      display: flex;
-      gap: 28px;
-      align-items: flex-start;
-      padding: 36px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.07);
-    }
+    .steps-big { max-width: 760px; margin: 0 auto 72px; }
+    .step-big { display: flex; gap: 28px; align-items: flex-start; padding: 36px 0; border-bottom: 1px solid #f3f4f6; }
     .step-big:last-child { border-bottom: none; }
-    .step-big-num {
-      background: linear-gradient(135deg, #f5c842, #fb923c);
-      color: #07070f;
-      font-weight: 900;
-      font-size: 20px;
-      border-radius: 50%;
-      width: 52px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      box-shadow: 0 0 20px rgba(245,200,66,0.3);
-    }
-    .step-big-body h3 {
-      font-size: 20px;
-      font-weight: 800;
-      margin-bottom: 8px;
-    }
-    .step-big-body p {
-      color: var(--text-muted);
-      line-height: 1.75;
-      font-size: 15px;
-    }
-    .step-big-tag {
-      display: inline-block;
-      background: rgba(245,200,66,0.1);
-      border: 1px solid rgba(245,200,66,0.25);
-      color: #f5c842;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      padding: 3px 10px;
-      border-radius: 20px;
-      margin-bottom: 10px;
-    }
+    .step-big-num { background: #eff6ff; color: #2563eb; font-weight: 900; font-size: 18px; border-radius: 50%; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .step-big-tag { display: inline-block; background: #eff6ff; border: 1px solid #bfdbfe; color: #2563eb; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 3px 10px; border-radius: 20px; margin-bottom: 10px; }
+    .step-big-body h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .step-big-body p { color: #4b5563; line-height: 1.75; font-size: 15px; }
 
-    /* Why better */
-    .why-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
-      margin-bottom: 64px;
-    }
-    .why-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 16px;
-      padding: 28px;
-      transition: border-color .2s;
-    }
-    .why-card:hover { border-color: rgba(245,200,66,0.3); }
+    /* Why cards */
+    .why-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-bottom: 64px; }
+    .why-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px; transition: border-color .2s; }
+    .why-card:hover { border-color: #2563eb; }
     .why-icon { font-size: 32px; margin-bottom: 14px; }
     .why-card h3 { font-size: 17px; font-weight: 800; margin-bottom: 10px; }
-    .why-card p { color: var(--text-muted); font-size: 14px; line-height: 1.75; }
+    .why-card p { color: #4b5563; font-size: 14px; line-height: 1.75; }
 
-    /* Compare table */
-    .compare-wrap {
-      overflow-x: auto;
-      margin-bottom: 72px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.09);
-    }
-    .compare-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-      min-width: 600px;
-    }
-    .compare-table th {
-      padding: 16px 20px;
-      text-align: center;
-      font-weight: 800;
-      font-size: 13px;
-      border-bottom: 2px solid rgba(255,255,255,0.09);
-      background: rgba(255,255,255,0.03);
-    }
+    /* Comparison table */
+    .compare-wrap { overflow-x: auto; margin-bottom: 72px; border-radius: 16px; border: 1px solid #e5e7eb; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 600px; }
+    .compare-table th { padding: 16px 20px; text-align: center; font-weight: 800; font-size: 13px; border-bottom: 2px solid #e5e7eb; background: #f9fafb; }
     .compare-table th:first-child { text-align: left; }
-    .compare-table th.us { color: #f5c842; }
-    .compare-table td {
-      padding: 14px 20px;
-      text-align: center;
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
+    .compare-table th.us { color: #2563eb; }
+    .compare-table td { padding: 14px 20px; text-align: center; border-bottom: 1px solid #f3f4f6; }
     .compare-table td:first-child { text-align: left; font-weight: 600; }
     .compare-table tr:last-child td { border-bottom: none; }
-    .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
-    .yes { color: #22c55e; font-weight: 800; font-size: 16px; }
+    .compare-table tr:hover td { background: #f9fafb; }
+    .yes { color: #16a34a; font-weight: 800; font-size: 16px; }
     .no { color: #ef4444; font-weight: 800; font-size: 16px; }
-    .partial { color: #f59e0b; font-size: 13px; font-weight: 600; }
-    .price-us { color: #f5c842; font-weight: 900; font-size: 18px; }
-    .price-them { color: var(--text-muted); font-weight: 600; }
+    .partial { color: #d97706; font-size: 13px; font-weight: 600; }
+    .price-us { color: #2563eb; font-weight: 900; font-size: 18px; }
+    .price-them { color: #6b7280; font-weight: 600; }
 
-    /* Bottom CTA */
-    .about-cta {
-      text-align: center;
-      padding: 64px 0 80px;
-    }
+    /* Testimonials */
+    .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .testimonial { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px; }
+    .stars { color: #f59e0b; font-size: 16px; margin-bottom: 14px; }
+    .testimonial p { font-size: 15px; color: #374151; line-height: 1.7; margin-bottom: 16px; }
+    .testimonial-author { font-size: 13px; font-weight: 700; color: #6b7280; }
+
+    /* CTA */
+    .about-cta { text-align: center; padding: 64px 0 80px; }
     .about-cta h2 { font-size: 36px; font-weight: 900; margin-bottom: 12px; }
-    .about-cta p { color: var(--text-muted); margin-bottom: 28px; font-size: 16px; }
+    .about-cta h2 span { color: #2563eb; }
+    .about-cta p { color: #6b7280; margin-bottom: 28px; font-size: 16px; }
 
-    .section-label {
-      text-align: center;
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: #f5c842;
-      margin-bottom: 16px;
-    }
-    .section-title-lg {
-      text-align: center;
-      font-size: clamp(28px, 4vw, 42px);
-      font-weight: 900;
-      margin-bottom: 48px;
-      letter-spacing: -0.02em;
-    }
+    /* Footer */
+    .footer { background: #111827; color: #9ca3af; padding: 48px 24px; }
+    .footer-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+    .footer .logo { color: #fff; }
+    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+    .footer-links a { font-size: 14px; font-weight: 600; color: #9ca3af; transition: color .15s; }
+    .footer-links a:hover { color: #fff; }
 
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
       .step-big { flex-direction: column; gap: 16px; }
+      .testimonials { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-  <!-- NAV -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
-      <a href="/app.html" class="btn btn-primary">Try Free →</a>
-    </div>
-  </nav>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
+    <a href="/app.html" class="btn btn-primary">Try Free →</a>
+  </div>
+</nav>
 
-  <!-- HERO -->
-  <section class="about-hero">
-    <div class="container">
-      <div class="hero-tag">Trusted by job seekers nationwide</div>
-      <h1>How <span class="grad">ResumeTailored AI</span><br/>actually works</h1>
-      <p>Most resume tools just score your resume. We rewrite it — using the exact language of the job posting — so you get past ATS filters and into interviews.</p>
-    </div>
-  </section>
+<section class="hero">
+  <div class="container">
+    <h1>How <span>ResumeTailored AI</span><br/>actually works</h1>
+    <p>Most resume tools just score your resume. We rewrite it — using the exact language of the job posting — so you get past ATS filters and into interviews.</p>
+  </div>
+</section>
 
-  <!-- HOW IT WORKS -->
-  <section class="section">
-    <div class="container">
-      <div class="section-label">The Process</div>
-      <h2 class="section-title-lg">From generic to <span class="grad-text">job-ready</span> in 30 seconds</h2>
-
-      <div class="steps-big">
-        <div class="step-big">
-          <div class="step-big-num">1</div>
-          <div class="step-big-body">
-            <div class="step-big-tag">Step 1</div>
-            <h3>Paste your current resume</h3>
-            <p>Open your resume in Word, Google Docs, or any editor. Select all, copy, and paste the plain text into ResumeTailored. No formatting required — our AI reads the raw text and understands your full work history, skills, and experience level automatically.</p>
-          </div>
+<section class="section">
+  <div class="container">
+    <div class="section-eyebrow">The Process</div>
+    <h2 class="section-title">From generic to <span>job-ready</span> in 30 seconds</h2>
+    <div class="steps-big">
+      <div class="step-big">
+        <div class="step-big-num">1</div>
+        <div class="step-big-body">
+          <div class="step-big-tag">Step 1</div>
+          <h3>Paste your current resume</h3>
+          <p>Open your resume in Word, Google Docs, or any editor. Select all, copy, and paste the plain text into ResumeTailored. No formatting required — our AI reads the raw text and understands your full work history, skills, and experience level automatically.</p>
         </div>
-
-        <div class="step-big">
-          <div class="step-big-num">2</div>
-          <div class="step-big-body">
-            <div class="step-big-tag">Step 2</div>
-            <h3>Paste the job posting</h3>
-            <p>Copy the full job description from LinkedIn, Indeed, Glassdoor, a company careers page — anywhere you found it. Paste the whole thing. The more detail you give our AI, the more precisely it can match your resume to what the hiring manager actually wants.</p>
-          </div>
+      </div>
+      <div class="step-big">
+        <div class="step-big-num">2</div>
+        <div class="step-big-body">
+          <div class="step-big-tag">Step 2</div>
+          <h3>Paste the job posting</h3>
+          <p>Copy the full job description from LinkedIn, Indeed, Glassdoor, or any company careers page. Paste the whole thing. The more detail you give our AI, the more precisely it can match your resume to what the hiring manager actually wants.</p>
         </div>
-
-        <div class="step-big">
-          <div class="step-big-num">3</div>
-          <div class="step-big-body">
-            <div class="step-big-tag">Step 3</div>
-            <h3>AI rewrites your resume to match</h3>
-            <p>Our AI — powered by Anthropic's Claude, the same model used by Fortune 500 companies — reads both documents simultaneously. It identifies which of your experiences are most relevant to this specific role, rewrites your bullet points using the job posting's exact keywords and language, reorders your sections so the most relevant work appears first, and rewrites your summary to speak directly to this company and role.</p>
-          </div>
+      </div>
+      <div class="step-big">
+        <div class="step-big-num">3</div>
+        <div class="step-big-body">
+          <div class="step-big-tag">Step 3</div>
+          <h3>AI rewrites your resume to match</h3>
+          <p>Our AI — powered by Anthropic's Claude — reads both documents simultaneously. It identifies which of your experiences are most relevant to this specific role, rewrites your bullet points using the job posting's exact keywords, reorders sections so your most relevant work appears first, and rewrites your summary to speak directly to this company and role.</p>
         </div>
-
-        <div class="step-big">
-          <div class="step-big-num">4</div>
-          <div class="step-big-body">
-            <div class="step-big-tag">Step 4 — Optional</div>
-            <h3>Get a custom cover letter too</h3>
-            <p>Choose "Cover Letter" or "Both" mode and we'll also write a 3–4 paragraph cover letter tailored to this specific job. It opens with a compelling hook about the company, connects 2–3 of your strongest achievements to the role's requirements, and closes with a confident call to action. No generic filler. No "I am writing to express my interest in." Just a letter that actually gets read.</p>
-          </div>
+      </div>
+      <div class="step-big">
+        <div class="step-big-num">4</div>
+        <div class="step-big-body">
+          <div class="step-big-tag">Step 4 — Optional</div>
+          <h3>Get a custom cover letter too</h3>
+          <p>Choose "Cover Letter" or "Both" mode and we'll also write a 3–4 paragraph cover letter tailored to this specific job. It opens with a compelling hook about the company, connects 2–3 of your strongest achievements to the role's requirements, and closes with a confident call to action. No generic filler.</p>
         </div>
-
-        <div class="step-big">
-          <div class="step-big-num">5</div>
-          <div class="step-big-body">
-            <div class="step-big-tag">Step 5</div>
-            <h3>Copy, paste, and submit</h3>
-            <p>One click copies your tailored resume and cover letter to your clipboard. Paste it into your application. Submit. The whole process takes under 30 seconds — and you get an application that looks like you spent hours customizing it.</p>
-          </div>
+      </div>
+      <div class="step-big">
+        <div class="step-big-num">5</div>
+        <div class="step-big-body">
+          <div class="step-big-tag">Step 5</div>
+          <h3>Copy, paste, and submit</h3>
+          <p>One click copies your tailored resume and cover letter to your clipboard. Paste into your application. Submit. The whole process takes under 30 seconds — and you get an application that looks like you spent hours customizing it.</p>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- WHY BETTER -->
-  <section class="section section-gray">
-    <div class="container">
-      <div class="section-label">The Difference</div>
-      <h2 class="section-title-lg">Why ResumeTailored beats <span class="grad-text">every competitor</span></h2>
-
-      <div class="why-grid">
-        <div class="why-card">
-          <div class="why-icon">🧠</div>
-          <h3>Powered by Claude — the world's best AI</h3>
-          <p>We use Anthropic's Claude model — the same AI trusted by Amazon, Salesforce, and leading enterprises worldwide. Most competitors use older, cheaper models that produce robotic, generic output. Claude writes like a real career coach with 15+ years of experience. The quality difference is immediately obvious.</p>
-        </div>
-
-        <div class="why-card">
-          <div class="why-icon">🎯</div>
-          <h3>We actually rewrite — not just score</h3>
-          <p>Jobscan and Resume Worded give you a "match score" and tell you to add keywords yourself. That's half the work. ResumeTailored AI reads both your resume and the job posting, then rewrites your bullet points for you — using the exact language the hiring manager used. Done in 30 seconds, not 45 minutes.</p>
-        </div>
-
-        <div class="why-card">
-          <div class="why-icon">✅</div>
-          <h3>100% honest — never fabricates experience</h3>
-          <p>Some AI tools hallucinate skills or experience you don't have, which is both dishonest and dangerous. ResumeTailored AI strictly rewrites and reframes your existing experience using the job's language. It never adds skills you don't have. You stay completely truthful — you just communicate your real value more clearly and persuasively.</p>
-        </div>
-
-        <div class="why-card">
-          <div class="why-icon">⚡</div>
-          <h3>30 seconds vs. 45 minutes per application</h3>
-          <p>The average job seeker spends 45 minutes tailoring each application manually. At 20 applications per week, that's 15 hours of copy-editing. ResumeTailored AI does it in 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it by hand — and spend your saved time on interview prep instead.</p>
-        </div>
-
-        <div class="why-card">
-          <div class="why-icon">📈</div>
-          <h3>ATS-optimized output every time</h3>
-          <p>75% of resumes are rejected by Applicant Tracking Systems before a human ever reads them — usually because they're missing the right keywords. Our AI knows how ATS parsers work and structures your output to pass these filters automatically. More applications reach human eyes, which means more callbacks.</p>
-        </div>
-
-        <div class="why-card">
-          <div class="why-icon">💰</div>
-          <h3>$19/mo vs. $30–$100/mo everywhere else</h3>
-          <p>Jobscan charges $49/mo. Resume.io charges $44.95/mo. Zety is $23.70/mo just for downloads. Teal+ is $29/mo with fewer features. ResumeTailored AI gives you unlimited AI tailoring, custom cover letters, a salary negotiation guide, a community forum, and career check-ins — all for $19. The most value in the market, period.</p>
-        </div>
-
-        <div class="why-card">
-          <div class="why-icon">🏆</div>
-          <h3>A full career platform, not just a resume tool</h3>
-          <p>Pro members get the entire Career Hub: word-for-word salary negotiation scripts, market rate research tools, a professional community forum to connect with other job seekers, and quarterly career check-ins to keep your growth on track. No competitor bundles this much value at this price point.</p>
-        </div>
-
-        <div class="why-card">
-          <div class="why-icon">🔓</div>
-          <h3>No contracts. Cancel anytime. For real.</h3>
-          <p>Month-to-month subscription. No annual contracts. No cancellation fees. No "please wait 30 days for cancellation to take effect." Send one message and your subscription is cancelled within 1 hour. We believe you should only pay for something you love — and we're confident enough in our product to let you leave whenever you want.</p>
-        </div>
+<section class="section section-gray">
+  <div class="container">
+    <div class="section-eyebrow">The Difference</div>
+    <h2 class="section-title">Why ResumeTailored beats <span>every competitor</span></h2>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon">🧠</div>
+        <h3>Powered by Claude — the world's best AI</h3>
+        <p>We use Anthropic's Claude — the same AI trusted by Amazon, Salesforce, and leading enterprises worldwide. Most competitors use older, cheaper models that produce robotic, generic output. Claude writes like a real career coach.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">🎯</div>
+        <h3>We actually rewrite — not just score</h3>
+        <p>Jobscan and Resume Worded give you a "match score" and tell you to add keywords yourself. ResumeTailored AI reads both your resume and the job posting, then rewrites your bullet points for you — in 30 seconds, not 45 minutes.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">✅</div>
+        <h3>100% honest — never fabricates experience</h3>
+        <p>Some AI tools hallucinate skills you don't have. ResumeTailored AI strictly rewrites and reframes your existing experience using the job's language. You stay completely truthful — you just communicate your real value more clearly.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">⚡</div>
+        <h3>30 seconds vs. 45 minutes per application</h3>
+        <p>At 20 applications per week, that's 15 hours of manual copy-editing saved. Apply to more jobs, faster, with higher-quality applications — and spend your saved time on interview prep instead.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">📈</div>
+        <h3>ATS-optimized output every time</h3>
+        <p>75% of resumes are rejected by ATS before a human ever reads them. Our AI knows how ATS parsers work and structures your output to pass these filters automatically. More applications reach human eyes.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">💰</div>
+        <h3>$19/mo vs. $30–$100/mo everywhere else</h3>
+        <p>Jobscan charges $49/mo. Resume.io charges $44.95/mo. Teal+ is $29/mo with fewer features. ResumeTailored AI gives you unlimited AI tailoring, cover letters, a salary guide, community forum, and career check-ins — all for $19.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">🏆</div>
+        <h3>A full career platform, not just a resume tool</h3>
+        <p>Pro members get the entire Career Hub: salary negotiation scripts, market rate research, a professional community forum, and quarterly career check-ins. No competitor bundles this much value at this price point.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">🔓</div>
+        <h3>No contracts. Cancel anytime. For real.</h3>
+        <p>Month-to-month subscription. No annual contracts. No cancellation fees. Send one message and your subscription is cancelled within 1 hour. We believe you should only pay for something you love.</p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- COMPARISON TABLE -->
-  <section class="section">
-    <div class="container">
-      <div class="section-label">Head to Head</div>
-      <h2 class="section-title-lg">ResumeTailored vs. <span class="grad-text">the competition</span></h2>
+<section class="section">
+  <div class="container">
+    <div class="section-eyebrow">Head to Head</div>
+    <h2 class="section-title">ResumeTailored vs. <span>the competition</span></h2>
+    <div class="compare-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th style="text-align:left;">Feature</th>
+            <th class="us">ResumeTailored AI</th>
+            <th>Jobscan</th>
+            <th>Resume.io</th>
+            <th>Teal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>AI rewrites your resume for you</td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td><td><span class="partial">Partial</span></td></tr>
+          <tr><td>Custom cover letter AI</td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td><td><span class="partial">Basic</span></td><td><span class="partial">Basic</span></td></tr>
+          <tr><td>Job-specific keyword matching</td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td><td><span class="yes">✓</span></td></tr>
+          <tr><td>Powered by top-tier AI (Claude)</td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td></tr>
+          <tr><td>Salary negotiation guide + scripts</td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td></tr>
+          <tr><td>Professional community forum</td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td></tr>
+          <tr><td>Quarterly career check-ins</td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td><td><span class="no">✗</span></td></tr>
+          <tr><td>Free tier — no credit card</td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="no">✗</span></td><td><span class="yes">✓</span></td></tr>
+          <tr><td>Cancel anytime, no fees</td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+          <tr><td style="font-weight:800;">Monthly Pro price</td><td><span class="price-us">$19</span></td><td><span class="price-them">$49</span></td><td><span class="price-them">$45</span></td><td><span class="price-them">$29</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
-      <div class="compare-wrap">
-        <table class="compare-table">
-          <thead>
-            <tr>
-              <th style="text-align:left;">Feature</th>
-              <th class="us">ResumeTailored AI</th>
-              <th>Jobscan</th>
-              <th>Resume.io</th>
-              <th>Teal</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>AI rewrites your resume for you</td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="partial">Partial</span></td>
-            </tr>
-            <tr>
-              <td>Custom cover letter AI</td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="partial">Basic</span></td>
-              <td><span class="partial">Basic</span></td>
-            </tr>
-            <tr>
-              <td>Job-specific keyword matching</td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="yes">✓</span></td>
-            </tr>
-            <tr>
-              <td>Powered by top-tier AI (Claude)</td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-            </tr>
-            <tr>
-              <td>Salary negotiation guide + scripts</td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-            </tr>
-            <tr>
-              <td>Professional community forum</td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-            </tr>
-            <tr>
-              <td>Quarterly career check-ins</td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="no">✗</span></td>
-            </tr>
-            <tr>
-              <td>Free tier — no credit card</td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="no">✗</span></td>
-              <td><span class="yes">✓</span></td>
-            </tr>
-            <tr>
-              <td>Cancel anytime, no fees</td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="yes">✓</span></td>
-              <td><span class="yes">✓</span></td>
-            </tr>
-            <tr>
-              <td style="font-weight:800;">Monthly Pro price</td>
-              <td><span class="price-us">$19</span></td>
-              <td><span class="price-them">$49</span></td>
-              <td><span class="price-them">$45</span></td>
-              <td><span class="price-them">$29</span></td>
-            </tr>
-          </tbody>
-        </table>
+<section class="section section-gray">
+  <div class="container">
+    <h2 class="section-title">What job seekers are <span>saying</span></h2>
+    <div class="testimonials">
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"I was applying to 20+ jobs and getting no responses. After using ResumeTailored I got 3 interviews in the first week. The difference was immediately obvious."</p>
+        <div class="testimonial-author">— Marcus T., Software Engineer</div>
+      </div>
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"I used to spend 45 minutes tailoring each application. Now it takes 2 minutes. The cover letters it writes are actually compelling — way better than what I was producing."</p>
+        <div class="testimonial-author">— Priya K., Marketing Manager</div>
+      </div>
+      <div class="testimonial">
+        <div class="stars">★★★★★</div>
+        <p>"Tried Jobscan first but it just told me what to fix, not how to fix it. ResumeTailored actually rewrites everything for me. Absolute game changer."</p>
+        <div class="testimonial-author">— Jordan L., Product Designer</div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- TESTIMONIALS -->
-  <section class="section section-gray">
-    <div class="container">
-      <h2 class="section-title-lg">What job seekers are <span class="grad-text">saying</span></h2>
-      <div class="testimonials">
-        <div class="testimonial">
-          <div class="stars">★★★★★</div>
-          <p>"I was applying to 20+ jobs and getting no responses. After using ResumeTailored I got 3 interviews in the first week. The difference was immediately obvious."</p>
-          <div class="testimonial-author">— Marcus T., Software Engineer</div>
-        </div>
-        <div class="testimonial">
-          <div class="stars">★★★★★</div>
-          <p>"I used to spend 45 minutes tailoring each application. Now it takes 2 minutes. The cover letters it writes are actually compelling — way better than what I was producing after a long day of job searching."</p>
-          <div class="testimonial-author">— Priya K., Marketing Manager</div>
-        </div>
-        <div class="testimonial">
-          <div class="stars">★★★★★</div>
-          <p>"Tried Jobscan first but it just told me what to fix, not how to fix it. ResumeTailored actually rewrites everything for me. Absolute game changer."</p>
-          <div class="testimonial-author">— Jordan L., Product Designer</div>
-        </div>
-      </div>
+<section class="section">
+  <div class="container">
+    <div class="about-cta">
+      <h2>Ready to land more <span>interviews?</span></h2>
+      <p>Try ResumeTailored AI free — no credit card, no signup required. One tailoring per day on the free plan.</p>
+      <a href="/app.html" class="btn btn-primary btn-lg">Tailor My Resume Free →</a>
+      <p style="margin-top:16px;font-size:13px;color:#6b7280;">Upgrade to Pro for $19/mo — cancel anytime</p>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- CTA -->
-  <section class="section">
-    <div class="container">
-      <div class="about-cta">
-        <h2>Ready to land more <span class="grad">interviews?</span></h2>
-        <p>Try ResumeTailored AI free — no credit card, no signup required. One tailoring per day on the free plan.</p>
-        <a href="/app.html" class="btn btn-primary btn-lg">Tailor My Resume Free →</a>
-        <p style="margin-top:16px;font-size:13px;color:var(--text-muted);">Upgrade to Pro for $19/mo — cancel anytime</p>
-      </div>
+<footer class="footer">
+  <div class="footer-inner">
+    <span class="logo">ResumeTailored <span class="badge-ai">AI</span></span>
+    <div class="footer-links">
+      <a href="/about.html">How It Works</a>
+      <a href="/cancel.html">Cancel Anytime</a>
+      <a href="/app.html">Dashboard</a>
+      <a href="mailto:marvinperson11@gmail.com">Contact</a>
     </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <span class="logo">ResumeTailored <span class="badge-ai">AI</span></span>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
-          <a href="/about.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">How It Works</a>
-          <a href="/cancel.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">Cancel Anytime</a>
-          <a href="/app.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">Dashboard</a>
-        </div>
-        <span style="color:var(--text-muted);font-size:13px;">© 2025 ResumeTailored. All rights reserved.</span>
-      </div>
-    </div>
-  </footer>
+    <span style="font-size:13px;">© 2025 ResumeTailored AI. All rights reserved.</span>
+  </div>
+</footer>
 
 </body>
 </html>

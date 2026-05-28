@@ -880,3 +880,31 @@ textarea:focus { outline: none; border-color: rgba(245,200,66,.4); box-shadow: 0
   .tpl-preview-wrap { width: 100%; }
   .tpl-modal-body iframe { width: 100%; min-width: 0; }
 }
+
+/* ── Extra Template Classes ── */
+.tpl-academic { font-family: Georgia, 'Times New Roman', serif; }
+.tpl-academic .resume-name { font-variant: small-caps; letter-spacing: 0.04em; }
+.tpl-academic h2, .tpl-academic h3 { font-variant: small-caps; letter-spacing: 0.06em; border-bottom: 1px solid #333; padding-bottom: 4px; }
+
+.tpl-compact { font-size: 12.5px; line-height: 1.4; }
+.tpl-compact .resume-section { margin-bottom: 10px; }
+.tpl-compact h2 { font-size: 13px; }
+
+.tpl-sharp .resume-header { border-left: 5px solid #dc2626; padding-left: 14px; }
+.tpl-sharp h2 { color: #dc2626; }
+.tpl-sharp a { color: #dc2626; }
+
+.tpl-neutral .resume-header { border-left: 5px solid #78716c; padding-left: 14px; }
+.tpl-neutral h2 { color: #78716c; }
+.tpl-neutral a { color: #78716c; }
+
+.tpl-vivid .resume-header { border-left: 5px solid #0d9488; padding-left: 14px; }
+.tpl-vivid h2 { color: #0d9488; }
+.tpl-vivid a { color: #0d9488; }
+
+/* Cover letter variants */
+.tpl-cl-academic-cover { font-family: Georgia, 'Times New Roman', serif; }
+.tpl-cl-compact-cover { font-size: 12.5px; line-height: 1.4; }
+.tpl-cl-sharp-cover .cl-header { border-left: 5px solid #dc2626; padding-left: 14px; }
+.tpl-cl-neutral-cover .cl-header { border-left: 5px solid #78716c; padding-left: 14px; }
+.tpl-cl-vivid-cover .cl-header { border-left: 5px solid #0d9488; padding-left: 14px; }

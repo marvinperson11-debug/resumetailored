@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+
+  <!-- Logo area -->
+  <text x="540" y="90" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="white" opacity="0.7">ResumeTailored AI</text>
+
+  <!-- Main headline -->
+  <text x="540" y="240" text-anchor="middle" font-family="Arial, sans-serif" font-size="80" font-weight="900" fill="white">Land More</text>
+  <text x="540" y="340" text-anchor="middle" font-family="Arial, sans-serif" font-size="80" font-weight="900" fill="#93c5fd">Interviews.</text>
+
+  <!-- Before card -->
+  <rect x="60" y="410" width="430" height="310" rx="20" fill="white" opacity="0.95"/>
+  <rect x="60" y="410" width="430" height="56" rx="20" fill="#f3f4f6"/>
+  <rect x="60" y="446" width="430" height="20" fill="#f3f4f6"/>
+  <text x="270" y="447" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="800" fill="#dc2626">✕ Before</text>
+  <rect x="88" y="490" width="370" height="12" rx="6" fill="#e5e7eb"/>
+  <rect x="88" y="512" width="340" height="12" rx="6" fill="#e5e7eb"/>
+  <rect x="88" y="534" width="300" height="12" rx="6" fill="#e5e7eb"/>
+  <rect x="88" y="570" width="370" height="12" rx="6" fill="#e5e7eb"/>
+  <rect x="88" y="592" width="280" height="12" rx="6" fill="#e5e7eb"/>
+  <rect x="80" y="670" width="390" height="36" rx="10" fill="#fee2e2"/>
+  <text x="280" y="694" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#dc2626">❌ 0 callbacks</text>
+
+  <!-- Arrow -->
+  <text x="540" y="590" text-anchor="middle" font-family="Arial, sans-serif" font-size="60" fill="#93c5fd">→</text>
+
+  <!-- After card -->
+  <rect x="590" y="410" width="430" height="310" rx="20" fill="white" opacity="0.95"/>
+  <rect x="590" y="410" width="430" height="56" rx="20" fill="#2563eb"/>
+  <rect x="590" y="446" width="430" height="20" fill="#2563eb"/>
+  <text x="808" y="447" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="800" fill="white">✓ AI Tailored</text>
+  <rect x="618" y="490" width="370" height="12" rx="6" fill="#bfdbfe"/>
+  <rect x="618" y="512" width="350" height="12" rx="6" fill="#dbeafe"/>
+  <rect x="618" y="534" width="310" height="12" rx="6" fill="#dbeafe"/>
+  <rect x="618" y="570" width="370" height="12" rx="6" fill="#bfdbfe"/>
+  <rect x="618" y="592" width="290" height="12" rx="6" fill="#dbeafe"/>
+  <rect x="610" y="670" width="390" height="36" rx="10" fill="#dcfce7"/>
+  <text x="808" y="694" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#16a34a">✅ 3 interviews week 1</text>
+
+  <!-- Stats row -->
+  <text x="540" y="800" text-anchor="middle" font-family="Arial, sans-serif" font-size="36" font-weight="900" fill="white">3× more callbacks · 30 seconds</text>
+
+  <!-- CTA -->
+  <rect x="240" y="860" width="600" height="80" rx="16" fill="white"/>
+  <text x="540" y="912" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#2563eb">Try Free → resumetailored.com</text>
+
+  <!-- Bottom note -->
+  <text x="540" y="1010" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" fill="white" opacity="0.6">1 free tailoring/day · No credit card</text>
+</svg>

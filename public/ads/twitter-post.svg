@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675">
+  <rect width="1200" height="675" fill="#fff"/>
+  <!-- Blue left bar -->
+  <rect x="0" y="0" width="8" height="675" fill="#2563eb"/>
+
+  <!-- Header -->
+  <text x="60" y="72" font-family="Arial, sans-serif" font-size="28" font-weight="900" fill="#2563eb">ResumeTailored AI</text>
+  <text x="60" y="104" font-family="Arial, sans-serif" font-size="18" fill="#6b7280">@resumetailored · resumetailored.com</text>
+
+  <!-- Divider -->
+  <rect x="60" y="120" width="1080" height="2" fill="#e5e7eb"/>
+
+  <!-- Big stat -->
+  <text x="60" y="230" font-family="Arial, sans-serif" font-size="110" font-weight="900" fill="#111827">3×</text>
+  <text x="60" y="308" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="#2563eb">more interviews.</text>
+  <text x="60" y="368" font-family="Arial, sans-serif" font-size="28" fill="#4b5563">Job seekers using ResumeTailored AI get</text>
+  <text x="60" y="406" font-family="Arial, sans-serif" font-size="28" fill="#4b5563">3× more callbacks than those applying manually.</text>
+
+  <!-- Features row -->
+  <rect x="60" y="448" width="320" height="80" rx="12" fill="#eff6ff" stroke="#bfdbfe" stroke-width="2"/>
+  <text x="220" y="482" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="800" fill="#2563eb">⚡ 30-second tailoring</text>
+  <text x="220" y="508" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#4b5563">Per application</text>
+
+  <rect x="400" y="448" width="320" height="80" rx="12" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="2"/>
+  <text x="560" y="482" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="800" fill="#16a34a">✅ Never lies</text>
+  <text x="560" y="508" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#4b5563">Only rewrites your real experience</text>
+
+  <rect x="740" y="448" width="320" height="80" rx="12" fill="#fef3c7" stroke="#fde68a" stroke-width="2"/>
+  <text x="900" y="482" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="800" fill="#d97706">🆓 Free to start</text>
+  <text x="900" y="508" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" fill="#4b5563">No credit card needed</text>
+
+  <!-- CTA -->
+  <rect x="60" y="565" width="460" height="68" rx="14" fill="#2563eb"/>
+  <text x="290" y="607" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="900" fill="white">Tailor My Resume Free →</text>
+  <text x="620" y="607" font-family="Arial, sans-serif" font-size="22" fill="#6b7280">resumetailored.com</text>
+</svg>
