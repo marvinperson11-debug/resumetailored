@@ -183,34 +183,88 @@
     .lp-hero-note { font-size: 13px; color: var(--muted); }
 
     /* ── BEFORE / AFTER DEMO CARD ────────────────────── */
-    .lp-demo-wrap { max-width: 900px; margin: 0 auto; }
+    /* ── BEFORE / AFTER DEMO ──────────────────── */
+    .lp-demo-wrap { max-width: 860px; margin: 0 auto; }
+    .lp-demo-header {
+      text-align: center; margin-bottom: 24px;
+    }
+    .lp-demo-header span {
+      display: inline-block; background: var(--blue-light);
+      color: var(--blue); font-size: 12px; font-weight: 800;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 6px 18px; border-radius: 100px;
+    }
     .lp-demo-card {
-      display: grid; grid-template-columns: 1fr auto 1fr; gap: 0;
-      background: #fff; border: 1px solid var(--border);
-      border-radius: 16px; overflow: hidden;
-      box-shadow: 0 8px 40px rgba(37,99,235,0.1);
+      display: grid; grid-template-columns: 1fr 72px 1fr;
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 12px 48px rgba(37,99,235,0.13);
+      border: 1px solid var(--border);
     }
-    .lp-demo-col { padding: 28px 28px 24px; }
-    .lp-demo-before { border-right: 1px solid var(--border); background: #fafafa; }
-    .lp-demo-after  { border-left: 3px solid var(--blue); background: #fff; }
-    .lp-demo-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
-      padding: 4px 12px; border-radius: 100px; margin-bottom: 16px;
+    /* Before column */
+    .lp-demo-before {
+      background: #f9fafb; padding: 28px 28px 0;
+      border-right: 1px solid var(--border);
     }
-    .lp-demo-badge-before { background: #f3f4f6; color: var(--muted); }
-    .lp-demo-badge-after  { background: var(--blue-light); color: var(--blue); }
-    .lp-demo-job { font-size: 14px; font-weight: 800; color: var(--text); margin-bottom: 14px; }
-    .lp-demo-bullet {
-      display: flex; gap: 8px; margin-bottom: 10px;
-      font-size: 14px; line-height: 1.65; color: #374151;
+    .lp-demo-col-label {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 20px;
     }
-    .lp-demo-bullet::before { content: "•"; color: var(--muted); flex-shrink: 0; }
-    .lp-demo-after .lp-demo-bullet { font-weight: 500; color: #111827; }
-    .lp-demo-after .lp-demo-bullet::before { color: var(--blue); }
-    .lp-demo-divider {
+    .lp-demo-col-label .lp-demo-dot {
+      width: 28px; height: 28px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      padding: 0 8px; background: #fff; font-size: 22px; font-weight: 900; color: var(--blue);
+      font-size: 13px; font-weight: 900; flex-shrink: 0;
+    }
+    .lp-demo-dot-x  { background: #fee2e2; color: #dc2626; }
+    .lp-demo-dot-ok { background: #dcfce7; color: #16a34a; }
+    .lp-demo-col-label strong {
+      font-size: 13px; font-weight: 800; letter-spacing: 0.3px;
+    }
+    .lp-demo-before .lp-demo-col-label strong { color: #9ca3af; }
+    .lp-demo-after  .lp-demo-col-label strong { color: var(--blue); }
+    .lp-demo-role {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: #9ca3af; margin-bottom: 14px;
+    }
+    .lp-demo-bullet {
+      display: flex; gap: 10px; margin-bottom: 12px;
+      font-size: 13.5px; line-height: 1.6; color: #9ca3af;
+      padding: 10px 12px; border-radius: 8px; background: #f3f4f6;
+    }
+    .lp-demo-bullet .lp-bicon { flex-shrink: 0; font-size: 14px; margin-top: 1px; }
+    .lp-demo-after .lp-demo-bullet {
+      background: #eff6ff; color: #1e40af; border-left: 3px solid var(--blue);
+    }
+    .lp-demo-result {
+      margin-top: 16px; padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; font-weight: 700;
+    }
+    .lp-demo-before .lp-demo-result { color: #dc2626; background: #fef2f2; }
+    .lp-demo-after  .lp-demo-result { color: #16a34a; background: #f0fdf4; }
+    /* Middle arrow */
+    .lp-demo-arrow {
+      display: flex; align-items: center; justify-content: center;
+      background: #fff; flex-direction: column; gap: 6px;
+    }
+    .lp-demo-arrow-circle {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--blue); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 900; box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+    }
+    .lp-demo-arrow-label {
+      font-size: 9px; font-weight: 800; color: var(--blue);
+      text-transform: uppercase; letter-spacing: 1px; text-align: center;
+    }
+    /* After column */
+    .lp-demo-after {
+      background: #fff; padding: 28px 28px 0;
+    }
+    @media(max-width:700px) {
+      .lp-demo-card { grid-template-columns: 1fr; }
+      .lp-demo-arrow { padding: 16px 0; background: var(--blue-light); flex-direction: row; }
+      .lp-demo-arrow-circle { width: 36px; height: 36px; font-size: 16px; }
     }
 
     /* ── SECTION BASE ────────────────────────────────── */
@@ -417,9 +471,6 @@
       .lp-hero h1 { letter-spacing: -1px; }
       .lp-hero-sub { font-size: 16px; }
       .lp-demo-card { grid-template-columns: 1fr; }
-      .lp-demo-before { border-right: none; border-bottom: 1px solid var(--border); }
-      .lp-demo-after { border-left: none; border-top: 3px solid var(--blue); }
-      .lp-demo-divider { display: none; }
       .lp-sec { padding: 56px 20px; }
       .lp-features { gap: 40px; }
       .lp-feat, .lp-feat-rev { flex-direction: column; gap: 20px; text-align: center; }
@@ -485,22 +536,41 @@
 
     <!-- Before / After Demo -->
     <div class="lp-demo-wrap">
+      <div class="lp-demo-header"><span>✦ Real AI Transformation</span></div>
       <div class="lp-demo-card">
-        <div class="lp-demo-col lp-demo-before">
-          <div class="lp-demo-badge lp-demo-badge-before">📄 Before — Generic</div>
-          <div class="lp-demo-job">Marketing Manager — Your Resume</div>
-          <div class="lp-demo-bullet">Managed marketing campaigns and worked with teams to grow revenue and improve brand awareness across multiple channels.</div>
-          <div class="lp-demo-bullet">Helped create content and monitored social media accounts to increase engagement.</div>
-          <div class="lp-demo-bullet">Organized events and coordinated with vendors to support company goals.</div>
+
+        <!-- BEFORE -->
+        <div class="lp-demo-before">
+          <div class="lp-demo-col-label">
+            <div class="lp-demo-dot lp-demo-dot-x">✕</div>
+            <strong>Before — Generic Resume</strong>
+          </div>
+          <div class="lp-demo-role">Marketing Manager · Experience Section</div>
+          <div class="lp-demo-bullet"><span class="lp-bicon">•</span>Managed marketing campaigns and worked with teams to grow revenue and improve brand awareness across multiple channels.</div>
+          <div class="lp-demo-bullet"><span class="lp-bicon">•</span>Helped create content and monitored social media accounts to increase engagement.</div>
+          <div class="lp-demo-bullet"><span class="lp-bicon">•</span>Organized events and coordinated with vendors to support company goals.</div>
+          <div class="lp-demo-result">❌ &nbsp;Rejected by ATS · Zero callbacks</div>
         </div>
-        <div class="lp-demo-divider">→</div>
-        <div class="lp-demo-col lp-demo-after">
-          <div class="lp-demo-badge lp-demo-badge-after">✦ After — AI Tailored</div>
-          <div class="lp-demo-job">Marketing Manager — Tailored for This Job</div>
-          <div class="lp-demo-bullet">Spearheaded 6 cross-channel demand-gen campaigns (paid, email, SEO) driving <strong>34% YoY pipeline growth</strong> and $2.1M in attributed revenue.</div>
-          <div class="lp-demo-bullet">Grew LinkedIn &amp; Instagram following by <strong>18K followers</strong> in 8 months through data-driven content strategy, lifting engagement rate from 1.2% to 4.7%.</div>
-          <div class="lp-demo-bullet">Planned and executed 12 B2B events per year, managing <strong>$450K budget</strong> and 3 vendor contracts end-to-end.</div>
+
+        <!-- ARROW -->
+        <div class="lp-demo-arrow">
+          <div class="lp-demo-arrow-circle">→</div>
+          <div class="lp-demo-arrow-label">AI<br>tailors</div>
         </div>
+
+        <!-- AFTER -->
+        <div class="lp-demo-after">
+          <div class="lp-demo-col-label">
+            <div class="lp-demo-dot lp-demo-dot-ok">✓</div>
+            <strong>After — AI Tailored</strong>
+          </div>
+          <div class="lp-demo-role">Marketing Manager · Matched to Job Keywords</div>
+          <div class="lp-demo-bullet"><span class="lp-bicon">→</span>Spearheaded 6 cross-channel campaigns driving <strong>34% YoY pipeline growth</strong> and $2.1M attributed revenue.</div>
+          <div class="lp-demo-bullet"><span class="lp-bicon">→</span>Grew LinkedIn &amp; Instagram by <strong>18K followers</strong> in 8 months; lifted engagement from 1.2% → 4.7%.</div>
+          <div class="lp-demo-bullet"><span class="lp-bicon">→</span>Executed 12 B2B events/year managing <strong>$450K budget</strong> and 3 vendor contracts end-to-end.</div>
+          <div class="lp-demo-result">✅ &nbsp;97% ATS match · 3 interviews week 1</div>
+        </div>
+
       </div>
     </div>
   </section>
