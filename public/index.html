@@ -266,7 +266,7 @@
     }
     .hub-box:hover { filter: brightness(0.93); }
     /* Template card preview */
-    .tcard-header { height: 104px; overflow: hidden; padding: 10px; }
+    .tcard-header { height: 140px; overflow: hidden; padding: 0; position: relative; }
 
     /* ── TESTIMONIALS ── */
     .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
@@ -370,6 +370,7 @@
   <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Features</a>
   <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Templates</a>
   <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Pricing</a>
+  <a href="/app.html" class="btn btn-ghost btn-lg" style="border-color:#2563eb;color:#2563eb;" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Log In</a>
   <a href="/app.html" class="btn btn-primary btn-lg">Get Started Free →</a>
 </div>
 
@@ -564,16 +565,20 @@
       <button class="gallery-scroll-btn left" onclick="scrollGallery('gallery-resume-track', -1)" aria-label="Scroll left">&#8249;</button>
       <div class="gallery-track-wrap">
         <div class="gallery-track" id="gallery-resume-track">
-          <!-- FREE -->
+          <!-- FREE: Classic -->
           <div class="template-card">
-            <div class="tcard-header" style="background:#1e293b;">
-              <div style="width:62%;height:5px;background:rgba(255,255,255,0.9);border-radius:3px;margin-bottom:4px;"></div>
-              <div style="width:42%;height:3px;background:rgba(255,255,255,0.45);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="width:100%;height:1px;background:rgba(255,255,255,0.15);margin-bottom:5px;"></div>
-              <div style="width:33%;height:3px;background:rgba(255,255,255,0.55);border-radius:2px;margin-bottom:4px;"></div>
-              <div style="width:92%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:80%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:68%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="background:#fff;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="text-align:center;border-bottom:1.5px solid #1e293b;padding-bottom:5px;margin-bottom:5px;">
+                  <div style="font-size:9.5px;font-weight:700;letter-spacing:2px;color:#0f172a;text-transform:uppercase;">ALEX JOHNSON</div>
+                  <div style="font-size:5.5px;color:#475569;margin-top:2px;">alex@email.com · (555) 234-5678 · New York, NY</div>
+                </div>
+                <div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">Experience</div>
+                <div style="font-size:6.5px;font-weight:700;color:#0f172a;margin-bottom:1px;">Sr. Marketing Manager · TechCorp Inc.</div>
+                <div style="font-size:5.5px;color:#475569;line-height:1.4;margin-bottom:3px;">• Grew pipeline 34% YoY · $2.1M attributed revenue<br/>• Led 8-person cross-functional team across 4 products</div>
+                <div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">Skills</div>
+                <div style="font-size:5.5px;color:#475569;">Python · SQL · Tableau · Salesforce · HubSpot</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Classic</div>
@@ -581,15 +586,22 @@
               <button class="tcard-btn tcard-btn-free" onclick="window.location='/app.html'">Use Template →</button>
             </div>
           </div>
+          <!-- FREE: Modern -->
           <div class="template-card">
-            <div class="tcard-header" style="background:#2563eb;">
-              <div style="width:62%;height:5px;background:rgba(255,255,255,0.95);border-radius:3px;margin-bottom:4px;"></div>
-              <div style="width:40%;height:3px;background:rgba(255,255,255,0.5);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="width:100%;height:1px;background:rgba(255,255,255,0.2);margin-bottom:5px;"></div>
-              <div style="width:30%;height:3px;background:#bfdbfe;border-radius:2px;margin-bottom:4px;"></div>
-              <div style="width:95%;height:2px;background:rgba(255,255,255,0.25);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:82%;height:2px;background:rgba(255,255,255,0.25);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:70%;height:2px;background:rgba(255,255,255,0.25);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#2563eb;padding:10px 10px 8px;">
+                  <div style="font-size:9.5px;font-weight:800;color:#fff;letter-spacing:.5px;">SARAH CHEN</div>
+                  <div style="font-size:5.5px;color:#bfdbfe;margin-top:2px;">sarah@email.com · (555) 987-6543 · San Francisco, CA</div>
+                </div>
+                <div style="padding:7px 10px;">
+                  <div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div>
+                  <div style="font-size:6.5px;font-weight:700;color:#111827;">Software Engineer · Stripe</div>
+                  <div style="font-size:5.5px;color:#4b5563;line-height:1.4;margin-bottom:3px;">• API handling 50M+ daily transactions<br/>• Reduced latency 42% via pipeline rebuild</div>
+                  <div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Skills</div>
+                  <div style="font-size:5.5px;color:#4b5563;">TypeScript · React · Node.js · AWS · PostgreSQL</div>
+                </div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Modern</div>
@@ -597,202 +609,318 @@
               <button class="tcard-btn tcard-btn-free" onclick="window.location='/app.html'">Use Template →</button>
             </div>
           </div>
-          <!-- PRO -->
+          <!-- PRO: Executive -->
           <div class="template-card" onclick="openProModal('Executive')">
-            <div class="tcard-header" style="background:#0f172a;">
-              <div style="width:58%;height:5px;background:rgba(255,255,255,0.9);border-radius:3px;margin-bottom:4px;"></div>
-              <div style="width:38%;height:3px;background:rgba(255,255,255,0.4);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="width:100%;height:1px;background:#f59e0b;margin-bottom:5px;opacity:0.6;"></div>
-              <div style="width:30%;height:3px;background:#f59e0b;border-radius:2px;margin-bottom:4px;opacity:0.7;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:78%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:65%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#0f172a;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="text-align:center;border-bottom:1.5px solid #f59e0b;padding-bottom:4px;margin-bottom:5px;">
+                  <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#f1f5f9;text-transform:uppercase;">MICHAEL CHEN</div>
+                  <div style="font-size:5.5px;color:#94a3b8;margin-top:2px;">VP of Engineering · 15+ Years</div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Executive Profile</div>
+                <div style="font-size:5.5px;color:#cbd5e1;line-height:1.4;margin-bottom:3px;">Senior technology leader driving 3× revenue growth across global teams of 50+ engineers.</div>
+                <div style="font-size:6px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div>
+                <div style="font-size:6px;color:#e2e8f0;">CTO · Fortune 500 · 2019–Present</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(15,23,42,0.72);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Executive</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Minimal -->
           <div class="template-card" onclick="openProModal('Minimal')">
-            <div class="tcard-header" style="background:#fafafa;border-bottom:1px solid #e5e7eb;">
-              <div style="width:58%;height:5px;background:#111827;border-radius:3px;margin-bottom:4px;opacity:0.85;"></div>
-              <div style="width:38%;height:3px;background:#6b7280;border-radius:2px;margin-bottom:6px;opacity:0.6;"></div>
-              <div style="width:100%;height:1px;background:#d1d5db;margin-bottom:5px;"></div>
-              <div style="width:28%;height:3px;background:#374151;border-radius:2px;margin-bottom:4px;opacity:0.7;"></div>
-              <div style="width:90%;height:2px;background:#d1d5db;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:76%;height:2px;background:#d1d5db;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:62%;height:2px;background:#d1d5db;border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fafafa;padding:10px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="margin-bottom:6px;">
+                  <div style="font-size:9px;font-weight:300;letter-spacing:3px;color:#111827;text-transform:uppercase;">JESSICA PARK</div>
+                  <div style="font-size:5.5px;color:#6b7280;margin-top:2px;">Product Designer · jessica@email.com</div>
+                  <div style="width:100%;height:0.5px;background:#d1d5db;margin-top:5px;"></div>
+                </div>
+                <div style="font-size:6px;font-weight:500;color:#374151;text-transform:uppercase;letter-spacing:2px;margin-bottom:3px;">Work</div>
+                <div style="font-size:6px;color:#374151;margin-bottom:1px;">Lead Designer · Figma</div>
+                <div style="font-size:5.5px;color:#9ca3af;margin-bottom:3px;">Redesigned core editor, +22% DAU</div>
+                <div style="font-size:6px;font-weight:500;color:#374151;text-transform:uppercase;letter-spacing:2px;margin-bottom:2px;">Tools</div>
+                <div style="font-size:5.5px;color:#9ca3af;">Figma · Principle · Lottie · Swift UI</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(17,24,39,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Minimal</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Creative -->
           <div class="template-card" onclick="openProModal('Creative')">
-            <div class="tcard-header" style="background:linear-gradient(135deg,#4f1d96,#1d4ed8);">
-              <div style="width:60%;height:5px;background:rgba(255,255,255,0.95);border-radius:3px;margin-bottom:4px;"></div>
-              <div style="width:40%;height:3px;background:rgba(255,255,255,0.5);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="width:100%;height:1px;background:rgba(255,255,255,0.2);margin-bottom:5px;"></div>
-              <div style="width:28%;height:3px;background:#e879f9;border-radius:2px;margin-bottom:4px;"></div>
-              <div style="width:88%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:74%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:60%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:linear-gradient(135deg,#4f1d96,#1d4ed8);padding:10px;">
+                  <div style="font-size:9px;font-weight:800;color:#fff;">RYAN TORRES</div>
+                  <div style="font-size:5.5px;color:#c4b5fd;margin-top:2px;">Creative Director · Brand Strategy</div>
+                </div>
+                <div style="padding:7px 10px;">
+                  <div style="font-size:6px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Selected Work</div>
+                  <div style="font-size:6px;color:#374151;margin-bottom:1px;">Creative Lead · Nike Digital</div>
+                  <div style="font-size:5.5px;color:#6b7280;">Launched 3 global campaigns, 200M+ reach</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(17,24,39,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Creative</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Professional -->
           <div class="template-card" onclick="openProModal('Professional')">
-            <div class="tcard-header" style="background:#0f766e;">
-              <div style="width:60%;height:5px;background:rgba(255,255,255,0.9);border-radius:3px;margin-bottom:4px;"></div>
-              <div style="width:40%;height:3px;background:rgba(255,255,255,0.45);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="width:100%;height:1px;background:#99f6e4;margin-bottom:5px;opacity:0.35;"></div>
-              <div style="width:30%;height:3px;background:#99f6e4;border-radius:2px;margin-bottom:4px;opacity:0.6;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:76%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:62%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#0f766e;padding:10px;">
+                  <div style="font-size:9px;font-weight:800;color:#fff;">DIANA OSEI</div>
+                  <div style="font-size:5.5px;color:#99f6e4;margin-top:2px;">Consultant · Financial Services</div>
+                </div>
+                <div style="padding:7px 10px;">
+                  <div style="font-size:6px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div>
+                  <div style="font-size:6px;color:#374151;margin-bottom:1px;">Senior Analyst · McKinsey</div>
+                  <div style="font-size:5.5px;color:#6b7280;">Advised F100 clients on $2B+ transformation</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(17,24,39,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Professional</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Tech -->
           <div class="template-card" onclick="openProModal('Tech')">
-            <div class="tcard-header" style="background:#0c1a2e;">
-              <div style="width:55%;height:4px;background:#22d3ee;border-radius:3px;margin-bottom:4px;"></div>
-              <div style="width:38%;height:3px;background:rgba(34,211,238,0.45);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="width:100%;height:1px;background:#22d3ee;margin-bottom:5px;opacity:0.25;"></div>
-              <div style="width:28%;height:3px;background:rgba(34,211,238,0.5);border-radius:2px;margin-bottom:4px;"></div>
-              <div style="width:92%;height:2px;background:rgba(255,255,255,0.12);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:78%;height:2px;background:rgba(255,255,255,0.12);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:64%;height:2px;background:rgba(255,255,255,0.12);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#0c1a2e;padding:10px;height:140px;overflow:hidden;font-family:'Courier New',monospace;">
+                <div style="margin-bottom:5px;">
+                  <div style="font-size:9px;font-weight:700;color:#22d3ee;">JAMES KIM</div>
+                  <div style="font-size:5.5px;color:#64748b;margin-top:2px;">james@email.com · github.com/jkim</div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#22d3ee;margin-bottom:2px;"># Experience</div>
+                <div style="font-size:6px;color:#94a3b8;margin-bottom:1px;">Staff Engineer @ Cloudflare</div>
+                <div style="font-size:5.5px;color:#475569;line-height:1.4;margin-bottom:3px;">- Edge runtime perf: -60ms p99 latency<br/>- Open source: 4.2k GitHub stars</div>
+                <div style="font-size:6px;font-weight:700;color:#22d3ee;margin-bottom:2px;"># Stack</div>
+                <div style="font-size:5.5px;color:#475569;">Rust · Go · TypeScript · K8s · Terraform</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(12,26,46,0.75);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Tech</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Elegant -->
           <div class="template-card" onclick="openProModal('Elegant')">
-            <div class="tcard-header" style="background:#500724;">
-              <div style="width:60%;height:5px;background:rgba(255,255,255,0.9);border-radius:3px;margin-bottom:4px;"></div>
-              <div style="width:40%;height:3px;background:rgba(255,255,255,0.45);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="width:100%;height:1px;background:#fbcfe8;margin-bottom:5px;opacity:0.35;"></div>
-              <div style="width:30%;height:3px;background:#fbcfe8;border-radius:2px;margin-bottom:4px;opacity:0.55;"></div>
-              <div style="width:88%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:74%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:60%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff8f8;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="text-align:center;margin-bottom:5px;">
+                  <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#500724;text-transform:uppercase;">CLAIRE DUPONT</div>
+                  <div style="font-size:5.5px;color:#9d174d;margin-top:2px;">Art Director · Luxury Brands</div>
+                  <div style="width:50%;height:0.5px;background:#f9a8d4;margin:4px auto 0;"></div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#9d174d;letter-spacing:1px;margin-bottom:2px;text-align:center;text-transform:uppercase;">Expertise</div>
+                <div style="font-size:6px;color:#500724;text-align:center;margin-bottom:3px;">Art Direction · Brand Identity · Luxury Retail</div>
+                <div style="font-size:6px;font-weight:700;color:#9d174d;letter-spacing:1px;margin-bottom:2px;text-align:center;text-transform:uppercase;">Career</div>
+                <div style="font-size:5.5px;color:#6b7280;text-align:center;">Creative Director · Louis Vuitton Digital</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(80,7,36,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Elegant</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Bold -->
           <div class="template-card" onclick="openProModal('Bold')">
-            <div class="tcard-header" style="background:#7f1d1d;">
-              <div style="width:62%;height:6px;background:#fff;border-radius:3px;margin-bottom:4px;"></div>
-              <div style="width:42%;height:3px;background:rgba(255,255,255,0.5);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="width:100%;height:2px;background:#ef4444;margin-bottom:5px;opacity:0.6;"></div>
-              <div style="width:32%;height:4px;background:#ef4444;border-radius:2px;margin-bottom:4px;opacity:0.7;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:75%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:60%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#7f1d1d;padding:10px;">
+                  <div style="font-size:10px;font-weight:900;color:#fff;text-transform:uppercase;">MARCUS LEE</div>
+                  <div style="font-size:5.5px;color:#fca5a5;margin-top:2px;">Sales Director · Enterprise B2B</div>
+                </div>
+                <div style="padding:7px 10px;">
+                  <div style="height:2px;background:#ef4444;width:30%;margin-bottom:4px;"></div>
+                  <div style="font-size:6px;font-weight:800;color:#111827;margin-bottom:1px;">Director of Sales · Salesforce</div>
+                  <div style="font-size:5.5px;color:#4b5563;">Closed $12M enterprise deals · 140% quota</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(127,29,29,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Bold</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Contemporary -->
           <div class="template-card" onclick="openProModal('Contemporary')">
-            <div class="tcard-header" style="background:#0369a1;">
-              <div style="width:60%;height:5px;background:rgba(255,255,255,0.9);border-radius:3px;margin-bottom:4px;"></div>
-              <div style="width:40%;height:3px;background:rgba(255,255,255,0.5);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="display:flex;gap:5px;margin-bottom:5px;">
-                <div style="flex:1;height:2px;background:rgba(255,255,255,0.3);border-radius:2px;"></div>
-                <div style="flex:1;height:2px;background:rgba(255,255,255,0.3);border-radius:2px;"></div>
-                <div style="flex:1;height:2px;background:rgba(255,255,255,0.3);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:10px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="display:grid;grid-template-columns:1fr auto;gap:4px;margin-bottom:6px;">
+                  <div>
+                    <div style="font-size:9px;font-weight:800;color:#0369a1;">PRIYA SHARMA</div>
+                    <div style="font-size:5.5px;color:#0284c7;margin-top:1px;">Data Scientist · ML Engineer</div>
+                  </div>
+                  <div style="background:#0369a1;border-radius:4px;padding:4px 6px;text-align:center;">
+                    <div style="font-size:10px;font-weight:900;color:#fff;">97</div>
+                    <div style="font-size:5px;color:#bae6fd;">ATS</div>
+                  </div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#0369a1;margin-bottom:2px;">Experience</div>
+                <div style="font-size:6px;color:#374151;margin-bottom:1px;">ML Engineer · Google DeepMind</div>
+                <div style="font-size:5.5px;color:#6b7280;">Shipped model reducing hallucinations 38%</div>
               </div>
-              <div style="width:28%;height:3px;background:#bae6fd;border-radius:2px;margin-bottom:4px;opacity:0.7;"></div>
-              <div style="width:92%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:78%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;"></div>
+              <div style="position:absolute;inset:0;background:rgba(3,105,161,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Contemporary</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Academic -->
           <div class="template-card" onclick="openProModal('Academic')">
-            <div class="tcard-header" style="background:#1c1917;">
-              <div style="width:64%;height:4px;background:rgba(255,255,255,0.85);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:44%;height:3px;background:rgba(255,255,255,0.45);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:36%;height:2px;background:rgba(255,255,255,0.3);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="width:100%;height:1px;background:rgba(255,255,255,0.18);margin-bottom:4px;"></div>
-              <div style="width:28%;height:3px;background:rgba(255,255,255,0.5);border-radius:2px;margin-bottom:4px;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:75%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fffbf5;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="text-align:center;margin-bottom:5px;">
+                  <div style="font-size:9px;font-weight:700;color:#1c1917;letter-spacing:1px;">DR. ELENA VASQUEZ</div>
+                  <div style="font-size:5.5px;color:#57534e;margin-top:2px;">Associate Professor · Computer Science</div>
+                  <div style="font-size:5px;color:#78716c;">Stanford University · elena@cs.stanford.edu</div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#1c1917;border-bottom:1px solid #a8a29e;padding-bottom:1px;margin-bottom:3px;">Education</div>
+                <div style="font-size:5.5px;color:#44403c;margin-bottom:3px;">Ph.D. Computer Science · MIT · 2015</div>
+                <div style="font-size:6px;font-weight:700;color:#1c1917;border-bottom:1px solid #a8a29e;padding-bottom:1px;margin-bottom:2px;">Publications</div>
+                <div style="font-size:5.5px;color:#44403c;">47 peer-reviewed papers · 1,200+ citations</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(28,25,23,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Academic</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Compact -->
           <div class="template-card" onclick="openProModal('Compact')">
-            <div class="tcard-header" style="background:#1f2937;">
-              <div style="width:58%;height:4px;background:rgba(255,255,255,0.85);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:38%;height:2px;background:rgba(255,255,255,0.4);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:28%;height:2px;background:rgba(255,255,255,0.3);border-radius:2px;margin-bottom:4px;"></div>
-              <div style="width:100%;height:1px;background:rgba(255,255,255,0.15);margin-bottom:3px;"></div>
-              <div style="width:30%;height:2px;background:rgba(255,255,255,0.5);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:92%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:82%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:70%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#f8fafc;padding:8px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin-bottom:4px;">
+                  <div><div style="font-size:8px;font-weight:700;color:#1e293b;">CARLOS REYES</div><div style="font-size:5px;color:#64748b;">ops@email.com</div></div>
+                  <div style="text-align:right;font-size:5px;color:#64748b;">New York, NY</div>
+                </div>
+                <div style="font-size:5.5px;font-weight:700;color:#1e293b;margin-bottom:1px;">EXPERIENCE</div>
+                <div style="font-size:5.5px;color:#374151;margin-bottom:1px;"><strong>COO · Startup</strong> 2022–Now · Cut burn 40%</div>
+                <div style="font-size:5.5px;color:#374151;margin-bottom:3px;"><strong>VP Ops · Corp</strong> 2019–22 · $5M cost save</div>
+                <div style="font-size:5.5px;font-weight:700;color:#1e293b;margin-bottom:1px;">EDUCATION</div>
+                <div style="font-size:5.5px;color:#374151;margin-bottom:3px;">MBA · Harvard · 2018</div>
+                <div style="font-size:5.5px;font-weight:700;color:#1e293b;margin-bottom:1px;">SKILLS</div>
+                <div style="font-size:5px;color:#475569;">P&L · Supply Chain · Six Sigma · ERP · M&A</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(30,41,59,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Compact</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Sharp -->
           <div class="template-card" onclick="openProModal('Sharp')">
-            <div class="tcard-header" style="background:#fff;border-bottom:4px solid #dc2626;">
-              <div style="width:60%;height:5px;background:#111827;border-radius:2px;margin-bottom:4px;opacity:0.85;"></div>
-              <div style="width:38%;height:3px;background:#6b7280;border-radius:2px;margin-bottom:6px;opacity:0.6;"></div>
-              <div style="display:flex;gap:4px;margin-bottom:5px;">
-                <div style="width:12px;height:12px;background:#dc2626;border-radius:2px;flex-shrink:0;opacity:0.85;"></div>
-                <div style="flex:1;height:2px;background:#e5e7eb;border-radius:2px;margin-top:5px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="border-left:4px solid #dc2626;padding:10px;">
+                  <div style="font-size:9.5px;font-weight:900;color:#111827;text-transform:uppercase;letter-spacing:1px;">NOAH WALSH</div>
+                  <div style="font-size:5.5px;color:#6b7280;margin-top:2px;">Growth Hacker · Startup Advisor</div>
+                </div>
+                <div style="padding:0 10px 10px;">
+                  <div style="height:2px;background:#dc2626;width:100%;margin-bottom:5px;"></div>
+                  <div style="font-size:6px;font-weight:700;color:#dc2626;text-transform:uppercase;margin-bottom:2px;">Wins</div>
+                  <div style="font-size:5.5px;color:#374151;">$0 → $2M ARR in 8 months · 3 exits · Seed to Series B</div>
+                </div>
               </div>
-              <div style="width:88%;height:2px;background:#d1d5db;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:74%;height:2px;background:#d1d5db;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:60%;height:2px;background:#d1d5db;border-radius:2px;"></div>
+              <div style="position:absolute;inset:0;background:rgba(185,28,28,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Sharp</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Neutral -->
           <div class="template-card" onclick="openProModal('Neutral')">
-            <div class="tcard-header" style="background:#f5f5f4;border-bottom:1px solid #d6d3d1;">
-              <div style="width:58%;height:5px;background:#44403c;border-radius:2px;margin-bottom:4px;opacity:0.8;"></div>
-              <div style="width:38%;height:3px;background:#78716c;border-radius:2px;margin-bottom:6px;opacity:0.65;"></div>
-              <div style="width:100%;height:1px;background:#d6d3d1;margin-bottom:5px;"></div>
-              <div style="width:30%;height:3px;background:#78716c;border-radius:2px;margin-bottom:4px;opacity:0.55;"></div>
-              <div style="width:88%;height:2px;background:#d6d3d1;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:74%;height:2px;background:#d6d3d1;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:60%;height:2px;background:#d6d3d1;border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fafaf9;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="border-bottom:1px solid #d6d3d1;padding-bottom:5px;margin-bottom:5px;">
+                  <div style="font-size:9px;font-weight:600;color:#292524;letter-spacing:1px;">Amara Okonkwo</div>
+                  <div style="font-size:5.5px;color:#78716c;margin-top:2px;">HR Director · People & Culture</div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#57534e;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div>
+                <div style="font-size:6px;color:#44403c;margin-bottom:1px;">CHRO · Patagonia</div>
+                <div style="font-size:5.5px;color:#78716c;margin-bottom:3px;">Built culture ranking #1 on Glassdoor</div>
+                <div style="font-size:6px;font-weight:700;color:#57534e;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Skills</div>
+                <div style="font-size:5.5px;color:#78716c;">Org Design · HRIS · L&D · DEI · Coaching</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(41,37,36,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Neutral</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Vivid -->
           <div class="template-card" onclick="openProModal('Vivid')">
-            <div class="tcard-header" style="background:#0d9488;">
-              <div style="width:60%;height:5px;background:rgba(255,255,255,0.95);border-radius:3px;margin-bottom:4px;"></div>
-              <div style="width:40%;height:3px;background:rgba(255,255,255,0.5);border-radius:2px;margin-bottom:6px;"></div>
-              <div style="width:100%;height:1px;background:#99f6e4;margin-bottom:5px;opacity:0.4;"></div>
-              <div style="width:30%;height:3px;background:#ccfbf1;border-radius:2px;margin-bottom:4px;opacity:0.7;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:75%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:60%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#0d9488;padding:10px;">
+                  <div style="font-size:9.5px;font-weight:800;color:#fff;">ZARA NGUYEN</div>
+                  <div style="font-size:5.5px;color:#99f6e4;margin-top:2px;">UX Researcher · Healthcare Tech</div>
+                </div>
+                <div style="padding:7px 10px;">
+                  <div style="font-size:6px;font-weight:700;color:#0d9488;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Research</div>
+                  <div style="font-size:6px;color:#374151;margin-bottom:1px;">Lead Researcher · Apple Health</div>
+                  <div style="font-size:5.5px;color:#6b7280;">Drove 31% drop in ER readmission via UX</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(13,148,136,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Vivid</div>
@@ -809,16 +937,16 @@
       <button class="gallery-scroll-btn left" onclick="scrollGallery('gallery-cl-track', -1)" aria-label="Scroll left">&#8249;</button>
       <div class="gallery-track-wrap">
         <div class="gallery-track" id="gallery-cl-track">
-          <!-- FREE -->
+          <!-- FREE: Classic -->
           <div class="template-card">
-            <div class="tcard-header" style="background:#1e293b;">
-              <div style="width:42%;height:3px;background:rgba(255,255,255,0.55);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:28%;height:2px;background:rgba(255,255,255,0.3);border-radius:2px;margin-bottom:7px;"></div>
-              <div style="width:95%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:92%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:85%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:50%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="background:#fff;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="font-size:6px;color:#6b7280;margin-bottom:5px;">May 28, 2026</div>
+                <div style="font-size:6.5px;font-weight:600;color:#111827;margin-bottom:5px;">Dear Hiring Manager,</div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:4px;">When I saw your opening for Senior Engineer, I immediately thought of the 42% latency reduction I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale your team operates at.</div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:5px;">At TechCorp, I led a 5-person team rebuilding our checkout flow in React, driving 18% higher conversion and $1.8M in added annual revenue...</div>
+                <div style="font-size:5.5px;color:#6b7280;">Sincerely,<br/><span style="font-weight:600;color:#374151;">Alex Johnson</span></div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Classic</div>
@@ -826,15 +954,20 @@
               <button class="tcard-btn tcard-btn-free" onclick="window.location='/app.html'">Use Template →</button>
             </div>
           </div>
+          <!-- FREE: Modern -->
           <div class="template-card">
-            <div class="tcard-header" style="background:#2563eb;">
-              <div style="width:40%;height:3px;background:rgba(255,255,255,0.6);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:26%;height:2px;background:rgba(255,255,255,0.35);border-radius:2px;margin-bottom:7px;"></div>
-              <div style="width:95%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:92%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:85%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:48%;height:2px;background:rgba(255,255,255,0.22);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#2563eb;padding:8px 10px;">
+                  <div style="font-size:8px;font-weight:800;color:#fff;">SARAH CHEN</div>
+                  <div style="font-size:5px;color:#bfdbfe;">sarah@email.com · Software Engineer</div>
+                </div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:5.5px;font-weight:600;color:#374151;margin-bottom:4px;">Dear Ms. Rodriguez,</div>
+                  <div style="font-size:5.5px;color:#4b5563;line-height:1.55;margin-bottom:3px;">Stripe's engineering culture mirrors exactly how I led TechCorp's infra team to cut downtime by 60% — through obsessive ownership and data-driven decisions.</div>
+                  <div style="font-size:5.5px;color:#4b5563;line-height:1.55;">My API work at scale (50M+ daily txns) directly maps to your reliability goals...</div>
+                </div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Modern</div>
@@ -842,199 +975,261 @@
               <button class="tcard-btn tcard-btn-free" onclick="window.location='/app.html'">Use Template →</button>
             </div>
           </div>
-          <!-- PRO -->
+          <!-- PRO: Executive -->
           <div class="template-card" onclick="openProModal('Executive Cover Letter')">
-            <div class="tcard-header" style="background:#0f172a;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;">
-                <div style="width:40%;height:3px;background:rgba(255,255,255,0.7);border-radius:2px;"></div>
-                <div style="width:20%;height:2px;background:#f59e0b;border-radius:2px;opacity:0.7;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#0f172a;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="border-bottom:1px solid #f59e0b;padding-bottom:4px;margin-bottom:5px;">
+                  <div style="font-size:7.5px;font-weight:700;color:#f1f5f9;letter-spacing:1px;">MICHAEL CHEN</div>
+                  <div style="font-size:5px;color:#94a3b8;">VP Engineering · mchen@email.com</div>
+                </div>
+                <div style="font-size:5.5px;color:#e2e8f0;line-height:1.6;">Dear Board of Directors,</div>
+                <div style="font-size:5.5px;color:#cbd5e1;line-height:1.55;margin-top:3px;">Over 15 years leading enterprise technology at scale, I have consistently transformed engineering organizations — most recently driving $40M in efficiency gains through systematic modernization...</div>
               </div>
-              <div style="width:92%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:88%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:84%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:45%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;"></div>
+              <div style="position:absolute;inset:0;background:rgba(15,23,42,0.72);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Executive</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Minimal -->
           <div class="template-card" onclick="openProModal('Minimal Cover Letter')">
-            <div class="tcard-header" style="background:#fafafa;border-bottom:1px solid #e5e7eb;">
-              <div style="width:38%;height:3px;background:#374151;border-radius:2px;margin-bottom:3px;opacity:0.7;"></div>
-              <div style="width:25%;height:2px;background:#9ca3af;border-radius:2px;margin-bottom:7px;opacity:0.7;"></div>
-              <div style="width:92%;height:2px;background:#e5e7eb;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:88%;height:2px;background:#e5e7eb;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:90%;height:2px;background:#e5e7eb;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:82%;height:2px;background:#e5e7eb;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:44%;height:2px;background:#e5e7eb;border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fafafa;padding:10px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="margin-bottom:6px;">
+                  <div style="font-size:7.5px;font-weight:300;letter-spacing:3px;color:#111;text-transform:uppercase;">JESSICA PARK</div>
+                  <div style="width:100%;height:0.5px;background:#d1d5db;margin:4px 0;"></div>
+                </div>
+                <div style="font-size:5.5px;color:#6b7280;margin-bottom:4px;">Dear Hiring Team,</div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.55;">Design is problem solving. When I joined Figma's team, the editor had a 2-second load time for complex files. I redesigned the rendering pipeline, cutting it to 400ms and increasing daily active usage by 22%...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(17,24,39,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Minimal</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Creative -->
           <div class="template-card" onclick="openProModal('Creative Cover Letter')">
-            <div class="tcard-header" style="background:linear-gradient(135deg,#4f1d96,#1d4ed8);">
-              <div style="width:38%;height:3px;background:rgba(255,255,255,0.65);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:24%;height:2px;background:#e879f9;border-radius:2px;margin-bottom:7px;opacity:0.7;"></div>
-              <div style="width:92%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:86%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:88%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:80%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:42%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:linear-gradient(135deg,#4f1d96,#1d4ed8);padding:8px 10px;">
+                  <div style="font-size:7.5px;font-weight:800;color:#fff;">RYAN TORRES</div>
+                </div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:5.5px;color:#4b5563;line-height:1.55;">Most brands see marketing as a cost center. I see it as revenue architecture. At Nike Digital, I turned a $500K campaign budget into 200M+ organic impressions by building community before product...</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(79,29,150,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Creative</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Professional -->
           <div class="template-card" onclick="openProModal('Professional Cover Letter')">
-            <div class="tcard-header" style="background:#0f766e;">
-              <div style="width:38%;height:3px;background:rgba(255,255,255,0.6);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:24%;height:2px;background:#99f6e4;border-radius:2px;margin-bottom:7px;opacity:0.55;"></div>
-              <div style="width:92%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:86%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:88%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:80%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:40%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#0f766e;padding:8px 10px;">
+                  <div style="font-size:7.5px;font-weight:800;color:#fff;">DIANA OSEI</div>
+                </div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:5.5px;color:#374151;line-height:1.55;">Dear Ms. Patel, McKinsey's mission to deliver sustained improvement to clients resonates deeply with my 8 years advising F100 companies through $2B+ in transformations. I bring the rigor your team expects...</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(15,118,110,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Professional</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Tech -->
           <div class="template-card" onclick="openProModal('Tech Cover Letter')">
-            <div class="tcard-header" style="background:#0c1a2e;">
-              <div style="width:36%;height:3px;background:#22d3ee;border-radius:2px;margin-bottom:3px;opacity:0.8;"></div>
-              <div style="width:22%;height:2px;background:rgba(34,211,238,0.4);border-radius:2px;margin-bottom:7px;"></div>
-              <div style="width:92%;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:86%;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:88%;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:80%;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:38%;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#0c1a2e;padding:10px;height:140px;overflow:hidden;font-family:'Courier New',monospace;">
+                <div style="font-size:5px;color:#22d3ee;margin-bottom:4px;"># cover-letter.md</div>
+                <div style="font-size:5.5px;color:#94a3b8;margin-bottom:3px;">**To:** Cloudflare Engineering Team</div>
+                <div style="font-size:5.5px;color:#94a3b8;line-height:1.55;">Cloudflare's edge network processes more requests in one second than most companies do in a year. I've spent the last 4 years solving problems at that scale — cutting p99 latency by 60ms across 40 edge regions...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(12,26,46,0.75);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Tech</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Elegant -->
           <div class="template-card" onclick="openProModal('Elegant Cover Letter')">
-            <div class="tcard-header" style="background:#500724;">
-              <div style="width:38%;height:3px;background:rgba(255,255,255,0.6);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:24%;height:2px;background:#fbcfe8;border-radius:2px;margin-bottom:7px;opacity:0.5;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:84%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:86%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:78%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:40%;height:2px;background:rgba(255,255,255,0.15);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff8f8;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="text-align:center;border-bottom:0.5px solid #f9a8d4;padding-bottom:5px;margin-bottom:5px;">
+                  <div style="font-size:7.5px;font-weight:600;letter-spacing:2px;color:#500724;text-transform:uppercase;">CLAIRE DUPONT</div>
+                </div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.6;">Dear Madame Beaumont, Luxury is not a product — it is a promise. At Louis Vuitton Digital, I kept that promise across 14 markets, building campaigns that drove 340% growth in e-commerce while preserving brand heritage...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(80,7,36,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Elegant</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Bold -->
           <div class="template-card" onclick="openProModal('Bold Cover Letter')">
-            <div class="tcard-header" style="background:#7f1d1d;">
-              <div style="width:38%;height:4px;background:#fff;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:24%;height:2px;background:#ef4444;border-radius:2px;margin-bottom:7px;opacity:0.6;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:84%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:86%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:78%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:38%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#7f1d1d;padding:8px 10px;">
+                  <div style="font-size:7.5px;font-weight:900;color:#fff;text-transform:uppercase;">MARCUS LEE</div>
+                </div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:5.5px;color:#111827;font-weight:700;margin-bottom:3px;">I close deals others walk away from.</div>
+                  <div style="font-size:5.5px;color:#374151;line-height:1.55;">In 2023 alone I closed $12M in enterprise contracts at Salesforce — 140% of quota — by building relationships that competitors couldn't replicate...</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(127,29,29,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Bold</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Contemporary -->
           <div class="template-card" onclick="openProModal('Contemporary Cover Letter')">
-            <div class="tcard-header" style="background:#0369a1;">
-              <div style="width:38%;height:3px;background:rgba(255,255,255,0.6);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:22%;height:2px;background:#bae6fd;border-radius:2px;margin-bottom:7px;opacity:0.6;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:84%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:86%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:78%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:38%;height:2px;background:rgba(255,255,255,0.2);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:10px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                  <div style="width:20px;height:20px;background:#0369a1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;flex-shrink:0;">P</div>
+                  <div><div style="font-size:7px;font-weight:700;color:#0369a1;">PRIYA SHARMA</div><div style="font-size:5px;color:#64748b;">ML Engineer · priya@email.com</div></div>
+                </div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.55;">Dear Dr. Hassabis, DeepMind's approach to AI safety aligns with research I've been conducting for 3 years at Google. My model, published in NeurIPS 2024, reduced hallucinations by 38% — a result directly applicable to Gemini...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(3,105,161,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Contemporary</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Academic -->
           <div class="template-card" onclick="openProModal('Academic Cover Letter')">
-            <div class="tcard-header" style="background:#1c1917;">
-              <div style="width:38%;height:3px;background:rgba(255,255,255,0.6);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:26%;height:2px;background:rgba(255,255,255,0.35);border-radius:2px;margin-bottom:7px;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.13);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:84%;height:2px;background:rgba(255,255,255,0.13);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:86%;height:2px;background:rgba(255,255,255,0.13);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:78%;height:2px;background:rgba(255,255,255,0.13);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:36%;height:2px;background:rgba(255,255,255,0.13);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fffbf5;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="font-size:5.5px;color:#6b7280;margin-bottom:4px;">Dr. Elena Vasquez · elena@cs.stanford.edu</div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.6;">Dear Search Committee, My research sits at the intersection of human-computer interaction and machine learning — a rare combination your AI Ethics program needs. My 47 publications and 1,200+ citations reflect a decade of rigorous, applied scholarship...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(28,25,23,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Academic</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Compact -->
           <div class="template-card" onclick="openProModal('Compact Cover Letter')">
-            <div class="tcard-header" style="background:#1f2937;">
-              <div style="width:36%;height:3px;background:rgba(255,255,255,0.6);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:22%;height:2px;background:rgba(255,255,255,0.3);border-radius:2px;margin-bottom:5px;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.12);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:84%;height:2px;background:rgba(255,255,255,0.12);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:86%;height:2px;background:rgba(255,255,255,0.12);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:78%;height:2px;background:rgba(255,255,255,0.12);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:88%;height:2px;background:rgba(255,255,255,0.12);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:34%;height:2px;background:rgba(255,255,255,0.12);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#f8fafc;padding:8px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #e2e8f0;padding-bottom:3px;margin-bottom:4px;">
+                  <div style="font-size:7px;font-weight:700;color:#1e293b;">CARLOS REYES</div>
+                  <div style="font-size:5px;color:#64748b;">COO · ops@email.com</div>
+                </div>
+                <div style="font-size:5px;color:#374151;line-height:1.6;">Re: COO Position · [Company]. Your Q3 goal: cut OPEX 25% while scaling headcount 40%. I've done exactly this — reduced burn 40% at my current startup while tripling the team, achieving profitability 6 months ahead of plan. I can replicate this for you...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(30,41,59,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Compact</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Sharp -->
           <div class="template-card" onclick="openProModal('Sharp Cover Letter')">
-            <div class="tcard-header" style="background:#fff;border-bottom:4px solid #dc2626;">
-              <div style="width:36%;height:3px;background:#111827;border-radius:2px;margin-bottom:2px;opacity:0.8;"></div>
-              <div style="width:22%;height:2px;background:#9ca3af;border-radius:2px;margin-bottom:7px;opacity:0.7;"></div>
-              <div style="width:90%;height:2px;background:#e5e7eb;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:84%;height:2px;background:#e5e7eb;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:86%;height:2px;background:#e5e7eb;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:78%;height:2px;background:#e5e7eb;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:36%;height:2px;background:#e5e7eb;border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="border-left:4px solid #dc2626;padding:8px 10px;">
+                  <div style="font-size:7.5px;font-weight:900;color:#111;text-transform:uppercase;letter-spacing:1px;">NOAH WALSH</div>
+                </div>
+                <div style="padding:0 10px 8px;border-top:1px solid #fca5a5;">
+                  <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-top:5px;">$0 to $2M ARR in 8 months. 3 exits. Those aren't vanity metrics — they're proof I can build, sell, and scale. Your Series A startup needs that exact DNA to hit the milestones your investors expect...</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(185,28,28,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Sharp</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Neutral -->
           <div class="template-card" onclick="openProModal('Neutral Cover Letter')">
-            <div class="tcard-header" style="background:#f5f5f4;border-bottom:1px solid #d6d3d1;">
-              <div style="width:36%;height:3px;background:#44403c;border-radius:2px;margin-bottom:2px;opacity:0.7;"></div>
-              <div style="width:22%;height:2px;background:#78716c;border-radius:2px;margin-bottom:7px;opacity:0.55;"></div>
-              <div style="width:90%;height:2px;background:#d6d3d1;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:84%;height:2px;background:#d6d3d1;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:86%;height:2px;background:#d6d3d1;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:78%;height:2px;background:#d6d3d1;border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:36%;height:2px;background:#d6d3d1;border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fafaf9;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="border-bottom:1px solid #d6d3d1;padding-bottom:4px;margin-bottom:5px;">
+                  <div style="font-size:7.5px;font-weight:600;color:#292524;letter-spacing:1px;">Amara Okonkwo</div>
+                </div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.6;">Dear Ms. Fletcher, The best cultures aren't built by HR — they're built by leaders who make people feel genuinely valued. At Patagonia, I designed the people systems that earned us the #1 Glassdoor ranking two years running...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(41,37,36,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Neutral</div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Vivid -->
           <div class="template-card" onclick="openProModal('Vivid Cover Letter')">
-            <div class="tcard-header" style="background:#0d9488;">
-              <div style="width:36%;height:3px;background:rgba(255,255,255,0.7);border-radius:2px;margin-bottom:2px;"></div>
-              <div style="width:22%;height:2px;background:#ccfbf1;border-radius:2px;margin-bottom:7px;opacity:0.6;"></div>
-              <div style="width:90%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:84%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:86%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:78%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;margin-bottom:3px;"></div>
-              <div style="width:36%;height:2px;background:rgba(255,255,255,0.18);border-radius:2px;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#0d9488;padding:8px 10px;">
+                  <div style="font-size:7.5px;font-weight:800;color:#fff;">ZARA NGUYEN</div>
+                </div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:5.5px;color:#374151;line-height:1.55;">Healthcare UX is a matter of life and death — literally. At Apple Health, I led research that redesigned the discharge process, cutting readmissions by 31%. That work saved lives and $4M annually for our hospital partners...</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(13,148,136,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
             </div>
             <div class="tcard-body">
               <div class="tcard-name">Vivid</div>
@@ -1045,6 +1240,7 @@
       </div>
       <button class="gallery-scroll-btn right" onclick="scrollGallery('gallery-cl-track', 1)" aria-label="Scroll right">&#8250;</button>
     </div>
+
   </div>
 </section>
 
@@ -1211,7 +1407,7 @@
       <a href="#pricing">Pricing</a>
       <a href="/cancel.html">Cancel Anytime</a>
       <a href="/app.html">Dashboard</a>
-      <a href="mailto:marvinperson11@gmail.com">Contact</a>
+      <a href="mailto:support@resumetailored.com">Contact</a>
     </div>
     <span class="footer-copy">© 2025 ResumeTailored AI. All rights reserved.</span>
   </div>
