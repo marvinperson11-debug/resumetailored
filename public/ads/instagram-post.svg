@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <defs>
+    <linearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#f8faff"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#2563eb" flood-opacity="0.15"/>
+    </filter>
+    <filter id="cardshadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#000000" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="#ffffff"/>
+
+  <!-- Top gradient band -->
+  <rect width="1080" height="8" fill="url(#heroGrad)"/>
+
+  <!-- Top nav area -->
+  <rect x="60" y="48" width="48" height="48" rx="12" fill="#2563eb"/>
+  <text x="84" y="81" font-family="Arial,sans-serif" font-size="26" font-weight="900" fill="white" text-anchor="middle">R</text>
+  <text x="126" y="80" font-family="Arial,sans-serif" font-size="22" font-weight="800" fill="#111827">ResumeTailored</text>
+  <rect x="319" y="63" width="28" height="20" rx="5" fill="#2563eb"/>
+  <text x="333" y="78" font-family="Arial,sans-serif" font-size="11" font-weight="900" fill="white" text-anchor="middle">AI</text>
+
+  <!-- Main headline -->
+  <text x="540" y="200" font-family="Arial,sans-serif" font-size="72" font-weight="900" fill="#111827" text-anchor="middle" letter-spacing="-2">Get Hired</text>
+  <text x="540" y="285" font-family="Arial,sans-serif" font-size="72" font-weight="900" fill="#2563eb" text-anchor="middle" letter-spacing="-2">Faster.</text>
+
+  <text x="540" y="345" font-family="Arial,sans-serif" font-size="26" fill="#6b7280" text-anchor="middle">AI tailors your resume to every job in seconds</text>
+
+  <!-- Before card -->
+  <rect x="68" y="400" width="380" height="460" rx="20" fill="url(#cardGrad)" filter="url(#cardshadow)" stroke="#e5e7eb" stroke-width="1.5"/>
+  <rect x="68" y="400" width="380" height="52" rx="20" fill="#f9fafb"/>
+  <rect x="68" y="432" width="380" height="20" fill="#f9fafb"/>
+  <text x="258" y="433" font-family="Arial,sans-serif" font-size="13" font-weight="800" fill="#9ca3af" text-anchor="middle" letter-spacing="1">BEFORE — GENERIC</text>
+
+  <!-- Before resume lines -->
+  <text x="100" y="490" font-family="Arial,sans-serif" font-size="18" font-weight="800" fill="#374151">John Smith</text>
+  <rect x="100" y="500" width="180" height="2" fill="#e5e7eb"/>
+  <text x="100" y="525" font-family="Arial,sans-serif" font-size="11" fill="#9ca3af">EXPERIENCE</text>
+  <text x="100" y="548" font-family="Arial,sans-serif" font-size="13" font-weight="600" fill="#374151">Software Engineer — Acme Corp</text>
+  <text x="100" y="568" font-family="Arial,sans-serif" font-size="12" fill="#6b7280">• Worked on backend systems</text>
+  <text x="100" y="586" font-family="Arial,sans-serif" font-size="12" fill="#6b7280">• Helped with database stuff</text>
+  <text x="100" y="604" font-family="Arial,sans-serif" font-size="12" fill="#6b7280">• Did code reviews</text>
+  <text x="100" y="622" font-family="Arial,sans-serif" font-size="12" fill="#6b7280">• Attended team meetings</text>
+  <text x="100" y="640" font-family="Arial,sans-serif" font-size="12" fill="#6b7280">• Wrote some documentation</text>
+  <rect x="100" y="660" width="220" height="1.5" fill="#f3f4f6"/>
+  <text x="100" y="680" font-family="Arial,sans-serif" font-size="11" fill="#9ca3af">SKILLS</text>
+  <text x="100" y="700" font-family="Arial,sans-serif" font-size="12" fill="#6b7280">Python, SQL, JavaScript</text>
+  <text x="100" y="720" font-family="Arial,sans-serif" font-size="12" fill="#6b7280">Good communicator</text>
+  <text x="100" y="740" font-family="Arial,sans-serif" font-size="12" fill="#6b7280">Team player</text>
+
+  <!-- X badge on before card -->
+  <circle cx="418" cy="452" r="18" fill="#fee2e2"/>
+  <text x="418" y="459" font-family="Arial,sans-serif" font-size="18" font-weight="900" fill="#ef4444" text-anchor="middle">✕</text>
+
+  <!-- Arrow -->
+  <text x="540" y="660" font-family="Arial,sans-serif" font-size="52" fill="#2563eb" text-anchor="middle">→</text>
+
+  <!-- After card -->
+  <rect x="632" y="400" width="380" height="460" rx="20" fill="url(#cardGrad)" filter="url(#shadow)" stroke="#2563eb" stroke-width="2"/>
+  <rect x="632" y="400" width="380" height="52" rx="20" fill="#eff6ff"/>
+  <rect x="632" y="432" width="380" height="20" fill="#eff6ff"/>
+  <text x="822" y="433" font-family="Arial,sans-serif" font-size="13" font-weight="800" fill="#2563eb" text-anchor="middle" letter-spacing="1">AFTER — AI TAILORED ✦</text>
+
+  <!-- After resume lines -->
+  <text x="664" y="490" font-family="Arial,sans-serif" font-size="18" font-weight="800" fill="#111827">John Smith</text>
+  <rect x="664" y="500" width="180" height="2" fill="#2563eb"/>
+  <text x="664" y="525" font-family="Arial,sans-serif" font-size="11" fill="#2563eb" font-weight="800">EXPERIENCE</text>
+  <text x="664" y="548" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#111827">Senior Backend Engineer — Acme</text>
+  <text x="664" y="570" font-family="Arial,sans-serif" font-size="12" fill="#374151">• Architected microservices cutting API</text>
+  <text x="664" y="586" font-family="Arial,sans-serif" font-size="12" fill="#374151">  latency by 40% across 3M req/day</text>
+  <text x="664" y="606" font-family="Arial,sans-serif" font-size="12" fill="#374151">• Optimized PostgreSQL queries —</text>
+  <text x="664" y="622" font-family="Arial,sans-serif" font-size="12" fill="#374151">  reduced load time by 65%</text>
+  <text x="664" y="642" font-family="Arial,sans-serif" font-size="12" fill="#374151">• Led 5-engineer team, shipped 3</text>
+  <text x="664" y="658" font-family="Arial,sans-serif" font-size="12" fill="#374151">  features in Q3 on schedule</text>
+  <rect x="664" y="673" width="220" height="1.5" fill="#dbeafe"/>
+  <text x="664" y="693" font-family="Arial,sans-serif" font-size="11" fill="#2563eb" font-weight="800">SKILLS</text>
+  <text x="664" y="713" font-family="Arial,sans-serif" font-size="12" fill="#374151">Python · PostgreSQL · Node.js · AWS</text>
+  <text x="664" y="731" font-family="Arial,sans-serif" font-size="12" fill="#374151">Microservices · CI/CD · Redis</text>
+
+  <!-- Check badge on after card -->
+  <circle cx="982" cy="452" r="18" fill="#dcfce7"/>
+  <text x="982" y="459" font-family="Arial,sans-serif" font-size="16" font-weight="900" fill="#16a34a" text-anchor="middle">✓</text>
+
+  <!-- Feature pills -->
+  <rect x="120" y="892" width="220" height="40" rx="20" fill="#eff6ff"/>
+  <text x="230" y="917" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#2563eb" text-anchor="middle">✓ Free to start</text>
+
+  <rect x="430" y="892" width="220" height="40" rx="20" fill="#eff6ff"/>
+  <text x="540" y="917" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#2563eb" text-anchor="middle">✓ 100+ templates</text>
+
+  <rect x="740" y="892" width="220" height="40" rx="20" fill="#eff6ff"/>
+  <text x="850" y="917" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#2563eb" text-anchor="middle">✓ AI cover letter</text>
+
+  <!-- CTA -->
+  <rect x="340" y="952" width="400" height="60" rx="14" fill="#2563eb"/>
+  <text x="540" y="990" font-family="Arial,sans-serif" font-size="22" font-weight="800" fill="white" text-anchor="middle">Try Free → resumetailored.com</text>
+
+  <!-- Bottom gradient bar -->
+  <rect x="0" y="1072" width="1080" height="8" fill="url(#heroGrad)"/>
+</svg>
