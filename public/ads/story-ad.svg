@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="topGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="btnGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <filter id="s">
+      <feDropShadow dx="0" dy="10" stdDeviation="28" flood-color="#2563eb" flood-opacity="0.2"/>
+    </filter>
+    <filter id="cs">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#000" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <!-- Background white -->
+  <rect width="1080" height="1920" fill="#ffffff"/>
+
+  <!-- Top gradient section -->
+  <rect width="1080" height="680" fill="url(#topGrad)"/>
+
+  <!-- Logo -->
+  <rect x="60" y="80" width="56" height="56" rx="14" fill="rgba(255,255,255,0.2)"/>
+  <text x="88" y="118" font-family="Arial,sans-serif" font-size="28" font-weight="900" fill="white" text-anchor="middle">R</text>
+  <text x="134" y="117" font-family="Arial,sans-serif" font-size="22" font-weight="800" fill="white">ResumeTailored</text>
+  <rect x="350" y="97" width="32" height="22" rx="6" fill="rgba(255,255,255,0.3)"/>
+  <text x="366" y="113" font-family="Arial,sans-serif" font-size="12" font-weight="900" fill="white" text-anchor="middle">AI</text>
+
+  <!-- Hero text -->
+  <text x="540" y="300" font-family="Arial,sans-serif" font-size="76" font-weight="900" fill="white" text-anchor="middle" letter-spacing="-2">Land More</text>
+  <text x="540" y="390" font-family="Arial,sans-serif" font-size="76" font-weight="900" fill="#93c5fd" text-anchor="middle" letter-spacing="-2">Interviews</text>
+  <text x="540" y="480" font-family="Arial,sans-serif" font-size="76" font-weight="900" fill="white" text-anchor="middle" letter-spacing="-2">with AI.</text>
+
+  <text x="540" y="560" font-family="Arial,sans-serif" font-size="26" fill="rgba(255,255,255,0.8)" text-anchor="middle">Tailored resumes in 30 seconds</text>
+  <text x="540" y="596" font-family="Arial,sans-serif" font-size="26" fill="rgba(255,255,255,0.8)" text-anchor="middle">— matched to every job you apply for</text>
+
+  <!-- Before / After cards -->
+  <!-- Before card -->
+  <rect x="60" y="720" width="440" height="520" rx="24" fill="#fff" filter="url(#cs)" stroke="#e5e7eb" stroke-width="1.5"/>
+  <rect x="60" y="720" width="440" height="56" rx="24" fill="#f9fafb"/>
+  <rect x="60" y="748" width="440" height="28" fill="#f9fafb"/>
+  <text x="280" y="755" font-family="Arial,sans-serif" font-size="14" font-weight="800" fill="#9ca3af" text-anchor="middle" letter-spacing="1">📄 BEFORE</text>
+
+  <text x="92" y="818" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#374151">Generic Resume</text>
+  <rect x="92" y="830" width="200" height="2" fill="#e5e7eb"/>
+  <text x="92" y="862" font-family="Arial,sans-serif" font-size="12" fill="#9ca3af" font-weight="700">EXPERIENCE</text>
+  <text x="92" y="888" font-family="Arial,sans-serif" font-size="14" font-weight="600" fill="#374151">Software Engineer</text>
+  <text x="92" y="912" font-family="Arial,sans-serif" font-size="13" fill="#9ca3af">• Worked on backend systems</text>
+  <text x="92" y="934" font-family="Arial,sans-serif" font-size="13" fill="#9ca3af">• Helped with database stuff</text>
+  <text x="92" y="956" font-family="Arial,sans-serif" font-size="13" fill="#9ca3af">• Did some code reviews</text>
+  <text x="92" y="978" font-family="Arial,sans-serif" font-size="13" fill="#9ca3af">• Attended team meetings</text>
+  <text x="92" y="1000" font-family="Arial,sans-serif" font-size="13" fill="#9ca3af">• Wrote documentation</text>
+  <rect x="92" y="1020" width="220" height="1.5" fill="#f3f4f6"/>
+  <text x="92" y="1044" font-family="Arial,sans-serif" font-size="12" fill="#9ca3af" font-weight="700">RESULT</text>
+  <text x="92" y="1068" font-family="Arial,sans-serif" font-size="18" font-weight="900" fill="#ef4444">No callbacks ✕</text>
+  <text x="92" y="1092" font-family="Arial,sans-serif" font-size="13" fill="#9ca3af">Generic — ignored by ATS</text>
+  <text x="92" y="1112" font-family="Arial,sans-serif" font-size="13" fill="#9ca3af">and recruiters</text>
+
+  <!-- After card -->
+  <rect x="580" y="720" width="440" height="520" rx="24" fill="#fff" filter="url(#s)" stroke="#2563eb" stroke-width="2"/>
+  <rect x="580" y="720" width="440" height="56" rx="24" fill="#eff6ff"/>
+  <rect x="580" y="748" width="440" height="28" fill="#eff6ff"/>
+  <text x="800" y="755" font-family="Arial,sans-serif" font-size="14" font-weight="800" fill="#2563eb" text-anchor="middle" letter-spacing="1">✦ AFTER AI</text>
+
+  <text x="612" y="818" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#111827">AI-Tailored Resume</text>
+  <rect x="612" y="830" width="200" height="2" fill="#2563eb"/>
+  <text x="612" y="862" font-family="Arial,sans-serif" font-size="12" fill="#2563eb" font-weight="800">EXPERIENCE</text>
+  <text x="612" y="888" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#111827">Senior Software Engineer</text>
+  <text x="612" y="912" font-family="Arial,sans-serif" font-size="13" fill="#374151">• Cut API latency 40% — 3M req/day</text>
+  <text x="612" y="934" font-family="Arial,sans-serif" font-size="13" fill="#374151">• Optimized DB — 65% faster</text>
+  <text x="612" y="956" font-family="Arial,sans-serif" font-size="13" fill="#374151">• Led 5-engineer team, shipped</text>
+  <text x="612" y="974" font-family="Arial,sans-serif" font-size="13" fill="#374151">  3 features on schedule</text>
+  <text x="612" y="996" font-family="Arial,sans-serif" font-size="13" fill="#374151">• 97% ATS keyword match</text>
+  <rect x="612" y="1016" width="220" height="1.5" fill="#dbeafe"/>
+  <text x="612" y="1040" font-family="Arial,sans-serif" font-size="12" fill="#2563eb" font-weight="800">RESULT</text>
+  <text x="612" y="1064" font-family="Arial,sans-serif" font-size="18" font-weight="900" fill="#16a34a">3 interviews ✓</text>
+  <text x="612" y="1088" font-family="Arial,sans-serif" font-size="13" fill="#6b7280">In the first week</text>
+  <text x="612" y="1108" font-family="Arial,sans-serif" font-size="13" fill="#6b7280">after using ResumeTailored AI</text>
+
+  <!-- Arrow between cards -->
+  <text x="540" y="1006" font-family="Arial,sans-serif" font-size="52" fill="#2563eb" text-anchor="middle" filter="url(#s)">→</text>
+
+  <!-- Feature section -->
+  <text x="540" y="1310" font-family="Arial,sans-serif" font-size="32" font-weight="900" fill="#111827" text-anchor="middle">Why ResumeTailored AI?</text>
+
+  <!-- Feature rows -->
+  <circle cx="120" cy="1400" r="36" fill="#eff6ff"/>
+  <text x="120" y="1412" font-family="Arial,sans-serif" font-size="28" text-anchor="middle">⚡</text>
+  <text x="178" y="1394" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#111827">Instant Tailoring</text>
+  <text x="178" y="1418" font-family="Arial,sans-serif" font-size="16" fill="#6b7280">Paste a job listing, get a tailored resume in 30 seconds</text>
+
+  <circle cx="120" cy="1490" r="36" fill="#eff6ff"/>
+  <text x="120" y="1502" font-family="Arial,sans-serif" font-size="28" text-anchor="middle">📄</text>
+  <text x="178" y="1484" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#111827">100+ Templates</text>
+  <text x="178" y="1508" font-family="Arial,sans-serif" font-size="16" fill="#6b7280">Professional, ATS-friendly resume &amp; cover letter designs</text>
+
+  <circle cx="120" cy="1580" r="36" fill="#eff6ff"/>
+  <text x="120" y="1592" font-family="Arial,sans-serif" font-size="28" text-anchor="middle">✉️</text>
+  <text x="178" y="1574" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#111827">AI Cover Letters</text>
+  <text x="178" y="1598" font-family="Arial,sans-serif" font-size="16" fill="#6b7280">Personalized cover letter generated with your resume</text>
+
+  <circle cx="120" cy="1670" r="36" fill="#eff6ff"/>
+  <text x="120" y="1682" font-family="Arial,sans-serif" font-size="28" text-anchor="middle">🆓</text>
+  <text x="178" y="1664" font-family="Arial,sans-serif" font-size="20" font-weight="800" fill="#111827">Free to Start</text>
+  <text x="178" y="1688" font-family="Arial,sans-serif" font-size="16" fill="#6b7280">1 free tailoring per day — no payment required</text>
+
+  <!-- CTA button -->
+  <rect x="100" y="1768" width="880" height="80" rx="20" fill="url(#btnGrad)"/>
+  <text x="540" y="817" font-family="Arial,sans-serif" font-size="28" font-weight="900" fill="white" text-anchor="middle" dy="1000">Start for Free →</text>
+  <text x="540" y="1832" font-family="Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.9)" text-anchor="middle">No payment required</text>
+
+  <!-- URL -->
+  <text x="540" y="1888" font-family="Arial,sans-serif" font-size="20" fill="#9ca3af" text-anchor="middle">resumetailored.com</text>
+
+  <!-- Bottom bar -->
+  <rect x="0" y="1914" width="1080" height="6" fill="url(#btnGrad)"/>
+</svg>

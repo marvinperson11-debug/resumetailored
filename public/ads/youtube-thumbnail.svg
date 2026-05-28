@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <filter id="blur">
+      <feGaussianBlur stdDeviation="60"/>
+    </filter>
+    <filter id="s">
+      <feDropShadow dx="0" dy="8" stdDeviation="20" flood-color="#2563eb" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Dark background -->
+  <rect width="1280" height="720" fill="url(#bg)"/>
+
+  <!-- Glow orb left -->
+  <circle cx="200" cy="360" r="280" fill="#2563eb" opacity="0.12" filter="url(#blur)"/>
+  <!-- Glow orb right -->
+  <circle cx="1080" cy="360" r="280" fill="#7c3aed" opacity="0.12" filter="url(#blur)"/>
+
+  <!-- Left side — big text -->
+  <text x="60" y="200" font-family="Arial,sans-serif" font-size="36" font-weight="700" fill="rgba(255,255,255,0.5)" letter-spacing="2">BEFORE AI</text>
+
+  <text x="60" y="310" font-family="Arial,sans-serif" font-size="88" font-weight="900" fill="white" letter-spacing="-3">0</text>
+  <text x="60" y="400" font-family="Arial,sans-serif" font-size="88" font-weight="900" fill="white" letter-spacing="-3">callbacks</text>
+
+  <!-- Arrow -->
+  <text x="530" y="370" font-family="Arial,sans-serif" font-size="80" fill="#2563eb" filter="url(#s)">→</text>
+
+  <!-- Right side -->
+  <text x="680" y="200" font-family="Arial,sans-serif" font-size="36" font-weight="700" fill="#60a5fa" letter-spacing="2">AFTER AI</text>
+
+  <text x="680" y="310" font-family="Arial,sans-serif" font-size="88" font-weight="900" fill="url(#glow)" letter-spacing="-3">3</text>
+  <text x="680" y="400" font-family="Arial,sans-serif" font-size="88" font-weight="900" fill="url(#glow)" letter-spacing="-3">interviews</text>
+
+  <!-- Week stat -->
+  <text x="680" y="450" font-family="Arial,sans-serif" font-size="24" fill="rgba(255,255,255,0.6)">in the first week</text>
+
+  <!-- Bottom band -->
+  <rect x="0" y="540" width="1280" height="180" fill="url(#glow)" opacity="0.95" rx="0"/>
+
+  <!-- Bottom content -->
+  <rect x="60" y="568" width="48" height="48" rx="12" fill="white" opacity="0.2"/>
+  <text x="84" y="602" font-family="Arial,sans-serif" font-size="24" font-weight="900" fill="white" text-anchor="middle">R</text>
+  <text x="126" y="602" font-family="Arial,sans-serif" font-size="24" font-weight="800" fill="white">ResumeTailored AI</text>
+
+  <text x="640" y="620" font-family="Arial,sans-serif" font-size="30" font-weight="900" fill="white" text-anchor="middle">I Used AI to Tailor My Resume — Here's What Happened</text>
+  <text x="640" y="660" font-family="Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.8)" text-anchor="middle">FREE at resumetailored.com · No payment required</text>
+</svg>

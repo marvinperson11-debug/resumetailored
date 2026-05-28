@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="628" viewBox="0 0 1200 628">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <filter id="s">
+      <feDropShadow dx="0" dy="6" stdDeviation="16" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Left panel — gradient -->
+  <rect width="520" height="628" fill="url(#bg)"/>
+
+  <!-- Right panel — white -->
+  <rect x="520" width="680" height="628" fill="#ffffff"/>
+
+  <!-- Left content -->
+  <!-- Logo -->
+  <rect x="52" y="48" width="44" height="44" rx="10" fill="white" opacity="0.15"/>
+  <text x="74" y="78" font-family="Arial,sans-serif" font-size="22" font-weight="900" fill="white" text-anchor="middle">R</text>
+  <text x="112" y="79" font-family="Arial,sans-serif" font-size="18" font-weight="800" fill="white">ResumeTailored</text>
+  <rect x="294" y="62" width="24" height="18" rx="5" fill="white" opacity="0.3"/>
+  <text x="306" y="76" font-family="Arial,sans-serif" font-size="10" font-weight="900" fill="white" text-anchor="middle">AI</text>
+
+  <!-- Left headline -->
+  <text x="52" y="185" font-family="Arial,sans-serif" font-size="52" font-weight="900" fill="white" letter-spacing="-1.5">Stop Sending</text>
+  <text x="52" y="248" font-family="Arial,sans-serif" font-size="52" font-weight="900" fill="#93c5fd" letter-spacing="-1.5">Generic</text>
+  <text x="52" y="311" font-family="Arial,sans-serif" font-size="52" font-weight="900" fill="white" letter-spacing="-1.5">Resumes.</text>
+
+  <text x="52" y="360" font-family="Arial,sans-serif" font-size="17" fill="rgba(255,255,255,0.8)" xml:space="preserve">Our AI rewrites your resume to match</text>
+  <text x="52" y="384" font-family="Arial,sans-serif" font-size="17" fill="rgba(255,255,255,0.8)">every job — more interviews, less rejection.</text>
+
+  <!-- Feature list -->
+  <circle cx="72" cy="436" r="14" fill="rgba(255,255,255,0.15)"/>
+  <text x="72" y="441" font-family="Arial,sans-serif" font-size="13" fill="white" text-anchor="middle">✓</text>
+  <text x="98" y="441" font-family="Arial,sans-serif" font-size="16" fill="white" font-weight="600">1 free tailoring every day</text>
+
+  <circle cx="72" cy="476" r="14" fill="rgba(255,255,255,0.15)"/>
+  <text x="72" y="481" font-family="Arial,sans-serif" font-size="13" fill="white" text-anchor="middle">✓</text>
+  <text x="98" y="481" font-family="Arial,sans-serif" font-size="16" fill="white" font-weight="600">100+ professional templates</text>
+
+  <circle cx="72" cy="516" r="14" fill="rgba(255,255,255,0.15)"/>
+  <text x="72" y="521" font-family="Arial,sans-serif" font-size="13" fill="white" text-anchor="middle">✓</text>
+  <text x="98" y="521" font-family="Arial,sans-serif" font-size="16" fill="white" font-weight="600">AI cover letter included</text>
+
+  <!-- CTA -->
+  <rect x="52" y="556" width="236" height="50" rx="12" fill="white"/>
+  <text x="170" y="587" font-family="Arial,sans-serif" font-size="17" font-weight="800" fill="#2563eb" text-anchor="middle">Start for Free →</text>
+
+  <!-- Right panel content — mockup phone/resume -->
+  <rect x="570" y="40" width="580" height="548" rx="20" fill="#f8faff" stroke="#e5e7eb" stroke-width="1.5"/>
+
+  <!-- Mock resume card -->
+  <rect x="600" y="70" width="520" height="490" rx="16" fill="white" filter="url(#s)"/>
+
+  <!-- Resume header area -->
+  <rect x="600" y="70" width="520" height="80" rx="16" fill="#2563eb"/>
+  <rect x="600" y="118" width="520" height="32" fill="#2563eb"/>
+  <text x="860" y="103" font-family="Arial,sans-serif" font-size="22" font-weight="900" fill="white" text-anchor="middle">Alex Johnson</text>
+  <text x="860" y="130" font-family="Arial,sans-serif" font-size="13" fill="rgba(255,255,255,0.85)" text-anchor="middle">alex@email.com  ·  linkedin.com/in/alex  ·  San Francisco, CA</text>
+
+  <!-- AI tailored badge -->
+  <rect x="748" y="162" width="224" height="28" rx="14" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="860" y="181" font-family="Arial,sans-serif" font-size="12" font-weight="700" fill="#2563eb" text-anchor="middle">✦ AI-Tailored for This Role</text>
+
+  <!-- Resume body -->
+  <text x="626" y="216" font-family="Arial,sans-serif" font-size="10" font-weight="800" fill="#2563eb" letter-spacing="1.5">EXPERIENCE</text>
+  <rect x="626" y="220" width="468" height="1.5" fill="#dbeafe"/>
+
+  <text x="626" y="244" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#111827">Senior Software Engineer — TechCorp</text>
+  <text x="1094" y="244" font-family="Arial,sans-serif" font-size="11" fill="#9ca3af" text-anchor="end">2021 – Present</text>
+  <text x="626" y="264" font-family="Arial,sans-serif" font-size="12" fill="#374151">• Reduced API latency by 40% across 3M daily requests via caching layer</text>
+  <text x="626" y="282" font-family="Arial,sans-serif" font-size="12" fill="#374151">• Led migration to microservices — cut deployment time from 2hr to 12min</text>
+  <text x="626" y="300" font-family="Arial,sans-serif" font-size="12" fill="#374151">• Mentored 4 junior engineers; 3 promoted within 18 months</text>
+
+  <rect x="626" y="316" width="468" height="1" fill="#f3f4f6"/>
+
+  <text x="626" y="338" font-family="Arial,sans-serif" font-size="14" font-weight="700" fill="#111827">Software Engineer — StartupXYZ</text>
+  <text x="1094" y="338" font-family="Arial,sans-serif" font-size="11" fill="#9ca3af" text-anchor="end">2019 – 2021</text>
+  <text x="626" y="358" font-family="Arial,sans-serif" font-size="12" fill="#374151">• Built real-time dashboard processing 50K events/sec with Node.js + Redis</text>
+  <text x="626" y="376" font-family="Arial,sans-serif" font-size="12" fill="#374151">• Increased test coverage from 42% to 91%; reduced production bugs by 73%</text>
+
+  <text x="626" y="412" font-family="Arial,sans-serif" font-size="10" font-weight="800" fill="#2563eb" letter-spacing="1.5">SKILLS</text>
+  <rect x="626" y="416" width="468" height="1.5" fill="#dbeafe"/>
+  <text x="626" y="438" font-family="Arial,sans-serif" font-size="12" fill="#374151">Python · Node.js · PostgreSQL · AWS · Kubernetes · Redis · GraphQL · CI/CD</text>
+
+  <text x="626" y="472" font-family="Arial,sans-serif" font-size="10" font-weight="800" fill="#2563eb" letter-spacing="1.5">EDUCATION</text>
+  <rect x="626" y="476" width="468" height="1.5" fill="#dbeafe"/>
+  <text x="626" y="498" font-family="Arial,sans-serif" font-size="13" font-weight="700" fill="#111827">B.S. Computer Science — UC Berkeley</text>
+  <text x="626" y="518" font-family="Arial,sans-serif" font-size="12" fill="#6b7280">GPA 3.8 · Dean's List · ACM Club President</text>
+
+  <!-- Match score badge -->
+  <rect x="970" y="442" width="110" height="110" rx="16" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+  <text x="1025" y="485" font-family="Arial,sans-serif" font-size="11" font-weight="800" fill="#166534" text-anchor="middle">JOB MATCH</text>
+  <text x="1025" y="522" font-family="Arial,sans-serif" font-size="34" font-weight="900" fill="#16a34a" text-anchor="middle">97%</text>
+  <text x="1025" y="542" font-family="Arial,sans-serif" font-size="10" fill="#4ade80" text-anchor="middle">●●●●●</text>
+
+  <!-- URL watermark -->
+  <text x="860" y="614" font-family="Arial,sans-serif" font-size="13" fill="#9ca3af" text-anchor="middle">resumetailored.com</text>
+</svg>
