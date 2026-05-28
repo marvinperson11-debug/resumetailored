@@ -3,13 +3,67 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ResumeTailored AI — Land More Interviews</title>
-  <style>
-    body { background: #07070f; }
-  </style>
-  <meta name="description" content="Paste your resume and any job posting. Our AI rewrites your resume and writes a cover letter perfectly tailored to that role — in seconds." />
-  <link rel="icon" href="favicon.png" type="image/png" />
-  <!-- Google tag (gtag.js) -->
+
+  <!-- Primary SEO -->
+  <title>ResumeTailored AI — AI Resume Tailor &amp; Cover Letter Generator</title>
+  <meta name="description" content="The best AI resume tailor online. Paste your resume and any job posting — our AI rewrites your resume with ATS keywords and generates a personalized cover letter in 30 seconds. Free to start, no credit card required." />
+  <meta name="keywords" content="AI resume tailor, resume tailoring, ATS resume optimizer, tailor resume to job description, AI cover letter generator, resume keyword optimizer, resume builder AI, job application AI, personalized resume, ATS friendly resume" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://resumetailored.com/" />
+
+  <!-- Open Graph (Facebook, LinkedIn) -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:url"         content="https://resumetailored.com/" />
+  <meta property="og:title"       content="ResumeTailored AI — AI Resume Tailor &amp; Cover Letter Generator" />
+  <meta property="og:description" content="Paste your resume and a job posting. Our AI rewrites it with the right ATS keywords and writes a cover letter in 30 seconds. Free to start." />
+  <meta property="og:image"       content="https://resumetailored.com/favicon-192.png" />
+  <meta property="og:site_name"   content="ResumeTailored AI" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card"        content="summary" />
+  <meta name="twitter:title"       content="ResumeTailored AI — AI Resume Tailor" />
+  <meta name="twitter:description" content="AI that tailors your resume and writes your cover letter for every job posting — in 30 seconds. Free to start." />
+  <meta name="twitter:image"       content="https://resumetailored.com/favicon-192.png" />
+
+  <!-- Favicons -->
+  <link rel="icon"             type="image/svg+xml"  href="favicon.svg" />
+  <link rel="icon"             type="image/png" sizes="32x32" href="favicon-32.png" />
+  <link rel="icon"             type="image/png" sizes="64x64" href="favicon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ResumeTailored AI",
+    "url": "https://resumetailored.com",
+    "description": "AI-powered resume tailoring and cover letter generation. Paste your resume and a job posting to get an ATS-optimized resume and personalized cover letter in under 30 seconds.",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Free",
+        "price": "0",
+        "priceCurrency": "USD",
+        "description": "1 free AI resume tailoring per day"
+      },
+      {
+        "@type": "Offer",
+        "name": "Pro",
+        "price": "19",
+        "priceCurrency": "USD",
+        "description": "Unlimited AI resume tailorings, cover letters, and career tools"
+      }
+    ],
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "reviewCount": "3"
+    }
+  }
+  </script>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -18,145 +72,716 @@
     gtag('config', 'G-JWC76X5X68');
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-dark:  #1d4ed8;
+      --blue-light: #eff6ff;
+      --text:       #111827;
+      --muted:      #6b7280;
+      --border:     #e5e7eb;
+      --gray:       #f9fafb;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #fff;
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── NAV ─────────────────────────────────────────── */
+    .lp-nav {
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .lp-nav-inner {
+      max-width: 1200px; margin: 0 auto; padding: 0 24px;
+      height: 64px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .lp-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 800; font-size: 17px; color: var(--text); letter-spacing: -0.3px;
+    }
+    .lp-logo-icon {
+      width: 36px; height: 36px; background: var(--blue); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 17px; font-weight: 900;
+    }
+    .lp-logo-ai {
+      background: var(--blue); color: #fff; font-size: 10px; font-weight: 900;
+      padding: 2px 6px; border-radius: 5px; letter-spacing: 0.5px;
+    }
+    .lp-nav-right { display: flex; align-items: center; gap: 10px; }
+    .lp-btn-nav {
+      display: inline-flex; align-items: center;
+      padding: 9px 22px; border: 2px solid var(--blue); border-radius: 8px;
+      font-weight: 700; font-size: 15px; color: var(--blue); background: #fff;
+      cursor: pointer; transition: background 0.18s;
+    }
+    .lp-btn-nav:hover { background: var(--blue-light); }
+    .lp-hamburger {
+      display: none; background: none; border: none;
+      cursor: pointer; padding: 6px; color: var(--text); line-height: 1;
+    }
+
+    /* Mobile overlay menu */
+    .lp-mob-menu {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(17,24,39,0.97);
+      flex-direction: column; align-items: center; justify-content: center; gap: 36px;
+    }
+    .lp-mob-menu.open { display: flex; }
+    .lp-mob-menu a {
+      color: #fff; font-size: 24px; font-weight: 700; text-align: center;
+      transition: color 0.15s;
+    }
+    .lp-mob-menu a:hover { color: #60a5fa; }
+    .lp-mob-close {
+      position: absolute; top: 20px; right: 22px;
+      background: none; border: none; color: #9ca3af; font-size: 30px; cursor: pointer;
+    }
+
+    /* ── BUTTONS ─────────────────────────────────────── */
+    .lp-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 14px 32px; background: var(--blue); color: #fff;
+      font-weight: 700; font-size: 16px; border-radius: 8px;
+      cursor: pointer; transition: background 0.18s, transform 0.18s; border: none;
+    }
+    .lp-btn:hover { background: var(--blue-dark); transform: translateY(-2px); }
+    .lp-btn-white {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 14px 32px; background: #fff; color: var(--blue);
+      font-weight: 700; font-size: 16px; border-radius: 8px;
+      cursor: pointer; transition: background 0.18s, transform 0.18s; border: none;
+    }
+    .lp-btn-white:hover { background: var(--blue-light); transform: translateY(-2px); }
+    .lp-btn-full { width: 100%; }
+    .lp-btn-outline-full {
+      width: 100%; display: flex; align-items: center; justify-content: center;
+      padding: 13px 24px; background: #fff; color: var(--blue);
+      font-weight: 700; font-size: 15px; border-radius: 10px;
+      cursor: pointer; border: 1.5px solid var(--blue); transition: background 0.18s;
+    }
+    .lp-btn-outline-full:hover { background: var(--blue-light); }
+    .lp-btn-solid-full {
+      width: 100%; display: flex; align-items: center; justify-content: center;
+      padding: 14px 24px; background: var(--blue); color: #fff;
+      font-weight: 700; font-size: 15px; border-radius: 10px;
+      cursor: pointer; border: none; transition: background 0.18s;
+    }
+    .lp-btn-solid-full:hover { background: var(--blue-dark); }
+
+    /* ── HERO ────────────────────────────────────────── */
+    .lp-hero {
+      background: #fff; padding: 80px 24px 70px; text-align: center;
+    }
+    .lp-hero-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--blue-light); color: var(--blue);
+      font-size: 13px; font-weight: 700; padding: 6px 16px;
+      border-radius: 100px; margin-bottom: 28px;
+    }
+    .lp-hero h1 {
+      font-size: clamp(38px, 7vw, 68px); font-weight: 900;
+      line-height: 1.08; letter-spacing: -2px; color: var(--text);
+      margin-bottom: 24px; max-width: 820px; margin-left: auto; margin-right: auto;
+    }
+    .lp-blue { color: var(--blue); }
+    .lp-hero-sub {
+      font-size: 18px; color: var(--muted);
+      max-width: 560px; margin: 0 auto 40px; line-height: 1.75;
+    }
+    .lp-hero-cta {
+      display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 60px;
+    }
+    .lp-hero-note { font-size: 13px; color: var(--muted); }
+
+    /* Resume mockup */
+    .lp-mockup-outer { max-width: 700px; margin: 0 auto; }
+    .lp-mockup-bg {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+      border-radius: 20px; padding: 36px 40px 48px;
+      display: flex; align-items: flex-start; justify-content: center;
+    }
+    .lp-resume-paper {
+      background: #fff; border-radius: 6px;
+      padding: 18px 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      font-size: 0; line-height: 0; color: #1a1a1a;
+      flex-shrink: 0;
+    }
+    .lp-resume-paper-2 {
+      margin-left: -36px; margin-top: 20px; opacity: 0.8; z-index: 1;
+    }
+    .lp-resume-paper-1 { position: relative; z-index: 2; width: 250px; }
+    .lp-resume-paper-2 { width: 230px; }
+    .rc-n  { font-size: 11px; font-weight: 800; text-align: center; display: block; margin-bottom: 2px; }
+    .rc-c  { font-size: 6px; color: #666; text-align: center; display: block; margin-bottom: 8px; }
+    .rc-s  { font-size: 6.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+             border-bottom: 1px solid #ccc; padding-bottom: 2px; margin: 6px 0 3px; display: block; color: #333; }
+    .rc-e  { font-size: 6.5px; font-weight: 700; display: block; margin: 2px 0 1px; }
+    .rc-l  { font-size: 5.5px; color: #555; display: block; margin-bottom: 1.5px; }
+    .rc-b  { font-size: 5.5px; color: #444; display: block; padding-left: 8px; margin-bottom: 1.5px; }
+
+    /* ── SECTION BASE ────────────────────────────────── */
+    .lp-sec { padding: 80px 24px; }
+    .lp-sec-gray { background: var(--gray); }
+    .lp-wrap { max-width: 1100px; margin: 0 auto; }
+    .lp-title {
+      font-size: clamp(26px, 4vw, 38px); font-weight: 900; text-align: center;
+      color: var(--text); margin-bottom: 56px; letter-spacing: -0.8px;
+    }
+
+    /* ── HOW IT WORKS ────────────────────────────────── */
+    .lp-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; }
+    .lp-step { text-align: center; padding: 40px 28px; }
+    .lp-step-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px; font-size: 32px;
+    }
+    .lp-ic1 { background: #eff6ff; }
+    .lp-ic2 { background: #f0fdf4; }
+    .lp-ic3 { background: #fef3c7; }
+    .lp-step h3 { font-size: 18px; font-weight: 800; margin-bottom: 10px; }
+    .lp-step p  { font-size: 15px; color: var(--muted); line-height: 1.65; }
+
+    /* ── FEATURES ────────────────────────────────────── */
+    .lp-features { display: flex; flex-direction: column; gap: 72px; }
+    .lp-feat { display: flex; align-items: center; gap: 52px; }
+    .lp-feat-rev { flex-direction: row-reverse; }
+    .lp-feat-img {
+      flex-shrink: 0; width: 200px; height: 160px; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center; font-size: 72px;
+    }
+    .lp-fi1 { background: #eff6ff; }
+    .lp-fi2 { background: #f0fdf4; }
+    .lp-fi3 { background: #fff7ed; }
+    .lp-fi4 { background: #fdf2f8; }
+    .lp-feat-text h3 { font-size: 22px; font-weight: 800; margin-bottom: 12px; }
+    .lp-feat-text p  { font-size: 16px; color: var(--muted); line-height: 1.75; max-width: 460px; }
+
+    /* ── TESTIMONIALS ────────────────────────────────── */
+    .lp-tcard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+    .lp-tcard {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px; transition: box-shadow 0.2s;
+    }
+    .lp-tcard:hover { box-shadow: 0 8px 32px rgba(37,99,235,0.1); }
+    .lp-stars { color: #f59e0b; font-size: 15px; letter-spacing: 2px; margin-bottom: 14px; }
+    .lp-tcard p { font-size: 15px; color: #374151; line-height: 1.75; margin-bottom: 18px; }
+    .lp-tauthor { font-size: 13px; font-weight: 700; color: var(--muted); }
+
+    /* ── CTA BANNER ──────────────────────────────────── */
+    .lp-cta-wrap {
+      background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 100%);
+      padding: 80px 24px; text-align: center;
+    }
+    .lp-cta-wrap h2 {
+      font-size: clamp(28px, 5vw, 44px); font-weight: 900; color: #fff;
+      margin-bottom: 32px; letter-spacing: -1px; line-height: 1.2;
+    }
+    .lp-cta-papers {
+      display: flex; justify-content: center; gap: 16px; margin-top: 48px;
+    }
+    .lp-cta-paper {
+      background: rgba(255,255,255,0.12); border-radius: 8px;
+      width: 110px; height: 148px; padding: 12px 10px;
+      backdrop-filter: blur(8px); flex-shrink: 0;
+    }
+    .lp-cta-paper:nth-child(2) { margin-top: -16px; opacity: 0.75; }
+    .cta-line {
+      height: 4px; background: rgba(255,255,255,0.5);
+      border-radius: 2px; margin-bottom: 7px;
+    }
+    .cta-line.s { width: 65%; }
+    .cta-line.xs { width: 40%; }
+
+    /* ── FAQ ─────────────────────────────────────────── */
+    .lp-faq { max-width: 720px; margin: 0 auto; }
+    .lp-faq-item { border-bottom: 1px solid var(--border); padding: 22px 0; }
+    .lp-faq-q {
+      display: flex; justify-content: space-between; align-items: center;
+      cursor: pointer; font-size: 16px; font-weight: 600; color: var(--text);
+      gap: 16px; background: none; border: none; width: 100%;
+      text-align: left; padding: 0; transition: color 0.15s;
+    }
+    .lp-faq-q:hover { color: var(--blue); }
+    .lp-faq-plus {
+      font-size: 24px; color: var(--muted); flex-shrink: 0;
+      line-height: 1; transition: transform 0.2s;
+    }
+    .lp-faq-item.open .lp-faq-plus { transform: rotate(45deg); color: var(--blue); }
+    .lp-faq-a {
+      display: none; margin-top: 14px;
+      font-size: 15px; color: var(--muted); line-height: 1.75;
+    }
+    .lp-faq-item.open .lp-faq-a { display: block; }
+
+    /* ── PRICING ─────────────────────────────────────── */
+    .lp-price-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 28px; max-width: 720px; margin: 0 auto;
+    }
+    .lp-pcard {
+      border: 1.5px solid var(--border); border-radius: 20px; padding: 40px;
+      position: relative; background: #fff; transition: box-shadow 0.2s;
+    }
+    .lp-pcard:hover { box-shadow: 0 8px 40px rgba(37,99,235,0.1); }
+    .lp-pcard-pro {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 1px var(--blue), 0 16px 48px rgba(37,99,235,0.15);
+    }
+    .lp-pbadge {
+      position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+      background: var(--blue); color: #fff; font-size: 12px; font-weight: 700;
+      padding: 5px 20px; border-radius: 100px; white-space: nowrap;
+    }
+    .lp-pname { font-size: 12px; font-weight: 800; text-transform: uppercase;
+                letter-spacing: 1.5px; color: var(--muted); margin-bottom: 12px; }
+    .lp-pprice { font-size: 60px; font-weight: 900; letter-spacing: -3px;
+                  line-height: 1; color: var(--text); }
+    .lp-pprice-pro { color: var(--blue); }
+    .lp-pperiod { font-size: 14px; color: var(--muted); margin: 8px 0 28px; }
+    .lp-pfeatures { list-style: none; margin-bottom: 32px; }
+    .lp-pfeatures li {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; font-size: 15px; color: #374151;
+      border-bottom: 1px solid var(--border);
+    }
+    .lp-pfeatures li:last-child { border: none; }
+    .ck { color: #22c55e; font-weight: 900; font-size: 16px; }
+    .nx { color: #d1d5db; font-weight: 900; font-size: 16px; }
+
+    /* ── FOOTER ──────────────────────────────────────── */
+    .lp-footer {
+      background: var(--gray); border-top: 1px solid var(--border);
+      padding: 56px 24px 32px;
+    }
+    .lp-footer-grid {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 48px; margin-bottom: 48px;
+    }
+    .lp-fbrand h3 { font-size: 17px; font-weight: 800; color: var(--blue); margin-bottom: 12px; }
+    .lp-fbrand p  { font-size: 14px; color: var(--muted); line-height: 1.7; max-width: 260px; }
+    .lp-fcol h4 {
+      font-size: 12px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--text); margin-bottom: 16px;
+    }
+    .lp-fcol a { display: block; font-size: 14px; color: var(--muted); margin-bottom: 10px; transition: color 0.15s; }
+    .lp-fcol a:hover { color: var(--blue); }
+    .lp-footer-bot {
+      max-width: 1100px; margin: 0 auto;
+      padding-top: 24px; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .lp-footer-bot span { font-size: 13px; color: var(--muted); }
+
+    /* ── RESPONSIVE ──────────────────────────────────── */
+    @media (max-width: 768px) {
+      .lp-btn-nav { display: none; }
+      .lp-hamburger { display: block; }
+
+      .lp-hero { padding: 60px 20px 52px; }
+      .lp-hero h1 { letter-spacing: -1px; }
+      .lp-hero-sub { font-size: 16px; }
+      .lp-mockup-bg { padding: 28px 24px 36px; }
+      .lp-resume-paper-1 { width: 200px; }
+      .lp-resume-paper-2 { width: 180px; margin-left: -28px; }
+
+      .lp-sec { padding: 56px 20px; }
+
+      .lp-features { gap: 48px; }
+      .lp-feat, .lp-feat-rev { flex-direction: column; gap: 24px; text-align: center; }
+      .lp-feat-img { width: 140px; height: 120px; font-size: 56px; }
+      .lp-feat-text p { max-width: 100%; }
+
+      .lp-cta-wrap { padding: 56px 20px; }
+      .lp-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+      .lp-fbrand { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 480px) {
+      .lp-hero { padding: 48px 16px 44px; }
+      .lp-sec { padding: 44px 16px; }
+      .lp-price-grid { grid-template-columns: 1fr; }
+      .lp-footer-grid { grid-template-columns: 1fr; }
+      .lp-cta-papers { display: none; }
+      .lp-hero-cta .lp-btn { width: 100%; }
+    }
+  </style>
 </head>
 <body>
+
   <!-- NAV -->
-  <nav class="nav">
-    <div class="nav-inner">
-      <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
-      <a href="/app.html" class="btn btn-primary">Try Free →</a>
+  <nav class="lp-nav">
+    <div class="lp-nav-inner">
+      <a href="/" class="lp-logo">
+        <div class="lp-logo-icon">R</div>
+        ResumeTailored <span class="lp-logo-ai">AI</span>
+      </a>
+      <div class="lp-nav-right">
+        <a href="/app.html" class="lp-btn-nav">Get Started</a>
+        <button class="lp-hamburger" id="menuOpen" aria-label="Open menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect y="4"  width="24" height="2.5" rx="1.25" fill="currentColor"/>
+            <rect y="11" width="24" height="2.5" rx="1.25" fill="currentColor"/>
+            <rect y="18" width="24" height="2.5" rx="1.25" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
     </div>
   </nav>
 
-  <!-- HERO -->
-  <section class="hero">
-    <div class="hero-inner">
-      <div class="hero-tag">Free tier available · No credit card needed</div>
-      <h1>Your resume,<br /><span class="grad">perfectly tailored</span><br />to every job.</h1>
-      <p class="hero-sub">
-        Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.
-      </p>
-      <div class="hero-cta">
-        <a href="/app.html" class="btn btn-primary btn-lg">Tailor My Resume Free →</a>
-        <span class="hero-note">1 free tailoring per day · Create free account</span>
-      </div>
+  <!-- MOBILE MENU OVERLAY -->
+  <div class="lp-mob-menu" id="mobileMenu">
+    <button class="lp-mob-close" id="menuClose" aria-label="Close menu">✕</button>
+    <a href="/app.html"     id="mm1">Get Started Free</a>
+    <a href="#how-it-works" id="mm2">How It Works</a>
+    <a href="#pricing"      id="mm3">Pricing</a>
+    <a href="/app.html"     id="mm4">Dashboard</a>
+  </div>
 
-      <!-- Demo card -->
-      <div class="demo-card">
-        <div class="demo-before">
-          <div class="demo-label">Your resume</div>
-          <div class="demo-text">• Managed marketing campaigns and worked with teams to grow revenue and improve brand awareness across multiple channels...</div>
+  <!-- HERO -->
+  <section class="lp-hero">
+    <div class="lp-hero-tag">✦ AI Resume Tailor &nbsp;·&nbsp; Free to start</div>
+    <h1>The #1 AI Resume Tailor —<br><span class="lp-blue">Land More Interviews</span></h1>
+    <p class="lp-hero-sub">
+      Paste your resume and any job posting. Our AI rewrites it with the exact ATS keywords employers need and generates a personalized cover letter — in under 30 seconds.
+    </p>
+    <div class="lp-hero-cta">
+      <a href="/app.html" class="lp-btn">Get Started Free →</a>
+      <span class="lp-hero-note">1 free tailoring per day · No credit card required</span>
+    </div>
+
+    <!-- Layered resume preview -->
+    <div class="lp-mockup-outer">
+      <div class="lp-mockup-bg">
+        <div class="lp-resume-paper lp-resume-paper-2">
+          <span class="rc-n">James Appleseed</span>
+          <span class="rc-c">james@email.com · (555) 123-4567 · San Francisco, CA</span>
+          <span class="rc-s">Experience</span>
+          <span class="rc-e">Barnes &amp; Noble · Head Cashier · 2019–Present</span>
+          <span class="rc-b">• Managed daily transactions and team of 12</span>
+          <span class="rc-b">• Maintained 98% customer satisfaction</span>
+          <span class="rc-e">Best Buy · Cashier · 2017–2019</span>
+          <span class="rc-b">• Operated POS systems handling $50K+ daily</span>
+          <span class="rc-s">Skills</span>
+          <span class="rc-l">Customer Service · POS Systems · Leadership</span>
         </div>
-        <div class="demo-arrow">→</div>
-        <div class="demo-after">
-          <div class="demo-label ai-label">✦ AI Tailored</div>
-          <div class="demo-text after-text">• Spearheaded 6 cross-channel demand-gen campaigns (paid, email, SEO) that drove 34% YoY pipeline growth, generating $2.1M in attributed revenue for a SaaS product...</div>
+        <div class="lp-resume-paper lp-resume-paper-1">
+          <span class="rc-n">James Appleseed</span>
+          <span class="rc-c">james@email.com · (555) 123-4567 · San Francisco, CA</span>
+          <span class="rc-s">Summary</span>
+          <span class="rc-l">Results-driven Head Cashier with 7+ years delivering exceptional customer experiences and proven team leadership in high-volume retail.</span>
+          <span class="rc-s">Experience</span>
+          <span class="rc-e">Barnes &amp; Noble · Head Cashier · 2019–Present</span>
+          <span class="rc-b">• Led team of 12, achieving 98% satisfaction &amp; 15% faster checkout times</span>
+          <span class="rc-b">• Managed $75K+ daily transactions with 100% accuracy over 3 years</span>
+          <span class="rc-e">Best Buy · Senior Cashier · 2017–2019</span>
+          <span class="rc-b">• Processed $50K+ in daily POS while cross-training 8 new hires</span>
+          <span class="rc-s">Education</span>
+          <span class="rc-l">Clark University · B.S. Business Administration · 2017</span>
+          <span class="rc-s">Skills</span>
+          <span class="rc-l">Customer Experience · POS · Team Leadership · Loss Prevention</span>
         </div>
       </div>
     </div>
   </section>
 
   <!-- HOW IT WORKS -->
-  <section class="section">
-    <div class="container">
-      <h2 class="section-title">How it <span class="grad-text">works</span></h2>
-      <div class="steps">
-        <div class="step">
-          <div class="step-num">1</div>
+  <section class="lp-sec lp-sec-gray" id="how-it-works">
+    <div class="lp-wrap">
+      <h2 class="lp-title">How Our AI Resume Tailor Works</h2>
+      <div class="lp-steps">
+        <div class="lp-step">
+          <div class="lp-step-icon lp-ic1">📄</div>
           <h3>Paste your resume</h3>
-          <p>Copy and paste your current resume text. No formatting required.</p>
+          <p>Copy and paste your current resume text. No formatting required — plain text works perfectly.</p>
         </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <h3>Paste the job posting</h3>
+        <div class="lp-step">
+          <div class="lp-step-icon lp-ic2">🔍</div>
+          <h3>Add the job posting</h3>
           <p>Copy the full job description from LinkedIn, Indeed, or any job board.</p>
         </div>
-        <div class="step">
-          <div class="step-num">3</div>
+        <div class="lp-step">
+          <div class="lp-step-icon lp-ic3">✨</div>
           <h3>Get tailored results</h3>
-          <p>Our AI matches your experience to the role's keywords and requirements in seconds.</p>
+          <p>Our AI matches your experience to the role's keywords in seconds. Download and apply.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- SOCIAL PROOF -->
-  <section class="section section-gray">
-    <div class="container">
-      <h2 class="section-title">What job seekers are <span class="grad-text">saying</span></h2>
-      <div class="testimonials">
-        <div class="testimonial">
-          <div class="stars">★★★★★</div>
-          <p>"I was applying to 20+ jobs and getting no responses. After using ResumeTailor I got 3 interviews in the first week."</p>
-          <div class="testimonial-author">— Marcus T., Software Engineer</div>
+  <!-- FEATURES -->
+  <section class="lp-sec">
+    <div class="lp-wrap">
+      <div class="lp-features">
+
+        <div class="lp-feat">
+          <div class="lp-feat-img lp-fi1">💼</div>
+          <div class="lp-feat-text">
+            <h3>ATS Resume Optimizer — Get Past the Bots</h3>
+            <p>Over 90% of Fortune 500 companies use ATS software to auto-reject resumes. Our AI resume tailor injects the exact keywords from the job description so your application gets past automated filters and in front of real hiring managers.</p>
+          </div>
         </div>
-        <div class="testimonial">
-          <div class="stars">★★★★★</div>
+
+        <div class="lp-feat lp-feat-rev">
+          <div class="lp-feat-img lp-fi2">🏆</div>
+          <div class="lp-feat-text">
+            <h3>20 Professional Resume Templates</h3>
+            <p>Choose from 20 ATS-friendly resume and cover letter templates built around what employers actually want to see. Free users get 2 templates; Pro gets all 20 — classic, modern, executive, and more.</p>
+          </div>
+        </div>
+
+        <div class="lp-feat">
+          <div class="lp-feat-img lp-fi3">💰</div>
+          <div class="lp-feat-text">
+            <h3>Free AI Resume Tailor — No Credit Card</h3>
+            <p>No gimmicks, no hidden fees. Get one free AI resume tailoring every single day — no credit card required. Upgrade to Pro only when you're ready for unlimited tailorings.</p>
+          </div>
+        </div>
+
+        <div class="lp-feat lp-feat-rev">
+          <div class="lp-feat-img lp-fi4">✍️</div>
+          <div class="lp-feat-text">
+            <h3>AI Cover Letter Generator in 30 Seconds</h3>
+            <p>Don't just send a generic resume. Our AI cover letter generator writes a compelling, personalized letter that speaks directly to each job posting — in the same 30 seconds as your resume tailoring.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- TESTIMONIALS -->
+  <section class="lp-sec lp-sec-gray">
+    <div class="lp-wrap">
+      <h2 class="lp-title">What job seekers are saying</h2>
+      <div class="lp-tcard-grid">
+        <div class="lp-tcard">
+          <div class="lp-stars">★★★★★</div>
+          <p>"I was applying to 20+ jobs and getting no responses. After using ResumeTailored AI I got 3 interviews in the first week."</p>
+          <div class="lp-tauthor">— Marcus T., Software Engineer</div>
+        </div>
+        <div class="lp-tcard">
+          <div class="lp-stars">★★★★★</div>
           <p>"The cover letters it writes are actually good. Way better than anything I could write after a long day of job searching."</p>
-          <div class="testimonial-author">— Priya K., Marketing Manager</div>
+          <div class="lp-tauthor">— Priya K., Marketing Manager</div>
         </div>
-        <div class="testimonial">
-          <div class="stars">★★★★★</div>
+        <div class="lp-tcard">
+          <div class="lp-stars">★★★★★</div>
           <p>"I used to spend 45 minutes tailoring each application. Now it takes 2 minutes. Absolute game changer."</p>
-          <div class="testimonial-author">— Jordan L., Product Designer</div>
+          <div class="lp-tauthor">— Jordan L., Product Designer</div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section class="lp-cta-wrap">
+    <div class="lp-wrap">
+      <h2>Start tailoring your resume today,<br>land your dream job tomorrow</h2>
+      <a href="/app.html" class="lp-btn-white">Get Started Free →</a>
+      <div class="lp-cta-papers">
+        <div class="lp-cta-paper">
+          <div class="cta-line"></div>
+          <div class="cta-line s"></div>
+          <div class="cta-line xs"></div>
+          <div style="height:10px"></div>
+          <div class="cta-line"></div>
+          <div class="cta-line s"></div>
+          <div class="cta-line"></div>
+          <div class="cta-line xs"></div>
+          <div style="height:10px"></div>
+          <div class="cta-line"></div>
+          <div class="cta-line s"></div>
+        </div>
+        <div class="lp-cta-paper">
+          <div class="cta-line"></div>
+          <div class="cta-line s"></div>
+          <div class="cta-line xs"></div>
+          <div style="height:10px"></div>
+          <div class="cta-line"></div>
+          <div class="cta-line s"></div>
+          <div class="cta-line"></div>
+          <div style="height:10px"></div>
+          <div class="cta-line"></div>
+          <div class="cta-line xs"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="lp-sec">
+    <div class="lp-wrap">
+      <h2 class="lp-title">Frequently asked questions</h2>
+      <div class="lp-faq">
+
+        <div class="lp-faq-item">
+          <button class="lp-faq-q" onclick="toggleFaq(this)">
+            <span>Do I need a different resume for every job application?</span>
+            <span class="lp-faq-plus">+</span>
+          </button>
+          <div class="lp-faq-a">Yes — and that's exactly what ResumeTailored AI makes easy. A tailored resume is significantly more likely to pass ATS filters and catch a recruiter's eye. Our AI handles all the tailoring in seconds so you can apply to more jobs without the manual work.</div>
+        </div>
+
+        <div class="lp-faq-item">
+          <button class="lp-faq-q" onclick="toggleFaq(this)">
+            <span>How does the AI tailor my resume?</span>
+            <span class="lp-faq-plus">+</span>
+          </button>
+          <div class="lp-faq-a">Our AI reads your resume and the job posting, then rewrites your bullet points and summary to match the specific keywords, skills, and tone that employer is looking for — while keeping your authentic experience intact.</div>
+        </div>
+
+        <div class="lp-faq-item">
+          <button class="lp-faq-q" onclick="toggleFaq(this)">
+            <span>Is the free tier really free? Does this site sell my data?</span>
+            <span class="lp-faq-plus">+</span>
+          </button>
+          <div class="lp-faq-a">Yes, genuinely free — 1 tailoring per day, no credit card, no auto-charge trial. We do not sell your data. Your resume text is only sent to our AI for processing and is never stored or shared.</div>
+        </div>
+
+        <div class="lp-faq-item">
+          <button class="lp-faq-q" onclick="toggleFaq(this)">
+            <span>What does ATS-friendly mean?</span>
+            <span class="lp-faq-plus">+</span>
+          </button>
+          <div class="lp-faq-a">ATS (Applicant Tracking System) is software most large employers use to automatically screen resumes before a human ever sees them. An ATS-friendly resume uses the right keywords and clean formatting to pass these automated filters.</div>
+        </div>
+
+        <div class="lp-faq-item">
+          <button class="lp-faq-q" onclick="toggleFaq(this)">
+            <span>Can I cancel my Pro subscription anytime?</span>
+            <span class="lp-faq-plus">+</span>
+          </button>
+          <div class="lp-faq-a">Absolutely. Cancel anytime from your account settings — no questions asked, no hidden fees. You keep full access until the end of your current billing period.</div>
+        </div>
+
       </div>
     </div>
   </section>
 
   <!-- PRICING -->
-  <section class="section" id="pricing">
-    <div class="container">
-      <h2 class="section-title">Simple, <span class="grad-text">transparent</span> pricing</h2>
-      <div class="pricing-cards">
-        <div class="pricing-card">
-          <div class="plan-name">Free</div>
-          <div class="plan-price">$0</div>
-          <div class="plan-period">forever</div>
-          <ul class="plan-features">
-            <li><span class="check">✦</span> 1 tailoring per day</li>
-            <li><span class="check">✦</span> Resume tailoring</li>
-            <li><span class="check">✦</span> Cover letter generation</li>
-            <li><span class="no">✕</span> Unlimited tailorings</li>
-            <li><span class="no">✕</span> Career Hub access</li>
+  <section class="lp-sec lp-sec-gray" id="pricing">
+    <div class="lp-wrap">
+      <h2 class="lp-title">Simple, transparent pricing</h2>
+      <div class="lp-price-grid">
+
+        <div class="lp-pcard">
+          <div class="lp-pname">Free</div>
+          <div class="lp-pprice">$0</div>
+          <div class="lp-pperiod">forever</div>
+          <ul class="lp-pfeatures">
+            <li><span class="ck">✓</span> 1 tailoring per day</li>
+            <li><span class="ck">✓</span> Resume tailoring</li>
+            <li><span class="ck">✓</span> Cover letter generation</li>
+            <li><span class="ck">✓</span> 2 resume templates</li>
+            <li><span class="nx">✕</span> Unlimited tailorings</li>
+            <li><span class="nx">✕</span> Career Hub access</li>
+            <li><span class="nx">✕</span> All 20 templates</li>
           </ul>
-          <a href="/app.html" class="btn btn-ghost btn-full">Get Started Free</a>
+          <a href="/app.html" class="lp-btn-outline-full">Get Started Free</a>
         </div>
-        <div class="pricing-card pricing-card-featured">
-          <div class="plan-badge">✦ Most Popular</div>
-          <div class="plan-name">Pro</div>
-          <div class="plan-price">$19</div>
-          <div class="plan-period">per month · cancel anytime</div>
-          <ul class="plan-features">
-            <li><span class="check">✦</span> Unlimited resume tailorings</li>
-            <li><span class="check">✦</span> Cover letter generation</li>
-            <li><span class="check">✦</span> Resume + cover letter together</li>
-            <li><span class="check">✦</span> Community networking forum</li>
-            <li><span class="check">✦</span> Salary negotiation guide</li>
-            <li><span class="check">✦</span> Quarterly career check-ins</li>
-            <li><span class="check">✦</span> Priority AI processing</li>
+
+        <div class="lp-pcard lp-pcard-pro">
+          <div class="lp-pbadge">⭐ Most Popular</div>
+          <div class="lp-pname">Pro</div>
+          <div class="lp-pprice lp-pprice-pro">$19</div>
+          <div class="lp-pperiod">per month · cancel anytime</div>
+          <ul class="lp-pfeatures">
+            <li><span class="ck">✓</span> Unlimited resume tailorings</li>
+            <li><span class="ck">✓</span> Cover letter generation</li>
+            <li><span class="ck">✓</span> Resume + cover letter together</li>
+            <li><span class="ck">✓</span> All 20 professional templates</li>
+            <li><span class="ck">✓</span> Career Hub access</li>
+            <li><span class="ck">✓</span> Salary negotiation guide</li>
+            <li><span class="ck">✓</span> Community networking forum</li>
           </ul>
-          <a href="/app.html?plan=pro" class="btn btn-primary btn-full">Start Pro — $19/mo →</a>
+          <a href="/app.html?plan=pro" class="lp-btn-solid-full">Start Pro — $19/mo →</a>
         </div>
+
       </div>
     </div>
   </section>
 
+  <!-- SEO CONTENT BLOCK -->
+  <section class="lp-sec" style="padding-top:56px;padding-bottom:56px;">
+    <div class="lp-wrap" style="max-width:820px;">
+      <h2 class="lp-title" style="font-size:22px;margin-bottom:20px;text-align:left;">The Best Free AI Resume Tailor Online</h2>
+      <p style="font-size:15px;color:#374151;line-height:1.85;margin-bottom:18px;">
+        ResumeTailored AI is the fastest, most accurate AI resume tailor available. Unlike generic resume builders, our tool reads the actual job description you're applying for and rewrites your resume to match it exactly — including the specific skills, keywords, and language that applicant tracking systems (ATS) and recruiters are trained to look for.
+      </p>
+      <p style="font-size:15px;color:#374151;line-height:1.85;margin-bottom:18px;">
+        Whether you're applying for software engineering jobs on LinkedIn, marketing roles on Indeed, or finance positions on Glassdoor, our AI cover letter generator and resume keyword optimizer ensures every application looks custom-crafted — without spending 45 minutes on each one.
+      </p>
+      <p style="font-size:15px;color:#374151;line-height:1.85;">
+        Trusted by job seekers who've landed interviews at top companies. Start free — 1 AI resume tailoring every day, no credit card required.
+      </p>
+    </div>
+  </section>
+
   <!-- FOOTER -->
-  <footer class="footer">
-    <div class="container">
-      <div class="footer-inner">
-        <span class="logo">ResumeTailored <span class="badge-ai">AI</span></span>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
-          <a href="/about.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">How It Works</a>
-          <a href="/cancel.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">Cancel Anytime</a>
-          <a href="/app.html" style="color:var(--text-muted);text-decoration:none;font-size:14px;font-weight:600;">Dashboard</a>
-        </div>
-        <span style="color:var(--text-muted);font-size:13px;">© 2025 ResumeTailored. All rights reserved.</span>
+  <footer class="lp-footer">
+    <div class="lp-footer-grid">
+      <div class="lp-fbrand">
+        <h3>ResumeTailored AI</h3>
+        <p>AI-powered resume tailoring that gets you more interviews. Built for job seekers who want to stand out.</p>
+      </div>
+      <div class="lp-fcol">
+        <h4>Product</h4>
+        <a href="/app.html">Dashboard</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <div class="lp-fcol">
+        <h4>Resources</h4>
+        <a href="/about.html">About</a>
+        <a href="/cancel.html">Cancel Subscription</a>
+      </div>
+      <div class="lp-fcol">
+        <h4>Contact</h4>
+        <a href="mailto:support@resumetailored.com">support@resumetailored.com</a>
       </div>
     </div>
+    <div class="lp-footer-bot">
+      <span>© 2026 ResumeTailored AI. All rights reserved.</span>
+      <span>Made for job seekers everywhere</span>
+    </div>
   </footer>
+
+  <script>
+    const menu = document.getElementById('mobileMenu');
+
+    document.getElementById('menuOpen').addEventListener('click', () => {
+      menu.classList.add('open');
+    });
+    document.getElementById('menuClose').addEventListener('click', () => {
+      menu.classList.remove('open');
+    });
+    ['mm1','mm2','mm3','mm4'].forEach(id => {
+      document.getElementById(id).addEventListener('click', () => {
+        menu.classList.remove('open');
+      });
+    });
+
+    function toggleFaq(btn) {
+      const item = btn.closest('.lp-faq-item');
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.lp-faq-item.open').forEach(el => el.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    }
+  </script>
 </body>
 </html>
