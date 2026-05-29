@@ -136,6 +136,8 @@ app.get('/app',          (req, res) => res.redirect(301, '/dashboard'));
 const aboutHtml = path.join(__dirname, 'public', 'about.html');
 app.get('/how-it-works', (req, res) => res.sendFile(aboutHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
+const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
+app.get('/blog',         (req, res) => res.sendFile(blogIndexHtml));
 
 // Raw body needed for Stripe webhook verification
 app.use('/webhook', express.raw({ type: 'application/json' }));
