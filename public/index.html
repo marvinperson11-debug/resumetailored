@@ -1598,6 +1598,27 @@
   </div>
 </section>
 
+<!-- CONTACT MODAL -->
+<div class="modal-overlay" id="contactModal" onclick="closeContactModal(event)">
+  <div class="modal-box" style="max-width:520px;">
+    <h3 style="margin-bottom:6px;">Contact Us</h3>
+    <p style="font-size:14px;color:#6b7280;margin-bottom:4px;">We read every message and respond within 24 hours.</p>
+    <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">📧 <a href="mailto:support@resumetailored.com" style="color:#2563eb;font-weight:600;">support@resumetailored.com</a></p>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <input type="text" id="contactName" placeholder="Your name" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e5e7eb'" />
+      <input type="email" id="contactEmail" placeholder="Your email" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e5e7eb'" />
+      <input type="text" id="contactSubject" placeholder="Subject (optional)" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e5e7eb'" />
+      <textarea id="contactMessage" placeholder="How can we help you?" rows="5" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+      <div id="contactError" style="color:#dc2626;font-size:13px;font-weight:600;display:none;"></div>
+      <div id="contactSuccess" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;color:#16a34a;font-size:14px;font-weight:600;text-align:center;">✓ Message sent! We'll get back to you within 24 hours.</div>
+    </div>
+    <div class="modal-actions" style="margin-top:20px;">
+      <button id="contactBtn" class="btn btn-primary btn-lg" onclick="submitContact()">Send Message →</button>
+      <button class="btn btn-ghost" onclick="closeContactModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- FOOTER -->
 <footer class="footer">
   <div class="footer-inner">
@@ -1607,7 +1628,7 @@
       <a href="#pricing">Pricing</a>
       <a href="/cancel.html">Cancel Anytime</a>
       <a href="/app.html">Dashboard</a>
-      <a href="mailto:support@resumetailored.com">Contact</a>
+      <a href="#" onclick="event.preventDefault();openContactModal()">Contact Us</a>
     </div>
     <span class="footer-copy">© 2025 ResumeTailored AI. All rights reserved.</span>
   </div>
@@ -1733,6 +1754,56 @@
       </div>`
     }
   };
+
+  function openContactModal() {
+    document.getElementById('contactName').value = '';
+    document.getElementById('contactEmail').value = '';
+    document.getElementById('contactSubject').value = '';
+    document.getElementById('contactMessage').value = '';
+    document.getElementById('contactError').style.display = 'none';
+    document.getElementById('contactSuccess').style.display = 'none';
+    document.getElementById('contactBtn').style.display = '';
+    document.getElementById('contactModal').classList.add('open');
+  }
+  function closeContactModal(e) {
+    if (!e || e.target === document.getElementById('contactModal')) {
+      document.getElementById('contactModal').classList.remove('open');
+    }
+  }
+  async function submitContact() {
+    const name = document.getElementById('contactName').value.trim();
+    const email = document.getElementById('contactEmail').value.trim();
+    const subject = document.getElementById('contactSubject').value.trim();
+    const message = document.getElementById('contactMessage').value.trim();
+    const errEl = document.getElementById('contactError');
+    errEl.style.display = 'none';
+    if (!name || !email || !message) {
+      errEl.textContent = 'Please fill in your name, email, and message.';
+      errEl.style.display = 'block';
+      return;
+    }
+    const btn = document.getElementById('contactBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    try {
+      const r = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, subject, message })
+      });
+      if (r.ok) {
+        document.getElementById('contactSuccess').style.display = 'block';
+        btn.style.display = 'none';
+      } else {
+        throw new Error('Failed');
+      }
+    } catch {
+      errEl.textContent = 'Something went wrong. Email us directly at support@resumetailored.com';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Send Message →';
+    }
+  }
 
   function openTierModal(tier) {
     const d = tierData[tier];
