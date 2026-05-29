@@ -220,7 +220,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all .2s; cursor: pointer;
     }
     .template-card:hover { border-color: #2563eb; box-shadow: 0 4px 16px rgba(37,99,235,0.15); transform: translateY(-2px); }
-    .tcard-header { height: 64px; display: flex; align-items: center; justify-content: center; }
     .tcard-body { padding: 12px; }
     .tcard-line { height: 6px; border-radius: 4px; background: #e5e7eb; margin-bottom: 6px; }
     .tcard-line.dark { background: #d1d5db; }
@@ -241,7 +240,7 @@
     .tcard-btn-pro { background: #f3f4f6; color: #6b7280; }
     .tcard-btn-pro:hover { background: #e5e7eb; }
 
-    /* Pro modal */
+    /* Pro modal / Checkout modal */
     .modal-overlay {
       display: none; position: fixed; inset: 0; z-index: 300;
       background: rgba(0,0,0,0.4); align-items: center; justify-content: center;
@@ -252,8 +251,22 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.15);
     }
     .modal-box h3 { font-size: 22px; font-weight: 900; margin-bottom: 8px; }
-    .modal-box p { color: #6b7280; font-size: 14px; margin-bottom: 24px; line-height: 1.65; }
+    .modal-box p { color: #6b7280; font-size: 14px; margin-bottom: 20px; line-height: 1.65; }
     .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+    .checkout-input {
+      width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 10px;
+      font-size: 15px; font-family: inherit; outline: none; transition: border-color .15s;
+      margin-bottom: 6px; box-sizing: border-box;
+    }
+    .checkout-input:focus { border-color: #2563eb; }
+    .checkout-error { color: #dc2626; font-size: 13px; font-weight: 600; min-height: 18px; margin-bottom: 12px; }
+    .hub-box {
+      border-radius: 8px; padding: 12px; text-align: center;
+      font-size: 12px; font-weight: 700; cursor: pointer; transition: filter .15s;
+    }
+    .hub-box:hover { filter: brightness(0.93); }
+    /* Template card preview */
+    .tcard-header { height: 140px; overflow: hidden; padding: 0; position: relative; }
 
     /* ── TESTIMONIALS ── */
     .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
@@ -357,6 +370,7 @@
   <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Features</a>
   <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Templates</a>
   <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Pricing</a>
+  <a href="/app.html" class="btn btn-ghost btn-lg" style="border-color:#2563eb;color:#2563eb;" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Log In</a>
   <a href="/app.html" class="btn btn-primary btn-lg">Get Started Free →</a>
 </div>
 
@@ -433,10 +447,34 @@
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner">
-            <div class="fv-bar blue" style="width:90%"></div>
-            <div class="fv-bar light-blue" style="width:70%"></div>
-            <div class="fv-bar" style="width:55%"></div>
-            <div style="margin-top:16px;font-size:13px;font-weight:700;color:#2563eb;">ATS Match Score: 97%</div>
+            <div style="display:flex;align-items:center;gap:20px;margin-bottom:16px;">
+              <div style="position:relative;width:82px;height:82px;flex-shrink:0;">
+                <svg viewBox="0 0 80 80" style="width:82px;height:82px;transform:rotate(-90deg);">
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="#e5e7eb" stroke-width="8"/>
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="#2563eb" stroke-width="8"
+                    stroke-dasharray="213.6" stroke-dashoffset="6.4" stroke-linecap="round"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                  <span style="font-size:19px;font-weight:900;color:#2563eb;line-height:1;">97%</span>
+                  <span style="font-size:8px;color:#6b7280;font-weight:700;letter-spacing:1px;">MATCH</span>
+                </div>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Keyword Matches</div>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                  <span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">✓ Python</span>
+                  <span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">✓ API Design</span>
+                  <span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">✓ Team Lead</span>
+                  <span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">✓ Agile</span>
+                  <span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">✓ CI/CD</span>
+                  <span style="background:#fee2e2;color:#dc2626;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">✗ AWS (added)</span>
+                </div>
+              </div>
+            </div>
+            <div style="background:#f0fdf4;border-radius:10px;padding:12px 14px;border-left:4px solid #16a34a;">
+              <div style="font-size:11px;font-weight:800;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;">✓ ATS PASS — Screener Cleared</div>
+              <div style="font-size:12px;color:#374151;line-height:1.6;">Your resume now speaks the job posting's language. Bots approve. Humans notice.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -449,11 +487,18 @@
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner">
-            <div class="fv-bar dark" style="width:40%;height:14px;margin-bottom:14px;"></div>
-            <div class="fv-bar" style="width:100%"></div>
-            <div class="fv-bar" style="width:95%"></div>
-            <div class="fv-bar" style="width:88%"></div>
-            <div class="fv-bar" style="width:60%"></div>
+            <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <span style="font-size:10px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">Cover Letter</span>
+                <span style="background:#dcfce7;color:#16a34a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">AI Generated</span>
+              </div>
+              <div style="font-size:10px;color:#9ca3af;margin-bottom:10px;">May 28, 2026 · Stripe, Inc.</div>
+              <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">Dear Hiring Manager,</div>
+              <div style="font-size:12px;color:#4b5563;line-height:1.7;margin-bottom:8px;">
+                When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style="color:#2563eb;">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.
+              </div>
+              <div style="font-size:11px;color:#9ca3af;font-style:italic;">+ 3 more paragraphs connecting your experience to their exact needs...</div>
+            </div>
           </div>
         </div>
       </div>
@@ -467,11 +512,12 @@
         <div class="feature-visual">
           <div class="feature-visual-inner">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <div style="background:#eff6ff;border-radius:8px;padding:12px;text-align:center;font-size:12px;font-weight:700;color:#2563eb;">💰 Salary Guide</div>
-              <div style="background:#f0fdf4;border-radius:8px;padding:12px;text-align:center;font-size:12px;font-weight:700;color:#16a34a;">👥 Forum</div>
-              <div style="background:#fef3c7;border-radius:8px;padding:12px;text-align:center;font-size:12px;font-weight:700;color:#d97706;">📈 Check-ins</div>
-              <div style="background:#fdf4ff;border-radius:8px;padding:12px;text-align:center;font-size:12px;font-weight:700;color:#7c3aed;">🏆 Templates</div>
+              <div class="hub-box" style="background:#eff6ff;color:#2563eb;" onclick="openCheckoutModal()">💰 Salary Guide</div>
+              <div class="hub-box" style="background:#f0fdf4;color:#16a34a;" onclick="openCheckoutModal()">👥 Community Forum</div>
+              <div class="hub-box" style="background:#fef3c7;color:#d97706;" onclick="openCheckoutModal()">📈 Career Check-ins</div>
+              <div class="hub-box" style="background:#fdf4ff;color:#7c3aed;" onclick="openCheckoutModal()">🏆 Pro Templates</div>
             </div>
+            <div style="margin-top:10px;font-size:11px;color:#9ca3af;text-align:center;">Click any feature to unlock with Pro →</div>
           </div>
         </div>
       </div>
@@ -519,157 +565,365 @@
       <button class="gallery-scroll-btn left" onclick="scrollGallery('gallery-resume-track', -1)" aria-label="Scroll left">&#8249;</button>
       <div class="gallery-track-wrap">
         <div class="gallery-track" id="gallery-resume-track">
-          <!-- FREE -->
+          <!-- FREE: Classic -->
           <div class="template-card">
-            <div class="tcard-header" style="background:#1e293b;"></div>
+            <div class="tcard-header">
+              <div style="background:#fff;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="text-align:center;border-bottom:1.5px solid #1e293b;padding-bottom:5px;margin-bottom:5px;">
+                  <div style="font-size:9.5px;font-weight:700;letter-spacing:2px;color:#0f172a;text-transform:uppercase;">ALEX JOHNSON</div>
+                  <div style="font-size:5.5px;color:#475569;margin-top:2px;">alex@email.com · (555) 234-5678 · New York, NY</div>
+                </div>
+                <div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">Experience</div>
+                <div style="font-size:6.5px;font-weight:700;color:#0f172a;margin-bottom:1px;">Sr. Marketing Manager · TechCorp Inc.</div>
+                <div style="font-size:5.5px;color:#475569;line-height:1.4;margin-bottom:3px;">• Grew pipeline 34% YoY · $2.1M attributed revenue<br/>• Led 8-person cross-functional team across 4 products</div>
+                <div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">Skills</div>
+                <div style="font-size:5.5px;color:#475569;">Python · SQL · Tableau · Salesforce · HubSpot</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Classic</div>
               <div class="tcard-free-badge">FREE</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-free" onclick="window.location='/app.html'">Use Template →</button>
             </div>
           </div>
+          <!-- FREE: Modern -->
           <div class="template-card">
-            <div class="tcard-header" style="background:#2563eb;"></div>
+            <div class="tcard-header">
+              <div style="background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#2563eb;padding:10px 10px 8px;">
+                  <div style="font-size:9.5px;font-weight:800;color:#fff;letter-spacing:.5px;">SARAH CHEN</div>
+                  <div style="font-size:5.5px;color:#bfdbfe;margin-top:2px;">sarah@email.com · (555) 987-6543 · San Francisco, CA</div>
+                </div>
+                <div style="padding:7px 10px;">
+                  <div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div>
+                  <div style="font-size:6.5px;font-weight:700;color:#111827;">Software Engineer · Stripe</div>
+                  <div style="font-size:5.5px;color:#4b5563;line-height:1.4;margin-bottom:3px;">• API handling 50M+ daily transactions<br/>• Reduced latency 42% via pipeline rebuild</div>
+                  <div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Skills</div>
+                  <div style="font-size:5.5px;color:#4b5563;">TypeScript · React · Node.js · AWS · PostgreSQL</div>
+                </div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Modern</div>
               <div class="tcard-free-badge">FREE</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-free" onclick="window.location='/app.html'">Use Template →</button>
             </div>
           </div>
-          <!-- PRO -->
+          <!-- PRO: Executive -->
           <div class="template-card" onclick="openProModal('Executive')">
-            <div class="tcard-header" style="background:#111827;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#0f172a;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="text-align:center;border-bottom:1.5px solid #f59e0b;padding-bottom:4px;margin-bottom:5px;">
+                  <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#f1f5f9;text-transform:uppercase;">MICHAEL CHEN</div>
+                  <div style="font-size:5.5px;color:#94a3b8;margin-top:2px;">VP of Engineering · 15+ Years</div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Executive Profile</div>
+                <div style="font-size:5.5px;color:#cbd5e1;line-height:1.4;margin-bottom:3px;">Senior technology leader driving 3× revenue growth across global teams of 50+ engineers.</div>
+                <div style="font-size:6px;font-weight:700;color:#f59e0b;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div>
+                <div style="font-size:6px;color:#e2e8f0;">CTO · Fortune 500 · 2019–Present</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(15,23,42,0.72);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Executive</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Minimal -->
           <div class="template-card" onclick="openProModal('Minimal')">
-            <div class="tcard-header" style="background:#f3f4f6; border-bottom: 2px solid #e5e7eb;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fafafa;padding:10px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="margin-bottom:6px;">
+                  <div style="font-size:9px;font-weight:300;letter-spacing:3px;color:#111827;text-transform:uppercase;">JESSICA PARK</div>
+                  <div style="font-size:5.5px;color:#6b7280;margin-top:2px;">Product Designer · jessica@email.com</div>
+                  <div style="width:100%;height:0.5px;background:#d1d5db;margin-top:5px;"></div>
+                </div>
+                <div style="font-size:6px;font-weight:500;color:#374151;text-transform:uppercase;letter-spacing:2px;margin-bottom:3px;">Work</div>
+                <div style="font-size:6px;color:#374151;margin-bottom:1px;">Lead Designer · Figma</div>
+                <div style="font-size:5.5px;color:#9ca3af;margin-bottom:3px;">Redesigned core editor, +22% DAU</div>
+                <div style="font-size:6px;font-weight:500;color:#374151;text-transform:uppercase;letter-spacing:2px;margin-bottom:2px;">Tools</div>
+                <div style="font-size:5.5px;color:#9ca3af;">Figma · Principle · Lottie · Swift UI</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(17,24,39,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Minimal</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Creative -->
           <div class="template-card" onclick="openProModal('Creative')">
-            <div class="tcard-header" style="background:linear-gradient(135deg,#7c3aed,#2563eb);"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:linear-gradient(135deg,#4f1d96,#1d4ed8);padding:10px;">
+                  <div style="font-size:9px;font-weight:800;color:#fff;">RYAN TORRES</div>
+                  <div style="font-size:5.5px;color:#c4b5fd;margin-top:2px;">Creative Director · Brand Strategy</div>
+                </div>
+                <div style="padding:7px 10px;">
+                  <div style="font-size:6px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Selected Work</div>
+                  <div style="font-size:6px;color:#374151;margin-bottom:1px;">Creative Lead · Nike Digital</div>
+                  <div style="font-size:5.5px;color:#6b7280;">Launched 3 global campaigns, 200M+ reach</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(17,24,39,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Creative</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Professional -->
           <div class="template-card" onclick="openProModal('Professional')">
-            <div class="tcard-header" style="background:#0f766e;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#0f766e;padding:10px;">
+                  <div style="font-size:9px;font-weight:800;color:#fff;">DIANA OSEI</div>
+                  <div style="font-size:5.5px;color:#99f6e4;margin-top:2px;">Consultant · Financial Services</div>
+                </div>
+                <div style="padding:7px 10px;">
+                  <div style="font-size:6px;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div>
+                  <div style="font-size:6px;color:#374151;margin-bottom:1px;">Senior Analyst · McKinsey</div>
+                  <div style="font-size:5.5px;color:#6b7280;">Advised F100 clients on $2B+ transformation</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(17,24,39,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Professional</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Tech -->
           <div class="template-card" onclick="openProModal('Tech')">
-            <div class="tcard-header" style="background:#1e3a5f;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#0c1a2e;padding:10px;height:140px;overflow:hidden;font-family:'Courier New',monospace;">
+                <div style="margin-bottom:5px;">
+                  <div style="font-size:9px;font-weight:700;color:#22d3ee;">JAMES KIM</div>
+                  <div style="font-size:5.5px;color:#64748b;margin-top:2px;">james@email.com · github.com/jkim</div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#22d3ee;margin-bottom:2px;"># Experience</div>
+                <div style="font-size:6px;color:#94a3b8;margin-bottom:1px;">Staff Engineer @ Cloudflare</div>
+                <div style="font-size:5.5px;color:#475569;line-height:1.4;margin-bottom:3px;">- Edge runtime perf: -60ms p99 latency<br/>- Open source: 4.2k GitHub stars</div>
+                <div style="font-size:6px;font-weight:700;color:#22d3ee;margin-bottom:2px;"># Stack</div>
+                <div style="font-size:5.5px;color:#475569;">Rust · Go · TypeScript · K8s · Terraform</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(12,26,46,0.75);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Tech</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Elegant -->
           <div class="template-card" onclick="openProModal('Elegant')">
-            <div class="tcard-header" style="background:#9d174d;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff8f8;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="text-align:center;margin-bottom:5px;">
+                  <div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#500724;text-transform:uppercase;">CLAIRE DUPONT</div>
+                  <div style="font-size:5.5px;color:#9d174d;margin-top:2px;">Art Director · Luxury Brands</div>
+                  <div style="width:50%;height:0.5px;background:#f9a8d4;margin:4px auto 0;"></div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#9d174d;letter-spacing:1px;margin-bottom:2px;text-align:center;text-transform:uppercase;">Expertise</div>
+                <div style="font-size:6px;color:#500724;text-align:center;margin-bottom:3px;">Art Direction · Brand Identity · Luxury Retail</div>
+                <div style="font-size:6px;font-weight:700;color:#9d174d;letter-spacing:1px;margin-bottom:2px;text-align:center;text-transform:uppercase;">Career</div>
+                <div style="font-size:5.5px;color:#6b7280;text-align:center;">Creative Director · Louis Vuitton Digital</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(80,7,36,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Elegant</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Bold -->
           <div class="template-card" onclick="openProModal('Bold')">
-            <div class="tcard-header" style="background:#dc2626;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#7f1d1d;padding:10px;">
+                  <div style="font-size:10px;font-weight:900;color:#fff;text-transform:uppercase;">MARCUS LEE</div>
+                  <div style="font-size:5.5px;color:#fca5a5;margin-top:2px;">Sales Director · Enterprise B2B</div>
+                </div>
+                <div style="padding:7px 10px;">
+                  <div style="height:2px;background:#ef4444;width:30%;margin-bottom:4px;"></div>
+                  <div style="font-size:6px;font-weight:800;color:#111827;margin-bottom:1px;">Director of Sales · Salesforce</div>
+                  <div style="font-size:5.5px;color:#4b5563;">Closed $12M enterprise deals · 140% quota</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(127,29,29,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Bold</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Contemporary -->
           <div class="template-card" onclick="openProModal('Contemporary')">
-            <div class="tcard-header" style="background:#0369a1;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:10px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="display:grid;grid-template-columns:1fr auto;gap:4px;margin-bottom:6px;">
+                  <div>
+                    <div style="font-size:9px;font-weight:800;color:#0369a1;">PRIYA SHARMA</div>
+                    <div style="font-size:5.5px;color:#0284c7;margin-top:1px;">Data Scientist · ML Engineer</div>
+                  </div>
+                  <div style="background:#0369a1;border-radius:4px;padding:4px 6px;text-align:center;">
+                    <div style="font-size:10px;font-weight:900;color:#fff;">97</div>
+                    <div style="font-size:5px;color:#bae6fd;">ATS</div>
+                  </div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#0369a1;margin-bottom:2px;">Experience</div>
+                <div style="font-size:6px;color:#374151;margin-bottom:1px;">ML Engineer · Google DeepMind</div>
+                <div style="font-size:5.5px;color:#6b7280;">Shipped model reducing hallucinations 38%</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(3,105,161,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Contemporary</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Academic -->
           <div class="template-card" onclick="openProModal('Academic')">
-            <div class="tcard-header" style="background:#1c1917;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fffbf5;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="text-align:center;margin-bottom:5px;">
+                  <div style="font-size:9px;font-weight:700;color:#1c1917;letter-spacing:1px;">DR. ELENA VASQUEZ</div>
+                  <div style="font-size:5.5px;color:#57534e;margin-top:2px;">Associate Professor · Computer Science</div>
+                  <div style="font-size:5px;color:#78716c;">Stanford University · elena@cs.stanford.edu</div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#1c1917;border-bottom:1px solid #a8a29e;padding-bottom:1px;margin-bottom:3px;">Education</div>
+                <div style="font-size:5.5px;color:#44403c;margin-bottom:3px;">Ph.D. Computer Science · MIT · 2015</div>
+                <div style="font-size:6px;font-weight:700;color:#1c1917;border-bottom:1px solid #a8a29e;padding-bottom:1px;margin-bottom:2px;">Publications</div>
+                <div style="font-size:5.5px;color:#44403c;">47 peer-reviewed papers · 1,200+ citations</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(28,25,23,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Academic</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Compact -->
           <div class="template-card" onclick="openProModal('Compact')">
-            <div class="tcard-header" style="background:#374151;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#f8fafc;padding:8px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin-bottom:4px;">
+                  <div><div style="font-size:8px;font-weight:700;color:#1e293b;">CARLOS REYES</div><div style="font-size:5px;color:#64748b;">ops@email.com</div></div>
+                  <div style="text-align:right;font-size:5px;color:#64748b;">New York, NY</div>
+                </div>
+                <div style="font-size:5.5px;font-weight:700;color:#1e293b;margin-bottom:1px;">EXPERIENCE</div>
+                <div style="font-size:5.5px;color:#374151;margin-bottom:1px;"><strong>COO · Startup</strong> 2022–Now · Cut burn 40%</div>
+                <div style="font-size:5.5px;color:#374151;margin-bottom:3px;"><strong>VP Ops · Corp</strong> 2019–22 · $5M cost save</div>
+                <div style="font-size:5.5px;font-weight:700;color:#1e293b;margin-bottom:1px;">EDUCATION</div>
+                <div style="font-size:5.5px;color:#374151;margin-bottom:3px;">MBA · Harvard · 2018</div>
+                <div style="font-size:5.5px;font-weight:700;color:#1e293b;margin-bottom:1px;">SKILLS</div>
+                <div style="font-size:5px;color:#475569;">P&L · Supply Chain · Six Sigma · ERP · M&A</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(30,41,59,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Compact</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Sharp -->
           <div class="template-card" onclick="openProModal('Sharp')">
-            <div class="tcard-header" style="background:#b91c1c;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="border-left:4px solid #dc2626;padding:10px;">
+                  <div style="font-size:9.5px;font-weight:900;color:#111827;text-transform:uppercase;letter-spacing:1px;">NOAH WALSH</div>
+                  <div style="font-size:5.5px;color:#6b7280;margin-top:2px;">Growth Hacker · Startup Advisor</div>
+                </div>
+                <div style="padding:0 10px 10px;">
+                  <div style="height:2px;background:#dc2626;width:100%;margin-bottom:5px;"></div>
+                  <div style="font-size:6px;font-weight:700;color:#dc2626;text-transform:uppercase;margin-bottom:2px;">Wins</div>
+                  <div style="font-size:5.5px;color:#374151;">$0 → $2M ARR in 8 months · 3 exits · Seed to Series B</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(185,28,28,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Sharp</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Neutral -->
           <div class="template-card" onclick="openProModal('Neutral')">
-            <div class="tcard-header" style="background:#78716c;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fafaf9;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="border-bottom:1px solid #d6d3d1;padding-bottom:5px;margin-bottom:5px;">
+                  <div style="font-size:9px;font-weight:600;color:#292524;letter-spacing:1px;">Amara Okonkwo</div>
+                  <div style="font-size:5.5px;color:#78716c;margin-top:2px;">HR Director · People & Culture</div>
+                </div>
+                <div style="font-size:6px;font-weight:700;color:#57534e;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div>
+                <div style="font-size:6px;color:#44403c;margin-bottom:1px;">CHRO · Patagonia</div>
+                <div style="font-size:5.5px;color:#78716c;margin-bottom:3px;">Built culture ranking #1 on Glassdoor</div>
+                <div style="font-size:6px;font-weight:700;color:#57534e;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Skills</div>
+                <div style="font-size:5.5px;color:#78716c;">Org Design · HRIS · L&D · DEI · Coaching</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(41,37,36,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Neutral</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Vivid -->
           <div class="template-card" onclick="openProModal('Vivid')">
-            <div class="tcard-header" style="background:#0d9488;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#0d9488;padding:10px;">
+                  <div style="font-size:9.5px;font-weight:800;color:#fff;">ZARA NGUYEN</div>
+                  <div style="font-size:5.5px;color:#99f6e4;margin-top:2px;">UX Researcher · Healthcare Tech</div>
+                </div>
+                <div style="padding:7px 10px;">
+                  <div style="font-size:6px;font-weight:700;color:#0d9488;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Research</div>
+                  <div style="font-size:6px;color:#374151;margin-bottom:1px;">Lead Researcher · Apple Health</div>
+                  <div style="font-size:5.5px;color:#6b7280;">Drove 31% drop in ER readmission via UX</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(13,148,136,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Vivid</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
@@ -683,155 +937,302 @@
       <button class="gallery-scroll-btn left" onclick="scrollGallery('gallery-cl-track', -1)" aria-label="Scroll left">&#8249;</button>
       <div class="gallery-track-wrap">
         <div class="gallery-track" id="gallery-cl-track">
+          <!-- FREE: Classic -->
           <div class="template-card">
-            <div class="tcard-header" style="background:#1e293b;"></div>
+            <div class="tcard-header">
+              <div style="background:#fff;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="font-size:6px;color:#6b7280;margin-bottom:5px;">May 28, 2026</div>
+                <div style="font-size:6.5px;font-weight:600;color:#111827;margin-bottom:5px;">Dear Hiring Manager,</div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:4px;">When I saw your opening for Senior Engineer, I immediately thought of the 42% latency reduction I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale your team operates at.</div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:5px;">At TechCorp, I led a 5-person team rebuilding our checkout flow in React, driving 18% higher conversion and $1.8M in added annual revenue...</div>
+                <div style="font-size:5.5px;color:#6b7280;">Sincerely,<br/><span style="font-weight:600;color:#374151;">Alex Johnson</span></div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Classic</div>
               <div class="tcard-free-badge">FREE</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-free" onclick="window.location='/app.html'">Use Template →</button>
             </div>
           </div>
+          <!-- FREE: Modern -->
           <div class="template-card">
-            <div class="tcard-header" style="background:#2563eb;"></div>
+            <div class="tcard-header">
+              <div style="background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#2563eb;padding:8px 10px;">
+                  <div style="font-size:8px;font-weight:800;color:#fff;">SARAH CHEN</div>
+                  <div style="font-size:5px;color:#bfdbfe;">sarah@email.com · Software Engineer</div>
+                </div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:5.5px;font-weight:600;color:#374151;margin-bottom:4px;">Dear Ms. Rodriguez,</div>
+                  <div style="font-size:5.5px;color:#4b5563;line-height:1.55;margin-bottom:3px;">Stripe's engineering culture mirrors exactly how I led TechCorp's infra team to cut downtime by 60% — through obsessive ownership and data-driven decisions.</div>
+                  <div style="font-size:5.5px;color:#4b5563;line-height:1.55;">My API work at scale (50M+ daily txns) directly maps to your reliability goals...</div>
+                </div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Modern</div>
               <div class="tcard-free-badge">FREE</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-free" onclick="window.location='/app.html'">Use Template →</button>
             </div>
           </div>
+          <!-- PRO: Executive -->
           <div class="template-card" onclick="openProModal('Executive Cover Letter')">
-            <div class="tcard-header" style="background:#111827;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#0f172a;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="border-bottom:1px solid #f59e0b;padding-bottom:4px;margin-bottom:5px;">
+                  <div style="font-size:7.5px;font-weight:700;color:#f1f5f9;letter-spacing:1px;">MICHAEL CHEN</div>
+                  <div style="font-size:5px;color:#94a3b8;">VP Engineering · mchen@email.com</div>
+                </div>
+                <div style="font-size:5.5px;color:#e2e8f0;line-height:1.6;">Dear Board of Directors,</div>
+                <div style="font-size:5.5px;color:#cbd5e1;line-height:1.55;margin-top:3px;">Over 15 years leading enterprise technology at scale, I have consistently transformed engineering organizations — most recently driving $40M in efficiency gains through systematic modernization...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(15,23,42,0.72);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Executive</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Minimal -->
           <div class="template-card" onclick="openProModal('Minimal Cover Letter')">
-            <div class="tcard-header" style="background:#f3f4f6; border-bottom:2px solid #e5e7eb;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fafafa;padding:10px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="margin-bottom:6px;">
+                  <div style="font-size:7.5px;font-weight:300;letter-spacing:3px;color:#111;text-transform:uppercase;">JESSICA PARK</div>
+                  <div style="width:100%;height:0.5px;background:#d1d5db;margin:4px 0;"></div>
+                </div>
+                <div style="font-size:5.5px;color:#6b7280;margin-bottom:4px;">Dear Hiring Team,</div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.55;">Design is problem solving. When I joined Figma's team, the editor had a 2-second load time for complex files. I redesigned the rendering pipeline, cutting it to 400ms and increasing daily active usage by 22%...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(17,24,39,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Minimal</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Creative -->
           <div class="template-card" onclick="openProModal('Creative Cover Letter')">
-            <div class="tcard-header" style="background:linear-gradient(135deg,#7c3aed,#2563eb);"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:linear-gradient(135deg,#4f1d96,#1d4ed8);padding:8px 10px;">
+                  <div style="font-size:7.5px;font-weight:800;color:#fff;">RYAN TORRES</div>
+                </div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:5.5px;color:#4b5563;line-height:1.55;">Most brands see marketing as a cost center. I see it as revenue architecture. At Nike Digital, I turned a $500K campaign budget into 200M+ organic impressions by building community before product...</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(79,29,150,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Creative</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Professional -->
           <div class="template-card" onclick="openProModal('Professional Cover Letter')">
-            <div class="tcard-header" style="background:#0f766e;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#0f766e;padding:8px 10px;">
+                  <div style="font-size:7.5px;font-weight:800;color:#fff;">DIANA OSEI</div>
+                </div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:5.5px;color:#374151;line-height:1.55;">Dear Ms. Patel, McKinsey's mission to deliver sustained improvement to clients resonates deeply with my 8 years advising F100 companies through $2B+ in transformations. I bring the rigor your team expects...</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(15,118,110,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Professional</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Tech -->
           <div class="template-card" onclick="openProModal('Tech Cover Letter')">
-            <div class="tcard-header" style="background:#1e3a5f;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#0c1a2e;padding:10px;height:140px;overflow:hidden;font-family:'Courier New',monospace;">
+                <div style="font-size:5px;color:#22d3ee;margin-bottom:4px;"># cover-letter.md</div>
+                <div style="font-size:5.5px;color:#94a3b8;margin-bottom:3px;">**To:** Cloudflare Engineering Team</div>
+                <div style="font-size:5.5px;color:#94a3b8;line-height:1.55;">Cloudflare's edge network processes more requests in one second than most companies do in a year. I've spent the last 4 years solving problems at that scale — cutting p99 latency by 60ms across 40 edge regions...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(12,26,46,0.75);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Tech</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Elegant -->
           <div class="template-card" onclick="openProModal('Elegant Cover Letter')">
-            <div class="tcard-header" style="background:#9d174d;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff8f8;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="text-align:center;border-bottom:0.5px solid #f9a8d4;padding-bottom:5px;margin-bottom:5px;">
+                  <div style="font-size:7.5px;font-weight:600;letter-spacing:2px;color:#500724;text-transform:uppercase;">CLAIRE DUPONT</div>
+                </div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.6;">Dear Madame Beaumont, Luxury is not a product — it is a promise. At Louis Vuitton Digital, I kept that promise across 14 markets, building campaigns that drove 340% growth in e-commerce while preserving brand heritage...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(80,7,36,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Elegant</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Bold -->
           <div class="template-card" onclick="openProModal('Bold Cover Letter')">
-            <div class="tcard-header" style="background:#dc2626;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#7f1d1d;padding:8px 10px;">
+                  <div style="font-size:7.5px;font-weight:900;color:#fff;text-transform:uppercase;">MARCUS LEE</div>
+                </div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:5.5px;color:#111827;font-weight:700;margin-bottom:3px;">I close deals others walk away from.</div>
+                  <div style="font-size:5.5px;color:#374151;line-height:1.55;">In 2023 alone I closed $12M in enterprise contracts at Salesforce — 140% of quota — by building relationships that competitors couldn't replicate...</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(127,29,29,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Bold</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Contemporary -->
           <div class="template-card" onclick="openProModal('Contemporary Cover Letter')">
-            <div class="tcard-header" style="background:#0369a1;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:10px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+                  <div style="width:20px;height:20px;background:#0369a1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700;flex-shrink:0;">P</div>
+                  <div><div style="font-size:7px;font-weight:700;color:#0369a1;">PRIYA SHARMA</div><div style="font-size:5px;color:#64748b;">ML Engineer · priya@email.com</div></div>
+                </div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.55;">Dear Dr. Hassabis, DeepMind's approach to AI safety aligns with research I've been conducting for 3 years at Google. My model, published in NeurIPS 2024, reduced hallucinations by 38% — a result directly applicable to Gemini...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(3,105,161,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Contemporary</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Academic -->
           <div class="template-card" onclick="openProModal('Academic Cover Letter')">
-            <div class="tcard-header" style="background:#1c1917;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fffbf5;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="font-size:5.5px;color:#6b7280;margin-bottom:4px;">Dr. Elena Vasquez · elena@cs.stanford.edu</div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.6;">Dear Search Committee, My research sits at the intersection of human-computer interaction and machine learning — a rare combination your AI Ethics program needs. My 47 publications and 1,200+ citations reflect a decade of rigorous, applied scholarship...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(28,25,23,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Academic</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Compact -->
           <div class="template-card" onclick="openProModal('Compact Cover Letter')">
-            <div class="tcard-header" style="background:#374151;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#f8fafc;padding:8px;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="display:flex;justify-content:space-between;border-bottom:1px solid #e2e8f0;padding-bottom:3px;margin-bottom:4px;">
+                  <div style="font-size:7px;font-weight:700;color:#1e293b;">CARLOS REYES</div>
+                  <div style="font-size:5px;color:#64748b;">COO · ops@email.com</div>
+                </div>
+                <div style="font-size:5px;color:#374151;line-height:1.6;">Re: COO Position · [Company]. Your Q3 goal: cut OPEX 25% while scaling headcount 40%. I've done exactly this — reduced burn 40% at my current startup while tripling the team, achieving profitability 6 months ahead of plan. I can replicate this for you...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(30,41,59,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Compact</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Sharp -->
           <div class="template-card" onclick="openProModal('Sharp Cover Letter')">
-            <div class="tcard-header" style="background:#b91c1c;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="border-left:4px solid #dc2626;padding:8px 10px;">
+                  <div style="font-size:7.5px;font-weight:900;color:#111;text-transform:uppercase;letter-spacing:1px;">NOAH WALSH</div>
+                </div>
+                <div style="padding:0 10px 8px;border-top:1px solid #fca5a5;">
+                  <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-top:5px;">$0 to $2M ARR in 8 months. 3 exits. Those aren't vanity metrics — they're proof I can build, sell, and scale. Your Series A startup needs that exact DNA to hit the milestones your investors expect...</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(185,28,28,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Sharp</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Neutral -->
           <div class="template-card" onclick="openProModal('Neutral Cover Letter')">
-            <div class="tcard-header" style="background:#78716c;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fafaf9;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+                <div style="border-bottom:1px solid #d6d3d1;padding-bottom:4px;margin-bottom:5px;">
+                  <div style="font-size:7.5px;font-weight:600;color:#292524;letter-spacing:1px;">Amara Okonkwo</div>
+                </div>
+                <div style="font-size:5.5px;color:#374151;line-height:1.6;">Dear Ms. Fletcher, The best cultures aren't built by HR — they're built by leaders who make people feel genuinely valued. At Patagonia, I designed the people systems that earned us the #1 Glassdoor ranking two years running...</div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(41,37,36,0.6);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Neutral</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
+          <!-- PRO: Vivid -->
           <div class="template-card" onclick="openProModal('Vivid Cover Letter')">
-            <div class="tcard-header" style="background:#0d9488;"></div>
+            <div class="tcard-header">
+              <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+                <div style="background:#0d9488;padding:8px 10px;">
+                  <div style="font-size:7.5px;font-weight:800;color:#fff;">ZARA NGUYEN</div>
+                </div>
+                <div style="padding:8px 10px;">
+                  <div style="font-size:5.5px;color:#374151;line-height:1.55;">Healthcare UX is a matter of life and death — literally. At Apple Health, I led research that redesigned the discharge process, cutting readmissions by 31%. That work saved lives and $4M annually for our hospital partners...</div>
+                </div>
+              </div>
+              <div style="position:absolute;inset:0;background:rgba(13,148,136,0.65);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div style="font-size:22px;line-height:1;">🔒</div>
+                <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:1.5px;margin-top:5px;text-transform:uppercase;">Pro Only</div>
+              </div>
+            </div>
             <div class="tcard-body">
               <div class="tcard-name">Vivid</div>
-              <div class="tcard-line dark short"></div>
-              <div class="tcard-line"></div>
-              <div class="tcard-line short"></div>
               <button class="tcard-btn tcard-btn-pro">🔒 Unlock with Pro</button>
             </div>
           </div>
@@ -839,6 +1240,7 @@
       </div>
       <button class="gallery-scroll-btn right" onclick="scrollGallery('gallery-cl-track', 1)" aria-label="Scroll right">&#8250;</button>
     </div>
+
   </div>
 </section>
 
@@ -848,8 +1250,23 @@
     <h3>🔒 <span id="modalTemplateName">Executive</span> is a Pro Template</h3>
     <p>Unlock all 30 premium resume and cover letter templates, plus unlimited AI tailorings, Career Hub access, and more — for just $19/month.</p>
     <div class="modal-actions">
-      <a href="/app.html?plan=pro" class="btn btn-primary btn-lg">Upgrade to Pro — $19/mo →</a>
+      <button class="btn btn-primary btn-lg" onclick="document.getElementById('proModal').classList.remove('open');openCheckoutModal()">Upgrade to Pro — $19/mo →</button>
       <button class="btn btn-ghost" onclick="document.getElementById('proModal').classList.remove('open')">Try Free Templates First</button>
+    </div>
+  </div>
+</div>
+
+<!-- Checkout Modal -->
+<div class="modal-overlay" id="checkoutModal" onclick="closeCheckoutModal(event)">
+  <div class="modal-box">
+    <h3>🚀 Start Your Pro Subscription</h3>
+    <p>Enter your email to go to secure Stripe checkout. $19/month — cancel anytime, no questions asked.</p>
+    <input type="email" id="checkoutEmail" class="checkout-input" placeholder="your@email.com"
+           onkeydown="if(event.key==='Enter') submitCheckout()" />
+    <div id="checkoutError" class="checkout-error"></div>
+    <div class="modal-actions">
+      <button id="checkoutBtn" class="btn btn-primary btn-lg" onclick="submitCheckout()">Start Pro — $19/mo →</button>
+      <button class="btn btn-ghost" onclick="closeCheckoutModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -975,7 +1392,7 @@
           <li><span class="check-icon">✓</span> Salary negotiation guide</li>
           <li><span class="check-icon">✓</span> Quarterly career check-ins</li>
         </ul>
-        <a href="/app.html?plan=pro" class="btn btn-primary btn-full">Start Pro — $19/mo →</a>
+        <button class="btn btn-primary btn-full" onclick="openCheckoutModal()">Start Pro — $19/mo →</button>
       </div>
     </div>
   </div>
@@ -990,7 +1407,7 @@
       <a href="#pricing">Pricing</a>
       <a href="/cancel.html">Cancel Anytime</a>
       <a href="/app.html">Dashboard</a>
-      <a href="mailto:marvinperson11@gmail.com">Contact</a>
+      <a href="mailto:support@resumetailored.com">Contact</a>
     </div>
     <span class="footer-copy">© 2025 ResumeTailored AI. All rights reserved.</span>
   </div>
@@ -1025,6 +1442,56 @@
   function closeProModal(e) {
     if (e.target === document.getElementById('proModal')) {
       document.getElementById('proModal').classList.remove('open');
+    }
+  }
+
+  function openCheckoutModal() {
+    document.getElementById('checkoutError').textContent = '';
+    document.getElementById('checkoutEmail').value = '';
+    document.getElementById('checkoutBtn').textContent = 'Start Pro — $19/mo →';
+    document.getElementById('checkoutBtn').disabled = false;
+    document.getElementById('checkoutModal').classList.add('open');
+    setTimeout(() => document.getElementById('checkoutEmail').focus(), 50);
+  }
+
+  function closeCheckoutModal(e) {
+    if (!e || e.target === document.getElementById('checkoutModal')) {
+      document.getElementById('checkoutModal').classList.remove('open');
+    }
+  }
+
+  async function submitCheckout() {
+    const email = document.getElementById('checkoutEmail').value.trim();
+    const errEl = document.getElementById('checkoutError');
+    const btn = document.getElementById('checkoutBtn');
+    errEl.textContent = '';
+
+    if (!email || !email.includes('@')) {
+      errEl.textContent = 'Please enter a valid email address.';
+      return;
+    }
+
+    btn.textContent = 'Starting checkout…';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        errEl.textContent = data.error || 'Could not start checkout. Please try again.';
+        btn.textContent = 'Start Pro — $19/mo →';
+        btn.disabled = false;
+      }
+    } catch {
+      errEl.textContent = 'Network error. Please try again.';
+      btn.textContent = 'Start Pro — $19/mo →';
+      btn.disabled = false;
     }
   }
 </script>
