@@ -237,6 +237,11 @@
           <p>Paste your resume and the job posting. We'll match your experience to what they're looking for.</p>
         </div>
 
+        <div class="mobile-upgrade-banner" id="mobileUpgradeBanner" style="display:none;">
+          <p>✦ Unlock unlimited tailorings, cover letters & Career Hub features.</p>
+          <button class="btn btn-primary" onclick="startPro()">Upgrade — $19/mo</button>
+        </div>
+
         <div id="statusBadge" style="margin-bottom:16px;"></div>
 
         <div class="mode-row">
@@ -1085,10 +1090,12 @@
         const badge = document.getElementById('statusBadge');
         const navStatus = document.getElementById('navStatus');
 
+        const mobileBanner = document.getElementById('mobileUpgradeBanner');
         if (isSubscriberFlag) {
           badge.innerHTML = '<span class="free-badge pro-badge">✦ Pro — Unlimited Tailorings Active</span>';
           navStatus.innerHTML = '<span class="free-badge pro-badge" style="font-size:12px;">✦ Pro</span>';
           document.getElementById('sidebarProBox').style.display = 'none';
+          if (mobileBanner) mobileBanner.style.display = 'none';
         } else {
           const parts = [];
           if (freeResumesLeft > 0) parts.push('1 free resume');
@@ -1096,6 +1103,7 @@
           const badgeText = parts.length > 0 ? parts.join(' + ') + ' available today' : '0 free uses left today';
           badge.innerHTML = `<span class="free-badge">${badgeText}</span>`;
           document.getElementById('sidebarProBox').style.display = 'block';
+          if (mobileBanner) mobileBanner.style.display = '';
         }
 
         const modeExhausted = (!isSubscriberFlag) && (
@@ -1306,16 +1314,20 @@
       const email = document.getElementById('email').value.trim() || getStoredEmail();
       if (!email) { showToast('Enter your email first.'); showTab('tailor'); document.getElementById('email').focus(); return; }
 
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        showToast('Could not start checkout. Please try again.');
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          showToast(data.error || 'Could not start checkout. Please try again.');
+        }
+      } catch(err) {
+        showToast('Connection error. Please try again.');
       }
     }
 
