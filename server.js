@@ -508,19 +508,19 @@ app.post('/api/download-docx', async (req, res) => {
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function getTodayKey(ip) {
+function getTodayKey(ip, mode) {
   const today = new Date().toISOString().slice(0, 10);
-  return `${ip}_${today}`;
+  return `${ip}_${mode}_${today}`;
 }
 
-function hasFreeTierLeft(ip) {
-  const key = getTodayKey(ip);
+function hasFreeTierLeft(ip, mode) {
+  const key = getTodayKey(ip, mode);
   const row = db.prepare('SELECT count FROM usage_store WHERE key = ?').get(key);
   return !row || row.count < 1;
 }
 
-function consumeFreeTier(ip) {
-  const key = getTodayKey(ip);
+function consumeFreeTier(ip, mode) {
+  const key = getTodayKey(ip, mode);
   db.prepare('INSERT INTO usage_store (key, count) VALUES (?, 1) ON CONFLICT(key) DO UPDATE SET count = count + 1').run(key);
 }
 
@@ -533,7 +533,8 @@ app.get('/api/status', (req, res) => {
   const ip = req.ip;
   const email = req.query.email || '';
   res.json({
-    freeUsesLeft: hasFreeTierLeft(ip) ? 1 : 0,
+    freeResumesLeft: hasFreeTierLeft(ip, 'resume') ? 1 : 0,
+    freeCoverLettersLeft: hasFreeTierLeft(ip, 'cover_letter') ? 1 : 0,
     isSubscriber: isSubscriber(email)
   });
 });
@@ -553,13 +554,18 @@ app.post('/api/tailor', async (req, res) => {
   const subscribed = isSubscriber(email);
 
   if (!subscribed) {
-    if (!hasFreeTierLeft(ip)) {
-      return res.status(402).json({
-        error: 'free_limit_reached',
-        message: 'You have used your free daily tailoring. Upgrade to Pro for unlimited access.'
-      });
+    const resumeLeft = hasFreeTierLeft(ip, 'resume');
+    const coverLeft = hasFreeTierLeft(ip, 'cover_letter');
+
+    if (mode === 'resume' && !resumeLeft) {
+      return res.status(402).json({ error: 'free_limit_reached', mode: 'resume', message: 'You\'ve used your free daily resume tailoring. Upgrade to Pro for unlimited access.' });
     }
-    consumeFreeTier(ip);
+    if (mode === 'cover_letter' && !coverLeft) {
+      return res.status(402).json({ error: 'free_limit_reached', mode: 'cover_letter', message: 'You\'ve used your free daily cover letter. Upgrade to Pro for unlimited access.' });
+    }
+    if (mode === 'both' && !resumeLeft && !coverLeft) {
+      return res.status(402).json({ error: 'free_limit_reached', mode: 'both', message: 'You\'ve used your free daily tailorings. Upgrade to Pro for unlimited access.' });
+    }
   }
 
   try {
@@ -617,6 +623,11 @@ ${jobPosting}
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }]
     });
+
+    if (!subscribed) {
+      if (mode === 'resume' || mode === 'both') consumeFreeTier(ip, 'resume');
+      if (mode === 'cover_letter' || mode === 'both') consumeFreeTier(ip, 'cover_letter');
+    }
 
     res.json({ result: message.content[0].text });
   } catch (err) {
