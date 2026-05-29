@@ -127,6 +127,13 @@ function hashPw(pw) {
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 
+// Clean URL aliases — /dashboard, /login, /signup all serve app.html
+const appHtml = path.join(__dirname, 'public', 'app.html');
+app.get('/dashboard', (req, res) => res.sendFile(appHtml));
+app.get('/login',     (req, res) => res.sendFile(appHtml));
+app.get('/signup',    (req, res) => res.sendFile(appHtml));
+app.get('/app',       (req, res) => res.redirect(301, '/dashboard'));
+
 // Raw body needed for Stripe webhook verification
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());

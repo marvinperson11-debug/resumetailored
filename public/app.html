@@ -869,7 +869,11 @@
 
     async function checkAuth() {
       const token = getToken();
-      if (!token) { showAuthModal(); return; }
+      if (!token) {
+        const path = window.location.pathname;
+        showAuthModal(path === '/login' ? 'login' : 'signup');
+        return;
+      }
       try {
         const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
         if (!res.ok) { showAuthModal(); return; }
