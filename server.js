@@ -196,8 +196,45 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   if (!email) return res.status(400).json({ error: 'Email is required.' });
   const key = email.toLowerCase().trim();
 
-  // Always return success — prevents revealing which emails are registered
-  if (!db.prepare('SELECT 1 FROM users WHERE email = ?').get(key)) return res.json({ success: true });
+  if (!db.prepare('SELECT 1 FROM users WHERE email = ?').get(key)) {
+    // No account found — send a helpful email so the user isn't left wondering
+    try {
+      await sendEmail({
+        to: key,
+        subject: 'ResumeTailored AI — No Account Found',
+        html: `
+          <div style="font-family:'Inter',Arial,sans-serif;max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+            <div style="background:#2563eb;padding:28px 32px;">
+              <div style="display:inline-flex;align-items:center;gap:10px;">
+                <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;">R</div>
+                <span style="font-size:18px;font-weight:800;color:#fff;">ResumeTailored <span style="background:rgba(255,255,255,0.25);padding:2px 7px;border-radius:5px;font-size:11px;">AI</span></span>
+              </div>
+            </div>
+            <div style="padding:36px 32px;">
+              <div style="font-size:36px;text-align:center;margin-bottom:16px;">🔍</div>
+              <h2 style="font-size:22px;font-weight:800;color:#111827;text-align:center;margin:0 0 12px;">No Account Found</h2>
+              <p style="font-size:15px;color:#6b7280;line-height:1.7;text-align:center;margin:0 0 28px;">
+                We couldn't find an account linked to <strong style="color:#111827;">${key}</strong>.<br/>
+                You may need to create a new account — it only takes a minute.
+              </p>
+              <div style="text-align:center;margin-bottom:28px;">
+                <a href="https://resumetailored.com/app.html" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Create Account →</a>
+              </div>
+              <p style="font-size:13px;color:#9ca3af;text-align:center;line-height:1.6;margin:0;">
+                If you believe this is an error, please contact us at <a href="mailto:support@resumetailored.com" style="color:#2563eb;">support@resumetailored.com</a>
+              </p>
+            </div>
+            <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
+              <span style="font-size:12px;color:#9ca3af;">© ResumeTailored AI · <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a></span>
+            </div>
+          </div>
+        `
+      });
+    } catch(err) {
+      console.error('[Email] Failed to send no-account email:', err.message);
+    }
+    return res.json({ success: true });
+  }
 
   const token = uuidv4();
   const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
