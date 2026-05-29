@@ -533,8 +533,8 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   .sidebar::-webkit-scrollbar { display: none; }
   .sidebar-section { margin-bottom: 0; display: contents; }
   .sidebar-label { display: none; }
-  .sidebar-btn { width: auto; flex-shrink: 0; padding: 6px 10px; font-size: 12px; white-space: nowrap; border-radius: 7px; }
-  .sidebar-icon { font-size: 13px; }
+  .sidebar-btn { width: auto; flex-shrink: 0; padding: 8px 14px; font-size: 13px; white-space: nowrap; border-radius: 8px; min-height: 40px; }
+  .sidebar-icon { font-size: 15px; }
   .sidebar-pro-box { display: none; }
 
   .dash-main { padding: 24px 20px 60px; }
@@ -565,9 +565,18 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   #navUsername { display: none !important; }
   #logoutBtn { padding: 4px 9px !important; font-size: 11px !important; }
 
-  .sidebar { top: 52px; padding: 3px 8px; gap: 2px; }
-  .sidebar-btn { font-size: 0; padding: 6px 10px; gap: 0; border-radius: 7px; }
-  .sidebar-icon { font-size: 17px; }
+  .sidebar { top: 52px; padding: 5px 8px; gap: 3px; }
+  .sidebar-btn {
+    font-size: 0; padding: 8px 10px 6px; gap: 0;
+    border-radius: 10px; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-width: 60px; min-height: 56px;
+  }
+  .sidebar-btn::after {
+    content: attr(data-label); font-size: 10px; font-weight: 700;
+    color: inherit; margin-top: 4px; line-height: 1;
+  }
+  .sidebar-icon { font-size: 22px; line-height: 1; }
   .nav-pro-full { display: none; }
 
   .dash-main { padding: 18px 14px 80px; }
