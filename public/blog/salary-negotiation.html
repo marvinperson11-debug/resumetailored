@@ -59,7 +59,14 @@
     footer{background:#111827;color:#fff;padding:40px 24px;text-align:center;margin-top:56px;}
     footer p{font-size:13px;color:#9ca3af;margin-bottom:8px;}
     footer a{color:#60a5fa;font-weight:600;}
-    @media(max-width:768px){.article-hero h1{font-size:26px;}.nav-links{display:none;}.tip-row{grid-template-columns:1fr;}.stat-box{flex-direction:column;gap:16px;}}
+    .related-posts{margin:36px 0;padding-top:32px;border-top:1px solid #e5e7eb;}
+    .related-posts-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:16px;}
+    .related-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+    .related-card{display:block;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;transition:box-shadow .15s;}
+    .related-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08);}
+    .related-card-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+    .related-card-title{font-size:14px;font-weight:700;color:#111827;line-height:1.4;}
+    @media(max-width:768px){.article-hero h1{font-size:26px;}.nav-links{display:none;}.tip-row{grid-template-columns:1fr;}.stat-box{flex-direction:column;gap:16px;}.related-grid{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
@@ -109,6 +116,7 @@
     <li><strong>Competing offers</strong> — the most powerful leverage you can have</li>
   </ul>
   <p>Come in with a specific number, not a range. When you give a range, employers anchor to the bottom. Say "I'm targeting $95,000" not "somewhere between $85,000 and $95,000."</p>
+  <p>Getting multiple offers is your strongest leverage. If you're still working on landing interviews, our guides on <a href="/blog/resume-tips-2026" style="color:#dc2626;font-weight:600;">10 resume tips that get you more callbacks</a> and <a href="/blog/how-to-tailor-your-resume" style="color:#dc2626;font-weight:600;">tailoring your resume to every job</a> will help you get there.</p>
 
   <h2>When They Ask "What Are Your Salary Expectations?"</h2>
   <p>This question comes up early — sometimes even in the first screen. Try to deflect it until you have an offer:</p>
@@ -183,6 +191,28 @@
   <h2>After You Accept</h2>
   <p>Get everything in writing. Benefits, start date, salary, title, bonus structure, remote policy, equity — before you give notice at your current job. A verbal offer is not an offer.</p>
   <p>And once you're in the role: document your wins. Every time you hit a milestone, exceed a target, or deliver something significant — write it down. That list becomes your leverage for your next raise or promotion conversation.</p>
+
+  <div class="related-posts">
+    <div class="related-posts-label">Related Articles</div>
+    <div class="related-grid">
+      <a href="/blog/how-to-beat-ats-filters" class="related-card">
+        <div class="related-card-tag" style="color:#2563eb;">ATS & Keywords</div>
+        <div class="related-card-title">How to Beat ATS Filters and Get Your Resume Seen in 2026</div>
+      </a>
+      <a href="/blog/resume-tips-2026" class="related-card">
+        <div class="related-card-tag" style="color:#7c3aed;">Resume Writing</div>
+        <div class="related-card-title">10 Resume Tips That Will Get You More Interviews in 2026</div>
+      </a>
+      <a href="/blog/how-to-tailor-your-resume" class="related-card">
+        <div class="related-card-tag" style="color:#059669;">Job Search</div>
+        <div class="related-card-title">How to Tailor Your Resume to Any Job Posting (Step-by-Step)</div>
+      </a>
+      <a href="/blog/cover-letter-tips" class="related-card">
+        <div class="related-card-tag" style="color:#d97706;">Cover Letters</div>
+        <div class="related-card-title">How to Write a Cover Letter That Actually Gets Read</div>
+      </a>
+    </div>
+  </div>
 
   <div class="cta-inline">
     <h3>Land the interview first</h3>

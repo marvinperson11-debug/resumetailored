@@ -51,7 +51,14 @@
     footer{background:#111827;color:#fff;padding:40px 24px;text-align:center;margin-top:56px;}
     footer p{font-size:13px;color:#9ca3af;margin-bottom:8px;}
     footer a{color:#60a5fa;font-weight:600;}
-    @media(max-width:768px){.article-hero h1{font-size:26px;}.nav-links{display:none;}.tip-card{flex-direction:column;gap:10px;}}
+    .related-posts{margin:36px 0;padding-top:32px;border-top:1px solid #e5e7eb;}
+    .related-posts-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:16px;}
+    .related-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+    .related-card{display:block;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;transition:box-shadow .15s;}
+    .related-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08);}
+    .related-card-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+    .related-card-title{font-size:14px;font-weight:700;color:#111827;line-height:1.4;}
+    @media(max-width:768px){.article-hero h1{font-size:26px;}.nav-links{display:none;}.tip-card{flex-direction:column;gap:10px;}.related-grid{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
@@ -85,7 +92,7 @@
     <div class="tip-num">1</div>
     <div class="tip-content">
       <h3>Tailor your resume to every single job</h3>
-      <p>This is the most impactful thing you can do — and the thing most people skip. Recruiters can instantly tell when a resume is generic. More importantly, ATS systems filter out resumes that don't match the job's keywords. Use the exact language from each job posting and prioritize the skills they mention first.</p>
+      <p>This is the most impactful thing you can do — and the thing most people skip. Recruiters can instantly tell when a resume is generic. More importantly, <a href="/blog/how-to-beat-ats-filters" style="color:#7c3aed;font-weight:600;">ATS systems filter out resumes that don't match the job's keywords</a>. Use the exact language from each job posting and prioritize the skills they mention first. For the full process, see our <a href="/blog/how-to-tailor-your-resume" style="color:#7c3aed;font-weight:600;">step-by-step tailoring guide</a>.</p>
     </div>
   </div>
 
@@ -168,6 +175,28 @@
   <h2>The Fastest Way to Apply All 10 Tips</h2>
   <p>Manually implementing all of these — especially tailoring your resume for every single job — takes hours. Most job seekers either skip it or give up after a few applications.</p>
   <p>ResumeTailored AI does it in 60 seconds. Paste your resume and the job posting, and get back a fully tailored, keyword-optimized resume ready to submit. It handles tips 1, 3, 5, and 6 automatically.</p>
+
+  <div class="related-posts">
+    <div class="related-posts-label">Related Articles</div>
+    <div class="related-grid">
+      <a href="/blog/how-to-beat-ats-filters" class="related-card">
+        <div class="related-card-tag" style="color:#2563eb;">ATS & Keywords</div>
+        <div class="related-card-title">How to Beat ATS Filters and Get Your Resume Seen in 2026</div>
+      </a>
+      <a href="/blog/how-to-tailor-your-resume" class="related-card">
+        <div class="related-card-tag" style="color:#059669;">Job Search</div>
+        <div class="related-card-title">How to Tailor Your Resume to Any Job Posting (Step-by-Step)</div>
+      </a>
+      <a href="/blog/cover-letter-tips" class="related-card">
+        <div class="related-card-tag" style="color:#d97706;">Cover Letters</div>
+        <div class="related-card-title">How to Write a Cover Letter That Actually Gets Read</div>
+      </a>
+      <a href="/blog/salary-negotiation" class="related-card">
+        <div class="related-card-tag" style="color:#dc2626;">Salary & Negotiation</div>
+        <div class="related-card-title">How to Negotiate Your Salary and Get Paid What You're Worth</div>
+      </a>
+    </div>
+  </div>
 
   <div class="cta-inline">
     <h3>Get more interviews starting today</h3>

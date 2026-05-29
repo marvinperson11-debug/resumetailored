@@ -50,7 +50,14 @@
     footer{background:#111827;color:#fff;padding:40px 24px;text-align:center;margin-top:56px;}
     footer p{font-size:13px;color:#9ca3af;margin-bottom:8px;}
     footer a{color:#60a5fa;font-weight:600;}
-    @media(max-width:768px){.article-hero h1{font-size:26px;}.nav-links{display:none;}}
+    .related-posts{margin:36px 0;padding-top:32px;border-top:1px solid #e5e7eb;}
+    .related-posts-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6b7280;margin-bottom:16px;}
+    .related-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+    .related-card{display:block;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;transition:box-shadow .15s;}
+    .related-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08);}
+    .related-card-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+    .related-card-title{font-size:14px;font-weight:700;color:#111827;line-height:1.4;}
+    @media(max-width:768px){.article-hero h1{font-size:26px;}.nav-links{display:none;}.related-grid{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
@@ -78,7 +85,7 @@
   <a href="/blog" class="back-link">← Back to Blog</a>
 
   <p>If you're sending the same resume to every job you apply for, you're making the most common — and most costly — mistake in the job search process.</p>
-  <p>Recruiters see hundreds of resumes. They can tell instantly when one is generic. More importantly, <strong>ATS software filters out resumes that don't match the specific language of the job posting</strong> — before any human even sees them.</p>
+  <p>Recruiters see hundreds of resumes. They can tell instantly when one is generic. More importantly, <strong><a href="/blog/how-to-beat-ats-filters" style="color:#059669;font-weight:700;">ATS software filters out resumes that don't match the specific language of the job posting</a></strong> — before any human even sees them.</p>
   <p>Tailoring your resume doesn't mean rewriting it from scratch every time. It means making smart, targeted adjustments that show the employer: "I am exactly who you're looking for." Here's how to do it.</p>
 
   <h2>Why Tailoring Works</h2>
@@ -134,6 +141,28 @@
   <h2>How to Tailor Your Resume in 60 Seconds</h2>
   <p>Manually tailoring every resume is the right approach, but it takes time. ResumeTailored AI automates the process: paste your base resume and the job posting, and get back a tailored version instantly — with the right keywords woven in naturally, your summary rewritten for the role, and your skills section optimized.</p>
   <p>It doesn't invent things. It reorganizes and reframes your real experience to speak the employer's language.</p>
+
+  <div class="related-posts">
+    <div class="related-posts-label">Related Articles</div>
+    <div class="related-grid">
+      <a href="/blog/how-to-beat-ats-filters" class="related-card">
+        <div class="related-card-tag" style="color:#2563eb;">ATS & Keywords</div>
+        <div class="related-card-title">How to Beat ATS Filters and Get Your Resume Seen in 2026</div>
+      </a>
+      <a href="/blog/resume-tips-2026" class="related-card">
+        <div class="related-card-tag" style="color:#7c3aed;">Resume Writing</div>
+        <div class="related-card-title">10 Resume Tips That Will Get You More Interviews in 2026</div>
+      </a>
+      <a href="/blog/cover-letter-tips" class="related-card">
+        <div class="related-card-tag" style="color:#d97706;">Cover Letters</div>
+        <div class="related-card-title">How to Write a Cover Letter That Actually Gets Read</div>
+      </a>
+      <a href="/blog/salary-negotiation" class="related-card">
+        <div class="related-card-tag" style="color:#dc2626;">Salary & Negotiation</div>
+        <div class="related-card-title">How to Negotiate Your Salary and Get Paid What You're Worth</div>
+      </a>
+    </div>
+  </div>
 
   <div class="cta-inline">
     <h3>Tailor your resume to any job in 60 seconds</h3>
