@@ -65,44 +65,43 @@
     /* ── Upload / Download ── */
     .upload-btn {
       display: inline-flex; align-items: center; gap: 7px;
-      padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 700;
-      border: 1px dashed rgba(245,200,66,0.5); background: rgba(245,200,66,0.06);
-      color: #f5c842; cursor: pointer; font-family: inherit; transition: all .2s;
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      border: 1.5px dashed #93c5fd; background: #eff6ff;
+      color: #2563eb; cursor: pointer; font-family: inherit; transition: all .2s;
       white-space: nowrap;
     }
-    .upload-btn:hover { background: rgba(245,200,66,0.12); border-color: #f5c842; }
+    .upload-btn:hover { background: #dbeafe; border-color: #2563eb; }
     .upload-btn .spinner { width:14px;height:14px;border-width:2px; }
     .field-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
     .field-header label { margin-bottom:0; }
     .download-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
     .download-btn {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 11px 20px; border-radius: 10px; font-size: 14px; font-weight: 700;
+      padding: 11px 20px; border-radius: 9px; font-size: 14px; font-weight: 700;
       cursor: pointer; font-family: inherit; transition: all .2s; border: none;
     }
     .download-btn-txt {
-      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
-      color: #f1f0ff;
+      background: #f3f4f6; border: 1.5px solid #e5e7eb;
+      color: #374151;
     }
-    .download-btn-txt:hover { background: rgba(255,255,255,0.12); }
+    .download-btn-txt:hover { background: #e5e7eb; }
     .download-btn-docx {
-      background: linear-gradient(135deg,#f5c842,#fb923c); color: #07070f;
+      background: #2563eb; color: #fff;
     }
-    .download-btn-docx:hover { filter: brightness(1.08); }
+    .download-btn-docx:hover { background: #1d4ed8; }
     @media (max-width: 480px) {
       .auth-overlay { padding: 0; align-items: flex-end; }
-      .auth-card { border-radius: 20px 20px 0 0; max-width: 100%; }
+      .auth-card { border-radius: 16px 16px 0 0; max-width: 100%; }
     }
     /* ── Template type toggle ── */
     .sample-toggle { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
     .sample-toggle-btn {
-      padding: 10px 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 14px;
-      font-weight: 700; cursor: pointer; transition: all .2s; font-family: inherit;
+      padding: 9px 18px; border-radius: 8px; border: 1.5px solid #e5e7eb;
+      background: #fff; color: #6b7280; font-size: 14px;
+      font-weight: 700; cursor: pointer; transition: all .15s; font-family: inherit;
     }
     .sample-toggle-btn.active {
-      background: linear-gradient(135deg,rgba(245,200,66,.15),rgba(251,146,60,.1));
-      border-color: rgba(245,200,66,.4); color: #f5c842;
+      background: #eff6ff; border-color: #2563eb; color: #2563eb;
     }
   </style>
 </head>
