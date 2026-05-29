@@ -113,9 +113,24 @@ a { text-decoration: none; color: inherit; }
 .sidebar-pro-box {
   background: var(--blue-light); border: 1px solid #bfdbfe;
   border-radius: 12px; padding: 16px; color: var(--text); margin-top: 16px;
+  text-align: center;
 }
 .sidebar-pro-title { font-weight: 800; font-size: 14px; margin-bottom: 6px; color: var(--blue); }
 .sidebar-pro-text { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+/* Mobile upgrade banner — shown inside main content when sidebar pro box is hidden */
+.mobile-upgrade-banner {
+  display: none;
+}
+@media (max-width: 900px) {
+  .mobile-upgrade-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    background: var(--blue-light); border: 1px solid #bfdbfe;
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;
+  }
+  .mobile-upgrade-banner p { font-size: 13px; font-weight: 600; color: #1e40af; margin: 0; flex: 1; min-width: 160px; }
+  .mobile-upgrade-banner button { flex-shrink: 0; padding: 9px 18px; font-size: 13px; }
+}
 
 /* ── Main content ── */
 .dash-main {
