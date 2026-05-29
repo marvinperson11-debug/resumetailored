@@ -124,6 +124,7 @@ function hashPw(pw) {
   return crypto.createHash('sha256').update('rta_salt_2026_' + pw).digest('hex');
 }
 
+app.set('trust proxy', 1); // Required on Railway — reads real client IP from X-Forwarded-For
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 
