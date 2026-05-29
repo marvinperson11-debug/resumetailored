@@ -18,6 +18,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     /* ── Auth Modal ── */
     .auth-overlay {
@@ -91,6 +92,10 @@
       background: #2563eb; color: #fff;
     }
     .download-btn-docx:hover { background: #1d4ed8; }
+    .download-btn-pdf {
+      background: #dc2626; color: #fff;
+    }
+    .download-btn-pdf:hover { background: #b91c1c; }
     @media (max-width: 480px) {
       .auth-overlay { padding: 0; align-items: flex-end; }
       .auth-card { border-radius: 16px 16px 0 0; max-width: 100%; }
@@ -274,8 +279,9 @@
           </div>
           <div class="output-box" id="outputBox"></div>
           <div class="download-row">
-            <button class="download-btn download-btn-docx" onclick="downloadDocx()">⬇ Download as Word (.docx)</button>
-            <button class="download-btn download-btn-txt" onclick="downloadTxt()">⬇ Download as Text (.txt)</button>
+            <button class="download-btn download-btn-docx" onclick="downloadDocx()">⬇ Word (.docx)</button>
+            <button class="download-btn download-btn-pdf" onclick="downloadPdf()">⬇ PDF</button>
+            <button class="download-btn download-btn-txt" onclick="downloadTxt()">⬇ Text (.txt)</button>
           </div>
         </div>
 
@@ -285,7 +291,7 @@
         </div>
 
         <div class="upsell" id="limitBanner" style="display:none;">
-          <p>You've used your <strong>free daily tailoring</strong>. Upgrade to Pro for unlimited access — $19/month.</p>
+          <p>You've used your <strong>free daily use</strong> for this mode. You get 1 free resume tailoring + 1 free cover letter per day. Upgrade to Pro for unlimited access — $19/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -857,7 +863,8 @@
   <script>
     let selectedMode = 'resume';
     let isSubscriberFlag = false;
-    let freeUsesLeft = 1;
+    let freeResumesLeft = 1;
+    let freeCoverLettersLeft = 1;
     let pendingPro = false;
 
     // ── Auth helpers ───────────────────────────────────────────────────────────
@@ -1072,7 +1079,8 @@
         const res = await fetch(`/api/status?email=${encodeURIComponent(email)}`);
         const data = await res.json();
         isSubscriberFlag = data.isSubscriber;
-        freeUsesLeft = data.freeUsesLeft;
+        freeResumesLeft = data.freeResumesLeft;
+        freeCoverLettersLeft = data.freeCoverLettersLeft;
 
         const badge = document.getElementById('statusBadge');
         const navStatus = document.getElementById('navStatus');
@@ -1082,13 +1090,20 @@
           navStatus.innerHTML = '<span class="free-badge pro-badge" style="font-size:12px;">✦ Pro</span>';
           document.getElementById('sidebarProBox').style.display = 'none';
         } else {
-          badge.innerHTML = `<span class="free-badge">${freeUsesLeft > 0 ? '1 free tailoring available today' : '0 free tailorings left today'}</span>`;
+          const parts = [];
+          if (freeResumesLeft > 0) parts.push('1 free resume');
+          if (freeCoverLettersLeft > 0) parts.push('1 free cover letter');
+          const badgeText = parts.length > 0 ? parts.join(' + ') + ' available today' : '0 free uses left today';
+          badge.innerHTML = `<span class="free-badge">${badgeText}</span>`;
           document.getElementById('sidebarProBox').style.display = 'block';
         }
 
-        if (freeUsesLeft === 0 && !isSubscriberFlag) {
-          document.getElementById('limitBanner').style.display = 'flex';
-        }
+        const modeExhausted = (!isSubscriberFlag) && (
+          (selectedMode === 'resume' && freeResumesLeft === 0) ||
+          (selectedMode === 'cover_letter' && freeCoverLettersLeft === 0) ||
+          (selectedMode === 'both' && freeResumesLeft === 0 && freeCoverLettersLeft === 0)
+        );
+        document.getElementById('limitBanner').style.display = modeExhausted ? 'flex' : 'none';
       } catch(e) {}
     }
 
@@ -1121,6 +1136,7 @@
 
         if (res.status === 402) {
           document.getElementById('limitBanner').style.display = 'flex';
+          await checkStatus();
           return;
         }
         if (!res.ok) throw new Error(data.error || 'Something went wrong.');
@@ -1766,6 +1782,48 @@ Aaliyah Washington`
         URL.revokeObjectURL(a.href);
       } catch(err) {
         showToast('Could not generate .docx. Try downloading as .txt instead.');
+      }
+    }
+
+    function downloadPdf() {
+      const text = getOutputText();
+      if (!text) return;
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 15;
+        const maxWidth = pageWidth - margin * 2;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(11);
+
+        const lines = text.split('\n');
+        let y = 20;
+        lines.forEach(line => {
+          const wrapped = doc.splitTextToSize(line || ' ', maxWidth);
+          wrapped.forEach(wLine => {
+            if (y > 280) { doc.addPage(); y = 20; }
+            if (line.startsWith('# ')) {
+              doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+              doc.text(wLine.replace(/^#+\s*/, ''), margin, y);
+              doc.setFontSize(11); doc.setFont('helvetica', 'normal');
+              y += 9;
+            } else if (line.startsWith('## ') || line.startsWith('### ')) {
+              doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+              doc.text(wLine.replace(/^#+\s*/, ''), margin, y);
+              doc.setFontSize(11); doc.setFont('helvetica', 'normal');
+              y += 8;
+            } else {
+              doc.text(wLine, margin, y);
+              y += 6;
+            }
+          });
+        });
+
+        const filename = (document.getElementById('outputTitle').textContent || 'tailored-resume').replace(/[^a-z0-9-_ ]/gi, '_');
+        doc.save(filename + '.pdf');
+      } catch(err) {
+        showToast('PDF generation failed. Try downloading as Word or Text instead.');
       }
     }
 
