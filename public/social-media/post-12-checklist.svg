@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <rect width="1080" height="1080" fill="#f9fafb"/>
+  <rect width="1080" height="8" fill="#2563eb"/>
+
+  <!-- Logo -->
+  <rect x="80" y="60" width="44" height="44" rx="10" fill="#2563eb"/>
+  <text x="102" y="91" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">R</text>
+  <text x="136" y="90" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="18" fill="#111827">ResumeTailored AI</text>
+
+  <!-- Headline -->
+  <text x="80" y="195" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="58" fill="#111827" letter-spacing="-2">Before You Apply:</text>
+  <text x="80" y="260" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="58" fill="#2563eb" letter-spacing="-2">Resume Checklist</text>
+
+  <!-- Checklist items -->
+  <!-- Item 1 - checked -->
+  <rect x="80" y="306" width="920" height="72" rx="14" fill="white" stroke="#e5e7eb" stroke-width="1.5"/>
+  <rect x="80" y="306" width="5" height="72" rx="3" fill="#22c55e"/>
+  <rect x="106" y="326" width="32" height="32" rx="8" fill="#dcfce7"/>
+  <text x="122" y="348" font-family="'Inter',Arial,sans-serif" font-size="18" fill="#16a34a" text-anchor="middle">✓</text>
+  <text x="158" y="342" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="20" fill="#111827">Resume is tailored to THIS specific job posting</text>
+  <text x="158" y="364" font-family="'Inter',Arial,sans-serif" font-size="15" fill="#6b7280">Use ResumeTailored AI — takes 60 seconds</text>
+
+  <!-- Item 2 - checked -->
+  <rect x="80" y="394" width="920" height="72" rx="14" fill="white" stroke="#e5e7eb" stroke-width="1.5"/>
+  <rect x="80" y="394" width="5" height="72" rx="3" fill="#22c55e"/>
+  <rect x="106" y="414" width="32" height="32" rx="8" fill="#dcfce7"/>
+  <text x="122" y="436" font-family="'Inter',Arial,sans-serif" font-size="18" fill="#16a34a" text-anchor="middle">✓</text>
+  <text x="158" y="430" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="20" fill="#111827">Keywords from the job description are included</text>
+  <text x="158" y="452" font-family="'Inter',Arial,sans-serif" font-size="15" fill="#6b7280">ATS systems scan for these</text>
+
+  <!-- Item 3 - checked -->
+  <rect x="80" y="482" width="920" height="72" rx="14" fill="white" stroke="#e5e7eb" stroke-width="1.5"/>
+  <rect x="80" y="482" width="5" height="72" rx="3" fill="#22c55e"/>
+  <rect x="106" y="502" width="32" height="32" rx="8" fill="#dcfce7"/>
+  <text x="122" y="524" font-family="'Inter',Arial,sans-serif" font-size="18" fill="#16a34a" text-anchor="middle">✓</text>
+  <text x="158" y="518" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="20" fill="#111827">Cover letter is personalized to this company</text>
+  <text x="158" y="540" font-family="'Inter',Arial,sans-serif" font-size="15" fill="#6b7280">Generic letters go straight to the bin</text>
+
+  <!-- Item 4 - unchecked -->
+  <rect x="80" y="570" width="920" height="72" rx="14" fill="white" stroke="#e5e7eb" stroke-width="1.5"/>
+  <rect x="80" y="570" width="5" height="72" rx="3" fill="#e5e7eb"/>
+  <rect x="106" y="590" width="32" height="32" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.5"/>
+  <text x="158" y="606" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="20" fill="#9ca3af">LinkedIn profile matches your resume</text>
+  <text x="158" y="628" font-family="'Inter',Arial,sans-serif" font-size="15" fill="#d1d5db">Recruiters always check</text>
+
+  <!-- Item 5 - unchecked -->
+  <rect x="80" y="658" width="920" height="72" rx="14" fill="white" stroke="#e5e7eb" stroke-width="1.5"/>
+  <rect x="80" y="658" width="5" height="72" rx="3" fill="#e5e7eb"/>
+  <rect x="106" y="678" width="32" height="32" rx="8" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.5"/>
+  <text x="158" y="694" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="20" fill="#9ca3af">Contact info is current and professional</text>
+  <text x="158" y="716" font-family="'Inter',Arial,sans-serif" font-size="15" fill="#d1d5db">No outdated phone numbers or emails</text>
+
+  <!-- Bottom banner -->
+  <rect x="80" y="780" width="920" height="100" rx="20" fill="#2563eb"/>
+  <text x="540" y="825" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="26" fill="white" text-anchor="middle">ResumeTailored AI handles steps 1–3</text>
+  <text x="540" y="860" font-family="'Inter',Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.75)" text-anchor="middle">automatically. Start free at resumetailored.com</text>
+
+  <rect x="0" y="1072" width="1080" height="8" fill="#2563eb"/>
+</svg>

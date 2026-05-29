@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.15)"/>
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="400" fill="url(#bg)" rx="0"/>
+
+  <!-- Subtle pattern circles -->
+  <circle cx="340" cy="60" r="120" fill="rgba(255,255,255,0.04)"/>
+  <circle cx="60" cy="340" r="100" fill="rgba(255,255,255,0.04)"/>
+  <circle cx="340" cy="60" r="70" fill="rgba(255,255,255,0.05)"/>
+
+  <!-- White card background -->
+  <rect x="80" y="90" width="240" height="220" rx="24" fill="rgba(255,255,255,0.12)"/>
+  <rect x="80" y="90" width="240" height="220" rx="24" fill="url(#shine)"/>
+
+  <!-- R lettermark -->
+  <text x="200" y="230" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="110" fill="white" text-anchor="middle" letter-spacing="-4">R</text>
+
+  <!-- Dot accent -->
+  <circle cx="248" cy="148" r="12" fill="#60a5fa"/>
+
+  <!-- Bottom label -->
+  <rect x="60" y="316" width="280" height="48" rx="12" fill="rgba(255,255,255,0.15)"/>
+  <text x="200" y="334" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="13" fill="rgba(255,255,255,0.7)" text-anchor="middle" letter-spacing="2">RESUMETAILORED</text>
+  <text x="200" y="354" font-family="'Inter',Arial,sans-serif" font-weight="700" font-size="13" fill="white" text-anchor="middle" letter-spacing="1">AI</text>
+</svg>

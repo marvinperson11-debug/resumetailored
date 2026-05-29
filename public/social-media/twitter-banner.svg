@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 500" width="1500" height="500">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e40af"/>
+      <stop offset="50%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1500" height="500" fill="url(#bg)"/>
+
+  <!-- Decorative circles -->
+  <circle cx="1350" cy="80" r="200" fill="rgba(255,255,255,0.04)"/>
+  <circle cx="1350" cy="80" r="130" fill="rgba(255,255,255,0.05)"/>
+  <circle cx="150" cy="420" r="160" fill="rgba(255,255,255,0.03)"/>
+  <circle cx="750" cy="500" r="180" fill="rgba(255,255,255,0.03)"/>
+
+  <!-- Decorative grid dots (top right) -->
+  <g fill="rgba(255,255,255,0.12)">
+    <circle cx="1200" cy="60" r="3"/><circle cx="1240" cy="60" r="3"/><circle cx="1280" cy="60" r="3"/><circle cx="1320" cy="60" r="3"/>
+    <circle cx="1200" cy="100" r="3"/><circle cx="1240" cy="100" r="3"/><circle cx="1280" cy="100" r="3"/><circle cx="1320" cy="100" r="3"/>
+    <circle cx="1200" cy="140" r="3"/><circle cx="1240" cy="140" r="3"/><circle cx="1280" cy="140" r="3"/><circle cx="1320" cy="140" r="3"/>
+    <circle cx="1200" cy="180" r="3"/><circle cx="1240" cy="180" r="3"/><circle cx="1280" cy="180" r="3"/><circle cx="1320" cy="180" r="3"/>
+  </g>
+
+  <!-- Logo badge -->
+  <rect x="80" y="130" width="64" height="64" rx="16" fill="rgba(255,255,255,0.2)"/>
+  <text x="112" y="175" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="36" fill="white" text-anchor="middle">R</text>
+  <circle cx="140" cy="144" r="8" fill="#60a5fa"/>
+
+  <!-- Brand name -->
+  <text x="162" y="158" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="32" fill="white">ResumeTailored</text>
+  <rect x="510" y="138" width="44" height="28" rx="6" fill="rgba(255,255,255,0.25)"/>
+  <text x="532" y="158" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="14" fill="white" text-anchor="middle">AI</text>
+
+  <!-- Tagline -->
+  <text x="80" y="240" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="60" fill="white" letter-spacing="-2">Land Your Dream Job</text>
+  <text x="80" y="310" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="60" fill="rgba(255,255,255,0.85)" letter-spacing="-2">with AI-Powered Resumes.</text>
+
+  <!-- Sub text -->
+  <text x="80" y="380" font-family="'Inter',Arial,sans-serif" font-weight="500" font-size="22" fill="rgba(255,255,255,0.7)">Tailor your resume to any job posting in seconds · Free to start</text>
+
+  <!-- URL pill -->
+  <rect x="80" y="410" width="260" height="44" rx="22" fill="rgba(255,255,255,0.15)"/>
+  <text x="210" y="438" font-family="'Inter',Arial,sans-serif" font-weight="700" font-size="16" fill="white" text-anchor="middle">resumetailored.com</text>
+
+  <!-- Right side resume mockup -->
+  <rect x="960" y="60" width="380" height="380" rx="20" fill="rgba(255,255,255,0.1)"/>
+  <rect x="980" y="80" width="340" height="340" rx="14" fill="rgba(255,255,255,0.95)"/>
+  <!-- Mock resume lines -->
+  <rect x="1000" y="106" width="160" height="16" rx="4" fill="#111827"/>
+  <rect x="1000" y="130" width="100" height="8" rx="3" fill="#6b7280"/>
+  <rect x="1000" y="162" width="60" height="6" rx="2" fill="#2563eb"/>
+  <rect x="1000" y="178" width="300" height="5" rx="2" fill="#e5e7eb"/>
+  <rect x="1000" y="191" width="280" height="5" rx="2" fill="#e5e7eb"/>
+  <rect x="1000" y="204" width="240" height="5" rx="2" fill="#e5e7eb"/>
+  <rect x="1000" y="228" width="60" height="6" rx="2" fill="#2563eb"/>
+  <rect x="1000" y="244" width="300" height="5" rx="2" fill="#e5e7eb"/>
+  <rect x="1000" y="257" width="260" height="5" rx="2" fill="#e5e7eb"/>
+  <rect x="1000" y="270" width="300" height="5" rx="2" fill="#e5e7eb"/>
+  <rect x="1000" y="283" width="220" height="5" rx="2" fill="#e5e7eb"/>
+  <rect x="1000" y="307" width="60" height="6" rx="2" fill="#2563eb"/>
+  <rect x="1000" y="323" width="290" height="5" rx="2" fill="#e5e7eb"/>
+  <rect x="1000" y="336" width="260" height="5" rx="2" fill="#e5e7eb"/>
+  <rect x="1000" y="349" width="300" height="5" rx="2" fill="#e5e7eb"/>
+  <!-- AI badge on resume -->
+  <rect x="1240" y="98" width="68" height="26" rx="13" fill="#eff6ff"/>
+  <text x="1274" y="115" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="11" fill="#2563eb" text-anchor="middle">✦ AI</text>
+</svg>

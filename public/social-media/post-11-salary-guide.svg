@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#064e3b"/>
+      <stop offset="100%" style="stop-color:#065f46"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <circle cx="900" cy="180" r="260" fill="rgba(255,255,255,0.04)"/>
+  <circle cx="180" cy="900" r="220" fill="rgba(255,255,255,0.04)"/>
+
+  <!-- Logo -->
+  <rect x="80" y="70" width="44" height="44" rx="10" fill="rgba(255,255,255,0.15)"/>
+  <text x="102" y="101" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">R</text>
+  <text x="136" y="100" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="18" fill="rgba(255,255,255,0.8)">ResumeTailored AI</text>
+
+  <!-- Badge -->
+  <rect x="80" y="160" width="240" height="44" rx="22" fill="rgba(255,255,255,0.15)"/>
+  <text x="200" y="187" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="16" fill="white" text-anchor="middle">💰 SALARY GUIDE</text>
+
+  <!-- Headline -->
+  <text x="80" y="300" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="66" fill="white" letter-spacing="-2">Know Your</text>
+  <text x="80" y="380" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="66" fill="#6ee7b7" letter-spacing="-2">Worth.</text>
+
+  <text x="80" y="450" font-family="'Inter',Arial,sans-serif" font-size="26" fill="rgba(255,255,255,0.7)">Don't leave money on the table.</text>
+
+  <!-- Salary bars -->
+  <!-- Bar 1 -->
+  <text x="80" y="530" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="18" fill="rgba(255,255,255,0.7)">Software Engineer</text>
+  <rect x="80" y="545" width="840" height="44" rx="8" fill="rgba(255,255,255,0.08)"/>
+  <rect x="80" y="545" width="756" height="44" rx="8" fill="#2563eb"/>
+  <text x="920" y="573" font-family="'Inter',Arial,sans-serif" font-weight="700" font-size="18" fill="white" text-anchor="end">$95k–$160k</text>
+
+  <!-- Bar 2 -->
+  <text x="80" y="630" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="18" fill="rgba(255,255,255,0.7)">Product Manager</text>
+  <rect x="80" y="645" width="840" height="44" rx="8" fill="rgba(255,255,255,0.08)"/>
+  <rect x="80" y="645" width="672" height="44" rx="8" fill="#0ea5e9"/>
+  <text x="920" y="673" font-family="'Inter',Arial,sans-serif" font-weight="700" font-size="18" fill="white" text-anchor="end">$85k–$145k</text>
+
+  <!-- Bar 3 -->
+  <text x="80" y="730" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="18" fill="rgba(255,255,255,0.7)">Data Analyst</text>
+  <rect x="80" y="745" width="840" height="44" rx="8" fill="rgba(255,255,255,0.08)"/>
+  <rect x="80" y="745" width="588" height="44" rx="8" fill="#6ee7b7"/>
+  <text x="920" y="773" font-family="'Inter',Arial,sans-serif" font-weight="700" font-size="18" fill="white" text-anchor="end">$65k–$110k</text>
+
+  <!-- Bar 4 -->
+  <text x="80" y="830" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="18" fill="rgba(255,255,255,0.7)">Marketing Manager</text>
+  <rect x="80" y="845" width="840" height="44" rx="8" fill="rgba(255,255,255,0.08)"/>
+  <rect x="80" y="845" width="504" height="44" rx="8" fill="#34d399"/>
+  <text x="920" y="873" font-family="'Inter',Arial,sans-serif" font-weight="700" font-size="18" fill="white" text-anchor="end">$60k–$100k</text>
+
+  <!-- CTA -->
+  <text x="80" y="960" font-family="'Inter',Arial,sans-serif" font-size="22" fill="rgba(255,255,255,0.65)">Full salary guide inside the Career Hub →</text>
+  <text x="80" y="1010" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="24" fill="#6ee7b7">resumetailored.com</text>
+</svg>
