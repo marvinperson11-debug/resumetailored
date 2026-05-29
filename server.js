@@ -140,7 +140,7 @@ const apiLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 
 // ─── Auth endpoints ───────────────────────────────────────────────────────────
-app.post('/api/auth/signup', (req, res) => {
+app.post('/api/auth/signup', async (req, res) => {
   const { email, username, password } = req.body;
   if (!email || !username || !password) {
     return res.status(400).json({ error: 'Email, username, and password are required.' });
@@ -160,6 +160,100 @@ app.post('/api/auth/signup', (req, res) => {
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
   res.json({ token, username: cleanUsername, email: key });
+
+  // Welcome email — fire and forget, don't block the response
+  try {
+    await sendEmail({
+      to: key,
+      subject: 'Welcome to ResumeTailored AI — You\'re in!',
+      html: `
+        <div style="font-family:'Inter',Arial,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+
+          <!-- Header -->
+          <div style="background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 100%);padding:36px 32px;">
+            <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:20px;">
+              <div style="width:40px;height:40px;background:rgba(255,255,255,0.2);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;">R</div>
+              <span style="font-size:20px;font-weight:800;color:#fff;">ResumeTailored <span style="background:rgba(255,255,255,0.25);padding:2px 8px;border-radius:5px;font-size:12px;">AI</span></span>
+            </div>
+            <div style="font-size:28px;font-weight:900;color:#fff;line-height:1.2;">Welcome aboard, ${cleanUsername}!</div>
+            <div style="font-size:15px;color:rgba(255,255,255,0.8);margin-top:8px;">Your account is ready. Let's land that next job.</div>
+          </div>
+
+          <!-- Body -->
+          <div style="padding:36px 32px;">
+            <p style="font-size:15px;color:#374151;line-height:1.75;margin:0 0 28px;">
+              Thanks for joining ResumeTailored AI. You now have access to AI-powered resume tailoring, cover letter generation, and a full career hub — all built to help you stand out and get hired faster.
+            </p>
+
+            <!-- Features -->
+            <div style="margin-bottom:28px;">
+              <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#9ca3af;margin-bottom:16px;">What's waiting for you</div>
+              <div style="display:grid;gap:12px;">
+
+                <div style="display:flex;gap:14px;align-items:flex-start;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;">
+                  <div style="font-size:22px;line-height:1;">✦</div>
+                  <div>
+                    <div style="font-weight:700;color:#111827;font-size:14px;margin-bottom:3px;">AI Resume Tailor</div>
+                    <div style="font-size:13px;color:#6b7280;line-height:1.6;">Paste any job posting and get a resume tailored to match — highlighting the right keywords and experience to beat ATS filters.</div>
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:14px;align-items:flex-start;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;">
+                  <div style="font-size:22px;line-height:1;">✉</div>
+                  <div>
+                    <div style="font-weight:700;color:#111827;font-size:14px;margin-bottom:3px;">Cover Letter Generator</div>
+                    <div style="font-size:13px;color:#6b7280;line-height:1.6;">Generate a personalized, professional cover letter for every application in seconds — not the same generic template everyone else uses.</div>
+                  </div>
+                </div>
+
+                <div style="display:flex;gap:14px;align-items:flex-start;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;">
+                  <div style="font-size:22px;line-height:1;">💼</div>
+                  <div>
+                    <div style="font-weight:700;color:#111827;font-size:14px;margin-bottom:3px;">Career Hub</div>
+                    <div style="font-size:13px;color:#6b7280;line-height:1.6;">Salary guides, career check-ins, a community forum, and professional resume templates — everything you need in one place.</div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Pricing callout -->
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:20px 20px;margin-bottom:28px;">
+              <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#2563eb;margin-bottom:10px;">Your Plan</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                <div>
+                  <div style="font-size:16px;font-weight:700;color:#111827;">Free Tier</div>
+                  <div style="font-size:13px;color:#6b7280;margin-top:3px;">1 free AI tailoring per day · Full template access</div>
+                </div>
+                <a href="https://resumetailored.com/#pricing" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:13px;padding:10px 20px;border-radius:8px;text-decoration:none;white-space:nowrap;">Upgrade to Pro — $19/mo →</a>
+              </div>
+            </div>
+
+            <!-- CTA -->
+            <div style="text-align:center;margin-bottom:28px;">
+              <a href="https://resumetailored.com/app.html" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:15px 40px;border-radius:10px;text-decoration:none;">Go to My Dashboard →</a>
+            </div>
+
+            <!-- Contact -->
+            <div style="border-top:1px solid #e5e7eb;padding-top:20px;">
+              <div style="font-size:13px;color:#6b7280;line-height:1.7;text-align:center;">
+                Questions? We're here to help.<br/>
+                <a href="mailto:support@resumetailored.com" style="color:#2563eb;font-weight:600;text-decoration:none;">support@resumetailored.com</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
+            <span style="font-size:12px;color:#9ca3af;">© ResumeTailored AI · <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a> · You're receiving this because you just created an account.</span>
+          </div>
+
+        </div>
+      `
+    });
+  } catch(err) {
+    console.error('[Email] Failed to send welcome email:', err.message);
+  }
 });
 
 app.post('/api/auth/login', (req, res) => {
