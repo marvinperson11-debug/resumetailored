@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <rect width="1080" height="1080" fill="#f9fafb"/>
+  <rect width="1080" height="8" fill="#2563eb"/>
+
+  <!-- Logo -->
+  <rect x="80" y="60" width="44" height="44" rx="10" fill="#2563eb"/>
+  <text x="102" y="91" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">R</text>
+  <text x="136" y="90" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="18" fill="#111827">ResumeTailored AI</text>
+
+  <!-- Big quote mark -->
+  <text x="70" y="350" font-family="Georgia,serif" font-size="220" fill="#eff6ff">"</text>
+
+  <!-- Quote text -->
+  <text x="80" y="320" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="44" fill="#111827" letter-spacing="-1">I got 4 interview calls</text>
+  <text x="80" y="380" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="44" fill="#111827" letter-spacing="-1">in the first week after</text>
+  <text x="80" y="440" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="44" fill="#2563eb" letter-spacing="-1">using ResumeTailored AI.</text>
+
+  <!-- Stars -->
+  <text x="80" y="510" font-family="'Inter',Arial,sans-serif" font-size="36" fill="#fbbf24">★★★★★</text>
+
+  <!-- Attribution -->
+  <rect x="80" y="546" width="5" height="60" rx="3" fill="#2563eb"/>
+  <text x="104" y="576" font-family="'Inter',Arial,sans-serif" font-weight="700" font-size="20" fill="#111827">Marcus T.</text>
+  <text x="104" y="602" font-family="'Inter',Arial,sans-serif" font-size="17" fill="#6b7280">Software Engineer · Landed a role at a Fortune 500</text>
+
+  <!-- Divider -->
+  <rect x="80" y="660" width="920" height="1.5" fill="#e5e7eb"/>
+
+  <!-- Bottom headline -->
+  <text x="540" y="740" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="40" fill="#111827" text-anchor="middle" letter-spacing="-1">Join thousands of job seekers</text>
+  <text x="540" y="790" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="40" fill="#111827" text-anchor="middle" letter-spacing="-1">landing more interviews.</text>
+
+  <!-- CTA button -->
+  <rect x="290" y="840" width="500" height="68" rx="34" fill="#2563eb"/>
+  <text x="540" y="882" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="22" fill="white" text-anchor="middle">Start Free — No Credit Card Needed</text>
+
+  <!-- URL -->
+  <text x="540" y="1020" font-family="'Inter',Arial,sans-serif" font-weight="700" font-size="20" fill="#6b7280" text-anchor="middle">resumetailored.com</text>
+  <rect x="0" y="1072" width="1080" height="8" fill="#2563eb"/>
+</svg>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e3a8a"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+
+  <!-- Star particles -->
+  <circle cx="100" cy="100" r="2" fill="rgba(255,255,255,0.4)"/>
+  <circle cx="300" cy="60" r="1.5" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="800" cy="80" r="2" fill="rgba(255,255,255,0.4)"/>
+  <circle cx="950" cy="150" r="1.5" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="60" cy="400" r="2" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="1020" cy="600" r="2" fill="rgba(255,255,255,0.4)"/>
+  <circle cx="150" cy="800" r="1.5" fill="rgba(255,255,255,0.3)"/>
+  <circle cx="900" cy="950" r="2" fill="rgba(255,255,255,0.4)"/>
+
+  <!-- Logo -->
+  <rect x="80" y="70" width="44" height="44" rx="10" fill="rgba(255,255,255,0.15)"/>
+  <text x="102" y="101" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">R</text>
+  <text x="136" y="100" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="18" fill="rgba(255,255,255,0.8)">ResumeTailored AI</text>
+
+  <!-- Pro badge -->
+  <rect x="380" y="170" width="320" height="52" rx="26" fill="#fbbf24"/>
+  <text x="540" y="202" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="20" fill="#92400e" text-anchor="middle">★ PRO PLAN AVAILABLE</text>
+
+  <!-- Headline -->
+  <text x="540" y="320" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="72" fill="white" text-anchor="middle" letter-spacing="-3">Unlimited.</text>
+  <text x="540" y="410" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="72" fill="#93c5fd" text-anchor="middle" letter-spacing="-3">Unstoppable.</text>
+
+  <!-- Pro card -->
+  <rect x="140" y="460" width="800" height="380" rx="28" fill="url(#card)"/>
+  <circle cx="900" cy="500" r="160" fill="rgba(255,255,255,0.05)"/>
+
+  <text x="540" y="530" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="36" fill="white" text-anchor="middle">Everything in Free, plus:</text>
+
+  <text x="200" y="590" font-family="'Inter',Arial,sans-serif" font-size="24" fill="rgba(255,255,255,0.9)">✦  Unlimited AI resume tailoring</text>
+  <text x="200" y="635" font-family="'Inter',Arial,sans-serif" font-size="24" fill="rgba(255,255,255,0.9)">✦  Unlimited cover letter generation</text>
+  <text x="200" y="680" font-family="'Inter',Arial,sans-serif" font-size="24" fill="rgba(255,255,255,0.9)">✦  All premium resume templates</text>
+  <text x="200" y="725" font-family="'Inter',Arial,sans-serif" font-size="24" fill="rgba(255,255,255,0.9)">✦  Priority AI processing</text>
+
+  <rect x="350" y="770" width="380" height="52" rx="26" fill="white"/>
+  <text x="540" y="803" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="22" fill="#2563eb" text-anchor="middle">$19 / month · Cancel anytime</text>
+
+  <!-- URL -->
+  <text x="540" y="930" font-family="'Inter',Arial,sans-serif" font-weight="700" font-size="22" fill="rgba(255,255,255,0.7)" text-anchor="middle">Upgrade at</text>
+  <text x="540" y="970" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="28" fill="#60a5fa" text-anchor="middle">resumetailored.com/#pricing</text>
+</svg>

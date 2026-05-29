@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <rect width="1080" height="1080" fill="#f9fafb"/>
+  <!-- Top blue bar -->
+  <rect width="1080" height="8" fill="#2563eb"/>
+
+  <!-- Logo -->
+  <rect x="80" y="60" width="44" height="44" rx="10" fill="#2563eb"/>
+  <text x="102" y="91" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">R</text>
+  <text x="136" y="90" font-family="'Inter',Arial,sans-serif" font-weight="800" font-size="18" fill="#111827">ResumeTailored AI</text>
+
+  <!-- Big number -->
+  <text x="80" y="300" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="180" fill="#eff6ff" letter-spacing="-8">75%</text>
+  <text x="80" y="290" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="100" fill="#2563eb" letter-spacing="-4">75%</text>
+
+  <!-- Headline -->
+  <text x="80" y="390" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="52" fill="#111827" letter-spacing="-2">of resumes never reach</text>
+  <text x="80" y="455" font-family="'Inter',Arial,sans-serif" font-weight="900" font-size="52" fill="#111827" letter-spacing="-2">a human recruiter.</text>
+
+  <!-- Divider -->
+  <rect x="80" y="500" width="80" height="5" rx="3" fill="#2563eb"/>
+
+  <!-- Body text -->
+  <text x="80" y="560" font-family="'Inter',Arial,sans-serif" font-size="28" fill="#6b7280">ATS software filters them out first.</text>
+  <text x="80" y="600" font-family="'Inter',Arial,sans-serif" font-size="28" fill="#6b7280">ResumeTailored AI optimizes your resume</text>
+  <text x="80" y="640" font-family="'Inter',Arial,sans-serif" font-size="28" fill="#6b7280">with the exact keywords recruiters need.</text>
+
+  <!-- ATS check items -->
+  <rect x="80" y="700" width="920" height="68" rx="14" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="116" y="742" font-family="'Inter',Arial,sans-serif" font-size="26" fill="#2563eb">✓</text>
+  <text x="148" y="742" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="22" fill="#111827">Keyword optimization matched to the job posting</text>
+
+  <rect x="80" y="780" width="920" height="68" rx="14" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="116" y="822" font-family="'Inter',Arial,sans-serif" font-size="26" fill="#2563eb">✓</text>
+  <text x="148" y="822" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="22" fill="#111827">Clean formatting that ATS systems can parse</text>
+
+  <rect x="80" y="860" width="920" height="68" rx="14" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+  <text x="116" y="902" font-family="'Inter',Arial,sans-serif" font-size="26" fill="#2563eb">✓</text>
+  <text x="148" y="902" font-family="'Inter',Arial,sans-serif" font-weight="600" font-size="22" fill="#111827">Tailored for every application — not just one</text>
+
+  <!-- URL -->
+  <text x="80" y="1020" font-family="'Inter',Arial,sans-serif" font-weight="700" font-size="20" fill="#2563eb">resumetailored.com</text>
+  <rect x="0" y="1072" width="1080" height="8" fill="#2563eb"/>
+</svg>
