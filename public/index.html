@@ -339,6 +339,63 @@
       .hero { padding: 64px 0 48px; }
       .section { padding: 56px 0; }
     }
+    /* ── Resume Tiers ── */
+    .tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+    .tier-card {
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 16px;
+      overflow: hidden; transition: all .22s; cursor: pointer;
+      display: flex; flex-direction: column;
+    }
+    .tier-card:hover { transform: translateY(-6px); box-shadow: 0 20px 48px rgba(0,0,0,0.13); }
+    .tier-top { padding: 24px 24px 16px; }
+    .tier-level-badge {
+      display: inline-block; font-size: 11px; font-weight: 800;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
+    }
+    .tier-name { font-size: 22px; font-weight: 900; margin-bottom: 8px; }
+    .tier-desc { font-size: 14px; color: #6b7280; line-height: 1.65; }
+    .tier-preview-frame {
+      background: #f3f4f6; border-top: 1px solid #e5e7eb;
+      border-bottom: 1px solid #e5e7eb; height: 200px; overflow: hidden;
+      position: relative;
+    }
+    .tier-preview-frame .tier-overlay {
+      position: absolute; inset: 0; background: rgba(30,58,138,0.75);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .2s;
+    }
+    .tier-card:hover .tier-overlay { opacity: 1; }
+    .tier-overlay span {
+      background: #fff; color: #1e3a8a; font-size: 13px; font-weight: 800;
+      padding: 8px 20px; border-radius: 20px; letter-spacing: .3px;
+    }
+    .tier-bottom { padding: 20px 24px; flex: 1; display: flex; flex-direction: column; }
+    .tier-features { list-style: none; display: flex; flex-direction: column; gap: 9px; margin-bottom: 20px; flex: 1; }
+    .tier-features li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: #374151; }
+    .tier-check { font-weight: 800; flex-shrink: 0; }
+    .tier-basic-card { border-top: 4px solid #6b7280; }
+    .tier-pro-card { border-top: 4px solid #2563eb; box-shadow: 0 4px 20px rgba(37,99,235,0.1); }
+    .tier-exec-card { border-top: 4px solid #1e3a5f; }
+    /* Tier modal */
+    .tier-modal-overlay {
+      position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.6);
+      display: none; align-items: center; justify-content: center; padding: 24px;
+    }
+    .tier-modal-overlay.open { display: flex; }
+    .tier-modal-box {
+      background: #fff; border-radius: 16px; width: 100%; max-width: 700px;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(0,0,0,0.3);
+    }
+    .tier-modal-header {
+      padding: 20px 24px; border-bottom: 1px solid #e5e7eb;
+      display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #fff; z-index: 1;
+    }
+    .tier-modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #6b7280; line-height: 1; }
+    .tier-modal-body { padding: 28px; }
+    @media (max-width: 900px) {
+      .tiers-grid { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; }
+    }
   </style>
 </head>
 <body>
@@ -351,6 +408,7 @@
       <a href="/about.html">How It Works</a>
       <a href="#features">Features</a>
       <a href="#templates">Templates</a>
+      <a href="#tiers">Resume Tiers</a>
       <a href="#pricing">Pricing</a>
     </div>
     <div class="nav-actions">
@@ -1271,6 +1329,148 @@
   </div>
 </div>
 
+<!-- RESUME TIERS -->
+<section class="section" id="tiers">
+  <div class="container">
+    <div class="section-eyebrow">Resume Tiers</div>
+    <h2 class="section-title">Every career stage, <span>perfectly tailored</span></h2>
+    <p style="text-align:center;color:#6b7280;max-width:580px;margin:-24px auto 48px;font-size:16px;line-height:1.7;">From your first job to the C-suite — our AI adapts to your level and targets the exact role you want.</p>
+    <div class="tiers-grid">
+
+      <!-- BASIC -->
+      <div class="tier-card tier-basic-card" onclick="openTierModal('basic')">
+        <div class="tier-top">
+          <div class="tier-level-badge" style="background:#f3f4f6;color:#6b7280;">Free Tier</div>
+          <div class="tier-name" style="color:#374151;">Basic</div>
+          <div class="tier-desc">Clean, traditional resumes for students and entry-level job seekers.</div>
+        </div>
+        <div class="tier-preview-frame">
+          <div style="background:#fff;padding:14px 16px;font-family:Georgia,serif;color:#1a1a1a;transform:scale(0.72);transform-origin:top left;width:139%;pointer-events:none;">
+            <div style="text-align:center;margin-bottom:10px;">
+              <div style="font-size:18px;font-weight:700;letter-spacing:1px;">JORDAN SMITH</div>
+              <div style="font-size:11px;color:#555;margin-top:3px;">jordan@email.com · (555) 234-5678 · Chicago, IL</div>
+            </div>
+            <hr style="border:0.5px solid #ccc;margin:8px 0;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#333;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:6px;">Experience</div>
+            <div style="font-size:11px;font-weight:700;">Marketing Assistant — ABC Company</div>
+            <div style="font-size:10px;color:#555;margin-bottom:4px;">Jun 2022 – Present · Chicago, IL</div>
+            <div style="font-size:10px;color:#333;padding-left:10px;">· Coordinated social media campaigns increasing engagement 40%</div>
+            <div style="font-size:10px;color:#333;padding-left:10px;">· Managed email newsletters for 10,000+ subscribers</div>
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#333;border-bottom:1px solid #ccc;padding-bottom:3px;margin:10px 0 6px;">Education</div>
+            <div style="font-size:11px;font-weight:700;">B.A. Communications — State University</div>
+            <div style="font-size:10px;color:#555;">Graduated May 2022 · GPA 3.7</div>
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#333;border-bottom:1px solid #ccc;padding-bottom:3px;margin:10px 0 6px;">Skills</div>
+            <div style="font-size:10px;color:#333;">Microsoft Office, Google Analytics, Hootsuite, Canva, Email Marketing</div>
+          </div>
+          <div class="tier-overlay"><span>👁 View Full Sample</span></div>
+        </div>
+        <div class="tier-bottom">
+          <ul class="tier-features">
+            <li><span class="tier-check" style="color:#6b7280;">✓</span> Classic &amp; Modern templates</li>
+            <li><span class="tier-check" style="color:#6b7280;">✓</span> ATS-optimized formatting</li>
+            <li><span class="tier-check" style="color:#6b7280;">✓</span> 1 free AI tailoring per day</li>
+            <li><span class="tier-check" style="color:#6b7280;">✓</span> PDF &amp; text download</li>
+          </ul>
+          <button class="btn btn-ghost btn-full" onclick="event.stopPropagation();window.location='/app.html'">Start Free →</button>
+        </div>
+      </div>
+
+      <!-- PROFESSIONAL -->
+      <div class="tier-card tier-pro-card" onclick="openTierModal('professional')">
+        <div class="tier-top">
+          <div class="tier-level-badge" style="background:#dbeafe;color:#1d4ed8;">Pro — $19/mo</div>
+          <div class="tier-name" style="color:#1d4ed8;">Professional</div>
+          <div class="tier-desc">Polished, keyword-rich resumes for mid-career professionals targeting competitive roles.</div>
+        </div>
+        <div class="tier-preview-frame">
+          <div style="background:#fff;padding:14px 16px;font-family:'Inter',sans-serif;color:#1a1a1a;transform:scale(0.72);transform-origin:top left;width:139%;pointer-events:none;">
+            <div style="border-left:4px solid #2563eb;padding-left:12px;margin-bottom:10px;">
+              <div style="font-size:18px;font-weight:800;color:#111827;letter-spacing:-0.3px;">SARAH CHEN</div>
+              <div style="font-size:11px;color:#2563eb;font-weight:700;margin-top:2px;">Senior Product Manager</div>
+              <div style="font-size:10px;color:#6b7280;margin-top:2px;">sarah@chen.io · LinkedIn/sarahchen · San Francisco, CA</div>
+            </div>
+            <div style="font-size:9px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Experience</div>
+            <div style="font-size:11px;font-weight:700;color:#111827;">Senior Product Manager · TechCorp Inc.</div>
+            <div style="font-size:10px;color:#6b7280;margin-bottom:4px;">2020 – Present · San Francisco, CA</div>
+            <div style="font-size:10px;color:#374151;padding-left:10px;">· Led cross-functional team of 12, shipping $2.4M revenue product</div>
+            <div style="font-size:10px;color:#374151;padding-left:10px;">· Reduced churn 28% through data-driven onboarding redesign</div>
+            <div style="font-size:10px;color:#374151;padding-left:10px;">· Drove 0→1 mobile app to 200K users in 6 months</div>
+            <div style="font-size:9px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1.5px;margin:8px 0 4px;">Core Skills</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+              <span style="background:#eff6ff;color:#1d4ed8;font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;">Agile</span>
+              <span style="background:#eff6ff;color:#1d4ed8;font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;">SQL</span>
+              <span style="background:#eff6ff;color:#1d4ed8;font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;">Figma</span>
+              <span style="background:#eff6ff;color:#1d4ed8;font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;">OKRs</span>
+              <span style="background:#eff6ff;color:#1d4ed8;font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700;">Mixpanel</span>
+            </div>
+          </div>
+          <div class="tier-overlay"><span>👁 View Full Sample</span></div>
+        </div>
+        <div class="tier-bottom">
+          <ul class="tier-features">
+            <li><span class="tier-check" style="color:#2563eb;">✓</span> 15+ premium templates</li>
+            <li><span class="tier-check" style="color:#2563eb;">✓</span> Unlimited AI tailorings</li>
+            <li><span class="tier-check" style="color:#2563eb;">✓</span> AI cover letter generation</li>
+            <li><span class="tier-check" style="color:#2563eb;">✓</span> DOCX + PDF download</li>
+            <li><span class="tier-check" style="color:#2563eb;">✓</span> Career Hub access</li>
+          </ul>
+          <button class="btn btn-primary btn-full" onclick="event.stopPropagation();openCheckoutModal()">Go Pro — $19/mo →</button>
+        </div>
+      </div>
+
+      <!-- EXECUTIVE -->
+      <div class="tier-card tier-exec-card" onclick="openTierModal('executive')">
+        <div class="tier-top">
+          <div class="tier-level-badge" style="background:#e0e7ff;color:#1e3a5f;">Pro — $19/mo</div>
+          <div class="tier-name" style="color:#1e3a5f;">Executive</div>
+          <div class="tier-desc">Authority-commanding resumes for directors, VPs, and C-suite leaders.</div>
+        </div>
+        <div class="tier-preview-frame">
+          <div style="background:#fff;font-family:Georgia,serif;color:#1a1a1a;transform:scale(0.72);transform-origin:top left;width:139%;pointer-events:none;">
+            <div style="background:#1e3a5f;padding:14px 18px 12px;">
+              <div style="font-size:18px;font-weight:700;color:#fff;text-align:center;letter-spacing:2px;text-transform:uppercase;">MICHAEL DAVIS</div>
+              <div style="font-size:11px;color:#93c5fd;text-align:center;margin-top:3px;font-style:italic;">Chief Operations Officer</div>
+              <div style="font-size:9.5px;color:#bfdbfe;text-align:center;margin-top:2px;">michael@davis.com · New York, NY · (212) 555-9876</div>
+            </div>
+            <div style="padding:12px 16px;">
+              <div style="font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#1e3a5f;border-bottom:1.5px solid #1e3a5f;padding-bottom:3px;margin-bottom:6px;">Executive Summary</div>
+              <div style="font-size:10px;color:#374151;line-height:1.7;margin-bottom:8px;">Results-driven COO with 18+ years scaling Fortune 500 operations across 47 countries. Delivered $340M in cost savings and led 12,000-person global teams through transformative growth.</div>
+              <div style="font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#1e3a5f;border-bottom:1.5px solid #1e3a5f;padding-bottom:3px;margin-bottom:6px;">Experience</div>
+              <div style="font-size:11px;font-weight:700;color:#1e3a5f;">Chief Operations Officer · GlobalTech Corp</div>
+              <div style="font-size:10px;color:#6b7280;margin-bottom:4px;">2018 – Present · New York, NY</div>
+              <div style="font-size:10px;color:#374151;padding-left:10px;">· Scaled operations from 8 to 47 countries, $1.2B revenue</div>
+              <div style="font-size:10px;color:#374151;padding-left:10px;">· Delivered $340M in operational savings over 5 years</div>
+            </div>
+          </div>
+          <div class="tier-overlay"><span>👁 View Full Sample</span></div>
+        </div>
+        <div class="tier-bottom">
+          <ul class="tier-features">
+            <li><span class="tier-check" style="color:#1e3a5f;">✓</span> Executive &amp; Elegant templates</li>
+            <li><span class="tier-check" style="color:#1e3a5f;">✓</span> Leadership-focused AI language</li>
+            <li><span class="tier-check" style="color:#1e3a5f;">✓</span> Executive summary generation</li>
+            <li><span class="tier-check" style="color:#1e3a5f;">✓</span> Board-ready formatting</li>
+            <li><span class="tier-check" style="color:#1e3a5f;">✓</span> C-suite cover letters</li>
+          </ul>
+          <button class="btn btn-full" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="event.stopPropagation();openCheckoutModal()">Go Executive — $19/mo →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Tier Preview Modal -->
+<div class="tier-modal-overlay" id="tierModal" onclick="closeTierModal(event)">
+  <div class="tier-modal-box" onclick="event.stopPropagation()">
+    <div class="tier-modal-header">
+      <div id="tierModalTitle" style="font-size:18px;font-weight:800;color:#111827;"></div>
+      <button class="tier-modal-close" onclick="document.getElementById('tierModal').classList.remove('open')">✕</button>
+    </div>
+    <div class="tier-modal-body" id="tierModalBody"></div>
+  </div>
+</div>
+
 <!-- TESTIMONIALS -->
 <section class="section">
   <div class="container">
@@ -1442,6 +1642,107 @@
   function closeProModal(e) {
     if (e.target === document.getElementById('proModal')) {
       document.getElementById('proModal').classList.remove('open');
+    }
+  }
+
+  const tierData = {
+    basic: {
+      title: '📄 Basic — Free Tier',
+      body: `<div style="font-family:Georgia,serif;color:#1a1a1a;max-width:560px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+        <div style="padding:28px 32px;background:#fff;">
+          <div style="text-align:center;margin-bottom:18px;border-bottom:1px solid #ccc;padding-bottom:14px;">
+            <div style="font-size:26px;font-weight:700;letter-spacing:1px;">JORDAN SMITH</div>
+            <div style="font-size:13px;color:#555;margin-top:4px;">jordan@email.com · (555) 234-5678 · Chicago, IL · linkedin.com/in/jordansmith</div>
+          </div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#333;border-bottom:1px solid #ccc;padding-bottom:4px;margin-bottom:10px;">Experience</div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:2px;">Marketing Assistant — ABC Company, Chicago, IL</div>
+          <div style="font-size:12px;color:#555;margin-bottom:6px;">June 2022 – Present</div>
+          <div style="font-size:13px;color:#333;padding-left:14px;margin-bottom:3px;">· Coordinated social media campaigns increasing engagement 40% YoY</div>
+          <div style="font-size:13px;color:#333;padding-left:14px;margin-bottom:3px;">· Managed email newsletters for 10,000+ subscriber base</div>
+          <div style="font-size:13px;color:#333;padding-left:14px;margin-bottom:12px;">· Assisted in planning 8 company events with budgets up to $15K</div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:2px;">Intern — Local Marketing Agency, Chicago, IL</div>
+          <div style="font-size:12px;color:#555;margin-bottom:6px;">Jan 2022 – May 2022</div>
+          <div style="font-size:13px;color:#333;padding-left:14px;margin-bottom:3px;">· Supported content creation across Instagram and TikTok platforms</div>
+          <div style="font-size:13px;color:#333;padding-left:14px;margin-bottom:16px;">· Compiled analytics reports for 5 client accounts weekly</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#333;border-bottom:1px solid #ccc;padding-bottom:4px;margin-bottom:10px;">Education</div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:2px;">B.A. Communications — State University, Chicago</div>
+          <div style="font-size:12px;color:#555;margin-bottom:16px;">Graduated May 2022 · GPA: 3.7/4.0 · Dean's List</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#333;border-bottom:1px solid #ccc;padding-bottom:4px;margin-bottom:10px;">Skills</div>
+          <div style="font-size:13px;color:#333;">Microsoft Office Suite, Google Analytics, Hootsuite, Canva, Mailchimp, HubSpot</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:24px;">
+        <button class="btn btn-ghost" onclick="document.getElementById('tierModal').classList.remove('open');window.location='/app.html'" style="margin-right:12px;">Try Free Now →</button>
+      </div>`
+    },
+    professional: {
+      title: '💼 Professional — Pro Tier',
+      body: `<div style="font-family:'Inter',sans-serif;color:#1a1a1a;max-width:560px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+        <div style="padding:28px 32px;background:#fff;">
+          <div style="border-left:4px solid #2563eb;padding-left:16px;margin-bottom:18px;">
+            <div style="font-size:26px;font-weight:800;color:#111827;letter-spacing:-0.5px;">SARAH CHEN</div>
+            <div style="font-size:13px;color:#2563eb;font-weight:700;margin-top:3px;">Senior Product Manager</div>
+            <div style="font-size:12px;color:#6b7280;margin-top:3px;">sarah@chen.io · linkedin.com/in/sarahchen · San Francisco, CA</div>
+          </div>
+          <div style="font-size:10px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Professional Summary</div>
+          <div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:18px;">Results-driven Senior PM with 7+ years building B2B SaaS products. Proven track record of shipping 0-to-1 products and driving measurable growth through data-informed decisions.</div>
+          <div style="font-size:10px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Experience</div>
+          <div style="font-size:14px;font-weight:700;color:#111827;margin-bottom:2px;">Senior Product Manager · TechCorp Inc., San Francisco</div>
+          <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">2020 – Present</div>
+          <div style="font-size:13px;color:#374151;padding-left:14px;margin-bottom:3px;">· Led cross-functional team of 12, delivering $2.4M ARR product on time</div>
+          <div style="font-size:13px;color:#374151;padding-left:14px;margin-bottom:3px;">· Reduced customer churn 28% through data-driven onboarding redesign</div>
+          <div style="font-size:13px;color:#374151;padding-left:14px;margin-bottom:16px;">· Drove 0→1 mobile app from concept to 200K users in 6 months</div>
+          <div style="font-size:10px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Core Skills</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${['Agile/Scrum','SQL','Figma','Product Analytics','OKR Frameworks','A/B Testing','Mixpanel','Roadmapping'].map(s=>`<span style="background:#eff6ff;color:#1d4ed8;font-size:12px;padding:3px 10px;border-radius:5px;font-weight:700;">${s}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:24px;">
+        <button class="btn btn-primary" onclick="document.getElementById('tierModal').classList.remove('open');openCheckoutModal()">Unlock Professional — $19/mo →</button>
+      </div>`
+    },
+    executive: {
+      title: '👔 Executive — Pro Tier',
+      body: `<div style="font-family:Georgia,serif;color:#1a1a1a;max-width:560px;margin:0 auto;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">
+        <div style="background:#1e3a5f;padding:24px 32px 20px;text-align:center;">
+          <div style="font-size:26px;font-weight:700;color:#fff;letter-spacing:2.5px;text-transform:uppercase;">MICHAEL DAVIS</div>
+          <div style="font-size:14px;color:#93c5fd;font-style:italic;margin-top:4px;">Chief Operations Officer</div>
+          <div style="font-size:12px;color:#bfdbfe;margin-top:4px;">michael@davis.com · New York, NY · (212) 555-9876 · linkedin.com/in/michaeldavis</div>
+        </div>
+        <div style="padding:24px 32px;background:#fff;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:#1e3a5f;border-bottom:1.5px solid #1e3a5f;padding-bottom:4px;margin-bottom:10px;">Executive Summary</div>
+          <div style="font-size:13px;color:#374151;line-height:1.75;margin-bottom:18px;">Transformational COO with 18+ years of experience scaling Fortune 500 operations across 47 countries. Delivered $340M in cost savings and built world-class teams of 12,000+ through disciplined operational leadership and strategic vision.</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:#1e3a5f;border-bottom:1.5px solid #1e3a5f;padding-bottom:4px;margin-bottom:10px;">Experience</div>
+          <div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:2px;">Chief Operations Officer · GlobalTech Corp, New York</div>
+          <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">2018 – Present</div>
+          <div style="font-size:13px;color:#374151;padding-left:14px;margin-bottom:3px;">· Scaled operations from 8 to 47 countries, growing revenue to $1.2B</div>
+          <div style="font-size:13px;color:#374151;padding-left:14px;margin-bottom:3px;">· Delivered $340M in operational savings through process transformation</div>
+          <div style="font-size:13px;color:#374151;padding-left:14px;margin-bottom:16px;">· Built and led global leadership team of 14 VP-level direct reports</div>
+          <div style="font-size:14px;font-weight:700;color:#1e3a5f;margin-bottom:2px;">VP of Operations · MegaCorp Industries, Boston</div>
+          <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">2012 – 2018</div>
+          <div style="font-size:13px;color:#374151;padding-left:14px;margin-bottom:3px;">· Restructured supply chain saving $78M annually</div>
+          <div style="font-size:13px;color:#374151;padding-left:14px;margin-bottom:16px;">· Led 4,200-person operations division across North America</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2.5px;color:#1e3a5f;border-bottom:1.5px solid #1e3a5f;padding-bottom:4px;margin-bottom:10px;">Education</div>
+          <div style="font-size:14px;font-weight:700;color:#1e3a5f;">M.B.A. · Harvard Business School · 2006</div>
+          <div style="font-size:13px;color:#374151;margin-top:4px;">B.S. Industrial Engineering · MIT · 2004</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:24px;">
+        <button class="btn" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="document.getElementById('tierModal').classList.remove('open');openCheckoutModal()">Unlock Executive — $19/mo →</button>
+      </div>`
+    }
+  };
+
+  function openTierModal(tier) {
+    const d = tierData[tier];
+    document.getElementById('tierModalTitle').textContent = d.title;
+    document.getElementById('tierModalBody').innerHTML = d.body;
+    document.getElementById('tierModal').classList.add('open');
+  }
+  function closeTierModal(e) {
+    if (e.target === document.getElementById('tierModal')) {
+      document.getElementById('tierModal').classList.remove('open');
     }
   }
 
