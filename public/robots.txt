@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /reset-password
+Disallow: /success
+Disallow: /cancel
+
+Sitemap: https://resumetailored.com/sitemap.xml
