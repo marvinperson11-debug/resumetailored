@@ -133,10 +133,14 @@
       <!-- Log In -->
       <div id="authLoginForm" style="display:none;">
         <div class="auth-field"><input type="email" id="loginEmail" placeholder="Email address" /></div>
-        <div class="auth-field"><input type="password" id="loginPassword" placeholder="Password" /></div>
-        <div style="text-align:right;margin-bottom:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:-4px 0 12px;">
+          <label style="font-size:13px;color:#6b7280;cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:600;user-select:none;">
+            <input type="checkbox" id="rememberEmail" style="accent-color:#2563eb;width:14px;height:14px;cursor:pointer;" />
+            Remember email
+          </label>
           <a onclick="showForgotPassword()" style="font-size:13px;color:#6b7280;cursor:pointer;font-weight:600;">Forgot password?</a>
         </div>
+        <div class="auth-field"><input type="password" id="loginPassword" placeholder="Password" /></div>
         <div class="auth-error" id="loginError"></div>
         <button class="btn btn-primary btn-full" id="loginBtn" onclick="doLogin()">Log In →</button>
         <div class="auth-switch">Don't have an account? <a onclick="switchAuthTab('signup')">Sign up free</a></div>
@@ -907,6 +911,13 @@
         : 'Log in to access your dashboard.';
       document.getElementById('signupError').textContent = '';
       document.getElementById('loginError').textContent = '';
+      if (!isSignup) {
+        const saved = localStorage.getItem('rt_remember_email');
+        if (saved) {
+          document.getElementById('loginEmail').value = saved;
+          document.getElementById('rememberEmail').checked = true;
+        }
+      }
     }
 
     function showForgotPassword() {
@@ -984,8 +995,12 @@
     async function doLogin() {
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
+      const remember = document.getElementById('rememberEmail').checked;
       const errEl = document.getElementById('loginError');
       errEl.textContent = '';
+
+      if (remember) localStorage.setItem('rt_remember_email', email);
+      else localStorage.removeItem('rt_remember_email');
 
       if (!email || !password) { errEl.textContent = 'Email and password are required.'; return; }
 
