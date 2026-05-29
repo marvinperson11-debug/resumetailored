@@ -1,0 +1,15 @@
+# ResumeTailored AI
+
+> ResumeTailored AI is a SaaS tool that uses Claude AI to tailor resumes and generate cover letters for any job posting. It rewrites your resume with the right keywords, reorders your bullet points for relevance, and produces a custom cover letter — in under 60 seconds. Free tier available (1 tailoring/day). Pro plan at $19/month.
+
+## About
+
+- [How It Works](https://resumetailored.com/how-it-works): How ResumeTailored AI tailors your resume using Claude AI
+
+## Blog
+
+- [How to Beat ATS Filters and Get Your Resume Seen in 2026](https://resumetailored.com/blog/how-to-beat-ats-filters.md): 75% of resumes are filtered by ATS before a human sees them. Complete guide to optimizing your resume to pass ATS software every time.
+- [10 Resume Tips That Will Get You More Interviews in 2026](https://resumetailored.com/blog/resume-tips-2026.md): The resume strategies actually working right now — based on what recruiters say they look for.
+- [How to Tailor Your Resume to Any Job Posting (Step-by-Step)](https://resumetailored.com/blog/how-to-tailor-your-resume.md): Sending the same resume to every job is the #1 mistake. Here is the 5-step process to tailor your resume quickly and effectively.
+- [How to Write a Cover Letter That Actually Gets Read](https://resumetailored.com/blog/cover-letter-tips.md): Most cover letters are ignored. Learn the exact structure, opening lines, and do's and don'ts that make recruiters stop and read.
+- [How to Negotiate Your Salary and Get Paid What You're Worth](https://resumetailored.com/blog/salary-negotiation.md): 85% of employers have room to negotiate. Learn the exact scripts and strategies to negotiate your salary confidently without losing the offer.
