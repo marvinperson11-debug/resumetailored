@@ -614,6 +614,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   .sidebar-icon { font-size: 20px; line-height: 1; }
   .nav-pro-full { display: none; }
   .sidebar-pro-box { display: none; }
+  #tab-cancel { display: none; }
 
   .dash-main { padding: 18px 14px 72px; }
   .panel-header { margin-bottom: 18px; }
