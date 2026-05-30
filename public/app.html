@@ -110,6 +110,32 @@
     .sample-toggle-btn.active {
       background: #eff6ff; border-color: #2563eb; color: #2563eb;
     }
+    /* ── Output Template Picker ── */
+    .tpl-pick-section { margin: 14px 0 16px; }
+    .tpl-pick-label { font-size: 11.5px; font-weight: 700; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .6px; }
+    .tpl-pick-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+    .tpl-pick-row::-webkit-scrollbar { display: none; }
+    .tpl-pick-item {
+      flex-shrink: 0; width: 82px; cursor: pointer; border-radius: 8px;
+      border: 2px solid #e5e7eb; overflow: hidden; background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .tpl-pick-item:hover:not(.locked) { border-color: #93c5fd; }
+    .tpl-pick-item.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
+    .tpl-pick-item.locked { opacity: .6; cursor: default; }
+    .tpl-pick-thumb { height: 54px; overflow: hidden; position: relative; background: #f9fafb; }
+    .tpl-pick-thumb-inner { transform-origin: top left; position: absolute; top: 0; left: 0; pointer-events: none; }
+    .tpl-pick-name { font-size: 9.5px; font-weight: 700; text-align: center; padding: 4px 3px 5px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tpl-pick-badge { position: absolute; top: 3px; left: 3px; font-size: 7.5px; font-weight: 800; padding: 1px 4px; border-radius: 3px; line-height: 1.5; text-transform: uppercase; }
+    .tpl-pick-badge-free { background: #dcfce7; color: #166534; }
+    .tpl-pick-badge-pro { background: #1e1b4b; color: #e0e7ff; }
+    .tpl-pick-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.4); font-size: 16px; }
+    /* ── Edit mode ── */
+    .edit-bar { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 9px; margin-bottom: 10px; font-size: 13px; color: #1d4ed8; font-weight: 600; flex-wrap: wrap; }
+    .edit-bar .eb-btn { padding: 5px 14px; border-radius: 7px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .edit-bar .eb-save { background: #2563eb; color: #fff; }
+    .edit-bar .eb-cancel { background: #e5e7eb; color: #374151; }
+    #outputBox[contenteditable="true"] { outline: 2px dashed #2563eb; outline-offset: 2px; cursor: text; border-radius: 8px; }
   </style>
 </head>
 <body>
@@ -251,6 +277,12 @@
           <button class="mode-btn" data-mode="both">Resume + Cover Letter</button>
         </div>
 
+        <!-- Template Picker -->
+        <div class="tpl-pick-section" id="tplPickSection">
+          <div class="tpl-pick-label">Choose Your Template</div>
+          <div class="tpl-pick-row" id="tplPickRow"></div>
+        </div>
+
         <div class="inputs">
           <div class="field">
             <div class="field-header">
@@ -280,7 +312,15 @@
         <div class="output-wrap" id="outputWrap" style="display:none;">
           <div class="output-header">
             <h2 id="outputTitle">Tailored Result</h2>
-            <button class="btn btn-outline copy-btn" onclick="copyResult()">Copy</button>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline" id="editBtn" onclick="startEdit()" style="font-size:13px;padding:8px 14px;">✏️ Edit</button>
+              <button class="btn btn-outline copy-btn" onclick="copyResult()">Copy</button>
+            </div>
+          </div>
+          <div class="edit-bar" id="editBar" style="display:none;">
+            ✏️ Click any text to edit it directly
+            <button class="eb-btn eb-save" onclick="saveEdit()">Save Changes</button>
+            <button class="eb-btn eb-cancel" onclick="cancelEdit()">Cancel</button>
           </div>
           <div class="output-box" id="outputBox"></div>
           <div class="download-row">
@@ -871,6 +911,9 @@
     let freeResumesLeft = 1;
     let freeCoverLettersLeft = 1;
     let pendingPro = false;
+    let selectedOutputTpl = { resume: 'r1', cover: 'c1' };
+    let lastRawResult = '';
+    let editSnapshot = '';
 
     // ── Auth helpers ───────────────────────────────────────────────────────────
     function getToken() { return localStorage.getItem('rt_token') || ''; }
@@ -1074,6 +1117,7 @@
         document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         selectedMode = btn.dataset.mode;
+        renderTplPicker();
       });
     });
 
@@ -1087,6 +1131,7 @@
         freeResumesLeft = data.freeResumesLeft;
         freeCoverLettersLeft = data.freeCoverLettersLeft;
 
+        renderTplPicker();
         const badge = document.getElementById('statusBadge');
         const navStatus = document.getElementById('navStatus');
 
@@ -1151,7 +1196,12 @@
 
         const titles = { resume: 'Tailored Resume', cover_letter: 'Cover Letter', both: 'Tailored Resume + Cover Letter' };
         document.getElementById('outputTitle').textContent = titles[selectedMode];
-        document.getElementById('outputBox').textContent = data.result;
+        lastRawResult = data.result;
+        const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
+        document.getElementById('outputBox').innerHTML = renderAIOutput(data.result, selectedOutputTpl[tplCat], selectedMode);
+        document.getElementById('editBtn').style.display = 'inline-flex';
+        document.getElementById('editBar').style.display = 'none';
+        document.getElementById('outputBox').removeAttribute('contenteditable');
         document.getElementById('outputWrap').style.display = 'block';
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -1332,7 +1382,7 @@
     }
 
     function copyResult() {
-      navigator.clipboard.writeText(document.getElementById('outputBox').textContent)
+      navigator.clipboard.writeText(getOutputText())
         .then(() => showToast('Copied to clipboard!'));
     }
 
@@ -1377,6 +1427,168 @@
       const isOpen = answer.style.display === 'block';
       answer.style.display = isOpen ? 'none' : 'block';
       arrow.textContent = isOpen ? '▾' : '▴';
+    }
+
+    // ── Output Template Picker ────────────────────────────────────────────────
+    const OUT_TPLS = {
+      resume: [
+        { id:'r1', name:'Classic',   free:true,  c:{p:'#1a237e',a:'#7986cb',l:'#e8eaf6'} },
+        { id:'r2', name:'Executive', free:false, c:{p:'#1b3a4b',a:'#009688',l:'#e0f2f1'} },
+        { id:'r3', name:'Modern',    free:false, c:{p:'#1b5e20',a:'#66bb6a',l:'#f1f8e9'} },
+        { id:'r4', name:'Sidebar',   free:false, c:{p:'#4a1042',a:'#ab47bc',l:'#f3e5f5'} },
+        { id:'r5', name:'Minimal',   free:false, c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
+      ],
+      cover: [
+        { id:'c1', name:'Formal',  free:true,  c:{p:'#1a237e',a:'#7986cb',l:'#e8eaf6'} },
+        { id:'c2', name:'Bold',    free:false, c:{p:'#1b3a4b',a:'#009688',l:'#e0f2f1'} },
+        { id:'c3', name:'Boxed',   free:false, c:{p:'#1b5e20',a:'#66bb6a',l:'#f1f8e9'} },
+        { id:'c4', name:'Split',   free:false, c:{p:'#4a1042',a:'#ab47bc',l:'#f3e5f5'} },
+        { id:'c5', name:'Clean',   free:false, c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
+      ]
+    };
+
+    // Map OUT_TPLS ids to the existing sample template functions for thumbnail previews
+    const TPL_PREV_FNS = {
+      r1: () => rClassic(_TC[0]), r2: () => rExecutive(_TC[1]),
+      r3: () => rModern(_TC[2]),  r4: () => rSidebar(_TC[3]), r5: () => rMinimal(_TC[4]),
+      c1: () => cFormal(_TC[0]),  c2: () => cBold(_TC[1]),
+      c3: () => cBoxed(_TC[2]),   c4: () => cSplit(_TC[3]),   c5: () => cClean(_TC[4]),
+    };
+
+    function renderTplPicker() {
+      const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
+      const list = OUT_TPLS[cat];
+      const activeTplId = selectedOutputTpl[cat];
+      const row = document.getElementById('tplPickRow');
+      row.innerHTML = list.map(tpl => {
+        const locked = !tpl.free && !isSubscriberFlag;
+        const selected = tpl.id === activeTplId;
+        const previewHtml = (TPL_PREV_FNS[tpl.id] || (() => ''))();
+        const badge = tpl.free
+          ? `<span class="tpl-pick-badge tpl-pick-badge-free">Free</span>`
+          : `<span class="tpl-pick-badge tpl-pick-badge-pro">Pro</span>`;
+        return `<div class="tpl-pick-item${selected?' selected':''}${locked?' locked':''}"
+          onclick="${locked ? `showToast('Upgrade to Pro to unlock all templates!')` : `chooseTpl('${tpl.id}','${cat}')`}">
+          <div class="tpl-pick-thumb">
+            <div class="tpl-pick-thumb-inner" id="tpi-${tpl.id}">${previewHtml}</div>
+            ${badge}
+            ${locked ? '<div class="tpl-pick-lock">🔒</div>' : ''}
+          </div>
+          <div class="tpl-pick-name">${tpl.name}</div>
+        </div>`;
+      }).join('');
+      // Scale thumbnails
+      requestAnimationFrame(() => {
+        list.forEach(tpl => {
+          const inner = document.getElementById('tpi-' + tpl.id);
+          if (inner) inner.style.transform = `scale(${82/794})`;
+          const thumb = inner && inner.parentElement;
+          if (thumb) thumb.style.height = Math.round(1123 * 82/794) + 'px';
+        });
+      });
+    }
+
+    function chooseTpl(id, cat) {
+      selectedOutputTpl[cat] = id;
+      renderTplPicker();
+    }
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function renderAIOutput(text, tplId, mode) {
+      const cat = mode === 'cover_letter' ? 'cover' : 'resume';
+      const tpl = OUT_TPLS[cat].find(t => t.id === tplId) || OUT_TPLS[cat][0];
+      const c = tpl.c;
+      const isSerif = ['r1','r5','c1','c3'].includes(tplId);
+      const font = isSerif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
+      const lines = text.split('\n');
+      let html = '';
+      let firstLine = true;
+
+      for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i];
+        const t = raw.trim();
+
+        if (!t) {
+          html += `<div style="height:7px;"></div>`;
+          continue;
+        }
+
+        // Name: first non-empty line
+        if (firstLine) {
+          firstLine = false;
+          html += `<div style="font-size:22px;font-weight:800;color:${c.p};margin-bottom:3px;">${escHtml(t)}</div>`;
+          continue;
+        }
+
+        // Contact line (contains @ or | near top and no period)
+        if ((t.includes('@') || t.includes('|') || /\(\d{3}\)/.test(t)) && t.length < 120) {
+          html += `<div style="font-size:12px;color:#666;margin-bottom:2px;">${escHtml(t)}</div>`;
+          continue;
+        }
+
+        // Section header: ALL CAPS, 2–50 chars, letters + spaces/&/-/( only
+        const isHdr = t.length >= 2 && t.length <= 50 && /^[A-Z][A-Z\s&\/\(\)\-:]+$/.test(t);
+        if (isHdr) {
+          if (tplId === 'r2' || tplId === 'c2') {
+            html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:8px;margin:18px 0 7px;">${escHtml(t)}</div>`;
+          } else if (tplId === 'r3' || tplId === 'c4') {
+            html += `<div style="display:flex;align-items:center;gap:8px;margin:18px 0 7px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
+          } else if (tplId === 'r5' || tplId === 'c5') {
+            html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:20px 0 7px;">${escHtml(t)}</div>`;
+          } else {
+            html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:3px;margin:18px 0 7px;">${escHtml(t)}</div>`;
+          }
+          continue;
+        }
+
+        // Bullet point
+        if (/^[•·\-\*]\s/.test(t)) {
+          const txt = t.replace(/^[•·\-\*]\s*/, '');
+          html += `<div style="padding-left:14px;font-size:13px;line-height:1.8;color:#333;margin:2px 0;">• ${escHtml(txt)}</div>`;
+          continue;
+        }
+
+        // Job/role line heuristic: has — or | with a year
+        if ((t.includes('—') || t.includes('–') || (t.includes('|') && /\d{4}/.test(t))) && t.length < 120) {
+          html += `<div style="font-size:13.5px;font-weight:700;color:#222;margin:10px 0 2px;">${escHtml(t)}</div>`;
+          continue;
+        }
+
+        html += `<div style="font-size:13px;line-height:1.75;color:#333;">${escHtml(t)}</div>`;
+      }
+
+      return `<div style="font-family:${font};background:#fff;padding:28px 32px;color:#222;border-radius:8px;border:1px solid #e5e7eb;">${html}</div>`;
+    }
+
+    // ── Edit mode ─────────────────────────────────────────────────────────────
+    function startEdit() {
+      const box = document.getElementById('outputBox');
+      editSnapshot = box.innerHTML;
+      box.contentEditable = 'true';
+      box.focus();
+      document.getElementById('editBar').style.display = 'flex';
+      document.getElementById('editBtn').style.display = 'none';
+    }
+
+    function saveEdit() {
+      const box = document.getElementById('outputBox');
+      // Update raw result to the edited text so downloads reflect edits
+      lastRawResult = box.innerText || box.textContent;
+      box.removeAttribute('contenteditable');
+      document.getElementById('editBar').style.display = 'none';
+      document.getElementById('editBtn').style.display = 'inline-flex';
+      showToast('Changes saved!');
+    }
+
+    function cancelEdit() {
+      const box = document.getElementById('outputBox');
+      box.innerHTML = editSnapshot;
+      box.removeAttribute('contenteditable');
+      document.getElementById('editBar').style.display = 'none';
+      document.getElementById('editBtn').style.display = 'inline-flex';
     }
 
     // ── Template Gallery ──────────────────────────────────────────────────────
@@ -1762,7 +1974,12 @@ Aaliyah Washington`
     }
 
     // ── Download helpers ───────────────────────────────────────────────────────
-    function getOutputText() { return document.getElementById('outputBox').textContent; }
+    function getOutputText() {
+      // If in edit mode, get the current edited text; otherwise use the stored raw result
+      const box = document.getElementById('outputBox');
+      if (box.contentEditable === 'true') return box.innerText || box.textContent;
+      return lastRawResult || box.innerText || box.textContent;
+    }
 
     function downloadTxt() {
       const text = getOutputText();
@@ -1861,6 +2078,8 @@ Aaliyah Washington`
       pendingPro = true;
     }
     checkAuth();
+    // Init template picker after DOM is ready (template functions are hoisted)
+    setTimeout(renderTplPicker, 0);
   </script>
 </body>
 </html>
