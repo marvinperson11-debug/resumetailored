@@ -1147,7 +1147,7 @@
           if (freeCoverLettersLeft > 0) parts.push('1 free cover letter');
           const badgeText = parts.length > 0 ? parts.join(' + ') + ' available today' : '0 free uses left today';
           badge.innerHTML = `<span class="free-badge">${badgeText}</span>`;
-          document.getElementById('sidebarProBox').style.display = 'block';
+          document.getElementById('sidebarProBox').style.display = '';
           if (mobileBanner) mobileBanner.style.display = '';
         }
 
