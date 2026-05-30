@@ -8,7 +8,7 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@anthropic-ai/sdk": "^0.100.1",
     "better-sqlite3": "^9.4.3",
     "cors": "^2.8.5",
     "docx": "^9.6.1",
