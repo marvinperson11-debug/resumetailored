@@ -19,6 +19,11 @@ const app = express();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// Warn loudly on startup if critical env vars are missing
+if (!process.env.ANTHROPIC_API_KEY) console.error('STARTUP ERROR: ANTHROPIC_API_KEY is not set — AI tailoring will fail for all users.');
+if (!process.env.STRIPE_SECRET_KEY) console.error('STARTUP ERROR: STRIPE_SECRET_KEY is not set — payments will fail.');
+if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID is not set — checkout will fail.');
+
 // ─── Email helper ─────────────────────────────────────────────────────────────
 // Priority: Resend (RESEND_API_KEY) → SMTP (SMTP_USER + SMTP_PASS) → console log
 async function sendEmail({ to, subject, html }) {
@@ -528,6 +533,16 @@ function isSubscriber(email) {
   return email && !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(email.toLowerCase());
 }
 
+// ─── API: Health check ────────────────────────────────────────────────────────
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    anthropic: !!process.env.ANTHROPIC_API_KEY,
+    stripe: !!process.env.STRIPE_SECRET_KEY,
+    stripePrice: !!process.env.STRIPE_PRICE_ID
+  });
+});
+
 // ─── API: Check usage status ──────────────────────────────────────────────────
 app.get('/api/status', (req, res) => {
   const ip = req.ip;
@@ -631,8 +646,12 @@ ${jobPosting}
 
     res.json({ result: message.content[0].text });
   } catch (err) {
-    console.error('Claude API error:', err);
-    res.status(500).json({ error: 'AI processing failed. Please try again.' });
+    console.error('Claude API error:', err?.status, err?.message || err);
+    let userMessage = 'AI processing failed. Please try again.';
+    if (err?.status === 401) userMessage = 'AI service authentication error. Please contact support.';
+    else if (err?.status === 429) userMessage = 'AI is rate limited. Please wait a moment and try again.';
+    else if (err?.status >= 500 || err?.message?.toLowerCase().includes('overloaded')) userMessage = 'AI service is temporarily busy. Please try again in 30 seconds.';
+    res.status(500).json({ error: userMessage });
   }
 });
 
