@@ -513,20 +513,34 @@ app.post('/api/download-docx', async (req, res) => {
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function getTodayKey(ip, mode) {
+function getTodayKey(userKey, mode) {
   const today = new Date().toISOString().slice(0, 10);
-  return `${ip}_${mode}_${today}`;
+  return `${userKey}_${mode}_${today}`;
 }
 
-function hasFreeTierLeft(ip, mode) {
-  const key = getTodayKey(ip, mode);
+function hasFreeTierLeft(userKey, mode) {
+  const key = getTodayKey(userKey, mode);
   const row = db.prepare('SELECT count FROM usage_store WHERE key = ?').get(key);
   return !row || row.count < 1;
 }
 
-function consumeFreeTier(ip, mode) {
-  const key = getTodayKey(ip, mode);
+function consumeFreeTier(userKey, mode) {
+  const key = getTodayKey(userKey, mode);
   db.prepare('INSERT INTO usage_store (key, count) VALUES (?, 1) ON CONFLICT(key) DO UPDATE SET count = count + 1').run(key);
+}
+
+// Returns the authenticated email from the Bearer token, or null
+function getSessionEmail(req) {
+  const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  if (!token) return null;
+  const row = db.prepare('SELECT email FROM sessions WHERE token = ?').get(token);
+  return row ? row.email : null;
+}
+
+// Returns a per-user key for free tier tracking: email (if logged in) or IP
+function getUsageKey(req) {
+  const email = getSessionEmail(req);
+  return email ? `user:${email.toLowerCase()}` : `ip:${req.ip}`;
 }
 
 function isSubscriber(email) {
@@ -565,11 +579,11 @@ app.get('/api/test-ai', async (req, res) => {
 
 // ─── API: Check usage status ──────────────────────────────────────────────────
 app.get('/api/status', (req, res) => {
-  const ip = req.ip;
+  const usageKey = getUsageKey(req);
   const email = req.query.email || '';
   res.json({
-    freeResumesLeft: hasFreeTierLeft(ip, 'resume') ? 1 : 0,
-    freeCoverLettersLeft: hasFreeTierLeft(ip, 'cover_letter') ? 1 : 0,
+    freeResumesLeft: hasFreeTierLeft(usageKey, 'resume') ? 1 : 0,
+    freeCoverLettersLeft: hasFreeTierLeft(usageKey, 'cover_letter') ? 1 : 0,
     isSubscriber: isSubscriber(email)
   });
 });
@@ -585,12 +599,12 @@ app.post('/api/tailor', async (req, res) => {
     return res.status(400).json({ error: 'Invalid mode.' });
   }
 
-  const ip = req.ip;
+  const usageKey = getUsageKey(req);
   const subscribed = isSubscriber(email);
 
   if (!subscribed) {
-    const resumeLeft = hasFreeTierLeft(ip, 'resume');
-    const coverLeft = hasFreeTierLeft(ip, 'cover_letter');
+    const resumeLeft = hasFreeTierLeft(usageKey, 'resume');
+    const coverLeft = hasFreeTierLeft(usageKey, 'cover_letter');
 
     if (mode === 'resume' && !resumeLeft) {
       return res.status(402).json({ error: 'free_limit_reached', mode: 'resume', message: 'You\'ve used your free daily resume tailoring. Upgrade to Pro for unlimited access.' });
@@ -660,8 +674,8 @@ ${jobPosting}
     });
 
     if (!subscribed) {
-      if (mode === 'resume' || mode === 'both') consumeFreeTier(ip, 'resume');
-      if (mode === 'cover_letter' || mode === 'both') consumeFreeTier(ip, 'cover_letter');
+      if (mode === 'resume' || mode === 'both') consumeFreeTier(usageKey, 'resume');
+      if (mode === 'cover_letter' || mode === 'both') consumeFreeTier(usageKey, 'cover_letter');
     }
 
     res.json({ result: message.content[0].text });
