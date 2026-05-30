@@ -19,6 +19,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9896489046536589" crossorigin="anonymous"></script>
   <style>
     /* ── Auth Modal ── */
     .auth-overlay {
@@ -323,10 +325,8 @@
             <button class="eb-btn eb-cancel" onclick="cancelEdit()">Cancel</button>
           </div>
           <div class="output-box" id="outputBox"></div>
-          <div class="download-row">
-            <button class="download-btn download-btn-docx" onclick="downloadDocx()">⬇ Word (.docx)</button>
-            <button class="download-btn download-btn-pdf" onclick="downloadPdf()">⬇ PDF</button>
-            <button class="download-btn download-btn-txt" onclick="downloadTxt()">⬇ Text (.txt)</button>
+          <div class="download-row" id="downloadRow">
+            <!-- Buttons rendered by renderDownloadButtons() after output is ready -->
           </div>
         </div>
 
@@ -1132,6 +1132,7 @@
         freeCoverLettersLeft = data.freeCoverLettersLeft;
 
         renderTplPicker();
+        renderDownloadButtons();
         const badge = document.getElementById('statusBadge');
         const navStatus = document.getElementById('navStatus');
 
@@ -1203,6 +1204,7 @@
         document.getElementById('editBar').style.display = 'none';
         document.getElementById('outputBox').removeAttribute('contenteditable');
         document.getElementById('outputWrap').style.display = 'block';
+        renderDownloadButtons();
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         await checkStatus();
@@ -2080,6 +2082,108 @@ Aaliyah Washington`
     checkAuth();
     // Init template picker after DOM is ready (template functions are hoisted)
     setTimeout(renderTplPicker, 0);
+  </script>
+
+  <!-- ── Ad Gate Modal ── -->
+  <div id="adGateModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;">
+    <div style="background:#fff;border-radius:20px;padding:32px 28px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
+      <div style="font-size:28px;margin-bottom:10px;">▶</div>
+      <h2 style="font-size:18px;font-weight:800;color:#111827;margin-bottom:6px;">Watch a short ad to download</h2>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">Free tier — one short ad, then your file downloads automatically. <strong>Upgrade to Pro</strong> to skip ads forever.</p>
+      <!-- AdSense rewarded ad container -->
+      <div id="adGateContainer" style="min-height:80px;display:flex;align-items:center;justify-content:center;">
+        <ins class="adsbygoogle"
+             id="adGateIns"
+             style="display:block;width:300px;height:250px;"
+             data-ad-client="ca-pub-9896489046536589"
+             data-ad-slot="REPLACE_WITH_SLOT_ID"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
+      <div id="adGateStatus" style="font-size:13px;color:#6b7280;margin-top:14px;">Loading ad…</div>
+      <button onclick="closeAdModal()" style="margin-top:16px;font-size:12px;color:#9ca3af;background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;">Cancel</button>
+    </div>
+  </div>
+
+  <script>
+    // ── AdSense Rewarded Ad Gate ──────────────────────────────────────────────
+    // Replace REPLACE_WITH_SLOT_ID with your actual rewarded ad slot ID from AdSense
+    const ADSENSE_SLOT_ID = 'REPLACE_WITH_SLOT_ID';
+    let adPendingDownload = null;
+    let adWatchTimer = null;
+
+    function renderDownloadButtons() {
+      const row = document.getElementById('downloadRow');
+      if (!row) return;
+      if (isSubscriberFlag) {
+        // Pro users: direct download, no ads
+        row.innerHTML = `
+          <button class="download-btn download-btn-docx" onclick="downloadDocx()">⬇ Word (.docx)</button>
+          <button class="download-btn download-btn-pdf" onclick="downloadPdf()">⬇ PDF</button>
+          <button class="download-btn download-btn-txt" onclick="downloadTxt()">⬇ Text (.txt)</button>`;
+      } else {
+        // Free users: ad gate
+        row.innerHTML = `
+          <button class="download-btn download-btn-docx" onclick="adGate(downloadDocx)" style="background:#7c3aed;">▶ Watch Ad → Word</button>
+          <button class="download-btn download-btn-pdf" onclick="adGate(downloadPdf)" style="background:#b91c1c;">▶ Watch Ad → PDF</button>
+          <button class="download-btn download-btn-txt" onclick="adGate(downloadTxt)" style="background:#374151;">▶ Watch Ad → Text</button>`;
+      }
+    }
+
+    function adGate(downloadFn) {
+      adPendingDownload = downloadFn;
+      const modal = document.getElementById('adGateModal');
+      modal.style.display = 'flex';
+      document.getElementById('adGateStatus').textContent = 'Loading ad…';
+
+      // If slot ID is configured, push the ad
+      if (ADSENSE_SLOT_ID !== 'REPLACE_WITH_SLOT_ID') {
+        try {
+          (adsbygoogle = window.adsbygoogle || []).push({});
+        } catch(e) {}
+        // Watch for ad completion — poll every 500ms for up to 60s
+        let waited = 0;
+        adWatchTimer = setInterval(() => {
+          waited += 500;
+          const remaining = Math.max(0, Math.ceil((5000 - waited) / 1000));
+          if (waited >= 5000) {
+            document.getElementById('adGateStatus').textContent = 'Ad complete — downloading…';
+            clearInterval(adWatchTimer);
+            setTimeout(() => { completeAdGate(); }, 600);
+          } else {
+            document.getElementById('adGateStatus').textContent = `Ad playing… ${remaining}s`;
+          }
+        }, 500);
+      } else {
+        // Slot not configured yet — simulate for testing (5 second countdown)
+        document.getElementById('adGateStatus').textContent = '(Test mode — ad slot not configured yet)';
+        let secs = 5;
+        adWatchTimer = setInterval(() => {
+          secs--;
+          if (secs <= 0) {
+            clearInterval(adWatchTimer);
+            document.getElementById('adGateStatus').textContent = 'Done — downloading…';
+            setTimeout(() => { completeAdGate(); }, 600);
+          } else {
+            document.getElementById('adGateStatus').textContent = `(Test mode — ${secs}s)`;
+          }
+        }, 1000);
+      }
+    }
+
+    function completeAdGate() {
+      closeAdModal();
+      if (adPendingDownload) {
+        adPendingDownload();
+        adPendingDownload = null;
+      }
+    }
+
+    function closeAdModal() {
+      document.getElementById('adGateModal').style.display = 'none';
+      if (adWatchTimer) { clearInterval(adWatchTimer); adWatchTimer = null; }
+      adPendingDownload = null;
+    }
   </script>
 </body>
 </html>
