@@ -546,12 +546,18 @@ app.get('/api/health', (req, res) => {
 // ─── API: AI connection test ──────────────────────────────────────────────────
 app.get('/api/test-ai', async (req, res) => {
   try {
+    const modelList = await anthropic.models.list();
+    const models = modelList.data.map(m => m.id);
+    if (models.length === 0) {
+      return res.json({ success: false, error: 'No models available on this account', models: [] });
+    }
+    const model = models[0];
     const msg = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
+      model,
       max_tokens: 10,
       messages: [{ role: 'user', content: 'Say "ok"' }]
     });
-    res.json({ success: true, response: msg.content[0].text });
+    res.json({ success: true, modelUsed: model, availableModels: models, response: msg.content[0].text });
   } catch (err) {
     res.json({ success: false, status: err?.status, error: err?.message || String(err) });
   }
