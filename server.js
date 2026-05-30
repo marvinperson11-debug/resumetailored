@@ -547,7 +547,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/test-ai', async (req, res) => {
   try {
     const msg = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-haiku-20240307',
       max_tokens: 10,
       messages: [{ role: 'user', content: 'Say "ok"' }]
     });
@@ -647,7 +647,7 @@ ${jobPosting}
     }
 
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-3-haiku-20240307',
       max_tokens: 4096,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }]
