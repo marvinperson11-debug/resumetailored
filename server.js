@@ -543,6 +543,20 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ─── API: AI connection test ──────────────────────────────────────────────────
+app.get('/api/test-ai', async (req, res) => {
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 10,
+      messages: [{ role: 'user', content: 'Say "ok"' }]
+    });
+    res.json({ success: true, response: msg.content[0].text });
+  } catch (err) {
+    res.json({ success: false, status: err?.status, error: err?.message || String(err) });
+  }
+});
+
 // ─── API: Check usage status ──────────────────────────────────────────────────
 app.get('/api/status', (req, res) => {
   const ip = req.ip;
