@@ -86,7 +86,7 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* ══ DASHBOARD ══════════════════════════════════════════════════════════════════ */
-.dashboard { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 64px); max-width: 100vw; overflow-x: hidden; }
+.dashboard { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 64px); }
 
 /* ── Sidebar ── */
 .sidebar {
@@ -137,6 +137,8 @@ a { text-decoration: none; color: inherit; }
 .dash-main {
   padding: 36px 44px 80px;
   background: var(--bg);
+  min-width: 0;
+  overflow-x: hidden;
 }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
