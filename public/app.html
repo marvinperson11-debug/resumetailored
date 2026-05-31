@@ -7,6 +7,7 @@
   <meta name="description" content="Your ResumeTailored AI dashboard. Tailor your resume, generate cover letters, and track your job search." />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="favicon.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&family=Satisfy&family=Caveat:wght@600&display=swap" rel="stylesheet" />
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
   <script>
@@ -164,6 +165,16 @@
       .rb-grid-2 { grid-template-columns: 1fr; }
       .resume-mode-toggle { flex-wrap: wrap; }
     }
+    /* ── Signature ── */
+    .sig-section { margin-bottom: 16px; background: var(--blue-light); border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 16px; }
+    .sig-label { font-size: 13px; font-weight: 700; color: var(--text); display: block; margin-bottom: 8px; }
+    .sig-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); box-sizing: border-box; transition: border-color 0.15s; }
+    .sig-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .sig-fonts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .sig-font-btn { padding: 6px 13px; border: 1.5px solid var(--border); border-radius: 7px; background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); font-family: inherit; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+    .sig-font-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+    .sig-font-btn:hover:not(.active) { border-color: #93c5fd; }
+    .sig-preview { margin-top: 10px; padding: 14px 20px; background: #fafafa; border: 1.5px solid var(--border); border-radius: 8px; }
   </style>
 </head>
 <body>
@@ -415,9 +426,27 @@
           </div>
         </div>
 
+        <div class="sig-section">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span style="font-size:18px;">✍️</span>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--text);">Add Your Signature</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:1px;">Your name will appear signed at the bottom of your document</div>
+            </div>
+          </div>
+          <input class="sig-input" id="sigNameInput" type="text" placeholder="Type your name here..." oninput="updateSigPreview()" />
+          <div class="sig-fonts" id="sigFontsRow">
+            <button class="sig-font-btn active" onclick="setSigFont('Dancing Script')" data-font="Dancing Script"><span style="font-family:'Dancing Script',cursive;font-size:16px;">Aa</span> Script</button>
+            <button class="sig-font-btn" onclick="setSigFont('Great Vibes')" data-font="Great Vibes"><span style="font-family:'Great Vibes',cursive;font-size:16px;">Aa</span> Elegant</button>
+            <button class="sig-font-btn" onclick="setSigFont('Satisfy')" data-font="Satisfy"><span style="font-family:'Satisfy',cursive;font-size:16px;">Aa</span> Classic</button>
+            <button class="sig-font-btn" onclick="setSigFont('Caveat')" data-font="Caveat"><span style="font-family:'Caveat',cursive;font-size:16px;">Aa</span> Casual</button>
+          </div>
+          <div class="sig-preview" id="sigPreview" style="display:none;"></div>
+        </div>
+
         <div class="email-row">
-          <input type="email" id="email" placeholder="your@email.com (Pro subscribers enter email here)" />
-          <span class="email-hint">Pro subscriber? Enter your email to unlock unlimited tailorings.</span>
+          <input type="email" id="email" placeholder="Pro subscriber email (optional — unlocks unlimited runs)" />
+          <span class="email-hint">Already Pro? Enter your email above to unlock unlimited tailorings.</span>
         </div>
 
         <button class="btn btn-primary btn-full btn-lg" id="tailorBtn" onclick="tailor()">
@@ -1030,6 +1059,34 @@
     let resumeInputMode = 'upload';
     let workEntryCount = 0;
     let eduEntryCount = 0;
+    let sigName = '';
+    let sigFont = 'Dancing Script';
+
+    // ── Signature helpers ──────────────────────────────────────────────────────
+    function setSigFont(font) {
+      sigFont = font;
+      document.querySelectorAll('.sig-font-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.font === font);
+      });
+      updateSigPreview();
+    }
+
+    function updateSigPreview() {
+      sigName = document.getElementById('sigNameInput').value.trim();
+      const preview = document.getElementById('sigPreview');
+      if (!sigName) { preview.style.display = 'none'; return; }
+      preview.style.display = '';
+      preview.innerHTML = `<span style="font-family:'${sigFont}',cursive;font-size:28px;color:#1e293b;line-height:1.2;">${sigName}</span>`;
+    }
+
+    function renderSignatureHtml(primaryColor) {
+      if (!sigName) return '';
+      const color = primaryColor || '#1e293b';
+      return `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;">
+        <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signature</p>
+        <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${sigName}</p>
+      </div>`;
+    }
 
     // ── Auth helpers ───────────────────────────────────────────────────────────
     function getToken() { return localStorage.getItem('rt_token') || ''; }
@@ -1488,7 +1545,13 @@
         document.getElementById('outputTitle').textContent = titles[selectedMode];
         lastRawResult = data.result;
         const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
-        document.getElementById('outputBox').innerHTML = renderAIOutput(data.result, selectedOutputTpl[tplCat], selectedMode);
+        const outputBox = document.getElementById('outputBox');
+        outputBox.innerHTML = renderAIOutput(data.result, selectedOutputTpl[tplCat], selectedMode);
+        if (sigName) {
+          const tplColors = OUT_TPLS[tplCat].find(t => t.id === selectedOutputTpl[tplCat]);
+          const primaryColor = tplColors ? tplColors.c.p : '#1e293b';
+          outputBox.innerHTML += renderSignatureHtml(primaryColor);
+        }
         document.getElementById('editBtn').style.display = 'inline-flex';
         document.getElementById('editBar').style.display = 'none';
         document.getElementById('outputBox').removeAttribute('contenteditable');
@@ -1730,11 +1793,11 @@
         { id:'r5', name:'Minimal',   free:false, c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
       ],
       cover: [
-        { id:'c1', name:'Formal',  free:true,  c:{p:'#1a237e',a:'#7986cb',l:'#e8eaf6'} },
-        { id:'c2', name:'Bold',    free:false, c:{p:'#1b3a4b',a:'#009688',l:'#e0f2f1'} },
-        { id:'c3', name:'Boxed',   free:false, c:{p:'#1b5e20',a:'#66bb6a',l:'#f1f8e9'} },
-        { id:'c4', name:'Split',   free:false, c:{p:'#4a1042',a:'#ab47bc',l:'#f3e5f5'} },
-        { id:'c5', name:'Clean',   free:false, c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
+        { id:'c1', name:'Formal',  free:true,  c:{p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'} },
+        { id:'c2', name:'Bold',    free:false, c:{p:'#7c2d12',a:'#fb923c',l:'#fff7ed'} },
+        { id:'c3', name:'Boxed',   free:false, c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
+        { id:'c4', name:'Split',   free:false, c:{p:'#312e81',a:'#818cf8',l:'#eef2ff'} },
+        { id:'c5', name:'Clean',   free:false, c:{p:'#1e293b',a:'#64748b',l:'#f8fafc'} },
       ]
     };
 
@@ -1742,8 +1805,8 @@
     const TPL_PREV_FNS = {
       r1: () => rClassic(_TC[0]), r2: () => rExecutive(_TC[1]),
       r3: () => rModern(_TC[2]),  r4: () => rSidebar(_TC[3]), r5: () => rMinimal(_TC[4]),
-      c1: () => cFormal(_TC[0]),  c2: () => cBold(_TC[1]),
-      c3: () => cBoxed(_TC[2]),   c4: () => cSplit(_TC[3]),   c5: () => cClean(_TC[4]),
+      c1: () => cFormal(_TC_COVER[0]),  c2: () => cBold(_TC_COVER[1]),
+      c3: () => cBoxed(_TC_COVER[2]),   c4: () => cSplit(_TC_COVER[3]),   c5: () => cClean(_TC_COVER[4]),
     };
 
     function renderTplPicker() {
@@ -1890,6 +1953,13 @@
       {p:'#1b5e20',a:'#558b2f',l:'#f1f8e9'},
       {p:'#2e1a47',a:'#7b1fa2',l:'#f3e5f5'},
     ];
+    const _TC_COVER = [
+      {p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'},
+      {p:'#7c2d12',a:'#fb923c',l:'#fff7ed'},
+      {p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'},
+      {p:'#312e81',a:'#818cf8',l:'#eef2ff'},
+      {p:'#1e293b',a:'#64748b',l:'#f8fafc'},
+    ];
     const _RP = {
       name:'Jordan Mitchell', title:'Senior Software Engineer',
       email:'jordan.mitchell@email.com', phone:'(312) 555-0192', location:'Chicago, IL',
@@ -1937,13 +2007,13 @@
     function cFormal(c){const p=_CP;return `<div style="font-family:Georgia,serif;background:#fff;padding:60px 76px;color:#1a1a1a;max-width:794px;"><div style="margin-bottom:32px;"><div style="font-size:22px;font-weight:700;color:${c.p};">${p.name}</div><div style="font-size:12px;color:#888;margin-top:6px;">${p.email}&nbsp;|&nbsp;${p.phone}&nbsp;|&nbsp;${p.location}</div></div><div style="font-size:13px;color:#777;margin-bottom:24px;">${p.date}</div><div style="font-size:14px;font-weight:700;margin-bottom:3px;">${p.role} Hiring Team</div><div style="font-size:13px;color:#666;margin-bottom:28px;">${p.company}</div><div style="font-size:14.5px;font-weight:700;color:${c.p};margin-bottom:22px;">Dear Hiring Manager,</div>${p.body.map(para=>`<p style="font-size:13.5px;line-height:1.9;color:#333;margin-bottom:18px;">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div>`;}
 
     // Cover layout 2: Bold (strong header, left-border opener)
-    function cBold(c){const p=_CP;return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#1a1a1a;max-width:794px;"><div style="background:${c.p};padding:44px 60px;color:#fff;"><div style="font-size:30px;font-weight:900;letter-spacing:-1px;">${p.name}</div><div style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:8px;">${p.email}&nbsp;·&nbsp;${p.phone}&nbsp;·&nbsp;${p.location}</div><div style="width:44px;height:4px;background:${c.a};margin-top:14px;border-radius:2px;"></div></div><div style="padding:44px 60px;"><div style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">${p.date}</div><div style="font-size:17px;font-weight:800;color:${c.p};margin-bottom:26px;">${p.role}&nbsp;·&nbsp;${p.company}</div><div style="font-size:15px;font-weight:700;color:${c.a};margin-bottom:20px;">Dear Hiring Manager,</div>${p.body.map((para,i)=>`<p style="font-size:13.5px;line-height:1.85;color:#333;margin-bottom:18px;${i===0?`border-left:3px solid ${c.a};padding-left:14px;color:#1a1a1a;font-weight:600;`:''}">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div></div>`;}
+    function cBold(c){const p=_CP;return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#1a1a1a;max-width:794px;padding:52px 64px;"><div style="border-left:5px solid ${c.p};padding-left:20px;margin-bottom:30px;"><div style="font-size:30px;font-weight:900;color:${c.p};letter-spacing:-1px;">${p.name}</div><div style="font-size:12px;color:#888;margin-top:7px;">${p.email}&nbsp;·&nbsp;${p.phone}&nbsp;·&nbsp;${p.location}</div></div><div style="display:flex;justify-content:space-between;align-items:center;background:${c.l};border-radius:8px;padding:12px 18px;margin-bottom:28px;"><div><div style="font-size:13px;font-weight:800;color:${c.p};">${p.role}</div><div style="font-size:12px;color:${c.a};font-weight:700;">${p.company}</div></div><div style="font-size:11.5px;color:#999;">${p.date}</div></div><div style="font-size:14.5px;font-weight:800;color:${c.p};margin-bottom:22px;">Dear Hiring Manager,</div>${p.body.map((para,i)=>`<p style="font-size:13.5px;line-height:1.85;color:#333;margin-bottom:18px;${i===0?`border-left:3px solid ${c.a};padding-left:14px;color:#1a1a1a;font-weight:600;`:''}">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div>`;}
 
     // Cover layout 3: Boxed (framed header card)
     function cBoxed(c){const p=_CP;return `<div style="font-family:Georgia,serif;background:#fff;padding:52px;color:#222;max-width:794px;"><div style="border:2px solid ${c.p};border-radius:8px;padding:26px 34px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-size:23px;font-weight:800;color:${c.p};">${p.name}</div><div style="font-size:12px;color:#777;margin-top:5px;">${p.email}&nbsp;|&nbsp;${p.phone}&nbsp;|&nbsp;${p.location}</div></div><div style="width:46px;height:46px;border-radius:50%;background:${c.p};display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900;">${p.name[0]}</div></div><div style="font-size:12px;color:#aaa;margin-bottom:4px;">${p.date}</div><div style="font-size:13.5px;color:#555;margin-bottom:26px;">${p.role}&nbsp;—&nbsp;${p.company}</div><div style="font-size:14.5px;font-weight:700;color:${c.p};border-bottom:1px solid ${c.a};padding-bottom:7px;margin-bottom:22px;">Dear Hiring Manager,</div>${p.body.map(para=>`<p style="font-size:13.5px;line-height:1.9;color:#444;margin-bottom:17px;">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div>`;}
 
     // Cover layout 4: Split (sidebar + body)
-    function cSplit(c){const p=_CP;return `<div style="font-family:Arial,sans-serif;background:#fff;color:#222;max-width:794px;display:flex;min-height:900px;"><div style="width:190px;background:${c.p};padding:44px 22px;flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between;"><div><div style="width:52px;height:52px;border-radius:50%;background:${c.a};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;margin-bottom:18px;">${p.name[0]}</div><div style="font-size:15px;font-weight:800;color:#fff;line-height:1.3;">${p.name}</div><div style="width:28px;height:3px;background:${c.a};margin:10px 0;border-radius:2px;"></div><div style="font-size:10.5px;color:rgba(255,255,255,.72);line-height:1.9;margin-top:14px;"><div>${p.email}</div><div>${p.phone}</div><div>${p.location}</div></div></div><div style="font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:1px;">${p.date}</div></div><div style="flex:1;padding:44px 40px;"><div style="font-size:19px;font-weight:800;color:${c.p};margin-bottom:4px;">${p.role}</div><div style="font-size:12.5px;color:${c.a};font-weight:700;margin-bottom:26px;">${p.company}</div><div style="font-size:14px;font-weight:700;color:#333;margin-bottom:18px;">Dear Hiring Manager,</div>${p.body.map(para=>`<p style="font-size:13px;line-height:1.85;color:#444;margin-bottom:15px;">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div></div>`;}
+    function cSplit(c){const p=_CP;return `<div style="font-family:Arial,sans-serif;background:#fff;color:#222;max-width:794px;"><div style="display:grid;grid-template-columns:1fr auto;align-items:end;padding:40px 56px 22px;border-bottom:3px solid ${c.p};"><div><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${p.name}</div><div style="font-size:12px;color:#888;margin-top:7px;">${p.email}&nbsp;·&nbsp;${p.phone}&nbsp;·&nbsp;${p.location}</div></div><div style="text-align:right;background:${c.l};border-radius:8px;padding:12px 18px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${c.a};">${p.date}</div><div style="font-size:13px;font-weight:800;color:${c.p};margin-top:4px;">${p.role}</div><div style="font-size:12px;color:#666;">${p.company}</div></div></div><div style="padding:34px 56px;"><div style="font-size:14.5px;font-weight:700;color:${c.p};margin-bottom:20px;">Dear Hiring Manager,</div>${p.body.map(para=>`<p style="font-size:13px;line-height:1.85;color:#444;margin-bottom:15px;">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div></div>`;}
 
     // Cover layout 5: Clean (minimal, typographic)
     function cClean(c){const p=_CP;return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;padding:76px;color:#1a1a1a;max-width:794px;"><div style="margin-bottom:44px;"><div style="font-size:34px;font-weight:900;letter-spacing:-1.5px;">${p.name}</div><div style="display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;"><span style="font-size:12px;color:${c.p};font-weight:700;">${p.email}</span><span style="font-size:12px;color:#ddd;">|</span><span style="font-size:12px;color:${c.p};font-weight:700;">${p.phone}</span></div><div style="height:2px;background:${c.p};margin-top:18px;"></div></div><div style="font-size:11.5px;color:#bbb;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:26px;">${p.date}</div><div style="font-size:17px;font-weight:800;color:#1a1a1a;margin-bottom:26px;">Re: ${p.role} — ${p.company}</div>${p.body.map((para,i)=>`<p style="font-size:13.5px;line-height:1.9;margin-bottom:19px;${i===0?`color:#1a1a1a;font-weight:600;`:'color:#555;'}">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div>`;}
@@ -2266,10 +2336,10 @@ Aaliyah Washington`
 
     // ── Download helpers ───────────────────────────────────────────────────────
     function getOutputText() {
-      // If in edit mode, get the current edited text; otherwise use the stored raw result
       const box = document.getElementById('outputBox');
       if (box.contentEditable === 'true') return box.innerText || box.textContent;
-      return lastRawResult || box.innerText || box.textContent;
+      const base = lastRawResult || box.innerText || box.textContent;
+      return sigName ? base + '\n\n' + sigName : base;
     }
 
     function downloadTxt() {
