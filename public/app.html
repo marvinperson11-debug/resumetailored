@@ -138,6 +138,32 @@
     .edit-bar .eb-save { background: #2563eb; color: #fff; }
     .edit-bar .eb-cancel { background: #e5e7eb; color: #374151; }
     #outputBox[contenteditable="true"] { outline: 2px dashed #2563eb; outline-offset: 2px; cursor: text; border-radius: 8px; }
+
+    /* ── Resume build form ── */
+    .resume-mode-toggle { display: flex; gap: 6px; }
+    .rmode-btn { padding: 6px 13px; font-size: 12px; font-weight: 600; border: 1.5px solid var(--border); border-radius: 7px; background: #fff; color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: inherit; }
+    .rmode-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .rmode-btn:hover:not(.active) { background: var(--blue-light); color: var(--blue); }
+    .rb-section { margin-bottom: 18px; }
+    .rb-section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; }
+    .rb-optional { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; }
+    .rb-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px; }
+    .rb-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: #fff; font-family: inherit; transition: border-color 0.15s; box-sizing: border-box; }
+    .rb-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .rb-textarea { width: 100%; min-height: 90px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: #fff; font-family: inherit; resize: vertical; transition: border-color 0.15s; box-sizing: border-box; }
+    .rb-textarea-sm { min-height: 56px; }
+    .rb-textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .rb-entry { background: #f9fafb; border: 1.5px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+    .rb-entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .rb-entry-label { font-size: 13px; font-weight: 700; color: var(--text); }
+    .rb-remove-btn { font-size: 12px; color: #ef4444; background: none; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer; font-weight: 600; padding: 4px 10px; font-family: inherit; transition: background 0.15s; }
+    .rb-remove-btn:hover { background: #fef2f2; }
+    .rb-add-btn { width: 100%; padding: 10px; border: 1.5px dashed var(--border); border-radius: 8px; background: transparent; color: var(--blue); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .rb-add-btn:hover { background: var(--blue-light); border-color: var(--blue); }
+    @media (max-width: 560px) {
+      .rb-grid-2 { grid-template-columns: 1fr; }
+      .resume-mode-toggle { flex-wrap: wrap; }
+    }
   </style>
 </head>
 <body>
@@ -288,13 +314,67 @@
         <div class="inputs">
           <div class="field">
             <div class="field-header">
-              <label for="resume">Your Current Resume</label>
-              <button class="upload-btn" onclick="document.getElementById('resumeFileInput').click()">
-                <span id="uploadBtnText">⬆ Upload File</span>
-              </button>
-              <input type="file" id="resumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleResumeUpload(this)" />
+              <label>Your Resume</label>
+              <div class="resume-mode-toggle">
+                <button class="rmode-btn active" id="rmodeUpload" onclick="setResumeMode('upload')">⬆ Upload / Paste</button>
+                <button class="rmode-btn" id="rmodeBuild" onclick="setResumeMode('build')">✏️ Fill Out Form</button>
+              </div>
             </div>
-            <textarea id="resume" placeholder="Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file."></textarea>
+
+            <!-- UPLOAD / PASTE PANE -->
+            <div id="resumeUploadPane">
+              <div style="margin-bottom:6px;">
+                <button class="upload-btn" onclick="document.getElementById('resumeFileInput').click()">
+                  <span id="uploadBtnText">⬆ Upload File</span>
+                </button>
+                <input type="file" id="resumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleResumeUpload(this)" />
+              </div>
+              <textarea id="resume" placeholder="Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file."></textarea>
+            </div>
+
+            <!-- BUILD / FORM PANE -->
+            <div id="resumeBuildPane" style="display:none;">
+
+              <div class="rb-section">
+                <div class="rb-section-title">Personal Information</div>
+                <div class="rb-grid-2">
+                  <input type="text" class="rb-input" id="rbName" placeholder="Full Name *" />
+                  <input type="email" class="rb-input" id="rbEmail" placeholder="Email Address *" />
+                  <input type="tel" class="rb-input" id="rbPhone" placeholder="Phone Number" />
+                  <input type="text" class="rb-input" id="rbLocation" placeholder="City, State" />
+                  <input type="text" class="rb-input" id="rbLinkedin" placeholder="LinkedIn URL (optional)" />
+                  <input type="text" class="rb-input" id="rbWebsite" placeholder="Website / Portfolio (optional)" />
+                </div>
+              </div>
+
+              <div class="rb-section">
+                <div class="rb-section-title">Professional Summary <span class="rb-optional">(optional)</span></div>
+                <textarea class="rb-textarea" id="rbSummary" placeholder="2–3 sentence overview of your background and key strengths..."></textarea>
+              </div>
+
+              <div class="rb-section">
+                <div class="rb-section-title">Work Experience</div>
+                <div id="rbWorkEntries"></div>
+                <button class="rb-add-btn" onclick="addWorkEntry()">+ Add Position</button>
+              </div>
+
+              <div class="rb-section">
+                <div class="rb-section-title">Education</div>
+                <div id="rbEduEntries"></div>
+                <button class="rb-add-btn" onclick="addEduEntry()">+ Add Education</button>
+              </div>
+
+              <div class="rb-section">
+                <div class="rb-section-title">Skills</div>
+                <textarea class="rb-textarea" id="rbSkills" placeholder="e.g. JavaScript, React, Python, SQL, Project Management, Adobe Photoshop..."></textarea>
+              </div>
+
+              <div class="rb-section">
+                <div class="rb-section-title">Certifications <span class="rb-optional">(optional)</span></div>
+                <textarea class="rb-textarea rb-textarea-sm" id="rbCerts" placeholder="e.g. AWS Certified Solutions Architect, PMP, Google Analytics..."></textarea>
+              </div>
+
+            </div>
           </div>
           <div class="field">
             <label for="job">Job Posting</label>
@@ -914,6 +994,9 @@
     let selectedOutputTpl = { resume: 'r1', cover: 'c1' };
     let lastRawResult = '';
     let editSnapshot = '';
+    let resumeInputMode = 'upload';
+    let workEntryCount = 0;
+    let eduEntryCount = 0;
 
     // ── Auth helpers ───────────────────────────────────────────────────────────
     function getToken() { return localStorage.getItem('rt_token') || ''; }
@@ -1165,13 +1248,146 @@
     document.getElementById('email').addEventListener('blur', checkStatus);
     checkStatus();
 
+    // ── Resume build form ──────────────────────────────────────────────────────
+    function setResumeMode(mode) {
+      resumeInputMode = mode;
+      document.getElementById('resumeUploadPane').style.display = mode === 'upload' ? '' : 'none';
+      document.getElementById('resumeBuildPane').style.display = mode === 'build' ? '' : 'none';
+      document.getElementById('rmodeUpload').classList.toggle('active', mode === 'upload');
+      document.getElementById('rmodeBuild').classList.toggle('active', mode === 'build');
+      if (mode === 'build' && workEntryCount === 0) addWorkEntry();
+      if (mode === 'build' && eduEntryCount === 0) addEduEntry();
+    }
+
+    function addWorkEntry() {
+      workEntryCount++;
+      const idx = workEntryCount;
+      const id = 'work-' + idx;
+      const div = document.createElement('div');
+      div.className = 'rb-entry';
+      div.id = id;
+      div.innerHTML = `
+        <div class="rb-entry-header">
+          <span class="rb-entry-label">Position ${idx}</span>
+          <button class="rb-remove-btn" onclick="removeEntry('${id}')">✕ Remove</button>
+        </div>
+        <div class="rb-grid-2">
+          <input type="text" class="rb-input" placeholder="Job Title *" data-field="title" />
+          <input type="text" class="rb-input" placeholder="Company / Organization *" data-field="company" />
+          <input type="text" class="rb-input" placeholder="Start Date (e.g. Jan 2020)" data-field="start" />
+          <input type="text" class="rb-input" placeholder="End Date (or 'Present')" data-field="end" />
+        </div>
+        <textarea class="rb-textarea" placeholder="Key responsibilities and achievements — one per line. The AI will polish and tailor these to the job." data-field="bullets"></textarea>
+      `;
+      document.getElementById('rbWorkEntries').appendChild(div);
+    }
+
+    function addEduEntry() {
+      eduEntryCount++;
+      const idx = eduEntryCount;
+      const id = 'edu-' + idx;
+      const div = document.createElement('div');
+      div.className = 'rb-entry';
+      div.id = id;
+      div.innerHTML = `
+        <div class="rb-entry-header">
+          <span class="rb-entry-label">Degree ${idx}</span>
+          <button class="rb-remove-btn" onclick="removeEntry('${id}')">✕ Remove</button>
+        </div>
+        <div class="rb-grid-2">
+          <input type="text" class="rb-input" placeholder="Degree (e.g. B.S. Computer Science) *" data-field="degree" />
+          <input type="text" class="rb-input" placeholder="School / University *" data-field="school" />
+          <input type="text" class="rb-input" placeholder="Graduation Year (e.g. 2020)" data-field="year" />
+          <input type="text" class="rb-input" placeholder="GPA (optional)" data-field="gpa" />
+        </div>
+      `;
+      document.getElementById('rbEduEntries').appendChild(div);
+    }
+
+    function removeEntry(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    }
+
+    function buildResumeText() {
+      const name     = document.getElementById('rbName').value.trim();
+      const email    = document.getElementById('rbEmail').value.trim();
+      const phone    = document.getElementById('rbPhone').value.trim();
+      const location = document.getElementById('rbLocation').value.trim();
+      const linkedin = document.getElementById('rbLinkedin').value.trim();
+      const website  = document.getElementById('rbWebsite').value.trim();
+      const summary  = document.getElementById('rbSummary').value.trim();
+      const skills   = document.getElementById('rbSkills').value.trim();
+      const certs    = document.getElementById('rbCerts').value.trim();
+
+      if (!name) { showToast('Please enter your full name.'); return null; }
+      if (!email) { showToast('Please enter your email address.'); return null; }
+
+      let text = name.toUpperCase() + '\n';
+      const contact = [email, phone, location, linkedin, website].filter(Boolean);
+      if (contact.length) text += contact.join(' | ') + '\n';
+      text += '\n';
+
+      if (summary) text += 'PROFESSIONAL SUMMARY\n' + summary + '\n\n';
+
+      const workEls = document.querySelectorAll('#rbWorkEntries .rb-entry');
+      if (workEls.length) {
+        text += 'WORK EXPERIENCE\n\n';
+        workEls.forEach(el => {
+          const title   = el.querySelector('[data-field="title"]').value.trim();
+          const company = el.querySelector('[data-field="company"]').value.trim();
+          const start   = el.querySelector('[data-field="start"]').value.trim();
+          const end     = el.querySelector('[data-field="end"]').value.trim();
+          const bullets = el.querySelector('[data-field="bullets"]').value.trim();
+          if (!title && !company) return;
+          let line = [title, company].filter(Boolean).join(' | ');
+          if (start || end) line += ' | ' + [start, end].filter(Boolean).join(' – ');
+          text += line + '\n';
+          if (bullets) {
+            bullets.split('\n').filter(l => l.trim()).forEach(l => {
+              const t = l.trim();
+              text += (t.startsWith('•') || t.startsWith('-') || t.startsWith('*') ? '' : '• ') + t + '\n';
+            });
+          }
+          text += '\n';
+        });
+      }
+
+      const eduEls = document.querySelectorAll('#rbEduEntries .rb-entry');
+      if (eduEls.length) {
+        text += 'EDUCATION\n\n';
+        eduEls.forEach(el => {
+          const degree = el.querySelector('[data-field="degree"]').value.trim();
+          const school = el.querySelector('[data-field="school"]').value.trim();
+          const year   = el.querySelector('[data-field="year"]').value.trim();
+          const gpa    = el.querySelector('[data-field="gpa"]').value.trim();
+          if (!degree && !school) return;
+          let line = [degree, school].filter(Boolean).join(' | ');
+          if (year) line += ' | ' + year;
+          if (gpa) line += ' | GPA: ' + gpa;
+          text += line + '\n\n';
+        });
+      }
+
+      if (skills) text += 'SKILLS\n' + skills + '\n\n';
+      if (certs) text += 'CERTIFICATIONS\n' + certs + '\n';
+
+      return text.trim();
+    }
+
     // ── Tailor resume ──────────────────────────────────────────────────────────
     async function tailor() {
-      const resume = document.getElementById('resume').value.trim();
+      let resume;
+      if (resumeInputMode === 'build') {
+        resume = buildResumeText();
+        if (!resume) return;
+      } else {
+        resume = document.getElementById('resume').value.trim();
+        if (!resume) return showToast('Please paste your resume or upload a file.');
+      }
       const job = document.getElementById('job').value.trim();
       const email = document.getElementById('email').value.trim();
 
-      if (!resume) return showToast('Please paste your resume.');
       if (!job) return showToast('Please paste the job posting.');
 
       const btn = document.getElementById('tailorBtn');
