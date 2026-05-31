@@ -7,6 +7,7 @@
   <meta name="description" content="Your ResumeTailored AI dashboard. Tailor your resume, generate cover letters, and track your job search." />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="icon" href="favicon.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&family=Satisfy&family=Caveat:wght@600&display=swap" rel="stylesheet" />
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
   <script>
@@ -164,6 +165,16 @@
       .rb-grid-2 { grid-template-columns: 1fr; }
       .resume-mode-toggle { flex-wrap: wrap; }
     }
+    /* ── Signature ── */
+    .sig-section { margin-bottom: 16px; }
+    .sig-label { font-size: 13px; font-weight: 700; color: var(--text); display: block; margin-bottom: 8px; }
+    .sig-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); box-sizing: border-box; transition: border-color 0.15s; }
+    .sig-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .sig-fonts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .sig-font-btn { padding: 6px 13px; border: 1.5px solid var(--border); border-radius: 7px; background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); font-family: inherit; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+    .sig-font-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+    .sig-font-btn:hover:not(.active) { border-color: #93c5fd; }
+    .sig-preview { margin-top: 10px; padding: 14px 20px; background: #fafafa; border: 1.5px solid var(--border); border-radius: 8px; }
   </style>
 </head>
 <body>
@@ -418,6 +429,18 @@
         <div class="email-row">
           <input type="email" id="email" placeholder="your@email.com (Pro subscribers enter email here)" />
           <span class="email-hint">Pro subscriber? Enter your email to unlock unlimited tailorings.</span>
+        </div>
+
+        <div class="sig-section">
+          <label class="sig-label">Your Signature <span style="font-weight:400;color:var(--muted);font-size:12px;">(optional — appears at the bottom of your document)</span></label>
+          <input class="sig-input" id="sigNameInput" type="text" placeholder="Type your name to generate a signature..." oninput="updateSigPreview()" />
+          <div class="sig-fonts" id="sigFontsRow">
+            <button class="sig-font-btn active" onclick="setSigFont('Dancing Script')" data-font="Dancing Script"><span style="font-family:'Dancing Script',cursive;font-size:16px;">Aa</span> Script</button>
+            <button class="sig-font-btn" onclick="setSigFont('Great Vibes')" data-font="Great Vibes"><span style="font-family:'Great Vibes',cursive;font-size:16px;">Aa</span> Elegant</button>
+            <button class="sig-font-btn" onclick="setSigFont('Satisfy')" data-font="Satisfy"><span style="font-family:'Satisfy',cursive;font-size:16px;">Aa</span> Classic</button>
+            <button class="sig-font-btn" onclick="setSigFont('Caveat')" data-font="Caveat"><span style="font-family:'Caveat',cursive;font-size:16px;">Aa</span> Casual</button>
+          </div>
+          <div class="sig-preview" id="sigPreview" style="display:none;"></div>
         </div>
 
         <button class="btn btn-primary btn-full btn-lg" id="tailorBtn" onclick="tailor()">
@@ -1030,6 +1053,34 @@
     let resumeInputMode = 'upload';
     let workEntryCount = 0;
     let eduEntryCount = 0;
+    let sigName = '';
+    let sigFont = 'Dancing Script';
+
+    // ── Signature helpers ──────────────────────────────────────────────────────
+    function setSigFont(font) {
+      sigFont = font;
+      document.querySelectorAll('.sig-font-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.font === font);
+      });
+      updateSigPreview();
+    }
+
+    function updateSigPreview() {
+      sigName = document.getElementById('sigNameInput').value.trim();
+      const preview = document.getElementById('sigPreview');
+      if (!sigName) { preview.style.display = 'none'; return; }
+      preview.style.display = '';
+      preview.innerHTML = `<span style="font-family:'${sigFont}',cursive;font-size:28px;color:#1e293b;line-height:1.2;">${sigName}</span>`;
+    }
+
+    function renderSignatureHtml(primaryColor) {
+      if (!sigName) return '';
+      const color = primaryColor || '#1e293b';
+      return `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;">
+        <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signature</p>
+        <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${sigName}</p>
+      </div>`;
+    }
 
     // ── Auth helpers ───────────────────────────────────────────────────────────
     function getToken() { return localStorage.getItem('rt_token') || ''; }
@@ -1488,7 +1539,13 @@
         document.getElementById('outputTitle').textContent = titles[selectedMode];
         lastRawResult = data.result;
         const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
-        document.getElementById('outputBox').innerHTML = renderAIOutput(data.result, selectedOutputTpl[tplCat], selectedMode);
+        const outputBox = document.getElementById('outputBox');
+        outputBox.innerHTML = renderAIOutput(data.result, selectedOutputTpl[tplCat], selectedMode);
+        if (sigName) {
+          const tplColors = OUT_TPLS[tplCat].find(t => t.id === selectedOutputTpl[tplCat]);
+          const primaryColor = tplColors ? tplColors.c.p : '#1e293b';
+          outputBox.innerHTML += renderSignatureHtml(primaryColor);
+        }
         document.getElementById('editBtn').style.display = 'inline-flex';
         document.getElementById('editBar').style.display = 'none';
         document.getElementById('outputBox').removeAttribute('contenteditable');
@@ -1730,11 +1787,11 @@
         { id:'r5', name:'Minimal',   free:false, c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
       ],
       cover: [
-        { id:'c1', name:'Formal',  free:true,  c:{p:'#1a237e',a:'#7986cb',l:'#e8eaf6'} },
-        { id:'c2', name:'Bold',    free:false, c:{p:'#1b3a4b',a:'#009688',l:'#e0f2f1'} },
-        { id:'c3', name:'Boxed',   free:false, c:{p:'#1b5e20',a:'#66bb6a',l:'#f1f8e9'} },
-        { id:'c4', name:'Split',   free:false, c:{p:'#4a1042',a:'#ab47bc',l:'#f3e5f5'} },
-        { id:'c5', name:'Clean',   free:false, c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
+        { id:'c1', name:'Formal',  free:true,  c:{p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'} },
+        { id:'c2', name:'Bold',    free:false, c:{p:'#7c2d12',a:'#fb923c',l:'#fff7ed'} },
+        { id:'c3', name:'Boxed',   free:false, c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
+        { id:'c4', name:'Split',   free:false, c:{p:'#312e81',a:'#818cf8',l:'#eef2ff'} },
+        { id:'c5', name:'Clean',   free:false, c:{p:'#1e293b',a:'#64748b',l:'#f8fafc'} },
       ]
     };
 
@@ -1742,8 +1799,8 @@
     const TPL_PREV_FNS = {
       r1: () => rClassic(_TC[0]), r2: () => rExecutive(_TC[1]),
       r3: () => rModern(_TC[2]),  r4: () => rSidebar(_TC[3]), r5: () => rMinimal(_TC[4]),
-      c1: () => cFormal(_TC[0]),  c2: () => cBold(_TC[1]),
-      c3: () => cBoxed(_TC[2]),   c4: () => cSplit(_TC[3]),   c5: () => cClean(_TC[4]),
+      c1: () => cFormal(_TC_COVER[0]),  c2: () => cBold(_TC_COVER[1]),
+      c3: () => cBoxed(_TC_COVER[2]),   c4: () => cSplit(_TC_COVER[3]),   c5: () => cClean(_TC_COVER[4]),
     };
 
     function renderTplPicker() {
@@ -1889,6 +1946,13 @@
       {p:'#1a1a2e',a:'#c62828',l:'#fff0f0'},
       {p:'#1b5e20',a:'#558b2f',l:'#f1f8e9'},
       {p:'#2e1a47',a:'#7b1fa2',l:'#f3e5f5'},
+    ];
+    const _TC_COVER = [
+      {p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'},
+      {p:'#7c2d12',a:'#fb923c',l:'#fff7ed'},
+      {p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'},
+      {p:'#312e81',a:'#818cf8',l:'#eef2ff'},
+      {p:'#1e293b',a:'#64748b',l:'#f8fafc'},
     ];
     const _RP = {
       name:'Jordan Mitchell', title:'Senior Software Engineer',
@@ -2266,10 +2330,10 @@ Aaliyah Washington`
 
     // ── Download helpers ───────────────────────────────────────────────────────
     function getOutputText() {
-      // If in edit mode, get the current edited text; otherwise use the stored raw result
       const box = document.getElementById('outputBox');
       if (box.contentEditable === 'true') return box.innerText || box.textContent;
-      return lastRawResult || box.innerText || box.textContent;
+      const base = lastRawResult || box.innerText || box.textContent;
+      return sigName ? base + '\n\n' + sigName : base;
     }
 
     function downloadTxt() {
