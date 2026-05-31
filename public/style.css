@@ -667,14 +667,19 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
 .faq-a { display: none; margin-top: 9px; font-size: 14px; color: var(--text-muted); line-height: 1.7; }
 
 /* ══ TEMPLATE GALLERY ════════════════════════════════════════════════════════════ */
-.template-gallery { display: flex; flex-wrap: wrap; gap: 14px; }
+.template-gallery-outer { overflow-x: hidden; }
+.template-gallery { display: flex; flex-wrap: nowrap; gap: 14px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; }
+.template-gallery::-webkit-scrollbar { height: 4px; }
+.template-gallery::-webkit-scrollbar-track { background: transparent; }
+.template-gallery::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
 .tpl-card {
   width: 160px; flex-shrink: 0; cursor: pointer; border-radius: 10px; overflow: hidden;
   transition: transform .18s, box-shadow .18s;
   border: 1.5px solid var(--border); background: #fff;
 }
-.tpl-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: #93c5fd; }
-.tpl-card.locked:hover { box-shadow: var(--shadow); border-color: var(--border); }
+.tpl-card:hover:not(.locked) { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: #93c5fd; }
+.tpl-card.locked { opacity: 0.75; cursor: pointer; }
+.tpl-card.locked:hover { transform: translateY(-4px); box-shadow: 0 6px 18px rgba(251,191,36,0.3); border-color: #fbbf24; }
 .tpl-preview-wrap {
   width: 160px; height: 207px; overflow: hidden; position: relative; background: #f5f5f5;
 }
@@ -693,7 +698,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; letter-spacing: .5px;
 }
 .tpl-lock-overlay {
-  position: absolute; inset: 0; background: rgba(15,23,42,0.68);
+  position: absolute; inset: 0; background: rgba(15,23,42,0.55);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px;
 }
 .tpl-pro-badge {
@@ -703,24 +708,41 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
 
 /* Template modal */
 .tpl-modal-overlay {
-  position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,0.6);
-  display: flex; align-items: center; justify-content: center; padding: 20px;
+  position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,0.7);
+  display: flex; align-items: stretch; justify-content: center;
 }
 .tpl-modal-box {
-  background: #fff; border: 1px solid var(--border); border-radius: 14px;
-  width: 100%; max-width: 880px; height: 90vh; display: flex; flex-direction: column;
-  overflow: hidden; box-shadow: var(--shadow-lg);
+  background: #fff; width: 100%; max-width: 900px; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+@media (min-width: 640px) {
+  .tpl-modal-overlay { padding: 20px; align-items: center; }
+  .tpl-modal-box { border: 1px solid var(--border); border-radius: 14px; height: 95vh; box-shadow: var(--shadow-lg); }
 }
 .tpl-modal-header {
   padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid var(--border); flex-shrink: 0;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; background: #fff;
 }
 .tpl-modal-title { font-size: 15px; font-weight: 800; color: var(--text); }
-.tpl-modal-body { flex: 1; overflow: auto; background: #f3f4f6; padding: 20px; }
+.tpl-modal-body { flex: 1; overflow: auto; background: #f3f4f6; padding: 20px; position: relative; }
 .tpl-modal-body iframe {
   width: 794px; min-height: 1123px; border: none;
   box-shadow: var(--shadow-lg); display: block; margin: 0 auto; background: #fff;
 }
+
+/* Full-screen lock overlay on modal */
+.tpl-modal-lock {
+  position: absolute; inset: 0; z-index: 10;
+  background: rgba(8,12,24,0.84);
+  backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 14px; padding: 32px; text-align: center;
+}
+.tpl-modal-lock-icon { font-size: 150px; line-height: 1; filter: drop-shadow(0 8px 32px rgba(0,0,0,0.6)); }
+.tpl-modal-lock-title { font-size: 36px; font-weight: 900; color: #fff; letter-spacing: -0.5px; }
+.tpl-modal-lock-sub { font-size: 16px; color: rgba(255,255,255,0.65); max-width: 380px; line-height: 1.6; margin-bottom: 6px; }
+.tpl-modal-lock-peek { font-size: 13px; color: rgba(255,255,255,0.4); cursor: pointer; margin-top: 8px; text-decoration: underline; }
+.tpl-modal-lock-peek:hover { color: rgba(255,255,255,0.7); }
 .tpl-free-note {
   background: var(--blue-light); border: 1px solid #bfdbfe;
   border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 14px;
