@@ -115,24 +115,29 @@
     }
     /* ── Output Template Picker ── */
     .tpl-pick-section { margin: 14px 0 16px; }
-    .tpl-pick-label { font-size: 11.5px; font-weight: 700; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .6px; }
-    .tpl-pick-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
-    .tpl-pick-row::-webkit-scrollbar { display: none; }
+    .tpl-pick-label { font-size: 11.5px; font-weight: 700; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .6px; display: flex; justify-content: space-between; align-items: center; }
+    .tpl-pick-label span { font-size: 10px; font-weight: 600; color: #9ca3af; letter-spacing: .3px; text-transform: none; }
+    .tpl-pick-outer { position: relative; }
+    .tpl-pick-outer::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 48px; background: linear-gradient(to right, transparent, #f9fafb); pointer-events: none; z-index: 1; border-radius: 0 6px 0 0; }
+    .tpl-pick-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; }
+    .tpl-pick-row::-webkit-scrollbar { height: 3px; }
+    .tpl-pick-row::-webkit-scrollbar-track { background: transparent; }
+    .tpl-pick-row::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
     .tpl-pick-item {
-      flex-shrink: 0; width: 110px; cursor: pointer; border-radius: 8px;
+      flex-shrink: 0; width: 100px; cursor: pointer; border-radius: 8px;
       border: 2px solid #e5e7eb; overflow: hidden; background: #fff;
       transition: border-color .15s, box-shadow .15s;
     }
     .tpl-pick-item:hover:not(.locked) { border-color: #93c5fd; }
     .tpl-pick-item.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
-    .tpl-pick-item.locked { opacity: .6; cursor: default; }
-    .tpl-pick-thumb { height: 138px; overflow: hidden; position: relative; background: #f9fafb; }
+    .tpl-pick-item.locked { opacity: .55; cursor: default; }
+    .tpl-pick-thumb { height: 126px; overflow: hidden; position: relative; background: #f9fafb; }
     .tpl-pick-thumb-inner { transform-origin: top left; position: absolute; top: 0; left: 0; pointer-events: none; }
-    .tpl-pick-name { font-size: 9.5px; font-weight: 700; text-align: center; padding: 4px 3px 5px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tpl-pick-name { font-size: 9px; font-weight: 700; text-align: center; padding: 4px 3px 5px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tpl-pick-badge { position: absolute; top: 3px; left: 3px; font-size: 7.5px; font-weight: 800; padding: 1px 4px; border-radius: 3px; line-height: 1.5; text-transform: uppercase; }
     .tpl-pick-badge-free { background: #dcfce7; color: #166534; }
     .tpl-pick-badge-pro { background: #1e1b4b; color: #e0e7ff; }
-    .tpl-pick-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.4); font-size: 16px; }
+    .tpl-pick-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.35); font-size: 15px; }
     /* ── Edit mode ── */
     .edit-bar { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 9px; margin-bottom: 10px; font-size: 13px; color: #1d4ed8; font-weight: 600; flex-wrap: wrap; }
     .edit-bar .eb-btn { padding: 5px 14px; border-radius: 7px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
@@ -317,8 +322,10 @@
 
         <!-- Template Picker -->
         <div class="tpl-pick-section" id="tplPickSection">
-          <div class="tpl-pick-label">Choose Your Template</div>
-          <div class="tpl-pick-row" id="tplPickRow"></div>
+          <div class="tpl-pick-label">Choose Your Template <span id="tplCountHint">↔ scroll to see all 20</span></div>
+          <div class="tpl-pick-outer">
+            <div class="tpl-pick-row" id="tplPickRow"></div>
+          </div>
         </div>
 
         <div class="inputs">
@@ -1781,28 +1788,63 @@
     // ── Output Template Picker ────────────────────────────────────────────────
     const OUT_TPLS = {
       resume: [
-        { id:'r1', name:'Classic',   free:true,  c:{p:'#1a237e',a:'#7986cb',l:'#e8eaf6'} },
-        { id:'r2', name:'Executive', free:false, c:{p:'#1b3a4b',a:'#009688',l:'#e0f2f1'} },
-        { id:'r3', name:'Modern',    free:false, c:{p:'#1b5e20',a:'#66bb6a',l:'#f1f8e9'} },
-        { id:'r4', name:'Sidebar',   free:false, c:{p:'#4a1042',a:'#ab47bc',l:'#f3e5f5'} },
-        { id:'r5', name:'Minimal',   free:false, c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
+        // Classic — serif, centered header, underline section headers
+        { id:'r1',  name:'Classic',          free:true,  serif:true,  style:'underline', layout:'rClassic',   c:{p:'#1a237e',a:'#5c6bc0',l:'#e8eaf6'} },
+        { id:'r2',  name:'Classic Forest',   free:false, serif:true,  style:'underline', layout:'rClassic',   c:{p:'#1b5e20',a:'#4caf50',l:'#e8f5e9'} },
+        { id:'r3',  name:'Classic Ruby',     free:false, serif:true,  style:'underline', layout:'rClassic',   c:{p:'#7f1d1d',a:'#ef4444',l:'#fef2f2'} },
+        { id:'r4',  name:'Classic Slate',    free:false, serif:true,  style:'underline', layout:'rClassic',   c:{p:'#263238',a:'#78909c',l:'#eceff1'} },
+        // Executive — sans-serif, left-border accent header, left-bar sections
+        { id:'r5',  name:'Executive',        free:false, serif:false, style:'left-bar',  layout:'rExecutive', c:{p:'#004d40',a:'#00897b',l:'#e0f2f1'} },
+        { id:'r6',  name:'Executive Amber',  free:false, serif:false, style:'left-bar',  layout:'rExecutive', c:{p:'#3e2723',a:'#f59e0b',l:'#fffbeb'} },
+        { id:'r7',  name:'Executive Indigo', free:false, serif:false, style:'left-bar',  layout:'rExecutive', c:{p:'#1a0050',a:'#7c3aed',l:'#ede9fe'} },
+        { id:'r8',  name:'Executive Slate',  free:false, serif:false, style:'left-bar',  layout:'rExecutive', c:{p:'#1c2333',a:'#607d8b',l:'#eceff1'} },
+        // Modern — sans-serif, colored header bar, icon-bar sections
+        { id:'r9',  name:'Modern',           free:false, serif:false, style:'icon-bar',  layout:'rModern',    c:{p:'#1b5e20',a:'#66bb6a',l:'#f1f8e9'} },
+        { id:'r10', name:'Modern Ocean',     free:false, serif:false, style:'icon-bar',  layout:'rModern',    c:{p:'#01579b',a:'#29b6f6',l:'#e1f5fe'} },
+        { id:'r11', name:'Modern Coral',     free:false, serif:false, style:'icon-bar',  layout:'rModern',    c:{p:'#bf360c',a:'#ff7043',l:'#fff3e0'} },
+        { id:'r12', name:'Modern Violet',    free:false, serif:false, style:'icon-bar',  layout:'rModern',    c:{p:'#4a148c',a:'#ab47bc',l:'#f3e5f5'} },
+        // Sidebar — sans-serif, colored sidebar column
+        { id:'r13', name:'Sidebar',          free:false, serif:false, style:'underline', layout:'rSidebar',   c:{p:'#4a1042',a:'#ab47bc',l:'#f3e5f5'} },
+        { id:'r14', name:'Sidebar Navy',     free:false, serif:false, style:'underline', layout:'rSidebar',   c:{p:'#0a192f',a:'#4a90d9',l:'#e8f0fe'} },
+        { id:'r15', name:'Sidebar Forest',   free:false, serif:false, style:'underline', layout:'rSidebar',   c:{p:'#052e16',a:'#22c55e',l:'#f0fdf4'} },
+        { id:'r16', name:'Sidebar Crimson',  free:false, serif:false, style:'underline', layout:'rSidebar',   c:{p:'#7f1d1d',a:'#f87171',l:'#fef2f2'} },
+        // Minimal — serif, ultra-clean, wide-spaced section headers
+        { id:'r17', name:'Minimal',          free:false, serif:true,  style:'minimal',   layout:'rMinimal',   c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
+        { id:'r18', name:'Minimal Midnight', free:false, serif:true,  style:'minimal',   layout:'rMinimal',   c:{p:'#0d1117',a:'#4299e1',l:'#ebf8ff'} },
+        { id:'r19', name:'Minimal Sage',     free:false, serif:true,  style:'minimal',   layout:'rMinimal',   c:{p:'#2d4a22',a:'#7cb342',l:'#f9fbe7'} },
+        { id:'r20', name:'Minimal Graphite', free:false, serif:true,  style:'minimal',   layout:'rMinimal',   c:{p:'#212121',a:'#9e9e9e',l:'#fafafa'} },
       ],
       cover: [
-        { id:'c1', name:'Formal',  free:true,  c:{p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'} },
-        { id:'c2', name:'Bold',    free:false, c:{p:'#7c2d12',a:'#fb923c',l:'#fff7ed'} },
-        { id:'c3', name:'Boxed',   free:false, c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
-        { id:'c4', name:'Split',   free:false, c:{p:'#312e81',a:'#818cf8',l:'#eef2ff'} },
-        { id:'c5', name:'Clean',   free:false, c:{p:'#1e293b',a:'#64748b',l:'#f8fafc'} },
+        // Formal — serif, classic business letter header
+        { id:'c1',  name:'Formal',           free:true,  serif:true,  style:'underline', layout:'cFormal', c:{p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'} },
+        { id:'c2',  name:'Formal Forest',    free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#14532d',a:'#22c55e',l:'#f0fdf4'} },
+        { id:'c3',  name:'Formal Ruby',      free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#7f1d1d',a:'#f87171',l:'#fef2f2'} },
+        { id:'c4',  name:'Formal Slate',     free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#334155',a:'#94a3b8',l:'#f8fafc'} },
+        // Bold — sans-serif, left-accent letterhead, info row
+        { id:'c5',  name:'Bold',             free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#7c2d12',a:'#fb923c',l:'#fff7ed'} },
+        { id:'c6',  name:'Bold Navy',        free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#172554',a:'#60a5fa',l:'#eff6ff'} },
+        { id:'c7',  name:'Bold Teal',        free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
+        { id:'c8',  name:'Bold Violet',      free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#3b0764',a:'#c084fc',l:'#faf5ff'} },
+        // Boxed — serif, bordered letterhead box
+        { id:'c9',  name:'Boxed',            free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
+        { id:'c10', name:'Boxed Cobalt',     free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#1e3a5f',a:'#60a5fa',l:'#dbeafe'} },
+        { id:'c11', name:'Boxed Burgundy',   free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#4c0519',a:'#f43f5e',l:'#fff1f2'} },
+        { id:'c12', name:'Boxed Forest',     free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#14532d',a:'#4ade80',l:'#f0fdf4'} },
+        // Split — sans-serif, two-column horizontal header
+        { id:'c13', name:'Split',            free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#312e81',a:'#818cf8',l:'#eef2ff'} },
+        { id:'c14', name:'Split Forest',     free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#052e16',a:'#16a34a',l:'#dcfce7'} },
+        { id:'c15', name:'Split Amber',      free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#78350f',a:'#fbbf24',l:'#fffbeb'} },
+        { id:'c16', name:'Split Charcoal',   free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#1c1917',a:'#78716c',l:'#fafaf9'} },
+        // Clean — sans-serif, ultra-minimal letter
+        { id:'c17', name:'Clean',            free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#1e293b',a:'#64748b',l:'#f8fafc'} },
+        { id:'c18', name:'Clean Ocean',      free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#0c4a6e',a:'#0284c7',l:'#e0f2fe'} },
+        { id:'c19', name:'Clean Sage',       free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#1a2e05',a:'#65a30d',l:'#ecfccb'} },
+        { id:'c20', name:'Clean Rose',       free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#4c0519',a:'#fb7185',l:'#fff1f2'} },
       ]
     };
 
-    // Map OUT_TPLS ids to the existing sample template functions for thumbnail previews
-    const TPL_PREV_FNS = {
-      r1: () => rClassic(_TC[0]), r2: () => rExecutive(_TC[1]),
-      r3: () => rModern(_TC[2]),  r4: () => rSidebar(_TC[3]), r5: () => rMinimal(_TC[4]),
-      c1: () => cFormal(_TC_COVER[0]),  c2: () => cBold(_TC_COVER[1]),
-      c3: () => cBoxed(_TC_COVER[2]),   c4: () => cSplit(_TC_COVER[3]),   c5: () => cClean(_TC_COVER[4]),
-    };
+    // TPL_PREV_FNS is populated after layout functions are defined below
+    const TPL_PREV_FNS = {};
 
     function renderTplPicker() {
       const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
@@ -1830,9 +1872,9 @@
       requestAnimationFrame(() => {
         list.forEach(tpl => {
           const inner = document.getElementById('tpi-' + tpl.id);
-          if (inner) inner.style.transform = `scale(${110/794})`;
+          if (inner) inner.style.transform = `scale(${100/794})`;
           const thumb = inner && inner.parentElement;
-          if (thumb) thumb.style.height = Math.round(1123 * 110/794) + 'px';
+          if (thumb) thumb.style.height = Math.round(1123 * 100/794) + 'px';
         });
       });
     }
@@ -1850,8 +1892,7 @@
       const cat = mode === 'cover_letter' ? 'cover' : 'resume';
       const tpl = OUT_TPLS[cat].find(t => t.id === tplId) || OUT_TPLS[cat][0];
       const c = tpl.c;
-      const isSerif = ['r1','r5','c1','c3'].includes(tplId);
-      const font = isSerif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
+      const font = tpl.serif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
       const lines = text.split('\n');
       let html = '';
       let firstLine = true;
@@ -1881,11 +1922,11 @@
         // Section header: ALL CAPS, 2–50 chars, letters + spaces/&/-/( only
         const isHdr = t.length >= 2 && t.length <= 50 && /^[A-Z][A-Z\s&\/\(\)\-:]+$/.test(t);
         if (isHdr) {
-          if (tplId === 'r2' || tplId === 'c2') {
+          if (tpl.style === 'left-bar') {
             html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:8px;margin:18px 0 7px;">${escHtml(t)}</div>`;
-          } else if (tplId === 'r3' || tplId === 'c4') {
+          } else if (tpl.style === 'icon-bar') {
             html += `<div style="display:flex;align-items:center;gap:8px;margin:18px 0 7px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
-          } else if (tplId === 'r5' || tplId === 'c5') {
+          } else if (tpl.style === 'minimal') {
             html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:20px 0 7px;">${escHtml(t)}</div>`;
           } else {
             html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:3px;margin:18px 0 7px;">${escHtml(t)}</div>`;
@@ -2020,6 +2061,12 @@
 
     const resumeTemplates=_RL.flatMap((fn,li)=>_TC.map((c,ci)=>({id:li*5+ci+1,name:_RN[li*5+ci],fn,c,free:li===0&&ci<2})));
     const coverTemplates=_CL.flatMap((fn,li)=>_TC.map((c,ci)=>({id:li*5+ci+1,name:_CN[li*5+ci],fn,c,free:li===0&&ci<2})));
+
+    // Populate TPL_PREV_FNS from OUT_TPLS now that all layout functions are defined
+    {
+      const _lmap={rClassic,rExecutive,rModern,rSidebar,rMinimal,cFormal,cBold,cBoxed,cSplit,cClean};
+      [...OUT_TPLS.resume,...OUT_TPLS.cover].forEach(t=>{TPL_PREV_FNS[t.id]=()=>_lmap[t.layout](t.c);});
+    }
 
     let _activeType='resume';
 
