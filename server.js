@@ -26,17 +26,20 @@ if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID 
 
 // ─── Email helper ─────────────────────────────────────────────────────────────
 // Priority: Resend (RESEND_API_KEY) → SMTP (SMTP_USER + SMTP_PASS) → console log
-async function sendEmail({ to, subject, html }) {
-  const resendKey = process.env.RESEND_API_KEY;
-  const smtpUser  = process.env.SMTP_USER;
-  const smtpPass  = process.env.SMTP_PASS;
-  const fromAddr  = process.env.EMAIL_FROM || (smtpUser ? smtpUser : 'support@resumetailored.com');
+async function sendEmail({ to, subject, html, replyTo }) {
+  const resendKey  = process.env.RESEND_API_KEY;
+  const smtpUser   = process.env.SMTP_USER;
+  const smtpPass   = process.env.SMTP_PASS;
+  const fromAddr   = process.env.EMAIL_FROM || (smtpUser ? smtpUser : 'support@resumetailored.com');
+  const ownerEmail = process.env.OWNER_EMAIL || 'marvinperson11@gmail.com';
+  // Always set a Reply-To so replies don't bounce back to the sending domain
+  const effectiveReplyTo = replyTo || ownerEmail;
 
   if (resendKey) {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
-      body: JSON.stringify({ from: `ResumeTailor AI <${fromAddr}>`, to, subject, html })
+      body: JSON.stringify({ from: `ResumeTailor AI <${fromAddr}>`, to, subject, html, reply_to: effectiveReplyTo })
     });
     if (r.ok) { console.log(`[Resend] Email sent to ${to}`); return; }
     const err = await r.json().catch(() => ({}));
@@ -51,7 +54,7 @@ async function sendEmail({ to, subject, html }) {
       secure: process.env.SMTP_SECURE === 'true',
       auth: { user: smtpUser, pass: smtpPass }
     });
-    await transporter.sendMail({ from: `ResumeTailor AI <${fromAddr || smtpUser}>`, to, subject, html });
+    await transporter.sendMail({ from: `ResumeTailor AI <${fromAddr || smtpUser}>`, to, subject, html, replyTo: effectiveReplyTo });
     console.log(`[SMTP] Email sent to ${to}`);
     return;
   }
@@ -830,6 +833,7 @@ app.post('/api/contact', async (req, res) => {
     await sendEmail({
       to: ownerEmail,
       subject: `[ResumeTailor Support] ${subject || 'New message from ' + name}`,
+      replyTo: email,
       html: `
             <h2>New Support Message</h2>
             <p><strong>From:</strong> ${name} (${email})</p>
