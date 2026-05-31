@@ -444,10 +444,6 @@
           <div class="sig-preview" id="sigPreview" style="display:none;"></div>
         </div>
 
-        <div class="email-row">
-          <input type="email" id="email" placeholder="Pro subscriber email (optional — unlocks unlimited runs)" />
-          <span class="email-hint">Already Pro? Enter your email above to unlock unlimited tailorings.</span>
-        </div>
 
         <button class="btn btn-primary btn-full btn-lg" id="tailorBtn" onclick="tailor()">
           Tailor My Resume →
@@ -1305,7 +1301,7 @@
 
     // ── Status check ───────────────────────────────────────────────────────────
     async function checkStatus() {
-      const email = document.getElementById('email').value.trim() || getStoredEmail();
+      const email = getStoredEmail();
       try {
         const res = await fetch(`/api/status?email=${encodeURIComponent(email)}`);
         const data = await res.json();
@@ -1344,7 +1340,6 @@
       } catch(e) {}
     }
 
-    document.getElementById('email').addEventListener('blur', checkStatus);
     checkStatus();
 
     // ── Resume build form ──────────────────────────────────────────────────────
@@ -1515,7 +1510,7 @@
         if (!resume && selectedMode !== 'cover_letter') return showToast('Please paste your resume or upload a file.');
       }
       const job = document.getElementById('job').value.trim();
-      const email = document.getElementById('email').value.trim();
+      const email = getStoredEmail();
 
       if (!job) return showToast('Please paste the job posting.');
 
@@ -1672,7 +1667,7 @@
 
     // ── Check-in ───────────────────────────────────────────────────────────────
     async function loadCheckIn() {
-      const email = document.getElementById('email').value.trim();
+      const email = getStoredEmail();
       try {
         const res = await fetch(`/api/checkin?email=${encodeURIComponent(email)}`);
         const data = await res.json();
@@ -1715,8 +1710,8 @@
 
     // ── Subscribe ──────────────────────────────────────────────────────────────
     async function subscribe() {
-      const email = document.getElementById('email').value.trim() || getStoredEmail();
-      if (!email) { showToast('Enter your email first.'); showTab('tailor'); document.getElementById('email').focus(); return; }
+      const email = getStoredEmail();
+      if (!email) { showToast('Please log in to subscribe.'); return; }
 
       try {
         const res = await fetch('/api/subscribe', {
