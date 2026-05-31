@@ -374,6 +374,40 @@
               </div>
 
             </div>
+
+            <!-- COVER LETTER BUILD PANE -->
+            <div id="coverBuildPane" style="display:none;">
+
+              <div class="rb-section">
+                <div class="rb-section-title">Your Information</div>
+                <div class="rb-grid-2">
+                  <input type="text"  class="rb-input" id="clName"     placeholder="Full Name *" />
+                  <input type="email" class="rb-input" id="clEmail"    placeholder="Email Address *" />
+                  <input type="tel"   class="rb-input" id="clPhone"    placeholder="Phone Number" />
+                  <input type="text"  class="rb-input" id="clLocation" placeholder="City, State" />
+                </div>
+              </div>
+
+              <div class="rb-section">
+                <div class="rb-section-title">Application Details</div>
+                <div class="rb-grid-2">
+                  <input type="text" class="rb-input" id="clCompany" placeholder="Company Name *" />
+                  <input type="text" class="rb-input" id="clRole"    placeholder="Job Title / Role *" />
+                  <input type="text" class="rb-input" id="clManager" placeholder="Hiring Manager Name (optional)" style="grid-column:1/-1;" />
+                </div>
+              </div>
+
+              <div class="rb-section">
+                <div class="rb-section-title">Key Highlights to Mention <span class="rb-optional">(optional)</span></div>
+                <textarea class="rb-textarea" id="clHighlights" placeholder="List accomplishments, skills, or experiences you want the letter to highlight — one per line. The AI will weave these in naturally.&#10;&#10;e.g.&#10;Led a team of 8 and grew revenue 40%&#10;5 years of enterprise sales experience&#10;Built an email list of 85,000 subscribers"></textarea>
+              </div>
+
+              <div class="rb-section">
+                <div class="rb-section-title">Why This Company / Role <span class="rb-optional">(optional)</span></div>
+                <textarea class="rb-textarea" id="clMotivation" placeholder="What excites you about this specific company or role? The AI will make your letter feel personal and genuine rather than generic."></textarea>
+              </div>
+
+            </div>
           </div>
           <div class="field">
             <label for="job">Job Posting</label>
@@ -1206,6 +1240,9 @@
           ? 'Paste your cover letter draft here (optional), OR click Upload File to import a file. Leave blank to generate from scratch.'
           : 'Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file.';
         document.getElementById('tailorBtn').textContent = isCover ? 'Generate Cover Letter →' : 'Tailor My Resume →';
+        document.getElementById('rmodeBuild').textContent = isCover ? '✏️ Input Info' : '✏️ Fill Out Form';
+        // If already in build mode, switch to the correct pane for the new mode
+        if (resumeInputMode === 'build') setResumeMode('build');
       });
     });
 
@@ -1256,12 +1293,14 @@
     // ── Resume build form ──────────────────────────────────────────────────────
     function setResumeMode(mode) {
       resumeInputMode = mode;
+      const isCover = selectedMode === 'cover_letter';
       document.getElementById('resumeUploadPane').style.display = mode === 'upload' ? '' : 'none';
-      document.getElementById('resumeBuildPane').style.display = mode === 'build' ? '' : 'none';
+      document.getElementById('resumeBuildPane').style.display  = (mode === 'build' && !isCover) ? '' : 'none';
+      document.getElementById('coverBuildPane').style.display   = (mode === 'build' && isCover)  ? '' : 'none';
       document.getElementById('rmodeUpload').classList.toggle('active', mode === 'upload');
       document.getElementById('rmodeBuild').classList.toggle('active', mode === 'build');
-      if (mode === 'build' && workEntryCount === 0) addWorkEntry();
-      if (mode === 'build' && eduEntryCount === 0) addEduEntry();
+      if (mode === 'build' && !isCover && workEntryCount === 0) addWorkEntry();
+      if (mode === 'build' && !isCover && eduEntryCount === 0) addEduEntry();
     }
 
     function addWorkEntry() {
@@ -1380,11 +1419,39 @@
       return text.trim();
     }
 
+    function buildCoverLetterText() {
+      const name       = document.getElementById('clName').value.trim();
+      const email      = document.getElementById('clEmail').value.trim();
+      const phone      = document.getElementById('clPhone').value.trim();
+      const location   = document.getElementById('clLocation').value.trim();
+      const company    = document.getElementById('clCompany').value.trim();
+      const role       = document.getElementById('clRole').value.trim();
+      const manager    = document.getElementById('clManager').value.trim();
+      const highlights = document.getElementById('clHighlights').value.trim();
+      const motivation = document.getElementById('clMotivation').value.trim();
+
+      if (!name)    { showToast('Please enter your full name.');    return null; }
+      if (!email)   { showToast('Please enter your email address.'); return null; }
+      if (!company) { showToast('Please enter the company name.');   return null; }
+      if (!role)    { showToast('Please enter the job title/role.'); return null; }
+
+      let text = 'APPLICANT: ' + name + '\n';
+      const contact = [email, phone, location].filter(Boolean);
+      if (contact.length) text += 'CONTACT: ' + contact.join(' | ') + '\n';
+      text += '\n';
+      text += 'APPLYING FOR: ' + role + ' at ' + company + '\n';
+      text += 'ADDRESSING: ' + (manager || 'Hiring Manager') + '\n';
+      if (highlights) text += '\nKEY HIGHLIGHTS TO INCLUDE:\n' + highlights + '\n';
+      if (motivation) text += '\nWHY THIS COMPANY/ROLE:\n' + motivation + '\n';
+
+      return text.trim();
+    }
+
     // ── Tailor resume ──────────────────────────────────────────────────────────
     async function tailor() {
       let resume;
       if (resumeInputMode === 'build') {
-        resume = buildResumeText();
+        resume = selectedMode === 'cover_letter' ? buildCoverLetterText() : buildResumeText();
         if (!resume) return;
       } else {
         resume = document.getElementById('resume').value.trim();
