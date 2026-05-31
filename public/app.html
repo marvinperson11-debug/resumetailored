@@ -118,14 +118,14 @@
     .tpl-pick-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
     .tpl-pick-row::-webkit-scrollbar { display: none; }
     .tpl-pick-item {
-      flex-shrink: 0; width: 82px; cursor: pointer; border-radius: 8px;
+      flex-shrink: 0; width: 110px; cursor: pointer; border-radius: 8px;
       border: 2px solid #e5e7eb; overflow: hidden; background: #fff;
       transition: border-color .15s, box-shadow .15s;
     }
     .tpl-pick-item:hover:not(.locked) { border-color: #93c5fd; }
     .tpl-pick-item.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
     .tpl-pick-item.locked { opacity: .6; cursor: default; }
-    .tpl-pick-thumb { height: 54px; overflow: hidden; position: relative; background: #f9fafb; }
+    .tpl-pick-thumb { height: 138px; overflow: hidden; position: relative; background: #f9fafb; }
     .tpl-pick-thumb-inner { transform-origin: top left; position: absolute; top: 0; left: 0; pointer-events: none; }
     .tpl-pick-name { font-size: 9.5px; font-weight: 700; text-align: center; padding: 4px 3px 5px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .tpl-pick-badge { position: absolute; top: 3px; left: 3px; font-size: 7.5px; font-weight: 800; padding: 1px 4px; border-radius: 3px; line-height: 1.5; text-transform: uppercase; }
@@ -300,9 +300,8 @@
 
         <div class="mode-row">
           <span style="font-weight:600;font-size:13px;align-self:center;color:var(--muted);">Generate:</span>
-          <button class="mode-btn active" data-mode="resume">Resume Only</button>
-          <button class="mode-btn" data-mode="cover_letter">Cover Letter Only</button>
-          <button class="mode-btn" data-mode="both">Resume + Cover Letter</button>
+          <button class="mode-btn active" data-mode="resume">Resume</button>
+          <button class="mode-btn" data-mode="cover_letter">Cover Letter</button>
         </div>
 
         <!-- Template Picker -->
@@ -314,7 +313,7 @@
         <div class="inputs">
           <div class="field">
             <div class="field-header">
-              <label>Your Resume</label>
+              <label id="resumeFieldLabel">Your Resume</label>
               <div class="resume-mode-toggle">
                 <button class="rmode-btn active" id="rmodeUpload" onclick="setResumeMode('upload')">⬆ Upload / Paste</button>
                 <button class="rmode-btn" id="rmodeBuild" onclick="setResumeMode('build')">✏️ Fill Out Form</button>
@@ -1201,6 +1200,12 @@
         btn.classList.add('active');
         selectedMode = btn.dataset.mode;
         renderTplPicker();
+        const isCover = selectedMode === 'cover_letter';
+        document.getElementById('resumeFieldLabel').textContent = isCover ? 'Your Cover Letter Draft' : 'Your Resume';
+        document.getElementById('resume').placeholder = isCover
+          ? 'Paste your cover letter draft here (optional), OR click Upload File to import a file. Leave blank to generate from scratch.'
+          : 'Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file.';
+        document.getElementById('tailorBtn').textContent = isCover ? 'Generate Cover Letter →' : 'Tailor My Resume →';
       });
     });
 
@@ -1383,7 +1388,7 @@
         if (!resume) return;
       } else {
         resume = document.getElementById('resume').value.trim();
-        if (!resume) return showToast('Please paste your resume or upload a file.');
+        if (!resume && selectedMode !== 'cover_letter') return showToast('Please paste your resume or upload a file.');
       }
       const job = document.getElementById('job').value.trim();
       const email = document.getElementById('email').value.trim();
@@ -1700,9 +1705,9 @@
       requestAnimationFrame(() => {
         list.forEach(tpl => {
           const inner = document.getElementById('tpi-' + tpl.id);
-          if (inner) inner.style.transform = `scale(${82/794})`;
+          if (inner) inner.style.transform = `scale(${110/794})`;
           const thumb = inner && inner.parentElement;
-          if (thumb) thumb.style.height = Math.round(1123 * 82/794) + 'px';
+          if (thumb) thumb.style.height = Math.round(1123 * 110/794) + 'px';
         });
       });
     }
