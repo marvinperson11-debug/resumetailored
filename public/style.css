@@ -195,19 +195,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
 .tpl-picker-row { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; margin-bottom: 6px; }
 .tpl-picker-row::-webkit-scrollbar { display: none; }
 .tpl-picker-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; color: var(--text-muted); margin-bottom: 10px; }
-.tpl-card {
-  flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 5px;
-  padding: 8px 12px; border-radius: 8px; cursor: pointer; min-width: 80px;
-  border: 1.5px solid var(--border); background: #fff;
-  transition: all .15s;
-}
-.tpl-card:hover:not(.locked) { border-color: var(--blue); background: var(--blue-light); }
-.tpl-card.active { border-color: var(--blue); background: var(--blue-light); }
-.tpl-card.locked { opacity: .5; cursor: default; }
-.tpl-swatch { width: 28px; height: 28px; border-radius: 5px; }
-.tpl-card-name { font-size: 10.5px; font-weight: 700; color: var(--text); text-align: center; white-space: nowrap; }
-.tpl-card-badge { font-size: 9px; font-weight: 800; letter-spacing: .4px; color: var(--blue); }
-.tpl-card-lock { font-size: 12px; }
+
 
 /* ══ RESUME DOCUMENT BASE ═════════════════════════════════════════════════════ */
 .resume-doc, .cover-doc {
@@ -667,7 +655,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
 .faq-a { display: none; margin-top: 9px; font-size: 14px; color: var(--text-muted); line-height: 1.7; }
 
 /* ══ TEMPLATE GALLERY ════════════════════════════════════════════════════════════ */
-.template-gallery-outer { overflow-x: hidden; }
+.template-gallery-outer { overflow-x: hidden; width: 100%; max-width: 100%; }
 .template-gallery { display: flex; flex-wrap: nowrap; gap: 14px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; }
 .template-gallery::-webkit-scrollbar { height: 4px; }
 .template-gallery::-webkit-scrollbar-track { background: transparent; }
@@ -749,8 +737,6 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
 }
 @media (max-width: 600px) {
-  .tpl-card { width: calc(50% - 7px); }
-  .tpl-preview-wrap { width: 100%; }
   .tpl-modal-body iframe { width: 100%; min-width: 0; }
 }
 
