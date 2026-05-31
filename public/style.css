@@ -23,6 +23,7 @@
   --glass-border:#e5e7eb;
 }
 
+html { overflow-x: hidden; }
 body {
   font-family: 'Inter', sans-serif;
   color: var(--text);
@@ -85,7 +86,7 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* ══ DASHBOARD ══════════════════════════════════════════════════════════════════ */
-.dashboard { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 64px); }
+.dashboard { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 64px); max-width: 100vw; overflow-x: hidden; }
 
 /* ── Sidebar ── */
 .sidebar {
@@ -655,7 +656,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
 .faq-a { display: none; margin-top: 9px; font-size: 14px; color: var(--text-muted); line-height: 1.7; }
 
 /* ══ TEMPLATE GALLERY ════════════════════════════════════════════════════════════ */
-.template-gallery-outer { overflow-x: hidden; width: 100%; max-width: 100%; }
+.template-gallery-outer { overflow: hidden; width: 100%; max-width: 100%; }
 .template-gallery { display: flex; flex-wrap: nowrap; gap: 14px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; }
 .template-gallery::-webkit-scrollbar { height: 4px; }
 .template-gallery::-webkit-scrollbar-track { background: transparent; }
