@@ -941,12 +941,12 @@ app.get('/api/generate-promo-video', async (req, res) => {
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-gpu',
-        '--window-size=1280,720'
+        '--window-size=1080,1920'
       ]
     });
 
     const page = await browser.newPage();
-    await page.setViewport({ width: 1280, height: 720 });
+    await page.setViewport({ width: 1080, height: 1920 });
 
     const PORT_INNER = process.env.PORT || 3000;
     await page.goto(`http://localhost:${PORT_INNER}/promo-slides.html`, {
