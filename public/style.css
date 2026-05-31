@@ -62,7 +62,7 @@ a { text-decoration: none; color: inherit; }
 }
 .btn-ghost:hover { border-color: #9ca3af; color: var(--text); }
 .btn-lg { padding: 14px 32px; font-size: 16px; border-radius: 10px; }
-.btn-full { width: 100%; }
+.btn-full { display: flex; width: 100%; }
 .btn:disabled { opacity: .45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
 /* ══ NAV ════════════════════════════════════════════════════════════════════════ */
@@ -658,8 +658,8 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
 .faq-a { display: none; margin-top: 9px; font-size: 14px; color: var(--text-muted); line-height: 1.7; }
 
 /* ══ TEMPLATE GALLERY ════════════════════════════════════════════════════════════ */
-.template-gallery-outer { overflow: hidden; width: 100%; max-width: 100%; }
-.template-gallery { display: flex; flex-wrap: nowrap; gap: 14px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; }
+.template-gallery-outer { overflow: clip; width: 100%; max-width: 100%; }
+.template-gallery { display: flex; flex-wrap: nowrap; gap: 14px; overflow-x: auto; padding-bottom: 10px; scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; -webkit-overflow-scrolling: touch; }
 .template-gallery::-webkit-scrollbar { height: 4px; }
 .template-gallery::-webkit-scrollbar-track { background: transparent; }
 .template-gallery::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
