@@ -86,7 +86,7 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* ══ DASHBOARD ══════════════════════════════════════════════════════════════════ */
-.dashboard { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 64px); }
+.dashboard { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 64px); max-width: 1600px; margin: 0 auto; }
 
 /* ── Sidebar ── */
 .sidebar {
@@ -574,10 +574,10 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   /* ── Bottom navigation bar ── */
   .sidebar {
     position: fixed; bottom: 0; left: 0; right: 0; top: auto;
-    z-index: 90; height: 56px;
+    z-index: 90; height: calc(56px + env(safe-area-inset-bottom));
     flex-direction: row; flex-wrap: nowrap;
     overflow-x: auto; overflow-y: hidden;
-    padding: 0; gap: 0;
+    padding: 0 0 env(safe-area-inset-bottom); gap: 0;
     border-top: 1px solid #e5e7eb; border-bottom: none; border-right: none;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.07);
     scrollbar-width: none;
@@ -606,7 +606,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   .nav-pro-full { display: none; }
   .sidebar-pro-box { display: none; }
 
-  .dash-main { padding: 18px 14px 72px; }
+  .dash-main { padding: 18px 14px calc(72px + env(safe-area-inset-bottom)); }
   .panel-header { margin-bottom: 18px; }
   .panel-header h1 { font-size: 20px; }
   .panel-header p { font-size: 14px; }
@@ -630,7 +630,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   .salary-resource-card { padding: 18px; }
   .help-form-card, .help-faq-card { padding: 18px; }
   .upsell { padding: 16px 18px; }
-  .toast { bottom: 70px; right: 14px; left: 14px; text-align: center; font-size: 13px; }
+  .toast { bottom: calc(70px + env(safe-area-inset-bottom)); right: 14px; left: 14px; text-align: center; font-size: 13px; }
   .auth-card { padding: 26px 20px; border-radius: 14px; }
   .auth-heading { font-size: 20px; }
 }
