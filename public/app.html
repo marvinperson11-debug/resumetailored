@@ -941,7 +941,9 @@
           <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">Unlock All 50 →</button>
         </div>
 
-        <div class="template-gallery" id="templateGallery"></div>
+        <div class="template-gallery-outer">
+          <div class="template-gallery" id="templateGallery"></div>
+        </div>
       </div>
 
       <!-- ═══ TAB: CANCEL ANYTIME ═══ -->
@@ -1045,6 +1047,13 @@
         </div>
       </div>
       <div class="tpl-modal-body">
+        <div class="tpl-modal-lock" id="tplModalLock" style="display:none;">
+          <div class="tpl-modal-lock-icon">🔒</div>
+          <div class="tpl-modal-lock-title">Pro Template</div>
+          <div class="tpl-modal-lock-sub">Upgrade to Pro to unlock all 20 premium templates per type and unlimited tailorings.</div>
+          <button class="btn btn-primary" style="font-size:16px;padding:14px 36px;" onclick="startPro()">Upgrade to Pro — $19/mo →</button>
+          <div class="tpl-modal-lock-peek" onclick="document.getElementById('tplModalLock').style.display='none'">View preview only ↓</div>
+        </div>
         <iframe id="tplFrame" sandbox="allow-same-origin" style="width:794px;min-height:1123px;border:none;display:block;margin:0 auto;background:#fff;"></iframe>
       </div>
     </div>
@@ -2086,7 +2095,7 @@
         const badge=tpl.free
           ?`<div class="tpl-free-badge">FREE</div>`
           :`<div class="tpl-lock-overlay"><span style="font-size:20px;">🔒</span><span class="tpl-pro-badge">PRO</span></div>`;
-        return `<div class="tpl-card${locked?' locked':''}" onclick="${locked?'showTplLock()':'openTpl(\''+_activeType+'\','+tpl.id+')'}">
+        return `<div class="tpl-card${locked?' locked':''}" onclick="openTpl('${_activeType}',${tpl.id})">
           <div class="tpl-preview-wrap">
             <div class="tpl-preview-inner">${html}</div>
             ${badge}
@@ -2119,6 +2128,8 @@
       const frame=document.getElementById('tplFrame');
       const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#fff;}</style></head><body>${tpl.fn(tpl.c)}</body></html>`;
       frame.srcdoc=html;
+      const locked=!tpl.free&&!isSubscriberFlag;
+      document.getElementById('tplModalLock').style.display=locked?'flex':'none';
       document.getElementById('tplModal').style.display='flex';
     }
 
