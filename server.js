@@ -851,5 +851,172 @@ app.post('/api/contact', async (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/app', (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
 
+// ─── Promo video: ambient music generator ─────────────────────────────────────
+function generateAmbientMusic(durationSeconds, sampleRate = 44100) {
+  const numSamples = Math.floor(durationSeconds * sampleRate);
+  const bufferSize = 44 + numSamples * 2;
+  const buf = Buffer.alloc(bufferSize);
+
+  // RIFF WAV header (44 bytes)
+  buf.write('RIFF', 0, 'ascii');
+  buf.writeUInt32LE(bufferSize - 8, 4);          // ChunkSize
+  buf.write('WAVE', 8, 'ascii');
+  buf.write('fmt ', 12, 'ascii');
+  buf.writeUInt32LE(16, 16);                      // Subchunk1Size (PCM)
+  buf.writeUInt16LE(1, 20);                       // AudioFormat = PCM
+  buf.writeUInt16LE(1, 22);                       // NumChannels = mono
+  buf.writeUInt32LE(sampleRate, 24);              // SampleRate
+  buf.writeUInt32LE(sampleRate * 2, 28);          // ByteRate (sampleRate * 1ch * 2 bytes)
+  buf.writeUInt16LE(2, 32);                       // BlockAlign
+  buf.writeUInt16LE(16, 34);                      // BitsPerSample
+  buf.write('data', 36, 'ascii');
+  buf.writeUInt32LE(numSamples * 2, 40);          // Subchunk2Size
+
+  // A-minor ambient chord frequencies (Hz)
+  const notes = [110, 130.81, 164.81, 196];
+  const fadeIn  = 2.5;   // seconds
+  const fadeOut = 3.5;   // seconds
+
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+
+    // Envelope: fade-in / sustain / fade-out, clamped 0-1
+    let envelope = 1.0;
+    if (t < fadeIn) {
+      envelope = t / fadeIn;
+    } else if (t > durationSeconds - fadeOut) {
+      envelope = (durationSeconds - t) / fadeOut;
+    }
+    envelope = Math.max(0, Math.min(1, envelope));
+
+    // Sum all notes with slight overtone
+    let sample = 0;
+    for (const freq of notes) {
+      sample += Math.sin(2 * Math.PI * freq * t) * 0.11 * envelope;
+      sample += Math.sin(2 * Math.PI * freq * 2 * t) * 0.03 * envelope;
+    }
+
+    // Soft saturation
+    sample = Math.tanh(sample * 1.5);
+
+    // Write 16-bit PCM little-endian
+    const pcm = Math.max(-32768, Math.min(32767, Math.round(sample * 32767)));
+    buf.writeInt16LE(pcm, 44 + i * 2);
+  }
+
+  return buf;
+}
+
+// ─── API: Generate promo video ────────────────────────────────────────────────
+app.get('/api/generate-promo-video', async (req, res) => {
+  const os = require('os');
+
+  // Optional admin secret guard
+  if (process.env.ADMIN_SECRET) {
+    if (req.query.secret !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ error: 'Unauthorized — missing or invalid ?secret= param.' });
+    }
+  }
+
+  let puppeteer, ffmpeg, ffmpegStatic;
+  try {
+    puppeteer    = require('puppeteer');
+    ffmpeg       = require('fluent-ffmpeg');
+    ffmpegStatic = require('ffmpeg-static');
+  } catch (err) {
+    return res.status(500).json({ error: 'Missing dependency: ' + err.message + '. Run: npm install puppeteer fluent-ffmpeg ffmpeg-static' });
+  }
+
+  ffmpeg.setFfmpegPath(ffmpegStatic);
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'promo-'));
+  let browser = null;
+
+  try {
+    // Launch Puppeteer
+    browser = await puppeteer.launch({
+      headless: 'new',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--window-size=1280,720'
+      ]
+    });
+
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1280, height: 720 });
+
+    const PORT_INNER = process.env.PORT || 3000;
+    await page.goto(`http://localhost:${PORT_INNER}/promo-slides.html`, {
+      waitUntil: 'networkidle2',
+      timeout: 20000
+    });
+
+    // Capture 30 frames per slide across 6 slides = 180 frames total
+    let frameIndex = 0;
+    for (let slideNum = 1; slideNum <= 6; slideNum++) {
+      await page.evaluate((n) => window.showSlide(n), slideNum);
+      for (let f = 0; f < 30; f++) {
+        const framePath = path.join(tmpDir, `f-${String(frameIndex).padStart(5, '0')}.png`);
+        await page.screenshot({ path: framePath });
+        frameIndex++;
+      }
+    }
+
+    await browser.close();
+    browser = null;
+
+    // Write ambient music WAV
+    const wavBuf = generateAmbientMusic(26);
+    const wavPath = path.join(tmpDir, 'bg.wav');
+    fs.writeFileSync(wavPath, wavBuf);
+
+    // Stitch frames + audio into MP4
+    const outputPath = path.join(tmpDir, 'promo.mp4');
+
+    await new Promise((resolve, reject) => {
+      ffmpeg()
+        .input(path.join(tmpDir, 'f-%05d.png'))
+        .inputFPS(10)
+        .input(wavPath)
+        .videoCodec('libx264')
+        .audioCodec('aac')
+        .audioBitrate('128k')
+        .outputOptions([
+          '-pix_fmt', 'yuv420p',
+          '-preset', 'ultrafast',
+          '-crf', '23',
+          '-shortest',
+          '-movflags', '+faststart'
+        ])
+        .save(outputPath)
+        .on('end', resolve)
+        .on('error', reject);
+    });
+
+    // Stream MP4 to client
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Disposition', 'attachment; filename="resumetailor-promo.mp4"');
+
+    const readStream = fs.createReadStream(outputPath);
+    readStream.pipe(res);
+    readStream.on('close', () => {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+  } catch (err) {
+    console.error('[PromoVideo] Error:', err.message);
+    if (browser) {
+      try { await browser.close(); } catch (_) {}
+    }
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Video generation failed: ' + err.message });
+    }
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`ResumeTailor running on http://localhost:${PORT}`));

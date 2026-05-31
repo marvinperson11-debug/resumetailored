@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>ResumeTailor AI — Promo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 1280px;
+      height: 720px;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      background: #0f172a;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0; left: 0;
+      width: 1280px;
+      height: 720px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: translateY(15px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      pointer-events: none;
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    /* ─── Slide 1: Hero ─────────────────────────────────── */
+    #slide-1 {
+      background: linear-gradient(135deg, #0f172a 0%, #1e40af 100%);
+      gap: 28px;
+    }
+
+    .hero-icon {
+      width: 96px;
+      height: 96px;
+      background: #2563eb;
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 52px;
+      box-shadow: 0 8px 32px rgba(37,99,235,0.5);
+    }
+
+    .hero-title {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hero-title h1 {
+      font-size: 56px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -1px;
+    }
+
+    .ai-badge {
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 18px;
+      font-weight: 700;
+      padding: 6px 14px;
+      border-radius: 8px;
+      letter-spacing: 1px;
+    }
+
+    .hero-subtitle {
+      font-size: 24px;
+      font-weight: 400;
+      color: #93c5fd;
+      text-align: center;
+      max-width: 700px;
+    }
+
+    .hero-pill {
+      border: 2px solid #93c5fd;
+      color: #93c5fd;
+      font-size: 17px;
+      font-weight: 600;
+      padding: 12px 32px;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+    }
+
+    /* ─── Slide 2: Problem ──────────────────────────────── */
+    #slide-2 {
+      background: linear-gradient(135deg, #0f172a 0%, #1c1c3a 100%);
+      gap: 40px;
+    }
+
+    .problem-headline {
+      font-size: 44px;
+      font-weight: 800;
+      color: #ffffff;
+      text-align: center;
+      max-width: 760px;
+      line-height: 1.2;
+    }
+
+    .problem-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .problem-item {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 22px;
+      font-weight: 500;
+      color: #e2e8f0;
+    }
+
+    .problem-item .x-mark {
+      width: 38px;
+      height: 38px;
+      background: #ef4444;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .bounce-arrow {
+      font-size: 40px;
+      color: #94a3b8;
+      animation: bounce 1.4s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(12px); }
+    }
+
+    /* ─── Slide 3: Solution ─────────────────────────────── */
+    #slide-3 {
+      background: #ffffff;
+      gap: 44px;
+    }
+
+    .solution-headline {
+      font-size: 42px;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: center;
+    }
+
+    .solution-flow {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .flow-box {
+      width: 280px;
+      height: 180px;
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      justify-content: flex-start;
+    }
+
+    .flow-box.gray {
+      background: #f1f5f9;
+      border: 2px solid #e2e8f0;
+    }
+
+    .flow-box.blue {
+      background: #eff6ff;
+      border: 2px solid #2563eb;
+    }
+
+    .flow-box-label {
+      font-size: 15px;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .flow-box.blue .flow-box-label {
+      color: #2563eb;
+    }
+
+    .fake-line {
+      height: 10px;
+      border-radius: 5px;
+    }
+
+    .flow-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .flow-center .arrow-text {
+      font-size: 40px;
+    }
+
+    .flow-center .ai-label {
+      font-size: 22px;
+      font-weight: 800;
+      color: #2563eb;
+      background: #eff6ff;
+      border-radius: 10px;
+      padding: 8px 16px;
+    }
+
+    /* ─── Slide 4: FREE ─────────────────────────────────── */
+    #slide-4 {
+      background: linear-gradient(135deg, #14532d 0%, #15803d 100%);
+      gap: 28px;
+    }
+
+    .free-headline {
+      font-size: 80px;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -2px;
+      line-height: 1;
+    }
+
+    .free-subtitle {
+      font-size: 26px;
+      font-weight: 500;
+      color: #bbf7d0;
+    }
+
+    .free-checks {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-top: 8px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 21px;
+      font-weight: 500;
+      color: #dcfce7;
+    }
+
+    .check-item .check-circle {
+      width: 36px;
+      height: 36px;
+      background: #22c55e;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    /* ─── Slide 5: Features ─────────────────────────────── */
+    #slide-5 {
+      background: #f8fafc;
+      gap: 40px;
+    }
+
+    .features-headline {
+      font-size: 38px;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: center;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      width: 860px;
+    }
+
+    .feature-card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 28px 32px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .feature-emoji {
+      font-size: 36px;
+    }
+
+    .feature-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .feature-desc {
+      font-size: 15px;
+      font-weight: 400;
+      color: #64748b;
+    }
+
+    /* ─── Slide 6: CTA ──────────────────────────────────── */
+    #slide-6 {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      gap: 28px;
+    }
+
+    .cta-headline {
+      font-size: 56px;
+      font-weight: 800;
+      color: #ffffff;
+      text-align: center;
+      max-width: 900px;
+      line-height: 1.15;
+      letter-spacing: -1px;
+    }
+
+    .cta-subtitle {
+      font-size: 22px;
+      font-weight: 400;
+      color: #bfdbfe;
+    }
+
+    .cta-button {
+      background: #ffffff;
+      color: #1e40af;
+      font-size: 22px;
+      font-weight: 700;
+      padding: 18px 52px;
+      border-radius: 999px;
+      animation: pulse-cta 2s infinite;
+      box-shadow: 0 4px 24px rgba(255,255,255,0.3);
+    }
+
+    @keyframes pulse-cta {
+      0%, 100% { transform: scale(1); box-shadow: 0 4px 24px rgba(255,255,255,0.3); }
+      50% { transform: scale(1.04); box-shadow: 0 8px 40px rgba(255,255,255,0.5); }
+    }
+
+    .cta-url {
+      font-size: 20px;
+      font-weight: 600;
+      color: #93c5fd;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Slide 1: Hero -->
+  <div class="slide" id="slide-1">
+    <div class="hero-icon">📄</div>
+    <div class="hero-title">
+      <h1>ResumeTailor</h1>
+      <span class="ai-badge">AI</span>
+    </div>
+    <p class="hero-subtitle">AI-Powered Resume &amp; Cover Letter Generator</p>
+    <div class="hero-pill">Land more interviews in under 30 seconds</div>
+  </div>
+
+  <!-- Slide 2: Problem -->
+  <div class="slide" id="slide-2">
+    <h2 class="problem-headline">Sending the same resume to every job?</h2>
+    <div class="problem-list">
+      <div class="problem-item">
+        <div class="x-mark">✗</div>
+        <span>Generic resumes get rejected by ATS filters</span>
+      </div>
+      <div class="problem-item">
+        <div class="x-mark">✗</div>
+        <span>Hours spent rewriting for each application</span>
+      </div>
+      <div class="problem-item">
+        <div class="x-mark">✗</div>
+        <span>Missing keywords hiring managers look for</span>
+      </div>
+    </div>
+    <div class="bounce-arrow">↓</div>
+  </div>
+
+  <!-- Slide 3: Solution -->
+  <div class="slide" id="slide-3">
+    <h2 class="solution-headline">AI Does The Heavy Lifting</h2>
+    <div class="solution-flow">
+      <div class="flow-box gray">
+        <div class="flow-box-label">Your Resume</div>
+        <div class="fake-line" style="background:#cbd5e1;width:90%"></div>
+        <div class="fake-line" style="background:#e2e8f0;width:75%"></div>
+        <div class="fake-line" style="background:#cbd5e1;width:85%"></div>
+        <div class="fake-line" style="background:#e2e8f0;width:60%"></div>
+        <div class="fake-line" style="background:#cbd5e1;width:80%"></div>
+      </div>
+      <div class="flow-center">
+        <span class="arrow-text">→</span>
+        <span class="ai-label">✨ AI</span>
+      </div>
+      <div class="flow-box blue">
+        <div class="flow-box-label">Tailored Resume</div>
+        <div class="fake-line" style="background:#93c5fd;width:90%"></div>
+        <div class="fake-line" style="background:#bfdbfe;width:75%"></div>
+        <div class="fake-line" style="background:#93c5fd;width:85%"></div>
+        <div class="fake-line" style="background:#bfdbfe;width:60%"></div>
+        <div class="fake-line" style="background:#93c5fd;width:80%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: FREE -->
+  <div class="slide" id="slide-4">
+    <div class="free-headline">100% FREE</div>
+    <div class="free-subtitle">to start — no card needed</div>
+    <div class="free-checks">
+      <div class="check-item">
+        <div class="check-circle">✓</div>
+        <span>1 free AI tailoring every day</span>
+      </div>
+      <div class="check-item">
+        <div class="check-circle">✓</div>
+        <span>Results in under 30 seconds</span>
+      </div>
+      <div class="check-item">
+        <div class="check-circle">✓</div>
+        <span>Beat ATS filters effortlessly</span>
+      </div>
+      <div class="check-item">
+        <div class="check-circle">✓</div>
+        <span>Cover letter included FREE</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: Features -->
+  <div class="slide" id="slide-5">
+    <h2 class="features-headline">Everything You Need to Get Hired</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-emoji">🎯</div>
+        <div class="feature-title">ATS-Optimized Keywords</div>
+        <div class="feature-desc">AI matches resume to job keywords</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-emoji">✉️</div>
+        <div class="feature-title">Custom Cover Letters</div>
+        <div class="feature-desc">Tailored cover letter with every resume</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-emoji">📥</div>
+        <div class="feature-title">Download as .DOCX</div>
+        <div class="feature-desc">Export in Word format, ready to submit</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-emoji">⚡</div>
+        <div class="feature-title">Works for Any Job</div>
+        <div class="feature-desc">Paste any job description instantly</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: CTA -->
+  <div class="slide" id="slide-6">
+    <h2 class="cta-headline">Start Tailoring Your Resume FREE Today</h2>
+    <p class="cta-subtitle">Join thousands landing more interviews</p>
+    <div class="cta-button">Get Started — It's Free</div>
+    <div class="cta-url">resumetailored.com</div>
+  </div>
+
+  <script>
+    function showSlide(n) {
+      document.querySelectorAll('.slide').forEach(function(s) {
+        s.classList.remove('active');
+      });
+      var target = document.getElementById('slide-' + n);
+      if (target) target.classList.add('active');
+    }
+
+    // Auto-show slide 1 on load
+    showSlide(1);
+  </script>
+</body>
+</html>
