@@ -595,11 +595,14 @@ app.get('/api/status', (req, res) => {
 app.post('/api/tailor', async (req, res) => {
   const { resume, jobPosting, mode, email } = req.body;
 
-  if (!resume || !jobPosting) {
-    return res.status(400).json({ error: 'Resume and job posting are required.' });
-  }
   if (!['resume', 'cover_letter', 'both'].includes(mode)) {
     return res.status(400).json({ error: 'Invalid mode.' });
+  }
+  if (!jobPosting) {
+    return res.status(400).json({ error: 'Job posting is required.' });
+  }
+  if (mode !== 'cover_letter' && !resume) {
+    return res.status(400).json({ error: 'Resume is required.' });
   }
 
   const usageKey = getUsageKey(req);
@@ -850,10 +853,6 @@ app.post('/api/contact', async (req, res) => {
 
   res.json({ success: true });
 });
-
-// ─── Serve pages ──────────────────────────────────────────────────────────────
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-app.get('/app', (req, res) => res.sendFile(path.join(__dirname, 'public', 'app.html')));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`ResumeTailor running on http://localhost:${PORT}`));
