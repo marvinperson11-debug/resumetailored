@@ -2644,6 +2644,32 @@ Aaliyah Washington`
     setTimeout(renderTplPicker, 0);
   </script>
 
+  <!-- ── Preview Modal ── -->
+  <div id="previewModal" onclick="if(event.target===this)closePreview()" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.88);overflow-y:auto;padding:24px 16px;">
+    <div style="background:#fff;border-radius:16px;width:100%;max-width:880px;margin:0 auto;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.5);">
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#1e1b4b;color:#fff;">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.55;margin-bottom:3px;">Document Preview</div>
+          <div id="previewTitle" style="font-size:16px;font-weight:700;"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button onclick="editFromPreview()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:13px;font-weight:600;padding:7px 16px;border-radius:8px;cursor:pointer;">✏️ Edit</button>
+          <button onclick="closePreview()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:30px;line-height:1;cursor:pointer;padding:2px 6px;">×</button>
+        </div>
+      </div>
+      <!-- Document page -->
+      <div style="background:#d1d5db;padding:32px 24px;overflow-y:auto;max-height:62vh;">
+        <div id="previewContent" style="background:#fff;max-width:780px;margin:0 auto;padding:40px 48px;box-shadow:0 4px 28px rgba(0,0,0,0.18);min-height:300px;"></div>
+      </div>
+      <!-- Download footer -->
+      <div style="padding:16px 24px;background:#fff;border-top:1px solid #e5e7eb;">
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:10px;">Looks good? Download your document:</div>
+        <div id="previewDownloadRow" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Ad Gate Modal ── -->
   <div id="adGateModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;">
     <div style="background:#fff;border-radius:20px;padding:32px 28px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
@@ -2675,19 +2701,44 @@ Aaliyah Washington`
     function renderDownloadButtons() {
       const row = document.getElementById('downloadRow');
       if (!row) return;
+      row.innerHTML = `<button class="btn btn-primary" onclick="openPreview()" style="font-size:15px;padding:12px 28px;margin-top:4px;">👁 Preview &amp; Download →</button>`;
+    }
+
+    function renderPreviewDownloadButtons() {
+      const row = document.getElementById('previewDownloadRow');
+      if (!row) return;
       if (isSubscriberFlag) {
-        // Pro users: direct download, no ads
         row.innerHTML = `
           <button class="download-btn download-btn-docx" onclick="downloadDocx()">⬇ Word (.docx)</button>
           <button class="download-btn download-btn-pdf" onclick="downloadPdf()">⬇ PDF</button>
           <button class="download-btn download-btn-txt" onclick="downloadTxt()">⬇ Text (.txt)</button>`;
       } else {
-        // Free users: ad gate
         row.innerHTML = `
           <button class="download-btn download-btn-docx" onclick="adGate(downloadDocx)" style="background:#7c3aed;">▶ Watch Ad → Word</button>
           <button class="download-btn download-btn-pdf" onclick="adGate(downloadPdf)" style="background:#b91c1c;">▶ Watch Ad → PDF</button>
           <button class="download-btn download-btn-txt" onclick="adGate(downloadTxt)" style="background:#374151;">▶ Watch Ad → Text</button>`;
       }
+    }
+
+    function openPreview() {
+      const outputBox = document.getElementById('outputBox');
+      if (!outputBox.innerHTML.trim()) return;
+      document.getElementById('previewContent').innerHTML = outputBox.innerHTML;
+      document.getElementById('previewTitle').textContent = document.getElementById('outputTitle').textContent;
+      renderPreviewDownloadButtons();
+      const modal = document.getElementById('previewModal');
+      modal.style.display = 'block';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePreview() {
+      document.getElementById('previewModal').style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    function editFromPreview() {
+      closePreview();
+      startEdit();
     }
 
     function adGate(downloadFn) {
