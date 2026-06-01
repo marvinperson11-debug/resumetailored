@@ -1098,12 +1098,13 @@
       preview.innerHTML = `<span style="font-family:'${sigFont}',cursive;font-size:28px;color:#1e293b;line-height:1.2;">${sigName}</span>`;
     }
 
-    function renderSignatureHtml(primaryColor) {
+    function renderSignatureHtml(primaryColor, font) {
       if (!sigName) return '';
       const color = primaryColor || '#1e293b';
-      return `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;">
-        <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signature</p>
-        <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${sigName}</p>
+      const bodyFont = font || "'Helvetica Neue',Arial,sans-serif";
+      return `<div style="margin-top:40px;text-align:left;">
+        <p style="margin:0 0 22px;font-size:13px;color:#333;font-family:${bodyFont};">Sincerely,</p>
+        <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${escHtml(sigName)}</p>
       </div>`;
     }
 
@@ -2910,7 +2911,7 @@ Aaliyah Washington`
       const printContent = renderAIOutput(rawText, tplId, selectedMode, true);
 
       // Signature
-      const sigHtml = sigName ? renderSignatureHtml(tpl.c.p) : '';
+      const sigHtml = sigName ? renderSignatureHtml(tpl.c.p, font) : '';
       const fontUrl = sigName
         ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(sigFont)}:ital@1&display=swap" rel="stylesheet">`
         : '';
@@ -2921,9 +2922,7 @@ Aaliyah Washington`
         return;
       }
 
-      const isSidebarLayout = tpl.layout === 'rSidebar';
-      const isModernLayout  = tpl.layout === 'rModern';
-      const noPagePad = isSidebarLayout || isModernLayout;
+      const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit'].includes(tpl.layout);
       const bodyBg = isSidebarLayout
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
         : '#fff';
@@ -3070,9 +3069,10 @@ Aaliyah Washington`
       // Layouts with their own internal margins don't need an outer page pad
       const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit'].includes(tpl.layout);
       const pagePad = noPagePad ? '0' : '0.65in 0.9in';
-      const sigHtml = sigName ? renderSignatureHtml(tpl.c.p) : '';
-      // Extra bottom padding keeps content from being sliced at the page boundary
-      const contentHtml = `<div style="padding:${pagePad};padding-bottom:80px;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}${sigHtml}</div>`;
+      const font = tpl.serif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
+      // Signature is positioned absolutely at bottom-left of last page — keep it out of content flow
+      const sigBottomPad = sigName ? '180px' : '80px';
+      const contentHtml = `<div style="padding:${pagePad};padding-bottom:${sigBottomPad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
 
       // Measure total rendered height at 816px width using an off-screen div
       const measure = document.createElement('div');
@@ -3083,10 +3083,15 @@ Aaliyah Washington`
       const numPages = Math.min(10, Math.max(1, Math.ceil(measure.scrollHeight / PAGE_H)));
       document.body.removeChild(measure);
 
+      // Signature block — absolutely positioned at bottom-left of the last page
+      const sigLeftPx = noPagePad ? '44px' : '86px'; // matches 0.9in margin at 96dpi
+      const sigBlock = sigName ? `<div style="position:absolute;bottom:54px;left:${sigLeftPx};font-family:${font};-webkit-print-color-adjust:exact;print-color-adjust:exact;"><p style="margin:0 0 20px;font-size:13px;color:#333;">Sincerely,</p><p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${tpl.c.p};line-height:1.3;">${escHtml(sigName)}</p></div>` : '';
+
       // Render one 816×1056 clip per page — each shifts the same content by -i×PAGE_H
       const pagesHtml = Array.from({length: numPages}, (_, i) => `
         <div style="width:816px;height:${PAGE_H}px;overflow:hidden;position:relative;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.5);${i > 0 ? 'margin-top:16px;' : ''}">
           <div style="position:absolute;top:${-i * PAGE_H}px;left:0;width:816px;">${contentHtml}</div>
+          ${i === numPages - 1 ? sigBlock : ''}
         </div>
         ${numPages > 1 ? `<div style="text-align:center;color:rgba(255,255,255,0.4);font-size:11px;font-family:sans-serif;margin-top:7px;">Page ${i + 1} of ${numPages}</div>` : ''}
       `).join('');
