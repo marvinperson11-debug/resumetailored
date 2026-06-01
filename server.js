@@ -420,6 +420,14 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   res.json({ success: true });
 });
 
+app.get('/api/auth/verify-reset-token', (req, res) => {
+  const { token } = req.query;
+  if (!token) return res.json({ valid: false });
+  const record = db.prepare('SELECT expires_at FROM reset_tokens WHERE token = ?').get(token);
+  if (!record || Date.now() > record.expires_at) return res.json({ valid: false });
+  res.json({ valid: true });
+});
+
 app.post('/api/auth/reset-password', (req, res) => {
   const { token, password } = req.body;
   if (!token || !password) return res.status(400).json({ error: 'Token and new password are required.' });
