@@ -2921,9 +2921,7 @@ Aaliyah Washington`
         return;
       }
 
-      const isSidebarLayout = tpl.layout === 'rSidebar';
-      const isModernLayout  = tpl.layout === 'rModern';
-      const noPagePad = isSidebarLayout || isModernLayout;
+      const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit'].includes(tpl.layout);
       const bodyBg = isSidebarLayout
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
         : '#fff';
@@ -3067,11 +3065,13 @@ Aaliyah Washington`
       const tpl = OUT_TPLS[tplCat].find(t => t.id === tplId) || OUT_TPLS[tplCat][0];
       const raw = lastRawResult || outputBox.innerText;
       const printHtml = renderAIOutput(raw, tplId, selectedMode, true);
-      const isSidebar = tpl.layout === 'rSidebar';
-      const isModern  = tpl.layout === 'rModern';
-      const pagePad = (isSidebar || isModern) ? '0' : '0.65in 0.9in';
-      const sigHtml = sigName ? renderSignatureHtml(tpl.c.p) : '';
-      const contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}${sigHtml}</div>`;
+      // Layouts with their own internal margins don't need an outer page pad
+      const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit'].includes(tpl.layout);
+      const pagePad = noPagePad ? '0' : '0.65in 0.9in';
+      const font = tpl.serif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
+      // Signature is positioned absolutely at bottom-left of last page — keep it out of content flow
+      const sigBottomPad = sigName ? '180px' : '80px';
+      const contentHtml = `<div style="padding:${pagePad};padding-bottom:${sigBottomPad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
 
       // Measure total rendered height at 816px width using an off-screen div
       const measure = document.createElement('div');
@@ -3082,10 +3082,15 @@ Aaliyah Washington`
       const numPages = Math.min(10, Math.max(1, Math.ceil(measure.scrollHeight / PAGE_H)));
       document.body.removeChild(measure);
 
+      // Signature block — absolutely positioned at bottom-left of the last page
+      const sigLeftPx = noPagePad ? '44px' : '86px'; // matches 0.9in margin at 96dpi
+      const sigBlock = sigName ? `<div style="position:absolute;bottom:54px;left:${sigLeftPx};-webkit-print-color-adjust:exact;print-color-adjust:exact;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-family:${font};">Signature</p><p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${tpl.c.p};line-height:1.3;">${escHtml(sigName)}</p></div>` : '';
+
       // Render one 816×1056 clip per page — each shifts the same content by -i×PAGE_H
       const pagesHtml = Array.from({length: numPages}, (_, i) => `
         <div style="width:816px;height:${PAGE_H}px;overflow:hidden;position:relative;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.5);${i > 0 ? 'margin-top:16px;' : ''}">
           <div style="position:absolute;top:${-i * PAGE_H}px;left:0;width:816px;">${contentHtml}</div>
+          ${i === numPages - 1 ? sigBlock : ''}
         </div>
         ${numPages > 1 ? `<div style="text-align:center;color:rgba(255,255,255,0.4);font-size:11px;font-family:sans-serif;margin-top:7px;">Page ${i + 1} of ${numPages}</div>` : ''}
       `).join('');
@@ -3105,12 +3110,16 @@ Aaliyah Washington`
     }
 
     function _scalePreviewPage() {
-      const area = document.getElementById('previewArea');
       const outer = document.getElementById('previewScaleOuter');
       const inner = document.getElementById('previewScaleInner');
-      if (!area || !outer || !inner) return;
-      const availW = area.clientWidth - 48;
-      const scale = Math.min(1, availW / 816);
+      if (!outer || !inner) return;
+      // Compute available width from the viewport directly — avoids measuring
+      // an already-expanded DOM container (previewScaleOuter has no explicit
+      // width, so it expands to 816px before JS runs, skewing clientWidth).
+      // previewModal: 16px padding each side = 32px total
+      // previewArea:  24px padding each side = 48px total
+      const availW = Math.min(window.innerWidth - 32 - 48, 816);
+      const scale = availW / 816;
       outer.style.width = Math.ceil(816 * scale) + 'px';
       if (scale < 1) {
         inner.style.transform = `scale(${scale})`;

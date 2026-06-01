@@ -667,7 +667,30 @@ app.post('/api/tailor', async (req, res) => {
 - Reword bullet points to mirror the language and keywords in the job posting
 - Prioritize and reorder bullet points so the most relevant experience appears first
 - Adjust the summary/objective section (if present) to target this specific role
-- Output the full tailored resume in clean markdown
+- Every bullet point must begin with a strong past-tense action verb (e.g. Led, Built, Reduced)
+- No periods at the end of bullet points (standard resume format)
+- ALL section headers must be in ALL CAPS (e.g. EXPERIENCE, EDUCATION, SKILLS)
+- Output the full tailored resume in clean plain text — no markdown formatting symbols
+
+## Output format (follow exactly):
+[Full Name]
+[City, State | Phone | Email]
+
+SUMMARY
+[2–3 sentence paragraph]
+
+EXPERIENCE
+[Job Title]
+[Company | Start – End]
+• [bullet]
+• [bullet]
+
+EDUCATION
+[Degree]
+[School | Year]
+
+SKILLS
+[comma-separated list]
 
 ## Candidate Resume:
 ${resume}
@@ -676,7 +699,7 @@ ${resume}
 ${jobPosting}
 
 ---
-**OUTPUT: Tailored Resume (markdown)**
+**OUTPUT: Tailored Resume**
 `;
     }
 
@@ -691,6 +714,18 @@ ${jobPosting}
 - Closing: confident call to action
 - Do NOT use generic filler phrases like "I am writing to express my interest"
 - Use keywords from the job posting naturally
+- Every sentence must be grammatically complete with correct punctuation
+- Paragraphs must be fully written out — no bullet points, no headers inside the letter body
+- Output plain text only — no markdown symbols
+
+## Output format (follow exactly):
+[Full Name]
+[City, State | Phone | Email]
+
+[Letter body — 3 to 4 full paragraphs separated by blank lines]
+
+Sincerely,
+[Full Name]
 
 ## Candidate Resume:
 ${resume}
