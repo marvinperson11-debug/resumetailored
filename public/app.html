@@ -3067,11 +3067,12 @@ Aaliyah Washington`
       const tpl = OUT_TPLS[tplCat].find(t => t.id === tplId) || OUT_TPLS[tplCat][0];
       const raw = lastRawResult || outputBox.innerText;
       const printHtml = renderAIOutput(raw, tplId, selectedMode, true);
-      const isSidebar = tpl.layout === 'rSidebar';
-      const isModern  = tpl.layout === 'rModern';
-      const pagePad = (isSidebar || isModern) ? '0' : '0.65in 0.9in';
+      // Layouts with their own internal margins don't need an outer page pad
+      const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit'].includes(tpl.layout);
+      const pagePad = noPagePad ? '0' : '0.65in 0.9in';
       const sigHtml = sigName ? renderSignatureHtml(tpl.c.p) : '';
-      const contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}${sigHtml}</div>`;
+      // Extra bottom padding keeps content from being sliced at the page boundary
+      const contentHtml = `<div style="padding:${pagePad};padding-bottom:80px;box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}${sigHtml}</div>`;
 
       // Measure total rendered height at 816px width using an off-screen div
       const measure = document.createElement('div');
@@ -3105,12 +3106,16 @@ Aaliyah Washington`
     }
 
     function _scalePreviewPage() {
-      const area = document.getElementById('previewArea');
       const outer = document.getElementById('previewScaleOuter');
       const inner = document.getElementById('previewScaleInner');
-      if (!area || !outer || !inner) return;
-      const availW = area.clientWidth - 48;
-      const scale = Math.min(1, availW / 816);
+      if (!outer || !inner) return;
+      // Compute available width from the viewport directly — avoids measuring
+      // an already-expanded DOM container (previewScaleOuter has no explicit
+      // width, so it expands to 816px before JS runs, skewing clientWidth).
+      // previewModal: 16px padding each side = 32px total
+      // previewArea:  24px padding each side = 48px total
+      const availW = Math.min(window.innerWidth - 32 - 48, 816);
+      const scale = availW / 816;
       outer.style.width = Math.ceil(816 * scale) + 'px';
       if (scale < 1) {
         inner.style.transform = `scale(${scale})`;
