@@ -2075,7 +2075,7 @@
       const outerStyle = printMode
         ? `font-family:${font};color:#222;`
         : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
-      return `<div style="${outerStyle}"><div style="background:${c.p};padding:36px 52px;color:#fff;${pca}"><div style="font-size:34px;font-weight:900;letter-spacing:-1px;">${escHtml(name)}</div><div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:8px;display:flex;flex-wrap:wrap;gap:14px;">${contactParts.map(s=>`<span>${escHtml(s)}</span>`).join('')}</div></div><div style="padding:32px 52px;">${sectionsHtml}</div></div>`;
+      return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;${pca}"><div style="font-size:26px;font-weight:900;letter-spacing:-0.5px;line-height:1.2;">${escHtml(name)}</div><div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;display:flex;flex-wrap:wrap;gap:12px;">${contactParts.map(s=>`<span>${escHtml(s)}</span>`).join('')}</div></div><div style="padding:20px 44px 28px;">${sectionsHtml}</div></div>`;
     }
 
     function renderAIOutput(text, tplId, mode, printMode) {
@@ -2607,6 +2607,8 @@ Aaliyah Washington`
       }
 
       const isSidebarLayout = tpl.layout === 'rSidebar';
+      const isModernLayout  = tpl.layout === 'rModern';
+      const noPagePad = isSidebarLayout || isModernLayout;
       const bodyBg = isSidebarLayout
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
         : '#fff';
@@ -2622,8 +2624,7 @@ Aaliyah Washington`
     @page { size: letter; margin: 0; }
     html { background: #fff; }
     body { font-family: ${font}; color: #222; background: ${bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-    .page { width: 8.5in; ${isSidebarLayout ? '' : 'padding: 0.75in 1in;'} margin: 0 auto; }
-    div { break-inside: avoid; page-break-inside: avoid; }
+    .page { width: 8.5in; ${noPagePad ? '' : 'padding: 0.65in 0.9in;'} margin: 0 auto; }
   </style>
 </head>
 <body>
@@ -2678,9 +2679,11 @@ Aaliyah Washington`
         </div>
       </div>
       <!-- Document page viewer (dark gray background mimics a document reader) -->
-      <div id="previewArea" style="background:#525659;padding:24px;overflow-y:auto;max-height:74vh;display:flex;justify-content:center;align-items:flex-start;">
-        <div id="previewPage" style="background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.5);transform-origin:top center;width:816px;flex-shrink:0;">
-          <div id="previewContent"></div>
+      <div id="previewArea" style="background:#525659;padding:24px;overflow-y:auto;max-height:74vh;">
+        <div id="previewWrapper" style="margin:0 auto;overflow:hidden;">
+          <div id="previewPage" style="background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.5);transform-origin:top left;width:816px;">
+            <div id="previewContent"></div>
+          </div>
         </div>
       </div>
       <!-- Download footer -->
@@ -2762,14 +2765,8 @@ Aaliyah Washington`
       const modal = document.getElementById('previewModal');
       modal.style.display = 'block';
       document.body.style.overflow = 'hidden';
-      // Scale the 816px-wide page to fit the viewer area width
-      requestAnimationFrame(() => {
-        const area = document.getElementById('previewArea');
-        const page = document.getElementById('previewPage');
-        const availW = area.clientWidth - 48;
-        const scale = Math.min(1, availW / 816);
-        page.style.zoom = String(scale);
-      });
+      // Scale the 816px-wide page to fit the viewer area width (two rAFs ensures content is rendered first)
+      requestAnimationFrame(() => requestAnimationFrame(_scalePreviewPage));
     }
 
     function closePreview() {
@@ -2779,12 +2776,25 @@ Aaliyah Washington`
 
     function _scalePreviewPage() {
       const area = document.getElementById('previewArea');
+      const wrapper = document.getElementById('previewWrapper');
       const page = document.getElementById('previewPage');
-      if (!area || !page) return;
+      if (!area || !wrapper || !page) return;
       const availW = area.clientWidth - 48;
-      page.style.zoom = String(Math.min(1, availW / 816));
+      const scale = Math.min(1, availW / 816);
+      const scaledW = Math.ceil(816 * scale);
+      wrapper.style.width = scaledW + 'px';
+      if (scale < 1) {
+        page.style.transform = `scale(${scale})`;
+        page.style.transformOrigin = 'top left';
+        // Collapse extra layout height so the wrapper shows only the scaled visual height
+        wrapper.style.height = Math.ceil(page.scrollHeight * scale) + 'px';
+      } else {
+        page.style.transform = '';
+        page.style.transformOrigin = '';
+        wrapper.style.height = '';
+      }
     }
-    window.addEventListener('resize', _scalePreviewPage);
+    window.addEventListener('resize', () => requestAnimationFrame(_scalePreviewPage));
 
     function editFromPreview() {
       closePreview();
