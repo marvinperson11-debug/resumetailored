@@ -134,6 +134,20 @@ function hashPw(pw) {
 
 app.set('trust proxy', 1); // Required on Railway — reads real client IP from X-Forwarded-For
 app.use(cors());
+
+// Redirect .html-extension URLs to their canonical clean-URL equivalents (prevents duplicate-content penalties)
+app.use((req, res, next) => {
+  if (req.path.endsWith('/index.html')) {
+    const dir = req.path.slice(0, -'index.html'.length).replace(/\/$/, '') || '/';
+    return res.redirect(301, dir + req.url.slice(req.path.length));
+  }
+  if (req.path.endsWith('.html')) {
+    const clean = req.path.slice(0, -5) || '/';
+    return res.redirect(301, clean + req.url.slice(req.path.length));
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 
 // Clean URL aliases — /dashboard, /login, /signup all serve app.html
