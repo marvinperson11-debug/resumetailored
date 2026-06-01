@@ -2678,11 +2678,11 @@ Aaliyah Washington`
           <button onclick="closePreview()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:30px;line-height:1;cursor:pointer;padding:2px 6px;">×</button>
         </div>
       </div>
-      <!-- Document page viewer (dark gray background mimics a document reader) -->
+      <!-- Document page viewer — pages split like a PDF reader -->
       <div id="previewArea" style="background:#525659;padding:24px;overflow-y:auto;max-height:74vh;">
-        <div id="previewWrapper" style="margin:0 auto;overflow:hidden;">
-          <div id="previewPage" style="background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.5);transform-origin:top left;width:816px;">
-            <div id="previewContent"></div>
+        <div id="previewScaleOuter" style="margin:0 auto;overflow:hidden;">
+          <div id="previewScaleInner" style="transform-origin:top left;width:816px;">
+            <!-- page divs injected by openPreview() -->
           </div>
         </div>
       </div>
@@ -2747,7 +2747,6 @@ Aaliyah Washington`
     function openPreview() {
       const outputBox = document.getElementById('outputBox');
       if (!outputBox.innerHTML.trim()) return;
-      // Render in print mode so the preview matches the actual document layout
       const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
       const tplId = selectedOutputTpl[tplCat];
       const tpl = OUT_TPLS[tplCat].find(t => t.id === tplId) || OUT_TPLS[tplCat][0];
@@ -2755,17 +2754,33 @@ Aaliyah Washington`
       const printHtml = renderAIOutput(raw, tplId, selectedMode, true);
       const isSidebar = tpl.layout === 'rSidebar';
       const isModern  = tpl.layout === 'rModern';
-      // Sidebar and Modern fill edge-to-edge; other layouts get standard page margins
       const pagePad = (isSidebar || isModern) ? '0' : '0.65in 0.9in';
       const sigHtml = sigName ? renderSignatureHtml(tpl.c.p) : '';
-      document.getElementById('previewContent').innerHTML =
-        `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}${sigHtml}</div>`;
+      const contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}${sigHtml}</div>`;
+
+      // Measure total rendered height at 816px width using an off-screen div
+      const measure = document.createElement('div');
+      measure.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:816px;left:-9999px;top:0;z-index:-1;';
+      measure.innerHTML = contentHtml;
+      document.body.appendChild(measure);
+      const PAGE_H = 1056; // 11in × 96dpi
+      const numPages = Math.min(10, Math.max(1, Math.ceil(measure.scrollHeight / PAGE_H)));
+      document.body.removeChild(measure);
+
+      // Render one 816×1056 clip per page — each shifts the same content by -i×PAGE_H
+      const pagesHtml = Array.from({length: numPages}, (_, i) => `
+        <div style="width:816px;height:${PAGE_H}px;overflow:hidden;position:relative;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.5);${i > 0 ? 'margin-top:16px;' : ''}">
+          <div style="position:absolute;top:${-i * PAGE_H}px;left:0;width:816px;">${contentHtml}</div>
+        </div>
+        ${numPages > 1 ? `<div style="text-align:center;color:rgba(255,255,255,0.4);font-size:11px;font-family:sans-serif;margin-top:7px;">Page ${i + 1} of ${numPages}</div>` : ''}
+      `).join('');
+
+      document.getElementById('previewScaleInner').innerHTML = pagesHtml;
       document.getElementById('previewTitle').textContent = document.getElementById('outputTitle').textContent;
       renderPreviewDownloadButtons();
       const modal = document.getElementById('previewModal');
       modal.style.display = 'block';
       document.body.style.overflow = 'hidden';
-      // Scale the 816px-wide page to fit the viewer area width (two rAFs ensures content is rendered first)
       requestAnimationFrame(() => requestAnimationFrame(_scalePreviewPage));
     }
 
@@ -2776,22 +2791,22 @@ Aaliyah Washington`
 
     function _scalePreviewPage() {
       const area = document.getElementById('previewArea');
-      const wrapper = document.getElementById('previewWrapper');
-      const page = document.getElementById('previewPage');
-      if (!area || !wrapper || !page) return;
+      const outer = document.getElementById('previewScaleOuter');
+      const inner = document.getElementById('previewScaleInner');
+      if (!area || !outer || !inner) return;
       const availW = area.clientWidth - 48;
       const scale = Math.min(1, availW / 816);
-      const scaledW = Math.ceil(816 * scale);
-      wrapper.style.width = scaledW + 'px';
+      outer.style.width = Math.ceil(816 * scale) + 'px';
       if (scale < 1) {
-        page.style.transform = `scale(${scale})`;
-        page.style.transformOrigin = 'top left';
-        // Collapse extra layout height so the wrapper shows only the scaled visual height
-        wrapper.style.height = Math.ceil(page.scrollHeight * scale) + 'px';
+        inner.style.transform = `scale(${scale})`;
+        inner.style.transformOrigin = 'top left';
+        outer.style.height = Math.ceil(inner.scrollHeight * scale) + 'px';
+        outer.style.overflow = 'hidden';
       } else {
-        page.style.transform = '';
-        page.style.transformOrigin = '';
-        wrapper.style.height = '';
+        inner.style.transform = '';
+        inner.style.transformOrigin = '';
+        outer.style.height = '';
+        outer.style.overflow = '';
       }
     }
     window.addEventListener('resize', () => requestAnimationFrame(_scalePreviewPage));
