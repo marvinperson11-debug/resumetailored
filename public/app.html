@@ -2665,7 +2665,7 @@ Aaliyah Washington`
 
   <!-- ── Preview Modal ── -->
   <div id="previewModal" onclick="if(event.target===this)closePreview()" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.88);overflow-y:auto;padding:24px 16px;">
-    <div style="background:#fff;border-radius:16px;width:100%;max-width:880px;margin:0 auto;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.5);">
+    <div style="background:#fff;border-radius:16px;width:100%;max-width:1000px;margin:0 auto;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.5);">
       <!-- Header -->
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#1e1b4b;color:#fff;">
         <div>
@@ -2677,9 +2677,11 @@ Aaliyah Washington`
           <button onclick="closePreview()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:30px;line-height:1;cursor:pointer;padding:2px 6px;">×</button>
         </div>
       </div>
-      <!-- Document page -->
-      <div style="background:#d1d5db;padding:32px 24px;overflow-y:auto;max-height:62vh;">
-        <div id="previewContent" style="background:#fff;max-width:780px;margin:0 auto;padding:40px 48px;box-shadow:0 4px 28px rgba(0,0,0,0.18);min-height:300px;"></div>
+      <!-- Document page viewer (dark gray background mimics a document reader) -->
+      <div id="previewArea" style="background:#525659;padding:24px;overflow-y:auto;max-height:74vh;display:flex;justify-content:center;align-items:flex-start;">
+        <div id="previewPage" style="background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.5);transform-origin:top center;width:816px;flex-shrink:0;">
+          <div id="previewContent"></div>
+        </div>
       </div>
       <!-- Download footer -->
       <div style="padding:16px 24px;background:#fff;border-top:1px solid #e5e7eb;">
@@ -2742,18 +2744,47 @@ Aaliyah Washington`
     function openPreview() {
       const outputBox = document.getElementById('outputBox');
       if (!outputBox.innerHTML.trim()) return;
-      document.getElementById('previewContent').innerHTML = outputBox.innerHTML;
+      // Render in print mode so the preview matches the actual document layout
+      const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
+      const tplId = selectedOutputTpl[tplCat];
+      const tpl = OUT_TPLS[tplCat].find(t => t.id === tplId) || OUT_TPLS[tplCat][0];
+      const raw = lastRawResult || outputBox.innerText;
+      const printHtml = renderAIOutput(raw, tplId, selectedMode, true);
+      const isSidebar = tpl.layout === 'rSidebar';
+      const isModern  = tpl.layout === 'rModern';
+      // Sidebar and Modern fill edge-to-edge; other layouts get standard page margins
+      const pagePad = (isSidebar || isModern) ? '0' : '0.65in 0.9in';
+      const sigHtml = sigName ? renderSignatureHtml(tpl.c.p) : '';
+      document.getElementById('previewContent').innerHTML =
+        `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}${sigHtml}</div>`;
       document.getElementById('previewTitle').textContent = document.getElementById('outputTitle').textContent;
       renderPreviewDownloadButtons();
       const modal = document.getElementById('previewModal');
       modal.style.display = 'block';
       document.body.style.overflow = 'hidden';
+      // Scale the 816px-wide page to fit the viewer area width
+      requestAnimationFrame(() => {
+        const area = document.getElementById('previewArea');
+        const page = document.getElementById('previewPage');
+        const availW = area.clientWidth - 48;
+        const scale = Math.min(1, availW / 816);
+        page.style.zoom = String(scale);
+      });
     }
 
     function closePreview() {
       document.getElementById('previewModal').style.display = 'none';
       document.body.style.overflow = '';
     }
+
+    function _scalePreviewPage() {
+      const area = document.getElementById('previewArea');
+      const page = document.getElementById('previewPage');
+      if (!area || !page) return;
+      const availW = area.clientWidth - 48;
+      page.style.zoom = String(Math.min(1, availW / 816));
+    }
+    window.addEventListener('resize', _scalePreviewPage);
 
     function editFromPreview() {
       closePreview();
