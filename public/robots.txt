@@ -4,6 +4,5 @@ Disallow: /api/
 Disallow: /reset-password
 Disallow: /success
 Disallow: /cancel
-Disallow: /*.html$
 
 Sitemap: https://resumetailored.com/sitemap.xml
