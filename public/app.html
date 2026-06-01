@@ -1317,8 +1317,8 @@
           : 'Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file.';
         document.getElementById('tailorBtn').textContent = isCover ? 'Generate Cover Letter →' : 'Tailor My Resume →';
         document.getElementById('rmodeBuild').textContent = isCover ? '✏️ Input Info' : '✏️ Fill Out Form';
-        // If already in build mode, switch to the correct pane for the new mode
-        if (resumeInputMode === 'build') setResumeMode('build');
+        // Cover letter always shows the input form; resume restores whatever mode was active
+        setResumeMode(isCover ? 'build' : resumeInputMode);
       });
     });
 
@@ -1509,6 +1509,7 @@
       if (!email)   { showToast('Please enter your email address.'); return null; }
       if (!company) { showToast('Please enter the company name.');   return null; }
       if (!role)    { showToast('Please enter the job title/role.'); return null; }
+      window.lastCoverMeta = { name, email, phone, location, company, role, manager };
 
       let text = 'APPLICANT: ' + name + '\n';
       const contact = [email, phone, location].filter(Boolean);
@@ -2234,12 +2235,158 @@
       return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;${pca}"><div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;">${escHtml(name)}</div>${contactLines.length?`<div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;">${escHtml(contactLines.join(' | '))}</div>`:''}</div><div style="padding:24px 44px 32px;">${bodyHtml}</div></div>`;
     }
 
+    function parseCoverOutput(text) {
+      const lines = text.split('\n');
+      const meta = window.lastCoverMeta || {};
+      let name = '', contactStr = '', headerDone = false;
+      const rawBody = [];
+      for (let i = 0; i < lines.length; i++) {
+        let t = lines[i].trim().replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();
+        if (!t) {
+          if (name) {
+            if (headerDone) rawBody.push('');
+            else headerDone = true;
+          }
+          continue;
+        }
+        if (!name && /^cover letter$/i.test(t)) continue;
+        if (!name) { name = t; continue; }
+        if (!headerDone && (t.includes('@') || /\(\d{3}\)|\d{3}[-.\s]\d{3}/.test(t) || (t.includes('|') && t.length < 120))) {
+          contactStr = t; continue;
+        }
+        if (!headerDone && /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(t) && t.length < 50) {
+          headerDone = true; continue;
+        }
+        headerDone = true;
+        rawBody.push(t);
+      }
+      const paragraphs = [];
+      let cur = [];
+      for (const line of rawBody) {
+        if (!line) { if (cur.length) { paragraphs.push(cur.join(' ')); cur = []; } } else cur.push(line);
+      }
+      if (cur.length) paragraphs.push(cur.join(' '));
+      const CLOSE_RE = /^(sincerely|best regards|regards|warm regards|respectfully|yours truly|cordially|thank you)[,\s]/i;
+      const body = paragraphs.filter(p => !CLOSE_RE.test(p));
+      const today = new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'});
+      return {
+        name: name || meta.name || 'Applicant',
+        contact: contactStr || [meta.email, meta.phone, meta.location].filter(Boolean).join(' | '),
+        company: meta.company || '',
+        role: meta.role || '',
+        date: today,
+        body
+      };
+    }
+
+    function renderCoverOutput(text, c, font, printMode, tpl) {
+      const p = parseCoverOutput(text);
+      const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+      const cardWrap = printMode
+        ? `font-family:${font};color:#222;`
+        : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+      const bodyParas = p.body.map(para =>
+        `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 16px;">${escHtml(para)}</p>`
+      ).join('');
+      const roleLine = [p.role, p.company].filter(Boolean);
+
+      if (tpl.layout === 'cFormal') {
+        const hdr = printMode ? '' : 'padding:60px 76px;';
+        return `<div style="${cardWrap}${hdr}">
+          <div style="margin-bottom:32px;">
+            <div style="font-size:22px;font-weight:700;color:${c.p};">${escHtml(p.name)}</div>
+            ${p.contact ? `<div style="font-size:12px;color:#888;margin-top:6px;">${escHtml(p.contact)}</div>` : ''}
+          </div>
+          <div style="font-size:13px;color:#777;margin-bottom:24px;">${p.date}</div>
+          ${roleLine.length ? `<div style="font-size:14px;font-weight:700;margin-bottom:3px;">${escHtml(p.role)} Hiring Team</div><div style="font-size:13px;color:#666;margin-bottom:28px;">${escHtml(p.company)}</div>` : '<div style="margin-bottom:28px;"></div>'}
+          <div style="font-size:14.5px;font-weight:700;color:${c.p};margin-bottom:22px;">Dear Hiring Manager,</div>
+          ${bodyParas}
+        </div>`;
+      }
+
+      if (tpl.layout === 'cBold') {
+        const firstPara = p.body[0] ? `<p style="font-size:13.5px;line-height:1.85;color:#1a1a1a;font-weight:600;margin:0 0 16px;border-left:3px solid ${c.a};padding-left:14px;${pca}">${escHtml(p.body[0])}</p>` : '';
+        const restParas = p.body.slice(1).map(para => `<p style="font-size:13.5px;line-height:1.85;color:#333;margin:0 0 16px;">${escHtml(para)}</p>`).join('');
+        const hdr = printMode ? '' : 'padding:52px 64px;';
+        return `<div style="${cardWrap}${hdr}">
+          <div style="border-left:5px solid ${c.p};padding-left:20px;margin-bottom:30px;${pca}">
+            <div style="font-size:30px;font-weight:900;color:${c.p};letter-spacing:-1px;">${escHtml(p.name)}</div>
+            ${p.contact ? `<div style="font-size:12px;color:#888;margin-top:7px;">${escHtml(p.contact)}</div>` : ''}
+          </div>
+          ${roleLine.length
+            ? `<div style="display:flex;justify-content:space-between;align-items:center;background:${c.l};border-radius:8px;padding:12px 18px;margin-bottom:28px;${pca}"><div><div style="font-size:13px;font-weight:800;color:${c.p};">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};font-weight:700;">${escHtml(p.company)}</div></div><div style="font-size:11.5px;color:#999;">${p.date}</div></div>`
+            : `<div style="font-size:12px;color:#999;margin-bottom:28px;">${p.date}</div>`}
+          <div style="font-size:14.5px;font-weight:800;color:${c.p};margin-bottom:22px;">Dear Hiring Manager,</div>
+          ${firstPara}${restParas}
+        </div>`;
+      }
+
+      if (tpl.layout === 'cBoxed') {
+        const hdr = printMode ? '' : 'padding:52px;';
+        return `<div style="${cardWrap}${hdr}">
+          <div style="border:2px solid ${c.p};border-radius:8px;padding:26px 34px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:center;${pca}">
+            <div>
+              <div style="font-size:23px;font-weight:800;color:${c.p};">${escHtml(p.name)}</div>
+              ${p.contact ? `<div style="font-size:12px;color:#777;margin-top:5px;">${escHtml(p.contact)}</div>` : ''}
+            </div>
+            <div style="width:46px;height:46px;border-radius:50%;background:${c.p};display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900;flex-shrink:0;${pca}">${escHtml((p.name[0]||'A').toUpperCase())}</div>
+          </div>
+          <div style="font-size:12px;color:#aaa;margin-bottom:4px;">${p.date}</div>
+          ${roleLine.length ? `<div style="font-size:13.5px;color:#555;margin-bottom:26px;">${escHtml(roleLine.join(' — '))}</div>` : '<div style="margin-bottom:26px;"></div>'}
+          <div style="font-size:14.5px;font-weight:700;color:${c.p};border-bottom:1px solid ${c.a};padding-bottom:7px;margin-bottom:22px;">Dear Hiring Manager,</div>
+          ${bodyParas}
+        </div>`;
+      }
+
+      if (tpl.layout === 'cSplit') {
+        const roleBlock = roleLine.length
+          ? `<div style="text-align:right;background:${c.l};border-radius:8px;padding:12px 18px;${pca}"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${c.a};">${p.date}</div><div style="font-size:13px;font-weight:800;color:${c.p};margin-top:4px;">${escHtml(p.role)}</div><div style="font-size:12px;color:#666;">${escHtml(p.company)}</div></div>`
+          : `<div style="font-size:12px;color:#999;">${p.date}</div>`;
+        return `<div style="${cardWrap}">
+          <div style="display:grid;grid-template-columns:1fr auto;align-items:end;padding:40px 56px 22px;border-bottom:3px solid ${c.p};${pca}">
+            <div>
+              <div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(p.name)}</div>
+              ${p.contact ? `<div style="font-size:12px;color:#888;margin-top:7px;">${escHtml(p.contact)}</div>` : ''}
+            </div>
+            ${roleBlock}
+          </div>
+          <div style="padding:34px 56px;">
+            <div style="font-size:14.5px;font-weight:700;color:${c.p};margin-bottom:20px;">Dear Hiring Manager,</div>
+            ${bodyParas}
+          </div>
+        </div>`;
+      }
+
+      if (tpl.layout === 'cClean') {
+        const contactParts = p.contact ? p.contact.split(/\s*\|\s*/) : [];
+        const contactHtml = contactParts.length
+          ? `<div style="display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;">${contactParts.map(pt => `<span style="font-size:12px;color:${c.p};font-weight:700;">${escHtml(pt)}</span>`).join('<span style="font-size:12px;color:#ddd;">|</span>')}</div>`
+          : '';
+        const firstBold = p.body[0] ? `<p style="font-size:13.5px;line-height:1.9;color:#1a1a1a;font-weight:600;margin:0 0 19px;">${escHtml(p.body[0])}</p>` : '';
+        const rest = p.body.slice(1).map(para => `<p style="font-size:13.5px;line-height:1.9;color:#555;margin:0 0 19px;">${escHtml(para)}</p>`).join('');
+        const hdr = printMode ? '' : 'padding:76px;';
+        return `<div style="${cardWrap}${hdr}">
+          <div style="margin-bottom:44px;">
+            <div style="font-size:34px;font-weight:900;letter-spacing:-1.5px;">${escHtml(p.name)}</div>
+            ${contactHtml}
+            <div style="height:2px;background:${c.p};margin-top:18px;${pca}"></div>
+          </div>
+          <div style="font-size:11.5px;color:#bbb;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:26px;">${p.date}</div>
+          ${roleLine.length ? `<div style="font-size:17px;font-weight:800;color:#1a1a1a;margin-bottom:26px;">Re: ${escHtml(roleLine.join(' — '))}</div>` : ''}
+          ${firstBold}${rest}
+        </div>`;
+      }
+
+      return renderCoverModernOutput(text, c, font, printMode);
+    }
+
     function renderAIOutput(text, tplId, mode, printMode) {
       const cat = mode === 'cover_letter' ? 'cover' : 'resume';
       const tpl = OUT_TPLS[cat].find(t => t.id === tplId) || OUT_TPLS[cat][0];
       const c = tpl.c;
       const font = tpl.serif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
       if (tpl.layout === 'cModern') return renderCoverModernOutput(text, c, font, printMode);
+      if (cat === 'cover') return renderCoverOutput(text, c, font, printMode, tpl);
       const parsed = parseAIOutput(text);
 
       if (tpl.layout === 'rSidebar') return renderSidebarOutput(parsed, c, font, printMode);
