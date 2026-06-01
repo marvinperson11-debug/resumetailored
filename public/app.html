@@ -1576,6 +1576,7 @@
         document.getElementById('outputWrap').style.display = 'block';
         renderDownloadButtons();
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => openPreview(), 800);
 
         await checkStatus();
         if (!isSubscriberFlag) document.getElementById('upsell').style.display = 'flex';
@@ -2016,88 +2017,104 @@
     }
 
     // printMode=true renders without the on-screen card border, for print/PDF output
+    // ── AI Output Parsing & Layout Rendering ──────────────────────────────────
+    function parseAIOutput(text) {
+      const lines = text.split('\n');
+      let name = '', contactParts = [], sections = [], currentSection = null;
+      let nameDone = false, contactDone = false;
+      for (const raw of lines) {
+        const t = raw.trim().replace(/^#{1,3}\s+/, '');
+        if (/^[-*_]{3,}$/.test(t)) continue;
+        const clean = t.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+        if (!clean) continue;
+        if (!nameDone) { name = clean; nameDone = true; continue; }
+        const isHdr = clean.length >= 2 && clean.length <= 60 && /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(clean);
+        if (isHdr) { contactDone = true; currentSection = { title: clean, lines: [] }; sections.push(currentSection); continue; }
+        if (!contactDone) { contactParts.push(clean); continue; }
+        if (currentSection) currentSection.lines.push(raw.trim());
+      }
+      return { name, contact: contactParts.join(' | '), sections };
+    }
+
+    function _lineHtml(raw, c) {
+      const t = raw.replace(/^#{1,3}\s+/, '').trim();
+      const clean = t.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+      if (!clean) return '<div style="height:5px;"></div>';
+      const wasBold = /^\*\*[^*]+\*\*$/.test(raw.trim());
+      const isBullet = /^[•·\-\*]\s/.test(raw.trim());
+      const isDate = (clean.includes('—') || clean.includes('–') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 150;
+      if (wasBold && clean.length < 70) return `<div style="font-size:13px;font-weight:800;color:#1a1a1a;margin:9px 0 1px;">${escHtml(clean)}</div>`;
+      if (isBullet) { const txt = clean.replace(/^[•·\-\*]\s*/, ''); return `<div style="padding-left:12px;font-size:12px;line-height:1.8;color:#444;margin:2px 0;">• ${escHtml(txt)}</div>`; }
+      if (isDate) return `<div style="font-size:11.5px;color:${c.a};font-weight:700;margin-bottom:4px;">${escHtml(clean)}</div>`;
+      return `<div style="font-size:12.5px;line-height:1.8;color:#444;">${escHtml(clean)}</div>`;
+    }
+
+    function renderSidebarOutput(parsed, c, font, printMode) {
+      const { name, contact, sections } = parsed;
+      const initials = name.trim()[0] ? name.trim()[0].toUpperCase() : '?';
+      const SIDE_KEYS = ['SKILL','CERTIF','LICENSE','LICENS','EDUCAT','LANGUAGE','AWARD','COMPETENC','TOOL','TECHNOLOG','PROFICIEN'];
+      const sideSecs = [], mainSecs = [];
+      for (const sec of sections) {
+        (SIDE_KEYS.some(k => sec.title.toUpperCase().includes(k)) ? sideSecs : mainSecs).push(sec);
+      }
+      const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
+      const sidebarHtml = sideSecs.map(sec => `<div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">${escHtml(sec.title)}</div>${sec.lines.map(raw => { const t = raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim(); if (!t) return ''; const txt = t.replace(/^[•·\-\*]\s*/,''); return `<div style="background:rgba(255,255,255,.13);color:#fff;font-size:11px;padding:4px 10px;border-radius:4px;margin-bottom:5px;">${escHtml(txt)}</div>`; }).join('')}</div>`).join('');
+      const mainHtml = mainSecs.map(sec => `<div style="margin-bottom:20px;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">${escHtml(sec.title)}</div><div style="width:36px;height:3px;background:${c.a};margin-bottom:10px;border-radius:2px;"></div>${sec.lines.map(raw => _lineHtml(raw, c)).join('')}</div>`).join('');
+      const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+      const outerStyle = printMode
+        ? `font-family:${font};color:#222;display:flex;width:8.5in;`
+        : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+      return `<div style="${outerStyle}"><div style="width:215px;background:${c.p};padding:36px 20px;flex-shrink:0;${pca}"><div style="width:56px;height:56px;border-radius:50%;background:${c.a};display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;font-weight:900;color:#fff;${pca}">${escHtml(initials)}</div><div style="color:#fff;text-align:center;margin-bottom:20px;"><div style="font-size:15px;font-weight:800;line-height:1.3;">${escHtml(name)}</div></div><div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">Contact</div><div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.9;">${contactLines.map(l=>`<div>${escHtml(l)}</div>`).join('')}</div></div>${sidebarHtml}</div><div style="flex:1;padding:36px 30px;min-width:0;">${mainHtml}</div></div>`;
+    }
+
+    function renderModernOutput(parsed, c, font, printMode) {
+      const { name, contact, sections } = parsed;
+      const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
+      const sectionsHtml = sections.map(sec => `<div style="margin-bottom:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${sec.lines.map(raw=>_lineHtml(raw,c)).join('')}</div>`).join('');
+      const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+      const outerStyle = printMode
+        ? `font-family:${font};color:#222;`
+        : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+      return `<div style="${outerStyle}"><div style="background:${c.p};padding:36px 52px;color:#fff;${pca}"><div style="font-size:34px;font-weight:900;letter-spacing:-1px;">${escHtml(name)}</div><div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:8px;display:flex;flex-wrap:wrap;gap:14px;">${contactParts.map(s=>`<span>${escHtml(s)}</span>`).join('')}</div></div><div style="padding:32px 52px;">${sectionsHtml}</div></div>`;
+    }
+
     function renderAIOutput(text, tplId, mode, printMode) {
       const cat = mode === 'cover_letter' ? 'cover' : 'resume';
       const tpl = OUT_TPLS[cat].find(t => t.id === tplId) || OUT_TPLS[cat][0];
       const c = tpl.c;
       const font = tpl.serif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
+      const parsed = parseAIOutput(text);
+
+      if (tpl.layout === 'rSidebar') return renderSidebarOutput(parsed, c, font, printMode);
+      if (tpl.layout === 'rModern')  return renderModernOutput(parsed, c, font, printMode);
+
+      // ── Linear layout (Classic, Executive, Minimal, all cover layouts) ──────
       const lines = text.split('\n');
       let html = '';
       let firstLine = true;
-
       for (let i = 0; i < lines.length; i++) {
         const raw = lines[i];
-
-        // Strip markdown heading prefix (##, ###, #)
         let t = raw.trim().replace(/^#{1,3}\s+/, '');
-
-        // Skip horizontal rule lines (---, ***, ___)
         if (/^[-*_]{3,}$/.test(t)) continue;
-
-        // Detect if original line was entirely bold (**text**) — marks job titles
         const wasBold = /^\*\*[^*]+\*\*$/.test(raw.trim());
-
-        // Strip inline markdown bold/italic
         t = t.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
-
-        if (!t) {
-          html += `<div style="height:7px;"></div>`;
-          continue;
-        }
-
-        // Name: first non-empty line
-        if (firstLine) {
-          firstLine = false;
-          html += `<div style="font-size:22px;font-weight:800;color:${c.p};margin-bottom:3px;">${escHtml(t)}</div>`;
-          continue;
-        }
-
-        // Contact line: has @ or phone or | pattern and is short
-        if ((t.includes('@') || /\(\d{3}\)/.test(t) || (t.includes('|') && t.length < 80 && !/\d{4}/.test(t))) && t.length < 120) {
-          html += `<div style="font-size:12px;color:#666;margin-bottom:2px;">${escHtml(t)}</div>`;
-          continue;
-        }
-
-        // Section header: ALL CAPS, 2–50 chars
+        if (!t) { html += `<div style="height:7px;"></div>`; continue; }
+        if (firstLine) { firstLine = false; html += `<div style="font-size:22px;font-weight:800;color:${c.p};margin-bottom:3px;">${escHtml(t)}</div>`; continue; }
+        if ((t.includes('@') || /\(\d{3}\)/.test(t) || (t.includes('|') && t.length < 80 && !/\d{4}/.test(t))) && t.length < 120) { html += `<div style="font-size:12px;color:#666;margin-bottom:2px;">${escHtml(t)}</div>`; continue; }
         const isHdr = t.length >= 2 && t.length <= 50 && /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(t);
         if (isHdr) {
-          if (tpl.style === 'left-bar') {
-            html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:8px;margin:18px 0 7px;">${escHtml(t)}</div>`;
-          } else if (tpl.style === 'icon-bar') {
-            html += `<div style="display:flex;align-items:center;gap:8px;margin:18px 0 7px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
-          } else if (tpl.style === 'minimal') {
-            html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:20px 0 7px;">${escHtml(t)}</div>`;
-          } else {
-            html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:3px;margin:18px 0 7px;">${escHtml(t)}</div>`;
-          }
+          if (tpl.style === 'left-bar') html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:8px;margin:18px 0 7px;">${escHtml(t)}</div>`;
+          else if (tpl.style === 'icon-bar') html += `<div style="display:flex;align-items:center;gap:8px;margin:18px 0 7px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
+          else if (tpl.style === 'minimal') html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:20px 0 7px;">${escHtml(t)}</div>`;
+          else html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:3px;margin:18px 0 7px;">${escHtml(t)}</div>`;
           continue;
         }
-
-        // Bold job title (whole line was **wrapped**): job/role name
-        if (wasBold && t.length < 70) {
-          html += `<div style="font-size:13.5px;font-weight:700;color:#222;margin:10px 0 1px;">${escHtml(t)}</div>`;
-          continue;
-        }
-
-        // Bullet point
-        if (/^[•·\-\*]\s/.test(raw.trim())) {
-          const txt = t.replace(/^[•·\-\*]\s*/, '');
-          html += `<div style="padding-left:14px;font-size:13px;line-height:1.8;color:#333;margin:2px 0;">• ${escHtml(txt)}</div>`;
-          continue;
-        }
-
-        // Company/date line: has — or – or | with a year
-        if ((t.includes('—') || t.includes('–') || (t.includes('|') && /\d{4}/.test(t))) && t.length < 150) {
-          html += `<div style="font-size:12px;color:${c.a};font-weight:600;margin-bottom:5px;">${escHtml(t)}</div>`;
-          continue;
-        }
-
+        if (wasBold && t.length < 70) { html += `<div style="font-size:13.5px;font-weight:700;color:#222;margin:10px 0 1px;">${escHtml(t)}</div>`; continue; }
+        if (/^[•·\-\*]\s/.test(raw.trim())) { const txt = t.replace(/^[•·\-\*]\s*/, ''); html += `<div style="padding-left:14px;font-size:13px;line-height:1.8;color:#333;margin:2px 0;">• ${escHtml(txt)}</div>`; continue; }
+        if ((t.includes('—') || t.includes('–') || (t.includes('|') && /\d{4}/.test(t))) && t.length < 150) { html += `<div style="font-size:12px;color:${c.a};font-weight:600;margin-bottom:5px;">${escHtml(t)}</div>`; continue; }
         html += `<div style="font-size:13px;line-height:1.75;color:#333;">${escHtml(t)}</div>`;
       }
-
-      if (printMode) {
-        return `<div style="font-family:${font};background:#fff;color:#222;">${html}</div>`;
-      }
+      if (printMode) return `<div style="font-family:${font};background:#fff;color:#222;">${html}</div>`;
       return `<div style="font-family:${font};background:#fff;padding:28px 32px;color:#222;border-radius:8px;border:1px solid #e5e7eb;">${html}</div>`;
     }
 
@@ -2589,6 +2606,11 @@ Aaliyah Washington`
         return;
       }
 
+      const isSidebarLayout = tpl.layout === 'rSidebar';
+      const bodyBg = isSidebarLayout
+        ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
+        : '#fff';
+
       win.document.write(`<!DOCTYPE html>
 <html>
 <head>
@@ -2597,14 +2619,11 @@ Aaliyah Washington`
   ${fontUrl}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { background: #fff; }
-    body { font-family: ${font}; color: #222; }
-    .page { width: 210mm; padding: 18mm 20mm; margin: 0 auto; background: #fff; }
+    @page { size: letter; margin: 0; }
+    html { background: #fff; }
+    body { font-family: ${font}; color: #222; background: ${bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    .page { width: 8.5in; ${isSidebarLayout ? '' : 'padding: 0.75in 1in;'} margin: 0 auto; }
     div { break-inside: avoid; page-break-inside: avoid; }
-    @media print {
-      * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
-      .page { padding: 15mm 18mm; }
-    }
   </style>
 </head>
 <body>
@@ -2701,7 +2720,7 @@ Aaliyah Washington`
     function renderDownloadButtons() {
       const row = document.getElementById('downloadRow');
       if (!row) return;
-      row.innerHTML = `<button class="btn btn-primary" onclick="openPreview()" style="font-size:15px;padding:12px 28px;margin-top:4px;">👁 Preview &amp; Download →</button>`;
+      row.innerHTML = `<button class="btn btn-primary" onclick="openPreview()" style="font-size:15px;padding:12px 28px;margin-top:4px;">👁 Preview →</button>`;
     }
 
     function renderPreviewDownloadButtons() {
@@ -2709,14 +2728,14 @@ Aaliyah Washington`
       if (!row) return;
       if (isSubscriberFlag) {
         row.innerHTML = `
-          <button class="download-btn download-btn-docx" onclick="downloadDocx()">⬇ Word (.docx)</button>
-          <button class="download-btn download-btn-pdf" onclick="downloadPdf()">⬇ PDF</button>
-          <button class="download-btn download-btn-txt" onclick="downloadTxt()">⬇ Text (.txt)</button>`;
+          <button class="download-btn download-btn-pdf" onclick="downloadPdf()">Download PDF</button>
+          <button class="download-btn download-btn-docx" onclick="downloadDocx()">Download Word</button>
+          <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>`;
       } else {
         row.innerHTML = `
-          <button class="download-btn download-btn-docx" onclick="adGate(downloadDocx)" style="background:#7c3aed;">▶ Watch Ad → Word</button>
-          <button class="download-btn download-btn-pdf" onclick="adGate(downloadPdf)" style="background:#b91c1c;">▶ Watch Ad → PDF</button>
-          <button class="download-btn download-btn-txt" onclick="adGate(downloadTxt)" style="background:#374151;">▶ Watch Ad → Text</button>`;
+          <button class="download-btn download-btn-pdf" onclick="adGate(downloadPdf)" style="background:#b91c1c;">▶ Ad → PDF</button>
+          <button class="download-btn download-btn-docx" onclick="adGate(downloadDocx)" style="background:#7c3aed;">▶ Ad → Word</button>
+          <button class="download-btn download-btn-txt" onclick="adGate(downloadTxt)" style="background:#374151;">▶ Ad → Text</button>`;
       }
     }
 
