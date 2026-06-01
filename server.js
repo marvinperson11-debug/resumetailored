@@ -569,7 +569,10 @@ function getUsageKey(req) {
 }
 
 function isSubscriber(email) {
-  return email && !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(email.toLowerCase());
+  if (!email) return false;
+  const ownerEmail = process.env.OWNER_EMAIL || 'marvinperson11@gmail.com';
+  if (email.toLowerCase() === ownerEmail.toLowerCase()) return true;
+  return !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(email.toLowerCase());
 }
 
 // ─── API: Health check ────────────────────────────────────────────────────────
