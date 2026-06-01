@@ -117,27 +117,33 @@
     .tpl-pick-section { margin: 14px 0 16px; }
     .tpl-pick-label { font-size: 11.5px; font-weight: 700; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .6px; display: flex; justify-content: space-between; align-items: center; }
     .tpl-pick-label span { font-size: 10px; font-weight: 600; color: #9ca3af; letter-spacing: .3px; text-transform: none; }
-    .tpl-pick-outer { position: relative; overflow: clip; }
+    .tpl-pick-outer { position: relative; overflow: hidden; }
     .tpl-pick-outer::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 48px; background: linear-gradient(to right, transparent, #f9fafb); pointer-events: none; z-index: 1; border-radius: 0 6px 0 0; }
     .tpl-pick-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; -webkit-overflow-scrolling: touch; }
     .tpl-pick-row::-webkit-scrollbar { height: 3px; }
     .tpl-pick-row::-webkit-scrollbar-track { background: transparent; }
     .tpl-pick-row::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
     .tpl-pick-item {
-      flex-shrink: 0; width: 100px; cursor: pointer; border-radius: 8px;
+      flex-shrink: 0; width: 160px; cursor: pointer; border-radius: 12px;
       border: 2px solid #e5e7eb; overflow: hidden; background: #fff;
-      transition: border-color .15s, box-shadow .15s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all .2s;
     }
-    .tpl-pick-item:hover:not(.locked) { border-color: #93c5fd; }
-    .tpl-pick-item.selected { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37,99,235,.15); }
-    .tpl-pick-item.locked { opacity: .55; cursor: default; }
-    .tpl-pick-thumb { height: 126px; overflow: hidden; position: relative; background: #f9fafb; }
+    .tpl-pick-item:hover:not(.locked) { border-color: #2563eb; box-shadow: 0 4px 16px rgba(37,99,235,0.15); transform: translateY(-2px); }
+    .tpl-pick-item.selected { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.2); }
+    .tpl-pick-item.locked { cursor: default; }
+    .tpl-pick-thumb { height: 140px; overflow: hidden; position: relative; background: #f9fafb; }
     .tpl-pick-thumb-inner { transform-origin: top left; position: absolute; top: 0; left: 0; pointer-events: none; }
-    .tpl-pick-name { font-size: 9px; font-weight: 700; text-align: center; padding: 4px 3px 5px; color: #374151; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tpl-pick-badge { position: absolute; top: 3px; left: 3px; font-size: 7.5px; font-weight: 800; padding: 1px 4px; border-radius: 3px; line-height: 1.5; text-transform: uppercase; }
-    .tpl-pick-badge-free { background: #dcfce7; color: #166534; }
+    .tpl-pick-body { padding: 10px; }
+    .tpl-pick-name { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 4px; }
+    .tpl-pick-badge { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
+    .tpl-pick-badge-free { background: #dcfce7; color: #16a34a; }
     .tpl-pick-badge-pro { background: #1e1b4b; color: #e0e7ff; }
-    .tpl-pick-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.35); font-size: 15px; }
+    .tpl-pick-btn { display: block; width: 100%; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 700; text-align: center; border: none; cursor: pointer; transition: background .15s; font-family: inherit; box-sizing: border-box; }
+    .tpl-pick-btn-select { background: #2563eb; color: #fff; }
+    .tpl-pick-btn-select:hover { background: #1d4ed8; }
+    .tpl-pick-btn-selected { background: #dcfce7; color: #166534; cursor: default; }
+    .tpl-pick-btn-locked { background: #f3f4f6; color: #6b7280; }
+    .tpl-pick-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.35); font-size: 24px; }
     /* ── Edit mode ── */
     .edit-bar { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 9px; margin-bottom: 10px; font-size: 13px; color: #1d4ed8; font-weight: 600; flex-wrap: wrap; }
     .edit-bar .eb-btn { padding: 5px 14px; border-radius: 7px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
@@ -1856,6 +1862,120 @@
     // TPL_PREV_FNS is populated after layout functions are defined below
     const TPL_PREV_FNS = {};
 
+    function makeStaticPreview(tpl) {
+      const { p, a, l } = tpl.c;
+      const font = tpl.serif ? 'Georgia,serif' : "'Inter',sans-serif";
+      switch (tpl.layout) {
+        case 'rClassic': return `<div style="background:#fff;padding:10px;font-family:${font};height:140px;overflow:hidden;">
+          <div style="text-align:center;border-bottom:1.5px solid ${p};padding-bottom:5px;margin-bottom:5px;">
+            <div style="font-size:9.5px;font-weight:700;letter-spacing:2px;color:${p};text-transform:uppercase;">ALEX JOHNSON</div>
+            <div style="font-size:5.5px;color:#475569;margin-top:2px;">alex@email.com · New York, NY</div>
+          </div>
+          <div style="font-size:6px;font-weight:700;text-transform:uppercase;color:${p};border-bottom:1px solid ${p};padding-bottom:1px;margin-bottom:3px;letter-spacing:1px;">Experience</div>
+          <div style="font-size:6.5px;font-weight:700;color:#0f172a;margin-bottom:1px;">Sr. Marketing Manager · TechCorp</div>
+          <div style="font-size:5.5px;color:#475569;line-height:1.4;margin-bottom:3px;">• Grew pipeline 34% YoY · $2.1M revenue</div>
+          <div style="font-size:6px;font-weight:700;text-transform:uppercase;color:${p};border-bottom:1px solid ${p};padding-bottom:1px;margin-bottom:2px;letter-spacing:1px;">Skills</div>
+          <div style="font-size:5.5px;color:#475569;">Python · SQL · Tableau · Salesforce</div>
+        </div>`;
+        case 'rExecutive': return `<div style="background:#fff;padding:10px;font-family:${font};height:140px;overflow:hidden;">
+          <div style="border-left:3px solid ${p};padding-left:7px;margin-bottom:7px;">
+            <div style="font-size:9px;font-weight:800;color:${p};text-transform:uppercase;letter-spacing:1px;">MICHAEL CHEN</div>
+            <div style="font-size:5.5px;color:#64748b;margin-top:2px;">VP Engineering · 15+ Years</div>
+          </div>
+          <div style="font-size:6px;font-weight:700;color:${a};text-transform:uppercase;letter-spacing:1px;border-left:2px solid ${a};padding-left:5px;margin-bottom:3px;">Experience</div>
+          <div style="font-size:6px;color:#1e293b;padding-left:7px;">CTO · Fortune 500 · 2019–Present</div>
+          <div style="font-size:5.5px;color:#64748b;padding-left:7px;margin-bottom:3px;">Drove 3× revenue growth, 50+ engineers</div>
+          <div style="font-size:6px;font-weight:700;color:${a};text-transform:uppercase;letter-spacing:1px;border-left:2px solid ${a};padding-left:5px;margin-bottom:2px;">Skills</div>
+          <div style="font-size:5.5px;color:#64748b;padding-left:7px;">Cloud · ML · DevOps · Leadership</div>
+        </div>`;
+        case 'rModern': return `<div style="background:#fff;font-family:${font};height:140px;overflow:hidden;">
+          <div style="background:${p};padding:10px 10px 8px;">
+            <div style="font-size:9.5px;font-weight:800;color:#fff;letter-spacing:.5px;">SARAH CHEN</div>
+            <div style="font-size:5.5px;color:${l};margin-top:2px;opacity:0.9;">sarah@email.com · San Francisco, CA</div>
+          </div>
+          <div style="padding:7px 10px;">
+            <div style="font-size:6px;font-weight:800;color:${a};text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div>
+            <div style="font-size:6.5px;font-weight:700;color:#111827;">Software Engineer · Stripe</div>
+            <div style="font-size:5.5px;color:#4b5563;line-height:1.4;margin-bottom:3px;">• API handling 50M+ transactions<br/>• Reduced latency 42%</div>
+            <div style="font-size:6px;font-weight:800;color:${a};text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Skills</div>
+            <div style="font-size:5.5px;color:#4b5563;">TypeScript · React · Node.js · AWS</div>
+          </div>
+        </div>`;
+        case 'rSidebar': return `<div style="background:#fff;display:flex;font-family:${font};height:140px;overflow:hidden;">
+          <div style="background:${p};width:46px;padding:8px 6px;flex-shrink:0;">
+            <div style="font-size:6px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;line-height:1.2;">ALEX J.</div>
+            <div style="font-size:5px;color:${l};opacity:0.9;margin-bottom:4px;">NYC</div>
+            <div style="font-size:5px;font-weight:700;color:${a};text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Skills</div>
+            <div style="font-size:5px;color:${l};opacity:0.9;line-height:1.5;">Python<br/>SQL<br/>React</div>
+          </div>
+          <div style="padding:10px 8px;flex:1;">
+            <div style="font-size:6px;font-weight:700;color:${p};text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid ${p};padding-bottom:1px;margin-bottom:3px;">Experience</div>
+            <div style="font-size:6px;font-weight:700;color:#1e293b;">Sr. Engineer · TechCorp</div>
+            <div style="font-size:5px;color:#64748b;line-height:1.4;margin-top:1px;">• Built core API, 50M+ req/day<br/>• Cut infra costs 40%</div>
+          </div>
+        </div>`;
+        case 'rMinimal': return `<div style="background:#fafafa;padding:12px;font-family:${font};height:140px;overflow:hidden;">
+          <div style="margin-bottom:6px;">
+            <div style="font-size:9px;font-weight:300;letter-spacing:3px;color:#111827;text-transform:uppercase;">JESSICA PARK</div>
+            <div style="font-size:5.5px;color:#6b7280;margin-top:2px;">Product Designer · jessica@email.com</div>
+            <div style="width:100%;height:0.5px;background:${p};margin-top:5px;"></div>
+          </div>
+          <div style="font-size:6px;font-weight:500;color:${p};text-transform:uppercase;letter-spacing:2px;margin-bottom:3px;">Work</div>
+          <div style="font-size:6px;color:#374151;margin-bottom:1px;">Lead Designer · Figma</div>
+          <div style="font-size:5.5px;color:#9ca3af;margin-bottom:3px;">Redesigned core editor, +22% DAU</div>
+          <div style="font-size:6px;font-weight:500;color:${p};text-transform:uppercase;letter-spacing:2px;margin-bottom:2px;">Tools</div>
+          <div style="font-size:5.5px;color:#9ca3af;">Figma · Principle · Lottie · Swift UI</div>
+        </div>`;
+        case 'cFormal': return `<div style="background:#fff;padding:12px;font-family:${font};height:140px;overflow:hidden;">
+          <div style="border-bottom:1.5px solid ${p};margin-bottom:7px;padding-bottom:5px;">
+            <div style="font-size:9px;font-weight:700;color:${p};letter-spacing:1px;text-transform:uppercase;">ALEX JOHNSON</div>
+            <div style="font-size:5.5px;color:#475569;margin-top:1px;">alex@email.com · New York, NY</div>
+          </div>
+          <div style="font-size:5.5px;color:#374151;line-height:1.55;">Dear Hiring Manager,</div>
+          <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-top:3px;">I am excited to apply. My background in marketing and data analysis aligns closely with your needs...</div>
+          <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-top:4px;">Sincerely,<br/>Alex Johnson</div>
+        </div>`;
+        case 'cBold': return `<div style="background:#fff;font-family:${font};height:140px;overflow:hidden;">
+          <div style="background:${p};padding:10px 10px 8px;">
+            <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:.5px;">ALEX JOHNSON</div>
+            <div style="font-size:5.5px;color:${a};margin-top:2px;">Marketing Director</div>
+          </div>
+          <div style="padding:7px 10px;">
+            <div style="font-size:5.5px;color:#374151;line-height:1.55;">Dear Hiring Manager,</div>
+            <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-top:3px;">I'm thrilled to apply. My track record in pipeline growth and team leadership makes me a strong fit...</div>
+          </div>
+        </div>`;
+        case 'cBoxed': return `<div style="background:#fff;padding:10px;font-family:${font};height:140px;overflow:hidden;">
+          <div style="border:1.5px solid ${p};padding:6px 8px;margin-bottom:7px;">
+            <div style="font-size:9px;font-weight:700;color:${p};letter-spacing:1px;text-transform:uppercase;">ALEX JOHNSON</div>
+            <div style="font-size:5.5px;color:#475569;margin-top:1px;">alex@email.com · New York, NY</div>
+          </div>
+          <div style="font-size:5.5px;color:#374151;line-height:1.55;">Dear Hiring Manager,<br/>I am writing to express my strong interest in this position. My experience in driving results...</div>
+        </div>`;
+        case 'cSplit': return `<div style="background:#fff;font-family:${font};height:140px;overflow:hidden;">
+          <div style="display:flex;background:${p};">
+            <div style="padding:10px;flex:1;">
+              <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:.5px;">ALEX JOHNSON</div>
+              <div style="font-size:5.5px;color:${l};margin-top:2px;opacity:0.9;">Marketing Director</div>
+            </div>
+            <div style="background:${a};width:6px;"></div>
+          </div>
+          <div style="padding:7px 10px;font-size:5.5px;color:#374151;line-height:1.55;">
+            Dear Hiring Manager,<br/>I'm excited to bring my expertise in pipeline growth and team leadership to your organization...
+          </div>
+        </div>`;
+        case 'cClean': return `<div style="background:${l};padding:12px;font-family:${font};height:140px;overflow:hidden;">
+          <div style="margin-bottom:8px;">
+            <div style="font-size:9px;font-weight:700;color:${p};">Alex Johnson</div>
+            <div style="font-size:5.5px;color:${a};margin-top:1px;">alex@email.com · New York, NY</div>
+            <div style="width:24px;height:2px;background:${a};margin-top:4px;"></div>
+          </div>
+          <div style="font-size:5.5px;color:${p};line-height:1.6;">Dear Hiring Manager,<br/>I am writing to express my enthusiasm for this role. My background in marketing and data analysis...</div>
+        </div>`;
+        default: return `<div style="background:#f3f4f6;height:140px;"></div>`;
+      }
+    }
+
     function renderTplPicker() {
       const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
       const list = OUT_TPLS[cat];
@@ -1864,29 +1984,26 @@
       row.innerHTML = list.map(tpl => {
         const locked = !tpl.free && !isSubscriberFlag;
         const selected = tpl.id === activeTplId;
-        const previewHtml = (TPL_PREV_FNS[tpl.id] || (() => ''))();
-        const badge = tpl.free
-          ? `<span class="tpl-pick-badge tpl-pick-badge-free">Free</span>`
-          : `<span class="tpl-pick-badge tpl-pick-badge-pro">Pro</span>`;
+        const previewHtml = makeStaticPreview(tpl);
+        const btnClass = selected ? 'tpl-pick-btn-selected' : locked ? 'tpl-pick-btn-locked' : 'tpl-pick-btn-select';
+        const btnText = selected ? '✓ Selected' : locked ? '🔒 Pro Only' : 'Use Template →';
+        const btnClick = locked
+          ? `event.stopPropagation();showToast('Upgrade to Pro to unlock all templates!')`
+          : selected ? `event.stopPropagation()`
+          : `event.stopPropagation();chooseTpl('${tpl.id}','${cat}')`;
         return `<div class="tpl-pick-item${selected?' selected':''}${locked?' locked':''}"
           onclick="${locked ? `showToast('Upgrade to Pro to unlock all templates!')` : `chooseTpl('${tpl.id}','${cat}')`}">
           <div class="tpl-pick-thumb">
-            <div class="tpl-pick-thumb-inner" id="tpi-${tpl.id}">${previewHtml}</div>
-            ${badge}
+            ${previewHtml}
             ${locked ? '<div class="tpl-pick-lock">🔒</div>' : ''}
           </div>
-          <div class="tpl-pick-name">${tpl.name}</div>
+          <div class="tpl-pick-body">
+            <div class="tpl-pick-name">${tpl.name}</div>
+            <div class="tpl-pick-badge ${tpl.free ? 'tpl-pick-badge-free' : 'tpl-pick-badge-pro'}">${tpl.free ? 'FREE' : 'PRO'}</div>
+            <button class="tpl-pick-btn ${btnClass}" onclick="${btnClick}">${btnText}</button>
+          </div>
         </div>`;
       }).join('');
-      // Scale thumbnails
-      requestAnimationFrame(() => {
-        list.forEach(tpl => {
-          const inner = document.getElementById('tpi-' + tpl.id);
-          if (inner) inner.style.transform = `scale(${100/794})`;
-          const thumb = inner && inner.parentElement;
-          if (thumb) thumb.style.height = Math.round(1123 * 100/794) + 'px';
-        });
-      });
     }
 
     function chooseTpl(id, cat) {
