@@ -20,6 +20,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9896489046536589" crossorigin="anonymous"></script>
   <style>
@@ -935,17 +936,17 @@
       <div class="tab-content" id="panel-samples">
         <div class="panel-header">
           <h1>Resume & Cover Letter Templates</h1>
-          <p>25 beautifully designed resume templates + 25 cover letter templates. Every style, every industry. Free members get 2 of each — Pro unlocks all 50.</p>
+          <p>20 beautifully designed resume templates + 20 cover letter templates. Every style, every industry. Free members get 2 of each — Pro unlocks all 40.</p>
         </div>
 
         <div class="sample-toggle">
-          <button class="sample-toggle-btn active" id="toggleResumes" onclick="switchTemplateType('resume')">📄 Resume Templates (25)</button>
-          <button class="sample-toggle-btn" id="toggleCovers" onclick="switchTemplateType('cover')">✉️ Cover Letter Templates (25)</button>
+          <button class="sample-toggle-btn active" id="toggleResumes" onclick="switchTemplateType('resume')">📄 Resume Templates (20)</button>
+          <button class="sample-toggle-btn" id="toggleCovers" onclick="switchTemplateType('cover')">✉️ Cover Letter Templates (20)</button>
         </div>
 
         <div class="tpl-free-note">
-          <span>✦ <strong style="color:#f5c842;">2 free templates</strong> included — upgrade to Pro to unlock all 25 of each type.</span>
-          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">Unlock All 50 →</button>
+          <span>✦ <strong style="color:#f5c842;">2 free templates</strong> included — upgrade to Pro to unlock all 20 of each type.</span>
+          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">Unlock All 40 →</button>
         </div>
 
         <div class="template-gallery-outer">
@@ -2181,19 +2182,11 @@
     // Cover layout 5: Clean (minimal, typographic)
     function cClean(c){const p=_CP;return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;padding:76px;color:#1a1a1a;max-width:794px;"><div style="margin-bottom:44px;"><div style="font-size:34px;font-weight:900;letter-spacing:-1.5px;">${p.name}</div><div style="display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;"><span style="font-size:12px;color:${c.p};font-weight:700;">${p.email}</span><span style="font-size:12px;color:#ddd;">|</span><span style="font-size:12px;color:${c.p};font-weight:700;">${p.phone}</span></div><div style="height:2px;background:${c.p};margin-top:18px;"></div></div><div style="font-size:11.5px;color:#bbb;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:26px;">${p.date}</div><div style="font-size:17px;font-weight:800;color:#1a1a1a;margin-bottom:26px;">Re: ${p.role} — ${p.company}</div>${p.body.map((para,i)=>`<p style="font-size:13.5px;line-height:1.9;margin-bottom:19px;${i===0?`color:#1a1a1a;font-weight:600;`:'color:#555;'}">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div>`;}
 
-    const _RL=[rClassic,rExecutive,rSidebar,rModern,rMinimal];
-    const _CL=[cFormal,cBold,cBoxed,cSplit,cClean];
-    const _RN=['Executive Classic','Navy Executive','Crimson Classic','Forest Classic','Indigo Classic','Authority Blue','Teal Corporate','Charcoal Executive','Sage Executive','Violet Executive','Classic Sidebar','Teal Sidebar','Bold Sidebar','Forest Sidebar','Purple Sidebar','Navy Modern','Teal Modern','Crimson Modern','Forest Modern','Indigo Modern','Navy Minimal','Teal Minimal','Red Minimal','Green Minimal','Purple Minimal'];
-    const _CN=['Executive Letter','Slate Letter','Crimson Formal','Forest Formal','Indigo Letter','Navy Bold','Teal Bold','Crimson Bold','Forest Bold','Violet Bold','Navy Boxed','Teal Boxed','Red Boxed','Forest Boxed','Purple Boxed','Navy Split','Teal Split','Bold Split','Sage Split','Violet Split','Navy Clean','Teal Clean','Red Clean','Green Clean','Purple Clean'];
-
-    const resumeTemplates=_RL.flatMap((fn,li)=>_TC.map((c,ci)=>({id:li*5+ci+1,name:_RN[li*5+ci],fn,c,free:li===0&&ci<2})));
-    const coverTemplates=_CL.flatMap((fn,li)=>_TC.map((c,ci)=>({id:li*5+ci+1,name:_CN[li*5+ci],fn,c,free:li===0&&ci<2})));
-
-    // Populate TPL_PREV_FNS from OUT_TPLS now that all layout functions are defined
-    {
-      const _lmap={rClassic,rExecutive,rModern,rSidebar,rMinimal,cFormal,cBold,cBoxed,cSplit,cClean};
-      [...OUT_TPLS.resume,...OUT_TPLS.cover].forEach(t=>{TPL_PREV_FNS[t.id]=()=>_lmap[t.layout](t.c);});
-    }
+    // Build gallery + output preview data from OUT_TPLS (single source of truth: 20 resume + 20 cover)
+    const _lmap={rClassic,rExecutive,rModern,rSidebar,rMinimal,cFormal,cBold,cBoxed,cSplit,cClean};
+    [...OUT_TPLS.resume,...OUT_TPLS.cover].forEach(t=>{TPL_PREV_FNS[t.id]=()=>_lmap[t.layout](t.c);});
+    const resumeTemplates=OUT_TPLS.resume.map(t=>({...t,fn:_lmap[t.layout]}));
+    const coverTemplates=OUT_TPLS.cover.map(t=>({...t,fn:_lmap[t.layout]}));
 
     let _activeType='resume';
 
@@ -2257,7 +2250,7 @@
     }
 
     function showTplLock(){
-      showToast('Upgrade to Pro to unlock all 25 templates!');
+      showToast('Upgrade to Pro to unlock all 40 templates!');
     }
 
     function useTplTemplate(){
@@ -2528,11 +2521,15 @@ Aaliyah Washington`
       const text = getOutputText();
       if (!text) return;
       const filename = document.getElementById('outputTitle').textContent || 'tailored-resume';
+      const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
+      const tplId = selectedOutputTpl[tplCat];
+      const tpl = OUT_TPLS[tplCat].find(t => t.id === tplId);
+      const colors = tpl ? { primary: tpl.c.p, accent: tpl.c.a } : null;
       try {
         const res = await fetch('/api/download-docx', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, filename })
+          body: JSON.stringify({ text, filename, colors })
         });
         if (!res.ok) throw new Error('Download failed.');
         const blob = await res.blob();
@@ -2546,43 +2543,32 @@ Aaliyah Washington`
       }
     }
 
-    function downloadPdf() {
-      const text = getOutputText();
-      if (!text) return;
+    async function downloadPdf() {
+      const outputBox = document.getElementById('outputBox');
+      if (!outputBox.innerHTML.trim()) return;
+      const filename = (document.getElementById('outputTitle').textContent || 'tailored-resume').replace(/[^a-z0-9-_ ]/gi, '_');
       try {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 15;
-        const maxWidth = pageWidth - margin * 2;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(11);
-
-        const lines = text.split('\n');
-        let y = 20;
-        lines.forEach(line => {
-          const wrapped = doc.splitTextToSize(line || ' ', maxWidth);
-          wrapped.forEach(wLine => {
-            if (y > 280) { doc.addPage(); y = 20; }
-            if (line.startsWith('# ')) {
-              doc.setFontSize(16); doc.setFont('helvetica', 'bold');
-              doc.text(wLine.replace(/^#+\s*/, ''), margin, y);
-              doc.setFontSize(11); doc.setFont('helvetica', 'normal');
-              y += 9;
-            } else if (line.startsWith('## ') || line.startsWith('### ')) {
-              doc.setFontSize(13); doc.setFont('helvetica', 'bold');
-              doc.text(wLine.replace(/^#+\s*/, ''), margin, y);
-              doc.setFontSize(11); doc.setFont('helvetica', 'normal');
-              y += 8;
-            } else {
-              doc.text(wLine, margin, y);
-              y += 6;
-            }
-          });
+        const canvas = await html2canvas(outputBox, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false
         });
-
-        const filename = (document.getElementById('outputTitle').textContent || 'tailored-resume').replace(/[^a-z0-9-_ ]/gi, '_');
-        doc.save(filename + '.pdf');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: 'mm', format: 'a4' });
+        const pdfW = pdf.internal.pageSize.getWidth();
+        const pdfH = pdf.internal.pageSize.getHeight();
+        const imgData = canvas.toDataURL('image/jpeg', 0.92);
+        const imgH = (canvas.height / canvas.width) * pdfW;
+        let yOffset = 0;
+        let pageCount = 0;
+        while (yOffset < imgH) {
+          if (pageCount > 0) pdf.addPage();
+          pdf.addImage(imgData, 'JPEG', 0, -yOffset, pdfW, imgH);
+          yOffset += pdfH;
+          pageCount++;
+        }
+        pdf.save(filename + '.pdf');
       } catch(err) {
         showToast('PDF generation failed. Try downloading as Word or Text instead.');
       }
