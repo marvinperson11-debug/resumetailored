@@ -11,7 +11,7 @@ const fs = require('fs');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const { Document, Packer, Paragraph, TextRun, HeadingLevel } = require('docx');
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } = require('docx');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 
@@ -509,17 +509,23 @@ app.post('/api/extract-text', upload.single('file'), async (req, res) => {
 
 // ─── API: Download tailored result as .docx ───────────────────────────────────
 app.post('/api/download-docx', async (req, res) => {
-  const { text, filename } = req.body;
+  const { text, filename, colors } = req.body;
   if (!text) return res.status(400).json({ error: 'No text provided.' });
+
+  // Strip # from hex colors for docx API (expects "1a237e" not "#1a237e")
+  const primaryHex = colors?.primary ? colors.primary.replace('#', '') : '1a237e';
+  const accentHex  = colors?.accent  ? colors.accent.replace('#', '')  : '5c6bc0';
 
   const lines = text.split('\n');
   const children = lines.map(line => {
     const trimmed = line.trim();
-    if (trimmed.length > 0 && trimmed.length <= 40 && trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed)) {
+    const isHeading = trimmed.length > 0 && trimmed.length <= 50 &&
+      trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed);
+    if (isHeading) {
       return new Paragraph({
-        text: trimmed,
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 240, after: 80 }
+        children: [new TextRun({ text: trimmed, font: 'Calibri', size: 26, bold: true, color: primaryHex })],
+        spacing: { before: 280, after: 80 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: accentHex, space: 4 } }
       });
     }
     return new Paragraph({
