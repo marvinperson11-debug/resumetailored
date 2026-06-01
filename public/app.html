@@ -1805,58 +1805,125 @@
     // ── Output Template Picker ────────────────────────────────────────────────
     const OUT_TPLS = {
       resume: [
-        // Classic — serif, centered header, underline section headers
-        { id:'r1',  name:'Classic',          free:true,  serif:true,  style:'underline', layout:'rClassic',   c:{p:'#1a237e',a:'#5c6bc0',l:'#e8eaf6'} },
-        { id:'r2',  name:'Classic Forest',   free:false, serif:true,  style:'underline', layout:'rClassic',   c:{p:'#1b5e20',a:'#4caf50',l:'#e8f5e9'} },
-        { id:'r3',  name:'Classic Ruby',     free:false, serif:true,  style:'underline', layout:'rClassic',   c:{p:'#7f1d1d',a:'#ef4444',l:'#fef2f2'} },
-        { id:'r4',  name:'Classic Slate',    free:false, serif:true,  style:'underline', layout:'rClassic',   c:{p:'#263238',a:'#78909c',l:'#eceff1'} },
-        // Executive — sans-serif, left-border accent header, left-bar sections
-        { id:'r5',  name:'Executive',        free:false, serif:false, style:'left-bar',  layout:'rExecutive', c:{p:'#004d40',a:'#00897b',l:'#e0f2f1'} },
-        { id:'r6',  name:'Executive Amber',  free:false, serif:false, style:'left-bar',  layout:'rExecutive', c:{p:'#3e2723',a:'#f59e0b',l:'#fffbeb'} },
-        { id:'r7',  name:'Executive Indigo', free:false, serif:false, style:'left-bar',  layout:'rExecutive', c:{p:'#1a0050',a:'#7c3aed',l:'#ede9fe'} },
-        { id:'r8',  name:'Executive Slate',  free:false, serif:false, style:'left-bar',  layout:'rExecutive', c:{p:'#1c2333',a:'#607d8b',l:'#eceff1'} },
-        // Modern — sans-serif, colored header bar, icon-bar sections
-        { id:'r9',  name:'Modern',           free:false, serif:false, style:'icon-bar',  layout:'rModern',    c:{p:'#1b5e20',a:'#66bb6a',l:'#f1f8e9'} },
-        { id:'r10', name:'Modern Ocean',     free:false, serif:false, style:'icon-bar',  layout:'rModern',    c:{p:'#01579b',a:'#29b6f6',l:'#e1f5fe'} },
-        { id:'r11', name:'Modern Coral',     free:false, serif:false, style:'icon-bar',  layout:'rModern',    c:{p:'#bf360c',a:'#ff7043',l:'#fff3e0'} },
-        { id:'r12', name:'Modern Violet',    free:false, serif:false, style:'icon-bar',  layout:'rModern',    c:{p:'#4a148c',a:'#ab47bc',l:'#f3e5f5'} },
-        // Sidebar — sans-serif, colored sidebar column
-        { id:'r13', name:'Sidebar',          free:false, serif:false, style:'underline', layout:'rSidebar',   c:{p:'#4a1042',a:'#ab47bc',l:'#f3e5f5'} },
-        { id:'r14', name:'Sidebar Navy',     free:false, serif:false, style:'underline', layout:'rSidebar',   c:{p:'#0a192f',a:'#4a90d9',l:'#e8f0fe'} },
-        { id:'r15', name:'Sidebar Forest',   free:false, serif:false, style:'underline', layout:'rSidebar',   c:{p:'#052e16',a:'#22c55e',l:'#f0fdf4'} },
-        { id:'r16', name:'Sidebar Crimson',  free:false, serif:false, style:'underline', layout:'rSidebar',   c:{p:'#7f1d1d',a:'#f87171',l:'#fef2f2'} },
-        // Minimal — serif, ultra-clean, wide-spaced section headers
-        { id:'r17', name:'Minimal',          free:false, serif:true,  style:'minimal',   layout:'rMinimal',   c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
-        { id:'r18', name:'Minimal Midnight', free:false, serif:true,  style:'minimal',   layout:'rMinimal',   c:{p:'#0d1117',a:'#4299e1',l:'#ebf8ff'} },
-        { id:'r19', name:'Minimal Sage',     free:false, serif:true,  style:'minimal',   layout:'rMinimal',   c:{p:'#2d4a22',a:'#7cb342',l:'#f9fbe7'} },
-        { id:'r20', name:'Minimal Graphite', free:false, serif:true,  style:'minimal',   layout:'rMinimal',   c:{p:'#212121',a:'#9e9e9e',l:'#fafafa'} },
+        // Classic — serif, centered header
+        { id:'r1',  name:'Classic',            free:true,  serif:true,  style:'underline', layout:'rClassic',  c:{p:'#1a237e',a:'#5c6bc0',l:'#e8eaf6'} },
+        { id:'r2',  name:'Classic Forest',     free:false, serif:true,  style:'underline', layout:'rClassic',  c:{p:'#1b5e20',a:'#4caf50',l:'#e8f5e9'} },
+        { id:'r3',  name:'Classic Ruby',       free:false, serif:true,  style:'underline', layout:'rClassic',  c:{p:'#7f1d1d',a:'#ef4444',l:'#fef2f2'} },
+        { id:'r4',  name:'Classic Slate',      free:false, serif:true,  style:'underline', layout:'rClassic',  c:{p:'#263238',a:'#78909c',l:'#eceff1'} },
+        { id:'r21', name:'Classic Royal',      free:false, serif:true,  style:'underline', layout:'rClassic',  c:{p:'#1a1a5e',a:'#c084fc',l:'#f5f3ff'} },
+        { id:'r22', name:'Classic Teal',       free:false, serif:true,  style:'underline', layout:'rClassic',  c:{p:'#005f73',a:'#0a9396',l:'#e0f7fa'} },
+        { id:'r23', name:'Classic Espresso',   free:false, serif:true,  style:'underline', layout:'rClassic',  c:{p:'#3b1c0a',a:'#b45309',l:'#fffbeb'} },
+        { id:'r24', name:'Classic Steel',      free:false, serif:true,  style:'underline', layout:'rClassic',  c:{p:'#37474f',a:'#90a4ae',l:'#eceff1'} },
+        // Executive — sans-serif, left-border accent
+        { id:'r5',  name:'Executive',          free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#004d40',a:'#00897b',l:'#e0f2f1'} },
+        { id:'r6',  name:'Executive Amber',    free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#3e2723',a:'#f59e0b',l:'#fffbeb'} },
+        { id:'r7',  name:'Executive Indigo',   free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#1a0050',a:'#7c3aed',l:'#ede9fe'} },
+        { id:'r8',  name:'Executive Slate',    free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#1c2333',a:'#607d8b',l:'#eceff1'} },
+        { id:'r25', name:'Executive Steel',    free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#263238',a:'#546e7a',l:'#eceff1'} },
+        { id:'r26', name:'Executive Navy',     free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#0d1b2a',a:'#4fc3f7',l:'#e0f7fa'} },
+        { id:'r27', name:'Executive Sage',     free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#1a2e05',a:'#65a30d',l:'#ecfccb'} },
+        { id:'r28', name:'Executive Rose',     free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#500724',a:'#e11d48',l:'#fff1f2'} },
+        // Modern — colored full-width header
+        { id:'r9',  name:'Modern',             free:false, serif:false, style:'icon-bar',  layout:'rModern',   c:{p:'#1b5e20',a:'#66bb6a',l:'#f1f8e9'} },
+        { id:'r10', name:'Modern Ocean',       free:false, serif:false, style:'icon-bar',  layout:'rModern',   c:{p:'#01579b',a:'#29b6f6',l:'#e1f5fe'} },
+        { id:'r11', name:'Modern Coral',       free:false, serif:false, style:'icon-bar',  layout:'rModern',   c:{p:'#bf360c',a:'#ff7043',l:'#fff3e0'} },
+        { id:'r12', name:'Modern Violet',      free:false, serif:false, style:'icon-bar',  layout:'rModern',   c:{p:'#4a148c',a:'#ab47bc',l:'#f3e5f5'} },
+        { id:'r29', name:'Modern Teal',        free:false, serif:false, style:'icon-bar',  layout:'rModern',   c:{p:'#134e4a',a:'#14b8a6',l:'#f0fdfa'} },
+        { id:'r30', name:'Modern Gold',        free:false, serif:false, style:'icon-bar',  layout:'rModern',   c:{p:'#78350f',a:'#d97706',l:'#fffbeb'} },
+        { id:'r31', name:'Modern Rose',        free:false, serif:false, style:'icon-bar',  layout:'rModern',   c:{p:'#881337',a:'#f43f5e',l:'#fff1f2'} },
+        { id:'r32', name:'Modern Slate',       free:false, serif:false, style:'icon-bar',  layout:'rModern',   c:{p:'#0f172a',a:'#64748b',l:'#f8fafc'} },
+        // Sidebar — colored left column
+        { id:'r13', name:'Sidebar',            free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#4a1042',a:'#ab47bc',l:'#f3e5f5'} },
+        { id:'r14', name:'Sidebar Navy',       free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#0a192f',a:'#4a90d9',l:'#e8f0fe'} },
+        { id:'r15', name:'Sidebar Forest',     free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#052e16',a:'#22c55e',l:'#f0fdf4'} },
+        { id:'r16', name:'Sidebar Crimson',    free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#7f1d1d',a:'#f87171',l:'#fef2f2'} },
+        { id:'r33', name:'Sidebar Teal',       free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#064e3b',a:'#34d399',l:'#ecfdf5'} },
+        { id:'r34', name:'Sidebar Amber',      free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#78350f',a:'#fbbf24',l:'#fffbeb'} },
+        { id:'r35', name:'Sidebar Indigo',     free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#1e1b4b',a:'#818cf8',l:'#eef2ff'} },
+        { id:'r36', name:'Sidebar Charcoal',   free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#1f2937',a:'#6b7280',l:'#f9fafb'} },
+        // Minimal — ultra-clean, generous whitespace
+        { id:'r17', name:'Minimal',            free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
+        { id:'r18', name:'Minimal Midnight',   free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#0d1117',a:'#4299e1',l:'#ebf8ff'} },
+        { id:'r19', name:'Minimal Sage',       free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#2d4a22',a:'#7cb342',l:'#f9fbe7'} },
+        { id:'r20', name:'Minimal Graphite',   free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#212121',a:'#9e9e9e',l:'#fafafa'} },
+        { id:'r37', name:'Minimal Cobalt',     free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#1e3a5f',a:'#2563eb',l:'#eff6ff'} },
+        { id:'r38', name:'Minimal Terra',      free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#7c2d12',a:'#ea580c',l:'#fff7ed'} },
+        { id:'r39', name:'Minimal Emerald',    free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#064e3b',a:'#059669',l:'#ecfdf5'} },
+        { id:'r40', name:'Minimal Shadow',     free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#374151',a:'#6b7280',l:'#f9fafb'} },
+        // TwoCol — two-column layout, no colored sidebar
+        { id:'r41', name:'TwoCol Classic',     free:false, serif:false, style:'left-bar',  layout:'rTwoCol',   c:{p:'#1a237e',a:'#5c6bc0',l:'#e8eaf6'} },
+        { id:'r42', name:'TwoCol Forest',      free:false, serif:false, style:'left-bar',  layout:'rTwoCol',   c:{p:'#1b5e20',a:'#4caf50',l:'#e8f5e9'} },
+        { id:'r43', name:'TwoCol Navy',        free:false, serif:false, style:'left-bar',  layout:'rTwoCol',   c:{p:'#0a192f',a:'#4a90d9',l:'#e8f0fe'} },
+        { id:'r44', name:'TwoCol Crimson',     free:false, serif:false, style:'left-bar',  layout:'rTwoCol',   c:{p:'#7f1d1d',a:'#ef4444',l:'#fef2f2'} },
+        { id:'r45', name:'TwoCol Teal',        free:false, serif:false, style:'left-bar',  layout:'rTwoCol',   c:{p:'#134e4a',a:'#14b8a6',l:'#f0fdfa'} },
+        { id:'r46', name:'TwoCol Violet',      free:false, serif:false, style:'left-bar',  layout:'rTwoCol',   c:{p:'#4a148c',a:'#ab47bc',l:'#f3e5f5'} },
+        { id:'r47', name:'TwoCol Gold',        free:false, serif:false, style:'left-bar',  layout:'rTwoCol',   c:{p:'#78350f',a:'#d97706',l:'#fffbeb'} },
+        { id:'r48', name:'TwoCol Slate',       free:false, serif:false, style:'left-bar',  layout:'rTwoCol',   c:{p:'#1f2937',a:'#64748b',l:'#f9fafb'} },
+        // Banner — left-border header, badge section labels
+        { id:'r49', name:'Banner Cobalt',      free:false, serif:false, style:'left-bar',  layout:'rBanner',   c:{p:'#1e3a5f',a:'#3b82f6',l:'#eff6ff'} },
+        { id:'r50', name:'Banner Forest',      free:false, serif:false, style:'left-bar',  layout:'rBanner',   c:{p:'#14532d',a:'#22c55e',l:'#f0fdf4'} },
+        { id:'r51', name:'Banner Crimson',     free:false, serif:false, style:'left-bar',  layout:'rBanner',   c:{p:'#7f1d1d',a:'#ef4444',l:'#fef2f2'} },
+        { id:'r52', name:'Banner Plum',        free:false, serif:false, style:'left-bar',  layout:'rBanner',   c:{p:'#4a0072',a:'#9c27b0',l:'#f3e5f5'} },
+        { id:'r53', name:'Banner Teal',        free:false, serif:false, style:'left-bar',  layout:'rBanner',   c:{p:'#134e4a',a:'#14b8a6',l:'#f0fdfa'} },
+        { id:'r54', name:'Banner Amber',       free:false, serif:false, style:'left-bar',  layout:'rBanner',   c:{p:'#78350f',a:'#d97706',l:'#fffbeb'} },
+        { id:'r55', name:'Banner Slate',       free:false, serif:false, style:'left-bar',  layout:'rBanner',   c:{p:'#0f172a',a:'#64748b',l:'#f8fafc'} },
+        { id:'r56', name:'Banner Sage',        free:false, serif:false, style:'left-bar',  layout:'rBanner',   c:{p:'#1a2e05',a:'#65a30d',l:'#ecfccb'} },
       ],
       cover: [
-        // Formal — serif, classic business letter header
-        { id:'c1',  name:'Formal',           free:true,  serif:true,  style:'underline', layout:'cFormal', c:{p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'} },
-        { id:'c2',  name:'Formal Forest',    free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#14532d',a:'#22c55e',l:'#f0fdf4'} },
-        { id:'c3',  name:'Formal Ruby',      free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#7f1d1d',a:'#f87171',l:'#fef2f2'} },
-        { id:'c4',  name:'Formal Slate',     free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#334155',a:'#94a3b8',l:'#f8fafc'} },
-        // Bold — sans-serif, left-accent letterhead, info row
-        { id:'c5',  name:'Bold',             free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#7c2d12',a:'#fb923c',l:'#fff7ed'} },
-        { id:'c6',  name:'Bold Navy',        free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#172554',a:'#60a5fa',l:'#eff6ff'} },
-        { id:'c7',  name:'Bold Teal',        free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
-        { id:'c8',  name:'Bold Violet',      free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#3b0764',a:'#c084fc',l:'#faf5ff'} },
-        // Boxed — serif, bordered letterhead box
-        { id:'c9',  name:'Boxed',            free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
-        { id:'c10', name:'Boxed Cobalt',     free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#1e3a5f',a:'#60a5fa',l:'#dbeafe'} },
-        { id:'c11', name:'Boxed Burgundy',   free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#4c0519',a:'#f43f5e',l:'#fff1f2'} },
-        { id:'c12', name:'Boxed Forest',     free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#14532d',a:'#4ade80',l:'#f0fdf4'} },
-        // Split — sans-serif, two-column horizontal header
-        { id:'c13', name:'Split',            free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#312e81',a:'#818cf8',l:'#eef2ff'} },
-        { id:'c14', name:'Split Forest',     free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#052e16',a:'#16a34a',l:'#dcfce7'} },
-        { id:'c15', name:'Split Amber',      free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#78350f',a:'#fbbf24',l:'#fffbeb'} },
-        { id:'c16', name:'Split Charcoal',   free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#1c1917',a:'#78716c',l:'#fafaf9'} },
-        // Clean — sans-serif, ultra-minimal letter
-        { id:'c17', name:'Clean',            free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#1e293b',a:'#64748b',l:'#f8fafc'} },
-        { id:'c18', name:'Clean Ocean',      free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#0c4a6e',a:'#0284c7',l:'#e0f2fe'} },
-        { id:'c19', name:'Clean Sage',       free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#1a2e05',a:'#65a30d',l:'#ecfccb'} },
-        { id:'c20', name:'Clean Rose',       free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#4c0519',a:'#fb7185',l:'#fff1f2'} },
+        // Formal — classic business letter
+        { id:'c1',  name:'Formal',             free:true,  serif:true,  style:'underline', layout:'cFormal', c:{p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'} },
+        { id:'c2',  name:'Formal Forest',      free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#14532d',a:'#22c55e',l:'#f0fdf4'} },
+        { id:'c3',  name:'Formal Ruby',        free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#7f1d1d',a:'#f87171',l:'#fef2f2'} },
+        { id:'c4',  name:'Formal Slate',       free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#334155',a:'#94a3b8',l:'#f8fafc'} },
+        { id:'c21', name:'Formal Royal',       free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#1a237e',a:'#5c6bc0',l:'#e8eaf6'} },
+        { id:'c22', name:'Formal Sage',        free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#1a2e05',a:'#65a30d',l:'#ecfccb'} },
+        { id:'c23', name:'Formal Crimson',     free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#7f1d1d',a:'#ef4444',l:'#fef2f2'} },
+        { id:'c24', name:'Formal Charcoal',    free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#1f2937',a:'#6b7280',l:'#f9fafb'} },
+        // Bold — strong header, left-border
+        { id:'c5',  name:'Bold',               free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#7c2d12',a:'#fb923c',l:'#fff7ed'} },
+        { id:'c6',  name:'Bold Navy',          free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#172554',a:'#60a5fa',l:'#eff6ff'} },
+        { id:'c7',  name:'Bold Teal',          free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
+        { id:'c8',  name:'Bold Violet',        free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#3b0764',a:'#c084fc',l:'#faf5ff'} },
+        { id:'c25', name:'Bold Forest',        free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#052e16',a:'#16a34a',l:'#dcfce7'} },
+        { id:'c26', name:'Bold Crimson',       free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#7f1d1d',a:'#f87171',l:'#fef2f2'} },
+        { id:'c27', name:'Bold Slate',         free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#0f172a',a:'#475569',l:'#f8fafc'} },
+        { id:'c28', name:'Bold Plum',          free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#4a0072',a:'#c084fc',l:'#faf5ff'} },
+        // Boxed — framed header card
+        { id:'c9',  name:'Boxed',              free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
+        { id:'c10', name:'Boxed Cobalt',       free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#1e3a5f',a:'#60a5fa',l:'#dbeafe'} },
+        { id:'c11', name:'Boxed Burgundy',     free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#4c0519',a:'#f43f5e',l:'#fff1f2'} },
+        { id:'c12', name:'Boxed Forest',       free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#14532d',a:'#4ade80',l:'#f0fdf4'} },
+        { id:'c29', name:'Boxed Navy',         free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#0a192f',a:'#4a90d9',l:'#e8f0fe'} },
+        { id:'c30', name:'Boxed Crimson',      free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#500724',a:'#e11d48',l:'#fff1f2'} },
+        { id:'c31', name:'Boxed Sage',         free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#14532d',a:'#4ade80',l:'#f0fdf4'} },
+        { id:'c32', name:'Boxed Amber',        free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#78350f',a:'#d97706',l:'#fffbeb'} },
+        // Split — two-column header
+        { id:'c13', name:'Split',              free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#312e81',a:'#818cf8',l:'#eef2ff'} },
+        { id:'c14', name:'Split Forest',       free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#052e16',a:'#16a34a',l:'#dcfce7'} },
+        { id:'c15', name:'Split Amber',        free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#78350f',a:'#fbbf24',l:'#fffbeb'} },
+        { id:'c16', name:'Split Charcoal',     free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#1c1917',a:'#78716c',l:'#fafaf9'} },
+        { id:'c33', name:'Split Ocean',        free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'} },
+        { id:'c34', name:'Split Crimson',      free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#7f1d1d',a:'#ef4444',l:'#fef2f2'} },
+        { id:'c35', name:'Split Sage',         free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#14532d',a:'#65a30d',l:'#ecfccb'} },
+        { id:'c36', name:'Split Plum',         free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#3b0764',a:'#a855f7',l:'#faf5ff'} },
+        // Clean — ultra-minimal
+        { id:'c17', name:'Clean',              free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#1e293b',a:'#64748b',l:'#f8fafc'} },
+        { id:'c18', name:'Clean Ocean',        free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#0c4a6e',a:'#0284c7',l:'#e0f2fe'} },
+        { id:'c19', name:'Clean Sage',         free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#1a2e05',a:'#65a30d',l:'#ecfccb'} },
+        { id:'c20', name:'Clean Rose',         free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#4c0519',a:'#fb7185',l:'#fff1f2'} },
+        { id:'c37', name:'Clean Teal',         free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#134e4a',a:'#14b8a6',l:'#f0fdfa'} },
+        { id:'c38', name:'Clean Crimson',      free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#7f1d1d',a:'#ef4444',l:'#fef2f2'} },
+        { id:'c39', name:'Clean Forest',       free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#14532d',a:'#22c55e',l:'#f0fdf4'} },
+        { id:'c40', name:'Clean Midnight',     free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#0d1117',a:'#4299e1',l:'#ebf8ff'} },
+        // Letter Modern — colored header block
+        { id:'c41', name:'Letter Modern Blue', free:false, serif:false, style:'icon-bar',  layout:'cModern', c:{p:'#1e3a8a',a:'#3b82f6',l:'#eff6ff'} },
+        { id:'c42', name:'Letter Modern Forest',free:false,serif:false, style:'icon-bar',  layout:'cModern', c:{p:'#14532d',a:'#22c55e',l:'#f0fdf4'} },
+        { id:'c43', name:'Letter Modern Crimson',free:false,serif:false,style:'icon-bar',  layout:'cModern', c:{p:'#7f1d1d',a:'#f87171',l:'#fef2f2'} },
+        { id:'c44', name:'Letter Modern Plum', free:false, serif:false, style:'icon-bar',  layout:'cModern', c:{p:'#4a0072',a:'#ab47bc',l:'#f3e5f5'} },
+        { id:'c45', name:'Letter Modern Teal', free:false, serif:false, style:'icon-bar',  layout:'cModern', c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
+        { id:'c46', name:'Letter Modern Amber',free:false, serif:false, style:'icon-bar',  layout:'cModern', c:{p:'#78350f',a:'#d97706',l:'#fffbeb'} },
+        { id:'c47', name:'Letter Modern Slate',free:false, serif:false, style:'icon-bar',  layout:'cModern', c:{p:'#1f2937',a:'#64748b',l:'#f9fafb'} },
+        { id:'c48', name:'Letter Modern Cobalt',free:false,serif:false, style:'icon-bar',  layout:'cModern', c:{p:'#0c4a6e',a:'#0284c7',l:'#e0f2fe'} },
       ]
     };
 
@@ -1973,6 +2040,41 @@
           </div>
           <div style="font-size:5.5px;color:${p};line-height:1.6;">Dear Hiring Manager,<br/>I am writing to express my enthusiasm for this role. My background in marketing and data analysis...</div>
         </div>`;
+        case 'rTwoCol': return `<div style="background:#fff;display:flex;font-family:${font};height:140px;overflow:hidden;">
+          <div style="width:46px;padding:8px 6px;border-right:1.5px solid ${a}40;flex-shrink:0;">
+            <div style="font-size:6px;font-weight:800;color:${p};margin-bottom:4px;line-height:1.2;">ALEX J.</div>
+            <div style="font-size:5px;color:#666;line-height:1.5;margin-bottom:3px;">NYC<br/>alex@co</div>
+            <div style="font-size:5px;font-weight:700;color:${p};text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid ${a}50;padding-bottom:1px;margin-bottom:2px;">Skills</div>
+            <div style="font-size:5px;color:#555;line-height:1.5;">Python<br/>SQL<br/>React</div>
+          </div>
+          <div style="padding:8px 7px;flex:1;">
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px;"><div style="width:10px;height:1.5px;background:${a};border-radius:1px;"></div><span style="font-size:5.5px;font-weight:700;color:${p};text-transform:uppercase;letter-spacing:1px;">Experience</span></div>
+            <div style="font-size:6px;font-weight:700;color:#1e293b;">Sr. Engineer · TechCorp</div>
+            <div style="font-size:5px;color:#64748b;line-height:1.4;margin-top:1px;">• Built core API, 50M+ req/day<br/>• Cut infra costs 40%</div>
+          </div>
+        </div>`;
+        case 'rBanner': return `<div style="background:#fff;padding:0;font-family:${font};height:140px;overflow:hidden;">
+          <div style="border-left:4px solid ${p};padding:10px 10px 8px;">
+            <div style="font-size:9px;font-weight:800;color:${p};letter-spacing:-0.3px;">ALEX JOHNSON</div>
+            <div style="font-size:5.5px;color:#666;margin-top:2px;">alex@email.com · New York, NY</div>
+            <div style="height:1.5px;background:linear-gradient(to right,${p},${a},transparent);margin-top:5px;"></div>
+          </div>
+          <div style="padding:6px 10px;">
+            <div style="display:inline-block;background:${p};color:#fff;font-size:5px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:2px 6px;border-radius:2px;margin-bottom:3px;">Experience</div>
+            <div style="font-size:6px;font-weight:700;color:#1e293b;">Sr. Engineer · TechCorp</div>
+            <div style="font-size:5.5px;color:#64748b;line-height:1.4;">• Built APIs, 50M+ req/day · Cut costs 40%</div>
+          </div>
+        </div>`;
+        case 'cModern': return `<div style="background:#fff;font-family:${font};height:140px;overflow:hidden;">
+          <div style="background:${p};padding:10px 10px 8px;">
+            <div style="font-size:9px;font-weight:800;color:#fff;letter-spacing:.5px;">ALEX JOHNSON</div>
+            <div style="font-size:5.5px;color:rgba(255,255,255,.75);margin-top:2px;">alex@email.com · New York, NY</div>
+          </div>
+          <div style="padding:7px 10px;">
+            <div style="font-size:5.5px;color:#374151;line-height:1.55;">Dear Hiring Manager,</div>
+            <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-top:3px;">I am thrilled to apply. My expertise in marketing and leadership aligns with your needs...</div>
+          </div>
+        </div>`;
         default: return `<div style="background:#f3f4f6;height:140px;"></div>`;
       }
     }
@@ -2078,15 +2180,72 @@
       return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;${pca}"><div style="font-size:26px;font-weight:900;letter-spacing:-0.5px;line-height:1.2;">${escHtml(name)}</div><div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;display:flex;flex-wrap:wrap;gap:12px;">${contactParts.map(s=>`<span>${escHtml(s)}</span>`).join('')}</div></div><div style="padding:20px 44px 28px;">${sectionsHtml}</div></div>`;
     }
 
+    // Two-column layout: contact/skills/edu on left (no color bg), content on right
+    function renderTwoColOutput(parsed, c, font, printMode) {
+      const { name, contact, sections } = parsed;
+      const SIDE_KEYS = ['SKILL','CERTIF','LICENSE','LICENS','EDUCAT','LANGUAGE','AWARD','COMPETENC','TOOL','TECHNOLOG','PROFICIEN'];
+      const sideSecs = [], mainSecs = [];
+      for (const sec of sections) {
+        (SIDE_KEYS.some(k => sec.title.toUpperCase().includes(k)) ? sideSecs : mainSecs).push(sec);
+      }
+      const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
+      const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+      const leftHtml = `<div style="font-size:17px;font-weight:900;color:${c.p};margin-bottom:5px;line-height:1.2;">${escHtml(name)}</div><div style="margin-bottom:16px;">${contactLines.map(l=>`<div style="font-size:10.5px;color:#555;line-height:1.7;">${escHtml(l)}</div>`).join('')}</div>${sideSecs.map(sec=>`<div style="margin-bottom:14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid ${c.a}50;">${escHtml(sec.title)}</div>${sec.lines.map(raw=>{const t=raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();if(!t)return '';return `<div style="font-size:10.5px;color:#444;line-height:1.65;">${escHtml(t.replace(/^[•·\-\*]\s*/,''))}</div>`;}).join('')}</div>`).join('')}`;
+      const rightHtml = mainSecs.map(sec=>`<div style="margin-bottom:18px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${sec.lines.map(raw=>_lineHtml(raw,c)).join('')}</div>`).join('');
+      const outerStyle = printMode ? `font-family:${font};color:#222;display:flex;width:8.5in;` : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+      return `<div style="${outerStyle}"><div style="width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;flex-shrink:0;${pca}">${leftHtml}</div><div style="flex:1;padding:32px 28px;min-width:0;">${rightHtml}</div></div>`;
+    }
+
+    // Banner layout: strong left-border header, section headers as colored badge pills
+    function renderBannerOutput(parsed, c, font, printMode) {
+      const { name, contact, sections } = parsed;
+      const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
+      const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+      const contactHtml = contactParts.map((s,i)=>`${i>0?`<span style="color:${c.a};margin:0 8px;">·</span>`:''}${escHtml(s)}`).join('');
+      const sectionsHtml = sections.map(sec=>`<div style="margin-bottom:20px;"><div style="display:inline-block;background:${c.p};color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 11px;border-radius:3px;margin-bottom:10px;${pca}">${escHtml(sec.title)}</div>${sec.lines.map(raw=>_lineHtml(raw,c)).join('')}</div>`).join('');
+      const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+      return `<div style="${outerStyle}"><div style="padding:26px 44px 18px;border-left:5px solid ${c.p};${pca}"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(name)}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${pca}"></div></div><div style="padding:18px 44px 32px;">${sectionsHtml}</div></div>`;
+    }
+
+    // Cover letter with colored full-width header block
+    function renderCoverModernOutput(text, c, font, printMode) {
+      const lines = text.split('\n');
+      let name = '', contactLines = [], bodyStart = 0, headerDone = false;
+      for (let i = 0; i < lines.length; i++) {
+        const raw = lines[i];
+        const t = raw.trim().replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();
+        if (!t) { if (name) { headerDone = true; bodyStart = i + 1; } continue; }
+        if (!name) { name = t; continue; }
+        if (!headerDone && (t.includes('@') || /\d{3}/.test(t) || (t.includes('|') && t.length < 120))) {
+          contactLines.push(t); continue;
+        }
+        if (!headerDone) { headerDone = true; bodyStart = i; }
+        if (headerDone) { bodyStart = i; break; }
+      }
+      let bodyHtml = '';
+      for (let i = bodyStart; i < lines.length; i++) {
+        const raw = lines[i];
+        const t = raw.trim().replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();
+        if (!t) { bodyHtml += `<div style="height:7px;"></div>`; continue; }
+        bodyHtml += `<div style="font-size:13px;line-height:1.85;color:#333;margin-bottom:1px;">${escHtml(t)}</div>`;
+      }
+      const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
+      const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+      return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;${pca}"><div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;">${escHtml(name)}</div>${contactLines.length?`<div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;">${escHtml(contactLines.join(' | '))}</div>`:''}</div><div style="padding:24px 44px 32px;">${bodyHtml}</div></div>`;
+    }
+
     function renderAIOutput(text, tplId, mode, printMode) {
       const cat = mode === 'cover_letter' ? 'cover' : 'resume';
       const tpl = OUT_TPLS[cat].find(t => t.id === tplId) || OUT_TPLS[cat][0];
       const c = tpl.c;
       const font = tpl.serif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
+      if (tpl.layout === 'cModern') return renderCoverModernOutput(text, c, font, printMode);
       const parsed = parseAIOutput(text);
 
       if (tpl.layout === 'rSidebar') return renderSidebarOutput(parsed, c, font, printMode);
       if (tpl.layout === 'rModern')  return renderModernOutput(parsed, c, font, printMode);
+      if (tpl.layout === 'rTwoCol')  return renderTwoColOutput(parsed, c, font, printMode);
+      if (tpl.layout === 'rBanner')  return renderBannerOutput(parsed, c, font, printMode);
 
       // ── Linear layout (Classic, Executive, Minimal, all cover layouts) ──────
       const lines = text.split('\n');
@@ -2219,8 +2378,17 @@
     // Cover layout 5: Clean (minimal, typographic)
     function cClean(c){const p=_CP;return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;padding:76px;color:#1a1a1a;max-width:794px;"><div style="margin-bottom:44px;"><div style="font-size:34px;font-weight:900;letter-spacing:-1.5px;">${p.name}</div><div style="display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;"><span style="font-size:12px;color:${c.p};font-weight:700;">${p.email}</span><span style="font-size:12px;color:#ddd;">|</span><span style="font-size:12px;color:${c.p};font-weight:700;">${p.phone}</span></div><div style="height:2px;background:${c.p};margin-top:18px;"></div></div><div style="font-size:11.5px;color:#bbb;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:26px;">${p.date}</div><div style="font-size:17px;font-weight:800;color:#1a1a1a;margin-bottom:26px;">Re: ${p.role} — ${p.company}</div>${p.body.map((para,i)=>`<p style="font-size:13.5px;line-height:1.9;margin-bottom:19px;${i===0?`color:#1a1a1a;font-weight:600;`:'color:#555;'}">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div>`;}
 
-    // Build gallery + output preview data from OUT_TPLS (single source of truth: 20 resume + 20 cover)
-    const _lmap={rClassic,rExecutive,rModern,rSidebar,rMinimal,cFormal,cBold,cBoxed,cSplit,cClean};
+    // Resume layout 6: TwoCol (two-column, no colored sidebar)
+    function rTwoCol(c){const p=_RP;return `<div style="font-family:Arial,sans-serif;background:#fff;color:#222;max-width:794px;display:flex;min-height:600px;"><div style="width:220px;padding:24px 16px 24px 20px;border-right:2px solid ${c.a}35;flex-shrink:0;"><div style="font-size:14px;font-weight:900;color:${c.p};margin-bottom:4px;">${p.name}</div><div style="font-size:9px;color:#666;line-height:1.7;margin-bottom:14px;">${p.email}<br/>${p.phone}<br/>${p.location}</div><div style="font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:${c.p};border-bottom:1px solid ${c.a}50;padding-bottom:3px;margin-bottom:7px;">Skills</div>${p.skills.map(s=>`<div style="font-size:9px;color:#444;line-height:1.6;">${s}</div>`).join('')}<div style="font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:${c.p};border-bottom:1px solid ${c.a}50;padding-bottom:3px;margin:10px 0 7px;">Education</div><div style="font-size:9px;font-weight:700;color:#222;">${p.edu.deg}</div><div style="font-size:8.5px;color:#666;">${p.edu.school}</div></div><div style="flex:1;padding:24px 22px;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><div style="width:14px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:${c.p};">Summary</span></div><p style="font-size:10px;line-height:1.7;color:#555;margin-bottom:14px;">${p.summary.slice(0,120)}...</p><div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;"><div style="width:14px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:${c.p};">Experience</span></div>${p.jobs.slice(0,1).map(j=>`<div style="margin-bottom:10px;"><div style="font-size:10.5px;font-weight:800;">${j.title}</div><div style="font-size:9px;color:${c.a};font-weight:700;">${j.company} · ${j.period}</div><ul style="margin:4px 0 0 14px;padding:0;font-size:9px;line-height:1.7;color:#555;">${j.bullets.slice(0,2).map(b=>`<li>${b}</li>`).join('')}</ul></div>`).join('')}</div></div>`;}
+
+    // Resume layout 7: Banner (left-border header + colored badge section titles)
+    function rBanner(c){const p=_RP;return `<div style="font-family:Arial,sans-serif;background:#fff;color:#222;max-width:794px;"><div style="padding:24px 40px 16px;border-left:5px solid ${c.p};"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${p.name}</div><div style="font-size:11px;color:#666;margin-top:6px;">${p.email} · ${p.phone} · ${p.location}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:12px;border-radius:1px;"></div></div><div style="padding:14px 40px 28px;"><div><div style="display:inline-block;background:${c.p};color:#fff;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;padding:3px 9px;border-radius:3px;margin-bottom:8px;">Summary</div><p style="font-size:11.5px;line-height:1.75;color:#444;margin-bottom:16px;">${p.summary.slice(0,160)}...</p></div><div><div style="display:inline-block;background:${c.p};color:#fff;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;padding:3px 9px;border-radius:3px;margin-bottom:8px;">Experience</div>${p.jobs.slice(0,1).map(j=>`<div><div style="font-size:12.5px;font-weight:800;">${j.title}</div><div style="font-size:10.5px;color:${c.a};font-weight:700;margin:2px 0 6px;">${j.company} · ${j.period}</div><ul style="margin:0 0 0 16px;padding:0;font-size:11px;line-height:1.8;color:#555;">${j.bullets.slice(0,2).map(b=>`<li>${b}</li>`).join('')}</ul></div>`).join('')}</div></div></div>`;}
+
+    // Cover layout 6: Modern cover letter (colored header block)
+    function cModern(c){const p=_CP;return `<div style="font-family:'Helvetica Neue',Arial,sans-serif;background:#fff;color:#222;max-width:794px;"><div style="background:${c.p};padding:30px 48px;color:#fff;"><div style="font-size:26px;font-weight:900;letter-spacing:-0.5px;">${p.name}</div><div style="font-size:11.5px;color:rgba(255,255,255,.8);margin-top:7px;">${p.email} · ${p.phone} · ${p.location}</div></div><div style="padding:28px 48px 40px;"><div style="font-size:12px;color:#888;margin-bottom:6px;">${p.date}</div><div style="font-size:13.5px;font-weight:700;color:${c.p};margin-bottom:20px;">Dear Hiring Manager,</div>${p.body.map(para=>`<p style="font-size:13px;line-height:1.85;color:#333;margin-bottom:16px;">${para.replace(/\n/g,'<br>')}</p>`).join('')}</div></div>`;}
+
+    // Build gallery + output preview data from OUT_TPLS (single source of truth: 56 resume + 48 cover)
+    const _lmap={rClassic,rExecutive,rModern,rSidebar,rMinimal,rTwoCol,rBanner,cFormal,cBold,cBoxed,cSplit,cClean,cModern};
     [...OUT_TPLS.resume,...OUT_TPLS.cover].forEach(t=>{TPL_PREV_FNS[t.id]=()=>_lmap[t.layout](t.c);});
     const resumeTemplates=OUT_TPLS.resume.map(t=>({...t,fn:_lmap[t.layout]}));
     const coverTemplates=OUT_TPLS.cover.map(t=>({...t,fn:_lmap[t.layout]}));
