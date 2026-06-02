@@ -3134,17 +3134,14 @@ Aaliyah Washington`
       const numPages = Math.min(10, Math.max(1, Math.ceil(rawContentH / PAGE_CONTENT_H)));
 
       const sigLeftPx = noPagePad ? '44px' : '192px';
-      let sigTopPx = 0, totalPages = numPages;
+      const totalPages = numPages;
+      let sigTopPx = 0;
       if (sigName) {
         const lastPageContentH = rawContentH - (numPages - 1) * PAGE_CONTENT_H;
         const naturalSigTop = lastPageContentH + PAGE_MARGIN_B; // 3in below last sentence
-        if (naturalSigTop > PAGE_H - 60) {
-          // Page is full — overflow signature to a new page at the 3in-from-bottom line
-          totalPages = numPages + 1;
-          sigTopPx = PAGE_CONTENT_H;
-        } else {
-          sigTopPx = naturalSigTop;
-        }
+        // If 3in below last sentence reaches the 3-inch margin zone, pin to top of that zone.
+        // Otherwise place signature exactly 3in below last sentence.
+        sigTopPx = Math.min(naturalSigTop, PAGE_CONTENT_H);
       }
       const sigBlock = sigName ? `<div style="position:absolute;top:${sigTopPx}px;left:${sigLeftPx};-webkit-print-color-adjust:exact;print-color-adjust:exact;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-family:${font};">Signature</p><p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${tpl.c.p};line-height:1.3;">${escHtml(sigName)}</p></div>` : '';
 
