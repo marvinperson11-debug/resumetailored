@@ -2214,7 +2214,7 @@
       const wasBold = /^\*\*[^*]+\*\*$/.test(raw.trim());
       const isBullet = /^[•·\-\*]\s/.test(raw.trim());
       const isDate = (clean.includes('—') || clean.includes('–') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 150;
-      const pbi = 'page-break-inside:avoid;break-inside:avoid;';
+      const pbi = 'page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
       if (wasBold && clean.length < 70) return `<div style="font-size:13px;font-weight:800;color:#1a1a1a;margin:9px 0 1px;${pbi}">${escHtml(clean)}</div>`;
       if (isBullet) { const txt = clean.replace(/^[•·\-\*]\s*/, ''); return `<div style="padding-left:12px;font-size:12px;line-height:1.8;color:#444;margin:2px 0;${pbi}">• ${escHtml(txt)}</div>`; }
       if (isDate) return `<div style="font-size:11.5px;color:${c.a};font-weight:700;margin-bottom:4px;${pbi}">${escHtml(clean)}</div>`;
@@ -2225,7 +2225,7 @@
     // and wraps each block in a break-inside:avoid container so entries never
     // orphan their title from their content across a page break.
     function _groupedSectionHtml(lines, c) {
-      const pbi = 'page-break-inside:avoid;break-inside:avoid;';
+      const pbi = 'page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
       const groups = [];
       let cur = [];
       for (const raw of lines) {
@@ -2278,7 +2278,7 @@
       }
       const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
-      const leftHtml = `<div style="font-size:17px;font-weight:900;color:${c.p};margin-bottom:5px;line-height:1.2;">${escHtml(name)}</div><div style="margin-bottom:16px;">${contactLines.map(l=>`<div style="font-size:10.5px;color:#555;line-height:1.7;">${escHtml(l)}</div>`).join('')}</div>${sideSecs.map(sec=>`<div style="margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid ${c.a}50;">${escHtml(sec.title)}</div>${sec.lines.map(raw=>{const t=raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();if(!t)return '';return `<div style="font-size:10.5px;color:#444;line-height:1.65;page-break-inside:avoid;break-inside:avoid;">${escHtml(t.replace(/^[•·\-\*]\s*/,''))}</div>`;}).join('')}</div>`).join('')}`;
+      const leftHtml = `<div style="font-size:17px;font-weight:900;color:${c.p};margin-bottom:5px;line-height:1.2;">${escHtml(name)}</div><div style="margin-bottom:16px;">${contactLines.map(l=>`<div style="font-size:10.5px;color:#555;line-height:1.7;">${escHtml(l)}</div>`).join('')}</div>${sideSecs.map(sec=>`<div style="margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid ${c.a}50;">${escHtml(sec.title)}</div>${sec.lines.map(raw=>{const t=raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();if(!t)return '';return `<div style="font-size:10.5px;color:#444;line-height:1.65;page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;">${escHtml(t.replace(/^[•·\-\*]\s*/,''))}</div>`;}).join('')}</div>`).join('')}`;
       const rightHtml = mainSecs.map(sec=>`<div style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c)}</div>`).join('');
       const outerStyle = printMode ? `font-family:${font};color:#222;display:flex;width:100%;` : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
       return `<div style="${outerStyle}"><div style="width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;flex-shrink:0;${pca}">${leftHtml}</div><div style="flex:1;padding:32px 28px;min-width:0;">${rightHtml}</div></div>`;
@@ -2315,7 +2315,7 @@
         const raw = lines[i];
         const t = raw.trim().replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();
         if (!t) { bodyHtml += `<div style="height:7px;"></div>`; continue; }
-        bodyHtml += `<div style="font-size:13px;line-height:1.85;color:#333;margin-bottom:1px;page-break-inside:avoid;break-inside:avoid;">${escHtml(t)}</div>`;
+        bodyHtml += `<div style="font-size:13px;line-height:1.85;color:#333;margin-bottom:1px;page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;">${escHtml(t)}</div>`;
       }
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
@@ -2373,7 +2373,7 @@
       const cardWrap = printMode
         ? `font-family:${font};color:#222;`
         : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
-      const _pbip = 'page-break-inside:avoid;break-inside:avoid;';
+      const _pbip = 'page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
       const bodyParas = p.body.map(para =>
         `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 16px;${_pbip}">${escHtml(para)}</p>`
       ).join('');
@@ -2498,7 +2498,7 @@
       const lines = text.split('\n');
       let html = '';
       let firstLine = true;
-      const _pbi = 'page-break-inside:avoid;break-inside:avoid;';
+      const _pbi = 'page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
       let _grpOpen = false;
       const _openGrp = () => { if (!_grpOpen) { html += `<div style="${_pbi}">`; _grpOpen = true; } };
       const _closeGrp = () => { if (_grpOpen) { html += '</div>'; _grpOpen = false; } };
@@ -3064,9 +3064,10 @@ Aaliyah Washington`
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     @page { size: letter; margin: 1in 1in 1in 1in; }
     html { background: #fff; }
-    body { font-family: ${font}; color: #222; background: ${bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    body { font-family: ${font}; color: #222; background: ${bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: break-word; word-break: keep-all; hyphens: none; -webkit-hyphens: none; }
     .page { width: 100%; }
-    p, li { page-break-inside: avoid; break-inside: avoid; }
+    p, li { page-break-inside: avoid; break-inside: avoid; overflow-wrap: break-word; word-break: keep-all; hyphens: none; -webkit-hyphens: none; }
+    div { overflow-wrap: break-word; word-break: keep-all; hyphens: none; -webkit-hyphens: none; min-width: 0; }
   </style>
 </head>
 <body>
