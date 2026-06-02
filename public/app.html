@@ -1596,6 +1596,15 @@
         }
         if (!res.ok) throw new Error(data.error || 'Something went wrong.');
 
+        // Detect AI refusals (e.g. "I'm sorry, the job posting isn't valid")
+        // A real resume always has at least one ALL-CAPS section header (EXPERIENCE, SKILLS, etc.)
+        if (selectedMode !== 'cover_letter') {
+          const hasResumeSection = /^[A-Z][A-Z\s&\/\(\)\-:.]{1,49}$/m.test(data.result);
+          if (!hasResumeSection) {
+            throw new Error('Please paste a valid job posting with a job title, requirements, and responsibilities, then try again.');
+          }
+        }
+
         const titles = { resume: 'Tailored Resume', cover_letter: 'Cover Letter', both: 'Tailored Resume + Cover Letter' };
         document.getElementById('outputTitle').textContent = titles[selectedMode];
         lastRawCoverResult = '';
@@ -3198,7 +3207,7 @@ Aaliyah Washington`
       const isBothMode = selectedMode === 'both' && lastRawCoverResult;
       // rSidebar sig must clear the 215px sidebar; noPagePad aligns to template body padding; padded aligns to 1in margin
       const _noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
-      const sigLeftPx = isBothMode ? '96px' : (tpl.layout === 'rSidebar' ? '215px' : (_noPagePad ? '44px' : '96px'));
+      const sigLeftPx = isBothMode ? '192px' : (tpl.layout === 'rSidebar' ? '311px' : (_noPagePad ? '140px' : '192px'));
       const sigColor = isBothMode
         ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0]).c.p
         : tpl.c.p;
