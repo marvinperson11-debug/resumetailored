@@ -3136,16 +3136,12 @@ Aaliyah Washington`
       const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // 864px usable per page
       const numPages = Math.min(10, Math.max(1, Math.ceil(rawContentH / PAGE_CONTENT_H)));
 
-      // rSidebar sig must clear the 215px green sidebar; padded templates align to 2in margin
-      const sigLeftPx = tpl.layout === 'rSidebar' ? '428px' : (noPagePad ? '44px' : '96px');
+      // rSidebar sig must clear the 215px sidebar; noPagePad aligns to template body padding; padded aligns to 1in margin
+      const sigLeftPx = tpl.layout === 'rSidebar' ? '215px' : (noPagePad ? '44px' : '96px');
       const totalPages = numPages;
-      let sigTopPx = 0;
-      if (sigName) {
-        const lastPageContentH = rawContentH - (numPages - 1) * PAGE_CONTENT_H;
-        // 3in below last sentence, relative to page top (accounting for top margin).
-        // Capped at the top of the 3in bottom margin zone (PAGE_MARGIN_T + PAGE_CONTENT_H = 768px).
-        sigTopPx = Math.min(PAGE_MARGIN_T + lastPageContentH + PAGE_MARGIN_B, PAGE_MARGIN_T + PAGE_CONTENT_H);
-      }
+      // Always anchor sig in the bottom margin (below the content clip) so it can never
+      // overlap with text regardless of how accurate the rawContentH measurement is.
+      const sigTopPx = PAGE_MARGIN_T + PAGE_CONTENT_H + 8; // 968px on 1056px page
       const sigBlock = sigName ? `<div style="position:absolute;top:${sigTopPx}px;left:${sigLeftPx};-webkit-print-color-adjust:exact;print-color-adjust:exact;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-family:${font};">Signature</p><p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${tpl.c.p};line-height:1.3;">${escHtml(sigName)}</p></div>` : '';
 
       // Page background: sidebar templates get a gradient so the sidebar color fills
@@ -3154,17 +3150,27 @@ Aaliyah Washington`
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
         : tpl.layout === 'cClean' ? tpl.c.l : '#fff';
 
+      // Fade at the bottom of each non-last page clip prevents letters from being
+      // sliced in half by overflow:hidden at page boundaries.
+      const fadeColor = tpl.layout === 'cClean' ? tpl.c.l : '#fff';
+
       // The clip div starts at PAGE_MARGIN_T (96px) so every page has a 1in blank top margin.
       // The bottom PAGE_MARGIN_B (96px) is naturally empty below the clip on every page.
-      const pagesHtml = Array.from({length: totalPages}, (_, i) => `
+      const pagesHtml = Array.from({length: totalPages}, (_, i) => {
+        const clipFade = (i < totalPages - 1 && tpl.layout !== 'rSidebar')
+          ? `<div style="position:absolute;bottom:0;left:0;width:100%;height:22px;background:linear-gradient(to bottom,transparent,${fadeColor});pointer-events:none;z-index:2;"></div>`
+          : '';
+        return `
         <div style="width:816px;height:${PAGE_H}px;overflow:hidden;position:relative;background:${pageBg};-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:0 4px 24px rgba(0,0,0,0.5);${i > 0 ? 'margin-top:16px;' : ''}">
           <div style="position:absolute;top:${PAGE_MARGIN_T}px;left:0;width:816px;height:${PAGE_CONTENT_H}px;overflow:hidden;">
             <div style="position:absolute;top:${-i * PAGE_CONTENT_H}px;left:0;width:816px;">${contentHtml}</div>
+            ${clipFade}
           </div>
           ${i === totalPages - 1 ? sigBlock : ''}
         </div>
         ${totalPages > 1 ? `<div style="text-align:center;color:rgba(255,255,255,0.4);font-size:11px;font-family:sans-serif;margin-top:7px;">Page ${i + 1} of ${totalPages}</div>` : ''}
-      `).join('');
+        `;
+      }).join('');
 
       document.getElementById('previewScaleInner').innerHTML = pagesHtml;
       document.getElementById('previewTitle').textContent = document.getElementById('outputTitle').textContent;
