@@ -3133,14 +3133,19 @@ Aaliyah Washington`
       const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_B; // 768px usable per page
       const numPages = Math.min(10, Math.max(1, Math.ceil(rawContentH / PAGE_CONTENT_H)));
 
-      // Signature positioning:
-      // - Signature MUST always be in the bottom 3-inch margin zone (>= PAGE_CONTENT_H)
-      //   to prevent it from visually overlapping the content clip area.
-      // - If page is not full: place 3 inches below last text line, but floor at
-      //   PAGE_CONTENT_H + 24 (just inside the margin zone).
-      // - If page is full: place near the bottom of the margin zone.
       const sigLeftPx = noPagePad ? '44px' : '192px';
-      const sigTopPx = sigName ? PAGE_CONTENT_H : 0;
+      let sigTopPx = 0, totalPages = numPages;
+      if (sigName) {
+        const lastPageContentH = rawContentH - (numPages - 1) * PAGE_CONTENT_H;
+        const naturalSigTop = lastPageContentH + PAGE_MARGIN_B; // 3in below last sentence
+        if (naturalSigTop > PAGE_H - 60) {
+          // Page is full — overflow signature to a new page at the 3in-from-bottom line
+          totalPages = numPages + 1;
+          sigTopPx = PAGE_CONTENT_H;
+        } else {
+          sigTopPx = naturalSigTop;
+        }
+      }
       const sigBlock = sigName ? `<div style="position:absolute;top:${sigTopPx}px;left:${sigLeftPx};-webkit-print-color-adjust:exact;print-color-adjust:exact;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-family:${font};">Signature</p><p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${tpl.c.p};line-height:1.3;">${escHtml(sigName)}</p></div>` : '';
 
       // Page background: sidebar templates get a gradient so the sidebar color fills
@@ -3149,16 +3154,14 @@ Aaliyah Washington`
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
         : tpl.layout === 'cClean' ? tpl.c.l : '#fff';
 
-      // Each page: inner clip div restricts content to PAGE_CONTENT_H (768px),
-      // leaving the bottom PAGE_MARGIN_B (288px = 3in) naturally empty on every page
-      const pagesHtml = Array.from({length: numPages}, (_, i) => `
+      const pagesHtml = Array.from({length: totalPages}, (_, i) => `
         <div style="width:816px;height:${PAGE_H}px;overflow:hidden;position:relative;background:${pageBg};-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:0 4px 24px rgba(0,0,0,0.5);${i > 0 ? 'margin-top:16px;' : ''}">
           <div style="position:absolute;top:0;left:0;width:816px;height:${PAGE_CONTENT_H}px;overflow:hidden;">
             <div style="position:absolute;top:${-i * PAGE_CONTENT_H}px;left:0;width:816px;">${contentHtml}</div>
           </div>
-          ${i === numPages - 1 ? sigBlock : ''}
+          ${i === totalPages - 1 ? sigBlock : ''}
         </div>
-        ${numPages > 1 ? `<div style="text-align:center;color:rgba(255,255,255,0.4);font-size:11px;font-family:sans-serif;margin-top:7px;">Page ${i + 1} of ${numPages}</div>` : ''}
+        ${totalPages > 1 ? `<div style="text-align:center;color:rgba(255,255,255,0.4);font-size:11px;font-family:sans-serif;margin-top:7px;">Page ${i + 1} of ${totalPages}</div>` : ''}
       `).join('');
 
       document.getElementById('previewScaleInner').innerHTML = pagesHtml;
