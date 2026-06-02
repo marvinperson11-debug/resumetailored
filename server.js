@@ -611,7 +611,7 @@ app.post('/api/download-docx', async (req, res) => {
   const doc = new Document({
     sections: [{
       properties: {
-        page: { margin: { top: 1440, bottom: 1440, left: 1080, right: 1080 } },
+        page: { margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } },
       },
       children,
     }],
