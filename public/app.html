@@ -1094,6 +1094,7 @@
     let pendingPro = false;
     let selectedOutputTpl = { resume: 'r1', cover: 'c1' };
     let lastRawResult = '';
+    let lastRawCoverResult = '';
     let editSnapshot = '';
     let resumeInputMode = 'upload';
     let workEntryCount = 0;
@@ -1597,14 +1598,37 @@
 
         const titles = { resume: 'Tailored Resume', cover_letter: 'Cover Letter', both: 'Tailored Resume + Cover Letter' };
         document.getElementById('outputTitle').textContent = titles[selectedMode];
-        lastRawResult = data.result;
-        const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
+        lastRawCoverResult = '';
         const outputBox = document.getElementById('outputBox');
-        outputBox.innerHTML = renderAIOutput(data.result, selectedOutputTpl[tplCat], selectedMode);
-        if (sigName) {
-          const tplColors = OUT_TPLS[tplCat].find(t => t.id === selectedOutputTpl[tplCat]);
-          const primaryColor = tplColors ? tplColors.c.p : '#1e293b';
-          outputBox.innerHTML += renderSignatureHtml(primaryColor);
+
+        if (selectedMode === 'both') {
+          const SPLIT_MARKER = '===COVER_LETTER_START===';
+          const markerIdx = data.result.indexOf(SPLIT_MARKER);
+          if (markerIdx !== -1) {
+            lastRawResult = data.result.substring(0, markerIdx).trim();
+            lastRawCoverResult = data.result.substring(markerIdx + SPLIT_MARKER.length).trim();
+          } else {
+            lastRawResult = data.result;
+          }
+          const resumeHtml = renderAIOutput(lastRawResult, selectedOutputTpl.resume, 'resume');
+          const coverHtml = lastRawCoverResult
+            ? renderAIOutput(lastRawCoverResult, selectedOutputTpl.cover, 'cover_letter')
+            : '';
+          outputBox.innerHTML = resumeHtml + (coverHtml
+            ? `<div style="margin:36px 0 20px;display:flex;align-items:center;gap:12px;"><div style="flex:1;height:1px;background:#e5e7eb;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;white-space:nowrap;">Cover Letter</span><div style="flex:1;height:1px;background:#e5e7eb;"></div></div>${coverHtml}`
+            : '');
+          if (sigName) {
+            const coverTplColors = OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover);
+            outputBox.innerHTML += renderSignatureHtml(coverTplColors ? coverTplColors.c.p : '#1e293b');
+          }
+        } else {
+          lastRawResult = data.result;
+          const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
+          outputBox.innerHTML = renderAIOutput(data.result, selectedOutputTpl[tplCat], selectedMode);
+          if (sigName) {
+            const tplColors = OUT_TPLS[tplCat].find(t => t.id === selectedOutputTpl[tplCat]);
+            outputBox.innerHTML += renderSignatureHtml(tplColors ? tplColors.c.p : '#1e293b');
+          }
         }
         document.getElementById('editBtn').style.display = 'inline-flex';
         document.getElementById('editBar').style.display = 'none';
@@ -2200,7 +2224,7 @@
       const mainHtml = mainSecs.map(sec => `<div style="margin-bottom:20px;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">${escHtml(sec.title)}</div><div style="width:36px;height:3px;background:${c.a};margin-bottom:10px;border-radius:2px;"></div>${sec.lines.map(raw => _lineHtml(raw, c)).join('')}</div>`).join('');
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode
-        ? `font-family:${font};color:#222;display:flex;width:100%;`
+        ? `font-family:${font};color:#222;display:flex;width:100%;padding-bottom:28px;`
         : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
       return `<div style="${outerStyle}"><div style="width:215px;background:${c.p};padding:36px 20px;flex-shrink:0;${pca}"><div style="width:56px;height:56px;border-radius:50%;background:${c.a};display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;font-weight:900;color:#fff;${pca}">${escHtml(initials)}</div><div style="color:#fff;text-align:center;margin-bottom:20px;"><div style="font-size:15px;font-weight:800;line-height:1.3;">${escHtml(name)}</div></div><div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">Contact</div><div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.9;">${contactLines.map(l=>`<div>${escHtml(l)}</div>`).join('')}</div></div>${sidebarHtml}</div><div style="flex:1;padding:36px 30px;min-width:0;">${mainHtml}</div></div>`;
     }
@@ -2267,7 +2291,7 @@
       }
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
-      const bodyPad = printMode ? 'padding:24px 44px 0;' : 'padding:24px 192px 0;';
+      const bodyPad = printMode ? 'padding:24px 44px 28px;' : 'padding:24px 192px 0;';
       return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;${pca}"><div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;">${escHtml(name)}</div>${contactLines.length?`<div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;">${escHtml(contactLines.join(' | '))}</div>`:''}</div><div style="${bodyPad}">${bodyHtml}</div></div>`;
     }
 
@@ -2327,7 +2351,7 @@
       const roleLine = [p.role, p.company].filter(Boolean);
 
       if (tpl.layout === 'cFormal') {
-        const hdr = printMode ? '' : 'padding:60px 76px;';
+        const hdr = printMode ? 'padding:0 0 28px 0;' : 'padding:60px 76px;';
         return `<div style="${cardWrap}${hdr}">
           <div style="margin-bottom:32px;padding-bottom:18px;border-bottom:1.5px solid ${c.p};${pca}">
             <div style="font-size:22px;font-weight:700;color:${c.p};">${escHtml(p.name)}</div>
@@ -2344,7 +2368,7 @@
         const boldOuter = printMode
           ? `font-family:${font};color:#222;`
           : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
-        const boldBody = printMode ? 'padding:24px 52px 0;' : 'padding:24px 192px 0;';
+        const boldBody = printMode ? 'padding:24px 52px 28px;' : 'padding:24px 192px 0;';
         const roleDate = roleLine.length
           ? `<div style="display:flex;justify-content:space-between;align-items:center;background:${c.l};padding:12px 52px;${pca}"><div><div style="font-size:13px;font-weight:800;color:${c.p};">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};font-weight:700;">${escHtml(p.company)}</div></div><div style="font-size:11.5px;color:#999;">${p.date}</div></div>`
           : `<div style="background:${c.l};padding:10px 52px;font-size:11.5px;color:#888;${pca}">${p.date}</div>`;
@@ -2362,7 +2386,7 @@
       }
 
       if (tpl.layout === 'cBoxed') {
-        const hdr = printMode ? '' : 'padding:52px;';
+        const hdr = printMode ? 'padding:0 0 28px 0;' : 'padding:52px;';
         return `<div style="${cardWrap}${hdr}">
           <div style="border:2px solid ${c.p};border-radius:8px;padding:26px 34px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:center;${pca}">
             <div>
@@ -2382,7 +2406,7 @@
         const splitOuter = printMode
           ? `font-family:${font};color:#222;`
           : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
-        const splitBody = printMode ? 'padding:24px 40px 0;' : 'padding:24px 192px 0;';
+        const splitBody = printMode ? 'padding:24px 40px 28px;' : 'padding:24px 192px 0;';
         const roleInfo = roleLine.length
           ? `<div style="text-align:right;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.7);">${p.date}</div><div style="font-size:14px;font-weight:800;color:#fff;margin-top:4px;">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};">${escHtml(p.company)}</div></div>`
           : `<div style="font-size:11.5px;color:rgba(255,255,255,0.7);">${p.date}</div>`;
@@ -2410,7 +2434,7 @@
         const cleanBodyParas = p.body.map(para => `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 19px;">${escHtml(para)}</p>`).join('');
         const hdr = printMode ? '' : 'padding:76px;';
         const cleanWrap = printMode
-          ? `font-family:${font};background:${c.l};color:#222;${pca}`
+          ? `font-family:${font};background:${c.l};color:#222;padding:0 0 28px 0;${pca}`
           : `font-family:${font};background:${c.l};color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;${pca}`;
         return `<div style="${cleanWrap}${hdr}">
           <div style="margin-bottom:44px;">
@@ -2456,10 +2480,10 @@
         if ((t.includes('@') || /\(\d{3}\)/.test(t) || (t.includes('|') && t.length < 80 && !/\d{4}/.test(t))) && t.length < 120) { html += `<div style="font-size:12px;color:#666;margin-bottom:2px;">${escHtml(t)}</div>`; continue; }
         const isHdr = t.length >= 2 && t.length <= 50 && /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(t);
         if (isHdr) {
-          if (tpl.style === 'left-bar') html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:8px;margin:18px 0 7px;">${escHtml(t)}</div>`;
-          else if (tpl.style === 'icon-bar') html += `<div style="display:flex;align-items:center;gap:8px;margin:18px 0 7px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
-          else if (tpl.style === 'minimal') html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:20px 0 7px;">${escHtml(t)}</div>`;
-          else html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:3px;margin:18px 0 7px;">${escHtml(t)}</div>`;
+          if (tpl.style === 'left-bar') html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:8px;margin:18px 0 10px;">${escHtml(t)}</div>`;
+          else if (tpl.style === 'icon-bar') html += `<div style="display:flex;align-items:center;gap:8px;margin:18px 0 10px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
+          else if (tpl.style === 'minimal') html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:20px 0 10px;">${escHtml(t)}</div>`;
+          else html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:5px;margin:18px 0 10px;">${escHtml(t)}</div>`;
           continue;
         }
         if (wasBold && t.length < 70) { html += `<div style="font-size:13.5px;font-weight:700;color:#222;margin:10px 0 1px;">${escHtml(t)}</div>`; continue; }
@@ -2468,7 +2492,7 @@
         html += `<div style="font-size:13px;line-height:1.75;color:#333;">${escHtml(t)}</div>`;
       }
       const bg = tpl.style === 'minimal' ? '#fafafa' : '#fff';
-      if (printMode) return `<div style="font-family:${font};background:${bg};color:#222;">${html}</div>`;
+      if (printMode) return `<div style="font-family:${font};background:${bg};color:#222;padding:0 0 28px 0;">${html}</div>`;
       return `<div style="font-family:${font};background:${bg};padding:28px 32px;color:#222;border-radius:8px;border:1px solid #e5e7eb;">${html}</div>`;
     }
 
@@ -2902,7 +2926,10 @@ Aaliyah Washington`
     function getOutputText() {
       const box = document.getElementById('outputBox');
       if (box.contentEditable === 'true') return box.innerText || box.textContent;
-      const base = lastRawResult || box.innerText || box.textContent;
+      let base = lastRawResult || box.innerText || box.textContent;
+      if (selectedMode === 'both' && lastRawCoverResult) {
+        base = base + '\n\n---\n\n' + lastRawCoverResult;
+      }
       return sigName ? base + '\n\n' + sigName : base;
     }
 
@@ -2954,11 +2981,27 @@ Aaliyah Washington`
       const font = tpl.serif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
 
       // Re-render without the on-screen card border for a clean printed page
-      const rawText = lastRawResult || outputBox.innerText;
-      const printContent = renderAIOutput(rawText, tplId, selectedMode, true);
+      let printContent;
+      if (selectedMode === 'both' && lastRawCoverResult) {
+        const resumeTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
+        const coverTpl  = OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover)  || OUT_TPLS.cover[0];
+        const rNoPagePad = ['rSidebar','rModern','rTwoCol','rBanner'].includes(resumeTpl.layout);
+        const cNoPagePad = ['cModern','cSplit','cBold'].includes(coverTpl.layout);
+        const rPad = rNoPagePad ? '' : 'padding-left:0;padding-right:0;';
+        const cPad = cNoPagePad ? '' : 'padding-left:0;padding-right:0;';
+        const rPrint = renderAIOutput(lastRawResult, selectedOutputTpl.resume, 'resume', true);
+        const cPrint  = renderAIOutput(lastRawCoverResult, selectedOutputTpl.cover, 'cover_letter', true);
+        printContent = `<div style="${rPad}box-sizing:border-box;">${rPrint}</div><div style="page-break-before:always;"></div><div style="${cPad}box-sizing:border-box;">${cPrint}</div>`;
+      } else {
+        const rawText = lastRawResult || outputBox.innerText;
+        printContent = renderAIOutput(rawText, tplId, selectedMode, true);
+      }
 
-      // Signature
-      const sigHtml = sigName ? renderSignatureHtml(tpl.c.p) : '';
+      // Signature — for 'both' mode, use cover letter template color
+      const _sigColor = (selectedMode === 'both' && lastRawCoverResult)
+        ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0]).c.p
+        : tpl.c.p;
+      const sigHtml = sigName ? renderSignatureHtml(_sigColor) : '';
       const fontUrl = sigName
         ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(sigFont)}:ital@1&display=swap" rel="stylesheet">`
         : '';
@@ -2969,12 +3012,12 @@ Aaliyah Washington`
         return;
       }
 
-      const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
-      const isSidebar = tpl.layout === 'rSidebar';
-      const bodyBg = isSidebar
+      const noPagePad = selectedMode === 'both' ? true : ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
+      const isSidebar = selectedMode !== 'both' && tpl.layout === 'rSidebar';
+      const bodyBg = selectedMode === 'both' ? '#fff' : (isSidebar
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
         : tpl.layout === 'cClean' ? tpl.c.l
-        : '#fff';
+        : '#fff');
 
       win.document.write(`<!DOCTYPE html>
 <html>
@@ -3113,14 +3156,30 @@ Aaliyah Washington`
       const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
       const tplId = selectedOutputTpl[tplCat];
       const tpl = OUT_TPLS[tplCat].find(t => t.id === tplId) || OUT_TPLS[tplCat][0];
-      const raw = lastRawResult || outputBox.innerText;
-      const printHtml = renderAIOutput(raw, tplId, selectedMode, true);
-      // Layouts with their own internal margins don't need an outer page pad
-      const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
-      // Top margin is provided by the clip position (not by content padding) so every page gets it.
-      const pagePad = noPagePad ? '0' : '0 1in 0 1in';
       const font = FONT_MAP[selectedDocFont] || (tpl.serif ? "Georgia,'Times New Roman',serif" : "Arial,sans-serif");
-      const contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
+
+      let contentHtml;
+      if (selectedMode === 'both' && lastRawCoverResult) {
+        const resumeTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
+        const coverTpl  = OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover)  || OUT_TPLS.cover[0];
+        const rNoPagePad = ['rSidebar','rModern','rTwoCol','rBanner'].includes(resumeTpl.layout);
+        const cNoPagePad = ['cModern','cSplit','cBold'].includes(coverTpl.layout);
+        const rPad = rNoPagePad ? '0' : '0 1in 0 1in';
+        const cPad = cNoPagePad ? '0' : '0 1in 0 1in';
+        const resumePrint = renderAIOutput(lastRawResult, selectedOutputTpl.resume, 'resume', true);
+        const coverPrint  = renderAIOutput(lastRawCoverResult, selectedOutputTpl.cover, 'cover_letter', true);
+        contentHtml =
+          `<div style="padding:${rPad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${resumePrint}</div>` +
+          `<div style="height:64px;"></div>` +
+          `<div style="padding:${cPad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${coverPrint}</div>`;
+      } else {
+        const raw = lastRawResult || outputBox.innerText;
+        const printHtml = renderAIOutput(raw, tplId, selectedMode, true);
+        // Layouts with their own internal margins don't need an outer page pad
+        const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
+        const pagePad = noPagePad ? '0' : '0 1in 0 1in';
+        contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
+      }
 
       // Measure raw content height at 816px
       const measure = document.createElement('div');
@@ -3136,28 +3195,33 @@ Aaliyah Washington`
       const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // 864px usable per page
       const numPages = Math.min(10, Math.max(1, Math.ceil(rawContentH / PAGE_CONTENT_H)));
 
+      const isBothMode = selectedMode === 'both' && lastRawCoverResult;
       // rSidebar sig must clear the 215px sidebar; noPagePad aligns to template body padding; padded aligns to 1in margin
-      const sigLeftPx = tpl.layout === 'rSidebar' ? '215px' : (noPagePad ? '44px' : '96px');
+      const _noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
+      const sigLeftPx = isBothMode ? '96px' : (tpl.layout === 'rSidebar' ? '215px' : (_noPagePad ? '44px' : '96px'));
+      const sigColor = isBothMode
+        ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0]).c.p
+        : tpl.c.p;
       const totalPages = numPages;
       // Always anchor sig in the bottom margin (below the content clip) so it can never
       // overlap with text regardless of how accurate the rawContentH measurement is.
       const sigTopPx = PAGE_MARGIN_T + PAGE_CONTENT_H + 8; // 968px on 1056px page
-      const sigBlock = sigName ? `<div style="position:absolute;top:${sigTopPx}px;left:${sigLeftPx};-webkit-print-color-adjust:exact;print-color-adjust:exact;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-family:${font};">Signature</p><p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${tpl.c.p};line-height:1.3;">${escHtml(sigName)}</p></div>` : '';
+      const sigBlock = sigName ? `<div style="position:absolute;top:${sigTopPx}px;left:${sigLeftPx};-webkit-print-color-adjust:exact;print-color-adjust:exact;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-family:${font};">Signature</p><p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${sigColor};line-height:1.3;">${escHtml(sigName)}</p></div>` : '';
 
       // Page background: sidebar templates get a gradient so the sidebar color fills
       // the full page height on every page (including top/bottom margin zones).
-      const pageBg = tpl.layout === 'rSidebar'
+      const pageBg = isBothMode ? '#fff' : (tpl.layout === 'rSidebar'
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
-        : tpl.layout === 'cClean' ? tpl.c.l : '#fff';
+        : tpl.layout === 'cClean' ? tpl.c.l : '#fff');
 
-      // Fade added at the bottom of each non-last page clip to prevent letters from
-      // being sliced in half by overflow:hidden at the page boundary.
-      const fadeColor = tpl.layout === 'cClean' ? tpl.c.l : '#fff';
+      // Fade at the bottom of each non-last page clip prevents letters from being
+      // sliced in half by overflow:hidden at page boundaries.
+      const fadeColor = isBothMode ? '#fff' : (tpl.layout === 'cClean' ? tpl.c.l : '#fff');
 
       // The clip div starts at PAGE_MARGIN_T (96px) so every page has a 1in blank top margin.
       // The bottom PAGE_MARGIN_B (96px) is naturally empty below the clip on every page.
       const pagesHtml = Array.from({length: totalPages}, (_, i) => {
-        const clipFade = (i < totalPages - 1 && tpl.layout !== 'rSidebar')
+        const clipFade = (i < totalPages - 1 && (isBothMode || tpl.layout !== 'rSidebar'))
           ? `<div style="position:absolute;bottom:0;left:0;width:100%;height:22px;background:linear-gradient(to bottom,transparent,${fadeColor});pointer-events:none;z-index:2;"></div>`
           : '';
         return `

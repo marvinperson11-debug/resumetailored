@@ -266,7 +266,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
             <!-- CTA -->
             <div style="text-align:center;margin-bottom:28px;">
-              <a href="https://resumetailored.com/app.html" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:15px 40px;border-radius:10px;text-decoration:none;">Go to My Dashboard →</a>
+              <a href="https://resumetailored.com/dashboard" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:15px 40px;border-radius:10px;text-decoration:none;">Go to My Dashboard →</a>
             </div>
 
             <!-- Contact -->
@@ -347,7 +347,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
                 You may need to create a new account — it only takes a minute.
               </p>
               <div style="text-align:center;margin-bottom:28px;">
-                <a href="https://resumetailored.com/app.html" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Create Account →</a>
+                <a href="https://resumetailored.com/signup" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Create Account →</a>
               </div>
               <p style="font-size:13px;color:#9ca3af;text-align:center;line-height:1.6;margin:0;">
                 If you believe this is an error, please contact us at <a href="mailto:support@resumetailored.com" style="color:#2563eb;">support@resumetailored.com</a>
@@ -793,7 +793,7 @@ ${jobPosting}
     }
 
     if (mode === 'cover_letter' || mode === 'both') {
-      if (mode === 'both') userPrompt += '\n\n---\n\n';
+      if (mode === 'both') userPrompt += '\n\n===COVER_LETTER_START===\n\n';
       userPrompt += `## Task: Write a compelling cover letter for this job.
 
 **Rules:**
@@ -862,7 +862,7 @@ app.post('/api/subscribe', async (req, res) => {
       customer_email: email,
       line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
       success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/app.html`,
+      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/dashboard`,
       metadata: { email }
     });
     res.json({ url: session.url });
