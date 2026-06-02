@@ -512,29 +512,110 @@ app.post('/api/download-docx', async (req, res) => {
   const { text, filename, colors } = req.body;
   if (!text) return res.status(400).json({ error: 'No text provided.' });
 
-  // Strip # from hex colors for docx API (expects "1a237e" not "#1a237e")
   const primaryHex = colors?.primary ? colors.primary.replace('#', '') : '1a237e';
   const accentHex  = colors?.accent  ? colors.accent.replace('#', '')  : '5c6bc0';
 
   const lines = text.split('\n');
-  const children = lines.map(line => {
-    const trimmed = line.trim();
-    const isHeading = trimmed.length > 0 && trimmed.length <= 50 &&
-      trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed);
-    if (isHeading) {
-      return new Paragraph({
-        children: [new TextRun({ text: trimmed, font: 'Calibri', size: 26, bold: true, color: primaryHex })],
-        spacing: { before: 280, after: 80 },
-        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: accentHex, space: 4 } }
-      });
-    }
-    return new Paragraph({
-      children: [new TextRun({ text: line, font: 'Calibri', size: 22 })],
-      spacing: { after: 40 }
-    });
-  });
+  const children = [];
+  let lineIndex = 0;
 
-  const doc = new Document({ sections: [{ properties: {}, children }] });
+  // Skip leading blank lines
+  while (lineIndex < lines.length && !lines[lineIndex].trim()) lineIndex++;
+
+  // First non-blank line = name
+  if (lineIndex < lines.length) {
+    const name = lines[lineIndex].trim().replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+    children.push(new Paragraph({
+      children: [new TextRun({ text: name, font: 'Calibri', size: 40, bold: true, color: primaryHex })],
+      spacing: { after: 60 },
+    }));
+    lineIndex++;
+  }
+
+  // Lines that look like contact info (email/phone/pipe-separated) immediately after name
+  while (lineIndex < lines.length) {
+    const raw = lines[lineIndex];
+    const t = raw.trim().replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+    if (!t) { lineIndex++; break; }
+    if (t.includes('@') || /\(\d{3}\)/.test(t) || /\d{3}[-.\s]\d{3}/.test(t) || (t.includes('|') && t.length < 120 && !/\d{4}/.test(t))) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: t, font: 'Calibri', size: 20, color: '555555' })],
+        spacing: { after: 40 },
+      }));
+      lineIndex++;
+    } else {
+      break;
+    }
+  }
+
+  // Remaining lines
+  for (; lineIndex < lines.length; lineIndex++) {
+    const raw = lines[lineIndex];
+    const trimmed = raw.trim();
+    const clean = trimmed.replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+
+    if (!clean) {
+      children.push(new Paragraph({ spacing: { after: 60 } }));
+      continue;
+    }
+
+    // Section heading: all-caps, 2-50 chars
+    const isHeading = clean.length >= 2 && clean.length <= 50 &&
+      /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(clean) && /[A-Z]/.test(clean);
+    if (isHeading) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: clean, font: 'Calibri', size: 24, bold: true, color: primaryHex })],
+        spacing: { before: 280, after: 80 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: accentHex, space: 4 } },
+      }));
+      continue;
+    }
+
+    // Bullet point
+    if (/^[•·\-\*]\s/.test(trimmed)) {
+      const txt = clean.replace(/^[•·\-\*]\s*/, '');
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `• ${txt}`, font: 'Calibri', size: 22, color: '333333' })],
+        indent: { left: 360 },
+        spacing: { after: 40 },
+      }));
+      continue;
+    }
+
+    // Date/company separator line (contains em-dash or pipe with year)
+    if ((clean.includes('—') || clean.includes('–') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 150) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: clean, font: 'Calibri', size: 22, color: accentHex, bold: true })],
+        spacing: { after: 40 },
+      }));
+      continue;
+    }
+
+    // Bold-only line (job title or sub-heading)
+    const wasBold = /^\*\*[^*]+\*\*$/.test(trimmed);
+    if (wasBold && clean.length < 70) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: clean, font: 'Calibri', size: 24, bold: true, color: '222222' })],
+        spacing: { before: 120, after: 40 },
+      }));
+      continue;
+    }
+
+    // Regular body text
+    children.push(new Paragraph({
+      children: [new TextRun({ text: clean, font: 'Calibri', size: 22, color: '333333' })],
+      spacing: { after: 40 },
+    }));
+  }
+
+  const doc = new Document({
+    sections: [{
+      properties: {
+        page: { margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } },
+      },
+      children,
+    }],
+  });
   const buffer = await Packer.toBuffer(doc);
 
   const safeName = (filename || 'tailored-resume').replace(/[^a-z0-9-_]/gi, '_');
