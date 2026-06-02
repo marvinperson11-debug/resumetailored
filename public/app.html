@@ -2395,18 +2395,21 @@
       if (tpl.layout === 'cClean') {
         const contactParts = p.contact ? p.contact.split(/\s*\|\s*/) : [];
         const contactHtml = contactParts.length
-          ? `<div style="display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;">${contactParts.map(pt => `<span style="font-size:12px;color:${c.p};font-weight:700;">${escHtml(pt)}</span>`).join('<span style="font-size:12px;color:#ddd;">|</span>')}</div>`
+          ? `<div style="display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;">${contactParts.map(pt => `<span style="font-size:12px;color:${c.a};font-weight:700;">${escHtml(pt)}</span>`).join('<span style="font-size:12px;color:#aaa;">|</span>')}</div>`
           : '';
         const cleanBodyParas = p.body.map(para => `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 19px;">${escHtml(para)}</p>`).join('');
         const hdr = printMode ? '' : 'padding:76px;';
-        return `<div style="${cardWrap}${hdr}">
+        const cleanWrap = printMode
+          ? `font-family:${font};background:${c.l};color:#222;${pca}`
+          : `font-family:${font};background:${c.l};color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;${pca}`;
+        return `<div style="${cleanWrap}${hdr}">
           <div style="margin-bottom:44px;">
-            <div style="font-size:34px;font-weight:900;letter-spacing:-1.5px;">${escHtml(p.name)}</div>
+            <div style="font-size:34px;font-weight:900;letter-spacing:-1.5px;color:${c.p};">${escHtml(p.name)}</div>
             ${contactHtml}
-            <div style="height:2px;background:${c.p};margin-top:18px;${pca}"></div>
+            <div style="height:2px;background:${c.a};margin-top:18px;${pca}"></div>
           </div>
-          <div style="font-size:11.5px;color:#bbb;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:26px;">${p.date}</div>
-          ${roleLine.length ? `<div style="font-size:16px;font-weight:700;color:#333;margin-bottom:26px;">Re: ${escHtml(roleLine.join(' — '))}</div>` : ''}
+          <div style="font-size:11.5px;color:${c.p};text-transform:uppercase;letter-spacing:1.5px;margin-bottom:26px;opacity:0.7;">${p.date}</div>
+          ${roleLine.length ? `<div style="font-size:16px;font-weight:700;color:${c.p};margin-bottom:26px;">Re: ${escHtml(roleLine.join(' — '))}</div>` : ''}
           ${cleanBodyParas}
         </div>`;
       }
@@ -2958,6 +2961,7 @@ Aaliyah Washington`
       const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit'].includes(tpl.layout);
       const bodyBg = isSidebarLayout
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
+        : tpl.layout === 'cClean' ? tpl.c.l
         : '#fff';
 
       win.document.write(`<!DOCTYPE html>
@@ -3127,10 +3131,13 @@ Aaliyah Washington`
       const sigTopPx = sigName ? Math.min(lastPageContentH + PAGE_MARGIN_B, PAGE_H - 60) : 0;
       const sigBlock = sigName ? `<div style="position:absolute;top:${sigTopPx}px;left:${sigLeftPx};-webkit-print-color-adjust:exact;print-color-adjust:exact;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-family:${font};">Signature</p><p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${tpl.c.p};line-height:1.3;">${escHtml(sigName)}</p></div>` : '';
 
+      // cClean templates tint the full page with their light accent color
+      const pageBg = tpl.layout === 'cClean' ? tpl.c.l : '#fff';
+
       // Each page: inner clip div restricts content to PAGE_CONTENT_H (768px),
       // leaving the bottom PAGE_MARGIN_B (288px = 3in) naturally empty on every page
       const pagesHtml = Array.from({length: numPages}, (_, i) => `
-        <div style="width:816px;height:${PAGE_H}px;overflow:hidden;position:relative;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.5);${i > 0 ? 'margin-top:16px;' : ''}">
+        <div style="width:816px;height:${PAGE_H}px;overflow:hidden;position:relative;background:${pageBg};-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:0 4px 24px rgba(0,0,0,0.5);${i > 0 ? 'margin-top:16px;' : ''}">
           <div style="position:absolute;top:0;left:0;width:816px;height:${PAGE_CONTENT_H}px;overflow:hidden;">
             <div style="position:absolute;top:${-i * PAGE_CONTENT_H}px;left:0;width:816px;">${contentHtml}</div>
           </div>
