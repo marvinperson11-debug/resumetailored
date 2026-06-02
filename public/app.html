@@ -2221,6 +2221,24 @@
       return `<div style="font-size:12.5px;line-height:1.8;color:#444;${pbi}">${escHtml(clean)}</div>`;
     }
 
+    // Groups section lines into job-entry blocks (bold title → date → bullets)
+    // and wraps each block in a break-inside:avoid container so entries never
+    // orphan their title from their content across a page break.
+    function _groupedSectionHtml(lines, c) {
+      const pbi = 'page-break-inside:avoid;break-inside:avoid;';
+      const groups = [];
+      let cur = [];
+      for (const raw of lines) {
+        const clean = raw.replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+        const wasBold = /^\*\*[^*]+\*\*$/.test(raw.trim()) && clean.length < 70;
+        if (!clean) { if (cur.length) { groups.push(cur); cur = []; } continue; }
+        if (wasBold && cur.length) { groups.push(cur); cur = []; }
+        cur.push(raw);
+      }
+      if (cur.length) groups.push(cur);
+      return groups.map(g => `<div style="${pbi}">${g.map(r => _lineHtml(r, c)).join('')}</div>`).join('<div style="height:6px;"></div>');
+    }
+
     function renderSidebarOutput(parsed, c, font, printMode) {
       const { name, contact, sections } = parsed;
       const initials = name.trim()[0] ? name.trim()[0].toUpperCase() : '?';
@@ -2231,7 +2249,7 @@
       }
       const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
       const sidebarHtml = sideSecs.map(sec => `<div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">${escHtml(sec.title)}</div>${sec.lines.map(raw => { const t = raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim(); if (!t) return ''; const txt = t.replace(/^[•·\-\*]\s*/,''); return `<div style="background:rgba(255,255,255,.13);color:#fff;font-size:11px;padding:4px 10px;border-radius:4px;margin-bottom:5px;">${escHtml(txt)}</div>`; }).join('')}</div>`).join('');
-      const mainHtml = mainSecs.map(sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">${escHtml(sec.title)}</div><div style="width:36px;height:3px;background:${c.a};margin-bottom:10px;border-radius:2px;"></div>${sec.lines.map(raw => _lineHtml(raw, c)).join('')}</div>`).join('');
+      const mainHtml = mainSecs.map(sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">${escHtml(sec.title)}</div><div style="width:36px;height:3px;background:${c.a};margin-bottom:10px;border-radius:2px;"></div>${_groupedSectionHtml(sec.lines, c)}</div>`).join('');
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode
         ? `font-family:${font};color:#222;display:flex;width:100%;padding-bottom:28px;`
@@ -2242,7 +2260,7 @@
     function renderModernOutput(parsed, c, font, printMode) {
       const { name, contact, sections } = parsed;
       const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
-      const sectionsHtml = sections.map(sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${sec.lines.map(raw=>_lineHtml(raw,c)).join('')}</div>`).join('');
+      const sectionsHtml = sections.map(sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c)}</div>`).join('');
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode
         ? `font-family:${font};color:#222;`
@@ -2261,7 +2279,7 @@
       const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const leftHtml = `<div style="font-size:17px;font-weight:900;color:${c.p};margin-bottom:5px;line-height:1.2;">${escHtml(name)}</div><div style="margin-bottom:16px;">${contactLines.map(l=>`<div style="font-size:10.5px;color:#555;line-height:1.7;">${escHtml(l)}</div>`).join('')}</div>${sideSecs.map(sec=>`<div style="margin-bottom:14px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid ${c.a}50;">${escHtml(sec.title)}</div>${sec.lines.map(raw=>{const t=raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();if(!t)return '';return `<div style="font-size:10.5px;color:#444;line-height:1.65;">${escHtml(t.replace(/^[•·\-\*]\s*/,''))}</div>`;}).join('')}</div>`).join('')}`;
-      const rightHtml = mainSecs.map(sec=>`<div style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${sec.lines.map(raw=>_lineHtml(raw,c)).join('')}</div>`).join('');
+      const rightHtml = mainSecs.map(sec=>`<div style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c)}</div>`).join('');
       const outerStyle = printMode ? `font-family:${font};color:#222;display:flex;width:100%;` : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
       return `<div style="${outerStyle}"><div style="width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;flex-shrink:0;${pca}">${leftHtml}</div><div style="flex:1;padding:32px 28px;min-width:0;">${rightHtml}</div></div>`;
     }
@@ -2272,7 +2290,7 @@
       const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const contactHtml = contactParts.map((s,i)=>`${i>0?`<span style="color:${c.a};margin:0 8px;">·</span>`:''}${escHtml(s)}`).join('');
-      const sectionsHtml = sections.map(sec=>`<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:inline-block;background:${c.p};color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 11px;border-radius:3px;margin-bottom:10px;${pca}">${escHtml(sec.title)}</div>${sec.lines.map(raw=>_lineHtml(raw,c)).join('')}</div>`).join('');
+      const sectionsHtml = sections.map(sec=>`<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:inline-block;background:${c.p};color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 11px;border-radius:3px;margin-bottom:10px;${pca}">${escHtml(sec.title)}</div>${_groupedSectionHtml(sec.lines, c)}</div>`).join('');
       const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
       return `<div style="${outerStyle}"><div style="padding:26px 44px 18px;border-left:5px solid ${c.p};${pca}"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(name)}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${pca}"></div></div><div style="padding:18px 44px 32px;">${sectionsHtml}</div></div>`;
     }
@@ -2479,29 +2497,34 @@
       const lines = text.split('\n');
       let html = '';
       let firstLine = true;
+      const _pbi = 'page-break-inside:avoid;break-inside:avoid;';
+      let _grpOpen = false;
+      const _openGrp = () => { if (!_grpOpen) { html += `<div style="${_pbi}">`; _grpOpen = true; } };
+      const _closeGrp = () => { if (_grpOpen) { html += '</div>'; _grpOpen = false; } };
       for (let i = 0; i < lines.length; i++) {
         const raw = lines[i];
         let t = raw.trim().replace(/^#{1,3}\s+/, '');
         if (/^[-*_]{3,}$/.test(t)) continue;
         const wasBold = /^\*\*[^*]+\*\*$/.test(raw.trim());
         t = t.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
-        if (!t) { html += `<div style="height:7px;"></div>`; continue; }
+        if (!t) { _closeGrp(); html += `<div style="height:7px;"></div>`; continue; }
         if (firstLine) { firstLine = false; html += tpl.style === 'minimal' ? `<div style="font-size:22px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:#111827;margin-bottom:3px;">${escHtml(t)}</div>` : `<div style="font-size:22px;font-weight:800;color:${c.p};margin-bottom:3px;">${escHtml(t)}</div>`; continue; }
         if ((t.includes('@') || /\(\d{3}\)/.test(t) || (t.includes('|') && t.length < 80 && !/\d{4}/.test(t))) && t.length < 120) { html += `<div style="font-size:12px;color:#666;margin-bottom:2px;">${escHtml(t)}</div>`; continue; }
         const isHdr = t.length >= 2 && t.length <= 50 && /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(t);
         if (isHdr) {
+          _closeGrp();
           if (tpl.style === 'left-bar') html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:8px;margin:18px 0 10px;">${escHtml(t)}</div>`;
           else if (tpl.style === 'icon-bar') html += `<div style="display:flex;align-items:center;gap:8px;margin:18px 0 10px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
           else if (tpl.style === 'minimal') html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:20px 0 10px;">${escHtml(t)}</div>`;
           else html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:5px;margin:18px 0 10px;">${escHtml(t)}</div>`;
           continue;
         }
-        const _pbi = 'page-break-inside:avoid;break-inside:avoid;';
-        if (wasBold && t.length < 70) { html += `<div style="font-size:13.5px;font-weight:700;color:#222;margin:10px 0 1px;${_pbi}">${escHtml(t)}</div>`; continue; }
-        if (/^[•·\-\*]\s/.test(raw.trim())) { const txt = t.replace(/^[•·\-\*]\s*/, ''); html += `<div style="padding-left:14px;font-size:13px;line-height:1.8;color:#333;margin:2px 0;${_pbi}">• ${escHtml(txt)}</div>`; continue; }
+        if (wasBold && t.length < 70) { _closeGrp(); _openGrp(); html += `<div style="font-size:13.5px;font-weight:700;color:#222;margin:10px 0 1px;${_pbi}">${escHtml(t)}</div>`; continue; }
+        if (/^[•·\-\*]\s/.test(raw.trim())) { _openGrp(); const txt = t.replace(/^[•·\-\*]\s*/, ''); html += `<div style="padding-left:14px;font-size:13px;line-height:1.8;color:#333;margin:2px 0;${_pbi}">• ${escHtml(txt)}</div>`; continue; }
         if ((t.includes('—') || t.includes('–') || (t.includes('|') && /\d{4}/.test(t))) && t.length < 150) { html += `<div style="font-size:12px;color:${c.a};font-weight:600;margin-bottom:5px;${_pbi}">${escHtml(t)}</div>`; continue; }
         html += `<div style="font-size:13px;line-height:1.75;color:#333;${_pbi}">${escHtml(t)}</div>`;
       }
+      _closeGrp();
       const bg = tpl.style === 'minimal' ? '#fafafa' : '#fff';
       if (printMode) return `<div style="font-family:${font};background:${bg};color:#222;padding:0 0 28px 0;">${html}</div>`;
       return `<div style="font-family:${font};background:${bg};padding:28px 32px;color:#222;border-radius:8px;border:1px solid #e5e7eb;">${html}</div>`;
