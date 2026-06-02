@@ -744,9 +744,10 @@ app.post('/api/tailor', async (req, res) => {
       userPrompt += `## Task: Tailor the resume below to the job posting.
 
 **Rules:**
+- Include EVERY job, position, and role from the original resume — do not omit or merge any work experience entries
 - Keep the same resume structure and factual experience — never fabricate anything
 - Reword bullet points to mirror the language and keywords in the job posting
-- Prioritize and reorder bullet points so the most relevant experience appears first
+- Within each job, prioritize and reorder bullet points so the most relevant achievements appear first
 - Adjust the summary/objective section (if present) to target this specific role
 - Every bullet point must begin with a strong past-tense action verb (e.g. Led, Built, Reduced)
 - No periods at the end of bullet points (standard resume format)
@@ -765,6 +766,13 @@ EXPERIENCE
 [Company | Start – End]
 • [bullet]
 • [bullet]
+
+[Job Title]
+[Company | Start – End]
+• [bullet]
+• [bullet]
+
+[Repeat for ALL jobs — every position from the original resume must appear]
 
 EDUCATION
 [Degree]
@@ -821,7 +829,7 @@ ${jobPosting}
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 4096,
+      max_tokens: 8192,
       system: systemPrompt,
       messages: [{ role: 'user', content: userPrompt }]
     });
