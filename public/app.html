@@ -2214,7 +2214,7 @@
       const wasBold = /^\*\*[^*]+\*\*$/.test(raw.trim());
       const isBullet = /^[•·\-\*]\s/.test(raw.trim());
       const isDate = (clean.includes('—') || clean.includes('–') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 150;
-      const pbi = 'page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
+      const pbi = 'page-break-inside:avoid;break-inside:avoid;-webkit-column-break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
       if (wasBold && clean.length < 70) return `<div style="font-size:13px;font-weight:800;color:#1a1a1a;margin:9px 0 1px;${pbi}">${escHtml(clean)}</div>`;
       if (isBullet) { const txt = clean.replace(/^[•·\-\*]\s*/, ''); return `<div style="padding-left:12px;font-size:12px;line-height:1.8;color:#444;margin:2px 0;${pbi}">• ${escHtml(txt)}</div>`; }
       if (isDate) return `<div style="font-size:11.5px;color:${c.a};font-weight:700;margin-bottom:4px;${pbi}">${escHtml(clean)}</div>`;
@@ -2224,8 +2224,11 @@
     // Groups section lines into job-entry blocks (bold title → date → bullets)
     // and wraps each block in a break-inside:avoid container so entries never
     // orphan their title from their content across a page break.
-    function _groupedSectionHtml(lines, c) {
-      const pbi = 'page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
+    // In printMode, uses display:table (Chrome page-break workaround — Chrome
+    // cannot break inside table elements, making break-inside:avoid reliable).
+    function _groupedSectionHtml(lines, c, printMode) {
+      const pbi = 'page-break-inside:avoid;break-inside:avoid;-webkit-column-break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
+      const grpStyle = printMode ? `display:table;width:100%;${pbi}` : pbi;
       const groups = [];
       let cur = [];
       for (const raw of lines) {
@@ -2236,7 +2239,7 @@
         cur.push(raw);
       }
       if (cur.length) groups.push(cur);
-      return groups.map(g => `<div style="${pbi}">${g.map(r => _lineHtml(r, c)).join('')}</div>`).join('<div style="height:6px;"></div>');
+      return groups.map(g => `<div style="${grpStyle}">${g.map(r => _lineHtml(r, c)).join('')}</div>`).join('<div style="height:6px;"></div>');
     }
 
     function renderSidebarOutput(parsed, c, font, printMode) {
@@ -2249,7 +2252,7 @@
       }
       const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
       const sidebarHtml = sideSecs.map(sec => `<div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">${escHtml(sec.title)}</div>${sec.lines.map(raw => { const t = raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim(); if (!t) return ''; const txt = t.replace(/^[•·\-\*]\s*/,''); return `<div style="background:rgba(255,255,255,.13);color:#fff;font-size:11px;padding:4px 10px;border-radius:4px;margin-bottom:5px;">${escHtml(txt)}</div>`; }).join('')}</div>`).join('');
-      const mainHtml = mainSecs.map(sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">${escHtml(sec.title)}</div><div style="width:36px;height:3px;background:${c.a};margin-bottom:10px;border-radius:2px;"></div>${_groupedSectionHtml(sec.lines, c)}</div>`).join('');
+      const mainHtml = mainSecs.map(sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">${escHtml(sec.title)}</div><div style="width:36px;height:3px;background:${c.a};margin-bottom:10px;border-radius:2px;"></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`).join('');
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode
         ? `font-family:${font};color:#222;display:flex;width:100%;padding-bottom:28px;`
@@ -2260,7 +2263,7 @@
     function renderModernOutput(parsed, c, font, printMode) {
       const { name, contact, sections } = parsed;
       const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
-      const sectionsHtml = sections.map(sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c)}</div>`).join('');
+      const sectionsHtml = sections.map(sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`).join('');
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode
         ? `font-family:${font};color:#222;`
@@ -2279,7 +2282,7 @@
       const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const leftHtml = `<div style="font-size:17px;font-weight:900;color:${c.p};margin-bottom:5px;line-height:1.2;">${escHtml(name)}</div><div style="margin-bottom:16px;">${contactLines.map(l=>`<div style="font-size:10.5px;color:#555;line-height:1.7;">${escHtml(l)}</div>`).join('')}</div>${sideSecs.map(sec=>`<div style="margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid ${c.a}50;">${escHtml(sec.title)}</div>${sec.lines.map(raw=>{const t=raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();if(!t)return '';return `<div style="font-size:10.5px;color:#444;line-height:1.65;page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;">${escHtml(t.replace(/^[•·\-\*]\s*/,''))}</div>`;}).join('')}</div>`).join('')}`;
-      const rightHtml = mainSecs.map(sec=>`<div style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c)}</div>`).join('');
+      const rightHtml = mainSecs.map(sec=>`<div style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`).join('');
       const outerStyle = printMode ? `font-family:${font};color:#222;display:flex;width:100%;` : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
       return `<div style="${outerStyle}"><div style="width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;flex-shrink:0;${pca}">${leftHtml}</div><div style="flex:1;padding:32px 28px;min-width:0;">${rightHtml}</div></div>`;
     }
@@ -2290,7 +2293,7 @@
       const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const contactHtml = contactParts.map((s,i)=>`${i>0?`<span style="color:${c.a};margin:0 8px;">·</span>`:''}${escHtml(s)}`).join('');
-      const sectionsHtml = sections.map(sec=>`<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:inline-block;background:${c.p};color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 11px;border-radius:3px;margin-bottom:10px;${pca}">${escHtml(sec.title)}</div>${_groupedSectionHtml(sec.lines, c)}</div>`).join('');
+      const sectionsHtml = sections.map(sec=>`<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:inline-block;background:${c.p};color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 11px;border-radius:3px;margin-bottom:10px;${pca}">${escHtml(sec.title)}</div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`).join('');
       const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
       return `<div style="${outerStyle}"><div style="padding:26px 44px 18px;border-left:5px solid ${c.p};${pca}"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(name)}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${pca}"></div></div><div style="padding:18px 44px 32px;">${sectionsHtml}</div></div>`;
     }
@@ -2373,7 +2376,7 @@
       const cardWrap = printMode
         ? `font-family:${font};color:#222;`
         : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
-      const _pbip = 'page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
+      const _pbip = 'page-break-inside:avoid;break-inside:avoid;-webkit-column-break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
       const bodyParas = p.body.map(para =>
         `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 16px;${_pbip}">${escHtml(para)}</p>`
       ).join('');
@@ -2498,9 +2501,10 @@
       const lines = text.split('\n');
       let html = '';
       let firstLine = true;
-      const _pbi = 'page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
+      const _pbi = 'page-break-inside:avoid;break-inside:avoid;-webkit-column-break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
+      const _grpStyle = printMode ? `display:table;width:100%;${_pbi}` : _pbi;
       let _grpOpen = false;
-      const _openGrp = () => { if (!_grpOpen) { html += `<div style="${_pbi}">`; _grpOpen = true; } };
+      const _openGrp = () => { if (!_grpOpen) { html += `<div style="${_grpStyle}">`; _grpOpen = true; } };
       const _closeGrp = () => { if (_grpOpen) { html += '</div>'; _grpOpen = false; } };
       for (let i = 0; i < lines.length; i++) {
         const raw = lines[i];
@@ -3066,7 +3070,7 @@ Aaliyah Washington`
     html { background: #fff; }
     body { font-family: ${font}; color: #222; background: ${bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: break-word; word-break: keep-all; hyphens: none; -webkit-hyphens: none; }
     .page { width: 100%; }
-    p, li { page-break-inside: avoid; break-inside: avoid; overflow-wrap: break-word; word-break: keep-all; hyphens: none; -webkit-hyphens: none; }
+    p, li { page-break-inside: avoid; break-inside: avoid; -webkit-column-break-inside: avoid; overflow-wrap: break-word; word-break: keep-all; hyphens: none; -webkit-hyphens: none; }
     div { overflow-wrap: break-word; word-break: keep-all; hyphens: none; -webkit-hyphens: none; min-width: 0; }
   </style>
 </head>
