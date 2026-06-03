@@ -193,6 +193,62 @@
     .sig-font-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
     .sig-font-btn:hover:not(.active) { border-color: #93c5fd; }
     .sig-preview { margin-top: 10px; padding: 14px 20px; background: #fafafa; border: 1.5px solid var(--border); border-radius: 8px; }
+
+    /* ── LinkedIn sidebar button highlight ── */
+    .sidebar-btn-linkedin {
+      background: linear-gradient(135deg, #e8f4fd 0%, #f0f9ff 100%) !important;
+      border: 1.5px solid #93c5fd !important;
+      color: #0077b5 !important;
+      font-weight: 700 !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+    .sidebar-btn-linkedin:hover:not(.active) {
+      background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%) !important;
+      border-color: #0077b5 !important;
+    }
+    .sidebar-btn-linkedin.active {
+      background: linear-gradient(135deg, #0077b5 0%, #1d4ed8 100%) !important;
+      color: #fff !important;
+      border-color: #0077b5 !important;
+    }
+    .sidebar-btn-linkedin.active span[style*="background:#0077b5"] {
+      background: rgba(255,255,255,0.3) !important;
+    }
+
+    /* ── LinkedIn Optimizer shortcut banner ── */
+    .linkedin-shortcut-banner {
+      background: linear-gradient(135deg, #eff8ff 0%, #e0f2fe 100%);
+      border: 1.5px solid #93c5fd;
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .linkedin-shortcut-banner:hover {
+      border-color: #0077b5;
+      box-shadow: 0 4px 16px rgba(0,119,181,0.12);
+      transform: translateY(-1px);
+    }
+    .linkedin-shortcut-banner .li-icon {
+      width: 40px; height: 40px; background: #0077b5; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+
+    /* ── A4 size toggle ── */
+    .page-size-toggle { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
+    .page-size-btn { padding: 5px 12px; font-size: 11px; font-weight: 700; border: 1.5px solid #e5e7eb; border-radius: 6px; background: #fff; color: #6b7280; cursor: pointer; font-family: inherit; transition: all .15s; text-transform: uppercase; letter-spacing: .5px; }
+    .page-size-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+    /* ── Chinese job board note ── */
+    .job-platform-note { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .platform-chip { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #f3f4f6; color: #6b7280; white-space: nowrap; }
+    .platform-chip-cn { background: #fef3c7; color: #92400e; }
   </style>
 </head>
 <body>
@@ -259,8 +315,9 @@
       <div style="display:flex;gap:12px;align-items:center;">
         <span id="navStatus"></span>
         <span id="navUsername" style="color:#9490b5;font-size:13px;font-weight:600;display:none;"></span>
-        <button class="btn btn-outline" id="goProNavBtn" onclick="startPro()" style="font-size:13px;padding:8px 14px;">Go Pro — $19/mo</button>
-        <button class="btn btn-outline" id="logoutBtn" onclick="doLogout()" style="display:none;font-size:13px;padding:8px 14px;">Log Out</button>
+        <button class="btn btn-outline" id="goProNavBtn" onclick="startPro()" style="font-size:13px;padding:8px 14px;" data-i18n="nav_go_pro">Go Pro — $19/mo</button>
+        <button onclick="toggleLang()" id="langToggleBtn" style="background:transparent;border:1.5px solid #e5e7eb;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;color:#6b7280;cursor:pointer;font-family:inherit;transition:all .15s;" title="Switch language / 切换语言">中文</button>
+        <button class="btn btn-outline" id="logoutBtn" onclick="doLogout()" style="display:none;font-size:13px;padding:8px 14px;" data-i18n="nav_logout">Log Out</button>
       </div>
     </div>
   </nav>
@@ -271,12 +328,15 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-section">
-        <div class="sidebar-label">Job Search</div>
+        <div class="sidebar-label" data-i18n="sidebar_jobsearch">Job Search</div>
         <button class="sidebar-btn active" onclick="showTab('tailor')" id="tab-tailor" data-label="Tailor">
-          <span class="sidebar-icon">✦</span> Resume Tailor
+          <span class="sidebar-icon">✦</span> <span data-i18n="sidebar_tailor">Resume Tailor</span>
         </button>
-        <button class="sidebar-btn" onclick="showTab('linkedin')" id="tab-linkedin" data-label="LinkedIn">
-          <span class="sidebar-icon">🔗</span> LinkedIn Optimizer
+        <!-- LinkedIn Optimizer — highlighted as a featured Pro tool -->
+        <button class="sidebar-btn sidebar-btn-linkedin" onclick="showTab('linkedin')" id="tab-linkedin" data-label="LinkedIn" title="LinkedIn Profile Optimizer — Pro Feature">
+          <span class="sidebar-icon">🔗</span>
+          <span style="flex:1;text-align:left;" data-i18n="sidebar_linkedin">LinkedIn Optimizer</span>
+          <span style="background:#0077b5;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
         </button>
       </div>
       <div class="sidebar-section">
@@ -319,8 +379,18 @@
       <!-- ═══ TAB: RESUME TAILOR ═══ -->
       <div class="tab-content active" id="panel-tailor">
         <div class="panel-header">
-          <h1>Tailor Your Resume</h1>
-          <p>Paste your resume and the job posting. We'll match your experience to what they're looking for.</p>
+          <h1 data-i18n="tailor_title">Tailor Your Resume</h1>
+          <p data-i18n="tailor_sub">Paste your resume and the job posting. We'll match your experience to what they're looking for.</p>
+        </div>
+
+        <!-- LinkedIn Optimizer Shortcut Banner -->
+        <div class="linkedin-shortcut-banner" onclick="showTab('linkedin')" id="linkedinShortcutBanner" title="Open LinkedIn Optimizer">
+          <div class="li-icon">🔗</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:800;color:#0077b5;margin-bottom:2px;" data-i18n="li_banner_title">LinkedIn Profile Optimizer <span style="background:#0077b5;color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;margin-left:4px;font-weight:800;">PRO</span></div>
+            <div style="font-size:12px;color:#4b5563;" data-i18n="li_banner_desc">Get an AI-optimized headline, About section &amp; experience bullets. Click here to open →</div>
+          </div>
+          <svg width="18" height="18" fill="none" stroke="#0077b5" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0;opacity:.7;"><path d="M9 18l6-6-6-6"/></svg>
         </div>
 
         <div class="mobile-upgrade-banner" id="mobileUpgradeBanner" style="display:none;">
@@ -331,9 +401,9 @@
         <div id="statusBadge" style="margin-bottom:16px;"></div>
 
         <div class="mode-row">
-          <span style="font-weight:600;font-size:13px;align-self:center;color:var(--muted);">Generate:</span>
-          <button class="mode-btn active" data-mode="resume">Resume</button>
-          <button class="mode-btn" data-mode="cover_letter">Cover Letter</button>
+          <span style="font-weight:600;font-size:13px;align-self:center;color:var(--muted);" data-i18n="mode_label">Generate:</span>
+          <button class="mode-btn active" data-mode="resume" data-i18n="mode_resume">Resume</button>
+          <button class="mode-btn" data-mode="cover_letter" data-i18n="mode_cover">Cover Letter</button>
         </div>
 
         <!-- Template Picker -->
@@ -452,8 +522,17 @@
             </div>
           </div>
           <div class="field">
-            <label for="job">Job Posting</label>
-            <textarea id="job" placeholder="Paste the full job description here...&#10;&#10;(Copy from LinkedIn, Indeed, company website, etc.)"></textarea>
+            <label for="job" data-i18n="job_label">Job Posting</label>
+            <div class="job-platform-note" style="margin-bottom:6px;">
+              <span class="platform-chip">LinkedIn</span>
+              <span class="platform-chip">Indeed</span>
+              <span class="platform-chip">Glassdoor</span>
+              <span class="platform-chip platform-chip-cn">Boss直聘</span>
+              <span class="platform-chip platform-chip-cn">猎聘 Liepin</span>
+              <span class="platform-chip platform-chip-cn">智联招聘 Zhaopin</span>
+              <span class="platform-chip">+ more</span>
+            </div>
+            <textarea id="job" placeholder="Paste the full job description here...&#10;&#10;Works with: LinkedIn, Indeed, Glassdoor, Boss直聘 (Boss Zhipin), 猎聘 (Liepin), 智联招聘 (Zhaopin), and any job posting in any language." data-i18n-placeholder="job_placeholder"></textarea>
           </div>
         </div>
 
@@ -476,16 +555,22 @@
         </div>
 
 
-        <button class="btn btn-primary btn-full btn-lg" id="tailorBtn" onclick="tailor()">
+        <button class="btn btn-primary btn-full btn-lg" id="tailorBtn" onclick="tailor()" data-i18n="tailor_btn">
           Tailor My Resume →
         </button>
 
         <div class="output-wrap" id="outputWrap" style="display:none;">
           <div class="output-header">
-            <h2 id="outputTitle">Tailored Result</h2>
-            <div style="display:flex;gap:8px;">
-              <button class="btn btn-outline" id="editBtn" onclick="startEdit()" style="font-size:13px;padding:8px 14px;">✏️ Edit</button>
-              <button class="btn btn-outline copy-btn" onclick="copyResult()">Copy</button>
+            <h2 id="outputTitle" data-i18n="output_title">Tailored Result</h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <!-- Page size selector for export -->
+              <div class="page-size-toggle" title="Choose export page size">
+                <span style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;" data-i18n="pagesize_label">Page:</span>
+                <button class="page-size-btn active" id="pageSizeLetter" onclick="setPageSize('letter')">Letter</button>
+                <button class="page-size-btn" id="pageSizeA4" onclick="setPageSize('a4')">A4</button>
+              </div>
+              <button class="btn btn-outline" id="editBtn" onclick="startEdit()" style="font-size:13px;padding:8px 14px;">✏️ <span data-i18n="btn_edit">Edit</span></button>
+              <button class="btn btn-outline copy-btn" onclick="copyResult()" data-i18n="btn_copy">Copy</button>
             </div>
           </div>
           <div class="edit-bar" id="editBar" style="display:none;">
@@ -512,9 +597,15 @@
 
       <!-- ═══ TAB: LINKEDIN OPTIMIZER ═══ -->
       <div class="tab-content" id="panel-linkedin">
-        <div class="panel-header">
-          <h1>LinkedIn Profile Optimizer</h1>
-          <p>Paste your current LinkedIn profile and target role — get an AI-optimized headline, About section, and experience bullets that get recruiters to click.</p>
+        <div class="panel-header" style="border-bottom:3px solid #0077b5;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <div style="width:44px;height:44px;background:#0077b5;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🔗</div>
+            <div>
+              <h1 style="color:#0077b5;" data-i18n="li_title">LinkedIn Profile Optimizer</h1>
+              <span style="background:#0077b5;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ PRO FEATURE</span>
+            </div>
+          </div>
+          <p data-i18n="li_sub">Paste your current LinkedIn profile and target role — get an AI-optimized headline, About section, and experience bullets that get recruiters to click. Works for all industries and global markets including MNCs.</p>
         </div>
 
         <!-- Free tier status -->
@@ -534,7 +625,7 @@
             <textarea id="linkedinProfileText" class="resume-textarea" style="min-height:200px;" placeholder="Paste your LinkedIn headline, About section, and experience bullets here...&#10;&#10;Example:&#10;Headline: Product Manager at Acme Corp&#10;&#10;About: I am a passionate product manager with 5 years of experience...&#10;&#10;Experience:&#10;Product Manager, Acme Corp (2020–Present)&#10;- Managed product roadmap&#10;- Worked with engineering team&#10;- Helped launch new features"></textarea>
           </div>
 
-          <button class="btn btn-primary" id="linkedinOptBtn" onclick="optimizeLinkedIn()" style="margin-top:16px;width:100%;padding:14px;">
+          <button class="btn btn-primary" id="linkedinOptBtn" onclick="optimizeLinkedIn()" style="margin-top:16px;width:100%;padding:14px;background:#0077b5;border-color:#0077b5;" data-i18n="li_optimize_btn">
             Optimize My LinkedIn Profile →
           </button>
         </div>
@@ -1172,6 +1263,81 @@
     let eduEntryCount = 0;
     let sigName = '';
     let sigFont = 'Dancing Script';
+    let selectedPageSize = 'letter'; // 'letter' or 'a4'
+
+    // ── Page size toggle ───────────────────────────────────────────────────────
+    function setPageSize(size) {
+      selectedPageSize = size;
+      document.getElementById('pageSizeLetter').classList.toggle('active', size === 'letter');
+      document.getElementById('pageSizeA4').classList.toggle('active', size === 'a4');
+    }
+
+    // ── Bilingual i18n (English / Simplified Chinese) ─────────────────────────
+    const APP_I18N = {
+      en: {
+        nav_go_pro: 'Go Pro — $19/mo', nav_logout: 'Log Out',
+        sidebar_jobsearch: 'Job Search', sidebar_tailor: 'Resume Tailor', sidebar_linkedin: 'LinkedIn Optimizer',
+        tailor_title: 'Tailor Your Resume',
+        tailor_sub: 'Paste your resume and the job posting. We\'ll match your experience to what they\'re looking for.',
+        li_banner_title: 'LinkedIn Profile Optimizer',
+        li_banner_desc: 'Get an AI-optimized headline, About section & experience bullets. Click here to open →',
+        li_title: 'LinkedIn Profile Optimizer',
+        li_sub: 'Paste your current LinkedIn profile and target role — get an AI-optimized headline, About section, and experience bullets that get recruiters to click. Works for all industries and global markets including MNCs.',
+        mode_label: 'Generate:',
+        mode_resume: 'Resume', mode_cover: 'Cover Letter',
+        job_label: 'Job Posting',
+        job_placeholder: 'Paste the full job description here...\n\nWorks with: LinkedIn, Indeed, Glassdoor, Boss直聘 (Boss Zhipin), 猎聘 (Liepin), 智联招聘 (Zhaopin), and any job posting in any language.',
+        output_title: 'Tailored Result',
+        pagesize_label: 'Page:',
+        btn_edit: 'Edit', btn_copy: 'Copy',
+        tailor_btn: 'Tailor My Resume →',
+        li_optimize_btn: 'Optimize My LinkedIn Profile →'
+      },
+      zh: {
+        nav_go_pro: '升级专业版 — ¥19/月', nav_logout: '退出登录',
+        sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
+        tailor_title: '定制你的简历',
+        tailor_sub: '粘贴你的简历和职位描述，AI将根据招聘要求优化你的简历关键词和经历描述。',
+        li_banner_title: 'LinkedIn 个人资料优化',
+        li_banner_desc: '获取AI优化的标题、个人简介和工作经历要点，点击此处打开 →',
+        li_title: 'LinkedIn 个人资料优化器',
+        li_sub: '粘贴你当前的LinkedIn个人资料和目标职位——获取AI优化的标题、个人简介和工作经历要点，让更多招聘人员主动联系你。适用于所有行业和全球市场，包括跨国企业。',
+        mode_label: '生成内容：',
+        mode_resume: '简历', mode_cover: '求职信',
+        job_label: '职位描述',
+        job_placeholder: '在此粘贴完整职位描述...\n\n支持以下平台：LinkedIn、Indeed、Glassdoor、Boss直聘、猎聘、智联招聘，以及任何语言的招聘信息。',
+        output_title: 'AI优化结果',
+        pagesize_label: '页面尺寸：',
+        btn_edit: '编辑', btn_copy: '复制',
+        tailor_btn: '开始定制简历 →',
+        li_optimize_btn: '优化我的LinkedIn资料 →'
+      }
+    };
+
+    function applyLangApp(lang) {
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (APP_I18N[lang] && APP_I18N[lang][key] !== undefined) {
+          el.innerHTML = APP_I18N[lang][key];
+        }
+      });
+      // Update placeholders
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (APP_I18N[lang] && APP_I18N[lang][key] !== undefined) {
+          el.placeholder = APP_I18N[lang][key];
+        }
+      });
+      const btn = document.getElementById('langToggleBtn');
+      if (btn) btn.textContent = lang === 'en' ? '中文' : 'EN';
+      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      localStorage.setItem('rt_lang', lang);
+    }
+
+    function toggleLang() {
+      const current = localStorage.getItem('rt_lang') || 'en';
+      applyLangApp(current === 'en' ? 'zh' : 'en');
+    }
 
     // ── Signature helpers ──────────────────────────────────────────────────────
     function setSigFont(font) {
@@ -3184,7 +3350,7 @@ Aaliyah Washington`
         const res = await fetch('/api/download-docx', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, filename, colors, sigName: sigName || null, sigFont: sigFont || null })
+          body: JSON.stringify({ text, filename, colors, sigName: sigName || null, sigFont: sigFont || null, pageSize: selectedPageSize })
         });
         if (!res.ok) throw new Error('Download failed.');
         const blob = await res.blob();
@@ -3330,6 +3496,11 @@ Aaliyah Washington`
     checkAuth();
     // Init template picker after DOM is ready (template functions are hoisted)
     setTimeout(renderTplPicker, 0);
+    // Apply saved language preference
+    (function() {
+      const saved = localStorage.getItem('rt_lang') || 'en';
+      if (saved !== 'en') applyLangApp(saved);
+    })();
   </script>
 
   <!-- ── Preview Modal ── -->
