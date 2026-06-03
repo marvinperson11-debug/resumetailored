@@ -452,8 +452,8 @@
   <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_features">Features</a>
   <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_templates">Templates</a>
   <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_pricing">Pricing</a>
-  <a href="/dashboard" class="btn btn-ghost btn-lg" style="border-color:#2563eb;color:#2563eb;" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Log In</a>
-  <a href="/dashboard" class="btn btn-primary btn-lg">Get Started Free →</a>
+  <a href="/dashboard" class="btn btn-ghost btn-lg" style="border-color:#2563eb;color:#2563eb;" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_login">Log In</a>
+  <a href="/dashboard" class="btn btn-primary btn-lg" data-i18n="mobile_cta">Get Started Free →</a>
 </div>
 
 <!-- HERO -->
@@ -653,12 +653,12 @@
             <div style="display:flex;align-items:center;justify-content:center;gap:24px;">
               <div>
                 <div style="font-size:36px;font-weight:900;color:#ef4444;">45<small style="font-size:14px;">min</small></div>
-                <div style="font-size:12px;color:#6b7280;font-weight:600;">Manual</div>
+                <div style="font-size:12px;color:#6b7280;font-weight:600;" data-i18n="label_manual">Manual</div>
               </div>
               <div style="font-size:24px;color:#9ca3af;">→</div>
               <div>
                 <div style="font-size:36px;font-weight:900;color:#16a34a;">30<small style="font-size:14px;">sec</small></div>
-                <div style="font-size:12px;color:#6b7280;font-weight:600;">With AI</div>
+                <div style="font-size:12px;color:#6b7280;font-weight:600;" data-i18n="label_with_ai">With AI</div>
               </div>
             </div>
           </div>
@@ -2106,8 +2106,10 @@
       nav_how: 'How It Works', nav_blog: 'Blog', nav_features: 'Features',
       nav_templates: 'Templates', nav_tiers: 'Career Levels', nav_pricing: 'Pricing',
       nav_login: 'Log In', nav_cta: 'Get Started Free →',
+      mobile_cta: 'Get Started Free →',
       feat_li_title: 'LinkedIn Profile Optimizer — <em>Pro Members Only</em>',
       feat_li_desc: 'Recruiters spend 6 seconds on your resume and 30 seconds on your LinkedIn profile. Our AI rewrites your headline, About section, and experience bullets to rank higher in LinkedIn search and get more recruiter messages — optimized for your specific target role and industry.',
+      label_manual: 'Manual', label_with_ai: 'With AI',
       footer_dashboard: 'Dashboard', footer_contact: 'Contact Us',
       footer_payments: 'Accepted Payments', footer_pay_note: 'International cards & Chinese payment methods',
       footer_copy: '© 2025 ResumeTailored AI. All rights reserved.'
@@ -2116,37 +2118,280 @@
       nav_how: '工作原理', nav_blog: '博客', nav_features: '功能特性',
       nav_templates: '简历模板', nav_tiers: '职业级别', nav_pricing: '定价',
       nav_login: '登录', nav_cta: '免费开始 →',
+      mobile_cta: '免费开始 →',
       feat_li_title: 'LinkedIn 个人资料优化 — <em>仅限专业会员</em>',
       feat_li_desc: '招聘人员花6秒看你的简历，30秒看你的LinkedIn资料。我们的AI将重写你的标题、个人简介和工作经历，使其在LinkedIn搜索中排名更高，获得更多招聘信息——专为你的目标职位和行业优化。',
+      label_manual: '手动', label_with_ai: 'AI辅助',
       footer_dashboard: '控制台', footer_contact: '联系我们',
       footer_payments: '支持的支付方式', footer_pay_note: '国际信用卡 · 支付宝 · 微信支付',
       footer_copy: '© 2025 ResumeTailored AI. 保留所有权利。'
     }
   };
 
+  // Comprehensive selector-based translations: [selector, optIndex|null, english, chinese]
+  const TRANS = [
+    // ── Hero ────────────────────────────────────────────────────────────────
+    ['.hero h1', null, 'Your resume,<br /><span class="blue">perfectly tailored</span><br />to every job.', '你的简历，<br /><span class="blue">精准匹配</span><br />每一份工作。'],
+    ['.hero-sub', null, 'Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.', '粘贴简历和职位描述，AI将用精准关键词重写你的简历，并在30秒内生成有力的求职信。'],
+    ['.hero-cta > .btn-primary', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
+    ['.hero-note', null, '1 free tailoring · No payment required', '每日1次免费定制 · 无需付款'],
+    ['.demo-before .demo-label', null, 'Before', '优化前'],
+    ['.demo-badge.demo-badge-before', null, '✕ Generic Resume', '✕ 通用简历'],
+    ['.demo-bullet.demo-bullet-before', 0, '• Managed marketing campaigns and worked with teams to grow revenue and improve brand awareness across multiple channels', '• 负责营销活动并与团队合作推动收入增长，提升各渠道品牌知名度'],
+    ['.demo-bullet.demo-bullet-before', 1, '• Helped with projects and communicated with stakeholders', '• 协助项目推进并与利益相关方沟通'],
+    ['.demo-footer.demo-footer-before', null, '❌ Rejected by ATS · Zero callbacks', '❌ ATS筛选失败 · 零回应'],
+    ['.demo-after .demo-label', null, 'After AI Tailoring', 'AI优化后'],
+    ['.demo-badge.demo-badge-after', null, '✓ AI Tailored', '✓ AI定制'],
+    ['.demo-bullet.demo-bullet-after', 0, '• Spearheaded 6 cross-channel demand-gen campaigns (paid, email, SEO) driving 34% YoY pipeline growth, generating $2.1M in attributed revenue', '• 主导6项跨渠道增长营销活动（付费、邮件、SEO），推动管道同比增长34%，带来210万美元归因收入'],
+    ['.demo-bullet.demo-bullet-after', 1, '• Led cross-functional stakeholder alignment across 4 product teams, reducing time-to-launch by 22%', '• 主导4个产品团队的跨职能协调，将产品上市时间缩短22%'],
+    ['.demo-footer.demo-footer-after', null, '✅ 97% ATS match · 3 interviews week 1', '✅ 97% ATS匹配 · 第一周获3次面试'],
+    // ── How It Works ────────────────────────────────────────────────────────
+    ['.section-eyebrow', 0, 'Simple Process', '简单流程'],
+    ['.section-title', 0, 'How it <span>works</span>', '如何<span>使用</span>'],
+    ['.step h3', 0, 'Paste your resume', '粘贴你的简历'],
+    ['.step p', 0, 'Copy and paste your current resume text. No formatting required — our AI reads the raw content.', '复制粘贴你的简历文本，无需排版——AI直接读取原始内容。'],
+    ['.step h3', 1, 'Paste the job posting', '粘贴职位描述'],
+    ['.step p', 1, 'Copy the full job description from LinkedIn, Indeed, or any job board. The more detail, the better.', '从LinkedIn、Boss直聘或其他招聘平台复制完整职位描述，内容越详细效果越好。'],
+    ['.step h3', 2, 'Get tailored results', '获取定制结果'],
+    ['.step p', 2, 'Our AI rewrites your resume with the role\'s exact keywords and generates a custom cover letter.', 'AI用该职位的精确关键词重写你的简历，并生成个性化求职信。'],
+    // ── Features ────────────────────────────────────────────────────────────
+    ['.section-eyebrow', 1, 'Why It Works', '为何有效'],
+    ['.section-title', 1, 'Everything you need to <span>land interviews</span>', '赢得面试的<span>完整工具箱</span>'],
+    ['.feature-body h3', 0, 'ATS-Optimized Resume Rewrites', 'ATS优化简历重写'],
+    ['.feature-body > p', 0, '75% of resumes are rejected by Applicant Tracking Systems before a human ever reads them. Our AI knows exactly how ATS parsers work and rewrites your bullet points using the job\'s exact keywords — so you get past the bots and into interviews.', '75%的简历在人工审阅前就被ATS系统拒绝。我们的AI深知ATS工作方式，用职位的精确关键词重写你的要点——帮你突破机器筛选，进入面试。'],
+    ['.feature-body h3', 1, 'Custom Cover Letters in Seconds', '秒速生成个性化求职信'],
+    ['.feature-body > p', 1, 'Every cover letter is unique to the company and role. No generic filler. No "I am writing to express my interest." Just a compelling 3–4 paragraph letter that opens with a hook about the company and connects your achievements to their needs.', '每封求职信都针对公司和职位量身定制。没有通用套话。只有引人入胜的3-4段信，以公司亮点开篇，将你的成就与对方需求紧密连接。'],
+    ['.features .feature-row:nth-child(3) .feature-body ul li', 0, '<span style="color:#0077b5;font-weight:800;">✓</span> AI-optimized headline (max 220 chars)', '<span style="color:#0077b5;font-weight:800;">✓</span> AI优化标题（最多220字符）'],
+    ['.features .feature-row:nth-child(3) .feature-body ul li', 1, '<span style="color:#0077b5;font-weight:800;">✓</span> Rewritten About section with search keywords', '<span style="color:#0077b5;font-weight:800;">✓</span> 包含搜索关键词的重写个人简介'],
+    ['.features .feature-row:nth-child(3) .feature-body ul li', 2, '<span style="color:#0077b5;font-weight:800;">✓</span> Achievement-focused experience bullets', '<span style="color:#0077b5;font-weight:800;">✓</span> 以成就为重点的工作经历要点'],
+    ['.features .feature-row:nth-child(3) .feature-body ul li', 3, '<span style="color:#0077b5;font-weight:800;">✓</span> Tailored for MNC, startup &amp; global markets', '<span style="color:#0077b5;font-weight:800;">✓</span> 针对跨国企业、初创公司和全球市场优化'],
+    ['.features .feature-row:nth-child(3) .feature-body .btn-primary', null, 'Unlock LinkedIn Optimizer — $19/mo →', '解锁LinkedIn优化 — ¥19/月 →'],
+    ['.feature-body h3', 3, 'Career Hub for Pro Members', '职业发展中心（专业版）'],
+    ['.feature-body > p', 3, 'Unlock the full Career Hub: word-for-word salary negotiation scripts, market rate research, a professional community forum, and quarterly career check-ins. A complete career platform, not just a resume tool.', '解锁完整职业发展中心：逐字薪资谈判脚本、市场薪酬调研、专业社区论坛和季度职业回顾。这是完整的职业平台，不只是简历工具。'],
+    ['.hub-box', 0, '💰 Salary Guide', '💰 薪资指南'],
+    ['.hub-box', 1, '👥 Community Forum', '👥 社区论坛'],
+    ['.hub-box', 2, '📈 Career Check-ins', '📈 职业回顾'],
+    ['.hub-box', 3, '🏆 Pro Templates', '🏆 专业模板'],
+    ['.features .feature-row:nth-child(4) .feature-visual-inner > div:last-child', null, 'Click any feature to unlock with Pro →', '点击任意功能升级专业版 →'],
+    ['.feature-body h3', 4, '30 Seconds vs. 45 Minutes', '30秒 vs. 45分钟'],
+    ['.feature-body > p', 4, 'The average job seeker spends 45 minutes tailoring each application manually. At 20 applications a week, that\'s 15 hours of copy-editing. ResumeTailored AI does it in 30 seconds — apply to more jobs, faster, with higher-quality applications.', '普通求职者手动修改每份申请平均需45分钟。每周投递20份就是15小时的编辑工作。ResumeTailored AI只需30秒——用更高质量的申请，更快地投递更多职位。'],
+    // ── Template Gallery ────────────────────────────────────────────────────
+    ['.section-eyebrow', 2, '100+ Templates', '100+简历模板'],
+    ['.section-title', 2, 'Professional templates for <span>every style</span>', '覆盖<span>所有风格</span>的专业模板'],
+    ['.gallery-tab', 0, 'Resume Templates', '简历模板'],
+    ['.gallery-tab', 1, 'Cover Letter Templates', '求职信模板'],
+    // ── Pro Modal ───────────────────────────────────────────────────────────
+    ['#proModal .modal-box > p', null, 'Unlock all 40 premium resume and cover letter templates, plus unlimited AI tailorings, Career Hub access, and more — for just $19/month.', '解锁全部40个高级简历和求职信模板，加上无限AI定制次数、职业发展中心及更多——每月仅需$19。'],
+    ['#proModal .btn-primary', null, 'Upgrade to Pro — $19/mo →', '升级专业版 — ¥19/月 →'],
+    ['#proModal .btn-ghost', null, 'Try Free Templates First', '先试用免费模板'],
+    // ── Checkout Modal ──────────────────────────────────────────────────────
+    ['#checkoutModal h3', null, '🚀 Start Your Pro Subscription', '🚀 开始你的专业版订阅'],
+    ['#checkoutModal > .modal-box > p', null, 'Enter your email to go to secure Stripe checkout. $19/month — cancel anytime, no questions asked.', '输入邮箱前往安全的Stripe结账页面。每月$19——随时取消，无需解释。'],
+    ['#checkoutBtn', null, 'Start Pro — $19/mo →', '开始专业版 — ¥19/月 →'],
+    // ── Career Levels ───────────────────────────────────────────────────────
+    ['.section-eyebrow', 3, 'Career Levels', '职业级别'],
+    ['.section-title', 3, 'Every career stage, <span>perfectly tailored</span>', '每个职业阶段，<span>精准定制</span>'],
+    ['#tiers .container > p', null, 'From your first job to the C-suite — our AI adapts to your level and targets the exact role you want.', '从第一份工作到高管——AI根据你的级别自适应，精准定位你想要的职位。'],
+    ['.tier-basic-card .tier-level-badge', null, 'Free Tier', '免费版'],
+    ['.tier-basic-card .tier-name', null, 'Basic', '基础版'],
+    ['.tier-basic-card .tier-desc', null, 'Clean, traditional resumes for students and entry-level job seekers.', '简洁传统的简历，适合学生和初级求职者。'],
+    ['.tier-basic-card .tier-features li', 0, '<span class="tier-check" style="color:#6b7280;">✓</span> Classic &amp; Modern templates', '<span class="tier-check" style="color:#6b7280;">✓</span> 经典与现代模板'],
+    ['.tier-basic-card .tier-features li', 1, '<span class="tier-check" style="color:#6b7280;">✓</span> ATS-optimized formatting', '<span class="tier-check" style="color:#6b7280;">✓</span> ATS优化格式'],
+    ['.tier-basic-card .tier-features li', 2, '<span class="tier-check" style="color:#6b7280;">✓</span> 1 free AI tailoring per day', '<span class="tier-check" style="color:#6b7280;">✓</span> 每日1次免费AI定制'],
+    ['.tier-basic-card .tier-features li', 3, '<span class="tier-check" style="color:#6b7280;">✓</span> PDF &amp; text download', '<span class="tier-check" style="color:#6b7280;">✓</span> PDF和文本下载'],
+    ['.tier-basic-card .tier-overlay span', null, '👁 View Full Sample', '👁 查看完整样本'],
+    ['.tier-basic-card .btn-ghost', null, 'Start Free →', '免费开始 →'],
+    ['.tier-pro-card .tier-level-badge', null, 'Pro — $19/mo', '专业版 — ¥19/月'],
+    ['.tier-pro-card .tier-name', null, 'Professional', '专业版'],
+    ['.tier-pro-card .tier-desc', null, 'Polished, keyword-rich resumes for mid-career professionals targeting competitive roles.', '精致、富含关键词的简历，适合针对竞争性职位的职场中期专业人士。'],
+    ['.tier-pro-card .tier-features li', 0, '<span class="tier-check" style="color:#2563eb;">✓</span> 15+ premium templates', '<span class="tier-check" style="color:#2563eb;">✓</span> 15+高级模板'],
+    ['.tier-pro-card .tier-features li', 1, '<span class="tier-check" style="color:#2563eb;">✓</span> Unlimited AI tailorings', '<span class="tier-check" style="color:#2563eb;">✓</span> 无限AI定制次数'],
+    ['.tier-pro-card .tier-features li', 2, '<span class="tier-check" style="color:#2563eb;">✓</span> AI cover letter generation', '<span class="tier-check" style="color:#2563eb;">✓</span> AI求职信生成'],
+    ['.tier-pro-card .tier-features li', 3, '<span class="tier-check" style="color:#2563eb;">✓</span> DOCX + PDF download', '<span class="tier-check" style="color:#2563eb;">✓</span> DOCX + PDF下载'],
+    ['.tier-pro-card .tier-features li', 4, '<span class="tier-check" style="color:#2563eb;">✓</span> Career Hub access', '<span class="tier-check" style="color:#2563eb;">✓</span> 职业发展中心访问'],
+    ['.tier-pro-card .tier-overlay span', null, '👁 View Full Sample', '👁 查看完整样本'],
+    ['.tier-pro-card .btn-primary', null, 'Go Pro — $19/mo →', '升级专业版 — ¥19/月 →'],
+    ['.tier-exec-card .tier-level-badge', null, 'Pro — $19/mo', '专业版 — ¥19/月'],
+    ['.tier-exec-card .tier-name', null, 'Executive', '高管版'],
+    ['.tier-exec-card .tier-desc', null, 'Authority-commanding resumes for directors, VPs, and C-suite leaders.', '彰显权威的简历，适合总监、副总裁和C级高管。'],
+    ['.tier-exec-card .tier-features li', 0, '<span class="tier-check" style="color:#1e3a5f;">✓</span> Executive &amp; Elegant templates', '<span class="tier-check" style="color:#1e3a5f;">✓</span> 高管与优雅模板'],
+    ['.tier-exec-card .tier-features li', 1, '<span class="tier-check" style="color:#1e3a5f;">✓</span> Leadership-focused AI language', '<span class="tier-check" style="color:#1e3a5f;">✓</span> 以领导力为重点的AI语言'],
+    ['.tier-exec-card .tier-features li', 2, '<span class="tier-check" style="color:#1e3a5f;">✓</span> Executive summary generation', '<span class="tier-check" style="color:#1e3a5f;">✓</span> 高管摘要生成'],
+    ['.tier-exec-card .tier-features li', 3, '<span class="tier-check" style="color:#1e3a5f;">✓</span> Board-ready formatting', '<span class="tier-check" style="color:#1e3a5f;">✓</span> 董事会级格式'],
+    ['.tier-exec-card .tier-features li', 4, '<span class="tier-check" style="color:#1e3a5f;">✓</span> C-suite cover letters', '<span class="tier-check" style="color:#1e3a5f;">✓</span> C级高管求职信'],
+    ['.tier-exec-card .tier-bottom .btn', null, 'Go Executive — $19/mo →', '升级高管版 — ¥19/月 →'],
+    // ── Testimonials ────────────────────────────────────────────────────────
+    ['.section-eyebrow', 4, 'Real Results', '真实成果'],
+    ['.section-title', 4, 'What job seekers are <span>saying</span>', '求职者都在<span>说什么</span>'],
+    ['.testimonial p', 0, '"I was applying to 20+ jobs and getting no responses. After using ResumeTailored I got 3 interviews in the first week. The difference was immediately obvious."', '"我投递了20多份工作却没有任何回音。使用ResumeTailored后，第一周就获得了3次面试机会。效果立竿见影。"'],
+    ['.testimonial p', 1, '"The cover letters it writes are actually good. Way better than anything I could write after a long day of job searching. I just paste and submit."', '"它生成的求职信真的很出色。比我在漫长求职一天后能写出的好多了。我只需粘贴然后提交。"'],
+    ['.testimonial p', 2, '"I used to spend 45 minutes tailoring each application. Now it takes 2 minutes. Absolute game changer — I apply to 3× more jobs with better applications."', '"我以前每份申请要花45分钟修改。现在只需2分钟。彻底改变了游戏规则——我用更好的申请投递了3倍多的职位。"'],
+    ['.testimonial-author', 0, '— Marcus T., Software Engineer', '— Marcus T.，软件工程师'],
+    ['.testimonial-author', 1, '— Priya K., Marketing Manager', '— Priya K.，市场经理'],
+    ['.testimonial-author', 2, '— Jordan L., Product Designer', '— Jordan L.，产品设计师'],
+    // ── CTA Banner ──────────────────────────────────────────────────────────
+    ['.cta-banner h2', null, 'Start landing more interviews today', '今天开始获得更多面试机会'],
+    ['.cta-banner p', null, 'Join thousands of job seekers who\'ve already tailored their resumes with AI. Free tier available — no credit card required.', '加入数千名已使用AI定制简历的求职者。免费版可用——无需信用卡。'],
+    ['.cta-banner .btn-white', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
+    // ── FAQ ─────────────────────────────────────────────────────────────────
+    ['.section-eyebrow', 5, 'Common Questions', '常见问题'],
+    ['.section-title', 5, 'Frequently asked <span>questions</span>', '常见<span>问题解答</span>'],
+    ['.faq-q span:first-child', 0, 'Is it really free to start?', '真的可以免费开始吗？'],
+    ['.faq-a', 0, 'Yes — the free tier gives you 1 AI resume tailoring per day with no credit card required. You can sign up and get your first tailored resume in under 2 minutes.', '是的——免费版每天为你提供1次AI简历定制，无需信用卡。注册后2分钟内即可获得第一份定制简历。'],
+    ['.faq-q span:first-child', 1, 'Will it fabricate experience I don\'t have?', '它会编造我没有的经历吗？'],
+    ['.faq-a', 1, 'Never. Our AI strictly rewrites and reframes your existing experience using the job\'s language — it never adds skills or experience you don\'t have. You stay 100% truthful while communicating your real value more clearly.', '绝对不会。我们的AI严格只重写和重新框架你已有的经历，使用职位的语言——绝不添加你没有的技能或经历。你保持100%真实，同时更清晰地传达真实价值。'],
+    ['.faq-q span:first-child', 2, 'What AI model does it use?', '使用哪种AI模型？'],
+    ['.faq-a', 2, 'We use Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. It\'s significantly better at nuanced writing than older or cheaper models, which is why the output actually sounds like a talented human wrote it.', '我们使用Anthropic的Claude——财富500强企业信赖的AI。在细腻写作方面明显优于旧版或低价模型，这就是为什么输出内容听起来像是有才华的人写的。'],
+    ['.faq-q span:first-child', 3, 'How is this different from Jobscan or Resume.io?', '与Jobscan或Resume.io有什么区别？'],
+    ['.faq-a', 3, 'Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. Resume.io is a resume builder with templates. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds.', 'Jobscan为你的简历打分并告诉你要添加什么关键词——但你仍需自己写作。Resume.io是带模板的简历制作工具。ResumeTailored AI真正为你重写简历，使用职位描述的精确语言，只需30秒。'],
+    ['.faq-q span:first-child', 4, 'Can I cancel Pro anytime?', '可以随时取消专业版吗？'],
+    ['.faq-a', 4, 'Yes, completely. Month-to-month, no contracts, no cancellation fees. You keep full Pro access through the end of your billing period when you cancel. Use the cancel page or email us and we\'ll handle it within 1 hour.', '完全可以。按月订阅，无合同，无取消费用。取消后你仍保留完整专业版访问权限直到当前账单周期结束。使用取消页面或发邮件给我们，1小时内处理。'],
+    ['.faq-q span:first-child', 5, 'What formats can I export my resume in?', '简历可以导出哪些格式？'],
+    ['.faq-a', 5, 'Your tailored resume is available to copy as plain text (perfect for pasting into ATS forms) or download as a formatted .docx Word document. Both are included in free and Pro plans.', '你的定制简历可以复制为纯文本（非常适合粘贴到ATS表格）或下载为格式化的.docx Word文档。两种格式均包含在免费版和专业版中。'],
+    // ── Pricing ─────────────────────────────────────────────────────────────
+    ['.section-eyebrow', 6, 'Pricing', '定价'],
+    ['.section-title', 6, 'Simple, <span>transparent</span> pricing', '简单<span>透明</span>的定价'],
+    ['.cc-title', null, 'How we compare to Jobscan &amp; Rezi', '我们与Jobscan和Rezi的对比'],
+    ['.cc-sub', null, 'Same result. No $49.95/month. No weak cover letters.', '同样的结果，不需要$49.95/月，没有质量差的求职信。'],
+    ['.cc-table thead th', 0, 'Feature', '功能'],
+    ['.cc-table thead th', 3, 'ResumeTailor AI ✦', 'ResumeTailor AI ✦'],
+    ['.pricing-card:first-child .plan-name', null, 'Free', '免费版'],
+    ['.pricing-card:first-child .plan-period', null, 'forever · no credit card', '永久有效 · 无需信用卡'],
+    ['.pricing-card:first-child .plan-features li', 0, '<span class="check-icon">✓</span> 1 AI tailoring per day', '<span class="check-icon">✓</span> 每日1次AI定制'],
+    ['.pricing-card:first-child .plan-features li', 1, '<span class="check-icon">✓</span> Resume tailoring', '<span class="check-icon">✓</span> 简历定制'],
+    ['.pricing-card:first-child .plan-features li', 2, '<span class="check-icon">✓</span> Cover letter generation', '<span class="check-icon">✓</span> 求职信生成'],
+    ['.pricing-card:first-child .plan-features li', 3, '<span class="check-icon">✓</span> Classic &amp; Modern templates', '<span class="check-icon">✓</span> 经典与现代模板'],
+    ['.pricing-card:first-child .plan-features li', 4, '<span class="cross-icon">✗</span> <span style="color:#9ca3af;">Unlimited tailorings</span>', '<span class="cross-icon">✗</span> <span style="color:#9ca3af;">无限次定制</span>'],
+    ['.pricing-card:first-child .plan-features li', 5, '<span class="cross-icon">✗</span> <span style="color:#9ca3af;">Career Hub access</span>', '<span class="cross-icon">✗</span> <span style="color:#9ca3af;">职业发展中心</span>'],
+    ['.pricing-card:first-child .plan-features li', 6, '<span class="cross-icon">✗</span> <span style="color:#9ca3af;">All 40 templates</span>', '<span class="cross-icon">✗</span> <span style="color:#9ca3af;">全部40个模板</span>'],
+    ['.pricing-card:first-child > a', null, 'Get Started Free', '免费开始'],
+    ['.pricing-card-featured .plan-badge', null, '✦ Most Popular', '✦ 最受欢迎'],
+    ['.pricing-card-featured .plan-name', null, 'Pro', '专业版'],
+    ['.pricing-card-featured .plan-period', null, 'per month · cancel anytime', '每月 · 随时取消'],
+    ['.pricing-card-featured .plan-features li', 0, '<span class="check-icon">✓</span> Unlimited resume tailorings', '<span class="check-icon">✓</span> 无限次简历定制'],
+    ['.pricing-card-featured .plan-features li', 1, '<span class="check-icon">✓</span> Cover letter generation', '<span class="check-icon">✓</span> 求职信生成'],
+    ['.pricing-card-featured .plan-features li', 2, '<span class="check-icon">✓</span> Resume + cover letter together', '<span class="check-icon">✓</span> 简历+求职信同时生成'],
+    ['.pricing-card-featured .plan-features li', 3, '<span class="check-icon">✓</span> All 40 premium templates', '<span class="check-icon">✓</span> 全部40个高级模板'],
+    ['.pricing-card-featured .plan-features li', 4, '<span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn Profile Optimizer</strong>', '<span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn个人资料优化</strong>'],
+    ['.pricing-card-featured .plan-features li', 5, '<span class="check-icon">✓</span> Community networking forum', '<span class="check-icon">✓</span> 职业社区论坛'],
+    ['.pricing-card-featured .plan-features li', 6, '<span class="check-icon">✓</span> Salary negotiation guide', '<span class="check-icon">✓</span> 薪资谈判指南'],
+    ['.pricing-card-featured .plan-features li', 7, '<span class="check-icon">✓</span> Quarterly career check-ins', '<span class="check-icon">✓</span> 季度职业回顾'],
+    ['.pricing-card-featured .btn-primary', null, 'Start Pro — $19/mo →', '开始专业版 — ¥19/月 →'],
+    ['.pricing-cards .pricing-card:last-child .plan-badge', null, '⚡ Best Value', '⚡ 最超值'],
+    ['.pricing-cards .pricing-card:last-child .plan-period', null, 'one-time · never expires', '一次性付费 · 永不过期'],
+    ['.pricing-cards .pricing-card:last-child .plan-features li', 0, '<span class="check-icon">✓</span> Everything in Pro, forever', '<span class="check-icon">✓</span> 专业版所有功能，永久有效'],
+    ['.pricing-cards .pricing-card:last-child .plan-features li', 1, '<span class="check-icon">✓</span> Unlimited resume tailorings', '<span class="check-icon">✓</span> 无限次简历定制'],
+    ['.pricing-cards .pricing-card:last-child .plan-features li', 2, '<span class="check-icon">✓</span> Cover letter generation', '<span class="check-icon">✓</span> 求职信生成'],
+    ['.pricing-cards .pricing-card:last-child .plan-features li', 3, '<span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn Profile Optimizer</strong>', '<span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn个人资料优化</strong>'],
+    ['.pricing-cards .pricing-card:last-child .plan-features li', 4, '<span class="check-icon">✓</span> All 40 premium templates', '<span class="check-icon">✓</span> 全部40个高级模板'],
+    ['.pricing-cards .pricing-card:last-child .plan-features li', 5, '<span class="check-icon">✓</span> Career Hub access', '<span class="check-icon">✓</span> 职业发展中心访问'],
+    ['.pricing-cards .pricing-card:last-child .plan-features li', 6, '<span class="check-icon">✓</span> All future features included', '<span class="check-icon">✓</span> 包含所有未来功能'],
+    ['.pricing-cards .pricing-card:last-child .btn', null, 'Get Lifetime Access — $129 →', '获取终身访问 — ¥129 →'],
+    // ── Lifetime Modal ──────────────────────────────────────────────────────
+    ['#lifetimeModal h3', null, 'Pro Lifetime Access', '专业版终身访问'],
+    ['#lifetimeModal .modal-box > p:first-of-type', null, '⚡ One-time $129 · Never pay again', '⚡ 一次性$129 · 永不再付费'],
+    ['#lifetimeModal .modal-box > p:last-of-type', null, 'Enter your email to get permanent Pro access — every feature, every template, all future updates. Cheaper than Rezi\'s $149 lifetime.', '输入邮箱获取永久专业版访问——所有功能、所有模板、所有未来更新。比Rezi的$149终身版更实惠。'],
+    ['#lifetimeBtn', null, 'Get Lifetime Access — $129 →', '获取终身访问 — ¥129 →'],
+    ['#lifetimeModal .btn-ghost', null, 'Cancel', '取消'],
+    // ── Contact Modal ───────────────────────────────────────────────────────
+    ['#contactModal h3', null, 'Contact Us', '联系我们'],
+    ['#contactModal .modal-box > p:first-of-type', null, 'We read every message and respond within 24 hours.', '我们阅读每条留言，并在24小时内回复。'],
+    ['#contactSuccess', null, '✓ Message sent! We\'ll get back to you within 24 hours.', '✓ 消息已发送！我们将在24小时内回复。'],
+    ['#contactBtn', null, 'Send Message →', '发送消息 →'],
+    ['#contactModal .btn-ghost', null, 'Cancel', '取消'],
+  ];
+
   function applyLang(lang) {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      if (I18N[lang] && I18N[lang][key]) {
-        el.innerHTML = I18N[lang][key];
+    var isZh = lang === 'zh';
+
+    // 1. data-i18n elements
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+      var key = el.getAttribute('data-i18n');
+      if (I18N[lang] && I18N[lang][key] !== undefined) el.innerHTML = I18N[lang][key];
+    });
+
+    // 2. TRANS selector-based translations
+    TRANS.forEach(function(t) {
+      var all = document.querySelectorAll(t[0]);
+      var el = t[1] !== null && t[1] !== undefined ? all[t[1]] : all[0];
+      if (el) el.innerHTML = isZh ? t[3] : t[2];
+    });
+
+    // 3. Bulk: repeat elements with identical text
+    document.querySelectorAll('.tcard-btn-free').forEach(function(el) {
+      el.innerHTML = isZh ? '使用模板 →' : 'Use Template →';
+    });
+    document.querySelectorAll('.tcard-btn-pro').forEach(function(el) {
+      el.innerHTML = isZh ? '🔒 专业版解锁' : '🔒 Unlock with Pro';
+    });
+    document.querySelectorAll('.tcard-free-badge').forEach(function(el) {
+      el.textContent = isZh ? '免费' : 'FREE';
+    });
+    // "Pro Only" text inside lock overlays
+    document.querySelectorAll('.tcard-header div').forEach(function(el) {
+      var t = el.textContent.trim();
+      if ((t === 'Pro Only' || t === '仅限专业版') && el.children.length === 0) {
+        el.textContent = isZh ? '仅限专业版' : 'Pro Only';
       }
     });
-    const btn1 = document.getElementById('langToggleBtn');
-    const btn2 = document.getElementById('langToggleBtnFooter');
-    if (btn1) btn1.textContent = lang === 'en' ? '中文' : 'EN';
-    if (btn2) btn2.textContent = lang === 'en' ? '中文 / EN' : 'EN / 中文';
-    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+
+    // 4. Contact modal placeholders
+    var cph = {
+      contactName: [isZh ? '你的姓名' : 'Your name'],
+      contactEmail: [isZh ? '你的邮箱' : 'Your email'],
+      contactSubject: [isZh ? '主题（可选）' : 'Subject (optional)'],
+      contactMessage: [isZh ? '我们如何帮助你？' : 'How can we help you?']
+    };
+    Object.keys(cph).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.placeholder = cph[id][0];
+    });
+
+    // 5. Checkout modal placeholder
+    var ce = document.getElementById('checkoutEmail');
+    if (ce) ce.placeholder = isZh ? '你的邮箱' : 'your@email.com';
+    var le = document.getElementById('lifetimeEmail');
+    if (le) le.placeholder = isZh ? '你的邮箱' : 'your@email.com';
+
+    // 6. Pro modal h3 — preserve dynamic template name span
+    var proH3 = document.querySelector('#proModal h3');
+    if (proH3) {
+      var nameSpan = proH3.querySelector('#modalTemplateName');
+      var tplName = nameSpan ? nameSpan.textContent : 'Executive';
+      proH3.innerHTML = '🔒 <span id="modalTemplateName">' + tplName + '</span> ' + (isZh ? '是专业版模板' : 'is a Pro Template');
+    }
+
+    // 7. Footer additional links
+    var footerMap = {
+      '/jobscan-alternative': isZh ? '对比Jobscan' : 'vs Jobscan',
+      '/rezi-alternative': isZh ? '对比Rezi' : 'vs Rezi',
+      '/ai-resume-tailor': isZh ? 'AI简历定制' : 'AI Resume Tailor',
+      '/ai-cover-letter-generator': isZh ? '求职信AI' : 'Cover Letter AI',
+      '/free-ats-resume-checker': isZh ? 'ATS检查器' : 'ATS Checker',
+      '/cancel.html': isZh ? '随时取消' : 'Cancel Anytime'
+    };
+    Object.keys(footerMap).forEach(function(href) {
+      var a = document.querySelector('a[href="' + href + '"]');
+      if (a) a.textContent = footerMap[href];
+    });
+
+    // 8. Language toggle buttons
+    var btn1 = document.getElementById('langToggleBtn');
+    var btn2 = document.getElementById('langToggleBtnFooter');
+    if (btn1) btn1.textContent = isZh ? 'EN' : '中文';
+    if (btn2) btn2.textContent = isZh ? 'EN / 中文' : '中文 / EN';
+    document.documentElement.lang = isZh ? 'zh-CN' : 'en';
     localStorage.setItem('rt_lang', lang);
   }
 
   function toggleLang() {
-    const current = localStorage.getItem('rt_lang') || 'en';
+    var current = localStorage.getItem('rt_lang') || 'en';
     applyLang(current === 'en' ? 'zh' : 'en');
   }
 
   // Apply saved language preference on load
   (function() {
-    const saved = localStorage.getItem('rt_lang') || 'en';
+    var saved = localStorage.getItem('rt_lang') || 'en';
     if (saved !== 'en') applyLang(saved);
   })();
 </script>
