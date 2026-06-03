@@ -1119,13 +1119,34 @@
       preview.innerHTML = `<span style="font-family:'${sigFont}',cursive;font-size:28px;color:#1e293b;line-height:1.2;">${sigName}</span>`;
     }
 
-    function renderSignatureHtml(primaryColor) {
+    function renderSignatureHtml(primaryColor, marginLeft, printMode) {
       if (!sigName) return '';
       const color = primaryColor || '#1e293b';
-      return `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;">
+      const ml = marginLeft ? `margin-left:${marginLeft};` : '';
+      const mt = printMode ? 'margin-top:16px;' : 'margin-top:32px;';
+      const pbb = printMode ? 'page-break-before:avoid;break-before:avoid;' : '';
+      return `<div style="${mt}padding-top:16px;border-top:1px solid #e2e8f0;${ml}${pbb}">
         <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signature</p>
         <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${sigName}</p>
       </div>`;
+    }
+
+    // Left indent so the signature aligns with the document's text column (screen mode)
+    function _sigScreenIndent(layout) {
+      if (layout === 'rSidebar') return '245px';   // 215px sidebar + 30px right-col padding
+      if (layout === 'rTwoCol')  return '248px';   // 220px left col + 28px right-col padding
+      if (['cFormal','cBoxed','cClean'].includes(layout)) return '76px';
+      if (['cBold','cSplit'].includes(layout))  return '52px';
+      if (['cModern','rModern','rBanner'].includes(layout)) return '44px';
+      return '32px'; // linear resume layouts (Classic, Executive, Minimal)
+    }
+
+    // Left indent for the PDF — @page margin handles letter-size layouts,
+    // but sidebar/two-col templates need a push past their coloured left column.
+    function _sigPrintIndent(layout) {
+      if (layout === 'rSidebar') return '245px';
+      if (layout === 'rTwoCol')  return '248px';
+      return '';
     }
 
     // ── Auth helpers ───────────────────────────────────────────────────────────
@@ -1628,7 +1649,10 @@
             : '');
           if (sigName) {
             const coverTplColors = OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover);
-            outputBox.innerHTML += renderSignatureHtml(coverTplColors ? coverTplColors.c.p : '#1e293b');
+            outputBox.innerHTML += renderSignatureHtml(
+              coverTplColors ? coverTplColors.c.p : '#1e293b',
+              _sigScreenIndent(coverTplColors ? coverTplColors.layout : '')
+            );
           }
         } else {
           lastRawResult = data.result;
@@ -1636,7 +1660,10 @@
           outputBox.innerHTML = renderAIOutput(data.result, selectedOutputTpl[tplCat], selectedMode);
           if (sigName) {
             const tplColors = OUT_TPLS[tplCat].find(t => t.id === selectedOutputTpl[tplCat]);
-            outputBox.innerHTML += renderSignatureHtml(tplColors ? tplColors.c.p : '#1e293b');
+            outputBox.innerHTML += renderSignatureHtml(
+              tplColors ? tplColors.c.p : '#1e293b',
+              _sigScreenIndent(tplColors ? tplColors.layout : '')
+            );
           }
         }
         document.getElementById('editBtn').style.display = 'inline-flex';
@@ -3036,11 +3063,13 @@ Aaliyah Washington`
         printContent = renderAIOutput(rawText, tplId, selectedMode, true);
       }
 
-      // Signature — for 'both' mode, use cover letter template color
-      const _sigColor = (selectedMode === 'both' && lastRawCoverResult)
-        ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0]).c.p
-        : tpl.c.p;
-      const sigHtml = sigName ? renderSignatureHtml(_sigColor) : '';
+      // Signature — for 'both' mode, use cover letter template color and layout
+      const _sigCoverTpl = selectedMode === 'both' && lastRawCoverResult
+        ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0])
+        : null;
+      const _sigColor = _sigCoverTpl ? _sigCoverTpl.c.p : tpl.c.p;
+      const _sigLayout = _sigCoverTpl ? _sigCoverTpl.layout : tpl.layout;
+      const sigHtml = sigName ? renderSignatureHtml(_sigColor, _sigPrintIndent(_sigLayout), true) : '';
       const fontUrl = sigName
         ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(sigFont)}:ital@1&display=swap" rel="stylesheet">`
         : '';
