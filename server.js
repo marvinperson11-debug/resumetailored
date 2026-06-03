@@ -509,17 +509,18 @@ app.post('/api/extract-text', upload.single('file'), async (req, res) => {
 
 // ─── API: Download tailored result as .docx ───────────────────────────────────
 app.post('/api/download-docx', async (req, res) => {
-  const { text, filename, colors, sigName, sigFont: sigFontName } = req.body;
+  const { text, filename, colors, sigName, sigFont: sigFontName, pageSize } = req.body;
   if (!text) return res.status(400).json({ error: 'No text provided.' });
 
   const primaryHex = colors?.primary ? colors.primary.replace('#', '') : '1a237e';
   const accentHex  = colors?.accent  ? colors.accent.replace('#', '')  : '5c6bc0';
 
-  // Professional margins: 1 inch = 1440 twips on all sides (letter size standard)
-  const MARGIN = 1440;
-  // Max usable line width at 1in margins on 8.5in letter = 6.5in = 9360 twips
-  // This is handled automatically by the page size, but we set explicit wrap widths
-  // on any paragraph that could overflow (long URLs, etc.)
+  // Page size: Letter (default, 8.5×11in) or A4 (210×297mm)
+  // 1 inch = 1440 twips; 1mm = 56.69 twips
+  const isA4 = pageSize === 'a4';
+  const PAGE_WIDTH  = isA4 ? 11906 : 12240; // A4: 210mm | Letter: 8.5in
+  const PAGE_HEIGHT = isA4 ? 16838 : 15840; // A4: 297mm | Letter: 11in
+  const MARGIN = 1440; // 1 inch on all sides
   const WrapOption = { wrap: 'auto', lineRule: 'auto' };
 
   const cleanLine = (s) => s.replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
@@ -649,8 +650,7 @@ app.post('/api/download-docx', async (req, res) => {
     sections: [{
       properties: {
         page: {
-          // Letter size: 12240 × 15840 twips (8.5in × 11in at 1440 twips/in)
-          size: { width: 12240, height: 15840 },
+          size: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
           margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN },
         },
       },
@@ -778,7 +778,11 @@ app.post('/api/tailor', async (req, res) => {
   }
 
   try {
-    const systemPrompt = `You are a senior professional resume writer and executive career strategist with 20+ years placing candidates at Fortune 500 companies and elite startups. Your writing is indistinguishable from a human expert — specific, grounded, and free of AI clichés.
+    // Detect Chinese job board context to add bilingual keyword guidance
+    const chinesePlatformHints = ['zhipin.com', 'liepin.com', 'zhaopin.com', 'boss直聘', 'bosszhipin', '猎聘', '智联招聘', 'lagou.com', '拉勾'];
+    const isChineseMarket = chinesePlatformHints.some(h => jobPosting.toLowerCase().includes(h.toLowerCase()));
+
+    const systemPrompt = `You are a senior professional resume writer and executive career strategist with 20+ years placing candidates at Fortune 500 companies, elite startups, and leading multinational corporations (MNCs) across global markets. Your writing is indistinguishable from a human expert — specific, grounded, and free of AI clichés.
 
 DEEP ANALYSIS PROTOCOL — apply to every job posting before writing:
 1. Extract the CORE COMPETENCIES: the 3–5 capabilities the hiring manager truly needs (not just listed requirements).
@@ -786,6 +790,13 @@ DEEP ANALYSIS PROTOCOL — apply to every job posting before writing:
 3. Note LANGUAGE FINGERPRINTS: exact phrases, industry jargon, and verbs the job posting uses — mirror these precisely.
 4. Assess the SENIORITY SIGNAL: leadership scope, strategic vs. tactical balance, budget/team ownership expectations.
 5. Flag any DIFFERENTIATOR GAPS the candidate can address with their strongest achievements.
+6. MULTINATIONAL CORPORATION (MNC) DETECTION: If the posting is from or targets a global/multinational company, identify and prioritize:
+   - Cross-border collaboration and global stakeholder management keywords
+   - Compliance standards (ISO, SOX, GDPR, local regulatory frameworks)
+   - International market expansion, P&L ownership across geographies
+   - Keywords valued by leading MNCs: "cross-functional", "matrixed organization", "global alignment", "go-to-market", "OKRs/KPIs at scale"
+   - For Chinese technology MNCs (Alibaba/阿里巴巴, Tencent/腾讯, Baidu/百度, Huawei/华为, ByteDance/字节跳动, Xiaomi/小米, JD.com/京东, NetEase/网易, Meituan/美团, DiDi/滴滴): emphasize digital ecosystem thinking, rapid iteration, product-market fit in high-growth markets, operational efficiency at massive scale, and data-driven decision-making
+   - For Western MNCs hiring in Asian markets: cultural bridge capabilities, local market expertise, bilingual communication skills${isChineseMarket ? '\n7. CHINESE JOB MARKET: This posting appears to be from a Chinese job platform (Boss直聘, 猎聘, or 智联招聘). Optimize for Chinese market expectations: emphasize team collaboration (团队协作), results-orientation (结果导向), continuous learning (持续学习), and align keywords with common Chinese HR screening criteria.' : ''}
 
 WRITING STANDARDS — non-negotiable:
 - Every bullet must contain a measurable outcome OR a clear scope indicator (e.g. "across 12 markets", "for 200K+ users", "$4M portfolio")

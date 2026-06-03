@@ -426,16 +426,17 @@
   <div class="nav-inner">
     <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
     <div class="nav-links">
-      <a href="/how-it-works">How It Works</a>
-      <a href="/blog">Blog</a>
-      <a href="#features">Features</a>
-      <a href="#templates">Templates</a>
-      <a href="#tiers">Career Levels</a>
-      <a href="#pricing">Pricing</a>
+      <a href="/how-it-works" data-i18n="nav_how">How It Works</a>
+      <a href="/blog" data-i18n="nav_blog">Blog</a>
+      <a href="#features" data-i18n="nav_features">Features</a>
+      <a href="#templates" data-i18n="nav_templates">Templates</a>
+      <a href="#tiers" data-i18n="nav_tiers">Career Levels</a>
+      <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
     </div>
     <div class="nav-actions">
-      <a href="/dashboard" class="btn btn-ghost">Log In</a>
-      <a href="/dashboard" class="btn btn-primary">Get Started Free →</a>
+      <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">中文</button>
+      <a href="/dashboard" class="btn btn-ghost" data-i18n="nav_login">Log In</a>
+      <a href="/dashboard" class="btn btn-primary" data-i18n="nav_cta">Get Started Free →</a>
     </div>
     <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.add('open')" aria-label="Open menu">
       <span></span><span></span><span></span>
@@ -446,11 +447,11 @@
 <!-- Mobile Menu -->
 <div class="mobile-menu">
   <button class="mobile-close" onclick="document.querySelector('.mobile-menu').classList.remove('open')">&times;</button>
-  <a href="/how-it-works" onclick="document.querySelector('.mobile-menu').classList.remove('open')">How It Works</a>
-  <a href="/blog" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Blog</a>
-  <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Features</a>
-  <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Templates</a>
-  <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Pricing</a>
+  <a href="/how-it-works" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_how">How It Works</a>
+  <a href="/blog" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_blog">Blog</a>
+  <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_features">Features</a>
+  <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_templates">Templates</a>
+  <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_pricing">Pricing</a>
   <a href="/dashboard" class="btn btn-ghost btn-lg" style="border-color:#2563eb;color:#2563eb;" onclick="document.querySelector('.mobile-menu').classList.remove('open')">Log In</a>
   <a href="/dashboard" class="btn btn-primary btn-lg">Get Started Free →</a>
 </div>
@@ -579,6 +580,44 @@
                 When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style="color:#2563eb;">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.
               </div>
               <div style="font-size:11px;color:#9ca3af;font-style:italic;">+ 3 more paragraphs connecting your experience to their exact needs...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LinkedIn Optimizer Feature — Pro Exclusive -->
+      <div class="feature-row" style="border:2px solid #0077b5;border-radius:20px;padding:32px;background:linear-gradient(135deg,#f0f7ff 0%,#fff 100%);position:relative;overflow:hidden;">
+        <div style="position:absolute;top:16px;right:20px;background:#0077b5;color:#fff;font-size:11px;font-weight:800;padding:4px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">✦ Pro Exclusive</div>
+        <div class="feature-body">
+          <div class="feature-icon" style="color:#0077b5;">🔗</div>
+          <h3 style="color:#0077b5;" data-i18n="feat_li_title">LinkedIn Profile Optimizer — <em>Pro Members Only</em></h3>
+          <p data-i18n="feat_li_desc">Recruiters spend 6 seconds on your resume and 30 seconds on your LinkedIn profile. Our AI rewrites your headline, About section, and experience bullets to rank higher in LinkedIn search and get more recruiter messages — optimized for your specific target role and industry.</p>
+          <ul style="list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#0077b5;font-weight:800;">✓</span> AI-optimized headline (max 220 chars)</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#0077b5;font-weight:800;">✓</span> Rewritten About section with search keywords</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#0077b5;font-weight:800;">✓</span> Achievement-focused experience bullets</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#0077b5;font-weight:800;">✓</span> Tailored for MNC, startup &amp; global markets</li>
+          </ul>
+          <button class="btn btn-primary" style="margin-top:20px;background:#0077b5;border-color:#0077b5;" onclick="openCheckoutModal()">Unlock LinkedIn Optimizer — $19/mo →</button>
+        </div>
+        <div class="feature-visual">
+          <div class="feature-visual-inner" style="border:2px solid #0077b5;border-radius:14px;overflow:hidden;padding:0;">
+            <div style="background:#0077b5;padding:16px 20px;display:flex;align-items:center;gap:10px;">
+              <div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;">J</div>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#fff;">Jane Chen</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.75);">San Francisco, CA</div>
+              </div>
+            </div>
+            <div style="padding:16px 20px;background:#fff;">
+              <div style="font-size:10px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Before</div>
+              <div style="font-size:12px;color:#6b7280;line-height:1.5;margin-bottom:14px;padding:10px;background:#f9fafb;border-radius:8px;">"Product Manager at TechCo | I love creating products that users enjoy"</div>
+              <div style="font-size:10px;font-weight:800;color:#0077b5;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">After — AI Optimized</div>
+              <div style="font-size:12px;color:#1e293b;font-weight:600;line-height:1.5;padding:10px;background:#eff6ff;border-radius:8px;border-left:3px solid #0077b5;">"Senior PM | B2B SaaS • 0→1 Product Launches • Data-Driven Growth | $12M ARR Delivered"</div>
+              <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">
+                <span style="background:#dcfce7;color:#16a34a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">+43% profile views</span>
+                <span style="background:#eff6ff;color:#2563eb;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">+2.1× recruiter messages</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1679,6 +1718,7 @@
           <li><span class="check-icon">✓</span> Cover letter generation</li>
           <li><span class="check-icon">✓</span> Resume + cover letter together</li>
           <li><span class="check-icon">✓</span> All 40 premium templates</li>
+          <li><span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn Profile Optimizer</strong></li>
           <li><span class="check-icon">✓</span> Community networking forum</li>
           <li><span class="check-icon">✓</span> Salary negotiation guide</li>
           <li><span class="check-icon">✓</span> Quarterly career check-ins</li>
@@ -1694,6 +1734,7 @@
           <li><span class="check-icon">✓</span> Everything in Pro, forever</li>
           <li><span class="check-icon">✓</span> Unlimited resume tailorings</li>
           <li><span class="check-icon">✓</span> Cover letter generation</li>
+          <li><span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn Profile Optimizer</strong></li>
           <li><span class="check-icon">✓</span> All 40 premium templates</li>
           <li><span class="check-icon">✓</span> Career Hub access</li>
           <li><span class="check-icon">✓</span> All future features included</li>
@@ -1743,22 +1784,44 @@
 
 <!-- FOOTER -->
 <footer class="footer">
-  <div class="footer-inner">
-    <span class="logo">ResumeTailored <span class="badge-ai">AI</span></span>
-    <div class="footer-links">
-      <a href="/how-it-works">How It Works</a>
-      <a href="/blog">Blog</a>
-      <a href="#pricing">Pricing</a>
-      <a href="/jobscan-alternative">vs Jobscan</a>
-      <a href="/rezi-alternative">vs Rezi</a>
-      <a href="/ai-resume-tailor">AI Resume Tailor</a>
-      <a href="/ai-cover-letter-generator">Cover Letter AI</a>
-      <a href="/free-ats-resume-checker">ATS Checker</a>
-      <a href="/cancel.html">Cancel Anytime</a>
-      <a href="/dashboard">Dashboard</a>
-      <a href="#" onclick="event.preventDefault();openContactModal()">Contact Us</a>
+  <div class="footer-inner" style="flex-direction:column;gap:20px;align-items:flex-start;">
+    <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;width:100%;">
+      <span class="logo">ResumeTailored <span class="badge-ai">AI</span></span>
+      <div class="footer-links">
+        <a href="/how-it-works" data-i18n="nav_how">How It Works</a>
+        <a href="/blog" data-i18n="nav_blog">Blog</a>
+        <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
+        <a href="/jobscan-alternative">vs Jobscan</a>
+        <a href="/rezi-alternative">vs Rezi</a>
+        <a href="/ai-resume-tailor">AI Resume Tailor</a>
+        <a href="/ai-cover-letter-generator">Cover Letter AI</a>
+        <a href="/free-ats-resume-checker">ATS Checker</a>
+        <a href="/cancel.html">Cancel Anytime</a>
+        <a href="/dashboard" data-i18n="footer_dashboard">Dashboard</a>
+        <a href="#" onclick="event.preventDefault();openContactModal()" data-i18n="footer_contact">Contact Us</a>
+      </div>
     </div>
-    <span class="footer-copy">© 2025 ResumeTailored AI. All rights reserved.</span>
+    <!-- Payment methods + Language toggle -->
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;width:100%;border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;" data-i18n="footer_payments">Accepted Payments</span>
+        <!-- Stripe card logos -->
+        <span style="background:#fff;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:700;color:#635bff;">STRIPE</span>
+        <!-- Alipay logo -->
+        <span style="background:#1677ff;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:800;color:#fff;letter-spacing:.3px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="#fff" style="vertical-align:middle;margin-right:3px;"><path d="M21.2 15.9c-.3-.1-3.5-1.1-7-2.2 1.4-2.8 2.5-6.1 2.5-9.7H8.2V2.5H4.7v1.5H1.2v3.2h3.5v7.5C4.7 17.3 7.2 20 10 20c2 0 3.9-.9 5.2-2.3 1.3.5 4 1.5 5.3 2.1.5.2 1 .2 1.4 0 .5-.3.8-.9.7-1.5-.1-.3-.2-.4-.4-.4z"/></svg>
+          支付宝 Alipay
+        </span>
+        <!-- WeChat Pay logo -->
+        <span style="background:#09bb07;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:800;color:#fff;letter-spacing:.3px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="#fff" style="vertical-align:middle;margin-right:3px;"><path d="M9.5 4C5.4 4 2 6.9 2 10.5c0 2.1 1.1 3.9 2.9 5.1l-.7 2.1 2.4-1.2c.8.2 1.6.3 2.4.3.3 0 .6 0 .9-.1C9.7 17 10 17.5 10 18c0 2.2 2.2 4 5 4 .6 0 1.2-.1 1.8-.2l1.9 1-.6-1.7C19.4 20.3 20.5 19.2 20.5 18c0-2.2-2.5-4-5.5-4-.3 0-.5 0-.8.1C14.1 13.4 14 12.5 14 11.5 14 7.4 12.1 4 9.5 4z"/></svg>
+          微信支付 WeChat
+        </span>
+        <span style="font-size:10px;color:#4b5563;font-style:italic;" data-i18n="footer_pay_note">International cards &amp; Chinese payment methods</span>
+      </div>
+      <button onclick="toggleLang()" id="langToggleBtnFooter" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;color:#9ca3af;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'" title="Switch language / 切换语言">中文 / EN</button>
+    </div>
+    <span class="footer-copy" data-i18n="footer_copy">© 2025 ResumeTailored AI. All rights reserved.</span>
   </div>
 </footer>
 
@@ -2036,6 +2099,56 @@
       btn.disabled = false;
     }
   }
+
+  // ── Bilingual i18n (English / Simplified Chinese) ──────────────────────────
+  const I18N = {
+    en: {
+      nav_how: 'How It Works', nav_blog: 'Blog', nav_features: 'Features',
+      nav_templates: 'Templates', nav_tiers: 'Career Levels', nav_pricing: 'Pricing',
+      nav_login: 'Log In', nav_cta: 'Get Started Free →',
+      feat_li_title: 'LinkedIn Profile Optimizer — <em>Pro Members Only</em>',
+      feat_li_desc: 'Recruiters spend 6 seconds on your resume and 30 seconds on your LinkedIn profile. Our AI rewrites your headline, About section, and experience bullets to rank higher in LinkedIn search and get more recruiter messages — optimized for your specific target role and industry.',
+      footer_dashboard: 'Dashboard', footer_contact: 'Contact Us',
+      footer_payments: 'Accepted Payments', footer_pay_note: 'International cards & Chinese payment methods',
+      footer_copy: '© 2025 ResumeTailored AI. All rights reserved.'
+    },
+    zh: {
+      nav_how: '工作原理', nav_blog: '博客', nav_features: '功能特性',
+      nav_templates: '简历模板', nav_tiers: '职业级别', nav_pricing: '定价',
+      nav_login: '登录', nav_cta: '免费开始 →',
+      feat_li_title: 'LinkedIn 个人资料优化 — <em>仅限专业会员</em>',
+      feat_li_desc: '招聘人员花6秒看你的简历，30秒看你的LinkedIn资料。我们的AI将重写你的标题、个人简介和工作经历，使其在LinkedIn搜索中排名更高，获得更多招聘信息——专为你的目标职位和行业优化。',
+      footer_dashboard: '控制台', footer_contact: '联系我们',
+      footer_payments: '支持的支付方式', footer_pay_note: '国际信用卡 · 支付宝 · 微信支付',
+      footer_copy: '© 2025 ResumeTailored AI. 保留所有权利。'
+    }
+  };
+
+  function applyLang(lang) {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (I18N[lang] && I18N[lang][key]) {
+        el.innerHTML = I18N[lang][key];
+      }
+    });
+    const btn1 = document.getElementById('langToggleBtn');
+    const btn2 = document.getElementById('langToggleBtnFooter');
+    if (btn1) btn1.textContent = lang === 'en' ? '中文' : 'EN';
+    if (btn2) btn2.textContent = lang === 'en' ? '中文 / EN' : 'EN / 中文';
+    document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+    localStorage.setItem('rt_lang', lang);
+  }
+
+  function toggleLang() {
+    const current = localStorage.getItem('rt_lang') || 'en';
+    applyLang(current === 'en' ? 'zh' : 'en');
+  }
+
+  // Apply saved language preference on load
+  (function() {
+    const saved = localStorage.getItem('rt_lang') || 'en';
+    if (saved !== 'en') applyLang(saved);
+  })();
 </script>
 </body>
 </html>
