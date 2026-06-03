@@ -872,6 +872,33 @@ app.post('/api/subscribe', async (req, res) => {
   }
 });
 
+// ─── API: Create Stripe lifetime checkout session ─────────────────────────────
+app.post('/api/subscribe-lifetime', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email required.' });
+
+  const lifetimePriceId = process.env.STRIPE_LIFETIME_PRICE_ID;
+  if (!lifetimePriceId) {
+    return res.status(503).json({ error: 'Lifetime plan not yet available. Please use the monthly plan.' });
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      customer_email: email,
+      line_items: [{ price: lifetimePriceId, quantity: 1 }],
+      success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=lifetime`,
+      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/#pricing`,
+      metadata: { email, plan: 'lifetime' }
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Stripe lifetime error:', err);
+    res.status(500).json({ error: 'Could not create checkout session.' });
+  }
+});
+
 // ─── Stripe webhook: activate subscription ────────────────────────────────────
 app.post('/webhook', (req, res) => {
   const sig = req.headers['stripe-signature'];
@@ -888,8 +915,11 @@ app.post('/webhook', (req, res) => {
     const session = event.data.object;
     const email = (session.metadata?.email || session.customer_email || '').toLowerCase();
     if (email) {
-      db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, session.customer);
-      console.log(`New subscriber: ${email}`);
+      const isLifetime = session.metadata?.plan === 'lifetime' || session.mode === 'payment';
+      // Lifetime subscribers get a sentinel customer_id so deletion webhooks never remove them
+      const customerId = isLifetime ? `lifetime_${email}` : session.customer;
+      db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, customerId);
+      console.log(`New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`);
     }
   }
 
