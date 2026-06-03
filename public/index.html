@@ -447,6 +447,7 @@
 <!-- Mobile Menu -->
 <div class="mobile-menu">
   <button class="mobile-close" onclick="document.querySelector('.mobile-menu').classList.remove('open')">&times;</button>
+  <button onclick="toggleLang();document.querySelector('.mobile-menu').classList.remove('open')" id="langToggleBtnMobile" style="background:transparent;border:1.5px solid #2563eb;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:700;color:#2563eb;cursor:pointer;font-family:inherit;align-self:flex-start;">中文 / EN</button>
   <a href="/how-it-works" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_how">How It Works</a>
   <a href="/blog" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_blog">Blog</a>
   <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_features">Features</a>
@@ -2378,8 +2379,10 @@
     // 8. Language toggle buttons
     var btn1 = document.getElementById('langToggleBtn');
     var btn2 = document.getElementById('langToggleBtnFooter');
+    var btn3 = document.getElementById('langToggleBtnMobile');
     if (btn1) btn1.textContent = isZh ? 'EN' : '中文';
     if (btn2) btn2.textContent = isZh ? 'EN / 中文' : '中文 / EN';
+    if (btn3) btn3.textContent = isZh ? 'EN / 中文' : '中文 / EN';
     document.documentElement.lang = isZh ? 'zh-CN' : 'en';
     localStorage.setItem('rt_lang', lang);
   }
