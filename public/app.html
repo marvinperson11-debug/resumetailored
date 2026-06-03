@@ -1119,11 +1119,13 @@
       preview.innerHTML = `<span style="font-family:'${sigFont}',cursive;font-size:28px;color:#1e293b;line-height:1.2;">${sigName}</span>`;
     }
 
-    function renderSignatureHtml(primaryColor, marginLeft) {
+    function renderSignatureHtml(primaryColor, marginLeft, printMode) {
       if (!sigName) return '';
       const color = primaryColor || '#1e293b';
       const ml = marginLeft ? `margin-left:${marginLeft};` : '';
-      return `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e8f0;${ml}">
+      const mt = printMode ? 'margin-top:16px;' : 'margin-top:32px;';
+      const pbb = printMode ? 'page-break-before:avoid;break-before:avoid;' : '';
+      return `<div style="${mt}padding-top:16px;border-top:1px solid #e2e8f0;${ml}${pbb}">
         <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signature</p>
         <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${sigName}</p>
       </div>`;
@@ -3067,7 +3069,7 @@ Aaliyah Washington`
         : null;
       const _sigColor = _sigCoverTpl ? _sigCoverTpl.c.p : tpl.c.p;
       const _sigLayout = _sigCoverTpl ? _sigCoverTpl.layout : tpl.layout;
-      const sigHtml = sigName ? renderSignatureHtml(_sigColor, _sigPrintIndent(_sigLayout)) : '';
+      const sigHtml = sigName ? renderSignatureHtml(_sigColor, _sigPrintIndent(_sigLayout), true) : '';
       const fontUrl = sigName
         ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(sigFont)}:ital@1&display=swap" rel="stylesheet">`
         : '';
