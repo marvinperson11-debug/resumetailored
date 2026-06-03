@@ -1290,7 +1290,7 @@
         output_title: 'Tailored Result',
         pagesize_label: 'Page:',
         btn_edit: 'Edit', btn_copy: 'Copy',
-        tailor_btn: 'Tailor My Resume →',
+        tailor_btn: 'Tailor My Resume →', tailor_btn_cover: 'Tailor My Cover Letter →',
         li_optimize_btn: 'Optimize My LinkedIn Profile →'
       },
       zh: {
@@ -1595,7 +1595,7 @@
         document.getElementById('resume').placeholder = isCover
           ? 'Paste your cover letter draft here (optional), OR click Upload File to import a file. Leave blank to generate from scratch.'
           : 'Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file.';
-        document.getElementById('tailorBtn').textContent = isCover ? 'Generate Cover Letter →' : 'Tailor My Resume →';
+        document.getElementById('tailorBtn').textContent = isCover ? 'Tailor My Cover Letter →' : 'Tailor My Resume →';
         document.getElementById('rmodeBuild').textContent = isCover ? '✏️ Input Info' : '✏️ Fill Out Form';
         // Cover letter always shows the input form; resume restores whatever mode was active
         setResumeMode(isCover ? 'build' : resumeInputMode);
