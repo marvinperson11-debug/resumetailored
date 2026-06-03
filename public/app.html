@@ -275,6 +275,9 @@
         <button class="sidebar-btn active" onclick="showTab('tailor')" id="tab-tailor" data-label="Tailor">
           <span class="sidebar-icon">✦</span> Resume Tailor
         </button>
+        <button class="sidebar-btn" onclick="showTab('linkedin')" id="tab-linkedin" data-label="LinkedIn">
+          <span class="sidebar-icon">🔗</span> LinkedIn Optimizer
+        </button>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label">Career Hub</div>
@@ -503,6 +506,73 @@
 
         <div class="upsell" id="limitBanner" style="display:none;">
           <p>You've used your <strong>free daily use</strong> for this mode. You get 1 free resume tailoring + 1 free cover letter per day. Upgrade to Pro for unlimited access — $19/month.</p>
+          <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: LINKEDIN OPTIMIZER ═══ -->
+      <div class="tab-content" id="panel-linkedin">
+        <div class="panel-header">
+          <h1>LinkedIn Profile Optimizer</h1>
+          <p>Paste your current LinkedIn profile and target role — get an AI-optimized headline, About section, and experience bullets that get recruiters to click.</p>
+        </div>
+
+        <!-- Free tier status -->
+        <div id="linkedinFreeStatus" style="display:none;background:rgba(37,99,235,0.06);border:1px solid rgba(37,99,235,0.18);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#2563eb;font-weight:600;">
+          <span id="linkedinFreeText">✓ 1 free LinkedIn optimization available today</span>
+        </div>
+
+        <div class="input-section">
+          <div class="input-group">
+            <label class="input-label" for="linkedinTargetRole">Target Role / Job Title</label>
+            <input type="text" id="linkedinTargetRole" class="text-input" placeholder="e.g. Senior Product Manager, Software Engineer, Marketing Director" />
+          </div>
+
+          <div class="input-group" style="margin-top:16px;">
+            <label class="input-label" for="linkedinProfileText">Your Current LinkedIn Profile Text</label>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">Paste your current headline, About section, and experience descriptions. The more detail you provide, the better the optimization.</p>
+            <textarea id="linkedinProfileText" class="resume-textarea" style="min-height:200px;" placeholder="Paste your LinkedIn headline, About section, and experience bullets here...&#10;&#10;Example:&#10;Headline: Product Manager at Acme Corp&#10;&#10;About: I am a passionate product manager with 5 years of experience...&#10;&#10;Experience:&#10;Product Manager, Acme Corp (2020–Present)&#10;- Managed product roadmap&#10;- Worked with engineering team&#10;- Helped launch new features"></textarea>
+          </div>
+
+          <button class="btn btn-primary" id="linkedinOptBtn" onclick="optimizeLinkedIn()" style="margin-top:16px;width:100%;padding:14px;">
+            Optimize My LinkedIn Profile →
+          </button>
+        </div>
+
+        <!-- Output -->
+        <div id="linkedinOutput" style="display:none;margin-top:28px;">
+          <div style="border-top:1px solid #e5e7eb;padding-top:24px;">
+
+            <div class="linkedin-result-block" id="linkedinHeadlineBlock" style="margin-bottom:20px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="font-size:15px;font-weight:700;color:#111827;margin:0;">✦ Optimized Headline</h3>
+                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyLinkedInSection('linkedinHeadlineText')">Copy</button>
+              </div>
+              <div id="linkedinHeadlineText" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:15px;font-weight:600;color:#1e293b;line-height:1.6;white-space:pre-wrap;"></div>
+            </div>
+
+            <div class="linkedin-result-block" id="linkedinAboutBlock" style="margin-bottom:20px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="font-size:15px;font-weight:700;color:#111827;margin:0;">✦ Optimized About Section</h3>
+                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyLinkedInSection('linkedinAboutText')">Copy</button>
+              </div>
+              <div id="linkedinAboutText" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:14px;color:#1e293b;line-height:1.75;white-space:pre-wrap;"></div>
+            </div>
+
+            <div class="linkedin-result-block" id="linkedinExpBlock">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <h3 style="font-size:15px;font-weight:700;color:#111827;margin:0;">✦ Optimized Experience Bullets</h3>
+                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyLinkedInSection('linkedinExpText')">Copy</button>
+              </div>
+              <div id="linkedinExpText" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:14px;color:#1e293b;line-height:1.75;white-space:pre-wrap;"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Limit / upsell banners -->
+        <div class="upsell" id="linkedinLimitBanner" style="display:none;margin-top:20px;">
+          <p>You've used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -1091,6 +1161,7 @@
     let isSubscriberFlag = false;
     let freeResumesLeft = 1;
     let freeCoverLettersLeft = 1;
+    let freeLinkedInLeft = 1;
     let pendingPro = false;
     let selectedOutputTpl = { resume: 'r1', cover: 'c1' };
     let lastRawResult = '';
@@ -1343,6 +1414,7 @@
       if (name === 'forum') loadForum();
       if (name === 'checkin') loadCheckIn();
       if (name === 'samples') initSamples();
+      if (name === 'linkedin') updateLinkedInFreeStatus();
     }
 
     // ── Mode buttons ───────────────────────────────────────────────────────────
@@ -1388,6 +1460,7 @@
         isSubscriberFlag = data.isSubscriber;
         freeResumesLeft = data.freeResumesLeft;
         freeCoverLettersLeft = data.freeCoverLettersLeft;
+        freeLinkedInLeft = data.freeLinkedInLeft !== undefined ? data.freeLinkedInLeft : 1;
 
         renderTplPicker();
         renderDownloadButtons();
@@ -1783,6 +1856,95 @@
       } catch(e) {
         showToast('Could not post reply.');
       }
+    }
+
+    // ── LinkedIn Optimizer ─────────────────────────────────────────────────────
+    function updateLinkedInFreeStatus() {
+      const statusEl = document.getElementById('linkedinFreeStatus');
+      const textEl   = document.getElementById('linkedinFreeText');
+      if (!statusEl || !textEl) return;
+      if (isSubscriberFlag) {
+        statusEl.style.display = 'none';
+      } else {
+        statusEl.style.display = 'block';
+        if (freeLinkedInLeft > 0) {
+          textEl.textContent = '✓ 1 free LinkedIn optimization available today';
+          textEl.style.color = '#2563eb';
+        } else {
+          textEl.textContent = '✗ Free optimization used today — upgrade for unlimited access';
+          textEl.style.color = '#dc2626';
+          document.getElementById('linkedinLimitBanner').style.display = 'block';
+        }
+      }
+    }
+
+    async function optimizeLinkedIn() {
+      const profileText = document.getElementById('linkedinProfileText').value.trim();
+      const targetRole  = document.getElementById('linkedinTargetRole').value.trim();
+      const email       = getStoredEmail();
+
+      if (!profileText) return showToast('Please paste your LinkedIn profile text.');
+      if (!targetRole)  return showToast('Please enter your target role.');
+
+      const btn = document.getElementById('linkedinOptBtn');
+      btn.disabled = true;
+      btn.textContent = 'Optimizing…';
+      document.getElementById('linkedinOutput').style.display = 'none';
+      document.getElementById('linkedinLimitBanner').style.display = 'none';
+
+      try {
+        const res = await fetch('/api/optimize-linkedin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profileText, targetRole, email })
+        });
+        const data = await res.json();
+
+        if (res.status === 402) {
+          document.getElementById('linkedinLimitBanner').style.display = 'block';
+          document.getElementById('linkedinFreeStatus').style.display = 'block';
+          document.getElementById('linkedinFreeText').textContent = '✗ Free optimization used for today — upgrade for unlimited access';
+          document.getElementById('linkedinFreeText').style.color = '#dc2626';
+          return;
+        }
+        if (!res.ok) throw new Error(data.error || 'Optimization failed.');
+
+        renderLinkedInResult(data.result);
+        document.getElementById('linkedinOutput').style.display = 'block';
+        document.getElementById('linkedinFreeStatus').style.display = 'block';
+        document.getElementById('linkedinFreeText').textContent = '✓ Optimization complete — copy sections below';
+        document.getElementById('linkedinFreeText').style.color = '#16a34a';
+        showToast('LinkedIn profile optimized!');
+      } catch(e) {
+        showToast(e.message || 'Something went wrong. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Optimize My LinkedIn Profile →';
+      }
+    }
+
+    function renderLinkedInResult(text) {
+      const headlineMatch = text.match(/OPTIMIZED HEADLINE[:\s\n]+([\s\S]+?)(?=\n\s*OPTIMIZED ABOUT SECTION|\n\s*ABOUT SECTION|$)/i);
+      const aboutMatch    = text.match(/(?:OPTIMIZED ABOUT SECTION|ABOUT SECTION)[:\s\n]+([\s\S]+?)(?=\n\s*OPTIMIZED EXPERIENCE BULLETS|\n\s*EXPERIENCE BULLETS|$)/i);
+      const expMatch      = text.match(/(?:OPTIMIZED EXPERIENCE BULLETS|EXPERIENCE BULLETS)[:\s\n]+([\s\S]+?)$/i);
+
+      document.getElementById('linkedinHeadlineText').textContent = headlineMatch ? headlineMatch[1].trim() : '';
+      document.getElementById('linkedinAboutText').textContent    = aboutMatch    ? aboutMatch[1].trim()    : '';
+      document.getElementById('linkedinExpText').textContent      = expMatch      ? expMatch[1].trim()      : text;
+    }
+
+    function copyLinkedInSection(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      navigator.clipboard.writeText(el.textContent).then(() => showToast('Copied to clipboard!')).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = el.textContent;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('Copied!');
+      });
     }
 
     // ── Check-in ───────────────────────────────────────────────────────────────
@@ -3022,7 +3184,7 @@ Aaliyah Washington`
         const res = await fetch('/api/download-docx', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, filename, colors })
+          body: JSON.stringify({ text, filename, colors, sigName: sigName || null, sigFont: sigFont || null })
         });
         if (!res.ok) throw new Error('Download failed.');
         const blob = await res.blob();
@@ -3074,6 +3236,36 @@ Aaliyah Washington`
         ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(sigFont)}:ital@1&display=swap" rel="stylesheet">`
         : '';
 
+      // Dynamic signature placement — measure content height at 624px (6.5in content width)
+      let sigSpacer = '';
+      if (sigName) {
+        const _measure = document.createElement('div');
+        _measure.style.cssText = 'position:absolute;top:-19999px;left:-19999px;width:624px;visibility:hidden;pointer-events:none;';
+        _measure.innerHTML = printContent;
+        document.body.appendChild(_measure);
+        const _contentH = _measure.scrollHeight;
+        document.body.removeChild(_measure);
+
+        const PAGE_H    = 864;   // 9in at 96dpi (letter minus 2in top+bottom margins)
+        const SIG_H_EST = 76;    // estimated signature block height in px
+        const SIG_ZONE  = 288;   // 3in from bottom = 864-288=576px from page top
+
+        if (_contentH <= PAGE_H) {
+          // Single page: push sig to the 3-inch-from-bottom zone
+          const spacerH = Math.max(0, PAGE_H - _contentH - SIG_H_EST - (PAGE_H - SIG_ZONE));
+          sigSpacer = spacerH > 0 ? `<div style="height:${spacerH}px" aria-hidden="true"></div>` : '';
+        } else {
+          // Multi-page: check if sig fits on the last partial page
+          const numPages   = Math.ceil(_contentH / PAGE_H);
+          const lastPageH  = _contentH - (numPages - 1) * PAGE_H;
+          if (lastPageH + SIG_H_EST > PAGE_H) {
+            // Last page completely full — push sig into bottom margin space with CSS
+            sigSpacer = `<div style="break-before:avoid;page-break-before:avoid;margin-top:4px;" aria-hidden="true"></div>`;
+          }
+          // Otherwise sig flows naturally after content on partial last page
+        }
+      }
+
       const win = window.open('', '_blank');
       if (!win) {
         showToast('Allow pop-ups in your browser to download PDF, then try again.');
@@ -3097,16 +3289,16 @@ Aaliyah Washington`
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     @page { size: letter; margin: 1in 1in 1in 1in; }
     html { background: #fff; }
-    body { font-family: ${font}; color: #222; background: ${bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: break-word; word-break: keep-all; hyphens: none; -webkit-hyphens: none; }
-    .page { width: 100%; }
-    p, li { page-break-inside: avoid; break-inside: avoid; -webkit-column-break-inside: avoid; overflow-wrap: break-word; word-break: keep-all; hyphens: none; -webkit-hyphens: none; }
-    div { overflow-wrap: break-word; word-break: keep-all; hyphens: none; -webkit-hyphens: none; min-width: 0; }
+    body { font-family: ${font}; color: #222; background: ${bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; }
+    .page { width: 100%; min-width: 0; }
+    p, li { page-break-inside: avoid; break-inside: avoid; -webkit-column-break-inside: avoid; overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; }
+    div { overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; min-width: 0; }
   </style>
 </head>
 <body>
   <div class="page">
     ${printContent}
-    ${sigHtml}
+    ${sigSpacer}${sigHtml}
   </div>
   <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); };<\/script>
 </body>

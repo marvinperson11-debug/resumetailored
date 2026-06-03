@@ -509,11 +509,20 @@ app.post('/api/extract-text', upload.single('file'), async (req, res) => {
 
 // ─── API: Download tailored result as .docx ───────────────────────────────────
 app.post('/api/download-docx', async (req, res) => {
-  const { text, filename, colors } = req.body;
+  const { text, filename, colors, sigName, sigFont: sigFontName } = req.body;
   if (!text) return res.status(400).json({ error: 'No text provided.' });
 
   const primaryHex = colors?.primary ? colors.primary.replace('#', '') : '1a237e';
   const accentHex  = colors?.accent  ? colors.accent.replace('#', '')  : '5c6bc0';
+
+  // Professional margins: 1 inch = 1440 twips on all sides (letter size standard)
+  const MARGIN = 1440;
+  // Max usable line width at 1in margins on 8.5in letter = 6.5in = 9360 twips
+  // This is handled automatically by the page size, but we set explicit wrap widths
+  // on any paragraph that could overflow (long URLs, etc.)
+  const WrapOption = { wrap: 'auto', lineRule: 'auto' };
+
+  const cleanLine = (s) => s.replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
 
   const lines = text.split('\n');
   const children = [];
@@ -522,25 +531,28 @@ app.post('/api/download-docx', async (req, res) => {
   // Skip leading blank lines
   while (lineIndex < lines.length && !lines[lineIndex].trim()) lineIndex++;
 
-  // First non-blank line = name
+  // First non-blank line = name (header)
   if (lineIndex < lines.length) {
-    const name = lines[lineIndex].trim().replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+    const name = cleanLine(lines[lineIndex]);
     children.push(new Paragraph({
-      children: [new TextRun({ text: name, font: 'Calibri', size: 40, bold: true, color: primaryHex })],
+      children: [new TextRun({ text: name, font: 'Calibri', size: 44, bold: true, color: primaryHex })],
       spacing: { after: 60 },
+      wordWrap: true,
     }));
     lineIndex++;
   }
 
-  // Lines that look like contact info (email/phone/pipe-separated) immediately after name
+  // Contact info lines immediately after name
   while (lineIndex < lines.length) {
     const raw = lines[lineIndex];
-    const t = raw.trim().replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+    const t = cleanLine(raw);
     if (!t) { lineIndex++; break; }
-    if (t.includes('@') || /\(\d{3}\)/.test(t) || /\d{3}[-.\s]\d{3}/.test(t) || (t.includes('|') && t.length < 120 && !/\d{4}/.test(t))) {
+    const isContact = t.includes('@') || /\(\d{3}\)/.test(t) || /\d{3}[-.\s]\d{3}/.test(t) || (t.includes('|') && t.length < 160 && !/\d{4}/.test(t));
+    if (isContact) {
       children.push(new Paragraph({
         children: [new TextRun({ text: t, font: 'Calibri', size: 20, color: '555555' })],
         spacing: { after: 40 },
+        wordWrap: true,
       }));
       lineIndex++;
     } else {
@@ -548,25 +560,26 @@ app.post('/api/download-docx', async (req, res) => {
     }
   }
 
-  // Remaining lines
+  // Remaining content lines
   for (; lineIndex < lines.length; lineIndex++) {
     const raw = lines[lineIndex];
     const trimmed = raw.trim();
-    const clean = trimmed.replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+    const clean = cleanLine(trimmed);
 
     if (!clean) {
-      children.push(new Paragraph({ spacing: { after: 60 } }));
+      children.push(new Paragraph({ spacing: { after: 80 } }));
       continue;
     }
 
-    // Section heading: all-caps, 2-50 chars
-    const isHeading = clean.length >= 2 && clean.length <= 50 &&
+    // Section heading: all-caps, 2–60 chars
+    const isHeading = clean.length >= 2 && clean.length <= 60 &&
       /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(clean) && /[A-Z]/.test(clean);
     if (isHeading) {
       children.push(new Paragraph({
         children: [new TextRun({ text: clean, font: 'Calibri', size: 24, bold: true, color: primaryHex })],
-        spacing: { before: 280, after: 80 },
-        border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: accentHex, space: 4 } },
+        spacing: { before: 320, after: 100 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 8, color: accentHex, space: 4 } },
+        wordWrap: true,
       }));
       continue;
     }
@@ -575,28 +588,31 @@ app.post('/api/download-docx', async (req, res) => {
     if (/^[•·\-\*]\s/.test(trimmed)) {
       const txt = clean.replace(/^[•·\-\*]\s*/, '');
       children.push(new Paragraph({
-        children: [new TextRun({ text: `• ${txt}`, font: 'Calibri', size: 22, color: '333333' })],
-        indent: { left: 360 },
-        spacing: { after: 40 },
+        children: [new TextRun({ text: txt, font: 'Calibri', size: 22, color: '333333' })],
+        bullet: { level: 0 },
+        spacing: { after: 50 },
+        wordWrap: true,
       }));
       continue;
     }
 
-    // Date/company separator line (contains em-dash or pipe with year)
-    if ((clean.includes('—') || clean.includes('–') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 150) {
+    // Date/company line (em-dash, en-dash, or pipe with year)
+    if ((clean.includes('—') || clean.includes('–') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 200) {
       children.push(new Paragraph({
         children: [new TextRun({ text: clean, font: 'Calibri', size: 22, color: accentHex, bold: true })],
-        spacing: { after: 40 },
+        spacing: { after: 50 },
+        wordWrap: true,
       }));
       continue;
     }
 
-    // Bold-only line (job title or sub-heading)
+    // Bold-only line (job title / sub-heading)
     const wasBold = /^\*\*[^*]+\*\*$/.test(trimmed);
-    if (wasBold && clean.length < 70) {
+    if (wasBold && clean.length < 120) {
       children.push(new Paragraph({
         children: [new TextRun({ text: clean, font: 'Calibri', size: 24, bold: true, color: '222222' })],
-        spacing: { before: 120, after: 40 },
+        spacing: { before: 140, after: 50 },
+        wordWrap: true,
       }));
       continue;
     }
@@ -604,21 +620,46 @@ app.post('/api/download-docx', async (req, res) => {
     // Regular body text
     children.push(new Paragraph({
       children: [new TextRun({ text: clean, font: 'Calibri', size: 22, color: '333333' })],
-      spacing: { after: 40 },
+      spacing: { after: 50 },
+      wordWrap: true,
+    }));
+  }
+
+  // Signature block — placed in document flow with proper spacing
+  if (sigName && sigName.trim()) {
+    const sig = sigName.trim();
+    // Horizontal rule above signature
+    children.push(new Paragraph({
+      children: [new TextRun({ text: '', font: 'Calibri', size: 22 })],
+      spacing: { before: 480 },
+      border: { top: { style: BorderStyle.SINGLE, size: 6, color: 'e2e8f0', space: 4 } },
+    }));
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'Signature', font: 'Calibri', size: 18, color: '94a3b8', allCaps: true })],
+      spacing: { before: 60, after: 40 },
+    }));
+    // Use the closest Calibri rendition for the signature name (cursive fonts aren't embeddable in docx without the font file)
+    children.push(new Paragraph({
+      children: [new TextRun({ text: sig, font: 'Calibri', size: 52, bold: true, color: primaryHex, italics: true })],
+      spacing: { after: 0 },
     }));
   }
 
   const doc = new Document({
     sections: [{
       properties: {
-        page: { margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } },
+        page: {
+          // Letter size: 12240 × 15840 twips (8.5in × 11in at 1440 twips/in)
+          size: { width: 12240, height: 15840 },
+          margin: { top: MARGIN, bottom: MARGIN, left: MARGIN, right: MARGIN },
+        },
       },
       children,
     }],
   });
   const buffer = await Packer.toBuffer(doc);
 
-  const safeName = (filename || 'tailored-resume').replace(/[^a-z0-9-_]/gi, '_');
+  const safeName = (filename || 'tailored-resume').replace(/[^a-z0-9-_\s]/gi, '_');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
   res.send(buffer);
@@ -699,6 +740,7 @@ app.get('/api/status', (req, res) => {
   res.json({
     freeResumesLeft: hasFreeTierLeft(usageKey, 'resume') ? 1 : 0,
     freeCoverLettersLeft: hasFreeTierLeft(usageKey, 'cover_letter') ? 1 : 0,
+    freeLinkedInLeft: hasFreeTierLeft(usageKey, 'linkedin') ? 1 : 0,
     isSubscriber: isSubscriber(email)
   });
 });
@@ -736,50 +778,66 @@ app.post('/api/tailor', async (req, res) => {
   }
 
   try {
-    const systemPrompt = `You are an expert career coach and professional resume writer with 15+ years of experience helping candidates land jobs at top companies. You tailor resumes and write compelling cover letters by carefully matching the candidate's experience to the job requirements using relevant keywords and framing.`;
+    const systemPrompt = `You are a senior professional resume writer and executive career strategist with 20+ years placing candidates at Fortune 500 companies and elite startups. Your writing is indistinguishable from a human expert — specific, grounded, and free of AI clichés.
+
+DEEP ANALYSIS PROTOCOL — apply to every job posting before writing:
+1. Extract the CORE COMPETENCIES: the 3–5 capabilities the hiring manager truly needs (not just listed requirements).
+2. Identify PROOF POINTS the job signals: specific metrics, scale indicators, tools, methodologies, and team dynamics they describe.
+3. Note LANGUAGE FINGERPRINTS: exact phrases, industry jargon, and verbs the job posting uses — mirror these precisely.
+4. Assess the SENIORITY SIGNAL: leadership scope, strategic vs. tactical balance, budget/team ownership expectations.
+5. Flag any DIFFERENTIATOR GAPS the candidate can address with their strongest achievements.
+
+WRITING STANDARDS — non-negotiable:
+- Every bullet must contain a measurable outcome OR a clear scope indicator (e.g. "across 12 markets", "for 200K+ users", "$4M portfolio")
+- Use the job's exact language where the candidate's experience warrants it — do not invent synonyms
+- Strip all weak openers: never start a bullet with "Responsible for", "Helped", "Assisted", "Worked on", "Involved in", "Supported", "Contributed to", or any passive construction
+- No filler phrases: no "leveraged", "utilized", "spearheaded synergies", "dynamic environment", "results-driven", "detail-oriented", "team player", "hard worker", or similar hollow clichés
+- Every bullet must begin with a powerful past-tense action verb that implies ownership: Led, Built, Drove, Grew, Cut, Launched, Engineered, Negotiated, Redesigned, Secured, Scaled, Automated, Trained, Managed, Delivered
+- Summaries must be specific to this exact role — not generic career overviews. Name the role and company type if known.
+- The output must read as if a real senior career coach wrote it, not an AI`;
 
     let userPrompt = '';
 
     if (mode === 'resume' || mode === 'both') {
-      userPrompt += `## Task: Tailor the resume below to the job posting.
+      userPrompt += `## Task: Deeply tailor the resume below to the specific job posting.
 
-**Rules:**
-- Include EVERY job, position, and role from the original resume — do not omit or merge any work experience entries
-- Keep the same resume structure and factual experience — never fabricate anything
-- Reword bullet points to mirror the language and keywords in the job posting
-- Within each job, prioritize and reorder bullet points so the most relevant achievements appear first
-- Adjust the summary/objective section (if present) to target this specific role
-- Every bullet point must begin with a strong past-tense action verb (e.g. Led, Built, Reduced)
-- No periods at the end of bullet points (standard resume format)
-- ALL section headers must be in ALL CAPS (e.g. EXPERIENCE, EDUCATION, SKILLS)
-- Output the full tailored resume in clean plain text — no markdown formatting symbols
+**Step 1 — Analyze the job posting:**
+Before writing, silently identify: (a) the 3 most critical competencies this role demands, (b) the measurable proof points the hiring manager wants to see, (c) the exact vocabulary and keywords they use.
 
-## Output format (follow exactly):
+**Step 2 — Tailor the resume:**
+Rules (all mandatory):
+- Include EVERY job, position, and role from the original resume — never omit or merge entries
+- Never fabricate experience, credentials, or metrics — only reframe what the candidate actually did
+- Rewrite every bullet to foreground measurable impact and mirror the job's language
+- Prioritize and reorder bullets within each job: most relevant achievements first
+- Rewrite the summary to speak directly to this specific role and company type
+- Every bullet starts with a strong past-tense action verb (never "Responsible for", "Helped", etc.)
+- Quantify results wherever possible: %, $, headcount, timeframes, scale
+- No periods at end of bullets (standard resume convention)
+- ALL section headers in ALL CAPS: EXPERIENCE, EDUCATION, SKILLS, SUMMARY, CERTIFICATIONS
+- Plain text output only — no markdown, no asterisks, no hash symbols
+
+## Output format (follow exactly — do not add extra blank lines or deviate):
 [Full Name]
 [City, State | Phone | Email]
 
 SUMMARY
-[2–3 sentence paragraph]
+[2–3 sentences targeting this specific role — specific, not generic]
 
 EXPERIENCE
 [Job Title]
 [Company | Start – End]
-• [bullet]
-• [bullet]
+• [bullet with action verb + measurable outcome]
+• [bullet with action verb + measurable outcome]
 
-[Job Title]
-[Company | Start – End]
-• [bullet]
-• [bullet]
-
-[Repeat for ALL jobs — every position from the original resume must appear]
+[Repeat for ALL jobs in the original resume — every position must appear]
 
 EDUCATION
 [Degree]
 [School | Year]
 
 SKILLS
-[comma-separated list]
+[comma-separated list using the job posting's terminology where applicable]
 
 ## Candidate Resume:
 ${resume}
@@ -788,30 +846,34 @@ ${resume}
 ${jobPosting}
 
 ---
-**OUTPUT: Tailored Resume**
+OUTPUT: Tailored Resume
 `;
     }
 
     if (mode === 'cover_letter' || mode === 'both') {
       if (mode === 'both') userPrompt += '\n\n===COVER_LETTER_START===\n\n';
-      userPrompt += `## Task: Write a compelling cover letter for this job.
+      userPrompt += `## Task: Write a distinctive, job-specific cover letter.
 
-**Rules:**
-- 3–4 paragraphs, professional but personable tone
-- Opening: hook with a specific reason why this company/role excites you
-- Middle: connect 2–3 of the candidate's strongest achievements to the job's key needs
-- Closing: confident call to action
-- Do NOT use generic filler phrases like "I am writing to express my interest"
-- Use keywords from the job posting naturally
+**Step 1 — Analyze before writing:**
+Identify: (a) the company's specific mission or differentiator mentioned in the posting, (b) the 2–3 achievements from the candidate's background that best match the role's core needs, (c) the exact tone and language of the posting (technical? startup? enterprise?).
+
+**Step 2 — Write the letter:**
+Rules (all mandatory):
+- 3–4 paragraphs, professional but human — sounds like a real person wrote it, not an AI
+- Opening paragraph: a specific, compelling hook tied to THIS company or role — NOT "I am writing to express my interest" or any generic opener. Reference something real about the company, role challenge, or industry moment.
+- Body paragraphs: connect 2–3 of the candidate's strongest, most relevant achievements directly to the key needs the job signals — always with concrete proof (metrics, scope, outcomes)
+- Closing: confident, forward-looking call to action — no hedging ("I hope to hear from you")
+- Mirror the job posting's vocabulary and tone throughout
 - Every sentence must be grammatically complete with correct punctuation
-- Paragraphs must be fully written out — no bullet points, no headers inside the letter body
-- Output plain text only — no markdown symbols
+- No bullet points, no section headers inside the letter body
+- The letter must be impossible to send to any other company — it must read as written for this role only
+- Plain text output only — no markdown symbols
 
 ## Output format (follow exactly):
 [Full Name]
 [City, State | Phone | Email]
 
-[Letter body — 3 to 4 full paragraphs separated by blank lines]
+[3 to 4 full paragraphs — each separated by a blank line]
 
 Sincerely,
 [Full Name]
@@ -823,7 +885,7 @@ ${resume}
 ${jobPosting}
 
 ---
-**OUTPUT: Cover Letter**
+OUTPUT: Cover Letter
 `;
     }
 
@@ -846,6 +908,69 @@ ${jobPosting}
     if (err?.status === 401) userMessage = 'AI service authentication error. Please contact support.';
     else if (err?.status === 429) userMessage = 'AI is rate limited. Please wait a moment and try again.';
     else if (err?.status >= 500 || err?.message?.toLowerCase().includes('overloaded')) userMessage = 'AI service is temporarily busy. Please try again in 30 seconds.';
+    res.status(500).json({ error: userMessage });
+  }
+});
+
+// ─── API: LinkedIn profile optimizer ─────────────────────────────────────────
+app.post('/api/optimize-linkedin', async (req, res) => {
+  const { profileText, targetRole, email } = req.body;
+  if (!profileText) return res.status(400).json({ error: 'Profile text is required.' });
+  if (!targetRole)  return res.status(400).json({ error: 'Target role is required.' });
+
+  const usageKey = getUsageKey(req);
+  const subscribed = isSubscriber(email);
+  if (!subscribed && !hasFreeTierLeft(usageKey, 'linkedin')) {
+    return res.status(402).json({ error: 'free_limit_reached', message: 'You\'ve used your free LinkedIn optimization today. Upgrade to Pro for unlimited access.' });
+  }
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      system: `You are a LinkedIn profile strategist who has helped thousands of professionals land senior roles at top companies. You write LinkedIn copy that reads as genuinely human, avoids buzzwords, and is optimized for both the LinkedIn algorithm and real recruiters. Your output is always specific, achievement-oriented, and impossible to confuse with a generic AI-generated profile.`,
+      messages: [{
+        role: 'user',
+        content: `## Task: Optimize this LinkedIn profile for the target role.
+
+**Target Role:** ${targetRole}
+
+**Analysis protocol (apply silently before writing):**
+1. Extract the 4–5 keywords and phrases recruiters search when hiring for "${targetRole}"
+2. Identify the candidate's 3 strongest proof points (metrics, scope, outcomes) from the profile text
+3. Note any credibility signals (companies, tools, certifications) that should be prominent
+4. Assess what the current profile is missing vs. best-in-class profiles for this role
+
+**Output exactly these three sections — use these exact section headers:**
+
+OPTIMIZED HEADLINE
+[Single line, max 220 characters. Format: [Strong Identity Statement] | [Key Skill 1] • [Key Skill 2] • [Key Skill 3]. Should contain searchable keywords without sounding robotic. No emojis.]
+
+OPTIMIZED ABOUT SECTION
+[5–7 sentences, first-person, conversational but professional. Open with a specific hook (a result, a mission, or a distinctive POV — never "I am a seasoned professional"). Middle: 2–3 specific achievements with metrics that prove the headline's claims. Close: what the candidate is focused on now or looking for. Under 2,000 characters total. No buzzwords, no clichés, no hollow phrases.]
+
+OPTIMIZED EXPERIENCE BULLETS
+[For each job detected in the profile, provide 3–4 rewritten bullet points. Format:
+**[Job Title] at [Company]**
+• [Verb + outcome + metric or scope]
+• [Verb + outcome + metric or scope]
+Each bullet starts with an action verb that implies ownership. Every bullet must have a concrete outcome or scale indicator. Never start a bullet with "Responsible for", "Helped", "Assisted", or "Worked on". Mirror the language of the target role.]
+
+## Current LinkedIn Profile:
+${profileText}
+
+---
+OUTPUT: LinkedIn Optimization (three labeled sections only — no preamble or explanation)`
+      }]
+    });
+
+    if (!subscribed) consumeFreeTier(usageKey, 'linkedin');
+    res.json({ result: message.content[0].text });
+  } catch (err) {
+    console.error('LinkedIn optimizer error:', err?.status, err?.message || err);
+    let userMessage = 'AI processing failed. Please try again.';
+    if (err?.status === 429) userMessage = 'AI is rate limited. Please wait a moment and try again.';
+    else if (err?.status >= 500) userMessage = 'AI service is temporarily busy. Please try again in 30 seconds.';
     res.status(500).json({ error: userMessage });
   }
 });
