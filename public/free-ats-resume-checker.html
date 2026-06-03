@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Free ATS Resume Checker — See Your Match Score Instantly</title>
+  <meta name="description" content="Free ATS resume checker. Paste your resume + job posting to see your keyword match score and get an AI-rewritten resume that passes ATS filters. No signup required." />
+  <meta name="keywords" content="free ATS resume checker, ATS resume checker free, ATS score checker, resume ATS checker, ATS keyword checker, resume keyword scanner, ATS resume test" />
+  <link rel="canonical" href="https://resumetailored.com/free-ats-resume-checker" />
+  <meta property="og:title" content="Free ATS Resume Checker — See Your Match Score Instantly" />
+  <meta property="og:description" content="Free ATS resume checker. Paste your resume + job posting to see your keyword match score — and get an AI-rewritten resume that passes ATS filters. No signup required." />
+  <meta property="og:url" content="https://resumetailored.com/free-ats-resume-checker" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://resumetailored.com/favicon.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Free ATS Resume Checker + AI Rewriter" />
+  <meta name="twitter:description" content="Most ATS checkers just show a score. We show the score AND rewrite your resume to fix it. Free, no signup." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- JSON-LD FAQPage -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is ResumeTailor AI's ATS checker really free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. You get one free ATS check and full resume rewrite per day with no account and no credit card required. The free check includes your keyword match analysis, identified gaps, and the complete AI-rewritten resume plus a cover letter. For unlimited daily checks and tailoring, Pro is $19/month."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is an ATS score?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "An ATS (Applicant Tracking System) score measures how well your resume matches a specific job posting based on keywords, skills, and required qualifications. ATS systems are used by over 97% of Fortune 500 companies to automatically screen resumes before a human recruiter sees them. A low ATS score means your resume is likely filtered out automatically, regardless of your actual qualifications. A score above 80% significantly increases your chances of passing the initial screening."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is ResumeTailor AI different from Jobscan's free ATS checker?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Jobscan's free tier gives you 5 total scans and only shows you a score with a list of missing keywords — you still have to edit your resume yourself. ResumeTailor AI gives you one free full check every single day, shows you your match analysis, AND automatically rewrites your resume to fix the gaps. You get the diagnosis and the cure in one step, every day, completely free."
+        }
+      }
+    ]
+  }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #111827; line-height: 1.6; }
+    a { color: inherit; text-decoration: none; }
+
+    /* NAV */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: #fff; border-bottom: 1px solid #e5e7eb;
+      padding: 0 24px;
+    }
+    .nav-inner {
+      max-width: 1120px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo { font-size: 18px; font-weight: 900; color: #111827; }
+    .logo .badge-ai {
+      background: #2563eb; color: #fff;
+      font-size: 11px; font-weight: 800;
+      padding: 2px 7px; border-radius: 5px;
+      vertical-align: middle; margin-left: 4px;
+    }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { font-size: 14px; font-weight: 600; color: #4b5563; transition: color .15s; }
+    .nav-links a:hover { color: #111827; }
+    .nav-actions { display: flex; gap: 12px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      border-radius: 8px; padding: 10px 20px; border: none; cursor: pointer;
+      transition: all .15s; text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-ghost { background: transparent; color: #4b5563; border: 2px solid #e5e7eb; }
+    .btn-ghost:hover { border-color: #9ca3af; color: #111827; }
+    .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
+    .btn-white { background: #fff; color: #2563eb; }
+    .btn-white:hover { background: #eff6ff; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #374151; border-radius: 2px; }
+    .mobile-menu {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: #fff; flex-direction: column;
+      align-items: center; justify-content: center; gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { font-size: 24px; font-weight: 700; color: #111827; }
+    .mobile-close { position: absolute; top: 20px; right: 24px; background: none; border: none; font-size: 28px; cursor: pointer; color: #374151; }
+
+    /* LAYOUT */
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    .section { padding: 80px 0; }
+    .section-gray { background: #f9fafb; }
+    .section-title {
+      text-align: center; font-size: clamp(28px, 4vw, 40px);
+      font-weight: 900; letter-spacing: -0.02em; margin-bottom: 16px; color: #111827;
+    }
+    .section-title span { color: #2563eb; }
+    .section-sub { text-align: center; font-size: 17px; color: #6b7280; max-width: 620px; margin: 0 auto 48px; line-height: 1.7; }
+    .section-eyebrow {
+      text-align: center; font-size: 13px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px; color: #2563eb; margin-bottom: 14px;
+    }
+
+    /* HERO */
+    .hero { padding: 96px 0 80px; text-align: center; background: #fff; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 100px;
+      padding: 6px 16px; font-size: 13px; font-weight: 700; color: #2563eb;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 60px); font-weight: 900;
+      letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 20px;
+      color: #111827;
+    }
+    .hero h1 .blue { color: #2563eb; }
+    .hero-sub { font-size: 18px; color: #4b5563; max-width: 620px; margin: 0 auto 32px; line-height: 1.7; }
+    .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .hero-note { font-size: 13px; color: #6b7280; margin-top: 12px; }
+
+    /* WHAT IS ATS */
+    .ats-explainer {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+    }
+    .ats-explainer-text h2 { font-size: clamp(24px, 3vw, 34px); font-weight: 900; letter-spacing: -0.02em; color: #111827; margin-bottom: 16px; }
+    .ats-explainer-text h2 span { color: #2563eb; }
+    .ats-explainer-text p { font-size: 15px; color: #374151; line-height: 1.75; margin-bottom: 14px; }
+    .ats-stat-box {
+      background: #111827; color: #fff; border-radius: 20px; padding: 36px 32px; text-align: center;
+    }
+    .ats-big-num { font-size: 72px; font-weight: 900; color: #60a5fa; line-height: 1; }
+    .ats-big-label { font-size: 18px; font-weight: 700; color: #fff; margin: 12px 0 8px; }
+    .ats-big-sub { font-size: 14px; color: #9ca3af; line-height: 1.6; }
+    .ats-stat-row { display: flex; gap: 16px; margin-top: 20px; }
+    .ats-stat-mini { flex: 1; background: rgba(255,255,255,0.06); border-radius: 12px; padding: 16px; text-align: center; }
+    .ats-stat-mini .num { font-size: 28px; font-weight: 900; color: #34d399; }
+    .ats-stat-mini .lbl { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+
+    /* COMPARISON TABLE */
+    .comparison-wrap { overflow-x: auto; }
+    .comparison-table {
+      width: 100%; border-collapse: collapse; font-size: 15px;
+      border-radius: 16px; overflow: hidden; box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    }
+    .comparison-table th {
+      padding: 20px 24px; font-size: 16px; font-weight: 800;
+      text-align: center; white-space: nowrap;
+    }
+    .comparison-table th:first-child { text-align: left; background: #f9fafb; color: #6b7280; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+    .th-comp { background: #f3f4f6; color: #374151; font-size: 14px; }
+    .th-us { background: #2563eb; color: #fff; }
+    .th-us .th-badge { background: rgba(255,255,255,0.2); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-top: 4px; }
+    .comparison-table td {
+      padding: 16px 24px; text-align: center; border-bottom: 1px solid #f3f4f6;
+      font-size: 14px; color: #374151;
+    }
+    .comparison-table td:first-child { text-align: left; font-weight: 600; color: #111827; background: #fafafa; }
+    .comparison-table tr:last-child td { border-bottom: none; }
+    .comparison-table tr:nth-child(even) td { background: #f9fafb; }
+    .comparison-table tr:nth-child(even) td:first-child { background: #f3f4f6; }
+    .td-us { background: #eff6ff !important; font-weight: 700; color: #1d4ed8 !important; }
+    .check { color: #16a34a; font-size: 18px; font-weight: 900; }
+    .cross { color: #dc2626; font-size: 18px; font-weight: 900; }
+    .warn { color: #d97706; font-size: 16px; }
+
+    /* HOW TO USE */
+    .steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .step-item { text-align: center; padding: 32px 24px; background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; }
+    .step-num {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: #2563eb; color: #fff;
+      font-size: 22px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .step-item h3 { font-size: 17px; font-weight: 800; margin-bottom: 10px; color: #111827; }
+    .step-item p { font-size: 14px; color: #6b7280; line-height: 1.7; }
+
+    /* SCORE GUIDE */
+    .score-guide { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .score-card {
+      border-radius: 16px; padding: 28px; text-align: center;
+    }
+    .score-card.poor { background: #fef2f2; border: 2px solid #fecaca; }
+    .score-card.good { background: #fffbeb; border: 2px solid #fde68a; }
+    .score-card.great { background: #f0fdf4; border: 2px solid #bbf7d0; }
+    .score-pct { font-size: 48px; font-weight: 900; margin-bottom: 8px; }
+    .score-card.poor .score-pct { color: #dc2626; }
+    .score-card.good .score-pct { color: #d97706; }
+    .score-card.great .score-pct { color: #16a34a; }
+    .score-label { font-size: 16px; font-weight: 800; margin-bottom: 10px; color: #111827; }
+    .score-desc { font-size: 14px; color: #6b7280; line-height: 1.65; }
+    .score-card.great .score-desc { color: #374151; }
+    .score-action {
+      margin-top: 14px; font-size: 13px; font-weight: 700;
+      padding: 8px 16px; border-radius: 8px; display: inline-block;
+    }
+    .score-card.poor .score-action { background: #fee2e2; color: #991b1b; }
+    .score-card.good .score-action { background: #fef3c7; color: #92400e; }
+    .score-card.great .score-action { background: #dcfce7; color: #166534; }
+
+    /* FAQ */
+    .faq-list { max-width: 720px; margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid #e5e7eb; }
+    .faq-q {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 0; cursor: pointer; font-size: 15px; font-weight: 600; color: #111827;
+    }
+    .faq-q:hover { color: #2563eb; }
+    .faq-arrow { font-size: 20px; color: #9ca3af; transition: transform .2s; flex-shrink: 0; margin-left: 16px; }
+    .faq-a { font-size: 14px; color: #6b7280; line-height: 1.75; padding-bottom: 20px; display: none; }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); }
+    .faq-item.open .faq-a { display: block; }
+
+    /* CTA BANNER */
+    .cta-banner {
+      background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+      padding: 80px 24px; text-align: center; color: #fff;
+    }
+    .cta-banner h2 { font-size: clamp(26px, 4vw, 42px); font-weight: 900; margin-bottom: 14px; letter-spacing: -0.02em; }
+    .cta-banner p { font-size: 17px; opacity: 0.85; margin-bottom: 32px; max-width: 540px; margin-left: auto; margin-right: auto; }
+    .cta-banner .hero-note { color: rgba(255,255,255,0.7); margin-top: 14px; }
+
+    /* FOOTER */
+    .footer { background: #111827; color: #9ca3af; padding: 48px 24px; }
+    .footer-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+    .footer .logo { color: #fff; }
+    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+    .footer-links a { font-size: 14px; font-weight: 600; color: #9ca3af; transition: color .15s; }
+    .footer-links a:hover { color: #fff; }
+    .footer-copy { font-size: 13px; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .nav-links, .nav-actions { display: none; }
+      .hamburger { display: flex; }
+      .ats-explainer { grid-template-columns: 1fr; }
+      .steps-row { grid-template-columns: 1fr; }
+      .score-guide { grid-template-columns: 1fr; }
+      .ats-stat-row { flex-direction: column; }
+    }
+    @media (max-width: 480px) {
+      .hero { padding: 64px 0 48px; }
+      .section { padding: 56px 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">ResumeTailored<span class="badge-ai">AI</span></a>
+    <div class="nav-links">
+      <a href="/#how-it-works">How It Works</a>
+      <a href="/blog">Blog</a>
+      <a href="/#pricing">Pricing</a>
+    </div>
+    <div class="nav-actions">
+      <a href="/dashboard" class="btn btn-ghost">Log In</a>
+      <a href="/dashboard" class="btn btn-primary">Get Started Free &rarr;</a>
+    </div>
+    <button class="hamburger" onclick="document.getElementById('mobileMenu').classList.add('open')" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-close" onclick="document.getElementById('mobileMenu').classList.remove('open')">&times;</button>
+  <a href="/#how-it-works" onclick="document.getElementById('mobileMenu').classList.remove('open')">How It Works</a>
+  <a href="/blog" onclick="document.getElementById('mobileMenu').classList.remove('open')">Blog</a>
+  <a href="/#pricing" onclick="document.getElementById('mobileMenu').classList.remove('open')">Pricing</a>
+  <a href="/dashboard" class="btn btn-primary btn-lg">Get Started Free &rarr;</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      &#128202; Free ATS Resume Checker
+    </div>
+    <h1>Free ATS Resume Checker<br /><span class="blue">+ AI Rewriter</span></h1>
+    <p class="hero-sub">Most ATS checkers show you a score and leave you to fix it yourself. ResumeTailor AI shows you your keyword match score AND rewrites your resume to pass ATS filters — in 30 seconds, completely free, no signup required.</p>
+    <div class="hero-cta">
+      <a href="/dashboard" class="btn btn-primary btn-lg">Check My Resume Free &rarr;</a>
+    </div>
+    <p class="hero-note">No account needed &bull; No credit card &bull; 1 free check every day</p>
+  </div>
+</section>
+
+<!-- WHAT IS AN ATS CHECKER -->
+<section class="section section-gray">
+  <div class="container">
+    <div class="ats-explainer">
+      <div class="ats-explainer-text">
+        <p class="section-eyebrow" style="text-align: left;">What Is an ATS Resume Checker?</p>
+        <h2>Why <span>75% of Resumes</span> Never Reach a Human</h2>
+        <p>An Applicant Tracking System (ATS) is software that companies use to automatically screen job applications before a recruiter ever sees them. When you submit a resume online, an ATS reads it, scores it against the job description, and typically discards any resume that doesn't hit a minimum match threshold.</p>
+        <p>ATS systems score your resume based on keyword matches — does your resume contain the specific skills, job titles, tools, and phrases mentioned in the job posting? If your resume uses different terminology (e.g., "customer success" when the job says "account management"), an ATS may score it as a mismatch even if you're perfectly qualified.</p>
+        <p>An ATS resume checker helps you understand your current match score and identify what's missing. But most checkers stop there — they show you the problem and leave you to fix it. ResumeTailor AI shows you the score and automatically rewrites your resume to improve it.</p>
+      </div>
+      <div class="ats-stat-box">
+        <div class="ats-big-num">75%</div>
+        <div class="ats-big-label">of resumes are rejected by ATS before a human reads them</div>
+        <div class="ats-big-sub">Over 97% of Fortune 500 companies use ATS software. Most mid-size employers do too.</div>
+        <div class="ats-stat-row">
+          <div class="ats-stat-mini">
+            <div class="num">97%</div>
+            <div class="lbl">of Fortune 500s use ATS</div>
+          </div>
+          <div class="ats-stat-mini">
+            <div class="num">5–10x</div>
+            <div class="lbl">more callbacks with tailored resumes</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON: SCORE-ONLY VS RESUMETAILOR -->
+<section class="section">
+  <div class="container">
+    <p class="section-eyebrow">Tool Comparison</p>
+    <h2 class="section-title">Score-Only Tools vs. <span>ResumeTailor AI</span></h2>
+    <p class="section-sub">See how the most popular ATS checkers compare — and why "score only" isn't enough.</p>
+    <div class="comparison-wrap">
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th style="width:22%">Tool</th>
+            <th class="th-comp">Jobscan</th>
+            <th class="th-comp">Teal</th>
+            <th class="th-comp">Resume Worded</th>
+            <th class="th-us">ResumeTailor AI<br /><span class="th-badge">Best Free Option</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Price (free tier)</td>
+            <td>5 scans total</td>
+            <td>Free (limited)</td>
+            <td>5 checks/month</td>
+            <td class="td-us">1 full check/day, forever</td>
+          </tr>
+          <tr>
+            <td>No account required</td>
+            <td><span class="cross">&#10007;</span></td>
+            <td><span class="cross">&#10007;</span> Requires sign-up</td>
+            <td><span class="cross">&#10007;</span></td>
+            <td class="td-us"><span class="check">&#10003;</span> No signup needed</td>
+          </tr>
+          <tr>
+            <td>ATS keyword score</td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="check">&#10003;</span></td>
+            <td class="td-us"><span class="check">&#10003;</span></td>
+          </tr>
+          <tr>
+            <td>AI resume rewrite to fix gaps</td>
+            <td><span class="cross">&#10007;</span> Score only</td>
+            <td><span class="cross">&#10007;</span> Score only</td>
+            <td><span class="cross">&#10007;</span> Score only</td>
+            <td class="td-us"><span class="check">&#10003;</span> Full rewrite included</td>
+          </tr>
+          <tr>
+            <td>Cover letter generation</td>
+            <td><span class="warn">&#9888;</span> Basic, extra cost</td>
+            <td><span class="cross">&#10007;</span></td>
+            <td><span class="cross">&#10007;</span></td>
+            <td class="td-us"><span class="check">&#10003;</span> Included free</td>
+          </tr>
+          <tr>
+            <td>Pro price</td>
+            <td>$49.95/month</td>
+            <td>~$29/month</td>
+            <td>$19/month</td>
+            <td class="td-us">$19/month</td>
+          </tr>
+          <tr>
+            <td>Export to .docx</td>
+            <td><span class="check">&#10003;</span></td>
+            <td><span class="warn">&#9888;</span> Limited</td>
+            <td><span class="check">&#10003;</span></td>
+            <td class="td-us"><span class="check">&#10003;</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- HOW TO USE OUR FREE ATS CHECKER -->
+<section class="section section-gray">
+  <div class="container">
+    <p class="section-eyebrow">How It Works</p>
+    <h2 class="section-title">How to Use Our <span>Free ATS Checker</span></h2>
+    <p class="section-sub">Three steps — no account, no credit card, no waiting.</p>
+    <div class="steps-row">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <h3>Paste Your Resume</h3>
+        <p>Copy and paste your current resume text into our tool. Any format works — we handle the rest. No need to upload a file or sign in.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <h3>Paste the Job Posting</h3>
+        <p>Copy the full job description from LinkedIn, Indeed, the company site, or anywhere you found the opening. More detail = better analysis.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <h3>Get Your Score + Rewritten Resume</h3>
+        <p>In about 30 seconds, you'll see your ATS keyword match analysis and receive a fully rewritten resume that closes the gaps — plus a cover letter.</p>
+      </div>
+    </div>
+    <div style="text-align: center; margin-top: 40px;">
+      <a href="/dashboard" class="btn btn-primary btn-lg">Check My ATS Score Free &rarr;</a>
+      <p class="hero-note" style="margin-top: 12px;">No account needed &bull; Results in 30 seconds</p>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT YOUR ATS SCORE MEANS -->
+<section class="section">
+  <div class="container">
+    <p class="section-eyebrow">Understanding Your Score</p>
+    <h2 class="section-title">What Your <span>ATS Score Means</span></h2>
+    <p class="section-sub">ATS scores are a percentage match between your resume and the job posting. Here's how to interpret yours.</p>
+    <div class="score-guide">
+      <div class="score-card poor">
+        <div class="score-pct">Below 70%</div>
+        <div class="score-label">High Risk of Rejection</div>
+        <div class="score-desc">Your resume is missing too many of the keywords and skills the ATS is looking for. It will likely be filtered out automatically before a recruiter sees it, even if you're qualified. Critical action is needed.</div>
+        <div class="score-action">&#9888; Rewrite required</div>
+      </div>
+      <div class="score-card good">
+        <div class="score-pct">70–84%</div>
+        <div class="score-label">May Pass, But Not Optimized</div>
+        <div class="score-desc">You have a reasonable match and may pass some ATS systems, but you're likely being outranked by other candidates with better-optimized resumes. Improving to 85%+ will noticeably increase your callback rate.</div>
+        <div class="score-action">&#8594; Improvement recommended</div>
+      </div>
+      <div class="score-card great">
+        <div class="score-pct">85%+</div>
+        <div class="score-label">Strong ATS Match</div>
+        <div class="score-desc">Your resume is well-aligned with the job posting and should pass ATS screening. Scores above 85% are strongly correlated with getting to the human review stage. At 95%+, you're in the top tier of applicants for keyword match.</div>
+        <div class="score-action">&#10003; Ready to submit</div>
+      </div>
+    </div>
+    <p style="text-align: center; font-size: 15px; color: #6b7280; max-width: 600px; margin: 32px auto 0; line-height: 1.75;">ResumeTailor AI automatically rewrites your resume to target 85%+ on every tailoring — so you're always submitting an optimized application, not guessing.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section section-gray">
+  <div class="container">
+    <p class="section-eyebrow">Common Questions</p>
+    <h2 class="section-title">Frequently Asked <span>Questions</span></h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          Is the ATS resume checker really free?
+          <span class="faq-arrow">&#8964;</span>
+        </div>
+        <div class="faq-a">Yes. You get one free ATS check and full resume rewrite per day with no account and no credit card required. The free check includes your keyword match analysis, identified gaps, and the complete AI-rewritten resume plus a cover letter. For unlimited daily checks and tailoring, Pro is $19/month.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          What is an ATS score?
+          <span class="faq-arrow">&#8964;</span>
+        </div>
+        <div class="faq-a">An ATS (Applicant Tracking System) score measures how well your resume matches a specific job posting based on keywords, skills, and required qualifications. ATS systems are used by over 97% of Fortune 500 companies to automatically screen resumes before a human recruiter sees them. A low ATS score means your resume is likely filtered out automatically, regardless of your actual qualifications. A score above 80% significantly increases your chances of passing the initial screening.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          How is this different from Jobscan's free ATS checker?
+          <span class="faq-arrow">&#8964;</span>
+        </div>
+        <div class="faq-a">Jobscan's free tier gives you 5 total scans and only shows you a score with a list of missing keywords — you still have to edit your resume yourself. ResumeTailor AI gives you one free full check every single day, shows you your match analysis, AND automatically rewrites your resume to fix the gaps. You get the diagnosis and the cure in one step, every day, completely free.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          Do I need to create an account to check my ATS score?
+          <span class="faq-arrow">&#8964;</span>
+        </div>
+        <div class="faq-a">No. You can use the free ATS checker without creating an account or entering a credit card. Just paste your resume and the job posting and click go. You're able to save your results and access history with a free account, but it's not required to get started.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          What does "ATS-optimized" mean for a rewritten resume?
+          <span class="faq-arrow">&#8964;</span>
+        </div>
+        <div class="faq-a">An ATS-optimized resume uses clean, simple formatting (no tables, columns, graphics, or unusual fonts that ATS parsers can't read), standard section headers (Experience, Education, Skills), and the exact keywords and phrases from the target job posting. ResumeTailor AI's rewrites are designed to achieve a high keyword match score while remaining readable and compelling for the humans who see it after the ATS pass.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section class="cta-banner">
+  <div class="container">
+    <h2>Check Your ATS Score — Then Fix It Instantly</h2>
+    <p>Most checkers show you the score. We show you the score and rewrite your resume to improve it. Free, right now, no account needed.</p>
+    <div>
+      <a href="/dashboard" class="btn btn-white btn-lg">Check My ATS Score Free &rarr;</a>
+    </div>
+    <p class="hero-note">1 free check/day &bull; No signup required &bull; Results in 30 seconds</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <a href="/" class="logo">ResumeTailored<span class="badge-ai">AI</span></a>
+    <div class="footer-links">
+      <a href="/#how-it-works">How It Works</a>
+      <a href="/blog">Blog</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/jobscan-alternative">Compare</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 ResumeTailored AI</div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Resume Tailor — Rewrite Your Resume for Any Job in 30 Seconds</title>
+  <meta name="description" content="The #1 AI resume tailor. Paste your resume + job posting — our AI rewrites your resume with the job's exact keywords and generates a cover letter in 30 seconds. Free to start." />
+  <meta name="keywords" content="AI resume tailor, AI resume tailor free, AI resume tailoring, free resume tailor, AI resume builder, resume rewriter, ATS resume optimizer" />
+  <link rel="canonical" href="https://resumetailored.com/ai-resume-tailor" />
+  <meta property="og:title" content="AI Resume Tailor — Rewrite Your Resume for Any Job in 30 Seconds" />
+  <meta property="og:description" content="Paste your resume + job posting. Our AI rewrites your resume with the right keywords and generates a cover letter in 30 seconds. Free to start." />
+  <meta property="og:url" content="https://resumetailored.com/ai-resume-tailor" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://resumetailored.com/favicon.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="AI Resume Tailor — Free to Start" />
+  <meta name="twitter:description" content="Paste your resume + job posting. AI rewrites your resume + writes a cover letter in 30 seconds." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is an AI resume tailor?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "An AI resume tailor is a tool that automatically rewrites your existing resume to match a specific job posting. Rather than starting from scratch or manually editing keywords, you paste your resume and the job description, and the AI rewrites your resume to incorporate the exact skills, keywords, and language the employer is looking for — dramatically increasing your ATS match score and your chances of getting an interview."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How is ResumeTailor AI different from ChatGPT?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "ChatGPT is a general-purpose AI that requires you to write your own detailed prompts, evaluate the output yourself, and manually iterate until you get something usable. ResumeTailor AI is purpose-built for resume tailoring: it has a structured interface, knows exactly what ATS systems look for, generates a tailored resume AND a cover letter in one click, and exports to .docx. No prompt engineering required — you paste in, you get out a polished document."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is AI resume tailoring free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. ResumeTailor AI offers a free tier with one full resume tailoring per day — no credit card required. The free tier includes both the AI resume rewrite and the cover letter. For unlimited tailoring, Pro is $19/month."
+        }
+      }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ResumeTailored AI",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "url": "https://resumetailored.com",
+    "description": "AI-powered resume tailoring tool that rewrites your resume and generates a cover letter for any job posting in 30 seconds.",
+    "offers": [
+      {"@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free"},
+      {"@type": "Offer", "price": "19", "priceCurrency": "USD", "priceSpecification": {"@type": "UnitPriceSpecification", "billingDuration": "P1M"}, "name": "Pro"}
+    ],
+    "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "312"}
+  }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #111827; line-height: 1.6; }
+    a { color: inherit; text-decoration: none; }
+
+    /* NAV */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: #fff; border-bottom: 1px solid #e5e7eb;
+      padding: 0 24px;
+    }
+    .nav-inner {
+      max-width: 1120px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo { font-size: 18px; font-weight: 900; color: #111827; }
+    .logo .badge-ai {
+      background: #2563eb; color: #fff;
+      font-size: 11px; font-weight: 800;
+      padding: 2px 7px; border-radius: 5px;
+      vertical-align: middle; margin-left: 4px;
+    }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { font-size: 14px; font-weight: 600; color: #4b5563; transition: color .15s; }
+    .nav-links a:hover { color: #111827; }
+    .nav-actions { display: flex; gap: 12px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      border-radius: 8px; padding: 10px 20px; border: none; cursor: pointer;
+      transition: all .15s; text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-ghost { background: transparent; color: #4b5563; border: 2px solid #e5e7eb; }
+    .btn-ghost:hover { border-color: #9ca3af; color: #111827; }
+    .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
+    .btn-white { background: #fff; color: #2563eb; }
+    .btn-white:hover { background: #eff6ff; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #374151; border-radius: 2px; }
+    .mobile-menu {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: #fff; flex-direction: column;
+      align-items: center; justify-content: center; gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { font-size: 24px; font-weight: 700; color: #111827; }
+    .mobile-close { position: absolute; top: 20px; right: 24px; background: none; border: none; font-size: 28px; cursor: pointer; color: #374151; }
+
+    /* LAYOUT */
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    .section { padding: 80px 0; }
+    .section-gray { background: #f9fafb; }
+    .section-blue { background: #eff6ff; }
+    .section-title {
+      text-align: center; font-size: clamp(28px, 4vw, 40px);
+      font-weight: 900; letter-spacing: -0.02em; margin-bottom: 16px; color: #111827;
+    }
+    .section-title span { color: #2563eb; }
+    .section-sub { text-align: center; font-size: 17px; color: #6b7280; max-width: 620px; margin: 0 auto 48px; line-height: 1.7; }
+    .section-eyebrow {
+      text-align: center; font-size: 13px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px; color: #2563eb; margin-bottom: 14px;
+    }
+
+    /* HERO */
+    .hero { padding: 96px 0 80px; text-align: center; background: #fff; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 100px;
+      padding: 6px 16px; font-size: 13px; font-weight: 700; color: #2563eb;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 60px); font-weight: 900;
+      letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 20px;
+      color: #111827;
+    }
+    .hero h1 .blue { color: #2563eb; }
+    .hero-sub { font-size: 18px; color: #4b5563; max-width: 600px; margin: 0 auto 32px; line-height: 1.7; }
+    .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .hero-note { font-size: 13px; color: #6b7280; margin-top: 12px; }
+
+    /* STATS ROW */
+    .stats-row {
+      display: flex; gap: 0; justify-content: center;
+      background: #111827; border-radius: 16px; overflow: hidden;
+      margin-top: 56px;
+    }
+    .stat-item {
+      flex: 1; padding: 28px 24px; text-align: center;
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+    .stat-item:last-child { border-right: none; }
+    .stat-number { font-size: 32px; font-weight: 900; color: #fff; margin-bottom: 6px; }
+    .stat-number span { color: #60a5fa; }
+    .stat-label { font-size: 13px; color: #9ca3af; line-height: 1.5; }
+
+    /* HOW IT WORKS - 3 STEPS */
+    .steps-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; position: relative; }
+    .steps-row::before {
+      content: ''; position: absolute; top: 40px; left: calc(16.67% + 20px); right: calc(16.67% + 20px);
+      height: 2px; background: linear-gradient(90deg, #bfdbfe, #2563eb, #bfdbfe);
+      z-index: 0;
+    }
+    .step-item { text-align: center; padding: 0 24px; position: relative; z-index: 1; }
+    .step-num {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: #2563eb; color: #fff;
+      font-size: 28px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 0 0 8px #eff6ff;
+    }
+    .step-item h3 { font-size: 18px; font-weight: 800; margin-bottom: 10px; color: #111827; }
+    .step-item p { font-size: 14px; color: #6b7280; line-height: 1.7; }
+    .step-arrow { font-size: 28px; color: #bfdbfe; }
+
+    /* WHY IT MATTERS */
+    .stat-callout {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 16px;
+      padding: 24px 32px; text-align: center; margin-bottom: 32px;
+    }
+    .stat-callout .big-num { font-size: 56px; font-weight: 900; color: #2563eb; line-height: 1; }
+    .stat-callout .big-label { font-size: 16px; color: #374151; margin-top: 8px; font-weight: 600; }
+    .stat-callout .big-sub { font-size: 14px; color: #6b7280; margin-top: 6px; }
+    .stats-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    /* CRITERIA LIST */
+    .criteria-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 40px; }
+    .criteria-item {
+      display: flex; gap: 16px; align-items: flex-start;
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px;
+    }
+    .criteria-num {
+      width: 36px; height: 36px; border-radius: 50%; background: #eff6ff; color: #2563eb;
+      font-size: 15px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .criteria-item h4 { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 6px; }
+    .criteria-item p { font-size: 13px; color: #6b7280; line-height: 1.6; }
+
+    /* CHECKLIST */
+    .checklist { max-width: 640px; margin: 0 auto; }
+    .checklist-item {
+      display: flex; gap: 14px; align-items: flex-start;
+      padding: 14px 0; border-bottom: 1px solid #f3f4f6;
+    }
+    .checklist-item:last-child { border-bottom: none; }
+    .check-icon { font-size: 20px; color: #16a34a; flex-shrink: 0; margin-top: 1px; }
+    .checklist-item h4 { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 4px; }
+    .checklist-item p { font-size: 13px; color: #6b7280; line-height: 1.6; }
+
+    /* PRICING */
+    .pricing-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 700px; margin: 0 auto; }
+    .pricing-card {
+      border: 2px solid #e5e7eb; border-radius: 20px; padding: 32px; text-align: center;
+      position: relative;
+    }
+    .pricing-card.featured { border-color: #2563eb; }
+    .pricing-badge {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      background: #2563eb; color: #fff; font-size: 12px; font-weight: 800;
+      padding: 4px 16px; border-radius: 20px; white-space: nowrap;
+    }
+    .pricing-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 12px; }
+    .pricing-price { font-size: 40px; font-weight: 900; color: #111827; margin-bottom: 4px; }
+    .pricing-price span { font-size: 18px; font-weight: 600; color: #6b7280; }
+    .pricing-desc { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+    .pricing-features { list-style: none; text-align: left; margin-bottom: 28px; }
+    .pricing-features li {
+      font-size: 14px; color: #374151; padding: 7px 0;
+      border-bottom: 1px solid #f3f4f6; display: flex; gap: 10px; align-items: flex-start;
+    }
+    .pricing-features li:last-child { border-bottom: none; }
+    .pricing-features .pi { color: #16a34a; font-weight: 900; }
+
+    /* TESTIMONIALS */
+    .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .testimonial { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px; }
+    .stars { color: #f59e0b; font-size: 16px; margin-bottom: 14px; }
+    .testimonial p { font-size: 15px; color: #374151; line-height: 1.7; margin-bottom: 16px; }
+    .testimonial-author { font-size: 13px; font-weight: 700; color: #6b7280; }
+    .testimonial-author strong { display: block; font-size: 14px; font-weight: 800; color: #111827; }
+
+    /* FAQ */
+    .faq-list { max-width: 720px; margin: 0 auto; }
+    .faq-item { border-bottom: 1px solid #e5e7eb; }
+    .faq-q {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 0; cursor: pointer; font-size: 15px; font-weight: 600; color: #111827;
+    }
+    .faq-q:hover { color: #2563eb; }
+    .faq-arrow { font-size: 20px; color: #9ca3af; transition: transform .2s; flex-shrink: 0; margin-left: 16px; }
+    .faq-a { font-size: 14px; color: #6b7280; line-height: 1.75; padding-bottom: 20px; display: none; }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); }
+    .faq-item.open .faq-a { display: block; }
+
+    /* CTA BANNER */
+    .cta-banner {
+      background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+      padding: 80px 24px; text-align: center; color: #fff;
+    }
+    .cta-banner h2 { font-size: clamp(26px, 4vw, 42px); font-weight: 900; margin-bottom: 14px; letter-spacing: -0.02em; }
+    .cta-banner p { font-size: 17px; opacity: 0.85; margin-bottom: 32px; max-width: 540px; margin-left: auto; margin-right: auto; }
+    .cta-banner .hero-note { color: rgba(255,255,255,0.7); margin-top: 14px; }
+
+    /* FOOTER */
+    .footer { background: #111827; color: #9ca3af; padding: 48px 24px; }
+    .footer-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+    .footer .logo { color: #fff; }
+    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+    .footer-links a { font-size: 14px; font-weight: 600; color: #9ca3af; transition: color .15s; }
+    .footer-links a:hover { color: #fff; }
+    .footer-copy { font-size: 13px; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .nav-links, .nav-actions { display: none; }
+      .hamburger { display: flex; }
+      .testimonials { grid-template-columns: 1fr; }
+      .stats-row { flex-direction: column; }
+      .stat-item { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
+      .stat-item:last-child { border-bottom: none; }
+      .steps-row { grid-template-columns: 1fr; gap: 32px; }
+      .steps-row::before { display: none; }
+      .step-num { box-shadow: 0 0 0 6px #eff6ff; }
+      .criteria-grid { grid-template-columns: 1fr; }
+      .stats-2col { grid-template-columns: 1fr; }
+      .pricing-row { grid-template-columns: 1fr; max-width: 380px; }
+    }
+    @media (max-width: 480px) {
+      .hero { padding: 64px 0 48px; }
+      .section { padding: 56px 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">ResumeTailored<span class="badge-ai">AI</span></a>
+    <div class="nav-links">
+      <a href="/#how-it-works">How It Works</a>
+      <a href="/blog">Blog</a>
+      <a href="/#pricing">Pricing</a>
+    </div>
+    <div class="nav-actions">
+      <a href="/dashboard" class="btn btn-ghost">Log In</a>
+      <a href="/dashboard" class="btn btn-primary">Get Started Free &rarr;</a>
+    </div>
+    <button class="hamburger" onclick="document.getElementById('mobileMenu').classList.add('open')" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-close" onclick="document.getElementById('mobileMenu').classList.remove('open')">&times;</button>
+  <a href="/#how-it-works" onclick="document.getElementById('mobileMenu').classList.remove('open')">How It Works</a>
+  <a href="/blog" onclick="document.getElementById('mobileMenu').classList.remove('open')">Blog</a>
+  <a href="/#pricing" onclick="document.getElementById('mobileMenu').classList.remove('open')">Pricing</a>
+  <a href="/dashboard" class="btn btn-primary btn-lg">Get Started Free &rarr;</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">
+      &#129302; AI Resume Tailor
+    </div>
+    <h1>The AI Resume Tailor That<br /><span class="blue">Does the Rewriting For You</span></h1>
+    <p class="hero-sub">Paste your resume and the job posting. Our AI reads the job, identifies what matters, and rewrites your resume with the exact keywords and experience framing the employer wants — plus a matching cover letter — in under 30 seconds.</p>
+    <div class="hero-cta">
+      <a href="/dashboard" class="btn btn-primary btn-lg">Tailor My Resume Free &rarr;</a>
+    </div>
+    <p class="hero-note">Free tier: 1 full tailoring/day &bull; No credit card &bull; No account needed to start</p>
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-number"><span>75%</span></div>
+        <div class="stat-label">of resumes filtered out by ATS<br />before a human sees them</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number"><span>5–10x</span></div>
+        <div class="stat-label">higher response rate with<br />tailored vs generic resumes</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number"><span>30s</span></div>
+        <div class="stat-label">to get a tailored resume<br />+ cover letter with our AI</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number"><span>$0</span></div>
+        <div class="stat-label">to try — free tier with<br />one tailoring every day</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section section-gray" id="how-it-works">
+  <div class="container">
+    <p class="section-eyebrow">How It Works</p>
+    <h2 class="section-title">Three Steps to a <span>Tailored Resume</span></h2>
+    <p class="section-sub">No setup. No templates to fill in. Just paste and go.</p>
+    <div class="steps-row">
+      <div class="step-item">
+        <div class="step-num">1</div>
+        <h3>Paste Your Resume</h3>
+        <p>Copy and paste the text of your current resume into the box — no special formatting required. Our AI handles any structure.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">2</div>
+        <h3>Paste the Job Posting</h3>
+        <p>Copy the full job description from LinkedIn, Indeed, or wherever you found it. The more detail, the better the tailoring.</p>
+      </div>
+      <div class="step-item">
+        <div class="step-num">3</div>
+        <h3>Get Your AI-Tailored Resume + Cover Letter</h3>
+        <p>In about 30 seconds, our AI delivers a fully rewritten resume with the right keywords — and a job-specific cover letter to match.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY TAILORING MATTERS -->
+<section class="section">
+  <div class="container">
+    <p class="section-eyebrow">Why It Matters</p>
+    <h2 class="section-title">Why AI Resume Tailoring <span>Dramatically Improves</span> Your Odds</h2>
+    <div class="stats-2col">
+      <div class="stat-callout">
+        <div class="big-num">75%</div>
+        <div class="big-label">Resumes Rejected Before a Human Reads Them</div>
+        <div class="big-sub">Applicant Tracking Systems (ATS) filter out resumes that don't contain the right keywords. Most people apply with generic resumes that fail this first filter automatically.</div>
+      </div>
+      <div class="stat-callout">
+        <div class="big-num">5–10x</div>
+        <div class="big-label">Higher Interview Rate With Tailored Resumes</div>
+        <div class="big-sub">Studies consistently show that job seekers who tailor their resume to each job get dramatically more callbacks than those who send the same resume to every opening.</div>
+      </div>
+    </div>
+    <p style="text-align: center; font-size: 17px; color: #374151; max-width: 640px; margin: 32px auto 0; line-height: 1.75;">The problem is that tailoring a resume manually for every job takes 30–60 minutes. Most people don't do it. AI resume tailoring closes that gap — giving you the benefits of a perfectly tailored resume in 30 seconds.</p>
+  </div>
+</section>
+
+<!-- WHAT MAKES A GREAT AI RESUME TAILOR -->
+<section class="section section-gray">
+  <div class="container">
+    <p class="section-eyebrow">What to Look For</p>
+    <h2 class="section-title">5 Criteria for a <span>Great AI Resume Tailor</span></h2>
+    <p class="section-sub">Not all AI resume tools are equal. Here's what separates a genuinely useful AI tailor from one that wastes your time.</p>
+    <div class="criteria-grid">
+      <div class="criteria-item">
+        <div class="criteria-num">1</div>
+        <div>
+          <h4>Job-specific keyword matching</h4>
+          <p>The AI must extract the actual keywords and required skills from the job posting — not just generic "power words" — and weave them into your resume naturally.</p>
+        </div>
+      </div>
+      <div class="criteria-item">
+        <div class="criteria-num">2</div>
+        <div>
+          <h4>Full rewrite, not just suggestions</h4>
+          <p>Highlighting missing keywords and leaving you to edit is only half the job. A great AI tailor should rewrite the resume for you so you can move on.</p>
+        </div>
+      </div>
+      <div class="criteria-item">
+        <div class="criteria-num">3</div>
+        <div>
+          <h4>Simultaneous cover letter generation</h4>
+          <p>Your cover letter and resume should reference the same job and feel cohesive. Generating them separately almost always produces a mismatch in tone and emphasis.</p>
+        </div>
+      </div>
+      <div class="criteria-item">
+        <div class="criteria-num">4</div>
+        <div>
+          <h4>ATS compatibility</h4>
+          <p>The output must use clean, simple formatting that ATS systems can parse. Fancy tables, graphics, or unusual fonts can cause ATS parsers to reject or misread your resume.</p>
+        </div>
+      </div>
+      <div class="criteria-item">
+        <div class="criteria-num">5</div>
+        <div>
+          <h4>Speed — under 60 seconds</h4>
+          <p>You're applying to multiple jobs. A tool that takes 5 minutes per tailoring doesn't scale. The best AI resume tailor should produce results in 30 seconds or less.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW WE MEASURE UP -->
+<section class="section section-blue">
+  <div class="container">
+    <p class="section-eyebrow">ResumeTailor AI</p>
+    <h2 class="section-title">How ResumeTailor AI <span>Hits All 5 Criteria</span></h2>
+    <p class="section-sub">We built ResumeTailor AI specifically to check every box that matters for effective resume tailoring.</p>
+    <div class="checklist">
+      <div class="checklist-item">
+        <span class="check-icon">&#10003;</span>
+        <div>
+          <h4>Job-specific keyword matching</h4>
+          <p>Our AI parses every sentence of the job posting to extract required skills, preferred qualifications, and industry-specific terminology — then incorporates them naturally into your rewritten resume.</p>
+        </div>
+      </div>
+      <div class="checklist-item">
+        <span class="check-icon">&#10003;</span>
+        <div>
+          <h4>Full AI rewrite — no manual editing required</h4>
+          <p>We don't give you a list of suggestions and leave you to do the work. ResumeTailor rewrites your resume from top to bottom so you can review, download, and submit immediately.</p>
+        </div>
+      </div>
+      <div class="checklist-item">
+        <span class="check-icon">&#10003;</span>
+        <div>
+          <h4>Cover letter generated in the same pass</h4>
+          <p>Your cover letter is written simultaneously with your resume rewrite using the same job posting analysis — so they're aligned, job-specific, and ready together.</p>
+        </div>
+      </div>
+      <div class="checklist-item">
+        <span class="check-icon">&#10003;</span>
+        <div>
+          <h4>ATS-optimized output</h4>
+          <p>Clean formatting, standard section headers, no tables or graphics, proper keyword density — the output is built to pass ATS systems without any additional formatting work on your part.</p>
+        </div>
+      </div>
+      <div class="checklist-item">
+        <span class="check-icon">&#10003;</span>
+        <div>
+          <h4>30-second turnaround</h4>
+          <p>Paste in, get out. The average tailoring takes 25–35 seconds. No waiting around, no complex setup — you can tailor a new resume for every job you apply to without slowing your workflow.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section section-gray">
+  <div class="container">
+    <p class="section-eyebrow">Pricing</p>
+    <h2 class="section-title">Simple, <span>Transparent Pricing</span></h2>
+    <p class="section-sub">Start free. Upgrade when you're ready for unlimited tailoring.</p>
+    <div class="pricing-row">
+      <div class="pricing-card">
+        <div class="pricing-label">Free</div>
+        <div class="pricing-price">$0 <span>/ month</span></div>
+        <div class="pricing-desc">No credit card required. Forever free.</div>
+        <ul class="pricing-features">
+          <li><span class="pi">&#10003;</span> 1 AI resume tailoring per day</li>
+          <li><span class="pi">&#10003;</span> Cover letter included</li>
+          <li><span class="pi">&#10003;</span> .docx export</li>
+          <li><span class="pi">&#10003;</span> ATS-optimized output</li>
+        </ul>
+        <a href="/dashboard" class="btn btn-ghost" style="width: 100%; justify-content: center;">Start Free</a>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Most Popular</div>
+        <div class="pricing-label">Pro</div>
+        <div class="pricing-price">$19 <span>/ month</span></div>
+        <div class="pricing-desc">Unlimited tailoring for your full job search.</div>
+        <ul class="pricing-features">
+          <li><span class="pi">&#10003;</span> Unlimited AI tailoring</li>
+          <li><span class="pi">&#10003;</span> Cover letter every time</li>
+          <li><span class="pi">&#10003;</span> .docx export</li>
+          <li><span class="pi">&#10003;</span> 40+ resume templates</li>
+          <li><span class="pi">&#10003;</span> Priority processing</li>
+        </ul>
+        <a href="/dashboard" class="btn btn-primary" style="width: 100%; justify-content: center;">Get Started &rarr;</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="section">
+  <div class="container">
+    <p class="section-eyebrow">Real Results</p>
+    <h2 class="section-title">What Job Seekers Say About <span>AI Resume Tailoring</span></h2>
+    <div class="testimonials">
+      <div class="testimonial">
+        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p>"I was applying to maybe 3-4 jobs a week because each tailored application took me an hour. With ResumeTailor AI, I can apply to 15 or 20 jobs in the same time — and each one actually has a custom resume and cover letter. My callback rate went from about 5% to 30% in two weeks."</p>
+        <div class="testimonial-author">
+          <strong>Layla H.</strong>
+          UX Designer, San Francisco
+        </div>
+      </div>
+      <div class="testimonial">
+        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p>"I tried ChatGPT for resume tailoring and it just... wasn't good enough without spending 20 minutes on prompts. ResumeTailor AI does the same thing but purposefully — it knows what ATS systems care about, it writes the cover letter at the same time, and the whole thing takes 30 seconds. Night and day."</p>
+        <div class="testimonial-author">
+          <strong>Brandon C.</strong>
+          Finance Analyst, New York
+        </div>
+      </div>
+      <div class="testimonial">
+        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p>"Landed my current job after two weeks of using this. Applied to 40 positions with tailored resumes and cover letters — got 12 first-round interviews. Before AI tailoring I was sending the same resume everywhere and barely hearing back. The keyword matching alone is worth the price."</p>
+        <div class="testimonial-author">
+          <strong>Simone T.</strong>
+          Marketing Manager, Austin
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section section-gray">
+  <div class="container">
+    <p class="section-eyebrow">Common Questions</p>
+    <h2 class="section-title">Frequently Asked <span>Questions</span></h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          What is an AI resume tailor?
+          <span class="faq-arrow">&#8964;</span>
+        </div>
+        <div class="faq-a">An AI resume tailor is a tool that automatically rewrites your existing resume to match a specific job posting. Rather than starting from scratch or manually editing keywords, you paste your resume and the job description, and the AI rewrites your resume to incorporate the exact skills, keywords, and language the employer is looking for — dramatically increasing your ATS match score and your chances of getting an interview.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          How is ResumeTailor AI different from ChatGPT?
+          <span class="faq-arrow">&#8964;</span>
+        </div>
+        <div class="faq-a">ChatGPT is a general-purpose AI that requires you to write your own detailed prompts, evaluate the output yourself, and manually iterate until you get something usable. ResumeTailor AI is purpose-built for resume tailoring: it has a structured interface, knows exactly what ATS systems look for, generates a tailored resume AND a cover letter in one click, and exports to .docx. No prompt engineering required — you paste in, you get out a polished document.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          Is AI resume tailoring free?
+          <span class="faq-arrow">&#8964;</span>
+        </div>
+        <div class="faq-a">Yes. ResumeTailor AI offers a free tier with one full resume tailoring per day — no credit card required. The free tier includes both the AI resume rewrite and the cover letter. For unlimited tailoring, Pro is $19/month.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          Does the AI keep my resume data private?
+          <span class="faq-arrow">&#8964;</span>
+        </div>
+        <div class="faq-a">Your resume content is processed to generate the tailored output and is not shared with third parties or used to train AI models. Your data stays private.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+          Can I tailor the same resume for multiple jobs?
+          <span class="faq-arrow">&#8964;</span>
+        </div>
+        <div class="faq-a">Yes — that's exactly what ResumeTailor AI is designed for. Each tailoring is job-specific: paste the same base resume, change the job posting, and get a completely different tailored version optimized for that particular role. On the free tier you can do one per day; Pro gives you unlimited.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section class="cta-banner">
+  <div class="container">
+    <h2>Start Tailoring Your Resume With AI — Free</h2>
+    <p>One click. 30 seconds. A tailored resume and cover letter ready to send. Try it free today — no account required.</p>
+    <div>
+      <a href="/dashboard" class="btn btn-white btn-lg">Tailor My Resume Free &rarr;</a>
+    </div>
+    <p class="hero-note">1 free tailoring/day &bull; No credit card &bull; Upgrade to Pro for $19/mo</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <a href="/" class="logo">ResumeTailored<span class="badge-ai">AI</span></a>
+    <div class="footer-links">
+      <a href="/#how-it-works">How It Works</a>
+      <a href="/blog">Blog</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/jobscan-alternative">Compare</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 ResumeTailored AI</div>
+  </div>
+</footer>
+
+</body>
+</html>

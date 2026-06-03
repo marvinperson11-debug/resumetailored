@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ResumeTailored AI — AI Resume Tailor &amp; Cover Letter Generator</title>
   <meta name="description" content="Free AI resume builder and resume tailor. Paste your resume and any job posting — our AI rewrites it with the right keywords in 60 seconds. Pass ATS filters and land more interviews. No credit card needed." />
-  <meta name="keywords" content="ai resume tailor, free resume tailor, AI resume builder, free AI resume builder, resume scanner, resume optimizer, ATS resume, cover letter generator, resume rewriter, job application AI, resume tailoring tool, free ATS resume checker" />
+  <meta name="keywords" content="ai resume tailor, free resume tailor, AI resume builder, free AI resume builder, resume scanner, resume optimizer, ATS resume, cover letter generator, resume rewriter, job application AI, resume tailoring tool, free ATS resume checker, jobscan alternative, rezi alternative, tailor resume to job description, AI resume rewriter, ATS resume rewriter" />
   <link rel="canonical" href="https://resumetailored.com/" />
   <!-- Open Graph -->
   <meta property="og:title" content="ResumeTailored AI — AI Resume Tailor &amp; Cover Letter Generator" />
@@ -31,7 +31,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <!-- JSON-LD -->
   <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"ResumeTailored AI","applicationCategory":"BusinessApplication","operatingSystem":"Web","url":"https://resumetailored.com","description":"AI-powered resume tailoring and cover letter generation","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"19","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","billingDuration":"P1M"},"name":"Pro"}],"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"312"}}
+  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"ResumeTailored AI","applicationCategory":"BusinessApplication","operatingSystem":"Web","url":"https://resumetailored.com","description":"AI-powered resume tailoring and cover letter generation","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"19","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","billingDuration":"P1M"},"name":"Pro"},{"@type":"Offer","price":"129","priceCurrency":"USD","name":"Pro Lifetime"}],"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"312"}}
+  </script>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is it really free to start?","acceptedAnswer":{"@type":"Answer","text":"Yes — the free tier gives you 1 AI resume tailoring per day with no credit card required. You can sign up and get your first tailored resume in under 2 minutes."}},{"@type":"Question","name":"Will it fabricate experience I don't have?","acceptedAnswer":{"@type":"Answer","text":"Never. Our AI strictly rewrites and reframes your existing experience using the job's language — it never adds skills or experience you don't have."}},{"@type":"Question","name":"How is this different from Jobscan or Resume.io?","acceptedAnswer":{"@type":"Answer","text":"Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds."}},{"@type":"Question","name":"What formats can I export my resume in?","acceptedAnswer":{"@type":"Answer","text":"Your tailored resume is available to copy as plain text (perfect for pasting into ATS forms) or download as a formatted .docx Word document. Both are included in free and Pro plans."}},{"@type":"Question","name":"Can I cancel Pro anytime?","acceptedAnswer":{"@type":"Answer","text":"Yes, completely. Month-to-month, no contracts, no cancellation fees. You keep full Pro access through the end of your billing period when you cancel."}}]}
   </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -297,7 +300,19 @@
     .faq-a { font-size: 14px; color: #6b7280; line-height: 1.75; padding-bottom: 20px; display: none; }
 
     /* ── PRICING ── */
-    .pricing-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 760px; margin: 0 auto; }
+    .pricing-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; max-width: 1020px; margin: 0 auto; }
+    .competitor-compare { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 20px; padding: 40px; max-width: 1020px; margin: 0 auto 48px; }
+    .cc-title { font-size: 20px; font-weight: 800; color: #111827; margin-bottom: 8px; }
+    .cc-sub { font-size: 14px; color: #6b7280; margin-bottom: 28px; }
+    .cc-table { width: 100%; border-collapse: collapse; }
+    .cc-table th { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px; text-align: left; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
+    .cc-table th.ours { background: #eff6ff; color: #2563eb; border-radius: 8px 8px 0 0; }
+    .cc-table td { font-size: 14px; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #374151; }
+    .cc-table td.ours { background: #f0f7ff; font-weight: 600; color: #1d4ed8; }
+    .cc-table td.win { color: #16a34a; font-weight: 700; }
+    .cc-table td.lose { color: #dc2626; }
+    .cc-table tr:last-child td { border-bottom: none; }
+    .lifetime-badge { display: inline-block; background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
     .pricing-card {
       border: 2px solid #e5e7eb; border-radius: 20px; padding: 36px; position: relative;
     }
@@ -332,6 +347,8 @@
       .feature-row, .feature-row.reverse { grid-template-columns: 1fr; direction: ltr; gap: 32px; }
       .testimonials { grid-template-columns: 1fr; }
       .pricing-cards { grid-template-columns: 1fr; max-width: 400px; }
+      .competitor-compare { padding: 24px; }
+      .cc-table { font-size: 12px; }
       .demo-wrap { grid-template-columns: 1fr; }
       .demo-arrow-col { padding: 16px; border: none; border-top: 2px solid #e5e7eb; border-bottom: 2px solid #e5e7eb; }
       .gallery-scroll-btn.left { left: 0; }
@@ -1567,6 +1584,74 @@
   <div class="container">
     <div class="section-eyebrow">Pricing</div>
     <h2 class="section-title">Simple, <span>transparent</span> pricing</h2>
+
+    <!-- Competitor comparison -->
+    <div class="competitor-compare">
+      <div class="cc-title">How we compare to Jobscan &amp; Rezi</div>
+      <div class="cc-sub">Same result. No $49.95/month. No weak cover letters.</div>
+      <div style="overflow-x:auto;">
+        <table class="cc-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Jobscan</th>
+              <th>Rezi</th>
+              <th class="ours">ResumeTailor AI ✦</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Monthly price</strong></td>
+              <td class="lose">$49.95/mo</td>
+              <td>$29/mo</td>
+              <td class="ours win">$19/mo</td>
+            </tr>
+            <tr>
+              <td><strong>Free tier</strong></td>
+              <td>5 scans only</td>
+              <td>1 resume only</td>
+              <td class="ours win">1 full rewrite/day</td>
+            </tr>
+            <tr>
+              <td><strong>Full AI resume rewrite</strong></td>
+              <td class="lose">✗ Score only</td>
+              <td class="win">✓</td>
+              <td class="ours win">✓</td>
+            </tr>
+            <tr>
+              <td><strong>Cover letters</strong></td>
+              <td>Basic generator</td>
+              <td class="lose">⚠ Needs heavy editing</td>
+              <td class="ours win">✓ Job-specific, ready to send</td>
+            </tr>
+            <tr>
+              <td><strong>ATS keyword match score</strong></td>
+              <td class="win">✓</td>
+              <td class="win">✓</td>
+              <td class="ours win">✓</td>
+            </tr>
+            <tr>
+              <td><strong>Lifetime option</strong></td>
+              <td class="lose">✗</td>
+              <td>$149 one-time</td>
+              <td class="ours win">$129 one-time</td>
+            </tr>
+            <tr>
+              <td><strong>Resume + cover letter together</strong></td>
+              <td class="lose">✗</td>
+              <td class="lose">✗</td>
+              <td class="ours win">✓ In 30 seconds</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;font-size:13px;color:#6b7280;">
+        Jobscan data: $49.95/mo for unlimited scans. Rezi cover letter quality based on published user reviews.
+        <a href="/jobscan-alternative" style="color:#2563eb;font-weight:600;margin-left:8px;">Full Jobscan comparison →</a>
+        <a href="/rezi-alternative" style="color:#2563eb;font-weight:600;margin-left:8px;">Full Rezi comparison →</a>
+      </div>
+    </div>
+
     <div class="pricing-cards">
       <div class="pricing-card">
         <div class="plan-name">Free</div>
@@ -1599,9 +1684,40 @@
         </ul>
         <button class="btn btn-primary btn-full" onclick="openCheckoutModal()">Start Pro — $19/mo →</button>
       </div>
+      <div class="pricing-card" style="border-color:#7c3aed;">
+        <div class="plan-badge" style="background:linear-gradient(135deg,#7c3aed,#2563eb);">⚡ Best Value</div>
+        <div class="plan-name">Pro <span class="lifetime-badge">LIFETIME</span></div>
+        <div class="plan-price" style="color:#7c3aed;">$129</div>
+        <div class="plan-period">one-time · never expires</div>
+        <ul class="plan-features">
+          <li><span class="check-icon">✓</span> Everything in Pro, forever</li>
+          <li><span class="check-icon">✓</span> Unlimited resume tailorings</li>
+          <li><span class="check-icon">✓</span> Cover letter generation</li>
+          <li><span class="check-icon">✓</span> All 40 premium templates</li>
+          <li><span class="check-icon">✓</span> Career Hub access</li>
+          <li><span class="check-icon">✓</span> All future features included</li>
+          <li style="font-size:12px;color:#7c3aed;font-weight:700;">Saves $99+ vs. Rezi Lifetime</li>
+        </ul>
+        <button class="btn btn-full" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border:none;" onclick="openLifetimeModal()">Get Lifetime Access — $129 →</button>
+      </div>
     </div>
   </div>
 </section>
+
+<!-- LIFETIME MODAL -->
+<div class="modal-overlay" id="lifetimeModal" onclick="closeLifetimeModal(event)">
+  <div class="modal-box">
+    <h3 style="margin-bottom:4px;">Pro Lifetime Access</h3>
+    <p style="font-size:13px;color:#7c3aed;font-weight:700;margin-bottom:4px;">⚡ One-time $129 · Never pay again</p>
+    <p>Enter your email to get permanent Pro access — every feature, every template, all future updates. Cheaper than Rezi's $149 lifetime.</p>
+    <input type="email" id="lifetimeEmail" class="checkout-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')submitLifetime()" />
+    <div id="lifetimeError" class="checkout-error"></div>
+    <div class="modal-actions">
+      <button id="lifetimeBtn" class="btn btn-full btn-lg" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border:none;" onclick="submitLifetime()">Get Lifetime Access — $129 →</button>
+      <button class="btn btn-ghost btn-full" onclick="closeLifetimeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <!-- CONTACT MODAL -->
 <div class="modal-overlay" id="contactModal" onclick="closeContactModal(event)">
@@ -1632,6 +1748,11 @@
       <a href="/how-it-works">How It Works</a>
       <a href="/blog">Blog</a>
       <a href="#pricing">Pricing</a>
+      <a href="/jobscan-alternative">vs Jobscan</a>
+      <a href="/rezi-alternative">vs Rezi</a>
+      <a href="/ai-resume-tailor">AI Resume Tailor</a>
+      <a href="/ai-cover-letter-generator">Cover Letter AI</a>
+      <a href="/free-ats-resume-checker">ATS Checker</a>
       <a href="/cancel.html">Cancel Anytime</a>
       <a href="/dashboard">Dashboard</a>
       <a href="#" onclick="event.preventDefault();openContactModal()">Contact Us</a>
@@ -1835,6 +1956,48 @@
   function closeCheckoutModal(e) {
     if (!e || e.target === document.getElementById('checkoutModal')) {
       document.getElementById('checkoutModal').classList.remove('open');
+    }
+  }
+
+  function openLifetimeModal() {
+    document.getElementById('lifetimeError').textContent = '';
+    document.getElementById('lifetimeEmail').value = '';
+    document.getElementById('lifetimeBtn').textContent = 'Get Lifetime Access — $129 →';
+    document.getElementById('lifetimeBtn').disabled = false;
+    document.getElementById('lifetimeModal').classList.add('open');
+    setTimeout(() => document.getElementById('lifetimeEmail').focus(), 50);
+  }
+  function closeLifetimeModal(e) {
+    if (!e || e.target === document.getElementById('lifetimeModal')) {
+      document.getElementById('lifetimeModal').classList.remove('open');
+    }
+  }
+  async function submitLifetime() {
+    const email = document.getElementById('lifetimeEmail').value.trim();
+    const errEl = document.getElementById('lifetimeError');
+    const btn = document.getElementById('lifetimeBtn');
+    errEl.textContent = '';
+    if (!email || !email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
+    btn.textContent = 'Starting checkout…';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/subscribe-lifetime', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        errEl.textContent = data.error || 'Could not start checkout. Please try again.';
+        btn.textContent = 'Get Lifetime Access — $129 →';
+        btn.disabled = false;
+      }
+    } catch {
+      errEl.textContent = 'Network error. Please try again.';
+      btn.textContent = 'Get Lifetime Access — $129 →';
+      btn.disabled = false;
     }
   }
 
