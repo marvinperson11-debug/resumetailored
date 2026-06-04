@@ -1175,5 +1175,152 @@ app.post('/api/contact', async (req, res) => {
   res.json({ success: true });
 });
 
+// ─── API: Admin broadcast email ───────────────────────────────────────────────
+// POST /api/admin/broadcast  { secret: "ADMIN_SECRET value" }
+// Returns { sent, failed, total, errors[] }
+app.post('/api/admin/broadcast', async (req, res) => {
+  const { secret } = req.body;
+  const adminSecret = process.env.ADMIN_SECRET;
+  if (!adminSecret || secret !== adminSecret) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  const allUsers = db.prepare('SELECT email, username FROM users').all();
+  if (allUsers.length === 0) {
+    return res.json({ sent: 0, failed: 0, total: 0, message: 'No users in database' });
+  }
+
+  let sent = 0, failed = 0;
+  const errors = [];
+
+  for (const user of allUsers) {
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "We've made some big improvements to ResumeTailored AI 🚀",
+        html: broadcastEmailHtml(user.username || 'there')
+      });
+      sent++;
+      // Small delay to stay within Resend rate limits
+      await new Promise(r => setTimeout(r, 120));
+    } catch (e) {
+      failed++;
+      errors.push({ email: user.email, error: e.message });
+      console.error(`[Broadcast] Failed for ${user.email}:`, e.message);
+    }
+  }
+
+  console.log(`[Broadcast] Done — sent: ${sent}, failed: ${failed}, total: ${allUsers.length}`);
+  res.json({ sent, failed, total: allUsers.length, errors: errors.slice(0, 20) });
+});
+
+// GET /api/admin/users-list?secret=ADMIN_SECRET — quick email export
+app.get('/api/admin/users-list', (req, res) => {
+  const adminSecret = process.env.ADMIN_SECRET;
+  if (!adminSecret || req.query.secret !== adminSecret) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  const rows = db.prepare('SELECT email, username FROM users ORDER BY email').all();
+  res.json({ total: rows.length, users: rows });
+});
+
+function broadcastEmailHtml(username) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+</head>
+<body style="font-family:'Helvetica Neue',Arial,sans-serif;background:#f1f5f9;margin:0;padding:40px 16px;">
+  <div style="max-width:580px;margin:0 auto;background:#ffffff;border-radius:20px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,0.08);">
+
+    <!-- Header -->
+    <div style="background:linear-gradient(135deg,#1d4ed8,#2563eb);padding:36px 40px;text-align:center;">
+      <div style="display:inline-block;background:rgba(255,255,255,0.18);border-radius:14px;padding:10px 18px;">
+        <span style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;">ResumeTailored AI</span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:40px 40px 32px;">
+      <h1 style="font-size:26px;font-weight:900;color:#111827;margin:0 0 14px;line-height:1.3;">
+        Hey ${username}, we've been busy 👋
+      </h1>
+      <p style="font-size:16px;color:#374151;line-height:1.75;margin:0 0 24px;">
+        Since you first signed up, we've completely upgraded ResumeTailored AI. If you remember it as a simple resume paste tool, you're in for a real surprise.
+      </p>
+
+      <!-- What's new -->
+      <div style="background:#f8fafc;border-radius:14px;padding:28px;margin-bottom:28px;border:1px solid #e5e7eb;">
+        <p style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#2563eb;margin:0 0 20px;">What's new</p>
+
+        <div style="display:flex;gap:14px;margin-bottom:18px;">
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">✍️</span>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Resume Builder — Fill Out a Form, Get a Resume</div>
+            <div style="font-size:14px;color:#6b7280;line-height:1.65;">No resume on hand? Build one from scratch directly inside the app. Fill in your experience, education, and skills — the AI takes it from there.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:14px;margin-bottom:18px;">
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">🔗</span>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">LinkedIn Profile Optimizer</div>
+            <div style="font-size:14px;color:#6b7280;line-height:1.65;">Paste your LinkedIn profile and target role — get an AI-rewritten headline, About section, and experience bullets that make recruiters stop scrolling.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:14px;margin-bottom:18px;">
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">📄</span>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">40 Professional Templates</div>
+            <div style="font-size:14px;color:#6b7280;line-height:1.65;">20 resume templates + 20 cover letter templates designed for every industry and style. Pick one, tailor it, download it as a PDF or Word doc.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:14px;margin-bottom:18px;">
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">📊</span>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Career Hub — Salary Guides, Forum &amp; Check-Ins</div>
+            <div style="font-size:14px;color:#6b7280;line-height:1.65;">Word-for-word salary negotiation scripts, a community forum to share wins and tips, and quarterly career check-ins to keep you progressing.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:14px;">
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">🌐</span>
+          <div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Full Chinese Language Support (中文)</div>
+            <div style="font-size:14px;color:#6b7280;line-height:1.65;">The entire dashboard is now available in Simplified Chinese. Works with Boss直聘, 猎聘, and 智联招聘 job postings — just paste and tailor.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Free tier reminder -->
+      <div style="background:#eff6ff;border-radius:12px;padding:18px 20px;margin-bottom:28px;border-left:4px solid #2563eb;">
+        <p style="font-size:15px;font-weight:700;color:#1d4ed8;margin:0 0 4px;">Your free tier is still active</p>
+        <p style="font-size:14px;color:#3b82f6;margin:0;line-height:1.6;">You still get 1 free resume tailoring + 1 free cover letter every day — no credit card needed. Come give the new version a try.</p>
+      </div>
+
+      <!-- CTA -->
+      <div style="text-align:center;margin-bottom:36px;">
+        <a href="https://resumetailored.com/dashboard" style="display:inline-block;background:#2563eb;color:#ffffff;font-size:18px;font-weight:800;padding:18px 48px;border-radius:12px;text-decoration:none;letter-spacing:-0.3px;">
+          Go to My Dashboard →
+        </a>
+        <div style="margin-top:10px;font-size:13px;color:#9ca3af;">1 free tailoring waiting for you today</div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 24px;" />
+
+      <p style="font-size:13px;color:#9ca3af;line-height:1.65;margin:0;">
+        You're receiving this because you created an account at
+        <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a>.
+        Don't want future emails? Simply reply to this email and we'll take you off the list immediately.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`ResumeTailor running on http://localhost:${PORT}`));
