@@ -304,6 +304,13 @@ app.post('/api/auth/login', (req, res) => {
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
   res.json({ token, username: user.username, email: key });
+
+  const ownerEmail = process.env.OWNER_EMAIL || 'marvinperson11@gmail.com';
+  sendEmail({
+    to: ownerEmail,
+    subject: `[ResumeTailor] Login: ${key}`,
+    html: `<p><strong>${key}</strong> just logged in.</p><p>Time: ${new Date().toUTCString()}</p>`
+  }).catch(err => console.error('[Alert] Login email failed:', err.message));
 });
 
 app.get('/api/auth/me', (req, res) => {
@@ -663,6 +670,13 @@ app.post('/api/download-docx', async (req, res) => {
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
   res.send(buffer);
+
+  const ownerEmail = process.env.OWNER_EMAIL || 'marvinperson11@gmail.com';
+  sendEmail({
+    to: ownerEmail,
+    subject: `[ResumeTailor] Download: ${safeName}.docx`,
+    html: `<p>A user just downloaded <strong>${safeName}.docx</strong>.</p><p>Time: ${new Date().toUTCString()}</p>`
+  }).catch(err => console.error('[Alert] Download email failed:', err.message));
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
