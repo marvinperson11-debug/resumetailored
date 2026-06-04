@@ -1636,7 +1636,7 @@
               <th>Feature</th>
               <th>Jobscan</th>
               <th>Rezi</th>
-              <th class="ours">ResumeTailor AI ✦</th>
+              <th class="ours">ResumeTailored AI ✦</th>
             </tr>
           </thead>
           <tbody>
@@ -2254,7 +2254,7 @@
     ['.cc-title', null, 'How we compare to Jobscan &amp; Rezi', '我们与Jobscan和Rezi的对比'],
     ['.cc-sub', null, 'Same result. No $49.95/month. No weak cover letters.', '同样的结果，不需要$49.95/月，没有质量差的求职信。'],
     ['.cc-table thead th', 0, 'Feature', '功能'],
-    ['.cc-table thead th', 3, 'ResumeTailor AI ✦', 'ResumeTailor AI ✦'],
+    ['.cc-table thead th', 3, 'ResumeTailored AI ✦', 'ResumeTailored AI ✦'],
     ['.pricing-card:first-child .plan-name', null, 'Free', '免费版'],
     ['.pricing-card:first-child .plan-period', null, 'forever · no credit card', '永久有效 · 无需信用卡'],
     ['.pricing-card:first-child .plan-features li', 0, '<span class="check-icon">✓</span> 1 AI tailoring per day', '<span class="check-icon">✓</span> 每日1次AI定制'],
@@ -2381,7 +2381,7 @@
     var ccSubEl = document.querySelector('.cc-sub');
     if (ccSubEl) ccSubEl.textContent = isZh ? '同样的效果。无需每月$49.95。没有质量糟糕的求职信。' : 'Same result. No $49.95/month. No weak cover letters.';
     var ccThs = document.querySelectorAll('.cc-table th');
-    var ccThD = isZh ? ['功能', 'Jobscan', 'Rezi', 'ResumeTailor AI ✦'] : ['Feature', 'Jobscan', 'Rezi', 'ResumeTailor AI ✦'];
+    var ccThD = isZh ? ['功能', 'Jobscan', 'Rezi', 'ResumeTailored AI ✦'] : ['Feature', 'Jobscan', 'Rezi', 'ResumeTailored AI ✦'];
     ccThs.forEach(function(th, i) { if (ccThD[i] !== undefined) th.textContent = ccThD[i]; });
     var ccRowData = isZh ? [
       ['月费', '$49.95/月', '$29/月', '$19/月'],
