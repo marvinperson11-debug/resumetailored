@@ -6,7 +6,9 @@
   <title>ResumeTailored AI — Dashboard</title>
   <meta name="description" content="Your ResumeTailored AI dashboard. Tailor your resume, generate cover letters, and track your job search." />
   <meta name="robots" content="noindex, nofollow" />
-  <link rel="icon" href="favicon.png" type="image/png" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&family=Satisfy&family=Caveat:wght@600&display=swap" rel="stylesheet" />
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
@@ -102,6 +104,7 @@
     @media (max-width: 480px) {
       .auth-overlay { padding: 0; align-items: flex-end; }
       .auth-card { border-radius: 16px 16px 0 0; max-width: 100%; }
+      #goProNavBtn { display: none !important; }
     }
     /* ── Template type toggle ── */
     .sample-toggle { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
@@ -261,8 +264,8 @@
       <p class="auth-sub" id="authSubtext">Join thousands of job seekers landing more interviews.</p>
 
       <div class="auth-tabs" id="authTabs">
-        <button class="auth-tab-btn active" id="authTabSignup" onclick="switchAuthTab('signup')">Sign Up</button>
-        <button class="auth-tab-btn" id="authTabLogin" onclick="switchAuthTab('login')">Log In</button>
+        <button class="auth-tab-btn active" id="authTabSignup" onclick="switchAuthTab('signup')" data-i18n="auth_tab_signup">Sign Up</button>
+        <button class="auth-tab-btn" id="authTabLogin" onclick="switchAuthTab('login')" data-i18n="auth_tab_login">Log In</button>
       </div>
 
       <!-- Sign Up -->
@@ -340,36 +343,36 @@
         </button>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Career Hub</div>
+        <div class="sidebar-label" data-i18n="sidebar_careerhub">Career Hub</div>
         <button class="sidebar-btn" onclick="showTab('forum')" id="tab-forum" data-label="Forum">
-          <span class="sidebar-icon">💬</span> Community Forum
+          <span class="sidebar-icon">💬</span> <span data-i18n="sidebar_forum">Community Forum</span>
         </button>
         <button class="sidebar-btn" onclick="showTab('salary')" id="tab-salary" data-label="Salary">
-          <span class="sidebar-icon">💰</span> Salary Guide
+          <span class="sidebar-icon">💰</span> <span data-i18n="sidebar_salary">Salary Guide</span>
         </button>
         <button class="sidebar-btn" onclick="showTab('checkin')" id="tab-checkin" data-label="Check-In">
-          <span class="sidebar-icon">📋</span> Career Check-In
+          <span class="sidebar-icon">📋</span> <span data-i18n="sidebar_checkin">Career Check-In</span>
         </button>
         <button class="sidebar-btn" onclick="showTab('help')" id="tab-help" data-label="Help">
-          <span class="sidebar-icon">💌</span> Help & Support
+          <span class="sidebar-icon">💌</span> <span data-i18n="sidebar_help">Help & Support</span>
         </button>
         <button class="sidebar-btn" onclick="showTab('samples')" id="tab-samples" data-label="Samples">
-          <span class="sidebar-icon">📄</span> Samples
+          <span class="sidebar-icon">📄</span> <span data-i18n="sidebar_samples">Samples</span>
         </button>
       </div>
       <div class="sidebar-section">
-        <div class="sidebar-label">Learn More</div>
+        <div class="sidebar-label" data-i18n="sidebar_learn">Learn More</div>
         <button class="sidebar-btn" onclick="showTab('about')" id="tab-about" data-label="About">
-          <span class="sidebar-icon">✨</span> How Does It Work?
+          <span class="sidebar-icon">✨</span> <span data-i18n="sidebar_about">How Does It Work?</span>
         </button>
         <button class="sidebar-btn" onclick="showTab('cancel')" id="tab-cancel" data-label="Cancel">
-          <span class="sidebar-icon">🔓</span> Cancel Anytime
+          <span class="sidebar-icon">🔓</span> <span data-i18n="sidebar_cancel">Cancel Anytime</span>
         </button>
       </div>
       <div class="sidebar-pro-box" id="sidebarProBox">
-        <div class="sidebar-pro-title">✦ Unlock Full Access</div>
-        <div class="sidebar-pro-text">Career Hub features are available to Pro members.</div>
-        <button class="btn btn-primary" style="width:100%;margin-top:10px;font-size:13px;" onclick="startPro()">Upgrade — $19/mo</button>
+        <div class="sidebar-pro-title" data-i18n="sidebar_pro_title">✦ Unlock Full Access</div>
+        <div class="sidebar-pro-text" data-i18n="sidebar_pro_text">Career Hub features are available to Pro members.</div>
+        <button class="btn btn-primary" style="width:100%;margin-top:10px;font-size:13px;" onclick="startPro()" data-i18n="sidebar_pro_btn">Upgrade — $19/mo</button>
       </div>
     </aside>
 
@@ -394,8 +397,8 @@
         </div>
 
         <div class="mobile-upgrade-banner" id="mobileUpgradeBanner" style="display:none;">
-          <p>✦ Unlock unlimited tailorings, cover letters & Career Hub features.</p>
-          <button class="btn btn-primary" onclick="startPro()">Upgrade — $19/mo</button>
+          <p data-i18n="mobile_upgrade_p">✦ Unlock unlimited tailorings, cover letters & Career Hub features.</p>
+          <button class="btn btn-primary" onclick="startPro()" data-i18n="mobile_upgrade_btn">Upgrade — $19/mo</button>
         </div>
 
         <div id="statusBadge" style="margin-bottom:16px;"></div>
@@ -416,7 +419,7 @@
 
         <!-- Font Picker -->
         <div class="font-pick-row">
-          <span class="font-pick-label">Font:</span>
+          <span class="font-pick-label" data-i18n="font_label">Font:</span>
           <button class="font-btn active" data-font="arial">Arial</button>
           <button class="font-btn" data-font="calibri">Calibri</button>
           <button class="font-btn" data-font="times">Times New Roman</button>
@@ -425,10 +428,10 @@
         <div class="inputs">
           <div class="field">
             <div class="field-header">
-              <label id="resumeFieldLabel">Your Resume</label>
+              <label id="resumeFieldLabel" data-i18n="resume_label">Your Resume</label>
               <div class="resume-mode-toggle">
-                <button class="rmode-btn active" id="rmodeUpload" onclick="setResumeMode('upload')">⬆ Upload / Paste</button>
-                <button class="rmode-btn" id="rmodeBuild" onclick="setResumeMode('build')">✏️ Fill Out Form</button>
+                <button class="rmode-btn active" id="rmodeUpload" onclick="setResumeMode('upload')" data-i18n="rmode_upload">⬆ Upload / Paste</button>
+                <button class="rmode-btn" id="rmodeBuild" onclick="setResumeMode('build')" data-i18n="rmode_build">✏️ Fill Out Form</button>
               </div>
             </div>
 
@@ -436,11 +439,11 @@
             <div id="resumeUploadPane">
               <div style="margin-bottom:6px;">
                 <button class="upload-btn" onclick="document.getElementById('resumeFileInput').click()">
-                  <span id="uploadBtnText">⬆ Upload File</span>
+                  <span id="uploadBtnText" data-i18n="upload_btn">⬆ Upload File</span>
                 </button>
                 <input type="file" id="resumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleResumeUpload(this)" />
               </div>
-              <textarea id="resume" placeholder="Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file."></textarea>
+              <textarea id="resume" placeholder="Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file." data-i18n-placeholder="resume_placeholder"></textarea>
             </div>
 
             <!-- BUILD / FORM PANE -->
@@ -1277,6 +1280,16 @@
       en: {
         nav_go_pro: 'Go Pro — $19/mo', nav_logout: 'Log Out',
         sidebar_jobsearch: 'Job Search', sidebar_tailor: 'Resume Tailor', sidebar_linkedin: 'LinkedIn Optimizer',
+        sidebar_careerhub: 'Career Hub',
+        sidebar_forum: 'Community Forum', sidebar_salary: 'Salary Guide',
+        sidebar_checkin: 'Career Check-In', sidebar_help: 'Help & Support',
+        sidebar_samples: 'Samples', sidebar_learn: 'Learn More',
+        sidebar_about: 'How Does It Work?', sidebar_cancel: 'Cancel Anytime',
+        sidebar_pro_title: '✦ Unlock Full Access',
+        sidebar_pro_text: 'Career Hub features are available to Pro members.',
+        sidebar_pro_btn: 'Upgrade — $19/mo',
+        mobile_upgrade_p: '✦ Unlock unlimited tailorings, cover letters & Career Hub features.',
+        mobile_upgrade_btn: 'Upgrade — $19/mo',
         tailor_title: 'Tailor Your Resume',
         tailor_sub: 'Paste your resume and the job posting. We\'ll match your experience to what they\'re looking for.',
         li_banner_title: 'LinkedIn Profile Optimizer',
@@ -1285,17 +1298,33 @@
         li_sub: 'Paste your current LinkedIn profile and target role — get an AI-optimized headline, About section, and experience bullets that get recruiters to click. Works for all industries and global markets including MNCs.',
         mode_label: 'Generate:',
         mode_resume: 'Resume', mode_cover: 'Cover Letter',
+        resume_label: 'Your Resume',
+        rmode_upload: '⬆ Upload / Paste', rmode_build: '✏️ Fill Out Form',
+        upload_btn: '⬆ Upload File',
+        resume_placeholder: 'Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file.',
+        font_label: 'Font:',
         job_label: 'Job Posting',
         job_placeholder: 'Paste the full job description here...\n\nWorks with: LinkedIn, Indeed, Glassdoor, Boss直聘 (Boss Zhipin), 猎聘 (Liepin), 智联招聘 (Zhaopin), and any job posting in any language.',
         output_title: 'Tailored Result',
         pagesize_label: 'Page:',
         btn_edit: 'Edit', btn_copy: 'Copy',
-        tailor_btn: 'Tailor My Resume →',
-        li_optimize_btn: 'Optimize My LinkedIn Profile →'
+        tailor_btn: 'Tailor My Resume →', tailor_btn_cover: 'Tailor My Cover Letter →',
+        li_optimize_btn: 'Optimize My LinkedIn Profile →',
+        auth_tab_signup: 'Sign Up', auth_tab_login: 'Log In'
       },
       zh: {
         nav_go_pro: '升级专业版 — ¥19/月', nav_logout: '退出登录',
         sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
+        sidebar_careerhub: '职业中心',
+        sidebar_forum: '社区论坛', sidebar_salary: '薪资指南',
+        sidebar_checkin: '职业回顾', sidebar_help: '帮助与支持',
+        sidebar_samples: '模板样本', sidebar_learn: '了解更多',
+        sidebar_about: '它是如何工作的？', sidebar_cancel: '随时取消',
+        sidebar_pro_title: '✦ 解锁完整权限',
+        sidebar_pro_text: '职业中心功能仅限专业版会员使用。',
+        sidebar_pro_btn: '升级 — ¥19/月',
+        mobile_upgrade_p: '✦ 解锁无限次简历定制、求职信及职业中心功能。',
+        mobile_upgrade_btn: '立即升级 — ¥19/月',
         tailor_title: '定制你的简历',
         tailor_sub: '粘贴你的简历和职位描述，AI将根据招聘要求优化你的简历关键词和经历描述。',
         li_banner_title: 'LinkedIn 个人资料优化',
@@ -1304,38 +1333,252 @@
         li_sub: '粘贴你当前的LinkedIn个人资料和目标职位——获取AI优化的标题、个人简介和工作经历要点，让更多招聘人员主动联系你。适用于所有行业和全球市场，包括跨国企业。',
         mode_label: '生成内容：',
         mode_resume: '简历', mode_cover: '求职信',
+        resume_label: '你的简历',
+        rmode_upload: '⬆ 上传 / 粘贴', rmode_build: '✏️ 填写表单',
+        upload_btn: '⬆ 上传文件',
+        resume_placeholder: '在此粘贴简历文本，或点击「上传文件」导入 .txt、.pdf 或 .docx 文件。',
+        font_label: '字体：',
         job_label: '职位描述',
         job_placeholder: '在此粘贴完整职位描述...\n\n支持以下平台：LinkedIn、Indeed、Glassdoor、Boss直聘、猎聘、智联招聘，以及任何语言的招聘信息。',
         output_title: 'AI优化结果',
-        pagesize_label: '页面尺寸：',
+        pagesize_label: '页面：',
         btn_edit: '编辑', btn_copy: '复制',
-        tailor_btn: '开始定制简历 →',
-        li_optimize_btn: '优化我的LinkedIn资料 →'
+        tailor_btn: '开始定制简历 →', tailor_btn_cover: '定制我的求职信 →',
+        li_optimize_btn: '优化我的LinkedIn资料 →',
+        auth_tab_signup: '注册', auth_tab_login: '登录'
       }
     };
 
     function applyLangApp(lang) {
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (APP_I18N[lang] && APP_I18N[lang][key] !== undefined) {
-          el.innerHTML = APP_I18N[lang][key];
-        }
+      var isZh = lang === 'zh';
+      // 1. data-i18n elements
+      document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        if (APP_I18N[lang] && APP_I18N[lang][key] !== undefined) el.innerHTML = APP_I18N[lang][key];
       });
-      // Update placeholders
-      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-        const key = el.getAttribute('data-i18n-placeholder');
-        if (APP_I18N[lang] && APP_I18N[lang][key] !== undefined) {
-          el.placeholder = APP_I18N[lang][key];
-        }
+      // 2. data-i18n-placeholder elements
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n-placeholder');
+        if (APP_I18N[lang] && APP_I18N[lang][key] !== undefined) el.placeholder = APP_I18N[lang][key];
       });
-      const btn = document.getElementById('langToggleBtn');
-      if (btn) btn.textContent = lang === 'en' ? '中文' : 'EN';
-      document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+      // 3. Auth modal dynamic heading/subtext
+      var authForgotForm = document.getElementById('authForgotForm');
+      var authHeadingEl = document.getElementById('authHeading');
+      var authSubtextEl = document.getElementById('authSubtext');
+      var authTabSignupEl = document.getElementById('authTabSignup');
+      if (authHeadingEl) {
+        var isForgotVisible = authForgotForm && authForgotForm.style.display !== 'none';
+        var isSignupActive = authTabSignupEl && authTabSignupEl.classList.contains('active');
+        if (isForgotVisible) {
+          authHeadingEl.textContent = isZh ? '忘记密码？' : 'Forgot Password?';
+        } else if (isSignupActive) {
+          authHeadingEl.textContent = isZh ? '创建你的账户' : 'Create Your Account';
+          if (authSubtextEl) authSubtextEl.textContent = isZh ? '加入数千名获得更多面试机会的求职者。' : 'Join thousands of job seekers landing more interviews.';
+        } else {
+          authHeadingEl.textContent = isZh ? '欢迎回来' : 'Welcome Back';
+          if (authSubtextEl) authSubtextEl.textContent = isZh ? '登录以访问你的控制台。' : 'Log in to access your dashboard.';
+        }
+      }
+      // 4. Auth switch text
+      var signupSwitch = document.querySelector('#authSignupForm .auth-switch');
+      if (signupSwitch) signupSwitch.innerHTML = isZh ? '已有账户？ <a onclick="switchAuthTab(\'login\')">登录</a>' : 'Already have an account? <a onclick="switchAuthTab(\'login\')">Log in</a>';
+      var loginSwitch = document.querySelector('#authLoginForm .auth-switch');
+      if (loginSwitch) loginSwitch.innerHTML = isZh ? '还没有账户？ <a onclick="switchAuthTab(\'signup\')">免费注册</a>' : 'Don\'t have an account? <a onclick="switchAuthTab(\'signup\')">Sign up free</a>';
+      var forgotSwitch = document.querySelector('#authForgotForm .auth-switch');
+      if (forgotSwitch) forgotSwitch.innerHTML = '<a onclick="switchAuthTab(\'login\')">' + (isZh ? '← 返回登录' : '← Back to login') + '</a>';
+      var forgotIntro = document.querySelector('#authForgotForm > p');
+      if (forgotIntro) forgotIntro.textContent = isZh ? '输入你的邮箱，我们将发送一个重置密码的链接。' : 'Enter your email and we\'ll send you a link to reset your password.';
+      var forgotSuccessEl = document.getElementById('forgotSuccess');
+      if (forgotSuccessEl) forgotSuccessEl.textContent = isZh ? '✓ 请检查你的邮箱——重置链接已发送。' : '✓ Check your inbox — a reset link is on its way.';
+      var forgotBtnEl = document.getElementById('forgotBtn');
+      if (forgotBtnEl) forgotBtnEl.textContent = isZh ? '发送重置链接 →' : 'Send Reset Link →';
+      var signupBtnEl = document.getElementById('signupBtn');
+      if (signupBtnEl) signupBtnEl.textContent = isZh ? '创建账户 →' : 'Create Account →';
+      var loginBtnEl = document.getElementById('loginBtn');
+      if (loginBtnEl) loginBtnEl.textContent = isZh ? '登录 →' : 'Log In →';
+      // 5. Remember email label & forgot link
+      var remLabel = document.querySelector('label:has(#rememberEmail)');
+      if (remLabel) {
+        Array.from(remLabel.childNodes).filter(function(n) { return n.nodeType === 3; }).forEach(function(tn) { tn.textContent = isZh ? ' 记住邮箱' : ' Remember email'; });
+      }
+      var forgotLinkEl = document.querySelector('#authLoginForm a[onclick="showForgotPassword()"]');
+      if (forgotLinkEl) forgotLinkEl.textContent = isZh ? '忘记密码？' : 'Forgot password?';
+      // 6. Auth placeholders
+      var authPh = { authEmail: isZh ? '邮箱地址' : 'Email address', authUsername: isZh ? '选择用户名' : 'Choose a username', authPassword: isZh ? '密码（最少6个字符）' : 'Password (min. 6 characters)', authConfirmPw: isZh ? '确认密码' : 'Confirm password', loginEmail: isZh ? '邮箱地址' : 'Email address', loginPassword: isZh ? '密码' : 'Password', forgotEmail: isZh ? '邮箱地址' : 'Email address' };
+      Object.keys(authPh).forEach(function(id) { var el = document.getElementById(id); if (el) el.placeholder = authPh[id]; });
+      // 7. Template picker label (has child span)
+      var tplPickLabel = document.querySelector('.tpl-pick-label');
+      if (tplPickLabel) {
+        var tplHint = document.getElementById('tplCountHint');
+        var hintTxt = tplHint ? tplHint.textContent : '↔ scroll to see all 20';
+        tplPickLabel.innerHTML = (isZh ? '选择你的模板 ' : 'Choose Your Template ') + '<span id="tplCountHint">' + hintTxt + '</span>';
+      }
+      // 8. Tailor button (respects current mode)
+      var tailorBtnEl = document.getElementById('tailorBtn');
+      if (tailorBtnEl) {
+        var isCoverMode = document.querySelector('.mode-btn.active[data-mode="cover_letter"]') !== null;
+        tailorBtnEl.textContent = isCoverMode ? (APP_I18N[lang].tailor_btn_cover || 'Tailor My Cover Letter →') : (APP_I18N[lang].tailor_btn || 'Tailor My Resume →');
+      }
+      // 9. Edit bar
+      var editBarEl = document.getElementById('editBar');
+      if (editBarEl) editBarEl.innerHTML = (isZh ? '✏️ 点击任意文字进行编辑' : '✏️ Click any text to edit it directly') + '<button class="eb-btn eb-save" onclick="saveEdit()">' + (isZh ? '保存修改' : 'Save Changes') + '</button><button class="eb-btn eb-cancel" onclick="cancelEdit()">' + (isZh ? '取消' : 'Cancel') + '</button>';
+      // 10. Upsell/limit banners
+      var upsellP = document.querySelector('#upsell p');
+      if (upsellP) upsellP.innerHTML = isZh ? '想要<strong>无限次定制</strong>？升级专业版 — ¥19/月，随时取消。' : 'Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19/month, cancel anytime.';
+      document.querySelectorAll('.upsell .btn-primary').forEach(function(btn) { btn.textContent = isZh ? '升级专业版 →' : 'Upgrade to Pro →'; });
+      var limitPEl = document.querySelector('#limitBanner p');
+      if (limitPEl) limitPEl.innerHTML = isZh ? '你已用完今日<strong>免费使用次数</strong>。每日可免费定制1次简历+1封求职信。升级专业版享无限次 — ¥19/月。' : 'You\'ve used your <strong>free daily use</strong> for this mode. You get 1 free resume tailoring + 1 free cover letter per day. Upgrade to Pro for unlimited access — $19/month.';
+      // 11. LinkedIn output section
+      var liH3 = document.querySelector('#linkedinHeadlineBlock h3'); if (liH3) liH3.textContent = isZh ? '✦ 优化后的标题' : '✦ Optimized Headline';
+      var liAboutH3 = document.querySelector('#linkedinAboutBlock h3'); if (liAboutH3) liAboutH3.textContent = isZh ? '✦ 优化后的个人简介' : '✦ Optimized About Section';
+      var liExpH3 = document.querySelector('#linkedinExpBlock h3'); if (liExpH3) liExpH3.textContent = isZh ? '✦ 优化后的工作经历' : '✦ Optimized Experience Bullets';
+      document.querySelectorAll('#linkedinHeadlineBlock .btn-outline, #linkedinAboutBlock .btn-outline, #linkedinExpBlock .btn-outline').forEach(function(btn) { btn.textContent = isZh ? '复制' : 'Copy'; });
+      var liLimitP = document.querySelector('#linkedinLimitBanner p');
+      if (liLimitP) liLimitP.innerHTML = isZh ? '你已使用今日<strong>免费LinkedIn优化次数</strong>。升级专业版享无限次 — ¥19/月。' : 'You\'ve used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19/month.';
+      var liLimitBtn = document.querySelector('#linkedinLimitBanner .btn-primary');
+      if (liLimitBtn) liLimitBtn.textContent = isZh ? '升级专业版 →' : 'Upgrade to Pro →';
+      // 12. Template preview modal
+      var tplModalTitle = document.querySelector('#tplModal .tpl-modal-title'); if (tplModalTitle) tplModalTitle.textContent = isZh ? '模板预览' : 'Template Preview';
+      var tplModalBtn = document.querySelector('#tplModal .btn-primary'); if (tplModalBtn) tplModalBtn.textContent = isZh ? '使用此模板 →' : 'Use This Template →';
+      // 13. Resume builder section titles
+      var rbTitles = document.querySelectorAll('.rb-section-title');
+      var rbTitleData = isZh ? ['个人信息','个人简介 <span class="rb-optional">（可选）</span>','工作经历','教育背景','技能','资质证书 <span class="rb-optional">（可选）</span>','你的信息','申请详情','重要亮点 <span class="rb-optional">（可选）</span>','为什么选择这家公司/职位 <span class="rb-optional">（可选）</span>'] : ['Personal Information','Professional Summary <span class="rb-optional">(optional)</span>','Work Experience','Education','Skills','Certifications <span class="rb-optional">(optional)</span>','Your Information','Application Details','Key Highlights to Mention <span class="rb-optional">(optional)</span>','Why This Company / Role <span class="rb-optional">(optional)</span>'];
+      rbTitles.forEach(function(el, i) { if (rbTitleData[i] !== undefined) el.innerHTML = rbTitleData[i]; });
+      var rbAddBtns = document.querySelectorAll('.rb-add-btn');
+      var rbAddData = isZh ? ['+ 添加职位', '+ 添加教育经历'] : ['+ Add Position', '+ Add Education'];
+      rbAddBtns.forEach(function(btn, i) { if (rbAddData[i] !== undefined) btn.textContent = rbAddData[i]; });
+      // 14. Form placeholders
+      var formPh = { forumAuthor: isZh ? '你的姓名' : 'Your name', forumRole: isZh ? '你的职位（如：产品经理）' : 'Your role (e.g. Product Manager)', forumText: isZh ? '分享技巧、经历、疑问或鼓励...' : 'Share a tip, a win, a question, or words of encouragement...', checkinEmail: isZh ? 'your@email.com' : 'your@email.com', checkinCurrentRole: isZh ? '如：市场协调员' : 'e.g. Marketing Coordinator', checkinTargetRole: isZh ? '如：市场经理' : 'e.g. Marketing Manager', checkinGoals: isZh ? '上季度你实现了什么？接下来3个月的目标是什么？你在发展哪些技能？你想改变什么？' : 'What did you achieve last quarter? What are your goals for the next 3 months? What skills are you developing? What do you want to change?', helpName: isZh ? '你的姓名' : 'Your name', helpEmail: isZh ? 'your@email.com' : 'your@email.com', helpSubject: isZh ? '如：关于专业版的问题...' : 'e.g. Question about Pro plan, Issue with resume output...', helpMessage: isZh ? '详细描述你的问题。信息越详细，我们回复越快。' : 'Describe your question or issue in detail. The more info you provide, the faster we can help.' };
+      Object.keys(formPh).forEach(function(id) { var el = document.getElementById(id); if (el) el.placeholder = formPh[id]; });
+      // 15. Forum panel
+      var forumH1 = document.querySelector('#panel-forum h1'); if (forumH1) forumH1.textContent = isZh ? '社区论坛' : 'Community Forum';
+      var forumSubP = document.querySelector('#panel-forum .panel-header p'); if (forumSubP) forumSubP.textContent = isZh ? '与其他专业人士建立联系。在ResumeTailor社区分享技巧、成就和建议。' : 'Connect with other professionals. Share tips, wins, and advice with the ResumeTailor community.';
+      var forumComposeH3 = document.querySelector('.forum-compose h3'); if (forumComposeH3) forumComposeH3.textContent = isZh ? '分享你的故事' : 'Share Something With the Community';
+      var forumPostBtn = document.querySelector('#panel-forum .btn-primary'); if (forumPostBtn) forumPostBtn.textContent = isZh ? '发布到社区 →' : 'Post to Community →';
+      // 16. Salary panel
+      var salaryH1 = document.querySelector('#panel-salary h1'); if (salaryH1) salaryH1.textContent = isZh ? '薪资谈判指南' : 'Salary Negotiation Guide';
+      var salarySubP = document.querySelector('#panel-salary .panel-header p'); if (salarySubP) salarySubP.textContent = isZh ? '了解你的市场价值。运用这些策略和资源，自信地谈判，拿到你应得的薪酬。' : 'Know your worth. Use these strategies and resources to negotiate confidently and get paid what you deserve.';
+      var salaryCards = document.querySelectorAll('#panel-salary .salary-resource-card');
+      var sCD = isZh ? [{h3:'了解你的市场价值',p:'谈判前，研究你所在职位、城市和经验层次的薪资范围。知己知彼，方能百战不殆。'},{h3:'谈判框架',p:'每次收到报价时，遵循这个经过验证的5步流程：'},{h3:'实用谈判话术',p:null},{h3:'入职后的薪资增长',p:'薪资增长不会止步于入职。持续进步：'},{h3:'免费工具和计算器',p:null},{h3:'成长资源',p:'持续积累你的职业资本：'}] : [{h3:'Know Your Market Value',p:'Before negotiating, research salary ranges for your exact role, location, and experience level. Never go in blind.'},{h3:'The Negotiation Framework',p:'Follow this proven 5-step process for every offer:'},{h3:'Scripts That Work',p:null},{h3:'After You Land the Role',p:'Salary growth doesn\'t stop at the offer. Keep advancing:'},{h3:'Free Tools & Calculators',p:null},{h3:'Growth Resources',p:'Keep developing your career capital:'}];
+      salaryCards.forEach(function(card, i) { if (!sCD[i]) return; var h3=card.querySelector('h3'); if(h3) h3.textContent=sCD[i].h3; if(sCD[i].p){var p=card.querySelector('p'); if(p) p.textContent=sCD[i].p;} });
+      var salaryStepLis = document.querySelectorAll('#panel-salary .salary-steps li');
+      var sStepD = isZh ? ['<strong>永远不要先报数字。</strong>让对方先出价。','<strong>先获取完整书面报价</strong>再作回应。','<strong>等待24–48小时</strong>"考虑"后再还价。','<strong>在目标数字基础上高出10–20%</strong>进行还价。','<strong>谈判总薪酬包</strong> — 底薪、股权、年假、远程天数、签约奖金。'] : ['<strong>Never give a number first.</strong> Let them anchor.','<strong>Get the full offer in writing</strong> before responding.','<strong>Take 24–48 hours</strong> to "review" before countering.','<strong>Counter 10–20% above</strong> your target number.','<strong>Negotiate total comp</strong> — salary, equity, PTO, remote days, signing bonus.'];
+      salaryStepLis.forEach(function(li, i) { if (sStepD[i]) li.innerHTML = sStepD[i]; });
+      var salaryTipLis = document.querySelectorAll('#panel-salary .salary-tips li');
+      var sTipD = isZh ? ['从第一天起记录每一个成就和贡献','6个月时申请正式绩效评估','每年对标薪资行情——市场变化很快','不要等加薪——主动提出来','每个新职位都是重置薪资上限的机会','即使在职也要与猎头保持联系'] : ['Document every win and contribution from Day 1','Request a formal performance review at 6 months','Benchmark your salary annually — markets shift fast','Don\'t wait for a raise — ask for it proactively','Every new role is a chance to reset your salary ceiling','Build relationships with recruiters even when employed'];
+      salaryTipLis.forEach(function(li, i) { if (sTipD[i]) li.textContent = sTipD[i]; });
+      var scriptLabels = document.querySelectorAll('.script-label');
+      var scriptTexts = document.querySelectorAll('.script-text');
+      var sLabelD = isZh ? ['当对方询问你的期望薪资时：','还价时：','谈判其他福利时：'] : ['When they ask your number:','When making a counter offer:','When negotiating beyond salary:'];
+      var sTextD = isZh ? ['"根据我的调研和经验，我的目标薪资范围是X到Y。请问贵司为这个职位预算了多少？"','"我对这个机会非常感兴趣。基于我的[X年经验/特定技能]，希望我们能达到Y。是否有一些弹性空间？"','"如果底薪已经定了，我希望能探讨额外一周的带薪假和签约奖金来弥补差距。"'] : ['"Based on my research and experience, I\'m targeting a range of $X to $Y. What budget have you allocated for this role?"','"I\'m very excited about this opportunity. Based on my [X years of experience / specific skills], I was hoping we could get closer to $Y. Is there flexibility there?"','"If the base salary is firm, I\'d love to explore an additional week of PTO and a signing bonus to bridge the gap."'];
+      scriptLabels.forEach(function(el, i) { if (sLabelD[i]) el.textContent = sLabelD[i]; });
+      scriptTexts.forEach(function(el, i) { if (sTextD[i]) el.textContent = sTextD[i]; });
+      // 17. Check-In panel
+      var checkinH1 = document.querySelector('#panel-checkin h1'); if (checkinH1) checkinH1.textContent = isZh ? '季度职业回顾' : 'Quarterly Career Check-In';
+      var checkinSubP = document.querySelector('#panel-checkin .panel-header p'); if (checkinSubP) checkinSubP.textContent = isZh ? '成功的职业生涯不是偶然发生的。每季度花5分钟反思、聚焦和提升自我。' : 'Successful careers don\'t happen by accident. Take 5 minutes every quarter to reflect, refocus, and level up.';
+      var checkinPromptLabel = document.querySelector('.checkin-prompt-label'); if (checkinPromptLabel) checkinPromptLabel.textContent = isZh ? '✦ 本季度反思主题' : '✦ This Quarter\'s Reflection Prompt';
+      var checkinFormH3 = document.querySelector('.checkin-form h3'); if (checkinFormH3) checkinFormH3.textContent = isZh ? '你的职业回顾' : 'Your Career Check-In';
+      var checkinLabels = document.querySelectorAll('#panel-checkin .checkin-field label');
+      var cLabelD = isZh ? ['你的邮箱（保存进度）','当前职位/头衔','目标职位（未来12个月）','本季度目标与反思'] : ['Your Email (saves your progress)','Current Role / Title','Target Role (next 12 months)','Your Goals & Reflections for This Quarter'];
+      checkinLabels.forEach(function(el, i) { if (cLabelD[i]) el.textContent = cLabelD[i]; });
+      var checkinSaveBtn = document.querySelector('#panel-checkin .btn-primary'); if (checkinSaveBtn) checkinSaveBtn.textContent = isZh ? '保存我的职业回顾 →' : 'Save My Check-In →';
+      var checkinMilestonesH3 = document.querySelector('.checkin-milestones h3'); if (checkinMilestonesH3) checkinMilestonesH3.textContent = isZh ? '职业里程碑清单' : 'Career Milestone Checklist';
+      var mStrongs = document.querySelectorAll('.milestone-text strong');
+      var mSpans = document.querySelectorAll('.milestone-text span');
+      var mStrongD = isZh ? ['更新你的简历','对标薪资行情','拓展3位新联系人','完成一门新技能课程','向上级申请反馈','设定下季度3个目标'] : ['Update Your Resume','Benchmark Your Salary','Connect With 3 New People','Complete a New Skill Course','Request Feedback From Your Manager','Set 3 Goals for Next Quarter'];
+      var mSpanD = isZh ? ['记录最近3个月的成就','查看Glassdoor、Levels.fyi、LinkedIn薪资','有意识地扩大你的职业人脉','Coursera、LinkedIn Learning 或 Udemy','在考核季前了解自己的位置','具体、可衡量、有时限的目标'] : ['Reflect your last 3 months of achievements','Check Glassdoor, Levels.fyi, LinkedIn Salary','Grow your professional network intentionally','Coursera, LinkedIn Learning, or Udemy','Know where you stand before review season','Specific, measurable, time-bound targets'];
+      mStrongs.forEach(function(el, i) { if (mStrongD[i]) el.textContent = mStrongD[i]; });
+      mSpans.forEach(function(el, i) { if (mSpanD[i]) el.textContent = mSpanD[i]; });
+      var checkinReminderH3 = document.querySelector('.checkin-reminder h3');
+      if (checkinReminderH3) { var nd = document.getElementById('nextCheckinDate'); var ndVal = nd ? nd.textContent : ''; checkinReminderH3.innerHTML = (isZh ? '下次回顾：' : 'Next Check-In: ') + '<span id="nextCheckinDate">' + ndVal + '</span>'; }
+      var checkinReminderP = document.querySelector('.checkin-reminder p'); if (checkinReminderP) checkinReminderP.textContent = isZh ? '我们会在90天后提醒你回来。持续反思是区分普通职业和卓越职业的关键。' : 'We\'ll remind you to come back in 90 days. Consistent reflection is what separates good careers from great ones.';
+      // 18. Help panel
+      var helpH1 = document.querySelector('#panel-help h1'); if (helpH1) helpH1.textContent = isZh ? '帮助与支持' : 'Help & Support';
+      var helpSubP = document.querySelector('#panel-help .panel-header p'); if (helpSubP) helpSubP.textContent = isZh ? '有问题或遇到困难？发送消息给我们，我们将在24小时内回复。' : 'Have a question or running into an issue? Send us a message and we\'ll get back to you within 24 hours.';
+      var helpFormH3 = document.querySelector('.help-form-card h3'); if (helpFormH3) helpFormH3.textContent = isZh ? '发送消息' : 'Send Us a Message';
+      var helpFormP = document.querySelector('.help-form-card > p'); if (helpFormP) helpFormP.textContent = isZh ? '我们会亲自阅读每条消息，并在24小时内回复。' : 'We read every message personally and respond within 24 hours.';
+      var helpLabels = document.querySelectorAll('#panel-help .checkin-field label');
+      var hLabelD = isZh ? ['你的姓名','你的邮箱','主题','消息内容'] : ['Your Name','Your Email','Subject','Message'];
+      helpLabels.forEach(function(el, i) { if (hLabelD[i]) el.textContent = hLabelD[i]; });
+      var helpSendBtnEl = document.getElementById('helpBtn'); if (helpSendBtnEl) helpSendBtnEl.textContent = isZh ? '发送消息 →' : 'Send Message →';
+      var helpSuccessEl = document.getElementById('helpSuccess'); if (helpSuccessEl) helpSuccessEl.textContent = isZh ? '✓ 消息已发送！我们将在24小时内回复你的邮件。' : '✓ Message sent! We\'ll reply to your email within 24 hours.';
+      var helpFaqH3 = document.querySelector('.help-faq-card h3'); if (helpFaqH3) helpFaqH3.textContent = isZh ? '常见问题' : 'Frequently Asked Questions';
+      var helpFaqQs = document.querySelectorAll('#panel-help .faq-q span');
+      var helpFaqAs = document.querySelectorAll('#panel-help .faq-a');
+      var hFaqQD = isZh ? ['免费版是如何工作的？','如何验证我的专业版订阅？','AI会编造我没有的经历吗？','如何取消专业版订阅？','我应该以什么格式粘贴简历？'] : ['How does the free tier work?','How do I verify my Pro subscription?','Will the AI make up experience I don\'t have?','How do I cancel my Pro subscription?','What format should I paste my resume in?'];
+      var hFaqAD = isZh ? ['每天可免费定制1次简历——无需信用卡。每天午夜计数器重置。升级专业版可享受无限次定制。','订阅后，在简历定制标签页的邮箱字段输入结账时使用的邮箱，然后点击其他地方。专业版状态将自动激活。','不会。我们的AI严格使用职位描述的语言和关键词改写和重构你现有的经历。它不会添加你原始简历中没有的技能或经历。','使用本页面的表单发送消息，附上你的邮箱，我们将立即为你取消。无需解释。也可以回复我们的任何邮件。','纯文本效果最佳。在Word或Google文档中打开简历，全选（Ctrl+A），复制（Ctrl+C），粘贴到简历字段。AI会处理格式。'] : ['You get 1 free resume tailoring per day — no credit card required. Each day at midnight the counter resets. Upgrade to Pro for unlimited tailorings.','After subscribing, enter the email you used at checkout into the email field on the Resume Tailor tab and click away. Your Pro status will activate automatically.','No. Our AI strictly rewrites and reframes your existing experience using the job posting\'s language and keywords. It never adds skills or experience you didn\'t include in your original resume.','Send us a message using the form on this page with your email and we\'ll cancel immediately. No questions asked. You can also reply to any of our emails.','Plain text works best. Open your resume in Word or Google Docs, select all (Ctrl+A), copy (Ctrl+C), and paste into the resume field. The AI handles the formatting.'];
+      helpFaqQs.forEach(function(el, i) { if (hFaqQD[i]) el.textContent = hFaqQD[i]; });
+      helpFaqAs.forEach(function(el, i) { if (hFaqAD[i]) el.textContent = hFaqAD[i]; });
+      // 19. About panel
+      var aboutH1 = document.querySelector('#panel-about h1'); if (aboutH1) aboutH1.textContent = isZh ? '它是如何工作的？' : 'How Does It Work?';
+      var aboutSubP = document.querySelector('#panel-about .panel-header p'); if (aboutSubP) aboutSubP.textContent = isZh ? '专为认真求职者打造。由最先进的AI驱动。' : 'Built for serious job seekers. Powered by the most advanced AI available.';
+      var aboutFeaturedH3 = document.querySelector('#panel-about .featured-card h3'); if (aboutFeaturedH3) aboutFeaturedH3.textContent = isZh ? '使用流程' : 'How It Works';
+      var aboutStepDivs = document.querySelectorAll('#panel-about .featured-card .salary-steps > div');
+      var aStepD = isZh ? [['粘贴你的简历','复制现有简历文本——Word、PDF、Google文档均可。纯文本就够了。'],['粘贴职位描述','从LinkedIn、Indeed、公司网站——任何找到职位的地方复制完整职位描述。'],['AI重写你的简历','我们的AI——由Anthropic Claude驱动——使用职位中的精确关键词改写工作要点，按相关性重排版块，并重写摘要以直接针对该职位。'],['同时获得定制求职信','可选择生成完整求职信——一封3-4段引人入胜的信件，将你的成就与职位要求相连接。30秒内即可提交。']] : [['Paste your resume','Copy your existing resume text — Word, PDF, Google Docs, it doesn\'t matter. Plain text is all we need.'],['Paste the job posting','Copy the full job description from LinkedIn, Indeed, a company website — anywhere you found the role.'],['AI rewrites your resume','Our AI — powered by Claude (Anthropic) — rewrites your bullet points using the job\'s exact keywords, reorders sections by relevance, and rewrites your summary to speak directly to this role.'],['Get a custom cover letter too','Optionally generate a full cover letter — a compelling 3–4 paragraph letter that connects your achievements to the job requirements. Ready to submit in under 30 seconds.']];
+      aboutStepDivs.forEach(function(sd, i) { if (!aStepD[i]) return; var divs=sd.querySelectorAll('div'); if(divs[1]){var s=divs[1].querySelector('strong'); var sp=divs[1].querySelector('span'); if(s) s.textContent=aStepD[i][0]; if(sp) sp.textContent=aStepD[i][1];} });
+      var aboutWhyH2s = document.querySelectorAll('#panel-about h2');
+      if (aboutWhyH2s[0]) aboutWhyH2s[0].textContent = isZh ? '为什么ResumeTailored AI优于竞品' : 'Why ResumeTailored AI Beats the Competition';
+      if (aboutWhyH2s[1]) aboutWhyH2s[1].textContent = isZh ? '竞品对比' : 'Head-to-Head Comparison';
+      var aboutCards = document.querySelectorAll('#panel-about .salary-grid .salary-resource-card');
+      var aCD = isZh ? [{h3:'由Claude AI驱动',p:'我们使用Anthropic的Claude——同样被财富500强企业信赖的AI。大多数竞品使用更旧、更廉价的模型，产出通用的机器人式内容。Claude写作就像一位拥有15年以上经验的职业顾问。'},{h3:'真正针对具体职位',p:'Jobscan和Resume Worded等工具会对你的简历关键词评分，但不会<em>改写</em>它。ResumeTailored AI同时读取你的简历和职位描述，然后改写你的工作要点，精确匹配招聘经理使用的语言。'},{h3:'绝不捏造经历',p:'与某些AI工具不同，我们绝不虚构你没有的技能或经历。我们使用职位的语言重新表达你已有的经历。你始终100%诚实——只是更清晰地传达了你的价值。'},{h3:'30秒，而非45分钟',p:'普通求职者每次申请花45分钟定制简历。我们在30秒内完成。以更高质量的申请，比手动操作的候选人投递更多职位，效率更快。'},{h3:'¥19/月，竞品需¥40–¥100/月',p:'Resume.io收费¥44.95/月。Zety仅下载就收费¥23.70/月。Teal+收费¥29/月。ResumeTailored AI提供无限次AI定制加完整职业中心，仅¥19——市场上最高性价比。'},{h3:'不只是一个简历工具',p:'专业版会员获得完整职业中心：薪资谈判指南、逐字谈判话术、专业社区论坛和季度职业回顾。没有任何竞品能以这个价格提供如此多的职业价值。'}] : [{h3:'Powered by Claude AI',p:'We use Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.'},{h3:'Actually Job-Specific',p:'Tools like Jobscan and Resume Worded score your resume for keywords but don\'t <em>rewrite</em> it. ResumeTailored AI reads both your resume AND the job posting, then rewrites your bullets to mirror the exact language the hiring manager used.'},{h3:'Never Fabricates Experience',p:'Unlike some AI tools, we never invent skills or experience you don\'t have. We reframe what you already did using the role\'s language. You stay 100% truthful — you just communicate your value more clearly.'},{h3:'30 Seconds, Not 45 Minutes',p:'The average job seeker spends 45 minutes tailoring each application. We do it in under 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it manually.'},{h3:'$19/mo vs. $40–$100/mo Elsewhere',p:'Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19 — the most value in the market.'},{h3:'More Than a Resume Tool',p:'Pro members get the full Career Hub: salary negotiation guides, word-for-word negotiation scripts, a professional community forum, and quarterly career check-ins. No competitor bundles this much career value at this price.'}];
+      aboutCards.forEach(function(card, i) { if(!aCD[i]) return; var h3=card.querySelector('h3'); if(h3) h3.textContent=aCD[i].h3; var p=card.querySelector('p'); if(p) p.innerHTML=aCD[i].p; });
+      var aboutTable = document.querySelector('#panel-about table');
+      if (aboutTable) {
+        var ths = aboutTable.querySelectorAll('th');
+        var tHeadD = isZh ? ['功能','ResumeTailored AI','Jobscan','Resume.io','Teal'] : ['Feature','ResumeTailored AI','Jobscan','Resume.io','Teal'];
+        ths.forEach(function(th, i) { if (tHeadD[i] !== undefined) th.textContent = tHeadD[i]; });
+        var tRows = aboutTable.querySelectorAll('tbody tr');
+        var tRowD = isZh ? ['AI重写你的简历','AI定制求职信','职位专属关键词匹配','薪资谈判指南','社区论坛','免费版（无需信用卡）','月费（专业版）'] : ['AI rewrites your resume','Custom cover letter AI','Job-specific keyword matching','Salary negotiation guide','Community forum','Free tier (no credit card)','Monthly price (Pro)'];
+        var partialLbl = isZh ? '部分' : 'Partial', basicLbl = isZh ? '基本' : 'Basic';
+        tRows.forEach(function(row, i) {
+          var cells = row.querySelectorAll('td');
+          if (cells[0] && tRowD[i]) cells[0].textContent = tRowD[i];
+          cells.forEach(function(cell) { var t=cell.textContent.trim(); if(t==='Partial'||t==='部分') cell.textContent=partialLbl; if(t==='Basic'||t==='基本') cell.textContent=basicLbl; });
+        });
+      }
+      var aboutTryBtn = document.querySelector('#panel-about .btn-primary'); if (aboutTryBtn) aboutTryBtn.textContent = isZh ? '立即免费试用 →' : 'Try It Free Now →';
+      var aboutNote = document.querySelector('#panel-about > div:last-of-type p'); if (aboutNote) aboutNote.textContent = isZh ? '每日1次免费定制' : '1 free tailoring per day';
+      // 20. Samples panel
+      var samplesH1 = document.querySelector('#panel-samples h1'); if (samplesH1) samplesH1.textContent = isZh ? '简历和求职信模板' : 'Resume & Cover Letter Templates';
+      var samplesSubP = document.querySelector('#panel-samples .panel-header p'); if (samplesSubP) samplesSubP.textContent = isZh ? '20个精美简历模板 + 20个求职信模板。涵盖各种风格和行业。免费会员各获2个——专业版解锁全部40个。' : '20 beautifully designed resume templates + 20 cover letter templates. Every style, every industry. Free members get 2 of each — Pro unlocks all 40.';
+      var toggleResumesEl = document.getElementById('toggleResumes'); if (toggleResumesEl) toggleResumesEl.textContent = isZh ? '📄 简历模板（20）' : '📄 Resume Templates (20)';
+      var toggleCoversEl = document.getElementById('toggleCovers'); if (toggleCoversEl) toggleCoversEl.textContent = isZh ? '✉️ 求职信模板（20）' : '✉️ Cover Letter Templates (20)';
+      var tplFreeNote = document.querySelector('#panel-samples .tpl-free-note');
+      if (tplFreeNote) tplFreeNote.innerHTML = '<span>✦ <strong style="color:#f5c842;">' + (isZh ? '2个免费模板' : '2 free templates') + '</strong> ' + (isZh ? '已包含——升级专业版解锁每种类型全部20个。' : 'included — upgrade to Pro to unlock all 20 of each type.') + '</span><button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">' + (isZh ? '解锁全部40个 →' : 'Unlock All 40 →') + '</button>';
+      // 21. Cancel panel
+      var cancelH1 = document.querySelector('#panel-cancel h1'); if (cancelH1) cancelH1.textContent = isZh ? '随时取消 — 无需解释' : 'Cancel Anytime — No Questions Asked';
+      var cancelSubP = document.querySelector('#panel-cancel .panel-header p'); if (cancelSubP) cancelSubP.textContent = isZh ? '我们相信你只应为你喜爱的服务付费。取消订阅即时生效，简单轻松。' : 'We believe you should only pay for what you love. Canceling is instant and effortless.';
+      var cancelFeaturedH2 = document.querySelector('#panel-cancel .featured-card h2'); if (cancelFeaturedH2) cancelFeaturedH2.textContent = isZh ? '你的订阅，你做主。' : 'Your subscription, your rules.';
+      var cancelFeaturedP = document.querySelector('#panel-cancel .featured-card > p'); if (cancelFeaturedP) cancelFeaturedP.textContent = isZh ? '随时取消专业版订阅——几秒钟即可完成。无取消费用。无需回答"确定吗？"。无需拨打热线。只需发消息，立即生效。' : 'Cancel your Pro subscription at any time — in seconds. No cancellation fees. No "are you sure?" hoops. No calling a 1-800 number. Just send us a message and it\'s done immediately.';
+      var cancelCards = document.querySelectorAll('#panel-cancel .salary-resource-card');
+      var cCardD = isZh ? [{h3:'如何取消'},{h3:'取消后会发生什么'}] : [{h3:'How to Cancel'},{h3:'What Happens When You Cancel'}];
+      cancelCards.forEach(function(card, i) { if(!cCardD[i]) return; var h3=card.querySelector('h3'); if(h3) h3.textContent=cCardD[i].h3; });
+      var cancelSteps = document.querySelectorAll('#panel-cancel .salary-steps li');
+      var cStepD = isZh ? ['前往 <strong>帮助与支持</strong> 标签','发送消息，主题：<strong>"取消我的订阅"</strong>','附上你订阅时使用的邮箱','我们将在 <strong>1小时</strong> 内取消并确认'] : ['Go to the <strong>Help & Support</strong> tab','Send a message with subject: <strong>"Cancel my subscription"</strong>','Include the email you used to subscribe','We\'ll cancel and confirm within <strong>1 hour</strong>'];
+      cancelSteps.forEach(function(li, i) { if (cStepD[i]) li.innerHTML = cStepD[i]; });
+      var cancelTips = document.querySelectorAll('#panel-cancel .salary-tips li');
+      var cTipD = isZh ? ['订阅在当前计费周期结束时停止','在此之前保留完整专业版权限','不收取部分月份费用——永远不会','不删除数据——你的回顾记录保持保存','随时以相同的¥19/月价格重新订阅','无罚款，无重新注册费'] : ['Subscription stops at end of current billing period','You keep full Pro access until then','No partial-month charges — ever','No data deleted — your check-ins stay saved','Resubscribe anytime at the same $19/mo price','No penalty, no re-enrollment fee'];
+      cancelTips.forEach(function(li, i) { if (cTipD[i]) li.textContent = cTipD[i]; });
+      var cancelGoHelpBtn = document.querySelector('#panel-cancel .btn-outline'); if (cancelGoHelpBtn) cancelGoHelpBtn.textContent = isZh ? '前往帮助与支持 →' : 'Go to Help & Support →';
+      var cancelFaqH2 = document.querySelector('#panel-cancel h2'); if (cancelFaqH2) cancelFaqH2.textContent = isZh ? '取消订阅常见问题' : 'Cancellation FAQs';
+      var cancelFaqQs = document.querySelectorAll('#panel-cancel .faq-q span');
+      var cancelFaqAs = document.querySelectorAll('#panel-cancel .faq-a');
+      var cFaqQD = isZh ? ['取消后能退款吗？','取消生效需要多长时间？','我可以暂停而不是取消吗？','如果我被扣款但不是有意订阅怎么办？','取消后我的简历历史会被删除吗？'] : ['Do I get a refund if I cancel mid-month?','How fast does cancellation take effect?','Can I pause instead of cancel?','What if I was charged but didn\'t mean to subscribe?','Will my resume history be deleted if I cancel?'];
+      var cFaqAD = isZh ? ['我们不提供按比例退款，但你将在当前计费周期结束前保留完整专业版权限。因此，如果你已支付当月费用，你就可以使用整个月。','我们在1小时内处理所有取消请求。完成后你会收到确认邮件。你的专业版权限将持续到计费周期结束。','我们目前不提供暂停功能，但取消并在之后重新订阅同样简单。你始终享有相同的¥19/月费率——我们不对价格锁定或惩罚回归会员。','在扣款7天内联系我们，我们将全额退款，无需解释。我们从不希望有人为无意购买的服务付费。','不会。你的职业回顾数据和社区帖子保持完整。如果你之后重新订阅，一切都在你离开的地方。'] : ['We don\'t offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.','We process all cancellation requests within 1 hour. You\'ll receive a confirmation email once it\'s done. Your Pro access continues until your billing period ends.','We don\'t currently offer a pause feature, but canceling and re-subscribing later is just as easy. You\'ll always get the same $19/month rate — we don\'t price-lock or penalize returning members.','Contact us within 7 days of the charge and we\'ll issue a full refund, no questions asked. We never want anyone paying for something they didn\'t intend to buy.','No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.'];
+      cancelFaqQs.forEach(function(el, i) { if (cFaqQD[i]) el.textContent = cFaqQD[i]; });
+      cancelFaqAs.forEach(function(el, i) { if (cFaqAD[i]) el.textContent = cFaqAD[i]; });
+      var cancelBottomH3 = document.querySelector('#panel-cancel > div:last-of-type h3'); if (cancelBottomH3) cancelBottomH3.textContent = isZh ? '还在考虑是否订阅？' : 'Still deciding whether to subscribe?';
+      var cancelBottomP = document.querySelector('#panel-cancel > div:last-of-type p'); if (cancelBottomP) cancelBottomP.textContent = isZh ? '先免费试用——每日1次定制。只有在确认有效后再升级。' : 'Try it free first — 1 tailoring per day. Upgrade only when you\'re convinced it works.';
+      var cancelTryBtn = document.querySelector('#panel-cancel .btn-primary'); if (cancelTryBtn) cancelTryBtn.textContent = isZh ? '先免费试用 →' : 'Try Free First →';
+      // 22. Language toggle button
+      var langBtnEl = document.getElementById('langToggleBtn');
+      if (langBtnEl) langBtnEl.textContent = isZh ? 'EN' : '中文';
+      document.documentElement.lang = isZh ? 'zh-CN' : 'en';
       localStorage.setItem('rt_lang', lang);
     }
 
     function toggleLang() {
-      const current = localStorage.getItem('rt_lang') || 'en';
+      var current = localStorage.getItem('rt_lang') || 'en';
       applyLangApp(current === 'en' ? 'zh' : 'en');
     }
 
@@ -1430,6 +1673,7 @@
     }
 
     function switchAuthTab(tab) {
+      var isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
       const isSignup = tab === 'signup';
       document.getElementById('authTabSignup').classList.toggle('active', isSignup);
       document.getElementById('authTabLogin').classList.toggle('active', !isSignup);
@@ -1437,10 +1681,10 @@
       document.getElementById('authLoginForm').style.display = isSignup ? 'none' : 'block';
       document.getElementById('authForgotForm').style.display = 'none';
       document.getElementById('authTabs').style.display = 'flex';
-      document.getElementById('authHeading').textContent = isSignup ? 'Create Your Account' : 'Welcome Back';
+      document.getElementById('authHeading').textContent = isSignup ? (isZh ? '创建你的账户' : 'Create Your Account') : (isZh ? '欢迎回来' : 'Welcome Back');
       document.getElementById('authSubtext').textContent = isSignup
-        ? 'Join thousands of job seekers landing more interviews.'
-        : 'Log in to access your dashboard.';
+        ? (isZh ? '加入数千名获得更多面试机会的求职者。' : 'Join thousands of job seekers landing more interviews.')
+        : (isZh ? '登录以访问你的控制台。' : 'Log in to access your dashboard.');
       document.getElementById('signupError').textContent = '';
       document.getElementById('loginError').textContent = '';
       if (!isSignup) {
@@ -1453,11 +1697,12 @@
     }
 
     function showForgotPassword() {
+      var isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
       document.getElementById('authLoginForm').style.display = 'none';
       document.getElementById('authSignupForm').style.display = 'none';
       document.getElementById('authForgotForm').style.display = 'block';
       document.getElementById('authTabs').style.display = 'none';
-      document.getElementById('authHeading').textContent = 'Forgot Password?';
+      document.getElementById('authHeading').textContent = isZh ? '忘记密码？' : 'Forgot Password?';
       document.getElementById('authSubtext').textContent = '';
       document.getElementById('forgotError').textContent = '';
       document.getElementById('forgotSuccess').style.display = 'none';
@@ -1595,7 +1840,8 @@
         document.getElementById('resume').placeholder = isCover
           ? 'Paste your cover letter draft here (optional), OR click Upload File to import a file. Leave blank to generate from scratch.'
           : 'Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file.';
-        document.getElementById('tailorBtn').textContent = isCover ? 'Tailor My Cover Letter →' : 'Tailor My Resume →';
+        var _li = APP_I18N[localStorage.getItem('rt_lang') || 'en'] || APP_I18N.en;
+        document.getElementById('tailorBtn').textContent = isCover ? (_li.tailor_btn_cover || 'Tailor My Cover Letter →') : (_li.tailor_btn || 'Tailor My Resume →');
         document.getElementById('rmodeBuild').textContent = isCover ? '✏️ Input Info' : '✏️ Fill Out Form';
         // Cover letter always shows the input form; resume restores whatever mode was active
         setResumeMode(isCover ? 'build' : resumeInputMode);

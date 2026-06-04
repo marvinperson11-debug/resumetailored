@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07070f"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <circle cx="100" cy="100" r="300" fill="rgba(37,99,235,0.07)"/>
+
+  <!-- Logo -->
+  <rect x="72" y="72" width="48" height="48" rx="12" fill="#2563eb"/>
+  <text x="96" y="105" font-family="Arial,sans-serif" font-weight="900" font-size="26" fill="white" text-anchor="middle">R</text>
+  <text x="134" y="103" font-family="Arial,sans-serif" font-weight="800" font-size="17" fill="white">ResumeTailored</text>
+  <rect x="316" y="82" width="30" height="20" rx="5" fill="rgba(255,255,255,0.2)"/>
+  <text x="331" y="96" font-family="Arial,sans-serif" font-weight="800" font-size="11" fill="white" text-anchor="middle">AI</text>
+
+  <!-- Headline -->
+  <text x="540" y="190" font-family="Arial,sans-serif" font-weight="900" font-size="56" fill="white" text-anchor="middle" letter-spacing="-1">同类工具横向对比</text>
+  <text x="540" y="240" font-family="Arial,sans-serif" font-size="22" fill="rgba(255,255,255,0.5)" text-anchor="middle">为什么选择 ResumeTailored AI？</text>
+
+  <!-- Table header -->
+  <rect x="60" y="278" width="960" height="56" rx="12" fill="rgba(255,255,255,0.06)"/>
+  <text x="240" y="313" font-family="Arial,sans-serif" font-weight="700" font-size="17" fill="rgba(255,255,255,0.4)" text-anchor="middle">功能</text>
+  <!-- Highlighted our product column -->
+  <rect x="440" y="270" width="200" height="72" rx="12" fill="#2563eb"/>
+  <text x="540" y="307" font-family="Arial,sans-serif" font-weight="900" font-size="15" fill="white" text-anchor="middle">ResumeTailored</text>
+  <text x="540" y="325" font-family="Arial,sans-serif" font-weight="900" font-size="14" fill="rgba(255,255,255,0.8)" text-anchor="middle">AI  ⭐</text>
+  <text x="745" y="313" font-family="Arial,sans-serif" font-weight="700" font-size="17" fill="rgba(255,255,255,0.4)" text-anchor="middle">Jobscan</text>
+  <text x="940" y="313" font-family="Arial,sans-serif" font-weight="700" font-size="17" fill="rgba(255,255,255,0.4)" text-anchor="middle">Resume.io</text>
+
+  <!-- Row data helper y values: 390, 452, 514, 576, 638, 700, 762 -->
+  <!-- Row 1 -->
+  <rect x="60" y="350" width="960" height="62" rx="0" fill="rgba(255,255,255,0.03)"/>
+  <text x="240" y="387" font-family="Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.7)" text-anchor="middle">月费</text>
+  <rect x="452" y="357" width="176" height="46" rx="10" fill="rgba(37,99,235,0.3)"/>
+  <text x="540" y="386" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#60a5fa" text-anchor="middle">¥19/月</text>
+  <text x="745" y="387" font-family="Arial,sans-serif" font-weight="700" font-size="18" fill="rgba(255,255,255,0.35)" text-anchor="middle">¥49/月</text>
+  <text x="940" y="387" font-family="Arial,sans-serif" font-weight="700" font-size="18" fill="rgba(255,255,255,0.35)" text-anchor="middle">¥45/月</text>
+
+  <!-- Row 2 -->
+  <text x="240" y="451" font-family="Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.7)" text-anchor="middle">每日免费使用</text>
+  <text x="540" y="455" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#4ade80" text-anchor="middle">✓</text>
+  <text x="745" y="455" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#f87171" text-anchor="middle">✗</text>
+  <text x="940" y="455" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#f87171" text-anchor="middle">✗</text>
+
+  <!-- Row 3 -->
+  <rect x="60" y="474" width="960" height="62" rx="0" fill="rgba(255,255,255,0.03)"/>
+  <text x="240" y="511" font-family="Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.7)" text-anchor="middle">AI求职信生成</text>
+  <text x="540" y="515" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#4ade80" text-anchor="middle">✓</text>
+  <text x="745" y="515" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#f87171" text-anchor="middle">✗</text>
+  <text x="940" y="515" font-family="Arial,sans-serif" font-size="16" fill="rgba(255,255,255,0.3)" text-anchor="middle">额外收费</text>
+
+  <!-- Row 4 -->
+  <text x="240" y="575" font-family="Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.7)" text-anchor="middle">支持中文简历</text>
+  <text x="540" y="579" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#4ade80" text-anchor="middle">✓</text>
+  <text x="745" y="579" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#f87171" text-anchor="middle">✗</text>
+  <text x="940" y="579" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#f87171" text-anchor="middle">✗</text>
+
+  <!-- Row 5 -->
+  <rect x="60" y="598" width="960" height="62" rx="0" fill="rgba(255,255,255,0.03)"/>
+  <text x="240" y="635" font-family="Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.7)" text-anchor="middle">LinkedIn优化</text>
+  <text x="540" y="639" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#4ade80" text-anchor="middle">✓</text>
+  <text x="745" y="639" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#f87171" text-anchor="middle">✗</text>
+  <text x="940" y="639" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#f87171" text-anchor="middle">✗</text>
+
+  <!-- Row 6 -->
+  <text x="240" y="697" font-family="Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.7)" text-anchor="middle">买断制（终身）</text>
+  <text x="540" y="701" font-family="Arial,sans-serif" font-weight="700" font-size="20" fill="#4ade80" text-anchor="middle">✓ ¥129</text>
+  <text x="745" y="701" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#f87171" text-anchor="middle">✗</text>
+  <text x="940" y="701" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#f87171" text-anchor="middle">✗</text>
+
+  <!-- Row 7 -->
+  <rect x="60" y="720" width="960" height="62" rx="0" fill="rgba(255,255,255,0.03)"/>
+  <text x="240" y="757" font-family="Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.7)" text-anchor="middle">A4格式下载</text>
+  <text x="540" y="761" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#4ade80" text-anchor="middle">✓</text>
+  <text x="745" y="761" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="#f87171" text-anchor="middle">✗</text>
+  <text x="940" y="761" font-family="Arial,sans-serif" font-size="16" fill="rgba(255,255,255,0.3)" text-anchor="middle">额外收费</text>
+
+  <!-- Verdict -->
+  <rect x="60" y="818" width="960" height="74" rx="16" fill="#2563eb"/>
+  <text x="540" y="851" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="white" text-anchor="middle">结论：功能最全、价格最低、支持中文</text>
+  <text x="540" y="877" font-family="Arial,sans-serif" font-size="17" fill="rgba(255,255,255,0.75)" text-anchor="middle">ResumeTailored AI 是中国求职者的最优选择</text>
+
+  <!-- URL -->
+  <text x="540" y="955" font-family="Arial,sans-serif" font-weight="700" font-size="20" fill="rgba(255,255,255,0.4)" text-anchor="middle">resumetailored.com</text>
+  <text x="540" y="985" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.25)" text-anchor="middle">每日免费 · 无需信用卡 · 支持支付宝/微信支付</text>
+</svg>

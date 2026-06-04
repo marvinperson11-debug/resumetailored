@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07070f"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="blueGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <!-- Glow orb -->
+  <circle cx="900" cy="200" r="320" fill="rgba(37,99,235,0.12)"/>
+  <circle cx="180" cy="880" r="240" fill="rgba(245,200,66,0.06)"/>
+
+  <!-- Logo -->
+  <rect x="72" y="72" width="52" height="52" rx="13" fill="url(#blueGlow)"/>
+  <text x="98" y="107" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="white" text-anchor="middle">R</text>
+  <text x="140" y="105" font-family="Arial,sans-serif" font-weight="800" font-size="18" fill="white">ResumeTailored</text>
+  <rect x="326" y="84" width="32" height="22" rx="6" fill="#2563eb"/>
+  <text x="342" y="99" font-family="Arial,sans-serif" font-weight="800" font-size="12" fill="white" text-anchor="middle">AI</text>
+
+  <!-- Gold accent line -->
+  <rect x="72" y="170" width="80" height="5" rx="2.5" fill="#f5c842"/>
+
+  <!-- Main Chinese headline -->
+  <text x="72" y="290" font-family="Arial,sans-serif" font-weight="900" font-size="82" fill="white" letter-spacing="-2">你的简历</text>
+  <text x="72" y="390" font-family="Arial,sans-serif" font-weight="900" font-size="82" fill="white" letter-spacing="-2">精准匹配</text>
+  <text x="72" y="490" font-family="Arial,sans-serif" font-weight="900" font-size="82" fill="#f5c842" letter-spacing="-2">每一份工作</text>
+
+  <!-- Sub -->
+  <text x="72" y="560" font-family="Arial,sans-serif" font-size="28" fill="rgba(255,255,255,0.65)" font-weight="400">AI驱动 · 30秒完成 · 免费开始</text>
+
+  <!-- Stat cards -->
+  <rect x="72" y="610" width="186" height="110" rx="16" fill="rgba(37,99,235,0.25)" stroke="rgba(37,99,235,0.5)" stroke-width="1.5"/>
+  <text x="165" y="660" font-family="Arial,sans-serif" font-weight="900" font-size="40" fill="#60a5fa" text-anchor="middle">97%</text>
+  <text x="165" y="686" font-family="Arial,sans-serif" font-weight="600" font-size="14" fill="rgba(255,255,255,0.6)" text-anchor="middle">ATS匹配率</text>
+  <text x="165" y="705" font-family="Arial,sans-serif" font-weight="500" font-size="12" fill="rgba(255,255,255,0.4)" text-anchor="middle">行业均值43%</text>
+
+  <rect x="276" y="610" width="186" height="110" rx="16" fill="rgba(37,99,235,0.25)" stroke="rgba(37,99,235,0.5)" stroke-width="1.5"/>
+  <text x="369" y="660" font-family="Arial,sans-serif" font-weight="900" font-size="40" fill="#60a5fa" text-anchor="middle">3×</text>
+  <text x="369" y="686" font-family="Arial,sans-serif" font-weight="600" font-size="14" fill="rgba(255,255,255,0.6)" text-anchor="middle">面试邀请</text>
+  <text x="369" y="705" font-family="Arial,sans-serif" font-weight="500" font-size="12" fill="rgba(255,255,255,0.4)" text-anchor="middle">第一周</text>
+
+  <rect x="480" y="610" width="186" height="110" rx="16" fill="rgba(37,99,235,0.25)" stroke="rgba(37,99,235,0.5)" stroke-width="1.5"/>
+  <text x="573" y="660" font-family="Arial,sans-serif" font-weight="900" font-size="40" fill="#f5c842" text-anchor="middle">¥19</text>
+  <text x="573" y="686" font-family="Arial,sans-serif" font-weight="600" font-size="14" fill="rgba(255,255,255,0.6)" text-anchor="middle">专业版/月</text>
+  <text x="573" y="705" font-family="Arial,sans-serif" font-weight="500" font-size="12" fill="rgba(255,255,255,0.4)" text-anchor="middle">免费可用</text>
+
+  <!-- Platform support -->
+  <text x="72" y="778" font-family="Arial,sans-serif" font-size="18" fill="rgba(255,255,255,0.45)" font-weight="500">支持平台：</text>
+  <rect x="72" y="792" width="136" height="34" rx="17" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="140" y="814" font-family="Arial,sans-serif" font-weight="700" font-size="14" fill="rgba(255,255,255,0.75)" text-anchor="middle">Boss直聘</text>
+  <rect x="220" y="792" width="100" height="34" rx="17" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="270" y="814" font-family="Arial,sans-serif" font-weight="700" font-size="14" fill="rgba(255,255,255,0.75)" text-anchor="middle">猎聘</text>
+  <rect x="332" y="792" width="136" height="34" rx="17" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="400" y="814" font-family="Arial,sans-serif" font-weight="700" font-size="14" fill="rgba(255,255,255,0.75)" text-anchor="middle">智联招聘</text>
+
+  <!-- CTA button -->
+  <rect x="72" y="860" width="460" height="68" rx="34" fill="#2563eb"/>
+  <text x="302" y="902" font-family="Arial,sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">立即免费试用 →</text>
+
+  <!-- URL -->
+  <text x="72" y="985" font-family="Arial,sans-serif" font-weight="700" font-size="18" fill="rgba(255,255,255,0.35)">resumetailored.com</text>
+</svg>

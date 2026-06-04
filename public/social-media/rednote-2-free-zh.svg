@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07070f"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <circle cx="540" cy="200" r="400" fill="rgba(245,200,66,0.05)"/>
+
+  <!-- Logo -->
+  <rect x="72" y="72" width="48" height="48" rx="12" fill="#2563eb"/>
+  <text x="96" y="105" font-family="Arial,sans-serif" font-weight="900" font-size="26" fill="white" text-anchor="middle">R</text>
+  <text x="134" y="103" font-family="Arial,sans-serif" font-weight="800" font-size="17" fill="white">ResumeTailored</text>
+  <rect x="316" y="82" width="30" height="20" rx="5" fill="rgba(255,255,255,0.2)"/>
+  <text x="331" y="96" font-family="Arial,sans-serif" font-weight="800" font-size="11" fill="white" text-anchor="middle">AI</text>
+
+  <!-- Big 0元 display -->
+  <text x="540" y="310" font-family="Arial,sans-serif" font-weight="900" font-size="220" fill="#f5c842" text-anchor="middle" letter-spacing="-6">¥0</text>
+  <text x="540" y="368" font-family="Arial,sans-serif" font-weight="700" font-size="28" fill="rgba(255,255,255,0.6)" text-anchor="middle">每天免费使用一次</text>
+
+  <!-- Headline -->
+  <text x="540" y="440" font-family="Arial,sans-serif" font-weight="900" font-size="52" fill="white" text-anchor="middle" letter-spacing="-1">无需信用卡  立即开始</text>
+
+  <!-- Features list -->
+  <rect x="140" y="490" width="800" height="56" rx="12" fill="rgba(255,255,255,0.06)"/>
+  <text x="540" y="525" font-family="Arial,sans-serif" font-weight="700" font-size="22" fill="rgba(255,255,255,0.85)" text-anchor="middle">✓  每日1次免费AI简历优化</text>
+
+  <rect x="140" y="556" width="800" height="56" rx="12" fill="rgba(255,255,255,0.06)"/>
+  <text x="540" y="591" font-family="Arial,sans-serif" font-weight="700" font-size="22" fill="rgba(255,255,255,0.85)" text-anchor="middle">✓  支持Boss直聘、猎聘、智联招聘</text>
+
+  <rect x="140" y="622" width="800" height="56" rx="12" fill="rgba(255,255,255,0.06)"/>
+  <text x="540" y="657" font-family="Arial,sans-serif" font-weight="700" font-size="22" fill="rgba(255,255,255,0.85)" text-anchor="middle">✓  30秒生成专业定制简历</text>
+
+  <rect x="140" y="688" width="800" height="56" rx="12" fill="rgba(255,255,255,0.06)"/>
+  <text x="540" y="723" font-family="Arial,sans-serif" font-weight="700" font-size="22" fill="rgba(255,255,255,0.85)" text-anchor="middle">✓  同时生成求职信</text>
+
+  <!-- Pro upsell -->
+  <rect x="140" y="774" width="800" height="78" rx="16" fill="rgba(37,99,235,0.2)" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="540" y="808" font-family="Arial,sans-serif" font-weight="700" font-size="20" fill="rgba(255,255,255,0.7)" text-anchor="middle">升级专业版</text>
+  <text x="540" y="834" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#60a5fa" text-anchor="middle">仅需 ¥19/月  或  ¥129 买断终身</text>
+
+  <!-- CTA -->
+  <rect x="200" y="884" width="680" height="68" rx="34" fill="#2563eb"/>
+  <text x="540" y="926" font-family="Arial,sans-serif" font-weight="900" font-size="26" fill="white" text-anchor="middle">免费开始 — resumetailored.com</text>
+
+  <text x="540" y="1010" font-family="Arial,sans-serif" font-size="16" fill="rgba(255,255,255,0.3)" text-anchor="middle">100+ 专业简历模板 · A4格式 · 中英双语</text>
+</svg>

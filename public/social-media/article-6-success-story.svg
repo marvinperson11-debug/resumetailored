@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 644" width="1200" height="644">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07070f"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="goldFade" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f5c842"/>
+      <stop offset="100%" stop-color="rgba(245,200,66,0)"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="644" fill="url(#bg)"/>
+  <circle cx="1050" cy="320" r="400" fill="rgba(245,200,66,0.04)"/>
+
+  <!-- Gold top line -->
+  <rect x="0" y="0" width="1200" height="6" fill="url(#goldFade)"/>
+
+  <!-- Tag -->
+  <rect x="60" y="68" width="170" height="34" rx="17" fill="rgba(245,200,66,0.15)" stroke="rgba(245,200,66,0.4)" stroke-width="1"/>
+  <text x="145" y="90" font-family="Arial,sans-serif" font-weight="700" font-size="14" fill="#f5c842" text-anchor="middle">SUCCESS STORY</text>
+
+  <!-- Big quote marks -->
+  <text x="52" y="200" font-family="Arial,sans-serif" font-size="200" fill="rgba(245,200,66,0.12)" font-weight="900">"</text>
+
+  <!-- Quote -->
+  <text x="72" y="218" font-family="Arial,sans-serif" font-weight="900" font-size="54" fill="white" letter-spacing="-2">I went from 0 callbacks</text>
+  <text x="72" y="290" font-family="Arial,sans-serif" font-weight="900" font-size="54" fill="white" letter-spacing="-2">in 3 months to</text>
+  <text x="72" y="362" font-family="Arial,sans-serif" font-weight="900" font-size="54" fill="#f5c842" letter-spacing="-2">3 interviews in 1 week.</text>
+
+  <!-- Attribution -->
+  <text x="72" y="420" font-family="Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.5)" font-weight="400">— Software Engineer · ResumeTailored AI user</text>
+
+  <!-- Divider -->
+  <rect x="72" y="450" width="100" height="3" rx="1.5" fill="#f5c842"/>
+
+  <!-- Sub text -->
+  <text x="72" y="498" font-family="Arial,sans-serif" font-size="22" fill="rgba(255,255,255,0.55)">The only thing that changed: an AI-tailored resume</text>
+
+  <!-- Right side stat visual -->
+  <rect x="750" y="56" width="410" height="440" rx="24" fill="rgba(245,200,66,0.06)" stroke="rgba(245,200,66,0.15)" stroke-width="1.5"/>
+
+  <!-- Timeline -->
+  <text x="955" y="136" font-family="Arial,sans-serif" font-weight="700" font-size="16" fill="rgba(255,255,255,0.4)" text-anchor="middle">BEFORE</text>
+  <rect x="770" y="154" width="370" height="66" rx="12" fill="rgba(220,38,38,0.1)" stroke="rgba(220,38,38,0.2)" stroke-width="1"/>
+  <text x="955" y="183" font-family="Arial,sans-serif" font-weight="800" font-size="18" fill="#f87171" text-anchor="middle">❌  Generic resume</text>
+  <text x="955" y="207" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.4)" text-anchor="middle">0 callbacks in 90 days</text>
+
+  <text x="955" y="264" font-family="Arial,sans-serif" font-size="32" fill="#f5c842" text-anchor="middle">↓</text>
+
+  <rect x="770" y="280" width="370" height="66" rx="12" fill="rgba(37,99,235,0.15)" stroke="rgba(37,99,235,0.3)" stroke-width="1"/>
+  <text x="955" y="309" font-family="Arial,sans-serif" font-weight="800" font-size="18" fill="#60a5fa" text-anchor="middle">🤖  ResumeTailored AI</text>
+  <text x="955" y="333" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.4)" text-anchor="middle">30 seconds to tailor · 1 click download</text>
+
+  <text x="955" y="388" font-family="Arial,sans-serif" font-size="32" fill="#4ade80" text-anchor="middle">↓</text>
+
+  <text x="955" y="418" font-family="Arial,sans-serif" font-weight="700" font-size="16" fill="rgba(255,255,255,0.4)" text-anchor="middle">AFTER</text>
+  <rect x="770" y="432" width="370" height="66" rx="12" fill="rgba(34,197,94,0.15)" stroke="rgba(34,197,94,0.3)" stroke-width="1"/>
+  <text x="955" y="461" font-family="Arial,sans-serif" font-weight="800" font-size="18" fill="#4ade80" text-anchor="middle">✅  3 interviews · Week 1</text>
+  <text x="955" y="485" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.4)" text-anchor="middle">Offer received · 2 weeks later</text>
+
+  <!-- Bottom -->
+  <rect x="0" y="570" width="1200" height="74" fill="rgba(255,255,255,0.03)"/>
+  <rect x="0" y="570" width="1200" height="1" fill="rgba(255,255,255,0.08)"/>
+  <rect x="60" y="594" width="32" height="32" rx="8" fill="#2563eb"/>
+  <text x="76" y="616" font-family="Arial,sans-serif" font-weight="900" font-size="18" fill="white" text-anchor="middle">R</text>
+  <text x="106" y="615" font-family="Arial,sans-serif" font-weight="800" font-size="15" fill="white">ResumeTailored AI</text>
+  <text x="540" y="615" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.3)" text-anchor="middle">Start free · No credit card · resumetailored.com</text>
+  <text x="1140" y="615" font-family="Arial,sans-serif" font-size="14" fill="rgba(255,255,255,0.3)" text-anchor="end">resumetailored.com</text>
+</svg>
