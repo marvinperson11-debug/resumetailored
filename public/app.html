@@ -1570,7 +1570,23 @@
       var cancelBottomH3 = document.querySelector('#panel-cancel > div:last-of-type h3'); if (cancelBottomH3) cancelBottomH3.textContent = isZh ? '还在考虑是否订阅？' : 'Still deciding whether to subscribe?';
       var cancelBottomP = document.querySelector('#panel-cancel > div:last-of-type p'); if (cancelBottomP) cancelBottomP.textContent = isZh ? '先免费试用——每日1次定制。只有在确认有效后再升级。' : 'Try it free first — 1 tailoring per day. Upgrade only when you\'re convinced it works.';
       var cancelTryBtn = document.querySelector('#panel-cancel .btn-primary'); if (cancelTryBtn) cancelTryBtn.textContent = isZh ? '先免费试用 →' : 'Try Free First →';
-      // 22. Language toggle button
+      // 22. Signature section
+      var sigTitle = document.querySelector('.sig-section > div > div:first-child');
+      if (sigTitle) sigTitle.textContent = isZh ? '添加您的签名' : 'Add Your Signature';
+      var sigDesc = document.querySelector('.sig-section > div > div:last-child');
+      if (sigDesc) sigDesc.textContent = isZh ? '您的姓名将以签名形式出现在文档底部' : 'Your name will appear signed at the bottom of your document';
+      var sigInput = document.getElementById('sigNameInput');
+      if (sigInput) sigInput.placeholder = isZh ? '在此输入您的姓名…' : 'Type your name here...';
+      var sigFontBtns = document.querySelectorAll('.sig-font-btn');
+      var sigFontLabels = isZh
+        ? ['手写体', '优雅体', '经典体', '随意体']
+        : ['Script', 'Elegant', 'Classic', 'Casual'];
+      sigFontBtns.forEach(function(btn, i) {
+        var span = btn.querySelector('span');
+        if (span && sigFontLabels[i]) btn.childNodes[btn.childNodes.length - 1].textContent = ' ' + sigFontLabels[i];
+      });
+
+      // 23. Language toggle button
       var langBtnEl = document.getElementById('langToggleBtn');
       if (langBtnEl) langBtnEl.textContent = isZh ? 'EN' : '中文';
       document.documentElement.lang = isZh ? 'zh-CN' : 'en';
