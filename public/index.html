@@ -434,10 +434,10 @@
       <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
     </div>
     <div class="nav-actions">
-      <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">中文</button>
       <a href="/dashboard" class="btn btn-ghost" data-i18n="nav_login">Log In</a>
       <a href="/dashboard" class="btn btn-primary" data-i18n="nav_cta">Get Started Free →</a>
     </div>
+    <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">中文</button>
     <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.add('open')" aria-label="Open menu">
       <span></span><span></span><span></span>
     </button>
@@ -447,7 +447,6 @@
 <!-- Mobile Menu -->
 <div class="mobile-menu">
   <button class="mobile-close" onclick="document.querySelector('.mobile-menu').classList.remove('open')">&times;</button>
-  <button onclick="toggleLang();document.querySelector('.mobile-menu').classList.remove('open')" id="langToggleBtnMobile" style="background:transparent;border:1.5px solid #2563eb;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:700;color:#2563eb;cursor:pointer;font-family:inherit;align-self:flex-start;">中文 / EN</button>
   <a href="/how-it-works" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_how">How It Works</a>
   <a href="/blog" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_blog">Blog</a>
   <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_features">Features</a>
