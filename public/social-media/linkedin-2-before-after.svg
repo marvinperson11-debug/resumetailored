@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 628" width="1200" height="628">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#eff6ff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="628" fill="url(#bg)"/>
+
+  <!-- Top accent bar -->
+  <rect width="1200" height="6" fill="#2563eb"/>
+
+  <!-- Logo -->
+  <rect x="48" y="32" width="38" height="38" rx="9" fill="#2563eb"/>
+  <text x="67" y="57" font-family="Arial,sans-serif" font-weight="900" font-size="20" fill="white" text-anchor="middle">R</text>
+  <text x="96" y="57" font-family="Arial,sans-serif" font-weight="800" font-size="16" fill="#1e3a8a">ResumeTailored</text>
+  <rect x="262" y="43" width="26" height="18" rx="5" fill="#2563eb"/>
+  <text x="275" y="56" font-family="Arial,sans-serif" font-weight="800" font-size="10" fill="white" text-anchor="middle">AI</text>
+
+  <!-- Headline -->
+  <text x="600" y="115" font-family="Arial,sans-serif" font-weight="900" font-size="46" fill="#0f172a" text-anchor="middle" letter-spacing="-1">What happens when you tailor with AI</text>
+
+  <!-- BEFORE card -->
+  <rect x="48" y="145" width="510" height="360" rx="18" fill="white" stroke="#e2e8f0" stroke-width="2"/>
+  <rect x="48" y="145" width="510" height="52" rx="18" fill="#f1f5f9"/>
+  <rect x="48" y="177" width="510" height="20" fill="#f1f5f9"/>
+  <text x="303" y="178" font-family="Arial,sans-serif" font-weight="800" font-size="18" fill="#dc2626" text-anchor="middle">✕  BEFORE — Generic Resume</text>
+  <!-- resume lines -->
+  <rect x="76" y="220" width="220" height="13" rx="6.5" fill="#1e293b"/>
+  <rect x="76" y="242" width="310" height="9" rx="4.5" fill="#94a3b8"/>
+  <rect x="76" y="260" width="270" height="9" rx="4.5" fill="#94a3b8"/>
+  <rect x="76" y="290" width="120" height="11" rx="5.5" fill="#64748b"/>
+  <rect x="76" y="310" width="420" height="8" rx="4" fill="#e2e8f0"/>
+  <rect x="76" y="326" width="390" height="8" rx="4" fill="#e2e8f0"/>
+  <rect x="76" y="342" width="360" height="8" rx="4" fill="#e2e8f0"/>
+  <rect x="76" y="360" width="420" height="8" rx="4" fill="#e2e8f0"/>
+  <rect x="76" y="376" width="300" height="8" rx="4" fill="#e2e8f0"/>
+  <!-- result -->
+  <rect x="68" y="430" width="470" height="56" rx="12" fill="#fef2f2"/>
+  <text x="303" y="457" font-family="Arial,sans-serif" font-weight="700" font-size="16" fill="#dc2626" text-anchor="middle">❌  No callbacks — ignored by ATS</text>
+  <text x="303" y="477" font-family="Arial,sans-serif" font-weight="500" font-size="13" fill="#ef4444" text-anchor="middle">Generic resume doesn't match job keywords</text>
+
+  <!-- Arrow -->
+  <text x="600" y="350" font-family="Arial,sans-serif" font-size="48" fill="#2563eb" text-anchor="middle">→</text>
+
+  <!-- AFTER card -->
+  <rect x="642" y="145" width="510" height="360" rx="18" fill="white" stroke="#2563eb" stroke-width="2.5"/>
+  <rect x="642" y="145" width="510" height="52" rx="18" fill="#2563eb"/>
+  <rect x="642" y="177" width="510" height="20" fill="#2563eb"/>
+  <text x="897" y="178" font-family="Arial,sans-serif" font-weight="800" font-size="18" fill="white" text-anchor="middle">✓  AFTER — AI-Tailored Resume</text>
+  <!-- resume lines highlighted -->
+  <rect x="670" y="220" width="220" height="13" rx="6.5" fill="#1e293b"/>
+  <rect x="670" y="242" width="310" height="9" rx="4.5" fill="#94a3b8"/>
+  <rect x="670" y="260" width="270" height="9" rx="4.5" fill="#94a3b8"/>
+  <rect x="670" y="290" width="120" height="11" rx="5.5" fill="#1e40af"/>
+  <rect x="670" y="310" width="420" height="8" rx="4" fill="#bfdbfe"/>
+  <rect x="670" y="326" width="390" height="8" rx="4" fill="#dbeafe"/>
+  <rect x="670" y="342" width="360" height="8" rx="4" fill="#bfdbfe"/>
+  <rect x="670" y="360" width="420" height="8" rx="4" fill="#dbeafe"/>
+  <rect x="670" y="376" width="300" height="8" rx="4" fill="#bfdbfe"/>
+  <!-- keyword match tags -->
+  <rect x="670" y="394" width="90" height="22" rx="11" fill="#dbeafe"/>
+  <text x="715" y="410" font-family="Arial,sans-serif" font-weight="700" font-size="11" fill="#1d4ed8" text-anchor="middle">keyword ✓</text>
+  <rect x="770" y="394" width="90" height="22" rx="11" fill="#dbeafe"/>
+  <text x="815" y="410" font-family="Arial,sans-serif" font-weight="700" font-size="11" fill="#1d4ed8" text-anchor="middle">ATS ready ✓</text>
+  <!-- result -->
+  <rect x="662" y="430" width="470" height="56" rx="12" fill="#f0fdf4"/>
+  <text x="897" y="457" font-family="Arial,sans-serif" font-weight="700" font-size="16" fill="#15803d" text-anchor="middle">✅  3 interviews in the first week</text>
+  <text x="897" y="477" font-family="Arial,sans-serif" font-weight="500" font-size="13" fill="#16a34a" text-anchor="middle">Resume matched 97% of job keywords</text>
+
+  <!-- Bottom bar -->
+  <rect x="0" y="522" width="1200" height="106" fill="#0f172a"/>
+  <text x="600" y="563" font-family="Arial,sans-serif" font-weight="900" font-size="26" fill="white" text-anchor="middle">ResumeTailored AI does this in 30 seconds — free to start</text>
+  <rect x="440" y="578" width="320" height="36" rx="18" fill="#2563eb"/>
+  <text x="600" y="602" font-family="Arial,sans-serif" font-weight="800" font-size="16" fill="white" text-anchor="middle">resumetailored.com  →</text>
+</svg>

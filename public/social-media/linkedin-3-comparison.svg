@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 628" width="1200" height="628">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="628" fill="url(#bg)"/>
+  <circle cx="1100" cy="100" r="280" fill="rgba(37,99,235,0.08)"/>
+
+  <!-- Logo -->
+  <rect x="48" y="36" width="40" height="40" rx="10" fill="rgba(255,255,255,0.15)"/>
+  <text x="68" y="63" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="white" text-anchor="middle">R</text>
+  <text x="100" y="62" font-family="Arial,sans-serif" font-weight="800" font-size="17" fill="white">ResumeTailored</text>
+  <rect x="268" y="47" width="28" height="19" rx="5" fill="rgba(255,255,255,0.25)"/>
+  <text x="282" y="60" font-family="Arial,sans-serif" font-weight="800" font-size="11" fill="white" text-anchor="middle">AI</text>
+
+  <!-- Headline -->
+  <text x="600" y="120" font-family="Arial,sans-serif" font-weight="900" font-size="48" fill="white" text-anchor="middle" letter-spacing="-1">Why pay more for less?</text>
+  <text x="600" y="162" font-family="Arial,sans-serif" font-size="20" fill="rgba(255,255,255,0.6)" text-anchor="middle" font-weight="400">ResumeTailored AI gives you everything — for a fraction of the cost</text>
+
+  <!-- Table header -->
+  <rect x="48" y="190" width="1104" height="48" rx="10" fill="rgba(255,255,255,0.08)"/>
+  <text x="260" y="220" font-family="Arial,sans-serif" font-weight="700" font-size="16" fill="rgba(255,255,255,0.5)" text-anchor="middle">Feature</text>
+  <text x="590" y="220" font-family="Arial,sans-serif" font-weight="800" font-size="17" fill="#60a5fa" text-anchor="middle">ResumeTailored AI</text>
+  <text x="820" y="220" font-family="Arial,sans-serif" font-weight="700" font-size="16" fill="rgba(255,255,255,0.5)" text-anchor="middle">Jobscan</text>
+  <text x="1020" y="220" font-family="Arial,sans-serif" font-weight="700" font-size="16" fill="rgba(255,255,255,0.5)" text-anchor="middle">Resume.io</text>
+
+  <!-- Rows -->
+  <!-- Row 1 -->
+  <rect x="48" y="246" width="1104" height="52" rx="0" fill="rgba(255,255,255,0.04)"/>
+  <text x="260" y="278" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.75)" text-anchor="middle">Monthly Price</text>
+  <rect x="530" y="252" width="120" height="38" rx="19" fill="#2563eb"/>
+  <text x="590" y="276" font-family="Arial,sans-serif" font-weight="900" font-size="16" fill="white" text-anchor="middle">$19/mo</text>
+  <text x="820" y="278" font-family="Arial,sans-serif" font-weight="700" font-size="15" fill="rgba(255,255,255,0.45)" text-anchor="middle">$49/mo</text>
+  <text x="1020" y="278" font-family="Arial,sans-serif" font-weight="700" font-size="15" fill="rgba(255,255,255,0.45)" text-anchor="middle">$45/mo</text>
+
+  <!-- Row 2 -->
+  <text x="260" y="330" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.75)" text-anchor="middle">Free Daily Use</text>
+  <text x="590" y="330" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#4ade80" text-anchor="middle">✓</text>
+  <text x="820" y="330" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1020" y="330" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#ef4444" text-anchor="middle">✗</text>
+
+  <!-- Row 3 -->
+  <rect x="48" y="344" width="1104" height="52" rx="0" fill="rgba(255,255,255,0.04)"/>
+  <text x="260" y="376" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.75)" text-anchor="middle">AI Cover Letters</text>
+  <text x="590" y="376" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#4ade80" text-anchor="middle">✓</text>
+  <text x="820" y="376" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1020" y="376" font-family="Arial,sans-serif" font-weight="700" font-size="15" fill="rgba(255,255,255,0.45)" text-anchor="middle">Extra cost</text>
+
+  <!-- Row 4 -->
+  <text x="260" y="422" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.75)" text-anchor="middle">LinkedIn Optimizer</text>
+  <text x="590" y="422" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#4ade80" text-anchor="middle">✓</text>
+  <text x="820" y="422" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1020" y="422" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#ef4444" text-anchor="middle">✗</text>
+
+  <!-- Row 5 -->
+  <rect x="48" y="436" width="1104" height="52" rx="0" fill="rgba(255,255,255,0.04)"/>
+  <text x="260" y="468" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.75)" text-anchor="middle">Lifetime Plan</text>
+  <text x="590" y="468" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#4ade80" text-anchor="middle">✓  $129 one-time</text>
+  <text x="820" y="468" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#ef4444" text-anchor="middle">✗</text>
+  <text x="1020" y="468" font-family="Arial,sans-serif" font-weight="900" font-size="22" fill="#ef4444" text-anchor="middle">✗</text>
+
+  <!-- Bottom CTA -->
+  <rect x="300" y="530" width="600" height="64" rx="16" fill="#2563eb"/>
+  <text x="600" y="567" font-family="Arial,sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">Start free — no credit card needed</text>
+  <text x="600" y="586" font-family="Arial,sans-serif" font-size="14" fill="rgba(255,255,255,0.75)" text-anchor="middle">resumetailored.com</text>
+</svg>

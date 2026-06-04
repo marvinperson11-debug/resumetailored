@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 628" width="1200" height="628">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="60%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.06)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="628" fill="url(#bg)"/>
+  <!-- Decorative circles -->
+  <circle cx="1050" cy="80" r="220" fill="rgba(255,255,255,0.04)"/>
+  <circle cx="150" cy="550" r="180" fill="rgba(255,255,255,0.04)"/>
+
+  <!-- Logo -->
+  <rect x="60" y="44" width="44" height="44" rx="11" fill="rgba(255,255,255,0.22)"/>
+  <text x="82" y="75" font-family="Arial,sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">R</text>
+  <text x="116" y="73" font-family="Arial,sans-serif" font-weight="800" font-size="18" fill="white">ResumeTailored</text>
+  <rect x="299" y="57" width="30" height="20" rx="5" fill="rgba(255,255,255,0.25)"/>
+  <text x="314" y="71" font-family="Arial,sans-serif" font-weight="800" font-size="11" fill="white" text-anchor="middle">AI</text>
+
+  <!-- Main headline -->
+  <text x="60" y="200" font-family="Arial,sans-serif" font-weight="900" font-size="72" fill="white" letter-spacing="-2">Stop sending</text>
+  <text x="60" y="282" font-family="Arial,sans-serif" font-weight="900" font-size="72" fill="white" letter-spacing="-2">generic resumes.</text>
+  <text x="60" y="364" font-family="Arial,sans-serif" font-weight="900" font-size="72" fill="#93c5fd" letter-spacing="-2">Start getting hired.</text>
+
+  <!-- Subtext -->
+  <text x="60" y="420" font-family="Arial,sans-serif" font-weight="400" font-size="24" fill="rgba(255,255,255,0.72)">AI tailors your resume to every job posting in 30 seconds.</text>
+
+  <!-- Stats row -->
+  <rect x="60" y="462" width="170" height="88" rx="14" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="145" y="508" font-family="Arial,sans-serif" font-weight="900" font-size="34" fill="white" text-anchor="middle">97%</text>
+  <text x="145" y="534" font-family="Arial,sans-serif" font-weight="600" font-size="13" fill="rgba(255,255,255,0.65)" text-anchor="middle">ATS Pass Rate</text>
+
+  <rect x="246" y="462" width="170" height="88" rx="14" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="331" y="508" font-family="Arial,sans-serif" font-weight="900" font-size="34" fill="white" text-anchor="middle">3×</text>
+  <text x="331" y="534" font-family="Arial,sans-serif" font-weight="600" font-size="13" fill="rgba(255,255,255,0.65)" text-anchor="middle">More Interviews</text>
+
+  <rect x="432" y="462" width="170" height="88" rx="14" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <text x="517" y="508" font-family="Arial,sans-serif" font-weight="900" font-size="34" fill="white" text-anchor="middle">30s</text>
+  <text x="517" y="534" font-family="Arial,sans-serif" font-weight="600" font-size="13" fill="rgba(255,255,255,0.65)" text-anchor="middle">Time to Tailor</text>
+
+  <!-- CTA pill -->
+  <rect x="60" y="570" width="300" height="44" rx="22" fill="white"/>
+  <text x="210" y="598" font-family="Arial,sans-serif" font-weight="800" font-size="18" fill="#2563eb" text-anchor="middle">resumetailored.com →</text>
+
+  <!-- Right side document mockup -->
+  <rect x="760" y="120" width="380" height="430" rx="20" fill="white" opacity="0.97"/>
+  <!-- doc header bar -->
+  <rect x="760" y="120" width="380" height="48" rx="20" fill="#f8fafc"/>
+  <rect x="760" y="148" width="380" height="20" fill="#f8fafc"/>
+  <circle cx="790" cy="144" r="8" fill="#e5e7eb"/>
+  <circle cx="812" cy="144" r="8" fill="#e5e7eb"/>
+  <circle cx="834" cy="144" r="8" fill="#e5e7eb"/>
+  <text x="950" y="150" font-family="Arial,sans-serif" font-weight="700" font-size="13" fill="#94a3b8" text-anchor="middle">AI Tailored Resume</text>
+  <!-- doc content lines -->
+  <rect x="788" y="185" width="200" height="14" rx="7" fill="#1e40af"/>
+  <rect x="788" y="207" width="280" height="9" rx="4.5" fill="#e2e8f0"/>
+  <rect x="788" y="224" width="240" height="9" rx="4.5" fill="#e2e8f0"/>
+  <!-- section header -->
+  <rect x="788" y="252" width="100" height="11" rx="5.5" fill="#2563eb"/>
+  <rect x="788" y="272" width="308" height="8" rx="4" fill="#dbeafe"/>
+  <rect x="788" y="288" width="290" height="8" rx="4" fill="#dbeafe"/>
+  <rect x="788" y="304" width="260" height="8" rx="4" fill="#dbeafe"/>
+  <!-- section 2 -->
+  <rect x="788" y="332" width="120" height="11" rx="5.5" fill="#2563eb"/>
+  <rect x="788" y="352" width="308" height="8" rx="4" fill="#e2e8f0"/>
+  <rect x="788" y="368" width="270" height="8" rx="4" fill="#e2e8f0"/>
+  <rect x="788" y="384" width="240" height="8" rx="4" fill="#e2e8f0"/>
+  <!-- AI badge overlay -->
+  <rect x="1060" y="128" width="62" height="28" rx="8" fill="#2563eb"/>
+  <text x="1091" y="146" font-family="Arial,sans-serif" font-weight="800" font-size="12" fill="white" text-anchor="middle">+ AI</text>
+  <!-- result badge -->
+  <rect x="788" y="460" width="310" height="52" rx="12" fill="#dcfce7"/>
+  <text x="943" y="482" font-family="Arial,sans-serif" font-weight="700" font-size="14" fill="#15803d" text-anchor="middle">✓ 3 interviews in first week</text>
+  <text x="943" y="502" font-family="Arial,sans-serif" font-weight="500" font-size="12" fill="#16a34a" text-anchor="middle">after using ResumeTailored AI</text>
+</svg>
