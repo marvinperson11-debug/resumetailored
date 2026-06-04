@@ -1175,5 +1175,135 @@ app.post('/api/contact', async (req, res) => {
   res.json({ success: true });
 });
 
+// ─── Admin: re-engagement email blast ────────────────────────────────────────
+// POST /api/admin/reengagement  { adminToken: "..." }
+// Sends a one-time "we've improved, come back!" email to every registered user.
+// Protect with ADMIN_TOKEN env var so this can't be triggered by strangers.
+app.post('/api/admin/reengagement', express.json(), async (req, res) => {
+  const adminToken = process.env.ADMIN_TOKEN;
+  if (!adminToken || req.body.adminToken !== adminToken) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const allUsers = db.prepare('SELECT email, username FROM users').all();
+  if (allUsers.length === 0) {
+    return res.json({ sent: 0, message: 'No registered users found.' });
+  }
+
+  let sent = 0;
+  const errors = [];
+
+  for (const user of allUsers) {
+    const firstName = (user.username || 'there').split(' ')[0];
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f6f9;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f6f9;padding:40px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.08);max-width:600px;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:36px 40px;text-align:center;">
+            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">ResumeTailor AI</h1>
+            <p style="margin:8px 0 0;color:#c4b5fd;font-size:14px;">Your AI-powered job search partner</p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:40px 40px 32px;">
+            <h2 style="margin:0 0 16px;color:#1e1b4b;font-size:22px;">Hey ${firstName}, we've been busy! 👋</h2>
+            <p style="margin:0 0 16px;color:#4b5563;font-size:15px;line-height:1.6;">
+              We noticed you signed up a little while back — and we wanted to reach out personally.
+              We've been heads-down improving ResumeTailor AI based on early feedback, and the platform is
+              in a much better place now.
+            </p>
+
+            <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.6;">Here's what's new:</p>
+
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding:12px 16px;background:#f5f3ff;border-left:4px solid #7c3aed;border-radius:0 8px 8px 0;margin-bottom:12px;display:block;">
+                  <strong style="color:#4f46e5;">✦ Smarter tailoring</strong><br>
+                  <span style="color:#6b7280;font-size:14px;">Claude AI now produces tighter, more targeted resumes that match job descriptions line by line.</span>
+                </td>
+              </tr>
+              <tr><td style="height:10px;"></td></tr>
+              <tr>
+                <td style="padding:12px 16px;background:#f5f3ff;border-left:4px solid #7c3aed;border-radius:0 8px 8px 0;">
+                  <strong style="color:#4f46e5;">✦ Cover letter generation</strong><br>
+                  <span style="color:#6b7280;font-size:14px;">One click and you get a personalized cover letter ready to send alongside your resume.</span>
+                </td>
+              </tr>
+              <tr><td style="height:10px;"></td></tr>
+              <tr>
+                <td style="padding:12px 16px;background:#f5f3ff;border-left:4px solid #7c3aed;border-radius:0 8px 8px 0;">
+                  <strong style="color:#4f46e5;">✦ Community &amp; career check-ins</strong><br>
+                  <span style="color:#6b7280;font-size:14px;">Connect with other job seekers, share wins, and get career coaching prompts to keep you on track.</span>
+                </td>
+              </tr>
+              <tr><td style="height:10px;"></td></tr>
+              <tr>
+                <td style="padding:12px 16px;background:#f5f3ff;border-left:4px solid #7c3aed;border-radius:0 8px 8px 0;">
+                  <strong style="color:#4f46e5;">✦ Improved stability</strong><br>
+                  <span style="color:#6b7280;font-size:14px;">We squashed the bugs from early launch. The app is faster, more reliable, and just works.</span>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:28px 0 24px;color:#4b5563;font-size:15px;line-height:1.6;">
+              Your free tailoring is waiting — no credit card needed to try it again. Come see the difference.
+            </p>
+
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td align="center">
+                  <a href="https://resumetailored.com/app"
+                     style="display:inline-block;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;padding:14px 36px;border-radius:8px;letter-spacing:0.2px;">
+                    Take ResumeTailor for a Spin →
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:24px 40px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
+            <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.6;">
+              You're receiving this because you created an account at resumetailored.com.<br>
+              Questions? Just reply — we read every email.<br>
+              <a href="https://resumetailored.com" style="color:#7c3aed;text-decoration:none;">resumetailored.com</a>
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "We've improved a lot — come give ResumeTailor another shot 🚀",
+        html
+      });
+      sent++;
+    } catch (err) {
+      console.error(`[Reengagement] Failed to send to ${user.email}:`, err.message);
+      errors.push({ email: user.email, error: err.message });
+    }
+  }
+
+  console.log(`[Reengagement] Blast complete. Sent: ${sent}/${allUsers.length}`);
+  res.json({ sent, total: allUsers.length, errors });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`ResumeTailor running on http://localhost:${PORT}`));
