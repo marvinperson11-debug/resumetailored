@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#07070f"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#bg)"/>
+  <circle cx="200" cy="200" r="300" fill="rgba(37,99,235,0.08)"/>
+  <circle cx="900" cy="900" r="280" fill="rgba(245,200,66,0.05)"/>
+
+  <!-- Logo -->
+  <rect x="72" y="72" width="50" height="50" rx="13" fill="#2563eb"/>
+  <text x="97" y="107" font-family="Arial,sans-serif" font-weight="900" font-size="28" fill="white" text-anchor="middle">R</text>
+  <text x="136" y="105" font-family="Arial,sans-serif" font-weight="800" font-size="17" fill="white">ResumeTailored AI</text>
+
+  <!-- Tag -->
+  <rect x="72" y="158" width="220" height="38" rx="19" fill="rgba(37,99,235,0.2)" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="182" y="182" font-family="Arial,sans-serif" font-weight="800" font-size="15" fill="#93c5fd" text-anchor="middle">⏱  时间就是机会</text>
+
+  <!-- Headline -->
+  <text x="72" y="285" font-family="Arial,sans-serif" font-weight="900" font-size="72" fill="white" letter-spacing="-2">手动改简历</text>
+  <text x="72" y="370" font-family="Arial,sans-serif" font-weight="900" font-size="72" fill="rgba(255,255,255,0.4)" letter-spacing="-2">需要 45 分钟</text>
+  <text x="72" y="455" font-family="Arial,sans-serif" font-weight="900" font-size="72" fill="white" letter-spacing="-2">AI帮你改</text>
+  <text x="72" y="540" font-family="Arial,sans-serif" font-weight="900" font-size="72" fill="#f5c842" letter-spacing="-2">只要 30 秒</text>
+
+  <!-- Visual timer comparison -->
+  <rect x="72" y="580" width="440" height="110" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+  <text x="292" y="622" font-family="Arial,sans-serif" font-weight="700" font-size="16" fill="rgba(255,255,255,0.5)" text-anchor="middle">手动修改简历</text>
+  <rect x="96" y="636" width="396" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
+  <rect x="96" y="636" width="396" height="16" rx="8" fill="rgba(220,38,38,0.5)"/>
+  <text x="292" y="672" font-family="Arial,sans-serif" font-weight="800" font-size="18" fill="#f87171" text-anchor="middle">45 分钟 😩</text>
+
+  <rect x="560" y="580" width="440" height="110" rx="16" fill="rgba(37,99,235,0.12)" stroke="rgba(37,99,235,0.3)" stroke-width="1"/>
+  <text x="780" y="622" font-family="Arial,sans-serif" font-weight="700" font-size="16" fill="rgba(255,255,255,0.5)" text-anchor="middle">ResumeTailored AI</text>
+  <rect x="584" y="636" width="392" height="16" rx="8" fill="rgba(255,255,255,0.08)"/>
+  <rect x="584" y="636" width="18" height="16" rx="8" fill="#2563eb"/>
+  <text x="780" y="672" font-family="Arial,sans-serif" font-weight="800" font-size="18" fill="#60a5fa" text-anchor="middle">30 秒 🚀</text>
+
+  <!-- Steps -->
+  <text x="72" y="742" font-family="Arial,sans-serif" font-weight="700" font-size="19" fill="rgba(255,255,255,0.6)">1️⃣  复制职位描述   2️⃣  粘贴到网站   3️⃣  下载完美简历</text>
+
+  <!-- Benefit list -->
+  <text x="72" y="800" font-family="Arial,sans-serif" font-size="19" fill="rgba(255,255,255,0.65)">✓  每个岗位都有专属定制简历</text>
+  <text x="72" y="834" font-family="Arial,sans-serif" font-size="19" fill="rgba(255,255,255,0.65)">✓  关键词自动匹配，ATS通过率97%</text>
+  <text x="72" y="868" font-family="Arial,sans-serif" font-size="19" fill="rgba(255,255,255,0.65)">✓  同时生成求职信，一步到位</text>
+
+  <!-- CTA -->
+  <rect x="200" y="910" width="680" height="68" rx="34" fill="#2563eb"/>
+  <text x="540" y="952" font-family="Arial,sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">每日免费 → resumetailored.com</text>
+
+  <text x="540" y="1022" font-family="Arial,sans-serif" font-size="15" fill="rgba(255,255,255,0.2)" text-anchor="middle">resumetailored.com</text>
+</svg>
