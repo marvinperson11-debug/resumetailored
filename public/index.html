@@ -2375,6 +2375,46 @@
       if (a) a.textContent = footerMap[href];
     });
 
+    // 9. Competitor comparison table
+    var ccTitleEl = document.querySelector('.cc-title');
+    if (ccTitleEl) ccTitleEl.textContent = isZh ? '我们与Jobscan和Rezi的对比' : 'How we compare to Jobscan & Rezi';
+    var ccSubEl = document.querySelector('.cc-sub');
+    if (ccSubEl) ccSubEl.textContent = isZh ? '同样的效果。无需每月$49.95。没有质量糟糕的求职信。' : 'Same result. No $49.95/month. No weak cover letters.';
+    var ccThs = document.querySelectorAll('.cc-table th');
+    var ccThD = isZh ? ['功能', 'Jobscan', 'Rezi', 'ResumeTailor AI ✦'] : ['Feature', 'Jobscan', 'Rezi', 'ResumeTailor AI ✦'];
+    ccThs.forEach(function(th, i) { if (ccThD[i] !== undefined) th.textContent = ccThD[i]; });
+    var ccRowData = isZh ? [
+      ['月费', '$49.95/月', '$29/月', '$19/月'],
+      ['免费版', '仅5次扫描', '仅1份简历', '每日1次完整重写'],
+      ['完整AI简历重写', '✗ 仅评分', '✓', '✓'],
+      ['求职信', '基础生成器', '⚠ 需要大量编辑', '✓ 针对职位，即发即用'],
+      ['ATS关键词匹配分数', '✓', '✓', '✓'],
+      ['终身方案', '✗', '$149一次性', '$129一次性'],
+      ['简历+求职信同时生成', '✗', '✗', '✓ 30秒完成']
+    ] : [
+      ['Monthly price', '$49.95/mo', '$29/mo', '$19/mo'],
+      ['Free tier', '5 scans only', '1 resume only', '1 full rewrite/day'],
+      ['Full AI resume rewrite', '✗ Score only', '✓', '✓'],
+      ['Cover letters', 'Basic generator', '⚠ Needs heavy editing', '✓ Job-specific, ready to send'],
+      ['ATS keyword match score', '✓', '✓', '✓'],
+      ['Lifetime option', '✗', '$149 one-time', '$129 one-time'],
+      ['Resume + cover letter together', '✗', '✗', '✓ In 30 seconds']
+    ];
+    document.querySelectorAll('.cc-table tbody tr').forEach(function(row, i) {
+      if (!ccRowData[i]) return;
+      var cells = row.querySelectorAll('td');
+      if (cells[0]) cells[0].innerHTML = '<strong>' + ccRowData[i][0] + '</strong>';
+      if (cells[1]) cells[1].textContent = ccRowData[i][1];
+      if (cells[2]) cells[2].textContent = ccRowData[i][2];
+      if (cells[3]) cells[3].textContent = ccRowData[i][3];
+    });
+    var ccFootnoteEl = document.querySelector('.competitor-compare > div:last-child');
+    if (ccFootnoteEl) {
+      var jLink = '<a href="/jobscan-alternative" style="color:#2563eb;font-weight:600;margin-left:8px;">' + (isZh ? '完整Jobscan对比 →' : 'Full Jobscan comparison →') + '</a>';
+      var rLink = '<a href="/rezi-alternative" style="color:#2563eb;font-weight:600;margin-left:8px;">' + (isZh ? '完整Rezi对比 →' : 'Full Rezi comparison →') + '</a>';
+      ccFootnoteEl.innerHTML = (isZh ? 'Jobscan数据：无限次扫描每月$49.95。Rezi求职信质量基于已发布的用户评价。' : 'Jobscan data: $49.95/mo for unlimited scans. Rezi cover letter quality based on published user reviews.') + jLink + rLink;
+    }
+
     // 8. Language toggle buttons
     var btn1 = document.getElementById('langToggleBtn');
     var btn2 = document.getElementById('langToggleBtnFooter');
