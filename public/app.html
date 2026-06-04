@@ -1585,6 +1585,100 @@
         var span = btn.querySelector('span');
         if (span && sigFontLabels[i]) btn.childNodes[btn.childNodes.length - 1].textContent = ' ' + sigFontLabels[i];
       });
+      // 22b. Resume builder & cover letter static input placeholders
+      var rbPh2 = {
+        rbName: isZh ? '姓名 *' : 'Full Name *',
+        rbEmail: isZh ? '邮箱地址 *' : 'Email Address *',
+        rbPhone: isZh ? '电话号码' : 'Phone Number',
+        rbLocation: isZh ? '城市，省份' : 'City, State',
+        rbLinkedin: isZh ? 'LinkedIn链接（可选）' : 'LinkedIn URL (optional)',
+        rbWebsite: isZh ? '网站/作品集（可选）' : 'Website / Portfolio (optional)',
+        rbSummary: isZh ? '2–3句话概述你的背景和核心优势...' : '2–3 sentence overview of your background and key strengths...',
+        rbSkills: isZh ? '例：JavaScript、React、Python、SQL、项目管理、Adobe Photoshop...' : 'e.g. JavaScript, React, Python, SQL, Project Management, Adobe Photoshop...',
+        rbCerts: isZh ? '例：AWS认证解决方案架构师、PMP、Google Analytics...' : 'e.g. AWS Certified Solutions Architect, PMP, Google Analytics...',
+        clName: isZh ? '姓名 *' : 'Full Name *',
+        clEmail: isZh ? '邮箱地址 *' : 'Email Address *',
+        clPhone: isZh ? '电话号码' : 'Phone Number',
+        clLocation: isZh ? '城市，省份' : 'City, State',
+        clCompany: isZh ? '公司名称 *' : 'Company Name *',
+        clRole: isZh ? '职位名称 *' : 'Job Title / Role *',
+        clManager: isZh ? '招聘经理姓名（可选）' : 'Hiring Manager Name (optional)'
+      };
+      Object.keys(rbPh2).forEach(function(id) { var el = document.getElementById(id); if (el) el.placeholder = rbPh2[id]; });
+      var clHighlightsEl = document.getElementById('clHighlights');
+      if (clHighlightsEl) clHighlightsEl.placeholder = isZh
+        ? '列出你希望信中重点强调的成就、技能或经历——每行一条。AI会自然地融入其中。\n\n例：\n带领8人团队，营收增长40%\n5年企业销售经验\n建立了85,000名订阅者的邮件列表'
+        : 'List accomplishments, skills, or experiences you want the letter to highlight — one per line. The AI will weave these in naturally.\n\ne.g.\nLed a team of 8 and grew revenue 40%\n5 years of enterprise sales experience\nBuilt an email list of 85,000 subscribers';
+      var clMotivationEl = document.getElementById('clMotivation');
+      if (clMotivationEl) clMotivationEl.placeholder = isZh
+        ? '你对这家公司或职位有什么特别的兴趣？AI会让你的信看起来真诚而非千篇一律。'
+        : 'What excites you about this specific company or role? The AI will make your letter feel personal and genuine rather than generic.';
+      // 22c. LinkedIn form labels, description, placeholder, free status
+      var liTargetLabelEl = document.querySelector('label[for="linkedinTargetRole"]');
+      if (liTargetLabelEl) liTargetLabelEl.textContent = isZh ? '目标职位 / 职称' : 'Target Role / Job Title';
+      var liProfileLabelEl = document.querySelector('label[for="linkedinProfileText"]');
+      if (liProfileLabelEl) liProfileLabelEl.textContent = isZh ? '你当前的LinkedIn个人资料文字' : 'Your Current LinkedIn Profile Text';
+      var liProfileDescEl = document.querySelector('#panel-linkedin .input-group p');
+      if (liProfileDescEl) liProfileDescEl.textContent = isZh ? '粘贴你当前的标题、个人简介和工作经历描述。提供的信息越详细，优化效果越好。' : 'Paste your current headline, About section, and experience descriptions. The more detail you provide, the better the optimization.';
+      var liTargetRoleInputEl = document.getElementById('linkedinTargetRole');
+      if (liTargetRoleInputEl) liTargetRoleInputEl.placeholder = isZh ? '例：高级产品经理、软件工程师、市场总监' : 'e.g. Senior Product Manager, Software Engineer, Marketing Director';
+      var liProfileTextareaEl = document.getElementById('linkedinProfileText');
+      if (liProfileTextareaEl) liProfileTextareaEl.placeholder = isZh
+        ? '粘贴你的LinkedIn标题、个人简介和工作经历要点...\n\n示例：\n标题：Acme Corp产品经理\n\n个人简介：我是一位充满热情的产品经理，拥有5年经验...\n\n工作经历：\n产品经理，Acme Corp（2020–至今）\n- 管理产品路线图\n- 与工程团队协作\n- 协助推出新功能'
+        : 'Paste your LinkedIn headline, About section, and experience bullets here...\n\nExample:\nHeadline: Product Manager at Acme Corp\n\nAbout: I am a passionate product manager with 5 years of experience...\n\nExperience:\nProduct Manager, Acme Corp (2020–Present)\n- Managed product roadmap\n- Worked with engineering team\n- Helped launch new features';
+      var linkedinFreeTextEl = document.getElementById('linkedinFreeText');
+      if (linkedinFreeTextEl) linkedinFreeTextEl.textContent = isZh ? '✓ 今日还有1次免费LinkedIn优化' : '✓ 1 free LinkedIn optimization available today';
+      // 22d. Template modal lock content
+      var tplLockTitle = document.querySelector('.tpl-modal-lock-title');
+      if (tplLockTitle) tplLockTitle.textContent = isZh ? '专业版模板' : 'Pro Template';
+      var tplLockSub = document.querySelector('.tpl-modal-lock-sub');
+      if (tplLockSub) tplLockSub.textContent = isZh ? '升级专业版以解锁每种类型的全部20个高级模板和无限次定制。' : 'Upgrade to Pro to unlock all 20 premium templates per type and unlimited tailorings.';
+      var tplLockBtn = document.querySelector('.tpl-modal-lock .btn-primary');
+      if (tplLockBtn) tplLockBtn.textContent = isZh ? '升级专业版 — ¥19/月 →' : 'Upgrade to Pro — $19/mo →';
+      var tplLockPeek = document.querySelector('.tpl-modal-lock-peek');
+      if (tplLockPeek) tplLockPeek.textContent = isZh ? '仅查看预览 ↓' : 'View preview only ↓';
+      // 22e. Dynamic work/edu entries — update already-rendered entries
+      document.querySelectorAll('.rb-entry').forEach(function(entry) {
+        var isWork = entry.id.startsWith('work-');
+        var idx = entry.id.split('-')[1];
+        var labelEl = entry.querySelector('.rb-entry-label');
+        if (labelEl) labelEl.textContent = isZh ? (isWork ? '职位 ' + idx : '学历 ' + idx) : (isWork ? 'Position ' + idx : 'Degree ' + idx);
+        var removeBtn = entry.querySelector('.rb-remove-btn');
+        if (removeBtn) removeBtn.textContent = isZh ? '✕ 删除' : '✕ Remove';
+        var inputs = entry.querySelectorAll('.rb-input');
+        if (isWork) {
+          var workPh = isZh
+            ? ['职位名称 *', '公司/机构 *', '开始日期（如 2020年1月）', '结束日期（或"至今"）']
+            : ['Job Title *', 'Company / Organization *', 'Start Date (e.g. Jan 2020)', "End Date (or 'Present')"];
+          inputs.forEach(function(inp, i) { if (workPh[i]) inp.placeholder = workPh[i]; });
+          var ta = entry.querySelector('.rb-textarea');
+          if (ta) ta.placeholder = isZh ? '主要职责和成就——每行一条。AI将根据职位描述对其进行优化和定制。' : 'Key responsibilities and achievements — one per line. The AI will polish and tailor these to the job.';
+        } else {
+          var eduPh = isZh
+            ? ['学位（如：计算机科学学士）*', '学校/大学 *', '毕业年份（如：2020）', 'GPA（可选）']
+            : ['Degree (e.g. B.S. Computer Science) *', 'School / University *', 'Graduation Year (e.g. 2020)', 'GPA (optional)'];
+          inputs.forEach(function(inp, i) { if (eduPh[i]) inp.placeholder = eduPh[i]; });
+        }
+      });
+      // 22f. Status badge
+      var statusBadgeEl = document.getElementById('statusBadge');
+      if (statusBadgeEl) {
+        if (isSubscriberFlag) {
+          statusBadgeEl.innerHTML = '<span class="free-badge pro-badge">✦ ' + (isZh ? '专业版 — 无限次定制已激活' : 'Pro — Unlimited Tailorings Active') + '</span>';
+        } else {
+          var parts3 = [];
+          if (freeResumesLeft > 0) parts3.push(isZh ? '1次免费简历定制' : '1 free resume');
+          if (freeCoverLettersLeft > 0) parts3.push(isZh ? '1次免费求职信' : '1 free cover letter');
+          var badgeTxt2 = parts3.length > 0 ? parts3.join(' + ') + (isZh ? '（今日可用）' : ' available today') : (isZh ? '今日免费次数已用完' : '0 free uses left today');
+          statusBadgeEl.innerHTML = '<span class="free-badge">' + badgeTxt2 + '</span>';
+        }
+      }
+      // 22g. Nav username greeting
+      var navUsernameEl = document.getElementById('navUsername');
+      if (navUsernameEl && navUsernameEl.style.display !== 'none') {
+        var uname = localStorage.getItem('rt_username') || '';
+        if (uname) navUsernameEl.textContent = (isZh ? '你好，' : 'Hi, ') + uname;
+      }
 
       // 23. Language toggle button
       var langBtnEl = document.getElementById('langToggleBtn');
@@ -1681,7 +1775,8 @@
       document.getElementById('authOverlay').style.display = 'none';
       const username = getStoredUsername();
       const navUsername = document.getElementById('navUsername');
-      navUsername.textContent = 'Hi, ' + username;
+      const _lang = localStorage.getItem('rt_lang') || 'en';
+      navUsername.textContent = (_lang === 'zh' ? '你好，' : 'Hi, ') + username;
       navUsername.style.display = 'inline';
       document.getElementById('logoutBtn').style.display = 'inline-flex';
       checkStatus();
@@ -1943,18 +2038,19 @@
       const div = document.createElement('div');
       div.className = 'rb-entry';
       div.id = id;
+      const isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
       div.innerHTML = `
         <div class="rb-entry-header">
-          <span class="rb-entry-label">Position ${idx}</span>
-          <button class="rb-remove-btn" onclick="removeEntry('${id}')">✕ Remove</button>
+          <span class="rb-entry-label">${isZh ? '职位 ' + idx : 'Position ' + idx}</span>
+          <button class="rb-remove-btn" onclick="removeEntry('${id}')">${isZh ? '✕ 删除' : '✕ Remove'}</button>
         </div>
         <div class="rb-grid-2">
-          <input type="text" class="rb-input" placeholder="Job Title *" data-field="title" />
-          <input type="text" class="rb-input" placeholder="Company / Organization *" data-field="company" />
-          <input type="text" class="rb-input" placeholder="Start Date (e.g. Jan 2020)" data-field="start" />
-          <input type="text" class="rb-input" placeholder="End Date (or 'Present')" data-field="end" />
+          <input type="text" class="rb-input" placeholder="${isZh ? '职位名称 *' : 'Job Title *'}" data-field="title" />
+          <input type="text" class="rb-input" placeholder="${isZh ? '公司/机构 *' : 'Company / Organization *'}" data-field="company" />
+          <input type="text" class="rb-input" placeholder="${isZh ? '开始日期（如 2020年1月）' : 'Start Date (e.g. Jan 2020)'}" data-field="start" />
+          <input type="text" class="rb-input" placeholder="${isZh ? '结束日期（或"至今"）' : "End Date (or 'Present')"}" data-field="end" />
         </div>
-        <textarea class="rb-textarea" placeholder="Key responsibilities and achievements — one per line. The AI will polish and tailor these to the job." data-field="bullets"></textarea>
+        <textarea class="rb-textarea" placeholder="${isZh ? '主要职责和成就——每行一条。AI将根据职位描述对其进行优化和定制。' : 'Key responsibilities and achievements — one per line. The AI will polish and tailor these to the job.'}" data-field="bullets"></textarea>
       `;
       document.getElementById('rbWorkEntries').appendChild(div);
     }
@@ -1966,16 +2062,17 @@
       const div = document.createElement('div');
       div.className = 'rb-entry';
       div.id = id;
+      const isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
       div.innerHTML = `
         <div class="rb-entry-header">
-          <span class="rb-entry-label">Degree ${idx}</span>
-          <button class="rb-remove-btn" onclick="removeEntry('${id}')">✕ Remove</button>
+          <span class="rb-entry-label">${isZh ? '学历 ' + idx : 'Degree ' + idx}</span>
+          <button class="rb-remove-btn" onclick="removeEntry('${id}')">${isZh ? '✕ 删除' : '✕ Remove'}</button>
         </div>
         <div class="rb-grid-2">
-          <input type="text" class="rb-input" placeholder="Degree (e.g. B.S. Computer Science) *" data-field="degree" />
-          <input type="text" class="rb-input" placeholder="School / University *" data-field="school" />
-          <input type="text" class="rb-input" placeholder="Graduation Year (e.g. 2020)" data-field="year" />
-          <input type="text" class="rb-input" placeholder="GPA (optional)" data-field="gpa" />
+          <input type="text" class="rb-input" placeholder="${isZh ? '学位（如：计算机科学学士）*' : 'Degree (e.g. B.S. Computer Science) *'}" data-field="degree" />
+          <input type="text" class="rb-input" placeholder="${isZh ? '学校/大学 *' : 'School / University *'}" data-field="school" />
+          <input type="text" class="rb-input" placeholder="${isZh ? '毕业年份（如：2020）' : 'Graduation Year (e.g. 2020)'}" data-field="year" />
+          <input type="text" class="rb-input" placeholder="${isZh ? 'GPA（可选）' : 'GPA (optional)'}" data-field="gpa" />
         </div>
       `;
       document.getElementById('rbEduEntries').appendChild(div);
