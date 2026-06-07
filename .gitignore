@@ -6,3 +6,4 @@ Thumbs.db
 data/
 !.claude/skills/**/data/
 !.claude/skills/**/data/**
+__pycache__/
