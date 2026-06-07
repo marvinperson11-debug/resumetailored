@@ -2970,7 +2970,7 @@
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode
         ? `font-family:${font};color:#222;display:flex;width:100%;padding-bottom:28px;`
-        : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+        : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       return `<div style="${outerStyle}"><div style="width:215px;background:${c.p};padding:36px 20px;flex-shrink:0;${pca}"><div style="width:56px;height:56px;border-radius:50%;background:${c.a};display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;font-weight:900;color:#fff;${pca}">${escHtml(initials)}</div><div style="color:#fff;text-align:center;margin-bottom:20px;"><div style="font-size:15px;font-weight:800;line-height:1.3;">${escHtml(name)}</div></div><div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">Contact</div><div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.9;">${contactLines.map(l=>`<div>${escHtml(l)}</div>`).join('')}</div></div>${sidebarHtml}</div><div style="flex:1;padding:36px 30px;min-width:0;">${mainHtml}</div></div>`;
     }
 
@@ -2981,7 +2981,7 @@
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode
         ? `font-family:${font};color:#222;`
-        : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+        : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;${pca}"><div style="font-size:26px;font-weight:900;letter-spacing:-0.5px;line-height:1.2;">${escHtml(name)}</div><div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;display:flex;flex-wrap:wrap;gap:12px;">${contactParts.map(s=>`<span>${escHtml(s)}</span>`).join('')}</div></div><div style="padding:20px 44px 28px;">${sectionsHtml}</div></div>`;
     }
 
@@ -2997,7 +2997,7 @@
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const leftHtml = `<div style="font-size:17px;font-weight:900;color:${c.p};margin-bottom:5px;line-height:1.2;">${escHtml(name)}</div><div style="margin-bottom:16px;">${contactLines.map(l=>`<div style="font-size:10.5px;color:#555;line-height:1.7;">${escHtml(l)}</div>`).join('')}</div>${sideSecs.map(sec=>`<div style="margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid ${c.a}50;">${escHtml(sec.title)}</div>${sec.lines.map(raw=>{const t=raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();if(!t)return '';return `<div style="font-size:10.5px;color:#444;line-height:1.65;page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;">${escHtml(t.replace(/^[•·\-\*]\s*/,''))}</div>`;}).join('')}</div>`).join('')}`;
       const rightHtml = mainSecs.map(sec=>`<div style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`).join('');
-      const outerStyle = printMode ? `font-family:${font};color:#222;display:flex;width:100%;` : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+      const outerStyle = printMode ? `font-family:${font};color:#222;display:flex;width:100%;` : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       return `<div style="${outerStyle}"><div style="width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;flex-shrink:0;${pca}">${leftHtml}</div><div style="flex:1;padding:32px 28px;min-width:0;">${rightHtml}</div></div>`;
     }
 
@@ -3008,7 +3008,7 @@
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const contactHtml = contactParts.map((s,i)=>`${i>0?`<span style="color:${c.a};margin:0 8px;">·</span>`:''}${escHtml(s)}`).join('');
       const sectionsHtml = sections.map(sec=>`<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:inline-block;background:${c.p};color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 11px;border-radius:3px;margin-bottom:10px;${pca}">${escHtml(sec.title)}</div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`).join('');
-      const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+      const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       return `<div style="${outerStyle}"><div style="padding:26px 44px 18px;border-left:5px solid ${c.p};${pca}"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(name)}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${pca}"></div></div><div style="padding:18px 44px 32px;">${sectionsHtml}</div></div>`;
     }
 
@@ -3035,7 +3035,7 @@
         bodyHtml += `<div style="font-size:13px;line-height:1.85;color:#333;margin-bottom:1px;page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;">${escHtml(t)}</div>`;
       }
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
-      const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+      const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       const bodyPad = printMode ? 'padding:24px 44px 28px;' : 'padding:24px 192px 0;';
       return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;${pca}"><div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;">${escHtml(name)}</div>${contactLines.length?`<div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;">${escHtml(contactLines.join(' | '))}</div>`:''}</div><div style="${bodyPad}">${bodyHtml}</div></div>`;
     }
@@ -3089,7 +3089,7 @@
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const cardWrap = printMode
         ? `font-family:${font};color:#222;`
-        : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+        : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       const _pbip = 'page-break-inside:avoid;break-inside:avoid;-webkit-column-break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
       const bodyParas = p.body.map(para =>
         `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 16px;${_pbip}">${escHtml(para)}</p>`
@@ -3113,7 +3113,7 @@
       if (tpl.layout === 'cBold') {
         const boldOuter = printMode
           ? `font-family:${font};color:#222;`
-          : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+          : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
         const boldBody = printMode ? 'padding:24px 52px 28px;' : 'padding:24px 192px 0;';
         const roleDate = roleLine.length
           ? `<div style="display:flex;justify-content:space-between;align-items:center;background:${c.l};padding:12px 52px;${pca}"><div><div style="font-size:13px;font-weight:800;color:${c.p};">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};font-weight:700;">${escHtml(p.company)}</div></div><div style="font-size:11.5px;color:#999;">${p.date}</div></div>`
@@ -3151,7 +3151,7 @@
       if (tpl.layout === 'cSplit') {
         const splitOuter = printMode
           ? `font-family:${font};color:#222;`
-          : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;`;
+          : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
         const splitBody = printMode ? 'padding:24px 40px 28px;' : 'padding:24px 192px 0;';
         const roleInfo = roleLine.length
           ? `<div style="text-align:right;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.7);">${p.date}</div><div style="font-size:14px;font-weight:800;color:#fff;margin-top:4px;">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};">${escHtml(p.company)}</div></div>`
@@ -3181,7 +3181,7 @@
         const hdr = printMode ? '' : 'padding:76px;';
         const cleanWrap = printMode
           ? `font-family:${font};background:${c.l};color:#222;padding:0 0 28px 0;${pca}`
-          : `font-family:${font};background:${c.l};color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;${pca}`;
+          : `font-family:${font};background:${c.l};color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);${pca}`;
         return `<div style="${cleanWrap}${hdr}">
           <div style="margin-bottom:44px;">
             <div style="font-size:34px;font-weight:900;letter-spacing:-1.5px;color:${c.p};">${escHtml(p.name)}</div>
@@ -3227,26 +3227,26 @@
         const wasBold = /^\*\*[^*]+\*\*$/.test(raw.trim());
         t = t.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
         if (!t) { _closeGrp(); html += `<div style="height:7px;"></div>`; continue; }
-        if (firstLine) { firstLine = false; html += tpl.style === 'minimal' ? `<div style="font-size:22px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:#111827;margin-bottom:3px;">${escHtml(t)}</div>` : `<div style="font-size:22px;font-weight:800;color:${c.p};margin-bottom:3px;">${escHtml(t)}</div>`; continue; }
-        if ((t.includes('@') || /\(\d{3}\)/.test(t) || (t.includes('|') && t.length < 80 && !/\d{4}/.test(t))) && t.length < 120) { html += `<div style="font-size:12px;color:#666;margin-bottom:2px;">${escHtml(t)}</div>`; continue; }
+        if (firstLine) { firstLine = false; html += tpl.style === 'minimal' ? `<div style="font-size:22px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:#111827;margin-bottom:3px;">${escHtml(t)}</div>` : `<div style="font-size:28px;font-weight:800;color:${c.p};letter-spacing:-0.5px;margin-bottom:4px;">${escHtml(t)}</div>`; continue; }
+        if ((t.includes('@') || /\(\d{3}\)/.test(t) || (t.includes('|') && t.length < 80 && !/\d{4}/.test(t))) && t.length < 120) { html += `<div style="font-size:12px;color:#666;margin-bottom:14px;letter-spacing:0.3px;">${escHtml(t)}</div>`; continue; }
         const isHdr = t.length >= 2 && t.length <= 50 && /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(t);
         if (isHdr) {
           _closeGrp();
-          if (tpl.style === 'left-bar') html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:8px;margin:18px 0 10px;">${escHtml(t)}</div>`;
-          else if (tpl.style === 'icon-bar') html += `<div style="display:flex;align-items:center;gap:8px;margin:18px 0 10px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
-          else if (tpl.style === 'minimal') html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:20px 0 10px;">${escHtml(t)}</div>`;
-          else html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:5px;margin:18px 0 10px;">${escHtml(t)}</div>`;
+          if (tpl.style === 'left-bar') html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:12px;margin:24px 0 12px;">${escHtml(t)}</div>`;
+          else if (tpl.style === 'icon-bar') html += `<div style="display:flex;align-items:center;gap:8px;margin:24px 0 12px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
+          else if (tpl.style === 'minimal') html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:24px 0 12px;">${escHtml(t)}</div>`;
+          else html += `<div style="margin-top:24px;"></div><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-bottom:1.5px solid ${c.a};padding-bottom:5px;margin-bottom:12px;">${escHtml(t)}</div>`;
           continue;
         }
-        if (wasBold && t.length < 70) { _closeGrp(); _openGrp(); html += `<div style="font-size:13.5px;font-weight:700;color:#222;margin:10px 0 1px;${_pbi}">${escHtml(t)}</div>`; continue; }
-        if (/^[•·\-\*]\s/.test(raw.trim())) { _openGrp(); const txt = t.replace(/^[•·\-\*]\s*/, ''); html += `<div style="padding-left:14px;font-size:13px;line-height:1.8;color:#333;margin:2px 0;${_pbi}">• ${escHtml(txt)}</div>`; continue; }
-        if ((t.includes('—') || t.includes('–') || (t.includes('|') && /\d{4}/.test(t))) && t.length < 150) { html += `<div style="font-size:12px;color:${c.a};font-weight:600;margin-bottom:5px;${_pbi}">${escHtml(t)}</div>`; continue; }
+        if (wasBold && t.length < 70) { _closeGrp(); _openGrp(); html += `<div style="font-size:14px;font-weight:800;color:#111827;margin:14px 0 2px;${_pbi}">${escHtml(t)}</div>`; continue; }
+        if (/^[•·\-\*]\s/.test(raw.trim())) { _openGrp(); const txt = t.replace(/^[•·\-\*]\s*/, ''); html += `<div style="padding-left:16px;font-size:13.5px;line-height:1.85;color:#374151;margin:3px 0;${_pbi}">• ${escHtml(txt)}</div>`; continue; }
+        if ((t.includes('—') || t.includes('–') || (t.includes('|') && /\d{4}/.test(t))) && t.length < 150) { html += `<div style="font-size:12px;color:${c.a};font-weight:600;margin-bottom:8px;${_pbi}">${escHtml(t)}</div>`; continue; }
         html += `<div style="font-size:13px;line-height:1.75;color:#333;${_pbi}">${escHtml(t)}</div>`;
       }
       _closeGrp();
       const bg = tpl.style === 'minimal' ? '#fafafa' : '#fff';
       if (printMode) return `<div style="font-family:${font};background:${bg};color:#222;padding:0 0 28px 0;">${html}</div>`;
-      return `<div style="font-family:${font};background:${bg};padding:28px 32px;color:#222;border-radius:8px;border:1px solid #e5e7eb;">${html}</div>`;
+      return `<div style="font-family:${font};background:${bg};padding:52px 64px;color:#222;border-radius:4px;border:none;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 8px 32px rgba(0,0,0,0.1);">${html}</div>`;
     }
 
     // ── Edit mode ─────────────────────────────────────────────────────────────

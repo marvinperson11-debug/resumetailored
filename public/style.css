@@ -191,7 +191,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
 .output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .output-header h2 { font-size: 17px; font-weight: 800; color: var(--text); }
 .copy-btn { font-size: 13px; font-weight: 700; padding: 7px 16px; }
-.output-box { border-radius: 12px; min-height: 120px; overflow: hidden; }
+.output-box { border-radius: 4px; min-height: 120px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 10px 40px rgba(0,0,0,0.12); background: #fff; }
 
 /* ══ TEMPLATE PICKER ══════════════════════════════════════════════════════════ */
 .tpl-picker-section { margin: 20px 0 4px; }
@@ -202,8 +202,13 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
 
 /* ══ RESUME DOCUMENT BASE ═════════════════════════════════════════════════════ */
 .resume-doc, .cover-doc {
-  background: #fff; color: #1a1a1a; font-family: 'Georgia','Times New Roman',serif;
-  font-size: 13.5px; line-height: 1.78; padding: 40px 44px;
+  background: #fff;
+  color: #1a1a1a;
+  font-family: 'Georgia','Times New Roman',serif;
+  font-size: 13.5px;
+  line-height: 1.82;
+  padding: 52px 64px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06), 0 12px 40px rgba(0,0,0,0.12);
 }
 .rd-name { font-size: 26px; font-weight: 700; margin-bottom: 3px; }
 .rd-contact { font-size: 12px; color: #555; margin-bottom: 18px; }
