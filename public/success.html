@@ -13,40 +13,43 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: #f9fafb; color: #111827; min-height: 100vh; display: flex; flex-direction: column; }
+    body { font-family: 'Inter', sans-serif; background: #030712; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
 
-    .nav { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 0 24px; }
+    .nav { background: rgba(3,7,18,0.85); border-bottom: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 0 24px; }
     .nav-inner { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; height: 64px; }
-    .logo { font-size: 18px; font-weight: 900; color: #111827; text-decoration: none; }
-    .logo .badge-ai { background: #2563eb; color: #fff; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 5px; vertical-align: middle; margin-left: 4px; }
+    .logo { font-size: 18px; font-weight: 900; color: #f1f5f9; text-decoration: none; }
+    .logo .badge-ai { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 5px; vertical-align: middle; margin-left: 4px; }
 
     .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
     .card {
-      background: #fff; border-radius: 24px; padding: 56px 48px;
+      background: rgba(255,255,255,0.04); border-radius: 24px; padding: 56px 48px;
       max-width: 600px; width: 100%; text-align: center;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
-      border: 1px solid #e5e7eb;
+      border: 1px solid rgba(255,255,255,0.08);
     }
 
     .checkmark { font-size: 72px; margin-bottom: 20px; }
-    .card h1 { font-size: 36px; font-weight: 900; margin-bottom: 10px; color: #111827; }
-    .card .subtitle { font-size: 17px; color: #4b5563; margin-bottom: 36px; line-height: 1.6; }
+    .card h1 { font-size: 36px; font-weight: 900; margin-bottom: 10px; color: #e2e8f0; }
+    .card .subtitle { font-size: 17px; color: #94a3b8; margin-bottom: 36px; line-height: 1.6; }
 
     .perks-grid {
       display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 36px; text-align: left;
     }
     .perk {
       display: flex; gap: 10px; align-items: flex-start;
-      background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px;
+      transition: border-color .2s, transform .2s;
     }
+    .perk:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-3px); }
     .perk-icon { font-size: 20px; flex-shrink: 0; }
-    .perk-text { font-size: 13px; font-weight: 600; color: #374151; line-height: 1.4; }
+    .perk-text { font-size: 13px; font-weight: 600; color: #94a3b8; line-height: 1.4; }
 
     .btn { display: inline-flex; align-items: center; justify-content: center; font-family: inherit; font-size: 16px; font-weight: 700; border-radius: 10px; padding: 14px 32px; border: none; cursor: pointer; transition: all .15s; text-decoration: none; width: 100%; }
-    .btn-primary { background: #2563eb; color: #fff; }
-    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; box-shadow: 0 0 20px rgba(99,102,241,0.35); }
+    .btn-primary:hover { box-shadow: 0 0 32px rgba(99,102,241,0.6); transform: translateY(-1px); }
 
-    .footer-note { margin-top: 20px; font-size: 13px; color: #9ca3af; }
+    .footer-note { margin-top: 20px; font-size: 13px; color: #64748b; }
+    .footer-note a { color: #818CF8; font-weight: 600; }
+    .footer-note a:hover { color: #e2e8f0; }
 
     @media (max-width: 480px) {
       .card { padding: 36px 24px; }
@@ -81,7 +84,7 @@
     </div>
 
     <a href="/dashboard" class="btn btn-primary">Start Tailoring My Resume →</a>
-    <p class="footer-note">Questions? Email <a href="mailto:support@resumetailored.com" style="color:#2563eb;font-weight:600;">support@resumetailored.com</a></p>
+    <p class="footer-note">Questions? Email <a href="mailto:support@resumetailored.com">support@resumetailored.com</a></p>
   </div>
 </div>
 

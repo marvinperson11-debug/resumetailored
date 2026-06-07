@@ -23,20 +23,21 @@
   </script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Inter',Arial,sans-serif;background:#fff;color:#111827;line-height:1.6;}
+    body{font-family:'Inter',Arial,sans-serif;background:#030712;color:#e2e8f0;line-height:1.6;}
     a{color:inherit;text-decoration:none;}
-    .nav{background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:100;}
+    .nav{background:rgba(3,7,18,0.85);border-bottom:1px solid rgba(255,255,255,0.08);position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
     .nav-inner{max-width:1120px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;}
-    .logo{font-size:18px;font-weight:900;color:#111827;}
-    .logo .badge-ai{background:#2563eb;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;}
+    .logo{font-size:18px;font-weight:900;color:#f1f5f9;}
+    .logo .badge-ai{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;}
     .nav-links{display:flex;gap:28px;align-items:center;}
-    .nav-links a{font-size:14px;font-weight:600;color:#4b5563;}
+    .nav-links a{font-size:14px;font-weight:600;color:#94a3b8;}
+    .nav-links a:hover{color:#e2e8f0;}
     .nav-actions{display:flex;gap:12px;align-items:center;}
     .btn{display:inline-flex;align-items:center;justify-content:center;font-family:inherit;font-size:14px;font-weight:700;border-radius:8px;padding:10px 20px;border:none;cursor:pointer;transition:all .15s;text-decoration:none;white-space:nowrap;}
-    .btn-primary{background:#2563eb;color:#fff;}
-    .btn-primary:hover{background:#1d4ed8;}
-    .btn-ghost{background:transparent;color:#2563eb;border:2px solid #2563eb;}
-    .btn-ghost:hover{background:#eff6ff;}
+    .btn-primary{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;box-shadow:0 0 20px rgba(99,102,241,0.35);position:relative;overflow:hidden;}
+    .btn-primary:hover{box-shadow:0 0 32px rgba(99,102,241,0.6);transform:translateY(-1px);}
+    .btn-ghost{background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);}
+    .btn-ghost:hover{background:rgba(255,255,255,0.1);color:#e2e8f0;}
     .btn-lg{padding:14px 28px;font-size:16px;border-radius:10px;}
     .container{max-width:1120px;margin:0 auto;padding:0 24px;}
     .hero{background:linear-gradient(135deg,#4c1d95,#7c3aed);padding:80px 24px;text-align:center;color:#fff;}
@@ -45,61 +46,61 @@
     .hero-sub{font-size:17px;color:rgba(255,255,255,0.85);max-width:600px;margin:0 auto 28px;line-height:1.7;}
     .hero-note{font-size:13px;color:rgba(255,255,255,0.6);margin-top:10px;}
     .section{padding:80px 0;}
-    .section-gray{background:#f9fafb;}
-    .section-eyebrow{text-align:center;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#7c3aed;margin-bottom:14px;}
-    .section-title{text-align:center;font-size:clamp(26px,4vw,38px);font-weight:900;letter-spacing:-0.02em;margin-bottom:48px;color:#111827;}
-    .section-title span{color:#7c3aed;}
+    .section-gray{background:rgba(255,255,255,0.02);}
+    .section-eyebrow{text-align:center;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#818CF8;margin-bottom:14px;}
+    .section-title{text-align:center;font-size:clamp(26px,4vw,38px);font-weight:900;letter-spacing:-0.02em;margin-bottom:48px;color:#e2e8f0;}
+    .section-title span{background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
     .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:900px;margin:0 auto;}
-    .feature-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:28px;text-align:center;}
+    .feature-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;text-align:center;}
     .feature-icon{font-size:36px;margin-bottom:14px;}
-    .feature-card h4{font-size:16px;font-weight:800;margin-bottom:8px;color:#111827;}
-    .feature-card p{font-size:14px;color:#6b7280;line-height:1.65;}
+    .feature-card h4{font-size:16px;font-weight:800;margin-bottom:8px;color:#e2e8f0;}
+    .feature-card p{font-size:14px;color:#94a3b8;line-height:1.65;}
     .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;max-width:860px;margin:0 auto;}
-    .step-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px;text-align:center;}
-    .step-num{width:44px;height:44px;border-radius:50%;background:#ede9fe;color:#7c3aed;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
-    .step-card h3{font-size:16px;font-weight:800;margin-bottom:8px;}
-    .step-card p{font-size:14px;color:#6b7280;line-height:1.65;}
-    .example-box{max-width:640px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:28px;box-shadow:0 4px 16px rgba(0,0,0,0.06);}
+    .step-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:28px;text-align:center;}
+    .step-num{width:44px;height:44px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818CF8;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+    .step-card h3{font-size:16px;font-weight:800;margin-bottom:8px;color:#e2e8f0;}
+    .step-card p{font-size:14px;color:#94a3b8;line-height:1.65;}
+    .example-box{max-width:640px;margin:0 auto;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:28px;box-shadow:0 4px 16px rgba(0,0,0,0.3);}
     .example-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
-    .example-tag{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6b7280;}
-    .example-badge{background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;}
-    .example-meta{font-size:12px;color:#9ca3af;margin-bottom:14px;}
-    .example-greeting{font-size:14px;font-weight:600;color:#111827;margin-bottom:10px;}
-    .example-para{font-size:14px;color:#374151;line-height:1.75;margin-bottom:12px;}
-    .example-more{font-size:12px;color:#9ca3af;font-style:italic;}
+    .example-tag{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#64748b;}
+    .example-badge{background:rgba(52,211,153,0.15);color:#34d399;font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;}
+    .example-meta{font-size:12px;color:#64748b;margin-bottom:14px;}
+    .example-greeting{font-size:14px;font-weight:600;color:#e2e8f0;margin-bottom:10px;}
+    .example-para{font-size:14px;color:#94a3b8;line-height:1.75;margin-bottom:12px;}
+    .example-more{font-size:12px;color:#64748b;font-style:italic;}
     .differentiators{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:760px;margin:0 auto;}
-    .diff-item{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;}
+    .diff-item{display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;}
     .diff-icon{font-size:22px;flex-shrink:0;}
-    .diff-item h4{font-size:15px;font-weight:800;margin-bottom:4px;color:#111827;}
-    .diff-item p{font-size:13px;color:#6b7280;line-height:1.6;}
+    .diff-item h4{font-size:15px;font-weight:800;margin-bottom:4px;color:#e2e8f0;}
+    .diff-item p{font-size:13px;color:#94a3b8;line-height:1.6;}
     .pricing-cards{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:600px;margin:0 auto;}
-    .pricing-card{border:2px solid #e5e7eb;border-radius:18px;padding:28px;position:relative;}
-    .pricing-card-featured{border-color:#7c3aed;}
-    .plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#7c3aed;color:#fff;font-size:11px;font-weight:800;padding:3px 14px;border-radius:20px;white-space:nowrap;}
-    .plan-name{font-size:16px;font-weight:800;margin-bottom:6px;}
-    .plan-price{font-size:40px;font-weight:900;color:#111827;}
-    .plan-period{font-size:12px;color:#6b7280;margin-bottom:20px;}
+    .pricing-card{border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);border-radius:18px;padding:28px;position:relative;}
+    .pricing-card-featured{border-color:#6366F1;box-shadow:0 0 24px rgba(99,102,241,0.2);}
+    .plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:3px 14px;border-radius:20px;white-space:nowrap;}
+    .plan-name{font-size:16px;font-weight:800;margin-bottom:6px;color:#e2e8f0;}
+    .plan-price{font-size:40px;font-weight:900;color:#e2e8f0;}
+    .plan-period{font-size:12px;color:#64748b;margin-bottom:20px;}
     .plan-features{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:20px;}
-    .plan-features li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#374151;}
-    .check{color:#16a34a;font-weight:800;flex-shrink:0;}
-    .cross{color:#9ca3af;flex-shrink:0;}
+    .plan-features li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#94a3b8;}
+    .check{color:#34d399;font-weight:800;flex-shrink:0;}
+    .cross{color:#f87171;flex-shrink:0;}
     .faq-list{max-width:720px;margin:0 auto;}
-    .faq-item{border-bottom:1px solid #e5e7eb;}
-    .faq-q{display:flex;justify-content:space-between;align-items:center;padding:20px 0;cursor:pointer;font-size:15px;font-weight:600;color:#111827;}
-    .faq-q:hover{color:#7c3aed;}
-    .faq-arrow{font-size:20px;color:#9ca3af;}
-    .faq-a{font-size:14px;color:#6b7280;line-height:1.75;padding-bottom:20px;display:none;}
+    .faq-item{border-bottom:1px solid rgba(255,255,255,0.08);}
+    .faq-q{display:flex;justify-content:space-between;align-items:center;padding:20px 0;cursor:pointer;font-size:15px;font-weight:600;color:#e2e8f0;}
+    .faq-q:hover{color:#818CF8;}
+    .faq-arrow{font-size:20px;color:#64748b;}
+    .faq-a{font-size:14px;color:#94a3b8;line-height:1.75;padding-bottom:20px;display:none;}
     .cta-banner{background:linear-gradient(135deg,#4c1d95,#7c3aed);padding:72px 24px;text-align:center;color:#fff;}
     .cta-banner h2{font-size:clamp(24px,4vw,36px);font-weight:900;margin-bottom:14px;}
     .cta-banner p{font-size:16px;opacity:.85;margin-bottom:28px;}
     .btn-white{background:#fff;color:#7c3aed;font-weight:700;}
     .btn-white:hover{background:#f5f3ff;}
-    .footer{background:#111827;color:#9ca3af;padding:48px 24px;}
+    .footer{background:rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.07);color:#64748b;padding:48px 24px;}
     .footer-inner{max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;}
-    .footer-logo{font-size:18px;font-weight:900;color:#fff;}
+    .footer-logo{font-size:18px;font-weight:900;color:#e2e8f0;}
     .footer-links{display:flex;gap:24px;flex-wrap:wrap;}
-    .footer-links a{font-size:14px;font-weight:600;color:#9ca3af;}
-    .footer-links a:hover{color:#fff;}
+    .footer-links a{font-size:14px;font-weight:600;color:#64748b;}
+    .footer-links a:hover{color:#e2e8f0;}
     @media(max-width:768px){
       .nav-links,.nav-actions{display:none;}
       .features-grid,.steps-grid,.differentiators{grid-template-columns:1fr;}
@@ -197,14 +198,14 @@
       <div class="example-meta">June 3, 2026 · Generated from job description</div>
       <div class="example-greeting">Dear Hiring Manager,</div>
       <div class="example-para">
-        When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style="color:#7c3aed;">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale and reliability challenges Stripe operates at every day.
+        When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style="color:#818CF8;">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale and reliability challenges Stripe operates at every day.
       </div>
-      <div class="example-para" style="color:#6b7280;">
+      <div class="example-para" style="color:#64748b;">
         Over the past four years at [Company], I've led the API infrastructure handling 50M+ daily transactions, reduced on-call incidents by 60% through proactive observability tooling, and mentored a team of 6 engineers from junior to senior-level contributors...
       </div>
       <div class="example-more">+ 2 more paragraphs connecting your specific experience to their team and role...</div>
     </div>
-    <p style="text-align:center;margin-top:20px;font-size:13px;color:#9ca3af;">Compare to the typical AI output: "I am writing to express my interest in the Software Engineer position..."</p>
+    <p style="text-align:center;margin-top:20px;font-size:13px;color:#64748b;">Compare to the typical AI output: "I am writing to express my interest in the Software Engineer position..."</p>
   </div>
 </section>
 
@@ -260,7 +261,7 @@
           <li><span class="check">✓</span> 1 cover letter per day</li>
           <li><span class="check">✓</span> Resume + cover letter together</li>
           <li><span class="check">✓</span> Job-specific output</li>
-          <li><span class="cross">✗</span> <span style="color:#9ca3af;">Unlimited cover letters</span></li>
+          <li><span class="cross">✗</span> <span style="color:#64748b;">Unlimited cover letters</span></li>
         </ul>
         <a href="/dashboard" class="btn btn-ghost" style="width:100%;justify-content:center;">Start Free</a>
       </div>
@@ -318,7 +319,7 @@
 
 <footer class="footer">
   <div class="footer-inner">
-    <span class="footer-logo">ResumeTailored <span style="background:#2563eb;color:#fff;font-size:11px;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;">AI</span></span>
+    <span class="footer-logo">ResumeTailored <span style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;">AI</span></span>
     <div class="footer-links">
       <a href="/how-it-works">How It Works</a>
       <a href="/blog">Blog</a>
