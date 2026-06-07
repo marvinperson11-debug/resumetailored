@@ -26,91 +26,92 @@
   </script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Inter',Arial,sans-serif;background:#fff;color:#111827;line-height:1.6;}
+    body{font-family:'Inter',Arial,sans-serif;background:#030712;color:#e2e8f0;line-height:1.6;}
     a{color:inherit;text-decoration:none;}
-    .nav{background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:100;}
+    .nav{background:rgba(3,7,18,0.85);border-bottom:1px solid rgba(255,255,255,0.08);position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
     .nav-inner{max-width:1120px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;}
-    .logo{font-size:18px;font-weight:900;color:#111827;}
-    .logo .badge-ai{background:#2563eb;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;}
+    .logo{font-size:18px;font-weight:900;color:#f1f5f9;}
+    .logo .badge-ai{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;}
     .nav-links{display:flex;gap:28px;align-items:center;}
-    .nav-links a{font-size:14px;font-weight:600;color:#4b5563;}
+    .nav-links a{font-size:14px;font-weight:600;color:#94a3b8;}
+    .nav-links a:hover{color:#e2e8f0;}
     .nav-actions{display:flex;gap:12px;align-items:center;}
     .btn{display:inline-flex;align-items:center;justify-content:center;font-family:inherit;font-size:14px;font-weight:700;border-radius:8px;padding:10px 20px;border:none;cursor:pointer;transition:all .15s;text-decoration:none;white-space:nowrap;}
-    .btn-primary{background:#2563eb;color:#fff;}
-    .btn-primary:hover{background:#1d4ed8;}
-    .btn-ghost{background:transparent;color:#2563eb;border:2px solid #2563eb;}
-    .btn-ghost:hover{background:#eff6ff;}
+    .btn-primary{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;box-shadow:0 0 20px rgba(99,102,241,0.35);position:relative;overflow:hidden;}
+    .btn-primary:hover{box-shadow:0 0 32px rgba(99,102,241,0.6);transform:translateY(-1px);}
+    .btn-ghost{background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);}
+    .btn-ghost:hover{background:rgba(255,255,255,0.1);color:#e2e8f0;}
     .btn-lg{padding:14px 28px;font-size:16px;border-radius:10px;}
     .container{max-width:1120px;margin:0 auto;padding:0 24px;}
-    .hero{background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:80px 24px;text-align:center;color:#fff;}
+    .hero{background:linear-gradient(135deg,#1e1b4b,#4c1d95);padding:80px 24px;text-align:center;color:#fff;}
     .hero h1{font-size:clamp(30px,5vw,52px);font-weight:900;letter-spacing:-0.03em;line-height:1.1;margin-bottom:18px;}
-    .hero h1 .accent{color:#93c5fd;}
+    .hero h1 .accent{color:#c4b5fd;}
     .hero-sub{font-size:17px;color:rgba(255,255,255,0.85);max-width:580px;margin:0 auto 28px;line-height:1.7;}
     .hero-note{font-size:13px;color:rgba(255,255,255,0.6);margin-top:10px;}
     .section{padding:80px 0;}
-    .section-gray{background:#f9fafb;}
-    .section-eyebrow{text-align:center;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#2563eb;margin-bottom:14px;}
-    .section-title{text-align:center;font-size:clamp(26px,4vw,38px);font-weight:900;letter-spacing:-0.02em;margin-bottom:48px;color:#111827;}
-    .section-title span{color:#2563eb;}
+    .section-gray{background:rgba(255,255,255,0.02);}
+    .section-eyebrow{text-align:center;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#818CF8;margin-bottom:14px;}
+    .section-title{text-align:center;font-size:clamp(26px,4vw,38px);font-weight:900;letter-spacing:-0.02em;margin-bottom:48px;color:#e2e8f0;}
+    .section-title span{background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
     .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:700px;margin:0 auto;}
-    .stat-box{text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px 16px;}
-    .stat-num{font-size:40px;font-weight:900;color:#2563eb;line-height:1;}
-    .stat-label{font-size:13px;color:#6b7280;margin-top:6px;font-weight:600;}
+    .stat-box{text-align:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:28px 16px;}
+    .stat-num{font-size:40px;font-weight:900;background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
+    .stat-label{font-size:13px;color:#94a3b8;margin-top:6px;font-weight:600;}
     .what-is-tailoring{max-width:760px;margin:0 auto;}
-    .what-is-tailoring p{font-size:16px;color:#374151;line-height:1.8;margin-bottom:18px;}
-    .highlight-box{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:20px 24px;margin:24px 0;}
-    .highlight-box p{margin:0;color:#1e40af;font-weight:700;font-size:15px;}
+    .what-is-tailoring p{font-size:16px;color:#94a3b8;line-height:1.8;margin-bottom:18px;}
+    .highlight-box{background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.25);border-radius:12px;padding:20px 24px;margin:24px 0;}
+    .highlight-box p{margin:0;color:#818CF8;font-weight:700;font-size:15px;}
     .manual-vs-ai{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;max-width:700px;margin:0 auto;}
-    .side-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:24px;}
+    .side-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;}
     .side-card h4{font-size:16px;font-weight:800;margin-bottom:12px;}
     .side-card ul{list-style:none;display:flex;flex-direction:column;gap:8px;}
-    .side-card li{font-size:13px;color:#374151;display:flex;gap:8px;}
-    .vs-badge{background:#111827;color:#fff;font-size:16px;font-weight:900;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .side-card li{font-size:13px;color:#94a3b8;display:flex;gap:8px;}
+    .vs-badge{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);color:#e2e8f0;font-size:16px;font-weight:900;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
     .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;max-width:860px;margin:0 auto;}
-    .step-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:28px;text-align:center;}
-    .step-num{width:44px;height:44px;border-radius:50%;background:#eff6ff;color:#2563eb;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
-    .step-card h3{font-size:16px;font-weight:800;margin-bottom:8px;}
-    .step-card p{font-size:14px;color:#6b7280;line-height:1.65;}
-    .demo-wrap{max-width:860px;margin:0 auto;display:grid;grid-template-columns:1fr auto 1fr;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.09);}
-    .demo-before{background:#f3f4f6;padding:28px;display:flex;flex-direction:column;gap:10px;}
-    .demo-after{background:#fff;padding:28px;border:2px solid #2563eb;display:flex;flex-direction:column;gap:10px;}
-    .demo-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#6b7280;}
-    .demo-badge-bad{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#fee2e2;color:#dc2626;width:fit-content;}
-    .demo-badge-good{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:#dcfce7;color:#16a34a;width:fit-content;}
-    .demo-bullet-bad{padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.55;color:#374151;background:#e5e7eb;}
-    .demo-bullet-good{padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.55;color:#1e40af;background:#eff6ff;border-left:3px solid #2563eb;font-weight:500;}
-    .demo-footer-bad{font-size:12px;font-weight:700;padding:10px;border-radius:8px;text-align:center;background:#fee2e2;color:#dc2626;margin-top:auto;}
-    .demo-footer-good{font-size:12px;font-weight:700;padding:10px;border-radius:8px;text-align:center;background:#dcfce7;color:#16a34a;margin-top:auto;}
-    .demo-arrow-col{background:#f9fafb;display:flex;align-items:center;justify-content:center;padding:0 20px;border-top:2px solid #e5e7eb;border-bottom:2px solid #e5e7eb;}
-    .demo-arrow-circle{width:48px;height:48px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;}
+    .step-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:28px;text-align:center;}
+    .step-num{width:44px;height:44px;border-radius:50%;background:rgba(99,102,241,0.2);color:#818CF8;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
+    .step-card h3{font-size:16px;font-weight:800;margin-bottom:8px;color:#e2e8f0;}
+    .step-card p{font-size:14px;color:#94a3b8;line-height:1.65;}
+    .demo-wrap{max-width:860px;margin:0 auto;display:grid;grid-template-columns:1fr auto 1fr;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.4);}
+    .demo-before{background:rgba(255,255,255,0.03);padding:28px;display:flex;flex-direction:column;gap:10px;border:1px solid rgba(255,255,255,0.08);}
+    .demo-after{background:rgba(99,102,241,0.06);padding:28px;border:2px solid #6366F1;display:flex;flex-direction:column;gap:10px;}
+    .demo-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;}
+    .demo-badge-bad{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(248,113,113,0.15);color:#f87171;width:fit-content;}
+    .demo-badge-good{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;background:rgba(52,211,153,0.15);color:#34d399;width:fit-content;}
+    .demo-bullet-bad{padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.55;color:#64748b;background:rgba(255,255,255,0.05);}
+    .demo-bullet-good{padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.55;color:#c4b5fd;background:rgba(99,102,241,0.1);border-left:3px solid #6366F1;font-weight:500;}
+    .demo-footer-bad{font-size:12px;font-weight:700;padding:10px;border-radius:8px;text-align:center;background:rgba(248,113,113,0.12);color:#f87171;margin-top:auto;}
+    .demo-footer-good{font-size:12px;font-weight:700;padding:10px;border-radius:8px;text-align:center;background:rgba(52,211,153,0.12);color:#34d399;margin-top:auto;}
+    .demo-arrow-col{background:rgba(255,255,255,0.02);display:flex;align-items:center;justify-content:center;padding:0 20px;border-top:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.08);}
+    .demo-arrow-circle{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#8B5CF6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;}
     .faq-list{max-width:720px;margin:0 auto;}
-    .faq-item{border-bottom:1px solid #e5e7eb;}
-    .faq-q{display:flex;justify-content:space-between;align-items:center;padding:20px 0;cursor:pointer;font-size:15px;font-weight:600;color:#111827;}
-    .faq-q:hover{color:#2563eb;}
-    .faq-arrow{font-size:20px;color:#9ca3af;}
-    .faq-a{font-size:14px;color:#6b7280;line-height:1.75;padding-bottom:20px;display:none;}
+    .faq-item{border-bottom:1px solid rgba(255,255,255,0.08);}
+    .faq-q{display:flex;justify-content:space-between;align-items:center;padding:20px 0;cursor:pointer;font-size:15px;font-weight:600;color:#e2e8f0;}
+    .faq-q:hover{color:#818CF8;}
+    .faq-arrow{font-size:20px;color:#64748b;}
+    .faq-a{font-size:14px;color:#94a3b8;line-height:1.75;padding-bottom:20px;display:none;}
     .pricing-cards{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:600px;margin:0 auto;}
-    .pricing-card{border:2px solid #e5e7eb;border-radius:18px;padding:28px;position:relative;}
-    .pricing-card-featured{border-color:#2563eb;}
-    .plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:#2563eb;color:#fff;font-size:11px;font-weight:800;padding:3px 14px;border-radius:20px;white-space:nowrap;}
-    .plan-name{font-size:16px;font-weight:800;margin-bottom:6px;}
-    .plan-price{font-size:40px;font-weight:900;color:#111827;}
-    .plan-period{font-size:12px;color:#6b7280;margin-bottom:20px;}
+    .pricing-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:28px;position:relative;}
+    .pricing-card-featured{border-color:#6366F1;box-shadow:0 0 24px rgba(99,102,241,0.2);}
+    .plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:3px 14px;border-radius:20px;white-space:nowrap;}
+    .plan-name{font-size:16px;font-weight:800;margin-bottom:6px;color:#e2e8f0;}
+    .plan-price{font-size:40px;font-weight:900;color:#e2e8f0;}
+    .plan-period{font-size:12px;color:#64748b;margin-bottom:20px;}
     .plan-features{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:20px;}
-    .plan-features li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#374151;}
-    .check{color:#16a34a;font-weight:800;flex-shrink:0;}
-    .cross{color:#9ca3af;flex-shrink:0;}
-    .cta-banner{background:linear-gradient(135deg,#1d4ed8,#7c3aed);padding:72px 24px;text-align:center;color:#fff;}
+    .plan-features li{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#94a3b8;}
+    .check{color:#34d399;font-weight:800;flex-shrink:0;}
+    .cross{color:#f87171;flex-shrink:0;}
+    .cta-banner{background:linear-gradient(135deg,#4c1d95,#7c3aed);padding:72px 24px;text-align:center;color:#fff;}
     .cta-banner h2{font-size:clamp(24px,4vw,36px);font-weight:900;margin-bottom:14px;}
     .cta-banner p{font-size:16px;opacity:.85;margin-bottom:28px;}
-    .btn-white{background:#fff;color:#2563eb;font-weight:700;}
-    .btn-white:hover{background:#eff6ff;}
-    .footer{background:#111827;color:#9ca3af;padding:48px 24px;}
+    .btn-white{background:#fff;color:#7c3aed;font-weight:700;}
+    .btn-white:hover{background:#f5f3ff;}
+    .footer{background:rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.07);color:#64748b;padding:48px 24px;}
     .footer-inner{max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;}
-    .footer-logo{font-size:18px;font-weight:900;color:#fff;}
+    .footer-logo{font-size:18px;font-weight:900;color:#f1f5f9;}
     .footer-links{display:flex;gap:24px;flex-wrap:wrap;}
-    .footer-links a{font-size:14px;font-weight:600;color:#9ca3af;}
-    .footer-links a:hover{color:#fff;}
+    .footer-links a{font-size:14px;font-weight:600;color:#64748b;}
+    .footer-links a:hover{color:#e2e8f0;}
     @media(max-width:768px){
       .nav-links,.nav-actions{display:none;}
       .stat-row{grid-template-columns:1fr 1fr;}
@@ -118,7 +119,7 @@
       .manual-vs-ai{grid-template-columns:1fr;gap:12px;}
       .vs-badge{display:none;}
       .demo-wrap{grid-template-columns:1fr;}
-      .demo-arrow-col{padding:14px;border:none;border-top:2px solid #e5e7eb;border-bottom:2px solid #e5e7eb;}
+      .demo-arrow-col{padding:14px;border:none;border-top:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.08);}
       .pricing-cards{grid-template-columns:1fr;max-width:340px;}
     }
   </style>
@@ -193,25 +194,25 @@
     <div class="section-eyebrow">Manual vs. AI</div>
     <h2 class="section-title">45 minutes vs. <span>30 seconds</span></h2>
     <div class="manual-vs-ai">
-      <div class="side-card" style="border-color:#fee2e2;">
-        <h4 style="color:#dc2626;">Tailoring manually</h4>
+      <div class="side-card" style="border-color:rgba(248,113,113,0.3);">
+        <h4 style="color:#f87171;">Tailoring manually</h4>
         <ul>
           <li><span>•</span> Re-read the job description (5 min)</li>
           <li><span>•</span> Identify key keywords and skills (10 min)</li>
           <li><span>•</span> Rewrite each bullet point (20 min)</li>
           <li><span>•</span> Write a cover letter (10 min)</li>
-          <li><span>•</span> Total: <strong>45 minutes per application</strong></li>
+          <li><span>•</span> Total: <strong style="color:#e2e8f0;">45 minutes per application</strong></li>
         </ul>
       </div>
       <div class="vs-badge">VS</div>
-      <div class="side-card" style="border-color:#dcfce7;">
-        <h4 style="color:#16a34a;">With ResumeTailor AI</h4>
+      <div class="side-card" style="border-color:rgba(52,211,153,0.3);">
+        <h4 style="color:#34d399;">With ResumeTailor AI</h4>
         <ul>
           <li><span>•</span> Paste resume + job posting (30 sec)</li>
           <li><span>•</span> AI extracts all key requirements (auto)</li>
           <li><span>•</span> AI rewrites your bullet points (auto)</li>
           <li><span>•</span> AI generates cover letter (auto)</li>
-          <li><span>•</span> Total: <strong>Under 30 seconds</strong></li>
+          <li><span>•</span> Total: <strong style="color:#e2e8f0;">Under 30 seconds</strong></li>
         </ul>
       </div>
     </div>
@@ -284,7 +285,7 @@
           <li><span class="check">✓</span> 1 tailoring per day</li>
           <li><span class="check">✓</span> Resume + cover letter</li>
           <li><span class="check">✓</span> DOCX download</li>
-          <li><span class="cross">✗</span> <span style="color:#9ca3af;">Unlimited tailorings</span></li>
+          <li><span class="cross">✗</span> <span style="color:#64748b;">Unlimited tailorings</span></li>
         </ul>
         <a href="/dashboard" class="btn btn-ghost" style="width:100%;justify-content:center;">Start Free</a>
       </div>
@@ -302,7 +303,7 @@
         <a href="/dashboard" class="btn btn-primary" style="width:100%;justify-content:center;">Start Pro — $19/mo →</a>
       </div>
     </div>
-    <p style="text-align:center;margin-top:20px;font-size:13px;color:#9ca3af;">Jobscan charges $49.95/month and only tells you what keywords to add — we actually rewrite your resume with them.</p>
+    <p style="text-align:center;margin-top:20px;font-size:13px;color:#64748b;">Jobscan charges $49.95/month and only tells you what keywords to add — we actually rewrite your resume with them.</p>
   </div>
 </section>
 
@@ -343,7 +344,7 @@
 
 <footer class="footer">
   <div class="footer-inner">
-    <span class="footer-logo">ResumeTailored <span style="background:#2563eb;color:#fff;font-size:11px;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;">AI</span></span>
+    <span class="footer-logo">ResumeTailored <span style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;">AI</span></span>
     <div class="footer-links">
       <a href="/how-it-works">How It Works</a>
       <a href="/blog">Blog</a>

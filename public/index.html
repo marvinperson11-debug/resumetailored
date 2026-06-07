@@ -39,13 +39,15 @@
   </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: #fff; color: #111827; line-height: 1.6; }
+    body { font-family: 'Inter', sans-serif; background: #030712; color: #e2e8f0; line-height: 1.6; }
     a { color: inherit; text-decoration: none; }
 
     /* ── NAV ── */
     .nav {
       position: sticky; top: 0; z-index: 100;
-      background: #fff; border-bottom: 1px solid #e5e7eb;
+      background: rgba(3,7,18,0.85);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       padding: 0 24px;
     }
     .nav-inner {
@@ -53,86 +55,133 @@
       display: flex; align-items: center; justify-content: space-between;
       height: 64px;
     }
-    .logo { font-size: 18px; font-weight: 900; color: #111827; }
+    .logo { font-size: 18px; font-weight: 900; color: #f1f5f9; }
     .logo .badge-ai {
-      background: #2563eb; color: #fff;
+      background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff;
       font-size: 11px; font-weight: 800;
       padding: 2px 7px; border-radius: 5px;
       vertical-align: middle; margin-left: 4px;
     }
     .nav-links { display: flex; gap: 28px; align-items: center; }
-    .nav-links a { font-size: 14px; font-weight: 600; color: #4b5563; transition: color .15s; }
-    .nav-links a:hover { color: #111827; }
+    .nav-links a { font-size: 14px; font-weight: 600; color: #94a3b8; transition: color .15s; }
+    .nav-links a:hover { color: #f1f5f9; }
     .nav-actions { display: flex; gap: 12px; align-items: center; }
 
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
       font-family: inherit; font-size: 14px; font-weight: 700;
       border-radius: 8px; padding: 10px 20px; border: none; cursor: pointer;
-      transition: all .15s; text-decoration: none; white-space: nowrap;
+      transition: all .2s; text-decoration: none; white-space: nowrap;
+      position: relative; overflow: hidden;
     }
-    .btn-primary { background: #2563eb; color: #fff; }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-outline { background: transparent; color: #2563eb; border: 2px solid #2563eb; }
-    .btn-outline:hover { background: #eff6ff; }
-    .btn-ghost { background: transparent; color: #4b5563; border: 2px solid #e5e7eb; }
-    .btn-ghost:hover { border-color: #9ca3af; color: #111827; }
+    .btn::before {
+      content: ''; position: absolute; top: 0; left: -100%;
+      width: 60%; height: 100%;
+      background: linear-gradient(120deg, transparent, rgba(255,255,255,0.18), transparent);
+      transform: skewX(-20deg); transition: left 0.5s ease;
+    }
+    .btn:hover::before { left: 150%; }
+    .btn-primary {
+      background: linear-gradient(135deg,#6366F1,#8B5CF6);
+      color: #fff; box-shadow: 0 0 20px rgba(99,102,241,0.35);
+    }
+    .btn-primary:hover { box-shadow: 0 0 32px rgba(99,102,241,0.6); transform: translateY(-1px); }
+    .btn-outline {
+      background: rgba(99,102,241,0.1); color: #818CF8;
+      border: 1px solid rgba(99,102,241,0.4);
+    }
+    .btn-outline:hover { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.7); }
+    .btn-ghost {
+      background: rgba(255,255,255,0.05); color: #94a3b8;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; border-color: rgba(255,255,255,0.2); }
     .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
     .btn-full { width: 100%; }
-    .btn-white { background: #fff; color: #2563eb; }
-    .btn-white:hover { background: #eff6ff; }
+    .btn-white {
+      background: rgba(255,255,255,0.12); color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-white:hover { background: rgba(255,255,255,0.22); }
 
     .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
-    .hamburger span { display: block; width: 22px; height: 2px; background: #374151; border-radius: 2px; transition: all .2s; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #94a3b8; border-radius: 2px; transition: all .2s; }
 
     /* Mobile overlay */
     .mobile-menu {
       display: none; position: fixed; inset: 0; z-index: 200;
-      background: #fff; flex-direction: column;
-      align-items: center; justify-content: center; gap: 32px;
+      background: rgba(3,7,18,0.97); backdrop-filter: blur(20px);
+      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
     }
     .mobile-menu.open { display: flex; }
-    .mobile-menu a { font-size: 24px; font-weight: 700; color: #111827; }
-    .mobile-close { position: absolute; top: 20px; right: 24px; background: none; border: none; font-size: 28px; cursor: pointer; color: #374151; }
+    .mobile-menu a { font-size: 24px; font-weight: 700; color: #f1f5f9; }
+    .mobile-close { position: absolute; top: 20px; right: 24px; background: none; border: none; font-size: 28px; cursor: pointer; color: #94a3b8; }
 
     /* ── LAYOUT ── */
     .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
     .section { padding: 80px 0; }
-    .section-gray { background: #f9fafb; }
+    .section-gray { background: rgba(255,255,255,0.02); }
     .section-title {
       text-align: center; font-size: clamp(28px, 4vw, 40px);
-      font-weight: 900; letter-spacing: -0.02em; margin-bottom: 48px; color: #111827;
+      font-weight: 900; letter-spacing: -0.02em; margin-bottom: 48px; color: #f1f5f9;
     }
-    .section-title span { color: #2563eb; }
+    .section-title span {
+      background: linear-gradient(135deg,#6366F1,#8B5CF6);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
     .section-eyebrow {
       text-align: center; font-size: 13px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 2px; color: #2563eb; margin-bottom: 14px;
+      text-transform: uppercase; letter-spacing: 2px; color: #818CF8; margin-bottom: 14px;
     }
 
     /* ── HERO ── */
-    .hero { padding: 96px 0 80px; text-align: center; }
+    .hero { padding: 96px 0 80px; text-align: center; position: relative; overflow: hidden; }
+    .hero-orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); pointer-events: none; z-index: 0;
+      animation: floatOrb 9s ease-in-out infinite;
+    }
+    .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(99,102,241,0.28) 0%, transparent 70%);
+      top: -220px; left: -80px; animation-delay: 0s;
+    }
+    .orb-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 70%);
+      top: -120px; right: -80px; animation-delay: -4.5s;
+    }
+    @keyframes floatOrb {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-32px) scale(1.06); }
+    }
+    .hero > .container { position: relative; z-index: 1; }
     .hero h1 {
       font-size: clamp(36px, 6vw, 64px); font-weight: 900;
-      letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 20px;
+      letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 20px; color: #f1f5f9;
     }
-    .hero h1 .blue { color: #2563eb; }
-    .hero-sub { font-size: 18px; color: #4b5563; max-width: 580px; margin: 0 auto 32px; line-height: 1.7; }
+    .hero h1 .blue {
+      background: linear-gradient(135deg,#818CF8,#A78BFA,#38BDF8);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-sub { font-size: 18px; color: #94a3b8; max-width: 580px; margin: 0 auto 32px; line-height: 1.7; }
     .hero-cta { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-    .hero-note { font-size: 13px; color: #6b7280; }
+    .hero-note { font-size: 13px; color: #64748b; }
 
     /* ── BEFORE/AFTER ── */
     .demo-wrap {
       margin: 56px auto 0; max-width: 860px;
       display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; align-items: stretch;
       border-radius: 16px; overflow: hidden;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+      box-shadow: 0 4px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07);
     }
     .demo-before {
-      background: #f3f4f6; padding: 28px;
+      background: rgba(255,255,255,0.04); padding: 28px;
       display: flex; flex-direction: column; gap: 12px;
     }
     .demo-after {
-      background: #fff; padding: 28px; border: 2px solid #2563eb;
+      background: rgba(99,102,241,0.08); padding: 28px;
+      border: 2px solid rgba(99,102,241,0.45);
       display: flex; flex-direction: column; gap: 12px;
     }
     .demo-badge {
@@ -140,39 +189,41 @@
       font-size: 12px; font-weight: 700; padding: 4px 10px;
       border-radius: 20px; width: fit-content;
     }
-    .demo-badge-before { background: #fee2e2; color: #dc2626; }
-    .demo-badge-after { background: #dcfce7; color: #16a34a; }
-    .demo-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 4px; }
+    .demo-badge-before { background: rgba(239,68,68,0.15); color: #f87171; }
+    .demo-badge-after { background: rgba(16,185,129,0.15); color: #34d399; }
+    .demo-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 4px; }
     .demo-bullet {
       padding: 10px 14px; border-radius: 8px;
-      font-size: 13px; line-height: 1.55; color: #374151;
+      font-size: 13px; line-height: 1.55; color: #94a3b8;
     }
-    .demo-bullet-before { background: #e5e7eb; }
-    .demo-bullet-after { background: #eff6ff; border-left: 3px solid #2563eb; color: #1e40af; font-weight: 500; }
+    .demo-bullet-before { background: rgba(255,255,255,0.05); }
+    .demo-bullet-after { background: rgba(99,102,241,0.12); border-left: 3px solid #6366F1; color: #a5b4fc; font-weight: 500; }
     .demo-footer { font-size: 12px; font-weight: 700; padding: 10px 14px; border-radius: 8px; text-align: center; margin-top: auto; }
-    .demo-footer-before { background: #fee2e2; color: #dc2626; }
-    .demo-footer-after { background: #dcfce7; color: #16a34a; }
+    .demo-footer-before { background: rgba(239,68,68,0.1); color: #f87171; }
+    .demo-footer-after { background: rgba(16,185,129,0.1); color: #34d399; }
     .demo-arrow-col {
-      background: #f9fafb; display: flex; align-items: center; justify-content: center;
-      padding: 0 20px; border-top: 2px solid #e5e7eb; border-bottom: 2px solid #e5e7eb;
+      background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center;
+      padding: 0 20px; border-top: 1px solid rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.07);
     }
     .demo-arrow-circle {
-      width: 48px; height: 48px; border-radius: 50%; background: #2563eb;
+      width: 48px; height: 48px; border-radius: 50%;
+      background: linear-gradient(135deg,#6366F1,#8B5CF6);
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 20px;
+      color: #fff; font-size: 20px; box-shadow: 0 0 20px rgba(99,102,241,0.45);
     }
 
     /* ── HOW IT WORKS ── */
     .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
     .step { text-align: center; }
     .step-num {
-      width: 48px; height: 48px; border-radius: 50%; background: #eff6ff;
-      color: #2563eb; font-size: 20px; font-weight: 900;
+      width: 48px; height: 48px; border-radius: 50%;
+      background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
+      color: #818CF8; font-size: 20px; font-weight: 900;
       display: flex; align-items: center; justify-content: center;
       margin: 0 auto 16px;
     }
-    .step h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-    .step p { font-size: 14px; color: #6b7280; line-height: 1.7; }
+    .step h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: #e2e8f0; }
+    .step p { font-size: 14px; color: #64748b; line-height: 1.7; }
 
     /* ── FEATURES ── */
     .features { display: flex; flex-direction: column; gap: 64px; }
@@ -182,36 +233,37 @@
     .feature-row.reverse { direction: rtl; }
     .feature-row.reverse > * { direction: ltr; }
     .feature-icon { font-size: 48px; margin-bottom: 16px; }
-    .feature-body h3 { font-size: 24px; font-weight: 800; margin-bottom: 12px; }
-    .feature-body p { font-size: 15px; color: #4b5563; line-height: 1.75; }
+    .feature-body h3 { font-size: 24px; font-weight: 800; margin-bottom: 12px; color: #e2e8f0; }
+    .feature-body p { font-size: 15px; color: #94a3b8; line-height: 1.75; }
     .feature-visual {
-      background: #f9fafb; border: 1px solid #e5e7eb;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
       border-radius: 16px; padding: 32px; min-height: 200px;
       display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(10px);
     }
     .feature-visual-inner { width: 100%; }
-    .fv-bar { height: 10px; border-radius: 6px; background: #e5e7eb; margin-bottom: 10px; }
-    .fv-bar.blue { background: #2563eb; }
-    .fv-bar.light-blue { background: #bfdbfe; }
+    .fv-bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,0.08); margin-bottom: 10px; }
+    .fv-bar.blue { background: linear-gradient(90deg,#6366F1,#8B5CF6); }
+    .fv-bar.light-blue { background: rgba(99,102,241,0.3); }
 
     /* ── TEMPLATE GALLERY ── */
     .gallery-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 32px; }
     .gallery-tab {
       padding: 8px 24px; border-radius: 8px; font-size: 14px; font-weight: 700;
-      cursor: pointer; border: 2px solid #e5e7eb; background: #fff; color: #6b7280;
-      transition: all .15s;
+      cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04); color: #64748b; transition: all .15s;
     }
-    .gallery-tab.active { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+    .gallery-tab.active { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.12); color: #818CF8; }
     .gallery-outer { position: relative; }
     .gallery-scroll-btn {
       position: absolute; top: 50%; transform: translateY(-50%);
       width: 40px; height: 40px; border-radius: 50%;
-      background: #fff; border: 2px solid #e5e7eb;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 18px; z-index: 2; color: #374151;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all .15s;
+      cursor: pointer; font-size: 18px; z-index: 2; color: #94a3b8;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4); transition: all .15s;
     }
-    .gallery-scroll-btn:hover { border-color: #2563eb; color: #2563eb; }
+    .gallery-scroll-btn:hover { border-color: rgba(99,102,241,0.5); color: #818CF8; background: rgba(99,102,241,0.12); }
     .gallery-scroll-btn.left { left: -20px; }
     .gallery-scroll-btn.right { right: -20px; }
     .gallery-track-wrap { overflow: hidden; }
@@ -222,122 +274,149 @@
     .gallery-track::-webkit-scrollbar { display: none; }
     .template-card {
       flex-shrink: 0; width: 180px; border-radius: 12px; overflow: hidden;
-      border: 2px solid #e5e7eb; background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all .2s; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3); transition: all .2s; cursor: pointer;
     }
-    .template-card:hover { border-color: #2563eb; box-shadow: 0 4px 16px rgba(37,99,235,0.15); transform: translateY(-2px); }
+    .template-card:hover { border-color: rgba(99,102,241,0.5); box-shadow: 0 4px 24px rgba(99,102,241,0.2); transform: translateY(-2px); }
     .tcard-body { padding: 12px; }
-    .tcard-line { height: 6px; border-radius: 4px; background: #e5e7eb; margin-bottom: 6px; }
-    .tcard-line.dark { background: #d1d5db; }
+    .tcard-line { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08); margin-bottom: 6px; }
+    .tcard-line.dark { background: rgba(255,255,255,0.13); }
     .tcard-line.short { width: 60%; }
-    .tcard-name { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 4px; }
+    .tcard-name { font-size: 12px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px; }
     .tcard-free-badge {
-      font-size: 10px; font-weight: 800; color: #16a34a;
-      background: #dcfce7; padding: 2px 8px; border-radius: 20px;
+      font-size: 10px; font-weight: 800; color: #34d399;
+      background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 20px;
       display: inline-block; margin-bottom: 8px;
     }
     .tcard-btn {
       display: block; width: 100%; padding: 7px; border-radius: 6px;
       font-size: 12px; font-weight: 700; text-align: center; border: none; cursor: pointer;
-      transition: background .15s;
+      transition: all .15s;
     }
-    .tcard-btn-free { background: #2563eb; color: #fff; }
-    .tcard-btn-free:hover { background: #1d4ed8; }
-    .tcard-btn-pro { background: #f3f4f6; color: #6b7280; }
-    .tcard-btn-pro:hover { background: #e5e7eb; }
+    .tcard-btn-free { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; }
+    .tcard-btn-free:hover { opacity: 0.88; }
+    .tcard-btn-pro { background: rgba(255,255,255,0.06); color: #64748b; }
+    .tcard-btn-pro:hover { background: rgba(255,255,255,0.11); color: #94a3b8; }
 
     /* Pro modal / Checkout modal */
     .modal-overlay {
       display: none; position: fixed; inset: 0; z-index: 300;
-      background: rgba(0,0,0,0.4); align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
     }
     .modal-overlay.open { display: flex; }
     .modal-box {
-      background: #fff; border-radius: 20px; padding: 40px; max-width: 440px; width: 90%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+      background: rgba(10,12,24,0.97); border: 1px solid rgba(255,255,255,0.1);
+      backdrop-filter: blur(20px);
+      border-radius: 20px; padding: 40px; max-width: 440px; width: 90%;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.15);
     }
-    .modal-box h3 { font-size: 22px; font-weight: 900; margin-bottom: 8px; }
-    .modal-box p { color: #6b7280; font-size: 14px; margin-bottom: 20px; line-height: 1.65; }
+    .modal-box h3 { font-size: 22px; font-weight: 900; margin-bottom: 8px; color: #f1f5f9; }
+    .modal-box p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; line-height: 1.65; }
     .modal-actions { display: flex; flex-direction: column; gap: 10px; }
     .checkout-input {
-      width: 100%; padding: 13px 16px; border: 2px solid #e5e7eb; border-radius: 10px;
+      width: 100%; padding: 13px 16px;
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
       font-size: 15px; font-family: inherit; outline: none; transition: border-color .15s;
       margin-bottom: 6px; box-sizing: border-box;
+      background: rgba(255,255,255,0.06); color: #e2e8f0;
     }
-    .checkout-input:focus { border-color: #2563eb; }
-    .checkout-error { color: #dc2626; font-size: 13px; font-weight: 600; min-height: 18px; margin-bottom: 12px; }
+    .checkout-input::placeholder { color: #64748b; }
+    .checkout-input:focus { border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.06); }
+    .checkout-error { color: #f87171; font-size: 13px; font-weight: 600; min-height: 18px; margin-bottom: 12px; }
     .hub-box {
       border-radius: 8px; padding: 12px; text-align: center;
       font-size: 12px; font-weight: 700; cursor: pointer; transition: filter .15s;
     }
-    .hub-box:hover { filter: brightness(0.93); }
+    .hub-box:hover { filter: brightness(1.2); }
     /* Template card preview */
     .tcard-header { height: 140px; overflow: hidden; padding: 0; position: relative; }
 
     /* ── TESTIMONIALS ── */
     .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
-    .testimonial { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 28px; }
-    .stars { color: #f59e0b; font-size: 16px; margin-bottom: 14px; }
-    .testimonial p { font-size: 15px; color: #374151; line-height: 1.7; margin-bottom: 16px; }
-    .testimonial-author { font-size: 13px; font-weight: 700; color: #6b7280; }
+    .testimonial {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 28px;
+      transition: border-color .2s, transform .2s;
+    }
+    .testimonial:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-3px); }
+    .stars { color: #fbbf24; font-size: 16px; margin-bottom: 14px; }
+    .testimonial p { font-size: 15px; color: #94a3b8; line-height: 1.7; margin-bottom: 16px; }
+    .testimonial-author { font-size: 13px; font-weight: 700; color: #64748b; }
 
     /* ── CTA BANNER ── */
     .cta-banner {
-      background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+      background: linear-gradient(135deg, #3730A3, #6D28D9);
       padding: 72px 24px; text-align: center; color: #fff;
+      position: relative; overflow: hidden;
     }
+    .cta-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.4) 0%, transparent 70%);
+    }
+    .cta-banner .container { position: relative; z-index: 1; }
     .cta-banner h2 { font-size: clamp(26px, 4vw, 40px); font-weight: 900; margin-bottom: 14px; }
     .cta-banner p { font-size: 17px; opacity: 0.85; margin-bottom: 32px; }
 
     /* ── FAQ ── */
     .faq-list { max-width: 720px; margin: 0 auto; }
-    .faq-item { border-bottom: 1px solid #e5e7eb; }
+    .faq-item { border-bottom: 1px solid rgba(255,255,255,0.08); }
     .faq-q {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 20px 0; cursor: pointer; font-size: 15px; font-weight: 600; color: #111827;
+      padding: 20px 0; cursor: pointer; font-size: 15px; font-weight: 600; color: #cbd5e1;
     }
-    .faq-q:hover { color: #2563eb; }
-    .faq-arrow { font-size: 20px; color: #9ca3af; transition: transform .2s; flex-shrink: 0; }
-    .faq-a { font-size: 14px; color: #6b7280; line-height: 1.75; padding-bottom: 20px; display: none; }
+    .faq-q:hover { color: #818CF8; }
+    .faq-arrow { font-size: 20px; color: #64748b; transition: transform .2s; flex-shrink: 0; }
+    .faq-a { font-size: 14px; color: #94a3b8; line-height: 1.75; padding-bottom: 20px; display: none; }
 
     /* ── PRICING ── */
     .pricing-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; max-width: 1020px; margin: 0 auto; }
-    .competitor-compare { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 20px; padding: 40px; max-width: 1020px; margin: 0 auto 48px; }
-    .cc-title { font-size: 20px; font-weight: 800; color: #111827; margin-bottom: 8px; }
-    .cc-sub { font-size: 14px; color: #6b7280; margin-bottom: 28px; }
-    .cc-table { width: 100%; border-collapse: collapse; }
-    .cc-table th { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px; text-align: left; color: #6b7280; border-bottom: 2px solid #e5e7eb; }
-    .cc-table th.ours { background: #eff6ff; color: #2563eb; border-radius: 8px 8px 0 0; }
-    .cc-table td { font-size: 14px; padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #374151; }
-    .cc-table td.ours { background: #f0f7ff; font-weight: 600; color: #1d4ed8; }
-    .cc-table td.win { color: #16a34a; font-weight: 700; }
-    .cc-table td.lose { color: #dc2626; }
-    .cc-table tr:last-child td { border-bottom: none; }
-    .lifetime-badge { display: inline-block; background: linear-gradient(135deg, #7c3aed, #2563eb); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
-    .pricing-card {
-      border: 2px solid #e5e7eb; border-radius: 20px; padding: 36px; position: relative;
+    .competitor-compare {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; padding: 40px; max-width: 1020px; margin: 0 auto 48px;
     }
-    .pricing-card-featured { border-color: #2563eb; }
+    .cc-title { font-size: 20px; font-weight: 800; color: #e2e8f0; margin-bottom: 8px; }
+    .cc-sub { font-size: 14px; color: #64748b; margin-bottom: 28px; }
+    .cc-table { width: 100%; border-collapse: collapse; }
+    .cc-table th { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px; text-align: left; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .cc-table th.ours { background: rgba(99,102,241,0.15); color: #818CF8; border-radius: 8px 8px 0 0; }
+    .cc-table td { font-size: 14px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); color: #94a3b8; }
+    .cc-table td.ours { background: rgba(99,102,241,0.08); font-weight: 600; color: #818CF8; }
+    .cc-table td.win { color: #34d399; font-weight: 700; }
+    .cc-table td.lose { color: #f87171; }
+    .cc-table tr:last-child td { border-bottom: none; }
+    .lifetime-badge { display: inline-block; background: linear-gradient(135deg, #8B5CF6, #6366F1); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
+    .pricing-card {
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 36px; position: relative;
+      background: rgba(255,255,255,0.04); backdrop-filter: blur(10px);
+      transition: border-color .2s, transform .2s;
+    }
+    .pricing-card:hover { transform: translateY(-3px); border-color: rgba(99,102,241,0.3); }
+    .pricing-card-featured {
+      border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.07);
+      box-shadow: 0 0 40px rgba(99,102,241,0.12);
+    }
     .plan-badge {
       position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
-      background: #2563eb; color: #fff; font-size: 12px; font-weight: 800;
+      background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; font-size: 12px; font-weight: 800;
       padding: 4px 16px; border-radius: 20px; white-space: nowrap;
     }
-    .plan-name { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
-    .plan-price { font-size: 48px; font-weight: 900; color: #111827; }
-    .plan-period { font-size: 13px; color: #6b7280; margin-bottom: 28px; }
+    .plan-name { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: #e2e8f0; }
+    .plan-price { font-size: 48px; font-weight: 900; color: #f1f5f9; }
+    .plan-period { font-size: 13px; color: #64748b; margin-bottom: 28px; }
     .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
-    .plan-features li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #374151; }
-    .check-icon { color: #16a34a; font-weight: 800; flex-shrink: 0; }
-    .cross-icon { color: #9ca3af; flex-shrink: 0; }
+    .plan-features li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #94a3b8; }
+    .check-icon { color: #34d399; font-weight: 800; flex-shrink: 0; }
+    .cross-icon { color: #64748b; flex-shrink: 0; }
 
     /* ── FOOTER ── */
-    .footer { background: #111827; color: #9ca3af; padding: 48px 24px; }
+    .footer { background: rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.07); color: #64748b; padding: 48px 24px; }
     .footer-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
-    .footer .logo { color: #fff; }
+    .footer .logo { color: #f1f5f9; }
     .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
-    .footer-links a { font-size: 14px; font-weight: 600; color: #9ca3af; transition: color .15s; }
-    .footer-links a:hover { color: #fff; }
+    .footer-links a { font-size: 14px; font-weight: 600; color: #64748b; transition: color .15s; }
+    .footer-links a:hover { color: #e2e8f0; }
     .footer-copy { font-size: 13px; }
 
     /* ── RESPONSIVE ── */
@@ -351,7 +430,7 @@
       .competitor-compare { padding: 24px; }
       .cc-table { font-size: 12px; }
       .demo-wrap { grid-template-columns: 1fr; }
-      .demo-arrow-col { padding: 16px; border: none; border-top: 2px solid #e5e7eb; border-bottom: 2px solid #e5e7eb; }
+      .demo-arrow-col { padding: 16px; border: none; border-top: 1px solid rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.07); }
       .gallery-scroll-btn.left { left: 0; }
       .gallery-scroll-btn.right { right: 0; }
     }
@@ -363,60 +442,68 @@
     /* ── Resume Tiers ── */
     .tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
     .tier-card {
-      background: #fff; border: 1px solid #e5e7eb; border-radius: 16px;
-      overflow: hidden; transition: all .22s; cursor: pointer;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px; overflow: hidden; transition: all .22s; cursor: pointer;
       display: flex; flex-direction: column;
     }
-    .tier-card:hover { transform: translateY(-6px); box-shadow: 0 20px 48px rgba(0,0,0,0.13); }
+    .tier-card:hover { transform: translateY(-6px); box-shadow: 0 20px 48px rgba(0,0,0,0.5); border-color: rgba(99,102,241,0.3); }
     .tier-top { padding: 24px 24px 16px; }
     .tier-level-badge {
       display: inline-block; font-size: 11px; font-weight: 800;
       text-transform: uppercase; letter-spacing: 1.5px;
       padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
     }
-    .tier-name { font-size: 22px; font-weight: 900; margin-bottom: 8px; }
-    .tier-desc { font-size: 14px; color: #6b7280; line-height: 1.65; }
+    .tier-name { font-size: 22px; font-weight: 900; margin-bottom: 8px; color: #e2e8f0; }
+    .tier-desc { font-size: 14px; color: #94a3b8; line-height: 1.65; }
     .tier-preview-frame {
-      background: #f3f4f6; border-top: 1px solid #e5e7eb;
-      border-bottom: 1px solid #e5e7eb; height: 200px; overflow: hidden;
+      background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.07);
+      border-bottom: 1px solid rgba(255,255,255,0.07); height: 200px; overflow: hidden;
       position: relative;
     }
     .tier-preview-frame .tier-overlay {
-      position: absolute; inset: 0; background: rgba(30,58,138,0.75);
+      position: absolute; inset: 0; background: rgba(10,12,30,0.88);
       display: flex; align-items: center; justify-content: center;
       opacity: 0; transition: opacity .2s;
     }
     .tier-card:hover .tier-overlay { opacity: 1; }
     .tier-overlay span {
-      background: #fff; color: #1e3a8a; font-size: 13px; font-weight: 800;
+      background: rgba(99,102,241,0.9); color: #fff; font-size: 13px; font-weight: 800;
       padding: 8px 20px; border-radius: 20px; letter-spacing: .3px;
     }
     .tier-bottom { padding: 20px 24px; flex: 1; display: flex; flex-direction: column; }
     .tier-features { list-style: none; display: flex; flex-direction: column; gap: 9px; margin-bottom: 20px; flex: 1; }
-    .tier-features li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: #374151; }
+    .tier-features li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: #94a3b8; }
     .tier-check { font-weight: 800; flex-shrink: 0; }
-    .tier-basic-card { border-top: 4px solid #6b7280; }
-    .tier-pro-card { border-top: 4px solid #2563eb; box-shadow: 0 4px 20px rgba(37,99,235,0.1); }
+    .tier-basic-card { border-top: 4px solid #475569; }
+    .tier-pro-card { border-top: 4px solid #6366F1; box-shadow: 0 4px 20px rgba(99,102,241,0.15); }
     .tier-exec-card { border-top: 4px solid #1e3a5f; }
     /* Tier modal */
     .tier-modal-overlay {
-      position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.6);
+      position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.8);
+      backdrop-filter: blur(4px);
       display: none; align-items: center; justify-content: center; padding: 24px;
     }
     .tier-modal-overlay.open { display: flex; }
     .tier-modal-box {
-      background: #fff; border-radius: 16px; width: 100%; max-width: 700px;
-      max-height: 90vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(0,0,0,0.3);
+      background: rgba(10,12,24,0.98); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; width: 100%; max-width: 700px;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(0,0,0,0.7);
     }
     .tier-modal-header {
-      padding: 20px 24px; border-bottom: 1px solid #e5e7eb;
-      display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: #fff; z-index: 1;
+      padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; background: rgba(10,12,24,0.98);
+      backdrop-filter: blur(10px); z-index: 1;
     }
-    .tier-modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #6b7280; line-height: 1; }
+    .tier-modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #64748b; line-height: 1; }
     .tier-modal-body { padding: 28px; }
     @media (max-width: 900px) {
       .tiers-grid { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; }
     }
+
+    /* ── Scroll Reveal ── */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
   </style>
 </head>
 <body>
@@ -458,6 +545,8 @@
 
 <!-- HERO -->
 <section class="hero">
+  <div class="hero-orb orb-1"></div>
+  <div class="hero-orb orb-2"></div>
   <div class="container">
     <h1>Your resume,<br /><span class="blue">perfectly tailored</span><br />to every job.</h1>
     <p class="hero-sub">Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.</p>
@@ -542,7 +631,7 @@
                 </div>
               </div>
               <div style="flex:1;">
-                <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Keyword Matches</div>
+                <div style="font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Keyword Matches</div>
                 <div style="display:flex;flex-wrap:wrap;gap:5px;">
                   <span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">✓ Python</span>
                   <span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">✓ API Design</span>
@@ -553,9 +642,9 @@
                 </div>
               </div>
             </div>
-            <div style="background:#f0fdf4;border-radius:10px;padding:12px 14px;border-left:4px solid #16a34a;">
-              <div style="font-size:11px;font-weight:800;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;">✓ ATS PASS — Screener Cleared</div>
-              <div style="font-size:12px;color:#374151;line-height:1.6;">Your resume now speaks the job posting's language. Bots approve. Humans notice.</div>
+            <div style="background:rgba(16,185,129,0.1);border-radius:10px;padding:12px 14px;border-left:4px solid #10b981;">
+              <div style="font-size:11px;font-weight:800;color:#34d399;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;">✓ ATS PASS — Screener Cleared</div>
+              <div style="font-size:12px;color:#94a3b8;line-height:1.6;">Your resume now speaks the job posting's language. Bots approve. Humans notice.</div>
             </div>
           </div>
         </div>
@@ -569,24 +658,24 @@
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner">
-            <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+            <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:18px;box-shadow:0 2px 16px rgba(0,0,0,0.3);">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                <span style="font-size:10px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">Cover Letter</span>
-                <span style="background:#dcfce7;color:#16a34a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">AI Generated</span>
+                <span style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Cover Letter</span>
+                <span style="background:rgba(16,185,129,0.15);color:#34d399;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">AI Generated</span>
               </div>
-              <div style="font-size:10px;color:#9ca3af;margin-bottom:10px;">May 28, 2026 · Stripe, Inc.</div>
-              <div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">Dear Hiring Manager,</div>
-              <div style="font-size:12px;color:#4b5563;line-height:1.7;margin-bottom:8px;">
-                When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style="color:#2563eb;">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.
+              <div style="font-size:10px;color:#64748b;margin-bottom:10px;">May 28, 2026 · Stripe, Inc.</div>
+              <div style="font-size:12px;font-weight:600;color:#cbd5e1;margin-bottom:6px;">Dear Hiring Manager,</div>
+              <div style="font-size:12px;color:#94a3b8;line-height:1.7;margin-bottom:8px;">
+                When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style="color:#818CF8;">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.
               </div>
-              <div style="font-size:11px;color:#9ca3af;font-style:italic;">+ 3 more paragraphs connecting your experience to their exact needs...</div>
+              <div style="font-size:11px;color:#64748b;font-style:italic;">+ 3 more paragraphs connecting your experience to their exact needs...</div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- LinkedIn Optimizer Feature — Pro Exclusive -->
-      <div class="feature-row" style="border:2px solid #0077b5;border-radius:20px;padding:32px;background:linear-gradient(135deg,#f0f7ff 0%,#fff 100%);position:relative;overflow:hidden;">
+      <div class="feature-row" style="border:2px solid rgba(0,119,181,0.5);border-radius:20px;padding:32px;background:rgba(0,119,181,0.07);position:relative;overflow:hidden;">
         <div style="position:absolute;top:16px;right:20px;background:#0077b5;color:#fff;font-size:11px;font-weight:800;padding:4px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">✦ Pro Exclusive</div>
         <div class="feature-body">
           <div class="feature-icon" style="color:#0077b5;">🔗</div>
@@ -609,14 +698,14 @@
                 <div style="font-size:11px;color:rgba(255,255,255,0.75);">San Francisco, CA</div>
               </div>
             </div>
-            <div style="padding:16px 20px;background:#fff;">
-              <div style="font-size:10px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Before</div>
-              <div style="font-size:12px;color:#6b7280;line-height:1.5;margin-bottom:14px;padding:10px;background:#f9fafb;border-radius:8px;">"Product Manager at TechCo | I love creating products that users enjoy"</div>
+            <div style="padding:16px 20px;background:rgba(15,20,40,0.8);">
+              <div style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Before</div>
+              <div style="font-size:12px;color:#94a3b8;line-height:1.5;margin-bottom:14px;padding:10px;background:rgba(255,255,255,0.06);border-radius:8px;">"Product Manager at TechCo | I love creating products that users enjoy"</div>
               <div style="font-size:10px;font-weight:800;color:#0077b5;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">After — AI Optimized</div>
-              <div style="font-size:12px;color:#1e293b;font-weight:600;line-height:1.5;padding:10px;background:#eff6ff;border-radius:8px;border-left:3px solid #0077b5;">"Senior PM | B2B SaaS • 0→1 Product Launches • Data-Driven Growth | $12M ARR Delivered"</div>
+              <div style="font-size:12px;color:#e2e8f0;font-weight:600;line-height:1.5;padding:10px;background:rgba(0,119,181,0.15);border-radius:8px;border-left:3px solid #0077b5;">"Senior PM | B2B SaaS • 0→1 Product Launches • Data-Driven Growth | $12M ARR Delivered"</div>
               <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">
-                <span style="background:#dcfce7;color:#16a34a;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">+43% profile views</span>
-                <span style="background:#eff6ff;color:#2563eb;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">+2.1× recruiter messages</span>
+                <span style="background:rgba(16,185,129,0.15);color:#34d399;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">+43% profile views</span>
+                <span style="background:rgba(99,102,241,0.15);color:#818CF8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">+2.1× recruiter messages</span>
               </div>
             </div>
           </div>
@@ -632,12 +721,12 @@
         <div class="feature-visual">
           <div class="feature-visual-inner">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <div class="hub-box" style="background:#eff6ff;color:#2563eb;" onclick="openCheckoutModal()">💰 Salary Guide</div>
-              <div class="hub-box" style="background:#f0fdf4;color:#16a34a;" onclick="openCheckoutModal()">👥 Community Forum</div>
-              <div class="hub-box" style="background:#fef3c7;color:#d97706;" onclick="openCheckoutModal()">📈 Career Check-ins</div>
-              <div class="hub-box" style="background:#fdf4ff;color:#7c3aed;" onclick="openCheckoutModal()">🏆 Pro Templates</div>
+              <div class="hub-box" style="background:rgba(99,102,241,0.15);color:#818CF8;" onclick="openCheckoutModal()">💰 Salary Guide</div>
+              <div class="hub-box" style="background:rgba(16,185,129,0.12);color:#34d399;" onclick="openCheckoutModal()">👥 Community Forum</div>
+              <div class="hub-box" style="background:rgba(251,191,36,0.12);color:#fbbf24;" onclick="openCheckoutModal()">📈 Career Check-ins</div>
+              <div class="hub-box" style="background:rgba(139,92,246,0.15);color:#a78bfa;" onclick="openCheckoutModal()">🏆 Pro Templates</div>
             </div>
-            <div style="margin-top:10px;font-size:11px;color:#9ca3af;text-align:center;">Click any feature to unlock with Pro →</div>
+            <div style="margin-top:10px;font-size:11px;color:#64748b;text-align:center;">Click any feature to unlock with Pro →</div>
           </div>
         </div>
       </div>
@@ -1402,8 +1491,8 @@
       <!-- BASIC -->
       <div class="tier-card tier-basic-card" onclick="openTierModal('basic')">
         <div class="tier-top">
-          <div class="tier-level-badge" style="background:#f3f4f6;color:#6b7280;">Free Tier</div>
-          <div class="tier-name" style="color:#374151;">Basic</div>
+          <div class="tier-level-badge" style="background:rgba(100,116,139,0.15);color:#94a3b8;">Free Tier</div>
+          <div class="tier-name" style="color:#e2e8f0;">Basic</div>
           <div class="tier-desc">Clean, traditional resumes for students and entry-level job seekers.</div>
         </div>
         <div class="tier-preview-frame">
@@ -1440,8 +1529,8 @@
       <!-- PROFESSIONAL -->
       <div class="tier-card tier-pro-card" onclick="openTierModal('professional')">
         <div class="tier-top">
-          <div class="tier-level-badge" style="background:#dbeafe;color:#1d4ed8;">Pro — $19/mo</div>
-          <div class="tier-name" style="color:#1d4ed8;">Professional</div>
+          <div class="tier-level-badge" style="background:rgba(99,102,241,0.2);color:#818CF8;">Pro — $19/mo</div>
+          <div class="tier-name" style="color:#818CF8;">Professional</div>
           <div class="tier-desc">Polished, keyword-rich resumes for mid-career professionals targeting competitive roles.</div>
         </div>
         <div class="tier-preview-frame">
@@ -1483,8 +1572,8 @@
       <!-- EXECUTIVE -->
       <div class="tier-card tier-exec-card" onclick="openTierModal('executive')">
         <div class="tier-top">
-          <div class="tier-level-badge" style="background:#e0e7ff;color:#1e3a5f;">Pro — $19/mo</div>
-          <div class="tier-name" style="color:#1e3a5f;">Executive</div>
+          <div class="tier-level-badge" style="background:rgba(30,58,95,0.3);color:#93c5fd;">Pro — $19/mo</div>
+          <div class="tier-name" style="color:#93c5fd;">Executive</div>
           <div class="tier-desc">Authority-commanding resumes for directors, VPs, and C-suite leaders.</div>
         </div>
         <div class="tier-preview-frame">
@@ -1526,7 +1615,7 @@
 <div class="tier-modal-overlay" id="tierModal" onclick="closeTierModal(event)">
   <div class="tier-modal-box" onclick="event.stopPropagation()">
     <div class="tier-modal-header">
-      <div id="tierModalTitle" style="font-size:18px;font-weight:800;color:#111827;"></div>
+      <div id="tierModalTitle" style="font-size:18px;font-weight:800;color:#e2e8f0;"></div>
       <button class="tier-modal-close" onclick="document.getElementById('tierModal').classList.remove('open')">✕</button>
     </div>
     <div class="tier-modal-body" id="tierModalBody"></div>
@@ -1687,8 +1776,8 @@
       </div>
       <div style="margin-top:16px;font-size:13px;color:#6b7280;">
         Jobscan data: $49.95/mo for unlimited scans. Rezi cover letter quality based on published user reviews.
-        <a href="/jobscan-alternative" style="color:#2563eb;font-weight:600;margin-left:8px;">Full Jobscan comparison →</a>
-        <a href="/rezi-alternative" style="color:#2563eb;font-weight:600;margin-left:8px;">Full Rezi comparison →</a>
+        <a href="/jobscan-alternative" style="color:#818CF8;font-weight:600;margin-left:8px;">Full Jobscan comparison →</a>
+        <a href="/rezi-alternative" style="color:#818CF8;font-weight:600;margin-left:8px;">Full Rezi comparison →</a>
       </div>
     </div>
 
@@ -1725,10 +1814,10 @@
         </ul>
         <button class="btn btn-primary btn-full" onclick="openCheckoutModal()">Start Pro — $19/mo →</button>
       </div>
-      <div class="pricing-card" style="border-color:#7c3aed;">
-        <div class="plan-badge" style="background:linear-gradient(135deg,#7c3aed,#2563eb);">⚡ Best Value</div>
+      <div class="pricing-card" style="border-color:rgba(139,92,246,0.5);">
+        <div class="plan-badge" style="background:linear-gradient(135deg,#8B5CF6,#6366F1);">⚡ Best Value</div>
         <div class="plan-name">Pro <span class="lifetime-badge">LIFETIME</span></div>
-        <div class="plan-price" style="color:#7c3aed;">$129</div>
+        <div class="plan-price" style="color:#a78bfa;">$129</div>
         <div class="plan-period">one-time · never expires</div>
         <ul class="plan-features">
           <li><span class="check-icon">✓</span> Everything in Pro, forever</li>
@@ -1738,9 +1827,9 @@
           <li><span class="check-icon">✓</span> All 40 premium templates</li>
           <li><span class="check-icon">✓</span> Career Hub access</li>
           <li><span class="check-icon">✓</span> All future features included</li>
-          <li style="font-size:12px;color:#7c3aed;font-weight:700;">Saves $99+ vs. Rezi Lifetime</li>
+          <li style="font-size:12px;color:#a78bfa;font-weight:700;">Saves $99+ vs. Rezi Lifetime</li>
         </ul>
-        <button class="btn btn-full" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border:none;" onclick="openLifetimeModal()">Get Lifetime Access — $129 →</button>
+        <button class="btn btn-full" style="background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;border:none;" onclick="openLifetimeModal()">Get Lifetime Access — $129 →</button>
       </div>
     </div>
   </div>
@@ -1750,12 +1839,12 @@
 <div class="modal-overlay" id="lifetimeModal" onclick="closeLifetimeModal(event)">
   <div class="modal-box">
     <h3 style="margin-bottom:4px;">Pro Lifetime Access</h3>
-    <p style="font-size:13px;color:#7c3aed;font-weight:700;margin-bottom:4px;">⚡ One-time $129 · Never pay again</p>
+    <p style="font-size:13px;color:#a78bfa;font-weight:700;margin-bottom:4px;">⚡ One-time $129 · Never pay again</p>
     <p>Enter your email to get permanent Pro access — every feature, every template, all future updates. Cheaper than Rezi's $149 lifetime.</p>
     <input type="email" id="lifetimeEmail" class="checkout-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')submitLifetime()" />
     <div id="lifetimeError" class="checkout-error"></div>
     <div class="modal-actions">
-      <button id="lifetimeBtn" class="btn btn-full btn-lg" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border:none;" onclick="submitLifetime()">Get Lifetime Access — $129 →</button>
+      <button id="lifetimeBtn" class="btn btn-full btn-lg" style="background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;border:none;" onclick="submitLifetime()">Get Lifetime Access — $129 →</button>
       <button class="btn btn-ghost btn-full" onclick="closeLifetimeModal()">Cancel</button>
     </div>
   </div>
@@ -1766,14 +1855,14 @@
   <div class="modal-box" style="max-width:520px;">
     <h3 style="margin-bottom:6px;">Contact Us</h3>
     <p style="font-size:14px;color:#6b7280;margin-bottom:4px;">We read every message and respond within 24 hours.</p>
-    <p style="font-size:13px;color:#6b7280;margin-bottom:20px;">📧 <a href="mailto:support@resumetailored.com" style="color:#2563eb;font-weight:600;">support@resumetailored.com</a></p>
+    <p style="font-size:13px;color:#64748b;margin-bottom:20px;">📧 <a href="mailto:support@resumetailored.com" style="color:#818CF8;font-weight:600;">support@resumetailored.com</a></p>
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <input type="text" id="contactName" placeholder="Your name" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e5e7eb'" />
-      <input type="email" id="contactEmail" placeholder="Your email" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e5e7eb'" />
-      <input type="text" id="contactSubject" placeholder="Subject (optional)" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e5e7eb'" />
-      <textarea id="contactMessage" placeholder="How can we help you?" rows="5" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;" onfocus="this.style.borderColor='#2563eb'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
-      <div id="contactError" style="color:#dc2626;font-size:13px;font-weight:600;display:none;"></div>
-      <div id="contactSuccess" style="display:none;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 16px;color:#16a34a;font-size:14px;font-weight:600;text-align:center;">✓ Message sent! We'll get back to you within 24 hours.</div>
+      <input type="text" id="contactName" placeholder="Your name" style="width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;background:rgba(255,255,255,0.06);color:#e2e8f0;" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
+      <input type="email" id="contactEmail" placeholder="Your email" style="width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;background:rgba(255,255,255,0.06);color:#e2e8f0;" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
+      <input type="text" id="contactSubject" placeholder="Subject (optional)" style="width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;background:rgba(255,255,255,0.06);color:#e2e8f0;" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
+      <textarea id="contactMessage" placeholder="How can we help you?" rows="5" style="width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:14px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;background:rgba(255,255,255,0.06);color:#e2e8f0;" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'"></textarea>
+      <div id="contactError" style="color:#f87171;font-size:13px;font-weight:600;display:none;"></div>
+      <div id="contactSuccess" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:12px 16px;color:#34d399;font-size:14px;font-weight:600;text-align:center;">✓ Message sent! We'll get back to you within 24 hours.</div>
     </div>
     <div class="modal-actions" style="margin-top:20px;">
       <button id="contactBtn" class="btn btn-primary btn-lg" onclick="submitContact()">Send Message →</button>
@@ -2410,8 +2499,8 @@
     });
     var ccFootnoteEl = document.querySelector('.competitor-compare > div:last-child');
     if (ccFootnoteEl) {
-      var jLink = '<a href="/jobscan-alternative" style="color:#2563eb;font-weight:600;margin-left:8px;">' + (isZh ? '完整Jobscan对比 →' : 'Full Jobscan comparison →') + '</a>';
-      var rLink = '<a href="/rezi-alternative" style="color:#2563eb;font-weight:600;margin-left:8px;">' + (isZh ? '完整Rezi对比 →' : 'Full Rezi comparison →') + '</a>';
+      var jLink = '<a href="/jobscan-alternative" style="color:#818CF8;font-weight:600;margin-left:8px;">' + (isZh ? '完整Jobscan对比 →' : 'Full Jobscan comparison →') + '</a>';
+      var rLink = '<a href="/rezi-alternative" style="color:#818CF8;font-weight:600;margin-left:8px;">' + (isZh ? '完整Rezi对比 →' : 'Full Rezi comparison →') + '</a>';
       ccFootnoteEl.innerHTML = (isZh ? 'Jobscan数据：无限次扫描每月$49.95。Rezi求职信质量基于已发布的用户评价。' : 'Jobscan data: $49.95/mo for unlimited scans. Rezi cover letter quality based on published user reviews.') + jLink + rLink;
     }
 
@@ -2435,6 +2524,16 @@
   (function() {
     var saved = localStorage.getItem('rt_lang') || 'en';
     if (saved !== 'en') applyLang(saved);
+  })();
+
+  // Scroll reveal
+  (function() {
+    var els = document.querySelectorAll('.section, .feature-row, .step, .testimonial, .pricing-card, .tier-card');
+    els.forEach(function(el) { el.classList.add('reveal'); });
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+    }, { threshold: 0.1 });
+    els.forEach(function(el) { io.observe(el); });
   })();
 </script>
 </body>
