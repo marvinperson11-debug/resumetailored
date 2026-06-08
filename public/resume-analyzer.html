@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Free Resume Analyzer — Word Count, Action Verbs &amp; Readability Score | ResumeTailored AI</title>
+  <meta name="description" content="Free instant resume analysis. Check your word count, bullet points, action verbs, passive voice, and get an overall score with tips to improve." />
+  <meta name="keywords" content="resume analyzer, resume word count, resume action verbs, resume readability score, free resume checker, ATS resume score" />
+  <link rel="canonical" href="https://resumetailored.com/resume-analyzer" />
+  <meta property="og:title" content="Free Resume Analyzer — Word Count, Action Verbs &amp; Readability Score | ResumeTailored AI" />
+  <meta property="og:description" content="Free instant resume analysis. Check your word count, bullet points, action verbs, passive voice, and get an overall score with tips to improve." />
+  <meta property="og:url" content="https://resumetailored.com/resume-analyzer" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://resumetailored.com/favicon.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Free Resume Analyzer — Word Count, Action Verbs &amp; Score | ResumeTailored AI" />
+  <meta name="twitter:description" content="Instant free resume analysis: word count, bullet points, action verbs, passive voice, and an overall score with improvement tips." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #030712; color: #e2e8f0; line-height: 1.6; }
+    h2,h3{font-family:'Inter',sans-serif;letter-spacing:-0.02em;}h1,.logo{font-family:'Inter',sans-serif;font-weight:900;letter-spacing:-0.03em;}
+    a { color: inherit; text-decoration: none; }
+
+    /* NAV */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(3,7,18,0.85); border-bottom: 1px solid rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      padding: 0 24px;
+    }
+    .nav-inner {
+      max-width: 1120px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo { font-size: 18px; font-weight: 900; color: #f1f5f9; }
+    .logo .badge-ai {
+      background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff;
+      font-size: 11px; font-weight: 800;
+      padding: 2px 7px; border-radius: 5px;
+      vertical-align: middle; margin-left: 4px;
+    }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { font-size: 14px; font-weight: 600; color: #94a3b8; transition: color .15s; }
+    .nav-links a:hover { color: #e2e8f0; }
+    .nav-actions { display: flex; gap: 12px; align-items: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      border-radius: 8px; padding: 10px 20px; border: none; cursor: pointer;
+      transition: all .15s; text-decoration: none; white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff;
+      box-shadow: 0 0 20px rgba(99,102,241,0.35); position: relative; overflow: hidden;
+    }
+    .btn-primary:hover { opacity: 0.9; box-shadow: 0 0 28px rgba(99,102,241,0.5); }
+    .btn-ghost {
+      background: rgba(255,255,255,0.05); color: #94a3b8;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+    .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
+    .btn-white { background: #fff; color: #6366F1; }
+    .btn-white:hover { background: #f1f5f9; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: #94a3b8; border-radius: 2px; }
+    .mobile-menu {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: #030712; flex-direction: column;
+      align-items: center; justify-content: center; gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { font-size: 24px; font-weight: 700; color: #e2e8f0; }
+    .mobile-close { position: absolute; top: 20px; right: 24px; background: none; border: none; font-size: 28px; cursor: pointer; color: #94a3b8; }
+
+    /* LAYOUT */
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    .section { padding: 80px 0; }
+    .section-gray { background: rgba(255,255,255,0.02); }
+    .section-title {
+      text-align: center; font-size: clamp(28px, 4vw, 40px);
+      font-weight: 900; letter-spacing: -0.02em; margin-bottom: 16px; color: #e2e8f0;
+    }
+    .section-title span {
+      background: linear-gradient(135deg,#6366F1,#8B5CF6);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .section-sub { text-align: center; font-size: 17px; color: #94a3b8; max-width: 620px; margin: 0 auto 48px; line-height: 1.7; }
+    .section-eyebrow {
+      text-align: center; font-size: 13px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px; color: #818CF8; margin-bottom: 14px;
+    }
+
+    /* HERO */
+    .hero { padding: 80px 0 60px; text-align: center; background: #030712; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3); border-radius: 100px;
+      padding: 6px 16px; font-size: 13px; font-weight: 700; color: #818CF8;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(32px, 5.5vw, 54px); font-weight: 900;
+      letter-spacing: -0.03em; line-height: 1.07; margin-bottom: 16px;
+      color: #e2e8f0;
+    }
+    .hero h1 .blue {
+      background: linear-gradient(135deg,#6366F1,#8B5CF6);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-sub { font-size: 17px; color: #94a3b8; max-width: 580px; margin: 0 auto 40px; line-height: 1.7; }
+
+    /* ANALYZER TOOL */
+    .analyzer-wrap {
+      max-width: 800px; margin: 0 auto;
+    }
+    .textarea-label {
+      display: block; font-size: 15px; font-weight: 700; color: #e2e8f0; margin-bottom: 10px;
+    }
+    .resume-textarea {
+      width: 100%; min-height: 280px; resize: vertical;
+      background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.12);
+      border-radius: 12px; padding: 18px 20px;
+      font-family: 'Inter', sans-serif; font-size: 14px; color: #e2e8f0;
+      line-height: 1.7; outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .resume-textarea::placeholder { color: #475569; }
+    .resume-textarea:focus {
+      border-color: rgba(99,102,241,0.5);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+    .analyze-btn-wrap { margin-top: 16px; display: flex; justify-content: center; }
+    .btn-analyze {
+      background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff;
+      font-family: inherit; font-size: 17px; font-weight: 800;
+      border: none; border-radius: 10px; padding: 15px 36px; cursor: pointer;
+      box-shadow: 0 0 24px rgba(99,102,241,0.4);
+      transition: opacity .15s, box-shadow .15s;
+    }
+    .btn-analyze:hover { opacity: 0.9; box-shadow: 0 0 34px rgba(99,102,241,0.55); }
+    .btn-analyze:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    /* RESULTS */
+    .results-section { display: none; margin-top: 64px; }
+    .results-section.visible { display: block; }
+    .results-heading {
+      text-align: center; font-size: 26px; font-weight: 900;
+      letter-spacing: -0.02em; color: #e2e8f0; margin-bottom: 8px;
+    }
+    .results-sub {
+      text-align: center; font-size: 15px; color: #64748b; margin-bottom: 40px;
+    }
+
+    /* METRIC CARDS GRID */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .metrics-grid-bottom {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .metric-card {
+      background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 24px; position: relative; overflow: hidden;
+      transition: box-shadow .2s, border-color .2s;
+    }
+    .metric-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .metric-card.status-good { border-color: rgba(52,211,153,0.3); }
+    .metric-card.status-warn { border-color: rgba(251,191,36,0.3); }
+    .metric-card.status-bad  { border-color: rgba(248,113,113,0.3); }
+
+    .metric-card-label {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1.5px; color: #64748b; margin-bottom: 10px;
+    }
+    .metric-main-row {
+      display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px;
+    }
+    .metric-number {
+      font-size: 38px; font-weight: 900; letter-spacing: -0.03em; line-height: 1;
+    }
+    .metric-number.good  { color: #34d399; }
+    .metric-number.warn  { color: #fbbf24; }
+    .metric-number.bad   { color: #f87171; }
+    .metric-unit { font-size: 14px; font-weight: 600; color: #64748b; }
+
+    .metric-status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 13px; font-weight: 700; padding: 3px 10px; border-radius: 100px;
+      margin-bottom: 12px;
+    }
+    .badge-good { background: rgba(52,211,153,0.12); color: #34d399; }
+    .badge-warn { background: rgba(251,191,36,0.12); color: #fbbf24; }
+    .badge-bad  { background: rgba(248,113,113,0.12); color: #f87171; }
+
+    .metric-tip {
+      font-size: 13px; color: #64748b; line-height: 1.6;
+    }
+
+    /* Passive samples list */
+    .passive-list {
+      margin-top: 10px; padding: 0; list-style: none;
+    }
+    .passive-list li {
+      font-size: 12px; color: #94a3b8;
+      background: rgba(255,255,255,0.04); border-radius: 6px;
+      padding: 5px 10px; margin-bottom: 6px;
+      border-left: 3px solid rgba(248,113,113,0.4);
+      font-style: italic;
+    }
+
+    /* Overall Score card */
+    .score-card {
+      background: rgba(255,255,255,0.04); border: 1.5px solid rgba(255,255,255,0.08);
+      border-radius: 16px; padding: 28px;
+      display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+    }
+    .score-badge {
+      width: 100px; height: 100px; border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex-shrink: 0; font-weight: 900; letter-spacing: -0.02em;
+      border: 4px solid transparent;
+    }
+    .score-badge .score-num { font-size: 32px; line-height: 1; }
+    .score-badge .score-grade { font-size: 15px; margin-top: 2px; }
+    .score-badge.score-a { background: rgba(52,211,153,0.12); border-color: #34d399; color: #34d399; }
+    .score-badge.score-b { background: rgba(96,165,250,0.12); border-color: #60a5fa; color: #60a5fa; }
+    .score-badge.score-c { background: rgba(251,191,36,0.12); border-color: #fbbf24; color: #fbbf24; }
+    .score-badge.score-d { background: rgba(248,113,113,0.12); border-color: #f87171; color: #f87171; }
+
+    .score-details { flex: 1; min-width: 200px; }
+    .score-details h3 { font-size: 18px; font-weight: 800; color: #e2e8f0; margin-bottom: 8px; }
+    .score-details p { font-size: 14px; color: #94a3b8; line-height: 1.6; }
+    .score-breakdown {
+      margin-top: 16px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;
+    }
+    .score-breakdown-item {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px; background: rgba(255,255,255,0.04);
+      border-radius: 8px; padding: 8px 12px;
+    }
+    .score-breakdown-item .sb-label { color: #94a3b8; }
+    .score-breakdown-item .sb-pts { font-weight: 800; }
+    .sb-pts.good  { color: #34d399; }
+    .sb-pts.warn  { color: #fbbf24; }
+    .sb-pts.bad   { color: #f87171; }
+
+    /* Action verbs progress bar */
+    .progress-bar-wrap { margin-top: 12px; }
+    .progress-bar-track {
+      height: 6px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%; border-radius: 100px;
+      background: linear-gradient(90deg,#6366F1,#8B5CF6);
+      transition: width .6s cubic-bezier(.4,0,.2,1);
+    }
+    .progress-label {
+      display: flex; justify-content: space-between;
+      font-size: 12px; color: #64748b; margin-bottom: 6px;
+    }
+
+    /* CTA SECTION */
+    .cta-tool-section {
+      margin-top: 56px;
+      background: linear-gradient(135deg, rgba(55,48,163,0.5), rgba(109,40,217,0.5));
+      border: 1px solid rgba(99,102,241,0.3); border-radius: 20px;
+      padding: 40px 36px; text-align: center;
+    }
+    .cta-tool-section h2 {
+      font-size: clamp(20px, 3vw, 28px); font-weight: 900;
+      letter-spacing: -0.02em; margin-bottom: 10px; color: #e2e8f0;
+    }
+    .cta-tool-section p { font-size: 15px; color: #94a3b8; margin-bottom: 24px; }
+
+    /* CTA BANNER */
+    .cta-banner {
+      background: linear-gradient(135deg, #3730A3, #6D28D9);
+      padding: 80px 24px; text-align: center; color: #fff;
+    }
+    .cta-banner h2 { font-size: clamp(26px, 4vw, 42px); font-weight: 900; margin-bottom: 14px; letter-spacing: -0.02em; }
+    .cta-banner p { font-size: 17px; opacity: 0.85; margin-bottom: 32px; max-width: 540px; margin-left: auto; margin-right: auto; }
+    .hero-note { font-size: 13px; color: #64748b; margin-top: 12px; }
+    .cta-banner .hero-note { color: rgba(255,255,255,0.7); margin-top: 14px; }
+
+    /* FOOTER */
+    .footer { background: rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.07); color: #64748b; padding: 48px 24px; }
+    .footer-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
+    .footer .logo { color: #f1f5f9; }
+    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+    .footer-links a { font-size: 14px; font-weight: 600; color: #64748b; transition: color .15s; }
+    .footer-links a:hover { color: #e2e8f0; }
+    .footer-copy { font-size: 13px; }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .nav-links, .nav-actions { display: none; }
+      .hamburger { display: flex; }
+      .metrics-grid { grid-template-columns: 1fr 1fr; }
+      .metrics-grid-bottom { grid-template-columns: 1fr; }
+      .score-card { flex-direction: column; align-items: flex-start; }
+      .score-breakdown { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 480px) {
+      .hero { padding: 56px 0 40px; }
+      .section { padding: 56px 0; }
+      .metrics-grid { grid-template-columns: 1fr; }
+      .score-breakdown { grid-template-columns: 1fr; }
+      .cta-tool-section { padding: 28px 20px; }
+    }
+
+    /* Fixed circuit grid background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.08), transparent),
+        linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 56px 56px, 56px 56px;
+      pointer-events: none;
+    }
+    nav, section, footer { position: relative; z-index: 1; }
+
+    /* Scroll-reveal animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .metric-card { animation: fadeUp .35s ease both; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">ResumeTailored<span class="badge-ai">AI</span></a>
+    <div class="nav-links">
+      <a href="/#how-it-works">How It Works</a>
+      <a href="/blog">Blog</a>
+      <a href="/#pricing">Pricing</a>
+    </div>
+    <div class="nav-actions">
+      <a href="/dashboard" class="btn btn-ghost">Log In</a>
+      <a href="/dashboard" class="btn btn-primary">Get Started Free &rarr;</a>
+    </div>
+    <button class="hamburger" onclick="document.getElementById('mobileMenu').classList.add('open')" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-close" onclick="document.getElementById('mobileMenu').classList.remove('open')">&times;</button>
+  <a href="/#how-it-works" onclick="document.getElementById('mobileMenu').classList.remove('open')">How It Works</a>
+  <a href="/blog" onclick="document.getElementById('mobileMenu').classList.remove('open')">Blog</a>
+  <a href="/#pricing" onclick="document.getElementById('mobileMenu').classList.remove('open')">Pricing</a>
+  <a href="/dashboard" class="btn btn-primary btn-lg">Get Started Free &rarr;</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge">&#128202; Free Resume Analyzer</div>
+    <h1>Analyze Your Resume in<br /><span class="blue">Under 10 Seconds</span></h1>
+    <p class="hero-sub">Paste your resume below and get an instant score on word count, bullet points, action verbs, passive voice, and quantified achievements — with actionable tips.</p>
+  </div>
+</section>
+
+<!-- ANALYZER TOOL -->
+<section class="section" style="padding-top: 0;">
+  <div class="container">
+    <div class="analyzer-wrap">
+      <label class="textarea-label" for="resumeInput">Paste Your Resume</label>
+      <textarea
+        id="resumeInput"
+        class="resume-textarea"
+        placeholder="Paste your full resume text here — experience, education, skills, everything. The more complete, the more accurate your analysis."
+        spellcheck="false"
+        aria-label="Paste your resume text"
+      ></textarea>
+      <div class="analyze-btn-wrap">
+        <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">
+          Analyze My Resume &rarr;
+        </button>
+      </div>
+
+      <!-- RESULTS -->
+      <div class="results-section" id="resultsSection">
+        <div class="results-heading">Your Resume Analysis</div>
+        <div class="results-sub" id="resultsSubLine">Here's how your resume stacks up across 5 key dimensions.</div>
+
+        <!-- Top row: 3 cards -->
+        <div class="metrics-grid" id="topCards">
+
+          <!-- Card 1: Word Count -->
+          <div class="metric-card" id="card-words">
+            <div class="metric-card-label">Word Count</div>
+            <div class="metric-main-row">
+              <span class="metric-number" id="wordCountNum">0</span>
+              <span class="metric-unit">words</span>
+            </div>
+            <div class="metric-status-badge" id="wordCountBadge"></div>
+            <div class="metric-tip" id="wordCountTip"></div>
+          </div>
+
+          <!-- Card 2: Bullet Points -->
+          <div class="metric-card" id="card-bullets">
+            <div class="metric-card-label">Bullet Points</div>
+            <div class="metric-main-row">
+              <span class="metric-number" id="bulletCountNum">0</span>
+              <span class="metric-unit">bullets</span>
+            </div>
+            <div class="metric-status-badge" id="bulletCountBadge"></div>
+            <div class="metric-tip" id="bulletCountTip"></div>
+          </div>
+
+          <!-- Card 3: Action Verbs Score -->
+          <div class="metric-card" id="card-verbs">
+            <div class="metric-card-label">Action Verbs</div>
+            <div class="metric-main-row">
+              <span class="metric-number" id="verbsNum">0</span>
+              <span class="metric-unit" id="verbsUnit">/ 0 bullets</span>
+            </div>
+            <div class="metric-status-badge" id="verbsBadge"></div>
+            <div class="progress-bar-wrap" id="verbsProgress">
+              <div class="progress-label">
+                <span>Action verb coverage</span>
+                <span id="verbsPct">0%</span>
+              </div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill" id="verbsBar" style="width:0%"></div>
+              </div>
+            </div>
+            <div class="metric-tip" id="verbsTip" style="margin-top:10px;"></div>
+          </div>
+        </div>
+
+        <!-- Bottom row: 2 cards + overall score (full-width) -->
+        <div class="metrics-grid-bottom" id="bottomCards">
+
+          <!-- Card 4: Passive Voice -->
+          <div class="metric-card" id="card-passive">
+            <div class="metric-card-label">Passive Voice</div>
+            <div class="metric-main-row">
+              <span class="metric-number" id="passiveNum">0</span>
+              <span class="metric-unit">instances</span>
+            </div>
+            <div class="metric-status-badge" id="passiveBadge"></div>
+            <div class="metric-tip" id="passiveTip"></div>
+            <ul class="passive-list" id="passiveList"></ul>
+          </div>
+
+          <!-- Card 5: Quantified Achievements -->
+          <div class="metric-card" id="card-quant">
+            <div class="metric-card-label">Quantified Achievements</div>
+            <div class="metric-main-row">
+              <span class="metric-number" id="quantNum">0</span>
+              <span class="metric-unit">lines with numbers</span>
+            </div>
+            <div class="metric-status-badge" id="quantBadge"></div>
+            <div class="metric-tip" id="quantTip"></div>
+          </div>
+        </div>
+
+        <!-- Card 6: Overall Score (full width) -->
+        <div class="score-card" id="card-score" style="margin-top: 20px;">
+          <div class="score-badge" id="scoreBadge">
+            <span class="score-num" id="scoreNum">0</span>
+            <span class="score-grade" id="scoreGrade">—</span>
+          </div>
+          <div class="score-details">
+            <h3 id="scoreHeading">Overall Resume Score</h3>
+            <p id="scoreSummary"></p>
+            <div class="score-breakdown" id="scoreBreakdown"></div>
+          </div>
+        </div>
+
+        <!-- Post-results CTA -->
+        <div class="cta-tool-section" id="toolCta" style="margin-top: 48px;">
+          <h2>Now Tailor This Resume to a Job Posting in 30 Seconds &rarr;</h2>
+          <p>Your resume analysis is a great start. But the fastest way to get more interviews is to tailor your resume to each specific job. ResumeTailor AI rewrites your resume for any posting — free to try, no card needed.</p>
+          <a href="/dashboard" class="btn btn-primary btn-lg">Tailor My Resume to a Job &rarr;</a>
+          <p class="hero-note" style="margin-top: 12px;">1 free tailoring/day &bull; No credit card &bull; Results in 30 seconds</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section class="cta-banner">
+  <div class="container">
+    <h2>Good Score? Now Make Every Application Count</h2>
+    <p>A strong resume foundation is step one. Step two is tailoring it to every job you apply for. ResumeTailor AI does the full rewrite in 30 seconds — free to try.</p>
+    <div>
+      <a href="/dashboard" class="btn btn-white btn-lg">Try It Free &rarr;</a>
+    </div>
+    <p class="hero-note">1 free tailoring/day &bull; No credit card &bull; Upgrade for $19/mo</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <a href="/" class="logo">ResumeTailored<span class="badge-ai">AI</span></a>
+    <div class="footer-links">
+      <a href="/#how-it-works">How It Works</a>
+      <a href="/blog">Blog</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/jobscan-alternative">Compare</a>
+      <a href="/resume-analyzer">Resume Analyzer</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 ResumeTailored AI</div>
+  </div>
+</footer>
+
+<script>
+  // ──────────────────────────────────────────────
+  // Core analysis function
+  // ──────────────────────────────────────────────
+  function analyzeResume(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+
+    // Word count
+    const wordCount = words.length;
+
+    // Bullet detection
+    const bulletLines = lines.filter(l => /^[•\-\*·–—]/.test(l) || /^\d+\./.test(l));
+    const bulletCount = bulletLines.length;
+
+    // Action verbs
+    const ACTION_VERBS = [
+      'led','built','created','designed','developed','managed','increased','reduced',
+      'improved','launched','delivered','achieved','generated','optimized','executed',
+      'implemented','drove','spearheaded','established','collaborated','streamlined',
+      'negotiated','trained','mentored','analyzed','researched','presented','coordinated',
+      'oversaw','transformed','scaled','grew','cut','saved','secured','won','closed',
+      'exceeded','surpassed','automated','deployed','shipped','refactored','migrated',
+      'integrated','architected','engineered','diagnosed','directed','supervised',
+      'planned','produced','wrote','edited','published'
+    ];
+    const bulletsWithActionVerbs = bulletLines.filter(l => {
+      const firstWord = l.replace(/^[•\-\*·–—\d\.]\s*/, '').split(/\s+/)[0].toLowerCase().replace(/[^a-z]/g, '');
+      return ACTION_VERBS.includes(firstWord);
+    });
+
+    // Passive voice
+    const passivePattern = /\b(was|were|been|is|are|have been|had been)\s+\w+ed\b/gi;
+    const passiveMatches = text.match(passivePattern) || [];
+
+    // Quantified achievements
+    const quantPattern = /\b(\d+[\%\$]?|\$\d+|[\$]\d+|\d+[xX]|\d+[kKmMbB])\b/g;
+    const linesWithNumbers = lines.filter(l => {
+      quantPattern.lastIndex = 0;
+      return quantPattern.test(l);
+    });
+
+    return {
+      wordCount,
+      bulletCount,
+      bulletsWithActionVerbs: bulletsWithActionVerbs.length,
+      totalBullets: bulletLines.length,
+      passiveCount: passiveMatches.length,
+      passiveSamples: passiveMatches.slice(0, 3),
+      quantifiedCount: linesWithNumbers.length
+    };
+  }
+
+  // ──────────────────────────────────────────────
+  // Scoring helpers
+  // ──────────────────────────────────────────────
+  function scoreWordCount(wc) {
+    if (wc >= 400 && wc <= 800) return 20;
+    if (wc >= 300 && wc < 400)  return 12;
+    if (wc > 800 && wc <= 1000) return 12;
+    if (wc >= 200 && wc < 300)  return 6;
+    if (wc > 1000 && wc <= 1200) return 6;
+    return 0;
+  }
+  function scoreBullets(bc) {
+    if (bc >= 15 && bc <= 35) return 15;
+    if ((bc >= 10 && bc < 15) || (bc > 35 && bc <= 45)) return 8;
+    return 2;
+  }
+  function scoreActionVerbs(bulletsWithAV, totalBullets) {
+    if (totalBullets === 0) return 0;
+    const pct = bulletsWithAV / totalBullets;
+    if (pct >= 0.8) return 30;
+    if (pct >= 0.6) return 22;
+    if (pct >= 0.4) return 14;
+    if (pct >= 0.2) return 7;
+    return 0;
+  }
+  function scorePassive(pc) {
+    if (pc <= 2)  return 20;
+    if (pc <= 5)  return 12;
+    return 0;
+  }
+  function scoreQuantified(qc) {
+    if (qc >= 5) return 15;
+    if (qc >= 3) return 9;
+    return 2;
+  }
+
+  function getGrade(score) {
+    if (score >= 85) return 'A';
+    if (score >= 70) return 'B';
+    if (score >= 50) return 'C';
+    return 'D';
+  }
+  function gradeClass(score) {
+    if (score >= 85) return 'score-a';
+    if (score >= 70) return 'score-b';
+    if (score >= 50) return 'score-c';
+    return 'score-d';
+  }
+
+  // ──────────────────────────────────────────────
+  // DOM helpers
+  // ──────────────────────────────────────────────
+  function setCard(cardId, status) {
+    const card = document.getElementById(cardId);
+    card.className = 'metric-card status-' + status;
+  }
+  function setBadge(elId, status, text) {
+    const el = document.getElementById(elId);
+    const cls = status === 'good' ? 'badge-good' : status === 'warn' ? 'badge-warn' : 'badge-bad';
+    const icon = status === 'good' ? '&#10003;' : status === 'warn' ? '&#9888;' : '&#10007;';
+    el.className = 'metric-status-badge ' + cls;
+    el.innerHTML = icon + ' ' + text;
+  }
+  function setNum(elId, value, status) {
+    const el = document.getElementById(elId);
+    el.textContent = value;
+    el.className = 'metric-number ' + status;
+  }
+  function setText(elId, html) {
+    document.getElementById(elId).innerHTML = html;
+  }
+
+  // ──────────────────────────────────────────────
+  // Main render function
+  // ──────────────────────────────────────────────
+  function runAnalysis() {
+    const text = document.getElementById('resumeInput').value.trim();
+    if (!text) {
+      document.getElementById('resumeInput').focus();
+      document.getElementById('resumeInput').style.borderColor = 'rgba(248,113,113,0.6)';
+      setTimeout(() => { document.getElementById('resumeInput').style.borderColor = ''; }, 1500);
+      return;
+    }
+
+    const btn = document.getElementById('analyzeBtn');
+    btn.disabled = true;
+    btn.textContent = 'Analyzing…';
+
+    // Small artificial delay for UX feel
+    setTimeout(() => {
+      const r = analyzeResume(text);
+      renderResults(r);
+      btn.disabled = false;
+      btn.textContent = 'Analyze My Resume →';
+    }, 420);
+  }
+
+  function renderResults(r) {
+    // ── Card 1: Word Count ──
+    let wcStatus, wcBadgeText, wcTip;
+    if (r.wordCount >= 400 && r.wordCount <= 800) {
+      wcStatus = 'good'; wcBadgeText = 'Good length';
+      wcTip = 'Your resume is in the ideal 400–800 word range. Most ATS systems and recruiters prefer concise, scannable resumes. You\'re right on target.';
+    } else if (r.wordCount < 400) {
+      wcStatus = 'warn'; wcBadgeText = 'Too short';
+      wcTip = 'Resumes under 400 words often lack enough detail to pass ATS filters or impress recruiters. Aim to expand your experience bullets and add more context to key accomplishments.';
+    } else {
+      wcStatus = 'warn'; wcBadgeText = 'Too long';
+      wcTip = 'Resumes over 800 words risk losing a recruiter\'s attention. Try trimming older experience, cutting redundant bullets, and keeping each point concise and punchy.';
+    }
+    setCard('card-words', wcStatus);
+    setNum('wordCountNum', r.wordCount, wcStatus === 'good' ? 'good' : 'warn');
+    setBadge('wordCountBadge', wcStatus, wcBadgeText);
+    setText('wordCountTip', wcTip);
+
+    // ── Card 2: Bullet Points ──
+    let bcStatus, bcBadgeText, bcTip;
+    if (r.bulletCount >= 15 && r.bulletCount <= 35) {
+      bcStatus = 'good'; bcBadgeText = 'Good range';
+      bcTip = '15–35 bullet points is the sweet spot. You have enough detail to showcase impact without overwhelming the reader.';
+    } else if (r.bulletCount < 15) {
+      bcStatus = 'warn'; bcBadgeText = 'Too few';
+      bcTip = 'Fewer than 15 bullets can make your resume feel thin. Add more achievement-focused bullets under each role to give recruiters and ATS more signal.';
+    } else {
+      bcStatus = 'warn'; bcBadgeText = 'Too many';
+      bcTip = 'Over 35 bullets can overwhelm recruiters. Trim the weakest bullets and focus on your highest-impact achievements in each role.';
+    }
+    setCard('card-bullets', bcStatus);
+    setNum('bulletCountNum', r.bulletCount, bcStatus === 'good' ? 'good' : 'warn');
+    setBadge('bulletCountBadge', bcStatus, bcBadgeText);
+    setText('bulletCountTip', bcTip);
+
+    // ── Card 3: Action Verbs ──
+    const pct = r.totalBullets === 0 ? 0 : Math.round((r.bulletsWithActionVerbs / r.totalBullets) * 100);
+    let avStatus, avBadgeText, avTip;
+    if (pct >= 70) {
+      avStatus = 'good'; avBadgeText = 'Strong action verbs';
+      avTip = 'Great job — most of your bullets lead with strong action verbs. This signals ownership and impact to both ATS systems and recruiters.';
+    } else if (pct >= 40) {
+      avStatus = 'warn'; avBadgeText = 'Needs improvement';
+      avTip = 'About half your bullets start with strong action verbs. Go through remaining bullets and replace weak openers like "Responsible for" or "Helped with" with verbs like Led, Built, or Delivered.';
+    } else {
+      avStatus = 'bad'; avBadgeText = 'Too few action verbs';
+      avTip = 'Most bullets don\'t start with a strong action verb. Start each bullet with verbs like Led, Built, Developed, Increased, or Managed to immediately communicate impact.';
+    }
+    setCard('card-verbs', avStatus);
+    setNum('verbsNum', r.bulletsWithActionVerbs, avStatus === 'good' ? 'good' : avStatus === 'warn' ? 'warn' : 'bad');
+    setText('verbsUnit', '/ ' + r.totalBullets + ' bullets');
+    setBadge('verbsBadge', avStatus, avBadgeText);
+    setText('verbsPct', pct + '%');
+    document.getElementById('verbsBar').style.width = Math.min(pct, 100) + '%';
+    setText('verbsTip', avTip);
+
+    // ── Card 4: Passive Voice ──
+    let pvStatus, pvBadgeText, pvTip;
+    if (r.passiveCount <= 2) {
+      pvStatus = 'good'; pvBadgeText = 'Mostly active voice';
+      pvTip = 'Excellent — you\'re predominantly using active voice. Active construction is stronger, more direct, and makes your impact clear.';
+    } else if (r.passiveCount <= 5) {
+      pvStatus = 'warn'; pvBadgeText = 'A few passive phrases';
+      pvTip = 'A few passive constructions detected. Passive voice ("was managed by", "were developed") weakens your resume. Rewrite these as active: "Managed…", "Developed…"';
+    } else {
+      pvStatus = 'bad'; pvBadgeText = 'Too much passive voice';
+      pvTip = 'Significant passive voice detected. This makes you sound like a bystander rather than a driver of results. Rewrite each to start with an active verb and own your accomplishments.';
+    }
+    setCard('card-passive', pvStatus);
+    setNum('passiveNum', r.passiveCount, pvStatus === 'good' ? 'good' : pvStatus === 'warn' ? 'warn' : 'bad');
+    setBadge('passiveBadge', pvStatus, pvBadgeText);
+    setText('passiveTip', pvTip);
+
+    const passiveListEl = document.getElementById('passiveList');
+    passiveListEl.innerHTML = '';
+    if (r.passiveSamples.length > 0) {
+      r.passiveSamples.forEach(sample => {
+        const li = document.createElement('li');
+        li.textContent = '"…' + sample + '…"';
+        passiveListEl.appendChild(li);
+      });
+    }
+
+    // ── Card 5: Quantified Achievements ──
+    let qStatus, qBadgeText, qTip;
+    if (r.quantifiedCount >= 5) {
+      qStatus = 'good'; qBadgeText = 'Great — numbers throughout';
+      qTip = 'Quantified achievements massively increase resume credibility. You\'re doing this well — keep numbers on every high-impact bullet.';
+    } else if (r.quantifiedCount >= 3) {
+      qStatus = 'warn'; qBadgeText = 'Add more numbers';
+      qTip = 'You have some numbers, but aim for 5+ quantified bullets. Recruits respond to specifics: "Increased revenue by 32%", "Reduced bug backlog by 200 issues", "Managed $1.2M budget".';
+    } else {
+      qStatus = 'bad'; qBadgeText = 'Needs numbers urgently';
+      qTip = 'Fewer than 3 lines contain numbers or metrics. This is one of the biggest resume weaknesses. Add specific figures to every accomplishment — percentages, dollar amounts, team size, timeframes.';
+    }
+    setCard('card-quant', qStatus);
+    setNum('quantNum', r.quantifiedCount, qStatus === 'good' ? 'good' : qStatus === 'warn' ? 'warn' : 'bad');
+    setBadge('quantBadge', qStatus, qBadgeText);
+    setText('quantTip', qTip);
+
+    // ── Card 6: Overall Score ──
+    const wcPts   = scoreWordCount(r.wordCount);
+    const bcPts   = scoreBullets(r.bulletCount);
+    const avPts   = scoreActionVerbs(r.bulletsWithActionVerbs, r.totalBullets);
+    const pvPts   = scorePassive(r.passiveCount);
+    const qPts    = scoreQuantified(r.quantifiedCount);
+    const total   = wcPts + bcPts + avPts + pvPts + qPts;
+    const grade   = getGrade(total);
+    const gClass  = gradeClass(total);
+
+    const scoreBadgeEl = document.getElementById('scoreBadge');
+    scoreBadgeEl.className = 'score-badge ' + gClass;
+    setText('scoreNum', total);
+    setText('scoreGrade', 'Grade ' + grade);
+
+    let scoreSummary;
+    if (total >= 85) {
+      scoreSummary = 'Outstanding! Your resume is well-structured, action-oriented, and data-driven. Focus on tailoring it to each specific job posting to maximize your interview rate.';
+    } else if (total >= 70) {
+      scoreSummary = 'Solid resume with some clear wins. Address the highlighted areas to push into the A range — particularly action verbs and quantified achievements, which have the biggest impact on recruiter response rates.';
+    } else if (total >= 50) {
+      scoreSummary = 'Your resume has a foundation but needs work in several areas. Focus on adding more quantified achievements, converting passive phrases to active, and starting each bullet with a strong action verb.';
+    } else {
+      scoreSummary = 'Your resume needs significant improvement before it will perform well. Start with the red-flagged areas: add numbers to your bullets, lead with action verbs, and hit the 400–800 word target range.';
+    }
+    setText('scoreSummary', scoreSummary);
+
+    function ptClass(pts, max) {
+      const ratio = pts / max;
+      if (ratio >= 0.8) return 'good';
+      if (ratio >= 0.5) return 'warn';
+      return 'bad';
+    }
+
+    const breakdown = [
+      { label: 'Word Count',   pts: wcPts, max: 20 },
+      { label: 'Bullets',      pts: bcPts, max: 15 },
+      { label: 'Action Verbs', pts: avPts, max: 30 },
+      { label: 'Passive Voice',pts: pvPts, max: 20 },
+      { label: 'Quantified',   pts: qPts,  max: 15 },
+    ];
+
+    const breakdownEl = document.getElementById('scoreBreakdown');
+    breakdownEl.innerHTML = breakdown.map(item => {
+      const cls = ptClass(item.pts, item.max);
+      return `<div class="score-breakdown-item"><span class="sb-label">${item.label}</span><span class="sb-pts ${cls}">${item.pts}/${item.max} pts</span></div>`;
+    }).join('');
+
+    // Show results
+    const resultsSection = document.getElementById('resultsSection');
+    resultsSection.classList.add('visible');
+
+    // Scroll into view smoothly
+    setTimeout(() => {
+      document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+</script>
+
+</body>
+</html>
