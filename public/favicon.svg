@@ -1,8 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Blue rounded square background matching site logo -->
-  <rect width="64" height="64" rx="14" fill="#2563eb"/>
-  <!-- White "R" matching the nav logo exactly -->
-  <text x="32" y="46" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="42" fill="white">R</text>
-  <!-- Gold dot accent bottom-right matching brand gold #f5c842 -->
-  <circle cx="50" cy="50" r="7" fill="#f5c842"/>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="60%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Dark outer shell -->
+  <rect width="64" height="64" rx="15" fill="#060918"/>
+
+  <!-- Gradient face -->
+  <rect x="3" y="3" width="58" height="58" rx="13" fill="url(#grad)"/>
+
+  <!-- Glass shine top-left -->
+  <rect x="3" y="3" width="58" height="30" rx="13" fill="url(#shine)"/>
+
+  <!-- White "R" with subtle glow -->
+  <text
+    x="32" y="46"
+    text-anchor="middle"
+    font-family="Arial Black, Arial, sans-serif"
+    font-weight="900"
+    font-size="40"
+    fill="white"
+    filter="url(#glow)"
+  >R</text>
+
+  <!-- Purple sparkle dot bottom-right -->
+  <circle cx="50" cy="50" r="5.5" fill="rgba(255,255,255,0.9)"/>
+  <circle cx="50" cy="50" r="3" fill="#c4b5fd"/>
 </svg>
