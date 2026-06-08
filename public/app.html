@@ -258,8 +258,9 @@
 <body>
 
   <!-- AUTH MODAL -->
-  <div class="auth-overlay" id="authOverlay">
-    <div class="auth-card">
+  <div class="auth-overlay" id="authOverlay" style="display:none;" onclick="if(event.target===this){document.getElementById('authOverlay').style.display='none';pendingDownloadFn=null;}">
+    <div class="auth-card" style="position:relative;">
+      <button onclick="document.getElementById('authOverlay').style.display='none';pendingDownloadFn=null;" style="position:absolute;top:14px;right:14px;background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1;padding:4px;" aria-label="Close">&times;</button>
       <div class="auth-logo">ResumeTailored <span class="badge-ai">AI</span></div>
       <h2 class="auth-heading" id="authHeading">Create Your Account</h2>
       <p class="auth-sub" id="authSubtext">Join thousands of job seekers landing more interviews.</p>
@@ -320,6 +321,7 @@
         <span id="navStatus"></span>
         <span id="navUsername" style="color:#9490b5;font-size:13px;font-weight:600;display:none;"></span>
         <button class="btn btn-outline" id="goProNavBtn" onclick="startPro()" style="font-size:13px;padding:8px 14px;" data-i18n="nav_go_pro">Go Pro — $19/mo</button>
+        <button class="btn btn-outline" id="loginNavBtn" onclick="showAuthModal('login')" style="font-size:13px;padding:8px 14px;display:none;">Log In</button>
         <button onclick="toggleLang()" id="langToggleBtn" style="background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.1);border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;color:#94a3b8;cursor:pointer;font-family:inherit;transition:all .15s;" title="Switch language / 切换语言">中文</button>
         <button class="btn btn-outline" id="logoutBtn" onclick="doLogout()" style="display:none;font-size:13px;padding:8px 14px;" data-i18n="nav_logout">Log Out</button>
       </div>
@@ -1254,6 +1256,8 @@
       times:   "'Times New Roman',Georgia,serif"
     };
     let isSubscriberFlag = false;
+    let isLoggedIn = false;
+    let pendingDownloadFn = null;
     let freeResumesLeft = 1;
     let freeCoverLettersLeft = 1;
     let freeLinkedInLeft = 1;
@@ -1752,21 +1756,61 @@
     async function checkAuth() {
       const token = getToken();
       if (!token) {
-        const path = window.location.pathname;
-        showAuthModal(path === '/login' ? 'login' : 'signup');
+        isLoggedIn = false;
+        updateNavForGuest();
         return;
       }
       try {
         const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
-        if (!res.ok) { showAuthModal(); return; }
+        if (!res.ok) {
+          localStorage.removeItem('rt_token');
+          isLoggedIn = false;
+          updateNavForGuest();
+          return;
+        }
         const data = await res.json();
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
-        hideAuthModal();
-      } catch(e) { hideAuthModal(); }
+        isLoggedIn = true;
+        updateNavForLogged();
+        document.getElementById('authOverlay').style.display = 'none';
+      } catch(e) {
+        isLoggedIn = false;
+        updateNavForGuest();
+      }
+    }
+
+    function updateNavForGuest() {
+      document.getElementById('loginNavBtn').style.display = 'inline-flex';
+      document.getElementById('logoutBtn').style.display = 'none';
+      document.getElementById('navUsername').style.display = 'none';
+    }
+
+    function updateNavForLogged() {
+      const username = getStoredUsername();
+      const _lang = localStorage.getItem('rt_lang') || 'en';
+      const navUsername = document.getElementById('navUsername');
+      navUsername.textContent = (_lang === 'zh' ? '你好，' : 'Hi, ') + username;
+      navUsername.style.display = 'inline';
+      document.getElementById('loginNavBtn').style.display = 'none';
+      document.getElementById('logoutBtn').style.display = 'inline-flex';
+    }
+
+    function showDownloadGate(downloadFn) {
+      pendingDownloadFn = downloadFn;
+      // Set download-specific messaging before showing modal
+      document.getElementById('authHeading').textContent = 'Your document is ready!';
+      document.getElementById('authSubtext').textContent = 'Create a free account in 5 seconds to instantly download your AI-tailored file and save your progress.';
+      switchAuthTab('signup');
+      document.getElementById('authOverlay').style.display = 'flex';
     }
 
     function showAuthModal(tab) {
+      pendingDownloadFn = null;
+      document.getElementById('authHeading').textContent = tab === 'login' ? 'Welcome Back' : 'Create Your Account';
+      document.getElementById('authSubtext').textContent = tab === 'login'
+        ? 'Log in to access your dashboard.'
+        : 'Join thousands of job seekers landing more interviews.';
       document.getElementById('authOverlay').style.display = 'flex';
       if (tab === 'login') switchAuthTab('login');
       else switchAuthTab('signup');
@@ -1774,13 +1818,14 @@
 
     function hideAuthModal() {
       document.getElementById('authOverlay').style.display = 'none';
-      const username = getStoredUsername();
-      const navUsername = document.getElementById('navUsername');
-      const _lang = localStorage.getItem('rt_lang') || 'en';
-      navUsername.textContent = (_lang === 'zh' ? '你好，' : 'Hi, ') + username;
-      navUsername.style.display = 'inline';
-      document.getElementById('logoutBtn').style.display = 'inline-flex';
+      isLoggedIn = true;
+      updateNavForLogged();
       checkStatus();
+      if (pendingDownloadFn) {
+        const fn = pendingDownloadFn;
+        pendingDownloadFn = null;
+        setTimeout(fn, 300);
+      }
       if (pendingPro) { pendingPro = false; subscribe(); }
     }
 
@@ -1922,10 +1967,11 @@
       localStorage.removeItem('rt_token');
       localStorage.removeItem('rt_email');
       localStorage.removeItem('rt_username');
-      document.getElementById('navUsername').style.display = 'none';
-      document.getElementById('logoutBtn').style.display = 'none';
+      isLoggedIn = false;
       pendingPro = false;
-      showAuthModal('signup');
+      updateNavForGuest();
+      isSubscriberFlag = false;
+      checkStatus();
     }
 
     // ── Tab switching ──────────────────────────────────────────────────────────
@@ -3935,6 +3981,12 @@ Aaliyah Washington`
           <button class="download-btn download-btn-pdf" onclick="downloadPdf()">Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="downloadDocx()">Download Word</button>
           <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>`;
+      } else if (!isLoggedIn) {
+        row.innerHTML = `
+          <button class="download-btn download-btn-pdf" onclick="showDownloadGate(downloadPdf)" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);">⬇ Download PDF</button>
+          <button class="download-btn download-btn-docx" onclick="showDownloadGate(downloadDocx)">⬇ Download Word</button>
+          <button class="download-btn download-btn-txt" onclick="showDownloadGate(downloadTxt)">⬇ Download Text</button>
+          <div style="width:100%;font-size:11px;color:#64748b;margin-top:6px;">Free account required to download — takes 5 seconds</div>`;
       } else {
         row.innerHTML = `
           <button class="download-btn download-btn-pdf" onclick="adGate(downloadPdf)" style="background:#b91c1c;">▶ Ad → PDF</button>
