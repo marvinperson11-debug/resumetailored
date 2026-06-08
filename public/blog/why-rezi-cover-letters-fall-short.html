@@ -86,6 +86,19 @@
       .related-grid{grid-template-columns:1fr;}
       .comparison-table{font-size:13px;}
     }
+
+    /* Fixed circuit grid background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.08), transparent),
+        linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 56px 56px, 56px 56px;
+      pointer-events: none;
+    }
+    nav, .article-hero, .article-body, footer { position: relative; z-index: 1; }
   </style>
 </head>
 <body>

@@ -75,6 +75,19 @@
     .related-card-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
     .related-card-title{font-size:14px;font-weight:700;color:#e2e8f0;line-height:1.4;}
     @media(max-width:768px){.article-hero h1{font-size:26px;}.nav-links{display:none;}.tip-row{grid-template-columns:1fr;}.stat-box{flex-direction:column;gap:16px;}.related-grid{grid-template-columns:1fr;}}
+
+    /* Fixed circuit grid background */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.08), transparent),
+        linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 56px 56px, 56px 56px;
+      pointer-events: none;
+    }
+    nav, .article-hero, .article-body, footer { position: relative; z-index: 1; }
   </style>
 </head>
 <body>

@@ -75,11 +75,11 @@
     .upload-btn {
       display: inline-flex; align-items: center; gap: 7px;
       padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
-      border: 1.5px dashed #93c5fd; background: #eff6ff;
-      color: #2563eb; cursor: pointer; font-family: inherit; transition: all .2s;
+      border: 1.5px dashed rgba(99,102,241,0.4); background: rgba(99,102,241,0.08);
+      color: #818CF8; cursor: pointer; font-family: inherit; transition: all .2s;
       white-space: nowrap;
     }
-    .upload-btn:hover { background: #dbeafe; border-color: #2563eb; }
+    .upload-btn:hover { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.7); }
     .upload-btn .spinner { width:14px;height:14px;border-width:2px; }
     .field-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
     .field-header label { margin-bottom:0; }
@@ -90,14 +90,14 @@
       cursor: pointer; font-family: inherit; transition: all .2s; border: none;
     }
     .download-btn-txt {
-      background: #f3f4f6; border: 1.5px solid #e5e7eb;
-      color: #374151;
+      background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);
+      color: #e2e8f0;
     }
-    .download-btn-txt:hover { background: #e5e7eb; }
+    .download-btn-txt:hover { background: rgba(255,255,255,0.1); }
     .download-btn-docx {
-      background: #2563eb; color: #fff;
+      background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff;
     }
-    .download-btn-docx:hover { background: #1d4ed8; }
+    .download-btn-docx:hover { opacity: 0.9; }
     .download-btn-pdf {
       background: #dc2626; color: #fff;
     }
@@ -110,72 +110,72 @@
     /* ── Template type toggle ── */
     .sample-toggle { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
     .sample-toggle-btn {
-      padding: 9px 18px; border-radius: 8px; border: 1.5px solid #e5e7eb;
-      background: #fff; color: #6b7280; font-size: 14px;
+      padding: 9px 18px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05); color: #94a3b8; font-size: 14px;
       font-weight: 700; cursor: pointer; transition: all .15s; font-family: inherit;
     }
     .sample-toggle-btn.active {
-      background: #eff6ff; border-color: #2563eb; color: #2563eb;
+      background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.5); color: #818CF8;
     }
     /* ── Font picker ── */
     .font-pick-row { display:flex; align-items:center; gap:7px; margin-bottom:14px; flex-wrap:wrap; }
-    .font-pick-label { font-size:11.5px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.6px; margin-right:2px; }
-    .font-btn { padding:5px 12px; font-size:12px; font-weight:600; border:1.5px solid #e5e7eb; border-radius:6px; background:#fff; color:#6b7280; cursor:pointer; transition:all .15s; font-family:inherit; }
+    .font-pick-label { font-size:11.5px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.6px; margin-right:2px; }
+    .font-btn { padding:5px 12px; font-size:12px; font-weight:600; border:1.5px solid rgba(255,255,255,0.1); border-radius:6px; background:rgba(255,255,255,0.05); color:#94a3b8; cursor:pointer; transition:all .15s; font-family:inherit; }
     .font-btn.active { background:#1e1b4b; color:#fff; border-color:#1e1b4b; }
     .font-btn:hover:not(.active) { border-color:#6366f1; color:#4338ca; }
     /* ── Output Template Picker ── */
     .tpl-pick-section { margin: 14px 0 16px; }
-    .tpl-pick-label { font-size: 11.5px; font-weight: 700; color: #6b7280; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .6px; display: flex; justify-content: space-between; align-items: center; }
-    .tpl-pick-label span { font-size: 10px; font-weight: 600; color: #9ca3af; letter-spacing: .3px; text-transform: none; }
+    .tpl-pick-label { font-size: 11.5px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .6px; display: flex; justify-content: space-between; align-items: center; }
+    .tpl-pick-label span { font-size: 10px; font-weight: 600; color: #64748b; letter-spacing: .3px; text-transform: none; }
     .tpl-pick-outer { position: relative; overflow: hidden; }
-    .tpl-pick-outer::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 48px; background: linear-gradient(to right, transparent, #f9fafb); pointer-events: none; z-index: 1; border-radius: 0 6px 0 0; }
-    .tpl-pick-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; -webkit-overflow-scrolling: touch; }
+    .tpl-pick-outer::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 48px; background: linear-gradient(to right, transparent, var(--bg,#030712)); pointer-events: none; z-index: 1; border-radius: 0 6px 0 0; }
+    .tpl-pick-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; -webkit-overflow-scrolling: touch; }
     .tpl-pick-row::-webkit-scrollbar { height: 3px; }
     .tpl-pick-row::-webkit-scrollbar-track { background: transparent; }
-    .tpl-pick-row::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 3px; }
+    .tpl-pick-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
     .tpl-pick-item {
       flex-shrink: 0; width: 160px; cursor: pointer; border-radius: 12px;
-      border: 2px solid #e5e7eb; overflow: hidden; background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all .2s;
+      border: 2px solid rgba(255,255,255,0.1); overflow: hidden; background: rgba(255,255,255,0.04);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all .2s;
     }
-    .tpl-pick-item:hover:not(.locked) { border-color: #2563eb; box-shadow: 0 4px 16px rgba(37,99,235,0.15); transform: translateY(-2px); }
-    .tpl-pick-item.selected { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.2); }
+    .tpl-pick-item:hover:not(.locked) { border-color: rgba(99,102,241,0.5); box-shadow: 0 4px 16px rgba(99,102,241,0.2); transform: translateY(-2px); }
+    .tpl-pick-item.selected { border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
     .tpl-pick-item.locked { cursor: default; }
-    .tpl-pick-thumb { height: 140px; overflow: hidden; position: relative; background: #f9fafb; }
+    .tpl-pick-thumb { height: 140px; overflow: hidden; position: relative; background: rgba(255,255,255,0.03); }
     .tpl-pick-thumb-inner { transform-origin: top left; position: absolute; top: 0; left: 0; pointer-events: none; }
     .tpl-pick-body { padding: 10px; }
-    .tpl-pick-name { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 4px; }
+    .tpl-pick-name { font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
     .tpl-pick-badge { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
-    .tpl-pick-badge-free { background: #dcfce7; color: #16a34a; }
-    .tpl-pick-badge-pro { background: #1e1b4b; color: #e0e7ff; }
+    .tpl-pick-badge-free { background: rgba(16,185,129,0.15); color: #34d399; }
+    .tpl-pick-badge-pro { background: rgba(99,102,241,0.2); color: #a5b4fc; }
     .tpl-pick-btn { display: block; width: 100%; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 700; text-align: center; border: none; cursor: pointer; transition: background .15s; font-family: inherit; box-sizing: border-box; }
-    .tpl-pick-btn-select { background: #2563eb; color: #fff; }
-    .tpl-pick-btn-select:hover { background: #1d4ed8; }
-    .tpl-pick-btn-selected { background: #dcfce7; color: #166534; cursor: default; }
-    .tpl-pick-btn-locked { background: #f3f4f6; color: #6b7280; }
+    .tpl-pick-btn-select { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; }
+    .tpl-pick-btn-select:hover { opacity: 0.9; }
+    .tpl-pick-btn-selected { background: rgba(16,185,129,0.15); color: #34d399; cursor: default; }
+    .tpl-pick-btn-locked { background: rgba(255,255,255,0.06); color: #64748b; }
     .tpl-pick-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.35); font-size: 24px; }
     /* ── Edit mode ── */
-    .edit-bar { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 9px; margin-bottom: 10px; font-size: 13px; color: #1d4ed8; font-weight: 600; flex-wrap: wrap; }
+    .edit-bar { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25); border-radius: 9px; margin-bottom: 10px; font-size: 13px; color: #818CF8; font-weight: 600; flex-wrap: wrap; }
     .edit-bar .eb-btn { padding: 5px 14px; border-radius: 7px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
-    .edit-bar .eb-save { background: #2563eb; color: #fff; }
-    .edit-bar .eb-cancel { background: #e5e7eb; color: #374151; }
-    #outputBox[contenteditable="true"] { outline: 2px dashed #2563eb; outline-offset: 2px; cursor: text; border-radius: 8px; }
+    .edit-bar .eb-save { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; }
+    .edit-bar .eb-cancel { background: rgba(255,255,255,0.08); color: #94a3b8; }
+    #outputBox[contenteditable="true"] { outline: 2px dashed rgba(99,102,241,0.6); outline-offset: 2px; cursor: text; border-radius: 8px; }
 
     /* ── Resume build form ── */
     .resume-mode-toggle { display: flex; gap: 6px; }
-    .rmode-btn { padding: 6px 13px; font-size: 12px; font-weight: 600; border: 1.5px solid var(--border); border-radius: 7px; background: #fff; color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: inherit; }
+    .rmode-btn { padding: 6px 13px; font-size: 12px; font-weight: 600; border: 1.5px solid var(--border); border-radius: 7px; background: rgba(255,255,255,0.05); color: var(--text-muted); cursor: pointer; transition: all 0.15s; font-family: inherit; }
     .rmode-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
     .rmode-btn:hover:not(.active) { background: var(--blue-light); color: var(--blue); }
     .rb-section { margin-bottom: 18px; }
     .rb-section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; }
     .rb-optional { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; }
     .rb-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px; }
-    .rb-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: #fff; font-family: inherit; transition: border-color 0.15s; box-sizing: border-box; }
-    .rb-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-    .rb-textarea { width: 100%; min-height: 90px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: #fff; font-family: inherit; resize: vertical; transition: border-color 0.15s; box-sizing: border-box; }
+    .rb-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: rgba(255,255,255,0.06); font-family: inherit; transition: border-color 0.15s; box-sizing: border-box; }
+    .rb-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .rb-textarea { width: 100%; min-height: 90px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: rgba(255,255,255,0.06); font-family: inherit; resize: vertical; transition: border-color 0.15s; box-sizing: border-box; }
     .rb-textarea-sm { min-height: 56px; }
-    .rb-textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-    .rb-entry { background: #f9fafb; border: 1.5px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+    .rb-textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .rb-entry { background: rgba(255,255,255,0.04); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
     .rb-entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .rb-entry-label { font-size: 13px; font-weight: 700; color: var(--text); }
     .rb-remove-btn { font-size: 12px; color: #ef4444; background: none; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer; font-weight: 600; padding: 4px 10px; font-family: inherit; transition: background 0.15s; }
@@ -188,28 +188,28 @@
       .field-header { flex-wrap: wrap; gap: 8px; }
     }
     /* ── Signature ── */
-    .sig-section { margin-bottom: 16px; background: var(--blue-light); border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 16px; }
+    .sig-section { margin-bottom: 16px; background: var(--blue-light); border: 1.5px solid rgba(99,102,241,0.25); border-radius: 10px; padding: 16px; }
     .sig-label { font-size: 13px; font-weight: 700; color: var(--text); display: block; margin-bottom: 8px; }
-    .sig-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); box-sizing: border-box; transition: border-color 0.15s; }
-    .sig-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    .sig-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); background: rgba(255,255,255,0.06); box-sizing: border-box; transition: border-color 0.15s; }
+    .sig-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
     .sig-fonts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-    .sig-font-btn { padding: 6px 13px; border: 1.5px solid var(--border); border-radius: 7px; background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); font-family: inherit; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+    .sig-font-btn { padding: 6px 13px; border: 1.5px solid var(--border); border-radius: 7px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted); font-family: inherit; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
     .sig-font-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
-    .sig-font-btn:hover:not(.active) { border-color: #93c5fd; }
-    .sig-preview { margin-top: 10px; padding: 14px 20px; background: #fafafa; border: 1.5px solid var(--border); border-radius: 8px; }
+    .sig-font-btn:hover:not(.active) { border-color: rgba(99,102,241,0.4); }
+    .sig-preview { margin-top: 10px; padding: 14px 20px; background: rgba(255,255,255,0.04); border: 1.5px solid var(--border); border-radius: 8px; }
 
     /* ── LinkedIn sidebar button highlight ── */
     .sidebar-btn-linkedin {
-      background: linear-gradient(135deg, #e8f4fd 0%, #f0f9ff 100%) !important;
-      border: 1.5px solid #93c5fd !important;
-      color: #0077b5 !important;
+      background: rgba(0,119,181,0.1) !important;
+      border: 1.5px solid rgba(0,119,181,0.35) !important;
+      color: #38bdf8 !important;
       font-weight: 700 !important;
       display: flex !important;
       align-items: center !important;
     }
     .sidebar-btn-linkedin:hover:not(.active) {
-      background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%) !important;
-      border-color: #0077b5 !important;
+      background: rgba(0,119,181,0.18) !important;
+      border-color: rgba(0,119,181,0.6) !important;
     }
     .sidebar-btn-linkedin.active {
       background: linear-gradient(135deg, #0077b5 0%, #1d4ed8 100%) !important;
@@ -222,8 +222,8 @@
 
     /* ── LinkedIn Optimizer shortcut banner ── */
     .linkedin-shortcut-banner {
-      background: linear-gradient(135deg, #eff8ff 0%, #e0f2fe 100%);
-      border: 1.5px solid #93c5fd;
+      background: rgba(0,119,181,0.08);
+      border: 1.5px solid rgba(0,119,181,0.25);
       border-radius: 12px;
       padding: 14px 16px;
       margin-bottom: 20px;
@@ -234,8 +234,8 @@
       transition: all .15s;
     }
     .linkedin-shortcut-banner:hover {
-      border-color: #0077b5;
-      box-shadow: 0 4px 16px rgba(0,119,181,0.12);
+      border-color: rgba(0,119,181,0.55);
+      box-shadow: 0 4px 16px rgba(0,119,181,0.15);
       transform: translateY(-1px);
     }
     .linkedin-shortcut-banner .li-icon {
@@ -246,13 +246,13 @@
 
     /* ── A4 size toggle ── */
     .page-size-toggle { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
-    .page-size-btn { padding: 5px 12px; font-size: 11px; font-weight: 700; border: 1.5px solid #e5e7eb; border-radius: 6px; background: #fff; color: #6b7280; cursor: pointer; font-family: inherit; transition: all .15s; text-transform: uppercase; letter-spacing: .5px; }
-    .page-size-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .page-size-btn { padding: 5px 12px; font-size: 11px; font-weight: 700; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(255,255,255,0.05); color: #94a3b8; cursor: pointer; font-family: inherit; transition: all .15s; text-transform: uppercase; letter-spacing: .5px; }
+    .page-size-btn.active { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; border-color: transparent; }
 
     /* ── Chinese job board note ── */
     .job-platform-note { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-    .platform-chip { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: #f3f4f6; color: #6b7280; white-space: nowrap; }
-    .platform-chip-cn { background: #fef3c7; color: #92400e; }
+    .platform-chip { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,0.06); color: #94a3b8; white-space: nowrap; }
+    .platform-chip-cn { background: rgba(251,191,36,0.1); color: #fbbf24; }
   </style>
 </head>
 <body>
@@ -284,11 +284,11 @@
       <div id="authLoginForm" style="display:none;">
         <div class="auth-field"><input type="email" id="loginEmail" placeholder="Email address" /></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin:-4px 0 12px;">
-          <label style="font-size:13px;color:#6b7280;cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:600;user-select:none;">
-            <input type="checkbox" id="rememberEmail" style="accent-color:#2563eb;width:14px;height:14px;cursor:pointer;" />
+          <label style="font-size:13px;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:600;user-select:none;">
+            <input type="checkbox" id="rememberEmail" style="accent-color:#6366F1;width:14px;height:14px;cursor:pointer;" />
             Remember email
           </label>
-          <a onclick="showForgotPassword()" style="font-size:13px;color:#6b7280;cursor:pointer;font-weight:600;">Forgot password?</a>
+          <a onclick="showForgotPassword()" style="font-size:13px;color:#818CF8;cursor:pointer;font-weight:600;">Forgot password?</a>
         </div>
         <div class="auth-field"><input type="password" id="loginPassword" placeholder="Password" /></div>
         <div class="auth-error" id="loginError"></div>
@@ -298,7 +298,7 @@
 
       <!-- Forgot Password -->
       <div id="authForgotForm" style="display:none;">
-        <p style="color:#6b7280;font-size:14px;line-height:1.65;margin-bottom:20px;">
+        <p style="color:#64748b;font-size:14px;line-height:1.65;margin-bottom:20px;">
           Enter your email and we'll send you a link to reset your password.
         </p>
         <div class="auth-field"><input type="email" id="forgotEmail" placeholder="Email address" /></div>
@@ -320,7 +320,7 @@
         <span id="navStatus"></span>
         <span id="navUsername" style="color:#9490b5;font-size:13px;font-weight:600;display:none;"></span>
         <button class="btn btn-outline" id="goProNavBtn" onclick="startPro()" style="font-size:13px;padding:8px 14px;" data-i18n="nav_go_pro">Go Pro — $19/mo</button>
-        <button onclick="toggleLang()" id="langToggleBtn" style="background:transparent;border:1.5px solid #e5e7eb;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;color:#6b7280;cursor:pointer;font-family:inherit;transition:all .15s;" title="Switch language / 切换语言">中文</button>
+        <button onclick="toggleLang()" id="langToggleBtn" style="background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.1);border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;color:#94a3b8;cursor:pointer;font-family:inherit;transition:all .15s;" title="Switch language / 切换语言">中文</button>
         <button class="btn btn-outline" id="logoutBtn" onclick="doLogout()" style="display:none;font-size:13px;padding:8px 14px;" data-i18n="nav_logout">Log Out</button>
       </div>
     </div>

@@ -4,37 +4,48 @@
       <stop offset="0%" stop-color="#6366F1"/>
       <stop offset="100%" stop-color="#8B5CF6"/>
     </linearGradient>
-    <linearGradient id="shine" x1="0%" y1="0%" x2="60%" y2="100%">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.18)"/>
-      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-    </linearGradient>
+    <radialGradient id="glow-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
     <filter id="glow">
-      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feGaussianBlur stdDeviation="2.2" result="blur"/>
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
 
-  <!-- Dark outer shell -->
-  <rect width="64" height="64" rx="15" fill="#060918"/>
+  <!-- Dark background matching site #030712 -->
+  <rect width="64" height="64" rx="14" fill="#030712"/>
 
-  <!-- Gradient face -->
-  <rect x="3" y="3" width="58" height="58" rx="13" fill="url(#grad)"/>
+  <!-- Circuit grid lines (matches site body::before grid) -->
+  <line x1="0"  y1="16" x2="64" y2="16" stroke="rgba(99,102,241,0.13)" stroke-width="0.6"/>
+  <line x1="0"  y1="32" x2="64" y2="32" stroke="rgba(99,102,241,0.13)" stroke-width="0.6"/>
+  <line x1="0"  y1="48" x2="64" y2="48" stroke="rgba(99,102,241,0.13)" stroke-width="0.6"/>
+  <line x1="16" y1="0"  x2="16" y2="64" stroke="rgba(99,102,241,0.13)" stroke-width="0.6"/>
+  <line x1="32" y1="0"  x2="32" y2="64" stroke="rgba(99,102,241,0.13)" stroke-width="0.6"/>
+  <line x1="48" y1="0"  x2="48" y2="64" stroke="rgba(99,102,241,0.13)" stroke-width="0.6"/>
 
-  <!-- Glass shine top-left -->
-  <rect x="3" y="3" width="58" height="30" rx="13" fill="url(#shine)"/>
+  <!-- Soft indigo glow behind the R -->
+  <circle cx="32" cy="30" r="20" fill="url(#glow-bg)"/>
 
-  <!-- White "R" with subtle glow -->
+  <!-- Circuit nodes at grid intersections -->
+  <circle cx="16" cy="16" r="1.4" fill="rgba(99,102,241,0.35)"/>
+  <circle cx="48" cy="16" r="1.4" fill="rgba(99,102,241,0.35)"/>
+  <circle cx="16" cy="48" r="1.4" fill="rgba(99,102,241,0.35)"/>
+
+  <!-- "R" in indigo/purple gradient with glow -->
   <text
     x="32" y="46"
     text-anchor="middle"
     font-family="Arial Black, Arial, sans-serif"
     font-weight="900"
     font-size="40"
-    fill="white"
+    fill="url(#grad)"
     filter="url(#glow)"
   >R</text>
 
-  <!-- Purple sparkle dot bottom-right -->
-  <circle cx="50" cy="50" r="5.5" fill="rgba(255,255,255,0.9)"/>
-  <circle cx="50" cy="50" r="3" fill="#c4b5fd"/>
+  <!-- Accent node bottom-right (brand sparkle) -->
+  <circle cx="48" cy="48" r="4"   fill="rgba(139,92,246,0.25)"/>
+  <circle cx="48" cy="48" r="2.5" fill="#8B5CF6"/>
+  <circle cx="48" cy="48" r="1.2" fill="#e9d5ff"/>
 </svg>
