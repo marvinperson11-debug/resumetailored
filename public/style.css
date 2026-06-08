@@ -1,6 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&display=swap');
-h1, h2, h3, .logo, .panel-header h1, .plan-name, .tier-name { font-family: 'Syne', sans-serif; letter-spacing: -0.02em; }
+h2, h3, .plan-name, .tier-name { font-family: 'Syne', sans-serif; letter-spacing: -0.02em; }
+h1, .logo, .panel-header h1 { font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.03em; }
 
 :root {
   --blue:        #6366F1;
