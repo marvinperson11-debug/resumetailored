@@ -3,7 +3,7 @@
 
   <url>
     <loc>https://resumetailored.com/</loc>
-    <lastmod>2026-06-03</lastmod>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -18,28 +18,28 @@
   <!-- SEO Landing Pages -->
   <url>
     <loc>https://resumetailored.com/ai-resume-tailor</loc>
-    <lastmod>2026-06-03</lastmod>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.95</priority>
   </url>
 
   <url>
     <loc>https://resumetailored.com/tailor-resume-to-job-description</loc>
-    <lastmod>2026-06-03</lastmod>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://resumetailored.com/ai-cover-letter-generator</loc>
-    <lastmod>2026-06-03</lastmod>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://resumetailored.com/free-ats-resume-checker</loc>
-    <lastmod>2026-06-03</lastmod>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -47,14 +47,35 @@
   <!-- Competitor Comparison Pages -->
   <url>
     <loc>https://resumetailored.com/jobscan-alternative</loc>
-    <lastmod>2026-06-03</lastmod>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
 
   <url>
     <loc>https://resumetailored.com/rezi-alternative</loc>
-    <lastmod>2026-06-03</lastmod>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/teal-alternative</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/kickresume-alternative</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/resume-io-alternative</loc>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -62,7 +83,7 @@
   <!-- Blog -->
   <url>
     <loc>https://resumetailored.com/blog</loc>
-    <lastmod>2026-06-03</lastmod>
+    <lastmod>2026-06-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -102,7 +123,6 @@
     <priority>0.7</priority>
   </url>
 
-  <!-- New Blog Posts -->
   <url>
     <loc>https://resumetailored.com/blog/jobscan-vs-resumetailored</loc>
     <lastmod>2026-06-03</lastmod>
@@ -136,6 +156,27 @@
     <lastmod>2026-06-07</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/blog/how-to-write-a-cover-letter</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/blog/resume-keywords</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/blog/linkedin-profile-tips</loc>
+    <lastmod>2026-06-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
 
 </urlset>
