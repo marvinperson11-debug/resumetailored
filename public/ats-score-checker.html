@@ -154,9 +154,19 @@
       color: #e2e8f0;
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 8px;
     }
     .textarea-label .label-icon { font-size: 16px; }
+    .upload-file-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 7px; font-size: 12px; font-weight: 700;
+      border: 1.5px dashed rgba(99,102,241,0.5); background: rgba(99,102,241,0.08);
+      color: #818CF8; cursor: pointer; font-family: inherit; transition: all .2s;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .upload-file-btn:hover { background: rgba(99,102,241,0.18); border-color: rgba(99,102,241,0.8); }
+    .upload-file-btn.loading { opacity: 0.6; cursor: not-allowed; }
     .resume-textarea {
       width: 100%;
       min-height: 340px;
@@ -466,18 +476,20 @@
     <div class="textareas-grid">
       <div class="textarea-card">
         <label class="textarea-label" for="resumeInput">
-          <span class="label-icon">&#128196;</span> Paste Your Resume
+          <span style="display:flex;align-items:center;gap:8px;"><span class="label-icon">&#128196;</span> Paste Your Resume</span>
+          <button class="upload-file-btn" id="uploadResumeBtn" onclick="document.getElementById('resumeFileInput').click()">&#8679; Upload File</button>
+          <input type="file" id="resumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleResumeFile(this)" />
         </label>
         <textarea
           id="resumeInput"
           class="resume-textarea"
-          placeholder="Paste your full resume text here..."
+          placeholder="Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx..."
           spellcheck="false"
         ></textarea>
       </div>
       <div class="textarea-card">
         <label class="textarea-label" for="jobInput">
-          <span class="label-icon">&#128203;</span> Paste Job Description
+          <span style="display:flex;align-items:center;gap:8px;"><span class="label-icon">&#128203;</span> Paste Job Description</span>
         </label>
         <textarea
           id="jobInput"
@@ -609,6 +621,40 @@
 </footer>
 
 <script>
+  // ─── FILE UPLOAD ──────────────────────────────────────────────────────────
+  async function handleResumeFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const btn = document.getElementById('uploadResumeBtn');
+    btn.textContent = 'Loading...';
+    btn.classList.add('loading');
+    btn.disabled = true;
+    const ext = file.name.split('.').pop().toLowerCase();
+    try {
+      if (ext === 'txt') {
+        const text = await file.text();
+        document.getElementById('resumeInput').value = text;
+      } else {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.text) {
+          document.getElementById('resumeInput').value = data.text;
+        } else {
+          alert('Could not extract text from this file. Try saving as .txt and uploading again.');
+        }
+      }
+    } catch(e) {
+      alert('Upload failed. Try pasting your resume text instead.');
+    } finally {
+      btn.textContent = '⬆ Upload File';
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      input.value = '';
+    }
+  }
+
   // ─── STOP WORDS ────────────────────────────────────────────────────────────
   const STOP_WORDS = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','can','that','this','these','those','it','its','we','you','they','he','she','our','your','their','my','about','all','also','as','into','than','then','when','who','how','what','which','not','no','up','out','so','if','each','other','more','most','such','after','before','while','through','over','work','team','role','experience','ability','strong','excellent','good','looking','seeking','required','preferred','including','must','have','will','join','help','ability','skills','knowledge']);
 
