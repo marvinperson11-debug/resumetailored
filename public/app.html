@@ -446,7 +446,13 @@
                 </button>
                 <input type="file" id="resumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleResumeUpload(this)" />
               </div>
-              <textarea id="resume" placeholder="Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file." data-i18n-placeholder="resume_placeholder"></textarea>
+              <textarea id="resume" placeholder="Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file." data-i18n-placeholder="resume_placeholder" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+              <div id="translateBar" style="margin-top:8px;display:none;">
+                <button id="translateBtn" onclick="translateResumeToEnglish()" style="background:none;border:1px solid #34d399;color:#34d399;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                  <span>🌐</span> <span id="translateBtnText">Translate to English</span>
+                </button>
+                <span id="translateStatus" style="font-size:12px;color:var(--muted);margin-left:10px;"></span>
+              </div>
             </div>
 
             <!-- BUILD / FORM PANE -->
@@ -538,7 +544,7 @@
               <span class="platform-chip platform-chip-cn">智联招聘 Zhaopin</span>
               <span class="platform-chip">+ more</span>
             </div>
-            <textarea id="job" placeholder="Paste the full job description here...&#10;&#10;Works with: LinkedIn, Indeed, Glassdoor, Boss直聘 (Boss Zhipin), 猎聘 (Liepin), 智联招聘 (Zhaopin), and any job posting in any language." data-i18n-placeholder="job_placeholder"></textarea>
+            <textarea id="job" spellcheck="false" autocorrect="off" autocapitalize="off" placeholder="Paste the full job description here...&#10;&#10;Works with: LinkedIn, Indeed, Glassdoor, Boss直聘 (Boss Zhipin), 猎聘 (Liepin), 智联招聘 (Zhaopin), and any job posting in any language." data-i18n-placeholder="job_placeholder"></textarea>
           </div>
         </div>
 
@@ -3695,6 +3701,7 @@ Aaliyah Washington`
         const reader = new FileReader();
         reader.onload = e => {
           document.getElementById('resume').value = e.target.result;
+          document.getElementById('translateBar').style.display = hasChinese(e.target.result) ? 'block' : 'none';
           btnText.textContent = '✓ ' + file.name;
           showToast('Resume loaded from file!');
         };
@@ -3712,6 +3719,7 @@ Aaliyah Washington`
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Extraction failed.');
         document.getElementById('resume').value = data.text;
+        document.getElementById('translateBar').style.display = hasChinese(data.text) ? 'block' : 'none';
         btnText.textContent = '✓ ' + file.name;
         showToast('Resume loaded from file!');
       } catch (err) {
@@ -3719,6 +3727,58 @@ Aaliyah Washington`
         btnText.textContent = '⬆ Upload File';
       } finally {
         input.value = '';
+      }
+    }
+
+    // ── Chinese detection: show translate bar when resume has Chinese text ────
+    function hasChinese(text) {
+      return /[一-鿿]/.test(text);
+    }
+
+    document.getElementById('resume').addEventListener('input', function() {
+      var bar = document.getElementById('translateBar');
+      bar.style.display = hasChinese(this.value) ? 'block' : 'none';
+    });
+
+    async function translateResumeToEnglish() {
+      var textarea = document.getElementById('resume');
+      var text = textarea.value.trim();
+      if (!text) return;
+
+      var btn = document.getElementById('translateBtn');
+      var btnText = document.getElementById('translateBtnText');
+      var status = document.getElementById('translateStatus');
+
+      btn.disabled = true;
+      btnText.textContent = 'Translating…';
+      status.textContent = '';
+
+      try {
+        var email = localStorage.getItem('rt_email') || '';
+        var token = localStorage.getItem('rt_token') || '';
+        var res = await fetch('/api/translate-resume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ resume: text, email: email })
+        });
+        var data = await res.json();
+        if (!res.ok) {
+          if (data.error === 'free_limit_reached') {
+            status.textContent = '⚠ Free limit reached — upgrade to Pro for unlimited translations.';
+          } else {
+            status.textContent = '✗ ' + (data.error || 'Translation failed.');
+          }
+          return;
+        }
+        textarea.value = data.translated;
+        // Hide bar since translated text has no Chinese
+        document.getElementById('translateBar').style.display = 'none';
+        showToast('Resume translated to English!');
+      } catch (err) {
+        status.textContent = '✗ Network error — please try again.';
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = 'Translate to English';
       }
     }
 
