@@ -755,8 +755,73 @@ app.get('/api/status', (req, res) => {
     freeResumesLeft: hasFreeTierLeft(usageKey, 'resume') ? 1 : 0,
     freeCoverLettersLeft: hasFreeTierLeft(usageKey, 'cover_letter') ? 1 : 0,
     freeLinkedInLeft: hasFreeTierLeft(usageKey, 'linkedin') ? 1 : 0,
+    freeAtsLeft: hasFreeTierLeft(usageKey, 'ats_scan') ? 1 : 0,
     isSubscriber: isSubscriber(email)
   });
+});
+
+// ─── API: ATS scan (Claude-powered) ──────────────────────────────────────────
+app.post('/api/ats-scan', async (req, res) => {
+  const { resume, jobPosting } = req.body;
+  if (!resume || !jobPosting) {
+    return res.status(400).json({ error: 'Resume and job posting are required.' });
+  }
+
+  const usageKey = getUsageKey(req);
+  const email = getSessionEmail(req);
+  const subscribed = isSubscriber(email);
+
+  if (!subscribed && !hasFreeTierLeft(usageKey, 'ats_scan')) {
+    return res.status(402).json({
+      error: 'free_limit_reached',
+      message: 'You\'ve used your free daily ATS scan. Upgrade to Pro for unlimited scans.'
+    });
+  }
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: `You are an expert ATS (Applicant Tracking System) analyst. Analyze how well this resume matches the job description.
+
+Return ONLY valid JSON in this exact format — no markdown, no explanation, nothing else:
+{
+  "score": <integer 0-100>,
+  "verdict": "<exactly one of: Strong Match, Good Match, Fair Match, Weak Match>",
+  "matched": [<array of strings — keywords and phrases found in both resume and job description, max 20>],
+  "missing": [<array of strings — critical keywords from the job description missing from the resume, max 15>],
+  "suggestions": [<array of 4-5 strings — specific, actionable rewrite suggestions referencing exact words from the job posting>]
+}
+
+Scoring guide:
+- 80-100: Strong Match — most required skills and keywords are present
+- 60-79: Good Match — many key requirements covered, minor gaps
+- 40-59: Fair Match — partial match, significant missing keywords
+- 0-39: Weak Match — poor match, major gaps
+
+Be specific in suggestions — name the exact keyword and where to add it.
+
+RESUME:
+${resume.slice(0, 4000)}
+
+JOB DESCRIPTION:
+${jobPosting.slice(0, 4000)}`
+      }]
+    });
+
+    const raw = msg.content[0].text.trim();
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON in response');
+    const result = JSON.parse(jsonMatch[0]);
+
+    if (!subscribed) consumeFreeTier(usageKey, 'ats_scan');
+    res.json(result);
+  } catch(e) {
+    console.error('ATS scan error:', e.message);
+    res.status(500).json({ error: 'Analysis failed. Please try again.' });
+  }
 });
 
 // ─── API: Tailor resume ───────────────────────────────────────────────────────
