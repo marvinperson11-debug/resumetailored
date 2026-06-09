@@ -927,7 +927,7 @@
     }
   };
 
-  let currentLang = localStorage.getItem('rtLang') || 'en';
+  let currentLang = localStorage.getItem('rt_lang') || 'en';
 
   function applyLang(lang) {
     document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -944,7 +944,7 @@
     });
     const btn = document.getElementById('langToggleBtn');
     if (btn) btn.textContent = lang === 'en' ? '中文' : 'EN';
-    localStorage.setItem('rtLang', lang);
+    localStorage.setItem('rt_lang', lang);
   }
 
   function toggleLang() {
