@@ -201,30 +201,31 @@
   <div class="nav-inner">
     <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
     <div class="nav-links">
-      <a href="/">Home</a>
-      <a href="/how-it-works">How It Works</a>
-      <a href="/score" style="color:#34d399;">Free Tools</a>
-      <a href="/blog">Blog</a>
-      <a href="/#pricing">Pricing</a>
-      <a href="/dashboard" class="btn-nav">Get Started Free →</a>
+      <a href="/" data-i18n="nav_home">Home</a>
+      <a href="/how-it-works" data-i18n="nav_how">How It Works</a>
+      <a href="/score" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
+      <a href="/blog" data-i18n="nav_blog">Blog</a>
+      <a href="/#pricing" data-i18n="nav_pricing">Pricing</a>
+      <a href="/dashboard" class="btn-nav" data-i18n="nav_cta">Get Started Free →</a>
     </div>
+    <button onclick="toggleLang()" id="langToggleBtn" style="background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.12);border-radius:7px;padding:6px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">中文</button>
   </div>
 </nav>
 
 <!-- HERO -->
 <section class="hero">
-  <p class="hero-eyebrow">&#9733; Free &nbsp;·&nbsp; No Account Required &nbsp;·&nbsp; Powered by Claude AI</p>
-  <h1>Resume <span>Optimization Hub</span></h1>
-  <p class="hero-sub">ATS Match Rate + Readability Review in one place. Paste your resume and get real AI analysis — free, instant, no sign-up.</p>
-  <p class="hero-note"><strong>Free tier:</strong> 1 ATS scan per day &nbsp;·&nbsp; Readability review is always unlimited</p>
+  <p class="hero-eyebrow" data-i18n="hero_eyebrow">★ Free · No Account Required · Powered by Claude AI</p>
+  <h1 data-i18n-html="hero_title">Resume <span>Optimization Hub</span></h1>
+  <p class="hero-sub" data-i18n="hero_sub">ATS Match Rate + Readability Review in one place. Paste your resume and get real AI analysis — free, instant, no sign-up.</p>
+  <p class="hero-note" data-i18n-html="hero_note"><strong>Free tier:</strong> 1 ATS scan per day · Readability review is always unlimited</p>
   <div class="status-bar" id="statusBar">Checking your access level…</div>
 </section>
 
 <!-- TAB SWITCHER -->
 <div class="tab-wrap">
   <div class="tab-switch">
-    <button class="tab-btn active" id="tabBtnAts" onclick="switchTab('ats')">&#9679; ATS Match Rate</button>
-    <button class="tab-btn" id="tabBtnRead" onclick="switchTab('readability')">&#128221; Readability Review</button>
+    <button class="tab-btn active" id="tabBtnAts" onclick="switchTab('ats')" data-i18n="tab_ats">● ATS Match Rate</button>
+    <button class="tab-btn" id="tabBtnRead" onclick="switchTab('readability')" data-i18n="tab_read">📝 Readability Review</button>
   </div>
 </div>
 
@@ -238,23 +239,23 @@
     <div class="inputs-grid">
       <div class="input-card">
         <div class="input-label">
-          <span>&#128196; Your Resume</span>
-          <button class="upload-btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()">&#8679; Upload File</button>
+          <span data-i18n="label_resume">📄 Your Resume</span>
+          <button class="upload-btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()" data-i18n="upload_btn">⬆ Upload File</button>
           <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleUpload(this)"/>
         </div>
-        <textarea id="resumeInput" class="resume-ta" placeholder="Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…" spellcheck="false"></textarea>
+        <textarea id="resumeInput" class="resume-ta" placeholder="Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…" data-i18n-placeholder="resume_ph" spellcheck="false"></textarea>
       </div>
       <div class="input-card">
-        <div class="input-label"><span>&#128203; Job Description</span></div>
-        <textarea id="jobInput" class="resume-ta" placeholder="Paste the full job posting here — include requirements, responsibilities, and qualifications…" spellcheck="false"></textarea>
+        <div class="input-label"><span data-i18n="label_job">📋 Job Description</span></div>
+        <textarea id="jobInput" class="resume-ta" placeholder="Paste the full job posting here — include requirements, responsibilities, and qualifications…" data-i18n-placeholder="job_ph" spellcheck="false"></textarea>
       </div>
     </div>
 
     <div class="error-msg" id="atsError"></div>
 
     <div class="action-row">
-      <button class="btn-analyze" id="atsBtn" onclick="runATS()">Analyze ATS Match &rarr;</button>
-      <span class="shortcut-hint">or press Ctrl+Enter</span>
+      <button class="btn-analyze" id="atsBtn" onclick="runATS()" data-i18n="analyze_btn">Analyze ATS Match →</button>
+      <span class="shortcut-hint" data-i18n="shortcut">or press Ctrl+Enter</span>
     </div>
 
     <!-- RESULTS -->
@@ -262,16 +263,16 @@
 
       <!-- UPGRADE WALL (shown when 402) -->
       <div class="upgrade-wall" id="upgradeWall">
-        <div style="font-size:44px;margin-bottom:16px;">&#128274;</div>
-        <h3>You've hit your daily limit!</h3>
-        <p>Your premium AI-tailored analysis is ready, but it's locked. Upgrade to ResumeTailored Pro to unlock unlimited smart ATS scans, reveal your exact missing keywords, and let our AI builder rewrite your entire resume instantly.</p>
+        <div style="font-size:44px;margin-bottom:16px;">🔒</div>
+        <h3 data-i18n="upgrade_h">You've hit your daily limit!</h3>
+        <p data-i18n="upgrade_p">Your premium AI-tailored analysis is ready, but it's locked. Upgrade to ResumeTailored Pro to unlock unlimited smart ATS scans, reveal your exact missing keywords, and let our AI builder rewrite your entire resume instantly.</p>
         <div class="upgrade-perks">
-          <div class="upgrade-perk"><strong>&#8734;</strong> Unlimited ATS scans</div>
-          <div class="upgrade-perk"><strong>&#128275;</strong> All missing keywords revealed</div>
-          <div class="upgrade-perk"><strong>&#9889;</strong> AI resume rewriter</div>
-          <div class="upgrade-perk"><strong>&#128338;</strong> No daily limits — ever</div>
+          <div class="upgrade-perk"><strong>∞</strong> <span data-i18n="perk1">Unlimited ATS scans</span></div>
+          <div class="upgrade-perk"><strong>🔓</strong> <span data-i18n="perk2">All missing keywords revealed</span></div>
+          <div class="upgrade-perk"><strong>⚡</strong> <span data-i18n="perk3">AI resume rewriter</span></div>
+          <div class="upgrade-perk"><strong>🕒</strong> <span data-i18n="perk4">No daily limits — ever</span></div>
         </div>
-        <a href="/dashboard?plan=pro" class="btn-upgrade">Upgrade to Pro — $19/mo &rarr;</a>
+        <a href="/dashboard?plan=pro" class="btn-upgrade" data-i18n="upgrade_btn">Upgrade to Pro — $19/mo →</a>
       </div>
 
       <!-- SCORE + KEYWORDS -->
@@ -279,7 +280,7 @@
 
         <!-- SCORE CARD -->
         <div class="score-card">
-          <div class="score-title">ATS Match Score</div>
+          <div class="score-title" data-i18n="score_title">ATS Match Score</div>
           <div class="score-circle-wrap">
             <svg class="score-svg" width="140" height="140" viewBox="0 0 100 100">
               <circle class="score-track" cx="50" cy="50" r="45"/>
@@ -296,18 +297,18 @@
         <!-- KEYWORDS -->
         <div class="keywords-card">
           <div>
-            <div class="kw-section-title found">&#10003; Matched Keywords <span class="kw-count" id="foundCount">0</span></div>
+            <div class="kw-section-title found"><span data-i18n="matched_kw">✓ Matched Keywords</span> <span class="kw-count" id="foundCount">0</span></div>
             <div class="chips-wrap" id="foundChips"></div>
           </div>
           <div>
-            <div class="kw-section-title missing">&#10005; Missing Keywords <span class="kw-count" id="missingCount">0</span></div>
+            <div class="kw-section-title missing"><span data-i18n="missing_kw">✕ Missing Keywords</span> <span class="kw-count" id="missingCount">0</span></div>
             <div class="missing-kw-wrap">
               <div class="chips-wrap" id="missingChips"></div>
               <!-- Lock overlay — shown for free users -->
               <div class="missing-lock-overlay" id="missingLockOverlay" style="display:none;">
                 <span class="lock-icon">&#128274;</span>
-                <span class="lock-text">Missing keywords locked<br/>for free users</span>
-                <a href="/dashboard?plan=pro" class="btn-unlock-sm">Unlock with Pro &rarr;</a>
+                <span class="lock-text" data-i18n-html="lock_text">Missing keywords locked<br/>for free users</span>
+                <a href="/dashboard?plan=pro" class="btn-unlock-sm" data-i18n="unlock_btn">Unlock with Pro →</a>
               </div>
             </div>
           </div>
@@ -317,17 +318,17 @@
 
       <!-- AI SUGGESTIONS -->
       <div class="suggestions-card" id="suggestionsCard" style="display:none;">
-        <div class="suggestions-eyebrow">&#128161; AI Rewrite Suggestions</div>
+        <div class="suggestions-eyebrow" data-i18n="ai_suggestions">💡 AI Rewrite Suggestions</div>
         <div id="suggestionsList"></div>
       </div>
 
       <!-- CTA -->
       <div class="cta-strip">
         <div class="cta-strip-text">
-          <h3>Fix missing keywords automatically &rarr;</h3>
-          <p>Let our AI rewrite your full resume with all the right keywords woven in naturally — plus a matching cover letter, in 30 seconds.</p>
+          <h3 data-i18n="cta_ats_h">Fix missing keywords automatically →</h3>
+          <p data-i18n="cta_ats_p">Let our AI rewrite your full resume with all the right keywords woven in naturally — plus a matching cover letter, in 30 seconds.</p>
         </div>
-        <a href="/dashboard" class="btn-fix">Tailor My Resume Free &rarr;</a>
+        <a href="/dashboard" class="btn-fix" data-i18n="cta_ats_btn">Tailor My Resume Free →</a>
       </div>
 
     </div><!-- end atsResults -->
@@ -336,9 +337,9 @@
   <!-- ── TAB 2: READABILITY REVIEW ── -->
   <div class="tab-pane" id="tab-readability">
 
-    <div class="input-label" style="margin-bottom:10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#e2e8f0;">&#128196; Your Resume</div>
+    <div class="input-label" data-i18n="read_label" style="margin-bottom:10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#e2e8f0;">📄 Your Resume</div>
     <div class="single-input-wrap">
-      <textarea id="readInput" class="single-ta" placeholder="Paste your full resume text here…" spellcheck="false" oninput="runReadability()"></textarea>
+      <textarea id="readInput" class="single-ta" placeholder="Paste your full resume text here…" data-i18n-placeholder="read_ph" spellcheck="false" oninput="runReadability()"></textarea>
     </div>
 
     <div class="results-section" id="readResults">
@@ -347,25 +348,25 @@
       <div class="verdict-row" id="readVerdictRow">
         <div class="verdict-row-icon" id="readVerdictIcon">&#128196;</div>
         <div class="verdict-row-text">
-          <h4 id="readVerdictTitle">Paste your resume above</h4>
-          <p id="readVerdictDesc">Analysis runs instantly as you type.</p>
+          <h4 id="readVerdictTitle" data-i18n="read_verdict_init_title">Paste your resume above</h4>
+          <p id="readVerdictDesc" data-i18n="read_verdict_init_desc">Analysis runs instantly as you type.</p>
         </div>
       </div>
 
       <!-- METRICS GRID -->
       <div class="readability-grid">
         <div class="metric-card">
-          <div class="metric-label">Word Count</div>
+          <div class="metric-label" data-i18n="metric_words">Word Count</div>
           <div class="metric-value" id="wordCount">—</div>
           <div class="metric-verdict" id="wordVerdict"></div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Bullet Points</div>
+          <div class="metric-label" data-i18n="metric_bullets">Bullet Points</div>
           <div class="metric-value" id="bulletCount">—</div>
           <div class="metric-verdict" id="bulletVerdict"></div>
         </div>
         <div class="metric-card">
-          <div class="metric-label">Weak Phrases</div>
+          <div class="metric-label" data-i18n="metric_weak">Weak Phrases</div>
           <div class="metric-value" id="weakCount">—</div>
           <div class="metric-verdict" id="weakVerdict"></div>
         </div>
@@ -373,17 +374,17 @@
 
       <!-- WEAK PHRASES LIST -->
       <div class="suggestions-card" id="weakPhrasesCard" style="display:none;">
-        <div class="suggestions-eyebrow">&#9888; Weak Phrases &amp; Passive Voice Detected</div>
+        <div class="suggestions-eyebrow" data-i18n="weak_eyebrow">&#9888; Weak Phrases &amp; Passive Voice Detected</div>
         <div id="weakPhrasesList"></div>
       </div>
 
       <!-- CTA -->
       <div class="cta-strip">
         <div class="cta-strip-text">
-          <h3>Fix weak language automatically &rarr;</h3>
-          <p>Paste a job description and our AI rewrites every bullet with strong action verbs and the right keywords — in 30 seconds.</p>
+          <h3 data-i18n="cta_read_h">Fix weak language automatically &rarr;</h3>
+          <p data-i18n="cta_read_p">Paste a job description and our AI rewrites every bullet with strong action verbs and the right keywords — in 30 seconds.</p>
         </div>
-        <a href="/dashboard" class="btn-fix">Rewrite My Resume Free &rarr;</a>
+        <a href="/dashboard" class="btn-fix" data-i18n="cta_read_btn">Rewrite My Resume Free &rarr;</a>
       </div>
 
     </div><!-- end readResults -->
@@ -394,23 +395,172 @@
 <!-- FOOTER -->
 <!-- Free Tools CTA Banner -->
 <div style="background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12));border-top:1px solid rgba(99,102,241,0.3);padding:28px 24px;text-align:center;position:relative;z-index:1;">
-  <p style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#818CF8;margin-bottom:8px;">AI Resume Tailor</p>
-  <p style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">Got missing keywords? Fix them in 30 seconds.</p>
-  <p style="font-size:14px;color:#94a3b8;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Our AI rewrites your entire resume with the right keywords woven in naturally — plus a matching cover letter.</p>
-  <a href="/dashboard" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 0 20px rgba(99,102,241,0.4);">Tailor My Resume Free &rarr;</a>
+  <p style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#818CF8;margin-bottom:8px;" data-i18n="footer_eyebrow">AI Resume Tailor</p>
+  <p style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:6px;" data-i18n="footer_title">Got missing keywords? Fix them in 30 seconds.</p>
+  <p style="font-size:14px;color:#94a3b8;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;" data-i18n="footer_desc">Our AI rewrites your entire resume with the right keywords woven in naturally — plus a matching cover letter.</p>
+  <a href="/dashboard" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 0 20px rgba(99,102,241,0.4);" data-i18n="footer_btn">Tailor My Resume Free &rarr;</a>
 </div>
 <footer>
   <p>&copy; 2026 ResumeTailored AI &nbsp;&middot;&nbsp; <a href="/">resumetailored.com</a></p>
-  <p style="margin-top:6px;"><a href="/score">Free Tools</a> &nbsp;&middot;&nbsp; <a href="/blog">Blog</a> &nbsp;&middot;&nbsp; <a href="/how-it-works">How It Works</a> &nbsp;&middot;&nbsp; <a href="mailto:support@resumetailored.com">support@resumetailored.com</a></p>
+  <p style="margin-top:6px;"><a href="/score" data-i18n="footer_free_tools">Free Tools</a> &nbsp;&middot;&nbsp; <a href="/blog" data-i18n="footer_blog">Blog</a> &nbsp;&middot;&nbsp; <a href="/how-it-works" data-i18n="footer_how">How It Works</a> &nbsp;&middot;&nbsp; <a href="mailto:support@resumetailored.com">support@resumetailored.com</a></p>
 </footer>
 
 <script>
+  // ── i18n ────────────────────────────────────────────────────────────────────
+  const I18N = {
+    en: {
+      nav_home:'Home', nav_how:'How It Works', nav_free_tools:'Free Tools',
+      nav_blog:'Blog', nav_pricing:'Pricing', nav_cta:'Get Started Free →',
+      hero_eyebrow:'★ Free · No Account Required · Powered by Claude AI',
+      hero_title:'Resume <span>Optimization Hub</span>',
+      hero_sub:'ATS Match Rate + Readability Review in one place. Paste your resume and get real AI analysis — free, instant, no sign-up.',
+      hero_note:'<strong>Free tier:</strong> 1 ATS scan per day · Readability review is always unlimited',
+      tab_ats:'● ATS Match Rate', tab_read:'📝 Readability Review',
+      label_resume:'📄 Your Resume', upload_btn:'⬆ Upload File', label_job:'📋 Job Description',
+      resume_ph:'Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…',
+      job_ph:'Paste the full job posting here — include requirements, responsibilities, and qualifications…',
+      analyze_btn:'Analyze ATS Match →', shortcut:'or press Ctrl+Enter',
+      upgrade_h:"You've hit your daily limit!",
+      upgrade_p:"Your premium AI-tailored analysis is ready, but it's locked. Upgrade to ResumeTailored Pro to unlock unlimited smart ATS scans, reveal your exact missing keywords, and let our AI builder rewrite your entire resume instantly.",
+      perk1:'Unlimited ATS scans', perk2:'All missing keywords revealed',
+      perk3:'AI resume rewriter', perk4:'No daily limits — ever',
+      upgrade_btn:'Upgrade to Pro — $19/mo →',
+      score_title:'ATS Match Score',
+      matched_kw:'✓ Matched Keywords', missing_kw:'✕ Missing Keywords',
+      lock_text:'Missing keywords locked<br/>for free users',
+      unlock_btn:'Unlock with Pro →',
+      ai_suggestions:'💡 AI Rewrite Suggestions',
+      cta_ats_h:'Fix missing keywords automatically →',
+      cta_ats_p:'Let our AI rewrite your full resume with all the right keywords woven in naturally — plus a matching cover letter, in 30 seconds.',
+      cta_ats_btn:'Tailor My Resume Free →',
+      read_label:'📄 Your Resume', read_ph:'Paste your full resume text here…',
+      read_verdict_init_title:'Paste your resume above',
+      read_verdict_init_desc:'Analysis runs instantly as you type.',
+      metric_words:'Word Count', metric_bullets:'Bullet Points', metric_weak:'Weak Phrases',
+      weak_eyebrow:'⚠ Weak Phrases &amp; Passive Voice Detected',
+      cta_read_h:'Fix weak language automatically →',
+      cta_read_p:'Paste a job description and our AI rewrites every bullet with strong action verbs and the right keywords — in 30 seconds.',
+      cta_read_btn:'Rewrite My Resume Free →',
+      footer_eyebrow:'AI Resume Tailor',
+      footer_title:'Got missing keywords? Fix them in 30 seconds.',
+      footer_desc:'Our AI rewrites your entire resume with the right keywords woven in naturally — plus a matching cover letter.',
+      footer_btn:'Tailor My Resume Free →',
+      footer_free_tools:'Free Tools', footer_blog:'Blog', footer_how:'How It Works',
+      status_pro:'✓ Pro member — unlimited ATS scans active',
+      status_free:'Free tier — <strong style="color:#34d399;">1 free ATS scan</strong> available today',
+      status_limit:'Daily limit reached — upgrade for unlimited scans',
+      v_too_short:'Too Short', v_a_bit_short:'A Bit Short', v_ideal:'Ideal',
+      v_a_bit_long:'A Bit Long', v_too_long:'Too Long',
+      v_too_few:'Too Few', v_could_add:'Could Add More', v_ideal_range:'Ideal Range',
+      v_consider_trim:'Consider Trimming',
+      v_none_found:'None Found ✓', v_a_few:'A Few', v_too_many:'Too Many',
+      v_short_title:'Resume is Too Short', v_needs_work_title:'Resume Needs Work',
+      v_weak_lang_title:'Weak Language Detected', v_strong_title:'Looking Strong!',
+      v_decent_title:'Decent Foundation',
+      v_strong_match:'✅ Strong Match', v_good_match:'✓ Good Match',
+      v_fair_match:'⚠️ Fair Match', v_weak_match:'❌ Weak Match',
+      v_no_matched:'No matched keywords found.',
+      v_no_missing:'No missing keywords — great match!',
+      err_no_resume:'Please paste your resume in the left box.',
+      err_no_job:'Please paste the job description in the right box.',
+      btn_analyzing:'Analyzing with Claude AI…',
+      btn_analyze:'Analyze ATS Match →',
+      upload_loading:'Loading…',
+    },
+    zh: {
+      nav_home:'首页', nav_how:'功能介绍', nav_free_tools:'免费工具',
+      nav_blog:'博客', nav_pricing:'定价', nav_cta:'免费开始 →',
+      hero_eyebrow:'★ 免费 · 无需注册 · 由 Claude AI 驱动',
+      hero_title:'简历 <span>优化中心</span>',
+      hero_sub:'ATS匹配率 + 可读性评审，一站搞定。粘贴简历即可获得真实AI分析——免费、即时、无需注册。',
+      hero_note:'<strong>免费版：</strong>每天1次ATS扫描 · 可读性评审无限制',
+      tab_ats:'● ATS 匹配率', tab_read:'📝 可读性评审',
+      label_resume:'📄 你的简历', upload_btn:'⬆ 上传文件', label_job:'📋 职位描述',
+      resume_ph:'在此粘贴完整简历文本，或点击"上传文件"导入 .txt、.pdf 或 .docx…',
+      job_ph:'在此粘贴完整职位描述——包含要求、职责和资质…',
+      analyze_btn:'分析ATS匹配 →', shortcut:'或按 Ctrl+Enter',
+      upgrade_h:'你今天的免费次数已用完！',
+      upgrade_p:'你的高级AI分析结果已就绪，但需要解锁。升级至ResumeTailored Pro，享受无限次ATS扫描、查看所有缺失关键词，并让AI即时重写你的完整简历。',
+      perk1:'无限次ATS扫描', perk2:'显示所有缺失关键词',
+      perk3:'AI简历重写', perk4:'永不设每日限制',
+      upgrade_btn:'升级至Pro版 — ¥138/月 →',
+      score_title:'ATS匹配得分',
+      matched_kw:'✓ 已匹配关键词', missing_kw:'✕ 缺失关键词',
+      lock_text:'缺失关键词对免费用户<br/>不可见',
+      unlock_btn:'升级Pro解锁 →',
+      ai_suggestions:'💡 AI重写建议',
+      cta_ats_h:'自动补充缺失关键词 →',
+      cta_ats_p:'让AI用正确关键词自然地重写你的完整简历——还附带匹配的求职信，30秒完成。',
+      cta_ats_btn:'免费定制我的简历 →',
+      read_label:'📄 你的简历', read_ph:'在此粘贴完整简历文本…',
+      read_verdict_init_title:'请在上方粘贴简历',
+      read_verdict_init_desc:'输入即时分析。',
+      metric_words:'字数统计', metric_bullets:'条目数量', metric_weak:'弱势表达',
+      weak_eyebrow:'⚠ 检测到弱势短语和被动语态',
+      cta_read_h:'自动修复弱势表达 →',
+      cta_read_p:'粘贴职位描述，AI重写每个条目，使用有力动词和正确关键词——30秒完成。',
+      cta_read_btn:'免费重写我的简历 →',
+      footer_eyebrow:'AI简历定制',
+      footer_title:'缺少关键词？30秒内修复。',
+      footer_desc:'AI用正确关键词自然地重写你的完整简历——还附带匹配的求职信。',
+      footer_btn:'免费定制我的简历 →',
+      footer_free_tools:'免费工具', footer_blog:'博客', footer_how:'功能介绍',
+      status_pro:'✓ Pro会员 — 无限次ATS扫描已激活',
+      status_free:'免费版 — 今天还有<strong style="color:#34d399;">1次免费ATS扫描</strong>',
+      status_limit:'今日限制已达 — 升级获取无限次扫描',
+      v_too_short:'太短', v_a_bit_short:'稍短', v_ideal:'理想',
+      v_a_bit_long:'稍长', v_too_long:'太长',
+      v_too_few:'太少', v_could_add:'可以增加', v_ideal_range:'理想范围',
+      v_consider_trim:'考虑精简',
+      v_none_found:'未检测到 ✓', v_a_few:'少量', v_too_many:'过多',
+      v_short_title:'简历太短', v_needs_work_title:'简历需要改进',
+      v_weak_lang_title:'检测到弱势表达', v_strong_title:'状态很好！',
+      v_decent_title:'有一定基础',
+      v_strong_match:'✅ 高度匹配', v_good_match:'✓ 良好匹配',
+      v_fair_match:'⚠️ 一般匹配', v_weak_match:'❌ 匹配较弱',
+      v_no_matched:'未找到匹配的关键词。',
+      v_no_missing:'没有缺失关键词——匹配完美！',
+      err_no_resume:'请在左侧框中粘贴您的简历。',
+      err_no_job:'请在右侧框中粘贴职位描述。',
+      btn_analyzing:'正在用Claude AI分析…',
+      btn_analyze:'分析ATS匹配 →',
+      upload_loading:'加载中…',
+    }
+  };
+
+  let currentLang = localStorage.getItem('rt_lang') || 'en';
+
+  function applyLang(lang) {
+    currentLang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (I18N[lang][key] !== undefined) el.innerHTML = I18N[lang][key];
+    });
+    document.querySelectorAll('[data-i18n-html]').forEach(el => {
+      const key = el.getAttribute('data-i18n-html');
+      if (I18N[lang][key] !== undefined) el.innerHTML = I18N[lang][key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if (I18N[lang][key] !== undefined) el.placeholder = I18N[lang][key];
+    });
+    document.getElementById('langToggleBtn').textContent = lang === 'en' ? '中文' : 'EN';
+    updateStatusBar();
+  }
+
+  function toggleLang() {
+    const next = currentLang === 'en' ? 'zh' : 'en';
+    localStorage.setItem('rt_lang', next);
+    applyLang(next);
+  }
+
   // ── State ──────────────────────────────────────────────────────────────────
   let isSubscriber = false;
   let freeAtsLeft = 1;
 
   // ── On load: check status ──────────────────────────────────────────────────
   (async function init() {
+    applyLang(currentLang);
     try {
       const token = localStorage.getItem('rt_token') || '';
       const email = localStorage.getItem('rt_email') || '';
@@ -425,12 +575,13 @@
 
   function updateStatusBar() {
     const bar = document.getElementById('statusBar');
+    const t = I18N[currentLang];
     if (isSubscriber) {
-      bar.innerHTML = '&#10003; Pro member — unlimited ATS scans active <span class="pro-pill">✦ PRO</span>';
+      bar.innerHTML = t.status_pro + ' <span class="pro-pill">✦ PRO</span>';
     } else if (freeAtsLeft > 0) {
-      bar.innerHTML = 'Free tier — <strong style="color:#34d399;">1 free ATS scan</strong> available today <span class="free-pill">FREE</span>';
+      bar.innerHTML = t.status_free + ' <span class="free-pill">FREE</span>';
     } else {
-      bar.innerHTML = 'Daily limit reached — upgrade for unlimited scans <span class="used-pill">LIMIT HIT</span>';
+      bar.innerHTML = t.status_limit + ' <span class="used-pill">LIMIT HIT</span>';
     }
   }
 
@@ -447,7 +598,8 @@
     const file = input.files[0];
     if (!file) return;
     const btn = document.getElementById('uploadBtn');
-    btn.textContent = 'Loading…';
+    const t = I18N[currentLang];
+    btn.textContent = t.upload_loading;
     btn.classList.add('loading');
     btn.disabled = true;
     const ext = file.name.split('.').pop().toLowerCase();
@@ -463,7 +615,7 @@
         else alert('Could not extract text. Try saving as .txt and uploading again.');
       }
     } catch(e) { alert('Upload failed. Please paste your resume text manually.'); }
-    finally { btn.textContent = '⬆ Upload File'; btn.classList.remove('loading'); btn.disabled = false; input.value = ''; }
+    finally { btn.textContent = t.upload_btn; btn.classList.remove('loading'); btn.disabled = false; input.value = ''; }
   }
 
   // ── Animate score circle ───────────────────────────────────────────────────
@@ -491,8 +643,9 @@
   // ── Render chips ───────────────────────────────────────────────────────────
   function renderChips(id, kws, cls) {
     const c = document.getElementById(id);
+    const t = I18N[currentLang];
     c.innerHTML = '';
-    if (!kws || !kws.length) { c.innerHTML = `<span class="chips-empty">${cls === 'chip-found' ? 'No matched keywords found.' : 'No missing keywords — great match!'}</span>`; return; }
+    if (!kws || !kws.length) { c.innerHTML = `<span class="chips-empty">${cls === 'chip-found' ? t.v_no_matched : t.v_no_missing}</span>`; return; }
     kws.forEach(k => { const s = document.createElement('span'); s.className = 'chip ' + cls; s.textContent = k; c.appendChild(s); });
   }
 
@@ -503,6 +656,7 @@
     const errEl  = document.getElementById('atsError');
     const resEl  = document.getElementById('atsResults');
     const btn    = document.getElementById('atsBtn');
+    const t      = I18N[currentLang];
 
     errEl.classList.remove('visible');
     resEl.classList.remove('visible');
@@ -510,10 +664,10 @@
     document.getElementById('atsResultsGrid').style.display = '';
     document.getElementById('suggestionsCard').style.display = 'none';
 
-    if (!resume) { errEl.textContent = 'Please paste your resume in the left box.'; errEl.classList.add('visible'); return; }
-    if (!job)    { errEl.textContent = 'Please paste the job description in the right box.'; errEl.classList.add('visible'); return; }
+    if (!resume) { errEl.textContent = t.err_no_resume; errEl.classList.add('visible'); return; }
+    if (!job)    { errEl.textContent = t.err_no_job; errEl.classList.add('visible'); return; }
 
-    btn.textContent = 'Analyzing with Claude AI…';
+    btn.textContent = t.btn_analyzing;
     btn.disabled = true;
 
     try {
@@ -551,12 +705,12 @@
 
       // Verdict
       const vMap = {
-        'Strong Match': ['✅ Strong Match', 'verdict-strong'],
-        'Good Match':   ['✓ Good Match',   'verdict-strong'],
-        'Fair Match':   ['⚠️ Fair Match',   'verdict-fair'],
-        'Weak Match':   ['❌ Weak Match',   'verdict-weak'],
+        'Strong Match': [t.v_strong_match, 'verdict-strong'],
+        'Good Match':   [t.v_good_match,   'verdict-strong'],
+        'Fair Match':   [t.v_fair_match,   'verdict-fair'],
+        'Weak Match':   [t.v_weak_match,   'verdict-weak'],
       };
-      const [vText, vCls] = vMap[verdict] || ['❌ Weak Match', 'verdict-weak'];
+      const [vText, vCls] = vMap[verdict] || [t.v_weak_match, 'verdict-weak'];
       const badge = document.getElementById('verdictBadge');
       badge.textContent = vText;
       badge.className = 'verdict-badge ' + vCls;
@@ -592,7 +746,7 @@
       errEl.textContent = 'Could not reach the server. Check your connection and try again.';
       errEl.classList.add('visible');
     } finally {
-      btn.textContent = 'Analyze ATS Match →';
+      btn.textContent = t.btn_analyze;
       btn.disabled = false;
     }
   }
@@ -611,6 +765,7 @@
   function runReadability() {
     const text = document.getElementById('readInput').value;
     const resEl = document.getElementById('readResults');
+    const t = I18N[currentLang];
     if (!text.trim()) { resEl.classList.remove('visible'); return; }
     resEl.classList.add('visible');
 
@@ -618,11 +773,11 @@
     const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
     document.getElementById('wordCount').textContent = words;
     let wCls, wText;
-    if (words < 200) { wCls = 'mv-bad'; wText = 'Too Short'; }
-    else if (words < 400) { wCls = 'mv-warn'; wText = 'A Bit Short'; }
-    else if (words <= 800) { wCls = 'mv-good'; wText = 'Ideal'; }
-    else if (words <= 1100) { wCls = 'mv-warn'; wText = 'A Bit Long'; }
-    else { wCls = 'mv-bad'; wText = 'Too Long'; }
+    if (words < 200) { wCls = 'mv-bad'; wText = t.v_too_short; }
+    else if (words < 400) { wCls = 'mv-warn'; wText = t.v_a_bit_short; }
+    else if (words <= 800) { wCls = 'mv-good'; wText = t.v_ideal; }
+    else if (words <= 1100) { wCls = 'mv-warn'; wText = t.v_a_bit_long; }
+    else { wCls = 'mv-bad'; wText = t.v_too_long; }
     const wv = document.getElementById('wordVerdict');
     wv.textContent = wText; wv.className = 'metric-verdict ' + wCls;
 
@@ -630,10 +785,10 @@
     const bullets = (text.match(/^[\s]*[•\-\*•‣◦⁃]/gm) || []).length;
     document.getElementById('bulletCount').textContent = bullets;
     let bCls, bText;
-    if (bullets < 5) { bCls = 'mv-bad'; bText = 'Too Few'; }
-    else if (bullets <= 15) { bCls = 'mv-warn'; bText = 'Could Add More'; }
-    else if (bullets <= 35) { bCls = 'mv-good'; bText = 'Ideal Range'; }
-    else { bCls = 'mv-warn'; bText = 'Consider Trimming'; }
+    if (bullets < 5) { bCls = 'mv-bad'; bText = t.v_too_few; }
+    else if (bullets <= 15) { bCls = 'mv-warn'; bText = t.v_could_add; }
+    else if (bullets <= 35) { bCls = 'mv-good'; bText = t.v_ideal_range; }
+    else { bCls = 'mv-warn'; bText = t.v_consider_trim; }
     const bv = document.getElementById('bulletVerdict');
     bv.textContent = bText; bv.className = 'metric-verdict ' + bCls;
 
@@ -648,15 +803,19 @@
     const uniq = [...new Set(found.map(s => s.toLowerCase()))];
     document.getElementById('weakCount').textContent = uniq.length;
     let kCls, kText;
-    if (uniq.length === 0) { kCls = 'mv-good'; kText = 'None Found ✓'; }
-    else if (uniq.length <= 2) { kCls = 'mv-warn'; kText = 'A Few'; }
-    else { kCls = 'mv-bad'; kText = 'Too Many'; }
+    if (uniq.length === 0) { kCls = 'mv-good'; kText = t.v_none_found; }
+    else if (uniq.length <= 2) { kCls = 'mv-warn'; kText = t.v_a_few; }
+    else { kCls = 'mv-bad'; kText = t.v_too_many; }
     const kv = document.getElementById('weakVerdict');
     kv.textContent = kText; kv.className = 'metric-verdict ' + kCls;
 
     if (uniq.length > 0) {
+      const zh = currentLang === 'zh';
+      const foundLabel   = zh ? '发现' : 'Found';
+      const replaceLabel = zh ? '替换为有力动词' : 'replace with a strong action verb';
+      const actionVerbs  = zh ? '主导、构建、推动、增长、交付' : 'Led, Built, Drove, Grew, Delivered';
       document.getElementById('weakPhrasesList').innerHTML = uniq.slice(0, 10).map(p =>
-        `<div class="suggestion-item"><span class="suggestion-num">!</span><span>Found: "<strong>${p}</strong>" — replace with a strong action verb (Led, Built, Drove, Grew, Delivered)</span></div>`
+        `<div class="suggestion-item"><span class="suggestion-num">!</span><span>${foundLabel}: "<strong>${p}</strong>" — ${replaceLabel} (${actionVerbs})</span></div>`
       ).join('');
       document.getElementById('weakPhrasesCard').style.display = 'block';
     } else {
@@ -664,22 +823,33 @@
     }
 
     // Overall verdict
+    const zh = currentLang === 'zh';
     let icon, title, desc;
     if (words < 200) {
-      icon = '📋'; title = 'Resume is Too Short';
-      desc = `${words} words is below the ideal range. Aim for 400–800 words for a strong, scannable resume.`;
+      icon = '📋'; title = t.v_short_title;
+      desc = zh
+        ? `${words}字数低于理想范围。理想简历为400–800词。`
+        : `${words} words is below the ideal range. Aim for 400–800 words for a strong, scannable resume.`;
     } else if (words > 1100 && uniq.length > 3) {
-      icon = '⚠️'; title = 'Resume Needs Work';
-      desc = `${words} words and ${uniq.length} weak phrases detected. Trim length and replace passive language with strong action verbs.`;
+      icon = '⚠️'; title = t.v_needs_work_title;
+      desc = zh
+        ? `${words}字数，检测到${uniq.length}个弱势短语。精简长度并用有力动词替换被动语言。`
+        : `${words} words and ${uniq.length} weak phrases detected. Trim length and replace passive language with strong action verbs.`;
     } else if (uniq.length > 3) {
-      icon = '⚠️'; title = 'Weak Language Detected';
-      desc = `${uniq.length} weak phrases or passive constructions found. Replace with confident, metric-driven action verbs.`;
+      icon = '⚠️'; title = t.v_weak_lang_title;
+      desc = zh
+        ? `检测到${uniq.length}个弱势短语或被动表达。用自信、量化的有力动词替换。`
+        : `${uniq.length} weak phrases or passive constructions found. Replace with confident, metric-driven action verbs.`;
     } else if (words >= 400 && words <= 800 && bullets >= 10 && uniq.length <= 1) {
-      icon = '✅'; title = 'Looking Strong!';
-      desc = `Good length (${words} words), ${bullets} bullet points, and minimal weak language. Consider adding more quantified achievements.`;
+      icon = '✅'; title = t.v_strong_title;
+      desc = zh
+        ? `长度合适（${words}词），${bullets}个条目，弱势表达极少。考虑增加更多量化成就。`
+        : `Good length (${words} words), ${bullets} bullet points, and minimal weak language. Consider adding more quantified achievements.`;
     } else {
-      icon = '🔍'; title = 'Decent Foundation';
-      desc = `${words} words, ${bullets} bullets, ${uniq.length} weak phrases. A few targeted fixes could significantly improve your ATS performance.`;
+      icon = '🔍'; title = t.v_decent_title;
+      desc = zh
+        ? `${words}词，${bullets}个条目，${uniq.length}个弱势短语。针对性修改可显著提升ATS表现。`
+        : `${words} words, ${bullets} bullets, ${uniq.length} weak phrases. A few targeted fixes could significantly improve your ATS performance.`;
     }
     document.getElementById('readVerdictIcon').textContent = icon;
     document.getElementById('readVerdictTitle').textContent = title;
