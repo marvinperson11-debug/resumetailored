@@ -8,6 +8,10 @@
   <meta name="description" content="Free AI resume builder and resume tailor. Paste your resume and any job posting â€” our AI rewrites it with the right keywords in 60 seconds. Pass ATS filters and land more interviews. No credit card needed." />
   <meta name="keywords" content="ai resume tailor, free resume tailor, AI resume builder, free AI resume builder, resume scanner, resume optimizer, ATS resume, cover letter generator, resume rewriter, job application AI, resume tailoring tool, free ATS resume checker, jobscan alternative, rezi alternative, tailor resume to job description, AI resume rewriter, ATS resume rewriter" />
   <link rel="canonical" href="https://resumetailored.com/" />
+  <!-- hreflang: English + Chinese bilingual site -->
+  <link rel="alternate" hreflang="en" href="https://resumetailored.com/" />
+  <link rel="alternate" hreflang="zh-CN" href="https://resumetailored.com/?lang=zh" />
+  <link rel="alternate" hreflang="x-default" href="https://resumetailored.com/" />
   <!-- Open Graph -->
   <meta property="og:title" content="ResumeTailored AI â€” AI Resume Tailor &amp; Cover Letter Generator" />
   <meta property="og:description" content="Paste your resume + job posting. Our AI rewrites your resume with the right keywords and writes a cover letter in under 30 seconds." />
@@ -31,11 +35,89 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
   <!-- JSON-LD -->
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"SoftwareApplication","name":"ResumeTailored AI","applicationCategory":"BusinessApplication","operatingSystem":"Web","url":"https://resumetailored.com","description":"AI-powered resume tailoring and cover letter generation","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"19","priceCurrency":"USD","priceSpecification":{"@type":"UnitPriceSpecification","billingDuration":"P1M"},"name":"Pro"},{"@type":"Offer","price":"129","priceCurrency":"USD","name":"Pro Lifetime"}],"aggregateRating":{"@type":"AggregateRating","ratingValue":"4.9","reviewCount":"312"}}
+  <script type=”application/ld+json”>
+  {
+    “@context”: “https://schema.org”,
+    “@type”: “SoftwareApplication”,
+    “name”: “ResumeTailored AI”,
+    “applicationCategory”: “BusinessApplication”,
+    “operatingSystem”: “Web”,
+    “url”: “https://resumetailored.com”,
+    “inLanguage”: [“en”, “zh-CN”],
+    “description”: “AI-powered resume tailoring, ATS scoring, and cover letter generation. Paste your resume and any job description — the AI rewrites your resume with the right keywords in under 60 seconds. Supports PDF and DOCX file upload, live job URL import from 40+ job boards including LinkedIn, Indeed, Glassdoor, Greenhouse, Lever, and Workday, and AI-powered English translation for non-native speakers.”,
+    “featureList”: [
+      “AI resume tailoring powered by Anthropic Claude”,
+      “ATS match score with keyword gap analysis”,
+      “AI-generated cover letter included with every tailoring”,
+      “Live job description import by URL from LinkedIn, Indeed, Glassdoor, Greenhouse, Lever, Workday, ZipRecruiter, Monster, Dice, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, and 40+ more job boards”,
+      “File upload support for PDF and DOCX resume formats”,
+      “AI-powered English translation for resumes in any language”,
+      “LinkedIn profile optimizer (Pro)”,
+      “20+ professional resume and cover letter templates”,
+      “Download as DOCX Word document or plain text”,
+      “Chinese (Simplified) and English bilingual interface”,
+      “Free tier: 1 full AI resume rewrite per day, no credit card required”
+    ],
+    “offers”: [
+      {“@type”: “Offer”, “price”: “0”, “priceCurrency”: “USD”, “name”: “Free — 1 tailoring/day”},
+      {“@type”: “Offer”, “price”: “19”, “priceCurrency”: “USD”, “priceSpecification”: {“@type”: “UnitPriceSpecification”, “billingDuration”: “P1M”}, “name”: “Pro — Unlimited”},
+      {“@type”: “Offer”, “price”: “129”, “priceCurrency”: “USD”, “name”: “Pro Lifetime”}
+    ],
+    “aggregateRating”: {“@type”: “AggregateRating”, “ratingValue”: “4.9”, “reviewCount”: “312”}
+  }
   </script>
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Is it really free to start?","acceptedAnswer":{"@type":"Answer","text":"Yes â€” the free tier gives you 1 AI resume tailoring per day with no credit card required. You can sign up and get your first tailored resume in under 2 minutes."}},{"@type":"Question","name":"Will it fabricate experience I don't have?","acceptedAnswer":{"@type":"Answer","text":"Never. Our AI strictly rewrites and reframes your existing experience using the job's language â€” it never adds skills or experience you don't have."}},{"@type":"Question","name":"How is this different from Jobscan or Resume.io?","acceptedAnswer":{"@type":"Answer","text":"Jobscan scores your resume and tells you what keywords to add â€” you still have to do the writing. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds."}},{"@type":"Question","name":"What formats can I export my resume in?","acceptedAnswer":{"@type":"Answer","text":"Your tailored resume is available to copy as plain text (perfect for pasting into ATS forms) or download as a formatted .docx Word document. Both are included in free and Pro plans."}},{"@type":"Question","name":"Can I cancel Pro anytime?","acceptedAnswer":{"@type":"Answer","text":"Yes, completely. Month-to-month, no contracts, no cancellation fees. You keep full Pro access through the end of your billing period when you cancel."}}]}
+  <script type=”application/ld+json”>
+  {
+    “@context”: “https://schema.org”,
+    “@type”: “FAQPage”,
+    “mainEntity”: [
+      {
+        “@type”: “Question”,
+        “name”: “Is it really free to start?”,
+        “acceptedAnswer”: {“@type”: “Answer”, “text”: “Yes — the free tier gives you 1 AI resume tailoring per day with no credit card required. You can sign up and get your first tailored resume in under 2 minutes.”}
+      },
+      {
+        “@type”: “Question”,
+        “name”: “How does the ResumeTailored AI ATS scanner work?”,
+        “acceptedAnswer”: {“@type”: “Answer”, “text”: “The ATS Scanner compares your resume against a specific job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions to improve your score. It mirrors how real Applicant Tracking Systems like Taleo, Workday, Greenhouse, and Lever rank candidates.”}
+      },
+      {
+        “@type”: “Question”,
+        “name”: “Can I import job descriptions from LinkedIn, Indeed, or other job boards by URL?”,
+        “acceptedAnswer”: {“@type”: “Answer”, “text”: “Yes. ResumeTailored AI supports live job description import by URL from over 40 job boards including LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and more. Paste the job URL and the AI extracts the full job description automatically — no copying and pasting required.”}
+      },
+      {
+        “@type”: “Question”,
+        “name”: “Does ResumeTailored AI support Chinese translation?”,
+        “acceptedAnswer”: {“@type”: “Answer”, “text”: “Yes. ResumeTailored AI includes an AI-powered translation feature that converts resumes written in Chinese (or any language) into professional English before tailoring. The platform also offers a full Chinese (Simplified) / English bilingual interface — toggle the language with one click. Chinese payment methods are also accepted.”}
+      },
+      {
+        “@type”: “Question”,
+        “name”: “What file formats can I upload for my resume?”,
+        “acceptedAnswer”: {“@type”: “Answer”, “text”: “You can upload your resume as a PDF (.pdf) or Word document (.docx), or paste the text directly. The AI extracts the content and uses it for tailoring regardless of format.”}
+      },
+      {
+        “@type”: “Question”,
+        “name”: “Will it fabricate experience I don't have?”,
+        “acceptedAnswer”: {“@type”: “Answer”, “text”: “Never. Our AI strictly rewrites and reframes your existing experience using the job's language — it never adds skills or experience you don't have. You stay 100% truthful while communicating your real value more clearly.”}
+      },
+      {
+        “@type”: “Question”,
+        “name”: “How is this different from Jobscan or Resume.io?”,
+        “acceptedAnswer”: {“@type”: “Answer”, “text”: “Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. Resume.io is a resume builder with templates. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds. It also generates a matching cover letter automatically.”}
+      },
+      {
+        “@type”: “Question”,
+        “name”: “What formats can I export my tailored resume in?”,
+        “acceptedAnswer”: {“@type”: “Answer”, “text”: “Your tailored resume is available to download as a formatted .docx Word document or copy as plain text (perfect for pasting into ATS application forms). Both are included in free and Pro plans.”}
+      },
+      {
+        “@type”: “Question”,
+        “name”: “Can I cancel Pro anytime?”,
+        “acceptedAnswer”: {“@type”: “Answer”, “text”: “Yes, completely. Month-to-month, no contracts, no cancellation fees. You keep full Pro access through the end of your billing period when you cancel.”}
+      }
+    ]
+  }
   </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -871,6 +953,48 @@
         </div>
       </div>
 
+    </div>
+  </div>
+</section>
+
+<!-- JOB BOARDS — AEO chunkable section -->
+<section class="section" id="job-boards" style="padding:60px 0;">
+  <div class="container">
+    <h2 class="section-title" style="margin-bottom:12px;">Which job boards does ResumeTailored AI <span>support?</span></h2>
+    <p style="text-align:center;color:#94a3b8;font-size:16px;max-width:640px;margin:0 auto 36px;">Paste a job URL from any of the 40+ supported platforms and our AI extracts the full job description automatically — no copying required.</p>
+    <div style="max-width:800px;margin:0 auto;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 36px;">
+      <h3 style="font-size:15px;font-weight:700;color:#818cf8;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;">Supported Job Boards &amp; ATS Platforms</h3>
+      <ul style="list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 24px;padding:0;">
+        <li style="color:#cbd5e1;font-size:14px;">✓ LinkedIn</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Indeed</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Glassdoor</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ ZipRecruiter</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Monster</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Dice</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Greenhouse</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Lever</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Workday</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ BambooHR</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Wellfound (AngelList)</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Ashby</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Built In</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ We Work Remotely</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Remote.co</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ FlexJobs</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ SimplyHired</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ CareerBuilder</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Handshake</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ iCIMS</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ SmartRecruiters</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ JazzHR</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Rippling</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Taleo (Oracle)</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ Boss直聘</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ 猎聘 (Liepin)</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ 智联招聘 (Zhaopin)</li>
+        <li style="color:#cbd5e1;font-size:14px;">✓ 前程无忧 (51job)</li>
+        <li style="color:#cbd5e1;font-size:14px;grid-column:1/-1;margin-top:4px;color:#64748b;">+ more added regularly — any URL-accessible job post works</li>
+      </ul>
     </div>
   </div>
 </section>
@@ -1779,12 +1903,33 @@
     <div class="section-eyebrow">Common Questions</div>
     <h2 class="section-title">Frequently asked <span>questions</span></h2>
     <div class="faq-list">
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
+      <div class=”faq-item”>
+        <div class=”faq-q” onclick=”toggleFaq(this)”>
           <span>Is it really free to start?</span>
-          <span class="faq-arrow">+</span>
+          <span class=”faq-arrow”>+</span>
         </div>
-        <div class="faq-a">Yes â€” the free tier gives you 1 AI resume tailoring per day with no credit card required. You can sign up and get your first tailored resume in under 2 minutes.</div>
+        <div class=”faq-a”>Yes — the free tier gives you 1 AI resume tailoring per day with no credit card required. You can sign up and get your first tailored resume in under 2 minutes.</div>
+      </div>
+      <div class=”faq-item”>
+        <div class=”faq-q” onclick=”toggleFaq(this)”>
+          <span>How does the ATS scanner work?</span>
+          <span class=”faq-arrow”>+</span>
+        </div>
+        <div class=”faq-a”>The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — mirroring how real ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href=”/score” style=”color:#818cf8;”>resumetailored.com/score</a> — no account needed.</div>
+      </div>
+      <div class=”faq-item”>
+        <div class=”faq-q” onclick=”toggleFaq(this)”>
+          <span>Can I import job descriptions from LinkedIn or Indeed by URL?</span>
+          <span class=”faq-arrow”>+</span>
+        </div>
+        <div class=”faq-a”>Yes. Paste a job URL and our AI extracts the full job description automatically. Supported job boards include LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and 40+ more. No manual copying required.</div>
+      </div>
+      <div class=”faq-item”>
+        <div class=”faq-q” onclick=”toggleFaq(this)”>
+          <span>Does ResumeTailored AI support Chinese translation?</span>
+          <span class=”faq-arrow”>+</span>
+        </div>
+        <div class=”faq-a”>Yes. Our AI translation feature converts resumes written in Chinese (or any language) into professional English before tailoring. The full platform interface is also available in Simplified Chinese — toggle with one click. Chinese payment methods are accepted.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
