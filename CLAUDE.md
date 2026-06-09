@@ -78,7 +78,7 @@ STRIPE_WEBHOOK_SECRET # Stripe webhook signing secret
 STRIPE_PRICE_ID       # Stripe Price ID (price_...)
 PORT                  # defaults to 3000
 RESEND_API_KEY        # optional — enables real emails
-OWNER_EMAIL           # optional — where support messages go (defaults to marvinperson11@gmail.com)
+OWNER_EMAIL           # optional — where support messages go (defaults to support@resumetailored.com)
 ```
 
 ## Deployment
