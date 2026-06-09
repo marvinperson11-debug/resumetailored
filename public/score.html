@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Free AI Resume Score Checker — ATS Match &amp; Readability | ResumeTailored AI</title>
+  <meta name="description" content="Free AI-powered resume score checker. Get your ATS match rate, readability review, missing keywords, and 5 specific AI rewrite suggestions — no account needed."/>
+  <meta name="keywords" content="free ats resume checker, resume score checker, ats match rate, resume readability, free resume scanner, ai resume checker"/>
+  <link rel="canonical" href="https://resumetailored.com/score"/>
+  <meta property="og:title" content="Free AI Resume Score Checker — ATS + Readability"/>
+  <meta property="og:description" content="Paste your resume and job description. Claude AI scores your ATS match and gives 5 specific fixes — free, no account needed."/>
+  <meta property="og:url" content="https://resumetailored.com/score"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:image" content="https://resumetailored.com/favicon.png"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <link rel="icon" href="/favicon.png" type="image/png"/>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;background:#030712;color:#e2e8f0;line-height:1.6;min-height:100vh;}
+    h1,h2,h3{font-family:'Inter',sans-serif;letter-spacing:-0.02em;}
+    a{color:inherit;text-decoration:none;}
+
+    /* Circuit grid bg */
+    body::before{content:'';position:fixed;inset:0;z-index:0;
+      background-image:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(99,102,241,0.1),transparent),
+        linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px);
+      background-size:100% 100%,56px 56px,56px 56px;pointer-events:none;}
+    nav,main,footer,.hero{position:relative;z-index:1;}
+
+    /* NAV */
+    .nav{background:rgba(3,7,18,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.08);position:sticky;top:0;z-index:100;}
+    .nav-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+    .logo{font-size:20px;font-weight:900;color:#f1f5f9;letter-spacing:-0.03em;}
+    .logo .badge-ai{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;}
+    .nav-links{display:flex;gap:24px;align-items:center;}
+    .nav-links a{font-size:14px;font-weight:600;color:#94a3b8;transition:color .15s;}
+    .nav-links a:hover{color:#f1f5f9;}
+    .btn-nav{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:9px 18px;border-radius:8px;font-weight:700;font-size:13px;}
+
+    /* HERO */
+    .hero{padding:56px 24px 40px;text-align:center;}
+    .hero-eyebrow{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#34d399;margin-bottom:14px;}
+    .hero h1{font-size:clamp(28px,5vw,52px);font-weight:900;color:#f1f5f9;letter-spacing:-0.03em;line-height:1.08;margin-bottom:14px;}
+    .hero h1 span{background:linear-gradient(135deg,#818CF8,#A78BFA,#38BDF8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+    .hero-sub{font-size:17px;color:#94a3b8;max-width:560px;margin:0 auto 10px;}
+    .hero-note{font-size:13px;color:#475569;}
+    .hero-note strong{color:#34d399;}
+
+    /* STATUS BADGE */
+    .status-bar{max-width:700px;margin:18px auto 0;padding:10px 18px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:13px;font-weight:600;color:#64748b;text-align:center;}
+    .status-bar .pro-pill{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;margin-left:6px;}
+    .status-bar .free-pill{background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.3);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;margin-left:6px;}
+    .status-bar .used-pill{background:rgba(248,113,113,0.12);color:#f87171;border:1px solid rgba(248,113,113,0.3);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;margin-left:6px;}
+
+    /* TAB SWITCHER */
+    .tab-wrap{max-width:700px;margin:32px auto 0;padding:0 24px;}
+    .tab-switch{display:flex;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:4px;gap:4px;}
+    .tab-btn{flex:1;padding:12px 16px;border:none;border-radius:9px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;background:transparent;color:#64748b;}
+    .tab-btn.active{background:linear-gradient(135deg,rgba(99,102,241,0.3),rgba(139,92,246,0.2));color:#c4b5fd;box-shadow:0 0 16px rgba(99,102,241,0.2);}
+    .tab-btn:hover:not(.active){color:#94a3b8;}
+
+    /* TOOL PANEL */
+    .tool-section{max-width:1100px;margin:32px auto 60px;padding:0 24px;}
+    .tab-pane{display:none;}
+    .tab-pane.active{display:block;}
+
+    /* INPUTS */
+    .inputs-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+    .input-card{display:flex;flex-direction:column;gap:10px;}
+    .input-label{font-size:13px;font-weight:800;color:#e2e8f0;text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;justify-content:space-between;}
+    .upload-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:700;border:1.5px dashed rgba(99,102,241,0.5);background:rgba(99,102,241,0.08);color:#818CF8;cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+    .upload-btn:hover{background:rgba(99,102,241,0.18);border-color:rgba(99,102,241,0.8);}
+    .upload-btn.loading{opacity:.6;cursor:not-allowed;}
+    .resume-ta{width:100%;min-height:300px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px;color:#e2e8f0;font-family:inherit;font-size:13.5px;line-height:1.65;resize:vertical;outline:none;transition:border-color .2s;}
+    .resume-ta:focus{border-color:rgba(99,102,241,0.6);box-shadow:0 0 0 3px rgba(99,102,241,0.12);}
+    .resume-ta::placeholder{color:#334155;}
+
+    /* SINGLE TEXTAREA (tab 2) */
+    .single-input-wrap{margin-bottom:20px;}
+    .single-ta{width:100%;min-height:340px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px;color:#e2e8f0;font-family:inherit;font-size:13.5px;line-height:1.65;resize:vertical;outline:none;transition:border-color .2s;}
+    .single-ta:focus{border-color:rgba(99,102,241,0.6);}
+    .single-ta::placeholder{color:#334155;}
+
+    /* ACTION ROW */
+    .action-row{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:24px;}
+    .btn-analyze{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border:none;padding:14px 40px;border-radius:10px;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer;transition:all .2s;box-shadow:0 0 24px rgba(99,102,241,0.4);}
+    .btn-analyze:hover{opacity:.9;box-shadow:0 0 36px rgba(99,102,241,0.6);transform:translateY(-1px);}
+    .btn-analyze:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+    .shortcut-hint{font-size:12px;color:#475569;}
+
+    /* ERROR */
+    .error-msg{display:none;color:#f87171;font-size:14px;font-weight:600;text-align:center;margin-bottom:16px;padding:12px;border-radius:8px;background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.2);}
+    .error-msg.visible{display:block;}
+
+    /* RESULTS */
+    .results-section{display:none;}
+    .results-section.visible{display:block;}
+
+    /* ATS RESULTS GRID */
+    .ats-results-grid{display:grid;grid-template-columns:220px 1fr;gap:24px;margin-bottom:24px;align-items:start;}
+
+    /* SCORE CIRCLE */
+    .score-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px 20px;text-align:center;}
+    .score-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#64748b;margin-bottom:16px;}
+    .score-circle-wrap{position:relative;width:140px;height:140px;margin:0 auto 14px;}
+    .score-svg{transform:rotate(-90deg);}
+    .score-track{fill:none;stroke:rgba(255,255,255,0.08);stroke-width:8;}
+    .score-bar{fill:none;stroke:#34d399;stroke-width:8;stroke-linecap:round;stroke-dasharray:283;stroke-dashoffset:283;transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1),stroke .4s;}
+    .score-number{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;}
+    .score-pct{font-size:36px;font-weight:900;color:#f1f5f9;line-height:1;}
+    .score-pct-sign{font-size:16px;font-weight:700;color:#64748b;}
+    .verdict-badge{display:inline-block;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:800;margin-top:4px;}
+    .verdict-strong{background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.3);}
+    .verdict-fair{background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);}
+    .verdict-weak{background:rgba(248,113,113,0.12);color:#f87171;border:1px solid rgba(248,113,113,0.3);}
+
+    /* KEYWORDS CARD */
+    .keywords-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:20px;}
+    .kw-section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+    .kw-section-title.found{color:#34d399;}
+    .kw-section-title.missing{color:#f87171;}
+    .kw-count{background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:10px;font-size:11px;color:#94a3b8;}
+    .chips-wrap{display:flex;flex-wrap:wrap;gap:8px;min-height:32px;}
+    .chip{display:inline-block;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;}
+    .chip-found{background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.25);color:#34d399;}
+    .chip-missing{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);color:#f87171;}
+    .chips-empty{font-size:13px;color:#475569;font-style:italic;}
+
+    /* MISSING KEYWORDS LOCK */
+    .missing-kw-wrap{position:relative;}
+    .missing-blur{filter:blur(5px);pointer-events:none;user-select:none;}
+    .missing-lock-overlay{position:absolute;inset:-8px;background:rgba(3,7,18,0.75);backdrop-filter:blur(2px);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:10;}
+    .lock-icon{font-size:22px;}
+    .lock-text{font-size:13px;font-weight:700;color:#94a3b8;text-align:center;}
+    .btn-unlock-sm{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:7px 18px;border-radius:8px;font-size:12px;font-weight:800;display:inline-block;margin-top:4px;}
+
+    /* SUGGESTIONS */
+    .suggestions-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px;margin-bottom:24px;}
+    .suggestions-eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#818CF8;margin-bottom:16px;}
+    .suggestion-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:14px;color:#cbd5e1;line-height:1.65;}
+    .suggestion-item:last-child{border-bottom:none;padding-bottom:0;}
+    .suggestion-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.4);color:#818CF8;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+
+    /* UPGRADE WALL */
+    .upgrade-wall{display:none;background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border:1px solid rgba(99,102,241,0.3);border-radius:20px;padding:48px 32px;text-align:center;margin-bottom:24px;}
+    .upgrade-wall h3{font-size:24px;font-weight:900;color:#f1f5f9;margin-bottom:10px;letter-spacing:-0.02em;}
+    .upgrade-wall p{font-size:15px;color:#94a3b8;max-width:520px;margin:0 auto 24px;line-height:1.7;}
+    .upgrade-wall .btn-upgrade{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:14px 36px;border-radius:10px;font-weight:800;font-size:16px;display:inline-block;box-shadow:0 0 24px rgba(99,102,241,0.45);}
+    .upgrade-wall .btn-upgrade:hover{opacity:.9;}
+    .upgrade-wall .upgrade-perks{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:28px;}
+    .upgrade-perk{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#94a3b8;}
+    .upgrade-perk strong{color:#c4b5fd;}
+
+    /* CTA STRIP */
+    .cta-strip{background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border:1px solid rgba(99,102,241,0.25);border-radius:16px;padding:24px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+    .cta-strip-text h3{font-size:16px;font-weight:800;color:#e2e8f0;margin-bottom:4px;}
+    .cta-strip-text p{font-size:13px;color:#64748b;}
+    .btn-fix{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:14px;font-weight:800;padding:11px 22px;border-radius:10px;white-space:nowrap;box-shadow:0 0 18px rgba(99,102,241,0.35);}
+
+    /* READABILITY RESULTS */
+    .readability-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px;}
+    .metric-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;text-align:center;}
+    .metric-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#475569;margin-bottom:12px;}
+    .metric-value{font-size:38px;font-weight:900;color:#f1f5f9;line-height:1;margin-bottom:8px;}
+    .metric-verdict{font-size:12px;font-weight:700;padding:4px 10px;border-radius:12px;display:inline-block;}
+    .mv-good{background:rgba(52,211,153,0.12);color:#34d399;}
+    .mv-warn{background:rgba(251,191,36,0.12);color:#fbbf24;}
+    .mv-bad{background:rgba(248,113,113,0.12);color:#f87171;}
+    .verdict-row{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px 24px;display:flex;align-items:center;gap:16px;margin-bottom:24px;}
+    .verdict-row-icon{font-size:28px;}
+    .verdict-row-text h4{font-size:16px;font-weight:800;color:#f1f5f9;margin-bottom:4px;}
+    .verdict-row-text p{font-size:13px;color:#64748b;line-height:1.6;}
+
+    /* FOOTER */
+    footer{background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.08);padding:32px 24px;text-align:center;position:relative;z-index:1;}
+    footer p{font-size:13px;color:#475569;}
+    footer a{color:#818CF8;font-weight:600;}
+
+    /* MOBILE */
+    @media(max-width:768px){
+      .inputs-grid{grid-template-columns:1fr;}
+      .ats-results-grid{grid-template-columns:1fr;}
+      .score-card{display:flex;align-items:center;gap:20px;text-align:left;}
+      .score-circle-wrap{flex-shrink:0;width:100px;height:100px;}
+      .score-pct{font-size:26px;}
+      .readability-grid{grid-template-columns:1fr;}
+      .nav-links{display:none;}
+      .cta-strip{flex-direction:column;}
+      .upgrade-wall{padding:32px 20px;}
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/how-it-works">How It Works</a>
+      <a href="/score" style="color:#34d399;">Free Tools</a>
+      <a href="/blog">Blog</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/dashboard" class="btn-nav">Get Started Free →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <p class="hero-eyebrow">&#9733; Free &nbsp;·&nbsp; No Account Required &nbsp;·&nbsp; Powered by Claude AI</p>
+  <h1>Resume <span>Optimization Hub</span></h1>
+  <p class="hero-sub">ATS Match Rate + Readability Review in one place. Paste your resume and get real AI analysis — free, instant, no sign-up.</p>
+  <p class="hero-note"><strong>Free tier:</strong> 1 ATS scan per day &nbsp;·&nbsp; Readability review is always unlimited</p>
+  <div class="status-bar" id="statusBar">Checking your access level…</div>
+</section>
+
+<!-- TAB SWITCHER -->
+<div class="tab-wrap">
+  <div class="tab-switch">
+    <button class="tab-btn active" id="tabBtnAts" onclick="switchTab('ats')">&#9679; ATS Match Rate</button>
+    <button class="tab-btn" id="tabBtnRead" onclick="switchTab('readability')">&#128221; Readability Review</button>
+  </div>
+</div>
+
+<!-- TOOL SECTION -->
+<main class="tool-section">
+
+  <!-- ── TAB 1: ATS MATCH RATE ── -->
+  <div class="tab-pane active" id="tab-ats">
+
+    <!-- INPUTS -->
+    <div class="inputs-grid">
+      <div class="input-card">
+        <div class="input-label">
+          <span>&#128196; Your Resume</span>
+          <button class="upload-btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()">&#8679; Upload File</button>
+          <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleUpload(this)"/>
+        </div>
+        <textarea id="resumeInput" class="resume-ta" placeholder="Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…" spellcheck="false"></textarea>
+      </div>
+      <div class="input-card">
+        <div class="input-label"><span>&#128203; Job Description</span></div>
+        <textarea id="jobInput" class="resume-ta" placeholder="Paste the full job posting here — include requirements, responsibilities, and qualifications…" spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <div class="error-msg" id="atsError"></div>
+
+    <div class="action-row">
+      <button class="btn-analyze" id="atsBtn" onclick="runATS()">Analyze ATS Match &rarr;</button>
+      <span class="shortcut-hint">or press Ctrl+Enter</span>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results-section" id="atsResults">
+
+      <!-- UPGRADE WALL (shown when 402) -->
+      <div class="upgrade-wall" id="upgradeWall">
+        <div style="font-size:44px;margin-bottom:16px;">&#128274;</div>
+        <h3>You've hit your daily limit!</h3>
+        <p>Your premium AI-tailored analysis is ready, but it's locked. Upgrade to ResumeTailored Pro to unlock unlimited smart ATS scans, reveal your exact missing keywords, and let our AI builder rewrite your entire resume instantly.</p>
+        <div class="upgrade-perks">
+          <div class="upgrade-perk"><strong>&#8734;</strong> Unlimited ATS scans</div>
+          <div class="upgrade-perk"><strong>&#128275;</strong> All missing keywords revealed</div>
+          <div class="upgrade-perk"><strong>&#9889;</strong> AI resume rewriter</div>
+          <div class="upgrade-perk"><strong>&#128338;</strong> No daily limits — ever</div>
+        </div>
+        <a href="/dashboard?plan=pro" class="btn-upgrade">Upgrade to Pro — $19/mo &rarr;</a>
+      </div>
+
+      <!-- SCORE + KEYWORDS -->
+      <div class="ats-results-grid" id="atsResultsGrid">
+
+        <!-- SCORE CARD -->
+        <div class="score-card">
+          <div class="score-title">ATS Match Score</div>
+          <div class="score-circle-wrap">
+            <svg class="score-svg" width="140" height="140" viewBox="0 0 100 100">
+              <circle class="score-track" cx="50" cy="50" r="45"/>
+              <circle class="score-bar" id="scoreBar" cx="50" cy="50" r="45"/>
+            </svg>
+            <div class="score-number">
+              <span class="score-pct" id="scoreDisplay">0</span>
+              <span class="score-pct-sign">%</span>
+            </div>
+          </div>
+          <div class="verdict-badge" id="verdictBadge"></div>
+        </div>
+
+        <!-- KEYWORDS -->
+        <div class="keywords-card">
+          <div>
+            <div class="kw-section-title found">&#10003; Matched Keywords <span class="kw-count" id="foundCount">0</span></div>
+            <div class="chips-wrap" id="foundChips"></div>
+          </div>
+          <div>
+            <div class="kw-section-title missing">&#10005; Missing Keywords <span class="kw-count" id="missingCount">0</span></div>
+            <div class="missing-kw-wrap">
+              <div class="chips-wrap" id="missingChips"></div>
+              <!-- Lock overlay — shown for free users -->
+              <div class="missing-lock-overlay" id="missingLockOverlay" style="display:none;">
+                <span class="lock-icon">&#128274;</span>
+                <span class="lock-text">Missing keywords locked<br/>for free users</span>
+                <a href="/dashboard?plan=pro" class="btn-unlock-sm">Unlock with Pro &rarr;</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end ats-results-grid -->
+
+      <!-- AI SUGGESTIONS -->
+      <div class="suggestions-card" id="suggestionsCard" style="display:none;">
+        <div class="suggestions-eyebrow">&#128161; AI Rewrite Suggestions</div>
+        <div id="suggestionsList"></div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-strip">
+        <div class="cta-strip-text">
+          <h3>Fix missing keywords automatically &rarr;</h3>
+          <p>Let our AI rewrite your full resume with all the right keywords woven in naturally — plus a matching cover letter, in 30 seconds.</p>
+        </div>
+        <a href="/dashboard" class="btn-fix">Tailor My Resume Free &rarr;</a>
+      </div>
+
+    </div><!-- end atsResults -->
+  </div><!-- end tab-ats -->
+
+  <!-- ── TAB 2: READABILITY REVIEW ── -->
+  <div class="tab-pane" id="tab-readability">
+
+    <div class="input-label" style="margin-bottom:10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#e2e8f0;">&#128196; Your Resume</div>
+    <div class="single-input-wrap">
+      <textarea id="readInput" class="single-ta" placeholder="Paste your full resume text here…" spellcheck="false" oninput="runReadability()"></textarea>
+    </div>
+
+    <div class="results-section" id="readResults">
+
+      <!-- OVERALL VERDICT -->
+      <div class="verdict-row" id="readVerdictRow">
+        <div class="verdict-row-icon" id="readVerdictIcon">&#128196;</div>
+        <div class="verdict-row-text">
+          <h4 id="readVerdictTitle">Paste your resume above</h4>
+          <p id="readVerdictDesc">Analysis runs instantly as you type.</p>
+        </div>
+      </div>
+
+      <!-- METRICS GRID -->
+      <div class="readability-grid">
+        <div class="metric-card">
+          <div class="metric-label">Word Count</div>
+          <div class="metric-value" id="wordCount">—</div>
+          <div class="metric-verdict" id="wordVerdict"></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Bullet Points</div>
+          <div class="metric-value" id="bulletCount">—</div>
+          <div class="metric-verdict" id="bulletVerdict"></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Weak Phrases</div>
+          <div class="metric-value" id="weakCount">—</div>
+          <div class="metric-verdict" id="weakVerdict"></div>
+        </div>
+      </div>
+
+      <!-- WEAK PHRASES LIST -->
+      <div class="suggestions-card" id="weakPhrasesCard" style="display:none;">
+        <div class="suggestions-eyebrow">&#9888; Weak Phrases &amp; Passive Voice Detected</div>
+        <div id="weakPhrasesList"></div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-strip">
+        <div class="cta-strip-text">
+          <h3>Fix weak language automatically &rarr;</h3>
+          <p>Paste a job description and our AI rewrites every bullet with strong action verbs and the right keywords — in 30 seconds.</p>
+        </div>
+        <a href="/dashboard" class="btn-fix">Rewrite My Resume Free &rarr;</a>
+      </div>
+
+    </div><!-- end readResults -->
+  </div><!-- end tab-readability -->
+
+</main>
+
+<!-- FOOTER -->
+<!-- Free Tools CTA Banner -->
+<div style="background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12));border-top:1px solid rgba(99,102,241,0.3);padding:28px 24px;text-align:center;position:relative;z-index:1;">
+  <p style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#818CF8;margin-bottom:8px;">AI Resume Tailor</p>
+  <p style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">Got missing keywords? Fix them in 30 seconds.</p>
+  <p style="font-size:14px;color:#94a3b8;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Our AI rewrites your entire resume with the right keywords woven in naturally — plus a matching cover letter.</p>
+  <a href="/dashboard" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 0 20px rgba(99,102,241,0.4);">Tailor My Resume Free &rarr;</a>
+</div>
+<footer>
+  <p>&copy; 2026 ResumeTailored AI &nbsp;&middot;&nbsp; <a href="/">resumetailored.com</a></p>
+  <p style="margin-top:6px;"><a href="/score">Free Tools</a> &nbsp;&middot;&nbsp; <a href="/blog">Blog</a> &nbsp;&middot;&nbsp; <a href="/how-it-works">How It Works</a> &nbsp;&middot;&nbsp; <a href="mailto:support@resumetailored.com">support@resumetailored.com</a></p>
+</footer>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let isSubscriber = false;
+  let freeAtsLeft = 1;
+
+  // ── On load: check status ──────────────────────────────────────────────────
+  (async function init() {
+    try {
+      const token = localStorage.getItem('rt_token') || '';
+      const email = localStorage.getItem('rt_email') || '';
+      const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+      const res = await fetch('/api/status?email=' + encodeURIComponent(email), { headers });
+      const data = await res.json();
+      isSubscriber = data.isSubscriber;
+      freeAtsLeft  = data.freeAtsLeft !== undefined ? data.freeAtsLeft : 1;
+      updateStatusBar();
+    } catch(e) { updateStatusBar(); }
+  })();
+
+  function updateStatusBar() {
+    const bar = document.getElementById('statusBar');
+    if (isSubscriber) {
+      bar.innerHTML = '&#10003; Pro member — unlimited ATS scans active <span class="pro-pill">✦ PRO</span>';
+    } else if (freeAtsLeft > 0) {
+      bar.innerHTML = 'Free tier — <strong style="color:#34d399;">1 free ATS scan</strong> available today <span class="free-pill">FREE</span>';
+    } else {
+      bar.innerHTML = 'Daily limit reached — upgrade for unlimited scans <span class="used-pill">LIMIT HIT</span>';
+    }
+  }
+
+  // ── Tab switching ──────────────────────────────────────────────────────────
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('tabBtn' + (tab === 'ats' ? 'Ats' : 'Read')).classList.add('active');
+  }
+
+  // ── File upload ────────────────────────────────────────────────────────────
+  async function handleUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const btn = document.getElementById('uploadBtn');
+    btn.textContent = 'Loading…';
+    btn.classList.add('loading');
+    btn.disabled = true;
+    const ext = file.name.split('.').pop().toLowerCase();
+    try {
+      if (ext === 'txt') {
+        document.getElementById('resumeInput').value = await file.text();
+      } else {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: fd });
+        const d = await res.json();
+        if (d.text) document.getElementById('resumeInput').value = d.text;
+        else alert('Could not extract text. Try saving as .txt and uploading again.');
+      }
+    } catch(e) { alert('Upload failed. Please paste your resume text manually.'); }
+    finally { btn.textContent = '⬆ Upload File'; btn.classList.remove('loading'); btn.disabled = false; input.value = ''; }
+  }
+
+  // ── Animate score circle ───────────────────────────────────────────────────
+  function animateScore(score) {
+    const bar = document.getElementById('scoreBar');
+    const display = document.getElementById('scoreDisplay');
+    const color = score >= 75 ? '#34d399' : score >= 50 ? '#fbbf24' : '#f87171';
+    bar.style.stroke = color;
+    bar.style.strokeDashoffset = 283;
+    bar.getBoundingClientRect();
+    bar.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1), stroke .4s';
+    bar.style.strokeDashoffset = 283 * (1 - score / 100);
+    display.textContent = '0';
+    display.style.color = color;
+    const t0 = performance.now();
+    (function step(now) {
+      const p = Math.min((now - t0) / 1000, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      display.textContent = Math.round(e * score);
+      if (p < 1) requestAnimationFrame(step);
+      else display.textContent = score;
+    })(t0);
+  }
+
+  // ── Render chips ───────────────────────────────────────────────────────────
+  function renderChips(id, kws, cls) {
+    const c = document.getElementById(id);
+    c.innerHTML = '';
+    if (!kws || !kws.length) { c.innerHTML = `<span class="chips-empty">${cls === 'chip-found' ? 'No matched keywords found.' : 'No missing keywords — great match!'}</span>`; return; }
+    kws.forEach(k => { const s = document.createElement('span'); s.className = 'chip ' + cls; s.textContent = k; c.appendChild(s); });
+  }
+
+  // ── ATS scan ───────────────────────────────────────────────────────────────
+  async function runATS() {
+    const resume = document.getElementById('resumeInput').value.trim();
+    const job    = document.getElementById('jobInput').value.trim();
+    const errEl  = document.getElementById('atsError');
+    const resEl  = document.getElementById('atsResults');
+    const btn    = document.getElementById('atsBtn');
+
+    errEl.classList.remove('visible');
+    resEl.classList.remove('visible');
+    document.getElementById('upgradeWall').style.display = 'none';
+    document.getElementById('atsResultsGrid').style.display = '';
+    document.getElementById('suggestionsCard').style.display = 'none';
+
+    if (!resume) { errEl.textContent = 'Please paste your resume in the left box.'; errEl.classList.add('visible'); return; }
+    if (!job)    { errEl.textContent = 'Please paste the job description in the right box.'; errEl.classList.add('visible'); return; }
+
+    btn.textContent = 'Analyzing with Claude AI…';
+    btn.disabled = true;
+
+    try {
+      const token = localStorage.getItem('rt_token') || '';
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+
+      const res = await fetch('/api/ats-scan', { method: 'POST', headers, body: JSON.stringify({ resume, jobPosting: job }) });
+
+      if (res.status === 402) {
+        freeAtsLeft = 0;
+        updateStatusBar();
+        document.getElementById('atsResultsGrid').style.display = 'none';
+        document.getElementById('upgradeWall').style.display = 'block';
+        resEl.classList.add('visible');
+        setTimeout(() => resEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+        return;
+      }
+
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        errEl.textContent = d.error || 'Analysis failed. Please try again.';
+        errEl.classList.add('visible');
+        return;
+      }
+
+      const data = await res.json();
+      const { score, verdict, matched, missing, suggestions } = data;
+
+      // Update state
+      if (!isSubscriber) { freeAtsLeft = 0; updateStatusBar(); }
+
+      // Animate score
+      animateScore(score);
+
+      // Verdict
+      const vMap = {
+        'Strong Match': ['✅ Strong Match', 'verdict-strong'],
+        'Good Match':   ['✓ Good Match',   'verdict-strong'],
+        'Fair Match':   ['⚠️ Fair Match',   'verdict-fair'],
+        'Weak Match':   ['❌ Weak Match',   'verdict-weak'],
+      };
+      const [vText, vCls] = vMap[verdict] || ['❌ Weak Match', 'verdict-weak'];
+      const badge = document.getElementById('verdictBadge');
+      badge.textContent = vText;
+      badge.className = 'verdict-badge ' + vCls;
+
+      // Matched keywords — always visible
+      document.getElementById('foundCount').textContent = (matched || []).length;
+      renderChips('foundChips', matched, 'chip-found');
+
+      // Missing keywords — blurred for free users
+      document.getElementById('missingCount').textContent = (missing || []).length;
+      if (isSubscriber) {
+        renderChips('missingChips', missing, 'chip-missing');
+        document.getElementById('missingLockOverlay').style.display = 'none';
+        document.getElementById('missingChips').classList.remove('missing-blur');
+      } else {
+        renderChips('missingChips', missing, 'chip-missing');
+        document.getElementById('missingChips').classList.add('missing-blur');
+        document.getElementById('missingLockOverlay').style.display = 'flex';
+      }
+
+      // AI suggestions
+      if (suggestions && suggestions.length) {
+        document.getElementById('suggestionsList').innerHTML = suggestions.map((s, i) =>
+          `<div class="suggestion-item"><span class="suggestion-num">${i+1}</span><span>${s}</span></div>`
+        ).join('');
+        document.getElementById('suggestionsCard').style.display = 'block';
+      }
+
+      resEl.classList.add('visible');
+      setTimeout(() => resEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+
+    } catch(e) {
+      errEl.textContent = 'Could not reach the server. Check your connection and try again.';
+      errEl.classList.add('visible');
+    } finally {
+      btn.textContent = 'Analyze ATS Match →';
+      btn.disabled = false;
+    }
+  }
+
+  // ── Readability (client-side, instant) ────────────────────────────────────
+  const WEAK_PATTERNS = [
+    /\bresponsible for\b/gi, /\bhelped (to )?\b/gi, /\bassisted (with )?\b/gi,
+    /\bworked on\b/gi, /\binvolved in\b/gi, /\bcontributed to\b/gi,
+    /\bsupported\b/gi, /\bwas responsible\b/gi, /\bwere responsible\b/gi,
+    /\bwas managed\b/gi, /\bwere managed\b/gi, /\bis being\b/gi,
+    /\bwas (a|the) (key|main|primary)\b/gi, /\bteam player\b/gi,
+    /\bhard[- ]worker\b/gi, /\bdetail[- ]oriented\b/gi,
+    /\bpassionate about\b/gi, /\bexcellent communication\b/gi,
+  ];
+
+  function runReadability() {
+    const text = document.getElementById('readInput').value;
+    const resEl = document.getElementById('readResults');
+    if (!text.trim()) { resEl.classList.remove('visible'); return; }
+    resEl.classList.add('visible');
+
+    // Word count
+    const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+    document.getElementById('wordCount').textContent = words;
+    let wCls, wText;
+    if (words < 200) { wCls = 'mv-bad'; wText = 'Too Short'; }
+    else if (words < 400) { wCls = 'mv-warn'; wText = 'A Bit Short'; }
+    else if (words <= 800) { wCls = 'mv-good'; wText = 'Ideal'; }
+    else if (words <= 1100) { wCls = 'mv-warn'; wText = 'A Bit Long'; }
+    else { wCls = 'mv-bad'; wText = 'Too Long'; }
+    const wv = document.getElementById('wordVerdict');
+    wv.textContent = wText; wv.className = 'metric-verdict ' + wCls;
+
+    // Bullet points
+    const bullets = (text.match(/^[\s]*[•\-\*•‣◦⁃]/gm) || []).length;
+    document.getElementById('bulletCount').textContent = bullets;
+    let bCls, bText;
+    if (bullets < 5) { bCls = 'mv-bad'; bText = 'Too Few'; }
+    else if (bullets <= 15) { bCls = 'mv-warn'; bText = 'Could Add More'; }
+    else if (bullets <= 35) { bCls = 'mv-good'; bText = 'Ideal Range'; }
+    else { bCls = 'mv-warn'; bText = 'Consider Trimming'; }
+    const bv = document.getElementById('bulletVerdict');
+    bv.textContent = bText; bv.className = 'metric-verdict ' + bCls;
+
+    // Weak phrases
+    const found = [];
+    WEAK_PATTERNS.forEach(rx => {
+      let m;
+      const src = text;
+      const r = new RegExp(rx.source, rx.flags.replace('g','') + 'g');
+      while ((m = r.exec(src)) !== null) found.push(m[0].trim());
+    });
+    const uniq = [...new Set(found.map(s => s.toLowerCase()))];
+    document.getElementById('weakCount').textContent = uniq.length;
+    let kCls, kText;
+    if (uniq.length === 0) { kCls = 'mv-good'; kText = 'None Found ✓'; }
+    else if (uniq.length <= 2) { kCls = 'mv-warn'; kText = 'A Few'; }
+    else { kCls = 'mv-bad'; kText = 'Too Many'; }
+    const kv = document.getElementById('weakVerdict');
+    kv.textContent = kText; kv.className = 'metric-verdict ' + kCls;
+
+    if (uniq.length > 0) {
+      document.getElementById('weakPhrasesList').innerHTML = uniq.slice(0, 10).map(p =>
+        `<div class="suggestion-item"><span class="suggestion-num">!</span><span>Found: "<strong>${p}</strong>" — replace with a strong action verb (Led, Built, Drove, Grew, Delivered)</span></div>`
+      ).join('');
+      document.getElementById('weakPhrasesCard').style.display = 'block';
+    } else {
+      document.getElementById('weakPhrasesCard').style.display = 'none';
+    }
+
+    // Overall verdict
+    let icon, title, desc;
+    if (words < 200) {
+      icon = '📋'; title = 'Resume is Too Short';
+      desc = `${words} words is below the ideal range. Aim for 400–800 words for a strong, scannable resume.`;
+    } else if (words > 1100 && uniq.length > 3) {
+      icon = '⚠️'; title = 'Resume Needs Work';
+      desc = `${words} words and ${uniq.length} weak phrases detected. Trim length and replace passive language with strong action verbs.`;
+    } else if (uniq.length > 3) {
+      icon = '⚠️'; title = 'Weak Language Detected';
+      desc = `${uniq.length} weak phrases or passive constructions found. Replace with confident, metric-driven action verbs.`;
+    } else if (words >= 400 && words <= 800 && bullets >= 10 && uniq.length <= 1) {
+      icon = '✅'; title = 'Looking Strong!';
+      desc = `Good length (${words} words), ${bullets} bullet points, and minimal weak language. Consider adding more quantified achievements.`;
+    } else {
+      icon = '🔍'; title = 'Decent Foundation';
+      desc = `${words} words, ${bullets} bullets, ${uniq.length} weak phrases. A few targeted fixes could significantly improve your ATS performance.`;
+    }
+    document.getElementById('readVerdictIcon').textContent = icon;
+    document.getElementById('readVerdictTitle').textContent = title;
+    document.getElementById('readVerdictDesc').textContent = desc;
+  }
+
+  // ── Keyboard shortcut ──────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runATS();
+  });
+</script>
+</body>
+</html>
