@@ -202,9 +202,21 @@
       .score-pct{font-size:26px;}
       .readability-grid{grid-template-columns:1fr;}
       .nav-links{display:none;}
+      .nav-hamburger{display:flex;}
       .cta-strip{flex-direction:column;}
       .upgrade-wall{padding:32px 20px;}
     }
+    .nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;cursor:pointer;padding:6px;border-radius:7px;}
+    .nav-hamburger span{display:block;width:22px;height:2px;background:#94a3b8;border-radius:2px;transition:all .25s;}
+    .nav-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+    .nav-hamburger.open span:nth-child(2){opacity:0;}
+    .nav-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+    .mobile-nav{display:none;position:fixed;top:64px;left:0;right:0;background:rgba(7,7,15,0.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.08);z-index:99;padding:16px 24px 20px;flex-direction:column;gap:4px;}
+    .mobile-nav.open{display:flex;}
+    .mobile-nav a{display:block;padding:12px 0;font-size:15px;font-weight:600;color:#94a3b8;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.05);}
+    .mobile-nav a:last-child{border-bottom:none;}
+    .mobile-nav a:hover{color:#f1f5f9;}
+    .mobile-nav .btn-nav-mobile{margin-top:10px;display:block;text-align:center;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff !important;border-radius:10px;padding:13px;font-weight:700;border-bottom:none !important;}
   </style>
 </head>
 <body>
@@ -220,9 +232,22 @@
       <a href="/#pricing" data-i18n="nav_pricing">Pricing</a>
       <a href="/dashboard" class="btn-nav" data-i18n="nav_cta">Get Started Free →</a>
     </div>
-    <button onclick="toggleLang()" id="langToggleBtn" style="background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.12);border-radius:7px;padding:6px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">中文</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <button onclick="toggleLang()" id="langToggleBtn" style="background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.12);border-radius:7px;padding:6px 13px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">中文</button>
+      <button class="nav-hamburger" id="hamburgerBtn" onclick="toggleMobileNav()" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </div>
 </nav>
+<div class="mobile-nav" id="mobileNav">
+  <a href="/" data-i18n="nav_home">Home</a>
+  <a href="/how-it-works" data-i18n="nav_how">How It Works</a>
+  <a href="/score" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
+  <a href="/blog" data-i18n="nav_blog">Blog</a>
+  <a href="/#pricing" data-i18n="nav_pricing">Pricing</a>
+  <a href="/dashboard" class="btn-nav-mobile" data-i18n="nav_cta">Get Started Free →</a>
+</div>
 
 <!-- HERO -->
 <section class="hero">
@@ -977,6 +1002,34 @@
   // ── Keyboard shortcut ──────────────────────────────────────────────────────
   document.addEventListener('keydown', e => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runATS();
+  });
+
+  function toggleMobileNav() {
+    const nav = document.getElementById('mobileNav');
+    const btn = document.getElementById('hamburgerBtn');
+    const open = nav.classList.toggle('open');
+    btn.classList.toggle('open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+
+  // Close mobile nav on outside click
+  document.addEventListener('click', e => {
+    const nav = document.getElementById('mobileNav');
+    const btn = document.getElementById('hamburgerBtn');
+    if (nav.classList.contains('open') && !nav.contains(e.target) && !btn.contains(e.target)) {
+      nav.classList.remove('open');
+      btn.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  });
+
+  // Close mobile nav when a link is clicked
+  document.querySelectorAll('.mobile-nav a').forEach(a => {
+    a.addEventListener('click', () => {
+      document.getElementById('mobileNav').classList.remove('open');
+      document.getElementById('hamburgerBtn').classList.remove('open');
+      document.body.style.overflow = '';
+    });
   });
 </script>
 </body>
