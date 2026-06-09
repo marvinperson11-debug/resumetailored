@@ -713,8 +713,12 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
 
             <div class="input-group">
-              <label class="input-label">📄 Your Resume</label>
-              <textarea id="atsResumeInput" class="resume-textarea" style="min-height:220px;" placeholder="Paste your resume here…" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <label class="input-label" style="margin:0;">📄 Your Resume</label>
+                <button id="atsUploadBtn" onclick="document.getElementById('atsResumeFileInput').click()" class="btn btn-outline" style="font-size:12px;padding:5px 10px;">⬆ Upload File</button>
+                <input type="file" id="atsResumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleAtsResumeUpload(this)" />
+              </div>
+              <textarea id="atsResumeInput" class="resume-textarea" style="min-height:220px;" placeholder="Paste your resume here, or click Upload File to import .txt, .pdf, or .docx…" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
               <button class="btn btn-outline" style="margin-top:6px;font-size:12px;padding:6px 12px;" onclick="copyResumeToAts()">↑ Use Resume from Tailor tab</button>
             </div>
 
@@ -2705,6 +2709,44 @@
       if (!src) return showToast('No resume found in the Tailor tab. Paste your resume there first.');
       document.getElementById('atsResumeInput').value = src;
       showToast('Resume copied to ATS Scanner!');
+    }
+
+    async function handleAtsResumeUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const btn = document.getElementById('atsUploadBtn');
+      btn.textContent = 'Loading…';
+      btn.disabled = true;
+      const ext = file.name.toLowerCase().split('.').pop();
+      if (ext === 'txt') {
+        const reader = new FileReader();
+        reader.onload = e => {
+          document.getElementById('atsResumeInput').value = e.target.result;
+          btn.textContent = '✓ ' + file.name;
+          btn.disabled = false;
+          showToast('Resume loaded!');
+        };
+        reader.onerror = () => { showToast('Could not read file.'); btn.textContent = '⬆ Upload File'; btn.disabled = false; };
+        reader.readAsText(file);
+        input.value = '';
+        return;
+      }
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Extraction failed.');
+        document.getElementById('atsResumeInput').value = data.text;
+        btn.textContent = '✓ ' + file.name;
+        showToast('Resume loaded!');
+      } catch (err) {
+        showToast(err.message);
+        btn.textContent = '⬆ Upload File';
+      } finally {
+        btn.disabled = false;
+        input.value = '';
+      }
     }
 
     function copyJobToTailorAndSwitch() {
