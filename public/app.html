@@ -262,27 +262,16 @@
     <div class="auth-card" style="position:relative;">
       <button onclick="document.getElementById('authOverlay').style.display='none';pendingDownloadFn=null;" style="position:absolute;top:14px;right:14px;background:none;border:none;color:#64748b;font-size:22px;cursor:pointer;line-height:1;padding:4px;" aria-label="Close">&times;</button>
       <div class="auth-logo">ResumeTailored <span class="badge-ai">AI</span></div>
-      <h2 class="auth-heading" id="authHeading">Create Your Account</h2>
-      <p class="auth-sub" id="authSubtext">Join thousands of job seekers landing more interviews.</p>
+      <h2 class="auth-heading" id="authHeading">Welcome Back</h2>
+      <p class="auth-sub" id="authSubtext">Log in to access your dashboard.</p>
 
       <div class="auth-tabs" id="authTabs">
-        <button class="auth-tab-btn active" id="authTabSignup" onclick="switchAuthTab('signup')" data-i18n="auth_tab_signup">Sign Up</button>
-        <button class="auth-tab-btn" id="authTabLogin" onclick="switchAuthTab('login')" data-i18n="auth_tab_login">Log In</button>
-      </div>
-
-      <!-- Sign Up -->
-      <div id="authSignupForm">
-        <div class="auth-field"><input type="email" id="authEmail" placeholder="Email address" autocomplete="off" /></div>
-        <div class="auth-field"><input type="text" id="authUsername" placeholder="Choose a username" maxlength="30" autocomplete="off" /></div>
-        <div class="auth-field"><input type="password" id="authPassword" placeholder="Password (min. 6 characters)" autocomplete="new-password" /></div>
-        <div class="auth-field"><input type="password" id="authConfirmPw" placeholder="Confirm password" autocomplete="new-password" /></div>
-        <div class="auth-error" id="signupError"></div>
-        <button class="btn btn-primary btn-full" id="signupBtn" onclick="doSignup()">Create Account →</button>
-        <div class="auth-switch">Already have an account? <a onclick="switchAuthTab('login')">Log in</a></div>
+        <button class="auth-tab-btn active" id="authTabLogin" onclick="switchAuthTab('login')" data-i18n="auth_tab_login">Log In</button>
+        <button class="auth-tab-btn" id="authTabSubscribe" onclick="switchAuthTab('subscribe')" data-i18n="auth_tab_subscribe">Subscribe</button>
       </div>
 
       <!-- Log In -->
-      <div id="authLoginForm" style="display:none;">
+      <div id="authLoginForm">
         <div class="auth-field"><input type="email" id="loginEmail" placeholder="Email address" /></div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin:-4px 0 12px;">
           <label style="font-size:13px;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:6px;font-weight:600;user-select:none;">
@@ -294,7 +283,26 @@
         <div class="auth-field"><input type="password" id="loginPassword" placeholder="Password" /></div>
         <div class="auth-error" id="loginError"></div>
         <button class="btn btn-primary btn-full" id="loginBtn" onclick="doLogin()">Log In →</button>
-        <div class="auth-switch">Don't have an account? <a onclick="switchAuthTab('signup')">Sign up free</a></div>
+        <div class="auth-switch">Not a subscriber yet? <a onclick="switchAuthTab('subscribe')">See plans →</a></div>
+      </div>
+
+      <!-- Subscribe -->
+      <div id="authSubscribeForm" style="display:none;">
+        <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+          <div style="font-size:13px;font-weight:800;color:#6366F1;margin-bottom:8px;">✦ Pro — $19/month</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="font-size:12px;color:#374151;">✓ Unlimited resume tailoring &amp; cover letters</div>
+            <div style="font-size:12px;color:#374151;">✓ Unlimited ATS scans</div>
+            <div style="font-size:12px;color:#374151;">✓ LinkedIn profile optimizer</div>
+            <div style="font-size:12px;color:#374151;">✓ 40+ premium templates</div>
+            <div style="font-size:12px;color:#374151;">✓ Cancel anytime — no contracts</div>
+          </div>
+        </div>
+        <div class="auth-field"><input type="email" id="subscribeEmail" placeholder="Your email address" autocomplete="email" /></div>
+        <div class="auth-error" id="subscribeError"></div>
+        <button class="btn btn-primary btn-full" id="subscribeBtn" onclick="doModalSubscribe()">Subscribe — $19/mo →</button>
+        <p style="font-size:11px;color:#9ca3af;text-align:center;margin-top:10px;line-height:1.5;">You'll be taken to Stripe for secure checkout. Pro access activates instantly after payment.</p>
+        <div class="auth-switch">Already subscribed? <a onclick="switchAuthTab('login')">Log in →</a></div>
       </div>
 
       <!-- Forgot Password -->
@@ -1429,7 +1437,7 @@
         btn_edit: 'Edit', btn_copy: 'Copy',
         tailor_btn: 'Tailor My Resume →', tailor_btn_cover: 'Tailor My Cover Letter →',
         li_optimize_btn: 'Optimize My LinkedIn Profile →',
-        auth_tab_signup: 'Sign Up', auth_tab_login: 'Log In'
+        auth_tab_subscribe: 'Subscribe', auth_tab_login: 'Log In'
       },
       zh: {
         nav_go_pro: '升级专业版 — ¥19/月', nav_logout: '退出登录',
@@ -1464,7 +1472,7 @@
         btn_edit: '编辑', btn_copy: '复制',
         tailor_btn: '开始定制简历 →', tailor_btn_cover: '定制我的求职信 →',
         li_optimize_btn: '优化我的LinkedIn资料 →',
-        auth_tab_signup: '注册', auth_tab_login: '登录'
+        auth_tab_subscribe: '订阅', auth_tab_login: '登录'
       }
     };
 
@@ -1484,25 +1492,25 @@
       var authForgotForm = document.getElementById('authForgotForm');
       var authHeadingEl = document.getElementById('authHeading');
       var authSubtextEl = document.getElementById('authSubtext');
-      var authTabSignupEl = document.getElementById('authTabSignup');
+      var authTabSubscribeEl = document.getElementById('authTabSubscribe');
       if (authHeadingEl) {
         var isForgotVisible = authForgotForm && authForgotForm.style.display !== 'none';
-        var isSignupActive = authTabSignupEl && authTabSignupEl.classList.contains('active');
+        var isSubscribeActive = authTabSubscribeEl && authTabSubscribeEl.classList.contains('active');
         if (isForgotVisible) {
           authHeadingEl.textContent = isZh ? '忘记密码？' : 'Forgot Password?';
-        } else if (isSignupActive) {
-          authHeadingEl.textContent = isZh ? '创建你的账户' : 'Create Your Account';
-          if (authSubtextEl) authSubtextEl.textContent = isZh ? '加入数千名获得更多面试机会的求职者。' : 'Join thousands of job seekers landing more interviews.';
+        } else if (isSubscribeActive) {
+          authHeadingEl.textContent = isZh ? '升级专业版' : 'Go Pro';
+          if (authSubtextEl) authSubtextEl.textContent = isZh ? '无限次定制简历，$19/月。' : 'Unlimited tailoring, ATS scans & more — $19/mo.';
         } else {
           authHeadingEl.textContent = isZh ? '欢迎回来' : 'Welcome Back';
           if (authSubtextEl) authSubtextEl.textContent = isZh ? '登录以访问你的控制台。' : 'Log in to access your dashboard.';
         }
       }
       // 4. Auth switch text
-      var signupSwitch = document.querySelector('#authSignupForm .auth-switch');
-      if (signupSwitch) signupSwitch.innerHTML = isZh ? '已有账户？ <a onclick="switchAuthTab(\'login\')">登录</a>' : 'Already have an account? <a onclick="switchAuthTab(\'login\')">Log in</a>';
       var loginSwitch = document.querySelector('#authLoginForm .auth-switch');
-      if (loginSwitch) loginSwitch.innerHTML = isZh ? '还没有账户？ <a onclick="switchAuthTab(\'signup\')">免费注册</a>' : 'Don\'t have an account? <a onclick="switchAuthTab(\'signup\')">Sign up free</a>';
+      if (loginSwitch) loginSwitch.innerHTML = isZh ? '还没订阅？ <a onclick="switchAuthTab(\'subscribe\')">查看方案 →</a>' : 'Not a subscriber yet? <a onclick="switchAuthTab(\'subscribe\')">See plans →</a>';
+      var subscribeSwitch = document.querySelector('#authSubscribeForm .auth-switch');
+      if (subscribeSwitch) subscribeSwitch.innerHTML = isZh ? '已订阅？ <a onclick="switchAuthTab(\'login\')">登录 →</a>' : 'Already subscribed? <a onclick="switchAuthTab(\'login\')">Log in →</a>';
       var forgotSwitch = document.querySelector('#authForgotForm .auth-switch');
       if (forgotSwitch) forgotSwitch.innerHTML = '<a onclick="switchAuthTab(\'login\')">' + (isZh ? '← 返回登录' : '← Back to login') + '</a>';
       var forgotIntro = document.querySelector('#authForgotForm > p');
@@ -1511,8 +1519,8 @@
       if (forgotSuccessEl) forgotSuccessEl.textContent = isZh ? '✓ 请检查你的邮箱——重置链接已发送。' : '✓ Check your inbox — a reset link is on its way.';
       var forgotBtnEl = document.getElementById('forgotBtn');
       if (forgotBtnEl) forgotBtnEl.textContent = isZh ? '发送重置链接 →' : 'Send Reset Link →';
-      var signupBtnEl = document.getElementById('signupBtn');
-      if (signupBtnEl) signupBtnEl.textContent = isZh ? '创建账户 →' : 'Create Account →';
+      var subscribeBtnEl = document.getElementById('subscribeBtn');
+      if (subscribeBtnEl) subscribeBtnEl.textContent = isZh ? '订阅 — $19/月 →' : 'Subscribe — $19/mo →';
       var loginBtnEl = document.getElementById('loginBtn');
       if (loginBtnEl) loginBtnEl.textContent = isZh ? '登录 →' : 'Log In →';
       // 5. Remember email label & forgot link
@@ -1915,19 +1923,14 @@
       // Set download-specific messaging before showing modal
       document.getElementById('authHeading').textContent = 'Your document is ready!';
       document.getElementById('authSubtext').textContent = 'Create a free account in 5 seconds to instantly download your AI-tailored file and save your progress.';
-      switchAuthTab('signup');
+      switchAuthTab('subscribe');
       document.getElementById('authOverlay').style.display = 'flex';
     }
 
     function showAuthModal(tab) {
       pendingDownloadFn = null;
-      document.getElementById('authHeading').textContent = tab === 'login' ? 'Welcome Back' : 'Create Your Account';
-      document.getElementById('authSubtext').textContent = tab === 'login'
-        ? 'Log in to access your dashboard.'
-        : 'Join thousands of job seekers landing more interviews.';
       document.getElementById('authOverlay').style.display = 'flex';
-      if (tab === 'login') switchAuthTab('login');
-      else switchAuthTab('signup');
+      switchAuthTab(tab === 'subscribe' ? 'subscribe' : 'login');
     }
 
     function hideAuthModal() {
@@ -1945,20 +1948,22 @@
 
     function switchAuthTab(tab) {
       var isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
-      const isSignup = tab === 'signup';
-      document.getElementById('authTabSignup').classList.toggle('active', isSignup);
-      document.getElementById('authTabLogin').classList.toggle('active', !isSignup);
-      document.getElementById('authSignupForm').style.display = isSignup ? 'block' : 'none';
-      document.getElementById('authLoginForm').style.display = isSignup ? 'none' : 'block';
+      const isLogin = tab !== 'subscribe';
+      document.getElementById('authTabLogin').classList.toggle('active', isLogin);
+      document.getElementById('authTabSubscribe').classList.toggle('active', !isLogin);
+      document.getElementById('authLoginForm').style.display = isLogin ? 'block' : 'none';
+      document.getElementById('authSubscribeForm').style.display = isLogin ? 'none' : 'block';
       document.getElementById('authForgotForm').style.display = 'none';
       document.getElementById('authTabs').style.display = 'flex';
-      document.getElementById('authHeading').textContent = isSignup ? (isZh ? '创建你的账户' : 'Create Your Account') : (isZh ? '欢迎回来' : 'Welcome Back');
-      document.getElementById('authSubtext').textContent = isSignup
-        ? (isZh ? '加入数千名获得更多面试机会的求职者。' : 'Join thousands of job seekers landing more interviews.')
-        : (isZh ? '登录以访问你的控制台。' : 'Log in to access your dashboard.');
-      document.getElementById('signupError').textContent = '';
+      document.getElementById('authHeading').textContent = isLogin
+        ? (isZh ? '欢迎回来' : 'Welcome Back')
+        : (isZh ? '升级专业版' : 'Go Pro');
+      document.getElementById('authSubtext').textContent = isLogin
+        ? (isZh ? '登录以访问你的控制台。' : 'Log in to access your dashboard.')
+        : (isZh ? '无限次定制简历，$19/月。' : 'Unlimited tailoring, ATS scans & more — $19/mo.');
       document.getElementById('loginError').textContent = '';
-      if (!isSignup) {
+      if (document.getElementById('subscribeError')) document.getElementById('subscribeError').textContent = '';
+      if (isLogin) {
         const saved = localStorage.getItem('rt_remember_email');
         if (saved) {
           document.getElementById('loginEmail').value = saved;
@@ -1970,7 +1975,7 @@
     function showForgotPassword() {
       var isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
       document.getElementById('authLoginForm').style.display = 'none';
-      document.getElementById('authSignupForm').style.display = 'none';
+      document.getElementById('authSubscribeForm').style.display = 'none';
       document.getElementById('authForgotForm').style.display = 'block';
       document.getElementById('authTabs').style.display = 'none';
       document.getElementById('authHeading').textContent = isZh ? '忘记密码？' : 'Forgot Password?';
@@ -4207,12 +4212,27 @@ Aaliyah Washington`
     }
 
     function startPro() {
-      if (!getToken()) {
-        pendingPro = true;
-        showAuthModal('signup');
-      } else {
-        subscribe();
-      }
+      showAuthModal('subscribe');
+    }
+
+    async function doModalSubscribe() {
+      const email = document.getElementById('subscribeEmail').value.trim();
+      const errEl = document.getElementById('subscribeError');
+      errEl.textContent = '';
+      if (!email || !email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
+      const btn = document.getElementById('subscribeBtn');
+      btn.disabled = true;
+      btn.textContent = 'Redirecting to checkout…';
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data.url) { window.location.href = data.url; }
+        else { errEl.textContent = data.error || 'Could not start checkout. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19/mo →'; }
+      } catch { errEl.textContent = 'Connection error. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19/mo →'; }
     }
 
     function showToast(msg) {
