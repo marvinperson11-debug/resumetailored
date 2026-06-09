@@ -349,6 +349,42 @@
     }
     .chips-empty { font-size: 14px; color: #64748b; font-style: italic; }
 
+    /* SUGGESTIONS */
+    .suggestions-section {
+      margin-top: 24px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 24px 28px;
+    }
+    .suggestions-title {
+      font-size: 13px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 1px; color: #818CF8; margin-bottom: 16px;
+    }
+    .suggestion-item {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06);
+      font-size: 14px; color: #cbd5e1; line-height: 1.6;
+    }
+    .suggestion-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .suggestion-num {
+      flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+      background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
+      color: #818CF8; font-size: 12px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 1px;
+    }
+
+    /* LIMIT REACHED */
+    .limit-banner {
+      display: none; margin-top: 24px;
+      background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08));
+      border: 1px solid rgba(99,102,241,0.35);
+      border-radius: 16px; padding: 32px; text-align: center;
+    }
+    .limit-banner h3 { font-size: 20px; font-weight: 800; color: #f1f5f9; margin-bottom: 8px; }
+    .limit-banner p { font-size: 14px; color: #94a3b8; margin-bottom: 20px; }
+
     /* CTA STRIP */
     .cta-strip {
       margin-top: 32px;
@@ -552,6 +588,19 @@
 
       </div><!-- end results-grid -->
 
+      <!-- AI SUGGESTIONS -->
+      <div class="suggestions-section" id="suggestionsSection" style="display:none;">
+        <div class="suggestions-title">&#128161; AI Recommendations</div>
+        <div id="suggestionsList"></div>
+      </div>
+
+      <!-- LIMIT REACHED -->
+      <div class="limit-banner" id="limitBanner">
+        <h3>You've used your free daily ATS scan</h3>
+        <p>Upgrade to Pro for unlimited ATS scans, resume tailoring, and cover letter generation.</p>
+        <a href="/dashboard?plan=pro" class="btn-fix">Upgrade to Pro — $19/mo →</a>
+      </div>
+
       <!-- CTA STRIP -->
       <div class="cta-strip">
         <div class="cta-strip-text">
@@ -571,7 +620,7 @@
   <div class="container">
     <p class="section-eyebrow">How It Works</p>
     <h2 class="section-title">Three Steps to Your <span>ATS Score</span></h2>
-    <p class="section-sub">No account needed. Your text never leaves your browser — the analysis runs entirely client-side.</p>
+    <p class="section-sub">No account needed. Paste or upload your resume and job description — Claude AI analyzes the match in seconds.</p>
     <div class="how-grid">
       <div class="how-card">
         <div class="how-step">1</div>
@@ -655,95 +704,22 @@
     }
   }
 
-  // ─── STOP WORDS ────────────────────────────────────────────────────────────
-  const STOP_WORDS = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','can','that','this','these','those','it','its','we','you','they','he','she','our','your','their','my','about','all','also','as','into','than','then','when','who','how','what','which','not','no','up','out','so','if','each','other','more','most','such','after','before','while','through','over','work','team','role','experience','ability','strong','excellent','good','looking','seeking','required','preferred','including','must','have','will','join','help','ability','skills','knowledge']);
-
-  // ─── KEYWORD EXTRACTION ───────────────────────────────────────────────────
-  function extractKeywords(text) {
-    const lower = text.toLowerCase().replace(/[^a-z0-9\s\+\#]/g, ' ');
-    const words = lower.split(/\s+/).filter(w => w.length >= 3 && !STOP_WORDS.has(w));
-    const freq = {};
-    words.forEach(w => freq[w] = (freq[w]||0)+1);
-    // Also get 2-word phrases
-    const rawWords = lower.split(/\s+/);
-    const phrases = {};
-    for(let i=0;i<rawWords.length-1;i++){
-      const w1=rawWords[i].replace(/[^a-z0-9\+\#]/g,'');
-      const w2=rawWords[i+1].replace(/[^a-z0-9\+\#]/g,'');
-      if(w1.length>=3&&w2.length>=3&&!STOP_WORDS.has(w1)&&!STOP_WORDS.has(w2)){
-        const p=`${w1} ${w2}`;
-        phrases[p]=(phrases[p]||0)+1;
-      }
-    }
-    return {words:freq, phrases};
-  }
-
-  // ─── ATS ANALYSIS ─────────────────────────────────────────────────────────
-  function analyzeATS(resumeText, jobText) {
-    const resumeLower = resumeText.toLowerCase();
-    const {words, phrases} = extractKeywords(jobText);
-
-    // Top single keywords (length >= 4, sort by frequency)
-    const keyTerms = Object.entries(words)
-      .filter(([w]) => w.length >= 4)
-      .sort((a,b) => b[1]-a[1])
-      .slice(0, 40)
-      .map(([w]) => w);
-
-    // Top phrases
-    const keyPhrases = Object.entries(phrases)
-      .sort((a,b) => b[1]-a[1])
-      .slice(0, 15)
-      .map(([p]) => p);
-
-    const found = [], missing = [];
-    keyTerms.forEach(term => {
-      if(resumeLower.includes(term)) found.push(term);
-      else missing.push(term);
-    });
-
-    const foundPhrases = [], missingPhrases = [];
-    keyPhrases.forEach(phrase => {
-      if(resumeLower.includes(phrase)) foundPhrases.push(phrase);
-      else missingPhrases.push(phrase);
-    });
-
-    const total = found.length + missing.length;
-    const score = total > 0 ? Math.round((found.length / total) * 100) : 0;
-    return {score, found:[...foundPhrases,...found], missing:[...missingPhrases,...missing]};
-  }
-
   // ─── ANIMATE SCORE CIRCLE ─────────────────────────────────────────────────
   function animateScore(score) {
-    const circumference = 283; // 2 * pi * 45
+    const circumference = 283;
     const bar = document.getElementById('scoreBar');
     const display = document.getElementById('scoreDisplay');
-
-    // Set color based on score
-    let color;
-    if (score >= 75) color = '#34d399';       // green
-    else if (score >= 50) color = '#fbbf24';   // yellow
-    else color = '#f87171';                    // red
+    const color = score >= 75 ? '#34d399' : score >= 50 ? '#fbbf24' : '#f87171';
     bar.style.stroke = color;
-
-    // Animate dashoffset
-    const targetOffset = circumference * (1 - score / 100);
-    // Start from 283 (empty) and animate to target
     bar.style.strokeDashoffset = circumference;
-    // Trigger reflow to ensure animation plays
     bar.getBoundingClientRect();
     bar.style.transition = 'stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.4s';
-    bar.style.strokeDashoffset = targetOffset;
-
-    // Animate number counter
+    bar.style.strokeDashoffset = circumference * (1 - score / 100);
     display.textContent = '0';
-    const duration = 1000;
-    const start = performance.now();
+    const duration = 1000, start = performance.now();
     function step(now) {
       const elapsed = Math.min(now - start, duration);
-      const progress = elapsed / duration;
-      // Ease out
-      const eased = 1 - Math.pow(1 - progress, 3);
+      const eased = 1 - Math.pow(1 - elapsed / duration, 3);
       display.textContent = Math.round(eased * score);
       if (elapsed < duration) requestAnimationFrame(step);
       else display.textContent = score;
@@ -755,7 +731,7 @@
   function renderChips(containerId, keywords, chipClass) {
     const container = document.getElementById(containerId);
     container.innerHTML = '';
-    if (keywords.length === 0) {
+    if (!keywords || keywords.length === 0) {
       container.innerHTML = `<span class="chips-empty">${chipClass === 'chip-found' ? 'No matching keywords found.' : 'No missing keywords — great match!'}</span>`;
       return;
     }
@@ -767,75 +743,106 @@
     });
   }
 
-  // ─── VERDICT ──────────────────────────────────────────────────────────────
-  function getVerdict(score) {
-    if (score >= 75) return { text: '✅ Strong Match', cls: 'verdict-strong' };
-    if (score >= 50) return { text: '⚠️ Fair Match',   cls: 'verdict-fair'   };
-    return               { text: '❌ Weak Match',   cls: 'verdict-weak'   };
+  // ─── VERDICT STYLE ────────────────────────────────────────────────────────
+  function verdictStyle(verdict) {
+    if (verdict === 'Strong Match') return { text: '✅ Strong Match', cls: 'verdict-strong' };
+    if (verdict === 'Good Match')   return { text: '✓ Good Match',    cls: 'verdict-strong' };
+    if (verdict === 'Fair Match')   return { text: '⚠️ Fair Match',   cls: 'verdict-fair'   };
+    return                                  { text: '❌ Weak Match',   cls: 'verdict-weak'   };
   }
 
-  // ─── MAIN RUN HANDLER ─────────────────────────────────────────────────────
-  function runCheck() {
+  // ─── MAIN RUN HANDLER (Claude-powered) ───────────────────────────────────
+  async function runCheck() {
     const resumeText = document.getElementById('resumeInput').value.trim();
     const jobText    = document.getElementById('jobInput').value.trim();
     const errorEl    = document.getElementById('errorMsg');
     const resultsEl  = document.getElementById('resultsSection');
+    const btn        = document.getElementById('checkBtn');
 
-    // Hide old state
     errorEl.classList.remove('visible');
     resultsEl.classList.remove('visible');
+    document.getElementById('limitBanner').style.display = 'none';
+    document.getElementById('suggestionsSection').style.display = 'none';
 
-    // Validate
     if (!resumeText && !jobText) {
       errorEl.textContent = 'Please paste your resume and the job description before checking.';
-      errorEl.classList.add('visible');
-      return;
+      errorEl.classList.add('visible'); return;
     }
     if (!resumeText) {
       errorEl.textContent = 'Please paste your resume text in the left box.';
-      errorEl.classList.add('visible');
-      return;
+      errorEl.classList.add('visible'); return;
     }
     if (!jobText) {
       errorEl.textContent = 'Please paste the job description in the right box.';
-      errorEl.classList.add('visible');
-      return;
+      errorEl.classList.add('visible'); return;
     }
 
-    // Analyze
-    const {score, found, missing} = analyzeATS(resumeText, jobText);
+    btn.textContent = 'Analyzing with AI…';
+    btn.disabled = true;
 
-    // Animate score circle
-    animateScore(score);
+    try {
+      const res = await fetch('/api/ats-scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resume: resumeText, jobPosting: jobText })
+      });
 
-    // Verdict badge
-    const verdict = getVerdict(score);
-    const badge = document.getElementById('verdictBadge');
-    badge.textContent = verdict.text;
-    badge.className = `verdict-badge ${verdict.cls}`;
+      if (res.status === 402) {
+        document.getElementById('scoreDisplay').textContent = '--';
+        document.getElementById('verdictBadge').textContent = '';
+        document.getElementById('foundChips').innerHTML = '';
+        document.getElementById('missingChips').innerHTML = '';
+        document.getElementById('foundCount').textContent = '—';
+        document.getElementById('missingCount').textContent = '—';
+        document.getElementById('limitBanner').style.display = 'block';
+        resultsEl.classList.add('visible');
+        setTimeout(() => resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+        return;
+      }
 
-    // Keyword counts
-    document.getElementById('foundCount').textContent = found.length;
-    document.getElementById('missingCount').textContent = missing.length;
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        errorEl.textContent = d.error || 'Analysis failed. Please try again.';
+        errorEl.classList.add('visible'); return;
+      }
 
-    // Render chips
-    renderChips('foundChips',   found,   'chip-found');
-    renderChips('missingChips', missing, 'chip-missing');
+      const data = await res.json();
+      const { score, verdict, matched, missing, suggestions } = data;
 
-    // Show results
-    resultsEl.classList.add('visible');
+      animateScore(score);
 
-    // Scroll results into view smoothly
-    setTimeout(() => {
-      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 80);
+      const v = verdictStyle(verdict);
+      const badge = document.getElementById('verdictBadge');
+      badge.textContent = v.text;
+      badge.className = `verdict-badge ${v.cls}`;
+
+      document.getElementById('foundCount').textContent = (matched || []).length;
+      document.getElementById('missingCount').textContent = (missing || []).length;
+      renderChips('foundChips',   matched,  'chip-found');
+      renderChips('missingChips', missing,  'chip-missing');
+
+      if (suggestions && suggestions.length) {
+        document.getElementById('suggestionsList').innerHTML = suggestions.map((s, i) =>
+          `<div class="suggestion-item"><span class="suggestion-num">${i+1}</span><span>${s}</span></div>`
+        ).join('');
+        document.getElementById('suggestionsSection').style.display = 'block';
+      }
+
+      resultsEl.classList.add('visible');
+      setTimeout(() => resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+
+    } catch(e) {
+      errorEl.textContent = 'Could not reach the server. Check your connection and try again.';
+      errorEl.classList.add('visible');
+    } finally {
+      btn.textContent = 'Check ATS Score →';
+      btn.disabled = false;
+    }
   }
 
-  // Allow Enter key shortcut from textareas (Ctrl+Enter)
+  // Ctrl+Enter shortcut
   document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-      runCheck();
-    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runCheck();
   });
 </script>
 </body>
