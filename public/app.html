@@ -344,6 +344,11 @@
           <span style="flex:1;text-align:left;" data-i18n="sidebar_linkedin">LinkedIn Optimizer</span>
           <span style="background:#0077b5;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
         </button>
+        <button class="sidebar-btn" onclick="showTab('ats')" id="tab-ats" data-label="ATS">
+          <span class="sidebar-icon">🎯</span>
+          <span style="flex:1;text-align:left;" data-i18n="sidebar_ats">ATS Scanner</span>
+          <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">∞ PRO</span>
+        </button>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label" data-i18n="sidebar_careerhub">Career Hub</div>
@@ -676,6 +681,109 @@
         <!-- Limit / upsell banners -->
         <div class="upsell" id="linkedinLimitBanner" style="display:none;margin-top:20px;">
           <p>You've used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19/month.</p>
+          <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: ATS SCANNER ═══ -->
+      <div class="tab-content" id="panel-ats">
+        <div class="panel-header" style="border-bottom:3px solid #6366F1;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <div style="width:44px;height:44px;background:linear-gradient(135deg,#6366F1,#8B5CF6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎯</div>
+            <div>
+              <h1 style="color:#6366F1;">ATS Match Scanner</h1>
+              <span style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">∞ UNLIMITED FOR PRO</span>
+            </div>
+          </div>
+          <p>Paste your resume and a job posting — get an ATS keyword match score, see exactly which keywords are missing, and receive 5 specific AI rewrite suggestions to close the gap.</p>
+        </div>
+
+        <div id="atsProStatus" style="display:none;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#6366F1;font-weight:600;"></div>
+
+        <div class="input-section">
+          <!-- Two-column inputs -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+            <div class="input-group">
+              <label class="input-label">📄 Your Resume</label>
+              <textarea id="atsResumeInput" class="resume-textarea" style="min-height:220px;" placeholder="Paste your resume here…" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+              <button class="btn btn-outline" style="margin-top:6px;font-size:12px;padding:6px 12px;" onclick="copyResumeToAts()">↑ Use Resume from Tailor tab</button>
+            </div>
+
+            <div class="input-group">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <label class="input-label" style="margin:0;">📋 Job Description</label>
+                <div style="display:flex;gap:3px;background:rgba(0,0,0,0.06);border-radius:7px;padding:2px;">
+                  <button id="atsJmtPaste" onclick="setAtsJobMode('paste')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#6366F1;color:#fff;font-family:inherit;">Paste</button>
+                  <button id="atsJmtUrl" onclick="setAtsJobMode('url')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:#6b7280;font-family:inherit;">🔗 URL</button>
+                </div>
+              </div>
+              <textarea id="atsJobInput" class="resume-textarea" style="min-height:220px;" placeholder="Paste the full job description here…" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+              <div id="atsUrlPane" style="display:none;">
+                <div style="display:flex;gap:8px;margin-top:6px;">
+                  <input type="url" id="atsUrlInput" style="flex:1;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;" placeholder="https://www.linkedin.com/jobs/view/…" spellcheck="false" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')fetchAtsJobUrl()" />
+                  <button onclick="fetchAtsJobUrl()" id="atsFetchBtn" style="padding:9px 14px;border-radius:8px;border:none;background:#6366F1;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Fetch →</button>
+                </div>
+                <div id="atsUrlStatus" style="font-size:12px;color:#6b7280;margin-top:5px;min-height:16px;"></div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">LinkedIn · Indeed · Glassdoor · Lever · Greenhouse · Workday · and more</div>
+              </div>
+            </div>
+
+          </div>
+
+          <button class="btn btn-primary" id="atsScanBtn" onclick="runDashboardATS()" style="margin-top:16px;width:100%;padding:14px;background:linear-gradient(135deg,#6366F1,#8B5CF6);border:none;">
+            Analyze ATS Match →
+          </button>
+        </div>
+
+        <!-- Results -->
+        <div id="atsDashResults" style="display:none;margin-top:28px;border-top:1px solid #e5e7eb;padding-top:24px;">
+
+          <!-- Score card -->
+          <div style="display:flex;align-items:center;gap:24px;margin-bottom:24px;flex-wrap:wrap;">
+            <div style="text-align:center;">
+              <div id="atsDashScoreNum" style="font-size:52px;font-weight:900;line-height:1;color:#6366F1;">—</div>
+              <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;">ATS Score</div>
+            </div>
+            <div>
+              <div id="atsDashVerdict" style="font-size:18px;font-weight:800;color:#111827;margin-bottom:4px;"></div>
+              <div id="atsDashBar" style="width:220px;height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden;">
+                <div id="atsDashBarFill" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#6366F1,#34d399);transition:width .5s;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Keywords grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+            <div>
+              <div style="font-size:13px;font-weight:800;color:#16a34a;margin-bottom:8px;">✓ Matched Keywords</div>
+              <div id="atsDashMatched" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:800;color:#dc2626;margin-bottom:8px;">✕ Missing Keywords</div>
+              <div id="atsDashMissing" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            </div>
+          </div>
+
+          <!-- AI Suggestions -->
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#6366F1;margin-bottom:10px;">💡 AI Rewrite Suggestions</div>
+            <div id="atsDashSuggestions" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+
+          <!-- CTA: use Tailor tab to fix -->
+          <div style="margin-top:24px;background:linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.06));border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:14px;font-weight:800;color:#111827;margin-bottom:3px;">Fix missing keywords automatically →</div>
+              <div style="font-size:13px;color:#6b7280;">Use the Tailor tab to let AI rewrite your resume with all the right keywords in 30 seconds.</div>
+            </div>
+            <button class="btn btn-primary" onclick="copyJobToTailorAndSwitch()" style="white-space:nowrap;">Tailor My Resume →</button>
+          </div>
+        </div>
+
+        <!-- Free limit banner -->
+        <div class="upsell" id="atsLimitBanner" style="display:none;margin-top:20px;">
+          <p>You've used your <strong>free daily ATS scan</strong>. Pro members get unlimited scans — upgrade for $19/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -2522,6 +2630,166 @@
         document.execCommand('copy');
         document.body.removeChild(ta);
         showToast('Copied!');
+      });
+    }
+
+    // ── ATS Scanner (dashboard) ────────────────────────────────────────────────
+    const ATS_ALLOWED_DOMAINS = [
+      'linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com',
+      'careerbuilder.com','dice.com','theladders.com','simplyhired.com','snagajob.com',
+      'flexjobs.com','themuse.com','hired.com','wellfound.com','angel.co',
+      'builtin.com','remote.co','weworkremotely.com','remoteok.com','remoteok.io',
+      'lever.co','greenhouse.io','ashbyhq.com','bamboohr.com','myworkdayjobs.com',
+      'workday.com','icims.com','smartrecruiters.com','jobvite.com','taleo.net',
+      'breezy.hr','workable.com','recruitee.com','pinpoint.com','teamtailor.com',
+      'handshake.com','wayup.com','recruiter.com','zippia.com','otta.com',
+      'techinasia.com','careers.google.com','jobs.apple.com','microsoft.com',
+      'amazon.jobs','meta.com','netflix.jobs',
+      'zhipin.com','liepin.com','zhaopin.com','lagou.com','51job.com','maimai.cn',
+    ];
+
+    function isAtsAllowedUrl(raw) {
+      try {
+        const u = new URL(raw);
+        if (u.protocol !== 'https:') return false;
+        const host = u.hostname.replace(/^www\./, '');
+        return ATS_ALLOWED_DOMAINS.some(d => host === d || host.endsWith('.' + d));
+      } catch { return false; }
+    }
+
+    function setAtsJobMode(mode) {
+      const ta = document.getElementById('atsJobInput');
+      const urlPane = document.getElementById('atsUrlPane');
+      const btnP = document.getElementById('atsJmtPaste');
+      const btnU = document.getElementById('atsJmtUrl');
+      if (mode === 'url') {
+        ta.style.display = 'none';
+        urlPane.style.display = 'block';
+        btnP.style.background = 'transparent'; btnP.style.color = '#6b7280';
+        btnU.style.background = '#6366F1';     btnU.style.color = '#fff';
+      } else {
+        ta.style.display = '';
+        urlPane.style.display = 'none';
+        btnP.style.background = '#6366F1'; btnP.style.color = '#fff';
+        btnU.style.background = 'transparent'; btnU.style.color = '#6b7280';
+      }
+    }
+
+    async function fetchAtsJobUrl() {
+      const raw = document.getElementById('atsUrlInput').value.trim();
+      const status = document.getElementById('atsUrlStatus');
+      const btn = document.getElementById('atsFetchBtn');
+      if (!raw) return;
+      if (!raw.startsWith('https://')) { status.textContent = 'Please enter a URL starting with https://'; return; }
+      if (!isAtsAllowedUrl(raw)) { status.textContent = 'Only job board URLs are accepted. Paste the job text directly if your board isn\'t listed.'; return; }
+      btn.disabled = true; status.textContent = 'Fetching job posting…';
+      try {
+        const res = await fetch('/api/fetch-job-url', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ url: raw }) });
+        const data = await res.json();
+        if (!res.ok) { status.textContent = '✗ ' + (data.error || 'Failed to fetch.'); return; }
+        document.getElementById('atsJobInput').value = data.text;
+        setAtsJobMode('paste');
+        status.textContent = '✓ Job description loaded!';
+        setTimeout(() => { status.textContent = ''; }, 3000);
+      } catch { status.textContent = '✗ Network error — please try again.'; }
+      finally { btn.disabled = false; }
+    }
+
+    function copyResumeToAts() {
+      const src = document.getElementById('resume').value.trim();
+      if (!src) return showToast('No resume found in the Tailor tab. Paste your resume there first.');
+      document.getElementById('atsResumeInput').value = src;
+      showToast('Resume copied to ATS Scanner!');
+    }
+
+    function copyJobToTailorAndSwitch() {
+      const job = document.getElementById('atsJobInput').value.trim();
+      if (job) document.getElementById('job').value = job;
+      showTab('tailor');
+    }
+
+    async function runDashboardATS() {
+      const resume = document.getElementById('atsResumeInput').value.trim();
+      const job    = document.getElementById('atsJobInput').value.trim();
+      if (!resume) return showToast('Please paste your resume in the left box.');
+      if (!job)    return showToast('Please paste the job description in the right box.');
+
+      const btn = document.getElementById('atsScanBtn');
+      btn.disabled = true;
+      btn.textContent = 'Analyzing with Claude AI…';
+      document.getElementById('atsDashResults').style.display = 'none';
+      document.getElementById('atsLimitBanner').style.display = 'none';
+      document.getElementById('atsProStatus').style.display = 'none';
+
+      try {
+        const res = await fetch('/api/ats-scan', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ resume, jobPosting: job })
+        });
+        const data = await res.json();
+
+        if (res.status === 402) {
+          document.getElementById('atsLimitBanner').style.display = 'block';
+          document.getElementById('atsProStatus').style.display = 'block';
+          document.getElementById('atsProStatus').textContent = '✗ Free daily scan used — upgrade to Pro for unlimited ATS scans';
+          document.getElementById('atsProStatus').style.color = '#dc2626';
+          return;
+        }
+        if (!res.ok) throw new Error(data.error || 'Analysis failed.');
+
+        renderAtsDashResults(data);
+        document.getElementById('atsDashResults').style.display = 'block';
+        document.getElementById('atsProStatus').style.display = 'block';
+        document.getElementById('atsProStatus').textContent = '✓ Analysis complete';
+        document.getElementById('atsProStatus').style.color = '#16a34a';
+      } catch(e) {
+        showToast(e.message || 'Something went wrong. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Analyze ATS Match →';
+      }
+    }
+
+    function renderAtsDashResults(d) {
+      // Score
+      document.getElementById('atsDashScoreNum').textContent = d.score;
+      const color = d.score >= 80 ? '#16a34a' : d.score >= 60 ? '#2563eb' : d.score >= 40 ? '#d97706' : '#dc2626';
+      document.getElementById('atsDashScoreNum').style.color = color;
+      document.getElementById('atsDashVerdict').textContent = d.verdict || '';
+      document.getElementById('atsDashBarFill').style.width = d.score + '%';
+      document.getElementById('atsDashBarFill').style.background = `linear-gradient(90deg,${color},${color}aa)`;
+
+      // Matched keywords
+      const matchedEl = document.getElementById('atsDashMatched');
+      matchedEl.innerHTML = '';
+      (d.matched || []).forEach(kw => {
+        const chip = document.createElement('span');
+        chip.textContent = kw;
+        chip.style.cssText = 'display:inline-block;padding:3px 10px;background:rgba(22,163,74,0.1);color:#16a34a;border-radius:99px;font-size:12px;font-weight:600;';
+        matchedEl.appendChild(chip);
+      });
+      if (!d.matched?.length) matchedEl.innerHTML = '<span style="font-size:12px;color:#9ca3af;">None found.</span>';
+
+      // Missing keywords
+      const missingEl = document.getElementById('atsDashMissing');
+      missingEl.innerHTML = '';
+      (d.missing || []).forEach(kw => {
+        const chip = document.createElement('span');
+        chip.textContent = kw;
+        chip.style.cssText = 'display:inline-block;padding:3px 10px;background:rgba(220,38,38,0.1);color:#dc2626;border-radius:99px;font-size:12px;font-weight:600;';
+        missingEl.appendChild(chip);
+      });
+      if (!d.missing?.length) missingEl.innerHTML = '<span style="font-size:12px;color:#16a34a;">No missing keywords — great match!</span>';
+
+      // Suggestions
+      const sugEl = document.getElementById('atsDashSuggestions');
+      sugEl.innerHTML = '';
+      (d.suggestions || []).forEach((s, i) => {
+        const div = document.createElement('div');
+        div.style.cssText = 'background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;font-size:13px;color:#374151;line-height:1.6;';
+        div.innerHTML = `<span style="font-weight:700;color:#6366F1;margin-right:6px;">${i + 1}.</span>${s}`;
+        sugEl.appendChild(div);
       });
     }
 
