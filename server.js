@@ -148,19 +148,27 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+app.use(express.static(path.join(__dirname, 'public'), {
+  extensions: ['html'],
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    else if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    else if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  }
+}));
 
 // Clean URL aliases â€” /dashboard, /login, /signup all serve app.html
 const appHtml = path.join(__dirname, 'public', 'app.html');
-app.get('/dashboard',    (req, res) => res.sendFile(appHtml));
-app.get('/login',        (req, res) => res.sendFile(appHtml));
-app.get('/signup',       (req, res) => res.sendFile(appHtml));
+const _htmlUtf8 = { headers: { 'Content-Type': 'text/html; charset=utf-8' } };
+app.get('/dashboard',    (req, res) => res.sendFile(appHtml, _htmlUtf8));
+app.get('/login',        (req, res) => res.sendFile(appHtml, _htmlUtf8));
+app.get('/signup',       (req, res) => res.sendFile(appHtml, _htmlUtf8));
 app.get('/app',          (req, res) => res.redirect(301, '/dashboard'));
 const aboutHtml = path.join(__dirname, 'public', 'about.html');
-app.get('/how-it-works', (req, res) => res.sendFile(aboutHtml));
+app.get('/how-it-works', (req, res) => res.sendFile(aboutHtml, _htmlUtf8));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
-app.get('/blog',         (req, res) => res.sendFile(blogIndexHtml));
+app.get('/blog',         (req, res) => res.sendFile(blogIndexHtml, _htmlUtf8));
 
 // Raw body needed for Stripe webhook verification
 app.use('/webhook', express.raw({ type: 'application/json' }));
