@@ -2198,19 +2198,22 @@
         renderDownloadButtons();
         const badge = document.getElementById('statusBadge');
         const navStatus = document.getElementById('navStatus');
+        const _isZhS = (localStorage.getItem('rt_lang') || 'en') === 'zh';
 
         const mobileBanner = document.getElementById('mobileUpgradeBanner');
         if (isSubscriberFlag) {
-          badge.innerHTML = '<span class="free-badge pro-badge">✦ Pro — Unlimited Tailorings Active</span>';
-          navStatus.innerHTML = '<span class="free-badge pro-badge" style="font-size:12px;">✦ Pro</span>';
+          badge.innerHTML = `<span class="free-badge pro-badge">✦ ${_isZhS ? '专业版 — 无限次定制已激活' : 'Pro — Unlimited Tailorings Active'}</span>`;
+          navStatus.innerHTML = `<span class="free-badge pro-badge" style="font-size:12px;">✦ ${_isZhS ? '专业版' : 'Pro'}</span>`;
           document.getElementById('sidebarProBox').style.display = 'none';
           document.getElementById('goProNavBtn').style.display = 'none';
           if (mobileBanner) mobileBanner.style.display = 'none';
         } else {
           const parts = [];
-          if (freeResumesLeft > 0) parts.push('1 free resume');
-          if (freeCoverLettersLeft > 0) parts.push('1 free cover letter');
-          const badgeText = parts.length > 0 ? parts.join(' + ') + ' available today' : '0 free uses left today';
+          if (freeResumesLeft > 0) parts.push(_isZhS ? '1次免费简历定制' : '1 free resume');
+          if (freeCoverLettersLeft > 0) parts.push(_isZhS ? '1次免费求职信' : '1 free cover letter');
+          const badgeText = parts.length > 0
+            ? parts.join(' + ') + (_isZhS ? '（今日可用）' : ' available today')
+            : (_isZhS ? '今日免费次数已用完' : '0 free uses left today');
           badge.innerHTML = `<span class="free-badge">${badgeText}</span>`;
           document.getElementById('sidebarProBox').style.display = '';
           if (mobileBanner) mobileBanner.style.display = '';
@@ -3797,9 +3800,40 @@
     function renderTemplateGallery(){
       const list=_activeType==='resume'?resumeTemplates:coverTemplates;
       const gallery=document.getElementById('templateGallery');
+      const _isZhG=(localStorage.getItem('rt_lang')||'en')==='zh';
+      const _tplNamesZh={
+        'Classic':'经典','Classic Forest':'经典 森林','Classic Ruby':'经典 红宝石','Classic Slate':'经典 石板灰',
+        'Classic Royal':'经典 皇家蓝','Classic Teal':'经典 青绿','Classic Espresso':'经典 浓咖啡','Classic Steel':'经典 钢铁灰',
+        'Executive':'高管','Executive Amber':'高管 琥珀','Executive Indigo':'高管 靛蓝','Executive Slate':'高管 石板灰',
+        'Executive Steel':'高管 钢铁灰','Executive Navy':'高管 海军蓝','Executive Sage':'高管 鼠尾草绿','Executive Rose':'高管 玫瑰红',
+        'Modern':'现代','Modern Ocean':'现代 海洋蓝','Modern Coral':'现代 珊瑚橙','Modern Violet':'现代 紫罗兰',
+        'Modern Teal':'现代 青绿','Modern Gold':'现代 金色','Modern Rose':'现代 玫瑰红','Modern Slate':'现代 石板灰',
+        'Sidebar':'侧边栏','Sidebar Navy':'侧边栏 海军蓝','Sidebar Forest':'侧边栏 森林','Sidebar Crimson':'侧边栏 深红',
+        'Sidebar Teal':'侧边栏 青绿','Sidebar Amber':'侧边栏 琥珀','Sidebar Indigo':'侧边栏 靛蓝','Sidebar Charcoal':'侧边栏 炭灰',
+        'Minimal':'简约','Minimal Midnight':'简约 午夜蓝','Minimal Sage':'简约 鼠尾草绿','Minimal Graphite':'简约 石墨灰',
+        'Minimal Cobalt':'简约 钴蓝','Minimal Terra':'简约 赭土红','Minimal Emerald':'简约 翡翠绿','Minimal Shadow':'简约 暗影灰',
+        'TwoCol Classic':'双栏 经典','TwoCol Forest':'双栏 森林','TwoCol Navy':'双栏 海军蓝','TwoCol Crimson':'双栏 深红',
+        'TwoCol Teal':'双栏 青绿','TwoCol Violet':'双栏 紫罗兰','TwoCol Gold':'双栏 金色','TwoCol Slate':'双栏 石板灰',
+        'Banner Cobalt':'横幅 钴蓝','Banner Forest':'横幅 森林','Banner Crimson':'横幅 深红','Banner Plum':'横幅 李子紫',
+        'Banner Teal':'横幅 青绿','Banner Amber':'横幅 琥珀','Banner Slate':'横幅 石板灰','Banner Sage':'横幅 鼠尾草绿',
+        'Formal':'正式','Formal Forest':'正式 森林','Formal Ruby':'正式 红宝石','Formal Slate':'正式 石板灰',
+        'Formal Royal':'正式 皇家蓝','Formal Sage':'正式 鼠尾草绿','Formal Crimson':'正式 深红','Formal Charcoal':'正式 炭灰',
+        'Bold':'粗体','Bold Navy':'粗体 海军蓝','Bold Teal':'粗体 青绿','Bold Violet':'粗体 紫罗兰',
+        'Bold Forest':'粗体 森林','Bold Crimson':'粗体 深红','Bold Slate':'粗体 石板灰','Bold Plum':'粗体 李子紫',
+        'Boxed':'框架','Boxed Cobalt':'框架 钴蓝','Boxed Burgundy':'框架 勃艮第红','Boxed Forest':'框架 森林',
+        'Boxed Navy':'框架 海军蓝','Boxed Crimson':'框架 深红','Boxed Sage':'框架 鼠尾草绿','Boxed Amber':'框架 琥珀',
+        'Split':'分栏','Split Forest':'分栏 森林','Split Amber':'分栏 琥珀','Split Charcoal':'分栏 炭灰',
+        'Split Ocean':'分栏 海洋蓝','Split Crimson':'分栏 深红','Split Sage':'分栏 鼠尾草绿','Split Plum':'分栏 李子紫',
+        'Clean':'简洁','Clean Ocean':'简洁 海洋蓝','Clean Sage':'简洁 鼠尾草绿','Clean Rose':'简洁 玫瑰红',
+        'Clean Teal':'简洁 青绿','Clean Crimson':'简洁 深红','Clean Forest':'简洁 森林','Clean Midnight':'简洁 午夜蓝',
+        'Letter Modern Blue':'现代信件 蓝色','Letter Modern Forest':'现代信件 森林','Letter Modern Crimson':'现代信件 深红',
+        'Letter Modern Plum':'现代信件 李子紫','Letter Modern Teal':'现代信件 青绿','Letter Modern Amber':'现代信件 琥珀',
+        'Letter Modern Slate':'现代信件 石板灰','Letter Modern Cobalt':'现代信件 钴蓝'
+      };
       gallery.innerHTML=list.map(tpl=>{
         const locked=!tpl.free&&!isSubscriberFlag;
         const html=tpl.fn(tpl.c);
+        const label=_isZhG?(_tplNamesZh[tpl.name]||tpl.name):tpl.name;
         const badge=tpl.free
           ?`<div class="tpl-free-badge">FREE</div>`
           :`<div class="tpl-lock-overlay"><span style="font-size:20px;">🔒</span><span class="tpl-pro-badge">PRO</span></div>`;
@@ -3808,7 +3842,7 @@
             <div class="tpl-preview-inner">${html}</div>
             ${badge}
           </div>
-          <div class="tpl-card-label">${tpl.name}</div>
+          <div class="tpl-card-label">${label}</div>
         </div>`;
       }).join('');
       updateTplScales();
