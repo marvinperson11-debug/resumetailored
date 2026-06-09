@@ -894,7 +894,7 @@
           <!-- FREE: Classic -->
           <div class="template-card">
             <div class="tcard-header">
-              <div style="background:#fff;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+              <div style="background:#fff;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;" id="tpl-resume-classic">
                 <div style="text-align:center;border-bottom:1.5px solid #1e293b;padding-bottom:5px;margin-bottom:5px;">
                   <div style="font-size:9.5px;font-weight:700;letter-spacing:2px;color:#0f172a;text-transform:uppercase;">ALEX JOHNSON</div>
                   <div style="font-size:5.5px;color:#475569;margin-top:2px;">alex@email.com · (555) 234-5678 · New York, NY</div>
@@ -915,7 +915,7 @@
           <!-- FREE: Modern -->
           <div class="template-card">
             <div class="tcard-header">
-              <div style="background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+              <div style="background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;" id="tpl-resume-modern">
                 <div style="background:#2563eb;padding:10px 10px 8px;">
                   <div style="font-size:9.5px;font-weight:800;color:#fff;letter-spacing:.5px;">SARAH CHEN</div>
                   <div style="font-size:5.5px;color:#bfdbfe;margin-top:2px;">sarah@email.com · (555) 987-6543 · San Francisco, CA</div>
@@ -1266,7 +1266,7 @@
           <!-- FREE: Classic -->
           <div class="template-card">
             <div class="tcard-header">
-              <div style="background:#fff;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;">
+              <div style="background:#fff;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;" id="tpl-cl-classic">
                 <div style="font-size:6px;color:#6b7280;margin-bottom:5px;">May 28, 2026</div>
                 <div style="font-size:6.5px;font-weight:600;color:#111827;margin-bottom:5px;">Dear Hiring Manager,</div>
                 <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:4px;">When I saw your opening for Senior Engineer, I immediately thought of the 42% latency reduction I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale your team operates at.</div>
@@ -1283,7 +1283,7 @@
           <!-- FREE: Modern -->
           <div class="template-card">
             <div class="tcard-header">
-              <div style="background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
+              <div style="background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;" id="tpl-cl-modern">
                 <div style="background:#2563eb;padding:8px 10px;">
                   <div style="font-size:8px;font-weight:800;color:#fff;">SARAH CHEN</div>
                   <div style="font-size:5px;color:#bfdbfe;">sarah@email.com · Software Engineer</div>
@@ -2594,6 +2594,38 @@
       if ((t === 'Pro Only' || t === '仅限专业版') && el.children.length === 0) {
         el.textContent = isZh ? '仅限专业版' : 'Pro Only';
       }
+    });
+
+    // Template card names
+    var _cnZH = {'Classic':'经典','Modern':'现代','Executive':'高管','Minimal':'简约',
+      'Creative':'创意','Professional':'专业','Tech':'科技','Elegant':'优雅',
+      'Bold':'粗犷','Contemporary':'当代','Academic':'学术','Compact':'紧凑',
+      'Sharp':'锐利','Neutral':'中性','Vivid':'活力'};
+    var _cnEN = {};
+    Object.keys(_cnZH).forEach(function(k){_cnEN[_cnZH[k]]=k;});
+    document.querySelectorAll('.tcard-name').forEach(function(el) {
+      var cur = el.textContent.trim();
+      var translated = isZh ? _cnZH[cur] : _cnEN[cur];
+      if (translated) el.textContent = translated;
+    });
+
+    // FREE template preview content (4 visible cards)
+    var _tEN = {
+      rc: '<div style="text-align:center;border-bottom:1.5px solid #1e293b;padding-bottom:5px;margin-bottom:5px;"><div style="font-size:9.5px;font-weight:700;letter-spacing:2px;color:#0f172a;text-transform:uppercase;">ALEX JOHNSON</div><div style="font-size:5.5px;color:#475569;margin-top:2px;">alex@email.com · (555) 234-5678 · New York, NY</div></div><div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">Experience</div><div style="font-size:6.5px;font-weight:700;color:#0f172a;margin-bottom:1px;">Sr. Marketing Manager · TechCorp Inc.</div><div style="font-size:5.5px;color:#475569;line-height:1.4;margin-bottom:3px;">• Grew pipeline 34% YoY · $2.1M attributed revenue<br>• Led 8-person cross-functional team across 4 products</div><div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">Skills</div><div style="font-size:5.5px;color:#475569;">Python · SQL · Tableau · Salesforce · HubSpot</div>',
+      rm: '<div style="background:#2563eb;padding:10px 10px 8px;"><div style="font-size:9.5px;font-weight:800;color:#fff;letter-spacing:.5px;">SARAH CHEN</div><div style="font-size:5.5px;color:#bfdbfe;margin-top:2px;">sarah@email.com · (555) 987-6543 · San Francisco, CA</div></div><div style="padding:7px 10px;"><div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div><div style="font-size:6.5px;font-weight:700;color:#111827;">Software Engineer · Stripe</div><div style="font-size:5.5px;color:#4b5563;line-height:1.4;margin-bottom:3px;">• API handling 50M+ daily transactions<br>• Reduced latency 42% via pipeline rebuild</div><div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Skills</div><div style="font-size:5.5px;color:#4b5563;">TypeScript · React · Node.js · AWS · PostgreSQL</div></div>',
+      cc: '<div style="font-size:6px;color:#6b7280;margin-bottom:5px;">May 28, 2026</div><div style="font-size:6.5px;font-weight:600;color:#111827;margin-bottom:5px;">Dear Hiring Manager,</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:4px;">When I saw your opening for Senior Engineer, I immediately thought of the 42% latency reduction I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale your team operates at.</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:5px;">At TechCorp, I led a 5-person team rebuilding our checkout flow in React, driving 18% higher conversion and $1.8M in added annual revenue...</div><div style="font-size:5.5px;color:#6b7280;">Sincerely,<br><span style="font-weight:600;color:#374151;">Alex Johnson</span></div>',
+      cm: '<div style="background:#2563eb;padding:8px 10px;"><div style="font-size:8px;font-weight:800;color:#fff;">SARAH CHEN</div><div style="font-size:5px;color:#bfdbfe;">sarah@email.com · Software Engineer</div></div><div style="padding:8px 10px;"><div style="font-size:5.5px;font-weight:600;color:#374151;margin-bottom:4px;">Dear Ms. Rodriguez,</div><div style="font-size:5.5px;color:#4b5563;line-height:1.55;margin-bottom:3px;">Stripe\'s engineering culture mirrors exactly how I led TechCorp\'s infra team to cut downtime by 60% — through obsessive ownership and data-driven decisions.</div><div style="font-size:5.5px;color:#4b5563;line-height:1.55;">My API work at scale (50M+ daily txns) directly maps to your reliability goals...</div></div>'
+    };
+    var _tZH = {
+      rc: '<div style="text-align:center;border-bottom:1.5px solid #1e293b;padding-bottom:5px;margin-bottom:5px;"><div style="font-size:9.5px;font-weight:700;letter-spacing:2px;color:#0f172a;">李明华</div><div style="font-size:5.5px;color:#475569;margin-top:2px;">lmh@email.com · 138-0010-1234 · 上海市</div></div><div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">工作经历</div><div style="font-size:6.5px;font-weight:700;color:#0f172a;margin-bottom:1px;">高级市场总监 · 腾讯科技</div><div style="font-size:5.5px;color:#475569;line-height:1.4;margin-bottom:3px;">• 年度营收增长34% · 创造2,100万元营收<br>• 领导8人跨职能团队管理4条产品线</div><div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">技能</div><div style="font-size:5.5px;color:#475569;">Python · SQL · Tableau · Salesforce · HubSpot</div>',
+      rm: '<div style="background:#2563eb;padding:10px 10px 8px;"><div style="font-size:9.5px;font-weight:800;color:#fff;letter-spacing:.5px;">张晓雯</div><div style="font-size:5.5px;color:#bfdbfe;margin-top:2px;">xzhang@email.com · 139-0020-5678 · 北京市</div></div><div style="padding:7px 10px;"><div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">工作经历</div><div style="font-size:6.5px;font-weight:700;color:#111827;">软件工程师 · 字节跳动</div><div style="font-size:5.5px;color:#4b5563;line-height:1.4;margin-bottom:3px;">• API每日处理5,000万+次请求<br>• 重构管道延迟降低42%</div><div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">技能</div><div style="font-size:5.5px;color:#4b5563;">TypeScript · React · Node.js · AWS · PostgreSQL</div></div>',
+      cc: '<div style="font-size:6px;color:#6b7280;margin-bottom:5px;">2026年5月28日</div><div style="font-size:6.5px;font-weight:600;color:#111827;margin-bottom:5px;">尊敬的招聘负责人，</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:4px;">看到贵公司高级工程师职位，我立刻想到了自己在重构支付管道时实现的42%延迟降低——正是贵团队的运营规模。</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:5px;">在腾讯，我带领5人团队重建支付结算系统，使转化率提升18%，年营收增加1,800万元...</div><div style="font-size:5.5px;color:#6b7280;">此致，<br><span style="font-weight:600;color:#374151;">李明华</span></div>',
+      cm: '<div style="background:#2563eb;padding:8px 10px;"><div style="font-size:8px;font-weight:800;color:#fff;">张晓雯</div><div style="font-size:5px;color:#bfdbfe;">xzhang@email.com · 软件工程师</div></div><div style="padding:8px 10px;"><div style="font-size:5.5px;font-weight:600;color:#374151;margin-bottom:4px;">尊敬的王女士，</div><div style="font-size:5.5px;color:#4b5563;line-height:1.55;margin-bottom:3px;">字节跳动的工程文化与我带领腾讯基础架构团队将停机降低60%的方式高度契合——通过极致的主人翁精神和数据驱动决策。</div><div style="font-size:5.5px;color:#4b5563;line-height:1.55;">我在大规模API的经验（每日5,000万+次请求）与贵公司的可靠性目标直接对应...</div></div>'
+    };
+    var _tplMap = {'tpl-resume-classic':'rc','tpl-resume-modern':'rm','tpl-cl-classic':'cc','tpl-cl-modern':'cm'};
+    Object.keys(_tplMap).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.innerHTML = isZh ? _tZH[_tplMap[id]] : _tEN[_tplMap[id]];
     });
 
     // 4. Contact modal placeholders
