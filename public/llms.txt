@@ -5,6 +5,9 @@
 ## About
 
 - [How It Works](https://resumetailored.com/how-it-works): How ResumeTailored AI tailors your resume using Claude AI
+- [ATS Resume Checker](https://resumetailored.com/score): Free ATS resume scanner — paste your resume and job description to get a match score and keyword analysis
+- [AI Resume Tailor](https://resumetailored.com/ai-resume-tailor): AI-powered resume tailoring tool — rewrites your resume for any job posting
+- [AI Cover Letter Generator](https://resumetailored.com/ai-cover-letter-generator): Generates a job-specific cover letter from your resume and the job posting
 
 ## Blog
 
@@ -13,3 +16,11 @@
 - [How to Tailor Your Resume to Any Job Posting (Step-by-Step)](https://resumetailored.com/blog/how-to-tailor-your-resume.md): Sending the same resume to every job is the #1 mistake. Here is the 5-step process to tailor your resume quickly and effectively.
 - [How to Write a Cover Letter That Actually Gets Read](https://resumetailored.com/blog/cover-letter-tips.md): Most cover letters are ignored. Learn the exact structure, opening lines, and do's and don'ts that make recruiters stop and read.
 - [How to Negotiate Your Salary and Get Paid What You're Worth](https://resumetailored.com/blog/salary-negotiation.md): 85% of employers have room to negotiate. Learn the exact scripts and strategies to negotiate your salary confidently without losing the offer.
+- [AI Resume Rewriter vs. AI Resume Builder: What's the Difference in 2026?](https://resumetailored.com/blog/ai-resume-rewriter-vs-builder.md): Most job seekers need a rewriter, not a builder. Here's the plain-English distinction and how to pick the right tool for your situation.
+- [Free ATS Resume Scanners Compared: Jobscan vs Teal vs Resume Worded vs ResumeTailored AI](https://resumetailored.com/blog/free-ats-resume-scanners-compared.md): We tested 4 free ATS scanners on their actual free tiers. Here's what you actually get — and which one gets you to a submitted application fastest.
+- [How to Write a Cover Letter That Gets Read in 2026](https://resumetailored.com/blog/how-to-write-a-cover-letter.md): The 4-part structure, opening hook formulas, and 3 complete examples that work in 2026. Stop opening with "I am writing to express my interest."
+- [Jobscan vs ResumeTailored AI: Which Resume Tool Is Right for Your Job Search?](https://resumetailored.com/blog/jobscan-vs-resumetailored.md): Jobscan tells you what's wrong. ResumeTailored AI fixes it. Honest comparison of features, pricing ($49.95/mo vs $19/mo), and free tiers.
+- [10 LinkedIn Profile Tips to Get More Recruiter Attention in 2026](https://resumetailored.com/blog/linkedin-profile-tips.md): 87% of recruiters use LinkedIn to source candidates. Here are 10 profile optimizations that move you to the top of their search results.
+- [Resume Keywords: How to Find, Use, and Place the Right Terms to Pass ATS](https://resumetailored.com/blog/resume-keywords.md): The 3 types of resume keywords, how to extract them from any job posting, where to place them, and industry-specific keyword lists for tech, marketing, finance, and healthcare.
+- [How to Tailor Your Resume to a Job Description in 5 Minutes](https://resumetailored.com/blog/tailor-resume-to-job-description.md): The Mirror Method, keyword extraction table, placement priority order, and AI-accelerated workflow to tailor any resume in under 5 minutes.
+- [Why Rezi Cover Letters Fall Short — and What to Use Instead](https://resumetailored.com/blog/why-rezi-cover-letters-fall-short.md): Rezi's cover letter generator doesn't read the job description — so it can't write a job-specific letter. Here's the structural problem and a side-by-side example of the difference.
