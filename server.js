@@ -761,6 +761,100 @@ app.get('/api/status', (req, res) => {
 });
 
 // ─── API: ATS scan (Claude-powered) ──────────────────────────────────────────
+// ─── API: Fetch job posting from URL ─────────────────────────────────────────
+const ALLOWED_JOB_DOMAINS = new Set([
+  'linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com',
+  'careerbuilder.com','dice.com','theladders.com','simplyhired.com','snagajob.com',
+  'flexjobs.com','themuse.com','hired.com','wellfound.com','angel.co',
+  'builtin.com','remote.co','weworkremotely.com','remoteok.com','remoteok.io',
+  'lever.co','greenhouse.io','ashbyhq.com','bamboohr.com','myworkdayjobs.com',
+  'workday.com','icims.com','smartrecruiters.com','jobvite.com','taleo.net',
+  'breezy.hr','workable.com','recruitee.com','pinpoint.com','teamtailor.com',
+  'handshake.com','wayup.com','internships.com','chegg.com','recruiter.com',
+  'zippia.com','jora.com','jobrapido.com','otta.com','cord.co',
+  'techinasia.com','careers.google.com','jobs.apple.com',
+  'microsoft.com','amazon.jobs','meta.com','netflix.jobs',
+  // Chinese platforms
+  'zhipin.com','liepin.com','zhaopin.com','lagou.com','51job.com','maimai.cn',
+]);
+
+function isAllowedJobUrl(raw) {
+  try {
+    const u = new URL(raw);
+    if (u.protocol !== 'https:') return false;
+    const host = u.hostname.replace(/^www\./, '');
+    for (const d of ALLOWED_JOB_DOMAINS) {
+      if (host === d || host.endsWith('.' + d)) return true;
+    }
+    return false;
+  } catch { return false; }
+}
+
+function stripHtml(html) {
+  // Remove scripts, styles, nav, footer, header blocks entirely
+  let text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<(nav|header|footer|aside)[^>]*>[\s\S]*?<\/\1>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ').replace(/&#\d+;/g, ' ').replace(/&[a-z]+;/g, ' ')
+    .replace(/\s{3,}/g, '\n\n')
+    .trim();
+  // Truncate to ~8000 chars to keep prompt size reasonable
+  return text.length > 8000 ? text.slice(0, 8000) + '…' : text;
+}
+
+app.post('/api/fetch-job-url', async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: 'URL is required.' });
+  if (!isAllowedJobUrl(url)) {
+    return res.status(400).json({ error: 'Only URLs from supported job boards are accepted.' });
+  }
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8',
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (response.status === 401 || response.status === 403) {
+      return res.status(422).json({ error: 'This job board requires a login to view postings. Please copy and paste the job description text instead.' });
+    }
+    if (!response.ok) {
+      return res.status(422).json({ error: `Could not load that page (HTTP ${response.status}). Please paste the job description manually.` });
+    }
+
+    const html = await response.text();
+    const rawText = stripHtml(html);
+
+    if (rawText.length < 100) {
+      return res.status(422).json({ error: 'Could not extract job text — the page may require a login. Please paste the job description manually.' });
+    }
+
+    // Use Claude to extract just the job description portion
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2048,
+      system: 'You extract job descriptions from raw webpage text. Output ONLY the job posting content — title, company, responsibilities, requirements, qualifications. Remove all navigation, ads, footers, related jobs, and unrelated site content. Preserve structure. No preamble.',
+      messages: [{ role: 'user', content: rawText }],
+    });
+
+    const text = msg.content[0]?.text?.trim() || rawText;
+    res.json({ text });
+  } catch (err) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') {
+      return res.status(422).json({ error: 'Request timed out. The job board may be blocking automated access — please paste the job description manually.' });
+    }
+    console.error('fetch-job-url error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch the job posting. Please paste the job description manually.' });
+  }
+});
+
 app.post('/api/ats-scan', async (req, res) => {
   const { resume, jobPosting } = req.body;
   if (!resume || !jobPosting) {

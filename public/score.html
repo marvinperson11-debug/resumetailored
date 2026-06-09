@@ -79,6 +79,18 @@
     .resume-ta{width:100%;min-height:300px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:16px;color:#e2e8f0;font-family:inherit;font-size:13.5px;line-height:1.65;resize:vertical;outline:none;transition:border-color .2s;}
     .resume-ta:focus{border-color:rgba(99,102,241,0.6);box-shadow:0 0 0 3px rgba(99,102,241,0.12);}
     .resume-ta::placeholder{color:#334155;}
+    .job-mode-toggle{display:flex;gap:4px;background:rgba(255,255,255,0.06);border-radius:8px;padding:3px;}
+    .jmt-btn{flex:1;padding:4px 10px;border-radius:6px;border:none;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#94a3b8;background:transparent;transition:all .15s;white-space:nowrap;}
+    .jmt-btn.active{background:#6366F1;color:#fff;}
+    .url-row{display:flex;gap:8px;align-items:center;}
+    .url-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;color:#e2e8f0;font-size:13px;font-family:inherit;outline:none;transition:border-color .2s;}
+    .url-input:focus{border-color:rgba(99,102,241,0.6);}
+    .url-input::placeholder{color:#475569;}
+    .btn-fetch{padding:10px 16px;border-radius:10px;border:none;background:#6366F1;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;transition:opacity .15s;}
+    .btn-fetch:hover{opacity:.85;}
+    .btn-fetch:disabled{opacity:.5;cursor:not-allowed;}
+    .url-status{font-size:12px;color:#94a3b8;margin-top:6px;min-height:16px;}
+    .url-boards{font-size:11px;color:#475569;margin-top:4px;line-height:1.5;}
 
     /* SINGLE TEXTAREA (tab 2) */
     .single-input-wrap{margin-bottom:20px;}
@@ -246,8 +258,24 @@
         <textarea id="resumeInput" class="resume-ta" placeholder="Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…" data-i18n-placeholder="resume_ph" spellcheck="false"></textarea>
       </div>
       <div class="input-card">
-        <div class="input-label"><span data-i18n="label_job">📋 Job Description</span></div>
+        <div class="input-label">
+          <span data-i18n="label_job">📋 Job Description</span>
+          <div class="job-mode-toggle">
+            <button class="jmt-btn active" id="jmtPaste" onclick="setJobMode('paste')" data-i18n="jmt_paste">Paste Text</button>
+            <button class="jmt-btn" id="jmtUrl" onclick="setJobMode('url')" data-i18n="jmt_url">🔗 Job URL</button>
+          </div>
+        </div>
+        <!-- Paste mode -->
         <textarea id="jobInput" class="resume-ta" placeholder="Paste the full job posting here — include requirements, responsibilities, and qualifications…" data-i18n-placeholder="job_ph" spellcheck="false"></textarea>
+        <!-- URL mode -->
+        <div id="jobUrlPane" style="display:none;">
+          <div class="url-row">
+            <input type="url" id="jobUrlInput" class="url-input" placeholder="https://www.linkedin.com/jobs/view/…" spellcheck="false" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')fetchJobUrl()" />
+            <button class="btn-fetch" id="fetchBtn" onclick="fetchJobUrl()" data-i18n="jmt_fetch">Fetch →</button>
+          </div>
+          <div class="url-status" id="urlStatus"></div>
+          <div class="url-boards" data-i18n-html="jmt_boards">Supported: LinkedIn · Indeed · Glassdoor · ZipRecruiter · Monster · Dice · Lever · Greenhouse · Workday · BambooHR · Wellfound · Ashby · Built In · We Work Remotely · Boss直聘 · 猎聘 · 智联招聘 · and more</div>
+        </div>
       </div>
     </div>
 
@@ -466,6 +494,12 @@
       btn_analyzing:'Analyzing with Claude AI…',
       btn_analyze:'Analyze ATS Match →',
       upload_loading:'Loading…',
+      jmt_paste:'Paste Text', jmt_url:'🔗 Job URL', jmt_fetch:'Fetch →',
+      jmt_boards:'Supported: LinkedIn · Indeed · Glassdoor · ZipRecruiter · Monster · Dice · Lever · Greenhouse · Workday · BambooHR · Wellfound · Ashby · Built In · We Work Remotely · Boss直聘 · 猎聘 · 智联招聘 · and more',
+      jmt_err_domain:'Only job board URLs are accepted. Paste the job text directly if your board isn\'t listed.',
+      jmt_err_invalid:'Please enter a valid URL (starting with https://).',
+      jmt_fetching:'Fetching job posting…',
+      jmt_ok:'✓ Job description loaded!',
     },
     zh: {
       nav_home:'首页', nav_how:'功能介绍', nav_free_tools:'免费工具',
@@ -525,6 +559,12 @@
       btn_analyzing:'正在用Claude AI分析…',
       btn_analyze:'分析ATS匹配 →',
       upload_loading:'加载中…',
+      jmt_paste:'粘贴文本', jmt_url:'🔗 职位链接', jmt_fetch:'获取 →',
+      jmt_boards:'支持：LinkedIn · Indeed · Glassdoor · ZipRecruiter · Monster · Dice · Lever · Greenhouse · Workday · BambooHR · Wellfound · Ashby · Built In · 远程工作 · Boss直聘 · 猎聘 · 智联招聘 · 更多',
+      jmt_err_domain:'仅接受招聘平台链接。如果您的平台不在列表中，请直接粘贴职位描述文字。',
+      jmt_err_invalid:'请输入有效的网址（以https://开头）。',
+      jmt_fetching:'正在获取职位信息…',
+      jmt_ok:'✓ 职位描述已加载！',
     }
   };
 
@@ -591,6 +631,84 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + tab).classList.add('active');
     document.getElementById('tabBtn' + (tab === 'ats' ? 'Ats' : 'Read')).classList.add('active');
+  }
+
+  // ── Job URL mode ──────────────────────────────────────────────────────────
+  const ALLOWED_JOB_DOMAINS = [
+    'linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com',
+    'careerbuilder.com','dice.com','theladders.com','simplyhired.com','snagajob.com',
+    'flexjobs.com','themuse.com','hired.com','wellfound.com','angel.co',
+    'builtin.com','remote.co','weworkremotely.com','remoteok.com','remoteok.io',
+    'lever.co','greenhouse.io','ashbyhq.com','bamboohr.com','myworkdayjobs.com',
+    'workday.com','icims.com','smartrecruiters.com','jobvite.com','taleo.net',
+    'breezy.hr','workable.com','recruitee.com','pinpoint.com','teamtailor.com',
+    'handshake.com','wayup.com','internships.com','chegg.com','recruiter.com',
+    'zippia.com','jora.com','jobrapido.com','otta.com','cord.co',
+    'techinasia.com','careers.google.com','jobs.apple.com','microsoft.com',
+    'amazon.jobs','meta.com','netflix.jobs',
+    // Chinese platforms
+    'zhipin.com','liepin.com','zhaopin.com','lagou.com','51job.com','maimai.cn',
+  ];
+
+  function isAllowedJobUrl(raw) {
+    try {
+      const u = new URL(raw);
+      if (u.protocol !== 'https:') return false;
+      const host = u.hostname.replace(/^www\./, '');
+      return ALLOWED_JOB_DOMAINS.some(d => host === d || host.endsWith('.' + d));
+    } catch { return false; }
+  }
+
+  function setJobMode(mode) {
+    const pasteTA  = document.getElementById('jobInput');
+    const urlPane  = document.getElementById('jobUrlPane');
+    const btnPaste = document.getElementById('jmtPaste');
+    const btnUrl   = document.getElementById('jmtUrl');
+    if (mode === 'url') {
+      pasteTA.style.display  = 'none';
+      urlPane.style.display  = 'block';
+      btnPaste.classList.remove('active');
+      btnUrl.classList.add('active');
+    } else {
+      pasteTA.style.display  = '';
+      urlPane.style.display  = 'none';
+      btnPaste.classList.add('active');
+      btnUrl.classList.remove('active');
+    }
+  }
+
+  async function fetchJobUrl() {
+    const t = I18N[currentLang];
+    const raw = document.getElementById('jobUrlInput').value.trim();
+    const status = document.getElementById('urlStatus');
+    const btn = document.getElementById('fetchBtn');
+
+    if (!raw) return;
+    if (!raw.startsWith('https://')) { status.textContent = t.jmt_err_invalid; return; }
+    if (!isAllowedJobUrl(raw)) { status.textContent = t.jmt_err_domain; return; }
+
+    btn.disabled = true;
+    status.textContent = t.jmt_fetching;
+
+    try {
+      const res = await fetch('/api/fetch-job-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: raw })
+      });
+      const data = await res.json();
+      if (!res.ok) { status.textContent = '✗ ' + (data.error || 'Failed to fetch.'); return; }
+      // Populate the hidden textarea and switch to paste mode so the text is visible
+      document.getElementById('jobInput').value = data.text;
+      setJobMode('paste');
+      status.textContent = t.jmt_ok;
+      // Clear status after 3s
+      setTimeout(() => { status.textContent = ''; }, 3000);
+    } catch (e) {
+      status.textContent = '✗ Network error — please try again.';
+    } finally {
+      btn.disabled = false;
+    }
   }
 
   // ── File upload ────────────────────────────────────────────────────────────
