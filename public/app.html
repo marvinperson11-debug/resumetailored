@@ -1634,7 +1634,7 @@
       var helpSendBtnEl = document.getElementById('helpBtn'); if (helpSendBtnEl) helpSendBtnEl.textContent = isZh ? '发送消息 →' : 'Send Message →';
       var helpSuccessEl = document.getElementById('helpSuccess'); if (helpSuccessEl) helpSuccessEl.textContent = isZh ? '✓ 消息已发送！我们将在24小时内回复你的邮件。' : '✓ Message sent! We\'ll reply to your email within 24 hours.';
       var helpFaqH3 = document.querySelector('.help-faq-card h3'); if (helpFaqH3) helpFaqH3.textContent = isZh ? '常见问题' : 'Frequently Asked Questions';
-      var helpFaqQs = document.querySelectorAll('#panel-help .faq-q span');
+      var helpFaqQs = document.querySelectorAll('#panel-help .faq-q > span:first-child');
       var helpFaqAs = document.querySelectorAll('#panel-help .faq-a');
       var hFaqQD = isZh ? ['免费版是如何工作的？','如何验证我的专业版订阅？','AI会编造我没有的经历吗？','如何取消专业版订阅？','我应该以什么格式粘贴简历？'] : ['How does the free tier work?','How do I verify my Pro subscription?','Will the AI make up experience I don\'t have?','How do I cancel my Pro subscription?','What format should I paste my resume in?'];
       var hFaqAD = isZh ? ['每天可免费定制1次简历——无需信用卡。每天午夜计数器重置。升级专业版可享受无限次定制。','订阅后，在简历定制标签页的邮箱字段输入结账时使用的邮箱，然后点击其他地方。专业版状态将自动激活。','不会。我们的AI严格使用职位描述的语言和关键词改写和重构你现有的经历。它不会添加你原始简历中没有的技能或经历。','使用本页面的表单发送消息，附上你的邮箱，我们将立即为你取消。无需解释。也可以回复我们的任何邮件。','纯文本效果最佳。在Word或Google文档中打开简历，全选（Ctrl+A），复制（Ctrl+C），粘贴到简历字段。AI会处理格式。'] : ['You get 1 free resume tailoring per day — no credit card required. Each day at midnight the counter resets. Upgrade to Pro for unlimited tailorings.','After subscribing, enter the email you used at checkout into the email field on the Resume Tailor tab and click away. Your Pro status will activate automatically.','No. Our AI strictly rewrites and reframes your existing experience using the job posting\'s language and keywords. It never adds skills or experience you didn\'t include in your original resume.','Send us a message using the form on this page with your email and we\'ll cancel immediately. No questions asked. You can also reply to any of our emails.','Plain text works best. Open your resume in Word or Google Docs, select all (Ctrl+A), copy (Ctrl+C), and paste into the resume field. The AI handles the formatting.'];
@@ -1681,7 +1681,7 @@
       var cancelSubP = document.querySelector('#panel-cancel .panel-header p'); if (cancelSubP) cancelSubP.textContent = isZh ? '我们相信你只应为你喜爱的服务付费。取消订阅即时生效，简单轻松。' : 'We believe you should only pay for what you love. Canceling is instant and effortless.';
       var cancelFeaturedH2 = document.querySelector('#panel-cancel .featured-card h2'); if (cancelFeaturedH2) cancelFeaturedH2.textContent = isZh ? '你的订阅，你做主。' : 'Your subscription, your rules.';
       var cancelFeaturedP = document.querySelector('#panel-cancel .featured-card > p'); if (cancelFeaturedP) cancelFeaturedP.textContent = isZh ? '随时取消专业版订阅——几秒钟即可完成。无取消费用。无需回答"确定吗？"。无需拨打热线。只需发消息，立即生效。' : 'Cancel your Pro subscription at any time — in seconds. No cancellation fees. No "are you sure?" hoops. No calling a 1-800 number. Just send us a message and it\'s done immediately.';
-      var cancelCards = document.querySelectorAll('#panel-cancel .salary-resource-card');
+      var cancelCards = document.querySelectorAll('#panel-cancel .salary-grid .salary-resource-card');
       var cCardD = isZh ? [{h3:'如何取消'},{h3:'取消后会发生什么'}] : [{h3:'How to Cancel'},{h3:'What Happens When You Cancel'}];
       cancelCards.forEach(function(card, i) { if(!cCardD[i]) return; var h3=card.querySelector('h3'); if(h3) h3.textContent=cCardD[i].h3; });
       var cancelSteps = document.querySelectorAll('#panel-cancel .salary-steps li');
@@ -1692,7 +1692,7 @@
       cancelTips.forEach(function(li, i) { if (cTipD[i]) li.textContent = cTipD[i]; });
       var cancelGoHelpBtn = document.querySelector('#panel-cancel .btn-outline'); if (cancelGoHelpBtn) cancelGoHelpBtn.textContent = isZh ? '前往帮助与支持 →' : 'Go to Help & Support →';
       var cancelFaqH2 = document.querySelector('#panel-cancel h2'); if (cancelFaqH2) cancelFaqH2.textContent = isZh ? '取消订阅常见问题' : 'Cancellation FAQs';
-      var cancelFaqQs = document.querySelectorAll('#panel-cancel .faq-q span');
+      var cancelFaqQs = document.querySelectorAll('#panel-cancel .faq-q > span:first-child');
       var cancelFaqAs = document.querySelectorAll('#panel-cancel .faq-a');
       var cFaqQD = isZh ? ['取消后能退款吗？','取消生效需要多长时间？','我可以暂停而不是取消吗？','如果我被扣款但不是有意订阅怎么办？','取消后我的简历历史会被删除吗？'] : ['Do I get a refund if I cancel mid-month?','How fast does cancellation take effect?','Can I pause instead of cancel?','What if I was charged but didn\'t mean to subscribe?','Will my resume history be deleted if I cancel?'];
       var cFaqAD = isZh ? ['我们不提供按比例退款，但你将在当前计费周期结束前保留完整专业版权限。因此，如果你已支付当月费用，你就可以使用整个月。','我们在1小时内处理所有取消请求。完成后你会收到确认邮件。你的专业版权限将持续到计费周期结束。','我们目前不提供暂停功能，但取消并在之后重新订阅同样简单。你始终享有相同的¥19/月费率——我们不对价格锁定或惩罚回归会员。','在扣款7天内联系我们，我们将全额退款，无需解释。我们从不希望有人为无意购买的服务付费。','不会。你的职业回顾数据和社区帖子保持完整。如果你之后重新订阅，一切都在你离开的地方。'] : ['We don\'t offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.','We process all cancellation requests within 1 hour. You\'ll receive a confirmation email once it\'s done. Your Pro access continues until your billing period ends.','We don\'t currently offer a pause feature, but canceling and re-subscribing later is just as easy. You\'ll always get the same $19/month rate — we don\'t price-lock or penalize returning members.','Contact us within 7 days of the charge and we\'ll issue a full refund, no questions asked. We never want anyone paying for something they didn\'t intend to buy.','No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.'];
@@ -1815,6 +1815,45 @@
       var langBtnEl = document.getElementById('langToggleBtn');
       if (langBtnEl) langBtnEl.textContent = isZh ? 'EN' : '中文';
       document.documentElement.lang = isZh ? 'zh-CN' : 'en';
+
+      // 24. Mobile nav data-label attributes (shown via CSS ::after on sidebar buttons)
+      var sidebarLabelMap = isZh ? {
+        'tab-tailor':'定制', 'tab-linkedin':'LinkedIn', 'tab-ats':'ATS',
+        'tab-forum':'论坛', 'tab-salary':'薪资', 'tab-checkin':'回顾',
+        'tab-help':'帮助', 'tab-samples':'模板', 'tab-about':'关于', 'tab-cancel':'取消'
+      } : {
+        'tab-tailor':'Tailor', 'tab-linkedin':'LinkedIn', 'tab-ats':'ATS',
+        'tab-forum':'Forum', 'tab-salary':'Salary', 'tab-checkin':'Check-In',
+        'tab-help':'Help', 'tab-samples':'Samples', 'tab-about':'About', 'tab-cancel':'Cancel'
+      };
+      Object.keys(sidebarLabelMap).forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.setAttribute('data-label', sidebarLabelMap[id]);
+      });
+
+      // 25. Template card labels in Samples tab
+      var tplNameMap = isZh ? {
+        'Classic':'经典','Classic Forest':'森林经典','Classic Ruby':'红宝石','Modern':'现代',
+        'Executive':'高管','Minimal':'简约','Creative':'创意','Professional':'专业',
+        'Tech':'科技','Elegant':'优雅','Bold':'粗犷','Contemporary':'当代',
+        'Academic':'学术','Compact':'紧凑','Sharp':'锐利','Neutral':'中性','Vivid':'活力',
+        'Serif':'衬线','Clean':'简洁','Letter':'书信','Formal':'正式','Simple':'简单',
+        'Classic Navy':'海军蓝','Modern Teal':'青绿','Modern Slate':'石板灰',
+        'Modern Coral':'珊瑚红','Minimal Sand':'沙漠简','Executive Dark':'深色高管',
+        'Bold Indigo':'靛蓝','Vivid Sunset':'日落','Sharp Emerald':'翡翠'
+      } : {};
+      document.querySelectorAll('.tpl-card-label').forEach(function(el) {
+        var cur = el.textContent.trim();
+        var t = tplNameMap[cur];
+        if (t) el.textContent = t;
+      });
+      // Also translate the tpl-pick-name labels in the template picker row
+      document.querySelectorAll('.tpl-pick-name').forEach(function(el) {
+        var cur = el.textContent.trim();
+        var t = tplNameMap[cur];
+        if (t) el.textContent = t;
+      });
+
       localStorage.setItem('rt_lang', lang);
     }
 
@@ -2466,8 +2505,9 @@
 
     function renderForum(posts) {
       const feed = document.getElementById('forumFeed');
+      const isZhF = (localStorage.getItem('rt_lang') || 'en') === 'zh';
       if (!posts.length) {
-        feed.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px;">Be the first to post!</div>';
+        feed.innerHTML = `<div style="text-align:center;color:var(--muted);padding:40px;">${isZhF ? '来第一个发帖吧！' : 'Be the first to post!'}</div>`;
         return;
       }
       feed.innerHTML = posts.map(p => `
@@ -2482,12 +2522,12 @@
           <div class="post-body">${p.text}</div>
           <div class="post-actions">
             <button class="post-action-btn" onclick="likePost(${p.id}, this)">👍 <span>${p.likes}</span></button>
-            <button class="post-action-btn" onclick="toggleReply(${p.id})">💬 Reply</button>
+            <button class="post-action-btn" onclick="toggleReply(${p.id})">💬 ${isZhF ? '回复' : 'Reply'}</button>
           </div>
           <div class="reply-form" id="reply-${p.id}" style="display:none;">
-            <input type="text" placeholder="Your name" class="forum-input" id="reply-author-${p.id}" style="margin-bottom:8px;" />
-            <textarea class="forum-textarea" style="min-height:80px;" placeholder="Write a reply..." id="reply-text-${p.id}"></textarea>
-            <button class="btn btn-primary" style="margin-top:8px;font-size:13px;padding:8px 16px;" onclick="submitReply(${p.id})">Post Reply</button>
+            <input type="text" placeholder="${isZhF ? '你的姓名' : 'Your name'}" class="forum-input" id="reply-author-${p.id}" style="margin-bottom:8px;" />
+            <textarea class="forum-textarea" style="min-height:80px;" placeholder="${isZhF ? '写下你的回复...' : 'Write a reply...'}" id="reply-text-${p.id}"></textarea>
+            <button class="btn btn-primary" style="margin-top:8px;font-size:13px;padding:8px 16px;" onclick="submitReply(${p.id})">${isZhF ? '发布回复' : 'Post Reply'}</button>
           </div>
           <div class="post-replies" id="replies-${p.id}">
             ${(p.replies||[]).map(r => `<div class="reply-item"><strong>${r.author}</strong>: ${r.text} <span class="reply-time">${r.time}</span></div>`).join('')}
@@ -2841,22 +2881,34 @@
     }
 
     // ── Check-in ───────────────────────────────────────────────────────────────
+    const CHECKIN_PROMPT_ZH = {
+      "What new skills have you developed in the last 3 months?": "过去3个月你学到了哪些新技能？",
+      "Are you being paid what you're worth? When did you last benchmark your salary?": "你的薪资与你的价值相符吗？你上次对标薪资是什么时候？",
+      "Have you updated your resume to reflect your latest accomplishments?": "你是否更新了简历以体现最新的成就？",
+      "What's your next career move? Is it time to aim higher?": "你的下一步职业规划是什么？是时候更上一层楼了吗？",
+      "Have you connected with 3 new people in your industry this quarter?": "本季度你是否在行业内结交了3位新朋友？",
+      "What would make your work more fulfilling? Is it time for a change?": "什么能让你的工作更有意义？是时候改变了吗？"
+    };
+
     async function loadCheckIn() {
       const email = getStoredEmail();
+      const isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
       try {
         const res = await fetch(`/api/checkin?email=${encodeURIComponent(email)}`);
         const data = await res.json();
-        document.getElementById('checkinPrompt').textContent = data.nextPrompt;
+        const prompt = data.nextPrompt || '';
+        document.getElementById('checkinPrompt').textContent = isZh ? (CHECKIN_PROMPT_ZH[prompt] || prompt) : prompt;
         if (data.goals) document.getElementById('checkinGoals').value = data.goals;
         if (data.currentRole) document.getElementById('checkinCurrentRole').value = data.currentRole;
         if (data.targetRole) document.getElementById('checkinTargetRole').value = data.targetRole;
         if (email) document.getElementById('checkinEmail').value = email;
       } catch(e) {}
 
-      // Set next check-in date (90 days from now)
+      // Set next check-in date (90 days from now) — use locale-appropriate format
       const next = new Date();
       next.setDate(next.getDate() + 90);
-      document.getElementById('nextCheckinDate').textContent = next.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const locale = isZh ? 'zh-CN' : 'en-US';
+      document.getElementById('nextCheckinDate').textContent = next.toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' });
     }
 
     async function saveCheckIn() {
