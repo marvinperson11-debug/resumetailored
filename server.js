@@ -1002,6 +1002,45 @@ OUTPUT: Cover Letter
   }
 });
 
+// ─── API: Translate resume Chinese → English ──────────────────────────────────
+app.post('/api/translate-resume', async (req, res) => {
+  const { resume, email } = req.body;
+  if (!resume || !resume.trim()) return res.status(400).json({ error: 'Resume text is required.' });
+
+  const usageKey = getUsageKey(req);
+  const subscribed = isSubscriber(email);
+  if (!subscribed && !hasFreeTierLeft(usageKey, 'translate')) {
+    return res.status(402).json({ error: 'free_limit_reached', message: 'You\'ve used your free daily translation. Upgrade to Pro for unlimited access.' });
+  }
+
+  try {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4096,
+      system: `You are an expert bilingual career consultant specializing in helping Chinese professionals apply for positions at American and international companies. You translate Chinese resumes into polished, professional English that reads naturally to Western hiring managers and ATS systems. Your translations:
+- Preserve all factual content (companies, dates, metrics, titles) exactly
+- Localize Chinese job titles and company descriptions for a Western audience (e.g., "互联网公司" → "tech company")
+- Convert Chinese date formats and number conventions to Western style
+- Use strong action verbs and clear professional English phrasing
+- Do NOT add or invent any details not present in the original`,
+      messages: [{
+        role: 'user',
+        content: `Translate the following Chinese resume into professional English. Output ONLY the translated resume text — no preamble, no explanation, no notes.\n\n${resume}`
+      }]
+    });
+
+    if (!subscribed) consumeFreeTier(usageKey, 'translate');
+    const translated = message.content[0]?.text || '';
+    res.json({ translated });
+  } catch (err) {
+    console.error('Translation error:', err.message);
+    let msg = 'Translation failed. Please try again.';
+    if (err?.status === 429) msg = 'AI is rate limited. Please wait a moment and try again.';
+    else if (err?.status >= 500) msg = 'AI service is temporarily busy. Please try again in 30 seconds.';
+    res.status(500).json({ error: msg });
+  }
+});
+
 // ─── API: LinkedIn profile optimizer ─────────────────────────────────────────
 app.post('/api/optimize-linkedin', async (req, res) => {
   const { profileText, targetRole, email } = req.body;
