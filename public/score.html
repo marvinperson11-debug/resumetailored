@@ -806,11 +806,17 @@
 
   async function fetchJobUrl() {
     const t = I18N[currentLang];
-    const raw = document.getElementById('jobUrlInput').value.trim();
+    let raw = document.getElementById('jobUrlInput').value.trim();
     const status = document.getElementById('urlStatus');
     const btn = document.getElementById('fetchBtn');
 
     if (!raw) return;
+    // Auto-extract URL if the user pasted "Job Title https://..." (common from job apps)
+    const httpsIdx = raw.indexOf('https://');
+    if (httpsIdx > 0) {
+      raw = raw.slice(httpsIdx).split(/\s/)[0];
+      document.getElementById('jobUrlInput').value = raw;
+    }
     if (!raw.startsWith('https://')) { status.textContent = t.jmt_err_invalid; return; }
     if (!isAllowedJobUrl(raw)) { status.textContent = t.jmt_err_domain; return; }
 

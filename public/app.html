@@ -2728,10 +2728,16 @@
     }
 
     async function fetchAtsJobUrl() {
-      const raw = document.getElementById('atsUrlInput').value.trim();
+      let raw = document.getElementById('atsUrlInput').value.trim();
       const status = document.getElementById('atsUrlStatus');
       const btn = document.getElementById('atsFetchBtn');
       if (!raw) return;
+      // Auto-extract URL if the user pasted "Job Title https://..." (common from job apps)
+      const httpsIdx = raw.indexOf('https://');
+      if (httpsIdx > 0) {
+        raw = raw.slice(httpsIdx).split(/\s/)[0];
+        document.getElementById('atsUrlInput').value = raw;
+      }
       if (!raw.startsWith('https://')) { status.textContent = 'Please enter a URL starting with https://'; return; }
       if (!isAtsAllowedUrl(raw)) { status.textContent = 'Only job board URLs are accepted. Paste the job text directly if your board isn\'t listed.'; return; }
       btn.disabled = true; status.textContent = 'Fetching job posting…';

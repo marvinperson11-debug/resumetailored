@@ -817,6 +817,37 @@ function isAllowedJobUrl(raw) {
   } catch { return false; }
 }
 
+function extractJsonLdJob(html) {
+  // Many job boards (Indeed, LinkedIn, Glassdoor) embed structured job data in JSON-LD
+  const matches = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+  for (const block of matches) {
+    try {
+      const json = JSON.parse(block.replace(/<script[^>]*>|<\/script>/gi, ''));
+      const objs = Array.isArray(json) ? json : [json];
+      for (const obj of objs) {
+        if (obj['@type'] === 'JobPosting') {
+          const parts = [];
+          if (obj.title) parts.push(obj.title);
+          if (obj.hiringOrganization?.name) parts.push('Company: ' + obj.hiringOrganization.name);
+          if (obj.jobLocation?.address) {
+            const a = obj.jobLocation.address;
+            parts.push('Location: ' + [a.addressLocality, a.addressRegion, a.addressCountry].filter(Boolean).join(', '));
+          }
+          if (obj.description) parts.push(obj.description.replace(/<[^>]+>/g, ' ').replace(/\s{3,}/g, '\n\n').trim());
+          if (obj.employmentType) parts.push('Employment Type: ' + obj.employmentType);
+          if (obj.baseSalary?.value) {
+            const s = obj.baseSalary.value;
+            parts.push('Salary: ' + (s.minValue || '') + (s.maxValue ? '–' + s.maxValue : '') + ' ' + (s.unitText || ''));
+          }
+          const text = parts.join('\n\n').trim();
+          if (text.length > 200) return text;
+        }
+      }
+    } catch { /* not valid JSON, skip */ }
+  }
+  return null;
+}
+
 function stripHtml(html) {
   // Remove scripts, styles, nav, footer, header blocks entirely
   let text = html
@@ -842,11 +873,19 @@ app.post('/api/fetch-job-url', async (req, res) => {
   try {
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Upgrade-Insecure-Requests': '1',
       },
-      signal: AbortSignal.timeout(10000),
+      redirect: 'follow',
+      signal: AbortSignal.timeout(15000),
     });
 
     if (response.status === 401 || response.status === 403) {
@@ -857,6 +896,13 @@ app.post('/api/fetch-job-url', async (req, res) => {
     }
 
     const html = await response.text();
+
+    // Try structured JSON-LD first (works reliably for Indeed, Glassdoor, etc.)
+    const jsonLdText = extractJsonLdJob(html);
+    if (jsonLdText) {
+      return res.json({ text: jsonLdText });
+    }
+
     const rawText = stripHtml(html);
 
     if (rawText.length < 100) {
