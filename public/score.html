@@ -452,10 +452,15 @@
   <!-- ── TAB 2: READABILITY REVIEW ── -->
   <div class="tab-pane" id="tab-readability">
 
-    <div class="input-label" data-i18n="read_label" style="margin-bottom:10px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#e2e8f0;">📄 Your Resume</div>
-    <div class="single-input-wrap">
-      <textarea id="readInput" class="single-ta" placeholder="Paste your full resume text here…" data-i18n-placeholder="read_ph" spellcheck="false" oninput="runReadability()"></textarea>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div class="input-label" data-i18n="read_label" style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#e2e8f0;">📄 Your Resume</div>
+      <button class="upload-btn" id="readUploadBtn" onclick="document.getElementById('readFileInput').click()" data-i18n="upload_btn">⬆ Upload File</button>
+      <input type="file" id="readFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleReadUpload(this)"/>
     </div>
+    <div class="single-input-wrap">
+      <textarea id="readInput" class="single-ta" placeholder="Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…" data-i18n-placeholder="read_ph" spellcheck="false" oninput="runReadability()"></textarea>
+    </div>
+
 
     <div class="results-section" id="readResults">
 
@@ -588,7 +593,7 @@
       cta_ats_h:'Fix missing keywords automatically →',
       cta_ats_p:'Let our AI rewrite your full resume with all the right keywords woven in naturally — plus a matching cover letter, in 30 seconds.',
       cta_ats_btn:'Tailor My Resume Free →',
-      read_label:'📄 Your Resume', read_ph:'Paste your full resume text here…',
+      read_label:'📄 Your Resume', read_ph:'Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…',
       read_verdict_init_title:'Paste your resume above',
       read_verdict_init_desc:'Analysis runs instantly as you type.',
       metric_words:'Word Count', metric_bullets:'Bullet Points', metric_weak:'Weak Phrases',
@@ -653,7 +658,7 @@
       cta_ats_h:'自动补充缺失关键词 →',
       cta_ats_p:'让AI用正确关键词自然地重写你的完整简历——还附带匹配的求职信，30秒完成。',
       cta_ats_btn:'免费定制我的简历 →',
-      read_label:'📄 你的简历', read_ph:'在此粘贴完整简历文本…',
+      read_label:'📄 你的简历', read_ph:'在此粘贴完整简历文本，或点击"上传文件"导入 .txt、.pdf 或 .docx…',
       read_verdict_init_title:'请在上方粘贴简历',
       read_verdict_init_desc:'输入即时分析。',
       metric_words:'字数统计', metric_bullets:'条目数量', metric_weak:'弱势表达',
@@ -864,6 +869,31 @@
         if (d.text) document.getElementById('resumeInput').value = d.text;
         else alert('Could not extract text. Try saving as .txt and uploading again.');
       }
+    } catch(e) { alert('Upload failed. Please paste your resume text manually.'); }
+    finally { btn.textContent = t.upload_btn; btn.classList.remove('loading'); btn.disabled = false; input.value = ''; }
+  }
+
+  async function handleReadUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const btn = document.getElementById('readUploadBtn');
+    const t = I18N[currentLang];
+    btn.textContent = t.upload_loading;
+    btn.classList.add('loading');
+    btn.disabled = true;
+    const ext = file.name.split('.').pop().toLowerCase();
+    try {
+      if (ext === 'txt') {
+        document.getElementById('readInput').value = await file.text();
+      } else {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: fd });
+        const d = await res.json();
+        if (d.text) document.getElementById('readInput').value = d.text;
+        else alert('Could not extract text. Try saving as .txt and uploading again.');
+      }
+      runReadability();
     } catch(e) { alert('Upload failed. Please paste your resume text manually.'); }
     finally { btn.textContent = t.upload_btn; btn.classList.remove('loading'); btn.disabled = false; input.value = ''; }
   }
