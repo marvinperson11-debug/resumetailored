@@ -135,6 +135,22 @@ function hashPw(pw) {
 app.set('trust proxy', 1); // Required on Railway â€” reads real client IP from X-Forwarded-For
 app.use(cors());
 
+// Force UTF-8 charset in Content-Type for every text response.
+// Hooks res.end() — the lowest-level flush point — so it fires regardless of
+// whether the response comes from express.static, res.sendFile, or a route handler.
+app.use((req, res, next) => {
+  const _end = res.end.bind(res);
+  res.end = function (chunk, encoding, callback) {
+    const ct = res.getHeader('Content-Type');
+    if (typeof ct === 'string' && !ct.includes('charset') &&
+        (ct.startsWith('text/') || ct.startsWith('application/javascript'))) {
+      res.setHeader('Content-Type', ct + '; charset=utf-8');
+    }
+    return _end(chunk, encoding, callback);
+  };
+  next();
+});
+
 // Redirect .html-extension URLs to their canonical clean-URL equivalents (prevents duplicate-content penalties)
 app.use((req, res, next) => {
   if (req.path.endsWith('/index.html')) {
