@@ -135,18 +135,29 @@ function hashPw(pw) {
 app.set('trust proxy', 1); // Required on Railway â€” reads real client IP from X-Forwarded-For
 app.use(cors());
 
-// Force UTF-8 charset in Content-Type for every text response.
-// Hooks res.end() — the lowest-level flush point — so it fires regardless of
-// whether the response comes from express.static, res.sendFile, or a route handler.
+// Force UTF-8 charset on all text responses.
+// Must hook res.write() (not just res.end()) because for large files express.static
+// streams chunks via res.write(), which flushes headers before res.end() is ever called.
+// Hooking only res.end() is too late — headers are already sent by then.
 app.use((req, res, next) => {
-  const _end = res.end.bind(res);
-  res.end = function (chunk, encoding, callback) {
+  function injectCharset() {
+    if (res.headersSent) return;
     const ct = res.getHeader('Content-Type');
     if (typeof ct === 'string' && !ct.includes('charset') &&
         (ct.startsWith('text/') || ct.startsWith('application/javascript'))) {
       res.setHeader('Content-Type', ct + '; charset=utf-8');
     }
-    return _end(chunk, encoding, callback);
+  }
+  const origWrite = res.write;
+  res.write = function (...args) {
+    injectCharset();
+    res.write = origWrite; // restore — only need to inject once
+    return origWrite.apply(res, args);
+  };
+  const origEnd = res.end;
+  res.end = function (...args) {
+    injectCharset(); // catches responses that skip res.write() entirely
+    return origEnd.apply(res, args);
   };
   next();
 });
