@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  width:800px; height:600px; overflow:hidden;
+  font-family:'Inter',system-ui,sans-serif;
+  background:#030712;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.15), transparent);
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column;
+  padding:32px 44px;
+  position:relative;
+}
+
+.grid-bg {
+  position:absolute; inset:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.05) 1px, transparent 1px);
+  background-size:56px 56px;
+}
+
+.logo {
+  position:absolute; top:22px; left:24px;
+  display:flex; align-items:center; gap:8px;
+}
+.logo-mark {
+  width:30px; height:30px;
+  background:linear-gradient(135deg,#6366F1,#8B5CF6);
+  border-radius:7px; display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:15px; color:white;
+}
+.logo-text { color:#e2e8f0; font-size:13px; font-weight:600; }
+
+.badge {
+  position:absolute; top:22px; right:22px;
+  background:linear-gradient(135deg,#6366F1,#8B5CF6);
+  color:white; padding:5px 14px; border-radius:999px;
+  font-size:10.5px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase;
+  box-shadow:0 0 16px rgba(99,102,241,0.5);
+}
+
+.top { text-align:center; margin-bottom:24px; }
+.eyebrow {
+  font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+  color:#6366F1; margin-bottom:10px;
+}
+h1 {
+  font-size:40px; font-weight:900; letter-spacing:-1.5px; line-height:1.1;
+  color:#e2e8f0;
+}
+h1 span {
+  background:linear-gradient(135deg,#6366F1,#a78bfa);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+
+/* Score cards row */
+.cards { display:flex; gap:14px; width:100%; margin-bottom:18px; }
+.card {
+  flex:1; background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:14px; padding:16px 14px;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+.card.highlight {
+  background:rgba(99,102,241,0.12);
+  border-color:rgba(99,102,241,0.3);
+}
+.card-icon { font-size:22px; }
+.card-val {
+  font-size:32px; font-weight:900; letter-spacing:-1px; line-height:1;
+}
+.card.highlight .card-val {
+  background:linear-gradient(135deg,#6366F1,#a78bfa);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.card-val.green { color:#10b981; }
+.card-val.amber { color:#f59e0b; }
+.card-label { font-size:11px; color:#64748b; font-weight:600; text-align:center; line-height:1.3; }
+
+/* Progress bars */
+.bars { width:100%; display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+.bar-row { display:flex; align-items:center; gap:12px; }
+.bar-name { width:140px; font-size:11.5px; color:#94a3b8; font-weight:500; flex-shrink:0; }
+.bar-track {
+  flex:1; height:8px; background:rgba(255,255,255,0.07); border-radius:999px; overflow:hidden;
+}
+.bar-fill { height:100%; border-radius:999px; }
+.bar-fill.hi { background:linear-gradient(90deg,#6366F1,#a78bfa); }
+.bar-fill.md { background:linear-gradient(90deg,#10b981,#34d399); }
+.bar-fill.lo { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
+.bar-pct { width:36px; font-size:11.5px; font-weight:700; color:#e2e8f0; text-align:right; }
+
+.cta-row { display:flex; align-items:center; gap:14px; }
+.cta-btn {
+  background:linear-gradient(135deg,#6366F1,#8B5CF6);
+  color:white; padding:11px 22px; border-radius:10px;
+  font-size:13px; font-weight:800;
+  box-shadow:0 0 24px rgba(99,102,241,0.45);
+  white-space:nowrap;
+}
+.cta-note { font-size:11.5px; color:#64748b; line-height:1.5; }
+
+.footer {
+  position:absolute; bottom:16px;
+  font-size:11.5px; color:#475569;
+}
+.footer span { color:#6366F1; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<div class="logo">
+  <div class="logo-mark">R</div>
+  <span class="logo-text">ResumeTailor AI</span>
+</div>
+<div class="badge">✦ FREE ATS SCANNER</div>
+
+<div class="top">
+  <div class="eyebrow">What your ATS scan reveals</div>
+  <h1>Your resume score, <span>broken down.</span></h1>
+</div>
+
+<div class="cards">
+  <div class="card highlight">
+    <div class="card-icon">🎯</div>
+    <div class="card-val">87<span style="font-size:18px;font-weight:700">/100</span></div>
+    <div class="card-label">Overall ATS Score</div>
+  </div>
+  <div class="card">
+    <div class="card-icon">🔑</div>
+    <div class="card-val green">14</div>
+    <div class="card-label">Keywords Matched</div>
+  </div>
+  <div class="card">
+    <div class="card-icon">⚠️</div>
+    <div class="card-val amber">5</div>
+    <div class="card-label">Keywords Missing</div>
+  </div>
+  <div class="card">
+    <div class="card-icon">✍️</div>
+    <div class="card-val" style="color:#e2e8f0">3</div>
+    <div class="card-label">Rewrite Suggestions</div>
+  </div>
+</div>
+
+<div class="bars">
+  <div class="bar-row">
+    <span class="bar-name">Keyword Density</span>
+    <div class="bar-track"><div class="bar-fill hi" style="width:87%"></div></div>
+    <span class="bar-pct">87%</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-name">Skills Match</span>
+    <div class="bar-track"><div class="bar-fill md" style="width:74%"></div></div>
+    <span class="bar-pct">74%</span>
+  </div>
+  <div class="bar-row">
+    <span class="bar-name">Format Score</span>
+    <div class="bar-track"><div class="bar-fill lo" style="width:61%"></div></div>
+    <span class="bar-pct">61%</span>
+  </div>
+</div>
+
+<div class="cta-row">
+  <div class="cta-btn">Scan My Resume Free →</div>
+  <div class="cta-note">Paste your resume + job posting.<br>Get your real score in seconds.</div>
+</div>
+
+<div class="footer">Free forever at <span>resumetailored.com</span></div>
+</body>
+</html>
