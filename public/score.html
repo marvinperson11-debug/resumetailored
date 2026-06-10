@@ -347,15 +347,11 @@
       <div class="input-card">
         <div class="input-label">
           <span data-i18n="label_job">📋 Job Description</span>
-          <div class="job-mode-toggle">
-            <button class="jmt-btn active" id="jmtPaste" onclick="setJobMode('paste')" data-i18n="jmt_paste">Paste Text</button>
-            <button class="jmt-btn" id="jmtUrl" onclick="setJobMode('url')" data-i18n="jmt_url">🔗 Job URL</button>
-          </div>
         </div>
-        <!-- Paste mode -->
-        <textarea id="jobInput" class="resume-ta" placeholder="Paste the full job posting here — include requirements, responsibilities, and qualifications…" data-i18n-placeholder="job_ph" spellcheck="false"></textarea>
-        <!-- URL mode -->
-        <div id="jobUrlPane" style="display:none;">
+        <!-- Hidden textarea used as data store for runATS() -->
+        <textarea id="jobInput" style="display:none;" spellcheck="false"></textarea>
+        <!-- URL input — always visible -->
+        <div id="jobUrlPane">
           <div class="url-row">
             <input type="url" id="jobUrlInput" class="url-input" placeholder="https://www.linkedin.com/jobs/view/…" spellcheck="false" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')fetchJobUrl()" />
             <button class="btn-fetch" id="fetchBtn" onclick="fetchJobUrl()" data-i18n="jmt_fetch">Fetch →</button>
@@ -617,13 +613,13 @@
       v_no_matched:'No matched keywords found.',
       v_no_missing:'No missing keywords — great match!',
       err_no_resume:'Please paste your resume in the left box.',
-      err_no_job:'Please paste the job description in the right box.',
+      err_no_job:'Please enter a job URL above and click Fetch →',
       btn_analyzing:'Analyzing with Claude AI…',
       btn_analyze:'Analyze ATS Match →',
       upload_loading:'Loading…',
-      jmt_paste:'Paste Text', jmt_url:'🔗 Job URL', jmt_fetch:'Fetch →',
+      jmt_url:'🔗 Job URL', jmt_fetch:'Fetch →',
       jmt_boards:'Supported: LinkedIn · Indeed · Glassdoor · ZipRecruiter · Monster · Dice · Lever · Greenhouse · Workday · BambooHR · Wellfound · Ashby · Built In · We Work Remotely · Boss直聘 · 猎聘 · 智联招聘 · and more',
-      jmt_err_domain:'Only job board URLs are accepted. Paste the job text directly if your board isn\'t listed.',
+      jmt_err_domain:'Only job board URLs are accepted. Supported boards are listed below.',
       jmt_err_invalid:'Please enter a valid URL (starting with https://).',
       jmt_fetching:'Fetching job posting…',
       jmt_ok:'✓ Job description loaded!',
@@ -682,13 +678,13 @@
       v_no_matched:'未找到匹配的关键词。',
       v_no_missing:'没有缺失关键词——匹配完美！',
       err_no_resume:'请在左侧框中粘贴您的简历。',
-      err_no_job:'请在右侧框中粘贴职位描述。',
+      err_no_job:'请在上方输入职位链接并点击获取 →',
       btn_analyzing:'正在用Claude AI分析…',
       btn_analyze:'分析ATS匹配 →',
       upload_loading:'加载中…',
-      jmt_paste:'粘贴文本', jmt_url:'🔗 职位链接', jmt_fetch:'获取 →',
+      jmt_url:'🔗 职位链接', jmt_fetch:'获取 →',
       jmt_boards:'支持：LinkedIn · Indeed · Glassdoor · ZipRecruiter · Monster · Dice · Lever · Greenhouse · Workday · BambooHR · Wellfound · Ashby · Built In · 远程工作 · Boss直聘 · 猎聘 · 智联招聘 · 更多',
-      jmt_err_domain:'仅接受招聘平台链接。如果您的平台不在列表中，请直接粘贴职位描述文字。',
+      jmt_err_domain:'仅接受招聘平台链接。支持的平台见下方列表。',
       jmt_err_invalid:'请输入有效的网址（以https://开头）。',
       jmt_fetching:'正在获取职位信息…',
       jmt_ok:'✓ 职位描述已加载！',
@@ -786,24 +782,6 @@
     } catch { return false; }
   }
 
-  function setJobMode(mode) {
-    const pasteTA  = document.getElementById('jobInput');
-    const urlPane  = document.getElementById('jobUrlPane');
-    const btnPaste = document.getElementById('jmtPaste');
-    const btnUrl   = document.getElementById('jmtUrl');
-    if (mode === 'url') {
-      pasteTA.style.display  = 'none';
-      urlPane.style.display  = 'block';
-      btnPaste.classList.remove('active');
-      btnUrl.classList.add('active');
-    } else {
-      pasteTA.style.display  = '';
-      urlPane.style.display  = 'none';
-      btnPaste.classList.add('active');
-      btnUrl.classList.remove('active');
-    }
-  }
-
   async function fetchJobUrl() {
     const t = I18N[currentLang];
     const raw = document.getElementById('jobUrlInput').value.trim();
@@ -825,9 +803,7 @@
       });
       const data = await res.json();
       if (!res.ok) { status.textContent = '✗ ' + (data.error || 'Failed to fetch.'); return; }
-      // Populate the hidden textarea and switch to paste mode so the text is visible
       document.getElementById('jobInput').value = data.text;
-      setJobMode('paste');
       status.textContent = t.jmt_ok;
       // Clear status after 3s
       setTimeout(() => { status.textContent = ''; }, 3000);

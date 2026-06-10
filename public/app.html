@@ -725,13 +725,11 @@
             <div class="input-group">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                 <label class="input-label" style="margin:0;">📋 Job Description</label>
-                <div style="display:flex;gap:3px;background:rgba(0,0,0,0.06);border-radius:7px;padding:2px;">
-                  <button id="atsJmtPaste" onclick="setAtsJobMode('paste')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#6366F1;color:#fff;font-family:inherit;">Paste</button>
-                  <button id="atsJmtUrl" onclick="setAtsJobMode('url')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:#6b7280;font-family:inherit;">🔗 URL</button>
-                </div>
               </div>
-              <textarea id="atsJobInput" class="resume-textarea" style="min-height:220px;" placeholder="Paste the full job description here…" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
-              <div id="atsUrlPane" style="display:none;">
+              <!-- Hidden textarea used as data store for runDashboardATS() -->
+              <textarea id="atsJobInput" style="display:none;" spellcheck="false"></textarea>
+              <!-- URL input — always visible -->
+              <div id="atsUrlPane">
                 <div style="display:flex;gap:8px;margin-top:6px;">
                   <input type="url" id="atsUrlInput" style="flex:1;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;" placeholder="https://www.linkedin.com/jobs/view/…" spellcheck="false" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')fetchAtsJobUrl()" />
                   <button onclick="fetchAtsJobUrl()" id="atsFetchBtn" style="padding:9px 14px;border-radius:8px;border:none;background:#6366F1;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Fetch →</button>
@@ -2709,38 +2707,19 @@
       } catch { return false; }
     }
 
-    function setAtsJobMode(mode) {
-      const ta = document.getElementById('atsJobInput');
-      const urlPane = document.getElementById('atsUrlPane');
-      const btnP = document.getElementById('atsJmtPaste');
-      const btnU = document.getElementById('atsJmtUrl');
-      if (mode === 'url') {
-        ta.style.display = 'none';
-        urlPane.style.display = 'block';
-        btnP.style.background = 'transparent'; btnP.style.color = '#6b7280';
-        btnU.style.background = '#6366F1';     btnU.style.color = '#fff';
-      } else {
-        ta.style.display = '';
-        urlPane.style.display = 'none';
-        btnP.style.background = '#6366F1'; btnP.style.color = '#fff';
-        btnU.style.background = 'transparent'; btnU.style.color = '#6b7280';
-      }
-    }
-
     async function fetchAtsJobUrl() {
       const raw = document.getElementById('atsUrlInput').value.trim();
       const status = document.getElementById('atsUrlStatus');
       const btn = document.getElementById('atsFetchBtn');
       if (!raw) return;
       if (!raw.startsWith('https://')) { status.textContent = 'Please enter a URL starting with https://'; return; }
-      if (!isAtsAllowedUrl(raw)) { status.textContent = 'Only job board URLs are accepted. Paste the job text directly if your board isn\'t listed.'; return; }
+      if (!isAtsAllowedUrl(raw)) { status.textContent = 'Only job board URLs are accepted. Supported boards are listed below.'; return; }
       btn.disabled = true; status.textContent = 'Fetching job posting…';
       try {
         const res = await fetch('/api/fetch-job-url', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ url: raw }) });
         const data = await res.json();
         if (!res.ok) { status.textContent = '✗ ' + (data.error || 'Failed to fetch.'); return; }
         document.getElementById('atsJobInput').value = data.text;
-        setAtsJobMode('paste');
         status.textContent = '✓ Job description loaded!';
         setTimeout(() => { status.textContent = ''; }, 3000);
       } catch { status.textContent = '✗ Network error — please try again.'; }
@@ -2802,7 +2781,7 @@
       const resume = document.getElementById('atsResumeInput').value.trim();
       const job    = document.getElementById('atsJobInput').value.trim();
       if (!resume) return showToast('Please paste your resume in the left box.');
-      if (!job)    return showToast('Please paste the job description in the right box.');
+      if (!job)    return showToast('Please enter a job URL above and click Fetch →');
 
       const btn = document.getElementById('atsScanBtn');
       btn.disabled = true;
