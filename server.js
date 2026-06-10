@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -20,12 +20,12 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Warn loudly on startup if critical env vars are missing
-if (!process.env.ANTHROPIC_API_KEY) console.error('STARTUP ERROR: ANTHROPIC_API_KEY is not set â€” AI tailoring will fail for all users.');
-if (!process.env.STRIPE_SECRET_KEY) console.error('STARTUP ERROR: STRIPE_SECRET_KEY is not set â€” payments will fail.');
-if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID is not set â€” checkout will fail.');
+if (!process.env.ANTHROPIC_API_KEY) console.error('STARTUP ERROR: ANTHROPIC_API_KEY is not set — AI tailoring will fail for all users.');
+if (!process.env.STRIPE_SECRET_KEY) console.error('STARTUP ERROR: STRIPE_SECRET_KEY is not set — payments will fail.');
+if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID is not set — checkout will fail.');
 
-// â”€â”€â”€ Email helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Priority: Resend (RESEND_API_KEY) â†’ SMTP (SMTP_USER + SMTP_PASS) â†’ console log
+// ─── Email helper ─────────────────────────────────────────────────────────────
+// Priority: Resend (RESEND_API_KEY) → SMTP (SMTP_USER + SMTP_PASS) → console log
 async function sendEmail({ to, subject, html, replyTo }) {
   const resendKey  = process.env.RESEND_API_KEY;
   const smtpUser   = process.env.SMTP_USER;
@@ -59,12 +59,12 @@ async function sendEmail({ to, subject, html, replyTo }) {
     return;
   }
 
-  // Neither configured â€” log the content so it can be found in Railway logs
+  // Neither configured — log the content so it can be found in Railway logs
   console.log(`[EMAIL] No sender configured. Subject: "${subject}" To: ${to}`);
   console.log('[EMAIL] Set RESEND_API_KEY or SMTP_USER+SMTP_PASS in Railway env vars to enable real emails.');
 }
 
-// â”€â”€â”€ SQLite database â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SQLite database ──────────────────────────────────────────────────────────
 // DATA_DIR defaults to ./data; set DATA_DIR=/data and mount a Railway Volume
 // at /data for full persistence across deploys.
 const dataDir = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -125,38 +125,31 @@ if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
   const ins = db.prepare('INSERT INTO forum_posts (author, role, time, text, likes) VALUES (?, ?, ?, ?, ?)');
   ins.run('Sarah M.', 'Software Engineer', '2 hours ago', 'Just accepted an offer at a Fortune 500! ResumeTailor helped me tailor 30+ applications. Happy to answer questions about the process.', 14);
   ins.run('James R.', 'Marketing Manager', '5 hours ago', 'Salary negotiation tip: always get the offer in writing before negotiating. They said my ask was "too high" verbally but came back with 8% more once I sent a counter via email. Never negotiate on the phone!', 22);
-  ins.run('Priya K.', 'Product Designer', '1 day ago', 'For anyone in tech design â€” portfolio matters MORE than your resume. But a tailored resume got me the interview so I could show my portfolio. Both matter!', 9);
+  ins.run('Priya K.', 'Product Designer', '1 day ago', 'For anyone in tech design — portfolio matters MORE than your resume. But a tailored resume got me the interview so I could show my portfolio. Both matter!', 9);
 }
 
 function hashPw(pw) {
   return crypto.createHash('sha256').update('rta_salt_2026_' + pw).digest('hex');
 }
 
-app.set('trust proxy', 1); // Required on Railway â€” reads real client IP from X-Forwarded-For
+app.set('trust proxy', 1); // Required on Railway — reads real client IP from X-Forwarded-For
 app.use(cors());
 
 // Force UTF-8 charset on text/html responses.
-// Must hook res.write() (not just res.end()) because for large files express.static
-// streams chunks via res.write(), which flushes headers before res.end() is ever called.
-// Hooking only res.end() is too late — headers are already sent by then.
+// Intercepts res.setHeader() — the moment Content-Type is assigned — so the
+// charset is baked in before any streaming, piping, or flushing can happen.
+// This is upstream of res.write() and res.end() so nothing can override it.
 app.use((req, res, next) => {
-  function injectCharset() {
-    if (res.headersSent) return;
-    const ct = res.getHeader('Content-Type');
-    if (typeof ct === 'string' && ct.startsWith('text/html') && !ct.includes('charset')) {
-      res.setHeader('Content-Type', ct + '; charset=utf-8');
+  const origSetHeader = res.setHeader.bind(res);
+  res.setHeader = function (name, value) {
+    if (typeof name === 'string' &&
+        name.toLowerCase() === 'content-type' &&
+        typeof value === 'string' &&
+        value.startsWith('text/html') &&
+        !value.includes('charset')) {
+      value += '; charset=utf-8';
     }
-  }
-  const origWrite = res.write;
-  res.write = function (chunk, encoding, callback) {
-    injectCharset();
-    res.write = origWrite; // restore — only need to inject once
-    return origWrite.call(res, chunk, encoding, callback);
-  };
-  const origEnd = res.end;
-  res.end = function (chunk, encoding, callback) {
-    injectCharset(); // catches responses that skip res.write() entirely
-    return origEnd.call(res, chunk, encoding, callback);
+    return origSetHeader(name, value);
   };
   next();
 });
@@ -183,7 +176,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-// Clean URL aliases â€” /dashboard, /login, /signup all serve app.html
+// Clean URL aliases — /dashboard, /login, /signup all serve app.html
 const appHtml = path.join(__dirname, 'public', 'app.html');
 const _htmlUtf8 = { headers: { 'Content-Type': 'text/html; charset=utf-8' } };
 app.get('/dashboard',    (req, res) => res.sendFile(appHtml, _htmlUtf8));
@@ -200,7 +193,7 @@ app.get('/blog',         (req, res) => res.sendFile(blogIndexHtml, _htmlUtf8));
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
-// â”€â”€â”€ Rate limiting â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Rate limiting ────────────────────────────────────────────────────────────
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
@@ -208,7 +201,7 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
-// â”€â”€â”€ Auth endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Auth endpoints ───────────────────────────────────────────────────────────
 app.post('/api/auth/signup', async (req, res) => {
   const { email, username, password } = req.body;
   if (!email || !username || !password) {
@@ -230,11 +223,11 @@ app.post('/api/auth/signup', async (req, res) => {
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
   res.json({ token, username: cleanUsername, email: key });
 
-  // Welcome email â€” fire and forget, don't block the response
+  // Welcome email — fire and forget, don't block the response
   try {
     await sendEmail({
       to: key,
-      subject: 'Welcome to ResumeTailored AI â€” You\'re in!',
+      subject: 'Welcome to ResumeTailored AI — You\'re in!',
       html: `
         <div style="font-family:'Inter',Arial,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
 
@@ -251,7 +244,7 @@ app.post('/api/auth/signup', async (req, res) => {
           <!-- Body -->
           <div style="padding:36px 32px;">
             <p style="font-size:15px;color:#374151;line-height:1.75;margin:0 0 28px;">
-              Thanks for joining ResumeTailored AI. You now have access to AI-powered resume tailoring, cover letter generation, and a full career hub â€” all built to help you stand out and get hired faster.
+              Thanks for joining ResumeTailored AI. You now have access to AI-powered resume tailoring, cover letter generation, and a full career hub — all built to help you stand out and get hired faster.
             </p>
 
             <!-- Features -->
@@ -260,26 +253,26 @@ app.post('/api/auth/signup', async (req, res) => {
               <div style="display:grid;gap:12px;">
 
                 <div style="display:flex;gap:14px;align-items:flex-start;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;">
-                  <div style="font-size:22px;line-height:1;">âœ¦</div>
+                  <div style="font-size:22px;line-height:1;">✦</div>
                   <div>
                     <div style="font-weight:700;color:#111827;font-size:14px;margin-bottom:3px;">AI Resume Tailor</div>
-                    <div style="font-size:13px;color:#6b7280;line-height:1.6;">Paste any job posting and get a resume tailored to match â€” highlighting the right keywords and experience to beat ATS filters.</div>
+                    <div style="font-size:13px;color:#6b7280;line-height:1.6;">Paste any job posting and get a resume tailored to match — highlighting the right keywords and experience to beat ATS filters.</div>
                   </div>
                 </div>
 
                 <div style="display:flex;gap:14px;align-items:flex-start;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;">
-                  <div style="font-size:22px;line-height:1;">âœ‰</div>
+                  <div style="font-size:22px;line-height:1;">✉</div>
                   <div>
                     <div style="font-weight:700;color:#111827;font-size:14px;margin-bottom:3px;">Cover Letter Generator</div>
-                    <div style="font-size:13px;color:#6b7280;line-height:1.6;">Generate a personalized, professional cover letter for every application in seconds â€” not the same generic template everyone else uses.</div>
+                    <div style="font-size:13px;color:#6b7280;line-height:1.6;">Generate a personalized, professional cover letter for every application in seconds — not the same generic template everyone else uses.</div>
                   </div>
                 </div>
 
                 <div style="display:flex;gap:14px;align-items:flex-start;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;">
-                  <div style="font-size:22px;line-height:1;">ðŸ’¼</div>
+                  <div style="font-size:22px;line-height:1;">💼</div>
                   <div>
                     <div style="font-weight:700;color:#111827;font-size:14px;margin-bottom:3px;">Career Hub</div>
-                    <div style="font-size:13px;color:#6b7280;line-height:1.6;">Salary guides, career check-ins, a community forum, and professional resume templates â€” everything you need in one place.</div>
+                    <div style="font-size:13px;color:#6b7280;line-height:1.6;">Salary guides, career check-ins, a community forum, and professional resume templates — everything you need in one place.</div>
                   </div>
                 </div>
 
@@ -292,15 +285,15 @@ app.post('/api/auth/signup', async (req, res) => {
               <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
                 <div>
                   <div style="font-size:16px;font-weight:700;color:#111827;">Free Tier</div>
-                  <div style="font-size:13px;color:#6b7280;margin-top:3px;">1 free AI tailoring per day Â· Full template access</div>
+                  <div style="font-size:13px;color:#6b7280;margin-top:3px;">1 free AI tailoring per day · Full template access</div>
                 </div>
-                <a href="https://resumetailored.com/#pricing" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:13px;padding:10px 20px;border-radius:8px;text-decoration:none;white-space:nowrap;">Upgrade to Pro â€” $19/mo â†’</a>
+                <a href="https://resumetailored.com/#pricing" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:13px;padding:10px 20px;border-radius:8px;text-decoration:none;white-space:nowrap;">Upgrade to Pro — $19/mo →</a>
               </div>
             </div>
 
             <!-- CTA -->
             <div style="text-align:center;margin-bottom:28px;">
-              <a href="https://resumetailored.com/dashboard" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:15px 40px;border-radius:10px;text-decoration:none;">Go to My Dashboard â†’</a>
+              <a href="https://resumetailored.com/dashboard" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:15px 40px;border-radius:10px;text-decoration:none;">Go to My Dashboard →</a>
             </div>
 
             <!-- Contact -->
@@ -314,7 +307,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
           <!-- Footer -->
           <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
-            <span style="font-size:12px;color:#9ca3af;">Â© ResumeTailored AI Â· <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a> Â· You're receiving this because you just created an account.</span>
+            <span style="font-size:12px;color:#9ca3af;">© ResumeTailored AI · <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a> · You're receiving this because you just created an account.</span>
           </div>
 
         </div>
@@ -367,11 +360,11 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   const key = email.toLowerCase().trim();
 
   if (!db.prepare('SELECT 1 FROM users WHERE email = ?').get(key)) {
-    // No account found â€” send a helpful email so the user isn't left wondering
+    // No account found — send a helpful email so the user isn't left wondering
     try {
       await sendEmail({
         to: key,
-        subject: 'ResumeTailored AI â€” No Account Found',
+        subject: 'ResumeTailored AI — No Account Found',
         html: `
           <div style="font-family:'Inter',Arial,sans-serif;max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
             <div style="background:#2563eb;padding:28px 32px;">
@@ -381,21 +374,21 @@ app.post('/api/auth/forgot-password', async (req, res) => {
               </div>
             </div>
             <div style="padding:36px 32px;">
-              <div style="font-size:36px;text-align:center;margin-bottom:16px;">ðŸ”</div>
+              <div style="font-size:36px;text-align:center;margin-bottom:16px;">🔍</div>
               <h2 style="font-size:22px;font-weight:800;color:#111827;text-align:center;margin:0 0 12px;">No Account Found</h2>
               <p style="font-size:15px;color:#6b7280;line-height:1.7;text-align:center;margin:0 0 28px;">
                 We couldn't find an account linked to <strong style="color:#111827;">${key}</strong>.<br/>
-                You may need to create a new account â€” it only takes a minute.
+                You may need to create a new account — it only takes a minute.
               </p>
               <div style="text-align:center;margin-bottom:28px;">
-                <a href="https://resumetailored.com/signup" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Create Account â†’</a>
+                <a href="https://resumetailored.com/signup" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Create Account →</a>
               </div>
               <p style="font-size:13px;color:#9ca3af;text-align:center;line-height:1.6;margin:0;">
                 If you believe this is an error, please contact us at <a href="mailto:support@resumetailored.com" style="color:#2563eb;">support@resumetailored.com</a>
               </p>
             </div>
             <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
-              <span style="font-size:12px;color:#9ca3af;">Â© ResumeTailored AI Â· <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a></span>
+              <span style="font-size:12px;color:#9ca3af;">© ResumeTailored AI · <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a></span>
             </div>
           </div>
         `
@@ -425,14 +418,14 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         </div>
       </div>
       <div style="padding:36px 32px;">
-        <div style="font-size:36px;text-align:center;margin-bottom:16px;">ðŸ”</div>
+        <div style="font-size:36px;text-align:center;margin-bottom:16px;">🔐</div>
         <h2 style="font-size:22px;font-weight:800;color:#111827;text-align:center;margin:0 0 12px;">Reset Your Password</h2>
         <p style="font-size:15px;color:#6b7280;line-height:1.7;text-align:center;margin:0 0 28px;">
           We received a request to reset the password for <strong style="color:#111827;">${key}</strong>.<br/>
           This link expires in <strong style="color:#2563eb;">1 hour</strong>.
         </p>
         <div style="text-align:center;margin-bottom:28px;">
-          <a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Reset My Password â†’</a>
+          <a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Reset My Password →</a>
         </div>
         <p style="font-size:13px;color:#9ca3af;text-align:center;line-height:1.6;margin:0;">
           If you didn't request this, you can safely ignore this email.<br/>
@@ -440,7 +433,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         </p>
       </div>
       <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
-        <span style="font-size:12px;color:#9ca3af;">Â© ResumeTailored AI Â· <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a></span>
+        <span style="font-size:12px;color:#9ca3af;">© ResumeTailored AI · <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a></span>
       </div>
     </div>
   `;
@@ -455,10 +448,10 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     await sendEmail({
       to: ownerEmail,
-      subject: `[ResumeTailored] Password reset requested â€” ${key}`,
+      subject: `[ResumeTailored] Password reset requested — ${key}`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:28px 32px;">
-          <h3 style="color:#111827;margin:0 0 16px;">ðŸ”” Password Reset Request</h3>
+          <h3 style="color:#111827;margin:0 0 16px;">🔔 Password Reset Request</h3>
           <p style="color:#374151;font-size:15px;margin:0 0 12px;">A user has requested a password reset on ResumeTailored AI.</p>
           <table style="width:100%;border-collapse:collapse;font-size:14px;">
             <tr><td style="padding:8px 0;color:#6b7280;width:100px;">Email:</td><td style="padding:8px 0;font-weight:700;color:#111827;">${key}</td></tr>
@@ -506,7 +499,7 @@ app.post('/api/auth/reset-password', (req, res) => {
   res.json({ success: true });
 });
 
-// â”€â”€â”€ File upload config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── File upload config ───────────────────────────────────────────────────────
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
@@ -523,7 +516,7 @@ const upload = multer({
   }
 });
 
-// â”€â”€â”€ API: Extract text from uploaded resume â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Extract text from uploaded resume ───────────────────────────────────
 app.post('/api/extract-text', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
   const ext = (req.file.originalname || '').toLowerCase().split('.').pop();
@@ -548,7 +541,7 @@ app.post('/api/extract-text', upload.single('file'), async (req, res) => {
   }
 });
 
-// â”€â”€â”€ API: Download tailored result as .docx â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Download tailored result as .docx ───────────────────────────────────
 app.post('/api/download-docx', async (req, res) => {
   const { text, filename, colors, sigName, sigFont: sigFontName, pageSize } = req.body;
   if (!text) return res.status(400).json({ error: 'No text provided.' });
@@ -556,7 +549,7 @@ app.post('/api/download-docx', async (req, res) => {
   const primaryHex = colors?.primary ? colors.primary.replace('#', '') : '1a237e';
   const accentHex  = colors?.accent  ? colors.accent.replace('#', '')  : '5c6bc0';
 
-  // Page size: Letter (default, 8.5Ã—11in) or A4 (210Ã—297mm)
+  // Page size: Letter (default, 8.5×11in) or A4 (210×297mm)
   // 1 inch = 1440 twips; 1mm = 56.69 twips
   const isA4 = pageSize === 'a4';
   const PAGE_WIDTH  = isA4 ? 11906 : 12240; // A4: 210mm | Letter: 8.5in
@@ -613,7 +606,7 @@ app.post('/api/download-docx', async (req, res) => {
       continue;
     }
 
-    // Section heading: all-caps, 2â€“60 chars
+    // Section heading: all-caps, 2–60 chars
     const isHeading = clean.length >= 2 && clean.length <= 60 &&
       /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(clean) && /[A-Z]/.test(clean);
     if (isHeading) {
@@ -627,8 +620,8 @@ app.post('/api/download-docx', async (req, res) => {
     }
 
     // Bullet point
-    if (/^[â€¢Â·\-\*]\s/.test(trimmed)) {
-      const txt = clean.replace(/^[â€¢Â·\-\*]\s*/, '');
+    if (/^[•·\-\*]\s/.test(trimmed)) {
+      const txt = clean.replace(/^[•·\-\*]\s*/, '');
       children.push(new Paragraph({
         children: [new TextRun({ text: txt, font: 'Calibri', size: 22, color: '333333' })],
         bullet: { level: 0 },
@@ -639,7 +632,7 @@ app.post('/api/download-docx', async (req, res) => {
     }
 
     // Date/company line (em-dash, en-dash, or pipe with year)
-    if ((clean.includes('â€”') || clean.includes('â€“') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 200) {
+    if ((clean.includes('—') || clean.includes('–') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 200) {
       children.push(new Paragraph({
         children: [new TextRun({ text: clean, font: 'Calibri', size: 22, color: accentHex, bold: true })],
         spacing: { after: 50 },
@@ -667,7 +660,7 @@ app.post('/api/download-docx', async (req, res) => {
     }));
   }
 
-  // Signature block â€” placed in document flow with proper spacing
+  // Signature block — placed in document flow with proper spacing
   if (sigName && sigName.trim()) {
     const sig = sigName.trim();
     // Horizontal rule above signature
@@ -713,7 +706,7 @@ app.post('/api/download-docx', async (req, res) => {
   }).catch(err => console.error('[Alert] Download email failed:', err.message));
 });
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function getTodayKey(userKey, mode) {
   const today = new Date().toISOString().slice(0, 10);
   return `${userKey}_${mode}_${today}`;
@@ -751,7 +744,7 @@ function isSubscriber(email) {
   return !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(email.toLowerCase());
 }
 
-// â”€â”€â”€ API: Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Health check ────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
@@ -761,7 +754,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// â”€â”€â”€ API: AI connection test â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: AI connection test ──────────────────────────────────────────────────
 app.get('/api/test-ai', async (req, res) => {
   try {
     const modelList = await anthropic.models.list();
@@ -781,7 +774,7 @@ app.get('/api/test-ai', async (req, res) => {
   }
 });
 
-// â”€â”€â”€ API: Check usage status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Check usage status ──────────────────────────────────────────────────
 app.get('/api/status', (req, res) => {
   const usageKey = getUsageKey(req);
   const email = req.query.email || '';
@@ -794,8 +787,8 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// â”€â”€â”€ API: ATS scan (Claude-powered) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// â”€â”€â”€ API: Fetch job posting from URL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: ATS scan (Claude-powered) ──────────────────────────────────────────
+// ─── API: Fetch job posting from URL ─────────────────────────────────────────
 const ALLOWED_JOB_DOMAINS = new Set([
   'linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com',
   'careerbuilder.com','dice.com','theladders.com','simplyhired.com','snagajob.com',
@@ -836,7 +829,7 @@ function stripHtml(html) {
     .replace(/\s{3,}/g, '\n\n')
     .trim();
   // Truncate to ~8000 chars to keep prompt size reasonable
-  return text.length > 8000 ? text.slice(0, 8000) + 'â€¦' : text;
+  return text.length > 8000 ? text.slice(0, 8000) + '…' : text;
 }
 
 app.post('/api/fetch-job-url', async (req, res) => {
@@ -867,14 +860,14 @@ app.post('/api/fetch-job-url', async (req, res) => {
     const rawText = stripHtml(html);
 
     if (rawText.length < 100) {
-      return res.status(422).json({ error: 'Could not extract job text â€” the page may require a login. Please paste the job description manually.' });
+      return res.status(422).json({ error: 'Could not extract job text — the page may require a login. Please paste the job description manually.' });
     }
 
     // Use Claude to extract just the job description portion
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 2048,
-      system: 'You extract job descriptions from raw webpage text. Output ONLY the job posting content â€” title, company, responsibilities, requirements, qualifications. Remove all navigation, ads, footers, related jobs, and unrelated site content. Preserve structure. No preamble.',
+      system: 'You extract job descriptions from raw webpage text. Output ONLY the job posting content — title, company, responsibilities, requirements, qualifications. Remove all navigation, ads, footers, related jobs, and unrelated site content. Preserve structure. No preamble.',
       messages: [{ role: 'user', content: rawText }],
     });
 
@@ -882,7 +875,7 @@ app.post('/api/fetch-job-url', async (req, res) => {
     res.json({ text });
   } catch (err) {
     if (err.name === 'TimeoutError' || err.name === 'AbortError') {
-      return res.status(422).json({ error: 'Request timed out. The job board may be blocking automated access â€” please paste the job description manually.' });
+      return res.status(422).json({ error: 'Request timed out. The job board may be blocking automated access — please paste the job description manually.' });
     }
     console.error('fetch-job-url error:', err.message);
     res.status(500).json({ error: 'Failed to fetch the job posting. Please paste the job description manually.' });
@@ -914,22 +907,22 @@ app.post('/api/ats-scan', async (req, res) => {
         role: 'user',
         content: `You are an expert ATS (Applicant Tracking System) analyst. Analyze how well this resume matches the job description.
 
-Return ONLY valid JSON in this exact format â€” no markdown, no explanation, nothing else:
+Return ONLY valid JSON in this exact format — no markdown, no explanation, nothing else:
 {
   "score": <integer 0-100>,
   "verdict": "<exactly one of: Strong Match, Good Match, Fair Match, Weak Match>",
-  "matched": [<array of strings â€” keywords and phrases found in both resume and job description, max 20>],
-  "missing": [<array of strings â€” critical keywords from the job description missing from the resume, max 15>],
-  "suggestions": [<array of 4-5 strings â€” specific, actionable rewrite suggestions referencing exact words from the job posting>]
+  "matched": [<array of strings — keywords and phrases found in both resume and job description, max 20>],
+  "missing": [<array of strings — critical keywords from the job description missing from the resume, max 15>],
+  "suggestions": [<array of 4-5 strings — specific, actionable rewrite suggestions referencing exact words from the job posting>]
 }
 
 Scoring guide:
-- 80-100: Strong Match â€” most required skills and keywords are present
-- 60-79: Good Match â€” many key requirements covered, minor gaps
-- 40-59: Fair Match â€” partial match, significant missing keywords
-- 0-39: Weak Match â€” poor match, major gaps
+- 80-100: Strong Match — most required skills and keywords are present
+- 60-79: Good Match — many key requirements covered, minor gaps
+- 40-59: Fair Match — partial match, significant missing keywords
+- 0-39: Weak Match — poor match, major gaps
 
-Be specific in suggestions â€” name the exact keyword and where to add it.
+Be specific in suggestions — name the exact keyword and where to add it.
 
 RESUME:
 ${resume.slice(0, 4000)}
@@ -952,7 +945,7 @@ ${jobPosting.slice(0, 4000)}`
   }
 });
 
-// â”€â”€â”€ API: Tailor resume â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Tailor resume ───────────────────────────────────────────────────────
 app.post('/api/tailor', async (req, res) => {
   const { resume, jobPosting, mode, email } = req.body;
 
@@ -986,15 +979,15 @@ app.post('/api/tailor', async (req, res) => {
 
   try {
     // Detect Chinese job board context to add bilingual keyword guidance
-    const chinesePlatformHints = ['zhipin.com', 'liepin.com', 'zhaopin.com', 'bossç›´è˜', 'bosszhipin', 'çŒŽè˜', 'æ™ºè”æ‹›è˜', 'lagou.com', 'æ‹‰å‹¾'];
+    const chinesePlatformHints = ['zhipin.com', 'liepin.com', 'zhaopin.com', 'boss直聘', 'bosszhipin', '猎聘', '智联招聘', 'lagou.com', '拉勾'];
     const isChineseMarket = chinesePlatformHints.some(h => jobPosting.toLowerCase().includes(h.toLowerCase()));
 
-    const systemPrompt = `You are a senior professional resume writer and executive career strategist with 20+ years placing candidates at Fortune 500 companies, elite startups, and leading multinational corporations (MNCs) across global markets. Your writing is indistinguishable from a human expert â€” specific, grounded, and free of AI clichÃ©s.
+    const systemPrompt = `You are a senior professional resume writer and executive career strategist with 20+ years placing candidates at Fortune 500 companies, elite startups, and leading multinational corporations (MNCs) across global markets. Your writing is indistinguishable from a human expert — specific, grounded, and free of AI clichés.
 
-DEEP ANALYSIS PROTOCOL â€” apply to every job posting before writing:
-1. Extract the CORE COMPETENCIES: the 3â€“5 capabilities the hiring manager truly needs (not just listed requirements).
+DEEP ANALYSIS PROTOCOL — apply to every job posting before writing:
+1. Extract the CORE COMPETENCIES: the 3–5 capabilities the hiring manager truly needs (not just listed requirements).
 2. Identify PROOF POINTS the job signals: specific metrics, scale indicators, tools, methodologies, and team dynamics they describe.
-3. Note LANGUAGE FINGERPRINTS: exact phrases, industry jargon, and verbs the job posting uses â€” mirror these precisely.
+3. Note LANGUAGE FINGERPRINTS: exact phrases, industry jargon, and verbs the job posting uses — mirror these precisely.
 4. Assess the SENIORITY SIGNAL: leadership scope, strategic vs. tactical balance, budget/team ownership expectations.
 5. Flag any DIFFERENTIATOR GAPS the candidate can address with their strongest achievements.
 6. MULTINATIONAL CORPORATION (MNC) DETECTION: If the posting is from or targets a global/multinational company, identify and prioritize:
@@ -1002,16 +995,16 @@ DEEP ANALYSIS PROTOCOL â€” apply to every job posting before writing:
    - Compliance standards (ISO, SOX, GDPR, local regulatory frameworks)
    - International market expansion, P&L ownership across geographies
    - Keywords valued by leading MNCs: "cross-functional", "matrixed organization", "global alignment", "go-to-market", "OKRs/KPIs at scale"
-   - For Chinese technology MNCs (Alibaba/é˜¿é‡Œå·´å·´, Tencent/è…¾è®¯, Baidu/ç™¾åº¦, Huawei/åŽä¸º, ByteDance/å­—èŠ‚è·³åŠ¨, Xiaomi/å°ç±³, JD.com/äº¬ä¸œ, NetEase/ç½‘æ˜“, Meituan/ç¾Žå›¢, DiDi/æ»´æ»´): emphasize digital ecosystem thinking, rapid iteration, product-market fit in high-growth markets, operational efficiency at massive scale, and data-driven decision-making
-   - For Western MNCs hiring in Asian markets: cultural bridge capabilities, local market expertise, bilingual communication skills${isChineseMarket ? '\n7. CHINESE JOB MARKET: This posting appears to be from a Chinese job platform (Bossç›´è˜, çŒŽè˜, or æ™ºè”æ‹›è˜). Optimize for Chinese market expectations: emphasize team collaboration (å›¢é˜Ÿåä½œ), results-orientation (ç»“æžœå¯¼å‘), continuous learning (æŒç»­å­¦ä¹ ), and align keywords with common Chinese HR screening criteria.' : ''}
+   - For Chinese technology MNCs (Alibaba/阿里巴巴, Tencent/腾讯, Baidu/百度, Huawei/华为, ByteDance/字节跳动, Xiaomi/小米, JD.com/京东, NetEase/网易, Meituan/美团, DiDi/滴滴): emphasize digital ecosystem thinking, rapid iteration, product-market fit in high-growth markets, operational efficiency at massive scale, and data-driven decision-making
+   - For Western MNCs hiring in Asian markets: cultural bridge capabilities, local market expertise, bilingual communication skills${isChineseMarket ? '\n7. CHINESE JOB MARKET: This posting appears to be from a Chinese job platform (Boss直聘, 猎聘, or 智联招聘). Optimize for Chinese market expectations: emphasize team collaboration (团队协作), results-orientation (结果导向), continuous learning (持续学习), and align keywords with common Chinese HR screening criteria.' : ''}
 
-WRITING STANDARDS â€” non-negotiable:
+WRITING STANDARDS — non-negotiable:
 - Every bullet must contain a measurable outcome OR a clear scope indicator (e.g. "across 12 markets", "for 200K+ users", "$4M portfolio")
-- Use the job's exact language where the candidate's experience warrants it â€” do not invent synonyms
+- Use the job's exact language where the candidate's experience warrants it — do not invent synonyms
 - Strip all weak openers: never start a bullet with "Responsible for", "Helped", "Assisted", "Worked on", "Involved in", "Supported", "Contributed to", or any passive construction
-- No filler phrases: no "leveraged", "utilized", "spearheaded synergies", "dynamic environment", "results-driven", "detail-oriented", "team player", "hard worker", or similar hollow clichÃ©s
+- No filler phrases: no "leveraged", "utilized", "spearheaded synergies", "dynamic environment", "results-driven", "detail-oriented", "team player", "hard worker", or similar hollow clichés
 - Every bullet must begin with a powerful past-tense action verb that implies ownership: Led, Built, Drove, Grew, Cut, Launched, Engineered, Negotiated, Redesigned, Secured, Scaled, Automated, Trained, Managed, Delivered
-- Summaries must be specific to this exact role â€” not generic career overviews. Name the role and company type if known.
+- Summaries must be specific to this exact role — not generic career overviews. Name the role and company type if known.
 - The output must read as if a real senior career coach wrote it, not an AI`;
 
     let userPrompt = '';
@@ -1019,13 +1012,13 @@ WRITING STANDARDS â€” non-negotiable:
     if (mode === 'resume' || mode === 'both') {
       userPrompt += `## Task: Deeply tailor the resume below to the specific job posting.
 
-**Step 1 â€” Analyze the job posting:**
+**Step 1 — Analyze the job posting:**
 Before writing, silently identify: (a) the 3 most critical competencies this role demands, (b) the measurable proof points the hiring manager wants to see, (c) the exact vocabulary and keywords they use.
 
-**Step 2 â€” Tailor the resume:**
+**Step 2 — Tailor the resume:**
 Rules (all mandatory):
-- Include EVERY job, position, and role from the original resume â€” never omit or merge entries
-- Never fabricate experience, credentials, or metrics â€” only reframe what the candidate actually did
+- Include EVERY job, position, and role from the original resume — never omit or merge entries
+- Never fabricate experience, credentials, or metrics — only reframe what the candidate actually did
 - Rewrite every bullet to foreground measurable impact and mirror the job's language
 - Prioritize and reorder bullets within each job: most relevant achievements first
 - Rewrite the summary to speak directly to this specific role and company type
@@ -1033,22 +1026,22 @@ Rules (all mandatory):
 - Quantify results wherever possible: %, $, headcount, timeframes, scale
 - No periods at end of bullets (standard resume convention)
 - ALL section headers in ALL CAPS: EXPERIENCE, EDUCATION, SKILLS, SUMMARY, CERTIFICATIONS
-- Plain text output only â€” no markdown, no asterisks, no hash symbols
+- Plain text output only — no markdown, no asterisks, no hash symbols
 
-## Output format (follow exactly â€” do not add extra blank lines or deviate):
+## Output format (follow exactly — do not add extra blank lines or deviate):
 [Full Name]
 [City, State | Phone | Email]
 
 SUMMARY
-[2â€“3 sentences targeting this specific role â€” specific, not generic]
+[2–3 sentences targeting this specific role — specific, not generic]
 
 EXPERIENCE
 [Job Title]
-[Company | Start â€“ End]
-â€¢ [bullet with action verb + measurable outcome]
-â€¢ [bullet with action verb + measurable outcome]
+[Company | Start – End]
+• [bullet with action verb + measurable outcome]
+• [bullet with action verb + measurable outcome]
 
-[Repeat for ALL jobs in the original resume â€” every position must appear]
+[Repeat for ALL jobs in the original resume — every position must appear]
 
 EDUCATION
 [Degree]
@@ -1072,26 +1065,26 @@ OUTPUT: Tailored Resume
       if (mode === 'both') userPrompt += '\n\n===COVER_LETTER_START===\n\n';
       userPrompt += `## Task: Write a distinctive, job-specific cover letter.
 
-**Step 1 â€” Analyze before writing:**
-Identify: (a) the company's specific mission or differentiator mentioned in the posting, (b) the 2â€“3 achievements from the candidate's background that best match the role's core needs, (c) the exact tone and language of the posting (technical? startup? enterprise?).
+**Step 1 — Analyze before writing:**
+Identify: (a) the company's specific mission or differentiator mentioned in the posting, (b) the 2–3 achievements from the candidate's background that best match the role's core needs, (c) the exact tone and language of the posting (technical? startup? enterprise?).
 
-**Step 2 â€” Write the letter:**
+**Step 2 — Write the letter:**
 Rules (all mandatory):
-- 3â€“4 paragraphs, professional but human â€” sounds like a real person wrote it, not an AI
-- Opening paragraph: a specific, compelling hook tied to THIS company or role â€” NOT "I am writing to express my interest" or any generic opener. Reference something real about the company, role challenge, or industry moment.
-- Body paragraphs: connect 2â€“3 of the candidate's strongest, most relevant achievements directly to the key needs the job signals â€” always with concrete proof (metrics, scope, outcomes)
-- Closing: confident, forward-looking call to action â€” no hedging ("I hope to hear from you")
+- 3–4 paragraphs, professional but human — sounds like a real person wrote it, not an AI
+- Opening paragraph: a specific, compelling hook tied to THIS company or role — NOT "I am writing to express my interest" or any generic opener. Reference something real about the company, role challenge, or industry moment.
+- Body paragraphs: connect 2–3 of the candidate's strongest, most relevant achievements directly to the key needs the job signals — always with concrete proof (metrics, scope, outcomes)
+- Closing: confident, forward-looking call to action — no hedging ("I hope to hear from you")
 - Mirror the job posting's vocabulary and tone throughout
 - Every sentence must be grammatically complete with correct punctuation
 - No bullet points, no section headers inside the letter body
-- The letter must be impossible to send to any other company â€” it must read as written for this role only
-- Plain text output only â€” no markdown symbols
+- The letter must be impossible to send to any other company — it must read as written for this role only
+- Plain text output only — no markdown symbols
 
 ## Output format (follow exactly):
 [Full Name]
 [City, State | Phone | Email]
 
-[3 to 4 full paragraphs â€” each separated by a blank line]
+[3 to 4 full paragraphs — each separated by a blank line]
 
 Sincerely,
 [Full Name]
@@ -1130,7 +1123,7 @@ OUTPUT: Cover Letter
   }
 });
 
-// â”€â”€â”€ API: Translate resume Chinese â†’ English â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Translate resume Chinese → English ──────────────────────────────────
 app.post('/api/translate-resume', async (req, res) => {
   const { resume, email } = req.body;
   if (!resume || !resume.trim()) return res.status(400).json({ error: 'Resume text is required.' });
@@ -1147,13 +1140,13 @@ app.post('/api/translate-resume', async (req, res) => {
       max_tokens: 4096,
       system: `You are an expert bilingual career consultant specializing in helping Chinese professionals apply for positions at American and international companies. You translate Chinese resumes into polished, professional English that reads naturally to Western hiring managers and ATS systems. Your translations:
 - Preserve all factual content (companies, dates, metrics, titles) exactly
-- Localize Chinese job titles and company descriptions for a Western audience (e.g., "äº’è”ç½‘å…¬å¸" â†’ "tech company")
+- Localize Chinese job titles and company descriptions for a Western audience (e.g., "互联网公司" → "tech company")
 - Convert Chinese date formats and number conventions to Western style
 - Use strong action verbs and clear professional English phrasing
 - Do NOT add or invent any details not present in the original`,
       messages: [{
         role: 'user',
-        content: `Translate the following Chinese resume into professional English. Output ONLY the translated resume text â€” no preamble, no explanation, no notes.\n\n${resume}`
+        content: `Translate the following Chinese resume into professional English. Output ONLY the translated resume text — no preamble, no explanation, no notes.\n\n${resume}`
       }]
     });
 
@@ -1169,7 +1162,7 @@ app.post('/api/translate-resume', async (req, res) => {
   }
 });
 
-// â”€â”€â”€ API: LinkedIn profile optimizer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: LinkedIn profile optimizer ─────────────────────────────────────────
 app.post('/api/optimize-linkedin', async (req, res) => {
   const { profileText, targetRole, email } = req.body;
   if (!profileText) return res.status(400).json({ error: 'Profile text is required.' });
@@ -1193,31 +1186,31 @@ app.post('/api/optimize-linkedin', async (req, res) => {
 **Target Role:** ${targetRole}
 
 **Analysis protocol (apply silently before writing):**
-1. Extract the 4â€“5 keywords and phrases recruiters search when hiring for "${targetRole}"
+1. Extract the 4–5 keywords and phrases recruiters search when hiring for "${targetRole}"
 2. Identify the candidate's 3 strongest proof points (metrics, scope, outcomes) from the profile text
 3. Note any credibility signals (companies, tools, certifications) that should be prominent
 4. Assess what the current profile is missing vs. best-in-class profiles for this role
 
-**Output exactly these three sections â€” use these exact section headers:**
+**Output exactly these three sections — use these exact section headers:**
 
 OPTIMIZED HEADLINE
-[Single line, max 220 characters. Format: [Strong Identity Statement] | [Key Skill 1] â€¢ [Key Skill 2] â€¢ [Key Skill 3]. Should contain searchable keywords without sounding robotic. No emojis.]
+[Single line, max 220 characters. Format: [Strong Identity Statement] | [Key Skill 1] • [Key Skill 2] • [Key Skill 3]. Should contain searchable keywords without sounding robotic. No emojis.]
 
 OPTIMIZED ABOUT SECTION
-[5â€“7 sentences, first-person, conversational but professional. Open with a specific hook (a result, a mission, or a distinctive POV â€” never "I am a seasoned professional"). Middle: 2â€“3 specific achievements with metrics that prove the headline's claims. Close: what the candidate is focused on now or looking for. Under 2,000 characters total. No buzzwords, no clichÃ©s, no hollow phrases.]
+[5–7 sentences, first-person, conversational but professional. Open with a specific hook (a result, a mission, or a distinctive POV — never "I am a seasoned professional"). Middle: 2–3 specific achievements with metrics that prove the headline's claims. Close: what the candidate is focused on now or looking for. Under 2,000 characters total. No buzzwords, no clichés, no hollow phrases.]
 
 OPTIMIZED EXPERIENCE BULLETS
-[For each job detected in the profile, provide 3â€“4 rewritten bullet points. Format:
+[For each job detected in the profile, provide 3–4 rewritten bullet points. Format:
 **[Job Title] at [Company]**
-â€¢ [Verb + outcome + metric or scope]
-â€¢ [Verb + outcome + metric or scope]
+• [Verb + outcome + metric or scope]
+• [Verb + outcome + metric or scope]
 Each bullet starts with an action verb that implies ownership. Every bullet must have a concrete outcome or scale indicator. Never start a bullet with "Responsible for", "Helped", "Assisted", or "Worked on". Mirror the language of the target role.]
 
 ## Current LinkedIn Profile:
 ${profileText}
 
 ---
-OUTPUT: LinkedIn Optimization (three labeled sections only â€” no preamble or explanation)`
+OUTPUT: LinkedIn Optimization (three labeled sections only — no preamble or explanation)`
       }]
     });
 
@@ -1232,7 +1225,7 @@ OUTPUT: LinkedIn Optimization (three labeled sections only â€” no preamble 
   }
 });
 
-// â”€â”€â”€ API: Create Stripe checkout session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Create Stripe checkout session ──────────────────────────────────────
 app.post('/api/subscribe', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required.' });
@@ -1254,7 +1247,7 @@ app.post('/api/subscribe', async (req, res) => {
   }
 });
 
-// â”€â”€â”€ API: Create Stripe lifetime checkout session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Create Stripe lifetime checkout session ─────────────────────────────
 app.post('/api/subscribe-lifetime', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required.' });
@@ -1281,7 +1274,7 @@ app.post('/api/subscribe-lifetime', async (req, res) => {
   }
 });
 
-// â”€â”€â”€ Stripe webhook: activate subscription â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Stripe webhook: activate subscription ────────────────────────────────────
 app.post('/webhook', (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -1314,7 +1307,7 @@ app.post('/webhook', (req, res) => {
   res.json({ received: true });
 });
 
-// â”€â”€â”€ API: Forum â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Forum ───────────────────────────────────────────────────────────────
 app.get('/api/forum', (req, res) => {
   const posts = db.prepare('SELECT * FROM forum_posts ORDER BY id DESC').all();
   const replies = db.prepare('SELECT * FROM forum_replies').all();
@@ -1353,7 +1346,7 @@ app.post('/api/forum/:id/reply', (req, res) => {
   res.json({ author: author || 'Anonymous', text: text.trim(), time: 'just now' });
 });
 
-// â”€â”€â”€ API: Career check-in â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Career check-in ─────────────────────────────────────────────────────
 app.get('/api/checkin', (req, res) => {
   const email = (req.query.email || '').toLowerCase();
   const row = email && db.prepare('SELECT * FROM check_ins WHERE email = ?').get(email);
@@ -1390,7 +1383,7 @@ function getCheckInPrompt() {
   return prompts[Math.floor(Math.random() * prompts.length)];
 }
 
-// â”€â”€â”€ API: Contact / Help form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Contact / Help form ─────────────────────────────────────────────────
 app.post('/api/contact', async (req, res) => {
   const { name, email, subject, message } = req.body;
   if (!name || !email || !message) {
@@ -1421,7 +1414,7 @@ app.post('/api/contact', async (req, res) => {
   res.json({ success: true });
 });
 
-// â”€â”€â”€ API: Admin broadcast email â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── API: Admin broadcast email ───────────────────────────────────────────────
 // POST /api/admin/broadcast  { secret: "ADMIN_SECRET value" }
 // Returns { sent, failed, total, errors[] }
 app.post('/api/admin/broadcast', async (req, res) => {
@@ -1443,7 +1436,7 @@ app.post('/api/admin/broadcast', async (req, res) => {
     try {
       await sendEmail({
         to: user.email,
-        subject: "We've made some big improvements to ResumeTailored AI ðŸš€",
+        subject: "We've made some big improvements to ResumeTailored AI 🚀",
         html: broadcastEmailHtml(user.username || 'there')
       });
       sent++;
@@ -1456,11 +1449,11 @@ app.post('/api/admin/broadcast', async (req, res) => {
     }
   }
 
-  console.log(`[Broadcast] Done â€” sent: ${sent}, failed: ${failed}, total: ${allUsers.length}`);
+  console.log(`[Broadcast] Done — sent: ${sent}, failed: ${failed}, total: ${allUsers.length}`);
   res.json({ sent, failed, total: allUsers.length, errors: errors.slice(0, 20) });
 });
 
-// GET /api/admin/users-list?secret=ADMIN_SECRET â€” quick email export
+// GET /api/admin/users-list?secret=ADMIN_SECRET — quick email export
 app.get('/api/admin/users-list', (req, res) => {
   const adminSecret = process.env.ADMIN_SECRET;
   if (!adminSecret || req.query.secret !== adminSecret) {
@@ -1490,7 +1483,7 @@ function broadcastEmailHtml(username) {
     <!-- Body -->
     <div style="padding:40px 40px 32px;">
       <h1 style="font-size:26px;font-weight:900;color:#111827;margin:0 0 14px;line-height:1.3;">
-        Hey ${username}, we've been busy ðŸ‘‹
+        Hey ${username}, we've been busy 👋
       </h1>
       <p style="font-size:16px;color:#374151;line-height:1.75;margin:0 0 24px;">
         Since you first signed up, we've completely upgraded ResumeTailored AI. If you remember it as a simple resume paste tool, you're in for a real surprise.
@@ -1501,23 +1494,23 @@ function broadcastEmailHtml(username) {
         <p style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#2563eb;margin:0 0 20px;">What's new</p>
 
         <div style="display:flex;gap:14px;margin-bottom:18px;">
-          <span style="font-size:22px;line-height:1;flex-shrink:0;">âœï¸</span>
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">✍️</span>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Resume Builder â€” Fill Out a Form, Get a Resume</div>
-            <div style="font-size:14px;color:#6b7280;line-height:1.65;">No resume on hand? Build one from scratch directly inside the app. Fill in your experience, education, and skills â€” the AI takes it from there.</div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Resume Builder — Fill Out a Form, Get a Resume</div>
+            <div style="font-size:14px;color:#6b7280;line-height:1.65;">No resume on hand? Build one from scratch directly inside the app. Fill in your experience, education, and skills — the AI takes it from there.</div>
           </div>
         </div>
 
         <div style="display:flex;gap:14px;margin-bottom:18px;">
-          <span style="font-size:22px;line-height:1;flex-shrink:0;">ðŸ”—</span>
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">🔗</span>
           <div>
             <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">LinkedIn Profile Optimizer</div>
-            <div style="font-size:14px;color:#6b7280;line-height:1.65;">Paste your LinkedIn profile and target role â€” get an AI-rewritten headline, About section, and experience bullets that make recruiters stop scrolling.</div>
+            <div style="font-size:14px;color:#6b7280;line-height:1.65;">Paste your LinkedIn profile and target role — get an AI-rewritten headline, About section, and experience bullets that make recruiters stop scrolling.</div>
           </div>
         </div>
 
         <div style="display:flex;gap:14px;margin-bottom:18px;">
-          <span style="font-size:22px;line-height:1;flex-shrink:0;">ðŸ“„</span>
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">📄</span>
           <div>
             <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">40 Professional Templates</div>
             <div style="font-size:14px;color:#6b7280;line-height:1.65;">20 resume templates + 20 cover letter templates designed for every industry and style. Pick one, tailor it, download it as a PDF or Word doc.</div>
@@ -1525,18 +1518,18 @@ function broadcastEmailHtml(username) {
         </div>
 
         <div style="display:flex;gap:14px;margin-bottom:18px;">
-          <span style="font-size:22px;line-height:1;flex-shrink:0;">ðŸ“Š</span>
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">📊</span>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Career Hub â€” Salary Guides, Forum &amp; Check-Ins</div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Career Hub — Salary Guides, Forum &amp; Check-Ins</div>
             <div style="font-size:14px;color:#6b7280;line-height:1.65;">Word-for-word salary negotiation scripts, a community forum to share wins and tips, and quarterly career check-ins to keep you progressing.</div>
           </div>
         </div>
 
         <div style="display:flex;gap:14px;">
-          <span style="font-size:22px;line-height:1;flex-shrink:0;">ðŸŒ</span>
+          <span style="font-size:22px;line-height:1;flex-shrink:0;">🌐</span>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Full Chinese Language Support (ä¸­æ–‡)</div>
-            <div style="font-size:14px;color:#6b7280;line-height:1.65;">The entire dashboard is now available in Simplified Chinese. Works with Bossç›´è˜, çŒŽè˜, and æ™ºè”æ‹›è˜ job postings â€” just paste and tailor.</div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">Full Chinese Language Support (中文)</div>
+            <div style="font-size:14px;color:#6b7280;line-height:1.65;">The entire dashboard is now available in Simplified Chinese. Works with Boss直聘, 猎聘, and 智联招聘 job postings — just paste and tailor.</div>
           </div>
         </div>
       </div>
@@ -1544,13 +1537,13 @@ function broadcastEmailHtml(username) {
       <!-- Free tier reminder -->
       <div style="background:#eff6ff;border-radius:12px;padding:18px 20px;margin-bottom:28px;border-left:4px solid #2563eb;">
         <p style="font-size:15px;font-weight:700;color:#1d4ed8;margin:0 0 4px;">Your free tier is still active</p>
-        <p style="font-size:14px;color:#3b82f6;margin:0;line-height:1.6;">You still get 1 free resume tailoring + 1 free cover letter every day â€” no credit card needed. Come give the new version a try.</p>
+        <p style="font-size:14px;color:#3b82f6;margin:0;line-height:1.6;">You still get 1 free resume tailoring + 1 free cover letter every day — no credit card needed. Come give the new version a try.</p>
       </div>
 
       <!-- CTA -->
       <div style="text-align:center;margin-bottom:36px;">
         <a href="https://resumetailored.com/dashboard" style="display:inline-block;background:#2563eb;color:#ffffff;font-size:18px;font-weight:800;padding:18px 48px;border-radius:12px;text-decoration:none;letter-spacing:-0.3px;">
-          Go to My Dashboard â†’
+          Go to My Dashboard →
         </a>
         <div style="margin-top:10px;font-size:13px;color:#9ca3af;">1 free tailoring waiting for you today</div>
       </div>
