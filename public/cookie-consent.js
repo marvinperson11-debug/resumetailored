@@ -1,0 +1,82 @@
+// Google Consent Mode v2 — must load BEFORE gtag
+(function() {
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+
+  // Set Consent Mode v2 defaults (all denied until user chooses)
+  gtag('consent', 'default', {
+    ad_storage:              'denied',
+    ad_user_data:            'denied',
+    ad_personalization:      'denied',
+    analytics_storage:       'denied',
+    functionality_storage:   'denied',
+    personalization_storage: 'denied',
+    security_storage:        'granted',
+    wait_for_update:         500
+  });
+
+  var STORAGE_KEY = 'rta_cookie_consent';
+
+  function applyConsent(choice) {
+    var granted = choice === 'accepted';
+    gtag('consent', 'update', {
+      ad_storage:              granted ? 'granted' : 'denied',
+      ad_user_data:            granted ? 'granted' : 'denied',
+      ad_personalization:      granted ? 'granted' : 'denied',
+      analytics_storage:       granted ? 'granted' : 'denied',
+      functionality_storage:   'granted',
+      personalization_storage: granted ? 'granted' : 'denied'
+    });
+  }
+
+  var stored = localStorage.getItem(STORAGE_KEY);
+  if (stored) {
+    applyConsent(stored);
+    return; // Banner already handled
+  }
+
+  // Inject banner CSS + HTML
+  var css = [
+    '#rta-consent{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:99999;',
+    'width:calc(100% - 32px);max-width:680px;',
+    'background:rgba(15,20,50,0.97);border:1px solid rgba(99,102,241,0.3);',
+    'border-radius:16px;padding:20px 24px;box-shadow:0 8px 40px rgba(0,0,0,0.6);',
+    'display:flex;align-items:center;gap:20px;flex-wrap:wrap;',
+    'font-family:system-ui,-apple-system,sans-serif;}',
+    '#rta-consent p{font-size:13px;color:#94a3b8;line-height:1.5;flex:1;min-width:220px;margin:0;}',
+    '#rta-consent a{color:#818CF8;font-weight:600;text-decoration:underline;}',
+    '#rta-consent .rta-btns{display:flex;gap:10px;flex-shrink:0;}',
+    '#rta-consent button{padding:9px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;}',
+    '#rta-accept{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;}',
+    '#rta-reject{background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.1)!important;}',
+    '#rta-reject:hover{background:rgba(255,255,255,0.1);color:#e2e8f0;}'
+  ].join('');
+
+  var style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+
+  var banner = document.createElement('div');
+  banner.id = 'rta-consent';
+  banner.innerHTML = [
+    '<p>We use cookies to improve your experience and measure site performance. ',
+    'See our <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>.</p>',
+    '<div class="rta-btns">',
+    '<button id="rta-reject">Reject</button>',
+    '<button id="rta-accept">Accept All</button>',
+    '</div>'
+  ].join('');
+
+  function dismiss(choice) {
+    localStorage.setItem(STORAGE_KEY, choice);
+    applyConsent(choice);
+    var el = document.getElementById('rta-consent');
+    if (el) el.remove();
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.body.appendChild(banner);
+    document.getElementById('rta-accept').addEventListener('click', function() { dismiss('accepted'); });
+    document.getElementById('rta-reject').addEventListener('click', function() { dismiss('rejected'); });
+  });
+})();

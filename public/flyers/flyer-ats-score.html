@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  width:800px; height:600px; overflow:hidden;
+  font-family:'Inter',system-ui,sans-serif;
+  background:#030712;
+  background-image:
+    radial-gradient(ellipse 70% 60% at 50% -10%, rgba(99,102,241,0.22), transparent),
+    radial-gradient(ellipse 40% 40% at 85% 80%, rgba(139,92,246,0.15), transparent);
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+
+/* Grid lines */
+.grid-bg {
+  position:absolute; inset:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px);
+  background-size:56px 56px;
+}
+
+.logo {
+  position:absolute; top:22px; left:24px;
+  display:flex; align-items:center; gap:8px;
+}
+.logo-mark {
+  width:30px; height:30px;
+  background:linear-gradient(135deg,#6366F1,#8B5CF6);
+  border-radius:7px; display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:15px; color:white;
+}
+.logo-text { color:#e2e8f0; font-size:13px; font-weight:600; }
+
+.badge {
+  position:absolute; top:22px; right:22px;
+  background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.4);
+  color:#10b981; padding:5px 12px; border-radius:999px;
+  font-size:10.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase;
+}
+
+/* Layout */
+.layout { display:flex; align-items:center; gap:48px; padding:0 48px; width:100%; }
+
+/* Left: text */
+.left { flex:1; }
+.eyebrow {
+  font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+  color:#6366F1; margin-bottom:14px;
+}
+h1 {
+  font-size:52px; font-weight:900; line-height:1.04; letter-spacing:-2px;
+  color:#e2e8f0; margin-bottom:16px;
+}
+h1 .grad {
+  background:linear-gradient(135deg,#6366F1,#8B5CF6,#a78bfa);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.sub {
+  font-size:14px; color:#94a3b8; line-height:1.6; margin-bottom:22px; max-width:280px;
+}
+.cta {
+  display:inline-block;
+  background:linear-gradient(135deg,#6366F1,#8B5CF6);
+  color:white; padding:11px 24px; border-radius:10px;
+  font-size:13px; font-weight:700;
+  box-shadow:0 0 24px rgba(99,102,241,0.45);
+}
+.cta-note { font-size:11px; color:#64748b; margin-top:8px; }
+
+/* Right: Score gauge */
+.right { display:flex; flex-direction:column; align-items:center; gap:16px; flex-shrink:0; }
+
+.score-ring {
+  position:relative; width:180px; height:180px;
+}
+.score-ring svg { transform:rotate(-90deg); }
+.track { fill:none; stroke:rgba(99,102,241,0.12); stroke-width:12; }
+.fill  { fill:none; stroke:url(#scoreGrad); stroke-width:12; stroke-linecap:round;
+         stroke-dasharray:471; stroke-dashoffset:80; }
+.score-center {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+}
+.score-num {
+  font-size:44px; font-weight:900; letter-spacing:-2px;
+  background:linear-gradient(135deg,#6366F1,#a78bfa);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.score-label { font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; }
+
+/* Mini keyword chips */
+.keywords { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; max-width:190px; }
+.kw {
+  padding:3px 10px; border-radius:999px; font-size:10.5px; font-weight:600;
+}
+.kw.match { background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); }
+.kw.miss  { background:rgba(239,68,68,0.1);  color:#f87171; border:1px solid rgba(239,68,68,0.2); }
+.kw-label { font-size:10px; color:#475569; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px; }
+
+.footer {
+  position:absolute; bottom:16px;
+  font-size:11.5px; color:#475569; font-weight:500;
+}
+.footer span { color:#6366F1; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<div class="logo">
+  <div class="logo-mark">R</div>
+  <span class="logo-text">ResumeTailor AI</span>
+</div>
+<div class="badge">✓ FREE — No Sign-Up Required</div>
+
+<div class="layout">
+  <div class="left">
+    <div class="eyebrow">✦ ATS Resume Scanner</div>
+    <h1>Is your<br>resume<br><span class="grad">ATS-ready?</span></h1>
+    <p class="sub">See your keyword match score, missing skills, and exactly what to fix — instantly and for free.</p>
+    <div class="cta">Scan My Resume Free →</div>
+    <div class="cta-note">No account needed &nbsp;·&nbsp; Results in seconds</div>
+  </div>
+
+  <div class="right">
+    <div class="score-ring">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <defs>
+          <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#6366F1"/>
+            <stop offset="100%" stop-color="#a78bfa"/>
+          </linearGradient>
+        </defs>
+        <circle class="track" cx="90" cy="90" r="75"/>
+        <circle class="fill"  cx="90" cy="90" r="75"/>
+      </svg>
+      <div class="score-center">
+        <div class="score-num">91</div>
+        <div class="score-label">ATS Score</div>
+      </div>
+    </div>
+
+    <div style="text-align:center">
+      <div class="kw-label">Keyword Match</div>
+      <div class="keywords">
+        <span class="kw match">Python</span>
+        <span class="kw match">SQL</span>
+        <span class="kw match">Agile</span>
+        <span class="kw miss">Kubernetes</span>
+        <span class="kw match">REST API</span>
+        <span class="kw miss">Terraform</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Scan free at <span>resumetailored.com</span></div>
+</body>
+</html>

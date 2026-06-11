@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 800px; height: 600px; overflow: hidden;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0a0f2c 0%, #0d1b4b 55%, #1a2a6c 100%);
+    position: relative;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 28px 32px;
+  }
+  .circle {
+    position: absolute; border-radius: 50%;
+    pointer-events: none;
+  }
+  .c1 { width: 260px; height: 260px; top: -70px; right: -50px; background: radial-gradient(circle, rgba(37,99,235,0.13) 0%, transparent 70%); }
+  .c2 { width: 180px; height: 180px; bottom: -40px; left: -30px; background: radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%); }
+
+  .logo {
+    position: absolute; top: 22px; left: 24px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .logo-mark {
+    width: 28px; height: 28px; background: white; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px; color: #1a2a6c;
+  }
+  .logo-text { color: white; font-size: 13px; font-weight: 600; opacity: 0.9; }
+
+  .badge {
+    background: #f59e0b; color: #1a1a1a;
+    padding: 5px 14px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+
+  .headline { text-align: center; margin-bottom: 14px; }
+  .headline h1 {
+    font-size: 44px; font-weight: 900; line-height: 1.08;
+    color: white; letter-spacing: -1.5px;
+  }
+  .headline h1 .blue { color: #60a5fa; }
+
+  /* Table */
+  .table-wrap {
+    width: 100%; max-width: 680px;
+    background: rgba(10, 20, 60, 0.75);
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.12);
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr {
+    background: rgba(255,255,255,0.06);
+  }
+  th {
+    padding: 9px 8px; font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    text-align: center;
+  }
+  th.feat-col { text-align: left; padding-left: 14px; color: rgba(255,255,255,0.55); }
+  th.jobscan-col { color: #f87171; }
+  th.rezi-col { color: #94a3b8; }
+  th.rt-col { color: #34d399; font-size: 12px; }
+
+  tbody tr { border-top: 1px solid rgba(255,255,255,0.06); }
+  tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+  td {
+    padding: 7px 8px; font-size: 11.5px;
+    text-align: center; vertical-align: middle;
+  }
+  td.feat { text-align: left; padding-left: 14px; color: rgba(255,255,255,0.8); font-weight: 500; }
+
+  td.jobscan { color: #f87171; background: rgba(239,68,68,0.06); }
+  td.rezi { color: #94a3b8; background: rgba(148,163,184,0.05); }
+  td.rt { color: #34d399; background: rgba(52,211,153,0.08); font-weight: 700; }
+
+  .win { color: #34d399; font-weight: 700; }
+  .loss { color: #f87171; }
+  .warn { color: #fbbf24; }
+
+  .footer {
+    position: absolute; bottom: 14px;
+    font-size: 12px; color: #93c5fd; font-weight: 500;
+  }
+</style>
+</head>
+<body>
+  <div class="circle c1"></div>
+  <div class="circle c2"></div>
+
+  <div class="logo">
+    <div class="logo-mark">R</div>
+    <span class="logo-text">ResumeTailor AI</span>
+  </div>
+
+  <div class="badge">★ SEE HOW WE COMPARE</div>
+
+  <div class="headline">
+    <h1>Best Value. <span class="blue">Best Features.</span></h1>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="feat-col">Feature</th>
+          <th class="jobscan-col">Jobscan</th>
+          <th class="rezi-col">Rezi</th>
+          <th class="rt-col">ResumeTailor AI ✦</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="feat">Monthly price</td>
+          <td class="jobscan"><s style="opacity:0.6">$49.95</s></td>
+          <td class="rezi"><s style="opacity:0.6">$29</s></td>
+          <td class="rt">$19 ✓</td>
+        </tr>
+        <tr>
+          <td class="feat">Free tier</td>
+          <td class="jobscan">5 scans only</td>
+          <td class="rezi">1 resume only</td>
+          <td class="rt">1 full rewrite/day ✓</td>
+        </tr>
+        <tr>
+          <td class="feat">Full AI rewrite</td>
+          <td class="jobscan">Score only ✗</td>
+          <td class="rezi">✓</td>
+          <td class="rt">✓</td>
+        </tr>
+        <tr>
+          <td class="feat">Cover letters</td>
+          <td class="jobscan">Basic ✗</td>
+          <td class="rezi" style="color:#fbbf24">Needs editing ⚠</td>
+          <td class="rt">Job-specific, ready ✓</td>
+        </tr>
+        <tr>
+          <td class="feat">ATS keyword score</td>
+          <td class="jobscan" style="color:#34d399">✓</td>
+          <td class="rezi" style="color:#34d399">✓</td>
+          <td class="rt">✓</td>
+        </tr>
+        <tr>
+          <td class="feat">Lifetime option</td>
+          <td class="jobscan">✗</td>
+          <td class="rezi" style="color:#94a3b8">$149</td>
+          <td class="rt">$129 ✓</td>
+        </tr>
+        <tr>
+          <td class="feat">Resume + cover letter</td>
+          <td class="jobscan">✗</td>
+          <td class="rezi">✗</td>
+          <td class="rt">In 30 seconds ✓</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer"><strong>resumetailored.com</strong></div>
+</body>
+</html>

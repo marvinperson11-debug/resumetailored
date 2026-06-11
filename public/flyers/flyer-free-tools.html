@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 800px; height: 600px; overflow: hidden;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0a0f2c 0%, #0d1b4b 55%, #1a2a6c 100%);
+    position: relative;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 32px;
+  }
+  .circle {
+    position: absolute; border-radius: 50%;
+    background: radial-gradient(circle, rgba(37,99,235,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .c1 { width: 280px; height: 280px; top: -60px; left: -50px; }
+  .c2 { width: 220px; height: 220px; bottom: -50px; right: -30px; background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%); }
+
+  .logo {
+    position: absolute; top: 22px; left: 24px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .logo-mark {
+    width: 28px; height: 28px; background: white; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 14px; color: #1a2a6c;
+  }
+  .logo-text { color: white; font-size: 13px; font-weight: 600; opacity: 0.9; }
+
+  .badge {
+    background: #f59e0b; color: #1a1a1a;
+    padding: 6px 16px; border-radius: 999px;
+    font-size: 11px; font-weight: 800; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+
+  .headline { text-align: center; margin-bottom: 16px; }
+  .headline h1 {
+    font-size: 58px; font-weight: 900; line-height: 1.05;
+    color: white; letter-spacing: -2px;
+  }
+  .headline h1 .blue { color: #60a5fa; }
+
+  .card {
+    background: rgba(37, 99, 235, 0.82);
+    border-radius: 18px; padding: 18px 24px;
+    width: 100%; max-width: 560px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 8px 20px;
+    margin-bottom: 12px;
+  }
+  .tool-item {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12.5px; color: rgba(255,255,255,0.93); font-weight: 500;
+  }
+  .tool-item .icon { font-size: 15px; }
+  .tool-item .limit {
+    font-size: 10px; color: #fbbf24; font-weight: 700;
+    background: rgba(251,191,36,0.15); border-radius: 4px;
+    padding: 1px 5px; margin-left: 3px;
+  }
+
+  .no-card {
+    text-align: center; font-size: 11.5px; color: rgba(255,255,255,0.7);
+    font-weight: 500;
+  }
+
+  .footer {
+    position: absolute; bottom: 18px;
+    font-size: 12px; color: #93c5fd; font-weight: 500;
+  }
+</style>
+</head>
+<body>
+  <div class="circle c1"></div>
+  <div class="circle c2"></div>
+
+  <div class="logo">
+    <div class="logo-mark">R</div>
+    <span class="logo-text">ResumeTailor AI</span>
+  </div>
+
+  <div class="badge">✦ FREE FOREVER TOOLS</div>
+
+  <div class="headline">
+    <h1>Powerful.<br><span class="blue">For Free.</span></h1>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div class="tool-item"><span class="icon">📄</span> AI Resume Tailor <span class="limit">1/day</span></div>
+      <div class="tool-item"><span class="icon">🌐</span> Job URL Auto-Fetch</div>
+      <div class="tool-item"><span class="icon">✉️</span> Cover Letter Writer <span class="limit">1/day</span></div>
+      <div class="tool-item"><span class="icon">📋</span> Resume Templates (2 free)</div>
+      <div class="tool-item"><span class="icon">🎯</span> ATS Match Scanner <span class="limit">1/day</span></div>
+      <div class="tool-item"><span class="icon">🌏</span> Chinese Job Boards</div>
+      <div class="tool-item"><span class="icon">💼</span> LinkedIn Optimizer <span class="limit">1/day</span></div>
+      <div class="tool-item"><span class="icon">💬</span> Career Community Forum</div>
+    </div>
+    <div class="no-card">No credit card required &nbsp;·&nbsp; Start in seconds</div>
+  </div>
+
+  <div class="footer">Start free at <strong>resumetailored.com</strong></div>
+</body>
+</html>

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 800px; height: 600px; overflow: hidden;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(145deg, #050a1a 0%, #0a0f2c 40%, #0d1240 100%);
+    position: relative;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+
+  /* Stars */
+  .stars {
+    position: absolute; inset: 0; pointer-events: none;
+  }
+  .star {
+    position: absolute; background: white; border-radius: 50%;
+    opacity: 0.4;
+  }
+
+  /* Background glow */
+  .bg-glow {
+    position: absolute; width: 400px; height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(236,72,153,0.08) 50%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  /* Logo monogram */
+  .logo-wrap {
+    position: relative;
+    width: 200px; height: 200px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 28px;
+  }
+  .logo-disc {
+    position: absolute; inset: 0; border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%, #1a1a2e 0%, #0d0d1a 100%);
+    box-shadow:
+      0 0 60px rgba(139,92,246,0.35),
+      0 0 120px rgba(236,72,153,0.2),
+      inset 0 0 30px rgba(0,0,0,0.5);
+  }
+  .monogram {
+    position: relative; z-index: 2;
+    font-size: 88px; font-weight: 900;
+    line-height: 1;
+    background: linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #ec4899 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 20px rgba(168,85,247,0.7)) drop-shadow(0 0 40px rgba(236,72,153,0.4));
+    letter-spacing: -4px;
+  }
+  /* Neon outline ring */
+  .ring {
+    position: absolute; inset: -4px; border-radius: 50%;
+    border: 1.5px solid transparent;
+    background: linear-gradient(135deg, rgba(139,92,246,0.4), rgba(236,72,153,0.3), transparent) border-box;
+    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: destination-out;
+    mask-composite: exclude;
+  }
+
+  /* Sparkles */
+  .sparkle {
+    position: absolute; font-size: 14px;
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    opacity: 0.7;
+  }
+
+  /* Brand name */
+  .brand-name {
+    font-size: 28px; font-weight: 800; color: white;
+    letter-spacing: -0.5px; margin-bottom: 8px;
+    text-align: center;
+  }
+  .tagline {
+    font-size: 14px; color: #93c5fd; font-weight: 500;
+    letter-spacing: 0.05em; text-align: center;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+  <!-- Scattered stars -->
+  <div class="stars">
+    <div class="star" style="width:2px;height:2px;top:8%;left:12%"></div>
+    <div class="star" style="width:3px;height:3px;top:15%;left:78%"></div>
+    <div class="star" style="width:2px;height:2px;top:22%;left:45%"></div>
+    <div class="star" style="width:2px;height:2px;top:70%;left:20%"></div>
+    <div class="star" style="width:3px;height:3px;top:80%;left:72%"></div>
+    <div class="star" style="width:2px;height:2px;top:55%;left:88%"></div>
+    <div class="star" style="width:2px;height:2px;top:35%;left:6%"></div>
+    <div class="star" style="width:2px;height:2px;top:90%;left:40%"></div>
+    <div class="star" style="width:3px;height:3px;top:5%;left:55%"></div>
+    <div class="star" style="width:2px;height:2px;top:48%;left:3%"></div>
+  </div>
+
+  <div class="bg-glow"></div>
+
+  <div class="logo-wrap">
+    <div class="logo-disc"></div>
+    <div class="monogram">RT</div>
+    <div class="ring"></div>
+    <!-- Sparkles around logo -->
+    <span class="sparkle" style="top:-10px;right:24px">✦</span>
+    <span class="sparkle" style="bottom:0px;left:10px;font-size:10px">✦</span>
+    <span class="sparkle" style="top:30px;left:-14px;font-size:10px">✦</span>
+  </div>
+
+  <div class="brand-name">ResumeTailor AI</div>
+  <div class="tagline">AI-Powered Career Tools</div>
+</body>
+</html>

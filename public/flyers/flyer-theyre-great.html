@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  width:800px; height:600px; overflow:hidden;
+  font-family:'Inter',system-ui,sans-serif;
+  background:#030712;
+  background-image:
+    radial-gradient(ellipse 60% 50% at 20% 50%, rgba(99,102,241,0.12), transparent),
+    radial-gradient(ellipse 50% 40% at 80% 20%, rgba(139,92,246,0.10), transparent);
+  position:relative;
+  display:flex; align-items:center;
+  padding:0 48px;
+  gap:44px;
+}
+
+.grid-bg {
+  position:absolute; inset:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.05) 1px, transparent 1px);
+  background-size:56px 56px;
+}
+
+.logo {
+  position:absolute; top:22px; left:24px;
+  display:flex; align-items:center; gap:8px;
+}
+.logo-mark {
+  width:30px; height:30px;
+  background:linear-gradient(135deg,#6366F1,#8B5CF6);
+  border-radius:7px; display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:15px; color:white;
+}
+.logo-text { color:#e2e8f0; font-size:13px; font-weight:600; }
+
+/* Left */
+.left { flex:1; }
+.eyebrow {
+  font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+  color:#6366F1; margin-bottom:14px;
+}
+h1 {
+  font-size:42px; font-weight:900; line-height:1.1; letter-spacing:-1.5px;
+  color:#e2e8f0; margin-bottom:20px;
+}
+h1 .they { color:#94a3b8; }
+h1 .we {
+  background:linear-gradient(135deg,#6366F1,#a78bfa);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+
+/* Comparison panels */
+.panels { display:flex; flex-direction:column; gap:10px; }
+.panel {
+  display:flex; align-items:center;
+  border-radius:10px; overflow:hidden;
+  border:1px solid rgba(255,255,255,0.06);
+}
+.panel-label {
+  width:110px; flex-shrink:0; padding:10px 12px;
+  font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;
+  text-align:center;
+}
+.panel-label.them { background:rgba(255,255,255,0.04); color:#64748b; }
+.panel-label.us { background:rgba(99,102,241,0.15); color:#6366F1; }
+
+.panel-items { display:flex; flex:1; padding:8px 12px; gap:8px; flex-wrap:wrap; align-items:center; }
+.chip {
+  padding:3px 10px; border-radius:6px; font-size:11px; font-weight:600;
+}
+.chip.ok { background:rgba(255,255,255,0.05); color:#94a3b8; }
+.chip.win { background:rgba(99,102,241,0.15); color:#a78bfa; border:1px solid rgba(99,102,241,0.25); }
+.chip.loss { background:rgba(239,68,68,0.08); color:#f87171; }
+
+/* Right */
+.right { width:220px; flex-shrink:0; display:flex; flex-direction:column; gap:12px; }
+
+.verdict-card {
+  background:rgba(99,102,241,0.1);
+  border:1px solid rgba(99,102,241,0.25);
+  border-radius:14px; padding:20px 16px; text-align:center;
+}
+.verdict-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:#6366F1; margin-bottom:8px; }
+.verdict-price {
+  font-size:40px; font-weight:900; letter-spacing:-2px;
+  background:linear-gradient(135deg,#6366F1,#a78bfa);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  margin-bottom:4px;
+}
+.verdict-sub { font-size:11px; color:#64748b; }
+
+.free-chip {
+  background:rgba(16,185,129,0.12);
+  border:1px solid rgba(16,185,129,0.3);
+  border-radius:10px; padding:12px 14px; text-align:center;
+}
+.free-chip-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:#10b981; margin-bottom:4px; }
+.free-chip-val { font-size:14px; font-weight:800; color:#e2e8f0; }
+
+.footer {
+  position:absolute; bottom:16px;
+  font-size:11.5px; color:#475569;
+}
+.footer span { color:#6366F1; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+
+<div class="logo">
+  <div class="logo-mark">R</div>
+  <span class="logo-text">ResumeTailor AI</span>
+</div>
+
+<div class="left">
+  <div class="eyebrow">✦ Honest Comparison</div>
+  <h1><span class="they">They're great.</span><br>We're just<br><span class="we">better.</span></h1>
+
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-label them">Jobscan</div>
+      <div class="panel-items">
+        <span class="chip ok">ATS scoring ✓</span>
+        <span class="chip loss">$49.95/mo</span>
+        <span class="chip loss">No cover letters</span>
+        <span class="chip loss">No lifetime deal</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-label them">Rezi</div>
+      <div class="panel-items">
+        <span class="chip ok">AI rewrite ✓</span>
+        <span class="chip loss">$29/mo</span>
+        <span class="chip loss">Cover letters need editing</span>
+        <span class="chip ok">$149 lifetime</span>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-label us">Us ✦</div>
+      <div class="panel-items">
+        <span class="chip win">$19/mo ✓ cheapest</span>
+        <span class="chip win">AI resume + cover letter</span>
+        <span class="chip win">Free ATS scan daily</span>
+        <span class="chip win">$129 lifetime ✓ best</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="right">
+  <div class="verdict-card">
+    <div class="verdict-label">Pro Plan</div>
+    <div class="verdict-price">$19</div>
+    <div class="verdict-sub">per month<br>cancel anytime</div>
+  </div>
+  <div class="free-chip">
+    <div class="free-chip-label">Free ATS Scan</div>
+    <div class="free-chip-val">1 per day, always</div>
+  </div>
+</div>
+
+<div class="footer">Compare at <span>resumetailored.com/#pricing</span></div>
+</body>
+</html>

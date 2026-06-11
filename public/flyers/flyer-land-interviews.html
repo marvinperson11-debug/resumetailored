@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  width:800px; height:600px; overflow:hidden;
+  font-family:'Inter',system-ui,sans-serif;
+  background:#030712;
+  position:relative;
+  display:flex; align-items:stretch;
+}
+
+/* Left panel */
+.left {
+  width:420px; flex-shrink:0;
+  background:linear-gradient(160deg,#1e1b4b 0%,#312e81 40%,#4c1d95 100%);
+  display:flex; flex-direction:column; justify-content:center;
+  padding:44px 40px;
+  position:relative; overflow:hidden;
+}
+.left-orb {
+  position:absolute; border-radius:50%; filter:blur(60px); pointer-events:none;
+}
+.lo1 { width:300px; height:300px; top:-100px; right:-80px; background:rgba(139,92,246,0.35); }
+.lo2 { width:200px; height:200px; bottom:-60px; left:-60px; background:rgba(99,102,241,0.30); }
+
+.logo {
+  position:absolute; top:22px; left:24px;
+  display:flex; align-items:center; gap:8px; z-index:2;
+}
+.logo-mark {
+  width:30px; height:30px;
+  background:rgba(255,255,255,0.15);
+  border-radius:7px; display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:15px; color:white;
+  border:1px solid rgba(255,255,255,0.2);
+}
+.logo-text { color:rgba(255,255,255,0.85); font-size:13px; font-weight:600; }
+
+.eyebrow {
+  font-size:10.5px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase;
+  color:rgba(196,181,253,0.8); margin-bottom:14px; position:relative; z-index:2;
+}
+h1 {
+  font-size:56px; font-weight:900; line-height:1.02; letter-spacing:-2.5px;
+  color:white; margin-bottom:18px;
+  position:relative; z-index:2;
+  text-shadow:0 2px 20px rgba(0,0,0,0.3);
+}
+.sub {
+  font-size:13.5px; color:rgba(196,181,253,0.85); line-height:1.6;
+  margin-bottom:28px; position:relative; z-index:2;
+}
+
+.cta-btn {
+  display:inline-block;
+  background:white; color:#4f46e5;
+  padding:12px 24px; border-radius:10px;
+  font-size:13px; font-weight:800;
+  box-shadow:0 4px 20px rgba(0,0,0,0.3);
+  position:relative; z-index:2; width:fit-content;
+}
+
+/* Right panel */
+.right {
+  flex:1; background:#030712;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:32px 36px; gap:16px;
+  position:relative;
+}
+.right::before {
+  content:'';
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse 80% 80% at 80% 50%, rgba(99,102,241,0.08), transparent);
+}
+
+.right-title {
+  font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+  color:#6366F1; margin-bottom:4px; position:relative;
+}
+
+/* Stat bubbles */
+.stats { display:flex; flex-direction:column; gap:12px; position:relative; }
+.stat-item {
+  display:flex; align-items:center; gap:14px;
+  padding:14px 16px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:12px;
+  transition:all 0.2s;
+}
+.stat-item.active {
+  background:rgba(99,102,241,0.1);
+  border-color:rgba(99,102,241,0.25);
+}
+.stat-icon { font-size:22px; flex-shrink:0; }
+.stat-text { flex:1; }
+.stat-heading { font-size:13px; font-weight:700; color:#e2e8f0; margin-bottom:2px; }
+.stat-sub { font-size:11px; color:#64748b; line-height:1.4; }
+.stat-badge {
+  font-size:10px; font-weight:800; padding:3px 8px; border-radius:6px;
+  white-space:nowrap; flex-shrink:0;
+}
+.badge-green { background:rgba(16,185,129,0.15); color:#10b981; }
+.badge-purple { background:rgba(99,102,241,0.15); color:#a78bfa; }
+.badge-amber { background:rgba(245,158,11,0.15); color:#fbbf24; }
+
+.footer {
+  position:absolute; bottom:14px; right:20px;
+  font-size:11px; color:#374151;
+}
+.footer span { color:#6366F1; font-weight:700; }
+</style>
+</head>
+<body>
+
+<div class="left">
+  <div class="left-orb lo1"></div>
+  <div class="left-orb lo2"></div>
+
+  <div class="logo">
+    <div class="logo-mark">R</div>
+    <span class="logo-text">ResumeTailor AI</span>
+  </div>
+
+  <div class="eyebrow">✦ Free ATS Scanner</div>
+  <h1>Land<br>more<br>inter&shy;views.</h1>
+  <p class="sub">Know exactly how your resume scores against the job before you apply.</p>
+  <div class="cta-btn">Scan Free — No Sign-Up</div>
+</div>
+
+<div class="right">
+  <div class="right-title">✦ What you get — free</div>
+  <div class="stats">
+    <div class="stat-item active">
+      <span class="stat-icon">🎯</span>
+      <div class="stat-text">
+        <div class="stat-heading">ATS Keyword Match Score</div>
+        <div class="stat-sub">See exactly how well your resume matches the job description</div>
+      </div>
+      <span class="stat-badge badge-purple">FREE</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-icon">🔍</span>
+      <div class="stat-text">
+        <div class="stat-heading">Missing Keywords</div>
+        <div class="stat-sub">Get the exact keywords you need to add to pass ATS filters</div>
+      </div>
+      <span class="stat-badge badge-green">1/DAY</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-icon">✍️</span>
+      <div class="stat-text">
+        <div class="stat-heading">Rewrite Suggestions</div>
+        <div class="stat-sub">AI-powered bullet improvements to boost your score instantly</div>
+      </div>
+      <span class="stat-badge badge-amber">FREE</span>
+    </div>
+  </div>
+
+  <div class="footer"><span>resumetailored.com</span></div>
+</div>
+
+</body>
+</html>
