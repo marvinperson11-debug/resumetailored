@@ -10,6 +10,7 @@
   <link rel="icon" href="favicon-32.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&family=Satisfy&family=Caveat:wght@600&display=swap" rel="stylesheet" />
+  <script src="/cookie-consent.js"></script>
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
   <script>
@@ -557,7 +558,13 @@
               <span class="platform-chip platform-chip-cn">智联招聘 Zhaopin</span>
               <span class="platform-chip">+ more</span>
             </div>
-            <textarea id="job" spellcheck="false" autocorrect="off" autocapitalize="off" placeholder="Paste the full job description here...&#10;&#10;Works with: LinkedIn, Indeed, Glassdoor, Boss直聘 (Boss Zhipin), 猎聘 (Liepin), 智联招聘 (Zhaopin), and any job posting in any language." data-i18n-placeholder="job_placeholder"></textarea>
+            <div style="margin-bottom:6px;">
+              <button class="upload-btn" onclick="document.getElementById('jobFileInput').click()">
+                <span id="jobUploadBtnText">⬆ Upload Job Posting</span>
+              </button>
+              <input type="file" id="jobFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleJobDescUpload(this)" />
+            </div>
+            <textarea id="job" spellcheck="false" autocorrect="off" autocapitalize="off" placeholder="Paste the full job description here, or upload a file above...&#10;&#10;Works with: LinkedIn, Indeed, Glassdoor, Boss直聘 (Boss Zhipin), 猎聘 (Liepin), 智联招聘 (Zhaopin), and any job posting in any language." data-i18n-placeholder="job_placeholder"></textarea>
           </div>
         </div>
 
@@ -1874,9 +1881,29 @@
     function updateSigPreview() {
       sigName = document.getElementById('sigNameInput').value.trim();
       const preview = document.getElementById('sigPreview');
-      if (!sigName) { preview.style.display = 'none'; return; }
+      if (!sigName) {
+        preview.style.display = 'none';
+        // Remove any existing signature from the live output box
+        const outputBox = document.getElementById('outputBox');
+        const existingSig = outputBox.querySelector('[data-sig="1"]');
+        if (existingSig) existingSig.remove();
+        return;
+      }
       preview.style.display = '';
-      preview.innerHTML = `<span style="font-family:'${sigFont}',cursive;font-size:28px;color:#1e293b;line-height:1.2;">${sigName}</span>`;
+      preview.innerHTML = `<span style="font-family:'${sigFont}',cursive;font-size:28px;color:#1e293b;line-height:1.2;">${escHtml(sigName)}</span>`;
+      // Keep the live output box in sync when results are already shown
+      const outputBox = document.getElementById('outputBox');
+      if (outputBox.innerHTML.trim()) {
+        const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
+        const tpl = OUT_TPLS[tplCat].find(t => t.id === selectedOutputTpl[tplCat]);
+        const sigHtml = renderSignatureHtml(tpl ? tpl.c.p : '#1e293b', _sigScreenIndent(tpl ? tpl.layout : ''));
+        const existingSig = outputBox.querySelector('[data-sig="1"]');
+        if (existingSig) {
+          existingSig.outerHTML = sigHtml;
+        } else {
+          outputBox.innerHTML += sigHtml;
+        }
+      }
     }
 
     function renderSignatureHtml(primaryColor, marginLeft, printMode) {
@@ -1885,9 +1912,9 @@
       const ml = marginLeft ? `margin-left:${marginLeft};` : '';
       const mt = printMode ? 'margin-top:16px;' : 'margin-top:32px;';
       const pbb = printMode ? 'page-break-before:avoid;break-before:avoid;' : '';
-      return `<div style="${mt}padding-top:16px;border-top:1px solid #e2e8f0;${ml}${pbb}">
+      return `<div data-sig="1" style="${mt}padding-top:16px;border-top:1px solid #e2e8f0;${ml}${pbb}">
         <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signature</p>
-        <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${sigName}</p>
+        <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${escHtml(sigName)}</p>
       </div>`;
     }
 
@@ -3690,8 +3717,11 @@
 
     function saveEdit() {
       const box = document.getElementById('outputBox');
-      // Update raw result to the edited text so downloads reflect edits
-      lastRawResult = box.innerText || box.textContent;
+      // Capture text without the signature div (server adds the sig block formatted)
+      const clone = box.cloneNode(true);
+      const sigDiv = clone.querySelector('[data-sig="1"]');
+      if (sigDiv) sigDiv.remove();
+      lastRawResult = clone.innerText || clone.textContent;
       box.removeAttribute('contenteditable');
       document.getElementById('editBar').style.display = 'none';
       document.getElementById('editBtn').style.display = 'inline-flex';
@@ -4137,6 +4167,41 @@ Aaliyah Washington`
       }
     }
 
+    async function handleJobDescUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const btnText = document.getElementById('jobUploadBtnText');
+      btnText.innerHTML = '<span class="spinner"></span> Reading...';
+      const ext = file.name.toLowerCase().split('.').pop();
+      if (ext === 'txt') {
+        const reader = new FileReader();
+        reader.onload = e => {
+          document.getElementById('job').value = e.target.result;
+          btnText.textContent = '✓ ' + file.name;
+          showToast('Job posting loaded!');
+        };
+        reader.onerror = () => { showToast('Could not read file.'); btnText.textContent = '⬆ Upload Job Posting'; };
+        reader.readAsText(file);
+        input.value = '';
+        return;
+      }
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Extraction failed.');
+        document.getElementById('job').value = data.text;
+        btnText.textContent = '✓ ' + file.name;
+        showToast('Job posting loaded!');
+      } catch (err) {
+        showToast(err.message);
+        btnText.textContent = '⬆ Upload Job Posting';
+      } finally {
+        input.value = '';
+      }
+    }
+
     // ── Chinese detection: show translate bar when resume has Chinese text ────
     function hasChinese(text) {
       return /[一-鿿]/.test(text);
@@ -4212,7 +4277,20 @@ Aaliyah Washington`
     }
 
     async function downloadDocx() {
-      const text = getOutputText();
+      // Get raw text without sigName appended — server adds the formatted sig block
+      const box = document.getElementById('outputBox');
+      let text;
+      if (box.contentEditable === 'true') {
+        const clone = box.cloneNode(true);
+        const sigDiv = clone.querySelector('[data-sig="1"]');
+        if (sigDiv) sigDiv.remove();
+        text = clone.innerText || clone.textContent;
+      } else {
+        text = lastRawResult;
+        if (selectedMode === 'both' && lastRawCoverResult) {
+          text = text + '\n\n---\n\n' + lastRawCoverResult;
+        }
+      }
       if (!text) return;
       const filename = document.getElementById('outputTitle').textContent || 'tailored-resume';
       const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
@@ -4339,7 +4417,7 @@ Aaliyah Washington`
     ${printContent}
     ${sigSpacer}${sigHtml}
   </div>
-  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); };<\/script>
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 1000); };<\/script>
 </body>
 </html>`);
       win.document.close();
