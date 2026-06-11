@@ -403,7 +403,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour
   db.prepare('INSERT OR REPLACE INTO reset_tokens (token, email, expires_at) VALUES (?, ?, ?)').run(token, key, expiresAt);
 
-  const origin = req.headers.origin || 'https://resumetailored.com';
+  const origin = process.env.APP_URL || 'https://resumetailored.com';
   const resetUrl = `${origin}/reset-password.html?token=${token}`;
 
   console.log(`[PASSWORD RESET] Link for ${key}: ${resetUrl}`);
@@ -777,7 +777,7 @@ app.get('/api/test-ai', async (req, res) => {
 // ─── API: Check usage status ──────────────────────────────────────────────────
 app.get('/api/status', (req, res) => {
   const usageKey = getUsageKey(req);
-  const email = req.query.email || '';
+  const email = getSessionEmail(req);
   res.json({
     freeResumesLeft: hasFreeTierLeft(usageKey, 'resume') ? 1 : 0,
     freeCoverLettersLeft: hasFreeTierLeft(usageKey, 'cover_letter') ? 1 : 0,
@@ -993,7 +993,8 @@ ${jobPosting.slice(0, 4000)}`
 
 // ─── API: Tailor resume ───────────────────────────────────────────────────────
 app.post('/api/tailor', async (req, res) => {
-  const { resume, jobPosting, mode, email } = req.body;
+  const { resume, jobPosting, mode } = req.body;
+  const email = getSessionEmail(req); // use verified session, not body
 
   if (!['resume', 'cover_letter', 'both'].includes(mode)) {
     return res.status(400).json({ error: 'Invalid mode.' });
@@ -1018,7 +1019,7 @@ app.post('/api/tailor', async (req, res) => {
     if (mode === 'cover_letter' && !coverLeft) {
       return res.status(402).json({ error: 'free_limit_reached', mode: 'cover_letter', message: 'You\'ve used your free daily cover letter. Upgrade to Pro for unlimited access.' });
     }
-    if (mode === 'both' && !resumeLeft && !coverLeft) {
+    if (mode === 'both' && (!resumeLeft || !coverLeft)) {
       return res.status(402).json({ error: 'free_limit_reached', mode: 'both', message: 'You\'ve used your free daily tailorings. Upgrade to Pro for unlimited access.' });
     }
   }
@@ -1171,7 +1172,8 @@ OUTPUT: Cover Letter
 
 // ─── API: Translate resume Chinese → English ──────────────────────────────────
 app.post('/api/translate-resume', async (req, res) => {
-  const { resume, email } = req.body;
+  const { resume } = req.body;
+  const email = getSessionEmail(req);
   if (!resume || !resume.trim()) return res.status(400).json({ error: 'Resume text is required.' });
 
   const usageKey = getUsageKey(req);
@@ -1210,7 +1212,8 @@ app.post('/api/translate-resume', async (req, res) => {
 
 // ─── API: LinkedIn profile optimizer ─────────────────────────────────────────
 app.post('/api/optimize-linkedin', async (req, res) => {
-  const { profileText, targetRole, email } = req.body;
+  const { profileText, targetRole } = req.body;
+  const email = getSessionEmail(req);
   if (!profileText) return res.status(400).json({ error: 'Profile text is required.' });
   if (!targetRole)  return res.status(400).json({ error: 'Target role is required.' });
 
@@ -1438,6 +1441,7 @@ app.post('/api/contact', async (req, res) => {
 
   const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
 
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   try {
     await sendEmail({
       to: ownerEmail,
@@ -1445,10 +1449,10 @@ app.post('/api/contact', async (req, res) => {
       replyTo: email,
       html: `
             <h2>New Support Message</h2>
-            <p><strong>From:</strong> ${name} (${email})</p>
-            <p><strong>Subject:</strong> ${subject || 'No subject'}</p>
+            <p><strong>From:</strong> ${esc(name)} (${esc(email)})</p>
+            <p><strong>Subject:</strong> ${esc(subject || 'No subject')}</p>
             <hr />
-            <p>${message.replace(/\n/g, '<br>')}</p>
+            <p>${esc(message).replace(/\n/g, '<br>')}</p>
             <hr />
             <p style="color:#888;font-size:12px;">Sent from ResumeTailor AI Help form</p>
           `

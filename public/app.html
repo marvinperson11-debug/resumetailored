@@ -188,6 +188,8 @@
       .resume-mode-toggle { flex-wrap: wrap; }
       .field-header { flex-wrap: wrap; gap: 8px; }
     }
+    .ats-inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 640px) { .ats-inputs-grid { grid-template-columns: 1fr; } }
     /* ── Signature ── */
     .sig-section { margin-bottom: 16px; background: var(--blue-light); border: 1.5px solid rgba(99,102,241,0.25); border-radius: 10px; padding: 16px; }
     .sig-label { font-size: 13px; font-weight: 700; color: var(--text); display: block; margin-bottom: 8px; }
@@ -717,7 +719,7 @@
 
         <div class="input-section">
           <!-- Two-column inputs -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div class="ats-inputs-grid">
 
             <div class="input-group">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -1990,10 +1992,10 @@
 
     function showDownloadGate(downloadFn) {
       pendingDownloadFn = downloadFn;
-      // Set download-specific messaging before showing modal
+      switchAuthTab('subscribe');
+      // Set download-specific messaging AFTER switchAuthTab (which overwrites authHeading)
       document.getElementById('authHeading').textContent = 'Your document is ready!';
       document.getElementById('authSubtext').textContent = 'Create a free account in 5 seconds to instantly download your AI-tailored file and save your progress.';
-      switchAuthTab('subscribe');
       document.getElementById('authOverlay').style.display = 'flex';
     }
 
@@ -2543,13 +2545,13 @@
       feed.innerHTML = posts.map(p => `
         <div class="forum-post" id="post-${p.id}">
           <div class="post-header">
-            <div class="post-avatar">${p.author.charAt(0)}</div>
+            <div class="post-avatar">${escHtml(p.author.charAt(0))}</div>
             <div>
-              <div class="post-author">${p.author}</div>
-              <div class="post-meta">${p.role} · ${p.time}</div>
+              <div class="post-author">${escHtml(p.author)}</div>
+              <div class="post-meta">${escHtml(p.role)} · ${escHtml(p.time)}</div>
             </div>
           </div>
-          <div class="post-body">${p.text}</div>
+          <div class="post-body">${escHtml(p.text)}</div>
           <div class="post-actions">
             <button class="post-action-btn" onclick="likePost(${p.id}, this)">👍 <span>${p.likes}</span></button>
             <button class="post-action-btn" onclick="toggleReply(${p.id})">💬 ${isZhF ? '回复' : 'Reply'}</button>
@@ -2560,7 +2562,7 @@
             <button class="btn btn-primary" style="margin-top:8px;font-size:13px;padding:8px 16px;" onclick="submitReply(${p.id})">${isZhF ? '发布回复' : 'Post Reply'}</button>
           </div>
           <div class="post-replies" id="replies-${p.id}">
-            ${(p.replies||[]).map(r => `<div class="reply-item"><strong>${r.author}</strong>: ${r.text} <span class="reply-time">${r.time}</span></div>`).join('')}
+            ${(p.replies||[]).map(r => `<div class="reply-item"><strong>${escHtml(r.author)}</strong>: ${escHtml(r.text)} <span class="reply-time">${escHtml(r.time)}</span></div>`).join('')}
           </div>
         </div>
       `).join('');
@@ -2781,8 +2783,13 @@
     }
 
     function copyResumeToAts() {
-      const src = document.getElementById('resume').value.trim();
-      if (!src) return showToast('No resume found in the Tailor tab. Paste your resume there first.');
+      let src = '';
+      if (resumeInputMode === 'build') {
+        src = buildResumeText() || '';
+      } else {
+        src = document.getElementById('resume').value.trim();
+      }
+      if (!src) return showToast('No resume found in the Tailor tab. Paste or fill in your resume there first.');
       document.getElementById('atsResumeInput').value = src;
       showToast('Resume copied to ATS Scanner!');
     }
@@ -2911,7 +2918,7 @@
       (d.suggestions || []).forEach((s, i) => {
         const div = document.createElement('div');
         div.style.cssText = 'background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;font-size:13px;color:#374151;line-height:1.6;';
-        div.innerHTML = `<span style="font-weight:700;color:#6366F1;margin-right:6px;">${i + 1}.</span>${s}`;
+        div.innerHTML = `<span style="font-weight:700;color:#6366F1;margin-right:6px;">${i + 1}.</span>${escHtml(s)}`;
         sugEl.appendChild(div);
       });
     }
@@ -3351,6 +3358,17 @@
     function chooseTpl(id, cat) {
       selectedOutputTpl[cat] = id;
       renderTplPicker();
+      // Re-render the output box with the new template if content is ready
+      const outputBox = document.getElementById('outputBox');
+      if (lastRawResult && outputBox.innerHTML.trim()) {
+        const mode = cat === 'cover' ? 'cover_letter' : 'resume';
+        outputBox.innerHTML = renderAIOutput(lastRawResult, id, mode);
+        // Re-attach signature if present
+        if (sigName) {
+          const tpl = OUT_TPLS[cat].find(t => t.id === id);
+          outputBox.innerHTML += renderSignatureHtml(tpl ? tpl.c.p : '#1e293b', _sigScreenIndent(tpl ? tpl.layout : ''));
+        }
+      }
     }
 
     function escHtml(s) {
@@ -3873,7 +3891,7 @@
         const badge=tpl.free
           ?`<div class="tpl-free-badge">FREE</div>`
           :`<div class="tpl-lock-overlay"><span style="font-size:20px;">🔒</span><span class="tpl-pro-badge">PRO</span></div>`;
-        return `<div class="tpl-card${locked?' locked':''}" onclick="openTpl('${_activeType}',${tpl.id})">
+        return `<div class="tpl-card${locked?' locked':''}" onclick="openTpl('${_activeType}','${tpl.id}')">
           <div class="tpl-preview-wrap">
             <div class="tpl-preview-inner">${html}</div>
             ${badge}
@@ -3898,10 +3916,12 @@
       });
     }
 
+    let _openTplType='resume', _openTplId='';
     function openTpl(type,id){
       const list=type==='resume'?resumeTemplates:coverTemplates;
       const tpl=list.find(t=>t.id===id);
       if(!tpl)return;
+      _openTplType=type; _openTplId=id;
       document.getElementById('tplModalTitle').textContent=tpl.name;
       const frame=document.getElementById('tplFrame');
       const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>*{box-sizing:border-box;margin:0;padding:0;}body{background:#fff;}</style></head><body>${tpl.fn(tpl.c)}</body></html>`;
@@ -3921,9 +3941,19 @@
     }
 
     function useTplTemplate(){
+      const cat = _openTplType === 'cover' ? 'cover' : 'resume';
+      const list = _openTplType === 'resume' ? resumeTemplates : coverTemplates;
+      const tpl = list.find(t => t.id === _openTplId);
+      if (tpl && (tpl.free || isSubscriberFlag)) {
+        chooseTpl(_openTplId, cat);
+      }
       document.getElementById('tplModal').style.display='none';
       showTab('tailor');
-      showToast('Paste your resume and job posting — the AI will tailor it for you!');
+      if (tpl && (tpl.free || isSubscriberFlag)) {
+        showToast('Template applied! Paste your resume and job posting to get started.');
+      } else {
+        showToast('Paste your resume and job posting — the AI will tailor it for you!');
+      }
     }
 
     function initSamples(){
@@ -4257,7 +4287,14 @@ Aaliyah Washington`
     // ── Download helpers ───────────────────────────────────────────────────────
     function getOutputText() {
       const box = document.getElementById('outputBox');
-      if (box.contentEditable === 'true') return box.innerText || box.textContent;
+      if (box.contentEditable === 'true') {
+        // In edit mode: strip the signature div before capturing text
+        const clone = box.cloneNode(true);
+        const sigDiv = clone.querySelector('[data-sig="1"]');
+        if (sigDiv) sigDiv.remove();
+        const base = clone.innerText || clone.textContent;
+        return sigName ? base + '\n\n' + sigName : base;
+      }
       let base = lastRawResult || box.innerText || box.textContent;
       if (selectedMode === 'both' && lastRawCoverResult) {
         base = base + '\n\n---\n\n' + lastRawCoverResult;
