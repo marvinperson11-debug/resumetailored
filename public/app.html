@@ -4550,7 +4550,9 @@ Aaliyah Washington`
       const PAGE_MARGIN_T = 96;    // 1in top margin on every page (from clip position)
       const PAGE_MARGIN_B = 96;    // 1in bottom margin on every page
       const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // 864px usable per page
-      const numPages = Math.min(10, Math.max(1, Math.ceil(rawContentH / PAGE_CONTENT_H)));
+      let numPages = Math.min(10, Math.max(1, Math.ceil(rawContentH / PAGE_CONTENT_H)));
+      // Collapse near-empty last pages caused by template bottom padding/margins
+      if (numPages > 1 && (rawContentH - (numPages - 1) * PAGE_CONTENT_H) < 100) numPages--;
 
       const isBothMode = selectedMode === 'both' && lastRawCoverResult;
       // rSidebar sig must clear the 215px sidebar; noPagePad aligns to template body padding; padded aligns to 1in margin
