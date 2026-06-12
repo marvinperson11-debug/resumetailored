@@ -4550,7 +4550,7 @@ Aaliyah Washington`
         const raw = lastRawResult || outputBox.innerText;
         const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
         const pagePad = noPagePad ? '0' : '0 1in 0 1in';
-        const printHtml = renderAIOutput(raw, tplId, selectedMode, true, _prevSig);
+        const printHtml = renderAIOutput(raw, tplId, selectedMode, true);
         contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
       }
 
@@ -4575,8 +4575,18 @@ Aaliyah Washington`
 
       const isBothMode = selectedMode === 'both' && lastRawCoverResult;
       const totalPages = numPages;
-      // Signature is now in the content flow (grouped with last section by each renderer).
-      const sigBlock = '';
+      // For non-both mode: absolutely position the sig below the last page's actual content.
+      // CSS page-break-inside:avoid has no effect on JS-based pagination, so we handle
+      // sig placement here in screen-space coordinates rather than relying on the renderer grouping.
+      let sigBlock = '';
+      if (!isBothMode && sigName) {
+        const _sigNoPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
+        const _sigPad = _sigNoPagePad ? '0' : '0 1in';
+        const _sigInner = renderSignatureHtml(tpl.c.p, _sigPrintIndent(tpl.layout), true);
+        const _actualLastH = lastPageOverflow > 0 ? PAGE_CONTENT_H + lastPageOverflow : rawLastPageH;
+        const _sigTopPx = PAGE_MARGIN_T + _actualLastH;
+        sigBlock = `<div style="position:absolute;top:${_sigTopPx}px;left:0;width:816px;padding:${_sigPad};box-sizing:border-box;">${_sigInner}</div>`;
+      }
 
       // Page background: sidebar templates get a gradient so the sidebar color fills
       // the full page height on every page (including top/bottom margin zones).
@@ -4592,10 +4602,12 @@ Aaliyah Washington`
       // The bottom PAGE_MARGIN_B (96px) is naturally empty below the clip on every page.
       // On the last page the clip and page height expand by lastPageOverflow so that
       // merged content is fully visible and the signature clears it.
+      // Extra height on the last page so the absolutely-positioned sig isn't clipped
+      const sigExtra = (!isBothMode && sigName) ? 120 : 0;
       const pagesHtml = Array.from({length: totalPages}, (_, i) => {
         const isLast = i === totalPages - 1;
         const clipH = isLast ? PAGE_CONTENT_H + lastPageOverflow : PAGE_CONTENT_H;
-        const pageH = isLast ? PAGE_H + lastPageOverflow : PAGE_H;
+        const pageH = isLast ? PAGE_H + lastPageOverflow + sigExtra : PAGE_H;
         const clipFade = (!isLast && (isBothMode || tpl.layout !== 'rSidebar'))
           ? `<div style="position:absolute;bottom:0;left:0;width:100%;height:22px;background:linear-gradient(to bottom,transparent,${fadeColor});pointer-events:none;z-index:2;"></div>`
           : '';
