@@ -196,7 +196,7 @@
     .sig-font-btn { padding: 6px 13px; border: 1.5px solid var(--border); border-radius: 7px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted); font-family: inherit; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
     .sig-font-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
     .sig-font-btn:hover:not(.active) { border-color: rgba(99,102,241,0.4); }
-    .sig-preview { margin-top: 10px; padding: 14px 20px; background: rgba(255,255,255,0.04); border: 1.5px solid var(--border); border-radius: 8px; }
+    .sig-preview { margin-top: 10px; padding: 14px 20px; background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px; }
 
     /* ── LinkedIn sidebar button highlight ── */
     .sidebar-btn-linkedin {
@@ -557,6 +557,11 @@
               <span class="platform-chip platform-chip-cn">智联招聘 Zhaopin</span>
               <span class="platform-chip">+ more</span>
             </div>
+            <div style="display:flex;gap:8px;margin-bottom:6px;">
+              <input type="url" id="tailorJobUrlInput" style="flex:1;background:rgba(255,255,255,0.06);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;color:var(--text);" placeholder="Or paste a job URL (LinkedIn, Indeed, Glassdoor…)" spellcheck="false" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')fetchTailorJobUrl()" />
+              <button onclick="fetchTailorJobUrl()" id="tailorFetchBtn" style="padding:9px 14px;border-radius:8px;border:none;background:#6366F1;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Fetch →</button>
+            </div>
+            <div id="tailorUrlStatus" style="font-size:12px;color:#6b7280;margin-bottom:6px;min-height:16px;"></div>
             <textarea id="job" spellcheck="false" autocorrect="off" autocapitalize="off" placeholder="Paste the full job description here...&#10;&#10;Works with: LinkedIn, Indeed, Glassdoor, Boss直聘 (Boss Zhipin), 猎聘 (Liepin), 智联招聘 (Zhaopin), and any job posting in any language." data-i18n-placeholder="job_placeholder"></textarea>
           </div>
         </div>
@@ -2707,6 +2712,31 @@
         const host = u.hostname.replace(/^www\./, '');
         return ATS_ALLOWED_DOMAINS.some(d => host === d || host.endsWith('.' + d));
       } catch { return false; }
+    }
+
+    async function fetchTailorJobUrl() {
+      let raw = document.getElementById('tailorJobUrlInput').value.trim();
+      const status = document.getElementById('tailorUrlStatus');
+      const btn = document.getElementById('tailorFetchBtn');
+      if (!raw) return;
+      const httpsIdx = raw.indexOf('https://');
+      if (httpsIdx > 0) {
+        raw = raw.slice(httpsIdx).split(/\s/)[0];
+        document.getElementById('tailorJobUrlInput').value = raw;
+      }
+      if (!raw.startsWith('https://')) { status.textContent = 'Please enter a URL starting with https://'; return; }
+      if (!isAtsAllowedUrl(raw)) { status.textContent = "Only job board URLs are accepted. Paste the job text directly if your board isn't listed."; return; }
+      btn.disabled = true; status.textContent = 'Fetching job posting…';
+      try {
+        const res = await fetch('/api/fetch-job-url', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ url: raw }) });
+        const data = await res.json();
+        if (!res.ok) { status.textContent = '✗ ' + (data.error || 'Failed to fetch.'); return; }
+        document.getElementById('job').value = data.text;
+        document.getElementById('tailorJobUrlInput').value = '';
+        status.textContent = '✓ Job description loaded!';
+        setTimeout(() => { status.textContent = ''; }, 3000);
+      } catch { status.textContent = '✗ Network error — please try again.'; }
+      finally { btn.disabled = false; }
     }
 
     function setAtsJobMode(mode) {
