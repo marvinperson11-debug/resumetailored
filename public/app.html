@@ -3680,7 +3680,7 @@
       if (tpl.layout === 'cModern') return renderCoverModernOutput(text, c, font, printMode);
       if (cat === 'cover') {
         const coverHtml = renderCoverOutput(text, c, font, printMode, tpl);
-        return (sigHtml && printMode) ? coverHtml + `<div style="page-break-inside:avoid;break-inside:avoid;">${sigHtml}</div>` : coverHtml;
+        return (sigHtml && printMode) ? coverHtml + sigHtml : coverHtml;
       }
       const parsed = parseAIOutput(text);
 
