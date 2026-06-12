@@ -1888,7 +1888,7 @@
       if (!sigName) return '';
       const color = primaryColor || '#1e293b';
       const ml = marginLeft ? `margin-left:${marginLeft};` : '';
-      const mt = printMode ? 'margin-top:2in;' : 'margin-top:32px;';
+      const mt = printMode ? 'margin-top:24px;' : 'margin-top:32px;';
       const pbb = printMode ? 'page-break-inside:avoid;break-inside:avoid;' : '';
       return `<div style="${mt}padding-top:16px;border-top:1px solid #e2e8f0;${ml}${pbb}">
         <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signature</p>
@@ -3415,7 +3415,7 @@
       return groups.map(g => `<div style="${grpStyle}">${g.map(r => _lineHtml(r, c)).join('')}</div>`).join('<div style="height:6px;"></div>');
     }
 
-    function renderSidebarOutput(parsed, c, font, printMode) {
+    function renderSidebarOutput(parsed, c, font, printMode, sigHtml='') {
       const { name, contact, sections } = parsed;
       const initials = name.trim()[0] ? name.trim()[0].toUpperCase() : '?';
       const SIDE_KEYS = ['SKILL','CERTIF','LICENSE','LICENS','EDUCAT','LANGUAGE','AWARD','COMPETENC','TOOL','TECHNOLOG','PROFICIEN'];
@@ -3425,7 +3425,10 @@
       }
       const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
       const sidebarHtml = sideSecs.map(sec => `<div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">${escHtml(sec.title)}</div>${sec.lines.map(raw => { const t = raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim(); if (!t) return ''; const txt = t.replace(/^[•·\-\*]\s*/,''); return `<div style="background:rgba(255,255,255,.13);color:#fff;font-size:11px;padding:4px 10px;border-radius:4px;margin-bottom:5px;">${escHtml(txt)}</div>`; }).join('')}</div>`).join('');
-      const mainHtml = mainSecs.map(sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">${escHtml(sec.title)}</div><div style="width:100%;height:2px;background:${c.a};margin-bottom:10px;border-radius:1px;"></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`).join('');
+      const _sideMainSec = sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">${escHtml(sec.title)}</div><div style="width:100%;height:2px;background:${c.a};margin-bottom:10px;border-radius:1px;"></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
+      const mainHtml = (sigHtml && printMode && mainSecs.length > 0)
+        ? mainSecs.slice(0,-1).map(_sideMainSec).join('') + `<div style="page-break-inside:avoid;break-inside:avoid;">${_sideMainSec(mainSecs[mainSecs.length-1])}${sigHtml}</div>`
+        : mainSecs.map(_sideMainSec).join('');
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       // Print mode uses display:table so the sidebar cell background persists across page breaks.
       // Flex containers fracture on multi-page print; table-cell backgrounds continue correctly.
@@ -3441,10 +3444,13 @@
       return `<div style="${outerStyle}"><div style="${lColStyle}"><div style="width:56px;height:56px;border-radius:50%;background:${c.a};display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;font-weight:900;color:#fff;${pca}">${escHtml(initials)}</div><div style="color:#fff;text-align:center;margin-bottom:20px;"><div style="font-size:15px;font-weight:800;line-height:1.3;">${escHtml(name)}</div></div><div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">Contact</div><div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.9;">${contactLines.map(l=>`<div>${escHtml(l)}</div>`).join('')}</div></div>${sidebarHtml}</div><div style="${rColStyle}">${mainHtml}</div></div>`;
     }
 
-    function renderModernOutput(parsed, c, font, printMode) {
+    function renderModernOutput(parsed, c, font, printMode, sigHtml='') {
       const { name, contact, sections } = parsed;
       const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
-      const sectionsHtml = sections.map(sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`).join('');
+      const _modernSec = sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
+      const sectionsHtml = (sigHtml && printMode && sections.length > 0)
+        ? sections.slice(0,-1).map(_modernSec).join('') + `<div style="page-break-inside:avoid;break-inside:avoid;">${_modernSec(sections[sections.length-1])}${sigHtml}</div>`
+        : sections.map(_modernSec).join('');
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode
         ? `font-family:${font};color:#222;`
@@ -3453,7 +3459,7 @@
     }
 
     // Two-column layout: contact/skills/edu on left (no color bg), content on right
-    function renderTwoColOutput(parsed, c, font, printMode) {
+    function renderTwoColOutput(parsed, c, font, printMode, sigHtml='') {
       const { name, contact, sections } = parsed;
       const SIDE_KEYS = ['SKILL','CERTIF','LICENSE','LICENS','EDUCAT','LANGUAGE','AWARD','COMPETENC','TOOL','TECHNOLOG','PROFICIEN'];
       const sideSecs = [], mainSecs = [];
@@ -3463,7 +3469,10 @@
       const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const leftHtml = `<div style="font-size:17px;font-weight:900;color:${c.p};margin-bottom:5px;line-height:1.2;">${escHtml(name)}</div><div style="margin-bottom:16px;">${contactLines.map(l=>`<div style="font-size:10.5px;color:#555;line-height:1.7;">${escHtml(l)}</div>`).join('')}</div>${sideSecs.map(sec=>`<div style="margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid ${c.a}50;">${escHtml(sec.title)}</div>${sec.lines.map(raw=>{const t=raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();if(!t)return '';return `<div style="font-size:10.5px;color:#444;line-height:1.65;page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;">${escHtml(t.replace(/^[•·\-\*]\s*/,''))}</div>`;}).join('')}</div>`).join('')}`;
-      const rightHtml = mainSecs.map(sec=>`<div style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`).join('');
+      const _twoColSec = sec => `<div style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
+      const rightHtml = (sigHtml && printMode && mainSecs.length > 0)
+        ? mainSecs.slice(0,-1).map(_twoColSec).join('') + `<div style="page-break-inside:avoid;break-inside:avoid;">${_twoColSec(mainSecs[mainSecs.length-1])}${sigHtml}</div>`
+        : mainSecs.map(_twoColSec).join('');
       const outerStyle = printMode
         ? `font-family:${font};color:#222;display:table;table-layout:fixed;width:100%;`
         : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
@@ -3473,12 +3482,15 @@
     }
 
     // Banner layout: strong left-border header, section headers as colored badge pills
-    function renderBannerOutput(parsed, c, font, printMode) {
+    function renderBannerOutput(parsed, c, font, printMode, sigHtml='') {
       const { name, contact, sections } = parsed;
       const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const contactHtml = contactParts.map((s,i)=>`${i>0?`<span style="color:${c.a};margin:0 8px;">·</span>`:''}${escHtml(s)}`).join('');
-      const sectionsHtml = sections.map(sec=>`<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:inline-block;background:${c.p};color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 11px;border-radius:3px;margin-bottom:10px;${pca}">${escHtml(sec.title)}</div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`).join('');
+      const _bannerSec = sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:inline-block;background:${c.p};color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 11px;border-radius:3px;margin-bottom:10px;${pca}">${escHtml(sec.title)}</div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
+      const sectionsHtml = (sigHtml && printMode && sections.length > 0)
+        ? sections.slice(0,-1).map(_bannerSec).join('') + `<div style="page-break-inside:avoid;break-inside:avoid;">${_bannerSec(sections[sections.length-1])}${sigHtml}</div>`
+        : sections.map(_bannerSec).join('');
       const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       return `<div style="${outerStyle}"><div style="padding:26px 44px 18px;border-left:5px solid ${c.p};${pca}"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(name)}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${pca}"></div></div><div style="padding:18px 44px 32px;">${sectionsHtml}</div></div>`;
     }
@@ -3668,19 +3680,22 @@
       return renderCoverModernOutput(text, c, font, printMode);
     }
 
-    function renderAIOutput(text, tplId, mode, printMode) {
+    function renderAIOutput(text, tplId, mode, printMode, sigHtml='') {
       const cat = mode === 'cover_letter' ? 'cover' : 'resume';
       const tpl = OUT_TPLS[cat].find(t => t.id === tplId) || OUT_TPLS[cat][0];
       const c = tpl.c;
       const font = FONT_MAP[selectedDocFont] || (tpl.serif ? "Georgia,'Times New Roman',serif" : "Arial,sans-serif");
       if (tpl.layout === 'cModern') return renderCoverModernOutput(text, c, font, printMode);
-      if (cat === 'cover') return renderCoverOutput(text, c, font, printMode, tpl);
+      if (cat === 'cover') {
+        const coverHtml = renderCoverOutput(text, c, font, printMode, tpl);
+        return (sigHtml && printMode) ? coverHtml + `<div style="page-break-inside:avoid;break-inside:avoid;">${sigHtml}</div>` : coverHtml;
+      }
       const parsed = parseAIOutput(text);
 
-      if (tpl.layout === 'rSidebar') return renderSidebarOutput(parsed, c, font, printMode);
-      if (tpl.layout === 'rModern')  return renderModernOutput(parsed, c, font, printMode);
-      if (tpl.layout === 'rTwoCol')  return renderTwoColOutput(parsed, c, font, printMode);
-      if (tpl.layout === 'rBanner')  return renderBannerOutput(parsed, c, font, printMode);
+      if (tpl.layout === 'rSidebar') return renderSidebarOutput(parsed, c, font, printMode, sigHtml);
+      if (tpl.layout === 'rModern')  return renderModernOutput(parsed, c, font, printMode, sigHtml);
+      if (tpl.layout === 'rTwoCol')  return renderTwoColOutput(parsed, c, font, printMode, sigHtml);
+      if (tpl.layout === 'rBanner')  return renderBannerOutput(parsed, c, font, printMode, sigHtml);
 
       // ── Linear layout (Classic, Executive, Minimal, all cover layouts) ──────
       const lines = text.split('\n');
@@ -3703,6 +3718,7 @@
         const isHdr = t.length >= 2 && t.length <= 50 && /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(t);
         if (isHdr) {
           _closeGrp();
+          if (printMode && sigHtml) html += '\x00';
           if (tpl.style === 'left-bar') html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:12px;margin:24px 0 12px;">${escHtml(t)}</div>`;
           else if (tpl.style === 'icon-bar') html += `<div style="display:flex;align-items:center;gap:8px;margin:24px 0 12px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
           else if (tpl.style === 'minimal') html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:24px 0 12px;">${escHtml(t)}</div>`;
@@ -3715,6 +3731,16 @@
         html += `<div style="font-size:13px;line-height:1.75;color:#333;${_pbi}">${escHtml(t)}</div>`;
       }
       _closeGrp();
+      if (printMode && sigHtml) {
+        const lastSent = html.lastIndexOf('\x00');
+        if (lastSent !== -1) {
+          const before = html.substring(0, lastSent).replace(/\x00/g, '');
+          const lastSec = html.substring(lastSent + 1);
+          html = before + `<div style="page-break-inside:avoid;break-inside:avoid;">${lastSec}${sigHtml}</div>`;
+        } else {
+          html += sigHtml;
+        }
+      }
       const bg = tpl.style === 'minimal' ? '#fafafa' : '#fff';
       if (printMode) return `<div style="font-family:${font};background:${bg};color:#222;padding:0 0 28px 0;">${html}</div>`;
       return `<div style="font-family:${font};background:${bg};padding:52px 64px;color:#222;border-radius:4px;border:none;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 8px 32px rgba(0,0,0,0.1);">${html}</div>`;
@@ -4289,6 +4315,14 @@ Aaliyah Washington`
       const tpl = OUT_TPLS[tplCat].find(t => t.id === tplId) || OUT_TPLS[tplCat][0];
       const font = tpl.serif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
 
+      // Signature — compute first so it can be grouped with the last section in each renderer
+      const _sigCoverTpl = selectedMode === 'both' && lastRawCoverResult
+        ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0])
+        : null;
+      const _sigColor = _sigCoverTpl ? _sigCoverTpl.c.p : tpl.c.p;
+      const _sigLayout = _sigCoverTpl ? _sigCoverTpl.layout : tpl.layout;
+      const sigHtml = sigName ? renderSignatureHtml(_sigColor, _sigPrintIndent(_sigLayout), true) : '';
+
       // Re-render without the on-screen card border for a clean printed page
       let printContent;
       if (selectedMode === 'both' && lastRawCoverResult) {
@@ -4299,20 +4333,13 @@ Aaliyah Washington`
         const rPad = rNoPagePad ? '' : 'padding-left:0;padding-right:0;';
         const cPad = cNoPagePad ? '' : 'padding-left:0;padding-right:0;';
         const rPrint = renderAIOutput(lastRawResult, selectedOutputTpl.resume, 'resume', true);
-        const cPrint  = renderAIOutput(lastRawCoverResult, selectedOutputTpl.cover, 'cover_letter', true);
+        const cPrint  = renderAIOutput(lastRawCoverResult, selectedOutputTpl.cover, 'cover_letter', true, sigHtml);
         printContent = `<div style="${rPad}box-sizing:border-box;">${rPrint}</div><div style="page-break-before:always;"></div><div style="${cPad}box-sizing:border-box;">${cPrint}</div>`;
       } else {
         const rawText = lastRawResult || outputBox.innerText;
-        printContent = renderAIOutput(rawText, tplId, selectedMode, true);
+        printContent = renderAIOutput(rawText, tplId, selectedMode, true, sigHtml);
       }
 
-      // Signature — for 'both' mode, use cover letter template color and layout
-      const _sigCoverTpl = selectedMode === 'both' && lastRawCoverResult
-        ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0])
-        : null;
-      const _sigColor = _sigCoverTpl ? _sigCoverTpl.c.p : tpl.c.p;
-      const _sigLayout = _sigCoverTpl ? _sigCoverTpl.layout : tpl.layout;
-      const sigHtml = sigName ? renderSignatureHtml(_sigColor, _sigPrintIndent(_sigLayout), true) : '';
       const fontUrl = sigName
         ? `<link href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(sigFont)}:ital@1&display=swap" rel="stylesheet">`
         : '';
@@ -4349,7 +4376,6 @@ Aaliyah Washington`
 <body>
   <div class="page">
     ${printContent}
-    ${sigHtml}
   </div>
   <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); };<\/script>
 </body>
@@ -4497,6 +4523,15 @@ Aaliyah Washington`
       const tpl = OUT_TPLS[tplCat].find(t => t.id === tplId) || OUT_TPLS[tplCat][0];
       const font = FONT_MAP[selectedDocFont] || (tpl.serif ? "Georgia,'Times New Roman',serif" : "Arial,sans-serif");
 
+      // Compute sig html first so renderers can group it with the last section
+      const _prevSigColor = (selectedMode === 'both' && lastRawCoverResult)
+        ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0]).c.p
+        : tpl.c.p;
+      const _prevSigLayout = (selectedMode === 'both' && lastRawCoverResult)
+        ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0]).layout
+        : tpl.layout;
+      const _prevSig = sigName ? renderSignatureHtml(_prevSigColor, _sigPrintIndent(_prevSigLayout), true) : '';
+
       let contentHtml;
       if (selectedMode === 'both' && lastRawCoverResult) {
         const resumeTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
@@ -4506,19 +4541,17 @@ Aaliyah Washington`
         const rPad = rNoPagePad ? '0' : '0 1in 0 1in';
         const cPad = cNoPagePad ? '0' : '0 1in 0 1in';
         const resumePrint = renderAIOutput(lastRawResult, selectedOutputTpl.resume, 'resume', true);
-        const coverPrint  = renderAIOutput(lastRawCoverResult, selectedOutputTpl.cover, 'cover_letter', true);
+        const coverPrint  = renderAIOutput(lastRawCoverResult, selectedOutputTpl.cover, 'cover_letter', true, _prevSig);
         contentHtml =
           `<div style="padding:${rPad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${resumePrint}</div>` +
           `<div style="height:64px;"></div>` +
           `<div style="padding:${cPad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${coverPrint}</div>`;
       } else {
         const raw = lastRawResult || outputBox.innerText;
-        const printHtml = renderAIOutput(raw, tplId, selectedMode, true);
         const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
         const pagePad = noPagePad ? '0' : '0 1in 0 1in';
-        // Signature flows naturally after content with 2in top margin — no absolute positioning needed
-        const _prevSig = sigName ? renderSignatureHtml(tpl.c.p, _sigPrintIndent(tpl.layout), true) : '';
-        contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>${_prevSig}`;
+        const printHtml = renderAIOutput(raw, tplId, selectedMode, true, _prevSig);
+        contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
       }
 
       // Measure raw content height at 816px (absolute off-screen is more reliable than fixed for display:table)
@@ -4541,17 +4574,9 @@ Aaliyah Washington`
       if (lastPageOverflow) numPages--;
 
       const isBothMode = selectedMode === 'both' && lastRawCoverResult;
-      // rSidebar sig must clear the 215px sidebar; noPagePad aligns to template body padding; padded aligns to 1in margin
-      const _noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
-      const sigLeftPx = isBothMode ? '192px' : (tpl.layout === 'rSidebar' ? '311px' : (_noPagePad ? '140px' : '192px'));
-      const sigColor = isBothMode
-        ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0]).c.p
-        : tpl.c.p;
       const totalPages = numPages;
-      // For 'both' mode the signature is still placed absolutely below the cover letter.
-      // For single-mode, the signature is already in the content flow (contentHtml).
-      const sigTopPx = PAGE_MARGIN_T + PAGE_CONTENT_H + lastPageOverflow + 8;
-      const sigBlock = (isBothMode && sigName) ? `<div style="position:absolute;top:${sigTopPx}px;left:${sigLeftPx};-webkit-print-color-adjust:exact;print-color-adjust:exact;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-family:${font};">Signature</p><p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${sigColor};line-height:1.3;">${escHtml(sigName)}</p></div>` : '';
+      // Signature is now in the content flow (grouped with last section by each renderer).
+      const sigBlock = '';
 
       // Page background: sidebar templates get a gradient so the sidebar color fills
       // the full page height on every page (including top/bottom margin zones).
