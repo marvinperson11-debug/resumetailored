@@ -1889,7 +1889,7 @@
       const color = primaryColor || '#1e293b';
       const ml = marginLeft ? `margin-left:${marginLeft};` : '';
       const mt = printMode ? 'margin-top:1.5in;' : 'margin-top:32px;';
-      const pbb = printMode ? 'page-break-inside:avoid;break-inside:avoid;break-before:avoid;page-break-before:avoid;' : '';
+      const pbb = printMode ? 'page-break-inside:avoid;break-inside:avoid;' : '';
       return `<div style="${mt}padding-top:16px;border-top:1px solid #e2e8f0;${ml}${pbb}">
         <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signature</p>
         <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${sigName}</p>
@@ -3517,7 +3517,7 @@
     }
 
     // Cover letter with colored full-width header block
-    function renderCoverModernOutput(text, c, font, printMode) {
+    function renderCoverModernOutput(text, c, font, printMode, sigHtml='') {
       const lines = text.split('\n');
       let name = '', contactLines = [], bodyStart = 0, headerDone = false;
       for (let i = 0; i < lines.length; i++) {
@@ -3531,13 +3531,31 @@
         if (!headerDone) { headerDone = true; bodyStart = i; }
         if (headerDone) { bodyStart = i; break; }
       }
-      let bodyHtml = '';
+      // Collect body paragraphs as groups (blank lines separate groups)
+      const pbi = 'page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
+      const lineFmt = t => `<div style="font-size:13px;line-height:1.85;color:#333;margin-bottom:1px;${pbi}">${escHtml(t)}</div>`;
+      const groups = [];
+      let cur = [];
       for (let i = bodyStart; i < lines.length; i++) {
-        const raw = lines[i];
-        const t = raw.trim().replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();
-        if (!t) { bodyHtml += `<div style="height:7px;"></div>`; continue; }
-        bodyHtml += `<div style="font-size:13px;line-height:1.85;color:#333;margin-bottom:1px;page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;">${escHtml(t)}</div>`;
+        const t = lines[i].trim().replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();
+        if (!t) { if (cur.length) { groups.push(cur); cur = []; } continue; }
+        cur.push(t);
       }
+      if (cur.length) groups.push(cur);
+      // Build body HTML — in print mode, group the last paragraph + signature together
+      let bodyHtml = '';
+      groups.forEach((grp, gi) => {
+        const isLast = gi === groups.length - 1;
+        const linesHtml = grp.map(lineFmt).join('');
+        if (gi > 0) bodyHtml += `<div style="height:7px;"></div>`;
+        if (isLast && printMode && sigHtml) {
+          // Reduce signature's top margin when embedded in the closing group
+          const closingSig = sigHtml.replace('margin-top:1.5in;', 'margin-top:20px;');
+          bodyHtml += `<div style="margin-top:24px;${pbi}position:relative;">${linesHtml}${closingSig}</div>`;
+        } else {
+          bodyHtml += linesHtml;
+        }
+      });
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       const bodyPad = printMode ? 'padding:24px 44px 28px;' : 'padding:24px 192px 0;';
@@ -3706,7 +3724,7 @@
       const tpl = OUT_TPLS[cat].find(t => t.id === tplId) || OUT_TPLS[cat][0];
       const c = tpl.c;
       const font = FONT_MAP[selectedDocFont] || (tpl.serif ? "Georgia,'Times New Roman',serif" : "Arial,sans-serif");
-      if (tpl.layout === 'cModern') return renderCoverModernOutput(text, c, font, printMode);
+      if (tpl.layout === 'cModern') return renderCoverModernOutput(text, c, font, printMode, printMode ? sigHtml : '');
       if (cat === 'cover') {
         const coverHtml = renderCoverOutput(text, c, font, printMode, tpl);
         return (sigHtml && printMode) ? coverHtml + sigHtml : coverHtml;
@@ -4366,6 +4384,7 @@ Aaliyah Washington`
       }
 
       const noPagePad = selectedMode === 'both' ? true : ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
+      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit'].includes(tpl.layout);
       const isSidebar = selectedMode !== 'both' && tpl.layout === 'rSidebar';
       const bodyBg = selectedMode === 'both' ? '#fff' : (isSidebar
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
@@ -4380,7 +4399,7 @@ Aaliyah Washington`
   ${fontUrl}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    @page { size: letter; margin: 0.5in; }
+    @page { size: letter; margin: ${isCoverBanner ? '0 0.5in 0.5in' : '0.5in'}; }
     html { background: ${isSidebar ? bodyBg : '#fff'}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     body { font-family: ${font}; color: #222; background: ${isSidebar ? 'transparent' : bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; }
     .page { width: 100%; min-width: 0; }
@@ -4565,7 +4584,9 @@ Aaliyah Washington`
         const raw = lastRawResult || outputBox.innerText;
         const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
         const pagePad = noPagePad ? '0' : '0 1in 0 1in';
-        const printHtml = renderAIOutput(raw, tplId, selectedMode, true);
+        // cModern embeds the signature inside renderCoverModernOutput; other templates use sigBlock
+        const _embedSig = tpl.layout === 'cModern' ? _prevSig : '';
+        const printHtml = renderAIOutput(raw, tplId, selectedMode, true, _embedSig);
         contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
       }
 
@@ -4587,9 +4608,11 @@ Aaliyah Washington`
       document.body.removeChild(measure);
 
       const PAGE_H = 1056;         // 11in × 96dpi
-      const PAGE_MARGIN_T = 96;    // 1in top margin on every page (from clip position)
+      // Banner cover templates (cModern/cBold/cSplit) have no top margin — header is flush to page top
+      const _isCoverBanner = !(selectedMode === 'both' && lastRawCoverResult) && ['cModern','cBold','cSplit'].includes(tpl.layout);
+      const PAGE_MARGIN_T = _isCoverBanner ? 0 : 96;
       const PAGE_MARGIN_B = 96;    // 1in bottom margin on every page
-      const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // 864px usable per page
+      const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // usable px per page
       let numPages = Math.min(10, Math.max(1, Math.ceil(rawContentH / PAGE_CONTENT_H)));
       // If the last page is < 70% full, merge it into the previous page by expanding
       // that page's clip — prevents the signature from stranding on a near-empty last page.
@@ -4603,7 +4626,7 @@ Aaliyah Washington`
       // CSS page-break-inside:avoid has no effect on JS-based pagination, so we handle
       // sig placement here in screen-space coordinates rather than relying on the renderer grouping.
       let sigBlock = '';
-      if (!isBothMode && sigName) {
+      if (!isBothMode && sigName && tpl.layout !== 'cModern') {
         const _sigNoPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
         const _sigPad = _sigNoPagePad ? '0' : '0 1in';
         const _sigInner = renderSignatureHtml(tpl.c.p, _sigPrintIndent(tpl.layout), true);
