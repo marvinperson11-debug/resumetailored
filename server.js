@@ -665,7 +665,7 @@ app.post('/api/download-docx', async (req, res) => {
     // Horizontal rule — keepNext keeps it glued to the label/name below
     children.push(new Paragraph({
       children: [new TextRun({ text: '', font: 'Calibri', size: 22 })],
-      spacing: { before: 480 },
+      spacing: { before: 2880 },
       border: { top: { style: BorderStyle.SINGLE, size: 6, color: 'e2e8f0', space: 4 } },
       keepNext: true,
     }));
