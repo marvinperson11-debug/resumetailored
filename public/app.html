@@ -3606,16 +3606,23 @@
       };
     }
 
-    function renderCoverOutput(text, c, font, printMode, tpl) {
+    function renderCoverOutput(text, c, font, printMode, tpl, sigHtml='') {
       const p = parseCoverOutput(text);
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const cardWrap = printMode
         ? `font-family:${font};color:#222;`
         : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       const _pbip = 'page-break-inside:avoid;break-inside:avoid;-webkit-column-break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;';
-      const bodyParas = p.body.map(para =>
+      // Reduce signature top gap and group it with the last body paragraph
+      const closingSig = (printMode && sigHtml) ? sigHtml.replace('margin-top:1.5in;', 'margin-top:20px;') : '';
+      const _grpParas = (paraEls) => {
+        if (!closingSig || paraEls.length === 0) return paraEls.join('');
+        const last = paraEls.splice(-1, 1)[0];
+        return paraEls.join('') + `<div style="margin-top:32px;${_pbip}position:relative;">${last}${closingSig}</div>`;
+      };
+      const bodyParas = _grpParas(p.body.map(para =>
         `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 16px;${_pbip}">${escHtml(para)}</p>`
-      ).join('');
+      ));
       const roleLine = [p.role, p.company].filter(Boolean);
 
       if (tpl.layout === 'cFormal') {
@@ -3640,15 +3647,18 @@
         const roleDate = roleLine.length
           ? `<div style="display:flex;justify-content:space-between;align-items:center;background:${c.l};padding:12px 52px;${pca}"><div><div style="font-size:13px;font-weight:800;color:${c.p};">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};font-weight:700;">${escHtml(p.company)}</div></div><div style="font-size:11.5px;color:#999;">${p.date}</div></div>`
           : `<div style="background:${c.l};padding:10px 52px;font-size:11.5px;color:#888;${pca}">${p.date}</div>`;
+        const boldBodyParas = _grpParas(p.body.map((para, i) =>
+          `<p style="font-size:13.5px;line-height:1.85;color:#333;margin:0 0 16px;${_pbip}${i===0 ? `border-left:3px solid ${c.a};padding-left:14px;${pca}` : ''}">${escHtml(para)}</p>`
+        ));
         return `<div style="${boldOuter}">
-          <div style="background:${c.p};padding:32px 52px 28px;${pca}">
+          <div style="background:${c.p};padding:32px 52px 28px;margin-top:0;${pca}">
             <div style="font-size:30px;font-weight:900;color:#fff;letter-spacing:-0.5px;">${escHtml(p.name)}</div>
             ${p.contact ? `<div style="font-size:12px;color:${c.a};margin-top:8px;font-weight:600;">${escHtml(p.contact)}</div>` : ''}
           </div>
           ${roleDate}
           <div style="${boldBody}">
             <div style="font-size:14.5px;font-weight:800;color:${c.p};margin-bottom:22px;">Dear Hiring Manager,</div>
-            ${p.body.map((para, i) => `<p style="font-size:13.5px;line-height:1.85;color:#333;margin:0 0 16px;${_pbip}${i===0 ? `border-left:3px solid ${c.a};padding-left:14px;${pca}` : ''}">${escHtml(para)}</p>`).join('')}
+            ${boldBodyParas}
           </div>
         </div>`;
       }
@@ -3679,7 +3689,7 @@
           ? `<div style="text-align:right;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.7);">${p.date}</div><div style="font-size:14px;font-weight:800;color:#fff;margin-top:4px;">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};">${escHtml(p.company)}</div></div>`
           : `<div style="font-size:11.5px;color:rgba(255,255,255,0.7);">${p.date}</div>`;
         return `<div style="${splitOuter}">
-          <div style="background:${c.p};display:flex;align-items:stretch;${pca}">
+          <div style="background:${c.p};display:flex;align-items:stretch;margin-top:0;${pca}">
             <div style="padding:32px 40px 28px;flex:1;">
               <div style="font-size:30px;font-weight:900;color:#fff;letter-spacing:-0.5px;">${escHtml(p.name)}</div>
               ${p.contact ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:8px;">${escHtml(p.contact)}</div>` : ''}
@@ -3699,7 +3709,7 @@
         const contactHtml = contactParts.length
           ? `<div style="display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;">${contactParts.map(pt => `<span style="font-size:12px;color:${c.a};font-weight:700;">${escHtml(pt)}</span>`).join('<span style="font-size:12px;color:#aaa;">|</span>')}</div>`
           : '';
-        const cleanBodyParas = p.body.map(para => `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 19px;${_pbip}">${escHtml(para)}</p>`).join('');
+        const cleanBodyParas = _grpParas(p.body.map(para => `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 19px;${_pbip}">${escHtml(para)}</p>`));
         const hdr = printMode ? '' : 'padding:76px;';
         const cleanWrap = printMode
           ? `font-family:${font};background:${c.l};color:#222;padding:0 0 28px 0;${pca}`
@@ -3716,7 +3726,7 @@
         </div>`;
       }
 
-      return renderCoverModernOutput(text, c, font, printMode);
+      return renderCoverModernOutput(text, c, font, printMode, printMode ? sigHtml : '');
     }
 
     function renderAIOutput(text, tplId, mode, printMode, sigHtml='') {
@@ -3726,8 +3736,7 @@
       const font = FONT_MAP[selectedDocFont] || (tpl.serif ? "Georgia,'Times New Roman',serif" : "Arial,sans-serif");
       if (tpl.layout === 'cModern') return renderCoverModernOutput(text, c, font, printMode, printMode ? sigHtml : '');
       if (cat === 'cover') {
-        const coverHtml = renderCoverOutput(text, c, font, printMode, tpl);
-        return (sigHtml && printMode) ? coverHtml + sigHtml : coverHtml;
+        return renderCoverOutput(text, c, font, printMode, tpl, printMode ? sigHtml : '');
       }
       const parsed = parseAIOutput(text);
 
@@ -4384,7 +4393,7 @@ Aaliyah Washington`
       }
 
       const noPagePad = selectedMode === 'both' ? true : ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
-      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit'].includes(tpl.layout);
+      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit','cFormal','cBoxed','cClean'].includes(tpl.layout);
       const isSidebar = selectedMode !== 'both' && tpl.layout === 'rSidebar';
       const bodyBg = selectedMode === 'both' ? '#fff' : (isSidebar
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
@@ -4584,8 +4593,8 @@ Aaliyah Washington`
         const raw = lastRawResult || outputBox.innerText;
         const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
         const pagePad = noPagePad ? '0' : '0 1in 0 1in';
-        // cModern embeds the signature inside renderCoverModernOutput; other templates use sigBlock
-        const _embedSig = tpl.layout === 'cModern' ? _prevSig : '';
+        // All cover templates embed the signature inside the body content (no sigBlock for covers)
+        const _embedSig = selectedMode === 'cover_letter' ? _prevSig : '';
         const printHtml = renderAIOutput(raw, tplId, selectedMode, true, _embedSig);
         contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
       }
@@ -4609,7 +4618,7 @@ Aaliyah Washington`
 
       const PAGE_H = 1056;         // 11in × 96dpi
       // Banner cover templates (cModern/cBold/cSplit) have no top margin — header is flush to page top
-      const _isCoverBanner = !(selectedMode === 'both' && lastRawCoverResult) && ['cModern','cBold','cSplit'].includes(tpl.layout);
+      const _isCoverBanner = !(selectedMode === 'both' && lastRawCoverResult) && selectedMode === 'cover_letter';
       const PAGE_MARGIN_T = _isCoverBanner ? 0 : 96;
       const PAGE_MARGIN_B = 96;    // 1in bottom margin on every page
       const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // usable px per page
@@ -4626,7 +4635,7 @@ Aaliyah Washington`
       // CSS page-break-inside:avoid has no effect on JS-based pagination, so we handle
       // sig placement here in screen-space coordinates rather than relying on the renderer grouping.
       let sigBlock = '';
-      if (!isBothMode && sigName && tpl.layout !== 'cModern') {
+      if (!isBothMode && sigName && selectedMode !== 'cover_letter') {
         const _sigNoPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
         const _sigPad = _sigNoPagePad ? '0' : '0 1in';
         const _sigInner = renderSignatureHtml(tpl.c.p, _sigPrintIndent(tpl.layout), true);
