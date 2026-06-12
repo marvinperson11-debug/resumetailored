@@ -4551,8 +4551,12 @@ Aaliyah Washington`
       const PAGE_MARGIN_B = 96;    // 1in bottom margin on every page
       const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // 864px usable per page
       let numPages = Math.min(10, Math.max(1, Math.ceil(rawContentH / PAGE_CONTENT_H)));
-      // Collapse near-empty last pages caused by template bottom padding/margins
-      if (numPages > 1 && (rawContentH - (numPages - 1) * PAGE_CONTENT_H) < 100) numPages--;
+      // If the last page is < 40% full, merge its content into the previous page
+      // by expanding that page's clip, so no content is lost and the signature
+      // never ends up alone on a near-empty page.
+      const rawLastPageH = rawContentH - (numPages - 1) * PAGE_CONTENT_H;
+      const lastPageOverflow = (numPages > 1 && rawLastPageH < PAGE_CONTENT_H * 0.4) ? rawLastPageH : 0;
+      if (lastPageOverflow) numPages--;
 
       const isBothMode = selectedMode === 'both' && lastRawCoverResult;
       // rSidebar sig must clear the 215px sidebar; noPagePad aligns to template body padding; padded aligns to 1in margin
@@ -4562,9 +4566,9 @@ Aaliyah Washington`
         ? (OUT_TPLS.cover.find(t => t.id === selectedOutputTpl.cover) || OUT_TPLS.cover[0]).c.p
         : tpl.c.p;
       const totalPages = numPages;
-      // Always anchor sig in the bottom margin (below the content clip) so it can never
-      // overlap with text regardless of how accurate the rawContentH measurement is.
-      const sigTopPx = PAGE_MARGIN_T + PAGE_CONTENT_H + 8; // 968px on 1056px page
+      // Signature sits just below the last content line. When the last page was
+      // merged (lastPageOverflow > 0), sigTopPx moves down to clear that extra content.
+      const sigTopPx = PAGE_MARGIN_T + PAGE_CONTENT_H + lastPageOverflow + 8;
       const sigBlock = sigName ? `<div style="position:absolute;top:${sigTopPx}px;left:${sigLeftPx};-webkit-print-color-adjust:exact;print-color-adjust:exact;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;font-family:${font};">Signature</p><p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${sigColor};line-height:1.3;">${escHtml(sigName)}</p></div>` : '';
 
       // Page background: sidebar templates get a gradient so the sidebar color fills
@@ -4579,17 +4583,22 @@ Aaliyah Washington`
 
       // The clip div starts at PAGE_MARGIN_T (96px) so every page has a 1in blank top margin.
       // The bottom PAGE_MARGIN_B (96px) is naturally empty below the clip on every page.
+      // On the last page the clip and page height expand by lastPageOverflow so that
+      // merged content is fully visible and the signature clears it.
       const pagesHtml = Array.from({length: totalPages}, (_, i) => {
-        const clipFade = (i < totalPages - 1 && (isBothMode || tpl.layout !== 'rSidebar'))
+        const isLast = i === totalPages - 1;
+        const clipH = isLast ? PAGE_CONTENT_H + lastPageOverflow : PAGE_CONTENT_H;
+        const pageH = isLast ? PAGE_H + lastPageOverflow : PAGE_H;
+        const clipFade = (!isLast && (isBothMode || tpl.layout !== 'rSidebar'))
           ? `<div style="position:absolute;bottom:0;left:0;width:100%;height:22px;background:linear-gradient(to bottom,transparent,${fadeColor});pointer-events:none;z-index:2;"></div>`
           : '';
         return `
-        <div style="width:816px;height:${PAGE_H}px;overflow:hidden;position:relative;background:${pageBg};-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:0 4px 24px rgba(0,0,0,0.5);${i > 0 ? 'margin-top:16px;' : ''}">
-          <div style="position:absolute;top:${PAGE_MARGIN_T}px;left:0;width:816px;height:${PAGE_CONTENT_H}px;overflow:hidden;">
+        <div style="width:816px;height:${pageH}px;overflow:hidden;position:relative;background:${pageBg};-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:0 4px 24px rgba(0,0,0,0.5);${i > 0 ? 'margin-top:16px;' : ''}">
+          <div style="position:absolute;top:${PAGE_MARGIN_T}px;left:0;width:816px;height:${clipH}px;overflow:hidden;">
             <div style="position:absolute;top:${-i * PAGE_CONTENT_H}px;left:0;width:816px;">${contentHtml}</div>
             ${clipFade}
           </div>
-          ${i === totalPages - 1 ? sigBlock : ''}
+          ${isLast ? sigBlock : ''}
         </div>
         ${totalPages > 1 ? `<div style="text-align:center;color:rgba(255,255,255,0.4);font-size:11px;font-family:sans-serif;margin-top:7px;">Page ${i + 1} of ${totalPages}</div>` : ''}
         `;
