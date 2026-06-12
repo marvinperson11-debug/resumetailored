@@ -4554,6 +4554,11 @@ Aaliyah Washington`
         contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
       }
 
+      // Strip break-inside:avoid from screen preview HTML — these CSS properties are for the
+      // browser's print engine only. In screen layout they cause entire sections to jump to
+      // the next page rather than clipping at the overflow boundary, creating blank gaps on page 1.
+      contentHtml = contentHtml.replace(/page-break-inside:avoid;break-inside:avoid;(-webkit-column-break-inside:avoid;)?/g, '');
+
       // Measure raw content height at 816px (absolute off-screen is more reliable than fixed for display:table)
       const measure = document.createElement('div');
       measure.style.cssText = 'position:absolute;top:-100000px;left:0;width:816px;visibility:hidden;pointer-events:none;';
