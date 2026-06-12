@@ -4381,8 +4381,8 @@ Aaliyah Washington`
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     @page { size: letter; margin: 0.5in; }
-    html { background: #fff; }
-    body { font-family: ${font}; color: #222; background: ${bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; }
+    html { background: ${isSidebar ? bodyBg : '#fff'}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    body { font-family: ${font}; color: #222; background: ${isSidebar ? 'transparent' : bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; }
     .page { width: 100%; min-width: 0; }
     p, li { page-break-inside: avoid; break-inside: avoid; -webkit-column-break-inside: avoid; overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; }
     div { overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; min-width: 0; }
