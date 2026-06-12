@@ -662,11 +662,10 @@ app.post('/api/download-docx', async (req, res) => {
   // keepNext/keepLines prevent Word from splitting the block onto a blank page alone.
   if (sigName && sigName.trim()) {
     const sig = sigName.trim();
-    const SIG_SPACE_BEFORE = 4320; // 3in × 1440 twips/in — reserves the signature zone
-    // Horizontal rule; large spaceBefore creates the 3-inch reservation above the sig
+    // Horizontal rule — keepNext keeps it glued to the label/name below
     children.push(new Paragraph({
       children: [new TextRun({ text: '', font: 'Calibri', size: 22 })],
-      spacing: { before: SIG_SPACE_BEFORE },
+      spacing: { before: 480 },
       border: { top: { style: BorderStyle.SINGLE, size: 6, color: 'e2e8f0', space: 4 } },
       keepNext: true,
     }));

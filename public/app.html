@@ -1889,7 +1889,7 @@
       const color = primaryColor || '#1e293b';
       const ml = marginLeft ? `margin-left:${marginLeft};` : '';
       const mt = printMode ? 'margin-top:24px;' : 'margin-top:32px;';
-      const pbb = printMode ? 'page-break-inside:avoid;break-inside:avoid;' : '';
+      const pbb = printMode ? 'page-break-inside:avoid;break-inside:avoid;break-before:avoid;page-break-before:avoid;' : '';
       return `<div style="${mt}padding-top:16px;border-top:1px solid #e2e8f0;${ml}${pbb}">
         <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signature</p>
         <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${sigName}</p>
@@ -3425,10 +3425,8 @@
       }
       const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
       const sidebarHtml = sideSecs.map(sec => `<div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">${escHtml(sec.title)}</div>${sec.lines.map(raw => { const t = raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim(); if (!t) return ''; const txt = t.replace(/^[•·\-\*]\s*/,''); return `<div style="background:rgba(255,255,255,.13);color:#fff;font-size:11px;padding:4px 10px;border-radius:4px;margin-bottom:5px;">${escHtml(txt)}</div>`; }).join('')}</div>`).join('');
-      const _sideMainSec = sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;">${escHtml(sec.title)}</div><div style="width:100%;height:2px;background:${c.a};margin-bottom:10px;border-radius:1px;"></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
-      const mainHtml = (sigHtml && printMode && mainSecs.length > 0)
-        ? mainSecs.slice(0,-1).map(_sideMainSec).join('') + `<div style="page-break-inside:avoid;break-inside:avoid;">${_sideMainSec(mainSecs[mainSecs.length-1])}${sigHtml}</div>`
-        : mainSecs.map(_sideMainSec).join('');
+      const _sideMainSec = sec => `<div style="margin-bottom:20px;"><div style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;break-after:avoid;page-break-after:avoid;">${escHtml(sec.title)}</div><div style="width:100%;height:2px;background:${c.a};margin-bottom:10px;border-radius:1px;break-after:avoid;page-break-after:avoid;"></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
+      const mainHtml = mainSecs.map(_sideMainSec).join('') + (sigHtml && printMode ? sigHtml : '');
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       // Print mode uses display:table so the sidebar cell background persists across page breaks.
       // Flex containers fracture on multi-page print; table-cell backgrounds continue correctly.
@@ -3447,10 +3445,8 @@
     function renderModernOutput(parsed, c, font, printMode, sigHtml='') {
       const { name, contact, sections } = parsed;
       const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
-      const _modernSec = sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
-      const sectionsHtml = (sigHtml && printMode && sections.length > 0)
-        ? sections.slice(0,-1).map(_modernSec).join('') + `<div style="page-break-inside:avoid;break-inside:avoid;">${_modernSec(sections[sections.length-1])}${sigHtml}</div>`
-        : sections.map(_modernSec).join('');
+      const _modernSec = sec => `<div style="margin-bottom:20px;"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;break-after:avoid;page-break-after:avoid;"><div style="width:4px;height:18px;background:${c.a};border-radius:2px;"></div><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
+      const sectionsHtml = sections.map(_modernSec).join('') + (sigHtml && printMode ? sigHtml : '');
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode
         ? `font-family:${font};color:#222;`
@@ -3469,10 +3465,8 @@
       const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const leftHtml = `<div style="font-size:17px;font-weight:900;color:${c.p};margin-bottom:5px;line-height:1.2;">${escHtml(name)}</div><div style="margin-bottom:16px;">${contactLines.map(l=>`<div style="font-size:10.5px;color:#555;line-height:1.7;">${escHtml(l)}</div>`).join('')}</div>${sideSecs.map(sec=>`<div style="margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid ${c.a}50;">${escHtml(sec.title)}</div>${sec.lines.map(raw=>{const t=raw.replace(/^#{1,3}\s+/,'').replace(/\*\*(.*?)\*\*/g,'$1').replace(/\*(.*?)\*/g,'$1').trim();if(!t)return '';return `<div style="font-size:10.5px;color:#444;line-height:1.65;page-break-inside:avoid;break-inside:avoid;overflow-wrap:break-word;word-break:keep-all;hyphens:none;">${escHtml(t.replace(/^[•·\-\*]\s*/,''))}</div>`;}).join('')}</div>`).join('')}`;
-      const _twoColSec = sec => `<div style="margin-bottom:18px;page-break-inside:avoid;break-inside:avoid;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
-      const rightHtml = (sigHtml && printMode && mainSecs.length > 0)
-        ? mainSecs.slice(0,-1).map(_twoColSec).join('') + `<div style="page-break-inside:avoid;break-inside:avoid;">${_twoColSec(mainSecs[mainSecs.length-1])}${sigHtml}</div>`
-        : mainSecs.map(_twoColSec).join('');
+      const _twoColSec = sec => `<div style="margin-bottom:18px;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;break-after:avoid;page-break-after:avoid;"><div style="width:18px;height:2px;background:${c.a};border-radius:1px;"></div><span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(sec.title)}</span></div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
+      const rightHtml = mainSecs.map(_twoColSec).join('') + (sigHtml && printMode ? sigHtml : '');
       const outerStyle = printMode
         ? `font-family:${font};color:#222;display:table;table-layout:fixed;width:100%;`
         : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
@@ -3487,10 +3481,8 @@
       const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const contactHtml = contactParts.map((s,i)=>`${i>0?`<span style="color:${c.a};margin:0 8px;">·</span>`:''}${escHtml(s)}`).join('');
-      const _bannerSec = sec => `<div style="margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;"><div style="display:inline-block;background:${c.p};color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 11px;border-radius:3px;margin-bottom:10px;${pca}">${escHtml(sec.title)}</div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
-      const sectionsHtml = (sigHtml && printMode && sections.length > 0)
-        ? sections.slice(0,-1).map(_bannerSec).join('') + `<div style="page-break-inside:avoid;break-inside:avoid;">${_bannerSec(sections[sections.length-1])}${sigHtml}</div>`
-        : sections.map(_bannerSec).join('');
+      const _bannerSec = sec => `<div style="margin-bottom:20px;"><div style="display:inline-block;background:${c.p};color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 11px;border-radius:3px;margin-bottom:10px;break-after:avoid;page-break-after:avoid;${pca}">${escHtml(sec.title)}</div>${_groupedSectionHtml(sec.lines, c, printMode)}</div>`;
+      const sectionsHtml = sections.map(_bannerSec).join('') + (sigHtml && printMode ? sigHtml : '');
       const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       return `<div style="${outerStyle}"><div style="padding:26px 44px 18px;border-left:5px solid ${c.p};${pca}"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(name)}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${pca}"></div></div><div style="padding:18px 44px 32px;">${sectionsHtml}</div></div>`;
     }
@@ -3718,7 +3710,6 @@
         const isHdr = t.length >= 2 && t.length <= 50 && /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(t);
         if (isHdr) {
           _closeGrp();
-          if (printMode && sigHtml) html += '\x00';
           if (tpl.style === 'left-bar') html += `<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};border-left:3px solid ${c.a};padding-left:12px;margin:24px 0 12px;">${escHtml(t)}</div>`;
           else if (tpl.style === 'icon-bar') html += `<div style="display:flex;align-items:center;gap:8px;margin:24px 0 12px;"><div style="width:3px;height:14px;background:${c.a};border-radius:2px;"></div><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.p};">${escHtml(t)}</span></div>`;
           else if (tpl.style === 'minimal') html += `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:3px;color:${c.p};margin:24px 0 12px;">${escHtml(t)}</div>`;
@@ -3732,14 +3723,9 @@
       }
       _closeGrp();
       if (printMode && sigHtml) {
-        const lastSent = html.lastIndexOf('\x00');
-        if (lastSent !== -1) {
-          const before = html.substring(0, lastSent).replace(/\x00/g, '');
-          const lastSec = html.substring(lastSent + 1);
-          html = before + `<div style="page-break-inside:avoid;break-inside:avoid;">${lastSec}${sigHtml}</div>`;
-        } else {
-          html += sigHtml;
-        }
+        html = html.replace(/\x00/g, '') + sigHtml;
+      } else {
+        html = html.replace(/\x00/g, '');
       }
       const bg = tpl.style === 'minimal' ? '#fafafa' : '#fff';
       if (printMode) return `<div style="font-family:${font};background:${bg};color:#222;padding:0 0 28px 0;">${html}</div>`;
