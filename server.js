@@ -660,23 +660,29 @@ app.post('/api/download-docx', async (req, res) => {
     }));
   }
 
-  // Signature block — placed in document flow with proper spacing
+  // Signature block — 3-inch reserved zone before the rule enforces the signature area.
+  // keepNext/keepLines prevent Word from splitting the block onto a blank page alone.
   if (sigName && sigName.trim()) {
     const sig = sigName.trim();
-    // Horizontal rule above signature
+    const SIG_SPACE_BEFORE = 4320; // 3in × 1440 twips/in — reserves the signature zone
+    // Horizontal rule; large spaceBefore creates the 3-inch reservation above the sig
     children.push(new Paragraph({
       children: [new TextRun({ text: '', font: 'Calibri', size: 22 })],
-      spacing: { before: 480 },
+      spacing: { before: SIG_SPACE_BEFORE },
       border: { top: { style: BorderStyle.SINGLE, size: 6, color: 'e2e8f0', space: 4 } },
+      keepNext: true,
     }));
+    // "SIGNATURE" label — keepNext keeps it glued to the name below it
     children.push(new Paragraph({
       children: [new TextRun({ text: 'Signature', font: 'Calibri', size: 18, color: '94a3b8', allCaps: true })],
       spacing: { before: 60, after: 40 },
+      keepNext: true,
     }));
-    // Use the closest Calibri rendition for the signature name (cursive fonts aren't embeddable in docx without the font file)
+    // Signature name — keepLines prevents its lines from splitting; it always stays whole
     children.push(new Paragraph({
       children: [new TextRun({ text: sig, font: 'Calibri', size: 52, bold: true, color: primaryHex, italics: true })],
       spacing: { after: 0 },
+      keepLines: true,
     }));
   }
 
