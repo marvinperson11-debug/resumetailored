@@ -3441,7 +3441,7 @@
       const rColStyle = printMode
         ? `display:table-cell;padding:36px 30px;vertical-align:top;`
         : `flex:1;padding:36px 30px;min-width:0;`;
-      return `<div style="${outerStyle}"><div style="${lColStyle}"><div style="width:56px;height:56px;border-radius:50%;background:${c.a};display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;font-weight:900;color:#fff;${pca}">${escHtml(initials)}</div><div style="color:#fff;text-align:center;margin-bottom:20px;"><div style="font-size:15px;font-weight:800;line-height:1.3;">${escHtml(name)}</div></div><div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">Contact</div><div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.9;">${contactLines.map(l=>`<div>${escHtml(l)}</div>`).join('')}</div></div>${sidebarHtml}</div><div style="${rColStyle}">${mainHtml}</div></div>`;
+      return `<div style="${outerStyle}"><div style="${lColStyle}"><div style="width:56px;height:56px;border-radius:50%;background:${c.a};display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;font-weight:900;color:#fff;${pca}">${escHtml(initials)}</div><div style="color:#fff;text-align:center;margin-bottom:20px;"><div style="font-size:15px;font-weight:800;line-height:1.3;">${escHtml(name)}</div></div><div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">Contact</div><div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.9;">${contactLines.map(l=>`<div>${escHtml(l)}</div>`).join('')}</div></div>${sidebarHtml}</div><div data-rt-main-col="1" style="${rColStyle}">${mainHtml}</div></div>`;
     }
 
     function renderModernOutput(parsed, c, font, printMode, sigHtml='') {
@@ -3478,7 +3478,7 @@
         : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       const lStyle2 = printMode ? `display:table-cell;width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;vertical-align:top;${pca}` : `width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;flex-shrink:0;${pca}`;
       const rStyle2 = printMode ? `display:table-cell;padding:32px 28px;vertical-align:top;` : `flex:1;padding:32px 28px;min-width:0;`;
-      return `<div style="${outerStyle}"><div style="${lStyle2}">${leftHtml}</div><div style="${rStyle2}">${rightHtml}</div></div>`;
+      return `<div style="${outerStyle}"><div style="${lStyle2}">${leftHtml}</div><div data-rt-main-col="1" style="${rStyle2}">${rightHtml}</div></div>`;
     }
 
     // Banner layout: strong left-border header, section headers as colored badge pills
@@ -4554,12 +4554,21 @@ Aaliyah Washington`
         contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
       }
 
+      // Strip break-inside:avoid from screen preview HTML — these CSS properties are for the
+      // browser's print engine only. In screen layout they cause entire sections to jump to
+      // the next page rather than clipping at the overflow boundary, creating blank gaps on page 1.
+      contentHtml = contentHtml.replace(/page-break-inside:avoid;break-inside:avoid;(-webkit-column-break-inside:avoid;)?/g, '');
+
       // Measure raw content height at 816px (absolute off-screen is more reliable than fixed for display:table)
       const measure = document.createElement('div');
       measure.style.cssText = 'position:absolute;top:-100000px;left:0;width:816px;visibility:hidden;pointer-events:none;';
       measure.innerHTML = contentHtml;
       document.body.appendChild(measure);
       const rawContentH = measure.scrollHeight;
+      // For two-column layouts (sidebar, two-col) the table height = max(left, right).
+      // The sig should appear after the RIGHT column ends, not after the taller left column.
+      const _mainColEl = measure.querySelector('[data-rt-main-col]');
+      const mainColH = _mainColEl ? _mainColEl.scrollHeight : null;
       document.body.removeChild(measure);
 
       const PAGE_H = 1056;         // 11in × 96dpi
@@ -4583,8 +4592,11 @@ Aaliyah Washington`
         const _sigNoPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
         const _sigPad = _sigNoPagePad ? '0' : '0 1in';
         const _sigInner = renderSignatureHtml(tpl.c.p, _sigPrintIndent(tpl.layout), true);
-        const _actualLastH = lastPageOverflow > 0 ? PAGE_CONTENT_H + lastPageOverflow : rawLastPageH;
-        const _sigTopPx = PAGE_MARGIN_T + _actualLastH;
+        // For two-column templates, position sig after the right column ends on the last page,
+        // not after the full table height (which is determined by whichever column is taller).
+        const _refH = mainColH !== null ? mainColH : rawContentH;
+        const _refLastPageH = Math.max(0, Math.min(PAGE_CONTENT_H + lastPageOverflow, _refH - (numPages - 1) * PAGE_CONTENT_H));
+        const _sigTopPx = PAGE_MARGIN_T + _refLastPageH;
         sigBlock = `<div style="position:absolute;top:${_sigTopPx}px;left:0;width:816px;padding:${_sigPad};box-sizing:border-box;">${_sigInner}</div>`;
       }
 
