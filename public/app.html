@@ -4327,9 +4327,11 @@ Aaliyah Washington`
         const _contentH = _measure.scrollHeight;
         document.body.removeChild(_measure);
 
-        const PAGE_H    = 864;   // 9in usable height per page at 96dpi (letter − 2in margins)
+        // @page bottom margin is 4in, so each page has only 6in (576px) of usable content.
+        // The bottom 3in is permanently reserved for the signature zone by the @page rule.
+        const PAGE_H    = 576;   // 6in usable height per page (letter 11in − 1in top − 4in bottom)
         const SIG_H_EST = 76;    // estimated signature block height
-        const SIG_TOP   = 576;   // 3in from page bottom = 576px from page top (864 − 288)
+        const SIG_TOP   = PAGE_H - SIG_H_EST; // 500px — sig fills the last 76px of the 6in zone
 
         const numPages  = Math.ceil(_contentH / PAGE_H);
         const lastPageH = _contentH - (numPages - 1) * PAGE_H;
@@ -4366,7 +4368,7 @@ Aaliyah Washington`
   ${fontUrl}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    @page { size: letter; margin: 1in 1in 1in 1in; }
+    @page { size: letter; margin: 1in 1in 4in 1in; }
     html { background: #fff; }
     body { font-family: ${font}; color: #222; background: ${bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; }
     .page { width: 100%; min-width: 0; }
