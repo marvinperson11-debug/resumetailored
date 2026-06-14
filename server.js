@@ -658,27 +658,26 @@ app.post('/api/download-docx', async (req, res) => {
     }));
   }
 
-  // Signature block — 3-inch reserved zone before the rule enforces the signature area.
-  // keepNext/keepLines prevent Word from splitting the block onto a blank page alone.
+  // Signature block.
+  // RULE A (room available): a modest 1/3-inch gap places the signature directly
+  // under the content. The old 2-inch forced gap pushed it onto a near-empty
+  // trailing page. keepNext glues the line to the name and keepLines keeps the
+  // name whole, so the block never splits or strands on a page by itself.
+  // No literal "Signature" label — the rule (top border) is the designated slot.
   if (sigName && sigName.trim()) {
     const sig = sigName.trim();
-    // Horizontal rule — keepNext keeps it glued to the label/name below
+    // Signature line (horizontal rule) — keepNext keeps it glued to the name below
     children.push(new Paragraph({
       children: [new TextRun({ text: '', font: 'Calibri', size: 22 })],
-      spacing: { before: 2880 },
-      border: { top: { style: BorderStyle.SINGLE, size: 6, color: 'e2e8f0', space: 4 } },
+      spacing: { before: 480 },
+      border: { top: { style: BorderStyle.SINGLE, size: 6, color: 'cbd5e1', space: 6 } },
       keepNext: true,
+      keepLines: true,
     }));
-    // "SIGNATURE" label — keepNext keeps it glued to the name below it
-    children.push(new Paragraph({
-      children: [new TextRun({ text: 'Signature', font: 'Calibri', size: 18, color: '94a3b8', allCaps: true })],
-      spacing: { before: 60, after: 40 },
-      keepNext: true,
-    }));
-    // Signature name — keepLines prevents its lines from splitting; it always stays whole
+    // Signature name — keepLines prevents its lines from splitting; it stays whole
     children.push(new Paragraph({
       children: [new TextRun({ text: sig, font: 'Calibri', size: 52, bold: true, color: primaryHex, italics: true })],
-      spacing: { after: 0 },
+      spacing: { before: 80, after: 0 },
       keepLines: true,
     }));
   }
