@@ -3626,7 +3626,7 @@
       const roleLine = [p.role, p.company].filter(Boolean);
 
       if (tpl.layout === 'cFormal') {
-        const hdr = printMode ? 'padding:48px 48px 28px;' : 'padding:60px 76px;';
+        const hdr = printMode ? 'padding:48px 48px 28px;' : 'padding:clamp(28px,5%,60px) clamp(20px,8%,76px);';
         return `<div style="${cardWrap}${hdr}">
           <div style="margin-bottom:32px;padding-bottom:18px;border-bottom:1.5px solid ${c.p};${pca}">
             <div style="font-size:22px;font-weight:700;color:${c.p};">${escHtml(p.name)}</div>
@@ -3651,9 +3651,9 @@
           `<p style="font-size:13.5px;line-height:1.85;color:#333;margin:0 0 16px;${_pbip}${i===0 ? `border-left:3px solid ${c.a};padding-left:14px;${pca}` : ''}">${escHtml(para)}</p>`
         ));
         return `<div style="${boldOuter}">
-          <div style="background:${c.p};padding:32px 52px 28px;margin-top:0;${pca}">
-            <div style="font-size:30px;font-weight:900;color:#fff;letter-spacing:-0.5px;">${escHtml(p.name)}</div>
-            ${p.contact ? `<div style="font-size:12px;color:${c.a};margin-top:8px;font-weight:600;">${escHtml(p.contact)}</div>` : ''}
+          <div style="background:${c.p};padding:clamp(20px,4%,32px) clamp(16px,7%,52px) clamp(16px,4%,28px);margin-top:0;${pca}">
+            <div style="font-size:clamp(22px,5%,30px);font-weight:900;color:#fff;letter-spacing:-0.5px;overflow-wrap:break-word;">${escHtml(p.name)}</div>
+            ${p.contact ? `<div style="font-size:12px;color:${c.a};margin-top:8px;font-weight:600;overflow-wrap:break-word;">${escHtml(p.contact)}</div>` : ''}
           </div>
           ${roleDate}
           <div style="${boldBody}">
@@ -3664,12 +3664,12 @@
       }
 
       if (tpl.layout === 'cBoxed') {
-        const hdr = printMode ? 'padding:48px 48px 28px;' : 'padding:52px;';
+        const hdr = printMode ? 'padding:48px 48px 28px;' : 'padding:clamp(20px,5%,52px);';
         return `<div style="${cardWrap}${hdr}">
-          <div style="border:2px solid ${c.p};border-radius:8px;padding:26px 34px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:center;${pca}">
-            <div>
-              <div style="font-size:23px;font-weight:800;color:${c.p};">${escHtml(p.name)}</div>
-              ${p.contact ? `<div style="font-size:12px;color:#777;margin-top:5px;">${escHtml(p.contact)}</div>` : ''}
+          <div style="border:2px solid ${c.p};border-radius:8px;padding:clamp(16px,4%,26px) clamp(16px,4%,34px);margin-bottom:32px;display:flex;justify-content:space-between;align-items:center;gap:12px;${pca}">
+            <div style="min-width:0;">
+              <div style="font-size:clamp(17px,4%,23px);font-weight:800;color:${c.p};overflow-wrap:break-word;">${escHtml(p.name)}</div>
+              ${p.contact ? `<div style="font-size:12px;color:#777;margin-top:5px;overflow-wrap:break-word;">${escHtml(p.contact)}</div>` : ''}
             </div>
             <div style="width:46px;height:46px;border-radius:50%;background:${c.p};display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900;flex-shrink:0;${pca}">${escHtml((p.name[0]||'A').toUpperCase())}</div>
           </div>
@@ -3689,12 +3689,12 @@
           ? `<div style="text-align:right;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.7);">${p.date}</div><div style="font-size:14px;font-weight:800;color:#fff;margin-top:4px;">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};">${escHtml(p.company)}</div></div>`
           : `<div style="font-size:11.5px;color:rgba(255,255,255,0.7);">${p.date}</div>`;
         return `<div style="${splitOuter}">
-          <div style="background:${c.p};display:flex;align-items:stretch;margin-top:0;${pca}">
-            <div style="padding:32px 40px 28px;flex:1;">
-              <div style="font-size:30px;font-weight:900;color:#fff;letter-spacing:-0.5px;">${escHtml(p.name)}</div>
-              ${p.contact ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:8px;">${escHtml(p.contact)}</div>` : ''}
+          <div style="background:${c.p};display:flex;align-items:stretch;flex-wrap:wrap;margin-top:0;${pca}">
+            <div style="padding:clamp(20px,4%,32px) clamp(16px,5%,40px) clamp(16px,4%,28px);flex:1;min-width:0;">
+              <div style="font-size:clamp(20px,4%,30px);font-weight:900;color:#fff;letter-spacing:-0.5px;overflow-wrap:break-word;">${escHtml(p.name)}</div>
+              ${p.contact ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:8px;overflow-wrap:break-word;">${escHtml(p.contact)}</div>` : ''}
             </div>
-            <div style="padding:32px 28px 28px;">${roleInfo}</div>
+            <div style="padding:clamp(16px,4%,32px) clamp(12px,4%,28px);">${roleInfo}</div>
             <div style="width:8px;background:${c.a};flex-shrink:0;${pca}"></div>
           </div>
           <div style="${splitBody}">
@@ -3710,7 +3710,7 @@
           ? `<div style="display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;">${contactParts.map(pt => `<span style="font-size:12px;color:${c.a};font-weight:700;">${escHtml(pt)}</span>`).join('<span style="font-size:12px;color:#aaa;">|</span>')}</div>`
           : '';
         const cleanBodyParas = _grpParas(p.body.map(para => `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 19px;${_pbip}">${escHtml(para)}</p>`));
-        const hdr = printMode ? 'padding:48px 48px 28px;' : 'padding:76px;';
+        const hdr = printMode ? 'padding:48px 48px 28px;' : 'padding:clamp(28px,6%,76px) clamp(20px,7%,76px);';
         const cleanWrap = printMode
           ? `font-family:${font};background:${c.l};color:#222;${pca}`
           : `font-family:${font};background:${c.l};color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);${pca}`;
