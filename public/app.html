@@ -4433,7 +4433,7 @@ Aaliyah Washington`
   <title>${title.replace(/</g,'&lt;')}</title>
   ${fontUrl}
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     @page { size: letter; margin: ${isCoverBanner ? '0' : '0.5in'}; }
     html { background: ${isSidebar ? bodyBg : '#fff'}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     body { font-family: ${font}; color: #222; background: ${isSidebar ? 'transparent' : bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; }
@@ -4446,7 +4446,11 @@ Aaliyah Washington`
   <div class="page">
     ${printContent}
   </div>
-  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 400); };<\/script>
+  <script>window.onload = function(){
+    ${selectedMode === 'cover_letter' ? `var p = document.querySelector('.page');
+    if (p) { var ph = ${isCoverBanner ? 1056 : 960}, ch = p.scrollHeight; if (ch > ph) document.documentElement.style.zoom = ph / ch; }` : ''}
+    setTimeout(function(){ window.print(); }, ${selectedMode === 'cover_letter' ? 700 : 400});
+  };<\/script>
 </body>
 </html>`);
       win.document.close();
