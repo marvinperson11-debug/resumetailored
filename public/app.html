@@ -4477,10 +4477,11 @@ Aaliyah Washington`
   </script>
 
   <!-- ── Preview Modal ── -->
-  <div id="previewModal" onclick="if(event.target===this)closePreview()" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.88);overflow-y:auto;padding:24px 16px;">
-    <div style="background:#fff;border-radius:16px;width:100%;max-width:1000px;margin:0 auto;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.5);">
-      <!-- Header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#1e1b4b;color:#fff;">
+  <!-- Flex container so header+footer stay pinned and only the page area scrolls -->
+  <div id="previewModal" onclick="if(event.target===this)closePreview()" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.88);overflow:hidden;padding:16px;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:16px;width:100%;max-width:1000px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.5);display:flex;flex-direction:column;max-height:calc(100vh - 32px);">
+      <!-- Header — always visible -->
+      <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#1e1b4b;color:#fff;">
         <div>
           <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.55;margin-bottom:3px;">Document Preview</div>
           <div id="previewTitle" style="font-size:16px;font-weight:700;"></div>
@@ -4490,16 +4491,16 @@ Aaliyah Washington`
           <button onclick="closePreview()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:30px;line-height:1;cursor:pointer;padding:2px 6px;">×</button>
         </div>
       </div>
-      <!-- Document page viewer — pages split like a PDF reader -->
-      <div id="previewArea" style="background:#525659;padding:24px;overflow-y:auto;max-height:74vh;">
+      <!-- Document page viewer — scrolls independently, flex:1 fills remaining space -->
+      <div id="previewArea" style="background:#525659;padding:24px;overflow-y:auto;flex:1;min-height:0;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;">
         <div id="previewScaleOuter" style="margin:0 auto;overflow:hidden;">
           <div id="previewScaleInner" style="transform-origin:top left;width:816px;">
             <!-- page divs injected by openPreview() -->
           </div>
         </div>
       </div>
-      <!-- Download footer -->
-      <div style="padding:16px 24px;background:#fff;border-top:1px solid #e5e7eb;">
+      <!-- Download footer — always visible at bottom -->
+      <div style="flex-shrink:0;padding:16px 24px;background:#fff;border-top:1px solid #e5e7eb;">
         <div style="font-size:12px;color:#9ca3af;margin-bottom:10px;">Looks good? Download your document:</div>
         <div id="previewDownloadRow" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
       </div>
@@ -4690,7 +4691,7 @@ Aaliyah Washington`
       document.getElementById('previewTitle').textContent = document.getElementById('outputTitle').textContent;
       renderPreviewDownloadButtons();
       const modal = document.getElementById('previewModal');
-      modal.style.display = 'block';
+      modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => requestAnimationFrame(_scalePreviewPage));
     }
