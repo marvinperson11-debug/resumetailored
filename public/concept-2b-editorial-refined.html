@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concept 2B — Editorial Noir (Refined)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root {
+  --blue: #6366F1;
+  --purple: #8B5CF6;
+  --bg: #030712;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --rule: rgba(255,255,255,0.08);
+}
+
+html,body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); overflow-x:hidden; }
+
+/* ─── NAV ─── */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  height:68px; display:flex; align-items:center; justify-content:space-between;
+  padding:0 56px;
+  background:rgba(3,7,18,0.9); backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--rule);
+}
+.logo {
+  font-family:'Syne',sans-serif; font-weight:900; font-size:17px;
+  letter-spacing:-0.2px; color:#f1f5f9; display:flex; align-items:center; gap:11px;
+}
+/* Favicon-inspired: document page with corner fold */
+.logo-mark {
+  width:22px; height:26px; position:relative; flex-shrink:0;
+}
+.logo-mark::before {
+  content:''; position:absolute; inset:0; border-radius:3px;
+  background:linear-gradient(160deg,#6366F1,#8B5CF6);
+  clip-path:polygon(0 0,72% 0,100% 28%,100% 100%,0 100%);
+}
+.logo-mark::after {
+  content:''; position:absolute; right:0; top:0;
+  width:29%; height:28%;
+  background:rgba(255,255,255,0.4);
+  clip-path:polygon(0 0,100% 100%,100% 0);
+}
+.nav-links { display:flex; gap:36px; }
+.nav-links a {
+  font-size:13px; font-weight:600; color:var(--muted);
+  text-decoration:none; letter-spacing:0.1px; transition:color .2s;
+}
+.nav-links a:hover { color:var(--text); }
+.nav-cta {
+  background:linear-gradient(135deg,#6366F1,#8B5CF6); color:#fff;
+  padding:10px 24px; border-radius:8px; font-weight:700; font-size:13px;
+  border:none; cursor:pointer; font-family:inherit;
+  box-shadow:0 0 22px rgba(99,102,241,0.4);
+  transition:all .2s;
+}
+.nav-cta:hover { box-shadow:0 0 36px rgba(99,102,241,0.65); transform:translateY(-1px); }
+
+/* ─── HERO ─── */
+.hero {
+  min-height:100vh; padding-top:68px;
+  display:grid; grid-template-columns:1fr 1fr;
+}
+
+/* Left column: all the messaging */
+.hero-left {
+  padding:96px 56px 80px 56px;
+  display:flex; flex-direction:column; justify-content:center;
+  border-right:1px solid var(--rule);
+}
+.eyebrow {
+  font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:3px;
+  color:var(--blue); margin-bottom:32px;
+  display:flex; align-items:center; gap:12px;
+}
+.eyebrow::before { content:''; display:block; width:32px; height:1.5px; background:var(--blue); }
+
+.hero-left h1 {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(60px,5.5vw,82px); font-weight:900;
+  line-height:0.93; letter-spacing:-3.5px; color:#f1f5f9;
+  margin-bottom:40px;
+}
+.hero-left h1 em {
+  font-style:normal;
+  background:linear-gradient(135deg,#818CF8,#A78BFA);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+
+.hero-left p {
+  font-size:17px; color:var(--muted); line-height:1.8;
+  max-width:400px; margin-bottom:48px;
+}
+
+.hero-cta-row { display:flex; gap:12px; align-items:center; }
+.btn-main {
+  background:linear-gradient(135deg,#6366F1,#8B5CF6); color:#fff;
+  padding:15px 34px; border-radius:10px; font-weight:800; font-size:15px;
+  border:none; cursor:pointer; font-family:inherit; letter-spacing:-0.2px;
+  box-shadow:0 0 28px rgba(99,102,241,0.45); transition:all .2s;
+}
+.btn-main:hover { transform:translateY(-2px); box-shadow:0 0 44px rgba(99,102,241,0.65); }
+.btn-ghost {
+  color:var(--muted); font-size:14px; font-weight:600; cursor:pointer;
+  background:none; border:none; font-family:inherit; transition:color .2s;
+  display:flex; align-items:center; gap:6px;
+}
+.btn-ghost:hover { color:var(--text); }
+.btn-ghost::after { content:'→'; }
+
+.trust-line {
+  margin-top:32px; font-size:12px; color:#475569;
+  display:flex; gap:18px; align-items:center;
+}
+.trust-line span { color:#64748b; }
+
+/* Right column: single bold visual element */
+.hero-right {
+  display:flex; align-items:center; justify-content:center;
+  padding:80px 56px; position:relative; overflow:hidden;
+}
+
+/* Huge typographic number — sole decorative element */
+.hero-right .bg-type {
+  position:absolute; font-family:'Syne',sans-serif; font-size:280px;
+  font-weight:900; letter-spacing:-20px; color:rgba(99,102,241,0.05);
+  user-select:none; line-height:1; top:50%; left:50%; transform:translate(-50%,-50%);
+  white-space:nowrap;
+}
+
+/* Single centered metric card */
+.metric-block {
+  position:relative; z-index:1; text-align:center;
+}
+.metric-num {
+  font-family:'Syne',sans-serif; font-size:96px; font-weight:900;
+  letter-spacing:-5px; line-height:1; color:#f1f5f9;
+  margin-bottom:8px;
+}
+.metric-num span {
+  background:linear-gradient(135deg,#818CF8,#A78BFA);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.metric-label {
+  font-size:14px; font-weight:600; color:var(--muted); letter-spacing:0.3px;
+  margin-bottom:40px;
+}
+/* Three micro-stats stacked */
+.micro-stats { display:flex; flex-direction:column; gap:0; width:240px; margin:0 auto; }
+.micro-stat {
+  display:flex; justify-content:space-between; align-items:baseline;
+  padding:14px 0; border-bottom:1px solid var(--rule); font-size:13px;
+}
+.micro-stat:first-child { border-top:1px solid var(--rule); }
+.ms-label { color:var(--muted); font-weight:600; }
+.ms-val { color:#f1f5f9; font-weight:800; font-family:'Syne',sans-serif; letter-spacing:-0.5px; }
+.ms-val.green { color:#10b981; }
+
+/* ─── SCROLL TICKER ─── */
+.ticker-band {
+  border-top:1px solid var(--rule); border-bottom:1px solid var(--rule);
+  padding:14px 0; overflow:hidden; white-space:nowrap;
+  background:rgba(255,255,255,0.015);
+}
+.ticker-inner {
+  display:inline-block; animation:tick 22s linear infinite;
+  font-size:11px; font-weight:700; color:var(--blue);
+  text-transform:uppercase; letter-spacing:2.5px;
+}
+@keyframes tick { from{transform:translateX(0);} to{transform:translateX(-50%);} }
+
+/* ─── FEATURES ─── */
+.features {
+  padding:100px 56px;
+  display:grid; grid-template-columns:260px 1fr; gap:80px;
+  border-bottom:1px solid var(--rule);
+}
+.features-lede h2 {
+  font-family:'Syne',sans-serif; font-size:34px; font-weight:900;
+  letter-spacing:-1px; color:#f1f5f9; line-height:1.1; margin-bottom:16px;
+}
+.features-lede p { font-size:14px; color:var(--muted); line-height:1.75; }
+
+.feat-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:40px 52px;
+}
+.feat-item {}
+.feat-item .num {
+  font-family:'Syne',sans-serif; font-size:11px; font-weight:900;
+  letter-spacing:2px; color:var(--blue); text-transform:uppercase;
+  margin-bottom:12px;
+}
+.feat-item h3 {
+  font-size:17px; font-weight:800; color:#f1f5f9;
+  letter-spacing:-0.3px; margin-bottom:10px; line-height:1.2;
+}
+.feat-item p { font-size:14px; color:var(--muted); line-height:1.7; }
+
+/* ─── FOOTER CTA ─── */
+.footer-cta {
+  padding:100px 56px;
+  display:flex; justify-content:space-between; align-items:center;
+  gap:40px;
+}
+.footer-cta h2 {
+  font-family:'Syne',sans-serif; font-size:clamp(40px,4vw,56px);
+  font-weight:900; letter-spacing:-2.5px; color:#f1f5f9; line-height:1.0;
+  max-width:480px;
+}
+.footer-cta h2 em {
+  font-style:normal;
+  background:linear-gradient(135deg,#818CF8,#A78BFA);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+}
+.footer-right { flex-shrink:0; text-align:right; }
+.footer-right .sub { font-size:13px; color:#475569; margin-bottom:20px; }
+
+/* Design note badge */
+.design-note {
+  position:fixed; bottom:20px; right:20px; z-index:200;
+  background:rgba(99,102,241,0.95); color:#fff; padding:10px 18px;
+  border-radius:10px; font-size:12px; font-weight:800; letter-spacing:0.5px;
+  backdrop-filter:blur(10px); box-shadow:0 4px 20px rgba(99,102,241,0.4);
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-mark"></div>
+    ResumeTailored
+  </div>
+  <div class="nav-links">
+    <a href="#">Features</a>
+    <a href="#">Compare</a>
+    <a href="#">Blog</a>
+    <a href="#">Pricing</a>
+  </div>
+  <button class="nav-cta">Try Free →</button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="eyebrow">Powered by Anthropic Claude</div>
+
+    <h1>Your resume,<br><em>rewritten</em><br>in 30 sec.</h1>
+
+    <p>
+      Paste any job URL. Claude rewrites your resume to match it and writes your cover letter. One click. Free every day.
+    </p>
+
+    <div class="hero-cta-row">
+      <button class="btn-main">Tailor My Resume Free</button>
+      <button class="btn-ghost">See templates</button>
+    </div>
+
+    <div class="trust-line">
+      <span>No credit card</span>
+      <span>·</span>
+      <span>1 free/day</span>
+      <span>·</span>
+      <span>$19/mo Pro</span>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="bg-type">AI</div>
+    <div class="metric-block">
+      <div class="metric-num"><span>30</span>s</div>
+      <div class="metric-label">Average completion time</div>
+      <div class="micro-stats">
+        <div class="micro-stat">
+          <span class="ms-label">Monthly price</span>
+          <span class="ms-val">$19 <span style="font-size:12px;color:#818CF8;font-family:Inter;">/ mo</span></span>
+        </div>
+        <div class="micro-stat">
+          <span class="ms-label">vs Teal</span>
+          <span class="ms-val green">−$10</span>
+        </div>
+        <div class="micro-stat">
+          <span class="ms-label">Job boards</span>
+          <span class="ms-val">40+</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-band">
+  <span class="ticker-inner">
+    Free Resume Tailoring &nbsp;·&nbsp; Claude AI — Not ChatGPT &nbsp;·&nbsp; 40+ Job Boards &nbsp;·&nbsp; English &amp; Chinese &nbsp;·&nbsp; $19/mo vs $29 Teal &nbsp;·&nbsp; Cover Letter Included &nbsp;·&nbsp; No Credit Card &nbsp;·&nbsp;
+    Free Resume Tailoring &nbsp;·&nbsp; Claude AI — Not ChatGPT &nbsp;·&nbsp; 40+ Job Boards &nbsp;·&nbsp; English &amp; Chinese &nbsp;·&nbsp; $19/mo vs $29 Teal &nbsp;·&nbsp; Cover Letter Included &nbsp;·&nbsp; No Credit Card &nbsp;·&nbsp;
+  </span>
+</div>
+
+<!-- FEATURES -->
+<div class="features">
+  <div class="features-lede">
+    <h2>What makes it different</h2>
+    <p>Four things no other AI resume tool does — all free.</p>
+  </div>
+  <div class="feat-grid">
+    <div class="feat-item">
+      <div class="num">01</div>
+      <h3>Full Resume Rewrite</h3>
+      <p>Every bullet point rewritten to match the job's language and priorities. Not keyword stuffing — genuine rewriting.</p>
+    </div>
+    <div class="feat-item">
+      <div class="num">02</div>
+      <h3>Paste Any Job URL</h3>
+      <p>LinkedIn, Indeed, Glassdoor, 40+ boards. Auto-extracts the full posting. No other tool does this.</p>
+    </div>
+    <div class="feat-item">
+      <div class="num">03</div>
+      <h3>Cover Letter Free</h3>
+      <p>Every tailoring includes a custom cover letter. Teal charges $29/mo and still doesn't write yours.</p>
+    </div>
+    <div class="feat-item">
+      <div class="num">04</div>
+      <h3>English + Chinese</h3>
+      <p>Full bilingual UI and AI-powered translation. The only resume tool with native Chinese support.</p>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER CTA -->
+<div class="footer-cta">
+  <h2>Start free.<br><em>Win the role.</em></h2>
+  <div class="footer-right">
+    <p class="sub">1 free tailoring/day · No credit card · Cancel anytime</p>
+    <button class="btn-main" style="font-size:16px;padding:16px 40px;">Tailor My Resume →</button>
+  </div>
+</div>
+
+<div class="design-note">CONCEPT 2B — Editorial Refined</div>
+
+</body>
+</html>
