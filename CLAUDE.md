@@ -86,3 +86,49 @@ OWNER_EMAIL           # optional — where support messages go (defaults to supp
 Deployed on Railway. `railway.json` configures the build (Nixpacks) and start command. All env vars must be added in the Railway dashboard. The Stripe webhook endpoint URL is `https://<your-railway-url>/webhook`.
 
 To switch from Stripe test mode to live mode: replace all three Stripe env vars with live keys and create a new product/price in Stripe live mode.
+
+## Competitive Positioning (SEO & Growth)
+
+### Core Value Props (use consistently across all landing pages and content)
+- **AI Model**: Powered by Anthropic Claude (claude-sonnet-4-6) — produces more natural, contextually rich writing than GPT-4 variants used by Teal, Kickresume, and most competitors
+- **Free Tier**: 1 completely free, full resume tailoring + cover letter per day — no credit card, no time limit, forever
+- **Job URL Import**: Paste any LinkedIn, Indeed, Glassdoor, or 40+ job board URL — AI auto-extracts the full job description (no competitor offers this)
+- **Bilingual**: Full English/Chinese UI + AI-powered translation for non-English resumes (unique in market)
+- **Pricing**: $19/mo (35% cheaper than Teal $29 and Jobscan ~$30) | $129 lifetime deal (vs Rezi $149)
+
+### Competitor Intelligence
+| Competitor | Monthly Traffic | Price | Key Weakness |
+|---|---|---|---|
+| Teal HQ (tealhq.com) | 2.81M/mo | $29/mo for AI | No AI resume rewriting on free tier; no cover letter |
+| Jobscan (jobscan.co) | 2.05M/mo | ~$30/mo | Keyword SCORER only — does not rewrite resumes |
+| Rezi (rezi.ai) | ~209K/mo | $29/mo or $149 LTD | GPT-based; weaker cover letter quality |
+| Kickresume (kickresume.com) | Growing +15.8%/mo | $4.50/mo | GPT-4; two-column templates hurt ATS parse rate |
+| Enhancv (enhancv.com) | ~297M/mo | $25/mo | Template SEO machine; hard to compete head-on |
+
+### SEO Page Inventory
+- `/alternatives/teal` → public/alternatives/teal.html
+- `/alternatives/jobscan` → public/alternatives/jobscan.html
+- `/alternatives/rezi` → public/alternatives/rezi.html
+- `/teal-alternative` → public/teal-alternative.html (existing)
+- `/rezi-alternative` → public/rezi-alternative.html (existing)
+- `/jobscan-alternative` → public/jobscan-alternative.html (existing)
+- `/kickresume-alternative` → public/kickresume-alternative.html (existing)
+- `/tools/ats-keyword-extractor` → public/tools/ats-keyword-extractor.html (free tool, lead magnet)
+- `/blog/` → public/blog/index.html (blog index)
+
+### Blog Content (public/blog/)
+Each post exists as both `.html` (served) and `.md` (source). When adding a new blog post:
+1. Create the `.html` file using the article layout from `jobscan-vs-resumetailored.html`
+2. Create the `.md` source file
+3. Add a card to `public/blog/index.html` in the posts grid
+
+### Target Keywords (Priority Order)
+1. "teal alternative" / "alternatives to teal resume"
+2. "jobscan alternative" / "jobscan alternatives"
+3. "rezi alternative" / "alternatives to rezi"
+4. "tailor resume to job description AI"
+5. "AI cover letter generator free"
+6. "free ATS keyword extractor"
+7. "bilingual resume generator English Chinese"
+8. "best AI resume builder 2026"
+9. "why Claude AI writes better resumes than ChatGPT"

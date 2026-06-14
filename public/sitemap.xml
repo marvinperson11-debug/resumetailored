@@ -83,7 +83,7 @@
   <!-- Blog -->
   <url>
     <loc>https://resumetailored.com/blog</loc>
-    <lastmod>2026-06-08</lastmod>
+    <lastmod>2026-06-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -179,7 +179,79 @@
     <priority>0.8</priority>
   </url>
 
+  <!-- New Alternatives Pages (2026-06-14) -->
+  <url>
+    <loc>https://resumetailored.com/alternatives/teal</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.92</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/alternatives/jobscan</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.92</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/alternatives/rezi</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.92</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/alternatives/kickresume</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
+  <!-- New Blog Posts (2026-06-14) -->
+  <url>
+    <loc>https://resumetailored.com/blog/how-to-tailor-resume-with-ai</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/blog/why-claude-writes-better-resumes</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/blog/best-resume-tools-international-job-seekers</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/blog/teal-vs-resumetailored</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/blog/rezi-vs-resumetailored</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+  </url>
+
   <!-- Free Tools -->
+  <url>
+    <loc>https://resumetailored.com/tools/ats-keyword-extractor</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.92</priority>
+  </url>
+
   <url>
     <loc>https://resumetailored.com/score</loc>
     <lastmod>2026-06-09</lastmod>
