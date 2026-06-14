@@ -201,6 +201,13 @@
     <priority>0.92</priority>
   </url>
 
+  <url>
+    <loc>https://resumetailored.com/alternatives/kickresume</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.90</priority>
+  </url>
+
   <!-- New Blog Posts (2026-06-14) -->
   <url>
     <loc>https://resumetailored.com/blog/how-to-tailor-resume-with-ai</loc>
@@ -221,6 +228,20 @@
     <lastmod>2026-06-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.85</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/blog/teal-vs-resumetailored</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/blog/rezi-vs-resumetailored</loc>
+    <lastmod>2026-06-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
   </url>
 
   <!-- Free Tools -->
