@@ -3626,7 +3626,7 @@
       const roleLine = [p.role, p.company].filter(Boolean);
 
       if (tpl.layout === 'cFormal') {
-        const hdr = printMode ? 'padding:0 0 28px 0;' : 'padding:60px 76px;';
+        const hdr = printMode ? 'padding:48px 48px 28px;' : 'padding:60px 76px;';
         return `<div style="${cardWrap}${hdr}">
           <div style="margin-bottom:32px;padding-bottom:18px;border-bottom:1.5px solid ${c.p};${pca}">
             <div style="font-size:22px;font-weight:700;color:${c.p};">${escHtml(p.name)}</div>
@@ -3664,7 +3664,7 @@
       }
 
       if (tpl.layout === 'cBoxed') {
-        const hdr = printMode ? 'padding:0 0 28px 0;' : 'padding:52px;';
+        const hdr = printMode ? 'padding:48px 48px 28px;' : 'padding:52px;';
         return `<div style="${cardWrap}${hdr}">
           <div style="border:2px solid ${c.p};border-radius:8px;padding:26px 34px;margin-bottom:32px;display:flex;justify-content:space-between;align-items:center;${pca}">
             <div>
@@ -3710,9 +3710,9 @@
           ? `<div style="display:flex;gap:14px;margin-top:9px;flex-wrap:wrap;">${contactParts.map(pt => `<span style="font-size:12px;color:${c.a};font-weight:700;">${escHtml(pt)}</span>`).join('<span style="font-size:12px;color:#aaa;">|</span>')}</div>`
           : '';
         const cleanBodyParas = _grpParas(p.body.map(para => `<p style="font-size:13.5px;line-height:1.9;color:#333;margin:0 0 19px;${_pbip}">${escHtml(para)}</p>`));
-        const hdr = printMode ? '' : 'padding:76px;';
+        const hdr = printMode ? 'padding:48px 48px 28px;' : 'padding:76px;';
         const cleanWrap = printMode
-          ? `font-family:${font};background:${c.l};color:#222;padding:0 0 28px 0;${pca}`
+          ? `font-family:${font};background:${c.l};color:#222;${pca}`
           : `font-family:${font};background:${c.l};color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);${pca}`;
         return `<div style="${cleanWrap}${hdr}">
           <div style="margin-bottom:44px;">
@@ -4322,8 +4322,12 @@ Aaliyah Washington`
     }
 
     async function downloadDocx() {
-      const text = getOutputText();
+      let text = getOutputText();
       if (!text) return;
+      // Strip trailing sig name appended by getOutputText() — server handles it via the sigName param
+      if (sigName && text.endsWith(sigName)) {
+        text = text.slice(0, text.length - sigName.length).trimEnd();
+      }
       const filename = document.getElementById('outputTitle').textContent || 'tailored-resume';
       const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
       const tplId = selectedOutputTpl[tplCat];
@@ -4393,7 +4397,7 @@ Aaliyah Washington`
       }
 
       const noPagePad = selectedMode === 'both' ? true : ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
-      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit','cFormal','cBoxed','cClean'].includes(tpl.layout);
+      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit'].includes(tpl.layout);
       const isSidebar = selectedMode !== 'both' && tpl.layout === 'rSidebar';
       const bodyBg = selectedMode === 'both' ? '#fff' : (isSidebar
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
