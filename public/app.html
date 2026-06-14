@@ -3358,7 +3358,7 @@
       if (!box) return;
       const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
       const tpl = OUT_TPLS[cat] && OUT_TPLS[cat].find(t => t.id === selectedOutputTpl[cat]);
-      const isBanner = selectedMode === 'cover_letter' && tpl && ['cBold','cSplit','cModern'].includes(tpl.layout);
+      const isBanner = tpl && ['cBold','cSplit','cModern','rModern'].includes(tpl.layout) && selectedMode !== 'both';
       box.classList.toggle('cover-banner', !!isBanner);
     }
 
@@ -3465,7 +3465,7 @@
       // Flex containers fracture on multi-page print; table-cell backgrounds continue correctly.
       const outerStyle = printMode
         ? `font-family:${font};color:#222;display:table;table-layout:fixed;width:100%;`
-        : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
+        : `font-family:${font};background:#fff;color:#222;display:flex;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       const lColStyle = printMode
         ? `display:table-cell;width:215px;background:${c.p};padding:36px 20px;vertical-align:top;height:100%;${pca}`
         : `width:215px;background:${c.p};padding:36px 20px;flex-shrink:0;${pca}`;
@@ -4419,7 +4419,7 @@ Aaliyah Washington`
       }
 
       const noPagePad = selectedMode === 'both' ? true : ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
-      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit'].includes(tpl.layout);
+      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit','rModern'].includes(tpl.layout);
       const isSidebar = selectedMode !== 'both' && tpl.layout === 'rSidebar';
       const bodyBg = selectedMode === 'both' ? '#fff' : (isSidebar
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
@@ -4645,7 +4645,7 @@ Aaliyah Washington`
 
       const PAGE_H = 1056;         // 11in × 96dpi
       // Banner cover templates (cModern/cBold/cSplit) have no top margin — header is flush to page top
-      const _isCoverBanner = !(selectedMode === 'both' && lastRawCoverResult) && selectedMode === 'cover_letter';
+      const _isCoverBanner = !(selectedMode === 'both' && lastRawCoverResult) && (selectedMode === 'cover_letter' || tpl.layout === 'rModern');
       const PAGE_MARGIN_T = _isCoverBanner ? 0 : 96;
       const PAGE_MARGIN_B = 96;    // 1in bottom margin on every page
       const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // usable px per page
