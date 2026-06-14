@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Free ATS Keyword Extractor — Extract Top Keywords From Any Job Description | ResumeTailored AI</title>
+  <meta name="description" content="Free tool: paste any job description and Claude AI instantly extracts the top 15 ATS keywords your resume needs to pass the filter. No account required. Works with any job board." />
+  <meta name="keywords" content="free ATS keyword extractor, job description keyword finder, ATS keywords from job description, resume keyword extractor, free ATS tool, extract keywords from job posting" />
+  <link rel="canonical" href="https://resumetailored.com/tools/ats-keyword-extractor" />
+  <meta property="og:title" content="Free ATS Keyword Extractor — Powered by Claude AI" />
+  <meta property="og:description" content="Paste any job description. Claude extracts the top 15 ATS keywords your resume must include. Free, no account needed." />
+  <meta property="og:url" content="https://resumetailored.com/tools/ats-keyword-extractor" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://resumetailored.com/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Free ATS Keyword Extractor — Claude AI" />
+  <meta name="twitter:description" content="Instantly extract the ATS keywords your resume is missing. Powered by Claude, free forever." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Free ATS Keyword Extractor",
+    "url": "https://resumetailored.com/tools/ats-keyword-extractor",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "description": "Paste any job description and Claude AI instantly extracts the top 15 ATS keywords your resume needs to pass applicant tracking system filters."
+  }
+  </script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;background:#030712;color:#e2e8f0;line-height:1.6;min-height:100vh;}
+    h1,h2,h3,.logo{font-family:'Inter',sans-serif;font-weight:900;letter-spacing:-0.03em;}
+    h2,h3{letter-spacing:-0.02em;}
+    a{color:inherit;text-decoration:none;}
+    body::before{content:'';position:fixed;inset:0;z-index:0;background-image:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(99,102,241,0.1),transparent),linear-gradient(rgba(99,102,241,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.04) 1px,transparent 1px);background-size:100% 100%,56px 56px,56px 56px;pointer-events:none;}
+    nav,main,section,footer{position:relative;z-index:1;}
+    /* NAV */
+    .nav{position:sticky;top:0;z-index:100;background:rgba(3,7,18,0.85);border-bottom:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:0 24px;}
+    .nav-inner{max-width:1120px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px;}
+    .logo{font-size:18px;color:#f1f5f9;}
+    .logo .badge-ai{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;}
+    .nav-links{display:flex;gap:28px;align-items:center;}
+    .nav-links a{font-size:14px;font-weight:600;color:#94a3b8;transition:color .15s;}
+    .nav-links a:hover{color:#e2e8f0;}
+    .nav-actions{display:flex;gap:12px;align-items:center;}
+    .btn{display:inline-flex;align-items:center;justify-content:center;font-family:inherit;font-size:14px;font-weight:700;border-radius:8px;padding:10px 20px;border:none;cursor:pointer;transition:all .15s;text-decoration:none;white-space:nowrap;}
+    .btn-primary{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;box-shadow:0 0 20px rgba(99,102,241,0.35);}
+    .btn-primary:hover{opacity:.9;}
+    .btn-ghost{background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);}
+    .btn-ghost:hover{background:rgba(255,255,255,0.08);color:#e2e8f0;}
+    .btn-lg{padding:14px 28px;font-size:16px;border-radius:10px;}
+    .hamburger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:4px;}
+    .hamburger span{display:block;width:22px;height:2px;background:#94a3b8;border-radius:2px;}
+    .mobile-menu{display:none;position:fixed;inset:0;z-index:200;background:#030712;flex-direction:column;align-items:center;justify-content:center;gap:32px;}
+    .mobile-menu.open{display:flex;}
+    .mobile-menu a{font-size:24px;font-weight:700;color:#e2e8f0;}
+    .mobile-close{position:absolute;top:20px;right:24px;background:none;border:none;font-size:28px;cursor:pointer;color:#94a3b8;}
+    /* TOOL LAYOUT */
+    .tool-wrap{max-width:780px;margin:0 auto;padding:64px 24px 40px;}
+    .tool-eyebrow{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#818CF8;margin-bottom:12px;}
+    .tool-title{font-size:clamp(28px,5vw,44px);font-weight:900;letter-spacing:-0.03em;line-height:1.1;margin-bottom:14px;color:#e2e8f0;}
+    .tool-title span{background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+    .tool-desc{font-size:17px;color:#94a3b8;line-height:1.7;margin-bottom:32px;max-width:640px;}
+    .tool-free-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:100px;padding:5px 14px;font-size:13px;font-weight:700;color:#34d399;margin-bottom:32px;}
+    /* INPUT AREA */
+    .input-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:32px;margin-bottom:24px;transition:border-color .2s;}
+    .input-card:focus-within{border-color:rgba(99,102,241,0.5);}
+    .input-label{font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:12px;display:block;}
+    .input-sublabel{font-size:13px;color:#64748b;margin-bottom:16px;}
+    textarea{width:100%;min-height:220px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;font-family:'Inter',sans-serif;font-size:14px;color:#e2e8f0;line-height:1.7;resize:vertical;outline:none;transition:border-color .2s;}
+    textarea::placeholder{color:#475569;}
+    textarea:focus{border-color:rgba(99,102,241,0.5);background:rgba(99,102,241,0.04);}
+    .char-count{font-size:12px;color:#475569;text-align:right;margin-top:8px;}
+    .extract-btn{width:100%;margin-top:20px;padding:16px;font-size:16px;border-radius:12px;font-weight:800;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;border:none;cursor:pointer;box-shadow:0 0 24px rgba(99,102,241,0.4);transition:opacity .15s,box-shadow .15s;display:flex;align-items:center;justify-content:center;gap:10px;}
+    .extract-btn:hover{opacity:.9;box-shadow:0 0 36px rgba(99,102,241,0.6);}
+    .extract-btn:disabled{opacity:.5;cursor:not-allowed;}
+    /* LOADING */
+    .loading{display:none;text-align:center;padding:40px 0;}
+    .spinner{width:40px;height:40px;border:3px solid rgba(99,102,241,0.2);border-top-color:#6366F1;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .loading-text{font-size:15px;color:#818CF8;font-weight:600;}
+    .loading-sub{font-size:13px;color:#475569;margin-top:6px;}
+    /* RESULTS */
+    .results{display:none;}
+    .results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+    .results-title{font-size:18px;font-weight:800;color:#e2e8f0;}
+    .results-meta{font-size:13px;color:#64748b;}
+    .keyword-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:32px;}
+    .keyword-tag{display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);border-radius:100px;padding:8px 18px;font-size:14px;font-weight:700;color:#a5b4fc;cursor:pointer;transition:all .15s;user-select:none;}
+    .keyword-tag:hover{background:rgba(99,102,241,0.22);border-color:rgba(99,102,241,0.6);color:#c7d2fe;}
+    .keyword-tag.copied{background:rgba(52,211,153,0.15);border-color:rgba(52,211,153,0.4);color:#34d399;}
+    .keyword-num{font-size:11px;font-weight:800;opacity:.5;}
+    .copy-all-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 20px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:#94a3b8;cursor:pointer;transition:all .15s;}
+    .copy-all-btn:hover{background:rgba(255,255,255,0.1);color:#e2e8f0;}
+    /* CTA CARD */
+    .cta-card{background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12));border:1px solid rgba(99,102,241,0.35);border-radius:20px;padding:36px;text-align:center;margin-top:8px;}
+    .cta-card h3{font-size:22px;font-weight:900;color:#f1f5f9;margin-bottom:10px;letter-spacing:-0.02em;}
+    .cta-card p{font-size:15px;color:#94a3b8;line-height:1.7;margin-bottom:24px;max-width:520px;margin-left:auto;margin-right:auto;}
+    .cta-card a{display:inline-block;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-weight:800;font-size:16px;padding:14px 32px;border-radius:12px;box-shadow:0 0 24px rgba(99,102,241,0.45);transition:opacity .15s;}
+    .cta-card a:hover{opacity:.9;}
+    .cta-note{font-size:13px;color:#64748b;margin-top:12px;}
+    /* HOW IT WORKS */
+    .how-section{padding:56px 0 0;}
+    .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:32px;}
+    .how-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:24px;}
+    .how-num{font-size:32px;font-weight:900;color:#6366F1;margin-bottom:10px;opacity:.6;}
+    .how-card h4{font-size:15px;font-weight:800;color:#e2e8f0;margin-bottom:8px;}
+    .how-card p{font-size:13px;color:#64748b;line-height:1.65;}
+    /* ERROR */
+    .error-msg{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.2);border-radius:12px;padding:16px 20px;font-size:14px;color:#fca5a5;margin-top:16px;display:none;}
+    /* FOOTER */
+    .footer{background:rgba(0,0,0,0.5);border-top:1px solid rgba(255,255,255,0.07);color:#64748b;padding:40px 24px;margin-top:80px;}
+    .footer-inner{max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between;}
+    .footer .logo{color:#f1f5f9;}
+    .footer-links{display:flex;gap:24px;flex-wrap:wrap;}
+    .footer-links a{font-size:14px;font-weight:600;color:#64748b;transition:color .15s;}
+    .footer-links a:hover{color:#e2e8f0;}
+    .footer-copy{font-size:13px;}
+    @media(max-width:768px){
+      .nav-links,.nav-actions{display:none;}
+      .hamburger{display:flex;}
+      .how-grid{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">ResumeTailored<span class="badge-ai">AI</span></a>
+    <div class="nav-links">
+      <a href="/#how-it-works">How It Works</a>
+      <a href="/blog">Blog</a>
+      <a href="/#pricing">Pricing</a>
+    </div>
+    <div class="nav-actions">
+      <a href="/dashboard" class="btn btn-ghost">Log In</a>
+      <a href="/dashboard" class="btn btn-primary">Try Free &rarr;</a>
+    </div>
+    <button class="hamburger" onclick="document.getElementById('mob').classList.add('open')" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+</nav>
+<div class="mobile-menu" id="mob">
+  <button class="mobile-close" onclick="document.getElementById('mob').classList.remove('open')">&times;</button>
+  <a href="/" onclick="document.getElementById('mob').classList.remove('open')">Home</a>
+  <a href="/blog" onclick="document.getElementById('mob').classList.remove('open')">Blog</a>
+  <a href="/#pricing" onclick="document.getElementById('mob').classList.remove('open')">Pricing</a>
+  <a href="/dashboard" class="btn btn-primary btn-lg">Try Free &rarr;</a>
+</div>
+
+<main>
+  <div class="tool-wrap">
+
+    <!-- HEADER -->
+    <div class="tool-eyebrow">Free Tool — No Account Required</div>
+    <h1 class="tool-title">Free ATS Keyword Extractor<br /><span>Powered by Claude AI</span></h1>
+    <p class="tool-desc">Paste any job description below. Claude AI instantly analyzes it and surfaces the top 15 ATS keywords your resume needs to include — the exact technical skills, tools, certifications, and phrases that Applicant Tracking Systems score for.</p>
+    <div class="tool-free-badge">&#9989; 100% Free &bull; No Account Needed &bull; Results in Seconds</div>
+
+    <!-- INPUT -->
+    <div class="input-card">
+      <label class="input-label" for="jobDesc">Paste your target job description</label>
+      <div class="input-sublabel">Copy the full posting from LinkedIn, Indeed, Glassdoor, or any job board</div>
+      <textarea id="jobDesc" placeholder="Paste your target job description here...&#10;&#10;Example: We are looking for a Senior Product Manager with 5+ years experience in B2B SaaS. You will lead cross-functional teams..." oninput="updateCount()"></textarea>
+      <div class="char-count"><span id="charCount">0</span> characters</div>
+      <div class="error-msg" id="errorMsg"></div>
+      <button class="extract-btn" id="extractBtn" onclick="extractKeywords()">
+        <span id="btnIcon">&#128269;</span>
+        <span id="btnText">Extract Top ATS Keywords</span>
+      </button>
+    </div>
+
+    <!-- LOADING -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Claude is analyzing the job description...</div>
+      <div class="loading-sub">Identifying the keywords that ATS systems score for</div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results" id="results">
+      <div class="results-header">
+        <div class="results-title">&#128293; Top 15 ATS Keywords Extracted</div>
+        <button class="copy-all-btn" onclick="copyAll()" id="copyAllBtn">Copy All</button>
+      </div>
+      <div class="keyword-grid" id="keywordGrid"></div>
+
+      <!-- CTA CARD -->
+      <div class="cta-card">
+        <h3>Want your resume rewritten to naturally include all of these?</h3>
+        <p>ResumeTailored AI takes these keywords and embeds them naturally into every bullet point, your summary, and skills section — automatically, in 30 seconds. Plus a custom cover letter. Powered by Claude AI.</p>
+        <a href="/dashboard">Tailor Your First Resume Free — No Card Required &rarr;</a>
+        <p class="cta-note">1 full AI rewrite + cover letter per day &bull; Free forever &bull; Pro at $19/mo</p>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div class="how-section">
+      <h2 style="font-size:22px;font-weight:900;color:#e2e8f0;margin-bottom:4px;">How This Tool Works</h2>
+      <p style="font-size:14px;color:#64748b;margin-bottom:0;">Claude AI reads the job description and identifies the terms that ATS engines score for.</p>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-num">1</div>
+          <h4>Paste the job description</h4>
+          <p>Copy the full posting from any job board — LinkedIn, Indeed, Glassdoor, company sites, anywhere.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-num">2</div>
+          <h4>Claude extracts the keywords</h4>
+          <p>The same AI that powers ResumeTailored AI identifies the technical skills, tools, and hard-skill phrases the ATS will look for.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-num">3</div>
+          <h4>Add them to your resume</h4>
+          <p>Manually embed these keywords into your resume — or let ResumeTailored AI do it automatically, in 30 seconds, for every job you apply to.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RELATED TOOLS -->
+    <div style="margin-top:48px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.07);">
+      <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#818CF8;margin-bottom:16px;">More Free Tools</p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <a href="/score" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;color:#94a3b8;transition:all .15s;">&#128200; ATS Score Checker</a>
+        <a href="/free-ats-resume-checker" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;color:#94a3b8;transition:all .15s;">&#9989; Free ATS Resume Checker</a>
+        <a href="/ai-cover-letter-generator" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;color:#94a3b8;transition:all .15s;">&#9993; AI Cover Letter Generator</a>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <a href="/" class="logo">ResumeTailored<span class="badge-ai">AI</span></a>
+    <div class="footer-links">
+      <a href="/blog">Blog</a>
+      <a href="/alternatives/teal">Teal Alternative</a>
+      <a href="/alternatives/jobscan">Jobscan Alternative</a>
+      <a href="/alternatives/rezi">Rezi Alternative</a>
+      <a href="/dashboard">Dashboard</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 ResumeTailored AI</div>
+  </div>
+</footer>
+
+<script>
+  function updateCount() {
+    const ta = document.getElementById('jobDesc');
+    document.getElementById('charCount').textContent = ta.value.length.toLocaleString();
+  }
+
+  async function extractKeywords() {
+    const jd = document.getElementById('jobDesc').value.trim();
+    const errorEl = document.getElementById('errorMsg');
+    const loadingEl = document.getElementById('loading');
+    const resultsEl = document.getElementById('results');
+    const btn = document.getElementById('extractBtn');
+
+    errorEl.style.display = 'none';
+    resultsEl.style.display = 'none';
+
+    if (jd.length < 50) {
+      errorEl.textContent = 'Please paste a complete job description (at least 50 characters).';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    document.getElementById('btnIcon').textContent = '';
+    document.getElementById('btnText').textContent = 'Extracting keywords...';
+    loadingEl.style.display = 'block';
+
+    try {
+      const resp = await fetch('/api/tools/extract-keywords', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobDescription: jd })
+      });
+      const data = await resp.json();
+
+      if (!resp.ok || data.error) {
+        throw new Error(data.error || 'Extraction failed — please try again.');
+      }
+
+      renderKeywords(data.keywords);
+      loadingEl.style.display = 'none';
+      resultsEl.style.display = 'block';
+      resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'keyword_extraction', { event_category: 'free_tool', value: data.keywords.length });
+      }
+    } catch (err) {
+      loadingEl.style.display = 'none';
+      errorEl.textContent = err.message || 'Something went wrong — please try again.';
+      errorEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      document.getElementById('btnIcon').textContent = '🔍';
+      document.getElementById('btnText').textContent = 'Extract Top ATS Keywords';
+    }
+  }
+
+  function renderKeywords(keywords) {
+    const grid = document.getElementById('keywordGrid');
+    grid.innerHTML = '';
+    keywords.forEach((kw, i) => {
+      const tag = document.createElement('button');
+      tag.className = 'keyword-tag';
+      tag.innerHTML = `<span class="keyword-num">${i + 1}</span> ${escapeHtml(kw)}`;
+      tag.title = 'Click to copy';
+      tag.onclick = () => copyTag(tag, kw);
+      grid.appendChild(tag);
+    });
+    window._extractedKeywords = keywords;
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function copyTag(tag, text) {
+    navigator.clipboard.writeText(text).then(() => {
+      tag.classList.add('copied');
+      setTimeout(() => tag.classList.remove('copied'), 1800);
+    });
+  }
+
+  function copyAll() {
+    const kws = window._extractedKeywords || [];
+    if (!kws.length) return;
+    navigator.clipboard.writeText(kws.join(', ')).then(() => {
+      const btn = document.getElementById('copyAllBtn');
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = orig, 2000);
+    });
+  }
+</script>
+</body>
+</html>

@@ -747,6 +747,41 @@ function isSubscriber(email) {
   return !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(email.toLowerCase());
 }
 
+// ─── API: Free Tool — ATS Keyword Extractor ──────────────────────────────────
+const keywordExtractorLimiter = rateLimit({ windowMs: 60 * 1000, max: 8, message: { error: 'Too many requests — please wait a minute and try again.' } });
+
+app.post('/api/tools/extract-keywords', keywordExtractorLimiter, async (req, res) => {
+  const { jobDescription } = req.body;
+  if (!jobDescription || typeof jobDescription !== 'string' || jobDescription.trim().length < 50) {
+    return res.status(400).json({ error: 'Please paste a complete job description (at least 50 characters).' });
+  }
+  if (jobDescription.length > 12000) {
+    return res.status(400).json({ error: 'Job description too long — paste the key sections only (under 12,000 characters).' });
+  }
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 600,
+      messages: [{
+        role: 'user',
+        content: `Extract the top 15 ATS keywords from this job description. Return ONLY a valid JSON array of strings — no explanation, no markdown, no extra text. Focus on: required technical skills, tools/software, certifications, methodologies, domain terms, and key hard-skill phrases that an Applicant Tracking System would score. Prioritize terms that appear multiple times or are listed under "Requirements."
+
+Job description:
+${jobDescription.slice(0, 10000)}`
+      }]
+    });
+    const raw = msg.content[0].text.trim();
+    const jsonMatch = raw.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return res.status(500).json({ error: 'Failed to parse keywords — please try again.' });
+    const keywords = JSON.parse(jsonMatch[0]);
+    if (!Array.isArray(keywords)) return res.status(500).json({ error: 'Unexpected response format — please try again.' });
+    res.json({ keywords: keywords.slice(0, 15) });
+  } catch (err) {
+    console.error('[extract-keywords]', err.message);
+    res.status(500).json({ error: 'AI extraction failed — please try again in a moment.' });
+  }
+});
+
 // ─── API: Health check ────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
