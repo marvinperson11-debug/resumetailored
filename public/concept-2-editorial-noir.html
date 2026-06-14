@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concept 2 — Editorial Noir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+:root {
+  --blue: #6366F1;
+  --purple: #8B5CF6;
+  --bg: #030712;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --border: rgba(255,255,255,0.07);
+  --rule: rgba(255,255,255,0.1);
+}
+
+html,body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); overflow-x:hidden; }
+
+/* ─── NAV: stark horizontal rule style ─── */
+nav {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  padding:0 48px; height:72px;
+  display:flex; align-items:center; justify-content:space-between;
+  background:rgba(3,7,18,0.95); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--rule);
+}
+.logo {
+  font-family:'Syne',sans-serif; font-weight:900; font-size:16px; letter-spacing:0.5px;
+  text-transform:uppercase; color:#f1f5f9; display:flex; align-items:center; gap:12px;
+}
+/* Favicon geometry: document page-corner shape */
+.logo-icon {
+  position:relative; width:22px; height:26px;
+}
+.logo-icon::before {
+  content:''; position:absolute; inset:0;
+  background:var(--blue); clip-path:polygon(0 0,70% 0,100% 30%,100% 100%,0 100%);
+}
+.logo-icon::after {
+  content:''; position:absolute; right:0; top:0; width:30%; height:30%;
+  background:rgba(255,255,255,0.35); clip-path:polygon(0 0,100% 100%,100% 0);
+}
+.nav-center {
+  display:flex; gap:40px;
+}
+.nav-center a {
+  font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:2px;
+  color:var(--muted); transition:color .2s; text-decoration:none;
+}
+.nav-center a:hover { color:var(--text); }
+.nav-right { display:flex; align-items:center; gap:16px; }
+.nav-tag { font-size:11px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:1.5px; }
+.nav-btn {
+  border:1.5px solid var(--blue); color:var(--blue); background:transparent;
+  padding:8px 20px; border-radius:4px; font-size:11px; font-weight:700;
+  letter-spacing:1.5px; text-transform:uppercase; cursor:pointer; font-family:inherit;
+  transition:all .2s;
+}
+.nav-btn:hover { background:var(--blue); color:#fff; }
+
+/* ─── HERO: editorial two-column split ─── */
+.hero {
+  min-height:100vh; display:grid; grid-template-columns:1fr 1fr;
+  padding-top:72px;
+}
+.hero-left {
+  padding:100px 64px 80px 64px;
+  border-right:1px solid var(--rule);
+  display:flex; flex-direction:column; justify-content:center;
+  position:relative;
+}
+/* Big issue number / index marker */
+.hero-index {
+  font-family:'Syne',sans-serif; font-size:11px; font-weight:900;
+  text-transform:uppercase; letter-spacing:4px; color:var(--blue);
+  display:flex; align-items:center; gap:14px; margin-bottom:40px;
+}
+.hero-index::before {
+  content:''; display:block; width:48px; height:1.5px; background:var(--blue);
+}
+.hero h1 {
+  font-family:'Syne',sans-serif;
+  font-size:clamp(56px,6vw,84px); font-weight:900; line-height:0.95;
+  letter-spacing:-3px; color:#f1f5f9; margin-bottom:40px;
+}
+.hero h1 .accent { color:var(--blue); }
+.hero-desc {
+  font-size:16px; color:var(--muted); line-height:1.8; max-width:400px; margin-bottom:48px;
+  border-left:2px solid rgba(99,102,241,0.4); padding-left:20px;
+}
+.hero-ctas { display:flex; gap:12px; flex-wrap:wrap; }
+.btn-editorial {
+  font-size:12px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  padding:15px 32px; cursor:pointer; font-family:inherit; transition:all .25s; border:none;
+}
+.btn-editorial.fill {
+  background:linear-gradient(135deg,#6366F1,#8B5CF6); color:#fff; border-radius:4px;
+  box-shadow:0 0 24px rgba(99,102,241,0.4);
+}
+.btn-editorial.fill:hover { box-shadow:0 0 40px rgba(99,102,241,0.7); transform:translateY(-1px); }
+.btn-editorial.outline {
+  background:transparent; color:var(--muted); border:1.5px solid var(--rule);
+  border-radius:4px;
+}
+.btn-editorial.outline:hover { border-color:rgba(255,255,255,0.25); color:var(--text); }
+
+/* Running ticker at bottom of hero left */
+.ticker {
+  position:absolute; bottom:0; left:0; right:0;
+  border-top:1px solid var(--rule); padding:14px 24px;
+  overflow:hidden; white-space:nowrap;
+}
+.ticker-inner {
+  display:inline-block; animation:tick 18s linear infinite;
+  font-size:11px; font-weight:700; color:var(--blue); text-transform:uppercase; letter-spacing:2px;
+}
+@keyframes tick { from{transform:translateX(0);} to{transform:translateX(-50%);} }
+
+/* Hero right: visual composition */
+.hero-right {
+  padding:100px 48px 80px; display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  background:rgba(255,255,255,0.01);
+  position:relative; overflow:hidden;
+}
+/* Large background number / decorative */
+.bg-num {
+  position:absolute; font-family:'Syne',sans-serif; font-size:320px; font-weight:900;
+  color:rgba(99,102,241,0.04); line-height:1; top:50%; left:50%;
+  transform:translate(-50%,-50%); user-select:none; pointer-events:none;
+  letter-spacing:-20px;
+}
+/* Document card stack */
+.card-stack { position:relative; width:320px; height:420px; }
+.doc-card {
+  position:absolute; width:280px; height:360px; border-radius:8px;
+  border:1px solid var(--border); background:rgba(255,255,255,0.03);
+  padding:28px 24px;
+}
+.doc-card:nth-child(1) { top:40px; left:40px; transform:rotate(6deg); background:rgba(99,102,241,0.05); border-color:rgba(99,102,241,0.2); }
+.doc-card:nth-child(2) { top:20px; left:20px; transform:rotate(3deg); background:rgba(139,92,246,0.04); }
+.doc-card:nth-child(3) { top:0; left:0; transform:rotate(0deg); background:rgba(255,255,255,0.04); border-color:rgba(255,255,255,0.1); z-index:3; }
+.doc-line { height:8px; border-radius:2px; background:rgba(255,255,255,0.08); margin-bottom:10px; }
+.doc-line.short { width:60%; }
+.doc-line.blue { background:rgba(99,102,241,0.35); width:40%; height:5px; }
+.doc-name { font-size:13px; font-weight:800; color:#f1f5f9; margin-bottom:6px; }
+.doc-contact { font-size:10px; color:var(--muted); margin-bottom:18px; }
+.doc-section { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:2px; color:var(--blue); margin-bottom:8px; margin-top:14px; }
+
+/* Stats column */
+.stats-col { margin-top:48px; width:100%; max-width:280px; }
+.stat-row {
+  display:flex; justify-content:space-between; align-items:baseline;
+  padding:14px 0; border-bottom:1px solid var(--rule);
+}
+.stat-row:first-child { border-top:1px solid var(--rule); }
+.stat-label-e { font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); font-weight:700; }
+.stat-val { font-family:'Syne',sans-serif; font-size:22px; font-weight:900; color:#f1f5f9; letter-spacing:-0.5px; }
+.stat-val .u { font-size:13px; color:var(--blue); margin-left:2px; }
+
+/* ─── FEATURES ROW ─── */
+.feat-row {
+  border-top:1px solid var(--rule); padding:80px 64px;
+  display:grid; grid-template-columns:280px 1fr; gap:80px;
+}
+.feat-label {
+  position:sticky; top:100px;
+}
+.feat-label .num {
+  font-family:'Syne',sans-serif; font-size:80px; font-weight:900;
+  color:rgba(99,102,241,0.15); line-height:1; margin-bottom:8px;
+}
+.feat-label h2 {
+  font-family:'Syne',sans-serif; font-size:28px; font-weight:900;
+  letter-spacing:-1px; color:#f1f5f9; line-height:1.1;
+}
+.feat-items { display:flex; flex-direction:column; gap:0; }
+.feat-item {
+  padding:36px 0; border-bottom:1px solid var(--rule);
+  display:grid; grid-template-columns:auto 1fr; gap:32px; align-items:start;
+}
+.feat-item:first-child { border-top:1px solid var(--rule); }
+.feat-num { font-size:11px; font-weight:700; color:var(--blue); letter-spacing:1.5px; text-transform:uppercase; padding-top:4px; min-width:32px; }
+.feat-item h3 { font-size:19px; font-weight:800; color:#f1f5f9; margin-bottom:10px; letter-spacing:-0.4px; }
+.feat-item p { font-size:14px; color:var(--muted); line-height:1.75; }
+
+/* ─── FOOTER CTA ─── */
+.footer-cta {
+  border-top:1px solid var(--rule); padding:80px 64px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.footer-cta h2 {
+  font-family:'Syne',sans-serif; font-size:44px; font-weight:900;
+  letter-spacing:-2px; color:#f1f5f9; max-width:440px; line-height:1.05;
+}
+.footer-cta h2 span { color:var(--blue); }
+.footer-right { text-align:right; }
+.footer-right p { font-size:14px; color:var(--muted); margin-bottom:24px; }
+
+.design-note {
+  position:fixed; bottom:20px; right:20px; z-index:200;
+  background:rgba(99,102,241,0.9); color:#fff; padding:10px 18px;
+  border-radius:10px; font-size:12px; font-weight:800; letter-spacing:0.5px;
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-icon"></div>
+    ResumeTailored
+  </div>
+  <div class="nav-center">
+    <a href="#">Features</a>
+    <a href="#">Compare</a>
+    <a href="#">Blog</a>
+    <a href="#">Pricing</a>
+  </div>
+  <div class="nav-right">
+    <span class="nav-tag">Free tier live</span>
+    <button class="nav-btn">Get Started</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-index">Vol. 1 · 2026 Edition</div>
+    <h1>The resume<br><span class="accent">that wins</span><br>the role.</h1>
+    <p class="hero-desc">
+      Claude AI rewrites your entire resume and cover letter for any job — in under 60 seconds. Paste a URL. Done.
+    </p>
+    <div class="hero-ctas">
+      <button class="btn-editorial fill">Start Free — No Card</button>
+      <button class="btn-editorial outline">View Samples</button>
+    </div>
+
+    <div class="ticker">
+      <span class="ticker-inner">
+        Powered by Anthropic Claude &nbsp;·&nbsp; Not ChatGPT &nbsp;·&nbsp; 40+ Job Boards &nbsp;·&nbsp; English / Chinese &nbsp;·&nbsp; $19/mo &nbsp;·&nbsp; 35% cheaper than Teal &nbsp;·&nbsp;
+        Powered by Anthropic Claude &nbsp;·&nbsp; Not ChatGPT &nbsp;·&nbsp; 40+ Job Boards &nbsp;·&nbsp; English / Chinese &nbsp;·&nbsp; $19/mo &nbsp;·&nbsp; 35% cheaper than Teal &nbsp;·&nbsp;
+      </span>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="bg-num">AI</div>
+    <div class="card-stack">
+      <div class="doc-card">
+        <div class="doc-line blue"></div>
+      </div>
+      <div class="doc-card">
+        <div class="doc-line"></div>
+        <div class="doc-line short"></div>
+      </div>
+      <div class="doc-card">
+        <div class="doc-name">Alex Johnson</div>
+        <div class="doc-contact">alex@email.com · New York, NY · (212) 555-0100</div>
+        <div class="doc-section">Experience</div>
+        <div class="doc-line" style="width:90%;height:6px;"></div>
+        <div class="doc-line" style="width:80%;height:5px;background:rgba(255,255,255,0.05);"></div>
+        <div class="doc-line" style="width:85%;height:5px;background:rgba(255,255,255,0.05);"></div>
+        <div class="doc-line" style="width:70%;height:5px;background:rgba(255,255,255,0.05);"></div>
+        <div class="doc-section">Skills</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+          <span style="background:rgba(99,102,241,0.2);color:#818CF8;padding:3px 10px;border-radius:3px;font-size:9px;font-weight:700;">React</span>
+          <span style="background:rgba(99,102,241,0.2);color:#818CF8;padding:3px 10px;border-radius:3px;font-size:9px;font-weight:700;">Node.js</span>
+          <span style="background:rgba(99,102,241,0.2);color:#818CF8;padding:3px 10px;border-radius:3px;font-size:9px;font-weight:700;">AWS</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-col">
+      <div class="stat-row">
+        <span class="stat-label-e">Completion time</span>
+        <span class="stat-val">30<span class="u">sec</span></span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label-e">Monthly price</span>
+        <span class="stat-val">$19<span class="u">/mo</span></span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label-e">vs Teal</span>
+        <span class="stat-val" style="color:#10b981;">−$10<span class="u">/mo</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<div class="feat-row">
+  <div class="feat-label">
+    <div class="num">01</div>
+    <h2>What makes us different</h2>
+  </div>
+  <div class="feat-items">
+    <div class="feat-item">
+      <span class="feat-num">01</span>
+      <div>
+        <h3>Paste Any Job URL</h3>
+        <p>LinkedIn, Indeed, Glassdoor, 40+ boards. We extract the full job description automatically — no copy-paste required. No competitor offers this.</p>
+      </div>
+    </div>
+    <div class="feat-item">
+      <span class="feat-num">02</span>
+      <div>
+        <h3>Claude, Not GPT</h3>
+        <p>Anthropic's Claude writes more natural, contextually rich content than GPT-4 variants used by Teal, Kickresume, and most competitors.</p>
+      </div>
+    </div>
+    <div class="feat-item">
+      <span class="feat-num">03</span>
+      <div>
+        <h3>Full Bilingual (EN/ZH)</h3>
+        <p>Complete English/Chinese UI with AI-powered translation for non-English resumes. Unique in the market.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER CTA -->
+<div class="footer-cta">
+  <h2>Start free.<br><span>Win the</span> role.</h2>
+  <div class="footer-right">
+    <p>1 free tailoring/day · No credit card · $19/mo Pro</p>
+    <button class="btn-editorial fill" style="font-size:13px;padding:16px 36px;">Tailor My Resume →</button>
+  </div>
+</div>
+
+<div class="design-note">CONCEPT 2 — Editorial Noir</div>
+
+</body>
+</html>
