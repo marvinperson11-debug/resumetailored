@@ -211,6 +211,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
 .output-header h2 { font-size: 17px; font-weight: 800; color: var(--text); }
 .copy-btn { font-size: 13px; font-weight: 700; padding: 7px 16px; }
 .output-box { border-radius: 4px; min-height: 120px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 10px 40px rgba(0,0,0,0.12); background: #fff; }
+.output-box.cover-banner { padding: 0 !important; }
 
 /* ══ TEMPLATE PICKER ══════════════════════════════════════════════════════════ */
 .tpl-picker-section { margin: 20px 0 4px; }
