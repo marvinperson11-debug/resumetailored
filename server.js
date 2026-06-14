@@ -1096,6 +1096,8 @@ WRITING STANDARDS — non-negotiable:
     if (mode === 'resume' || mode === 'both') {
       userPrompt += `## Task: Deeply tailor the resume below to the specific job posting.
 
+A resume is a FACTUAL CREDENTIAL DOCUMENT — not a narrative, not a letter. It uses implied third-person (no "I"), bullet points, and quantified achievements. It answers "What has this person accomplished?" in a scannable, ATS-optimized format. No storytelling, no motivation, no personality — just clean, powerful facts.
+
 **Step 1 — Analyze the job posting:**
 Before writing, silently identify: (a) the 3 most critical competencies this role demands, (b) the measurable proof points the hiring manager wants to see, (c) the exact vocabulary and keywords they use.
 
@@ -1147,28 +1149,52 @@ OUTPUT: Tailored Resume
 
     if (mode === 'cover_letter' || mode === 'both') {
       if (mode === 'both') userPrompt += '\n\n===COVER_LETTER_START===\n\n';
-      userPrompt += `## Task: Write a distinctive, job-specific cover letter.
+      userPrompt += `## Task: Write a cover letter that COMPLEMENTS — not repeats — the attached resume.
+
+FUNDAMENTAL DIFFERENCE between these two documents:
+- The RESUME (already written) is a factual credential inventory: bullet points, no "I", quantified metrics, implied third-person, ATS keywords. It answers "What have you done?"
+- The COVER LETTER (your task now) is a personal first-person argument. It answers "Why do you want THIS role at THIS company, and why should they choose you as a person?" It adds motivation, personality, and narrative context that a resume structurally cannot provide.
 
 **Step 1 — Analyze before writing:**
-Identify: (a) the company's specific mission or differentiator mentioned in the posting, (b) the 2–3 achievements from the candidate's background that best match the role's core needs, (c) the exact tone and language of the posting (technical? startup? enterprise?).
+(a) What is THIS company's specific mission, product, or industry challenge — what makes them different?
+(b) What ONE achievement from the candidate's background is the strongest match for the core need of this role?
+(c) What is the posting's tone — technical startup, enterprise, creative, analytical? Match it precisely.
 
-**Step 2 — Write the letter:**
-Rules (all mandatory):
-- 3–4 paragraphs, professional but human — sounds like a real person wrote it, not an AI
-- Opening paragraph: a specific, compelling hook tied to THIS company or role — NOT "I am writing to express my interest" or any generic opener. Reference something real about the company, role challenge, or industry moment.
-- Body paragraphs: connect 2–3 of the candidate's strongest, most relevant achievements directly to the key needs the job signals — always with concrete proof (metrics, scope, outcomes)
-- Closing: confident, forward-looking call to action — no hedging ("I hope to hear from you")
-- Mirror the job posting's vocabulary and tone throughout
+**Step 2 — Write the letter using this exact 4-paragraph structure:**
+
+PARAGRAPH 1 — OPENING HOOK (2–3 sentences):
+Why THIS company, why THIS role, why now. Reference something specific and real about the company — their product, market position, a problem they're solving, or the industry context. This must be impossible to copy-paste to another application. NEVER start with "I am writing to express my interest" or any variation of that phrase.
+
+PARAGRAPH 2 — ACHIEVEMENT STORY (3–5 sentences):
+Pick the ONE achievement from the candidate's background that most directly maps to what this role needs. Tell it as a brief narrative story — describe the situation or challenge, what the candidate did, and the specific outcome. Do NOT list multiple achievements like a resume. Write it as a person speaking, not as a bullet point expanded into prose. Use concrete numbers or scope only where they add meaning to the story.
+
+PARAGRAPH 3 — BROADER FIT & MOTIVATION (3–4 sentences):
+Why is this candidate right for this role beyond that one story? Connect their broader skills, working style, or values to what this company needs. This paragraph should feel personal and genuine — it should reveal something about who they are as a professional, not just repeat more credentials. Tie their career direction to this specific opportunity.
+
+PARAGRAPH 4 — CLOSING (2–3 sentences):
+A direct, confident close. State briefly what they would bring on day one. Invite a conversation — not "I hope to hear from you" (that's passive and weak), but something forward-leaning and assured.
+
+CRITICAL RULES — the cover letter must read like a different document from the resume:
+- Write entirely in first person throughout ("I", "my", "I've built", "I believe") — this is the clearest signal it's a different document
+- NEVER copy resume bullet text verbatim or near-verbatim — paraphrase into natural conversational prose
+- Do NOT produce a list of multiple achievements; tell one story well
+- Show genuine enthusiasm for this specific company — not a generic "I am passionate about opportunities"
+- Warm, confident, human tone — not stiff corporate-speak, not buzzword-heavy
 - Every sentence must be grammatically complete with correct punctuation
 - No bullet points, no section headers inside the letter body
-- The letter must be impossible to send to any other company — it must read as written for this role only
 - Plain text output only — no markdown symbols
 
 ## Output format (follow exactly):
 [Full Name]
 [City, State | Phone | Email]
 
-[3 to 4 full paragraphs — each separated by a blank line]
+[Paragraph 1]
+
+[Paragraph 2]
+
+[Paragraph 3]
+
+[Paragraph 4]
 
 Sincerely,
 [Full Name]
