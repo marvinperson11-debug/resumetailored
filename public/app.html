@@ -3358,7 +3358,7 @@
       if (!box) return;
       const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
       const tpl = OUT_TPLS[cat] && OUT_TPLS[cat].find(t => t.id === selectedOutputTpl[cat]);
-      const isBanner = tpl && ['cBold','cSplit','cModern','rModern'].includes(tpl.layout) && selectedMode !== 'both';
+      const isBanner = tpl && ['cBold','cSplit','cModern','rModern','rSidebar'].includes(tpl.layout) && selectedMode !== 'both';
       box.classList.toggle('cover-banner', !!isBanner);
     }
 
@@ -3489,7 +3489,7 @@
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
       const outerStyle = printMode
         ? `font-family:${font};color:#222;`
-        : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
+        : `font-family:${font};background:#fff;color:#222;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;${pca}"><div style="font-size:26px;font-weight:900;letter-spacing:-0.5px;line-height:1.2;">${escHtml(name)}</div><div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;display:flex;flex-wrap:wrap;gap:12px;">${contactParts.map(s=>`<span>${escHtml(s)}</span>`).join('')}</div></div><div style="padding:20px 44px 28px;">${sectionsHtml}</div></div>`;
     }
 
@@ -3514,7 +3514,7 @@
       const rightHtml = mainSecs.map((sec, i) => _twoColSec(sec, i === mainSecs.length - 1)).join('');
       const outerStyle = printMode
         ? `font-family:${font};color:#222;display:table;table-layout:fixed;width:100%;`
-        : `font-family:${font};background:#fff;color:#222;display:flex;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
+        : `font-family:${font};background:#fff;color:#222;display:flex;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       const lStyle2 = printMode ? `display:table-cell;width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;vertical-align:top;${pca}` : `width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;flex-shrink:0;${pca}`;
       const rStyle2 = printMode ? `display:table-cell;padding:32px 28px;vertical-align:top;` : `flex:1;padding:32px 28px;min-width:0;`;
       return `<div style="${outerStyle}"><div style="${lStyle2}">${leftHtml}</div><div data-rt-main-col="1" style="${rStyle2}">${rightHtml}</div></div>`;
@@ -3534,7 +3534,7 @@
         return `<div style="margin-bottom:20px;">${body}</div>`;
       };
       const sectionsHtml = sections.map((sec, i) => _bannerSec(sec, i === sections.length - 1)).join('');
-      const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
+      const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       return `<div style="${outerStyle}"><div style="padding:26px 44px 18px;border-left:5px solid ${c.p};${pca}"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(name)}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${pca}"></div></div><div style="padding:18px 44px 32px;">${sectionsHtml}</div></div>`;
     }
 
@@ -4419,7 +4419,7 @@ Aaliyah Washington`
       }
 
       const noPagePad = selectedMode === 'both' ? true : ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
-      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit','rModern'].includes(tpl.layout);
+      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit','rModern','rSidebar'].includes(tpl.layout);
       const isSidebar = selectedMode !== 'both' && tpl.layout === 'rSidebar';
       const bodyBg = selectedMode === 'both' ? '#fff' : (isSidebar
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
@@ -4645,7 +4645,7 @@ Aaliyah Washington`
 
       const PAGE_H = 1056;         // 11in × 96dpi
       // Banner cover templates (cModern/cBold/cSplit) have no top margin — header is flush to page top
-      const _isCoverBanner = !(selectedMode === 'both' && lastRawCoverResult) && (selectedMode === 'cover_letter' || tpl.layout === 'rModern');
+      const _isCoverBanner = !(selectedMode === 'both' && lastRawCoverResult) && (selectedMode === 'cover_letter' || tpl.layout === 'rModern' || tpl.layout === 'rSidebar');
       const PAGE_MARGIN_T = _isCoverBanner ? 0 : 96;
       const PAGE_MARGIN_B = 96;    // 1in bottom margin on every page
       const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // usable px per page
