@@ -1892,7 +1892,7 @@
       const pbb = printMode ? 'page-break-inside:avoid;break-inside:avoid;' : '';
       return `<div style="${mt}padding-top:16px;border-top:1px solid #e2e8f0;${ml}${pbb}">
         <p style="margin:0 0 4px;font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;">Signature</p>
-        <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.3;">${sigName}</p>
+        <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.6;padding-bottom:10px;">${sigName}</p>
       </div>`;
     }
 
@@ -2184,6 +2184,7 @@
         if (outputBox && lastRawResult) {
           const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
           outputBox.innerHTML = renderAIOutput(lastRawResult, selectedOutputTpl[cat], selectedMode);
+          _syncCoverBannerClass();
         }
       });
     });
@@ -2473,6 +2474,7 @@
           lastRawResult = data.result;
           const tplCat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
           outputBox.innerHTML = renderAIOutput(data.result, selectedOutputTpl[tplCat], selectedMode);
+          _syncCoverBannerClass();
           if (sigName) {
             const tplColors = OUT_TPLS[tplCat].find(t => t.id === selectedOutputTpl[tplCat]);
             outputBox.innerHTML += renderSignatureHtml(
@@ -3351,9 +3353,29 @@
       }).join('');
     }
 
+    function _syncCoverBannerClass() {
+      const box = document.getElementById('outputBox');
+      if (!box) return;
+      const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
+      const tpl = OUT_TPLS[cat] && OUT_TPLS[cat].find(t => t.id === selectedOutputTpl[cat]);
+      const isBanner = selectedMode === 'cover_letter' && tpl && ['cBold','cSplit','cModern'].includes(tpl.layout);
+      box.classList.toggle('cover-banner', !!isBanner);
+    }
+
     function chooseTpl(id, cat) {
       selectedOutputTpl[cat] = id;
       renderTplPicker();
+      const box = document.getElementById('outputBox');
+      if (!box || selectedMode === 'both') return;
+      const raw = cat === 'cover' ? lastRawCoverResult : lastRawResult;
+      if (!raw) return;
+      const mode = cat === 'cover' ? 'cover_letter' : selectedMode;
+      box.innerHTML = renderAIOutput(raw, id, mode);
+      if (sigName && mode !== 'cover_letter') {
+        const t2 = OUT_TPLS[cat] && OUT_TPLS[cat].find(t => t.id === id);
+        box.innerHTML += renderSignatureHtml(t2 && t2.c && t2.c.p, _sigScreenIndent(t2 && t2.layout || ''), false);
+      }
+      _syncCoverBannerClass();
     }
 
     function escHtml(s) {
@@ -3557,8 +3579,8 @@
         }
       });
       const pca = '-webkit-print-color-adjust:exact;print-color-adjust:exact;';
-      const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
-      const bodyPad = printMode ? 'padding:24px 44px 28px;' : 'padding:24px clamp(16px,12%,120px) 0;';
+      const outerStyle = printMode ? `font-family:${font};color:#222;` : `font-family:${font};background:#fff;color:#222;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
+      const bodyPad = printMode ? 'padding:24px 48px 40px;' : 'padding:24px clamp(16px,12%,120px) 0;';
       return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;${pca}"><div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;">${escHtml(name)}</div>${contactLines.length?`<div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;">${escHtml(contactLines.join(' | '))}</div>`:''}</div><div style="${bodyPad}">${bodyHtml}</div></div>`;
     }
 
@@ -3642,11 +3664,11 @@
       if (tpl.layout === 'cBold') {
         const boldOuter = printMode
           ? `font-family:${font};color:#222;`
-          : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
-        const boldBody = printMode ? 'padding:24px 52px 28px;' : 'padding:24px clamp(16px,12%,120px) 0;';
+          : `font-family:${font};background:#fff;color:#222;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
+        const boldBody = printMode ? 'padding:24px 48px 40px;' : 'padding:24px clamp(16px,12%,120px) 0;';
         const roleDate = roleLine.length
-          ? `<div style="display:flex;justify-content:space-between;align-items:center;background:${c.l};padding:12px 52px;${pca}"><div><div style="font-size:13px;font-weight:800;color:${c.p};">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};font-weight:700;">${escHtml(p.company)}</div></div><div style="font-size:11.5px;color:#999;">${p.date}</div></div>`
-          : `<div style="background:${c.l};padding:10px 52px;font-size:11.5px;color:#888;${pca}">${p.date}</div>`;
+          ? `<div style="display:flex;justify-content:space-between;align-items:center;background:${c.l};padding:12px 48px;${pca}"><div><div style="font-size:13px;font-weight:800;color:${c.p};">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};font-weight:700;">${escHtml(p.company)}</div></div><div style="font-size:11.5px;color:#999;">${p.date}</div></div>`
+          : `<div style="background:${c.l};padding:10px 48px;font-size:11.5px;color:#888;${pca}">${p.date}</div>`;
         const boldBodyParas = _grpParas(p.body.map((para, i) =>
           `<p style="font-size:13.5px;line-height:1.85;color:#333;margin:0 0 16px;${_pbip}${i===0 ? `border-left:3px solid ${c.a};padding-left:14px;${pca}` : ''}">${escHtml(para)}</p>`
         ));
@@ -3683,8 +3705,8 @@
       if (tpl.layout === 'cSplit') {
         const splitOuter = printMode
           ? `font-family:${font};color:#222;`
-          : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
-        const splitBody = printMode ? 'padding:24px 40px 28px;' : 'padding:24px clamp(16px,12%,120px) 0;';
+          : `font-family:${font};background:#fff;color:#222;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
+        const splitBody = printMode ? 'padding:24px 48px 40px;' : 'padding:24px clamp(16px,12%,120px) 0;';
         const roleInfo = roleLine.length
           ? `<div style="text-align:right;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.7);">${p.date}</div><div style="font-size:14px;font-weight:800;color:#fff;margin-top:4px;">${escHtml(p.role)}</div><div style="font-size:12px;color:${c.a};">${escHtml(p.company)}</div></div>`
           : `<div style="font-size:11.5px;color:rgba(255,255,255,0.7);">${p.date}</div>`;
@@ -3692,9 +3714,9 @@
           <div style="background:${c.p};display:flex;align-items:stretch;flex-wrap:wrap;margin-top:0;${pca}">
             <div style="padding:clamp(20px,4%,32px) clamp(16px,5%,40px) clamp(16px,4%,28px);flex:1;min-width:0;">
               <div style="font-size:clamp(20px,4%,30px);font-weight:900;color:#fff;letter-spacing:-0.5px;overflow-wrap:break-word;">${escHtml(p.name)}</div>
-              ${p.contact ? `<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-top:8px;overflow-wrap:break-word;">${escHtml(p.contact)}</div>` : ''}
+              ${p.contact ? `<div style="font-size:11.5px;color:rgba(255,255,255,0.75);margin-top:10px;line-height:1.6;overflow-wrap:break-word;">${escHtml(p.contact)}</div>` : ''}
             </div>
-            <div style="padding:clamp(16px,4%,32px) clamp(12px,4%,28px);">${roleInfo}</div>
+            <div style="padding:clamp(16px,4%,32px) clamp(16px,4%,32px);display:flex;flex-direction:column;justify-content:center;">${roleInfo}</div>
             <div style="width:8px;background:${c.a};flex-shrink:0;${pca}"></div>
           </div>
           <div style="${splitBody}">
@@ -4412,7 +4434,7 @@ Aaliyah Washington`
   ${fontUrl}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    @page { size: letter; margin: ${isCoverBanner ? '0 0.5in 0.5in' : '0.5in'}; }
+    @page { size: letter; margin: ${isCoverBanner ? '0' : '0.5in'}; }
     html { background: ${isSidebar ? bodyBg : '#fff'}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     body { font-family: ${font}; color: #222; background: ${isSidebar ? 'transparent' : bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; }
     .page { width: 100%; min-width: 0; }
@@ -4633,6 +4655,8 @@ Aaliyah Washington`
       const rawLastPageH = rawContentH - (numPages - 1) * PAGE_CONTENT_H;
       const lastPageOverflow = (numPages > 1 && rawLastPageH < PAGE_CONTENT_H * 0.7) ? rawLastPageH : 0;
       if (lastPageOverflow) numPages--;
+      // Cover letters are always 1 page — cap here so content doesn't orphan across pages
+      if (selectedMode === 'cover_letter') numPages = 1;
 
       const isBothMode = selectedMode === 'both' && lastRawCoverResult;
       const totalPages = numPages;
