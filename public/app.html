@@ -3576,7 +3576,7 @@
         if (gi > 0) bodyHtml += `<div style="height:7px;"></div>`;
         if (isLast && printMode && sigHtml) {
           // Reduce signature's top margin when embedded in the closing group
-          const closingSig = sigHtml.replace('margin-top:1.5in;', 'margin-top:20px;');
+          const closingSig = sigHtml.replace(/margin-top:[^;]+;/, 'margin-top:20px;');
           bodyHtml += `<div style="margin-top:24px;${pbi}position:relative;">${linesHtml}${closingSig}</div>`;
         } else {
           bodyHtml += linesHtml;
@@ -3640,7 +3640,7 @@
         : `font-family:${font};background:#fff;color:#222;border-radius:8px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
       const _pbip = 'page-break-inside:avoid;break-inside:avoid;-webkit-column-break-inside:avoid;overflow-wrap:break-word;word-break:normal;hyphens:none;';
       // Reduce signature top gap and group it with the last body paragraph
-      const closingSig = (printMode && sigHtml) ? sigHtml.replace('margin-top:1.5in;', 'margin-top:20px;') : '';
+      const closingSig = (printMode && sigHtml) ? sigHtml.replace(/margin-top:[^;]+;/, 'margin-top:20px;') : '';
       const _grpParas = (paraEls) => {
         if (!closingSig || paraEls.length === 0) return paraEls.join('');
         const last = paraEls.splice(-1, 1)[0];
@@ -3803,12 +3803,16 @@
         if ((t.includes('—') || t.includes('–') || (t.includes('|') && /\d{4}/.test(t))) && t.length < 150) { html += `<div style="font-size:12px;color:${c.a};font-weight:600;margin-bottom:8px;${_pbi}">${escHtml(t)}</div>`; continue; }
         html += `<div style="font-size:13px;line-height:1.75;color:#333;${_pbi}">${escHtml(t)}</div>`;
       }
-      _closeGrp();
       if (printMode && sigHtml) {
-        html = html.replace(/\x00/g, '') + sigHtml;
-      } else {
-        html = html.replace(/\x00/g, '');
+        // Keep the signature grouped with the last content block so it never
+        // strands on a page by itself (Rule A/B). If a job-entry group is still
+        // open (e.g. trailing bullets) the signature joins it; otherwise it opens
+        // its own break-inside:avoid group — matching the other resume renderers.
+        _openGrp();
+        html += sigHtml;
       }
+      _closeGrp();
+      html = html.replace(/\x00/g, '');
       const bg = tpl.style === 'minimal' ? '#fafafa' : '#fff';
       if (printMode) return `<div style="font-family:${font};background:${bg};color:#222;padding:0 0 28px 0;">${html}</div>`;
       return `<div style="font-family:${font};background:${bg};padding:52px 64px;color:#222;border-radius:4px;border:none;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 8px 32px rgba(0,0,0,0.1);">${html}</div>`;
