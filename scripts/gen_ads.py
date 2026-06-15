@@ -269,6 +269,101 @@ def render(concept, size):
 
 SIZES = {"linkedin-1200x627": (1200, 627), "square-1080x1080": (1080, 1080)}
 
+
+def center_tracked(img, draw, cx, y, s, fnt, fill, tracking):
+    draw_tracked(img, draw, (cx - text_w(s, fnt, tracking) / 2, y), s, fnt, fill, tracking)
+
+
+def price_card(img, x, y, cw, ch, name, price, suffix, hl):
+    rad = 22
+    card = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    cd = ImageDraw.Draw(card)
+    if hl:
+        glow = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        ImageDraw.Draw(glow).rounded_rectangle([x - 10, y - 10, x + cw + 10, y + ch + 10],
+                                               radius=rad + 10, fill=INDIGO + (120,))
+        img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(24)))
+        cd.rounded_rectangle([x, y, x + cw, y + ch], radius=rad,
+                             fill=(46, 40, 104, 235), outline=VIOLET + (255,), width=3)
+    else:
+        cd.rounded_rectangle([x, y, x + cw, y + ch], radius=rad,
+                             fill=(255, 255, 255, 16), outline=(255, 255, 255, 55), width=1)
+    img.alpha_composite(card)
+    d = ImageDraw.Draw(img)
+    cx = x + cw // 2
+    nf = font(BOLD, int(cw * 0.115))
+    while text_w(name, nf, 0.5) > cw - 24 and nf.size > 11:
+        nf = font(BOLD, nf.size - 2)
+    center_tracked(img, d, cx, y + int(ch * 0.12), name, nf, TEXT if hl else MUTED, 0.5)
+    pf = font(BOLD, int(cw * 0.30))
+    pw = text_w(price, pf, 0)
+    py = y + int(ch * 0.34)
+    if hl:
+        grad_word(img, (cx - pw / 2, py), price, pf, INDIGO, SKY, 0)
+    else:
+        draw_tracked(img, d, (cx - pw / 2, py), price, pf, (203, 213, 225), 0)
+        midy = py + pf.getmetrics()[0] * 0.52
+        d.line([(cx - pw / 2 - 6, midy), (cx + pw / 2 + 6, midy)], fill=(239, 68, 68, 230), width=5)
+    sff = font(REG, int(cw * 0.09))
+    center_tracked(img, d, cx, y + ch - int(ch * 0.22), suffix, sff, MUTED, 0.5)
+    if hl:
+        bf = font(BOLD, int(cw * 0.072))
+        bl = "BEST VALUE"
+        bw = text_w(bl, bf, 1)
+        bh = bf.getmetrics()[0] + 14
+        bx, by = cx - bw / 2 - 12, y - bh // 2
+        d.rounded_rectangle([bx, by, bx + bw + 24, by + bh], radius=bh // 2, fill=VIOLET + (255,))
+        draw_tracked(img, d, (bx + 12, by + 6), bl, bf, (255, 255, 255), 1)
+
+
+def render_price(concept, size):
+    w, h = size
+    pad = int(w * 0.07)
+    img = base_canvas(size, (w * 0.5, h * 0.18))
+    draw = ImageDraw.Draw(img)
+    wordmark(img, draw, (pad, pad))
+    y = int(h * 0.20)
+    ef = font(BOLD, int(w * 0.018) + 6)
+    draw_tracked(img, draw, (pad, y), concept["eyebrow"], ef, EYEBROW, 3)
+    y += ef.getmetrics()[0] + 22
+    hf = font(REG, int(w * 0.040) if w > 1100 else int(w * 0.050))
+    y = layout_headline(img, draw, concept["head"], hf, (pad, y), w - pad * 2, 0.5, 8, TEXT)
+    y += 14
+    cols = concept["columns"]
+    gap = int(w * 0.025)
+    cw = (w - pad * 2 - gap * 2) // 3
+    ch = int(h * 0.29) if w > 1100 else int(h * 0.27)
+    for i, (nm, pr, sx, hl) in enumerate(cols):
+        price_card(img, pad + i * (cw + gap), y, cw, ch, nm, pr, sx, hl)
+    sy = y + ch + int(h * 0.02)
+    sf = font(REG, int(w * 0.0215))
+    center_tracked(img, draw, w / 2, sy, concept["sub"], sf, MUTED, 0.3)
+    cf = font(BOLD, int(w * 0.022))
+    label = concept["cta"]
+    cw2 = int(text_w(label, cf, 1) + 68)
+    pill(img, draw, ((w - cw2) // 2, h - pad - 64), label, cf)
+    footer(img, draw, size, pad)
+    return img.convert("RGB")
+
+
+PRICE_COLS = dict(
+    name="price-compare",
+    eyebrow="HONEST PRICING",
+    head=[("Same", 0), ("result.", 0), ("Up", 0), ("to", 0), ("62%", 1), ("cheaper.", 1)],
+    columns=[("Jobscan", "$49.95", "per month", False),
+             ("Rezi", "$29", "per month", False),
+             ("ResumeTailored", "$19", "per month", True)],
+    sub="Same AI-tailored resume + cover letter — for a fraction of the price.",
+    cta="Tailor My Resume Free  →")
+
+LIFETIME = dict(
+    name="lifetime",
+    eyebrow="PAY ONCE · NEVER PAY AGAIN",
+    big="$129", big_label="lifetime — vs Rezi's $149",
+    head=[("Lifetime", 1), ("access.", 0), ("One", 0), ("payment.", 0)],
+    sub="Every feature, every template, all future updates — forever.",
+    cta="Get Lifetime — $129  →")
+
 made = []
 for c in CONCEPTS:
     for sname, sz in SIZES.items():
@@ -276,5 +371,19 @@ for c in CONCEPTS:
         fn = os.path.join(OUT, f"{c['name']}-{sname}.png")
         im.save(fn, "PNG")
         made.append(fn)
-print("\n".join(made))
-print(f"TOTAL {len(made)} images")
+
+price_made = []
+for sname, sz in SIZES.items():
+    im = render_price(PRICE_COLS, sz)
+    fn = os.path.join(OUT, f"price-compare-{sname}.png")
+    im.save(fn, "PNG")
+    price_made.append(fn)
+for sname, sz in SIZES.items():
+    im = render(LIFETIME, sz)
+    fn = os.path.join(OUT, f"lifetime-{sname}.png")
+    im.save(fn, "PNG")
+    price_made.append(fn)
+
+print("\n".join(made + price_made))
+print(f"TOTAL {len(made) + len(price_made)} images")
+print("PRICE:\n" + "\n".join(price_made))
