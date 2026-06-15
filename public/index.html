@@ -709,23 +709,27 @@
       border-top: 1px solid rgba(255,255,255,0.06);
       border-bottom: 1px solid rgba(255,255,255,0.06);
     }
-    /* the beam of light — fades + scales in like a stage spotlight, then drifts */
+    /* the beam of light — always lit and gently breathing, plus a sweep on reveal */
     .sl-spot {
       position: absolute; z-index: 0; pointer-events: none;
-      top: -240px; left: 6%; width: 540px; height: 820px;
+      top: -240px; left: 6%; width: 600px; height: 900px;
       background: radial-gradient(ellipse at center,
-        rgba(165,180,252,0.24), rgba(139,92,246,0.07) 45%, transparent 70%);
-      filter: blur(34px);
-      transform: rotate(24deg) translateY(-30px) scale(0.7);
-      opacity: 0;
+        rgba(180,190,255,0.42), rgba(139,92,246,0.14) 45%, transparent 72%);
+      filter: blur(30px);
+      transform: rotate(24deg);
+      opacity: 0.85;
+      animation: slPulse 4.5s ease-in-out infinite;
     }
     .sl-stage.in-view .sl-spot {
-      animation: slSpot 2.2s ease forwards, slDrift 9s ease-in-out 2.2s infinite alternate;
+      animation: slSpot 2s ease forwards, slPulse 4.5s ease-in-out 2s infinite;
     }
-    @keyframes slSpot { to { opacity: 1; transform: rotate(24deg) translateY(0) scale(1); } }
-    @keyframes slDrift {
-      from { transform: rotate(24deg) translateX(0) scale(1); }
-      to   { transform: rotate(20deg) translateX(64px) scale(1.05); }
+    @keyframes slSpot {
+      0%   { opacity: 0; transform: rotate(24deg) translate(-40px,-30px) scale(0.7); }
+      100% { opacity: 0.9; transform: rotate(24deg) translate(0,0) scale(1); }
+    }
+    @keyframes slPulse {
+      0%, 100% { opacity: 0.6; transform: rotate(24deg) translateX(0) scale(1); }
+      50%      { opacity: 0.95; transform: rotate(22deg) translateX(40px) scale(1.06); }
     }
     .sl-grid {
       position: relative; z-index: 1;
@@ -822,12 +826,6 @@
       100% { opacity: 1; transform: scale(1); }
     }
     .sl-stamp { font-size: 11px; color: #64748b; }
-    @media (prefers-reduced-motion: reduce) {
-      .sl-spot, .sl-doc, .sl-bullet, .sl-badge, .sl-ring-fg { animation: none !important; }
-      .sl-spot { opacity: 1; } .sl-doc { opacity: 1; transform: none; }
-      .sl-bullet { opacity: 1; transform: none; } .sl-badge { opacity: 1; }
-      .sl-ring-fg { stroke-dashoffset: 6.4; }
-    }
     @media (max-width: 760px) {
       .sl-stage { padding: 64px 0; }
       .sl-grid { grid-template-columns: 1fr; gap: 56px; }
@@ -879,25 +877,13 @@
     .pricing-card:hover { transform: translateY(-5px); box-shadow: 0 20px 48px rgba(0,0,0,0.5); border-color: rgba(99,102,241,0.35); }
     .feature-icon { transition: transform .25s ease; }
     .feature-row:hover .feature-icon { transform: scale(1.08) rotate(-3deg); }
-
-    @media (prefers-reduced-motion: reduce) {
-      .js-anim .hero h1, .js-anim .hero-sub, .js-anim .hero-cta,
-      .js-anim .section-eyebrow, .js-anim .section-title, .js-anim .step,
-      .js-anim .feature-row, .js-anim .template-card, .js-anim .tier-card,
-      .js-anim .testimonial, .js-anim .pricing-card, .js-anim .cta-banner .container {
-        opacity: 1 !important; transform: none !important; transition: none !important;
-      }
-    }
   </style>
   <script>
     /* Add the animation flag as early as possible (before first paint) so reveal
-       targets start hidden without a flash. Skipped if the user prefers reduced
-       motion, leaving the page fully static and visible. */
+       targets start hidden without a flash. */
     (function () {
       try {
-        if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
-          document.documentElement.classList.add('js-anim');
-        }
+        document.documentElement.classList.add('js-anim');
       } catch (e) {}
     })();
   </script>
