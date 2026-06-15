@@ -1,0 +1,26 @@
+# Netlify configuration — deploys the static landing page for live previews.
+#
+# Setup (one-time): in the Netlify dashboard, "Add new site" -> "Import an
+# existing project" -> connect this GitHub repo. Netlify auto-detects this file.
+# Every push builds the site, and every PR gets its own Deploy Preview URL.
+#
+# We point the build "base" at public/ (which has no package.json) so Netlify
+# skips installing the Express backend's dependencies — the landing page is
+# pure static HTML/CSS/JS and needs no build step.
+
+[build]
+  base = "public"
+  publish = "."
+  command = "echo 'Static site — no build step required.'"
+
+# Serve clean URLs (e.g. /how-it-works -> how-it-works.html). Netlify does this
+# automatically, but we make the index explicit for the root.
+[[redirects]]
+  from = "/dashboard"
+  to = "/app.html"
+  status = 200
+
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
