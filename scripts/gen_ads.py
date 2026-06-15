@@ -364,6 +364,91 @@ LIFETIME = dict(
     sub="Every feature, every template, all future updates — forever.",
     cta="Get Lifetime — $129  →")
 
+
+def mark(d, cx, cy, r, ok):
+    col = GREEN if ok else (120, 128, 142)
+    if ok:
+        d.line([(cx - r, cy + r * 0.05), (cx - r * 0.2, cy + r * 0.7)], fill=col, width=4)
+        d.line([(cx - r * 0.2, cy + r * 0.7), (cx + r, cy - r * 0.7)], fill=col, width=4)
+    else:
+        d.line([(cx - r * 0.7, cy - r * 0.7), (cx + r * 0.7, cy + r * 0.7)], fill=col, width=4)
+        d.line([(cx - r * 0.7, cy + r * 0.7), (cx + r * 0.7, cy - r * 0.7)], fill=col, width=4)
+
+
+def compare_card(img, x, y, cw, ch, title, feats, marks, hl):
+    rad = 22
+    layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    ld = ImageDraw.Draw(layer)
+    if hl:
+        glow = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        ImageDraw.Draw(glow).rounded_rectangle([x - 10, y - 10, x + cw + 10, y + ch + 10],
+                                               radius=rad + 10, fill=INDIGO + (120,))
+        img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(24)))
+        ld.rounded_rectangle([x, y, x + cw, y + ch], radius=rad,
+                             fill=(44, 38, 100, 235), outline=VIOLET + (255,), width=3)
+    else:
+        ld.rounded_rectangle([x, y, x + cw, y + ch], radius=rad,
+                             fill=(255, 255, 255, 14), outline=(255, 255, 255, 50), width=1)
+    img.alpha_composite(layer)
+    d = ImageDraw.Draw(img)
+    tf = font(BOLD, int(cw * 0.072))
+    tx = x + int(cw * 0.09)
+    ty = y + int(ch * 0.055)
+    draw_tracked(img, d, (tx, ty), title, tf, TEXT if hl else MUTED, 0.3)
+    rf = font(REG, int(cw * 0.056))
+    rows_top = ty + tf.getmetrics()[0] + int(ch * 0.06)
+    rows_h = (y + ch - int(ch * 0.05)) - rows_top
+    step = rows_h / len(feats)
+    r = max(9, int(cw * 0.022))
+    for i, label in enumerate(feats):
+        cy = rows_top + step * i + step / 2
+        mx = x + int(cw * 0.10)
+        mark(d, mx, cy, r, marks[i])
+        col = TEXT if (hl or marks[i]) else (130, 138, 152)
+        draw_tracked(img, d, (mx + r + 18, cy - rf.getmetrics()[0] / 2 + 1), label, rf, col, 0.2)
+
+
+def render_compare(concept, size):
+    w, h = size
+    pad = int(w * 0.06)
+    img = base_canvas(size, (w * 0.5, h * 0.13))
+    draw = ImageDraw.Draw(img)
+    wordmark(img, draw, (pad, pad))
+    y = int(h * 0.185)
+    ef = font(BOLD, int(w * 0.017) + 6)
+    draw_tracked(img, draw, (pad, y), concept["eyebrow"], ef, EYEBROW, 3)
+    y += ef.getmetrics()[0] + 16
+    hf = font(REG, int(w * 0.037) if w > 1100 else int(w * 0.048))
+    y = layout_headline(img, draw, concept["head"], hf, (pad, y), w - 2 * pad, 0.5, 6, TEXT)
+    y += 14
+    feats = concept["features"]
+    others = concept["others"]
+    gap = int(w * 0.03)
+    cw = (w - 2 * pad - gap) // 2
+    cards_top = y
+    cards_bottom = h - pad - 84
+    ch = cards_bottom - cards_top
+    compare_card(img, pad, cards_top, cw, ch, "Typical resume tools", feats, others, False)
+    compare_card(img, pad + cw + gap, cards_top, cw, ch, "ResumeTailored AI",
+                 feats, [True] * len(feats), True)
+    cf = font(BOLD, int(w * 0.020))
+    label = concept["cta"]
+    cw2 = int(text_w(label, cf, 1) + 68)
+    pill(img, draw, ((w - cw2) // 2, h - pad - 56), label, cf)
+    footer(img, draw, size, pad)
+    return img.convert("RGB")
+
+
+COMPARE = dict(
+    name="compare",
+    eyebrow="RESUMETAILORED vs THE REST",
+    head=[("Everything", 1), ("you", 0), ("need.", 0), ("One", 0), ("price.", 0)],
+    features=["AI rewrites your resume", "Cover letter included",
+              "1 free resume + cover/day", "Job URL auto-import",
+              "ATS keyword optimization", "English + Chinese"],
+    others=[False, False, False, False, True, False],
+    cta="Tailor My Resume Free  →")
+
 made = []
 for c in CONCEPTS:
     for sname, sz in SIZES.items():
@@ -383,7 +468,12 @@ for sname, sz in SIZES.items():
     fn = os.path.join(OUT, f"lifetime-{sname}.png")
     im.save(fn, "PNG")
     price_made.append(fn)
+for sname, sz in SIZES.items():
+    im = render_compare(COMPARE, sz)
+    fn = os.path.join(OUT, f"compare-features-{sname}.png")
+    im.save(fn, "PNG")
+    price_made.append(fn)
 
 print("\n".join(made + price_made))
 print(f"TOTAL {len(made) + len(price_made)} images")
-print("PRICE:\n" + "\n".join(price_made))
+print("NEW:\n" + "\n".join(p for p in price_made if "compare-features" in p))
