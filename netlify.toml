@@ -1,0 +1,18 @@
+# Netlify config — builds a preview of the static landing page so changes can
+# be viewed before going live. Points the build base at public/ (no package.json
+# there) so Netlify skips installing the backend; the site needs no build step.
+
+[build]
+  base = "public"
+  publish = "."
+  command = "echo 'Static site — no build step required.'"
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/app.html"
+  status = 200
+
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
