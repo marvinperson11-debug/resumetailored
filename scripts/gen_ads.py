@@ -449,6 +449,104 @@ COMPARE = dict(
     others=[False, False, False, False, True, False],
     cta="Tailor My Resume Free  →")
 
+def render_matrix(concept, size):
+    w, h = size
+    pad = int(w * 0.045)
+    img = base_canvas(size, (w * 0.5, h * 0.12))
+    draw = ImageDraw.Draw(img)
+    wordmark(img, draw, (pad, pad))
+    y = int(h * 0.155)
+    ef = font(BOLD, int(w * 0.016) + 6)
+    draw_tracked(img, draw, (pad, y), concept["eyebrow"], ef, EYEBROW, 3)
+    y += ef.getmetrics()[0] + 14
+    hf = font(REG, int(w * 0.036) if w > 1100 else int(w * 0.046))
+    y = layout_headline(img, draw, concept["head"], hf, (pad, y), w - 2 * pad, 0.5, 6, TEXT)
+
+    cols = concept["cols"]
+    prices = concept["prices"]
+    rows = concept["rows"]
+    table_top = y + 14
+    table_bottom = h - pad - 40
+    label_w = int((w - 2 * pad) * 0.33)
+    rest = (w - 2 * pad) - label_w
+    comp_w = int(rest * 0.225)
+    ours_w = rest - comp_w * 3
+    col_x = [pad + label_w + comp_w * i for i in range(3)] + [pad + label_w + comp_w * 3]
+    col_w = [comp_w, comp_w, comp_w, ours_w]
+
+    # highlight panel behind the ResumeTailored column
+    hl = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    ImageDraw.Draw(hl).rounded_rectangle(
+        [col_x[3] - 6, table_top - 8, col_x[3] + ours_w + 6, table_bottom + 8],
+        radius=18, fill=(44, 38, 100, 150), outline=VIOLET + (255,), width=3)
+    img.alpha_composite(hl)
+
+    n = len(rows)
+    header_h = (table_bottom - table_top) * 0.15
+    price_h = (table_bottom - table_top) * 0.17
+    row_h = (table_bottom - table_top - header_h - price_h) / n
+
+    def cx(i):
+        return col_x[i] + col_w[i] / 2
+
+    # header: names
+    for i, nm in enumerate(cols):
+        ours = (i == 3)
+        nf = font(BOLD, int(col_w[i] * 0.17))
+        while text_w(nm, nf, 0.3) > col_w[i] - 10 and nf.size > 11:
+            nf = font(BOLD, nf.size - 1)
+        ny = table_top + (header_h - nf.getmetrics()[0]) / 2
+        if ours:
+            grad_word(img, (cx(i) - text_w(nm, nf, 0.3) / 2, ny), nm, nf, INDIGO, SKY, 0.3)
+        else:
+            draw_tracked(img, draw, (cx(i) - text_w(nm, nf, 0.3) / 2, ny), nm, nf, TEXT, 0.3)
+
+    # price row
+    py = table_top + header_h
+    d = ImageDraw.Draw(img)
+    d.line([(pad, py), (w - pad, py)], fill=(255, 255, 255, 30), width=1)
+    draw_tracked(img, d, (pad + 8, py + (price_h - font(BOLD, int(w * 0.02)).getmetrics()[0]) / 2),
+                 "Price / month", font(BOLD, int(w * 0.02)), MUTED, 0.3)
+    for i, pr in enumerate(prices):
+        ours = (i == 3)
+        pf = font(BOLD, int(col_w[i] * 0.26) if not ours else int(col_w[i] * 0.24))
+        pw = text_w(pr, pf, 0)
+        ppy = py + (price_h - pf.getmetrics()[0]) / 2
+        if ours:
+            grad_word(img, (cx(i) - pw / 2, ppy), pr, pf, INDIGO, SKY, 0)
+        else:
+            draw_tracked(img, d, (cx(i) - pw / 2, ppy), pr, pf, (203, 213, 225), 0)
+
+    # feature rows
+    ry = py + price_h
+    lf = font(REG, int(w * 0.0205))
+    for r_i, (label, marks) in enumerate(rows):
+        yy = ry + row_h * r_i
+        d.line([(pad, yy), (w - pad, yy)], fill=(255, 255, 255, 22), width=1)
+        cyc = yy + row_h / 2
+        draw_tracked(img, d, (pad + 8, cyc - lf.getmetrics()[0] / 2), label, lf, TEXT, 0.2)
+        for i, ok in enumerate(marks):
+            mark(d, cx(i), cyc, max(9, int(w * 0.011)), ok)
+    footer(img, draw, size, pad)
+    return img.convert("RGB")
+
+
+COMPETE = dict(
+    name="vs-all",
+    eyebrow="HONEST COMPARISON",
+    head=[("More", 0), ("features.", 1), ("Lower", 0), ("price.", 1)],
+    cols=["Teal", "Jobscan", "Rezi", "ResumeTailored"],
+    prices=["$29", "$49.95", "$29", "$19"],
+    rows=[
+        ("AI rewrites your resume", [True, False, True, True]),
+        ("Cover letter generator", [False, False, True, True]),
+        ("Free daily tier (no card)", [False, False, False, True]),
+        ("Job URL import (40+ boards)", [False, False, False, True]),
+        ("ATS keyword optimization", [True, True, True, True]),
+        ("English + Chinese", [False, False, False, True]),
+        ("Lifetime deal", [False, False, True, True]),
+    ])
+
 made = []
 for c in CONCEPTS:
     for sname, sz in SIZES.items():
@@ -473,7 +571,12 @@ for sname, sz in SIZES.items():
     fn = os.path.join(OUT, f"compare-features-{sname}.png")
     im.save(fn, "PNG")
     price_made.append(fn)
+for sname, sz in SIZES.items():
+    im = render_matrix(COMPETE, sz)
+    fn = os.path.join(OUT, f"vs-all-{sname}.png")
+    im.save(fn, "PNG")
+    price_made.append(fn)
 
 print("\n".join(made + price_made))
 print(f"TOTAL {len(made) + len(price_made)} images")
-print("NEW:\n" + "\n".join(p for p in price_made if "compare-features" in p))
+print("NEW:\n" + "\n".join(p for p in price_made if "vs-all" in p))
