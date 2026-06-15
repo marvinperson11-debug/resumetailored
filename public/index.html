@@ -699,194 +699,7 @@
     /* Demo wrap hover */
     .demo-wrap { transition: box-shadow 0.3s ease; }
     .demo-wrap:hover { box-shadow: 0 4px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.4); }
-
-    /* ══ SPOTLIGHT SHOWCASE ══════════════════════════════════════════════════ */
-    .sl-stage {
-      position: relative; overflow: hidden; padding: 104px 0;
-      background:
-        radial-gradient(ellipse 90% 70% at 50% -10%, rgba(99,102,241,0.10), transparent 70%),
-        #04060f;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-    }
-    /* the beam of light — always lit and gently breathing, plus a sweep on reveal */
-    .sl-spot {
-      position: absolute; z-index: 0; pointer-events: none;
-      top: -240px; left: 6%; width: 600px; height: 900px;
-      background: radial-gradient(ellipse at center,
-        rgba(180,190,255,0.42), rgba(139,92,246,0.14) 45%, transparent 72%);
-      filter: blur(30px);
-      transform: rotate(24deg);
-      opacity: 0.85;
-      animation: slPulse 4.5s ease-in-out infinite;
-    }
-    .sl-stage.in-view .sl-spot {
-      animation: slSpot 2s ease forwards, slPulse 4.5s ease-in-out 2s infinite;
-    }
-    @keyframes slSpot {
-      0%   { opacity: 0; transform: rotate(24deg) translate(-40px,-30px) scale(0.7); }
-      100% { opacity: 0.9; transform: rotate(24deg) translate(0,0) scale(1); }
-    }
-    @keyframes slPulse {
-      0%, 100% { opacity: 0.6; transform: rotate(24deg) translateX(0) scale(1); }
-      50%      { opacity: 0.95; transform: rotate(22deg) translateX(40px) scale(1.06); }
-    }
-    .sl-grid {
-      position: relative; z-index: 1;
-      display: grid; grid-template-columns: 1fr 1fr; gap: 52px; align-items: center;
-    }
-    .sl-eyebrow {
-      font-size: 13px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 2px; color: #818CF8; margin-bottom: 14px;
-    }
-    .sl-title {
-      font-family: 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.02em;
-      font-size: clamp(28px, 3.4vw, 40px); line-height: 1.12; color: #f1f5f9; margin-bottom: 18px;
-    }
-    .sl-title span {
-      background: linear-gradient(135deg,#818CF8,#A78BFA 50%,#38BDF8);
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .sl-sub { color: #94a3b8; font-size: 17px; line-height: 1.7; max-width: 460px; margin-bottom: 28px; }
-
-    /* the document that the spotlight lands on */
-    .sl-doc-wrap { perspective: 1200px; }
-    .sl-doc {
-      position: relative;
-      background: linear-gradient(160deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-      border: 1px solid rgba(255,255,255,0.10); border-radius: 16px;
-      padding: 26px 26px 22px;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 60px rgba(99,102,241,0.10);
-      backdrop-filter: blur(6px);
-      transform: rotateX(16deg) translateY(44px); opacity: 0; transform-origin: top center;
-    }
-    .sl-stage.in-view .sl-doc { animation: slDoc 1s cubic-bezier(.2,.7,.2,1) .15s forwards; }
-    @keyframes slDoc { to { transform: rotateX(0) translateY(0); opacity: 1; } }
-
-    .sl-doc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
-    .sl-avatar {
-      width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
-      background: linear-gradient(135deg,#6366F1,#8B5CF6);
-      box-shadow: 0 0 22px rgba(99,102,241,0.5);
-    }
-    .sl-headlines { flex: 1; }
-    .sl-line { border-radius: 6px; background: rgba(255,255,255,0.10); }
-    .sl-line.lg { width: 58%; height: 12px; margin-bottom: 9px; background: rgba(255,255,255,0.18); }
-    .sl-line.sm { width: 40%; height: 9px; }
-
-    /* ATS score ring */
-    .sl-score {
-      position: absolute; top: -20px; right: -20px; width: 88px; height: 88px;
-      background: #0b1020; border-radius: 50%;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08);
-    }
-    .sl-score svg { width: 88px; height: 88px; transform: rotate(-90deg); }
-    .sl-ring-bg { fill: none; stroke: rgba(255,255,255,0.10); stroke-width: 7; }
-    .sl-ring-fg {
-      fill: none; stroke: url(#slGrad); stroke-width: 7; stroke-linecap: round;
-      stroke-dasharray: 213.6; stroke-dashoffset: 213.6;
-    }
-    .sl-stage.in-view .sl-ring-fg { animation: slRing 1.6s ease .5s forwards; }
-    @keyframes slRing { to { stroke-dashoffset: 6.4; } }
-    .sl-score-txt {
-      position: absolute; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 1px;
-    }
-    .sl-score-txt b { font-size: 21px; font-weight: 900; color: #f1f5f9; }
-    .sl-score-txt small { font-size: 7px; letter-spacing: 1.5px; color: #818CF8; font-weight: 700; }
-
-    /* bullet lines that light up one by one */
-    .sl-bullets { display: flex; flex-direction: column; gap: 14px; }
-    .sl-bullet { display: flex; gap: 11px; align-items: center; opacity: 0; transform: translateX(-10px); }
-    .sl-stage.in-view .sl-bullet { animation: slBullet .5s ease forwards; }
-    .sl-stage.in-view .sl-bullet:nth-child(1) { animation-delay: .55s; }
-    .sl-stage.in-view .sl-bullet:nth-child(2) { animation-delay: .8s; }
-    .sl-stage.in-view .sl-bullet:nth-child(3) { animation-delay: 1.05s; }
-    @keyframes slBullet { to { opacity: 1; transform: translateX(0); } }
-    .sl-check {
-      width: 19px; height: 19px; border-radius: 50%; flex-shrink: 0;
-      display: grid; place-items: center; font-size: 11px; color: #10b981;
-      background: rgba(16,185,129,0.14); box-shadow: inset 0 0 0 1px rgba(16,185,129,0.32);
-    }
-    .sl-btext { font-size: 14px; color: #cbd5e1; }
-
-    .sl-doc-foot {
-      margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.08);
-      display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    }
-    .sl-badge {
-      font-size: 12px; font-weight: 700; color: #10b981;
-      background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25);
-      padding: 5px 12px; border-radius: 999px; opacity: 0;
-    }
-    .sl-stage.in-view .sl-badge { animation: slPop .5s ease 1.35s forwards; }
-    @keyframes slPop {
-      0% { opacity: 0; transform: scale(.8); }
-      60% { transform: scale(1.06); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-    .sl-stamp { font-size: 11px; color: #64748b; }
-    @media (max-width: 760px) {
-      .sl-stage { padding: 64px 0; }
-      .sl-grid { grid-template-columns: 1fr; gap: 56px; }
-      .sl-doc { transform: translateY(30px); }
-      .sl-score { top: -16px; right: -10px; width: 76px; height: 76px; }
-      .sl-score svg { width: 76px; height: 76px; }
-    }
-
-    /* ══ SITE-WIDE SCROLL REVEAL & POLISH ════════════════════════════════════ */
-    /* Initial hidden state applies ONLY when JS adds .js-anim to <html>, so the
-       page is fully visible if JS is off or errors out. */
-    .js-anim .hero h1,
-    .js-anim .hero-sub,
-    .js-anim .hero-cta,
-    .js-anim .section-eyebrow,
-    .js-anim .section-title,
-    .js-anim .step,
-    .js-anim .feature-row,
-    .js-anim .template-card,
-    .js-anim .tier-card,
-    .js-anim .testimonial,
-    .js-anim .pricing-card,
-    .js-anim .cta-banner .container {
-      opacity: 0;
-      transform: translateY(26px);
-      transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1);
-      will-change: opacity, transform;
-    }
-    .js-anim .hero h1.in-view,
-    .js-anim .hero-sub.in-view,
-    .js-anim .hero-cta.in-view,
-    .js-anim .section-eyebrow.in-view,
-    .js-anim .section-title.in-view,
-    .js-anim .step.in-view,
-    .js-anim .feature-row.in-view,
-    .js-anim .template-card.in-view,
-    .js-anim .tier-card.in-view,
-    .js-anim .testimonial.in-view,
-    .js-anim .pricing-card.in-view,
-    .js-anim .cta-banner .container.in-view {
-      opacity: 1;
-      transform: none;
-    }
-
-    /* Hover lifts for cards that didn't already have one */
-    .step { transition: transform .2s ease, box-shadow .2s ease; }
-    .step:hover { transform: translateY(-4px); }
-    .pricing-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-    .pricing-card:hover { transform: translateY(-5px); box-shadow: 0 20px 48px rgba(0,0,0,0.5); border-color: rgba(99,102,241,0.35); }
-    .feature-icon { transition: transform .25s ease; }
-    .feature-row:hover .feature-icon { transform: scale(1.08) rotate(-3deg); }
   </style>
-  <script>
-    /* Add the animation flag as early as possible (before first paint) so reveal
-       targets start hidden without a flash. */
-    (function () {
-      try {
-        document.documentElement.classList.add('js-anim');
-      } catch (e) {}
-    })();
-  </script>
 </head>
 <body>
 
@@ -935,94 +748,29 @@
       <a href="/dashboard" class="btn btn-primary btn-lg">Tailor My Resume Free →</a>
       <span class="hero-note">1 free tailoring · No payment required</span>
     </div>
-  </div>
-</section>
 
-<!-- SPOTLIGHT SHOWCASE -->
-<section class="sl-stage">
-  <div class="sl-spot"></div>
-  <div class="container sl-grid">
-    <div class="sl-copy">
-      <div class="sl-eyebrow">Step Into The Spotlight</div>
-      <h2 class="sl-title">Watch a resume become an <span>interview magnet</span></h2>
-      <p class="sl-sub">Our AI rebuilds every line for the role — the right keywords, real metrics, ATS-clean formatting — until recruiters can't look away.</p>
-      <a href="/dashboard" class="btn btn-primary btn-lg sl-cta">Put Mine in the Spotlight →</a>
-    </div>
-
-    <div class="sl-doc-wrap">
-      <div class="sl-doc">
-        <div class="sl-score">
-          <svg viewBox="0 0 88 88" aria-hidden="true">
-            <defs>
-              <linearGradient id="slGrad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#6366F1" />
-                <stop offset="100%" stop-color="#38BDF8" />
-              </linearGradient>
-            </defs>
-            <circle class="sl-ring-bg" cx="44" cy="44" r="34" />
-            <circle class="sl-ring-fg" cx="44" cy="44" r="34" />
-          </svg>
-          <div class="sl-score-txt"><b><span class="sl-count">0</span>%</b><small>ATS MATCH</small></div>
-        </div>
-
-        <div class="sl-doc-head">
-          <div class="sl-avatar"></div>
-          <div class="sl-headlines">
-            <div class="sl-line lg"></div>
-            <div class="sl-line sm"></div>
-          </div>
-        </div>
-
-        <div class="sl-bullets">
-          <div class="sl-bullet"><span class="sl-check">✓</span><span class="sl-btext">Keywords matched to the job description</span></div>
-          <div class="sl-bullet"><span class="sl-check">✓</span><span class="sl-btext">Achievements rewritten with hard metrics</span></div>
-          <div class="sl-bullet"><span class="sl-check">✓</span><span class="sl-btext">Clean, single-column ATS-safe formatting</span></div>
-        </div>
-
-        <div class="sl-doc-foot">
-          <span class="sl-badge">✅ 3 interviews booked · Week 1</span>
-          <span class="sl-stamp">Rebuilt in 28s</span>
-        </div>
+    <!-- Before/After Demo -->
+    <div class="demo-wrap">
+      <div class="demo-before">
+        <div class="demo-label">Before</div>
+        <div class="demo-badge demo-badge-before">✕ Generic Resume</div>
+        <div class="demo-bullet demo-bullet-before">• Managed marketing campaigns and worked with teams to grow revenue and improve brand awareness across multiple channels</div>
+        <div class="demo-bullet demo-bullet-before">• Helped with projects and communicated with stakeholders</div>
+        <div class="demo-footer demo-footer-before">❌ Rejected by ATS · Zero callbacks</div>
+      </div>
+      <div class="demo-arrow-col">
+        <div class="demo-arrow-circle">↻</div>
+      </div>
+      <div class="demo-after">
+        <div class="demo-label">After AI Tailoring</div>
+        <div class="demo-badge demo-badge-after">✓ AI Tailored</div>
+        <div class="demo-bullet demo-bullet-after">• Spearheaded 6 cross-channel demand-gen campaigns (paid, email, SEO) driving 34% YoY pipeline growth, generating $2.1M in attributed revenue</div>
+        <div class="demo-bullet demo-bullet-after">• Led cross-functional stakeholder alignment across 4 product teams, reducing time-to-launch by 22%</div>
+        <div class="demo-footer demo-footer-after">✅ 97% ATS match · 3 interviews week 1</div>
       </div>
     </div>
   </div>
 </section>
-<script>
-  (function () {
-    var stage = document.querySelector('.sl-stage');
-    if (!stage) return;
-    var counted = false;
-    function countUp() {
-      var el = stage.querySelector('.sl-count');
-      if (!el) return;
-      var target = 97, dur = 1600, delay = 500, start = null;
-      setTimeout(function () {
-        function step(ts) {
-          if (!start) start = ts;
-          var p = Math.min((ts - start) / dur, 1);
-          el.textContent = Math.round(p * target);
-          if (p < 1) requestAnimationFrame(step);
-        }
-        requestAnimationFrame(step);
-      }, delay);
-    }
-    if (!('IntersectionObserver' in window)) {
-      stage.classList.add('in-view');
-      countUp();
-      return;
-    }
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting) {
-          stage.classList.add('in-view');
-          if (!counted) { counted = true; countUp(); }
-          io.disconnect();
-        }
-      });
-    }, { threshold: 0.3 });
-    io.observe(stage);
-  })();
-</script>
 
 <!-- HOW IT WORKS -->
 <section class="section section-gray">
@@ -2836,16 +2584,6 @@
     ['.demo-bullet.demo-bullet-after', 0, '• Spearheaded 6 cross-channel demand-gen campaigns (paid, email, SEO) driving 34% YoY pipeline growth, generating $2.1M in attributed revenue', '• 主导6项跨渠道增长营销活动（付费、邮件、SEO），推动管道同比增长34%，带来210万美元归因收入'],
     ['.demo-bullet.demo-bullet-after', 1, '• Led cross-functional stakeholder alignment across 4 product teams, reducing time-to-launch by 22%', '• 主导4个产品团队的跨职能协调，将产品上市时间缩短22%'],
     ['.demo-footer.demo-footer-after', null, '✅ 97% ATS match · 3 interviews week 1', '✅ 97% ATS匹配 · 第一周获3次面试'],
-    // ── Spotlight Showcase ───────────────────────────────────────────────────
-    ['.sl-eyebrow', null, 'Step Into The Spotlight', '聚焦你的高光时刻'],
-    ['.sl-title', null, 'Watch a resume become an <span>interview magnet</span>', '看一份简历变成<span>面试吸铁石</span>'],
-    ['.sl-sub', null, "Our AI rebuilds every line for the role — the right keywords, real metrics, ATS-clean formatting — until recruiters can't look away.", 'AI 为目标职位重写每一行——精准关键词、真实数据、ATS 友好排版——让招聘官无法移开视线。'],
-    ['.sl-cta', null, 'Put Mine in the Spotlight →', '让我的简历闪耀登场 →'],
-    ['.sl-btext', 0, 'Keywords matched to the job description', '关键词与职位描述精准匹配'],
-    ['.sl-btext', 1, 'Achievements rewritten with hard metrics', '用硬核数据重写工作成果'],
-    ['.sl-btext', 2, 'Clean, single-column ATS-safe formatting', '简洁单栏、ATS 安全的排版'],
-    ['.sl-badge', null, '✅ 3 interviews booked · Week 1', '✅ 第一周斩获 3 场面试'],
-    ['.sl-stamp', null, 'Rebuilt in 28s', '28 秒完成重写'],
     // ── How It Works ────────────────────────────────────────────────────────
     ['.section-eyebrow', 0, 'Simple Process', '简单流程'],
     ['.section-title', 0, 'How it <span>works</span>', '如何<span>使用</span>'],
@@ -3180,48 +2918,6 @@
       entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
     }, { threshold: 0.1 });
     els.forEach(function(el) { io.observe(el); });
-  })();
-</script>
-<script>
-  /* Site-wide scroll reveal: reveal curated elements as they enter the viewport,
-     with a gentle stagger for grouped items (cards in the same row/grid). */
-  (function () {
-    var root = document.documentElement;
-    if (!root.classList.contains('js-anim')) return;
-    var SELECTORS = [
-      '.hero h1', '.hero-sub', '.hero-cta',
-      '.section-eyebrow', '.section-title',
-      '.step', '.feature-row', '.template-card',
-      '.tier-card', '.testimonial', '.pricing-card',
-      '.cta-banner .container'
-    ];
-    try {
-      var els = [];
-      SELECTORS.forEach(function (sel) {
-        Array.prototype.forEach.call(document.querySelectorAll(sel), function (el) { els.push(el); });
-      });
-      if (!els.length) { root.classList.remove('js-anim'); return; }
-
-      // Stagger siblings that share a parent (e.g. cards in a grid).
-      var seen = new Map();
-      els.forEach(function (el) {
-        var p = el.parentElement;
-        var i = seen.get(p) || 0;
-        el.style.transitionDelay = Math.min(i * 70, 320) + 'ms';
-        seen.set(p, i + 1);
-      });
-
-      if (!('IntersectionObserver' in window)) { root.classList.remove('js-anim'); return; }
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (e) {
-          if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); }
-        });
-      }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
-      els.forEach(function (el) { io.observe(el); });
-    } catch (e) {
-      // Anything goes wrong → reveal everything so nothing stays hidden.
-      root.classList.remove('js-anim');
-    }
   })();
 </script>
 </body>
