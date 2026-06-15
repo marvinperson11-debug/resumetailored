@@ -11,7 +11,7 @@ const fs = require('fs');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } = require('docx');
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType } = require('docx');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 
@@ -540,9 +540,328 @@ app.post('/api/extract-text', upload.single('file'), async (req, res) => {
 });
 
 // ─── API: Download tailored result as .docx ───────────────────────────────────
+// ─── Template-aware DOCX engine ───────────────────────────────────────────────
+// Reproduces the visual resume/cover templates (sidebar, two-column, modern,
+// banner, boxed, etc.) in Word so the downloaded .docx matches the on-screen
+// design. Word has no flexbox, so multi-column layouts are built with borderless
+// tables and shaded cells. Full-page-height colour bleed on sidebars is limited
+// by Word (a cell only grows as tall as its content) — that is the one known gap.
+const _DX_NONE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+function _dxNoTableBorders() {
+  return { top: _DX_NONE, bottom: _DX_NONE, left: _DX_NONE, right: _DX_NONE, insideHorizontal: _DX_NONE, insideVertical: _DX_NONE };
+}
+const _dxClean = (s) => s.replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
+const _dxFont = (serif) => (serif ? 'Georgia' : 'Calibri');
+const _DX_SIDE_KEYS = ['SKILL', 'CERTIF', 'LICENSE', 'LICENS', 'EDUCAT', 'LANGUAGE', 'AWARD', 'COMPETENC', 'TOOL', 'TECHNOLOG', 'PROFICIEN'];
+
+function _dxParseResume(text) {
+  const lines = String(text || '').split('\n');
+  let name = '', contactParts = [], sections = [], cur = null;
+  let nameDone = false, contactDone = false;
+  for (const raw of lines) {
+    const t = raw.trim().replace(/^#{1,3}\s+/, '');
+    if (/^[-*_]{3,}$/.test(t)) continue;
+    const clean = _dxClean(t);
+    if (!clean) continue;
+    if (!nameDone) { name = clean; nameDone = true; continue; }
+    const isHdr = clean.length >= 2 && clean.length <= 60 && /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(clean);
+    if (isHdr) { contactDone = true; cur = { title: clean, lines: [] }; sections.push(cur); continue; }
+    if (!contactDone) { contactParts.push(clean); continue; }
+    if (cur) cur.lines.push(raw.trim());
+  }
+  return { name, contactParts, sections };
+}
+
+function _dxParseCover(text, meta) {
+  meta = meta || {};
+  const lines = String(text || '').split('\n');
+  let name = '', contactStr = '', headerDone = false;
+  const rawBody = [];
+  for (let i = 0; i < lines.length; i++) {
+    const t = _dxClean(lines[i].trim());
+    if (!t) { if (name) { if (headerDone) rawBody.push(''); else headerDone = true; } continue; }
+    if (!name && /^cover letter$/i.test(t)) continue;
+    if (!name) { name = t; continue; }
+    if (!headerDone && (t.includes('@') || /\(\d{3}\)|\d{3}[-.\s]\d{3}/.test(t) || (t.includes('|') && t.length < 120))) { contactStr = t; continue; }
+    if (!headerDone && /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/i.test(t) && t.length < 50) { headerDone = true; continue; }
+    headerDone = true; rawBody.push(t);
+  }
+  const paragraphs = []; let acc = [];
+  for (const line of rawBody) { if (!line) { if (acc.length) { paragraphs.push(acc.join(' ')); acc = []; } } else acc.push(line); }
+  if (acc.length) paragraphs.push(acc.join(' '));
+  const CLOSE_RE = /^(sincerely|best regards|regards|warm regards|respectfully|yours truly|cordially|thank you)[,\s]/i;
+  // Drop closings and any salutation — the layout renders its own "Dear Hiring Manager,"
+  const SALUT_RE = /^dear\b.{0,60}$/i;
+  const body = paragraphs.filter(p => !CLOSE_RE.test(p) && !SALUT_RE.test(p));
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  return {
+    name: name || meta.name || 'Applicant',
+    contact: contactStr || [meta.email, meta.phone, meta.location].filter(Boolean).join(' | '),
+    company: meta.company || '', role: meta.role || '', date: today, body,
+  };
+}
+
+// A single resume/cover content line → Word paragraph(s)
+function _dxLinePara(raw, o) {
+  const trimmed = String(raw).trim();
+  const clean = _dxClean(trimmed);
+  if (!clean) return [];
+  const bodyColor = o.onDark ? 'EDEDED' : '333333';
+  const titleColor = o.onDark ? 'FFFFFF' : '1A1A1A';
+  const sz = o.small ? 18 : 21;
+  if (/^[•·\-\*]\s/.test(trimmed)) {
+    return [new Paragraph({ children: [new TextRun({ text: clean.replace(/^[•·\-\*]\s*/, ''), font: o.font, size: sz, color: bodyColor })], bullet: { level: 0 }, spacing: { after: 40 } })];
+  }
+  const wasBold = /^\*\*[^*]+\*\*$/.test(trimmed);
+  if (wasBold && clean.length < 70) {
+    return [new Paragraph({ children: [new TextRun({ text: clean, font: o.font, size: sz + 2, bold: true, color: titleColor })], spacing: { before: 140, after: 20 }, keepNext: true })];
+  }
+  if ((clean.includes('—') || clean.includes('–') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 150) {
+    return [new Paragraph({ children: [new TextRun({ text: clean, font: o.font, size: sz - 1, bold: true, color: o.accentHex })], spacing: { after: 50 }, keepNext: true })];
+  }
+  return [new Paragraph({ children: [new TextRun({ text: clean, font: o.font, size: sz, color: bodyColor })], spacing: { after: 50 } })];
+}
+
+// Section heading in the main column, styled per layout family
+function _dxHeading(title, o) {
+  const base = { spacing: { before: 300, after: 120 }, keepNext: true };
+  const run = (size, spacing, color) => [new TextRun({ text: title, font: o.font, size, bold: true, color: color || o.primaryHex, allCaps: true, characterSpacing: spacing })];
+  if (o.style === 'banner-pill') {
+    return new Paragraph({ ...base, shading: { type: ShadingType.CLEAR, fill: o.primaryHex, color: 'auto' }, children: [new TextRun({ text: '  ' + title + '  ', font: o.font, size: 18, bold: true, color: 'FFFFFF', allCaps: true, characterSpacing: 30 })] });
+  }
+  if (o.style === 'left-bar' || o.style === 'icon-bar') {
+    return new Paragraph({ ...base, children: run(21, 30), border: { left: { style: BorderStyle.SINGLE, size: 24, color: o.accentHex, space: 10 } }, indent: { left: 150 } });
+  }
+  if (o.style === 'minimal') {
+    return new Paragraph({ ...base, children: run(19, 70) });
+  }
+  return new Paragraph({ ...base, children: run(21, 30), border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.accentHex, space: 4 } } });
+}
+
+// Compact heading for sidebar / two-column side sections
+function _dxSideHeading(title, o) {
+  return new Paragraph({
+    children: [new TextRun({ text: title, font: o.font, size: 16, bold: true, color: o.headColor, allCaps: true, characterSpacing: 30 })],
+    spacing: { before: 200, after: 70 },
+    border: { bottom: { style: BorderStyle.SINGLE, size: 4, color: o.accentHex, space: 3 } },
+    keepNext: true,
+  });
+}
+
+// Signature: line (top border) + cursive-style name. No literal label.
+function _dxSig(sigName, primaryHex, font) {
+  if (!sigName || !String(sigName).trim()) return [];
+  const sig = String(sigName).trim();
+  return [
+    new Paragraph({ children: [new TextRun({ text: '', font, size: 22 })], spacing: { before: 420 }, border: { top: { style: BorderStyle.SINGLE, size: 6, color: 'CBD5E1', space: 6 } }, keepNext: true, keepLines: true }),
+    new Paragraph({ children: [new TextRun({ text: sig, font, size: 44, bold: true, italics: true, color: primaryHex })], spacing: { before: 80, after: 0 }, keepLines: true }),
+  ];
+}
+
+// Full-width colour header band (used by Modern resume & Modern cover)
+function _dxBand(name, contactParts, o) {
+  const cell = new TableCell({
+    width: { size: o.contentWidth, type: WidthType.DXA },
+    shading: { type: ShadingType.CLEAR, fill: o.primaryHex, color: 'auto' },
+    margins: { top: 260, bottom: 260, left: 360, right: 360 },
+    verticalAlign: VerticalAlign.CENTER,
+    children: [
+      new Paragraph({ children: [new TextRun({ text: name, font: o.font, size: 34, bold: true, color: 'FFFFFF' })], spacing: { after: contactParts.length ? 50 : 0 } }),
+      ...(contactParts.length ? [new Paragraph({ children: [new TextRun({ text: contactParts.join('    |    '), font: o.font, size: 18, color: 'E6E6E6' })] })] : []),
+    ],
+  });
+  return new Table({ width: { size: o.contentWidth, type: WidthType.DXA }, columnWidths: [o.contentWidth], borders: _dxNoTableBorders(), rows: [new TableRow({ children: [cell] })] });
+}
+
+// Two-column table for Sidebar (shaded left) and Two-Column (bordered left)
+function _dxTwoCol(name, contactParts, sections, o) {
+  const isSidebar = o.layout === 'rSidebar';
+  const sideSecs = [], mainSecs = [];
+  for (const sec of sections) (_DX_SIDE_KEYS.some(k => sec.title.toUpperCase().includes(k)) ? sideSecs : mainSecs).push(sec);
+  const leftW = Math.round(o.contentWidth * (isSidebar ? 0.34 : 0.32));
+  const rightW = o.contentWidth - leftW;
+  const headColor = isSidebar ? 'FFFFFF' : o.primaryHex;
+  const onDark = isSidebar;
+
+  const left = [];
+  if (isSidebar) {
+    left.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: (name.trim()[0] || '?').toUpperCase(), font: o.font, size: 56, bold: true, color: o.accentHex })] }));
+    left.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 120 }, children: [new TextRun({ text: name, font: o.font, size: 24, bold: true, color: 'FFFFFF' })] }));
+  } else {
+    left.push(new Paragraph({ children: [new TextRun({ text: name, font: o.font, size: 30, bold: true, color: o.primaryHex })], spacing: { after: 80 } }));
+  }
+  left.push(_dxSideHeading('Contact', { font: o.font, headColor, accentHex: o.accentHex }));
+  for (const cp of contactParts) left.push(new Paragraph({ children: [new TextRun({ text: cp, font: o.font, size: 18, color: onDark ? 'E6E6E6' : '555555' })], spacing: { after: 40 } }));
+  for (const sec of sideSecs) {
+    left.push(_dxSideHeading(sec.title, { font: o.font, headColor, accentHex: o.accentHex }));
+    for (const raw of sec.lines) for (const p of _dxLinePara(raw, { font: o.font, accentHex: o.accentHex, onDark, small: true })) left.push(p);
+  }
+
+  const right = [];
+  const mainStyle = isSidebar ? 'underline' : 'icon-bar';
+  mainSecs.forEach(sec => {
+    right.push(_dxHeading(sec.title, { style: mainStyle, primaryHex: o.primaryHex, accentHex: o.accentHex, font: o.font }));
+    for (const raw of sec.lines) for (const p of _dxLinePara(raw, { font: o.font, accentHex: o.accentHex, onDark: false })) right.push(p);
+  });
+  for (const p of _dxSig(o.sigName, o.primaryHex, o.font)) right.push(p);
+  if (!left.length) left.push(new Paragraph({}));
+  if (!right.length) right.push(new Paragraph({}));
+
+  const leftCell = new TableCell({
+    width: { size: leftW, type: WidthType.DXA },
+    shading: isSidebar ? { type: ShadingType.CLEAR, fill: o.primaryHex, color: 'auto' } : undefined,
+    margins: { top: 300, bottom: 300, left: isSidebar ? 360 : 120, right: isSidebar ? 360 : 280 },
+    borders: isSidebar ? undefined : { right: { style: BorderStyle.SINGLE, size: 12, color: o.accentHex }, top: _DX_NONE, bottom: _DX_NONE, left: _DX_NONE },
+    verticalAlign: VerticalAlign.TOP,
+    children: left,
+  });
+  const rightCell = new TableCell({
+    width: { size: rightW, type: WidthType.DXA },
+    margins: { top: 300, bottom: 300, left: 320, right: 120 },
+    verticalAlign: VerticalAlign.TOP,
+    children: right,
+  });
+  return new Table({ width: { size: o.contentWidth, type: WidthType.DXA }, columnWidths: [leftW, rightW], borders: _dxNoTableBorders(), rows: [new TableRow({ children: [leftCell, rightCell] })] });
+}
+
+function _dxRenderResume(text, o) {
+  const font = _dxFont(o.serif);
+  const { name, contactParts, sections } = _dxParseResume(text);
+  if (o.layout === 'rSidebar' || o.layout === 'rTwoCol') {
+    return [_dxTwoCol(name, contactParts, sections, { ...o, font })];
+  }
+  const out = [];
+  if (o.layout === 'rModern') {
+    out.push(_dxBand(name, contactParts, { ...o, font }));
+    out.push(new Paragraph({ spacing: { after: 120 } }));
+  } else if (o.layout === 'rBanner') {
+    out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], border: { left: { style: BorderStyle.SINGLE, size: 36, color: o.primaryHex, space: 12 } }, indent: { left: 130 }, spacing: { after: 40 } }));
+    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   ·   '), font, size: 18, color: '666666' })], indent: { left: 130 }, spacing: { after: 80 }, border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.accentHex, space: 6 } } }));
+  } else if (o.layout === 'rMinimal') {
+    out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 40, color: '111827', characterSpacing: 60 })], spacing: { after: 60 } }));
+    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 18, color: '666666' })], spacing: { after: 120 } }));
+  } else {
+    out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], spacing: { after: 60 } }));
+    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 19, color: '555555' })], spacing: { after: 120 } }));
+  }
+  const headStyle = { rClassic: 'underline', rExecutive: 'left-bar', rMinimal: 'minimal', rModern: 'icon-bar', rBanner: 'banner-pill' }[o.layout] || 'underline';
+  sections.forEach(sec => {
+    out.push(_dxHeading(sec.title, { style: headStyle, primaryHex: o.primaryHex, accentHex: o.accentHex, font }));
+    for (const raw of sec.lines) for (const p of _dxLinePara(raw, { font, accentHex: o.accentHex, onDark: false })) out.push(p);
+  });
+  for (const p of _dxSig(o.sigName, o.primaryHex, font)) out.push(p);
+  return out;
+}
+
+function _dxRenderCover(text, o, meta) {
+  const font = _dxFont(o.serif);
+  const p = _dxParseCover(text, meta);
+  const out = [];
+  const roleLine = [p.role, p.company].filter(Boolean).join(' — ');
+  const band = (nameSize) => _dxBand(p.name, p.contact ? [p.contact] : [], { ...o, font });
+
+  if (o.layout === 'cModern' || o.layout === 'cBold' || o.layout === 'cSplit') {
+    out.push(band());
+    if (roleLine) out.push(new Paragraph({ children: [new TextRun({ text: roleLine, font, size: 19, bold: true, color: o.accentHex })], spacing: { before: 120, after: 40 } }));
+    out.push(new Paragraph({ children: [new TextRun({ text: p.date, font, size: 18, color: '888888' })], spacing: { after: 160 } }));
+  } else if (o.layout === 'cBoxed') {
+    const inner = new TableCell({
+      width: { size: o.contentWidth, type: WidthType.DXA },
+      margins: { top: 200, bottom: 200, left: 300, right: 300 },
+      borders: { top: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex }, bottom: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex }, left: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex }, right: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex } },
+      children: [
+        new Paragraph({ children: [new TextRun({ text: p.name, font, size: 28, bold: true, color: o.primaryHex })] }),
+        ...(p.contact ? [new Paragraph({ children: [new TextRun({ text: p.contact, font, size: 18, color: '777777' })], spacing: { before: 40 } })] : []),
+      ],
+    });
+    out.push(new Table({ width: { size: o.contentWidth, type: WidthType.DXA }, columnWidths: [o.contentWidth], borders: _dxNoTableBorders(), rows: [new TableRow({ children: [inner] })] }));
+    out.push(new Paragraph({ children: [new TextRun({ text: [p.date, roleLine].filter(Boolean).join('    ·    '), font, size: 18, color: '999999' })], spacing: { before: 160, after: 160 } }));
+  } else if (o.layout === 'cClean') {
+    out.push(new Paragraph({ children: [new TextRun({ text: p.name, font, size: 52, bold: true, color: o.primaryHex })], spacing: { after: 60 } }));
+    if (p.contact) out.push(new Paragraph({ children: [new TextRun({ text: p.contact, font, size: 18, bold: true, color: o.accentHex })], spacing: { after: 80 } }));
+    out.push(new Paragraph({ children: [new TextRun({ text: '', font, size: 8 })], border: { bottom: { style: BorderStyle.SINGLE, size: 16, color: o.accentHex, space: 2 } }, spacing: { after: 160 } }));
+    out.push(new Paragraph({ children: [new TextRun({ text: [p.date, roleLine ? 'Re: ' + roleLine : ''].filter(Boolean).join('    ·    '), font, size: 18, color: o.primaryHex })], spacing: { after: 200 } }));
+  } else {
+    // cFormal — classic business letter
+    out.push(new Paragraph({ children: [new TextRun({ text: p.name, font, size: 30, bold: true, color: o.primaryHex })], spacing: { after: 40 }, border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex, space: 6 } } }));
+    if (p.contact) out.push(new Paragraph({ children: [new TextRun({ text: p.contact, font, size: 18, color: '888888' })], spacing: { before: 80, after: 200 } }));
+    out.push(new Paragraph({ children: [new TextRun({ text: p.date, font, size: 19, color: '777777' })], spacing: { after: 80 } }));
+    if (roleLine) out.push(new Paragraph({ children: [new TextRun({ text: roleLine, font, size: 19, color: '666666' })], spacing: { after: 160 } }));
+  }
+
+  out.push(new Paragraph({ children: [new TextRun({ text: 'Dear Hiring Manager,', font, size: 23, bold: true, color: o.primaryHex })], spacing: { before: 120, after: 180 } }));
+  p.body.forEach(para => out.push(new Paragraph({ children: [new TextRun({ text: para, font, size: 22, color: '333333' })], spacing: { after: 200, line: 300, lineRule: 'auto' } })));
+  for (const s of _dxSig(o.sigName, o.primaryHex, font)) out.push(s);
+  return out;
+}
+
+function _dxMargins(layout) {
+  if (layout === 'rSidebar') return { top: 720, bottom: 720, left: 0, right: 0 };
+  if (layout === 'rTwoCol') return { top: 1000, bottom: 1000, left: 900, right: 900 };
+  if (['rModern', 'cModern', 'cBold', 'cSplit'].includes(layout)) return { top: 1080, bottom: 1080, left: 1080, right: 1080 };
+  return { top: 1440, bottom: 1440, left: 1440, right: 1440 };
+}
+
+function _dxHex(c, fallback) { return (c || fallback).replace('#', ''); }
+
+async function handleTemplatedDocx(req, res) {
+  const { text, coverText, filename, sigName, pageSize, mode, primary, cover, meta } = req.body;
+  const isA4 = pageSize === 'a4';
+  const PAGE_WIDTH = isA4 ? 11906 : 12240;
+  const PAGE_HEIGHT = isA4 ? 16838 : 15840;
+
+  const buildOpts = (tpl, withSig) => {
+    const layout = (tpl && tpl.layout) || 'rClassic';
+    const m = _dxMargins(layout);
+    const colors = (tpl && tpl.colors) || {};
+    return {
+      opts: {
+        layout, style: (tpl && tpl.style) || 'underline', serif: !!(tpl && tpl.serif),
+        primaryHex: _dxHex(colors.primary, '#1a237e'), accentHex: _dxHex(colors.accent, '#5c6bc0'),
+        lightHex: _dxHex(colors.light, '#e8eaf6'), sigName: withSig ? (sigName || null) : null,
+        contentWidth: PAGE_WIDTH - m.left - m.right,
+      },
+      margin: m,
+    };
+  };
+
+  const isCover = mode === 'cover_letter';
+  const isBoth = mode === 'both';
+
+  const prim = buildOpts(primary, !isBoth); // in 'both' mode the signature lives on the cover
+  const primChildren = isCover ? _dxRenderCover(text, prim.opts, meta) : _dxRenderResume(text, prim.opts);
+  const sections = [{ properties: { page: { size: { width: PAGE_WIDTH, height: PAGE_HEIGHT }, margin: prim.margin } }, children: primChildren }];
+
+  if (isBoth && coverText) {
+    const cv = buildOpts(cover, true);
+    sections.push({ properties: { page: { size: { width: PAGE_WIDTH, height: PAGE_HEIGHT }, margin: cv.margin } }, children: _dxRenderCover(coverText, cv.opts, meta) });
+  }
+
+  const doc = new Document({ sections });
+  const buffer = await Packer.toBuffer(doc);
+
+  const safeName = (filename || 'tailored-resume').replace(/[^a-z0-9-_\s]/gi, '_');
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
+  res.send(buffer);
+
+  const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
+  sendEmail({
+    to: ownerEmail,
+    subject: `[ResumeTailor] Download: ${safeName}.docx`,
+    html: `<p>A user just downloaded <strong>${safeName}.docx</strong>.</p><p>Time: ${new Date().toUTCString()}</p>`
+  }).catch(err => console.error('[Alert] Download email failed:', err.message));
+}
+
 app.post('/api/download-docx', async (req, res) => {
   const { text, filename, colors, sigName, sigFont: sigFontName, pageSize } = req.body;
   if (!text) return res.status(400).json({ error: 'No text provided.' });
+  // Template-aware path: when the client sends template metadata, render the
+  // chosen visual layout. Falls back to the legacy single-column builder below.
+  if (req.body.primary && req.body.primary.layout) {
+    try { return await handleTemplatedDocx(req, res); }
+    catch (err) { console.error('[docx] templated render failed, falling back:', err.message); }
+  }
 
   const primaryHex = colors?.primary ? colors.primary.replace('#', '') : '1a237e';
   const accentHex  = colors?.accent  ? colors.accent.replace('#', '')  : '5c6bc0';
