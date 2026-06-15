@@ -37,7 +37,7 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9896489046536589" crossorigin="anonymous"></script>
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
   <!-- JSON-LD -->
   <script type="application/ld+json">
   {
@@ -238,11 +238,12 @@
     .section { padding: 80px 0; }
     .section-gray { background: rgba(255,255,255,0.02); }
     .section-title {
-      text-align: center; font-size: clamp(28px, 4vw, 40px);
-      font-weight: 800; letter-spacing: -0.02em; margin-bottom: 48px; color: #f1f5f9;
+      text-align: center; font-size: clamp(28px, 4vw, 42px);
+      font-weight: 300; letter-spacing: 0.01em; margin-bottom: 48px; color: #f8fafc;
       font-family: 'Inter', sans-serif;
     }
     .section-title span {
+      font-weight: 400;
       background: linear-gradient(135deg,#6366F1,#8B5CF6);
       -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
     }
@@ -275,9 +276,11 @@
     .hero > .container { position: relative; z-index: 1; }
     .hero h1 {
       font-family: 'Inter', sans-serif;
-      font-size: clamp(36px, 6vw, 64px); font-weight: 900;
-      letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 20px; color: #f1f5f9;
+      font-size: clamp(38px, 6.2vw, 68px); font-weight: 200;
+      letter-spacing: 0.01em; line-height: 1.12; margin-bottom: 22px; color: #f8fafc;
     }
+    /* Keep the gradient phrase a touch heavier so it stays the focal point */
+    .hero h1 .blue { font-weight: 300; }
     .hero h1 .blue {
       background: linear-gradient(135deg,#818CF8 0%,#A78BFA 50%,#38BDF8 100%);
       -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
@@ -340,7 +343,7 @@
       display: flex; align-items: center; justify-content: center;
       margin: 0 auto 16px;
     }
-    .step h3 { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: #e2e8f0; }
+    .step h3 { font-size: 20px; font-weight: 300; letter-spacing: 0.01em; margin-bottom: 8px; color: #f1f5f9; }
     .step p { font-size: 14px; color: #64748b; line-height: 1.7; }
 
     /* ── FEATURES ── */
@@ -351,7 +354,7 @@
     .feature-row.reverse { direction: rtl; }
     .feature-row.reverse > * { direction: ltr; }
     .feature-icon { font-size: 48px; margin-bottom: 16px; }
-    .feature-body h3 { font-size: 24px; font-weight: 800; margin-bottom: 12px; color: #e2e8f0; }
+    .feature-body h3 { font-size: 24px; font-weight: 300; letter-spacing: 0.01em; margin-bottom: 12px; color: #f1f5f9; }
     .feature-body p { font-size: 15px; color: #94a3b8; line-height: 1.75; }
     .feature-visual {
       background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
@@ -474,7 +477,7 @@
       background: radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.4) 0%, transparent 70%);
     }
     .cta-banner .container { position: relative; z-index: 1; }
-    .cta-banner h2 { font-size: clamp(26px, 4vw, 40px); font-weight: 900; margin-bottom: 14px; }
+    .cta-banner h2 { font-size: clamp(26px, 4vw, 40px); font-weight: 300; letter-spacing: 0.01em; margin-bottom: 14px; }
     .cta-banner p { font-size: 17px; opacity: 0.85; margin-bottom: 32px; }
 
     /* ── FAQ ── */
@@ -707,6 +710,22 @@
     }
     /* Soften the existing static grid so the animated background reads clearly */
     body::before { opacity: 0.5; }
+
+    /* ── Hero headline: staggered word-by-word reveal (Digital Serenity effect) ── */
+    @keyframes word-appear {
+      0%   { opacity: 0; transform: translateY(30px) scale(0.8); filter: blur(10px); }
+      50%  { opacity: 0.8; transform: translateY(10px) scale(0.95); filter: blur(2px); }
+      100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    .hero h1 .word-animate {
+      display: inline-block; opacity: 0;
+      animation: word-appear 0.8s ease-out forwards;
+      transition: transform 0.3s ease, text-shadow 0.3s ease;
+    }
+    .hero h1 .word-animate:hover {
+      transform: translateY(-3px);
+      text-shadow: 0 0 22px rgba(129,140,248,0.55);
+    }
   </style>
 </head>
 <body>
@@ -753,7 +772,7 @@
   <div class="hero-orb orb-1"></div>
   <div class="hero-orb orb-2"></div>
   <div class="container">
-    <h1>Your resume,<br /><span class="blue">perfectly tailored</span><br />to every job.</h1>
+    <h1><span class="word-animate" style="animation-delay:0ms">Your</span> <span class="word-animate" style="animation-delay:120ms">resume,</span><br /><span class="word-animate blue" style="animation-delay:260ms">perfectly</span> <span class="word-animate blue" style="animation-delay:380ms">tailored</span><br /><span class="word-animate" style="animation-delay:520ms">to</span> <span class="word-animate" style="animation-delay:620ms">every</span> <span class="word-animate" style="animation-delay:740ms">job.</span></h1>
     <p class="hero-sub">Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.</p>
     <div class="hero-cta">
       <a href="/dashboard" class="btn btn-primary btn-lg">Tailor My Resume Free →</a>
@@ -814,7 +833,7 @@
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:48px;">
       <div style="flex:1;min-width:280px;">
         <p data-i18n="promo_eyebrow" style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#818CF8;margin-bottom:12px;">100% Free · No Account Required</p>
-        <h2 data-i18n="promo_title" style="font-size:clamp(26px,3.5vw,38px);font-weight:900;color:#f1f5f9;margin-bottom:16px;line-height:1.2;">Is Your Resume <span style="background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span></h2>
+        <h2 data-i18n="promo_title" style="font-size:clamp(26px,3.5vw,38px);font-weight:300;letter-spacing:0.01em;color:#f8fafc;margin-bottom:16px;line-height:1.2;">Is Your Resume <span style="font-weight:400;background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span></h2>
         <p data-i18n="promo_desc" style="font-size:16px;color:#94a3b8;margin-bottom:28px;line-height:1.7;">Paste your resume and job description. Claude AI scores your keyword match, flags what's missing, and gives you 5 specific fixes — in seconds. No login, no credit card.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:28px;">
           <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#94a3b8;"><span style="color:#6366F1;font-size:18px;">✓</span> <span data-i18n="promo_c1">ATS Match Score</span></div>
@@ -2581,7 +2600,7 @@
   // Comprehensive selector-based translations: [selector, optIndex|null, english, chinese]
   const TRANS = [
     // ── Hero ────────────────────────────────────────────────────────────────
-    ['.hero h1', null, 'Your resume,<br /><span class="blue">perfectly tailored</span><br />to every job.', '你的简历，<br /><span class="blue">精准匹配</span><br />每一份工作。'],
+    ['.hero h1', null, '<span class="word-animate" style="animation-delay:0ms">Your</span> <span class="word-animate" style="animation-delay:120ms">resume,</span><br /><span class="word-animate blue" style="animation-delay:260ms">perfectly</span> <span class="word-animate blue" style="animation-delay:380ms">tailored</span><br /><span class="word-animate" style="animation-delay:520ms">to</span> <span class="word-animate" style="animation-delay:620ms">every</span> <span class="word-animate" style="animation-delay:740ms">job.</span>', '<span class="word-animate" style="animation-delay:0ms">你的简历，</span><br /><span class="word-animate blue" style="animation-delay:260ms">精准匹配</span><br /><span class="word-animate" style="animation-delay:520ms">每一份工作。</span>'],
     ['.hero-sub', null, 'Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.', '粘贴简历和职位描述，AI将用精准关键词重写你的简历，并在30秒内生成有力的求职信。'],
     ['.hero-cta > .btn-primary', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
     ['.hero-note', null, '1 free tailoring · No payment required', '每日1次免费定制 · 无需付款'],
@@ -3074,6 +3093,20 @@
     running = true;
     rafId = requestAnimationFrame(render);
   })();
+</script>
+<script>
+  /* Once each hero word's entrance animation finishes, drop the animation so the
+     hover lift works (a finished forwards-animation would otherwise pin the
+     transform). Delegated so it also covers words re-rendered by the language
+     switch. Safe: if it never runs, words still settle visible via the
+     animation's forwards fill. */
+  document.addEventListener('animationend', function (e) {
+    var el = e.target;
+    if (el && el.classList && el.classList.contains('word-animate')) {
+      el.style.animation = 'none';
+      el.style.opacity = '1';
+    }
+  });
 </script>
 </body>
 </html>
