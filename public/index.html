@@ -208,7 +208,10 @@
       inherits: false;
       initial-value: 100%;
     }
-    .btn-primary::after {
+    .btn-shine { position: relative; overflow: hidden; }
+    .btn-primary::after,
+    .btn-white::after,
+    .btn-shine::after {
       content: ''; position: absolute; inset: 0; border-radius: inherit;
       pointer-events: none; z-index: 2;
       background: linear-gradient(-75deg,
@@ -220,6 +223,16 @@
     @keyframes btnShine {
       0% { --btn-x: 130%; }
       55%, 100% { --btn-x: -30%; }
+    }
+    /* Green shimmer for the "Free Tools" nav link (sweeps across the text) */
+    .nav-shine {
+      background: linear-gradient(-75deg,
+        #34d399 calc(var(--btn-x) + 18%),
+        #d1fae5 calc(var(--btn-x) + 25%),
+        #34d399 calc(var(--btn-x) + 32%));
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+      animation: btnShine 3.2s linear infinite;
     }
     .btn-outline {
       background: rgba(99,102,241,0.1); color: #818CF8;
@@ -758,7 +771,7 @@
     <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
     <div class="nav-links">
       <a href="/how-it-works" data-i18n="nav_how">How It Works</a>
-      <a href="/score" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
+      <a href="/score" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
       <a href="/blog" data-i18n="nav_blog">Blog</a>
       <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
     </div>
@@ -778,7 +791,7 @@
   <button class="mobile-close" onclick="document.querySelector('.mobile-menu').classList.remove('open')">&times;</button>
   <a href="/how-it-works" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_how">How It Works</a>
   <a href="/blog" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_blog">Blog</a>
-  <a href="/score" onclick="document.querySelector('.mobile-menu').classList.remove('open')" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
+  <a href="/score" onclick="document.querySelector('.mobile-menu').classList.remove('open')" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
   <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_features">Features</a>
   <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_templates">Templates</a>
   <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_pricing">Pricing</a>
@@ -860,7 +873,7 @@
           <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#94a3b8;"><span style="color:#6366F1;font-size:18px;">✓</span> <span data-i18n="promo_c3">Readability Review</span></div>
           <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#94a3b8;"><span style="color:#6366F1;font-size:18px;">✓</span> <span data-i18n="promo_c4">AI Suggestions</span></div>
         </div>
-        <a href="/score" data-i18n="promo_cta" style="display:inline-block;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:14px 32px;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;box-shadow:0 0 28px rgba(99,102,241,0.4);transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Check My Resume Free →</a>
+        <a href="/score" class="btn-shine" data-i18n="promo_cta" style="display:inline-block;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:14px 32px;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;box-shadow:0 0 28px rgba(99,102,241,0.4);transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Check My Resume Free →</a>
       </div>
       <div style="flex:1;min-width:260px;background:rgba(15,17,26,0.7);border:1px solid rgba(99,102,241,0.25);border-radius:18px;padding:28px;backdrop-filter:blur(10px);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
@@ -1845,7 +1858,7 @@
             <li><span class="tier-check" style="color:#6b7280;">✓</span> 1 free AI tailoring per day</li>
             <li><span class="tier-check" style="color:#6b7280;">✓</span> PDF &amp; text download</li>
           </ul>
-          <button class="btn btn-ghost btn-full" onclick="event.stopPropagation();window.location='/dashboard'">Start Free →</button>
+          <button class="btn btn-ghost btn-full btn-shine" onclick="event.stopPropagation();window.location='/dashboard'">Start Free →</button>
         </div>
       </div>
 
@@ -1926,7 +1939,7 @@
             <li><span class="tier-check" style="color:#1e3a5f;">✓</span> Board-ready formatting</li>
             <li><span class="tier-check" style="color:#1e3a5f;">✓</span> C-suite cover letters</li>
           </ul>
-          <button class="btn btn-full" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="event.stopPropagation();openCheckoutModal()">Go Executive — $19/mo →</button>
+          <button class="btn btn-full btn-shine" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="event.stopPropagation();openCheckoutModal()">Go Executive — $19/mo →</button>
         </div>
       </div>
 
@@ -2139,7 +2152,7 @@
           <li><span class="cross-icon">✗</span> <span style="color:#9ca3af;">Career Hub access</span></li>
           <li><span class="cross-icon">✗</span> <span style="color:#9ca3af;">All 40 templates</span></li>
         </ul>
-        <a href="/dashboard" class="btn btn-ghost btn-full">Get Started Free</a>
+        <a href="/dashboard" class="btn btn-ghost btn-full btn-shine">Get Started Free</a>
       </div>
       <div class="pricing-card pricing-card-featured">
         <div class="plan-badge">✦ Most Popular</div>
@@ -2263,7 +2276,7 @@
   <p data-i18n="footer_cta_eyebrow" style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#818CF8;margin-bottom:8px;">Free AI Resume Tools</p>
   <p data-i18n="footer_cta_title" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">Get Your ATS Score &amp; Readability Review — Free</p>
   <p data-i18n="footer_cta_desc" style="font-size:14px;color:#94a3b8;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Paste your resume and job description. Claude AI scores your match and gives you 5 specific fixes — no account needed.</p>
-  <a href="/score" data-i18n="footer_cta_btn" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 0 20px rgba(99,102,241,0.4);">Check My Resume Free →</a>
+  <a href="/score" class="btn-shine" data-i18n="footer_cta_btn" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 0 20px rgba(99,102,241,0.4);">Check My Resume Free →</a>
 </div>
 </footer>
 
@@ -2326,7 +2339,7 @@
         </div>
       </div>
       <div style="text-align:center;margin-top:24px;">
-        <button class="btn btn-ghost" onclick="document.getElementById('tierModal').classList.remove('open');window.location='/dashboard'" style="margin-right:12px;">Try Free Now →</button>
+        <button class="btn btn-ghost btn-shine" onclick="document.getElementById('tierModal').classList.remove('open');window.location='/dashboard'" style="margin-right:12px;">Try Free Now →</button>
       </div>`
     },
     professional: {
@@ -2383,7 +2396,7 @@
         </div>
       </div>
       <div style="text-align:center;margin-top:24px;">
-        <button class="btn" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="document.getElementById('tierModal').classList.remove('open');openCheckoutModal()">Unlock Executive — $19/mo →</button>
+        <button class="btn btn-shine" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="document.getElementById('tierModal').classList.remove('open');openCheckoutModal()">Unlock Executive — $19/mo →</button>
       </div>`
     }
   };
