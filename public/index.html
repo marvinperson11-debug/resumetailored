@@ -202,6 +202,25 @@
       color: #fff; box-shadow: 0 0 20px rgba(99,102,241,0.35);
     }
     .btn-primary:hover { box-shadow: 0 0 32px rgba(99,102,241,0.6); transform: translateY(-1px); }
+    /* Shiny sweep on primary buttons (vanilla port of the animated --x shine) */
+    @property --btn-x {
+      syntax: '<percentage>';
+      inherits: false;
+      initial-value: 100%;
+    }
+    .btn-primary::after {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      pointer-events: none; z-index: 2;
+      background: linear-gradient(-75deg,
+        rgba(255,255,255,0) calc(var(--btn-x) + 18%),
+        rgba(255,255,255,0.6) calc(var(--btn-x) + 25%),
+        rgba(255,255,255,0) calc(var(--btn-x) + 32%));
+      animation: btnShine 3.2s linear infinite;
+    }
+    @keyframes btnShine {
+      0% { --btn-x: 130%; }
+      55%, 100% { --btn-x: -30%; }
+    }
     .btn-outline {
       background: rgba(99,102,241,0.1); color: #818CF8;
       border: 1px solid rgba(99,102,241,0.4);
