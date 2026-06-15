@@ -835,7 +835,72 @@
       .sl-score { top: -16px; right: -10px; width: 76px; height: 76px; }
       .sl-score svg { width: 76px; height: 76px; }
     }
+
+    /* ══ SITE-WIDE SCROLL REVEAL & POLISH ════════════════════════════════════ */
+    /* Initial hidden state applies ONLY when JS adds .js-anim to <html>, so the
+       page is fully visible if JS is off or errors out. */
+    .js-anim .hero h1,
+    .js-anim .hero-sub,
+    .js-anim .hero-cta,
+    .js-anim .section-eyebrow,
+    .js-anim .section-title,
+    .js-anim .step,
+    .js-anim .feature-row,
+    .js-anim .template-card,
+    .js-anim .tier-card,
+    .js-anim .testimonial,
+    .js-anim .pricing-card,
+    .js-anim .cta-banner .container {
+      opacity: 0;
+      transform: translateY(26px);
+      transition: opacity .7s ease, transform .7s cubic-bezier(.2,.7,.2,1);
+      will-change: opacity, transform;
+    }
+    .js-anim .hero h1.in-view,
+    .js-anim .hero-sub.in-view,
+    .js-anim .hero-cta.in-view,
+    .js-anim .section-eyebrow.in-view,
+    .js-anim .section-title.in-view,
+    .js-anim .step.in-view,
+    .js-anim .feature-row.in-view,
+    .js-anim .template-card.in-view,
+    .js-anim .tier-card.in-view,
+    .js-anim .testimonial.in-view,
+    .js-anim .pricing-card.in-view,
+    .js-anim .cta-banner .container.in-view {
+      opacity: 1;
+      transform: none;
+    }
+
+    /* Hover lifts for cards that didn't already have one */
+    .step { transition: transform .2s ease, box-shadow .2s ease; }
+    .step:hover { transform: translateY(-4px); }
+    .pricing-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .pricing-card:hover { transform: translateY(-5px); box-shadow: 0 20px 48px rgba(0,0,0,0.5); border-color: rgba(99,102,241,0.35); }
+    .feature-icon { transition: transform .25s ease; }
+    .feature-row:hover .feature-icon { transform: scale(1.08) rotate(-3deg); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .js-anim .hero h1, .js-anim .hero-sub, .js-anim .hero-cta,
+      .js-anim .section-eyebrow, .js-anim .section-title, .js-anim .step,
+      .js-anim .feature-row, .js-anim .template-card, .js-anim .tier-card,
+      .js-anim .testimonial, .js-anim .pricing-card, .js-anim .cta-banner .container {
+        opacity: 1 !important; transform: none !important; transition: none !important;
+      }
+    }
   </style>
+  <script>
+    /* Add the animation flag as early as possible (before first paint) so reveal
+       targets start hidden without a flash. Skipped if the user prefers reduced
+       motion, leaving the page fully static and visible. */
+    (function () {
+      try {
+        if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+          document.documentElement.classList.add('js-anim');
+        }
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
 
@@ -3129,6 +3194,48 @@
       entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
     }, { threshold: 0.1 });
     els.forEach(function(el) { io.observe(el); });
+  })();
+</script>
+<script>
+  /* Site-wide scroll reveal: reveal curated elements as they enter the viewport,
+     with a gentle stagger for grouped items (cards in the same row/grid). */
+  (function () {
+    var root = document.documentElement;
+    if (!root.classList.contains('js-anim')) return;
+    var SELECTORS = [
+      '.hero h1', '.hero-sub', '.hero-cta',
+      '.section-eyebrow', '.section-title',
+      '.step', '.feature-row', '.template-card',
+      '.tier-card', '.testimonial', '.pricing-card',
+      '.cta-banner .container'
+    ];
+    try {
+      var els = [];
+      SELECTORS.forEach(function (sel) {
+        Array.prototype.forEach.call(document.querySelectorAll(sel), function (el) { els.push(el); });
+      });
+      if (!els.length) { root.classList.remove('js-anim'); return; }
+
+      // Stagger siblings that share a parent (e.g. cards in a grid).
+      var seen = new Map();
+      els.forEach(function (el) {
+        var p = el.parentElement;
+        var i = seen.get(p) || 0;
+        el.style.transitionDelay = Math.min(i * 70, 320) + 'ms';
+        seen.set(p, i + 1);
+      });
+
+      if (!('IntersectionObserver' in window)) { root.classList.remove('js-anim'); return; }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
+      els.forEach(function (el) { io.observe(el); });
+    } catch (e) {
+      // Anything goes wrong → reveal everything so nothing stays hidden.
+      root.classList.remove('js-anim');
+    }
   })();
 </script>
 </body>
