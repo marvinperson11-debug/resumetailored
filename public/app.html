@@ -4683,10 +4683,13 @@ Aaliyah Washington`
       const PAGE_MARGIN_B = 96;    // 1in bottom margin on every page
       const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // usable px per page
       let numPages = Math.min(10, Math.max(1, Math.ceil(rawContentH / PAGE_CONTENT_H)));
-      // If the last page is < 70% full, merge it into the previous page by expanding
-      // that page's clip — prevents the signature from stranding on a near-empty last page.
+      // Only merge a trailing page into the previous one when its content is TINY
+      // (a stranded signature or a stray line — under ~170px). This still prevents
+      // the signature orphaning on a near-empty page, but no longer collapses a
+      // 1.1–1.7 page resume into one long oversized page: those now show as the
+      // true 2 separate letter-size pages the user actually gets when printing.
       const rawLastPageH = rawContentH - (numPages - 1) * PAGE_CONTENT_H;
-      const lastPageOverflow = (numPages > 1 && rawLastPageH < PAGE_CONTENT_H * 0.7) ? rawLastPageH : 0;
+      const lastPageOverflow = (numPages > 1 && rawLastPageH < 170) ? rawLastPageH : 0;
       if (lastPageOverflow) numPages--;
       // Cover letters are always 1 page — cap here so content doesn't orphan across pages
       if (selectedMode === 'cover_letter') numPages = 1;
@@ -4843,6 +4846,7 @@ Aaliyah Washington`
       if (adWatchTimer) { clearInterval(adWatchTimer); adWatchTimer = null; }
       adPendingDownload = null;
     }
+
   </script>
 </body>
 </html>
