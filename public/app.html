@@ -4683,10 +4683,13 @@ Aaliyah Washington`
       const PAGE_MARGIN_B = 96;    // 1in bottom margin on every page
       const PAGE_CONTENT_H = PAGE_H - PAGE_MARGIN_T - PAGE_MARGIN_B; // usable px per page
       let numPages = Math.min(10, Math.max(1, Math.ceil(rawContentH / PAGE_CONTENT_H)));
-      // If the last page is < 70% full, merge it into the previous page by expanding
-      // that page's clip — prevents the signature from stranding on a near-empty last page.
+      // Only merge a trailing page into the previous one when its content is TINY
+      // (a stranded signature or a stray line — under ~170px). This still prevents
+      // the signature orphaning on a near-empty page, but no longer collapses a
+      // 1.1–1.7 page resume into one long oversized page: those now show as the
+      // true 2 separate letter-size pages the user actually gets when printing.
       const rawLastPageH = rawContentH - (numPages - 1) * PAGE_CONTENT_H;
-      const lastPageOverflow = (numPages > 1 && rawLastPageH < PAGE_CONTENT_H * 0.7) ? rawLastPageH : 0;
+      const lastPageOverflow = (numPages > 1 && rawLastPageH < 170) ? rawLastPageH : 0;
       if (lastPageOverflow) numPages--;
       // Cover letters are always 1 page — cap here so content doesn't orphan across pages
       if (selectedMode === 'cover_letter') numPages = 1;
@@ -4843,6 +4846,62 @@ Aaliyah Washington`
       if (adWatchTimer) { clearInterval(adWatchTimer); adWatchTimer = null; }
       adPendingDownload = null;
     }
+
+    // ── Preview pagination demo (verification aid only; activates with ?demo=1) ──
+    // Lets the paginated "Preview →" popup be viewed without the backend (e.g. on a
+    // static Netlify deploy). Harmless in normal use — does nothing without ?demo=1.
+    (function () {
+      if (location.search.indexOf('demo=1') === -1) return;
+      window.addEventListener('load', function () {
+        try {
+          var ao = document.getElementById('authOverlay'); if (ao) ao.style.display = 'none';
+          var tpl = (location.hash || '').replace('#', '') || 'r1';
+          var SAMPLE = [
+            'JORDAN MICHAELS',
+            'jordan.michaels@email.com | (415) 555-0199 | San Francisco, CA | linkedin.com/in/jordanmichaels',
+            '',
+            'PROFESSIONAL SUMMARY',
+            'Senior product marketing leader with 9+ years driving growth for B2B SaaS companies. Proven record launching products, building demand-generation engines, and aligning cross-functional teams to hit aggressive revenue targets.',
+            '',
+            'EXPERIENCE',
+            'Senior Product Marketing Manager — CloudScale Inc.',
+            'Jan 2021 – Present | San Francisco, CA',
+            '• Led go-to-market strategy for 4 major product launches, driving 34% YoY pipeline growth and $2.1M in attributed revenue',
+            '• Built a cross-channel demand-generation engine (paid, email, SEO) that increased qualified leads by 58%',
+            '• Partnered with sales to create enablement that cut average deal cycle time by 22%',
+            '• Managed a $2.1M marketing budget across 6 channels with full ROI reporting',
+            '• Mentored a team of 5 marketers and established the team’s first messaging framework',
+            '',
+            'Product Marketing Manager — DataBridge',
+            'Jun 2018 – Dec 2020 | Oakland, CA',
+            '• Owned positioning and messaging for a flagship analytics product used by 10,000+ customers',
+            '• Launched a competitive intelligence program adopted company-wide',
+            '• Drove a website refresh that lifted homepage conversion by 41%',
+            '• Produced case studies and webinars generating 1,200+ qualified leads per quarter',
+            '',
+            'Marketing Associate — BrightPath Media',
+            'Aug 2016 – May 2018 | San Jose, CA',
+            '• Coordinated multi-channel campaigns and managed the editorial content calendar',
+            '• Grew email subscriber base from 4k to 19k in 18 months',
+            '',
+            'EDUCATION',
+            'B.A. Marketing — University of California, Berkeley',
+            'Graduated May 2016 | GPA 3.7',
+            '',
+            'SKILLS',
+            'Positioning, GTM strategy, demand generation, competitive analysis, content marketing, marketing analytics, cross-functional leadership, budget management'
+          ].join('\n');
+          selectedMode = 'resume';
+          selectedOutputTpl = { resume: tpl, cover: 'c1' };
+          sigName = '';
+          lastRawResult = SAMPLE;
+          try { lastRawCoverResult = null; } catch (e) {}
+          var ob = document.getElementById('outputBox');
+          if (ob) ob.innerHTML = renderAIOutput(SAMPLE, tpl, 'resume', false);
+          openPreview();
+        } catch (e) { console.error('preview demo error', e); }
+      });
+    })();
   </script>
 </body>
 </html>
