@@ -4851,7 +4851,7 @@ Aaliyah Washington`
     // Lets the paginated "Preview →" popup be viewed without the backend (e.g. on a
     // static Netlify deploy). Harmless in normal use — does nothing without ?demo=1.
     (function () {
-      if (location.search.indexOf('demo=1') === -1) return;
+      if (location.search.indexOf('demo=') === -1) return;
       window.addEventListener('load', function () {
         try {
           var ao = document.getElementById('authOverlay'); if (ao) ao.style.display = 'none';
@@ -4891,13 +4891,40 @@ Aaliyah Washington`
             'SKILLS',
             'Positioning, GTM strategy, demand generation, competitive analysis, content marketing, marketing analytics, cross-functional leadership, budget management'
           ].join('\n');
-          selectedMode = 'resume';
-          selectedOutputTpl = { resume: tpl, cover: 'c1' };
-          sigName = '';
-          lastRawResult = SAMPLE;
-          try { lastRawCoverResult = null; } catch (e) {}
-          var ob = document.getElementById('outputBox');
-          if (ob) ob.innerHTML = renderAIOutput(SAMPLE, tpl, 'resume', false);
+          // Include a sample signature so signature placement can be verified too.
+          sigName = 'Jordan Michaels';
+          sigFont = sigFont || 'Dancing Script';
+          var isCover = location.search.indexOf('demo=cover') !== -1;
+          if (isCover) {
+            var COVER = [
+              'JORDAN MICHAELS',
+              'jordan.michaels@email.com | (415) 555-0199 | San Francisco, CA',
+              '',
+              'Dear Hiring Manager,',
+              '',
+              'I am excited to apply for the Senior Product Marketing Manager role. Over the past nine years I have launched products, built demand-generation engines, and led cross-functional teams to exceed revenue targets — and I would love to bring that to your team.',
+              '',
+              'In my current role at CloudScale I led go-to-market for four major launches that drove 34% year-over-year pipeline growth and $2.1M in attributed revenue. I thrive on translating complex products into clear, compelling stories that move buyers to act.',
+              '',
+              'I would welcome the chance to discuss how my background can help your team hit its goals. Thank you for your time and consideration.',
+              '',
+              'Sincerely,'
+            ].join('\n');
+            var coverTpl = tpl.charAt(0) === 'c' ? tpl : 'c1';
+            selectedMode = 'cover_letter';
+            selectedOutputTpl = { resume: 'r1', cover: coverTpl };
+            lastRawResult = COVER;
+            try { lastRawCoverResult = null; } catch (e) {}
+            var obc = document.getElementById('outputBox');
+            if (obc) obc.innerHTML = renderAIOutput(COVER, coverTpl, 'cover_letter', false);
+          } else {
+            selectedMode = 'resume';
+            selectedOutputTpl = { resume: tpl, cover: 'c1' };
+            lastRawResult = SAMPLE;
+            try { lastRawCoverResult = null; } catch (e) {}
+            var ob = document.getElementById('outputBox');
+            if (ob) ob.innerHTML = renderAIOutput(SAMPLE, tpl, 'resume', false);
+          }
           openPreview();
         } catch (e) { console.error('preview demo error', e); }
       });
