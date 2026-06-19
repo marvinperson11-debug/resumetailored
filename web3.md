@@ -105,6 +105,6 @@ It should return: `{"success":true,"modelUsed":"...","response":"ok"}`
 ---
 
 ## Security Notes
-- The ANTHROPIC_API_KEY (`sk-ant-api03-9My...`) was exposed in a screenshot. A new key named "resumetailor" was created and set in Railway. Delete the old "new" key from console.anthropic.com if not already done.
+- The ANTHROPIC_API_KEY (value redacted) was exposed in a screenshot. A new key named "resumetailor" was created and set in Railway. Delete the old "new" key from console.anthropic.com if not already done.
 - Passwords are SHA-256 hashed (not bcrypt) — noted as not production-grade in CLAUDE.md
 - All state is in-memory (Maps) + SQLite — resets on server restart except SQLite data

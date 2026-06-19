@@ -29,8 +29,8 @@ All files are at: `C:\Users\marvi\Desktop\Credit Report\resumetailor\`
 ### ✅ API Keys Collected So Far
 The `.env` file at `C:\Users\marvi\Desktop\Credit Report\resumetailor\.env` currently has:
 - `ANTHROPIC_API_KEY` ✅ filled
-- `STRIPE_SECRET_KEY` ✅ filled (test key: `sk_test_51TYvml...`)
-- `STRIPE_PUBLISHABLE_KEY` ✅ filled (test key: `pk_test_51TYvml...`)
+- `STRIPE_SECRET_KEY` ✅ filled (test key — redacted)
+- `STRIPE_PUBLISHABLE_KEY` ✅ filled (test key — redacted)
 - `STRIPE_WEBHOOK_SECRET` ❌ empty — not yet obtained
 - `STRIPE_PRICE_ID` ❌ empty — product not yet created in Stripe
 - `PORT=3000` ✅
