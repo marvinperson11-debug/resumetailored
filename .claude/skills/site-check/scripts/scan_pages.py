@@ -36,6 +36,7 @@ class PageParser(HTMLParser):
         self.has_desc = False
         self.has_canonical = False
         self.has_og_title = False
+        self.noindex = False
         self.local_links = []   # (attr, value)
         self.empty_links = []
 
@@ -48,6 +49,9 @@ class PageParser(HTMLParser):
                 self.has_desc = True
             if a.get("property", "").lower() == "og:title":
                 self.has_og_title = True
+            if a.get("name", "").lower() == "robots" \
+                    and "noindex" in a.get("content", "").lower():
+                self.noindex = True
         if tag == "link" and a.get("rel", "").lower() == "canonical":
             self.has_canonical = True
         for attr in LINK_ATTRS:
@@ -109,14 +113,17 @@ def main() -> int:
                 broken += 1
         for attr, link in p.empty_links:
             issues.append(f"empty {attr}: '{link}'")
-        if not p.title:
-            issues.append("missing <title>"); meta += 1
-        if not p.has_desc:
-            issues.append("missing meta description"); meta += 1
-        if not p.has_canonical:
-            issues.append("missing canonical link"); meta += 1
-        if not p.has_og_title:
-            issues.append("missing og:title"); meta += 1
+        # SEO/OG/canonical only matter for indexable pages. noindex pages
+        # (dashboards, payment success/cancel, password reset) are exempt.
+        if not p.noindex:
+            if not p.title:
+                issues.append("missing <title>"); meta += 1
+            if not p.has_desc:
+                issues.append("missing meta description"); meta += 1
+            if not p.has_canonical:
+                issues.append("missing canonical link"); meta += 1
+            if not p.has_og_title:
+                issues.append("missing og:title"); meta += 1
         if issues:
             print(f"\n{rel}")
             for i in issues:
