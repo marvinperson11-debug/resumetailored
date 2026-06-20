@@ -167,6 +167,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// Redirect /app -> /dashboard. Must run BEFORE express.static, otherwise the
+// static handler serves public/app.html for /app and shadows this redirect.
+app.get('/app', (req, res) => res.redirect(301, '/dashboard'));
+
 app.use(express.static(path.join(__dirname, 'public'), {
   extensions: ['html'],
   setHeaders: (res, filePath) => {
@@ -182,7 +186,6 @@ const _htmlUtf8 = { headers: { 'Content-Type': 'text/html; charset=utf-8' } };
 app.get('/dashboard',    (req, res) => res.sendFile(appHtml, _htmlUtf8));
 app.get('/login',        (req, res) => res.sendFile(appHtml, _htmlUtf8));
 app.get('/signup',       (req, res) => res.sendFile(appHtml, _htmlUtf8));
-app.get('/app',          (req, res) => res.redirect(301, '/dashboard'));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
 app.get('/blog',         (req, res) => res.sendFile(blogIndexHtml, _htmlUtf8));
