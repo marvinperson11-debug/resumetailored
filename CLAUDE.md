@@ -25,21 +25,23 @@ Everything lives in two places:
 
 There is no build step. The frontend is plain HTML/CSS/JS with no framework. `app.html` is a single-page app where tabs are shown/hidden via `showTab()` without any routing.
 
-## In-memory state (critical limitation)
+## Persistent state (SQLite)
 
-All server state is stored in JavaScript `Map` objects in `server.js` and resets on every server restart:
+All server state is stored in a **SQLite database** (`better-sqlite3`) created in `server.js`. The DB file lives at `${DATA_DIR}/resumetailor.db` (`DATA_DIR` defaults to `./data`). For persistence across Railway deploys, set `DATA_DIR=/data` and mount a Railway Volume at `/data`; otherwise the DB is recreated in the ephemeral container on each deploy. WAL journaling is enabled.
 
-| Map | What it tracks |
+Tables (all created with `CREATE TABLE IF NOT EXISTS` at startup):
+
+| Table | What it tracks |
 |---|---|
-| `usageStore` | Free-tier usage counts, keyed by `${ip}_${date}` |
-| `subscribers` | Active Stripe subscribers, keyed by email |
-| `users` | User accounts (email, username, SHA-256 password hash) |
-| `sessions` | Auth tokens (UUID → email) |
-| `resetTokens` | Password reset tokens with 1-hour TTL |
-| `checkIns` | Career check-in form data by email |
-| `forumPosts` | Community forum posts and replies |
+| `usage_store` | Free-tier usage counts, keyed by `${ip}_${date}_${type}` (`count`) |
+| `subscribers` | Active Stripe subscribers (`email` PK, `customer_id`) |
+| `users` | User accounts (`email` PK, `username`, SHA-256 `password_hash`) |
+| `sessions` | Auth tokens (`token` PK → `email`) |
+| `reset_tokens` | Password reset tokens (`token` PK, `email`, `expires_at`) |
+| `check_ins` | Career check-in data by `email` |
+| `forum_posts` / `forum_replies` | Community forum posts and their replies |
 
-This is intentional for MVP. Adding a database (SQLite or Postgres on Railway) is the next major infrastructure step.
+Access is via prepared statements (`db.prepare(...).run/get/all`). Note: several older docs/comments still reference in-memory `Map` objects — that design has been replaced by the SQLite tables above.
 
 ## Auth flow
 
@@ -51,14 +53,14 @@ Passwords are hashed with SHA-256 using a static salt (`rta_salt_2026_` prefix).
 
 `/api/tailor` checks two things before calling Claude:
 1. Is the `email` parameter in an active Stripe subscription? (`isSubscriber()`)
-2. If not subscribed, has the IP used its 1 free tailoring today? (`hasFreeTierLeft()`)
+2. If not subscribed, has the IP used its free quota today? (`hasFreeTierLeft()`)
 
-Free usage is tracked by `${ip}_${today}` key in `usageStore`. This resets naturally at midnight because the date string changes.
+Free usage is tracked per-feature in the `usage_store` table, keyed by `${ip}_${date}_${type}` (e.g. `resume`, `cover_letter`). It resets naturally at midnight because the date string changes; old rows simply stop being read.
 
 ## Stripe integration
 
-- Checkout is initiated via `POST /api/subscribe` → returns a Stripe Checkout URL.
-- `POST /webhook` receives `checkout.session.completed` (adds to `subscribers`) and `customer.subscription.deleted` (removes from `subscribers`).
+- Checkout is initiated via `POST /api/subscribe` (monthly, `mode: subscription`) → returns a Stripe Checkout URL. `POST /api/subscribe-lifetime` (`mode: payment`, requires `STRIPE_LIFETIME_PRICE_ID`) handles the one-time lifetime plan.
+- `POST /webhook` receives `checkout.session.completed` (inserts into the `subscribers` table) and `customer.subscription.deleted` (deletes by `customer_id`). Lifetime buyers are stored with a sentinel `customer_id` of `lifetime_${email}` so subscription-deletion events never remove them.
 - The webhook route must use `express.raw()` body parsing (already set up) — do not add `express.json()` middleware before it.
 - `STRIPE_WEBHOOK_SECRET` must be set for webhook signature verification to pass.
 
@@ -75,8 +77,10 @@ ANTHROPIC_API_KEY     # Claude API
 STRIPE_SECRET_KEY     # Stripe server-side
 STRIPE_PUBLISHABLE_KEY # Stripe client-side (used in public pages)
 STRIPE_WEBHOOK_SECRET # Stripe webhook signing secret
-STRIPE_PRICE_ID       # Stripe Price ID (price_...)
+STRIPE_PRICE_ID       # Stripe Price ID for the monthly plan (price_...)
+STRIPE_LIFETIME_PRICE_ID # optional — Price ID for the one-time lifetime plan
 PORT                  # defaults to 3000
+DATA_DIR              # optional — SQLite dir (default ./data; set /data + mount a Railway Volume to persist)
 RESEND_API_KEY        # optional — enables real emails
 OWNER_EMAIL           # optional — where support messages go (defaults to support@resumetailored.com)
 ```
