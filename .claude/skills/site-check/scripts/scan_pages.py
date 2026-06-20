@@ -54,6 +54,10 @@ class PageParser(HTMLParser):
             if attr in a:
                 val = (a[attr] or "").strip()
                 if val in ("", "#"):
+                    # href="#" with an onclick handler is an intentional JS
+                    # trigger (e.g. opening a modal), not a dead link.
+                    if val == "#" and a.get("onclick"):
+                        continue
                     self.empty_links.append((attr, val))
                 elif not EXTERNAL.match(val):
                     self.local_links.append((attr, val))
