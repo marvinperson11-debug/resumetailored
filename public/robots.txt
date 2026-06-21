@@ -1,4 +1,51 @@
+# Default — all crawlers welcome
 User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /reset-password
+Disallow: /success
+Disallow: /cancel
+
+# ─── AI assistants & answer engines — explicitly welcome ───
+# OpenAI / ChatGPT (search + browsing + training)
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /api/
+Disallow: /reset-password
+Disallow: /success
+Disallow: /cancel
+
+# Anthropic / Claude
+User-agent: ClaudeBot
+User-agent: anthropic-ai
+User-agent: Claude-Web
+Allow: /
+Disallow: /api/
+Disallow: /reset-password
+Disallow: /success
+Disallow: /cancel
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api/
+Disallow: /reset-password
+Disallow: /success
+Disallow: /cancel
+
+# Google Gemini (Extended) & Apple Intelligence
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /api/
+Disallow: /reset-password
+Disallow: /success
+Disallow: /cancel
+
+# Common Crawl (used to train many LLMs)
+User-agent: CCBot
 Allow: /
 Disallow: /api/
 Disallow: /reset-password
