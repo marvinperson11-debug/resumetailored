@@ -358,6 +358,11 @@
           <span style="flex:1;text-align:left;" data-i18n="sidebar_ats">ATS Scanner</span>
           <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">∞ PRO</span>
         </button>
+        <button class="sidebar-btn" onclick="showTab('video')" id="tab-video" data-label="Video" title="Resume Video Maker — Pro Feature">
+          <span class="sidebar-icon">🎬</span>
+          <span style="flex:1;text-align:left;">Resume Video</span>
+          <span style="background:#e11d48;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
+        </button>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label" data-i18n="sidebar_careerhub">Career Hub</div>
@@ -695,6 +700,50 @@
         <!-- Limit / upsell banners -->
         <div class="upsell" id="linkedinLimitBanner" style="display:none;margin-top:20px;">
           <p>You've used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19/month.</p>
+          <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: RESUME VIDEO ═══ -->
+      <div class="tab-content" id="panel-video">
+        <div class="panel-header" style="border-bottom:3px solid #e11d48;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <div style="width:44px;height:44px;background:#e11d48;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎬</div>
+            <div>
+              <h1 style="color:#e11d48;">Resume Video Maker</h1>
+              <span style="background:#e11d48;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ PRO FEATURE</span>
+            </div>
+          </div>
+          <p>Turn any résumé into a short, shareable vertical video with a studio voiceover — perfect for LinkedIn, Shorts, and Reels. No tailoring required: paste or upload a résumé and generate a video anytime.</p>
+        </div>
+
+        <div class="input-section">
+          <div class="input-group">
+            <label class="input-label" for="videoName">Your Name <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — overrides the name read from the résumé)</span></label>
+            <input type="text" id="videoName" class="text-input" placeholder="e.g. Jordan Mitchell" />
+          </div>
+
+          <div class="input-group" style="margin-top:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
+              <label class="input-label" for="videoResume" style="margin:0;">Your Résumé</label>
+              <span style="display:flex;gap:8px;">
+                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyTailorResumeToVideo()">Use my Tailor résumé</button>
+                <button class="upload-btn" id="videoUploadBtn" onclick="document.getElementById('videoResumeFileInput').click()">⬆ Upload File</button>
+              </span>
+              <input type="file" id="videoResumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleVideoResumeUpload(this)" />
+            </div>
+            <textarea id="videoResume" class="resume-textarea" style="min-height:220px;" placeholder="Paste your résumé text here, or upload a PDF/DOCX/TXT above.&#10;&#10;The video highlights your name, title, top achievements, and skills — so include your experience bullets and a skills section for the best result."></textarea>
+          </div>
+
+          <button class="btn btn-primary" id="videoGenBtn" onclick="generateStandaloneVideo()" style="margin-top:16px;width:100%;padding:14px;background:#e11d48;border-color:#e11d48;">
+            🎬 Generate Resume Video →
+          </button>
+          <p style="font-size:12px;color:#6b7280;margin-top:10px;text-align:center;">Rendering takes ~30–60 seconds. Subscribers get the studio-quality (ElevenLabs) voiceover.</p>
+        </div>
+
+        <!-- Upgrade gate for non-subscribers -->
+        <div class="upsell" id="videoUpsell" style="display:none;margin-top:20px;">
+          <p>The <strong>Resume Video Maker</strong> is a Pro feature. Upgrade to create unlimited shareable resume videos with a studio voiceover — $19/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -2156,6 +2205,7 @@
       if (name === 'checkin') loadCheckIn();
       if (name === 'samples') initSamples();
       if (name === 'linkedin') updateLinkedInFreeStatus();
+      if (name === 'video') updateVideoGate();
     }
 
     // ── Mode buttons ───────────────────────────────────────────────────────────
@@ -4405,6 +4455,101 @@ Aaliyah Washington`
 
     // Render the tailored resume into a short shareable MP4 via the Remotion
     // server endpoint. Heavy + slow, so show progress and handle gating/busy.
+    // ── Standalone Resume Video Maker (Pro tab — no tailoring required) ────────
+    function updateVideoGate() {
+      const up = document.getElementById('videoUpsell');
+      const btn = document.getElementById('videoGenBtn');
+      if (!up || !btn) return;
+      if (isSubscriberFlag) {
+        up.style.display = 'none';
+        btn.innerHTML = '🎬 Generate Resume Video →';
+      } else {
+        up.style.display = 'block';
+        btn.innerHTML = '🔒 Generate Resume Video (Pro) →';
+      }
+    }
+
+    function copyTailorResumeToVideo() {
+      const tailored = (lastRawResult && selectedMode !== 'cover_letter') ? lastRawResult : '';
+      const raw = document.getElementById('resume');
+      const src = (tailored || (raw ? raw.value : '') || '').trim();
+      if (!src) { showToast('No résumé found — paste one here, or tailor a resume first.'); return; }
+      document.getElementById('videoResume').value = src;
+      showToast('Résumé copied from the Tailor tab!');
+    }
+
+    async function handleVideoResumeUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const btn = document.getElementById('videoUploadBtn');
+      btn.textContent = 'Loading…';
+      btn.disabled = true;
+      const ext = file.name.toLowerCase().split('.').pop();
+      if (ext === 'txt') {
+        const reader = new FileReader();
+        reader.onload = e => { document.getElementById('videoResume').value = e.target.result; btn.textContent = '✓ ' + file.name; btn.disabled = false; showToast('Résumé loaded!'); };
+        reader.onerror = () => { showToast('Could not read file.'); btn.textContent = '⬆ Upload File'; btn.disabled = false; };
+        reader.readAsText(file);
+        input.value = '';
+        return;
+      }
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/extract-text', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Extraction failed.');
+        document.getElementById('videoResume').value = data.text;
+        btn.textContent = '✓ ' + file.name;
+        showToast('Résumé loaded!');
+      } catch (err) {
+        showToast(err.message);
+        btn.textContent = '⬆ Upload File';
+      } finally {
+        btn.disabled = false;
+        input.value = '';
+      }
+    }
+
+    async function generateStandaloneVideo() {
+      if (!isSubscriberFlag) {
+        const up = document.getElementById('videoUpsell');
+        if (up) { up.style.display = 'block'; up.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+        return;
+      }
+      const resumeText = (document.getElementById('videoResume').value || '').trim();
+      if (!resumeText) { showToast('Paste or upload a résumé first.'); return; }
+      const name = (document.getElementById('videoName').value || '').trim();
+      const btn = document.getElementById('videoGenBtn');
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Rendering your video… (up to a minute)';
+      showToast('Generating your resume video — this can take up to a minute.');
+      try {
+        const res = await fetch('/api/resume-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resume: resumeText, name: name || undefined, email: getStoredEmail() })
+        });
+        if (res.status === 402) { const d = await res.json().catch(() => ({})); showToast(d.message || 'Upgrade to Pro to use the Resume Video Maker.'); return; }
+        if (res.status === 429) { showToast('A video is already rendering. Please try again in a moment.'); return; }
+        if (res.status === 501) { showToast('Video rendering is not enabled on the server yet.'); return; }
+        if (!res.ok) throw new Error('render failed');
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (name ? name.replace(/[^a-z0-9-_ ]/gi, '_') : 'resume') + '-video.mp4';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast('Your resume video is ready! 🎬');
+      } catch (err) {
+        showToast('Could not generate the video. Please try again.');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    }
+
     async function downloadVideo(btn) {
       if (selectedMode === 'cover_letter') { showToast('The video is generated from a tailored resume.'); return; }
       const resumeText = (lastRawResult || '').trim();
