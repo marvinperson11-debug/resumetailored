@@ -4534,7 +4534,10 @@ Aaliyah Washington`
         if (res.status === 402) { const d = await res.json().catch(() => ({})); showToast(d.message || 'Upgrade to Pro to use the Resume Video Maker.'); return; }
         if (res.status === 429) { showToast('A video is already rendering. Please try again in a moment.'); return; }
         if (res.status === 501) { showToast('Video rendering is not enabled on the server yet.'); return; }
-        if (!res.ok) throw new Error('render failed');
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(d.detail || d.error || 'render failed');
+        }
         const blob = await res.blob();
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -4543,7 +4546,7 @@ Aaliyah Washington`
         URL.revokeObjectURL(a.href);
         showToast('Your resume video is ready! 🎬');
       } catch (err) {
-        showToast('Could not generate the video. Please try again.');
+        showToast('Could not generate the video: ' + (err && err.message ? err.message : 'please try again') , 7000);
       } finally {
         btn.disabled = false;
         btn.innerHTML = orig;
@@ -4692,11 +4695,12 @@ Aaliyah Washington`
       } catch { errEl.textContent = 'Connection error. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19/mo →'; }
     }
 
-    function showToast(msg) {
+    function showToast(msg, ms) {
       const t = document.getElementById('toast');
       t.textContent = msg;
       t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 3000);
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => t.classList.remove('show'), ms || 3000);
     }
 
     // ── Page load ─────────────────────────────────────────────────────────────
