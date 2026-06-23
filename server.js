@@ -65,6 +65,20 @@ async function sendEmail({ to, subject, html, replyTo }) {
   console.log('[EMAIL] Set RESEND_API_KEY or SMTP_USER+SMTP_PASS in Railway env vars to enable real emails.');
 }
 
+// ─── Owner activity alerts ────────────────────────────────────────────────────
+// Fire-and-forget email to the site owner whenever something notable happens
+// (new signup, tailoring, new/cancelled subscription, …). Never blocks or
+// throws into the request path. Set OWNER_EMAIL to your inbox + RESEND_API_KEY
+// (or SMTP_*) in Railway for these to actually arrive. Set OWNER_ALERTS=off to
+// silence all activity alerts without touching the call sites.
+function notifyOwner(subject, html) {
+  if (process.env.OWNER_ALERTS === 'off') return;
+  const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
+  const stamp = `<p style="color:#888;font-size:12px;">Time: ${new Date().toUTCString()}</p>`;
+  sendEmail({ to: ownerEmail, subject, html: html + stamp })
+    .catch(err => console.error('[Alert] Owner notification failed:', err.message));
+}
+
 // ─── SQLite database ──────────────────────────────────────────────────────────
 // DATA_DIR defaults to ./data; set DATA_DIR=/data and mount a Railway Volume
 // at /data for full persistence across deploys.
@@ -226,6 +240,9 @@ app.post('/api/auth/signup', async (req, res) => {
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
   res.json({ token, username: cleanUsername, email: key });
+
+  notifyOwner(`[ResumeTailor] New signup: ${key}`,
+    `<p>🎉 <strong>${cleanUsername}</strong> (${key}) just created an account.</p>`);
 
   // Welcome email — fire and forget, don't block the response
   try {
@@ -1552,6 +1569,11 @@ OUTPUT: Cover Letter
     }
 
     res.json({ result: message.content[0].text });
+
+    const who = email ? email : `anonymous (${usageKey})`;
+    const what = mode === 'both' ? 'a resume + cover letter' : (mode === 'cover_letter' ? 'a cover letter' : 'a resume');
+    notifyOwner(`[ResumeTailor] Tailored: ${who}`,
+      `<p>✍️ <strong>${who}</strong> just tailored <strong>${what}</strong>${subscribed ? ' (Pro)' : ' (free tier)'}.</p>`);
   } catch (err) {
     console.error('Claude API error:', err?.status, err?.message || err);
     let userMessage = 'AI processing failed. Please try again.';
@@ -1820,13 +1842,20 @@ app.post('/webhook', (req, res) => {
       const customerId = isLifetime ? `lifetime_${email}` : session.customer;
       db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, customerId);
       console.log(`New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`);
+      const plan = isLifetime ? 'lifetime ($129)' : 'monthly ($19/mo)';
+      notifyOwner(`[ResumeTailor] 💰 New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`,
+        `<p>💰 <strong>${email}</strong> just subscribed — <strong>${plan}</strong>. Cha-ching!</p>`);
     }
   }
 
   if (event.type === 'customer.subscription.deleted') {
     const customerId = event.data.object.customer;
+    // Look up the email before deleting so we can name them in the alert
+    const row = db.prepare('SELECT email FROM subscribers WHERE customer_id = ?').get(customerId);
     db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(customerId);
     console.log(`Removed subscriber with customer_id: ${customerId}`);
+    notifyOwner(`[ResumeTailor] Subscription canceled: ${row?.email || customerId}`,
+      `<p>👋 <strong>${row?.email || `customer ${customerId}`}</strong>'s subscription was canceled.</p>`);
   }
 
   res.json({ received: true });
