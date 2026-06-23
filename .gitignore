@@ -6,6 +6,7 @@ Thumbs.db
 data/
 out/
 .remotion/
+piper-voices/
 !.claude/skills/**/data/
 !.claude/skills/**/data/**
 __pycache__/

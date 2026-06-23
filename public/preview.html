@@ -60,6 +60,11 @@
       background: linear-gradient(135deg, var(--accent), var(--primary));
     }
     button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    select {
+      background: #060c18; color: var(--text); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 12px; font-size: 13px; max-width: 60%;
+    }
     .hint { color: var(--subtext); font-size: 12px; }
     footer { text-align: center; color: var(--subtext); font-size: 12px; margin-top: 30px; }
     footer a { color: var(--accent); text-decoration: none; }
@@ -341,19 +346,51 @@
       const [text, setText] = React.useState('');
       const [status, setStatus] = React.useState('');
       const [voiceOn, setVoiceOn] = React.useState(false);
+      const [voices, setVoices] = React.useState([]);
+      const [voiceURI, setVoiceURI] = React.useState('');
       const fileRef = React.useRef(null);
       const playerRef = React.useRef(null);
       const duration = sceneFrames(props.highlights.length, FPS).total;
 
       const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+      // Load available English voices and default to the best-sounding one.
+      React.useEffect(() => {
+        if (!hasSpeech) return;
+        const pickBest = (list) => {
+          const score = (v) => {
+            const n = (v.name + ' ' + v.voiceURI).toLowerCase();
+            let s = 0;
+            if (/natural|neural|enhanced|premium|siri/.test(n)) s += 6;
+            if (/google/.test(n)) s += 4;
+            if (/samantha|allison|ava|evan|zoe|jenny|aria|guy|nova/.test(n)) s += 3;
+            if (v.lang && v.lang.toLowerCase() === 'en-us') s += 2;
+            if (!v.localService) s += 1;
+            return s;
+          };
+          return list.slice().sort((a, b) => score(b) - score(a))[0];
+        };
+        const load = () => {
+          const all = window.speechSynthesis.getVoices().filter((v) => /^en[-_]?/i.test(v.lang || ''));
+          if (!all.length) return;
+          setVoices(all);
+          setVoiceURI((prev) => prev || (pickBest(all) || {}).voiceURI || '');
+        };
+        load();
+        window.speechSynthesis.addEventListener('voiceschanged', load);
+        return () => window.speechSynthesis.removeEventListener('voiceschanged', load);
+      }, [hasSpeech]);
+
       const speak = React.useCallback(() => {
         if (!hasSpeech) return;
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(narrationScript(props));
-        u.lang = 'en-US';
+        const v = window.speechSynthesis.getVoices().find((x) => x.voiceURI === voiceURI);
+        if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
         u.rate = 1.0;
+        u.pitch = 1.0;
         window.speechSynthesis.speak(u);
-      }, [props, hasSpeech]);
+      }, [props, hasSpeech, voiceURI]);
       const stopSpeech = React.useCallback(() => { if (hasSpeech) window.speechSynthesis.cancel(); }, [hasSpeech]);
 
       // Restart narration from the top whenever the video loops/plays/seeks.
@@ -416,7 +453,12 @@
             <button class=${voiceOn ? '' : 'ghost'} onClick=${() => setVoiceOn((v) => !v)} disabled=${!hasSpeech}>
               ${voiceOn ? '🔊 Voiceover: On' : '🔈 Voiceover: Off'}
             </button>
-            <span class="hint">${hasSpeech ? 'Free browser narration — the downloadable MP4 gets its own baked-in voice.' : 'Your browser has no speech engine; the downloadable MP4 still gets voice.'}</span>
+            ${voices.length ? html`<select value=${voiceURI} onChange=${(e) => setVoiceURI(e.target.value)} title="Voice">
+              ${voices.map((v) => html`<option key=${v.voiceURI} value=${v.voiceURI}>${v.name} (${v.lang})</option>`)}
+            </select>` : null}
+          </div>
+          <div class="row" style=${{ justifyContent: 'center', marginTop: 6 }}>
+            <span class="hint">${hasSpeech ? 'Browser narration — pick the best voice your device has. The downloadable MP4 gets its own neural (Piper) voice.' : 'Your browser has no speech engine; the downloadable MP4 still gets voice.'}</span>
           </div>
           <div class="panel">
             <label for="resume">Upload or paste a tailored resume to preview your own video</label>

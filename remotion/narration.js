@@ -3,9 +3,12 @@
 // the MP4 via <Audio>. No cloud account or API key required.
 //
 // Engine selection (first available wins):
-//   1. Piper  — if PIPER_BIN + PIPER_VOICE are set (free, neural, best quality)
-//   2. espeak-ng / espeak on PATH — free, lightweight, robotic (installed via
-//      nixpacks.toml on Railway)
+//   1. Piper — natural neural voice. Used automatically when a Piper binary
+//      (PIPER_BIN, `piper` on PATH, or the `python3 -m piper` pip CLI) AND a
+//      voice model are available. The model is resolved from PIPER_VOICE, then
+//      common dirs, then best-effort downloaded (see resolvePiperVoice).
+//      nixpacks.toml installs Piper + the default voice on Railway.
+//   2. espeak-ng / espeak on PATH — free, lightweight, robotic fallback.
 // If none is available, returns null and the video renders silently.
 //
 // Disable entirely with RESUME_VIDEO_VOICE=off.
@@ -25,15 +28,75 @@ function onPath(bin) {
   }
 }
 
-// Returns { bin, args(wavPath) } for the first available engine, or null.
+function hasPiperModule() {
+  try {
+    execSync('python3 -c "import piper"', { stdio: ['ignore', 'ignore', 'ignore'] });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+const PIPER_VOICE_ID = process.env.PIPER_VOICE_ID || 'en_US-lessac-medium';
+
+// Candidate directories where a Piper .onnx voice model may live.
+function piperVoiceDirs() {
+  return [
+    process.env.PIPER_DATA_DIR,
+    path.join(process.cwd(), 'piper-voices'),
+    path.join(process.env.DATA_DIR || './data', 'piper'),
+  ].filter(Boolean);
+}
+
+// Locate the Piper voice model, downloading it once (best-effort) if absent.
+function resolvePiperVoice() {
+  if (process.env.PIPER_VOICE && fs.existsSync(process.env.PIPER_VOICE)) {
+    return process.env.PIPER_VOICE;
+  }
+  for (const dir of piperVoiceDirs()) {
+    const p = path.join(dir, `${PIPER_VOICE_ID}.onnx`);
+    if (fs.existsSync(p)) return p;
+  }
+  // Backstop: download into a writable dir (normally pre-fetched at build time).
+  if (process.env.PIPER_AUTODOWNLOAD !== 'off' && hasPiperModule()) {
+    const target = process.env.PIPER_DATA_DIR || path.join(process.env.DATA_DIR || './data', 'piper');
+    try {
+      fs.mkdirSync(target, { recursive: true });
+      const r = spawnSync('python3', ['-m', 'piper.download_voices', PIPER_VOICE_ID, '--data-dir', target], {
+        stdio: ['ignore', 'ignore', 'ignore'],
+        timeout: 180000,
+      });
+      const p = path.join(target, `${PIPER_VOICE_ID}.onnx`);
+      if (r.status === 0 && fs.existsSync(p)) return p;
+    } catch (_) {
+      /* fall through to espeak */
+    }
+  }
+  return null;
+}
+
+// Build a Piper engine descriptor if a binary + model are available.
+function piperEngine() {
+  const voice = resolvePiperVoice();
+  if (!voice) return null;
+  if (process.env.PIPER_BIN) {
+    return { name: 'piper', bin: process.env.PIPER_BIN, args: (wav) => ['--model', voice, '--output_file', wav] };
+  }
+  if (onPath('piper')) {
+    return { name: 'piper', bin: 'piper', args: (wav) => ['--model', voice, '--output_file', wav] };
+  }
+  if (hasPiperModule()) {
+    return { name: 'piper-py', bin: 'python3', args: (wav) => ['-m', 'piper', '-m', voice, '-f', wav] };
+  }
+  return null;
+}
+
+// Returns { name, bin, args(wavPath) } for the first available engine, or null.
 function pickEngine() {
   if (process.env.RESUME_VIDEO_VOICE === 'off') return null;
 
-  const piperBin = process.env.PIPER_BIN;
-  const piperVoice = process.env.PIPER_VOICE;
-  if (piperBin && piperVoice) {
-    return { name: 'piper', bin: piperBin, args: (wav) => ['--model', piperVoice, '--output_file', wav] };
-  }
+  const piper = piperEngine();
+  if (piper) return piper;
 
   const voice = process.env.ESPEAK_VOICE || 'en-us';
   if (onPath('espeak-ng')) {

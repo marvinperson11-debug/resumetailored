@@ -1,5 +1,16 @@
 [phases.setup]
 # chromium + fonts are required for Remotion server-side video rendering
 # (remotion/render.js). The renderer auto-detects the `chromium` binary on PATH.
-# espeak-ng provides the free resume-video voiceover (remotion/narration.js).
+# espeak-ng is the robotic fallback voice; Piper (below) is the good one.
 nixPkgs = ["nodejs", "python3", "gcc", "gnumake", "chromium", "fontconfig", "dejavu_fonts", "espeak-ng"]
+
+# Install Piper (natural neural TTS) + a default English voice for the resume
+# video voiceover. Every step is guarded with `|| true`: if Piper can't be set
+# up the deploy still succeeds and remotion/narration.js falls back to espeak-ng.
+[phases.piper]
+dependsOn = ["install"]
+cmds = [
+  "python3 -m ensurepip --upgrade || true",
+  "python3 -m pip install --break-system-packages --quiet piper-tts || python3 -m pip install --quiet piper-tts || true",
+  "python3 -m piper.download_voices en_US-lessac-medium --data-dir ./piper-voices || true",
+]
