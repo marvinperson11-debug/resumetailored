@@ -1248,17 +1248,17 @@
       <div class="tab-content" id="panel-samples">
         <div class="panel-header">
           <h1>Resume & Cover Letter Templates</h1>
-          <p>20 beautifully designed resume templates + 20 cover letter templates. Every style, every industry. Free members get 2 of each — Pro unlocks all 40.</p>
+          <p>56 beautifully designed resume templates + 48 cover letter templates. Every style, every industry. Free members get 2 free templates — Pro unlocks all 104.</p>
         </div>
 
         <div class="sample-toggle">
-          <button class="sample-toggle-btn active" id="toggleResumes" onclick="switchTemplateType('resume')">📄 Resume Templates (20)</button>
-          <button class="sample-toggle-btn" id="toggleCovers" onclick="switchTemplateType('cover')">✉️ Cover Letter Templates (20)</button>
+          <button class="sample-toggle-btn active" id="toggleResumes" onclick="switchTemplateType('resume')">📄 Resume Templates (56)</button>
+          <button class="sample-toggle-btn" id="toggleCovers" onclick="switchTemplateType('cover')">✉️ Cover Letter Templates (48)</button>
         </div>
 
         <div class="tpl-free-note">
-          <span>✦ <strong style="color:#f5c842;">2 free templates</strong> included — upgrade to Pro to unlock all 20 of each type.</span>
-          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">Unlock All 40 →</button>
+          <span>✦ <strong style="color:#f5c842;">2 free templates</strong> included — upgrade to Pro to unlock all 104 templates.</span>
+          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">Unlock All 104 →</button>
         </div>
 
         <div class="template-gallery-outer">
@@ -1677,11 +1677,11 @@
       var aboutNote = document.querySelector('#panel-about > div:last-of-type p'); if (aboutNote) aboutNote.textContent = isZh ? '每日1次免费定制' : '1 free tailoring per day';
       // 20. Samples panel
       var samplesH1 = document.querySelector('#panel-samples h1'); if (samplesH1) samplesH1.textContent = isZh ? '简历和求职信模板' : 'Resume & Cover Letter Templates';
-      var samplesSubP = document.querySelector('#panel-samples .panel-header p'); if (samplesSubP) samplesSubP.textContent = isZh ? '20个精美简历模板 + 20个求职信模板。涵盖各种风格和行业。免费会员各获2个——专业版解锁全部40个。' : '20 beautifully designed resume templates + 20 cover letter templates. Every style, every industry. Free members get 2 of each — Pro unlocks all 40.';
-      var toggleResumesEl = document.getElementById('toggleResumes'); if (toggleResumesEl) toggleResumesEl.textContent = isZh ? '📄 简历模板（20）' : '📄 Resume Templates (20)';
-      var toggleCoversEl = document.getElementById('toggleCovers'); if (toggleCoversEl) toggleCoversEl.textContent = isZh ? '✉️ 求职信模板（20）' : '✉️ Cover Letter Templates (20)';
+      var samplesSubP = document.querySelector('#panel-samples .panel-header p'); if (samplesSubP) samplesSubP.textContent = isZh ? '56个精美简历模板 + 48个求职信模板。涵盖各种风格和行业。免费会员获2个免费模板——专业版解锁全部104个。' : '56 beautifully designed resume templates + 48 cover letter templates. Every style, every industry. Free members get 2 free templates — Pro unlocks all 104.';
+      var toggleResumesEl = document.getElementById('toggleResumes'); if (toggleResumesEl) toggleResumesEl.textContent = isZh ? '📄 简历模板（56）' : '📄 Resume Templates (56)';
+      var toggleCoversEl = document.getElementById('toggleCovers'); if (toggleCoversEl) toggleCoversEl.textContent = isZh ? '✉️ 求职信模板（48）' : '✉️ Cover Letter Templates (48)';
       var tplFreeNote = document.querySelector('#panel-samples .tpl-free-note');
-      if (tplFreeNote) tplFreeNote.innerHTML = '<span>✦ <strong style="color:#f5c842;">' + (isZh ? '2个免费模板' : '2 free templates') + '</strong> ' + (isZh ? '已包含——升级专业版解锁每种类型全部20个。' : 'included — upgrade to Pro to unlock all 20 of each type.') + '</span><button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">' + (isZh ? '解锁全部40个 →' : 'Unlock All 40 →') + '</button>';
+      if (tplFreeNote) tplFreeNote.innerHTML = '<span>✦ <strong style="color:#f5c842;">' + (isZh ? '2个免费模板' : '2 free templates') + '</strong> ' + (isZh ? '已包含——升级专业版解锁全部104个模板。' : 'included — upgrade to Pro to unlock all 104 templates.') + '</span><button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">' + (isZh ? '解锁全部104个 →' : 'Unlock All 104 →') + '</button>';
       // 21. Cancel panel
       var cancelH1 = document.querySelector('#panel-cancel h1'); if (cancelH1) cancelH1.textContent = isZh ? '随时取消 — 无需解释' : 'Cancel Anytime — No Questions Asked';
       var cancelSubP = document.querySelector('#panel-cancel .panel-header p'); if (cancelSubP) cancelSubP.textContent = isZh ? '我们相信你只应为你喜爱的服务付费。取消订阅即时生效，简单轻松。' : 'We believe you should only pay for what you love. Canceling is instant and effortless.';
@@ -4028,7 +4028,7 @@
     }
 
     function showTplLock(){
-      showToast('Upgrade to Pro to unlock all 40 templates!');
+      showToast('Upgrade to Pro to unlock all 104 templates!');
     }
 
     function useTplTemplate(){
