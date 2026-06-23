@@ -12,6 +12,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
     "@remotion/bundler": "4.0.482",
+    "@remotion/player": "4.0.482",
     "@remotion/renderer": "4.0.482",
     "better-sqlite3": "^9.4.3",
     "cors": "^2.8.5",

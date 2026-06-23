@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Resume Video Preview · ResumeTailor AI</title>
+  <meta name="description" content="Watch the ResumeTailor AI resume video play in real time — powered by the Remotion Player, no server render required." />
+  <meta name="robots" content="noindex" />
+  <style>
+    :root {
+      --bg: #0B1220;
+      --panel: #0E1B3A;
+      --primary: #6366F1;
+      --accent: #22D3EE;
+      --text: #F8FAFC;
+      --subtext: #94A3B8;
+      --border: rgba(255,255,255,0.10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 10%, #15224a, transparent 45%),
+                  radial-gradient(circle at 85% 90%, #0c2a36, transparent 45%),
+                  var(--bg);
+      color: var(--text);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 64px; }
+    header { text-align: center; margin-bottom: 22px; }
+    .badge {
+      display: inline-block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--accent); border: 1px solid var(--border); border-radius: 999px;
+      padding: 5px 14px; margin-bottom: 14px;
+    }
+    h1 { font-size: 26px; margin: 0 0 6px; font-weight: 800; }
+    header p { color: var(--subtext); margin: 0; font-size: 14px; line-height: 1.5; }
+    .player-shell {
+      width: 100%; max-width: 360px; margin: 0 auto;
+      aspect-ratio: 9 / 16; border-radius: 22px; overflow: hidden;
+      border: 1px solid var(--border); box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+      background: var(--bg);
+    }
+    .panel {
+      margin-top: 26px; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 18px; padding: 18px;
+    }
+    .panel label { display: block; font-size: 13px; color: var(--subtext); margin-bottom: 8px; font-weight: 600; }
+    textarea {
+      width: 100%; min-height: 150px; resize: vertical;
+      background: #060c18; color: var(--text); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.5;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+    button {
+      cursor: pointer; border: none; border-radius: 12px; padding: 12px 20px;
+      font-size: 14px; font-weight: 700; color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+    }
+    button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .hint { color: var(--subtext); font-size: 12px; }
+    footer { text-align: center; color: var(--subtext); font-size: 12px; margin-top: 30px; }
+    footer a { color: var(--accent); text-decoration: none; }
+    .loading { text-align: center; color: var(--subtext); padding: 40px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="badge">Live Preview · Remotion Player</div>
+      <h1>🎬 Resume Video Preview</h1>
+      <p>This is the same animation that the server renders into a shareable MP4 — playing right here in your browser, no server render needed. Paste a tailored resume below to preview your own.</p>
+    </header>
+
+    <div id="root">
+      <div class="loading">Loading player…</div>
+    </div>
+
+    <footer>
+      Powered by <a href="https://www.remotion.dev/docs/player" target="_blank" rel="noopener">@remotion/player</a> ·
+      <a href="/app.html">Open the app →</a>
+    </footer>
+  </div>
+
+  <!-- Graceful fallback if the module never mounts (e.g. a browser without
+       import-map support, or a blocked CDN). -->
+  <script>
+    window.addEventListener('error', function () {
+      var r = document.getElementById('root');
+      if (r && /Loading player/.test(r.textContent)) {
+        r.innerHTML = '<div class="loading">Couldn\'t load the player. Use an up-to-date browser (Safari 16.4+, recent Chrome/Firefox) and check your connection.</div>';
+      }
+    });
+    setTimeout(function () {
+      var r = document.getElementById('root');
+      if (r && /Loading player/.test(r.textContent)) {
+        r.innerHTML = '<div class="loading">Still loading… if this persists, your browser may not support import maps (needs Safari 16.4+, recent Chrome/Firefox).</div>';
+      }
+    }, 12000);
+  </script>
+
+  <!-- Pin React + Remotion to the same versions the server uses (see package.json).
+       `?external=react,react-dom` makes the CDN packages share this single React
+       instance so the Remotion hooks work correctly. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@19.2.7",
+      "react/jsx-runtime": "https://esm.sh/react@19.2.7/jsx-runtime",
+      "react-dom": "https://esm.sh/react-dom@19.2.7",
+      "react-dom/client": "https://esm.sh/react-dom@19.2.7/client",
+      "remotion": "https://esm.sh/remotion@4.0.482?external=react,react-dom",
+      "@remotion/player": "https://esm.sh/@remotion/player@4.0.482?external=react,react-dom",
+      "htm": "https://esm.sh/htm@3.1.1"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { Player } from '@remotion/player';
+    import {
+      AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig, spring, interpolate,
+    } from 'remotion';
+    import htm from 'htm';
+
+    const html = htm.bind(React.createElement);
+
+    // ── Theme + timing (mirrors remotion/theme.ts + remotion/data.js) ──────────
+    const theme = {
+      bg: '#0B1220',
+      primary: '#6366F1',
+      accent: '#22D3EE',
+      text: '#F8FAFC',
+      subtext: '#94A3B8',
+      card: 'rgba(255,255,255,0.06)',
+      fontFamily:
+        'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    };
+    const FPS = 30;
+    function sceneFrames(highlightCount, fps = FPS) {
+      const intro = Math.round(2.8 * fps);
+      const perHighlight = Math.round(1.35 * fps);
+      const highlights = Math.round(1.1 * fps) + perHighlight * Math.max(highlightCount, 1);
+      const skills = Math.round(2.6 * fps);
+      const outro = Math.round(2.6 * fps);
+      return { intro, highlights, skills, outro, total: intro + highlights + skills + outro };
+    }
+    const defaultProps = {
+      name: 'Alex Morgan',
+      title: 'Senior Product Manager',
+      summary: 'Product leader who scaled a B2B SaaS platform from $2M to $18M ARR across 12 markets.',
+      highlights: [
+        'Drove $16M ARR growth by launching 3 enterprise products',
+        'Led a cross-functional team of 24 across 4 time zones',
+        'Cut churn 38% with a data-driven retention program',
+        'Shipped an AI feature adopted by 200K+ users in 90 days',
+      ],
+      skills: ['Product Strategy', 'Roadmapping', 'A/B Testing', 'SQL', 'Go-to-Market', 'OKRs', 'Figma', 'Analytics'],
+      accentColor: '#6366F1',
+      brand: 'ResumeTailor AI',
+    };
+
+    // ── Resume parser (mirrors remotion/parseResume.js) ────────────────────────
+    const BULLET_RE = /^\s*[•\-*–·▪]\s+/;
+    const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+    function isHeader(line) {
+      const t = line.trim();
+      if (!t || t.length > 34) return false;
+      if (t.replace(/[^A-Za-z]/g, '').length < 3) return false;
+      if (t !== t.toUpperCase()) return false;
+      return /^[A-Z0-9 &/]+$/.test(t);
+    }
+    function parseResume(text) {
+      const raw = String(text || '').replace(/\r/g, '').replace(/\*\*/g, '');
+      const lines = raw.split('\n');
+      const name = clean(lines.find((l) => l.trim()) || '').slice(0, 60);
+      const sections = { _head: [] };
+      let current = '_head';
+      for (const line of lines) {
+        if (isHeader(line)) { current = line.trim().toUpperCase(); sections[current] = sections[current] || []; }
+        else { sections[current].push(line); }
+      }
+      const findSection = (keys) => {
+        const k = Object.keys(sections).find((h) => keys.some((key) => h.includes(key)));
+        return k ? sections[k] : [];
+      };
+      const summary = clean(findSection(['SUMMARY', 'PROFILE']).join(' ')).slice(0, 220);
+      const expLines = findSection(['EXPERIENCE']);
+      const titleLine = expLines.find((l) => l.trim() && !BULLET_RE.test(l));
+      const title = clean((titleLine || '').split('|')[0]).slice(0, 60);
+      let bullets = lines.filter((l) => BULLET_RE.test(l)).map((l) => clean(l.replace(BULLET_RE, ''))).filter((b) => b.length > 8);
+      const quant = bullets.filter((b) => /\d/.test(b));
+      const rest = bullets.filter((b) => !/\d/.test(b));
+      const highlights = [...quant, ...rest].slice(0, 5).map((b) => b.replace(/[.;]+$/, '').slice(0, 130));
+      const skills = clean(findSection(['SKILLS']).join(', ')).split(/[,|•\n]/).map((s) => s.trim()).filter((s) => s.length > 1 && s.length < 40).slice(0, 8);
+      return {
+        name: name || defaultProps.name,
+        title: title || 'Professional',
+        summary,
+        highlights: highlights.length ? highlights : defaultProps.highlights,
+        skills: skills.length ? skills : defaultProps.skills,
+        accentColor: defaultProps.accentColor,
+        brand: defaultProps.brand,
+      };
+    }
+
+    // ── Scenes (mirror remotion/scenes/*.tsx) ──────────────────────────────────
+    const Background = ({ accent }) => {
+      const frame = useCurrentFrame();
+      const drift = interpolate(frame, [0, 600], [0, 60], { extrapolateRight: 'clamp' });
+      return html`<${AbsoluteFill} style=${{
+        backgroundColor: theme.bg,
+        backgroundImage: `radial-gradient(circle at 28% ${18 + drift / 3}%, ${accent}33, transparent 42%), radial-gradient(circle at 78% ${82 - drift / 4}%, ${theme.accent}22, transparent 48%)`,
+      }} />`;
+    };
+
+    const Intro = ({ name, title, summary, accent }) => {
+      const frame = useCurrentFrame();
+      const { fps } = useVideoConfig();
+      const rule = spring({ frame, fps, config: { damping: 200 } });
+      const nameIn = spring({ frame: frame - 4, fps, config: { damping: 200 } });
+      const titleIn = spring({ frame: frame - 12, fps, config: { damping: 200 } });
+      const sumIn = spring({ frame: frame - 22, fps, config: { damping: 200 } });
+      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90 }}>
+        <div style=${{ width: 130, height: 8, borderRadius: 4, backgroundColor: accent, marginBottom: 44, transform: `scaleX(${rule})` }} />
+        <div style=${{ fontSize: 100, fontWeight: 800, color: theme.text, textAlign: 'center', lineHeight: 1.04, opacity: nameIn, transform: `translateY(${(1 - nameIn) * 32}px)` }}>${name}</div>
+        <div style=${{ fontSize: 50, fontWeight: 600, color: accent, marginTop: 26, textAlign: 'center', opacity: titleIn, transform: `translateY(${(1 - titleIn) * 28}px)` }}>${title}</div>
+        ${summary ? html`<div style=${{ fontSize: 36, color: theme.subtext, marginTop: 44, textAlign: 'center', maxWidth: 780, lineHeight: 1.42, opacity: sumIn }}>${summary}</div>` : null}
+      <//>`;
+    };
+
+    const Highlights = ({ highlights, accent }) => {
+      const frame = useCurrentFrame();
+      const { fps } = useVideoConfig();
+      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', padding: 90 }}>
+        <div style=${{ fontSize: 38, fontWeight: 700, color: theme.subtext, letterSpacing: 6, marginBottom: 50, textTransform: 'uppercase' }}>Career Highlights</div>
+        <div style=${{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+          ${highlights.map((h, i) => {
+            const p = spring({ frame: frame - i * Math.round(0.5 * fps), fps, config: { damping: 200 } });
+            return html`<div key=${i} style=${{ display: 'flex', alignItems: 'flex-start', gap: 26, background: theme.card, border: `1px solid ${accent}40`, borderRadius: 26, padding: '30px 34px', opacity: p, transform: `translateX(${(1 - p) * -70}px)` }}>
+              <div style=${{ minWidth: 60, height: 60, borderRadius: 18, background: accent, color: '#0B1220', fontSize: 32, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>${i + 1}</div>
+              <div style=${{ fontSize: 37, color: theme.text, lineHeight: 1.34, fontWeight: 500 }}>${h}</div>
+            </div>`;
+          })}
+        </div>
+      <//>`;
+    };
+
+    const Skills = ({ skills, accent }) => {
+      const frame = useCurrentFrame();
+      const { fps } = useVideoConfig();
+      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90 }}>
+        <div style=${{ fontSize: 38, fontWeight: 700, color: theme.subtext, letterSpacing: 6, marginBottom: 50, textTransform: 'uppercase' }}>Core Skills</div>
+        <div style=${{ display: 'flex', flexWrap: 'wrap', gap: 22, justifyContent: 'center', maxWidth: 920 }}>
+          ${skills.map((s, i) => {
+            const p = spring({ frame: frame - i * 3, fps, config: { damping: 14, mass: 0.6 } });
+            return html`<div key=${i} style=${{ fontSize: 35, fontWeight: 600, color: theme.text, background: `${accent}26`, border: `1px solid ${accent}66`, borderRadius: 999, padding: '16px 36px', transform: `scale(${p})`, opacity: Math.min(p, 1) }}>${s}</div>`;
+          })}
+        </div>
+      <//>`;
+    };
+
+    const Outro = ({ brand, accent }) => {
+      const frame = useCurrentFrame();
+      const { fps } = useVideoConfig();
+      const p = spring({ frame, fps, config: { damping: 200 } });
+      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90 }}>
+        <div style=${{ fontSize: 44, color: theme.subtext, opacity: p }}>Tailored with</div>
+        <div style=${{ fontSize: 86, fontWeight: 800, color: accent, marginTop: 18, transform: `scale(${p})` }}>${brand}</div>
+        <div style=${{ marginTop: 44, fontSize: 32, color: theme.subtext, opacity: p }}>resumetailored.com</div>
+      <//>`;
+    };
+
+    const ResumeVideo = (props) => {
+      const { fps } = useVideoConfig();
+      const f = sceneFrames(props.highlights.length, fps);
+      const accent = props.accentColor || theme.primary;
+      return html`<${AbsoluteFill} style=${{ backgroundColor: theme.bg, fontFamily: theme.fontFamily }}>
+        <${Background} accent=${accent} />
+        <${Sequence} durationInFrames=${f.intro}>
+          <${Intro} name=${props.name} title=${props.title} summary=${props.summary} accent=${accent} />
+        <//>
+        <${Sequence} from=${f.intro} durationInFrames=${f.highlights}>
+          <${Highlights} highlights=${props.highlights} accent=${accent} />
+        <//>
+        <${Sequence} from=${f.intro + f.highlights} durationInFrames=${f.skills}>
+          <${Skills} skills=${props.skills} accent=${accent} />
+        <//>
+        <${Sequence} from=${f.intro + f.highlights + f.skills} durationInFrames=${f.outro}>
+          <${Outro} brand=${props.brand} accent=${accent} />
+        <//>
+      <//>`;
+    };
+
+    // ── Page app: the Player + a paste-your-resume panel ───────────────────────
+    const App = () => {
+      const [props, setProps] = React.useState(defaultProps);
+      const [text, setText] = React.useState('');
+      const duration = sceneFrames(props.highlights.length, FPS).total;
+
+      const update = () => setProps(text.trim() ? parseResume(text) : defaultProps);
+      const reset = () => { setText(''); setProps(defaultProps); };
+
+      return html`
+        <div>
+          <div class="player-shell">
+            <${Player}
+              component=${ResumeVideo}
+              inputProps=${props}
+              durationInFrames=${duration}
+              compositionWidth=${1080}
+              compositionHeight=${1920}
+              fps=${FPS}
+              controls
+              autoPlay
+              loop
+              style=${{ width: '100%', height: '100%' }}
+            />
+          </div>
+          <div class="panel">
+            <label for="resume">Paste a tailored resume to preview your own video</label>
+            <textarea id="resume" placeholder="Paste the tailored resume text from the app…" value=${text} onInput=${(e) => setText(e.target.value)}></textarea>
+            <div class="row">
+              <button onClick=${update}>▶ Update preview</button>
+              <button class="ghost" onClick=${reset}>Reset to demo</button>
+              <span class="hint">Runs entirely in your browser — nothing is uploaded.</span>
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>

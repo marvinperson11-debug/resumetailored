@@ -188,6 +188,8 @@ app.get('/dashboard',    (req, res) => res.sendFile(appHtml, _htmlUtf8));
 app.get('/login',        (req, res) => res.sendFile(appHtml, _htmlUtf8));
 app.get('/signup',       (req, res) => res.sendFile(appHtml, _htmlUtf8));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
+// Live in-browser video preview (Remotion Player — plays client-side, no render)
+app.get('/preview',      (req, res) => res.sendFile(path.join(__dirname, 'public', 'preview.html'), _htmlUtf8));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
 app.get('/blog',         (req, res) => res.sendFile(blogIndexHtml, _htmlUtf8));
 

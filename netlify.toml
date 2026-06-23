@@ -12,6 +12,12 @@
   to = "/app.html"
   status = 200
 
+# Live in-browser video preview (Remotion Player, no server render).
+[[redirects]]
+  from = "/preview"
+  to = "/preview.html"
+  status = 200
+
 [[redirects]]
   from = "/"
   to = "/index.html"
