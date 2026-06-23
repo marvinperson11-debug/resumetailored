@@ -1592,12 +1592,14 @@ app.post('/api/resume-video', async (req, res) => {
     props.name = name.trim().slice(0, 60);
   }
 
-  // Optional free voiceover (espeak-ng/Piper). Best-effort: if it can't be
-  // produced, the video just renders silently. The audio length extends the
-  // video so the whole narration is heard.
+  // Optional voiceover. Subscribers get the studio-quality ElevenLabs voice
+  // (server owner's key) when configured; free users get the local Piper/espeak
+  // voice so they don't spend ElevenLabs credits. Open it to everyone with
+  // ELEVENLABS_FREE_TIER=on. Best-effort: any failure ⇒ silent video.
   if (voice !== false) {
     try {
-      const vo = require('./remotion/narration').generateNarration(props);
+      const allowEleven = subscribed || process.env.ELEVENLABS_FREE_TIER === 'on';
+      const vo = await require('./remotion/narration').generateNarrationAsync(props, { allowEleven });
       if (vo && vo.src) {
         const { FPS } = require('./remotion/data');
         props.audioSrc = vo.src;

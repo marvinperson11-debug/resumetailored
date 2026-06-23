@@ -159,4 +159,64 @@ function generateNarration(props) {
   }
 }
 
-module.exports = { generateNarration, pickEngine };
+// ── ElevenLabs (studio-quality cloud voice) ────────────────────────────────
+// Used for the downloadable MP4 when ELEVENLABS_API_KEY is set. Uses the server
+// owner's key (one account), so the caller gates it (e.g. subscribers only) to
+// control credit spend. Falls back to the local engine on any failure.
+function elevenConfig() {
+  const key = process.env.ELEVENLABS_API_KEY;
+  if (!key) return null;
+  return {
+    key,
+    voiceId: process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM', // "Rachel"
+    model: process.env.ELEVENLABS_MODEL_ID || 'eleven_turbo_v2_5',
+  };
+}
+
+async function elevenNarration(props) {
+  const cfg = elevenConfig();
+  if (!cfg) return null;
+  const text = narrationScript(props);
+  if (!text) return null;
+
+  // with-timestamps returns the audio AND character timings, so we get an exact
+  // duration to extend the video by — and mp3 works on every ElevenLabs tier.
+  const url = `https://api.elevenlabs.io/v1/text-to-speech/${cfg.voiceId}/with-timestamps?output_format=mp3_44100_128`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'xi-api-key': cfg.key, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      text,
+      model_id: cfg.model,
+      voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+    }),
+  });
+  if (!res.ok) {
+    console.error('ElevenLabs TTS failed:', res.status, (await res.text().catch(() => '')).slice(0, 200));
+    return null;
+  }
+  const data = await res.json();
+  if (!data || !data.audio_base64) return null;
+  const ends =
+    (data.alignment && data.alignment.character_end_times_seconds) ||
+    (data.normalized_alignment && data.normalized_alignment.character_end_times_seconds) ||
+    [];
+  const seconds = ends.length ? ends[ends.length - 1] : Math.max(4, text.length / 14);
+  return { src: `data:audio/mpeg;base64,${data.audio_base64}`, seconds };
+}
+
+// Preferred entry point for the server. Tries ElevenLabs first (when allowed and
+// configured), else the local engine (Piper/espeak), else null (silent video).
+async function generateNarrationAsync(props, opts = {}) {
+  if (opts.allowEleven !== false && process.env.RESUME_VIDEO_VOICE !== 'off') {
+    try {
+      const el = await elevenNarration(props);
+      if (el) return el;
+    } catch (err) {
+      console.error('ElevenLabs narration error:', err.message);
+    }
+  }
+  return generateNarration(props);
+}
+
+module.exports = { generateNarration, generateNarrationAsync, pickEngine };
