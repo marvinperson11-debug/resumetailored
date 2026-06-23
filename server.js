@@ -1561,7 +1561,7 @@ OUTPUT: Cover Letter
 // and lazy-load the Remotion packages only when the first video is requested.
 let videoRenderInFlight = false;
 app.post('/api/resume-video', async (req, res) => {
-  const { resume, name, accentColor, email } = req.body || {};
+  const { resume, name, accentColor, email, voice } = req.body || {};
   if (!resume || !resume.trim()) {
     return res.status(400).json({ error: 'Tailored resume text is required.' });
   }
@@ -1592,10 +1592,39 @@ app.post('/api/resume-video', async (req, res) => {
     props.name = name.trim().slice(0, 60);
   }
 
+  // Optional free voiceover (espeak-ng/Piper). Best-effort: if it can't be
+  // produced, the video just renders silently. The audio length extends the
+  // video so the whole narration is heard.
+  if (voice !== false) {
+    try {
+      const vo = require('./remotion/narration').generateNarration(props);
+      if (vo && vo.src) {
+        const { FPS } = require('./remotion/data');
+        props.audioSrc = vo.src;
+        props.audioDurationInFrames = Math.ceil((vo.seconds || 0) * FPS);
+      }
+    } catch (e) {
+      console.error('Narration unavailable:', e.message);
+    }
+  }
+
   const outPath = path.join(os.tmpdir(), `resume-video-${uuidv4()}.mp4`);
   videoRenderInFlight = true;
   try {
-    await renderModule.renderResumeVideo(props, outPath);
+    try {
+      await renderModule.renderResumeVideo(props, outPath);
+    } catch (err) {
+      // If a render with audio fails, retry once without it so the user still
+      // gets a (silent) video rather than an error.
+      if (props.audioSrc) {
+        console.error('Render with audio failed, retrying silent:', err?.message || err);
+        delete props.audioSrc;
+        delete props.audioDurationInFrames;
+        await renderModule.renderResumeVideo(props, outPath);
+      } else {
+        throw err;
+      }
+    }
     if (!subscribed) consumeFreeTier(usageKey, 'video');
     res.download(outPath, 'resume-video.mp4', (err) => {
       fs.unlink(outPath, () => {});

@@ -40,4 +40,20 @@ function sceneFrames(highlightCount, fps = FPS) {
   return { intro, highlights, skills, outro, total: intro + highlights + skills + outro };
 }
 
-module.exports = { defaultResumeVideoProps, FPS, sceneFrames };
+// Spoken voiceover script derived from the resume props. Used both by the
+// server-side TTS (remotion/narration.js) and the browser preview narration
+// (public/preview.html). Kept short so it tracks the ~18s video length.
+function narrationScript(props) {
+  const p = props || {};
+  const parts = [];
+  if (p.name) parts.push(`Meet ${p.name}${p.title ? `, ${p.title}` : ''}.`);
+  if (p.summary) parts.push(p.summary);
+  const hs = (p.highlights || []).slice(0, 3);
+  if (hs.length) parts.push('Career highlights: ' + hs.map((h) => h.replace(/\s+/g, ' ').trim()).join('. ') + '.');
+  const skills = (p.skills || []).slice(0, 6);
+  if (skills.length) parts.push('Core skills include ' + skills.join(', ') + '.');
+  if (p.brand) parts.push(`Tailored with ${p.brand}.`);
+  return parts.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+module.exports = { defaultResumeVideoProps, FPS, sceneFrames, narrationScript };

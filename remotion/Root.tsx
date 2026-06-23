@@ -19,7 +19,10 @@ export const RemotionRoot: React.FC = () => {
       height={HEIGHT}
       defaultProps={defaultResumeVideoProps}
       calculateMetadata={({ props }) => ({
-        durationInFrames: sceneFrames(props.highlights.length, FPS).total,
+        durationInFrames: Math.max(
+          sceneFrames(props.highlights.length, FPS).total,
+          props.audioDurationInFrames || 0
+        ),
       })}
     />
   );

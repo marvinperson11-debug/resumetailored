@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, Sequence, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Audio, Sequence, useVideoConfig } from 'remotion';
 import { ResumeVideoProps } from './types';
 import { sceneFrames } from './data';
 import { theme } from './theme';
@@ -13,9 +13,14 @@ export const ResumeVideo: React.FC<ResumeVideoProps> = (props) => {
   const { fps } = useVideoConfig();
   const f = sceneFrames(props.highlights.length, fps);
   const accent = props.accentColor || theme.primary;
+  // Stretch the outro to fill any extra time when the voiceover runs longer
+  // than the scene timeline, so the video ends with the narration.
+  const total = Math.max(f.total, props.audioDurationInFrames || 0);
+  const outroDuration = total - (f.intro + f.highlights + f.skills);
 
   return (
     <AbsoluteFill style={{ backgroundColor: theme.bg, fontFamily: theme.fontFamily }}>
+      {props.audioSrc ? <Audio src={props.audioSrc} /> : null}
       <Background accent={accent} />
 
       <Sequence durationInFrames={f.intro} name="Intro">
@@ -41,7 +46,7 @@ export const ResumeVideo: React.FC<ResumeVideoProps> = (props) => {
 
       <Sequence
         from={f.intro + f.highlights + f.skills}
-        durationInFrames={f.outro}
+        durationInFrames={outroDuration}
         name="Outro"
       >
         <Outro brand={props.brand} accent={accent} />

@@ -1,4 +1,5 @@
 [phases.setup]
 # chromium + fonts are required for Remotion server-side video rendering
 # (remotion/render.js). The renderer auto-detects the `chromium` binary on PATH.
-nixPkgs = ["nodejs", "python3", "gcc", "gnumake", "chromium", "fontconfig", "dejavu_fonts"]
+# espeak-ng provides the free resume-video voiceover (remotion/narration.js).
+nixPkgs = ["nodejs", "python3", "gcc", "gnumake", "chromium", "fontconfig", "dejavu_fonts", "espeak-ng"]

@@ -164,6 +164,19 @@
       brand: 'ResumeTailor AI',
     };
 
+    // Voiceover script (mirrors remotion/data.js narrationScript).
+    function narrationScript(p) {
+      const parts = [];
+      if (p.name) parts.push(`Meet ${p.name}${p.title ? ', ' + p.title : ''}.`);
+      if (p.summary) parts.push(p.summary);
+      const hs = (p.highlights || []).slice(0, 3);
+      if (hs.length) parts.push('Career highlights: ' + hs.join('. ') + '.');
+      const sk = (p.skills || []).slice(0, 6);
+      if (sk.length) parts.push('Core skills include ' + sk.join(', ') + '.');
+      if (p.brand) parts.push(`Tailored with ${p.brand}.`);
+      return parts.join(' ').replace(/\s+/g, ' ').trim();
+    }
+
     // ── Resume parser (mirrors remotion/parseResume.js) ────────────────────────
     const BULLET_RE = /^\s*[•\-*–·▪]\s+/;
     const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim();
@@ -327,8 +340,41 @@
       const [props, setProps] = React.useState(defaultProps);
       const [text, setText] = React.useState('');
       const [status, setStatus] = React.useState('');
+      const [voiceOn, setVoiceOn] = React.useState(false);
       const fileRef = React.useRef(null);
+      const playerRef = React.useRef(null);
       const duration = sceneFrames(props.highlights.length, FPS).total;
+
+      const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
+      const speak = React.useCallback(() => {
+        if (!hasSpeech) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(narrationScript(props));
+        u.lang = 'en-US';
+        u.rate = 1.0;
+        window.speechSynthesis.speak(u);
+      }, [props, hasSpeech]);
+      const stopSpeech = React.useCallback(() => { if (hasSpeech) window.speechSynthesis.cancel(); }, [hasSpeech]);
+
+      // Restart narration from the top whenever the video loops/plays/seeks.
+      React.useEffect(() => {
+        const p = playerRef.current;
+        if (!p || !voiceOn) return;
+        const onPlay = () => speak();
+        const onStop = () => stopSpeech();
+        p.addEventListener('play', onPlay);
+        p.addEventListener('pause', onStop);
+        p.addEventListener('ended', onStop);
+        p.addEventListener('seeked', onStop);
+        if (typeof p.isPlaying === 'function' ? p.isPlaying() : true) speak();
+        return () => {
+          p.removeEventListener('play', onPlay);
+          p.removeEventListener('pause', onStop);
+          p.removeEventListener('ended', onStop);
+          p.removeEventListener('seeked', onStop);
+          stopSpeech();
+        };
+      }, [voiceOn, props, speak, stopSpeech]);
 
       const apply = (t) => { setText(t); setProps(t.trim() ? parseResume(t) : defaultProps); };
       const update = () => apply(text);
@@ -353,6 +399,7 @@
         <div>
           <div class="player-shell">
             <${Player}
+              ref=${playerRef}
               component=${ResumeVideo}
               inputProps=${props}
               durationInFrames=${duration}
@@ -364,6 +411,12 @@
               loop
               style=${{ width: '100%', height: '100%' }}
             />
+          </div>
+          <div class="row" style=${{ justifyContent: 'center', marginTop: 12 }}>
+            <button class=${voiceOn ? '' : 'ghost'} onClick=${() => setVoiceOn((v) => !v)} disabled=${!hasSpeech}>
+              ${voiceOn ? '🔊 Voiceover: On' : '🔈 Voiceover: Off'}
+            </button>
+            <span class="hint">${hasSpeech ? 'Free browser narration — the downloadable MP4 gets its own baked-in voice.' : 'Your browser has no speech engine; the downloadable MP4 still gets voice.'}</span>
           </div>
           <div class="panel">
             <label for="resume">Upload or paste a tailored resume to preview your own video</label>
