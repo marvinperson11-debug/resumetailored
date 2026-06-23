@@ -296,14 +296,58 @@
       <//>`;
     };
 
-    // ── Page app: the Player + a paste-your-resume panel ───────────────────────
+    // Extract plain text from an uploaded resume file, all in the browser.
+    // Parsers are loaded from the CDN on demand so the page stays light.
+    async function extractText(file) {
+      const name = (file.name || '').toLowerCase();
+      if (name.endsWith('.txt') || file.type === 'text/plain') {
+        return await file.text();
+      }
+      if (name.endsWith('.docx')) {
+        const mammoth = await import('https://esm.sh/mammoth@1.8.0?bundle');
+        const res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        return res.value || '';
+      }
+      if (name.endsWith('.pdf')) {
+        const pdfjs = await import('https://esm.sh/pdfjs-dist@4.7.76/build/pdf.min.mjs');
+        pdfjs.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
+        const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+        let out = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const content = await (await pdf.getPage(i)).getTextContent();
+          out += content.items.map((it) => it.str).join(' ') + '\n';
+        }
+        return out;
+      }
+      return await file.text();
+    }
+
+    // ── Page app: the Player + an upload / paste resume panel ───────────────────
     const App = () => {
       const [props, setProps] = React.useState(defaultProps);
       const [text, setText] = React.useState('');
+      const [status, setStatus] = React.useState('');
+      const fileRef = React.useRef(null);
       const duration = sceneFrames(props.highlights.length, FPS).total;
 
-      const update = () => setProps(text.trim() ? parseResume(text) : defaultProps);
-      const reset = () => { setText(''); setProps(defaultProps); };
+      const apply = (t) => { setText(t); setProps(t.trim() ? parseResume(t) : defaultProps); };
+      const update = () => apply(text);
+      const reset = () => { setText(''); setStatus(''); setProps(defaultProps); };
+
+      const onFile = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        setStatus('Reading ' + file.name + '…');
+        try {
+          const t = await extractText(file);
+          if (!t.trim()) { setStatus('No text found in that file — try pasting instead.'); return; }
+          apply(t);
+          setStatus('Loaded ' + file.name);
+        } catch (err) {
+          setStatus('Could not read that file. Paste the text instead.');
+        }
+      };
 
       return html`
         <div>
@@ -322,12 +366,17 @@
             />
           </div>
           <div class="panel">
-            <label for="resume">Paste a tailored resume to preview your own video</label>
-            <textarea id="resume" placeholder="Paste the tailored resume text from the app…" value=${text} onInput=${(e) => setText(e.target.value)}></textarea>
+            <label for="resume">Upload or paste a tailored resume to preview your own video</label>
+            <div class="row" style=${{ marginTop: 0, marginBottom: 12 }}>
+              <button onClick=${() => fileRef.current && fileRef.current.click()}>⬆ Upload résumé (PDF, DOCX, TXT)</button>
+              ${status ? html`<span class="hint">${status}</span>` : null}
+              <input ref=${fileRef} type="file" accept=".pdf,.docx,.txt" onChange=${onFile} style=${{ display: 'none' }} />
+            </div>
+            <textarea id="resume" placeholder="…or paste the tailored resume text from the app here" value=${text} onInput=${(e) => setText(e.target.value)}></textarea>
             <div class="row">
               <button onClick=${update}>▶ Update preview</button>
               <button class="ghost" onClick=${reset}>Reset to demo</button>
-              <span class="hint">Runs entirely in your browser — nothing is uploaded.</span>
+              <span class="hint">Runs entirely in your browser — nothing is uploaded to a server.</span>
             </div>
           </div>
         </div>
