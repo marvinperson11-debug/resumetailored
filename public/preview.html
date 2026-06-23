@@ -340,16 +340,47 @@
       return await file.text();
     }
 
+    // ── ElevenLabs pro voice (browser-direct; key kept only in localStorage) ────
+    const EL_MODEL = 'eleven_turbo_v2_5';
+    async function elevenVoices(key) {
+      const r = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key } });
+      if (!r.ok) throw new Error(r.status === 401 ? 'Invalid API key' : 'Could not load voices (' + r.status + ')');
+      const d = await r.json();
+      return (d.voices || []).map((v) => ({ id: v.voice_id, name: v.name }));
+    }
+    async function elevenTts(key, voiceId, text) {
+      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
+        method: 'POST',
+        headers: { 'xi-api-key': key, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
+        body: JSON.stringify({ text, model_id: EL_MODEL, voice_settings: { stability: 0.5, similarity_boost: 0.75 } }),
+      });
+      if (!r.ok) {
+        let msg = 'ElevenLabs error ' + r.status;
+        if (r.status === 401) msg = 'Invalid API key';
+        else if (r.status === 422) msg = 'Voice or text rejected';
+        else if (r.status === 429) msg = 'Rate limited / quota reached';
+        throw new Error(msg);
+      }
+      return await r.blob();
+    }
+
     // ── Page app: the Player + an upload / paste resume panel ───────────────────
     const App = () => {
       const [props, setProps] = React.useState(defaultProps);
       const [text, setText] = React.useState('');
       const [status, setStatus] = React.useState('');
       const [voiceOn, setVoiceOn] = React.useState(false);
+      const [voiceSource, setVoiceSource] = React.useState('browser'); // 'browser' | 'eleven'
       const [voices, setVoices] = React.useState([]);
       const [voiceURI, setVoiceURI] = React.useState('');
+      const [elKey, setElKey] = React.useState(() => { try { return localStorage.getItem('el_key') || ''; } catch (_) { return ''; } });
+      const [elVoices, setElVoices] = React.useState([]);
+      const [elVoiceId, setElVoiceId] = React.useState('');
+      const [elStatus, setElStatus] = React.useState('');
       const fileRef = React.useRef(null);
       const playerRef = React.useRef(null);
+      const audioRef = React.useRef(null);
+      const elCacheRef = React.useRef({ sig: '', url: '' });
       const duration = sceneFrames(props.highlights.length, FPS).total;
 
       const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
@@ -381,6 +412,22 @@
         return () => window.speechSynthesis.removeEventListener('voiceschanged', load);
       }, [hasSpeech]);
 
+      // Load ElevenLabs voices whenever a key is present.
+      React.useEffect(() => {
+        if (!elKey) { setElVoices([]); return; }
+        let cancelled = false;
+        setElStatus('Loading voices…');
+        elevenVoices(elKey)
+          .then((vs) => {
+            if (cancelled) return;
+            setElVoices(vs);
+            setElVoiceId((prev) => prev || (vs[0] && vs[0].id) || '');
+            setElStatus(vs.length ? 'Loaded ' + vs.length + ' voices ✓' : 'No voices on this account');
+          })
+          .catch((e) => { if (!cancelled) setElStatus(e.message); });
+        return () => { cancelled = true; };
+      }, [elKey]);
+
       const speak = React.useCallback(() => {
         if (!hasSpeech) return;
         window.speechSynthesis.cancel();
@@ -391,27 +438,68 @@
         u.pitch = 1.0;
         window.speechSynthesis.speak(u);
       }, [props, hasSpeech, voiceURI]);
-      const stopSpeech = React.useCallback(() => { if (hasSpeech) window.speechSynthesis.cancel(); }, [hasSpeech]);
+
+      const getAudio = () => { if (!audioRef.current) audioRef.current = new Audio(); return audioRef.current; };
+
+      // Generate (and cache) the ElevenLabs MP3 for the current script + voice.
+      const ensureElevenUrl = React.useCallback(async () => {
+        const t = narrationScript(props);
+        const sig = elVoiceId + '|' + t;
+        if (elCacheRef.current.sig === sig && elCacheRef.current.url) return elCacheRef.current.url;
+        setElStatus('Generating pro voice…');
+        const blob = await elevenTts(elKey, elVoiceId, t);
+        const url = URL.createObjectURL(blob);
+        if (elCacheRef.current.url) URL.revokeObjectURL(elCacheRef.current.url);
+        elCacheRef.current = { sig, url };
+        setElStatus('Pro voice ready ✓');
+        return url;
+      }, [props, elKey, elVoiceId]);
+
+      const startNarration = React.useCallback(async () => {
+        if (voiceSource === 'eleven' && elKey && elVoiceId) {
+          try {
+            const url = await ensureElevenUrl();
+            const a = getAudio();
+            a.src = url;
+            a.currentTime = 0;
+            await a.play();
+          } catch (e) { setElStatus(e.message || 'Pro voice failed'); }
+        } else {
+          speak();
+        }
+      }, [voiceSource, elKey, elVoiceId, ensureElevenUrl, speak]);
+
+      const stopNarration = React.useCallback(() => {
+        if (hasSpeech) window.speechSynthesis.cancel();
+        if (audioRef.current) audioRef.current.pause();
+      }, [hasSpeech]);
 
       // Restart narration from the top whenever the video loops/plays/seeks.
       React.useEffect(() => {
         const p = playerRef.current;
         if (!p || !voiceOn) return;
-        const onPlay = () => speak();
-        const onStop = () => stopSpeech();
+        const onPlay = () => startNarration();
+        const onStop = () => stopNarration();
         p.addEventListener('play', onPlay);
         p.addEventListener('pause', onStop);
         p.addEventListener('ended', onStop);
         p.addEventListener('seeked', onStop);
-        if (typeof p.isPlaying === 'function' ? p.isPlaying() : true) speak();
+        startNarration();
         return () => {
           p.removeEventListener('play', onPlay);
           p.removeEventListener('pause', onStop);
           p.removeEventListener('ended', onStop);
           p.removeEventListener('seeked', onStop);
-          stopSpeech();
+          stopNarration();
         };
-      }, [voiceOn, props, speak, stopSpeech]);
+      }, [voiceOn, voiceSource, props, voiceURI, elVoiceId, elKey, startNarration, stopNarration]);
+
+      const saveKey = (k) => {
+        const v = (k || '').trim();
+        setElKey(v);
+        try { v ? localStorage.setItem('el_key', v) : localStorage.removeItem('el_key'); } catch (_) {}
+        elCacheRef.current = { sig: '', url: '' };
+      };
 
       const apply = (t) => { setText(t); setProps(t.trim() ? parseResume(t) : defaultProps); };
       const update = () => apply(text);
@@ -450,16 +538,37 @@
             />
           </div>
           <div class="row" style=${{ justifyContent: 'center', marginTop: 12 }}>
-            <button class=${voiceOn ? '' : 'ghost'} onClick=${() => setVoiceOn((v) => !v)} disabled=${!hasSpeech}>
+            <button class=${voiceOn ? '' : 'ghost'} onClick=${() => setVoiceOn((v) => !v)} disabled=${!hasSpeech && !elKey}>
               ${voiceOn ? '🔊 Voiceover: On' : '🔈 Voiceover: Off'}
             </button>
-            ${voices.length ? html`<select value=${voiceURI} onChange=${(e) => setVoiceURI(e.target.value)} title="Voice">
+            <select value=${voiceSource} onChange=${(e) => setVoiceSource(e.target.value)} title="Voice source">
+              <option value="browser">Device voice (free)</option>
+              <option value="eleven">Pro voice — ElevenLabs</option>
+            </select>
+            ${voiceSource === 'browser' && voices.length ? html`<select value=${voiceURI} onChange=${(e) => setVoiceURI(e.target.value)} title="Device voice">
               ${voices.map((v) => html`<option key=${v.voiceURI} value=${v.voiceURI}>${v.name} (${v.lang})</option>`)}
             </select>` : null}
+            ${voiceSource === 'eleven' && elVoices.length ? html`<select value=${elVoiceId} onChange=${(e) => { setElVoiceId(e.target.value); elCacheRef.current = { sig: '', url: '' }; }} title="ElevenLabs voice">
+              ${elVoices.map((v) => html`<option key=${v.id} value=${v.id}>${v.name}</option>`)}
+            </select>` : null}
           </div>
+          ${voiceSource === 'eleven' ? html`
+          <div class="panel" style=${{ marginTop: 14 }}>
+            <label>🎙 Pro voice — ElevenLabs API key</label>
+            <div class="row" style=${{ marginTop: 0 }}>
+              <input type="password" placeholder="Paste your ElevenLabs API key" value=${elKey}
+                onInput=${(e) => setElKey(e.target.value)} onBlur=${(e) => saveKey(e.target.value)}
+                style=${{ flex: '1 1 220px', background: '#060c18', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 12px', fontSize: 13 }} />
+              <button onClick=${() => saveKey(elKey)}>Save key</button>
+              <button class="ghost" onClick=${() => { setVoiceOn(true); startNarration(); }} disabled=${!elKey || !elVoiceId}>▶ Test</button>
+            </div>
+            <div class="row" style=${{ marginTop: 8 }}>
+              <span class="hint">${elStatus || 'Your key is stored only in this browser and sent only to ElevenLabs. Get a free key at elevenlabs.io → Profile → API key.'}</span>
+            </div>
+          </div>` : html`
           <div class="row" style=${{ justifyContent: 'center', marginTop: 6 }}>
-            <span class="hint">${hasSpeech ? 'Browser narration — pick the best voice your device has. The downloadable MP4 gets its own neural (Piper) voice.' : 'Your browser has no speech engine; the downloadable MP4 still gets voice.'}</span>
-          </div>
+            <span class="hint">${hasSpeech ? 'Free device voice. Switch to “Pro voice — ElevenLabs” for a studio-quality voice.' : 'No device speech engine — switch to the Pro voice.'}</span>
+          </div>`}
           <div class="panel">
             <label for="resume">Upload or paste a tailored resume to preview your own video</label>
             <div class="row" style=${{ marginTop: 0, marginBottom: 12 }}>
