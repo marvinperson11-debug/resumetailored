@@ -22,8 +22,26 @@ Everything lives in two places:
 
 - **`server.js`** — the entire backend: Express app, all API routes, Stripe webhooks, Claude API calls, auth, file parsing, and .docx generation.
 - **`public/`** — static frontend: `index.html` (landing page), `app.html` (main dashboard SPA), `style.css`, and post-payment pages.
+- **`remotion/`** — the only TypeScript/React in the repo: a self-contained [Remotion](https://www.remotion.dev/docs) project that renders a tailored resume into a short MP4 (see "Resume video" below).
 
-There is no build step. The frontend is plain HTML/CSS/JS with no framework. `app.html` is a single-page app where tabs are shown/hidden via `showTab()` without any routing.
+There is no build step for the web app. The frontend is plain HTML/CSS/JS with no framework. `app.html` is a single-page app where tabs are shown/hidden via `showTab()` without any routing. Remotion is the one exception — it has its own TSX compositions, compiled on demand by Remotion's own bundler (not by the web app).
+
+## Resume video (Remotion)
+
+A tailored resume can be turned into a short vertical MP4 (1080×1920, ~18s) for sharing on LinkedIn / Shorts / Reels. This is the only React/TypeScript in the codebase.
+
+- **`remotion/`** — the Remotion project:
+  - `index.ts` → `registerRoot`; `Root.tsx` declares the single `ResumeVideo` composition (duration derived from highlight count via `calculateMetadata`).
+  - `ResumeVideo.tsx` + `scenes/` (`Background`, `Intro`, `Highlights`, `Skills`, `Outro`) — the animated scenes.
+  - `data.js` — **CommonJS** single source of truth for default props + scene timing (`sceneFrames`), shared by both the TSX (via webpack CJS interop) and the Node server. `types.ts` holds only the `ResumeVideoProps` type.
+  - `parseResume.js` — converts the plain-text tailor output into `ResumeVideoProps` (name, title, summary, top-5 highlights preferring quantified bullets, skills).
+  - `render.js` — server-side renderer: `bundle()` once (cached) + `selectComposition()` + `renderMedia()`. Auto-detects a system `chromium` on PATH (or `REMOTION_BROWSER_EXECUTABLE`), else downloads Remotion's headless shell.
+  - `narration.js` — voiceover for the MP4. `generateNarrationAsync` tries, in order: **ElevenLabs** (studio-quality, when `ELEVENLABS_API_KEY` is set — uses the `/with-timestamps` endpoint for an mp3 + exact duration), then the local engine **Piper** (natural neural voice; Piper binary via `PIPER_BIN`/PATH/`python3 -m piper` + a voice model resolved from `PIPER_VOICE`/common dirs or best-effort downloaded), then **espeak-ng** (robotic), else silent. The script comes from `narrationScript` in `data.js`. `nixpacks.toml` installs Piper + the `en_US-lessac-medium` voice on Railway (guarded with `|| true`). The composition muxes the audio via `<Audio>` and extends to fit (`audioDurationInFrames`). The `/api/resume-video` route gates ElevenLabs to **subscribers** by default (`ELEVENLABS_FREE_TIER=on` opens it to all); `RESUME_VIDEO_VOICE=off` disables voice. Best-effort throughout: any failure ⇒ silent video, and the route retries silently if an audio render fails.
+- **Endpoint**: `POST /api/resume-video` (`server.js`) takes `{ resume, name?, accentColor?, email }`, gated like other features (subscribers unlimited; free tier = 1/day via the `video` usage key). It renders one video at a time (`videoRenderInFlight` lock → 429 if busy), streams the MP4, and deletes the temp file. The heavy Remotion packages are `require()`d lazily inside the handler, so the server boots even if they aren't installed (route returns 501).
+- **Frontend**: a "🎬 Resume Video" button in `renderPreviewDownloadButtons()` (`app.html`, hidden for cover-letter-only mode) calls `downloadVideo()`.
+- **Web preview (no server render)**: `public/preview.html` (served at `/preview`) plays the composition live in the browser via [`@remotion/player`](https://www.remotion.dev/docs/player), loaded from esm.sh with React pinned through an import map — so it works on static hosting (Netlify deploy previews, mobile) with no Chromium. Supports **upload (PDF/DOCX/TXT, parsed client-side)** or paste, plus a voiceover synced to the player: a free **device voice** (Web Speech API, with a voice picker) or a **pro voice via ElevenLabs** (browser-direct — the user pastes their own API key, kept only in `localStorage` and sent only to ElevenLabs; no server key involved). Its scenes/parser/narration **mirror** the TSX + `data.js` in `remotion/` (kept deliberately in sync); the server-rendered MP4 remains the source of truth.
+- **Local dev**: `npm run remotion:studio` (live preview/editor) and `npm run remotion:render` (CLI render to `out/`).
+- **Deploy**: rendering needs Chromium + fonts. `nixpacks.toml` installs `chromium`, `fontconfig`, `dejavu_fonts`; the renderer auto-detects the binary. Rendering is CPU-heavy — keep the one-at-a-time lock.
 
 ## Persistent state (SQLite)
 
@@ -33,7 +51,7 @@ Tables (all created with `CREATE TABLE IF NOT EXISTS` at startup):
 
 | Table | What it tracks |
 |---|---|
-| `usage_store` | Free-tier usage counts, keyed by `${ip}_${date}_${type}` (`count`) |
+| `usage_store` | Free-tier usage counts, keyed by `${ip}_${date}_${type}` (`count`); `type` ∈ `resume`, `cover_letter`, `translate`, `video`, … |
 | `subscribers` | Active Stripe subscribers (`email` PK, `customer_id`) |
 | `users` | User accounts (`email` PK, `username`, SHA-256 `password_hash`) |
 | `sessions` | Auth tokens (`token` PK → `email`) |

@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Resume Video Preview · ResumeTailor AI</title>
+  <meta name="description" content="Watch the ResumeTailor AI resume video play in real time — powered by the Remotion Player, no server render required." />
+  <meta name="robots" content="noindex" />
+  <style>
+    :root {
+      --bg: #0B1220;
+      --panel: #0E1B3A;
+      --primary: #6366F1;
+      --accent: #22D3EE;
+      --text: #F8FAFC;
+      --subtext: #94A3B8;
+      --border: rgba(255,255,255,0.10);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 20% 10%, #15224a, transparent 45%),
+                  radial-gradient(circle at 85% 90%, #0c2a36, transparent 45%),
+                  var(--bg);
+      color: var(--text);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 64px; }
+    header { text-align: center; margin-bottom: 22px; }
+    .badge {
+      display: inline-block; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--accent); border: 1px solid var(--border); border-radius: 999px;
+      padding: 5px 14px; margin-bottom: 14px;
+    }
+    h1 { font-size: 26px; margin: 0 0 6px; font-weight: 800; }
+    header p { color: var(--subtext); margin: 0; font-size: 14px; line-height: 1.5; }
+    .player-shell {
+      width: 100%; max-width: 360px; margin: 0 auto;
+      aspect-ratio: 9 / 16; border-radius: 22px; overflow: hidden;
+      border: 1px solid var(--border); box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+      background: var(--bg);
+    }
+    .panel {
+      margin-top: 26px; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 18px; padding: 18px;
+    }
+    .panel label { display: block; font-size: 13px; color: var(--subtext); margin-bottom: 8px; font-weight: 600; }
+    textarea {
+      width: 100%; min-height: 150px; resize: vertical;
+      background: #060c18; color: var(--text); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.5;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+    button {
+      cursor: pointer; border: none; border-radius: 12px; padding: 12px 20px;
+      font-size: 14px; font-weight: 700; color: #fff;
+      background: linear-gradient(135deg, var(--accent), var(--primary));
+    }
+    button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    select {
+      background: #060c18; color: var(--text); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 12px; font-size: 13px; max-width: 60%;
+    }
+    .hint { color: var(--subtext); font-size: 12px; }
+    footer { text-align: center; color: var(--subtext); font-size: 12px; margin-top: 30px; }
+    footer a { color: var(--accent); text-decoration: none; }
+    .loading { text-align: center; color: var(--subtext); padding: 40px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="badge">Live Preview · Remotion Player</div>
+      <h1>🎬 Resume Video Preview</h1>
+      <p>This is the same animation that the server renders into a shareable MP4 — playing right here in your browser, no server render needed. Paste a tailored resume below to preview your own.</p>
+    </header>
+
+    <div id="root">
+      <div class="loading">Loading player…</div>
+    </div>
+
+    <footer>
+      Powered by <a href="https://www.remotion.dev/docs/player" target="_blank" rel="noopener">@remotion/player</a> ·
+      <a href="/app.html">Open the app →</a>
+    </footer>
+  </div>
+
+  <!-- Graceful fallback if the module never mounts (e.g. a browser without
+       import-map support, or a blocked CDN). -->
+  <script>
+    window.addEventListener('error', function () {
+      var r = document.getElementById('root');
+      if (r && /Loading player/.test(r.textContent)) {
+        r.innerHTML = '<div class="loading">Couldn\'t load the player. Use an up-to-date browser (Safari 16.4+, recent Chrome/Firefox) and check your connection.</div>';
+      }
+    });
+    setTimeout(function () {
+      var r = document.getElementById('root');
+      if (r && /Loading player/.test(r.textContent)) {
+        r.innerHTML = '<div class="loading">Still loading… if this persists, your browser may not support import maps (needs Safari 16.4+, recent Chrome/Firefox).</div>';
+      }
+    }, 12000);
+  </script>
+
+  <!-- Pin React + Remotion to the same versions the server uses (see package.json).
+       `?external=react,react-dom` makes the CDN packages share this single React
+       instance so the Remotion hooks work correctly. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@19.2.7",
+      "react/jsx-runtime": "https://esm.sh/react@19.2.7/jsx-runtime",
+      "react-dom": "https://esm.sh/react-dom@19.2.7",
+      "react-dom/client": "https://esm.sh/react-dom@19.2.7/client",
+      "remotion": "https://esm.sh/remotion@4.0.482?external=react,react-dom",
+      "@remotion/player": "https://esm.sh/@remotion/player@4.0.482?external=react,react-dom",
+      "htm": "https://esm.sh/htm@3.1.1"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { Player } from '@remotion/player';
+    import {
+      AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig, spring, interpolate,
+    } from 'remotion';
+    import htm from 'htm';
+
+    const html = htm.bind(React.createElement);
+
+    // ── Theme + timing (mirrors remotion/theme.ts + remotion/data.js) ──────────
+    const theme = {
+      bg: '#0B1220',
+      primary: '#6366F1',
+      accent: '#22D3EE',
+      text: '#F8FAFC',
+      subtext: '#94A3B8',
+      card: 'rgba(255,255,255,0.06)',
+      fontFamily:
+        'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    };
+    const FPS = 30;
+    function sceneFrames(highlightCount, fps = FPS) {
+      const intro = Math.round(2.8 * fps);
+      const perHighlight = Math.round(1.35 * fps);
+      const highlights = Math.round(1.1 * fps) + perHighlight * Math.max(highlightCount, 1);
+      const skills = Math.round(2.6 * fps);
+      const outro = Math.round(2.6 * fps);
+      return { intro, highlights, skills, outro, total: intro + highlights + skills + outro };
+    }
+    const defaultProps = {
+      name: 'Alex Morgan',
+      title: 'Senior Product Manager',
+      summary: 'Product leader who scaled a B2B SaaS platform from $2M to $18M ARR across 12 markets.',
+      highlights: [
+        'Drove $16M ARR growth by launching 3 enterprise products',
+        'Led a cross-functional team of 24 across 4 time zones',
+        'Cut churn 38% with a data-driven retention program',
+        'Shipped an AI feature adopted by 200K+ users in 90 days',
+      ],
+      skills: ['Product Strategy', 'Roadmapping', 'A/B Testing', 'SQL', 'Go-to-Market', 'OKRs', 'Figma', 'Analytics'],
+      accentColor: '#6366F1',
+      brand: 'ResumeTailor AI',
+    };
+
+    // Voiceover script (mirrors remotion/data.js narrationScript).
+    function narrationScript(p) {
+      const parts = [];
+      if (p.name) parts.push(`Meet ${p.name}${p.title ? ', ' + p.title : ''}.`);
+      if (p.summary) parts.push(p.summary);
+      const hs = (p.highlights || []).slice(0, 3);
+      if (hs.length) parts.push('Career highlights: ' + hs.join('. ') + '.');
+      const sk = (p.skills || []).slice(0, 6);
+      if (sk.length) parts.push('Core skills include ' + sk.join(', ') + '.');
+      if (p.brand) parts.push(`Tailored with ${p.brand}.`);
+      return parts.join(' ').replace(/\s+/g, ' ').trim();
+    }
+
+    // ── Resume parser (mirrors remotion/parseResume.js) ────────────────────────
+    const BULLET_RE = /^\s*[•\-*–·▪]\s+/;
+    const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+    function isHeader(line) {
+      const t = line.trim();
+      if (!t || t.length > 34) return false;
+      if (t.replace(/[^A-Za-z]/g, '').length < 3) return false;
+      if (t !== t.toUpperCase()) return false;
+      return /^[A-Z0-9 &/]+$/.test(t);
+    }
+    function parseResume(text) {
+      const raw = String(text || '').replace(/\r/g, '').replace(/\*\*/g, '');
+      const lines = raw.split('\n');
+      const name = clean(lines.find((l) => l.trim()) || '').slice(0, 60);
+      const sections = { _head: [] };
+      let current = '_head';
+      for (const line of lines) {
+        if (isHeader(line)) { current = line.trim().toUpperCase(); sections[current] = sections[current] || []; }
+        else { sections[current].push(line); }
+      }
+      const findSection = (keys) => {
+        const k = Object.keys(sections).find((h) => keys.some((key) => h.includes(key)));
+        return k ? sections[k] : [];
+      };
+      const summary = clean(findSection(['SUMMARY', 'PROFILE']).join(' ')).slice(0, 220);
+      const expLines = findSection(['EXPERIENCE']);
+      const titleLine = expLines.find((l) => l.trim() && !BULLET_RE.test(l));
+      const title = clean((titleLine || '').split('|')[0]).slice(0, 60);
+      let bullets = lines.filter((l) => BULLET_RE.test(l)).map((l) => clean(l.replace(BULLET_RE, ''))).filter((b) => b.length > 8);
+      const quant = bullets.filter((b) => /\d/.test(b));
+      const rest = bullets.filter((b) => !/\d/.test(b));
+      const highlights = [...quant, ...rest].slice(0, 5).map((b) => b.replace(/[.;]+$/, '').slice(0, 130));
+      const skills = clean(findSection(['SKILLS']).join(', ')).split(/[,|•\n]/).map((s) => s.trim()).filter((s) => s.length > 1 && s.length < 40).slice(0, 8);
+      return {
+        name: name || defaultProps.name,
+        title: title || 'Professional',
+        summary,
+        highlights: highlights.length ? highlights : defaultProps.highlights,
+        skills: skills.length ? skills : defaultProps.skills,
+        accentColor: defaultProps.accentColor,
+        brand: defaultProps.brand,
+      };
+    }
+
+    // ── Scenes (mirror remotion/scenes/*.tsx) ──────────────────────────────────
+    const Background = ({ accent }) => {
+      const frame = useCurrentFrame();
+      const drift = interpolate(frame, [0, 600], [0, 60], { extrapolateRight: 'clamp' });
+      return html`<${AbsoluteFill} style=${{
+        backgroundColor: theme.bg,
+        backgroundImage: `radial-gradient(circle at 28% ${18 + drift / 3}%, ${accent}33, transparent 42%), radial-gradient(circle at 78% ${82 - drift / 4}%, ${theme.accent}22, transparent 48%)`,
+      }} />`;
+    };
+
+    const Intro = ({ name, title, summary, accent }) => {
+      const frame = useCurrentFrame();
+      const { fps } = useVideoConfig();
+      const rule = spring({ frame, fps, config: { damping: 200 } });
+      const nameIn = spring({ frame: frame - 4, fps, config: { damping: 200 } });
+      const titleIn = spring({ frame: frame - 12, fps, config: { damping: 200 } });
+      const sumIn = spring({ frame: frame - 22, fps, config: { damping: 200 } });
+      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90 }}>
+        <div style=${{ width: 130, height: 8, borderRadius: 4, backgroundColor: accent, marginBottom: 44, transform: `scaleX(${rule})` }} />
+        <div style=${{ fontSize: 100, fontWeight: 800, color: theme.text, textAlign: 'center', lineHeight: 1.04, opacity: nameIn, transform: `translateY(${(1 - nameIn) * 32}px)` }}>${name}</div>
+        <div style=${{ fontSize: 50, fontWeight: 600, color: accent, marginTop: 26, textAlign: 'center', opacity: titleIn, transform: `translateY(${(1 - titleIn) * 28}px)` }}>${title}</div>
+        ${summary ? html`<div style=${{ fontSize: 36, color: theme.subtext, marginTop: 44, textAlign: 'center', maxWidth: 780, lineHeight: 1.42, opacity: sumIn }}>${summary}</div>` : null}
+      <//>`;
+    };
+
+    const Highlights = ({ highlights, accent }) => {
+      const frame = useCurrentFrame();
+      const { fps } = useVideoConfig();
+      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', padding: 90 }}>
+        <div style=${{ fontSize: 38, fontWeight: 700, color: theme.subtext, letterSpacing: 6, marginBottom: 50, textTransform: 'uppercase' }}>Career Highlights</div>
+        <div style=${{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+          ${highlights.map((h, i) => {
+            const p = spring({ frame: frame - i * Math.round(0.5 * fps), fps, config: { damping: 200 } });
+            return html`<div key=${i} style=${{ display: 'flex', alignItems: 'flex-start', gap: 26, background: theme.card, border: `1px solid ${accent}40`, borderRadius: 26, padding: '30px 34px', opacity: p, transform: `translateX(${(1 - p) * -70}px)` }}>
+              <div style=${{ minWidth: 60, height: 60, borderRadius: 18, background: accent, color: '#0B1220', fontSize: 32, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>${i + 1}</div>
+              <div style=${{ fontSize: 37, color: theme.text, lineHeight: 1.34, fontWeight: 500 }}>${h}</div>
+            </div>`;
+          })}
+        </div>
+      <//>`;
+    };
+
+    const Skills = ({ skills, accent }) => {
+      const frame = useCurrentFrame();
+      const { fps } = useVideoConfig();
+      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90 }}>
+        <div style=${{ fontSize: 38, fontWeight: 700, color: theme.subtext, letterSpacing: 6, marginBottom: 50, textTransform: 'uppercase' }}>Core Skills</div>
+        <div style=${{ display: 'flex', flexWrap: 'wrap', gap: 22, justifyContent: 'center', maxWidth: 920 }}>
+          ${skills.map((s, i) => {
+            const p = spring({ frame: frame - i * 3, fps, config: { damping: 14, mass: 0.6 } });
+            return html`<div key=${i} style=${{ fontSize: 35, fontWeight: 600, color: theme.text, background: `${accent}26`, border: `1px solid ${accent}66`, borderRadius: 999, padding: '16px 36px', transform: `scale(${p})`, opacity: Math.min(p, 1) }}>${s}</div>`;
+          })}
+        </div>
+      <//>`;
+    };
+
+    const Outro = ({ brand, accent }) => {
+      const frame = useCurrentFrame();
+      const { fps } = useVideoConfig();
+      const p = spring({ frame, fps, config: { damping: 200 } });
+      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90 }}>
+        <div style=${{ fontSize: 44, color: theme.subtext, opacity: p }}>Tailored with</div>
+        <div style=${{ fontSize: 86, fontWeight: 800, color: accent, marginTop: 18, transform: `scale(${p})` }}>${brand}</div>
+        <div style=${{ marginTop: 44, fontSize: 32, color: theme.subtext, opacity: p }}>resumetailored.com</div>
+      <//>`;
+    };
+
+    const ResumeVideo = (props) => {
+      const { fps } = useVideoConfig();
+      const f = sceneFrames(props.highlights.length, fps);
+      const accent = props.accentColor || theme.primary;
+      return html`<${AbsoluteFill} style=${{ backgroundColor: theme.bg, fontFamily: theme.fontFamily }}>
+        <${Background} accent=${accent} />
+        <${Sequence} durationInFrames=${f.intro}>
+          <${Intro} name=${props.name} title=${props.title} summary=${props.summary} accent=${accent} />
+        <//>
+        <${Sequence} from=${f.intro} durationInFrames=${f.highlights}>
+          <${Highlights} highlights=${props.highlights} accent=${accent} />
+        <//>
+        <${Sequence} from=${f.intro + f.highlights} durationInFrames=${f.skills}>
+          <${Skills} skills=${props.skills} accent=${accent} />
+        <//>
+        <${Sequence} from=${f.intro + f.highlights + f.skills} durationInFrames=${f.outro}>
+          <${Outro} brand=${props.brand} accent=${accent} />
+        <//>
+      <//>`;
+    };
+
+    // Extract plain text from an uploaded resume file, all in the browser.
+    // Parsers are loaded from the CDN on demand so the page stays light.
+    async function extractText(file) {
+      const name = (file.name || '').toLowerCase();
+      if (name.endsWith('.txt') || file.type === 'text/plain') {
+        return await file.text();
+      }
+      if (name.endsWith('.docx')) {
+        const mammoth = await import('https://esm.sh/mammoth@1.8.0?bundle');
+        const res = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+        return res.value || '';
+      }
+      if (name.endsWith('.pdf')) {
+        const pdfjs = await import('https://esm.sh/pdfjs-dist@4.7.76/build/pdf.min.mjs');
+        pdfjs.GlobalWorkerOptions.workerSrc = 'https://esm.sh/pdfjs-dist@4.7.76/build/pdf.worker.min.mjs';
+        const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+        let out = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const content = await (await pdf.getPage(i)).getTextContent();
+          out += content.items.map((it) => it.str).join(' ') + '\n';
+        }
+        return out;
+      }
+      return await file.text();
+    }
+
+    // ── ElevenLabs pro voice (browser-direct; key kept only in localStorage) ────
+    const EL_MODEL = 'eleven_turbo_v2_5';
+    async function elevenVoices(key) {
+      const r = await fetch('https://api.elevenlabs.io/v1/voices', { headers: { 'xi-api-key': key } });
+      if (!r.ok) throw new Error(r.status === 401 ? 'Invalid API key' : 'Could not load voices (' + r.status + ')');
+      const d = await r.json();
+      return (d.voices || []).map((v) => ({ id: v.voice_id, name: v.name }));
+    }
+    async function elevenTts(key, voiceId, text) {
+      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
+        method: 'POST',
+        headers: { 'xi-api-key': key, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
+        body: JSON.stringify({ text, model_id: EL_MODEL, voice_settings: { stability: 0.5, similarity_boost: 0.75 } }),
+      });
+      if (!r.ok) {
+        let msg = 'ElevenLabs error ' + r.status;
+        if (r.status === 401) msg = 'Invalid API key';
+        else if (r.status === 422) msg = 'Voice or text rejected';
+        else if (r.status === 429) msg = 'Rate limited / quota reached';
+        throw new Error(msg);
+      }
+      return await r.blob();
+    }
+
+    // ── Page app: the Player + an upload / paste resume panel ───────────────────
+    const App = () => {
+      const [props, setProps] = React.useState(defaultProps);
+      const [text, setText] = React.useState('');
+      const [status, setStatus] = React.useState('');
+      const [voiceOn, setVoiceOn] = React.useState(false);
+      const [voiceSource, setVoiceSource] = React.useState('browser'); // 'browser' | 'eleven'
+      const [voices, setVoices] = React.useState([]);
+      const [voiceURI, setVoiceURI] = React.useState('');
+      const [elKey, setElKey] = React.useState(() => { try { return localStorage.getItem('el_key') || ''; } catch (_) { return ''; } });
+      const [elVoices, setElVoices] = React.useState([]);
+      const [elVoiceId, setElVoiceId] = React.useState('');
+      const [elStatus, setElStatus] = React.useState('');
+      const fileRef = React.useRef(null);
+      const playerRef = React.useRef(null);
+      const audioRef = React.useRef(null);
+      const elCacheRef = React.useRef({ sig: '', url: '' });
+      const duration = sceneFrames(props.highlights.length, FPS).total;
+
+      const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+      // Load available English voices and default to the best-sounding one.
+      React.useEffect(() => {
+        if (!hasSpeech) return;
+        const pickBest = (list) => {
+          const score = (v) => {
+            const n = (v.name + ' ' + v.voiceURI).toLowerCase();
+            let s = 0;
+            if (/natural|neural|enhanced|premium|siri/.test(n)) s += 6;
+            if (/google/.test(n)) s += 4;
+            if (/samantha|allison|ava|evan|zoe|jenny|aria|guy|nova/.test(n)) s += 3;
+            if (v.lang && v.lang.toLowerCase() === 'en-us') s += 2;
+            if (!v.localService) s += 1;
+            return s;
+          };
+          return list.slice().sort((a, b) => score(b) - score(a))[0];
+        };
+        const load = () => {
+          const all = window.speechSynthesis.getVoices().filter((v) => /^en[-_]?/i.test(v.lang || ''));
+          if (!all.length) return;
+          setVoices(all);
+          setVoiceURI((prev) => prev || (pickBest(all) || {}).voiceURI || '');
+        };
+        load();
+        window.speechSynthesis.addEventListener('voiceschanged', load);
+        return () => window.speechSynthesis.removeEventListener('voiceschanged', load);
+      }, [hasSpeech]);
+
+      // Load ElevenLabs voices whenever a key is present.
+      React.useEffect(() => {
+        if (!elKey) { setElVoices([]); return; }
+        let cancelled = false;
+        setElStatus('Loading voices…');
+        elevenVoices(elKey)
+          .then((vs) => {
+            if (cancelled) return;
+            setElVoices(vs);
+            setElVoiceId((prev) => prev || (vs[0] && vs[0].id) || '');
+            setElStatus(vs.length ? 'Loaded ' + vs.length + ' voices ✓' : 'No voices on this account');
+          })
+          .catch((e) => { if (!cancelled) setElStatus(e.message); });
+        return () => { cancelled = true; };
+      }, [elKey]);
+
+      const speak = React.useCallback(() => {
+        if (!hasSpeech) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(narrationScript(props));
+        const v = window.speechSynthesis.getVoices().find((x) => x.voiceURI === voiceURI);
+        if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
+        u.rate = 1.0;
+        u.pitch = 1.0;
+        window.speechSynthesis.speak(u);
+      }, [props, hasSpeech, voiceURI]);
+
+      const getAudio = () => { if (!audioRef.current) audioRef.current = new Audio(); return audioRef.current; };
+
+      // Generate (and cache) the ElevenLabs MP3 for the current script + voice.
+      const ensureElevenUrl = React.useCallback(async () => {
+        const t = narrationScript(props);
+        const sig = elVoiceId + '|' + t;
+        if (elCacheRef.current.sig === sig && elCacheRef.current.url) return elCacheRef.current.url;
+        setElStatus('Generating pro voice…');
+        const blob = await elevenTts(elKey, elVoiceId, t);
+        const url = URL.createObjectURL(blob);
+        if (elCacheRef.current.url) URL.revokeObjectURL(elCacheRef.current.url);
+        elCacheRef.current = { sig, url };
+        setElStatus('Pro voice ready ✓');
+        return url;
+      }, [props, elKey, elVoiceId]);
+
+      const startNarration = React.useCallback(async () => {
+        if (voiceSource === 'eleven' && elKey && elVoiceId) {
+          try {
+            const url = await ensureElevenUrl();
+            const a = getAudio();
+            a.src = url;
+            a.currentTime = 0;
+            await a.play();
+          } catch (e) { setElStatus(e.message || 'Pro voice failed'); }
+        } else {
+          speak();
+        }
+      }, [voiceSource, elKey, elVoiceId, ensureElevenUrl, speak]);
+
+      const stopNarration = React.useCallback(() => {
+        if (hasSpeech) window.speechSynthesis.cancel();
+        if (audioRef.current) audioRef.current.pause();
+      }, [hasSpeech]);
+
+      // Restart narration from the top whenever the video loops/plays/seeks.
+      React.useEffect(() => {
+        const p = playerRef.current;
+        if (!p || !voiceOn) return;
+        const onPlay = () => startNarration();
+        const onStop = () => stopNarration();
+        p.addEventListener('play', onPlay);
+        p.addEventListener('pause', onStop);
+        p.addEventListener('ended', onStop);
+        p.addEventListener('seeked', onStop);
+        startNarration();
+        return () => {
+          p.removeEventListener('play', onPlay);
+          p.removeEventListener('pause', onStop);
+          p.removeEventListener('ended', onStop);
+          p.removeEventListener('seeked', onStop);
+          stopNarration();
+        };
+      }, [voiceOn, voiceSource, props, voiceURI, elVoiceId, elKey, startNarration, stopNarration]);
+
+      const saveKey = (k) => {
+        const v = (k || '').trim();
+        setElKey(v);
+        try { v ? localStorage.setItem('el_key', v) : localStorage.removeItem('el_key'); } catch (_) {}
+        elCacheRef.current = { sig: '', url: '' };
+      };
+
+      const apply = (t) => { setText(t); setProps(t.trim() ? parseResume(t) : defaultProps); };
+      const update = () => apply(text);
+      const reset = () => { setText(''); setStatus(''); setProps(defaultProps); };
+
+      const onFile = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        setStatus('Reading ' + file.name + '…');
+        try {
+          const t = await extractText(file);
+          if (!t.trim()) { setStatus('No text found in that file — try pasting instead.'); return; }
+          apply(t);
+          setStatus('Loaded ' + file.name);
+        } catch (err) {
+          setStatus('Could not read that file. Paste the text instead.');
+        }
+      };
+
+      return html`
+        <div>
+          <div class="player-shell">
+            <${Player}
+              ref=${playerRef}
+              component=${ResumeVideo}
+              inputProps=${props}
+              durationInFrames=${duration}
+              compositionWidth=${1080}
+              compositionHeight=${1920}
+              fps=${FPS}
+              controls
+              autoPlay
+              loop
+              style=${{ width: '100%', height: '100%' }}
+            />
+          </div>
+          <div class="row" style=${{ justifyContent: 'center', marginTop: 12 }}>
+            <button class=${voiceOn ? '' : 'ghost'} onClick=${() => setVoiceOn((v) => !v)} disabled=${!hasSpeech && !elKey}>
+              ${voiceOn ? '🔊 Voiceover: On' : '🔈 Voiceover: Off'}
+            </button>
+            <select value=${voiceSource} onChange=${(e) => setVoiceSource(e.target.value)} title="Voice source">
+              <option value="browser">Device voice (free)</option>
+              <option value="eleven">Pro voice — ElevenLabs</option>
+            </select>
+            ${voiceSource === 'browser' && voices.length ? html`<select value=${voiceURI} onChange=${(e) => setVoiceURI(e.target.value)} title="Device voice">
+              ${voices.map((v) => html`<option key=${v.voiceURI} value=${v.voiceURI}>${v.name} (${v.lang})</option>`)}
+            </select>` : null}
+            ${voiceSource === 'eleven' && elVoices.length ? html`<select value=${elVoiceId} onChange=${(e) => { setElVoiceId(e.target.value); elCacheRef.current = { sig: '', url: '' }; }} title="ElevenLabs voice">
+              ${elVoices.map((v) => html`<option key=${v.id} value=${v.id}>${v.name}</option>`)}
+            </select>` : null}
+          </div>
+          ${voiceSource === 'eleven' ? html`
+          <div class="panel" style=${{ marginTop: 14 }}>
+            <label>🎙 Pro voice — ElevenLabs API key</label>
+            <div class="row" style=${{ marginTop: 0 }}>
+              <input type="password" placeholder="Paste your ElevenLabs API key" value=${elKey}
+                onInput=${(e) => setElKey(e.target.value)} onBlur=${(e) => saveKey(e.target.value)}
+                style=${{ flex: '1 1 220px', background: '#060c18', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 12px', fontSize: 13 }} />
+              <button onClick=${() => saveKey(elKey)}>Save key</button>
+              <button class="ghost" onClick=${() => { setVoiceOn(true); startNarration(); }} disabled=${!elKey || !elVoiceId}>▶ Test</button>
+            </div>
+            <div class="row" style=${{ marginTop: 8 }}>
+              <span class="hint">${elStatus || 'Your key is stored only in this browser and sent only to ElevenLabs. Get a free key at elevenlabs.io → Profile → API key.'}</span>
+            </div>
+          </div>` : html`
+          <div class="row" style=${{ justifyContent: 'center', marginTop: 6 }}>
+            <span class="hint">${hasSpeech ? 'Free device voice. Switch to “Pro voice — ElevenLabs” for a studio-quality voice.' : 'No device speech engine — switch to the Pro voice.'}</span>
+          </div>`}
+          <div class="panel">
+            <label for="resume">Upload or paste a tailored resume to preview your own video</label>
+            <div class="row" style=${{ marginTop: 0, marginBottom: 12 }}>
+              <button onClick=${() => fileRef.current && fileRef.current.click()}>⬆ Upload résumé (PDF, DOCX, TXT)</button>
+              ${status ? html`<span class="hint">${status}</span>` : null}
+              <input ref=${fileRef} type="file" accept=".pdf,.docx,.txt" onChange=${onFile} style=${{ display: 'none' }} />
+            </div>
+            <textarea id="resume" placeholder="…or paste the tailored resume text from the app here" value=${text} onInput=${(e) => setText(e.target.value)}></textarea>
+            <div class="row">
+              <button onClick=${update}>▶ Update preview</button>
+              <button class="ghost" onClick=${reset}>Reset to demo</button>
+              <span class="hint">Runs entirely in your browser — nothing is uploaded to a server.</span>
+            </div>
+          </div>
+        </div>
+      `;
+    };
+
+    createRoot(document.getElementById('root')).render(html`<${App} />`);
+  </script>
+</body>
+</html>

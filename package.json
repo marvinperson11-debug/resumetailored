@@ -5,10 +5,15 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "remotion:studio": "remotion studio remotion/index.ts",
+    "remotion:render": "remotion render remotion/index.ts ResumeVideo out/resume-video.mp4"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
+    "@remotion/bundler": "4.0.482",
+    "@remotion/player": "4.0.482",
+    "@remotion/renderer": "4.0.482",
     "better-sqlite3": "^9.4.3",
     "cors": "^2.8.5",
     "docx": "^9.6.1",
@@ -20,11 +25,17 @@
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^8.0.9",
     "pdf-parse": "^1.1.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "remotion": "4.0.482",
     "stripe": "^16.2.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.4"
+    "@remotion/cli": "4.0.482",
+    "@types/react": "^19.0.0",
+    "nodemon": "^3.1.4",
+    "typescript": "^5.7.0"
   },
   "engines": {
     "node": ">=18.0.0"
