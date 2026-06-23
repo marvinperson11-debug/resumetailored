@@ -1064,11 +1064,18 @@ function getUsageKey(req) {
   return email ? `user:${email.toLowerCase()}` : `ip:${req.ip}`;
 }
 
+// Comped accounts are treated as active subscribers (unlimited access, pro
+// voice). Includes the owner email plus any COMP_EMAILS (comma-separated).
+const COMP_EMAILS = (process.env.COMP_EMAILS || 'marvinperson11@gmail.com')
+  .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+
 function isSubscriber(email) {
   if (!email) return false;
-  const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
-  if (email.toLowerCase() === ownerEmail.toLowerCase()) return true;
-  return !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(email.toLowerCase());
+  const e = email.toLowerCase();
+  const ownerEmail = (process.env.OWNER_EMAIL || 'support@resumetailored.com').toLowerCase();
+  if (e === ownerEmail) return true;
+  if (COMP_EMAILS.includes(e)) return true;
+  return !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(e);
 }
 
 // ─── API: Free Tool — ATS Keyword Extractor ──────────────────────────────────
