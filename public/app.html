@@ -4403,6 +4403,43 @@ Aaliyah Washington`
       }
     }
 
+    // Render the tailored resume into a short shareable MP4 via the Remotion
+    // server endpoint. Heavy + slow, so show progress and handle gating/busy.
+    async function downloadVideo(btn) {
+      if (selectedMode === 'cover_letter') { showToast('The video is generated from a tailored resume.'); return; }
+      const resumeText = (lastRawResult || '').trim();
+      if (!resumeText) { showToast('Tailor a resume first.'); return; }
+      const trigger = btn && btn.nodeType === 1 ? btn : null;
+      const origHtml = trigger ? trigger.innerHTML : '';
+      if (trigger) { trigger.disabled = true; trigger.innerHTML = '⏳ Rendering…'; }
+      showToast('Generating your resume video — this can take up to a minute.');
+      try {
+        const res = await fetch('/api/resume-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resume: resumeText, email: getStoredEmail() })
+        });
+        if (res.status === 402) {
+          const d = await res.json().catch(() => ({}));
+          showToast(d.message || 'Upgrade to Pro for more resume videos.');
+          return;
+        }
+        if (res.status === 429) { showToast('A video is already rendering. Please try again in a moment.'); return; }
+        if (res.status === 501) { showToast('Video rendering is not enabled on this server.'); return; }
+        if (!res.ok) throw new Error('render failed');
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'resume-video.mp4';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch (err) {
+        showToast('Could not generate video. Please try again.');
+      } finally {
+        if (trigger) { trigger.disabled = false; trigger.innerHTML = origHtml; }
+      }
+    }
+
     function downloadPdf() {
       const outputBox = document.getElementById('outputBox');
       if (!outputBox.innerHTML.trim()) return;
@@ -4600,22 +4637,26 @@ Aaliyah Washington`
     function renderPreviewDownloadButtons() {
       const row = document.getElementById('previewDownloadRow');
       if (!row) return;
+      const showVideo = selectedMode !== 'cover_letter';
       if (isSubscriberFlag) {
+        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo(this)" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `
           <button class="download-btn download-btn-pdf" onclick="downloadPdf()">Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="downloadDocx()">Download Word</button>
-          <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>`;
+          <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>${videoBtn}`;
       } else if (!isLoggedIn) {
+        const videoBtn = showVideo ? `<button class="download-btn" onclick="showDownloadGate(downloadVideo)" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `
           <button class="download-btn download-btn-pdf" onclick="showDownloadGate(downloadPdf)" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);">⬇ Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="showDownloadGate(downloadDocx)">⬇ Download Word</button>
-          <button class="download-btn download-btn-txt" onclick="showDownloadGate(downloadTxt)">⬇ Download Text</button>
+          <button class="download-btn download-btn-txt" onclick="showDownloadGate(downloadTxt)">⬇ Download Text</button>${videoBtn}
           <div style="width:100%;font-size:11px;color:#64748b;margin-top:6px;">Free account required to download — takes 5 seconds</div>`;
       } else {
+        const videoBtn = showVideo ? `<button class="download-btn" onclick="adGate(downloadVideo)" style="background:#0891b2;">▶ Ad → Video</button>` : '';
         row.innerHTML = `
           <button class="download-btn download-btn-pdf" onclick="adGate(downloadPdf)" style="background:#b91c1c;">▶ Ad → PDF</button>
           <button class="download-btn download-btn-docx" onclick="adGate(downloadDocx)" style="background:#7c3aed;">▶ Ad → Word</button>
-          <button class="download-btn download-btn-txt" onclick="adGate(downloadTxt)" style="background:#374151;">▶ Ad → Text</button>`;
+          <button class="download-btn download-btn-txt" onclick="adGate(downloadTxt)" style="background:#374151;">▶ Ad → Text</button>${videoBtn}`;
       }
     }
 

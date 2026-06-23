@@ -22,8 +22,24 @@ Everything lives in two places:
 
 - **`server.js`** — the entire backend: Express app, all API routes, Stripe webhooks, Claude API calls, auth, file parsing, and .docx generation.
 - **`public/`** — static frontend: `index.html` (landing page), `app.html` (main dashboard SPA), `style.css`, and post-payment pages.
+- **`remotion/`** — the only TypeScript/React in the repo: a self-contained [Remotion](https://www.remotion.dev/docs) project that renders a tailored resume into a short MP4 (see "Resume video" below).
 
-There is no build step. The frontend is plain HTML/CSS/JS with no framework. `app.html` is a single-page app where tabs are shown/hidden via `showTab()` without any routing.
+There is no build step for the web app. The frontend is plain HTML/CSS/JS with no framework. `app.html` is a single-page app where tabs are shown/hidden via `showTab()` without any routing. Remotion is the one exception — it has its own TSX compositions, compiled on demand by Remotion's own bundler (not by the web app).
+
+## Resume video (Remotion)
+
+A tailored resume can be turned into a short vertical MP4 (1080×1920, ~18s) for sharing on LinkedIn / Shorts / Reels. This is the only React/TypeScript in the codebase.
+
+- **`remotion/`** — the Remotion project:
+  - `index.ts` → `registerRoot`; `Root.tsx` declares the single `ResumeVideo` composition (duration derived from highlight count via `calculateMetadata`).
+  - `ResumeVideo.tsx` + `scenes/` (`Background`, `Intro`, `Highlights`, `Skills`, `Outro`) — the animated scenes.
+  - `data.js` — **CommonJS** single source of truth for default props + scene timing (`sceneFrames`), shared by both the TSX (via webpack CJS interop) and the Node server. `types.ts` holds only the `ResumeVideoProps` type.
+  - `parseResume.js` — converts the plain-text tailor output into `ResumeVideoProps` (name, title, summary, top-5 highlights preferring quantified bullets, skills).
+  - `render.js` — server-side renderer: `bundle()` once (cached) + `selectComposition()` + `renderMedia()`. Auto-detects a system `chromium` on PATH (or `REMOTION_BROWSER_EXECUTABLE`), else downloads Remotion's headless shell.
+- **Endpoint**: `POST /api/resume-video` (`server.js`) takes `{ resume, name?, accentColor?, email }`, gated like other features (subscribers unlimited; free tier = 1/day via the `video` usage key). It renders one video at a time (`videoRenderInFlight` lock → 429 if busy), streams the MP4, and deletes the temp file. The heavy Remotion packages are `require()`d lazily inside the handler, so the server boots even if they aren't installed (route returns 501).
+- **Frontend**: a "🎬 Resume Video" button in `renderPreviewDownloadButtons()` (`app.html`, hidden for cover-letter-only mode) calls `downloadVideo()`.
+- **Local dev**: `npm run remotion:studio` (live preview/editor) and `npm run remotion:render` (CLI render to `out/`).
+- **Deploy**: rendering needs Chromium + fonts. `nixpacks.toml` installs `chromium`, `fontconfig`, `dejavu_fonts`; the renderer auto-detects the binary. Rendering is CPU-heavy — keep the one-at-a-time lock.
 
 ## Persistent state (SQLite)
 
@@ -33,7 +49,7 @@ Tables (all created with `CREATE TABLE IF NOT EXISTS` at startup):
 
 | Table | What it tracks |
 |---|---|
-| `usage_store` | Free-tier usage counts, keyed by `${ip}_${date}_${type}` (`count`) |
+| `usage_store` | Free-tier usage counts, keyed by `${ip}_${date}_${type}` (`count`); `type` ∈ `resume`, `cover_letter`, `translate`, `video`, … |
 | `subscribers` | Active Stripe subscribers (`email` PK, `customer_id`) |
 | `users` | User accounts (`email` PK, `username`, SHA-256 `password_hash`) |
 | `sessions` | Auth tokens (`token` PK → `email`) |

@@ -8,6 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
+const os = require('os');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
@@ -1549,6 +1550,61 @@ OUTPUT: Cover Letter
     else if (err?.status === 429) userMessage = 'AI is rate limited. Please wait a moment and try again.';
     else if (err?.status >= 500 || err?.message?.toLowerCase().includes('overloaded')) userMessage = 'AI service is temporarily busy. Please try again in 30 seconds.';
     res.status(500).json({ error: userMessage });
+  }
+});
+
+// ─── API: Generate an animated resume highlight video (Remotion) ──────────────
+// Renders the tailored resume into a short vertical MP4 the user can share on
+// LinkedIn / Shorts / Reels. Rendering is CPU-heavy, so we serve one at a time
+// and lazy-load the Remotion packages only when the first video is requested.
+let videoRenderInFlight = false;
+app.post('/api/resume-video', async (req, res) => {
+  const { resume, name, accentColor, email } = req.body || {};
+  if (!resume || !resume.trim()) {
+    return res.status(400).json({ error: 'Tailored resume text is required.' });
+  }
+
+  const usageKey = getUsageKey(req);
+  const subscribed = isSubscriber(email);
+  if (!subscribed && !hasFreeTierLeft(usageKey, 'video')) {
+    return res.status(402).json({ error: 'free_limit_reached', mode: 'video', message: 'You\'ve used your free daily resume video. Upgrade to Pro for unlimited access.' });
+  }
+
+  if (videoRenderInFlight) {
+    return res.status(429).json({ error: 'busy', message: 'A video is already rendering. Please try again in a moment.' });
+  }
+
+  let renderModule, parseModule;
+  try {
+    renderModule = require('./remotion/render');
+    parseModule = require('./remotion/parseResume');
+  } catch (e) {
+    console.error('Remotion not available:', e.message);
+    return res.status(501).json({ error: 'Video rendering is not available on this server.' });
+  }
+
+  const props = parseModule.parseResume(resume, {
+    accentColor: typeof accentColor === 'string' ? accentColor : undefined,
+  });
+  if (name && typeof name === 'string' && name.trim()) {
+    props.name = name.trim().slice(0, 60);
+  }
+
+  const outPath = path.join(os.tmpdir(), `resume-video-${uuidv4()}.mp4`);
+  videoRenderInFlight = true;
+  try {
+    await renderModule.renderResumeVideo(props, outPath);
+    if (!subscribed) consumeFreeTier(usageKey, 'video');
+    res.download(outPath, 'resume-video.mp4', (err) => {
+      fs.unlink(outPath, () => {});
+      if (err && !res.headersSent) console.error('Video send error:', err.message);
+    });
+  } catch (err) {
+    console.error('Video render error:', err?.message || err);
+    fs.unlink(outPath, () => {});
+    if (!res.headersSent) res.status(500).json({ error: 'Video generation failed. Please try again.' });
+  } finally {
+    videoRenderInFlight = false;
   }
 });
 

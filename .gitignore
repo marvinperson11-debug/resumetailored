@@ -4,6 +4,8 @@ node_modules/
 .DS_Store
 Thumbs.db
 data/
+out/
+.remotion/
 !.claude/skills/**/data/
 !.claude/skills/**/data/**
 __pycache__/
