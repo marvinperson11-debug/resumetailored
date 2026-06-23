@@ -1642,7 +1642,7 @@ app.post('/api/resume-video', async (req, res) => {
   } catch (err) {
     console.error('Video render error:', err?.message || err);
     fs.unlink(outPath, () => {});
-    if (!res.headersSent) res.status(500).json({ error: 'Video generation failed. Please try again.' });
+    if (!res.headersSent) res.status(500).json({ error: 'Video generation failed. Please try again.', detail: String(err?.message || err).slice(0, 400) });
   } finally {
     videoRenderInFlight = false;
   }

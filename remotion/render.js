@@ -78,6 +78,11 @@ async function renderResumeVideo(inputProps, outputLocation, onProgress) {
     outputLocation,
     inputProps,
     browserExecutable: browserExecutable || undefined,
+    // Headless-server hardening: software GL (no GPU on Railway), single
+    // concurrency to stay within memory, and a generous frame timeout.
+    concurrency: 1,
+    chromiumOptions: { gl: 'swiftshader', headless: true },
+    timeoutInMilliseconds: 120000,
     onProgress: onProgress ? ({ progress }) => onProgress(progress) : undefined,
   });
 
