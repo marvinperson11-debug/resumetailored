@@ -1944,9 +1944,13 @@
       // split or strand alone.
       const mt = printMode ? 'margin-top:0.4in;' : 'margin-top:32px;';
       const pbb = printMode ? 'page-break-inside:avoid;break-inside:avoid;-webkit-column-break-inside:avoid;' : '';
+      // Narrow-column layouts (sidebar / two-column) indent the signature under the
+      // main column, leaving less width — use a smaller signature there so a typical
+      // name stays on one line instead of wrapping.
+      const sigSize = (marginLeft && parseInt(marginLeft, 10) > 200) ? 23 : 30;
       // The signature line (top border) is the designated slot — no literal label.
       return `<div style="${mt}padding-top:14px;border-top:1px solid #cbd5e1;${ml}${pbb}max-width:100%;overflow-wrap:anywhere;">
-        <p style="margin:0;font-family:'${sigFont}',cursive;font-size:30px;color:${color};line-height:1.4;padding-bottom:6px;">${sigName}</p>
+        <p style="margin:0;font-family:'${sigFont}',cursive;font-size:${sigSize}px;color:${color};line-height:1.4;padding-bottom:6px;">${sigName}</p>
       </div>`;
     }
 
