@@ -12,7 +12,7 @@ const os = require('os');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType } = require('docx');
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType, HeightRule } = require('docx');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 
@@ -574,7 +574,11 @@ function _dxNoTableBorders() {
   return { top: _DX_NONE, bottom: _DX_NONE, left: _DX_NONE, right: _DX_NONE, insideHorizontal: _DX_NONE, insideVertical: _DX_NONE };
 }
 const _dxClean = (s) => s.replace(/^#{1,3}\s+/, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim();
-const _dxFont = (serif) => (serif ? 'Georgia' : 'Calibri');
+const _DOCX_FONTS = { arial: 'Arial', calibri: 'Calibri', times: 'Times New Roman' };
+// Match the web preview / PDF font. The dashboard font picker (selectedDocFont)
+// wins for all three outputs; without it, fall back to the template's serif
+// default — and sans templates use Arial to match the web (previously Calibri).
+const _dxFont = (serif, docFont) => _DOCX_FONTS[docFont] || (serif ? 'Georgia' : 'Arial');
 const _DX_SIDE_KEYS = ['SKILL', 'CERTIF', 'LICENSE', 'LICENS', 'EDUCAT', 'LANGUAGE', 'AWARD', 'COMPETENC', 'TOOL', 'TECHNOLOG', 'PROFICIEN'];
 
 function _dxParseResume(text) {
@@ -744,28 +748,55 @@ function _dxTwoCol(name, contactParts, sections, o) {
     verticalAlign: VerticalAlign.TOP,
     children: right,
   });
-  return new Table({ width: { size: o.contentWidth, type: WidthType.DXA }, columnWidths: [leftW, rightW], borders: _dxNoTableBorders(), rows: [new TableRow({ children: [leftCell, rightCell] })] });
+  // Force the row to at least a full page tall so the coloured Sidebar column
+  // (and the Two-Column divider) runs the whole page height even when the
+  // content is short — and continues down subsequent pages if it overflows.
+  const row = new TableRow({ height: { value: o.pageContentHeight || 13680, rule: HeightRule.ATLEAST }, children: [leftCell, rightCell] });
+  return new Table({ width: { size: o.contentWidth, type: WidthType.DXA }, columnWidths: [leftW, rightW], borders: _dxNoTableBorders(), rows: [row] });
 }
 
 function _dxRenderResume(text, o) {
-  const font = _dxFont(o.serif);
+  const font = _dxFont(o.serif, o.docFont);
   const { name, contactParts, sections } = _dxParseResume(text);
   if (o.layout === 'rSidebar' || o.layout === 'rTwoCol') {
     return [_dxTwoCol(name, contactParts, sections, { ...o, font })];
   }
-  const out = [];
   if (o.layout === 'rModern') {
-    out.push(_dxBand(name, contactParts, { ...o, font }));
-    out.push(new Paragraph({ spacing: { after: 120 } }));
-  } else if (o.layout === 'rBanner') {
+    // Full-bleed colour band across the top of the page (page margins are 0 for
+    // this layout). The body sits in a borderless table inset from the edges so
+    // the text keeps its 0.5in margin while the band runs edge to edge.
+    const body = [];
+    sections.forEach(sec => {
+      body.push(_dxHeading(sec.title, { style: 'icon-bar', primaryHex: o.primaryHex, accentHex: o.accentHex, font }));
+      for (const raw of sec.lines) for (const p of _dxLinePara(raw, { font, accentHex: o.accentHex, onDark: false })) body.push(p);
+    });
+    for (const p of _dxSig(o.sigName, o.primaryHex, font)) body.push(p);
+    const inset = new TableCell({ width: { size: o.contentWidth, type: WidthType.DXA }, margins: { top: 240, bottom: 120, left: 720, right: 720 }, children: body.length ? body : [new Paragraph({})] });
+    return [
+      _dxBand(name, contactParts, { ...o, font }),
+      new Table({ width: { size: o.contentWidth, type: WidthType.DXA }, columnWidths: [o.contentWidth], borders: _dxNoTableBorders(), rows: [new TableRow({ children: [inset] })] }),
+    ];
+  }
+  const out = [];
+  if (o.layout === 'rBanner') {
     out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], border: { left: { style: BorderStyle.SINGLE, size: 36, color: o.primaryHex, space: 12 } }, indent: { left: 130 }, spacing: { after: 40 } }));
     if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   ·   '), font, size: 18, color: '666666' })], indent: { left: 130 }, spacing: { after: 80 }, border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.accentHex, space: 6 } } }));
   } else if (o.layout === 'rMinimal') {
     out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 40, color: '111827', characterSpacing: 60 })], spacing: { after: 60 } }));
-    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 18, color: '666666' })], spacing: { after: 120 } }));
+    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 18, color: '666666' })], spacing: { after: 160 }, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: o.primaryHex, space: 6 } } }));
+  } else if (o.layout === 'rExecutive') {
+    // Coloured left bar on the name + contact, matching the gallery card.
+    const lb = { left: { style: BorderStyle.SINGLE, size: 24, color: o.primaryHex, space: 8 } };
+    out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], border: lb, indent: { left: 60 }, spacing: { after: 40 } }));
+    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 19, color: '555555' })], border: lb, indent: { left: 60 }, spacing: { after: 120 } }));
   } else {
-    out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], spacing: { after: 60 } }));
-    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 19, color: '555555' })], spacing: { after: 120 } }));
+    // rClassic — centred name + contact with a full-width rule underneath.
+    out.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], spacing: { after: 40 } }));
+    if (contactParts.length) {
+      out.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: contactParts.join('   |   '), font, size: 19, color: '555555' })], spacing: { after: 120 }, border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex, space: 6 } } }));
+    } else {
+      out.push(new Paragraph({ children: [new TextRun({ text: '', font, size: 2 })], border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex, space: 6 } }, spacing: { after: 120 } }));
+    }
   }
   const headStyle = { rClassic: 'underline', rExecutive: 'left-bar', rMinimal: 'minimal', rModern: 'icon-bar', rBanner: 'banner-pill' }[o.layout] || 'underline';
   sections.forEach(sec => {
@@ -777,7 +808,7 @@ function _dxRenderResume(text, o) {
 }
 
 function _dxRenderCover(text, o, meta) {
-  const font = _dxFont(o.serif);
+  const font = _dxFont(o.serif, o.docFont);
   const p = _dxParseCover(text, meta);
   const out = [];
   const roleLine = [p.role, p.company].filter(Boolean).join(' — ');
@@ -819,16 +850,19 @@ function _dxRenderCover(text, o, meta) {
 }
 
 function _dxMargins(layout) {
+  // Match the PDF/print body margins: print uses a 0.5in (720 twip) page margin
+  // for every layout. The Sidebar bleeds its coloured column to the page edge,
+  // so its left/right margins are 0 and the inset lives inside the table cells.
   if (layout === 'rSidebar') return { top: 720, bottom: 720, left: 0, right: 0 };
-  if (layout === 'rTwoCol') return { top: 1000, bottom: 1000, left: 900, right: 900 };
-  if (['rModern', 'cModern', 'cBold', 'cSplit'].includes(layout)) return { top: 1080, bottom: 1080, left: 1080, right: 1080 };
-  return { top: 1440, bottom: 1440, left: 1440, right: 1440 };
+  // Modern bleeds its colour band to the top + side edges; the body is inset by
+  // a table instead (see _dxRenderResume), so page side margins are 0 here.
+  if (layout === 'rModern') return { top: 0, bottom: 720, left: 0, right: 0 };
+  return { top: 720, bottom: 720, left: 720, right: 720 };
 }
 
 function _dxHex(c, fallback) { return (c || fallback).replace('#', ''); }
 
-async function handleTemplatedDocx(req, res) {
-  const { text, coverText, filename, sigName, pageSize, mode, primary, cover, meta } = req.body;
+async function buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mode, primary, cover, meta, docFont }) {
   const isA4 = pageSize === 'a4';
   const PAGE_WIDTH = isA4 ? 11906 : 12240;
   const PAGE_HEIGHT = isA4 ? 16838 : 15840;
@@ -840,9 +874,11 @@ async function handleTemplatedDocx(req, res) {
     return {
       opts: {
         layout, style: (tpl && tpl.style) || 'underline', serif: !!(tpl && tpl.serif),
+        docFont: docFont || null,
         primaryHex: _dxHex(colors.primary, '#1a237e'), accentHex: _dxHex(colors.accent, '#5c6bc0'),
         lightHex: _dxHex(colors.light, '#e8eaf6'), sigName: withSig ? (sigName || null) : null,
         contentWidth: PAGE_WIDTH - m.left - m.right,
+        pageContentHeight: PAGE_HEIGHT - m.top - m.bottom,
       },
       margin: m,
     };
@@ -860,8 +896,12 @@ async function handleTemplatedDocx(req, res) {
     sections.push({ properties: { page: { size: { width: PAGE_WIDTH, height: PAGE_HEIGHT }, margin: cv.margin } }, children: _dxRenderCover(coverText, cv.opts, meta) });
   }
 
-  const doc = new Document({ sections });
-  const buffer = await Packer.toBuffer(doc);
+  return Packer.toBuffer(new Document({ sections }));
+}
+
+async function handleTemplatedDocx(req, res) {
+  const { text, coverText, filename, sigName, pageSize, mode, primary, cover, meta, docFont } = req.body;
+  const buffer = await buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mode, primary, cover, meta, docFont });
 
   const safeName = (filename || 'tailored-resume').replace(/[^a-z0-9-_\s]/gi, '_');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -883,7 +923,15 @@ app.post('/api/download-docx', async (req, res) => {
   // chosen visual layout. Falls back to the legacy single-column builder below.
   if (req.body.primary && req.body.primary.layout) {
     try { return await handleTemplatedDocx(req, res); }
-    catch (err) { console.error('[docx] templated render failed, falling back:', err.message); }
+    catch (err) {
+      // Surface the failure instead of silently emitting a generic single-column
+      // document that ignores the chosen template's layout/margins/fonts.
+      console.error('[docx] templated render failed:', err && err.stack ? err.stack : err);
+      if (!res.headersSent) {
+        return res.status(500).json({ error: 'Could not generate the .docx for this template. Please try again.', detail: String(err && err.message ? err.message : err).slice(0, 300) });
+      }
+      return;
+    }
   }
 
   const primaryHex = colors?.primary ? colors.primary.replace('#', '') : '1a237e';
@@ -2143,4 +2191,9 @@ function broadcastEmailHtml(username) {
 }
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`ResumeTailor running on http://localhost:${PORT}`));
+if (require.main === module) {
+  app.listen(PORT, () => console.log(`ResumeTailor running on http://localhost:${PORT}`));
+}
+
+// Exported for offline rendering/tests (e.g. DOCX alignment verification).
+module.exports = { app, buildTemplatedDocxBuffer };
