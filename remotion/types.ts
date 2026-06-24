@@ -15,4 +15,15 @@ export type ResumeVideoProps = {
   // When the narration is longer than the scene timeline, the video is extended
   // to this many frames so the whole voiceover is heard.
   audioDurationInFrames?: number;
+  // Per-segment narration timings. When present, each scene is revealed exactly
+  // while its line is spoken (instead of the fixed scene durations).
+  segments?: NarrationSegment[];
+};
+
+export type NarrationSegment = {
+  kind: 'intro' | 'summary' | 'highlight' | 'skills' | 'brand';
+  index?: number; // highlight number (kind === 'highlight')
+  text: string;
+  start: number; // seconds
+  end: number; // seconds
 };

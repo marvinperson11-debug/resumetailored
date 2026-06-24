@@ -40,20 +40,46 @@ function sceneFrames(highlightCount, fps = FPS) {
   return { intro, highlights, skills, outro, total: intro + highlights + skills + outro };
 }
 
+// Spoken voiceover broken into ordered segments, each tagged with the scene it
+// drives. Single source of truth for both the script (join the texts) and the
+// reveal timing — each segment maps to one on-screen scene shown exactly while
+// its text is spoken. `index` is the highlight number.
+function narrationSegments(props) {
+  const p = props || {};
+  const segs = [];
+  if (p.name) segs.push({ kind: 'intro', text: `Meet ${p.name}${p.title ? `, ${p.title}` : ''}.` });
+  if (p.summary) segs.push({ kind: 'summary', text: String(p.summary).replace(/\s+/g, ' ').trim() });
+  const hs = (p.highlights || []).slice(0, 3);
+  hs.forEach((h, i) => {
+    const t = String(h).replace(/\s+/g, ' ').trim();
+    if (t) segs.push({ kind: 'highlight', index: i, text: `${i === 0 ? 'Career highlights. ' : ''}${t}.` });
+  });
+  const skills = (p.skills || []).slice(0, 6);
+  if (skills.length) segs.push({ kind: 'skills', text: `Core skills include ${skills.join(', ')}.` });
+  if (p.brand) segs.push({ kind: 'brand', text: `Tailored with ${p.brand}.` });
+  return segs;
+}
+
+// Build the exact script string AND each segment's character span within it, so
+// a TTS engine that returns per-character timings (ElevenLabs) can be mapped
+// back to per-segment start/end times with no drift.
+function narrationTimeline(props) {
+  const segs = narrationSegments(props);
+  let script = '';
+  const segments = segs.map((s) => {
+    if (script) script += ' ';
+    const charStart = script.length;
+    script += s.text;
+    return { ...s, charStart, charEnd: script.length };
+  });
+  return { script, segments };
+}
+
 // Spoken voiceover script derived from the resume props. Used both by the
 // server-side TTS (remotion/narration.js) and the browser preview narration
 // (public/preview.html). Kept short so it tracks the ~18s video length.
 function narrationScript(props) {
-  const p = props || {};
-  const parts = [];
-  if (p.name) parts.push(`Meet ${p.name}${p.title ? `, ${p.title}` : ''}.`);
-  if (p.summary) parts.push(p.summary);
-  const hs = (p.highlights || []).slice(0, 3);
-  if (hs.length) parts.push('Career highlights: ' + hs.map((h) => h.replace(/\s+/g, ' ').trim()).join('. ') + '.');
-  const skills = (p.skills || []).slice(0, 6);
-  if (skills.length) parts.push('Core skills include ' + skills.join(', ') + '.');
-  if (p.brand) parts.push(`Tailored with ${p.brand}.`);
-  return parts.join(' ').replace(/\s+/g, ' ').trim();
+  return narrationTimeline(props).script;
 }
 
-module.exports = { defaultResumeVideoProps, FPS, sceneFrames, narrationScript };
+module.exports = { defaultResumeVideoProps, FPS, sceneFrames, narrationScript, narrationSegments, narrationTimeline };

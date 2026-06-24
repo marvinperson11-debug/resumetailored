@@ -1708,6 +1708,8 @@ app.post('/api/resume-video', async (req, res) => {
         const { FPS } = require('./remotion/data');
         props.audioSrc = vo.src;
         props.audioDurationInFrames = Math.ceil((vo.seconds || 0) * FPS);
+        // Per-segment timings drive the reveal-as-spoken sync in the composition.
+        if (vo.segments && vo.segments.length) props.segments = vo.segments;
       }
     } catch (e) {
       console.error('Narration unavailable:', e.message);
@@ -1726,6 +1728,7 @@ app.post('/api/resume-video', async (req, res) => {
         console.error('Render with audio failed, retrying silent:', err?.message || err);
         delete props.audioSrc;
         delete props.audioDurationInFrames;
+        delete props.segments;
         await withTimeout(renderModule.renderResumeVideo(props, outPath), MAX_RENDER_MS, 'Video render (silent retry)');
       } else {
         throw err;
