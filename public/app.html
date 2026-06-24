@@ -358,10 +358,10 @@
           <span style="flex:1;text-align:left;" data-i18n="sidebar_ats">ATS Scanner</span>
           <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">∞ PRO</span>
         </button>
-        <button class="sidebar-btn" onclick="showTab('video')" id="tab-video" data-label="Video" title="Resume Video Maker — Pro Feature">
+        <button class="sidebar-btn" onclick="showTab('video')" id="tab-video" data-label="Video" title="Resume Video Maker — free, in your browser">
           <span class="sidebar-icon">🎬</span>
           <span style="flex:1;text-align:left;">Resume Video</span>
-          <span style="background:#e11d48;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
+          <span style="background:#0891b2;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">FREE</span>
         </button>
       </div>
       <div class="sidebar-section">
@@ -711,10 +711,10 @@
             <div style="width:44px;height:44px;background:#e11d48;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎬</div>
             <div>
               <h1 style="color:#e11d48;">Resume Video Maker</h1>
-              <span style="background:#e11d48;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ PRO FEATURE</span>
+              <span style="background:#0891b2;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ FREE · IN YOUR BROWSER</span>
             </div>
           </div>
-          <p>Turn any résumé into a short, shareable vertical video with a studio voiceover — perfect for LinkedIn, Shorts, and Reels. No tailoring required: paste or upload a résumé and generate a video anytime.</p>
+          <p>Turn any résumé into a short, shareable vertical video with a voiceover — perfect for LinkedIn, Shorts, and Reels. No tailoring required: paste or upload a résumé, then preview and record it right in your browser — free, nothing to install.</p>
         </div>
 
         <div class="input-section">
@@ -735,10 +735,10 @@
             <textarea id="videoResume" class="resume-textarea" style="min-height:220px;" placeholder="Paste your résumé text here, or upload a PDF/DOCX/TXT above.&#10;&#10;The video highlights your name, title, top achievements, and skills — so include your experience bullets and a skills section for the best result."></textarea>
           </div>
 
-          <button class="btn btn-primary" id="videoGenBtn" onclick="generateStandaloneVideo()" style="margin-top:16px;width:100%;padding:14px;background:#e11d48;border-color:#e11d48;">
-            🎬 Generate Resume Video →
+          <button class="btn btn-primary" id="videoGenBtn" onclick="generateStandaloneVideo()" style="margin-top:16px;width:100%;padding:14px;background:#0891b2;border-color:#0891b2;">
+            🎬 Open Video Maker →
           </button>
-          <p style="font-size:12px;color:#6b7280;margin-top:10px;text-align:center;">Rendering takes ~30–60 seconds. Subscribers get the studio-quality (ElevenLabs) voiceover.</p>
+          <p style="font-size:12px;color:#6b7280;margin-top:10px;text-align:center;">Opens the free in-browser maker — preview instantly, pick a voiceover (device voice, or your own ElevenLabs key for a studio voice), and record to share.</p>
         </div>
 
         <!-- Upgrade gate for non-subscribers -->
@@ -4455,18 +4455,25 @@ Aaliyah Washington`
 
     // Render the tailored resume into a short shareable MP4 via the Remotion
     // server endpoint. Heavy + slow, so show progress and handle gating/busy.
-    // ── Standalone Resume Video Maker (Pro tab — no tailoring required) ────────
+    // ── Resume Video Maker — opens the free in-browser maker (/preview) ────────
+    // Rendering runs client-side on the user's device via the Remotion Player,
+    // so there is no server/Chromium cost. We stash the résumé so /preview loads
+    // it automatically (one-shot handoff, cleared on read).
+    function openVideoMaker(resumeText) {
+      try {
+        const t = (resumeText || '').trim();
+        if (t) localStorage.setItem('rt_preview_resume', t);
+      } catch (_) {}
+      window.open('/preview', '_blank');
+    }
+
     function updateVideoGate() {
+      // The video maker is free (in-browser), so no Pro gate. Keep the upsell
+      // hidden and the button labelled for the maker.
       const up = document.getElementById('videoUpsell');
       const btn = document.getElementById('videoGenBtn');
-      if (!up || !btn) return;
-      if (isSubscriberFlag) {
-        up.style.display = 'none';
-        btn.innerHTML = '🎬 Generate Resume Video →';
-      } else {
-        up.style.display = 'block';
-        btn.innerHTML = '🔒 Generate Resume Video (Pro) →';
-      }
+      if (up) up.style.display = 'none';
+      if (btn) btn.innerHTML = '🎬 Open Video Maker →';
     }
 
     function copyTailorResumeToVideo() {
@@ -4511,81 +4518,16 @@ Aaliyah Washington`
       }
     }
 
-    async function generateStandaloneVideo() {
-      if (!isSubscriberFlag) {
-        const up = document.getElementById('videoUpsell');
-        if (up) { up.style.display = 'block'; up.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-        return;
-      }
+    // Video tab: open the in-browser maker with the résumé from the tab's textarea.
+    function generateStandaloneVideo() {
       const resumeText = (document.getElementById('videoResume').value || '').trim();
-      if (!resumeText) { showToast('Paste or upload a résumé first.'); return; }
-      const name = (document.getElementById('videoName').value || '').trim();
-      const btn = document.getElementById('videoGenBtn');
-      const orig = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '⏳ Rendering your video… (up to a minute)';
-      showToast('Generating your resume video — this can take up to a minute.');
-      try {
-        const res = await fetch('/api/resume-video', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resume: resumeText, name: name || undefined, email: getStoredEmail() })
-        });
-        if (res.status === 402) { const d = await res.json().catch(() => ({})); showToast(d.message || 'Upgrade to Pro to use the Resume Video Maker.'); return; }
-        if (res.status === 429) { showToast('A video is already rendering. Please try again in a moment.'); return; }
-        if (res.status === 501) { showToast('Video rendering is not enabled on the server yet.'); return; }
-        if (!res.ok) {
-          const d = await res.json().catch(() => ({}));
-          throw new Error(d.detail || d.error || 'render failed');
-        }
-        const blob = await res.blob();
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = (name ? name.replace(/[^a-z0-9-_ ]/gi, '_') : 'resume') + '-video.mp4';
-        a.click();
-        URL.revokeObjectURL(a.href);
-        showToast('Your resume video is ready! 🎬');
-      } catch (err) {
-        showToast('Could not generate the video: ' + (err && err.message ? err.message : 'please try again') , 7000);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = orig;
-      }
+      openVideoMaker(resumeText); // empty is fine — /preview supports paste/upload
     }
 
-    async function downloadVideo(btn) {
-      if (selectedMode === 'cover_letter') { showToast('The video is generated from a tailored resume.'); return; }
-      const resumeText = (lastRawResult || '').trim();
-      if (!resumeText) { showToast('Tailor a resume first.'); return; }
-      const trigger = btn && btn.nodeType === 1 ? btn : null;
-      const origHtml = trigger ? trigger.innerHTML : '';
-      if (trigger) { trigger.disabled = true; trigger.innerHTML = '⏳ Rendering…'; }
-      showToast('Generating your resume video — this can take up to a minute.');
-      try {
-        const res = await fetch('/api/resume-video', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resume: resumeText, email: getStoredEmail() })
-        });
-        if (res.status === 402) {
-          const d = await res.json().catch(() => ({}));
-          showToast(d.message || 'Upgrade to Pro for more resume videos.');
-          return;
-        }
-        if (res.status === 429) { showToast('A video is already rendering. Please try again in a moment.'); return; }
-        if (res.status === 501) { showToast('Video rendering is not enabled on this server.'); return; }
-        if (!res.ok) throw new Error('render failed');
-        const blob = await res.blob();
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'resume-video.mp4';
-        a.click();
-        URL.revokeObjectURL(a.href);
-      } catch (err) {
-        showToast('Could not generate video. Please try again.');
-      } finally {
-        if (trigger) { trigger.disabled = false; trigger.innerHTML = origHtml; }
-      }
+    // Download row 🎬 button: open the in-browser maker with the tailored résumé.
+    function downloadVideo() {
+      if (selectedMode === 'cover_letter') { showToast('The video is made from a tailored resume.'); return; }
+      openVideoMaker((lastRawResult || '').trim());
     }
 
     function downloadPdf() {
@@ -4788,20 +4730,20 @@ Aaliyah Washington`
       if (!row) return;
       const showVideo = selectedMode !== 'cover_letter';
       if (isSubscriberFlag) {
-        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo(this)" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
+        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `
           <button class="download-btn download-btn-pdf" onclick="downloadPdf()">Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="downloadDocx()">Download Word</button>
           <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>${videoBtn}`;
       } else if (!isLoggedIn) {
-        const videoBtn = showVideo ? `<button class="download-btn" onclick="showDownloadGate(downloadVideo)" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
+        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `
           <button class="download-btn download-btn-pdf" onclick="showDownloadGate(downloadPdf)" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);">⬇ Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="showDownloadGate(downloadDocx)">⬇ Download Word</button>
           <button class="download-btn download-btn-txt" onclick="showDownloadGate(downloadTxt)">⬇ Download Text</button>${videoBtn}
           <div style="width:100%;font-size:11px;color:#64748b;margin-top:6px;">Free account required to download — takes 5 seconds</div>`;
       } else {
-        const videoBtn = showVideo ? `<button class="download-btn" onclick="adGate(downloadVideo)" style="background:#0891b2;">▶ Ad → Video</button>` : '';
+        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `
           <button class="download-btn download-btn-pdf" onclick="adGate(downloadPdf)" style="background:#b91c1c;">▶ Ad → PDF</button>
           <button class="download-btn download-btn-docx" onclick="adGate(downloadDocx)" style="background:#7c3aed;">▶ Ad → Word</button>
