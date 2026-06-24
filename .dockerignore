@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+out
+data
+piper-voices
+*.md
+.env
+.env.*
