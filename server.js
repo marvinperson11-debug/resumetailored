@@ -1665,7 +1665,7 @@ function withTimeout(promise, ms, label) {
 }
 
 app.post('/api/resume-video', async (req, res) => {
-  const { resume, name, accentColor, email, voice } = req.body || {};
+  const { resume, name, accentColor, email, voice, photoUrl } = req.body || {};
   if (!resume || !resume.trim()) {
     return res.status(400).json({ error: 'Tailored resume text is required.' });
   }
@@ -1695,6 +1695,19 @@ app.post('/api/resume-video', async (req, res) => {
   if (name && typeof name === 'string' && name.trim()) {
     props.name = name.trim().slice(0, 60);
   }
+
+  // Optional candidate photo (small, client-downscaled image data URL).
+  if (typeof photoUrl === 'string' &&
+      /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) &&
+      photoUrl.length < 800000) {
+    props.photoUrl = photoUrl;
+  }
+
+  // Quiet background music bed (best-effort; BACKGROUND_MUSIC=off to disable).
+  try {
+    const music = require('./remotion/music').backgroundMusic();
+    if (music && music.src) props.musicSrc = music.src;
+  } catch (_) { /* no music */ }
 
   // Optional voiceover. Subscribers get the studio-quality ElevenLabs voice
   // (server owner's key) when configured; free users get the local Piper/espeak

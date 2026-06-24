@@ -724,6 +724,16 @@
           </div>
 
           <div class="input-group" style="margin-top:16px;">
+            <label class="input-label">Your Photo <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — adds your face to the intro)</span></label>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              <img id="videoPhotoPreview" alt="" style="display:none;width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #0891b2;" />
+              <button type="button" class="upload-btn" id="videoPhotoBtn" onclick="document.getElementById('videoPhotoInput').click()">⬆ Upload Photo</button>
+              <button type="button" class="btn btn-outline" id="videoPhotoClear" style="display:none;font-size:12px;padding:6px 12px;" onclick="clearVideoPhoto()">Remove</button>
+              <input type="file" id="videoPhotoInput" accept="image/*" style="display:none;" onchange="handleVideoPhoto(this)" />
+            </div>
+          </div>
+
+          <div class="input-group" style="margin-top:16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
               <label class="input-label" for="videoResume" style="margin:0;">Your Résumé</label>
               <span style="display:flex;gap:8px;">
@@ -4581,6 +4591,52 @@ Aaliyah Washington`
       }
     }
 
+    // Optional candidate photo for the video intro — center-cropped + downscaled
+    // in the browser so we send a small data URL (keeps the request tiny).
+    let videoPhotoDataUrl = '';
+    function downscaleImage(file, maxSize, quality) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = reject;
+        reader.onload = () => {
+          const im = new Image();
+          im.onerror = reject;
+          im.onload = () => {
+            try {
+              const src = Math.min(im.width, im.height);
+              const sx = (im.width - src) / 2, sy = (im.height - src) / 2;
+              const out = Math.min(maxSize, src);
+              const canvas = document.createElement('canvas');
+              canvas.width = out; canvas.height = out;
+              canvas.getContext('2d').drawImage(im, sx, sy, src, src, 0, 0, out, out);
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            } catch (e) { reject(e); }
+          };
+          im.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    async function handleVideoPhoto(input) {
+      const file = input.files[0]; input.value = '';
+      if (!file) return;
+      if (!/^image\//.test(file.type)) { showToast('Please choose an image file.'); return; }
+      try {
+        videoPhotoDataUrl = await downscaleImage(file, 360, 0.82);
+        const img = document.getElementById('videoPhotoPreview');
+        img.src = videoPhotoDataUrl; img.style.display = 'block';
+        document.getElementById('videoPhotoClear').style.display = 'inline-block';
+        document.getElementById('videoPhotoBtn').textContent = '✓ Photo added';
+        showToast("Photo added — it'll appear in your video intro.");
+      } catch (_) { showToast('Could not process that image.'); }
+    }
+    function clearVideoPhoto() {
+      videoPhotoDataUrl = '';
+      const img = document.getElementById('videoPhotoPreview'); if (img) { img.style.display = 'none'; img.src = ''; }
+      const clr = document.getElementById('videoPhotoClear'); if (clr) clr.style.display = 'none';
+      const btn = document.getElementById('videoPhotoBtn'); if (btn) btn.textContent = '⬆ Upload Photo';
+    }
+
     // Subscriber path: POST the résumé to the server renderer and download the
     // returned MP4 (studio ElevenLabs voice + narration-synced reveal).
     let videoRendering = false;
@@ -4602,7 +4658,7 @@ Aaliyah Washington`
         const res = await fetch('/api/resume-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resume: text, name: name || undefined, email }),
+          body: JSON.stringify({ resume: text, name: name || undefined, email, photoUrl: videoPhotoDataUrl || undefined }),
         });
         if (!res.ok) {
           let msg = 'Video generation failed. Please try again.';

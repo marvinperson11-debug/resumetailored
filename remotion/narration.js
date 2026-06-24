@@ -19,6 +19,14 @@ const crypto = require('crypto');
 const { spawnSync, execSync } = require('child_process');
 const { narrationScript, narrationTimeline } = require('./data');
 
+// Parse an env override to a number, falling back to `dflt` and clamping to a
+// safe range. Keeps voice settings tunable from Railway without code changes.
+function clampNum(v, dflt, lo, hi) {
+  const n = v == null || v === '' ? dflt : Number(v);
+  if (!Number.isFinite(n)) return dflt;
+  return Math.min(hi, Math.max(lo, n));
+}
+
 // Spread the total spoken duration across segments in proportion to their text
 // length. Used when the engine gives no per-character timings (Piper/espeak):
 // it's an estimate, but it still keeps each scene on screen for roughly as long
@@ -216,16 +224,20 @@ async function elevenNarration(props) {
   // exact duration to extend the video by, plus exact per-segment start/end
   // times to drive the reveal sync. mp3 works on every ElevenLabs tier.
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${cfg.voiceId}/with-timestamps?output_format=mp3_44100_128`;
+  const vs = {
+    // Lower stability + some style = more expressive, less monotone/robotic;
+    // speed < 1 slows the delivery to a relaxed, conversational pace. All
+    // env-tunable so the voice can be dialled in without a code change.
+    stability: clampNum(process.env.ELEVENLABS_STABILITY, 0.35, 0, 1),
+    similarity_boost: clampNum(process.env.ELEVENLABS_SIMILARITY, 0.8, 0, 1),
+    style: clampNum(process.env.ELEVENLABS_STYLE, 0.45, 0, 1),
+    use_speaker_boost: true,
+    speed: clampNum(process.env.ELEVENLABS_SPEED, 0.9, 0.7, 1.2),
+  };
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'xi-api-key': cfg.key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      text,
-      model_id: cfg.model,
-      // Slightly lower stability + higher similarity reads warmer and more
-      // human; speaker boost adds presence. Tunable via env if desired.
-      voice_settings: { stability: 0.4, similarity_boost: 0.85, style: 0.0, use_speaker_boost: true },
-    }),
+    body: JSON.stringify({ text, model_id: cfg.model, voice_settings: vs }),
   });
   if (!res.ok) {
     console.error('ElevenLabs TTS failed:', res.status, (await res.text().catch(() => '')).slice(0, 200));
