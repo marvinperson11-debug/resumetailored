@@ -55,6 +55,9 @@ async function renderResumeVideo(inputProps, outputLocation, onProgress) {
     id: 'ResumeVideo',
     inputProps,
     browserExecutable: browserExecutable || undefined,
+    // Cap the browser launch/eval so a stalled headless shell surfaces as an
+    // error instead of hanging the request (and its one-at-a-time lock) forever.
+    timeoutInMilliseconds: 60000,
   });
 
   await renderMedia({
