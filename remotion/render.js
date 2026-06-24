@@ -5,35 +5,21 @@
 // headless browser are only loaded the first time a video is requested, so the
 // rest of the server boots fine even if they are not installed.
 const path = require('path');
-const { execSync } = require('child_process');
 
 let bundlePromise = null;
 let cachedExecutable;
 
-// Prefer a system Chromium (installed via nixpacks on Railway, see
-// nixpacks.toml) so we don't depend on Remotion downloading a browser at
-// runtime. Falls back to Remotion's own headless shell when none is found.
+// By default, let Remotion download and use its own chrome-headless-shell — the
+// standalone "old headless" implementation Chrome split out in v132. We
+// deliberately do NOT auto-detect a system Chrome/Chromium on PATH anymore:
+// recent Chromium builds (132+, e.g. the one nixpacks installs) removed old
+// headless mode, so handing that binary to Remotion fails to launch with
+// "Old Headless mode has been removed from the Chrome binary". The bundled
+// chrome-headless-shell has no such problem. An explicit
+// REMOTION_BROWSER_EXECUTABLE / CHROME_PATH still wins as an escape hatch.
 function getBrowserExecutable() {
   if (cachedExecutable !== undefined) return cachedExecutable;
-  const fromEnv = process.env.REMOTION_BROWSER_EXECUTABLE || process.env.CHROME_PATH;
-  if (fromEnv) {
-    cachedExecutable = fromEnv;
-    return cachedExecutable;
-  }
-  for (const bin of ['chromium', 'chromium-browser', 'google-chrome-stable', 'google-chrome']) {
-    try {
-      const found = execSync(`command -v ${bin}`, { stdio: ['ignore', 'pipe', 'ignore'] })
-        .toString()
-        .trim();
-      if (found) {
-        cachedExecutable = found;
-        return cachedExecutable;
-      }
-    } catch (_) {
-      // not on PATH — try the next candidate
-    }
-  }
-  cachedExecutable = null;
+  cachedExecutable = process.env.REMOTION_BROWSER_EXECUTABLE || process.env.CHROME_PATH || null;
   return cachedExecutable;
 }
 

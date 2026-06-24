@@ -1,8 +1,19 @@
 [phases.setup]
-# chromium + fonts are required for Remotion server-side video rendering
-# (remotion/render.js). The renderer auto-detects the `chromium` binary on PATH.
-# espeak-ng is the robotic fallback voice; Piper (below) is the good one.
+# `chromium` is installed for its shared libraries (libnss, libatk, …) that
+# Remotion's downloaded chrome-headless-shell links against at runtime. We no
+# longer launch this chromium binary directly — recent builds removed the old
+# headless mode Remotion relies on — so the renderer uses chrome-headless-shell
+# instead (see remotion/render.js). espeak-ng is the robotic fallback voice;
+# Piper (below) is the good one.
 nixPkgs = ["nodejs", "python3", "gcc", "gnumake", "chromium", "fontconfig", "dejavu_fonts", "espeak-ng"]
+
+# Pre-download Remotion's chrome-headless-shell at build time (network is
+# available here) so the first video render doesn't pay a download cost or need
+# runtime network. Guarded with `|| true`: if it fails, render.js falls back to
+# downloading the shell on first use.
+[phases.browser]
+dependsOn = ["install"]
+cmds = ["node -e \"require('@remotion/renderer').ensureBrowser()\" || true"]
 
 # Install Piper (natural neural TTS) + a default English voice for the resume
 # video voiceover. Every step is guarded with `|| true`: if Piper can't be set
