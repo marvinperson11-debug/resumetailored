@@ -761,16 +761,29 @@ function _dxRenderResume(text, o) {
   if (o.layout === 'rSidebar' || o.layout === 'rTwoCol') {
     return [_dxTwoCol(name, contactParts, sections, { ...o, font })];
   }
-  const out = [];
   if (o.layout === 'rModern') {
-    out.push(_dxBand(name, contactParts, { ...o, font }));
-    out.push(new Paragraph({ spacing: { after: 120 } }));
-  } else if (o.layout === 'rBanner') {
+    // Full-bleed colour band across the top of the page (page margins are 0 for
+    // this layout). The body sits in a borderless table inset from the edges so
+    // the text keeps its 0.5in margin while the band runs edge to edge.
+    const body = [];
+    sections.forEach(sec => {
+      body.push(_dxHeading(sec.title, { style: 'icon-bar', primaryHex: o.primaryHex, accentHex: o.accentHex, font }));
+      for (const raw of sec.lines) for (const p of _dxLinePara(raw, { font, accentHex: o.accentHex, onDark: false })) body.push(p);
+    });
+    for (const p of _dxSig(o.sigName, o.primaryHex, font)) body.push(p);
+    const inset = new TableCell({ width: { size: o.contentWidth, type: WidthType.DXA }, margins: { top: 240, bottom: 120, left: 720, right: 720 }, children: body.length ? body : [new Paragraph({})] });
+    return [
+      _dxBand(name, contactParts, { ...o, font }),
+      new Table({ width: { size: o.contentWidth, type: WidthType.DXA }, columnWidths: [o.contentWidth], borders: _dxNoTableBorders(), rows: [new TableRow({ children: [inset] })] }),
+    ];
+  }
+  const out = [];
+  if (o.layout === 'rBanner') {
     out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], border: { left: { style: BorderStyle.SINGLE, size: 36, color: o.primaryHex, space: 12 } }, indent: { left: 130 }, spacing: { after: 40 } }));
     if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   ·   '), font, size: 18, color: '666666' })], indent: { left: 130 }, spacing: { after: 80 }, border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.accentHex, space: 6 } } }));
   } else if (o.layout === 'rMinimal') {
     out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 40, color: '111827', characterSpacing: 60 })], spacing: { after: 60 } }));
-    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 18, color: '666666' })], spacing: { after: 120 } }));
+    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 18, color: '666666' })], spacing: { after: 160 }, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: o.primaryHex, space: 6 } } }));
   } else if (o.layout === 'rExecutive') {
     // Coloured left bar on the name + contact, matching the gallery card.
     const lb = { left: { style: BorderStyle.SINGLE, size: 24, color: o.primaryHex, space: 8 } };
@@ -841,6 +854,9 @@ function _dxMargins(layout) {
   // for every layout. The Sidebar bleeds its coloured column to the page edge,
   // so its left/right margins are 0 and the inset lives inside the table cells.
   if (layout === 'rSidebar') return { top: 720, bottom: 720, left: 0, right: 0 };
+  // Modern bleeds its colour band to the top + side edges; the body is inset by
+  // a table instead (see _dxRenderResume), so page side margins are 0 here.
+  if (layout === 'rModern') return { top: 0, bottom: 720, left: 0, right: 0 };
   return { top: 720, bottom: 720, left: 720, right: 720 };
 }
 
