@@ -12,7 +12,7 @@ const os = require('os');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType } = require('docx');
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType, HeightRule } = require('docx');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 
@@ -748,7 +748,11 @@ function _dxTwoCol(name, contactParts, sections, o) {
     verticalAlign: VerticalAlign.TOP,
     children: right,
   });
-  return new Table({ width: { size: o.contentWidth, type: WidthType.DXA }, columnWidths: [leftW, rightW], borders: _dxNoTableBorders(), rows: [new TableRow({ children: [leftCell, rightCell] })] });
+  // Force the row to at least a full page tall so the coloured Sidebar column
+  // (and the Two-Column divider) runs the whole page height even when the
+  // content is short — and continues down subsequent pages if it overflows.
+  const row = new TableRow({ height: { value: o.pageContentHeight || 13680, rule: HeightRule.ATLEAST }, children: [leftCell, rightCell] });
+  return new Table({ width: { size: o.contentWidth, type: WidthType.DXA }, columnWidths: [leftW, rightW], borders: _dxNoTableBorders(), rows: [row] });
 }
 
 function _dxRenderResume(text, o) {
@@ -848,6 +852,7 @@ async function buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mo
         primaryHex: _dxHex(colors.primary, '#1a237e'), accentHex: _dxHex(colors.accent, '#5c6bc0'),
         lightHex: _dxHex(colors.light, '#e8eaf6'), sigName: withSig ? (sigName || null) : null,
         contentWidth: PAGE_WIDTH - m.left - m.right,
+        pageContentHeight: PAGE_HEIGHT - m.top - m.bottom,
       },
       margin: m,
     };
