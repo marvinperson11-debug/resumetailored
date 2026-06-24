@@ -1588,7 +1588,34 @@ OUTPUT: Cover Letter
 // Renders the tailored resume into a short vertical MP4 the user can share on
 // LinkedIn / Shorts / Reels. Rendering is CPU-heavy, so we serve one at a time
 // and lazy-load the Remotion packages only when the first video is requested.
-let videoRenderInFlight = false;
+// Single in-flight render lock. We record WHEN the render started rather than a
+// bare boolean so a hung render (e.g. the headless browser stalls during launch)
+// can't brick the feature until the next process restart: a request arriving
+// after MAX_RENDER_MS steals the stale lock. Each render is also wrapped in an
+// overall timeout so a hang becomes a surfaced error instead of an infinite wait.
+let videoRenderStartedAt = 0;
+const MAX_RENDER_MS = 4 * 60 * 1000;
+
+function videoRenderBusy() {
+  if (!videoRenderStartedAt) return false;
+  if (Date.now() - videoRenderStartedAt > MAX_RENDER_MS) {
+    console.warn('[resume-video] Stale render lock held too long — releasing it.');
+    videoRenderStartedAt = 0;
+    return false;
+  }
+  return true;
+}
+
+// Reject `promise` if it doesn't settle within `ms` (the underlying work may keep
+// running, but the request stops waiting and the lock is freed).
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
 app.post('/api/resume-video', async (req, res) => {
   const { resume, name, accentColor, email, voice } = req.body || {};
   if (!resume || !resume.trim()) {
@@ -1601,7 +1628,7 @@ app.post('/api/resume-video', async (req, res) => {
     return res.status(402).json({ error: 'free_limit_reached', mode: 'video', message: 'You\'ve used your free daily resume video. Upgrade to Pro for unlimited access.' });
   }
 
-  if (videoRenderInFlight) {
+  if (videoRenderBusy()) {
     return res.status(429).json({ error: 'busy', message: 'A video is already rendering. Please try again in a moment.' });
   }
 
@@ -1640,10 +1667,10 @@ app.post('/api/resume-video', async (req, res) => {
   }
 
   const outPath = path.join(os.tmpdir(), `resume-video-${uuidv4()}.mp4`);
-  videoRenderInFlight = true;
+  videoRenderStartedAt = Date.now();
   try {
     try {
-      await renderModule.renderResumeVideo(props, outPath);
+      await withTimeout(renderModule.renderResumeVideo(props, outPath), MAX_RENDER_MS, 'Video render');
     } catch (err) {
       // If a render with audio fails, retry once without it so the user still
       // gets a (silent) video rather than an error.
@@ -1651,7 +1678,7 @@ app.post('/api/resume-video', async (req, res) => {
         console.error('Render with audio failed, retrying silent:', err?.message || err);
         delete props.audioSrc;
         delete props.audioDurationInFrames;
-        await renderModule.renderResumeVideo(props, outPath);
+        await withTimeout(renderModule.renderResumeVideo(props, outPath), MAX_RENDER_MS, 'Video render (silent retry)');
       } else {
         throw err;
       }
@@ -1666,7 +1693,7 @@ app.post('/api/resume-video', async (req, res) => {
     fs.unlink(outPath, () => {});
     if (!res.headersSent) res.status(500).json({ error: 'Video generation failed. Please try again.', detail: String(err?.message || err).slice(0, 400) });
   } finally {
-    videoRenderInFlight = false;
+    videoRenderStartedAt = 0;
   }
 });
 
