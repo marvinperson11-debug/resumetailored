@@ -505,6 +505,19 @@
       const update = () => apply(text);
       const reset = () => { setText(''); setStatus(''); setProps(defaultProps); };
 
+      // One-shot handoff from the dashboard: the 🎬 button stashes the tailored
+      // resume in localStorage before opening this page, so we load it straight
+      // into the preview and then clear it.
+      React.useEffect(() => {
+        try {
+          const stashed = localStorage.getItem('rt_preview_resume');
+          if (stashed && stashed.trim()) {
+            apply(stashed);
+            localStorage.removeItem('rt_preview_resume');
+          }
+        } catch (_) {}
+      }, []);
+
       const onFile = async (e) => {
         const file = e.target.files && e.target.files[0];
         e.target.value = '';
