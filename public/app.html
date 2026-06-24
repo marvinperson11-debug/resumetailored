@@ -711,7 +711,7 @@
             <div style="width:44px;height:44px;background:#e11d48;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎬</div>
             <div>
               <h1 style="color:#e11d48;">Resume Video Maker</h1>
-              <span style="background:#0891b2;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ FREE · IN YOUR BROWSER</span>
+              <span id="videoBadge" style="background:#0891b2;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ FREE · IN YOUR BROWSER</span>
             </div>
           </div>
           <p>Turn any résumé into a short, shareable vertical video with a voiceover — perfect for LinkedIn, Shorts, and Reels. No tailoring required: paste or upload a résumé, then preview and record it right in your browser — free, nothing to install.</p>
@@ -738,12 +738,14 @@
           <button class="btn btn-primary" id="videoGenBtn" onclick="generateStandaloneVideo()" style="margin-top:16px;width:100%;padding:14px;background:#0891b2;border-color:#0891b2;">
             🎬 Open Video Maker →
           </button>
-          <p style="font-size:12px;color:#6b7280;margin-top:10px;text-align:center;">Opens the free in-browser maker — preview instantly, pick a voiceover (device voice, or your own ElevenLabs key for a studio voice), and record to share.</p>
+          <div id="videoStatus" style="display:none;font-size:13px;color:#0891b2;margin-top:12px;text-align:center;font-weight:600;"></div>
+          <p id="videoHelp" style="font-size:12px;color:#6b7280;margin-top:10px;text-align:center;">Opens the free in-browser maker — preview instantly, pick a voiceover (device voice, or your own ElevenLabs key for a studio voice), and record to share.</p>
         </div>
 
-        <!-- Upgrade gate for non-subscribers -->
+        <!-- Upsell: free users get the in-browser maker above; Pro gets the
+             server-rendered studio MP4 (natural voice, synced reveal, download). -->
         <div class="upsell" id="videoUpsell" style="display:none;margin-top:20px;">
-          <p>The <strong>Resume Video Maker</strong> is a Pro feature. Upgrade to create unlimited shareable resume videos with a studio voiceover — $19/month.</p>
+          <p><strong>Want the studio version?</strong> Pro renders your video on our servers with a natural human voiceover synced to the narration, and downloads a polished, shareable <strong>.mp4</strong> — $19/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -4491,12 +4493,23 @@ Aaliyah Washington`
     }
 
     function updateVideoGate() {
-      // The video maker is free (in-browser), so no Pro gate. Keep the upsell
-      // hidden and the button labelled for the maker.
+      // Subscribers (and the owner) get the server-rendered studio MP4 — natural
+      // ElevenLabs voice, synced reveal, downloadable. Free users get the free
+      // in-browser maker (device voice) + an upsell to the studio video.
       const up = document.getElementById('videoUpsell');
       const btn = document.getElementById('videoGenBtn');
-      if (up) up.style.display = 'none';
-      if (btn) btn.innerHTML = '🎬 Open Video Maker →';
+      const help = document.getElementById('videoHelp');
+      const badge = document.getElementById('videoBadge');
+      if (badge) badge.textContent = isSubscriberFlag ? '✦ PRO · STUDIO VOICE' : '✦ FREE · IN YOUR BROWSER';
+      if (isSubscriberFlag) {
+        if (btn) btn.innerHTML = '🎬 Generate Studio Video →';
+        if (help) help.textContent = 'Renders on our servers with a studio voice synced to the narration, then downloads a shareable .mp4. Takes about 30–90 seconds.';
+        if (up) up.style.display = 'none';
+      } else {
+        if (btn) btn.innerHTML = '🎬 Open Free Video Maker →';
+        if (help) help.textContent = 'Opens the free in-browser maker — preview instantly, pick a voiceover (device voice, or your own ElevenLabs key for a studio voice), and record to share.';
+        if (up) up.style.display = 'flex';
+      }
     }
 
     function copyTailorResumeToVideo() {
@@ -4541,16 +4554,79 @@ Aaliyah Washington`
       }
     }
 
-    // Video tab: open the in-browser maker with the résumé from the tab's textarea.
+    // Video tab: subscribers render the studio MP4 on the server; free users get
+    // the in-browser maker.
     function generateStandaloneVideo() {
       const resumeText = (document.getElementById('videoResume').value || '').trim();
-      openVideoMaker(resumeText); // empty is fine — /preview supports paste/upload
+      if (isSubscriberFlag) {
+        if (!resumeText) { showToast('Paste or upload a résumé first.'); return; }
+        renderServerVideo(resumeText);
+      } else {
+        openVideoMaker(resumeText); // empty is fine — /preview supports paste/upload
+      }
     }
 
-    // Download row 🎬 button: open the in-browser maker with the tailored résumé.
+    // Download row 🎬 button: subscribers get the server studio MP4, free users
+    // the in-browser maker, both from the tailored résumé.
     function downloadVideo() {
       if (selectedMode === 'cover_letter') { showToast('The video is made from a tailored resume.'); return; }
-      openVideoMaker((lastRawResult || '').trim());
+      const resumeText = (lastRawResult || '').trim();
+      if (isSubscriberFlag) {
+        if (!resumeText) { showToast('Tailor a resume first, then make its video.'); return; }
+        showTab('video');
+        const ta = document.getElementById('videoResume'); if (ta && !ta.value.trim()) ta.value = resumeText;
+        renderServerVideo(resumeText);
+      } else {
+        openVideoMaker(resumeText);
+      }
+    }
+
+    // Subscriber path: POST the résumé to the server renderer and download the
+    // returned MP4 (studio ElevenLabs voice + narration-synced reveal).
+    let videoRendering = false;
+    async function renderServerVideo(resumeText) {
+      if (videoRendering) { showToast('A video is already rendering — please wait.'); return; }
+      const text = (resumeText || '').trim();
+      if (!text) { showToast('No résumé found.'); return; }
+      const email = (typeof getStoredEmail === 'function' ? getStoredEmail() : (localStorage.getItem('rt_email') || ''));
+      const name = (document.getElementById('videoName')?.value || '').trim();
+      const btn = document.getElementById('videoGenBtn');
+      const status = document.getElementById('videoStatus');
+      const setStatus = (msg) => { if (status) { status.style.display = 'block'; status.textContent = msg; } };
+      const t0 = Date.now();
+      videoRendering = true;
+      let timer = setInterval(() => setStatus(`Rendering your studio video… ${Math.round((Date.now() - t0) / 1000)}s (usually 30–90s).`), 1000);
+      if (btn) { btn.disabled = true; btn.dataset.prevLabel = btn.innerHTML; btn.innerHTML = '⏳ Rendering…'; }
+      setStatus('Rendering your studio video… this usually takes 30–90 seconds.');
+      try {
+        const res = await fetch('/api/resume-video', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resume: text, name: name || undefined, email }),
+        });
+        if (!res.ok) {
+          let msg = 'Video generation failed. Please try again.';
+          if (res.status === 429) msg = 'A video is already rendering on the server — try again in a moment.';
+          else { try { const j = await res.json(); if (j && (j.message || j.error)) msg = j.message || j.error; } catch (_) {} }
+          throw new Error(msg);
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = (name ? name.replace(/[^\w]+/g, '_') : 'resume') + '-video.mp4';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        setStatus('✓ Done — your video downloaded.');
+        showToast('🎬 Your resume video is ready!');
+      } catch (err) {
+        if (status) { status.style.display = 'none'; status.textContent = ''; }
+        showToast(err.message || 'Video generation failed.');
+      } finally {
+        videoRendering = false;
+        clearInterval(timer);
+        if (btn) { btn.disabled = false; if (btn.dataset.prevLabel) btn.innerHTML = btn.dataset.prevLabel; }
+      }
     }
 
     function downloadPdf() {
