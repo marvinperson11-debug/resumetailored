@@ -4436,12 +4436,16 @@ Aaliyah Washington`
           body: JSON.stringify({
             text: primaryText, coverText, filename, colors,
             sigName: sigName || null, sigFont: sigFont || null, pageSize: selectedPageSize,
-            mode: selectedMode,
+            mode: selectedMode, docFont: selectedDocFont,
             primary: tplMeta(primaryTpl), cover: tplMeta(cTpl),
             meta: window.lastCoverMeta || null
           })
         });
-        if (!res.ok) throw new Error('Download failed.');
+        if (!res.ok) {
+          let detail = '';
+          try { const d = await res.json(); detail = d.detail || d.error || ''; } catch (_) {}
+          throw new Error(detail || 'Download failed.');
+        }
         const blob = await res.blob();
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -4449,7 +4453,7 @@ Aaliyah Washington`
         a.click();
         URL.revokeObjectURL(a.href);
       } catch(err) {
-        showToast('Could not generate .docx. Try downloading as .txt instead.');
+        showToast('Could not generate .docx: ' + (err && err.message ? err.message : 'try .txt instead'), 6000);
       }
     }
 
