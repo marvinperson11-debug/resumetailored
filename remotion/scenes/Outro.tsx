@@ -2,6 +2,8 @@ import React from 'react';
 import { AbsoluteFill, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { theme } from '../theme';
 
+// Closing card. The brand itself now lives in the small corner watermark, so
+// the end no longer flashes a giant logo — just a clean, modest call to action.
 export const Outro: React.FC<{ brand: string; accent: string }> = ({
   brand,
   accent,
@@ -12,23 +14,21 @@ export const Outro: React.FC<{ brand: string; accent: string }> = ({
 
   return (
     <AbsoluteFill
-      style={{ justifyContent: 'center', alignItems: 'center', padding: 90 }}
+      style={{ justifyContent: 'center', alignItems: 'center', padding: 100 }}
     >
-      <div style={{ fontSize: 44, color: theme.subtext, opacity: p }}>
-        Tailored with
+      <div style={{ fontSize: 36, color: theme.subtext, opacity: p }}>
+        Tailored with {brand}
       </div>
       <div
         style={{
-          fontSize: 86,
+          fontSize: 60,
           fontWeight: 800,
           color: accent,
           marginTop: 18,
-          transform: `scale(${p})`,
+          opacity: p,
+          transform: `translateY(${(1 - p) * 22}px)`,
         }}
       >
-        {brand}
-      </div>
-      <div style={{ marginTop: 44, fontSize: 32, color: theme.subtext, opacity: p }}>
         resumetailored.com
       </div>
     </AbsoluteFill>

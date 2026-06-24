@@ -17,7 +17,32 @@ const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 const { spawnSync, execSync } = require('child_process');
-const { narrationScript } = require('./data');
+const { narrationScript, narrationTimeline } = require('./data');
+
+// Spread the total spoken duration across segments in proportion to their text
+// length. Used when the engine gives no per-character timings (Piper/espeak):
+// it's an estimate, but it still keeps each scene on screen for roughly as long
+// as its line is spoken.
+function estimateSegmentTimes(segments, seconds) {
+  const total = segments.reduce((n, s) => n + s.text.length, 0) || 1;
+  let t = 0;
+  return segments.map((s) => {
+    const start = t;
+    t += seconds * (s.text.length / total);
+    return { kind: s.kind, index: s.index, text: s.text, start, end: t };
+  });
+}
+
+// Map each segment's character span to start/end seconds using ElevenLabs'
+// per-character timing arrays (exact sync, no drift).
+function segmentTimesFromChars(segments, starts, ends) {
+  const last = ends.length - 1;
+  return segments.map((s) => {
+    const si = Math.max(0, Math.min(s.charStart, starts.length - 1));
+    const ei = Math.max(0, Math.min(s.charEnd - 1, last));
+    return { kind: s.kind, index: s.index, text: s.text, start: starts[si] || 0, end: ends[ei] || 0 };
+  });
+}
 
 function onPath(bin) {
   try {
@@ -132,7 +157,7 @@ function wavSeconds(buf) {
 // (src is a data: URL), or null when no engine is available / disabled / on any
 // failure — the caller then renders a silent video.
 function generateNarration(props) {
-  const script = narrationScript(props);
+  const { script, segments } = narrationTimeline(props);
   if (!script) return null;
 
   const engine = pickEngine();
@@ -150,7 +175,12 @@ function generateNarration(props) {
     }
     const wav = fs.readFileSync(wavPath);
     if (!wav.length) return null;
-    return { src: `data:audio/wav;base64,${wav.toString('base64')}`, seconds: wavSeconds(wav) };
+    const seconds = wavSeconds(wav);
+    return {
+      src: `data:audio/wav;base64,${wav.toString('base64')}`,
+      seconds,
+      segments: estimateSegmentTimes(segments, seconds),
+    };
   } catch (err) {
     console.error('Narration error:', err.message);
     return null;
@@ -169,18 +199,22 @@ function elevenConfig() {
   return {
     key,
     voiceId: process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM', // "Rachel"
-    model: process.env.ELEVENLABS_MODEL_ID || 'eleven_turbo_v2_5',
+    // multilingual_v2 is ElevenLabs' most natural/expressive model — worth the
+    // few extra seconds for a polished, human-sounding subscriber video. Set
+    // ELEVENLABS_MODEL_ID=eleven_turbo_v2_5 to trade a little warmth for speed.
+    model: process.env.ELEVENLABS_MODEL_ID || 'eleven_multilingual_v2',
   };
 }
 
 async function elevenNarration(props) {
   const cfg = elevenConfig();
   if (!cfg) return null;
-  const text = narrationScript(props);
+  const { script: text, segments } = narrationTimeline(props);
   if (!text) return null;
 
-  // with-timestamps returns the audio AND character timings, so we get an exact
-  // duration to extend the video by — and mp3 works on every ElevenLabs tier.
+  // with-timestamps returns the audio AND per-character timings, so we get an
+  // exact duration to extend the video by, plus exact per-segment start/end
+  // times to drive the reveal sync. mp3 works on every ElevenLabs tier.
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${cfg.voiceId}/with-timestamps?output_format=mp3_44100_128`;
   const res = await fetch(url, {
     method: 'POST',
@@ -188,7 +222,9 @@ async function elevenNarration(props) {
     body: JSON.stringify({
       text,
       model_id: cfg.model,
-      voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+      // Slightly lower stability + higher similarity reads warmer and more
+      // human; speaker boost adds presence. Tunable via env if desired.
+      voice_settings: { stability: 0.4, similarity_boost: 0.85, style: 0.0, use_speaker_boost: true },
     }),
   });
   if (!res.ok) {
@@ -197,12 +233,14 @@ async function elevenNarration(props) {
   }
   const data = await res.json();
   if (!data || !data.audio_base64) return null;
-  const ends =
-    (data.alignment && data.alignment.character_end_times_seconds) ||
-    (data.normalized_alignment && data.normalized_alignment.character_end_times_seconds) ||
-    [];
+  const align = data.alignment || data.normalized_alignment || {};
+  const ends = align.character_end_times_seconds || [];
+  const starts = align.character_start_times_seconds || ends.map((_, i) => (i ? ends[i - 1] : 0));
   const seconds = ends.length ? ends[ends.length - 1] : Math.max(4, text.length / 14);
-  return { src: `data:audio/mpeg;base64,${data.audio_base64}`, seconds };
+  const segTimes = ends.length
+    ? segmentTimesFromChars(segments, starts, ends)
+    : estimateSegmentTimes(segments, seconds);
+  return { src: `data:audio/mpeg;base64,${data.audio_base64}`, seconds, segments: segTimes };
 }
 
 // Preferred entry point for the server. Tries ElevenLabs first (when allowed and
