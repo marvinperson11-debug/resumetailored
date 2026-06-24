@@ -3838,8 +3838,22 @@
         const wasBold = /^\*\*[^*]+\*\*$/.test(raw.trim());
         t = t.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
         if (!t) { _closeGrp(); html += `<div style="height:7px;"></div>`; continue; }
-        if (firstLine) { firstLine = false; html += tpl.style === 'minimal' ? `<div style="font-size:22px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:#111827;margin-bottom:3px;">${escHtml(t)}</div>` : `<div style="font-size:28px;font-weight:800;color:${c.p};letter-spacing:-0.5px;margin-bottom:4px;">${escHtml(t)}</div>`; continue; }
-        if ((t.includes('@') || /\(\d{3}\)/.test(t) || (t.includes('|') && t.length < 80 && !/\d{4}/.test(t))) && t.length < 120) { html += `<div style="font-size:12px;color:#666;margin-bottom:14px;letter-spacing:0.3px;">${escHtml(t)}</div>`; continue; }
+        if (firstLine) {
+          firstLine = false;
+          // Header name — match the template gallery cards: Classic (underline)
+          // centers the name; Executive (left-bar) gives it a coloured left bar.
+          if (tpl.style === 'minimal') html += `<div style="font-size:22px;font-weight:300;letter-spacing:4px;text-transform:uppercase;color:#111827;margin-bottom:3px;">${escHtml(t)}</div>`;
+          else if (tpl.style === 'left-bar') html += `<div style="border-left:4px solid ${c.p};padding-left:13px;font-size:28px;font-weight:800;color:${c.p};letter-spacing:-0.5px;margin-bottom:4px;">${escHtml(t)}</div>`;
+          else if (tpl.style === 'underline') html += `<div style="text-align:center;font-size:28px;font-weight:800;color:${c.p};letter-spacing:-0.5px;margin-bottom:3px;">${escHtml(t)}</div>`;
+          else html += `<div style="font-size:28px;font-weight:800;color:${c.p};letter-spacing:-0.5px;margin-bottom:4px;">${escHtml(t)}</div>`;
+          continue;
+        }
+        if ((t.includes('@') || /\(\d{3}\)/.test(t) || (t.includes('|') && t.length < 80 && !/\d{4}/.test(t))) && t.length < 120) {
+          if (tpl.style === 'underline') html += `<div style="text-align:center;font-size:12px;color:#666;margin-bottom:14px;letter-spacing:0.3px;border-bottom:1.5px solid ${c.p};padding-bottom:10px;">${escHtml(t)}</div>`;
+          else if (tpl.style === 'left-bar') html += `<div style="border-left:4px solid ${c.p};padding-left:13px;font-size:12px;color:#666;margin-bottom:14px;letter-spacing:0.3px;">${escHtml(t)}</div>`;
+          else html += `<div style="font-size:12px;color:#666;margin-bottom:14px;letter-spacing:0.3px;">${escHtml(t)}</div>`;
+          continue;
+        }
         const isHdr = t.length >= 2 && t.length <= 50 && /^[A-Z][A-Z\s&\/\(\)\-:.]+$/.test(t);
         if (isHdr) {
           _closeGrp();

@@ -771,9 +771,19 @@ function _dxRenderResume(text, o) {
   } else if (o.layout === 'rMinimal') {
     out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 40, color: '111827', characterSpacing: 60 })], spacing: { after: 60 } }));
     if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 18, color: '666666' })], spacing: { after: 120 } }));
+  } else if (o.layout === 'rExecutive') {
+    // Coloured left bar on the name + contact, matching the gallery card.
+    const lb = { left: { style: BorderStyle.SINGLE, size: 24, color: o.primaryHex, space: 8 } };
+    out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], border: lb, indent: { left: 60 }, spacing: { after: 40 } }));
+    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 19, color: '555555' })], border: lb, indent: { left: 60 }, spacing: { after: 120 } }));
   } else {
-    out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], spacing: { after: 60 } }));
-    if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 19, color: '555555' })], spacing: { after: 120 } }));
+    // rClassic — centred name + contact with a full-width rule underneath.
+    out.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], spacing: { after: 40 } }));
+    if (contactParts.length) {
+      out.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: contactParts.join('   |   '), font, size: 19, color: '555555' })], spacing: { after: 120 }, border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex, space: 6 } } }));
+    } else {
+      out.push(new Paragraph({ children: [new TextRun({ text: '', font, size: 2 })], border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex, space: 6 } }, spacing: { after: 120 } }));
+    }
   }
   const headStyle = { rClassic: 'underline', rExecutive: 'left-bar', rMinimal: 'minimal', rModern: 'icon-bar', rBanner: 'banner-pill' }[o.layout] || 'underline';
   sections.forEach(sec => {
