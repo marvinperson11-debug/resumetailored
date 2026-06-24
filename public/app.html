@@ -4576,7 +4576,7 @@ Aaliyah Washington`
       }
 
       const noPagePad = selectedMode === 'both' ? true : ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
-      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit','rModern','rSidebar'].includes(tpl.layout);
+      const isCoverBanner = selectedMode !== 'both' && ['cModern','cBold','cSplit','rModern'].includes(tpl.layout);
       const isSidebar = selectedMode !== 'both' && tpl.layout === 'rSidebar';
       const bodyBg = selectedMode === 'both' ? '#fff' : (isSidebar
         ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
@@ -4600,7 +4600,7 @@ Aaliyah Washington`
   </style>
 </head>
 <body>
-  <div class="page">
+  <div class="page"${isSidebar ? ` style="background:${bodyBg};-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;"` : ''}>
     ${printContent}
   </div>
   <script>window.onload = function(){
