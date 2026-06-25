@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, Audio, Sequence, useVideoConfig } from 'remotion';
 import { ResumeVideoProps, NarrationSegment } from './types';
-import { sceneFrames } from './data';
+import { sceneFrames, HIRED_SECONDS } from './data';
 import { theme } from './theme';
 import { Background } from './scenes/Background';
 import { Intro } from './scenes/Intro';
@@ -10,6 +10,7 @@ import { Highlights } from './scenes/Highlights';
 import { HighlightOne } from './scenes/HighlightOne';
 import { Skills } from './scenes/Skills';
 import { Outro } from './scenes/Outro';
+import { Hired } from './scenes/Hired';
 import { Watermark } from './scenes/Watermark';
 
 export const ResumeVideo: React.FC<ResumeVideoProps> = (props) => {
@@ -80,6 +81,8 @@ const SyncedScenes: React.FC<{
     }
   };
 
+  const hiredFrames = Math.round(HIRED_SECONDS * fps);
+
   return (
     <>
       {segments.map((seg, i) => {
@@ -91,6 +94,10 @@ const SyncedScenes: React.FC<{
           </Sequence>
         );
       })}
+      {/* Closing celebration after the narration: interview handshake → hired. */}
+      <Sequence from={totalF} durationInFrames={hiredFrames} name="Hired">
+        <Hired accent={accent} />
+      </Sequence>
     </>
   );
 };
@@ -123,6 +130,9 @@ const FixedScenes: React.FC<{ props: ResumeVideoProps; accent: string; fps: numb
         name="Outro"
       >
         <Outro brand={props.brand} accent={accent} />
+      </Sequence>
+      <Sequence from={total} durationInFrames={Math.round(HIRED_SECONDS * fps)} name="Hired">
+        <Hired accent={accent} />
       </Sequence>
     </>
   );

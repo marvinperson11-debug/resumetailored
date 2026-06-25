@@ -29,6 +29,10 @@ const defaultResumeVideoProps = {
 
 const FPS = 30;
 
+// Length of the closing "interview handshake → got the job" celebration that
+// plays after the narration ends. Shared by Root (duration) and ResumeVideo.
+const HIRED_SECONDS = 3.4;
+
 // Per-scene frame counts. `total` is what Root passes to <Composition> via
 // calculateMetadata so the timeline always matches the content length.
 function sceneFrames(highlightCount, fps = FPS) {
@@ -97,4 +101,4 @@ function narrationScript(props) {
   return narrationTimeline(props).script;
 }
 
-module.exports = { defaultResumeVideoProps, FPS, sceneFrames, narrationScript, narrationSegments, narrationTimeline };
+module.exports = { defaultResumeVideoProps, FPS, HIRED_SECONDS, sceneFrames, narrationScript, narrationSegments, narrationTimeline };
