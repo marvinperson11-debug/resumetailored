@@ -741,6 +741,14 @@
           </div>
 
           <div class="input-group" style="margin-top:16px;">
+            <label class="input-label" for="videoVoiceGender">Narration voice <span style="color:#9ca3af;font-weight:400;font-size:12px;">(it speaks in first person — pick the one that matches you)</span></label>
+            <select id="videoVoiceGender" class="text-input" style="max-width:260px;">
+              <option value="female">Female voice</option>
+              <option value="male">Male voice</option>
+            </select>
+          </div>
+
+          <div class="input-group" style="margin-top:16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
               <label class="input-label" for="videoResume" style="margin:0;">Your Résumé</label>
               <span style="display:flex;gap:8px;">
@@ -4728,7 +4736,7 @@ Aaliyah Washington`
         const res = await fetch('/api/resume-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resume: text, name: name || undefined, email, photoUrl: videoPhotoDataUrl || undefined }),
+          body: JSON.stringify({ resume: text, name: name || undefined, email, photoUrl: videoPhotoDataUrl || undefined, voiceGender: (document.getElementById('videoVoiceGender') || {}).value || undefined }),
         });
         if (!res.ok) {
           let msg = 'Video generation failed. Please try again.';

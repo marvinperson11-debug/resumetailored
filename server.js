@@ -1665,7 +1665,7 @@ function withTimeout(promise, ms, label) {
 }
 
 app.post('/api/resume-video', async (req, res) => {
-  const { resume, name, accentColor, email, voice, photoUrl } = req.body || {};
+  const { resume, name, accentColor, email, voice, photoUrl, voiceGender } = req.body || {};
   if (!resume || !resume.trim()) {
     return res.status(400).json({ error: 'Tailored resume text is required.' });
   }
@@ -1716,7 +1716,8 @@ app.post('/api/resume-video', async (req, res) => {
   if (voice !== false) {
     try {
       const allowEleven = subscribed || process.env.ELEVENLABS_FREE_TIER === 'on';
-      const vo = await require('./remotion/narration').generateNarrationAsync(props, { allowEleven });
+      const vg = (voiceGender === 'male' || voiceGender === 'female') ? voiceGender : undefined;
+      const vo = await require('./remotion/narration').generateNarrationAsync(props, { allowEleven, voiceGender: vg });
       if (vo && vo.src) {
         const { FPS } = require('./remotion/data');
         props.audioSrc = vo.src;

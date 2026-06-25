@@ -206,7 +206,6 @@ function elevenConfig() {
   if (!key) return null;
   return {
     key,
-    voiceId: process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM', // "Rachel"
     // multilingual_v2 is ElevenLabs' most natural/expressive model — worth the
     // few extra seconds for a polished, human-sounding subscriber video. Set
     // ELEVENLABS_MODEL_ID=eleven_turbo_v2_5 to trade a little warmth for speed.
@@ -214,25 +213,40 @@ function elevenConfig() {
   };
 }
 
-async function elevenNarration(props) {
+// Resolve the voice for the requested narrator gender. The video is first-person
+// ("My name is …"), so it sounds most human when the voice matches the
+// candidate. Defaults are well-known, stable ElevenLabs premade voices; override
+// either per gender (ELEVENLABS_VOICE_ID_MALE/_FEMALE) or globally
+// (ELEVENLABS_VOICE_ID) — set those to a conversational voice from your library.
+function resolveVoiceId(voiceGender) {
+  const female = process.env.ELEVENLABS_VOICE_ID_FEMALE || process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'; // Rachel
+  const male = process.env.ELEVENLABS_VOICE_ID_MALE || 'pNInz6obpgDQGcFmaJgB'; // Adam
+  if (voiceGender === 'male') return male;
+  if (voiceGender === 'female') return female;
+  return process.env.ELEVENLABS_VOICE_ID || female;
+}
+
+async function elevenNarration(props, opts = {}) {
   const cfg = elevenConfig();
   if (!cfg) return null;
   const { script: text, segments } = narrationTimeline(props);
   if (!text) return null;
 
+  const voiceId = resolveVoiceId(opts.voiceGender);
   // with-timestamps returns the audio AND per-character timings, so we get an
   // exact duration to extend the video by, plus exact per-segment start/end
   // times to drive the reveal sync. mp3 works on every ElevenLabs tier.
-  const url = `https://api.elevenlabs.io/v1/text-to-speech/${cfg.voiceId}/with-timestamps?output_format=mp3_44100_128`;
+  const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=mp3_44100_128`;
   const vs = {
-    // Lower stability + some style = more expressive, less monotone/robotic;
-    // speed < 1 slows the delivery to a relaxed, conversational pace. All
-    // env-tunable so the voice can be dialled in without a code change.
-    stability: clampNum(process.env.ELEVENLABS_STABILITY, 0.35, 0, 1),
-    similarity_boost: clampNum(process.env.ELEVENLABS_SIMILARITY, 0.8, 0, 1),
-    style: clampNum(process.env.ELEVENLABS_STYLE, 0.45, 0, 1),
+    // Lower stability + more style = warmer, more expressive and less monotone
+    // (the "robotic" feel comes from flat, over-stable delivery); higher
+    // similarity hews closer to the real human recording; speed < 1 relaxes the
+    // pace. All env-tunable so the voice can be dialled in without a code change.
+    stability: clampNum(process.env.ELEVENLABS_STABILITY, 0.3, 0, 1),
+    similarity_boost: clampNum(process.env.ELEVENLABS_SIMILARITY, 0.85, 0, 1),
+    style: clampNum(process.env.ELEVENLABS_STYLE, 0.55, 0, 1),
     use_speaker_boost: true,
-    speed: clampNum(process.env.ELEVENLABS_SPEED, 0.88, 0.7, 1.2),
+    speed: clampNum(process.env.ELEVENLABS_SPEED, 0.9, 0.7, 1.2),
   };
   const res = await fetch(url, {
     method: 'POST',
@@ -260,7 +274,7 @@ async function elevenNarration(props) {
 async function generateNarrationAsync(props, opts = {}) {
   if (opts.allowEleven !== false && process.env.RESUME_VIDEO_VOICE !== 'off') {
     try {
-      const el = await elevenNarration(props);
+      const el = await elevenNarration(props, opts);
       if (el) return el;
     } catch (err) {
       console.error('ElevenLabs narration error:', err.message);
