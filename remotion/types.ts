@@ -18,6 +18,11 @@ export type ResumeVideoProps = {
   // Per-segment narration timings. When present, each scene is revealed exactly
   // while its line is spoken (instead of the fixed scene durations).
   segments?: NarrationSegment[];
+  // Optional candidate photo (data/HTTP URL). Shown as a circular avatar in the
+  // intro when present.
+  photoUrl?: string;
+  // Optional quiet background music track (data/HTTP URL), muxed under the voice.
+  musicSrc?: string;
 };
 
 export type NarrationSegment = {

@@ -20,6 +20,8 @@ export const ResumeVideo: React.FC<ResumeVideoProps> = (props) => {
   return (
     <AbsoluteFill style={{ backgroundColor: theme.bg, fontFamily: theme.fontFamily }}>
       {props.audioSrc ? <Audio src={props.audioSrc} /> : null}
+      {/* Quiet background jingle, mixed well under the voice. */}
+      {props.musicSrc ? <Audio src={props.musicSrc} volume={0.12} loop /> : null}
       <Background accent={accent} />
       {segments ? (
         <SyncedScenes props={props} segments={segments} accent={accent} fps={fps} />
@@ -57,7 +59,7 @@ const SyncedScenes: React.FC<{
   const sceneFor = (seg: NarrationSegment) => {
     switch (seg.kind) {
       case 'intro':
-        return <Intro name={props.name} title={props.title} summary="" accent={accent} />;
+        return <Intro name={props.name} title={props.title} summary="" accent={accent} photoUrl={props.photoUrl} />;
       case 'summary':
         return <Summary summary={props.summary} accent={accent} />;
       case 'highlight':
@@ -107,7 +109,7 @@ const FixedScenes: React.FC<{ props: ResumeVideoProps; accent: string; fps: numb
   return (
     <>
       <Sequence durationInFrames={f.intro} name="Intro">
-        <Intro name={props.name} title={props.title} summary={props.summary} accent={accent} />
+        <Intro name={props.name} title={props.title} summary={props.summary} accent={accent} photoUrl={props.photoUrl} />
       </Sequence>
       <Sequence from={f.intro} durationInFrames={f.highlights} name="Highlights">
         <Highlights highlights={props.highlights} accent={accent} />

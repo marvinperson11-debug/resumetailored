@@ -172,13 +172,13 @@
     // Voiceover script (mirrors remotion/data.js narrationScript).
     function narrationScript(p) {
       const parts = [];
-      if (p.name) parts.push(`Meet ${p.name}${p.title ? ', ' + p.title : ''}.`);
+      if (p.name) parts.push(`Hello. My name is ${p.name}${p.title ? `, and I'm ${/^[aeiou]/i.test(p.title.trim()) ? 'an' : 'a'} ${p.title}` : ''}.`);
       if (p.summary) parts.push(p.summary);
       const hs = (p.highlights || []).slice(0, 3);
-      if (hs.length) parts.push('Career highlights: ' + hs.join('. ') + '.');
+      if (hs.length) parts.push("Here are a few things I'm proud of. " + hs.join('. ') + '.');
       const sk = (p.skills || []).slice(0, 6);
-      if (sk.length) parts.push('Core skills include ' + sk.join(', ') + '.');
-      if (p.brand) parts.push(`Tailored with ${p.brand}.`);
+      if (sk.length) parts.push('My core skills include ' + sk.join(', ') + '.');
+      // No spoken brand/website line — the video is about the candidate.
       return parts.join(' ').replace(/\s+/g, ' ').trim();
     }
 

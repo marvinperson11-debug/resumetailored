@@ -47,16 +47,18 @@ function sceneFrames(highlightCount, fps = FPS) {
 function narrationSegments(props) {
   const p = props || {};
   const segs = [];
-  if (p.name) segs.push({ kind: 'intro', text: `Meet ${p.name}${p.title ? `, ${p.title}` : ''}.` });
+  // Open like a person introducing themselves, not a product teaser.
+  if (p.name) segs.push({ kind: 'intro', text: `Hello. My name is ${p.name}${p.title ? `, and I'm ${/^[aeiou]/i.test(p.title.trim()) ? 'an' : 'a'} ${p.title}` : ''}.` });
   if (p.summary) segs.push({ kind: 'summary', text: String(p.summary).replace(/\s+/g, ' ').trim() });
   const hs = (p.highlights || []).slice(0, 3);
   hs.forEach((h, i) => {
     const t = String(h).replace(/\s+/g, ' ').trim();
-    if (t) segs.push({ kind: 'highlight', index: i, text: `${i === 0 ? 'Career highlights. ' : ''}${t}.` });
+    if (t) segs.push({ kind: 'highlight', index: i, text: `${i === 0 ? 'Here are a few things I’m proud of. ' : ''}${t}.` });
   });
   const skills = (p.skills || []).slice(0, 6);
-  if (skills.length) segs.push({ kind: 'skills', text: `Core skills include ${skills.join(', ')}.` });
-  if (p.brand) segs.push({ kind: 'brand', text: `Tailored with ${p.brand}.` });
+  if (skills.length) segs.push({ kind: 'skills', text: `My core skills include ${skills.join(', ')}.` });
+  // No spoken brand/website outro — the video is about the candidate, not us.
+  // The small corner watermark carries the brand silently.
   return segs;
 }
 
