@@ -241,13 +241,20 @@
     }
 
     // ── Scenes (mirror remotion/scenes/*.tsx) ──────────────────────────────────
-    const Background = ({ accent }) => {
+    const Background = () => {
       const frame = useCurrentFrame();
-      const drift = interpolate(frame, [0, 600], [0, 60], { extrapolateRight: 'clamp' });
-      return html`<${AbsoluteFill} style=${{
-        backgroundColor: theme.bg,
-        backgroundImage: `radial-gradient(circle at 28% ${18 + drift / 3}%, ${accent}33, transparent 42%), radial-gradient(circle at 78% ${82 - drift / 4}%, ${theme.accent}22, transparent 48%)`,
+      const orb = (x, y, size, color, speed, phase) => html`<div style=${{
+        position: 'absolute', left: `${x}%`, top: `${y}%`, width: size, height: size,
+        marginLeft: -size / 2, marginTop: -size / 2, borderRadius: '50%',
+        background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
+        transform: `translate(${Math.sin(frame / speed + phase) * 60}px, ${Math.cos(frame / (speed * 1.25) + phase) * 44}px)`,
       }} />`;
+      return html`<${AbsoluteFill} style=${{ backgroundColor: '#030712', overflow: 'hidden' }}>
+        ${orb(26, 22, 1200, 'rgba(99,102,241,0.34)', 105, 0)}
+        ${orb(78, 76, 1300, 'rgba(139,92,246,0.26)', 80, 2.1)}
+        ${orb(64, 44, 900, 'rgba(99,102,241,0.18)', 130, 4.2)}
+        ${orb(16, 84, 820, 'rgba(139,92,246,0.16)', 95, 1.2)}
+      <//>`;
     };
 
     const Intro = ({ name, title, summary, accent }) => {

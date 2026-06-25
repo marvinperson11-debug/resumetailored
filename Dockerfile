@@ -26,6 +26,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libcups2 \
       fontconfig \
       fonts-dejavu-core \
+      fonts-noto-color-emoji \
       espeak-ng \
       python3 \
       python3-pip \
