@@ -1692,7 +1692,7 @@ app.post('/api/resume-video', async (req, res) => {
   const props = parseModule.parseResume(resume, {
     accentColor: typeof accentColor === 'string' ? accentColor : undefined,
   });
-  if (name && typeof name === 'string' && name.trim()) {
+  if (name && typeof name === 'string' && name.trim().length >= 2 && /[A-Za-z]/.test(name)) {
     props.name = name.trim().slice(0, 60);
   }
 
