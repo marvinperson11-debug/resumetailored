@@ -264,11 +264,10 @@
       const nameIn = spring({ frame: frame - 8, fps, config: { damping: 200 } });
       const titleIn = spring({ frame: frame - 16, fps, config: { damping: 200 } });
       const sumIn = spring({ frame: frame - 26, fps, config: { damping: 200 } });
-      const wave = interpolate(Math.sin(frame / 3.5), [-1, 1], [-22, 22]);
       const float = Math.sin(frame / 16) * 8;
       return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90, flexDirection: 'column' }}>
         <div style=${{ transform: `translateY(${float}px)`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style=${{ fontSize: 150, marginBottom: 18, transform: `scale(${popIn}) rotate(${wave}deg)`, transformOrigin: '70% 70%' }}>👋</div>
+          <div style=${{ width: 140, height: 8, borderRadius: 4, background: accent, marginBottom: 44, transform: `scaleX(${popIn})` }} />
           <div style=${{ fontSize: 40, color: theme.subtext, opacity: nameIn, letterSpacing: 1 }}>Hi, I'm</div>
           <div style=${{ fontSize: 104, fontWeight: 800, color: theme.text, textAlign: 'center', lineHeight: 1.03, marginTop: 8, opacity: nameIn, transform: `translateY(${(1 - nameIn) * 34}px)` }}>${name}</div>
           <div style=${{ fontSize: 52, fontWeight: 600, color: accent, marginTop: 22, textAlign: 'center', opacity: titleIn, transform: `translateY(${(1 - titleIn) * 26}px)` }}>${title}</div>
