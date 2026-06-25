@@ -1,5 +1,5 @@
 import React from 'react';
-import { AbsoluteFill, Img, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, Img, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { theme } from '../theme';
 
 export const Intro: React.FC<{
@@ -16,8 +16,6 @@ export const Intro: React.FC<{
   const nameIn = spring({ frame: frame - 8, fps, config: { damping: 200 } });
   const titleIn = spring({ frame: frame - 16, fps, config: { damping: 200 } });
   const sumIn = spring({ frame: frame - 26, fps, config: { damping: 200 } });
-  // Friendly waving hand: rocks back and forth.
-  const wave = interpolate(Math.sin(frame / 3.5), [-1, 1], [-22, 22]);
   // Gentle continuous float so the frame never feels static.
   const float = Math.sin(frame / 16) * 8;
 
@@ -32,54 +30,34 @@ export const Intro: React.FC<{
     >
       <div style={{ transform: `translateY(${float}px)`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {photoUrl ? (
-          <div
+          <Img
+            src={photoUrl}
             style={{
-              position: 'relative',
               width: 320,
               height: 320,
-              marginBottom: 36,
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: `8px solid ${accent}`,
+              boxShadow: `0 24px 60px ${accent}55`,
+              marginBottom: 38,
               transform: `scale(${popIn})`,
             }}
-          >
-            <Img
-              src={photoUrl}
-              style={{
-                width: 320,
-                height: 320,
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: `8px solid ${accent}`,
-                boxShadow: `0 24px 60px ${accent}55`,
-              }}
-            />
-            <div
-              style={{
-                position: 'absolute',
-                bottom: -6,
-                right: -6,
-                fontSize: 64,
-                transform: `rotate(${wave}deg)`,
-                transformOrigin: '70% 70%',
-              }}
-            >
-              👋
-            </div>
-          </div>
+          />
         ) : (
           <div
             style={{
-              fontSize: 150,
-              marginBottom: 18,
-              transform: `scale(${popIn}) rotate(${wave}deg)`,
-              transformOrigin: '70% 70%',
+              width: 140,
+              height: 8,
+              borderRadius: 4,
+              background: accent,
+              marginBottom: 44,
+              transform: `scaleX(${popIn})`,
             }}
-          >
-            👋
-          </div>
+          />
         )}
 
         <div style={{ fontSize: 40, color: theme.subtext, opacity: nameIn, letterSpacing: 1 }}>
-          Hi, I&rsquo;m
+          I&rsquo;m
         </div>
         <div
           style={{
@@ -94,19 +72,6 @@ export const Intro: React.FC<{
           }}
         >
           {name}
-        </div>
-        <div
-          style={{
-            fontSize: 52,
-            fontWeight: 600,
-            color: accent,
-            marginTop: 22,
-            textAlign: 'center',
-            opacity: titleIn,
-            transform: `translateY(${(1 - titleIn) * 26}px)`,
-          }}
-        >
-          {title}
         </div>
         {summary ? (
           <div

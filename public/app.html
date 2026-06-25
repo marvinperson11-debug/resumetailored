@@ -731,6 +731,14 @@
           </div>
 
           <div class="input-group" style="margin-top:16px;">
+            <label class="input-label">Send to <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — opens the video addressing them: “Hi Mr. Smith…”)</span></label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <input type="text" id="videoRecipientName" class="text-input" style="flex:1;min-width:160px;" placeholder="Recipient — e.g. Mr. Smith" />
+              <input type="text" id="videoRecipientTitle" class="text-input" style="flex:1;min-width:160px;" placeholder="Their title — e.g. Hiring Manager" />
+            </div>
+          </div>
+
+          <div class="input-group" style="margin-top:16px;">
             <label class="input-label">Your Photo <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — adds your face to the intro)</span></label>
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
               <img id="videoPhotoPreview" alt="" style="display:none;width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #0891b2;" />
@@ -4736,7 +4744,15 @@ Aaliyah Washington`
         const res = await fetch('/api/resume-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resume: text, name: name || undefined, email, photoUrl: videoPhotoDataUrl || undefined, voiceGender: (document.getElementById('videoVoiceGender') || {}).value || undefined }),
+          body: JSON.stringify({
+            resume: text,
+            name: name || undefined,
+            email,
+            photoUrl: videoPhotoDataUrl || undefined,
+            voiceGender: (document.getElementById('videoVoiceGender') || {}).value || undefined,
+            recipientName: (document.getElementById('videoRecipientName') || {}).value || undefined,
+            recipientTitle: (document.getElementById('videoRecipientTitle') || {}).value || undefined,
+          }),
         });
         if (!res.ok) {
           let msg = 'Video generation failed. Please try again.';

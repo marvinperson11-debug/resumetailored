@@ -1,7 +1,7 @@
 // Shared visual theme for the ResumeTailor video compositions.
 // Keep this in sync with the brand palette used on the web app (indigo/cyan).
 export const theme = {
-  bg: '#0B1220',
+  bg: '#030712', // matches the website body background
   primary: '#6366F1',
   accent: '#22D3EE',
   text: '#F8FAFC',

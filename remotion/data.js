@@ -60,8 +60,12 @@ function speakableName(name) {
 function narrationSegments(props) {
   const p = props || {};
   const segs = [];
-  // Open like a person introducing themselves, not a product teaser.
-  if (p.name) segs.push({ kind: 'intro', text: `Hello. My name is ${speakableName(p.name)}${p.title ? `, and I'm ${/^[aeiou]/i.test(p.title.trim()) ? 'an' : 'a'} ${p.title}` : ''}.` });
+  // Optionally address the recipient first (e.g. "Hi Mr. Smith, Hiring Manager.").
+  const rcpt = String(p.recipientName || '').trim();
+  const rcptTitle = String(p.recipientTitle || '').trim();
+  if (rcpt) segs.push({ kind: 'greeting', text: `Hi ${rcpt}${rcptTitle ? ', ' + rcptTitle : ''}.` });
+  // Candidate introduces themselves (no title — the focus is name + story).
+  if (p.name) segs.push({ kind: 'intro', text: `${rcpt ? '' : 'Hello. '}My name is ${speakableName(p.name)}.` });
   if (p.summary) segs.push({ kind: 'summary', text: String(p.summary).replace(/\s+/g, ' ').trim() });
   const hs = (p.highlights || []).slice(0, 3);
   hs.forEach((h, i) => {

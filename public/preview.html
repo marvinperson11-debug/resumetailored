@@ -173,7 +173,7 @@
     function narrationScript(p) {
       const parts = [];
       const sp = (n) => String(n||'').replace(/\bJr\.?\b/gi,'Junior').replace(/\bSr\.?\b/gi,'Senior').replace(/\bIII\b/g,'the Third').replace(/\bIV\b/g,'the Fourth').replace(/\bII\b/g,'the Second').replace(/\s+/g,' ').trim();
-      if (p.name) parts.push(`Hello. My name is ${sp(p.name)}${p.title ? `, and I'm ${/^[aeiou]/i.test(p.title.trim()) ? 'an' : 'a'} ${p.title}` : ''}.`);
+      if (p.name) parts.push(`Hello. My name is ${sp(p.name)}.`);
       if (p.summary) parts.push(p.summary);
       const hs = (p.highlights || []).slice(0, 3);
       if (hs.length) parts.push("Here are a few things I'm proud of. " + hs.join('. ') + '.');
@@ -241,13 +241,20 @@
     }
 
     // ── Scenes (mirror remotion/scenes/*.tsx) ──────────────────────────────────
-    const Background = ({ accent }) => {
+    const Background = () => {
       const frame = useCurrentFrame();
-      const drift = interpolate(frame, [0, 600], [0, 60], { extrapolateRight: 'clamp' });
-      return html`<${AbsoluteFill} style=${{
-        backgroundColor: theme.bg,
-        backgroundImage: `radial-gradient(circle at 28% ${18 + drift / 3}%, ${accent}33, transparent 42%), radial-gradient(circle at 78% ${82 - drift / 4}%, ${theme.accent}22, transparent 48%)`,
+      const orb = (x, y, size, color, speed, phase) => html`<div style=${{
+        position: 'absolute', left: `${x}%`, top: `${y}%`, width: size, height: size,
+        marginLeft: -size / 2, marginTop: -size / 2, borderRadius: '50%',
+        background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
+        transform: `translate(${Math.sin(frame / speed + phase) * 60}px, ${Math.cos(frame / (speed * 1.25) + phase) * 44}px)`,
       }} />`;
+      return html`<${AbsoluteFill} style=${{ backgroundColor: '#030712', overflow: 'hidden' }}>
+        ${orb(26, 22, 1200, 'rgba(99,102,241,0.34)', 105, 0)}
+        ${orb(78, 76, 1300, 'rgba(139,92,246,0.26)', 80, 2.1)}
+        ${orb(64, 44, 900, 'rgba(99,102,241,0.18)', 130, 4.2)}
+        ${orb(16, 84, 820, 'rgba(139,92,246,0.16)', 95, 1.2)}
+      <//>`;
     };
 
     const Intro = ({ name, title, summary, accent }) => {
@@ -257,14 +264,12 @@
       const nameIn = spring({ frame: frame - 8, fps, config: { damping: 200 } });
       const titleIn = spring({ frame: frame - 16, fps, config: { damping: 200 } });
       const sumIn = spring({ frame: frame - 26, fps, config: { damping: 200 } });
-      const wave = interpolate(Math.sin(frame / 3.5), [-1, 1], [-22, 22]);
       const float = Math.sin(frame / 16) * 8;
       return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90, flexDirection: 'column' }}>
         <div style=${{ transform: `translateY(${float}px)`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style=${{ fontSize: 150, marginBottom: 18, transform: `scale(${popIn}) rotate(${wave}deg)`, transformOrigin: '70% 70%' }}>👋</div>
-          <div style=${{ fontSize: 40, color: theme.subtext, opacity: nameIn, letterSpacing: 1 }}>Hi, I'm</div>
+          <div style=${{ width: 140, height: 8, borderRadius: 4, background: accent, marginBottom: 44, transform: `scaleX(${popIn})` }} />
+          <div style=${{ fontSize: 40, color: theme.subtext, opacity: nameIn, letterSpacing: 1 }}>I'm</div>
           <div style=${{ fontSize: 104, fontWeight: 800, color: theme.text, textAlign: 'center', lineHeight: 1.03, marginTop: 8, opacity: nameIn, transform: `translateY(${(1 - nameIn) * 34}px)` }}>${name}</div>
-          <div style=${{ fontSize: 52, fontWeight: 600, color: accent, marginTop: 22, textAlign: 'center', opacity: titleIn, transform: `translateY(${(1 - titleIn) * 26}px)` }}>${title}</div>
           ${summary ? html`<div style=${{ fontSize: 34, color: theme.subtext, marginTop: 36, textAlign: 'center', maxWidth: 780, lineHeight: 1.42, opacity: sumIn }}>${summary}</div>` : null}
         </div>
       <//>`;
