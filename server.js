@@ -40,7 +40,7 @@ async function sendEmail({ to, subject, html, replyTo }) {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
-      body: JSON.stringify({ from: `ResumeTailor AI <${fromAddr}>`, to, subject, html, reply_to: effectiveReplyTo })
+      body: JSON.stringify({ from: `ResumeTailored AI <${fromAddr}>`, to, subject, html, reply_to: effectiveReplyTo })
     });
     if (r.ok) { console.log(`[Resend] Email sent to ${to}`); return; }
     const err = await r.json().catch(() => ({}));
@@ -55,7 +55,7 @@ async function sendEmail({ to, subject, html, replyTo }) {
       secure: process.env.SMTP_SECURE === 'true',
       auth: { user: smtpUser, pass: smtpPass }
     });
-    await transporter.sendMail({ from: `ResumeTailor AI <${fromAddr || smtpUser}>`, to, subject, html, replyTo: effectiveReplyTo });
+    await transporter.sendMail({ from: `ResumeTailored AI <${fromAddr || smtpUser}>`, to, subject, html, replyTo: effectiveReplyTo });
     console.log(`[SMTP] Email sent to ${to}`);
     return;
   }
@@ -138,7 +138,7 @@ db.exec(`
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
   const ins = db.prepare('INSERT INTO forum_posts (author, role, time, text, likes) VALUES (?, ?, ?, ?, ?)');
-  ins.run('Sarah M.', 'Software Engineer', '2 hours ago', 'Just accepted an offer at a Fortune 500! ResumeTailor helped me tailor 30+ applications. Happy to answer questions about the process.', 14);
+  ins.run('Sarah M.', 'Software Engineer', '2 hours ago', 'Just accepted an offer at a Fortune 500! ResumeTailored helped me tailor 30+ applications. Happy to answer questions about the process.', 14);
   ins.run('James R.', 'Marketing Manager', '5 hours ago', 'Salary negotiation tip: always get the offer in writing before negotiating. They said my ask was "too high" verbally but came back with 8% more once I sent a counter via email. Never negotiate on the phone!', 22);
   ins.run('Priya K.', 'Product Designer', '1 day ago', 'For anyone in tech design — portfolio matters MORE than your resume. But a tailored resume got me the interview so I could show my portfolio. Both matter!', 9);
 }
@@ -241,7 +241,7 @@ app.post('/api/auth/signup', async (req, res) => {
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
   res.json({ token, username: cleanUsername, email: key });
 
-  notifyOwner(`[ResumeTailor] New signup: ${key}`,
+  notifyOwner(`[ResumeTailored] New signup: ${key}`,
     `<p>🎉 <strong>${cleanUsername}</strong> (${key}) just created an account.</p>`);
 
   // Welcome email — fire and forget, don't block the response
@@ -356,7 +356,7 @@ app.post('/api/auth/login', (req, res) => {
   const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
   sendEmail({
     to: ownerEmail,
-    subject: `[ResumeTailor] Login: ${key}`,
+    subject: `[ResumeTailored] Login: ${key}`,
     html: `<p><strong>${key}</strong> just logged in.</p><p>Time: ${new Date().toUTCString()}</p>`
   }).catch(err => console.error('[Alert] Login email failed:', err.message));
 });
@@ -911,7 +911,7 @@ async function handleTemplatedDocx(req, res) {
   const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
   sendEmail({
     to: ownerEmail,
-    subject: `[ResumeTailor] Download: ${safeName}.docx`,
+    subject: `[ResumeTailored] Download: ${safeName}.docx`,
     html: `<p>A user just downloaded <strong>${safeName}.docx</strong>.</p><p>Time: ${new Date().toUTCString()}</p>`
   }).catch(err => console.error('[Alert] Download email failed:', err.message));
 }
@@ -1093,7 +1093,7 @@ app.post('/api/download-docx', async (req, res) => {
   const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
   sendEmail({
     to: ownerEmail,
-    subject: `[ResumeTailor] Download: ${safeName}.docx`,
+    subject: `[ResumeTailored] Download: ${safeName}.docx`,
     html: `<p>A user just downloaded <strong>${safeName}.docx</strong>.</p><p>Time: ${new Date().toUTCString()}</p>`
   }).catch(err => console.error('[Alert] Download email failed:', err.message));
 });
@@ -1620,7 +1620,7 @@ OUTPUT: Cover Letter
 
     const who = email ? email : `anonymous (${usageKey})`;
     const what = mode === 'both' ? 'a resume + cover letter' : (mode === 'cover_letter' ? 'a cover letter' : 'a resume');
-    notifyOwner(`[ResumeTailor] Tailored: ${who}`,
+    notifyOwner(`[ResumeTailored] Tailored: ${who}`,
       `<p>✍️ <strong>${who}</strong> just tailored <strong>${what}</strong>${subscribed ? ' (Pro)' : ' (free tier)'}.</p>`);
   } catch (err) {
     console.error('Claude API error:', err?.status, err?.message || err);
@@ -1642,7 +1642,7 @@ OUTPUT: Cover Letter
 // after MAX_RENDER_MS steals the stale lock. Each render is also wrapped in an
 // overall timeout so a hang becomes a surfaced error instead of an infinite wait.
 let videoRenderStartedAt = 0;
-const MAX_RENDER_MS = 4 * 60 * 1000;
+const MAX_RENDER_MS = 6 * 60 * 1000;
 
 function videoRenderBusy() {
   if (!videoRenderStartedAt) return false;
@@ -1944,7 +1944,7 @@ app.post('/webhook', (req, res) => {
       db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, customerId);
       console.log(`New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`);
       const plan = isLifetime ? 'lifetime ($129)' : 'monthly ($19/mo)';
-      notifyOwner(`[ResumeTailor] 💰 New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`,
+      notifyOwner(`[ResumeTailored] 💰 New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`,
         `<p>💰 <strong>${email}</strong> just subscribed — <strong>${plan}</strong>. Cha-ching!</p>`);
     }
   }
@@ -1955,7 +1955,7 @@ app.post('/webhook', (req, res) => {
     const row = db.prepare('SELECT email FROM subscribers WHERE customer_id = ?').get(customerId);
     db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(customerId);
     console.log(`Removed subscriber with customer_id: ${customerId}`);
-    notifyOwner(`[ResumeTailor] Subscription canceled: ${row?.email || customerId}`,
+    notifyOwner(`[ResumeTailored] Subscription canceled: ${row?.email || customerId}`,
       `<p>👋 <strong>${row?.email || `customer ${customerId}`}</strong>'s subscription was canceled.</p>`);
   }
 
@@ -2050,7 +2050,7 @@ app.post('/api/contact', async (req, res) => {
   try {
     await sendEmail({
       to: ownerEmail,
-      subject: `[ResumeTailor Support] ${subject || 'New message from ' + name}`,
+      subject: `[ResumeTailored Support] ${subject || 'New message from ' + name}`,
       replyTo: email,
       html: `
             <h2>New Support Message</h2>
@@ -2059,7 +2059,7 @@ app.post('/api/contact', async (req, res) => {
             <hr />
             <p>${message.replace(/\n/g, '<br>')}</p>
             <hr />
-            <p style="color:#888;font-size:12px;">Sent from ResumeTailor AI Help form</p>
+            <p style="color:#888;font-size:12px;">Sent from ResumeTailored AI Help form</p>
           `
     });
   } catch (err) {
@@ -2218,7 +2218,7 @@ function broadcastEmailHtml(username) {
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
-  app.listen(PORT, () => console.log(`ResumeTailor running on http://localhost:${PORT}`));
+  app.listen(PORT, () => console.log(`ResumeTailored running on http://localhost:${PORT}`));
 }
 
 // Exported for offline rendering/tests (e.g. DOCX alignment verification).

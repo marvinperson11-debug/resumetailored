@@ -57,7 +57,7 @@ async function renderResumeVideo(inputProps, outputLocation, onProgress) {
     browserExecutable: browserExecutable || undefined,
     // Cap the browser launch/eval so a stalled headless shell surfaces as an
     // error instead of hanging the request (and its one-at-a-time lock) forever.
-    timeoutInMilliseconds: 60000,
+    timeoutInMilliseconds: 90000,
   });
 
   await renderMedia({
@@ -71,7 +71,9 @@ async function renderResumeVideo(inputProps, outputLocation, onProgress) {
     // concurrency to stay within memory, and a generous frame timeout.
     concurrency: 1,
     chromiumOptions: { gl: 'swiftshader', headless: true },
-    timeoutInMilliseconds: 120000,
+    // Per-frame eval timeout. Generous so a ~2-minute software-GL render on
+    // Railway isn't killed mid-way (was 120000, which could fail real renders).
+    timeoutInMilliseconds: 240000,
     onProgress: onProgress ? ({ progress }) => onProgress(progress) : undefined,
   });
 

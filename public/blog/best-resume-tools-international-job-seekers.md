@@ -56,13 +56,13 @@ Before comparing tools, know the criteria that matter for international use:
 
 ## The 3 Best Tools (Compared)
 
-### 1. ResumeTailor AI — Best for Bilingual Applicants Targeting US/UK Roles
+### 1. ResumeTailored AI — Best for Bilingual Applicants Targeting US/UK Roles
 
 **Best for:** Non-native English speakers applying to English-speaking markets  
 **Supports:** Any language input → English output with native-level quality  
 **Price:** Free (1/day) · $19/month unlimited
 
-Claude (the AI model powering ResumeTailor AI) is trained on multilingual data and handles Chinese → English, Spanish → English, and other transitions with significantly better fluency than GPT-based tools. When you paste a job description in English and your resume content in Chinese, it produces output that reads as written by a native English speaker — not translated.
+Claude (the AI model powering ResumeTailored AI) is trained on multilingual data and handles Chinese → English, Spanish → English, and other transitions with significantly better fluency than GPT-based tools. When you paste a job description in English and your resume content in Chinese, it produces output that reads as written by a native English speaker — not translated.
 
 **What it does well:**
 - Handles mixed-language input naturally
@@ -121,7 +121,7 @@ If you're a Chinese professional applying to US or Canada roles:
 **Step 1: Prepare your content in Chinese first**  
 Write your full work history, education, and accomplishments in Chinese. This is faster and ensures you capture the real details before translation introduces omissions.
 
-**Step 2: Paste into ResumeTailor AI with the English job description**  
+**Step 2: Paste into ResumeTailored AI with the English job description**  
 The tool accepts Chinese input. Claude will handle the translation and tailoring simultaneously — producing US-standard output that incorporates the job description's keywords.
 
 **Step 3: Review for institution naming**  
@@ -134,7 +134,7 @@ The cover letter is where you contextualize your international background. Claud
 
 ## Comparison Table
 
-| Feature | ResumeTailor AI | Rezi | Teal |
+| Feature | ResumeTailored AI | Rezi | Teal |
 |---------|----------------|------|------|
 | Non-English input | ✓ | Partial | ✗ |
 | Claude AI model | ✓ | ✗ (GPT) | ✗ |
@@ -149,11 +149,11 @@ The cover letter is where you contextualize your international background. Claud
 
 ## Final Recommendation
 
-For international applicants whose primary goal is **landing roles in the US or UK**, ResumeTailor AI delivers the best combination of bilingual input handling, Claude's writing quality, and price point.
+For international applicants whose primary goal is **landing roles in the US or UK**, ResumeTailored AI delivers the best combination of bilingual input handling, Claude's writing quality, and price point.
 
 For applicants who specifically need **non-English output** (a German Lebenslauf, a Japanese rirekisho), no current AI tool handles this reliably — you'll need to work with a country-specific service or a bilingual career consultant.
 
-**[Try ResumeTailor AI free — paste your resume in any language →](/signup)**
+**[Try ResumeTailored AI free — paste your resume in any language →](/signup)**
 
 ---
 

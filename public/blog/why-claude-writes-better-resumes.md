@@ -88,7 +88,7 @@ For resume tailoring specifically:
 - Claude follows accuracy constraints more reliably
 - Claude's output requires less editing before submission
 
-[ResumeTailor AI](/) uses Claude (claude-sonnet-4-6) — not GPT — for exactly these reasons. Every tailoring and cover letter generation runs through Claude.
+[ResumeTailored AI](/) uses Claude (claude-sonnet-4-6) — not GPT — for exactly these reasons. Every tailoring and cover letter generation runs through Claude.
 
 **[Try it free — see the difference for yourself →](/signup)**
 

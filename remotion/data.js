@@ -24,7 +24,7 @@ const defaultResumeVideoProps = {
     'Analytics',
   ],
   accentColor: '#6366F1',
-  brand: 'ResumeTailor AI',
+  brand: 'ResumeTailored AI',
 };
 
 const FPS = 30;
@@ -44,17 +44,53 @@ function sceneFrames(highlightCount, fps = FPS) {
 // drives. Single source of truth for both the script (join the texts) and the
 // reveal timing — each segment maps to one on-screen scene shown exactly while
 // its text is spoken. `index` is the highlight number.
-// Expand name suffixes for speech so TTS doesn't spell them out ("J. R.").
-// Visual scenes still show the original ("Jr"); only the spoken script changes.
-function speakableName(name) {
-  return String(name || '')
-    .replace(/\bJr\.?\b/gi, 'Junior')
-    .replace(/\bSr\.?\b/gi, 'Senior')
-    .replace(/\bIII\b/g, 'the Third')
-    .replace(/\bIV\b/g, 'the Fourth')
-    .replace(/\bII\b/g, 'the Second')
-    .replace(/\s+/g, ' ')
-    .trim();
+// Expand honorifics, name suffixes and common job-title abbreviations for
+// speech so the TTS says the words instead of spelling out the letters
+// ("Mr." → "Mister", "VP" → "Vice President", "Jr." → "Junior"). Visual scenes
+// still show the original text; only the spoken script is expanded.
+function speakable(s) {
+  let t = String(s || '').replace(/\s+/g, ' ').trim();
+  const reps = [
+    // Honorifics (the \b before the optional dot lets us also consume "Mr.")
+    [/\bMrs\b\.?/gi, 'Missus'],
+    [/\bMr\b\.?/gi, 'Mister'],
+    [/\bMs\b\.?/gi, 'Miz'],
+    [/\bMx\b\.?/gi, 'Mix'],
+    [/\bDr\b\.?/gi, 'Doctor'],
+    [/\bProf\b\.?/gi, 'Professor'],
+    // Name suffixes
+    [/\bJr\b\.?/gi, 'Junior'],
+    [/\bSr\b\.?/gi, 'Senior'],
+    [/\bIII\b/g, 'the Third'],
+    [/\bIV\b/g, 'the Fourth'],
+    [/\bII\b/g, 'the Second'],
+    // Job-title / position abbreviations
+    [/\bSVP\b/g, 'Senior Vice President'],
+    [/\bEVP\b/g, 'Executive Vice President'],
+    [/\bAVP\b/g, 'Assistant Vice President'],
+    [/\bVP\b/g, 'Vice President'],
+    [/\bCEO\b/g, 'Chief Executive Officer'],
+    [/\bCFO\b/g, 'Chief Financial Officer'],
+    [/\bCTO\b/g, 'Chief Technology Officer'],
+    [/\bCOO\b/g, 'Chief Operating Officer'],
+    [/\bCMO\b/g, 'Chief Marketing Officer'],
+    [/\bCIO\b/g, 'Chief Information Officer'],
+    [/\bCHRO\b/g, 'Chief Human Resources Officer'],
+    [/\bHR\b/g, 'Human Resources'],
+    [/\bMgr\b\.?/gi, 'Manager'],
+    [/\bDir\b\.?/gi, 'Director'],
+    [/\bAsst\b\.?/gi, 'Assistant'],
+    [/\bAssoc\b\.?/gi, 'Associate'],
+    [/\bExec\b\.?/gi, 'Executive'],
+    [/\bCoord\b\.?/gi, 'Coordinator'],
+    [/\bAdmin\b\.?/gi, 'Administrator'],
+    [/\bRep\b\.?/gi, 'Representative'],
+    [/\bSpec\b\.?/gi, 'Specialist'],
+    [/\bEngr?\b\.?/gi, 'Engineer'],
+    [/\bOps\b/gi, 'Operations'],
+  ];
+  for (const [re, rep] of reps) t = t.replace(re, rep);
+  return t.replace(/\s+/g, ' ').trim();
 }
 
 function narrationSegments(props) {
@@ -63,9 +99,9 @@ function narrationSegments(props) {
   // Optionally address the recipient first (e.g. "Hi Mr. Smith, Hiring Manager.").
   const rcpt = String(p.recipientName || '').trim();
   const rcptTitle = String(p.recipientTitle || '').trim();
-  if (rcpt) segs.push({ kind: 'greeting', text: `Hi ${rcpt}${rcptTitle ? ', ' + rcptTitle : ''}.` });
+  if (rcpt) segs.push({ kind: 'greeting', text: `Hi ${speakable(rcpt)}${rcptTitle ? ', ' + speakable(rcptTitle) : ''}.` });
   // Candidate introduces themselves (no title — the focus is name + story).
-  if (p.name) segs.push({ kind: 'intro', text: `${rcpt ? '' : 'Hello. '}My name is ${speakableName(p.name)}.` });
+  if (p.name) segs.push({ kind: 'intro', text: `${rcpt ? '' : 'Hello. '}My name is ${speakable(p.name)}.` });
   if (p.summary) segs.push({ kind: 'summary', text: String(p.summary).replace(/\s+/g, ' ').trim() });
   const hs = (p.highlights || []).slice(0, 3);
   hs.forEach((h, i) => {
