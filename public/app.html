@@ -4637,7 +4637,35 @@ Aaliyah Washington`
       const btn = document.getElementById('videoPhotoBtn'); if (btn) btn.textContent = '⬆ Upload Photo';
     }
 
-    // Subscriber path: POST the résumé to the server renderer and download the
+    // Show the rendered MP4 in a player so the user can watch before downloading.
+    function showVideoPreview(url, filename) {
+      const old = document.getElementById('videoPreviewModal');
+      if (old) old.remove();
+      const overlay = document.createElement('div');
+      overlay.id = 'videoPreviewModal';
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;';
+      const close = () => { overlay.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000); };
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+      const box = document.createElement('div');
+      box.style.cssText = 'background:#0b1220;border-radius:16px;padding:16px;max-width:420px;width:100%;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,.5);';
+      const vid = document.createElement('video');
+      vid.src = url; vid.controls = true; vid.autoplay = true; vid.loop = true; vid.playsInline = true;
+      vid.style.cssText = 'width:100%;max-height:68vh;border-radius:10px;background:#000;';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:10px;';
+      const dl = document.createElement('a');
+      dl.href = url; dl.download = filename; dl.textContent = '⬇ Download MP4';
+      dl.className = 'btn btn-primary'; dl.style.cssText = 'flex:1;text-align:center;text-decoration:none;padding:12px;';
+      const cl = document.createElement('button');
+      cl.type = 'button'; cl.textContent = 'Close'; cl.className = 'btn btn-outline'; cl.style.cssText = 'padding:12px 18px;';
+      cl.onclick = close;
+      row.appendChild(dl); row.appendChild(cl);
+      box.appendChild(vid); box.appendChild(row);
+      overlay.appendChild(box);
+      document.body.appendChild(overlay);
+    }
+
+    // Subscriber path: POST the résumé to the server renderer, then preview the
     // returned MP4 (studio ElevenLabs voice + narration-synced reveal).
     let videoRendering = false;
     async function renderServerVideo(resumeText) {
@@ -4668,13 +4696,10 @@ Aaliyah Washington`
         }
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = (name ? name.replace(/[^\w]+/g, '_') : 'resume') + '-video.mp4';
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 4000);
-        setStatus('✓ Done — your video downloaded.');
-        showToast('🎬 Your resume video is ready!');
+        const fname = (name ? name.replace(/[^\w]+/g, '_') : 'resume') + '-video.mp4';
+        showVideoPreview(url, fname);
+        setStatus('✓ Done — preview your video, then download.');
+        showToast('🎬 Your video is ready — preview it, then download.');
       } catch (err) {
         if (status) { status.style.display = 'none'; status.textContent = ''; }
         showToast(err.message || 'Video generation failed.');

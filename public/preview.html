@@ -192,10 +192,23 @@
       if (t !== t.toUpperCase()) return false;
       return /^[A-Z0-9 &/]+$/.test(t);
     }
+    // Pick a plausible name line (skip stray initials / contact / headers).
+    function pickName(lines) {
+      const cands = lines.map((l) => l.trim()).filter(Boolean);
+      const ok = (t) => {
+        if (t.length < 3 || t.length > 60) return false;
+        if (/[@|]/.test(t)) return false;
+        if (/\d{3,}/.test(t)) return false;
+        if (t.replace(/[^A-Za-z]/g, '').length < 3) return false;
+        if (t === t.toUpperCase() && !/\s/.test(t)) return false;
+        return true;
+      };
+      return clean(cands.find((t) => ok(t) && /\s/.test(t)) || cands.find(ok) || cands[0] || '').slice(0, 60);
+    }
     function parseResume(text) {
       const raw = String(text || '').replace(/\r/g, '').replace(/\*\*/g, '');
       const lines = raw.split('\n');
-      const name = clean(lines.find((l) => l.trim()) || '').slice(0, 60);
+      const name = pickName(lines);
       const sections = { _head: [] };
       let current = '_head';
       for (const line of lines) {
@@ -239,15 +252,20 @@
     const Intro = ({ name, title, summary, accent }) => {
       const frame = useCurrentFrame();
       const { fps } = useVideoConfig();
-      const rule = spring({ frame, fps, config: { damping: 200 } });
-      const nameIn = spring({ frame: frame - 4, fps, config: { damping: 200 } });
-      const titleIn = spring({ frame: frame - 12, fps, config: { damping: 200 } });
-      const sumIn = spring({ frame: frame - 22, fps, config: { damping: 200 } });
-      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90 }}>
-        <div style=${{ width: 130, height: 8, borderRadius: 4, backgroundColor: accent, marginBottom: 44, transform: `scaleX(${rule})` }} />
-        <div style=${{ fontSize: 100, fontWeight: 800, color: theme.text, textAlign: 'center', lineHeight: 1.04, opacity: nameIn, transform: `translateY(${(1 - nameIn) * 32}px)` }}>${name}</div>
-        <div style=${{ fontSize: 50, fontWeight: 600, color: accent, marginTop: 26, textAlign: 'center', opacity: titleIn, transform: `translateY(${(1 - titleIn) * 28}px)` }}>${title}</div>
-        ${summary ? html`<div style=${{ fontSize: 36, color: theme.subtext, marginTop: 44, textAlign: 'center', maxWidth: 780, lineHeight: 1.42, opacity: sumIn }}>${summary}</div>` : null}
+      const popIn = spring({ frame, fps, config: { damping: 14, mass: 0.7 } });
+      const nameIn = spring({ frame: frame - 8, fps, config: { damping: 200 } });
+      const titleIn = spring({ frame: frame - 16, fps, config: { damping: 200 } });
+      const sumIn = spring({ frame: frame - 26, fps, config: { damping: 200 } });
+      const wave = interpolate(Math.sin(frame / 3.5), [-1, 1], [-22, 22]);
+      const float = Math.sin(frame / 16) * 8;
+      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90, flexDirection: 'column' }}>
+        <div style=${{ transform: `translateY(${float}px)`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style=${{ fontSize: 150, marginBottom: 18, transform: `scale(${popIn}) rotate(${wave}deg)`, transformOrigin: '70% 70%' }}>👋</div>
+          <div style=${{ fontSize: 40, color: theme.subtext, opacity: nameIn, letterSpacing: 1 }}>Hi, I'm</div>
+          <div style=${{ fontSize: 104, fontWeight: 800, color: theme.text, textAlign: 'center', lineHeight: 1.03, marginTop: 8, opacity: nameIn, transform: `translateY(${(1 - nameIn) * 34}px)` }}>${name}</div>
+          <div style=${{ fontSize: 52, fontWeight: 600, color: accent, marginTop: 22, textAlign: 'center', opacity: titleIn, transform: `translateY(${(1 - titleIn) * 26}px)` }}>${title}</div>
+          ${summary ? html`<div style=${{ fontSize: 34, color: theme.subtext, marginTop: 36, textAlign: 'center', maxWidth: 780, lineHeight: 1.42, opacity: sumIn }}>${summary}</div>` : null}
+        </div>
       <//>`;
     };
 

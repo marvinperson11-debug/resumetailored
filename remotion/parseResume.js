@@ -21,12 +21,28 @@ function isHeader(line) {
 
 const BULLET_RE = /^\s*[•\-*–·▪]\s+/;
 
+// Pick the candidate's name: the first line that actually looks like a name,
+// not a stray initial ("M"), a contact line, a phone number, or a section
+// header. Prefers a "First Last" line (has a space).
+function pickName(lines) {
+  const cands = lines.map((l) => l.trim()).filter(Boolean);
+  const ok = (t) => {
+    if (t.length < 3 || t.length > 60) return false;
+    if (/[@|]/.test(t)) return false; // contact line
+    if (/\d{3,}/.test(t)) return false; // phone / numbers
+    if (t.replace(/[^A-Za-z]/g, '').length < 3) return false; // skips "M", "M.", initials
+    if (t === t.toUpperCase() && !/\s/.test(t)) return false; // single all-caps word = header
+    return true;
+  };
+  return clean(cands.find((t) => ok(t) && /\s/.test(t)) || cands.find(ok) || cands[0] || '').slice(0, 60);
+}
+
 function parseResume(text, opts = {}) {
   const raw = String(text || '').replace(/\r/g, '').replace(/\*\*/g, '');
   const lines = raw.split('\n');
 
-  // Name = first non-empty line. Drop a leading contact line if it has |/@.
-  const name = clean((lines.find((l) => l.trim()) || '')).slice(0, 60);
+  // Name = first line that plausibly looks like a person's name.
+  const name = pickName(lines);
 
   // Group lines under their section header.
   const sections = { _head: [] };

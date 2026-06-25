@@ -232,7 +232,7 @@ async function elevenNarration(props) {
     similarity_boost: clampNum(process.env.ELEVENLABS_SIMILARITY, 0.8, 0, 1),
     style: clampNum(process.env.ELEVENLABS_STYLE, 0.45, 0, 1),
     use_speaker_boost: true,
-    speed: clampNum(process.env.ELEVENLABS_SPEED, 0.9, 0.7, 1.2),
+    speed: clampNum(process.env.ELEVENLABS_SPEED, 0.88, 0.7, 1.2),
   };
   const res = await fetch(url, {
     method: 'POST',
