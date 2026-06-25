@@ -1665,7 +1665,7 @@ function withTimeout(promise, ms, label) {
 }
 
 app.post('/api/resume-video', async (req, res) => {
-  const { resume, name, accentColor, email, voice, photoUrl, voiceGender } = req.body || {};
+  const { resume, name, accentColor, email, voice, photoUrl, voiceGender, recipientName, recipientTitle } = req.body || {};
   if (!resume || !resume.trim()) {
     return res.status(400).json({ error: 'Tailored resume text is required.' });
   }
@@ -1701,6 +1701,14 @@ app.post('/api/resume-video', async (req, res) => {
       /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) &&
       photoUrl.length < 800000) {
     props.photoUrl = photoUrl;
+  }
+
+  // Optional recipient the video is addressed to (e.g. the hiring manager).
+  if (typeof recipientName === 'string' && recipientName.trim()) {
+    props.recipientName = recipientName.trim().slice(0, 60);
+    if (typeof recipientTitle === 'string' && recipientTitle.trim()) {
+      props.recipientTitle = recipientTitle.trim().slice(0, 80);
+    }
   }
 
   // Quiet background music bed (best-effort; BACKGROUND_MUSIC=off to disable).

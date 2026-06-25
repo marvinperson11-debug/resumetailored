@@ -173,7 +173,7 @@
     function narrationScript(p) {
       const parts = [];
       const sp = (n) => String(n||'').replace(/\bJr\.?\b/gi,'Junior').replace(/\bSr\.?\b/gi,'Senior').replace(/\bIII\b/g,'the Third').replace(/\bIV\b/g,'the Fourth').replace(/\bII\b/g,'the Second').replace(/\s+/g,' ').trim();
-      if (p.name) parts.push(`Hello. My name is ${sp(p.name)}${p.title ? `, and I'm ${/^[aeiou]/i.test(p.title.trim()) ? 'an' : 'a'} ${p.title}` : ''}.`);
+      if (p.name) parts.push(`Hello. My name is ${sp(p.name)}.`);
       if (p.summary) parts.push(p.summary);
       const hs = (p.highlights || []).slice(0, 3);
       if (hs.length) parts.push("Here are a few things I'm proud of. " + hs.join('. ') + '.');
@@ -268,9 +268,8 @@
       return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 90, flexDirection: 'column' }}>
         <div style=${{ transform: `translateY(${float}px)`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style=${{ width: 140, height: 8, borderRadius: 4, background: accent, marginBottom: 44, transform: `scaleX(${popIn})` }} />
-          <div style=${{ fontSize: 40, color: theme.subtext, opacity: nameIn, letterSpacing: 1 }}>Hi, I'm</div>
+          <div style=${{ fontSize: 40, color: theme.subtext, opacity: nameIn, letterSpacing: 1 }}>I'm</div>
           <div style=${{ fontSize: 104, fontWeight: 800, color: theme.text, textAlign: 'center', lineHeight: 1.03, marginTop: 8, opacity: nameIn, transform: `translateY(${(1 - nameIn) * 34}px)` }}>${name}</div>
-          <div style=${{ fontSize: 52, fontWeight: 600, color: accent, marginTop: 22, textAlign: 'center', opacity: titleIn, transform: `translateY(${(1 - titleIn) * 26}px)` }}>${title}</div>
           ${summary ? html`<div style=${{ fontSize: 34, color: theme.subtext, marginTop: 36, textAlign: 'center', maxWidth: 780, lineHeight: 1.42, opacity: sumIn }}>${summary}</div>` : null}
         </div>
       <//>`;

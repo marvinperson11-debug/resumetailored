@@ -57,7 +57,7 @@ export const Intro: React.FC<{
         )}
 
         <div style={{ fontSize: 40, color: theme.subtext, opacity: nameIn, letterSpacing: 1 }}>
-          Hi, I&rsquo;m
+          I&rsquo;m
         </div>
         <div
           style={{
@@ -72,19 +72,6 @@ export const Intro: React.FC<{
           }}
         >
           {name}
-        </div>
-        <div
-          style={{
-            fontSize: 52,
-            fontWeight: 600,
-            color: accent,
-            marginTop: 22,
-            textAlign: 'center',
-            opacity: titleIn,
-            transform: `translateY(${(1 - titleIn) * 26}px)`,
-          }}
-        >
-          {title}
         </div>
         {summary ? (
           <div

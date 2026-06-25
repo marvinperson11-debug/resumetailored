@@ -23,10 +23,14 @@ export type ResumeVideoProps = {
   photoUrl?: string;
   // Optional quiet background music track (data/HTTP URL), muxed under the voice.
   musicSrc?: string;
+  // Optional recipient the video is addressed to (e.g. the hiring manager). When
+  // present, the video opens with "Hi <name>, <title>." before the candidate intro.
+  recipientName?: string;
+  recipientTitle?: string;
 };
 
 export type NarrationSegment = {
-  kind: 'intro' | 'summary' | 'highlight' | 'skills' | 'brand';
+  kind: 'greeting' | 'intro' | 'summary' | 'highlight' | 'skills' | 'brand';
   index?: number; // highlight number (kind === 'highlight')
   text: string;
   start: number; // seconds

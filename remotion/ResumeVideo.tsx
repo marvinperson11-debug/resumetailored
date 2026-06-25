@@ -4,6 +4,7 @@ import { ResumeVideoProps, NarrationSegment } from './types';
 import { sceneFrames } from './data';
 import { theme } from './theme';
 import { Background } from './scenes/Background';
+import { Greeting } from './scenes/Greeting';
 import { Intro } from './scenes/Intro';
 import { Summary } from './scenes/Summary';
 import { Highlights } from './scenes/Highlights';
@@ -58,6 +59,8 @@ const SyncedScenes: React.FC<{
 
   const sceneFor = (seg: NarrationSegment) => {
     switch (seg.kind) {
+      case 'greeting':
+        return <Greeting recipientName={props.recipientName || ''} recipientTitle={props.recipientTitle} accent={accent} />;
       case 'intro':
         return <Intro name={props.name} title={props.title} summary="" accent={accent} photoUrl={props.photoUrl} />;
       case 'summary':
