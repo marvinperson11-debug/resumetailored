@@ -358,7 +358,7 @@
           <span style="flex:1;text-align:left;" data-i18n="sidebar_ats">ATS Scanner</span>
           <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">∞ PRO</span>
         </button>
-        <button class="sidebar-btn" onclick="showTab('video')" id="tab-video" data-label="Video" title="Resume Video Maker — free, in your browser">
+        <button class="sidebar-btn" onclick="showTab('video')" id="tab-video" data-label="Video" title="Resume Video Maker — Pro studio video">
           <span class="sidebar-icon">🎬</span>
           <span style="flex:1;text-align:left;">Resume Video</span>
           <span style="background:#0891b2;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">FREE</span>
@@ -718,10 +718,10 @@
             <div style="width:44px;height:44px;background:#e11d48;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎬</div>
             <div>
               <h1 style="color:#e11d48;">Resume Video Maker</h1>
-              <span id="videoBadge" style="background:#0891b2;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ FREE · IN YOUR BROWSER</span>
+              <span id="videoBadge" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ PRO FEATURE</span>
             </div>
           </div>
-          <p>Turn any résumé into a short, shareable vertical video with a voiceover — perfect for LinkedIn, Shorts, and Reels. No tailoring required: paste or upload a résumé, then preview and record it right in your browser — free, nothing to install.</p>
+          <p>Turn any résumé into a short, shareable vertical video with a studio AI voiceover — perfect for LinkedIn, Shorts, and Reels. Pick a male or female voice, address it to the hiring manager, and download a polished MP4. A Pro feature.</p>
         </div>
 
         <div class="input-section">
@@ -4541,14 +4541,14 @@ Aaliyah Washington`
       const btn = document.getElementById('videoGenBtn');
       const help = document.getElementById('videoHelp');
       const badge = document.getElementById('videoBadge');
-      if (badge) badge.textContent = isSubscriberFlag ? '✦ PRO · STUDIO VOICE' : '✦ FREE · IN YOUR BROWSER';
+      if (badge) badge.textContent = isSubscriberFlag ? '✦ PRO · STUDIO VOICE' : '✦ PRO FEATURE';
       if (isSubscriberFlag) {
         if (btn) btn.innerHTML = '🎬 Generate Studio Video →';
         if (help) help.textContent = 'Renders on our servers with a studio voice synced to the narration, then downloads a shareable .mp4. Takes about 30–90 seconds.';
         if (up) up.style.display = 'none';
       } else {
-        if (btn) btn.innerHTML = '🎬 Open Free Video Maker →';
-        if (help) help.textContent = 'Opens the free in-browser maker — preview instantly, pick a voiceover (device voice, or your own ElevenLabs key for a studio voice), and record to share.';
+        if (btn) btn.innerHTML = '🔒 Upgrade to Pro →';
+        if (help) help.textContent = 'The resume video is a Pro feature — upgrade to generate a studio-voice MP4 (male or female voice, addressed to the hiring manager).';
         if (up) up.style.display = 'flex';
       }
     }
@@ -4598,28 +4598,22 @@ Aaliyah Washington`
     // Video tab: subscribers render the studio MP4 on the server; free users get
     // the in-browser maker.
     function generateStandaloneVideo() {
+      if (!isSubscriberFlag) { startPro(); return; }
       const resumeText = (document.getElementById('videoResume').value || '').trim();
-      if (isSubscriberFlag) {
-        if (!resumeText) { showToast('Paste or upload a résumé first.'); return; }
-        renderServerVideo(resumeText);
-      } else {
-        openVideoMaker(resumeText); // empty is fine — /preview supports paste/upload
-      }
+      if (!resumeText) { showToast('Paste or upload a résumé first.'); return; }
+      renderServerVideo(resumeText);
     }
 
-    // Download row 🎬 button: subscribers get the server studio MP4, free users
-    // the in-browser maker, both from the tailored résumé.
+    // Download row 🎬 button: subscribers get the server studio MP4; free users
+    // are sent to upgrade (the resume video is a Pro feature).
     function downloadVideo() {
       if (selectedMode === 'cover_letter') { showToast('The video is made from a tailored resume.'); return; }
+      if (!isSubscriberFlag) { showTab('video'); startPro(); return; }
       const resumeText = (lastRawResult || '').trim();
-      if (isSubscriberFlag) {
-        if (!resumeText) { showToast('Tailor a resume first, then make its video.'); return; }
-        showTab('video');
-        const ta = document.getElementById('videoResume'); if (ta && !ta.value.trim()) ta.value = resumeText;
-        renderServerVideo(resumeText);
-      } else {
-        openVideoMaker(resumeText);
-      }
+      if (!resumeText) { showToast('Tailor a resume first, then make its video.'); return; }
+      showTab('video');
+      const ta = document.getElementById('videoResume'); if (ta && !ta.value.trim()) ta.value = resumeText;
+      renderServerVideo(resumeText);
     }
 
     // Optional candidate photo for the video intro — center-cropped + downscaled

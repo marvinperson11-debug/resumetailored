@@ -1672,8 +1672,9 @@ app.post('/api/resume-video', async (req, res) => {
 
   const usageKey = getUsageKey(req);
   const subscribed = isSubscriber(email);
-  if (!subscribed && !hasFreeTierLeft(usageKey, 'video')) {
-    return res.status(402).json({ error: 'free_limit_reached', mode: 'video', message: 'You\'ve used your free daily resume video. Upgrade to Pro for unlimited access.' });
+  // The resume video is a Pro feature — subscribers (and the owner) only.
+  if (!subscribed) {
+    return res.status(402).json({ error: 'pro_only', mode: 'video', message: 'The resume video is a Pro feature. Upgrade to Pro to generate one.' });
   }
 
   if (videoRenderBusy()) {
