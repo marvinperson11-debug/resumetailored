@@ -44,13 +44,15 @@ function generatePad() {
   const seconds = 24;
   const n = sr * seconds;
   const out = new Float32Array(n);
-  // A soft, warm chord (A2, E3, A3, C#4, E4) with light detune for width.
+  // A soft, warm chord with a low sub for warmth and a gently rolled-off top so
+  // it sits calmly under the voice (A1 sub, A2, E3, A3, C#4, soft E4).
   const voices = [
+    { f: 55.0, a: 0.28 }, // warm sub-octave
     { f: 110.0, a: 0.5 },
-    { f: 164.81, a: 0.4 },
-    { f: 220.0, a: 0.32 },
-    { f: 277.18, a: 0.24 },
-    { f: 329.63, a: 0.18 },
+    { f: 164.81, a: 0.38 },
+    { f: 220.0, a: 0.3 },
+    { f: 277.18, a: 0.2 },
+    { f: 329.63, a: 0.1 }, // softer, less bright top
   ];
   for (let i = 0; i < n; i++) {
     const t = i / sr;

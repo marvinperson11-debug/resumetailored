@@ -11,10 +11,11 @@ export const Summary: React.FC<{ summary: string; accent: string }> = ({
   const { fps } = useVideoConfig();
   const rule = spring({ frame, fps, config: { damping: 200 } });
   const inP = spring({ frame: frame - 4, fps, config: { damping: 200 } });
+  const float = Math.sin(frame / 16) * 7;
 
   return (
     <AbsoluteFill
-      style={{ justifyContent: 'center', alignItems: 'center', padding: 110 }}
+      style={{ justifyContent: 'center', alignItems: 'center', padding: 110, transform: `translateY(${float}px)` }}
     >
       <div
         style={{

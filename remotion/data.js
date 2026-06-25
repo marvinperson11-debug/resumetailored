@@ -44,11 +44,24 @@ function sceneFrames(highlightCount, fps = FPS) {
 // drives. Single source of truth for both the script (join the texts) and the
 // reveal timing — each segment maps to one on-screen scene shown exactly while
 // its text is spoken. `index` is the highlight number.
+// Expand name suffixes for speech so TTS doesn't spell them out ("J. R.").
+// Visual scenes still show the original ("Jr"); only the spoken script changes.
+function speakableName(name) {
+  return String(name || '')
+    .replace(/\bJr\.?\b/gi, 'Junior')
+    .replace(/\bSr\.?\b/gi, 'Senior')
+    .replace(/\bIII\b/g, 'the Third')
+    .replace(/\bIV\b/g, 'the Fourth')
+    .replace(/\bII\b/g, 'the Second')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function narrationSegments(props) {
   const p = props || {};
   const segs = [];
   // Open like a person introducing themselves, not a product teaser.
-  if (p.name) segs.push({ kind: 'intro', text: `Hello. My name is ${p.name}${p.title ? `, and I'm ${/^[aeiou]/i.test(p.title.trim()) ? 'an' : 'a'} ${p.title}` : ''}.` });
+  if (p.name) segs.push({ kind: 'intro', text: `Hello. My name is ${speakableName(p.name)}${p.title ? `, and I'm ${/^[aeiou]/i.test(p.title.trim()) ? 'an' : 'a'} ${p.title}` : ''}.` });
   if (p.summary) segs.push({ kind: 'summary', text: String(p.summary).replace(/\s+/g, ' ').trim() });
   const hs = (p.highlights || []).slice(0, 3);
   hs.forEach((h, i) => {

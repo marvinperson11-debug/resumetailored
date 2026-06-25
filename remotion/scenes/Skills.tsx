@@ -9,10 +9,11 @@ export const Skills: React.FC<{ skills: string[]; accent: string }> = ({
 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
+  const float = Math.sin(frame / 16) * 8;
 
   return (
     <AbsoluteFill
-      style={{ justifyContent: 'center', alignItems: 'center', padding: 90 }}
+      style={{ justifyContent: 'center', alignItems: 'center', padding: 90, transform: `translateY(${float}px)` }}
     >
       <div
         style={{

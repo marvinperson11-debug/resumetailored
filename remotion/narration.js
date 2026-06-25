@@ -219,8 +219,8 @@ function elevenConfig() {
 // either per gender (ELEVENLABS_VOICE_ID_MALE/_FEMALE) or globally
 // (ELEVENLABS_VOICE_ID) — set those to a conversational voice from your library.
 function resolveVoiceId(voiceGender) {
-  const female = process.env.ELEVENLABS_VOICE_ID_FEMALE || process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'; // Rachel
-  const male = process.env.ELEVENLABS_VOICE_ID_MALE || 'pNInz6obpgDQGcFmaJgB'; // Adam
+  const female = process.env.ELEVENLABS_VOICE_ID_FEMALE || process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Bella — soft & warm
+  const male = process.env.ELEVENLABS_VOICE_ID_MALE || 'pNInz6obpgDQGcFmaJgB'; // Adam — warm & deep
   if (voiceGender === 'male') return male;
   if (voiceGender === 'female') return female;
   return process.env.ELEVENLABS_VOICE_ID || female;

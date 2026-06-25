@@ -14,6 +14,7 @@ export const HighlightOne: React.FC<{
   const { fps } = useVideoConfig();
   const badge = spring({ frame, fps, config: { damping: 200 } });
   const inP = spring({ frame: frame - 5, fps, config: { damping: 200 } });
+  const float = Math.sin(frame / 16) * 9;
 
   return (
     <AbsoluteFill
@@ -22,6 +23,7 @@ export const HighlightOne: React.FC<{
         alignItems: 'center',
         padding: 110,
         flexDirection: 'column',
+        transform: `translateY(${float}px)`,
       }}
     >
       <div
