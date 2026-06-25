@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Resume Video Preview · ResumeTailor AI</title>
-  <meta name="description" content="Watch the ResumeTailor AI resume video play in real time — powered by the Remotion Player, no server render required." />
+  <title>Resume Video Preview · ResumeTailored AI</title>
+  <meta name="description" content="Watch the ResumeTailored AI resume video play in real time — powered by the Remotion Player, no server render required." />
   <meta name="robots" content="noindex" />
   <style>
     :root {
@@ -166,13 +166,13 @@
       ],
       skills: ['Product Strategy', 'Roadmapping', 'A/B Testing', 'SQL', 'Go-to-Market', 'OKRs', 'Figma', 'Analytics'],
       accentColor: '#6366F1',
-      brand: 'ResumeTailor AI',
+      brand: 'ResumeTailored AI',
     };
 
     // Voiceover script (mirrors remotion/data.js narrationScript).
     function narrationScript(p) {
       const parts = [];
-      const sp = (n) => String(n||'').replace(/\bJr\.?\b/gi,'Junior').replace(/\bSr\.?\b/gi,'Senior').replace(/\bIII\b/g,'the Third').replace(/\bIV\b/g,'the Fourth').replace(/\bII\b/g,'the Second').replace(/\s+/g,' ').trim();
+      const sp = (n) => String(n||'').replace(/\bMrs\b\.?/gi,'Missus').replace(/\bMr\b\.?/gi,'Mister').replace(/\bMs\b\.?/gi,'Miz').replace(/\bDr\b\.?/gi,'Doctor').replace(/\bProf\b\.?/gi,'Professor').replace(/\bJr\b\.?/gi,'Junior').replace(/\bSr\b\.?/gi,'Senior').replace(/\bIII\b/g,'the Third').replace(/\bIV\b/g,'the Fourth').replace(/\bII\b/g,'the Second').replace(/\s+/g,' ').trim();
       if (p.name) parts.push(`Hello. My name is ${sp(p.name)}.`);
       if (p.summary) parts.push(p.summary);
       const hs = (p.highlights || []).slice(0, 3);
@@ -621,7 +621,7 @@
           <div class="panel">
             <label for="resume">Upload or paste a tailored resume to preview your own video</label>
             <div class="row" style=${{ marginTop: 0, marginBottom: 12 }}>
-              <button onClick=${() => fileRef.current && fileRef.current.click()}>⬆ Upload résumé (PDF, DOCX, TXT)</button>
+              <button onClick=${() => fileRef.current && fileRef.current.click()}>⬆ Upload resume (PDF, DOCX, TXT)</button>
               ${status ? html`<span class="hint">${status}</span>` : null}
               <input ref=${fileRef} type="file" accept=".pdf,.docx,.txt" onChange=${onFile} style=${{ display: 'none' }} />
             </div>

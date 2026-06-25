@@ -721,12 +721,12 @@
               <span id="videoBadge" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ PRO FEATURE</span>
             </div>
           </div>
-          <p>Turn any résumé into a short, shareable vertical video with a studio AI voiceover — perfect for LinkedIn, Shorts, and Reels. Pick a male or female voice, address it to the hiring manager, and download a polished MP4. A Pro feature.</p>
+          <p>Turn any resume into a short, shareable vertical video with a studio AI voiceover — perfect for LinkedIn, Shorts, and Reels. Pick a male or female voice, address it to the hiring manager, and download a polished MP4. A Pro feature.</p>
         </div>
 
         <div class="input-section">
           <div class="input-group">
-            <label class="input-label" for="videoName">Your Name <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — overrides the name read from the résumé)</span></label>
+            <label class="input-label" for="videoName">Your Name <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — overrides the name read from the resume)</span></label>
             <input type="text" id="videoName" class="text-input" placeholder="e.g. Jordan Mitchell" />
           </div>
 
@@ -758,14 +758,14 @@
 
           <div class="input-group" style="margin-top:16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
-              <label class="input-label" for="videoResume" style="margin:0;">Your Résumé</label>
+              <label class="input-label" for="videoResume" style="margin:0;">Your Resume</label>
               <span style="display:flex;gap:8px;">
-                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyTailorResumeToVideo()">Use my Tailor résumé</button>
+                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyTailorResumeToVideo()">Use my Tailor resume</button>
                 <button class="upload-btn" id="videoUploadBtn" onclick="document.getElementById('videoResumeFileInput').click()">⬆ Upload File</button>
               </span>
               <input type="file" id="videoResumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleVideoResumeUpload(this)" />
             </div>
-            <textarea id="videoResume" class="resume-textarea" style="min-height:220px;" placeholder="Paste your résumé text here, or upload a PDF/DOCX/TXT above.&#10;&#10;The video highlights your name, title, top achievements, and skills — so include your experience bullets and a skills section for the best result."></textarea>
+            <textarea id="videoResume" class="resume-textarea" style="min-height:220px;" placeholder="Paste your resume text here, or upload a PDF/DOCX/TXT above.&#10;&#10;The video highlights your name, title, top achievements, and skills — so include your experience bullets and a skills section for the best result."></textarea>
           </div>
 
           <button class="btn btn-primary" id="videoGenBtn" onclick="generateStandaloneVideo()" style="margin-top:16px;width:100%;padding:14px;background:#0891b2;border-color:#0891b2;">
@@ -894,7 +894,7 @@
       <div class="tab-content" id="panel-forum">
         <div class="panel-header">
           <h1>Community Forum</h1>
-          <p>Connect with other professionals. Share tips, wins, and advice with the ResumeTailor community.</p>
+          <p>Connect with other professionals. Share tips, wins, and advice with the ResumeTailored community.</p>
         </div>
 
         <!-- New post form -->
@@ -1673,7 +1673,7 @@
       Object.keys(formPh).forEach(function(id) { var el = document.getElementById(id); if (el) el.placeholder = formPh[id]; });
       // 15. Forum panel
       var forumH1 = document.querySelector('#panel-forum h1'); if (forumH1) forumH1.textContent = isZh ? '社区论坛' : 'Community Forum';
-      var forumSubP = document.querySelector('#panel-forum .panel-header p'); if (forumSubP) forumSubP.textContent = isZh ? '与其他专业人士建立联系。在ResumeTailor社区分享技巧、成就和建议。' : 'Connect with other professionals. Share tips, wins, and advice with the ResumeTailor community.';
+      var forumSubP = document.querySelector('#panel-forum .panel-header p'); if (forumSubP) forumSubP.textContent = isZh ? '与其他专业人士建立联系。在ResumeTailored社区分享技巧、成就和建议。' : 'Connect with other professionals. Share tips, wins, and advice with the ResumeTailored community.';
       var forumComposeH3 = document.querySelector('.forum-compose h3'); if (forumComposeH3) forumComposeH3.textContent = isZh ? '分享你的故事' : 'Share Something With the Community';
       var forumPostBtn = document.querySelector('#panel-forum .btn-primary'); if (forumPostBtn) forumPostBtn.textContent = isZh ? '发布到社区 →' : 'Post to Community →';
       // 16. Salary panel
@@ -4523,7 +4523,7 @@ Aaliyah Washington`
     // server endpoint. Heavy + slow, so show progress and handle gating/busy.
     // ── Resume Video Maker — opens the free in-browser maker (/preview) ────────
     // Rendering runs client-side on the user's device via the Remotion Player,
-    // so there is no server/Chromium cost. We stash the résumé so /preview loads
+    // so there is no server/Chromium cost. We stash the resume so /preview loads
     // it automatically (one-shot handoff, cleared on read).
     function openVideoMaker(resumeText) {
       try {
@@ -4557,9 +4557,9 @@ Aaliyah Washington`
       const tailored = (lastRawResult && selectedMode !== 'cover_letter') ? lastRawResult : '';
       const raw = document.getElementById('resume');
       const src = (tailored || (raw ? raw.value : '') || '').trim();
-      if (!src) { showToast('No résumé found — paste one here, or tailor a resume first.'); return; }
+      if (!src) { showToast('No resume found — paste one here, or tailor a resume first.'); return; }
       document.getElementById('videoResume').value = src;
-      showToast('Résumé copied from the Tailor tab!');
+      showToast('Resume copied from the Tailor tab!');
     }
 
     async function handleVideoResumeUpload(input) {
@@ -4571,7 +4571,7 @@ Aaliyah Washington`
       const ext = file.name.toLowerCase().split('.').pop();
       if (ext === 'txt') {
         const reader = new FileReader();
-        reader.onload = e => { document.getElementById('videoResume').value = e.target.result; btn.textContent = '✓ ' + file.name; btn.disabled = false; showToast('Résumé loaded!'); };
+        reader.onload = e => { document.getElementById('videoResume').value = e.target.result; btn.textContent = '✓ ' + file.name; btn.disabled = false; showToast('Resume loaded!'); };
         reader.onerror = () => { showToast('Could not read file.'); btn.textContent = '⬆ Upload File'; btn.disabled = false; };
         reader.readAsText(file);
         input.value = '';
@@ -4585,7 +4585,7 @@ Aaliyah Washington`
         if (!res.ok) throw new Error(data.error || 'Extraction failed.');
         document.getElementById('videoResume').value = data.text;
         btn.textContent = '✓ ' + file.name;
-        showToast('Résumé loaded!');
+        showToast('Resume loaded!');
       } catch (err) {
         showToast(err.message);
         btn.textContent = '⬆ Upload File';
@@ -4600,7 +4600,7 @@ Aaliyah Washington`
     function generateStandaloneVideo() {
       if (!isSubscriberFlag) { startPro(); return; }
       const resumeText = (document.getElementById('videoResume').value || '').trim();
-      if (!resumeText) { showToast('Paste or upload a résumé first.'); return; }
+      if (!resumeText) { showToast('Paste or upload a resume first.'); return; }
       renderServerVideo(resumeText);
     }
 
@@ -4655,7 +4655,7 @@ Aaliyah Washington`
         showToast("Photo added — it'll appear in your video intro.");
       } catch (_) { showToast('Could not process that image.'); }
     }
-    // Résumé photo (Sidebar template avatar). Stored on window.rtResumePhoto so
+    // Resume photo (Sidebar template avatar). Stored on window.rtResumePhoto so
     // renderSidebarOutput (preview + PDF) picks it up; re-render to show it live.
     function _reRenderOutputPhoto() {
       const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
@@ -4717,13 +4717,13 @@ Aaliyah Washington`
       document.body.appendChild(overlay);
     }
 
-    // Subscriber path: POST the résumé to the server renderer, then preview the
+    // Subscriber path: POST the resume to the server renderer, then preview the
     // returned MP4 (studio ElevenLabs voice + narration-synced reveal).
     let videoRendering = false;
     async function renderServerVideo(resumeText) {
       if (videoRendering) { showToast('A video is already rendering — please wait.'); return; }
       const text = (resumeText || '').trim();
-      if (!text) { showToast('No résumé found.'); return; }
+      if (!text) { showToast('No resume found.'); return; }
       const email = (typeof getStoredEmail === 'function' ? getStoredEmail() : (localStorage.getItem('rt_email') || ''));
       const name = (document.getElementById('videoName')?.value || '').trim();
       const btn = document.getElementById('videoGenBtn');
@@ -4731,9 +4731,9 @@ Aaliyah Washington`
       const setStatus = (msg) => { if (status) { status.style.display = 'block'; status.textContent = msg; } };
       const t0 = Date.now();
       videoRendering = true;
-      let timer = setInterval(() => setStatus(`Rendering your studio video… ${Math.round((Date.now() - t0) / 1000)}s (usually 30–90s).`), 1000);
+      let timer = setInterval(() => setStatus(`Rendering your studio video… ${Math.round((Date.now() - t0) / 1000)}s (this takes about 2 minutes).`), 1000);
       if (btn) { btn.disabled = true; btn.dataset.prevLabel = btn.innerHTML; btn.innerHTML = '⏳ Rendering…'; }
-      setStatus('Rendering your studio video… this usually takes 30–90 seconds.');
+      setStatus('Rendering your studio video… this takes about 2 minutes — keep this tab open.');
       try {
         const res = await fetch('/api/resume-video', {
           method: 'POST',
