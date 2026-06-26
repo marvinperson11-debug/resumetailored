@@ -1748,7 +1748,7 @@ async function runVideoRender(jobId, body, mods) {
   const job = videoJobs.get(jobId);
   if (!job) return;
   const { renderModule, parseModule } = mods;
-  const { resume, name, accentColor, voice, photoUrl, voiceGender, recipientName, recipientTitle, email, speed } = body || {};
+  const { resume, name, accentColor, voice, photoUrl, voiceGender, recipientName, recipientTitle, email, speed, outro } = body || {};
   const subscribed = isSubscriber(email);
   const outPath = path.join(os.tmpdir(), `resume-video-${jobId}.mp4`);
   try {
@@ -1772,6 +1772,12 @@ async function runVideoRender(jobId, body, mods) {
       if (typeof recipientTitle === 'string' && recipientTitle.trim()) {
         props.recipientTitle = recipientTitle.trim().slice(0, 80);
       }
+    }
+
+    // Optional closing line (a preset key or custom text); resolved + capped in
+    // data.js (outroText). Defaults to a polite thank-you when absent.
+    if (typeof outro === 'string' && outro.trim()) {
+      props.outro = outro.trim().slice(0, 400);
     }
 
     // Quiet background music bed (best-effort; BACKGROUND_MUSIC=off to disable).
@@ -1839,6 +1845,16 @@ app.get('/api/video-voices', (req, res) => {
     res.json({ voices });
   } catch (_) {
     res.json({ voices: [] });
+  }
+});
+
+// The list of closing-line (outro) presets the picker offers.
+app.get('/api/video-outros', (req, res) => {
+  try {
+    const outros = require('./remotion/data').outroOptions();
+    res.json({ outros });
+  } catch (_) {
+    res.json({ outros: [] });
   }
 });
 

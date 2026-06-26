@@ -93,6 +93,32 @@ function speakable(s) {
   return t.replace(/\s+/g, ' ').trim();
 }
 
+// Closing line the candidate speaks at the end of the video. The picker offers
+// these presets; a subscriber can also pass custom text. `default` is used when
+// nothing is chosen. Single source of truth — the front-end fetches the labels
+// from /api/video-outros so the picker can't drift from what is spoken.
+const OUTRO_PRESETS = {
+  default:     { label: 'Thank you & have a great day (default)',          text: 'Thank you for your time, and have a great day.' },
+  considering: { label: 'Thrilled to bring my experience to your team',    text: 'Thank you for considering my application. I would be thrilled to bring my experience to your team, and I look forward to the possibility of discussing this further.' },
+  excited:     { label: 'Excited about the role — looking forward',         text: 'I am very excited about this role, and I am confident my background is a great fit. I look forward to hearing from you to discuss the next steps.' },
+  reviewing:   { label: 'Thanks for reviewing — hope to hear soon',         text: 'Thank you for your time, and for reviewing my video. I hope to hear from you soon regarding an interview.' },
+  contribute:  { label: 'Eager to contribute — thank you for considering',  text: 'I am eager to contribute to the success of your team, and I believe my skills align perfectly with your goals. Thank you for your consideration.' },
+};
+
+// Resolve the spoken/shown outro text. A known preset key wins; otherwise any
+// non-empty custom string is used (trimmed and capped); otherwise the default.
+function outroText(outro) {
+  const raw = String(outro == null ? '' : outro).replace(/\s+/g, ' ').trim();
+  if (!raw) return OUTRO_PRESETS.default.text;
+  if (OUTRO_PRESETS[raw]) return OUTRO_PRESETS[raw].text;
+  return raw.slice(0, 400);
+}
+
+// Public option list for the outro picker: key + label + the full spoken text.
+function outroOptions() {
+  return Object.entries(OUTRO_PRESETS).map(([key, v]) => ({ key, label: v.label, text: v.text }));
+}
+
 function narrationSegments(props) {
   const p = props || {};
   const segs = [];
@@ -110,8 +136,9 @@ function narrationSegments(props) {
   });
   const skills = (p.skills || []).slice(0, 6);
   if (skills.length) segs.push({ kind: 'skills', text: `My core skills include ${skills.join(', ')}.` });
-  // No spoken brand/website outro — the video is about the candidate, not us.
-  // The small corner watermark carries the brand silently.
+  // The candidate's spoken closing line (chosen preset or custom; defaults to a
+  // polite thank-you). The brand stays silent in the small corner watermark.
+  segs.push({ kind: 'outro', text: outroText(p.outro) });
   return segs;
 }
 
@@ -137,4 +164,4 @@ function narrationScript(props) {
   return narrationTimeline(props).script;
 }
 
-module.exports = { defaultResumeVideoProps, FPS, sceneFrames, narrationScript, narrationSegments, narrationTimeline };
+module.exports = { defaultResumeVideoProps, FPS, sceneFrames, narrationScript, narrationSegments, narrationTimeline, OUTRO_PRESETS, outroText, outroOptions };

@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, Audio, Sequence, useVideoConfig } from 'remotion';
 import { ResumeVideoProps, NarrationSegment } from './types';
-import { sceneFrames } from './data';
+import { sceneFrames, outroText } from './data';
 import { theme } from './theme';
 import { Background } from './scenes/Background';
 import { Greeting } from './scenes/Greeting';
@@ -76,8 +76,8 @@ const SyncedScenes: React.FC<{
         );
       case 'skills':
         return <Skills skills={props.skills} accent={accent} />;
-      case 'brand':
-        return <Outro brand={props.brand} accent={accent} />;
+      case 'outro':
+        return <Outro text={seg.text} name={props.name} accent={accent} />;
       default:
         return null;
     }
@@ -125,7 +125,7 @@ const FixedScenes: React.FC<{ props: ResumeVideoProps; accent: string; fps: numb
         durationInFrames={outroDuration}
         name="Outro"
       >
-        <Outro brand={props.brand} accent={accent} />
+        <Outro text={outroText(props.outro)} name={props.name} accent={accent} />
       </Sequence>
     </>
   );

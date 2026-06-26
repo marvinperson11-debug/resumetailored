@@ -27,10 +27,13 @@ export type ResumeVideoProps = {
   // present, the video opens with "Hi <name>, <title>." before the candidate intro.
   recipientName?: string;
   recipientTitle?: string;
+  // Optional closing line the candidate speaks at the end (preset key or custom
+  // text). Resolved to the spoken/shown text in data.js (outroText).
+  outro?: string;
 };
 
 export type NarrationSegment = {
-  kind: 'greeting' | 'intro' | 'summary' | 'highlight' | 'skills' | 'brand';
+  kind: 'greeting' | 'intro' | 'summary' | 'highlight' | 'skills' | 'brand' | 'outro';
   index?: number; // highlight number (kind === 'highlight')
   text: string;
   start: number; // seconds
