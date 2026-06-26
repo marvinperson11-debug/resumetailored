@@ -767,6 +767,14 @@
           </div>
 
           <div class="input-group" style="margin-top:16px;">
+            <label class="input-label" for="videoVoiceSpeed">Voice speed <span id="videoVoiceSpeedLabel" style="color:#6366F1;font-weight:600;font-size:12px;">Relaxed</span></label>
+            <input type="range" id="videoVoiceSpeed" min="0.7" max="1.2" step="0.05" value="0.9" style="width:100%;max-width:320px;display:block;" oninput="updateVoiceSpeedLabel(this.value)">
+            <div style="display:flex;justify-content:space-between;max-width:320px;font-size:11px;color:#9ca3af;margin-top:2px;">
+              <span>Slower</span><span>Normal</span><span>Faster</span>
+            </div>
+          </div>
+
+          <div class="input-group" style="margin-top:16px;">
             <div id="savedResumesRow" style="display:none;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
               <label class="input-label" style="margin:0;">Saved resumes</label>
               <select id="videoSavedResumes" class="text-input" style="flex:1;min-width:180px;max-width:340px;" onchange="useSavedResume(this.value)"></select>
@@ -4646,6 +4654,22 @@ Aaliyah Washington`
       } catch (_) { /* keep the hardcoded fallback list */ }
     }
 
+    // Map the narration speed slider (0.7–1.2) to a friendly word. 1.0 is the
+    // natural pace; below it is slower/calmer, above it is faster.
+    function updateVoiceSpeedLabel(v) {
+      const n = parseFloat(v);
+      const el = document.getElementById('videoVoiceSpeedLabel');
+      if (!el) return;
+      let word = 'Normal';
+      if (n <= 0.75) word = 'Slowest';
+      else if (n <= 0.85) word = 'Slower';
+      else if (n < 0.98) word = 'Relaxed';
+      else if (n <= 1.02) word = 'Normal';
+      else if (n <= 1.12) word = 'Faster';
+      else word = 'Fastest';
+      el.textContent = word;
+    }
+
     function useSavedResume(id) {
       if (!id) return;
       const rr = _savedResumesCache.find(x => String(x.id) === String(id));
@@ -4855,6 +4879,7 @@ Aaliyah Washington`
             email,
             photoUrl: videoPhotoDataUrl || undefined,
             voice: (document.getElementById('videoVoiceGender') || {}).value || undefined,
+            speed: (document.getElementById('videoVoiceSpeed') || {}).value || undefined,
             recipientName: (document.getElementById('videoRecipientName') || {}).value || undefined,
             recipientTitle: (document.getElementById('videoRecipientTitle') || {}).value || undefined,
           }),

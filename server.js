@@ -1748,7 +1748,7 @@ async function runVideoRender(jobId, body, mods) {
   const job = videoJobs.get(jobId);
   if (!job) return;
   const { renderModule, parseModule } = mods;
-  const { resume, name, accentColor, voice, photoUrl, voiceGender, recipientName, recipientTitle, email } = body || {};
+  const { resume, name, accentColor, voice, photoUrl, voiceGender, recipientName, recipientTitle, email, speed } = body || {};
   const subscribed = isSubscriber(email);
   const outPath = path.join(os.tmpdir(), `resume-video-${jobId}.mp4`);
   try {
@@ -1789,7 +1789,9 @@ async function runVideoRender(jobId, body, mods) {
         // Optional specific voice the user picked from the catalog (validated in
         // resolveVoiceId); falls back to the per-gender default if unknown.
         const voiceKey = typeof voice === 'string' ? voice : undefined;
-        const vo = await require('./remotion/narration').generateNarrationAsync(props, { allowEleven, voiceGender: vg, voice: voiceKey });
+        // Optional subscriber-chosen narration pace (clamped in narration.js).
+        const spd = (speed != null && Number.isFinite(Number(speed))) ? Number(speed) : undefined;
+        const vo = await require('./remotion/narration').generateNarrationAsync(props, { allowEleven, voiceGender: vg, voice: voiceKey, speed: spd });
         if (vo && vo.src) {
           const { FPS } = require('./remotion/data');
           props.audioSrc = vo.src;

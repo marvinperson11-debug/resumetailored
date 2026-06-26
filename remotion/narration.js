@@ -271,7 +271,9 @@ async function elevenNarration(props, opts = {}) {
     similarity_boost: clampNum(process.env.ELEVENLABS_SIMILARITY, 0.85, 0, 1),
     style: clampNum(process.env.ELEVENLABS_STYLE, 0.55, 0, 1),
     use_speaker_boost: true,
-    speed: clampNum(process.env.ELEVENLABS_SPEED, 0.9, 0.7, 1.2),
+    // A subscriber-chosen pace (opts.speed) wins over the env default. 1.0 is
+    // natural; lower is slower/calmer, higher is faster. Clamped to a safe range.
+    speed: clampNum(opts.speed != null ? opts.speed : process.env.ELEVENLABS_SPEED, 0.9, 0.7, 1.2),
   };
   const res = await fetch(url, {
     method: 'POST',
