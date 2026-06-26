@@ -159,8 +159,33 @@ if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
   ins.run('Priya K.', 'Product Designer', '1 day ago', 'For anyone in tech design — portfolio matters MORE than your resume. But a tailored resume got me the interview so I could show my portfolio. Both matter!', 9);
 }
 
-function hashPw(pw) {
+// ─── Password hashing ──────────────────────────────────────────────────────
+// New hashes use bcrypt (per-record salt, slow). Legacy accounts created before
+// this migration used a single static-salt SHA-256 ("rta_salt_2026_" + pw) — we
+// still VERIFY those so nobody is locked out, and transparently re-hash them to
+// bcrypt on their next successful login (lazy migration; no forced reset).
+const bcrypt = require('bcryptjs');
+const BCRYPT_ROUNDS = 10;
+
+function legacyHashPw(pw) {
   return crypto.createHash('sha256').update('rta_salt_2026_' + pw).digest('hex');
+}
+
+// True for stored hashes still in the old SHA-256 format (bcrypt hashes start "$2").
+function isLegacyHash(stored) {
+  return typeof stored === 'string' && !stored.startsWith('$2');
+}
+
+// Hash a new/changed password with bcrypt.
+function hashPassword(pw) {
+  return bcrypt.hashSync(pw, BCRYPT_ROUNDS);
+}
+
+// Verify a plaintext password against a stored hash of either format.
+function verifyPassword(pw, stored) {
+  if (!stored) return false;
+  if (isLegacyHash(stored)) return legacyHashPw(pw) === stored;
+  try { return bcrypt.compareSync(pw, stored); } catch { return false; }
 }
 
 app.set('trust proxy', 1); // Required on Railway — reads real client IP from X-Forwarded-For
@@ -252,7 +277,7 @@ app.post('/api/auth/signup', async (req, res) => {
     return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
   }
   const cleanUsername = username.trim().slice(0, 30);
-  db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)').run(key, cleanUsername, hashPw(password));
+  db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)').run(key, cleanUsername, hashPassword(password));
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
   res.json({ token, username: cleanUsername, email: key });
@@ -362,8 +387,14 @@ app.post('/api/auth/login', (req, res) => {
   }
   const key = email.toLowerCase().trim();
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(key);
-  if (!user || user.password_hash !== hashPw(password)) {
+  if (!user || !verifyPassword(password, user.password_hash)) {
     return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+  // Lazy migration: re-hash legacy SHA-256 accounts to bcrypt on successful login.
+  if (isLegacyHash(user.password_hash)) {
+    try {
+      db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(hashPassword(password), key);
+    } catch (e) { console.error('[auth] lazy bcrypt migration failed for', key, e.message); }
   }
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
@@ -570,7 +601,7 @@ app.post('/api/auth/reset-password', (req, res) => {
     return res.status(400).json({ error: 'Account not found.' });
   }
 
-  db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(hashPw(password), record.email);
+  db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(hashPassword(password), record.email);
   db.prepare('DELETE FROM reset_tokens WHERE token = ?').run(token);
   db.prepare('DELETE FROM sessions WHERE email = ?').run(record.email);
 
