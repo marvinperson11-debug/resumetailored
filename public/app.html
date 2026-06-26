@@ -1213,6 +1213,29 @@
             </div>
           </div>
         </div>
+
+        <!-- Privacy & Data: saving tailored resumes is opt-in, off by default -->
+        <div class="help-form-card" id="privacyDataCard" style="margin-top:24px;">
+          <h3 style="font-size:18px;font-weight:700;margin-bottom:6px;" id="privacyDataTitle">Privacy &amp; Data</h3>
+          <p style="color:var(--text-muted);font-size:14px;margin-bottom:18px;" id="privacyDataSub">Control whether your tailored resumes are saved to your account.</p>
+
+          <div style="display:flex;gap:14px;align-items:flex-start;padding:14px 16px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px;margin-bottom:18px;">
+            <div style="font-size:20px;line-height:1;flex-shrink:0;">⚠️</div>
+            <div style="font-size:13.5px;line-height:1.55;color:var(--text-muted);" id="privacyDataWarning">
+              <strong style="color:#f59e0b;">We recommend NOT saving your resumes.</strong>
+              We don't track or monitor what's stored, and we are not responsible for any loss, exposure, or misuse of resume content you choose to save. Your resume can contain personal details (name, address, phone, employer history), so only enable this if you understand and accept that risk. This is entirely optional — you can keep using the tailor tool either way.
+            </div>
+          </div>
+
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;font-weight:600;margin-bottom:14px;" id="privacyDataToggleLabel">
+            <input type="checkbox" id="saveResumesToggle" onchange="onSaveResumesToggle(this.checked)" style="width:18px;height:18px;accent-color:#6366F1;cursor:pointer;" />
+            <span id="privacyDataToggleText">Save my tailored resumes to my account</span>
+          </label>
+          <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;" id="privacyDataStatus">Currently off — nothing is being saved.</div>
+
+          <button class="btn btn-outline" style="font-size:13px;padding:8px 14px;" onclick="deleteAllSavedResumes()" id="deleteAllSavedBtn">Delete all saved resumes</button>
+          <div id="privacyDataMsg" style="display:none;margin-top:12px;font-size:13px;font-weight:600;"></div>
+        </div>
       </div>
 
       <!-- ═══ TAB: ABOUT ═══ -->
@@ -1761,6 +1784,16 @@
       var hFaqAD = isZh ? ['每天可免费定制1次简历——无需信用卡。每天午夜计数器重置。升级专业版可享受无限次定制。','订阅后，在简历定制标签页的邮箱字段输入结账时使用的邮箱，然后点击其他地方。专业版状态将自动激活。','不会。我们的AI严格使用职位描述的语言和关键词改写和重构你现有的经历。它不会添加你原始简历中没有的技能或经历。','使用本页面的表单发送消息，附上你的邮箱，我们将立即为你取消。无需解释。也可以回复我们的任何邮件。','纯文本效果最佳。在Word或Google文档中打开简历，全选（Ctrl+A），复制（Ctrl+C），粘贴到简历字段。AI会处理格式。'] : ['You get 1 free resume tailoring per day — no credit card required. Each day at midnight the counter resets. Upgrade to Pro for unlimited tailorings.','After subscribing, enter the email you used at checkout into the email field on the Resume Tailor tab and click away. Your Pro status will activate automatically.','No. Our AI strictly rewrites and reframes your existing experience using the job posting\'s language and keywords. It never adds skills or experience you didn\'t include in your original resume.','Send us a message using the form on this page with your email and we\'ll cancel immediately. No questions asked. You can also reply to any of our emails.','Plain text works best. Open your resume in Word or Google Docs, select all (Ctrl+A), copy (Ctrl+C), and paste into the resume field. The AI handles the formatting.'];
       helpFaqQs.forEach(function(el, i) { if (hFaqQD[i]) el.textContent = hFaqQD[i]; });
       helpFaqAs.forEach(function(el, i) { if (hFaqAD[i]) el.textContent = hFaqAD[i]; });
+      // 18b. Privacy & Data card
+      var pdTitle = document.getElementById('privacyDataTitle'); if (pdTitle) pdTitle.textContent = isZh ? '隐私与数据' : 'Privacy & Data';
+      var pdSub = document.getElementById('privacyDataSub'); if (pdSub) pdSub.textContent = isZh ? '控制你定制的简历是否保存到你的账户。' : 'Control whether your tailored resumes are saved to your account.';
+      var pdWarn = document.getElementById('privacyDataWarning');
+      if (pdWarn) pdWarn.innerHTML = isZh
+        ? '<strong style="color:#f59e0b;">我们建议不要保存你的简历。</strong> 我们不会追踪或监控已保存的内容，并且对你选择保存的简历内容造成的任何丢失、泄露或滥用不承担责任。你的简历可能包含个人信息（姓名、地址、电话、工作经历），因此只有在你理解并接受这一风险的情况下才启用此功能。这完全是可选的——无论是否开启，你都可以正常使用定制工具。'
+        : '<strong style="color:#f59e0b;">We recommend NOT saving your resumes.</strong> We don\'t track or monitor what\'s stored, and we are not responsible for any loss, exposure, or misuse of resume content you choose to save. Your resume can contain personal details (name, address, phone, employer history), so only enable this if you understand and accept that risk. This is entirely optional — you can keep using the tailor tool either way.';
+      var pdToggleText = document.getElementById('privacyDataToggleText'); if (pdToggleText) pdToggleText.textContent = isZh ? '将我定制的简历保存到我的账户' : 'Save my tailored resumes to my account';
+      var pdDeleteBtn = document.getElementById('deleteAllSavedBtn'); if (pdDeleteBtn) pdDeleteBtn.textContent = isZh ? '删除所有已保存的简历' : 'Delete all saved resumes';
+      renderPrivacyDataCard();
       // 19. About panel
       var aboutH1 = document.querySelector('#panel-about h1'); if (aboutH1) aboutH1.textContent = isZh ? '它是如何工作的？' : 'How Does It Work?';
       var aboutSubP = document.querySelector('#panel-about .panel-header p'); if (aboutSubP) aboutSubP.textContent = isZh ? '专为认真求职者打造。由最先进的AI驱动。' : 'Built for serious job seekers. Powered by the most advanced AI available.';
@@ -2066,11 +2099,73 @@
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
         isLoggedIn = true;
+        _saveResumesEnabled = !!data.saveResumes;
+        renderPrivacyDataCard();
         updateNavForLogged();
         document.getElementById('authOverlay').style.display = 'none';
       } catch(e) {
         isLoggedIn = false;
         updateNavForGuest();
+      }
+    }
+
+    // ── Privacy & Data: opt-in saving of tailored resumes (default off) ───────
+    let _saveResumesEnabled = false;
+
+    function renderPrivacyDataCard() {
+      const toggle = document.getElementById('saveResumesToggle');
+      const status = document.getElementById('privacyDataStatus');
+      if (!toggle || !status) return;
+      var isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      toggle.checked = _saveResumesEnabled;
+      status.textContent = _saveResumesEnabled
+        ? (isZh ? '当前已开启 —— 你定制的简历会保存到你的账户。' : 'Currently on — your tailored resumes are being saved to your account.')
+        : (isZh ? '当前已关闭 —— 不会保存任何内容。' : 'Currently off — nothing is being saved.');
+    }
+
+    async function onSaveResumesToggle(checked) {
+      const msg = document.getElementById('privacyDataMsg');
+      try {
+        const r = await fetch('/api/account/prefs', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ saveResumes: checked })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Could not update this setting.');
+        _saveResumesEnabled = !!d.saveResumes;
+        renderPrivacyDataCard();
+        if (msg) {
+          var isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+          msg.style.display = 'block';
+          msg.style.color = '#22c55e';
+          msg.textContent = _saveResumesEnabled
+            ? (isZh ? '✓ 已开启保存。' : '✓ Saving is now on.')
+            : (isZh ? '✓ 已关闭保存。' : '✓ Saving is now off.');
+          setTimeout(function () { msg.style.display = 'none'; }, 3000);
+        }
+      } catch (e) {
+        document.getElementById('saveResumesToggle').checked = _saveResumesEnabled;
+        if (msg) { msg.style.display = 'block'; msg.style.color = '#ef4444'; msg.textContent = e.message; }
+      }
+    }
+
+    async function deleteAllSavedResumes() {
+      const msg = document.getElementById('privacyDataMsg');
+      var isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      try {
+        const r = await fetch('/api/resumes', { method: 'DELETE', headers: authHeaders() });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Could not delete saved resumes.');
+        _savedResumesCache = [];
+        if (msg) {
+          msg.style.display = 'block';
+          msg.style.color = '#22c55e';
+          msg.textContent = isZh ? '✓ 已删除所有已保存的简历。' : '✓ All saved resumes deleted.';
+          setTimeout(function () { msg.style.display = 'none'; }, 3000);
+        }
+      } catch (e) {
+        if (msg) { msg.style.display = 'block'; msg.style.color = '#ef4444'; msg.textContent = e.message; }
       }
     }
 
@@ -2276,6 +2371,7 @@
       if (name === 'samples') initSamples();
       if (name === 'linkedin') updateLinkedInFreeStatus();
       if (name === 'video') updateVideoGate();
+      if (name === 'help') renderPrivacyDataCard();
     }
 
     // ── Mode buttons ───────────────────────────────────────────────────────────
@@ -2609,7 +2705,8 @@
           }
         }
         // Persist the tailored resume so it's saved for later (e.g. the video maker, other devices).
-        if (lastRawResult && selectedMode !== 'cover_letter') saveTailoredResume(lastRawResult);
+        // Opt-in only (Privacy & Data setting, off by default) — see Help & Support tab.
+        if (lastRawResult && selectedMode !== 'cover_letter' && _saveResumesEnabled) saveTailoredResume(lastRawResult);
         document.getElementById('editBtn').style.display = 'inline-flex';
         document.getElementById('editBar').style.display = 'none';
         document.getElementById('outputBox').removeAttribute('contenteditable');

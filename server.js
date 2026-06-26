@@ -151,6 +151,10 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_saved_resumes_email ON saved_resumes(email);
 `);
 
+// Opt-in flag for saving tailored resumes to the account (added after the
+// initial users table). Defaults OFF — saving is opt-in, not opt-out.
+try { db.exec('ALTER TABLE users ADD COLUMN save_resumes INTEGER NOT NULL DEFAULT 0'); } catch (e) {}
+
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
   const ins = db.prepare('INSERT INTO forum_posts (author, role, time, text, likes) VALUES (?, ?, ?, ?, ?)');
@@ -412,8 +416,8 @@ app.get('/api/auth/me', (req, res) => {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   const row = token && db.prepare('SELECT email FROM sessions WHERE token = ?').get(token);
   if (!row) return res.status(401).json({ error: 'Not authenticated.' });
-  const user = db.prepare('SELECT username FROM users WHERE email = ?').get(row.email);
-  res.json({ email: row.email, username: user ? user.username : '' });
+  const user = db.prepare('SELECT username, save_resumes FROM users WHERE email = ?').get(row.email);
+  res.json({ email: row.email, username: user ? user.username : '', saveResumes: !!(user && user.save_resumes) });
 });
 
 app.post('/api/auth/logout', (req, res) => {
@@ -438,10 +442,36 @@ app.get('/api/resumes', (req, res) => {
   res.json({ resumes: rows });
 });
 
+// Whether this user has opted in to having their tailored resumes saved.
+// Defaults OFF — we recommend against saving, so saving only happens if the
+// user explicitly turned it on via the Privacy & Data setting.
+function hasOptedIntoSaving(email) {
+  const row = db.prepare('SELECT save_resumes FROM users WHERE email = ?').get(email);
+  return !!(row && row.save_resumes);
+}
+
+// Get/set the saved-resumes opt-in preference for the signed-in user.
+app.get('/api/account/prefs', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  res.json({ saveResumes: hasOptedIntoSaving(email) });
+});
+
+app.post('/api/account/prefs', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const saveResumes = !!(req.body && req.body.saveResumes);
+  db.prepare('UPDATE users SET save_resumes = ? WHERE email = ?').run(saveResumes ? 1 : 0, email);
+  res.json({ success: true, saveResumes });
+});
+
 // Save a tailored resume (dedupes identical content; keeps the latest 20).
+// No-ops (without erroring) if the user hasn't opted in — enforced server-side
+// so this holds even if a client tries to call it directly.
 app.post('/api/resumes', (req, res) => {
   const email = emailFromToken(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!hasOptedIntoSaving(email)) return res.json({ success: false, optedOut: true });
   const content = (req.body && typeof req.body.content === 'string') ? req.body.content.trim() : '';
   if (content.length < 40) return res.status(400).json({ error: 'Resume content is required.' });
   const rawTitle = (req.body && typeof req.body.title === 'string' && req.body.title.trim())
@@ -461,6 +491,15 @@ app.delete('/api/resumes/:id', (req, res) => {
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   db.prepare('DELETE FROM saved_resumes WHERE id = ? AND email = ?').run(req.params.id, email);
   res.json({ success: true });
+});
+
+// Delete every saved resume for the signed-in user (used by the "delete all
+// saved resumes" control next to the save-resumes privacy setting).
+app.delete('/api/resumes', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const info = db.prepare('DELETE FROM saved_resumes WHERE email = ?').run(email);
+  res.json({ success: true, deleted: info.changes });
 });
 
 app.post('/api/auth/forgot-password', async (req, res) => {
