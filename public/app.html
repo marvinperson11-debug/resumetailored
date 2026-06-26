@@ -750,10 +750,28 @@
 
           <div class="input-group" style="margin-top:16px;">
             <label class="input-label" for="videoVoiceGender">Narration voice <span style="color:#9ca3af;font-weight:400;font-size:12px;">(it speaks in first person — pick the one that matches you)</span></label>
-            <select id="videoVoiceGender" class="text-input" style="max-width:260px;">
-              <option value="female">Female voice</option>
-              <option value="male">Male voice</option>
+            <select id="videoVoiceGender" class="text-input" style="max-width:320px;">
+              <optgroup label="Female">
+                <option value="bella">Bella — soft &amp; warm</option>
+                <option value="rachel">Rachel — calm &amp; professional</option>
+                <option value="matilda">Matilda — friendly &amp; upbeat</option>
+                <option value="charlotte">Charlotte — warm, gentle accent</option>
+              </optgroup>
+              <optgroup label="Male">
+                <option value="adam">Adam — deep &amp; warm</option>
+                <option value="antoni">Antoni — warm &amp; well-rounded</option>
+                <option value="josh">Josh — young &amp; energetic</option>
+                <option value="daniel">Daniel — deep, British newsreader</option>
+              </optgroup>
             </select>
+          </div>
+
+          <div class="input-group" style="margin-top:16px;">
+            <label class="input-label" for="videoVoiceSpeed">Voice speed <span id="videoVoiceSpeedLabel" style="color:#6366F1;font-weight:600;font-size:12px;">Relaxed</span></label>
+            <input type="range" id="videoVoiceSpeed" min="0.7" max="1.2" step="0.05" value="0.9" style="width:100%;max-width:320px;display:block;" oninput="updateVoiceSpeedLabel(this.value)">
+            <div style="display:flex;justify-content:space-between;max-width:320px;font-size:11px;color:#9ca3af;margin-top:2px;">
+              <span>Slower</span><span>Normal</span><span>Faster</span>
+            </div>
           </div>
 
           <div class="input-group" style="margin-top:16px;">
@@ -4554,6 +4572,8 @@ Aaliyah Washington`
         if (up) up.style.display = 'none';
         // Offer the subscriber's saved tailored resumes as a quick-pick source.
         populateSavedResumes();
+        // Load the full narration voice catalog into the picker.
+        populateVideoVoices();
       } else {
         if (btn) btn.innerHTML = '🔒 Upgrade to Pro →';
         if (help) help.textContent = 'The resume video is a Pro feature — upgrade to generate a studio-voice MP4 (male or female voice, addressed to the hiring manager).';
@@ -4603,6 +4623,51 @@ Aaliyah Washington`
         o.textContent = (rr.title || 'Resume') + (isNaN(d.getTime()) ? '' : ' · ' + d.toLocaleDateString());
         sel.appendChild(o);
       });
+    }
+
+    // Populate the narration voice picker from the server's catalog so it never
+    // drifts from what actually renders. Falls back to the hardcoded <optgroup>
+    // list already in the HTML if the request fails.
+    let _videoVoicesLoaded = false;
+    async function populateVideoVoices() {
+      if (_videoVoicesLoaded) return;
+      const sel = document.getElementById('videoVoiceGender');
+      if (!sel) return;
+      try {
+        const r = await fetch('/api/video-voices');
+        if (!r.ok) return;
+        const d = await r.json();
+        const list = Array.isArray(d.voices) ? d.voices : [];
+        if (!list.length) return;
+        const prev = sel.value;
+        const groups = { female: [], male: [] };
+        list.forEach(v => { (groups[v.gender] || (groups.female)).push(v); });
+        const mkGroup = (label, items) => {
+          if (!items.length) return '';
+          return '<optgroup label="' + label + '">' +
+            items.map(v => '<option value="' + v.key + '">' + (v.label || v.key) + '</option>').join('') +
+            '</optgroup>';
+        };
+        sel.innerHTML = mkGroup('Female', groups.female) + mkGroup('Male', groups.male);
+        if (prev && sel.querySelector('option[value="' + prev + '"]')) sel.value = prev;
+        _videoVoicesLoaded = true;
+      } catch (_) { /* keep the hardcoded fallback list */ }
+    }
+
+    // Map the narration speed slider (0.7–1.2) to a friendly word. 1.0 is the
+    // natural pace; below it is slower/calmer, above it is faster.
+    function updateVoiceSpeedLabel(v) {
+      const n = parseFloat(v);
+      const el = document.getElementById('videoVoiceSpeedLabel');
+      if (!el) return;
+      let word = 'Normal';
+      if (n <= 0.75) word = 'Slowest';
+      else if (n <= 0.85) word = 'Slower';
+      else if (n < 0.98) word = 'Relaxed';
+      else if (n <= 1.02) word = 'Normal';
+      else if (n <= 1.12) word = 'Faster';
+      else word = 'Fastest';
+      el.textContent = word;
     }
 
     function useSavedResume(id) {
@@ -4813,7 +4878,8 @@ Aaliyah Washington`
             name: name || undefined,
             email,
             photoUrl: videoPhotoDataUrl || undefined,
-            voiceGender: (document.getElementById('videoVoiceGender') || {}).value || undefined,
+            voice: (document.getElementById('videoVoiceGender') || {}).value || undefined,
+            speed: (document.getElementById('videoVoiceSpeed') || {}).value || undefined,
             recipientName: (document.getElementById('videoRecipientName') || {}).value || undefined,
             recipientTitle: (document.getElementById('videoRecipientTitle') || {}).value || undefined,
           }),

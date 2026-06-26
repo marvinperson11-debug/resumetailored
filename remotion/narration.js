@@ -213,16 +213,41 @@ function elevenConfig() {
   };
 }
 
-// Resolve the voice for the requested narrator gender. The video is first-person
-// ("My name is …"), so it sounds most human when the voice matches the
-// candidate. Defaults are well-known, stable ElevenLabs premade voices; override
-// either per gender (ELEVENLABS_VOICE_ID_MALE/_FEMALE) or globally
-// (ELEVENLABS_VOICE_ID) — set those to a conversational voice from your library.
-function resolveVoiceId(voiceGender) {
-  const female = process.env.ELEVENLABS_VOICE_ID_FEMALE || process.env.ELEVENLABS_VOICE_ID || 'EXAVITQu4vr4xnSDxMaL'; // Bella — soft & warm
-  const male = process.env.ELEVENLABS_VOICE_ID_MALE || 'pNInz6obpgDQGcFmaJgB'; // Adam — warm & deep
-  if (voiceGender === 'male') return male;
-  if (voiceGender === 'female') return female;
+// Curated set of well-known, stable ElevenLabs premade voices the user can pick
+// from for the resume video. Single source of truth: the front-end fetches this
+// list (labels only) from /api/video-voices so the picker can't drift from what
+// the server actually renders. Keys are what the client sends back as `voice`.
+const VOICE_CATALOG = {
+  // Female
+  rachel:    { id: '21m00Tcm4TlvDq8ikWAM', label: 'Rachel — calm & professional',    gender: 'female' },
+  bella:     { id: 'EXAVITQu4vr4xnSDxMaL', label: 'Bella — soft & warm',              gender: 'female' },
+  matilda:   { id: 'XrExE9yKIg1WjnnlVkGX', label: 'Matilda — friendly & upbeat',      gender: 'female' },
+  charlotte: { id: 'XB0fDUnXU5powFXDhCwa', label: 'Charlotte — warm, gentle accent',  gender: 'female' },
+  // Male
+  adam:      { id: 'pNInz6obpgDQGcFmaJgB', label: 'Adam — deep & warm',               gender: 'male' },
+  antoni:    { id: 'ErXwobaYiN019PkySvjV', label: 'Antoni — warm & well-rounded',     gender: 'male' },
+  josh:      { id: 'TxGEqnHWrfWFTfGW9XjX', label: 'Josh — young & energetic',         gender: 'male' },
+  daniel:    { id: 'onwK4e9ZLuTAKqWW03F9', label: 'Daniel — deep, British newsreader', gender: 'male' },
+};
+
+// Public option list for the picker — keys + labels + gender, never the raw IDs.
+function videoVoiceOptions() {
+  return Object.entries(VOICE_CATALOG).map(([key, v]) => ({ key, label: v.label, gender: v.gender }));
+}
+
+// Resolve the ElevenLabs voice for a render. An explicit pick from the catalog
+// (`opts.voice`, validated) wins; otherwise fall back to a per-gender default.
+// The video is first-person ("My name is …"), so it sounds most human when the
+// voice matches the candidate. Defaults/IDs are env-overridable per gender
+// (ELEVENLABS_VOICE_ID_MALE/_FEMALE) or globally (ELEVENLABS_VOICE_ID).
+function resolveVoiceId(opts = {}) {
+  const key = String((opts && (opts.voice || opts.voiceKey)) || '').toLowerCase();
+  if (key && VOICE_CATALOG[key]) return VOICE_CATALOG[key].id;
+  const female = process.env.ELEVENLABS_VOICE_ID_FEMALE || process.env.ELEVENLABS_VOICE_ID || VOICE_CATALOG.bella.id;
+  const male = process.env.ELEVENLABS_VOICE_ID_MALE || VOICE_CATALOG.adam.id;
+  const gender = opts && opts.voiceGender;
+  if (gender === 'male') return male;
+  if (gender === 'female') return female;
   return process.env.ELEVENLABS_VOICE_ID || female;
 }
 
@@ -232,7 +257,7 @@ async function elevenNarration(props, opts = {}) {
   const { script: text, segments } = narrationTimeline(props);
   if (!text) return null;
 
-  const voiceId = resolveVoiceId(opts.voiceGender);
+  const voiceId = resolveVoiceId(opts);
   // with-timestamps returns the audio AND per-character timings, so we get an
   // exact duration to extend the video by, plus exact per-segment start/end
   // times to drive the reveal sync. mp3 works on every ElevenLabs tier.
@@ -246,7 +271,9 @@ async function elevenNarration(props, opts = {}) {
     similarity_boost: clampNum(process.env.ELEVENLABS_SIMILARITY, 0.85, 0, 1),
     style: clampNum(process.env.ELEVENLABS_STYLE, 0.55, 0, 1),
     use_speaker_boost: true,
-    speed: clampNum(process.env.ELEVENLABS_SPEED, 0.9, 0.7, 1.2),
+    // A subscriber-chosen pace (opts.speed) wins over the env default. 1.0 is
+    // natural; lower is slower/calmer, higher is faster. Clamped to a safe range.
+    speed: clampNum(opts.speed != null ? opts.speed : process.env.ELEVENLABS_SPEED, 0.9, 0.7, 1.2),
   };
   const res = await fetch(url, {
     method: 'POST',
@@ -283,4 +310,4 @@ async function generateNarrationAsync(props, opts = {}) {
   return generateNarration(props);
 }
 
-module.exports = { generateNarration, generateNarrationAsync, pickEngine };
+module.exports = { generateNarration, generateNarrationAsync, pickEngine, VOICE_CATALOG, videoVoiceOptions };
