@@ -70,7 +70,22 @@ function hasPiperModule() {
   }
 }
 
-const PIPER_VOICE_ID = process.env.PIPER_VOICE_ID || 'en_US-lessac-medium';
+// Default Piper voice models per gender. lessac (female) was the original single
+// voice; ryan (male) is added so a "male" pick is never silently rendered in the
+// female voice. Both are standard en_US Piper voices; all env-overridable.
+const PIPER_VOICE_FEMALE = process.env.PIPER_VOICE_ID_FEMALE || process.env.PIPER_VOICE_ID || 'en_US-lessac-medium';
+const PIPER_VOICE_MALE   = process.env.PIPER_VOICE_ID_MALE   || 'en_US-ryan-high';
+function piperVoiceIdFor(gender) { return gender === 'male' ? PIPER_VOICE_MALE : PIPER_VOICE_FEMALE; }
+
+// Decide which gender of voice to render locally. An explicit voiceGender wins;
+// otherwise infer it from the catalog key the user picked (e.g. "adam" -> male);
+// default female to preserve the original behavior when nothing is specified.
+function desiredGender(opts = {}) {
+  if (opts.voiceGender === 'male' || opts.voiceGender === 'female') return opts.voiceGender;
+  const key = String((opts && (opts.voice || opts.voiceKey)) || '').toLowerCase();
+  if (key && VOICE_CATALOG[key]) return VOICE_CATALOG[key].gender;
+  return 'female';
+}
 
 // Candidate directories where a Piper .onnx voice model may live.
 function piperVoiceDirs() {
@@ -81,13 +96,16 @@ function piperVoiceDirs() {
   ].filter(Boolean);
 }
 
-// Locate the Piper voice model, downloading it once (best-effort) if absent.
-function resolvePiperVoice() {
-  if (process.env.PIPER_VOICE && fs.existsSync(process.env.PIPER_VOICE)) {
+// Locate a Piper voice model by id, downloading it once (best-effort) if absent.
+// `PIPER_VOICE` (an explicit file path) still wins as a global override, but only
+// for the female/default request — a male request must not be forced to a single
+// female file, so it falls through to per-gender id resolution.
+function resolvePiperVoice(voiceId, gender) {
+  if (gender !== 'male' && process.env.PIPER_VOICE && fs.existsSync(process.env.PIPER_VOICE)) {
     return process.env.PIPER_VOICE;
   }
   for (const dir of piperVoiceDirs()) {
-    const p = path.join(dir, `${PIPER_VOICE_ID}.onnx`);
+    const p = path.join(dir, `${voiceId}.onnx`);
     if (fs.existsSync(p)) return p;
   }
   // Backstop: download into a writable dir (normally pre-fetched at build time).
@@ -95,11 +113,11 @@ function resolvePiperVoice() {
     const target = process.env.PIPER_DATA_DIR || path.join(process.env.DATA_DIR || './data', 'piper');
     try {
       fs.mkdirSync(target, { recursive: true });
-      const r = spawnSync('python3', ['-m', 'piper.download_voices', PIPER_VOICE_ID, '--data-dir', target], {
+      const r = spawnSync('python3', ['-m', 'piper.download_voices', voiceId, '--data-dir', target], {
         stdio: ['ignore', 'ignore', 'ignore'],
         timeout: 180000,
       });
-      const p = path.join(target, `${PIPER_VOICE_ID}.onnx`);
+      const p = path.join(target, `${voiceId}.onnx`);
       if (r.status === 0 && fs.existsSync(p)) return p;
     } catch (_) {
       /* fall through to espeak */
@@ -109,8 +127,8 @@ function resolvePiperVoice() {
 }
 
 // Build a Piper engine descriptor if a binary + model are available.
-function piperEngine() {
-  const voice = resolvePiperVoice();
+function piperEngine(gender) {
+  const voice = resolvePiperVoice(piperVoiceIdFor(gender), gender);
   if (!voice) return null;
   if (process.env.PIPER_BIN) {
     return { name: 'piper', bin: process.env.PIPER_BIN, args: (wav) => ['--model', voice, '--output_file', wav] };
@@ -125,13 +143,20 @@ function piperEngine() {
 }
 
 // Returns { name, bin, args(wavPath) } for the first available engine, or null.
-function pickEngine() {
+// `gender` ('male'|'female') selects a matching local voice so the rendered
+// fallback voiceover matches the gender the user picked.
+function pickEngine(gender) {
   if (process.env.RESUME_VIDEO_VOICE === 'off') return null;
 
-  const piper = piperEngine();
+  const piper = piperEngine(gender);
   if (piper) return piper;
 
-  const voice = process.env.ESPEAK_VOICE || 'en-us';
+  // espeak voice variants: en-us+m1..m7 (male) / en-us+f1..f5 (female). A global
+  // ESPEAK_VOICE override still wins for back-compat; otherwise pick per gender.
+  const voice = process.env.ESPEAK_VOICE
+    || (gender === 'male'
+        ? (process.env.ESPEAK_VOICE_MALE || 'en-us+m3')
+        : (process.env.ESPEAK_VOICE_FEMALE || 'en-us+f3'));
   if (onPath('espeak-ng')) {
     return { name: 'espeak-ng', bin: 'espeak-ng', args: (wav) => ['-v', voice, '-s', '165', '-w', wav] };
   }
@@ -164,11 +189,11 @@ function wavSeconds(buf) {
 // Generate a voiceover for the given video props. Returns { src, seconds }
 // (src is a data: URL), or null when no engine is available / disabled / on any
 // failure — the caller then renders a silent video.
-function generateNarration(props) {
+function generateNarration(props, opts = {}) {
   const { script, segments } = narrationTimeline(props);
   if (!script) return null;
 
-  const engine = pickEngine();
+  const engine = pickEngine(desiredGender(opts));
   if (!engine) return null;
 
   const wavPath = path.join(os.tmpdir(), `vo-${crypto.randomUUID()}.wav`);
@@ -307,7 +332,7 @@ async function generateNarrationAsync(props, opts = {}) {
       console.error('ElevenLabs narration error:', err.message);
     }
   }
-  return generateNarration(props);
+  return generateNarration(props, opts);
 }
 
-module.exports = { generateNarration, generateNarrationAsync, pickEngine, VOICE_CATALOG, videoVoiceOptions };
+module.exports = { generateNarration, generateNarrationAsync, pickEngine, desiredGender, piperVoiceIdFor, VOICE_CATALOG, videoVoiceOptions };

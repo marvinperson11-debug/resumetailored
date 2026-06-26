@@ -320,7 +320,17 @@
     }
     .hero-sub { font-size: 18px; color: #94a3b8; max-width: 580px; margin: 0 auto 32px; line-height: 1.7; }
     .hero-cta { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .hero-cta-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center; }
     .hero-note { font-size: 13px; color: #64748b; }
+    /* Compact trust strip — sits between the CTA and the demo without pushing
+       the demo below the fold (small margins, single line on desktop). */
+    .hero-trust {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+      gap: 8px; margin: 16px auto 0; font-size: 13px; color: #94a3b8;
+    }
+    .hero-trust-stars { color: #fbbf24; letter-spacing: 1px; }
+    .hero-trust-dot { color: #475569; }
+    @media (max-width: 560px) { .hero-trust { font-size: 12px; gap: 6px; } }
 
     /* ── BEFORE/AFTER ── */
     .demo-wrap {
@@ -778,7 +788,7 @@
     </div>
     <div class="nav-actions">
       <a href="/dashboard" class="btn btn-ghost" data-i18n="nav_login">Log In</a>
-      <a href="/dashboard" class="btn btn-primary" data-i18n="nav_cta">Get Started Free →</a>
+      <a href="/dashboard" class="btn btn-primary" data-i18n="nav_cta">Tailor My Resume Free →</a>
     </div>
     <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">中文</button>
     <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.add('open')" aria-label="Open menu">
@@ -797,7 +807,7 @@
   <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_templates">Templates</a>
   <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_pricing">Pricing</a>
   <a href="/dashboard" class="btn btn-ghost btn-lg" style="border-color:#2563eb;color:#2563eb;" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_login">Log In</a>
-  <a href="/dashboard" class="btn btn-primary btn-lg" data-i18n="mobile_cta">Get Started Free →</a>
+  <a href="/dashboard" class="btn btn-primary btn-lg" data-i18n="mobile_cta">Tailor My Resume Free →</a>
 </div>
 
 <!-- HERO -->
@@ -808,8 +818,21 @@
     <h1><span class="word-animate" style="animation-delay:0ms">Your</span> <span class="word-animate" style="animation-delay:120ms">resume,</span><br /><span class="word-animate blue" style="animation-delay:260ms">perfectly</span> <span class="word-animate blue" style="animation-delay:380ms">tailored</span><br /><span class="word-animate" style="animation-delay:520ms">to</span> <span class="word-animate" style="animation-delay:620ms">every</span> <span class="word-animate" style="animation-delay:740ms">job.</span></h1>
     <p class="hero-sub">Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.</p>
     <div class="hero-cta">
-      <a href="/dashboard" class="btn btn-primary btn-lg">Tailor My Resume Free →</a>
+      <div class="hero-cta-row">
+        <a href="/dashboard" class="btn btn-primary btn-lg">Tailor My Resume Free →</a>
+        <a href="/how-it-works" class="btn btn-ghost btn-lg">See how it works</a>
+      </div>
       <span class="hero-note">1 free tailoring · No payment required</span>
+    </div>
+
+    <!-- Trust strip: honest, feature-based social proof (no unverified metrics) -->
+    <div class="hero-trust">
+      <span class="hero-trust-stars">★★★★★</span>
+      <span>Powered by Anthropic&nbsp;Claude</span>
+      <span class="hero-trust-dot">·</span>
+      <span>100+ ATS-ready templates</span>
+      <span class="hero-trust-dot">·</span>
+      <span>Free tier — no card required</span>
     </div>
 
     <!-- Before/After Demo -->
@@ -2188,7 +2211,7 @@
           <li><span class="cross-icon">✗</span> <span style="color:#9ca3af;">Career Hub access</span></li>
           <li><span class="cross-icon">✗</span> <span style="color:#9ca3af;">All 104 templates</span></li>
         </ul>
-        <a href="/dashboard" class="btn btn-ghost btn-full btn-shine">Get Started Free</a>
+        <a href="/dashboard" class="btn btn-ghost btn-full btn-shine">Tailor My Resume Free →</a>
       </div>
       <div class="pricing-card pricing-card-featured">
         <div class="plan-badge">✦ Most Popular</div>
@@ -2596,8 +2619,8 @@
     en: {
       nav_how: 'How It Works', nav_blog: 'Blog', nav_free_tools: 'Free Tools', nav_features: 'Features',
       nav_templates: 'Templates', nav_tiers: 'Career Levels', nav_pricing: 'Pricing',
-      nav_login: 'Log In', nav_cta: 'Get Started Free →',
-      mobile_cta: 'Get Started Free →',
+      nav_login: 'Log In', nav_cta: 'Tailor My Resume Free →',
+      mobile_cta: 'Tailor My Resume Free →',
       feat_li_title: 'LinkedIn Profile Optimizer — <em>Pro Members Only</em>',
       feat_li_desc: 'Recruiters spend 6 seconds on your resume and 30 seconds on your LinkedIn profile. Our AI rewrites your headline, About section, and experience bullets to rank higher in LinkedIn search and get more recruiter messages — optimized for your specific target role and industry.',
       feat_video_title: 'Resume Video Maker — <em>Pro Members Only</em>',
@@ -2633,8 +2656,8 @@
     zh: {
       nav_how: '工作原理', nav_blog: '博客', nav_free_tools: '免费工具', nav_features: '功能特性',
       nav_templates: '简历模板', nav_tiers: '职业级别', nav_pricing: '定价',
-      nav_login: '登录', nav_cta: '免费开始 →',
-      mobile_cta: '免费开始 →',
+      nav_login: '登录', nav_cta: '免费定制我的简历 →',
+      mobile_cta: '免费定制我的简历 →',
       feat_li_title: 'LinkedIn 个人资料优化 — <em>仅限专业会员</em>',
       feat_li_desc: '招聘人员花6秒看你的简历，30秒看你的LinkedIn资料。我们的AI将重写你的标题、个人简介和工作经历，使其在LinkedIn搜索中排名更高，获得更多招聘信息——专为你的目标职位和行业优化。',
       feat_video_title: '简历视频生成器 — <em>仅限专业会员</em>',
@@ -2674,8 +2697,12 @@
     // ── Hero ────────────────────────────────────────────────────────────────
     ['.hero h1', null, '<span class="word-animate" style="animation-delay:0ms">Your</span> <span class="word-animate" style="animation-delay:120ms">resume,</span><br /><span class="word-animate blue" style="animation-delay:260ms">perfectly</span> <span class="word-animate blue" style="animation-delay:380ms">tailored</span><br /><span class="word-animate" style="animation-delay:520ms">to</span> <span class="word-animate" style="animation-delay:620ms">every</span> <span class="word-animate" style="animation-delay:740ms">job.</span>', '<span class="word-animate" style="animation-delay:0ms">你的简历，</span><br /><span class="word-animate blue" style="animation-delay:260ms">精准匹配</span><br /><span class="word-animate" style="animation-delay:520ms">每一份工作。</span>'],
     ['.hero-sub', null, 'Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.', '粘贴简历和职位描述，AI将用精准关键词重写你的简历，并在30秒内生成有力的求职信。'],
-    ['.hero-cta > .btn-primary', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
+    ['.hero-cta-row > .btn-primary', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
+    ['.hero-cta-row > .btn-ghost', null, 'See how it works', '了解工作原理'],
     ['.hero-note', null, '1 free tailoring · No payment required', '每日1次免费定制 · 无需付款'],
+    ['.hero-trust', null,
+      '<span class="hero-trust-stars">★★★★★</span><span>Powered by Anthropic&nbsp;Claude</span><span class="hero-trust-dot">·</span><span>100+ ATS-ready templates</span><span class="hero-trust-dot">·</span><span>Free tier — no card required</span>',
+      '<span class="hero-trust-stars">★★★★★</span><span>由 Anthropic&nbsp;Claude 提供支持</span><span class="hero-trust-dot">·</span><span>100+ 套 ATS 友好模板</span><span class="hero-trust-dot">·</span><span>免费套餐 — 无需信用卡</span>'],
     ['.demo-before .demo-label', null, 'Before', '优化前'],
     ['.demo-badge.demo-badge-before', null, '✕ Generic Resume', '✕ 通用简历'],
     ['.demo-bullet.demo-bullet-before', 0, '• Managed marketing campaigns and worked with teams to grow revenue and improve brand awareness across multiple channels', '• 负责营销活动并与团队合作推动收入增长，提升各渠道品牌知名度'],

@@ -159,8 +159,33 @@ if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
   ins.run('Priya K.', 'Product Designer', '1 day ago', 'For anyone in tech design — portfolio matters MORE than your resume. But a tailored resume got me the interview so I could show my portfolio. Both matter!', 9);
 }
 
-function hashPw(pw) {
+// ─── Password hashing ──────────────────────────────────────────────────────
+// New hashes use bcrypt (per-record salt, slow). Legacy accounts created before
+// this migration used a single static-salt SHA-256 ("rta_salt_2026_" + pw) — we
+// still VERIFY those so nobody is locked out, and transparently re-hash them to
+// bcrypt on their next successful login (lazy migration; no forced reset).
+const bcrypt = require('bcryptjs');
+const BCRYPT_ROUNDS = 10;
+
+function legacyHashPw(pw) {
   return crypto.createHash('sha256').update('rta_salt_2026_' + pw).digest('hex');
+}
+
+// True for stored hashes still in the old SHA-256 format (bcrypt hashes start "$2").
+function isLegacyHash(stored) {
+  return typeof stored === 'string' && !stored.startsWith('$2');
+}
+
+// Hash a new/changed password with bcrypt.
+function hashPassword(pw) {
+  return bcrypt.hashSync(pw, BCRYPT_ROUNDS);
+}
+
+// Verify a plaintext password against a stored hash of either format.
+function verifyPassword(pw, stored) {
+  if (!stored) return false;
+  if (isLegacyHash(stored)) return legacyHashPw(pw) === stored;
+  try { return bcrypt.compareSync(pw, stored); } catch { return false; }
 }
 
 app.set('trust proxy', 1); // Required on Railway — reads real client IP from X-Forwarded-For
@@ -252,7 +277,7 @@ app.post('/api/auth/signup', async (req, res) => {
     return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
   }
   const cleanUsername = username.trim().slice(0, 30);
-  db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)').run(key, cleanUsername, hashPw(password));
+  db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)').run(key, cleanUsername, hashPassword(password));
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
   res.json({ token, username: cleanUsername, email: key });
@@ -362,8 +387,14 @@ app.post('/api/auth/login', (req, res) => {
   }
   const key = email.toLowerCase().trim();
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(key);
-  if (!user || user.password_hash !== hashPw(password)) {
+  if (!user || !verifyPassword(password, user.password_hash)) {
     return res.status(401).json({ error: 'Invalid email or password.' });
+  }
+  // Lazy migration: re-hash legacy SHA-256 accounts to bcrypt on successful login.
+  if (isLegacyHash(user.password_hash)) {
+    try {
+      db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(hashPassword(password), key);
+    } catch (e) { console.error('[auth] lazy bcrypt migration failed for', key, e.message); }
   }
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
@@ -570,7 +601,7 @@ app.post('/api/auth/reset-password', (req, res) => {
     return res.status(400).json({ error: 'Account not found.' });
   }
 
-  db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(hashPw(password), record.email);
+  db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(hashPassword(password), record.email);
   db.prepare('DELETE FROM reset_tokens WHERE token = ?').run(token);
   db.prepare('DELETE FROM sessions WHERE email = ?').run(record.email);
 
@@ -595,7 +626,23 @@ const upload = multer({
 });
 
 // ─── API: Extract text from uploaded resume ───────────────────────────────────
-app.post('/api/extract-text', upload.single('file'), async (req, res) => {
+// multer 2.x surfaces upload problems (rejected file type, size-limit) as errors
+// passed to the middleware callback. Wrap upload.single so they return a clean
+// 4xx JSON response instead of falling through to Express's default 500 HTML.
+function uploadSingleFile(req, res, next) {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      const isMulterErr = err instanceof multer.MulterError;
+      const msg = err.code === 'LIMIT_FILE_SIZE'
+        ? 'File is too large. Maximum size is 10 MB.'
+        : err.message || 'Upload failed.';
+      return res.status(400).json({ error: msg, code: isMulterErr ? err.code : 'INVALID_FILE' });
+    }
+    next();
+  });
+}
+
+app.post('/api/extract-text', uploadSingleFile, async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
   const ext = (req.file.originalname || '').toLowerCase().split('.').pop();
   try {
@@ -624,8 +671,11 @@ app.post('/api/extract-text', upload.single('file'), async (req, res) => {
 // Reproduces the visual resume/cover templates (sidebar, two-column, modern,
 // banner, boxed, etc.) in Word so the downloaded .docx matches the on-screen
 // design. Word has no flexbox, so multi-column layouts are built with borderless
-// tables and shaded cells. Full-page-height colour bleed on sidebars is limited
-// by Word (a cell only grows as tall as its content) — that is the one known gap.
+// tables and shaded cells. Full-page-height colour bleed on sidebars is handled
+// by giving the layout row a HeightRule.ATLEAST equal to the page content height
+// (see _dxColumnsTable), so the shaded sidebar cell fills the page on single-page
+// resumes. Multi-page sidebars are the remaining edge: the colour follows the
+// row across the break but the trailing page only fills to its content height.
 const _DX_NONE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
 function _dxNoTableBorders() {
   return { top: _DX_NONE, bottom: _DX_NONE, left: _DX_NONE, right: _DX_NONE, insideHorizontal: _DX_NONE, insideVertical: _DX_NONE };
@@ -902,7 +952,14 @@ function _dxRenderCover(text, o, meta) {
 
   out.push(new Paragraph({ children: [new TextRun({ text: 'Dear Hiring Manager,', font, size: 23, bold: true, color: o.primaryHex })], spacing: { before: 120, after: 180 } }));
   p.body.forEach(para => out.push(new Paragraph({ children: [new TextRun({ text: para, font, size: 22, color: '333333' })], spacing: { after: 200, line: 300, lineRule: 'auto' } })));
-  for (const s of _dxSig(o.sigName, o.primaryHex, font)) out.push(s);
+  // Complimentary close. A cover letter ends with "Sincerely, <name>" — NOT the
+  // resume-style horizontal signature rule. This matches the on-screen/PDF cover
+  // (which renders cover-letter mode without the stylized sig block, so the close
+  // shows as plain text) for cross-format consistency. keepNext/keepLines stop the
+  // close from orphaning onto a new page.
+  const _coverCloser = (o.sigName && String(o.sigName).trim()) || p.name;
+  out.push(new Paragraph({ children: [new TextRun({ text: 'Sincerely,', font, size: 22, color: '333333' })], spacing: { before: 240, after: 0 }, keepNext: true, keepLines: true }));
+  if (_coverCloser) out.push(new Paragraph({ children: [new TextRun({ text: _coverCloser, font, size: 22, color: '333333' })], spacing: { before: 160, after: 0 }, keepLines: true }));
   return out;
 }
 
@@ -2310,8 +2367,8 @@ function broadcastEmailHtml(username) {
         <div style="display:flex;gap:14px;margin-bottom:18px;">
           <span style="font-size:22px;line-height:1;flex-shrink:0;">📄</span>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">40 Professional Templates</div>
-            <div style="font-size:14px;color:#6b7280;line-height:1.65;">20 resume templates + 20 cover letter templates designed for every industry and style. Pick one, tailor it, download it as a PDF or Word doc.</div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">100+ Professional Templates</div>
+            <div style="font-size:14px;color:#6b7280;line-height:1.65;">56 resume templates + 48 cover letter templates designed for every industry and style. Pick one, tailor it, download it as a PDF or Word doc.</div>
           </div>
         </div>
 

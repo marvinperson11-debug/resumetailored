@@ -5130,7 +5130,7 @@ Aaliyah Washington`
   <!-- ── Preview Modal ── -->
   <!-- Flex container so header+footer stay pinned and only the page area scrolls -->
   <div id="previewModal" onclick="if(event.target===this)closePreview()" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.88);overflow:hidden;padding:16px;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:16px;width:100%;max-width:1000px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.5);display:flex;flex-direction:column;max-height:calc(100vh - 32px);">
+    <div style="background:#fff;border-radius:16px;width:100%;max-width:1000px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.5);display:flex;flex-direction:column;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);">
       <!-- Header — always visible -->
       <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#1e1b4b;color:#fff;">
         <div>
@@ -5150,8 +5150,11 @@ Aaliyah Washington`
           </div>
         </div>
       </div>
-      <!-- Download footer — always visible at bottom -->
-      <div style="flex-shrink:0;padding:16px 24px;background:#fff;border-top:1px solid #e5e7eb;">
+      <!-- Download footer — always visible at bottom. Bottom padding adds the
+           mobile safe-area inset so the last button row is never clipped behind
+           the browser/home-indicator chrome. Capped height + scroll as a backstop
+           when many buttons wrap on a very short viewport. -->
+      <div style="flex-shrink:0;padding:16px 24px calc(16px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid #e5e7eb;max-height:42dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
         <div style="font-size:12px;color:#9ca3af;margin-bottom:10px;">Looks good? Download your document:</div>
         <div id="previewDownloadRow" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
       </div>
