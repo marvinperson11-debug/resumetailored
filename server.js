@@ -20,6 +20,14 @@ const app = express();
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+// Keep the server alive if a lazy-loaded subsystem throws an *unhandled*
+// rejection. The resume-video render (Remotion) can do this — e.g. its headless
+// browser download fires a detached promise that rejects outside our try/catch.
+// One user's failed video should never take the whole server down for everyone.
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection (ignored to keep server up):', reason && reason.message ? reason.message : reason);
+});
+
 // Warn loudly on startup if critical env vars are missing
 if (!process.env.ANTHROPIC_API_KEY) console.error('STARTUP ERROR: ANTHROPIC_API_KEY is not set — AI tailoring will fail for all users.');
 if (!process.env.STRIPE_SECRET_KEY) console.error('STARTUP ERROR: STRIPE_SECRET_KEY is not set — payments will fail.');
@@ -1713,16 +1721,123 @@ function withTimeout(promise, ms, label) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
-app.post('/api/resume-video', async (req, res) => {
-  const { resume, name, accentColor, email, voice, photoUrl, voiceGender, recipientName, recipientTitle } = req.body || {};
+// Async render jobs. A render takes ~2 minutes, which is far too long to hold a
+// single HTTP request open — mobile carrier NAT/proxies drop connections that
+// sit idle (no bytes flowing) for ~30–60s, and phone browsers throttle
+// backgrounded tabs, so the request dies before the MP4 is ready (this is why a
+// render that worked on desktop wifi failed on a phone). Instead the POST kicks
+// off a background job and returns a jobId immediately; the client polls a tiny
+// status endpoint and downloads the finished file separately. Every request
+// stays short, so a dropped connection just means the next poll reconnects.
+const videoJobs = new Map(); // jobId -> { status, outPath, error, startedAt, finishedAt }
+const VIDEO_JOB_TTL_MS = 10 * 60 * 1000;
+
+function cleanupVideoJobs() {
+  const now = Date.now();
+  for (const [id, job] of videoJobs) {
+    if (job.finishedAt && now - job.finishedAt > VIDEO_JOB_TTL_MS) {
+      if (job.outPath) fs.unlink(job.outPath, () => {});
+      videoJobs.delete(id);
+    }
+  }
+}
+
+// Build props, generate narration, and render the MP4 for a job in the
+// background. Releases the in-flight render lock when finished (success or not).
+async function runVideoRender(jobId, body, mods) {
+  const job = videoJobs.get(jobId);
+  if (!job) return;
+  const { renderModule, parseModule } = mods;
+  const { resume, name, accentColor, voice, photoUrl, voiceGender, recipientName, recipientTitle, email } = body || {};
+  const subscribed = isSubscriber(email);
+  const outPath = path.join(os.tmpdir(), `resume-video-${jobId}.mp4`);
+  try {
+    const props = parseModule.parseResume(resume, {
+      accentColor: typeof accentColor === 'string' ? accentColor : undefined,
+    });
+    if (name && typeof name === 'string' && name.trim().length >= 2 && /[A-Za-z]/.test(name)) {
+      props.name = name.trim().slice(0, 60);
+    }
+
+    // Optional candidate photo (small, client-downscaled image data URL).
+    if (typeof photoUrl === 'string' &&
+        /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) &&
+        photoUrl.length < 800000) {
+      props.photoUrl = photoUrl;
+    }
+
+    // Optional recipient the video is addressed to (e.g. the hiring manager).
+    if (typeof recipientName === 'string' && recipientName.trim()) {
+      props.recipientName = recipientName.trim().slice(0, 60);
+      if (typeof recipientTitle === 'string' && recipientTitle.trim()) {
+        props.recipientTitle = recipientTitle.trim().slice(0, 80);
+      }
+    }
+
+    // Quiet background music bed (best-effort; BACKGROUND_MUSIC=off to disable).
+    try {
+      const music = require('./remotion/music').backgroundMusic();
+      if (music && music.src) props.musicSrc = music.src;
+    } catch (_) { /* no music */ }
+
+    // Optional voiceover. Subscribers get the studio-quality ElevenLabs voice
+    // (server owner's key) when configured. Best-effort: any failure ⇒ silent video.
+    if (voice !== false) {
+      try {
+        const allowEleven = subscribed || process.env.ELEVENLABS_FREE_TIER === 'on';
+        const vg = (voiceGender === 'male' || voiceGender === 'female') ? voiceGender : undefined;
+        const vo = await require('./remotion/narration').generateNarrationAsync(props, { allowEleven, voiceGender: vg });
+        if (vo && vo.src) {
+          const { FPS } = require('./remotion/data');
+          props.audioSrc = vo.src;
+          props.audioDurationInFrames = Math.ceil((vo.seconds || 0) * FPS);
+          if (vo.segments && vo.segments.length) props.segments = vo.segments;
+        }
+      } catch (e) {
+        console.error('Narration unavailable:', e.message);
+      }
+    }
+
+    try {
+      await withTimeout(renderModule.renderResumeVideo(props, outPath), MAX_RENDER_MS, 'Video render');
+    } catch (err) {
+      // If a render with audio fails, retry once without it so the user still
+      // gets a (silent) video rather than an error.
+      if (props.audioSrc) {
+        console.error('Render with audio failed, retrying silent:', err?.message || err);
+        delete props.audioSrc;
+        delete props.audioDurationInFrames;
+        delete props.segments;
+        await withTimeout(renderModule.renderResumeVideo(props, outPath), MAX_RENDER_MS, 'Video render (silent retry)');
+      } else {
+        throw err;
+      }
+    }
+    job.outPath = outPath;
+    job.status = 'done';
+  } catch (err) {
+    console.error('Video render error:', err?.message || err);
+    fs.unlink(outPath, () => {});
+    job.error = String(err?.message || err).slice(0, 200);
+    job.status = 'error';
+  } finally {
+    job.finishedAt = Date.now();
+    videoRenderStartedAt = 0;
+    cleanupVideoJobs();
+  }
+}
+
+// Start a render job. Returns a jobId immediately; the heavy work runs in the
+// background so the request doesn't have to stay open for the whole ~2-min
+// render (which mobile networks won't tolerate). Poll /status and fetch /file.
+app.post('/api/resume-video', (req, res) => {
+  const { resume, email } = req.body || {};
   if (!resume || !resume.trim()) {
     return res.status(400).json({ error: 'Tailored resume text is required.' });
   }
 
-  const usageKey = getUsageKey(req);
-  const subscribed = isSubscriber(email);
   // The resume video is a Pro feature — subscribers (and the owner) only.
-  if (!subscribed) {
+  if (!isSubscriber(email)) {
     return res.status(402).json({ error: 'pro_only', mode: 'video', message: 'The resume video is a Pro feature. Upgrade to Pro to generate one.' });
   }
 
@@ -1739,85 +1854,33 @@ app.post('/api/resume-video', async (req, res) => {
     return res.status(501).json({ error: 'Video rendering is not available on this server.' });
   }
 
-  const props = parseModule.parseResume(resume, {
-    accentColor: typeof accentColor === 'string' ? accentColor : undefined,
+  const jobId = uuidv4();
+  videoJobs.set(jobId, { status: 'rendering', outPath: null, error: null, startedAt: Date.now(), finishedAt: 0 });
+  videoRenderStartedAt = Date.now(); // hold the single-render lock for this job
+  res.status(202).json({ jobId });
+  // Fire-and-forget: the job updates its own status; errors are captured there.
+  runVideoRender(jobId, req.body, { renderModule, parseModule }).catch((e) => {
+    console.error('Unexpected render job failure:', e?.message || e);
   });
-  if (name && typeof name === 'string' && name.trim().length >= 2 && /[A-Za-z]/.test(name)) {
-    props.name = name.trim().slice(0, 60);
-  }
+});
 
-  // Optional candidate photo (small, client-downscaled image data URL).
-  if (typeof photoUrl === 'string' &&
-      /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) &&
-      photoUrl.length < 800000) {
-    props.photoUrl = photoUrl;
-  }
+// Poll a render job's status: 'rendering' | 'done' | 'error' (or 404 if expired).
+app.get('/api/resume-video/status/:jobId', (req, res) => {
+  const job = videoJobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ status: 'unknown', error: 'Render job not found or expired.' });
+  res.json({ status: job.status, error: job.error || undefined });
+});
 
-  // Optional recipient the video is addressed to (e.g. the hiring manager).
-  if (typeof recipientName === 'string' && recipientName.trim()) {
-    props.recipientName = recipientName.trim().slice(0, 60);
-    if (typeof recipientTitle === 'string' && recipientTitle.trim()) {
-      props.recipientTitle = recipientTitle.trim().slice(0, 80);
-    }
-  }
-
-  // Quiet background music bed (best-effort; BACKGROUND_MUSIC=off to disable).
-  try {
-    const music = require('./remotion/music').backgroundMusic();
-    if (music && music.src) props.musicSrc = music.src;
-  } catch (_) { /* no music */ }
-
-  // Optional voiceover. Subscribers get the studio-quality ElevenLabs voice
-  // (server owner's key) when configured; free users get the local Piper/espeak
-  // voice so they don't spend ElevenLabs credits. Open it to everyone with
-  // ELEVENLABS_FREE_TIER=on. Best-effort: any failure ⇒ silent video.
-  if (voice !== false) {
-    try {
-      const allowEleven = subscribed || process.env.ELEVENLABS_FREE_TIER === 'on';
-      const vg = (voiceGender === 'male' || voiceGender === 'female') ? voiceGender : undefined;
-      const vo = await require('./remotion/narration').generateNarrationAsync(props, { allowEleven, voiceGender: vg });
-      if (vo && vo.src) {
-        const { FPS } = require('./remotion/data');
-        props.audioSrc = vo.src;
-        props.audioDurationInFrames = Math.ceil((vo.seconds || 0) * FPS);
-        // Per-segment timings drive the reveal-as-spoken sync in the composition.
-        if (vo.segments && vo.segments.length) props.segments = vo.segments;
-      }
-    } catch (e) {
-      console.error('Narration unavailable:', e.message);
-    }
-  }
-
-  const outPath = path.join(os.tmpdir(), `resume-video-${uuidv4()}.mp4`);
-  videoRenderStartedAt = Date.now();
-  try {
-    try {
-      await withTimeout(renderModule.renderResumeVideo(props, outPath), MAX_RENDER_MS, 'Video render');
-    } catch (err) {
-      // If a render with audio fails, retry once without it so the user still
-      // gets a (silent) video rather than an error.
-      if (props.audioSrc) {
-        console.error('Render with audio failed, retrying silent:', err?.message || err);
-        delete props.audioSrc;
-        delete props.audioDurationInFrames;
-        delete props.segments;
-        await withTimeout(renderModule.renderResumeVideo(props, outPath), MAX_RENDER_MS, 'Video render (silent retry)');
-      } else {
-        throw err;
-      }
-    }
-    if (!subscribed) consumeFreeTier(usageKey, 'video');
-    res.download(outPath, 'resume-video.mp4', (err) => {
-      fs.unlink(outPath, () => {});
-      if (err && !res.headersSent) console.error('Video send error:', err.message);
-    });
-  } catch (err) {
-    console.error('Video render error:', err?.message || err);
-    fs.unlink(outPath, () => {});
-    if (!res.headersSent) res.status(500).json({ error: 'Video generation failed. Please try again.', detail: String(err?.message || err).slice(0, 400) });
-  } finally {
-    videoRenderStartedAt = 0;
-  }
+// Download the finished MP4 for a job. Kept available (re-downloadable) until the
+// job's TTL so a dropped download on mobile can simply be retried.
+app.get('/api/resume-video/file/:jobId', (req, res) => {
+  const job = videoJobs.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'Render job not found or expired.' });
+  if (job.status === 'error') return res.status(500).json({ error: job.error || 'Video generation failed.' });
+  if (job.status !== 'done' || !job.outPath) return res.status(409).json({ error: 'Video is not ready yet.' });
+  res.download(job.outPath, 'resume-video.mp4', (err) => {
+    if (err && !res.headersSent) console.error('Video send error:', err.message);
+  });
 });
 
 // ─── API: Translate resume Chinese → English ──────────────────────────────────
