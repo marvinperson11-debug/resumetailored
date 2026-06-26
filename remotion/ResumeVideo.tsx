@@ -12,6 +12,7 @@ import { HighlightOne } from './scenes/HighlightOne';
 import { Skills } from './scenes/Skills';
 import { Outro } from './scenes/Outro';
 import { Watermark } from './scenes/Watermark';
+import { PhotoBadge } from './scenes/PhotoBadge';
 
 export const ResumeVideo: React.FC<ResumeVideoProps> = (props) => {
   const { fps } = useVideoConfig();
@@ -31,6 +32,8 @@ export const ResumeVideo: React.FC<ResumeVideoProps> = (props) => {
       )}
       {/* Small persistent brand mark, bottom-right — not a full-screen splash. */}
       <Watermark brand={props.brand} accent={accent} />
+      {/* Small persistent headshot, top-left — shown whenever a photo was uploaded. */}
+      <PhotoBadge photoUrl={props.photoUrl} accent={accent} />
     </AbsoluteFill>
   );
 };
