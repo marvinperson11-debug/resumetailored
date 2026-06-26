@@ -775,6 +775,15 @@
           </div>
 
           <div class="input-group" style="margin-top:16px;">
+            <label class="input-label" for="videoOutro">Closing message <span style="color:#9ca3af;font-weight:400;font-size:12px;">(spoken at the very end)</span></label>
+            <select id="videoOutro" class="text-input" style="max-width:420px;" onchange="onOutroChange()">
+              <option value="default">Thank you &amp; have a great day (default)</option>
+            </select>
+            <div id="videoOutroPreview" style="font-size:12px;color:#9ca3af;margin-top:6px;max-width:520px;font-style:italic;"></div>
+            <textarea id="videoOutroCustom" class="text-input" placeholder="Write your own closing line…" rows="3" maxlength="400" style="display:none;margin-top:8px;max-width:520px;"></textarea>
+          </div>
+
+          <div class="input-group" style="margin-top:16px;">
             <div id="savedResumesRow" style="display:none;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
               <label class="input-label" style="margin:0;">Saved resumes</label>
               <select id="videoSavedResumes" class="text-input" style="flex:1;min-width:180px;max-width:340px;" onchange="useSavedResume(this.value)"></select>
@@ -4574,6 +4583,8 @@ Aaliyah Washington`
         populateSavedResumes();
         // Load the full narration voice catalog into the picker.
         populateVideoVoices();
+        // Load the closing-message presets into the outro picker.
+        populateVideoOutros();
       } else {
         if (btn) btn.innerHTML = '🔒 Upgrade to Pro →';
         if (help) help.textContent = 'The resume video is a Pro feature — upgrade to generate a studio-voice MP4 (male or female voice, addressed to the hiring manager).';
@@ -4652,6 +4663,59 @@ Aaliyah Washington`
         if (prev && sel.querySelector('option[value="' + prev + '"]')) sel.value = prev;
         _videoVoicesLoaded = true;
       } catch (_) { /* keep the hardcoded fallback list */ }
+    }
+
+    // Populate the closing-message (outro) picker from the server's preset list,
+    // plus a "Custom" option that reveals a free-text box. Shows a live preview
+    // of exactly what will be spoken at the end.
+    let _outroOptions = [];
+    let _videoOutrosLoaded = false;
+    async function populateVideoOutros() {
+      if (_videoOutrosLoaded) return;
+      const sel = document.getElementById('videoOutro');
+      if (!sel) return;
+      try {
+        const r = await fetch('/api/video-outros');
+        if (!r.ok) return;
+        const d = await r.json();
+        const list = Array.isArray(d.outros) ? d.outros : [];
+        if (!list.length) return;
+        _outroOptions = list;
+        const prev = sel.value;
+        sel.innerHTML = '';
+        list.forEach(o => { const opt = document.createElement('option'); opt.value = o.key; opt.textContent = o.label; sel.appendChild(opt); });
+        const c = document.createElement('option'); c.value = '__custom'; c.textContent = 'Custom — write your own…'; sel.appendChild(c);
+        if (prev && sel.querySelector('option[value="' + prev + '"]')) sel.value = prev;
+        _videoOutrosLoaded = true;
+        onOutroChange();
+      } catch (_) { /* keep the default option already in the HTML */ }
+    }
+
+    function onOutroChange() {
+      const sel = document.getElementById('videoOutro');
+      const custom = document.getElementById('videoOutroCustom');
+      const prev = document.getElementById('videoOutroPreview');
+      if (!sel) return;
+      if (sel.value === '__custom') {
+        if (custom) custom.style.display = 'block';
+        if (prev) prev.textContent = '';
+        return;
+      }
+      if (custom) custom.style.display = 'none';
+      const o = _outroOptions.find(x => x.key === sel.value);
+      if (prev) prev.textContent = o ? '“' + o.text + '”' : '';
+    }
+
+    // The chosen outro to send with the render: a preset key, or custom text.
+    function selectedOutro() {
+      const sel = document.getElementById('videoOutro');
+      if (!sel) return undefined;
+      if (sel.value === '__custom') {
+        const c = document.getElementById('videoOutroCustom');
+        const t = (c && c.value || '').trim();
+        return t || undefined;
+      }
+      return sel.value || undefined;
     }
 
     // Map the narration speed slider (0.7–1.2) to a friendly word. 1.0 is the
@@ -4880,6 +4944,7 @@ Aaliyah Washington`
             photoUrl: videoPhotoDataUrl || undefined,
             voice: (document.getElementById('videoVoiceGender') || {}).value || undefined,
             speed: (document.getElementById('videoVoiceSpeed') || {}).value || undefined,
+            outro: selectedOutro(),
             recipientName: (document.getElementById('videoRecipientName') || {}).value || undefined,
             recipientTitle: (document.getElementById('videoRecipientTitle') || {}).value || undefined,
           }),

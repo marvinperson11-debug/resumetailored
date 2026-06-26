@@ -179,7 +179,8 @@
       if (hs.length) parts.push("Here are a few things I'm proud of. " + hs.join('. ') + '.');
       const sk = (p.skills || []).slice(0, 6);
       if (sk.length) parts.push('My core skills include ' + sk.join(', ') + '.');
-      // No spoken brand/website line — the video is about the candidate.
+      // Polite spoken closing line (mirrors the default outro in data.js).
+      parts.push('Thank you for your time, and have a great day.');
       return parts.join(' ').replace(/\s+/g, ' ').trim();
     }
 
@@ -306,13 +307,20 @@
       <//>`;
     };
 
-    const Outro = ({ brand, accent }) => {
+    // Closing scene — the candidate's spoken sign-off (mirrors scenes/Outro.tsx).
+    const Outro = ({ text, name, accent }) => {
       const frame = useCurrentFrame();
       const { fps } = useVideoConfig();
-      const p = spring({ frame, fps, config: { damping: 200 } });
-      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 100 }}>
-        <div style=${{ fontSize: 36, color: theme.subtext, opacity: p }}>Tailored with ${brand}</div>
-        <div style=${{ fontSize: 60, fontWeight: 800, color: accent, marginTop: 18, opacity: p, transform: `translateY(${(1 - p) * 22}px)` }}>resumetailored.com</div>
+      const rule = spring({ frame, fps, config: { damping: 200 } });
+      const inP = spring({ frame: frame - 4, fps, config: { damping: 200 } });
+      const signoff = spring({ frame: frame - 14, fps, config: { damping: 200 } });
+      const float = Math.sin(frame / 16) * 6;
+      const msg = text || 'Thank you for your time, and have a great day.';
+      const fontSize = msg.length > 130 ? 46 : 54;
+      return html`<${AbsoluteFill} style=${{ justifyContent: 'center', alignItems: 'center', padding: 110, transform: `translateY(${float}px)` }}>
+        <div style=${{ width: 110, height: 8, borderRadius: 4, backgroundColor: accent, marginBottom: 50, transform: `scaleX(${rule})` }} />
+        <div style=${{ fontSize, fontWeight: 600, color: theme.text, textAlign: 'center', maxWidth: 940, lineHeight: 1.4, opacity: inP, transform: `translateY(${(1 - inP) * 24}px)` }}>${msg}</div>
+        ${name ? html`<div style=${{ fontSize: 40, fontWeight: 800, color: accent, marginTop: 44, opacity: signoff, transform: `translateY(${(1 - signoff) * 18}px)` }}>— ${name}</div>` : null}
       <//>`;
     };
 
@@ -344,7 +352,7 @@
           <${Skills} skills=${props.skills} accent=${accent} />
         <//>
         <${Sequence} from=${f.intro + f.highlights + f.skills} durationInFrames=${f.outro}>
-          <${Outro} brand=${props.brand} accent=${accent} />
+          <${Outro} text=${'Thank you for your time, and have a great day.'} name=${props.name} accent=${accent} />
         <//>
         <${Watermark} brand=${props.brand} accent=${accent} />
       <//>`;
