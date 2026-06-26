@@ -595,7 +595,23 @@ const upload = multer({
 });
 
 // ─── API: Extract text from uploaded resume ───────────────────────────────────
-app.post('/api/extract-text', upload.single('file'), async (req, res) => {
+// multer 2.x surfaces upload problems (rejected file type, size-limit) as errors
+// passed to the middleware callback. Wrap upload.single so they return a clean
+// 4xx JSON response instead of falling through to Express's default 500 HTML.
+function uploadSingleFile(req, res, next) {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      const isMulterErr = err instanceof multer.MulterError;
+      const msg = err.code === 'LIMIT_FILE_SIZE'
+        ? 'File is too large. Maximum size is 10 MB.'
+        : err.message || 'Upload failed.';
+      return res.status(400).json({ error: msg, code: isMulterErr ? err.code : 'INVALID_FILE' });
+    }
+    next();
+  });
+}
+
+app.post('/api/extract-text', uploadSingleFile, async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
   const ext = (req.file.originalname || '').toLowerCase().split('.').pop();
   try {
