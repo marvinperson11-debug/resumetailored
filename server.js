@@ -133,6 +133,14 @@ db.exec(`
     text    TEXT NOT NULL,
     time    TEXT NOT NULL DEFAULT 'just now'
   );
+  CREATE TABLE IF NOT EXISTS saved_resumes (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL,
+    title      TEXT NOT NULL DEFAULT 'Resume',
+    content    TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_saved_resumes_email ON saved_resumes(email);
 `);
 
 // Seed default forum posts on first run
@@ -372,6 +380,47 @@ app.get('/api/auth/me', (req, res) => {
 app.post('/api/auth/logout', (req, res) => {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   if (token) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+  res.json({ success: true });
+});
+
+// ── Saved resumes (per signed-in user, so they're available on every device) ──
+function emailFromToken(req) {
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (!token) return null;
+  const row = db.prepare('SELECT email FROM sessions WHERE token = ?').get(token);
+  return row ? row.email : null;
+}
+
+// List the signed-in user's saved resumes, most recent first.
+app.get('/api/resumes', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const rows = db.prepare('SELECT id, title, content, created_at FROM saved_resumes WHERE email = ? ORDER BY created_at DESC').all(email);
+  res.json({ resumes: rows });
+});
+
+// Save a tailored resume (dedupes identical content; keeps the latest 20).
+app.post('/api/resumes', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const content = (req.body && typeof req.body.content === 'string') ? req.body.content.trim() : '';
+  if (content.length < 40) return res.status(400).json({ error: 'Resume content is required.' });
+  const rawTitle = (req.body && typeof req.body.title === 'string' && req.body.title.trim())
+    ? req.body.title.trim()
+    : (content.split('\n').find((l) => l.trim()) || 'Resume').trim();
+  const title = rawTitle.slice(0, 80);
+  db.prepare('DELETE FROM saved_resumes WHERE email = ? AND content = ?').run(email, content);
+  const info = db.prepare('INSERT INTO saved_resumes (email, title, content, created_at) VALUES (?, ?, ?, ?)')
+    .run(email, title, content.slice(0, 60000), Date.now());
+  db.prepare('DELETE FROM saved_resumes WHERE email = ? AND id NOT IN (SELECT id FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 20)').run(email, email);
+  res.json({ success: true, id: info.lastInsertRowid, title });
+});
+
+// Delete one of the user's saved resumes.
+app.delete('/api/resumes/:id', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  db.prepare('DELETE FROM saved_resumes WHERE id = ? AND email = ?').run(req.params.id, email);
   res.json({ success: true });
 });
 
