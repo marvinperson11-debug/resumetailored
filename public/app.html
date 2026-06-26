@@ -4802,7 +4802,10 @@ Aaliyah Washington`
       if (btn) { btn.disabled = true; btn.dataset.prevLabel = btn.innerHTML; btn.innerHTML = '⏳ Rendering…'; }
       setStatus('Rendering your studio video… this takes about 2 minutes — keep this tab open.');
       try {
-        const res = await fetch('/api/resume-video', {
+        // 1) Start the render job. This returns a jobId right away — the heavy
+        //    render runs on the server in the background so we never hold one
+        //    request open for ~2 minutes (which mobile networks drop).
+        const startRes = await fetch('/api/resume-video', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -4815,13 +4818,39 @@ Aaliyah Washington`
             recipientTitle: (document.getElementById('videoRecipientTitle') || {}).value || undefined,
           }),
         });
-        if (!res.ok) {
+        if (!startRes.ok) {
           let msg = 'Video generation failed. Please try again.';
-          if (res.status === 429) msg = 'A video is already rendering on the server — try again in a moment.';
-          else { try { const j = await res.json(); if (j && (j.message || j.error)) msg = j.message || j.error; } catch (_) {} }
+          if (startRes.status === 429) msg = 'A video is already rendering on the server — try again in a moment.';
+          else { try { const j = await startRes.json(); if (j && (j.message || j.error)) msg = j.message || j.error; } catch (_) {} }
           throw new Error(msg);
         }
-        const blob = await res.blob();
+        const { jobId } = await startRes.json();
+        if (!jobId) throw new Error('Could not start the render. Please try again.');
+
+        // 2) Poll the job's status. Each poll is a tiny request, so a dropped
+        //    mobile connection just means the next poll reconnects.
+        const deadline = Date.now() + 7 * 60 * 1000;
+        for (;;) {
+          await new Promise((r) => setTimeout(r, 3000));
+          if (Date.now() > deadline) throw new Error('Rendering took too long. Please try again.');
+          let sres;
+          try { sres = await fetch('/api/resume-video/status/' + jobId); }
+          catch (_) { continue; } // transient network blip — keep polling
+          if (!sres.ok) {
+            if (sres.status === 404) throw new Error('The render job expired. Please try again.');
+            continue;
+          }
+          let sj;
+          try { sj = await sres.json(); } catch (_) { continue; }
+          if (sj.status === 'done') break;
+          if (sj.status === 'error') throw new Error(sj.error || 'Video generation failed. Please try again.');
+        }
+
+        // 3) Download the finished MP4 (short request, retried by the browser).
+        setStatus('Finishing up — downloading your video…');
+        const fileRes = await fetch('/api/resume-video/file/' + jobId);
+        if (!fileRes.ok) throw new Error('Could not download the finished video. Please try again.');
+        const blob = await fileRes.blob();
         const url = URL.createObjectURL(blob);
         const fname = (name ? name.replace(/[^\w]+/g, '_') : 'resume') + '-video.mp4';
         showVideoPreview(url, fname);
