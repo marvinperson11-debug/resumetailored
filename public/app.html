@@ -757,10 +757,14 @@
           </div>
 
           <div class="input-group" style="margin-top:16px;">
+            <div id="savedResumesRow" style="display:none;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+              <label class="input-label" style="margin:0;">Saved resumes</label>
+              <select id="videoSavedResumes" class="text-input" style="flex:1;min-width:180px;max-width:340px;" onchange="useSavedResume(this.value)"></select>
+            </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
               <label class="input-label" for="videoResume" style="margin:0;">Your Resume</label>
               <span style="display:flex;gap:8px;">
-                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyTailorResumeToVideo()">Use my Tailor resume</button>
+                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyTailorResumeToVideo()">Use my tailored resume</button>
                 <button class="upload-btn" id="videoUploadBtn" onclick="document.getElementById('videoResumeFileInput').click()">⬆ Upload File</button>
               </span>
               <input type="file" id="videoResumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleVideoResumeUpload(this)" />
@@ -2577,6 +2581,8 @@
             );
           }
         }
+        // Persist the tailored resume so it's saved for later (e.g. the video maker, other devices).
+        if (lastRawResult && selectedMode !== 'cover_letter') saveTailoredResume(lastRawResult);
         document.getElementById('editBtn').style.display = 'inline-flex';
         document.getElementById('editBar').style.display = 'none';
         document.getElementById('outputBox').removeAttribute('contenteditable');
@@ -4544,22 +4550,83 @@ Aaliyah Washington`
       if (badge) badge.textContent = isSubscriberFlag ? '✦ PRO · STUDIO VOICE' : '✦ PRO FEATURE';
       if (isSubscriberFlag) {
         if (btn) btn.innerHTML = '🎬 Generate Studio Video →';
-        if (help) help.textContent = 'Renders on our servers with a studio voice synced to the narration, then downloads a shareable .mp4. Takes about 30–90 seconds.';
+        if (help) help.textContent = 'Renders on our servers with a studio voice synced to the narration, then downloads a shareable .mp4. Takes about 2 minutes.';
         if (up) up.style.display = 'none';
+        // Offer the subscriber's saved tailored resumes as a quick-pick source.
+        populateSavedResumes();
       } else {
         if (btn) btn.innerHTML = '🔒 Upgrade to Pro →';
         if (help) help.textContent = 'The resume video is a Pro feature — upgrade to generate a studio-voice MP4 (male or female voice, addressed to the hiring manager).';
         if (up) up.style.display = 'flex';
+        const wrap = document.getElementById('savedResumesRow');
+        if (wrap) wrap.style.display = 'none';
       }
     }
 
-    function copyTailorResumeToVideo() {
+    // ---- Saved tailored resumes (subscribers) ----------------------------
+    // Every successful tailoring is saved server-side (per account) so a user
+    // can reuse it later — including on another device — to make a video.
+    let _savedResumesCache = [];
+
+    async function saveTailoredResume(content) {
+      const t = (content || '').trim();
+      if (!t || t.length < 40 || !getToken()) return;
+      try {
+        const r = await fetch('/api/resumes', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ content: t }) });
+        if (r.ok) _savedResumesCache = []; // invalidate so the next fetch is fresh
+      } catch (_) {}
+    }
+
+    async function fetchSavedResumes() {
+      if (!getToken()) return [];
+      try {
+        const r = await fetch('/api/resumes', { headers: authHeaders() });
+        if (!r.ok) return [];
+        const d = await r.json();
+        _savedResumesCache = Array.isArray(d.resumes) ? d.resumes : [];
+        return _savedResumesCache;
+      } catch (_) { return []; }
+    }
+
+    async function populateSavedResumes() {
+      const sel = document.getElementById('videoSavedResumes');
+      const wrap = document.getElementById('savedResumesRow');
+      if (!sel) return;
+      const list = await fetchSavedResumes();
+      if (!list.length) { if (wrap) wrap.style.display = 'none'; return; }
+      if (wrap) wrap.style.display = 'flex';
+      sel.innerHTML = '<option value="">— Use a saved resume —</option>';
+      list.forEach(rr => {
+        const o = document.createElement('option');
+        o.value = String(rr.id);
+        const d = new Date(rr.created_at);
+        o.textContent = (rr.title || 'Resume') + (isNaN(d.getTime()) ? '' : ' · ' + d.toLocaleDateString());
+        sel.appendChild(o);
+      });
+    }
+
+    function useSavedResume(id) {
+      if (!id) return;
+      const rr = _savedResumesCache.find(x => String(x.id) === String(id));
+      if (rr && rr.content) {
+        document.getElementById('videoResume').value = rr.content;
+        showToast('Loaded your saved resume.');
+      }
+    }
+
+    async function copyTailorResumeToVideo() {
       const tailored = (lastRawResult && selectedMode !== 'cover_letter') ? lastRawResult : '';
       const raw = document.getElementById('resume');
-      const src = (tailored || (raw ? raw.value : '') || '').trim();
-      if (!src) { showToast('No resume found — paste one here, or tailor a resume first.'); return; }
+      let src = (tailored || (raw ? raw.value : '') || '').trim();
+      // Fall back to the most recently saved tailored resume (e.g. when the user
+      // tailored on another device, or after a reload cleared the in-memory result).
+      if (!src) {
+        if (!_savedResumesCache.length) await fetchSavedResumes();
+        if (_savedResumesCache.length && _savedResumesCache[0].content) src = _savedResumesCache[0].content.trim();
+      }
+      if (!src) { showToast('No resume found — tailor a resume first, or paste one here.'); return; }
       document.getElementById('videoResume').value = src;
-      showToast('Resume copied from the Tailor tab!');
+      showToast('Loaded your tailored resume!');
     }
 
     async function handleVideoResumeUpload(input) {
