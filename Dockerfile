@@ -48,11 +48,13 @@ COPY . .
 # remotion/render.js downloads it on first use.
 RUN node -e "require('@remotion/renderer').ensureBrowser()" || true
 
-# Piper (natural neural TTS) + a default English voice for the resume-video
-# voiceover. Best-effort, like the old nixpacks piper phase: if it fails the
-# app still runs and narration.js falls back to espeak-ng.
+# Piper (natural neural TTS) + English voices for the resume-video voiceover.
+# Two voices so the narration matches the user's gender pick: lessac (female)
+# and ryan (male). Best-effort, like the old nixpacks piper phase: if it fails
+# the app still runs and narration.js falls back to gender-matched espeak-ng.
 RUN pip install --break-system-packages --quiet piper-tts || pip install --quiet piper-tts || true
 RUN python3 -m piper.download_voices en_US-lessac-medium --data-dir ./piper-voices || true
+RUN python3 -m piper.download_voices en_US-ryan-high --data-dir ./piper-voices || true
 
 EXPOSE 3000
 CMD ["node", "server.js"]
