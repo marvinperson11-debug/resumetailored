@@ -671,8 +671,11 @@ app.post('/api/extract-text', uploadSingleFile, async (req, res) => {
 // Reproduces the visual resume/cover templates (sidebar, two-column, modern,
 // banner, boxed, etc.) in Word so the downloaded .docx matches the on-screen
 // design. Word has no flexbox, so multi-column layouts are built with borderless
-// tables and shaded cells. Full-page-height colour bleed on sidebars is limited
-// by Word (a cell only grows as tall as its content) — that is the one known gap.
+// tables and shaded cells. Full-page-height colour bleed on sidebars is handled
+// by giving the layout row a HeightRule.ATLEAST equal to the page content height
+// (see _dxColumnsTable), so the shaded sidebar cell fills the page on single-page
+// resumes. Multi-page sidebars are the remaining edge: the colour follows the
+// row across the break but the trailing page only fills to its content height.
 const _DX_NONE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
 function _dxNoTableBorders() {
   return { top: _DX_NONE, bottom: _DX_NONE, left: _DX_NONE, right: _DX_NONE, insideHorizontal: _DX_NONE, insideVertical: _DX_NONE };
@@ -949,7 +952,14 @@ function _dxRenderCover(text, o, meta) {
 
   out.push(new Paragraph({ children: [new TextRun({ text: 'Dear Hiring Manager,', font, size: 23, bold: true, color: o.primaryHex })], spacing: { before: 120, after: 180 } }));
   p.body.forEach(para => out.push(new Paragraph({ children: [new TextRun({ text: para, font, size: 22, color: '333333' })], spacing: { after: 200, line: 300, lineRule: 'auto' } })));
-  for (const s of _dxSig(o.sigName, o.primaryHex, font)) out.push(s);
+  // Complimentary close. A cover letter ends with "Sincerely, <name>" — NOT the
+  // resume-style horizontal signature rule. This matches the on-screen/PDF cover
+  // (which renders cover-letter mode without the stylized sig block, so the close
+  // shows as plain text) for cross-format consistency. keepNext/keepLines stop the
+  // close from orphaning onto a new page.
+  const _coverCloser = (o.sigName && String(o.sigName).trim()) || p.name;
+  out.push(new Paragraph({ children: [new TextRun({ text: 'Sincerely,', font, size: 22, color: '333333' })], spacing: { before: 240, after: 0 }, keepNext: true, keepLines: true }));
+  if (_coverCloser) out.push(new Paragraph({ children: [new TextRun({ text: _coverCloser, font, size: 22, color: '333333' })], spacing: { before: 160, after: 0 }, keepLines: true }));
   return out;
 }
 
@@ -2357,8 +2367,8 @@ function broadcastEmailHtml(username) {
         <div style="display:flex;gap:14px;margin-bottom:18px;">
           <span style="font-size:22px;line-height:1;flex-shrink:0;">📄</span>
           <div>
-            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">40 Professional Templates</div>
-            <div style="font-size:14px;color:#6b7280;line-height:1.65;">20 resume templates + 20 cover letter templates designed for every industry and style. Pick one, tailor it, download it as a PDF or Word doc.</div>
+            <div style="font-size:15px;font-weight:700;color:#111827;margin-bottom:4px;">100+ Professional Templates</div>
+            <div style="font-size:14px;color:#6b7280;line-height:1.65;">56 resume templates + 48 cover letter templates designed for every industry and style. Pick one, tailor it, download it as a PDF or Word doc.</div>
           </div>
         </div>
 
