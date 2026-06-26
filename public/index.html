@@ -320,7 +320,17 @@
     }
     .hero-sub { font-size: 18px; color: #94a3b8; max-width: 580px; margin: 0 auto 32px; line-height: 1.7; }
     .hero-cta { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .hero-cta-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center; }
     .hero-note { font-size: 13px; color: #64748b; }
+    /* Compact trust strip — sits between the CTA and the demo without pushing
+       the demo below the fold (small margins, single line on desktop). */
+    .hero-trust {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+      gap: 8px; margin: 16px auto 0; font-size: 13px; color: #94a3b8;
+    }
+    .hero-trust-stars { color: #fbbf24; letter-spacing: 1px; }
+    .hero-trust-dot { color: #475569; }
+    @media (max-width: 560px) { .hero-trust { font-size: 12px; gap: 6px; } }
 
     /* ── BEFORE/AFTER ── */
     .demo-wrap {
@@ -808,8 +818,21 @@
     <h1><span class="word-animate" style="animation-delay:0ms">Your</span> <span class="word-animate" style="animation-delay:120ms">resume,</span><br /><span class="word-animate blue" style="animation-delay:260ms">perfectly</span> <span class="word-animate blue" style="animation-delay:380ms">tailored</span><br /><span class="word-animate" style="animation-delay:520ms">to</span> <span class="word-animate" style="animation-delay:620ms">every</span> <span class="word-animate" style="animation-delay:740ms">job.</span></h1>
     <p class="hero-sub">Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.</p>
     <div class="hero-cta">
-      <a href="/dashboard" class="btn btn-primary btn-lg">Tailor My Resume Free →</a>
+      <div class="hero-cta-row">
+        <a href="/dashboard" class="btn btn-primary btn-lg">Tailor My Resume Free →</a>
+        <a href="/how-it-works" class="btn btn-ghost btn-lg">See how it works</a>
+      </div>
       <span class="hero-note">1 free tailoring · No payment required</span>
+    </div>
+
+    <!-- Trust strip: honest, feature-based social proof (no unverified metrics) -->
+    <div class="hero-trust">
+      <span class="hero-trust-stars">★★★★★</span>
+      <span>Powered by Anthropic&nbsp;Claude</span>
+      <span class="hero-trust-dot">·</span>
+      <span>40+ ATS-ready templates</span>
+      <span class="hero-trust-dot">·</span>
+      <span>Free tier — no card required</span>
     </div>
 
     <!-- Before/After Demo -->
@@ -2674,8 +2697,12 @@
     // ── Hero ────────────────────────────────────────────────────────────────
     ['.hero h1', null, '<span class="word-animate" style="animation-delay:0ms">Your</span> <span class="word-animate" style="animation-delay:120ms">resume,</span><br /><span class="word-animate blue" style="animation-delay:260ms">perfectly</span> <span class="word-animate blue" style="animation-delay:380ms">tailored</span><br /><span class="word-animate" style="animation-delay:520ms">to</span> <span class="word-animate" style="animation-delay:620ms">every</span> <span class="word-animate" style="animation-delay:740ms">job.</span>', '<span class="word-animate" style="animation-delay:0ms">你的简历，</span><br /><span class="word-animate blue" style="animation-delay:260ms">精准匹配</span><br /><span class="word-animate" style="animation-delay:520ms">每一份工作。</span>'],
     ['.hero-sub', null, 'Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.', '粘贴简历和职位描述，AI将用精准关键词重写你的简历，并在30秒内生成有力的求职信。'],
-    ['.hero-cta > .btn-primary', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
+    ['.hero-cta-row > .btn-primary', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
+    ['.hero-cta-row > .btn-ghost', null, 'See how it works', '了解工作原理'],
     ['.hero-note', null, '1 free tailoring · No payment required', '每日1次免费定制 · 无需付款'],
+    ['.hero-trust', null,
+      '<span class="hero-trust-stars">★★★★★</span><span>Powered by Anthropic&nbsp;Claude</span><span class="hero-trust-dot">·</span><span>40+ ATS-ready templates</span><span class="hero-trust-dot">·</span><span>Free tier — no card required</span>',
+      '<span class="hero-trust-stars">★★★★★</span><span>由 Anthropic&nbsp;Claude 提供支持</span><span class="hero-trust-dot">·</span><span>40+ 套 ATS 友好模板</span><span class="hero-trust-dot">·</span><span>免费套餐 — 无需信用卡</span>'],
     ['.demo-before .demo-label', null, 'Before', '优化前'],
     ['.demo-badge.demo-badge-before', null, '✕ Generic Resume', '✕ 通用简历'],
     ['.demo-bullet.demo-bullet-before', 0, '• Managed marketing campaigns and worked with teams to grow revenue and improve brand awareness across multiple channels', '• 负责营销活动并与团队合作推动收入增长，提升各渠道品牌知名度'],
