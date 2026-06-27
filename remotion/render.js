@@ -30,6 +30,7 @@ function getServeUrl() {
     const { bundle } = require('@remotion/bundler');
     bundlePromise = bundle({
       entryPoint: path.resolve(__dirname, 'index.ts'),
+      publicDir: path.resolve(__dirname, 'public'),
       onProgress: () => {},
     }).catch((err) => {
       // Reset so a later request can retry instead of caching the failure.
