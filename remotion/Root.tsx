@@ -41,6 +41,9 @@ export const RemotionRoot: React.FC = () => {
         width={PROMO_WIDTH}
         height={PROMO_HEIGHT}
         defaultProps={{ accentColor: '#6366F1' }}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: Math.max(promoTotalFrames, props.audioDurationInFrames || 0),
+        })}
       />
     </>
   );

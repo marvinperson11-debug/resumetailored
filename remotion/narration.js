@@ -164,8 +164,10 @@ function wavSeconds(buf) {
 // Generate a voiceover for the given video props. Returns { src, seconds }
 // (src is a data: URL), or null when no engine is available / disabled / on any
 // failure — the caller then renders a silent video.
-function generateNarration(props) {
-  const { script, segments } = narrationTimeline(props);
+function generateNarration(props, opts = {}) {
+  const { script, segments } = opts.scriptOverride != null
+    ? { script: opts.scriptOverride, segments: [] }
+    : narrationTimeline(props);
   if (!script) return null;
 
   const engine = pickEngine();
@@ -254,7 +256,9 @@ function resolveVoiceId(opts = {}) {
 async function elevenNarration(props, opts = {}) {
   const cfg = elevenConfig();
   if (!cfg) return null;
-  const { script: text, segments } = narrationTimeline(props);
+  const { script: text, segments } = opts.scriptOverride != null
+    ? { script: opts.scriptOverride, segments: [] }
+    : narrationTimeline(props);
   if (!text) return null;
 
   const voiceId = resolveVoiceId(opts);
@@ -307,7 +311,7 @@ async function generateNarrationAsync(props, opts = {}) {
       console.error('ElevenLabs narration error:', err.message);
     }
   }
-  return generateNarration(props);
+  return generateNarration(props, opts);
 }
 
 module.exports = { generateNarration, generateNarrationAsync, pickEngine, VOICE_CATALOG, videoVoiceOptions };
