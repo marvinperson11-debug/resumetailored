@@ -39,4 +39,4 @@ export const promoNarrationScript =
   "Stand out before they even open your resume. ResumeTailored AI rewrites your resume for any job in seconds. " +
   "But here's the real difference: turn that tailored resume into a short video resume. Our AI writes the voiceover, " +
   'addresses the hiring manager by name, and exports it ready for LinkedIn, Shorts, and Reels. ' +
-  'Try it free at resumetailored dot com.';
+  'Build your resume free at resumetailored dot com.';
