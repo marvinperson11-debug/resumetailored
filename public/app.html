@@ -151,6 +151,14 @@
     .tpl-pick-badge-pro { background: rgba(99,102,241,0.2); color: #a5b4fc; }
     .tpl-ats-badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; display: inline-block; margin: 0 0 8px 4px; background: rgba(16,185,129,0.12); color: #6ee7b7; letter-spacing: .3px; }
     .tpl-human-note { font-size: 9.5px; color: #94a3b8; margin: -4px 0 8px; line-height: 1.4; }
+    .export-warn-box { background: #12121f; border: 1px solid rgba(251,191,36,0.35); border-radius: 14px; max-width: 440px; padding: 26px 28px; margin: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.5); }
+    .export-warn-title { font-size: 16px; font-weight: 800; color: #fbbf24; margin-bottom: 10px; }
+    .export-warn-text { font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 20px; }
+    .export-warn-actions { display: flex; gap: 12px; align-items: center; }
+    .export-warn-dismiss { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: #e2e8f0; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-family: inherit; }
+    .export-warn-dismiss:hover { background: rgba(255,255,255,0.1); }
+    .export-fmt-banner { position: sticky; top: 0; z-index: 5; display: flex; gap: 10px; align-items: flex-start; background: rgba(251,191,36,0.09); border: 1px solid rgba(251,191,36,0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 12.5px; color: #fcd34d; line-height: 1.55; text-align: left; width: 100%; box-sizing: border-box; }
+    .export-fmt-banner a { color: #fbbf24; font-weight: 700; }
     .tpl-pick-btn { display: block; width: 100%; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 700; text-align: center; border: none; cursor: pointer; transition: background .15s; font-family: inherit; box-sizing: border-box; }
     .tpl-pick-btn-select { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; }
     .tpl-pick-btn-select:hover { opacity: 0.9; }
@@ -1492,6 +1500,18 @@
           <div class="tpl-modal-lock-peek" onclick="document.getElementById('tplModalLock').style.display='none'">View preview only ↓</div>
         </div>
         <iframe id="tplFrame" sandbox="allow-same-origin" style="width:794px;min-height:1123px;border:none;display:block;margin:0 auto;background:#fff;"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export-format warning for advanced-formatting templates (Modern, Sidebar) -->
+  <div class="tpl-modal-overlay" id="exportWarnModal" style="display:none;z-index:9999;" onclick="if(event.target===this)dismissExportWarn()">
+    <div class="export-warn-box" onclick="event.stopPropagation()">
+      <div class="export-warn-title">⚠️ This template uses advanced Word formatting.</div>
+      <p class="export-warn-text">DOCX export matches the preview exactly. PDF export may look different. We recommend DOCX.</p>
+      <div class="export-warn-actions">
+        <a class="btn btn-primary" style="font-size:13px;padding:9px 18px;text-decoration:none;" href="/help/template-export-formats" target="_blank" rel="noopener">Learn more</a>
+        <button class="export-warn-dismiss" onclick="dismissExportWarn()">Dismiss</button>
       </div>
     </div>
   </div>
@@ -3520,6 +3540,7 @@
         box.innerHTML += renderSignatureHtml(t2 && t2.c && t2.c.p, _sigScreenIndent(t2 && t2.layout || ''), false);
       }
       _syncCoverBannerClass();
+      renderPreviewDownloadButtons(); // keep the export-format note in sync
     }
 
     function escHtml(s) {
@@ -4172,6 +4193,19 @@
       });
     }
 
+    // Modern & Sidebar use Word-only formatting (shaded boxes / colour
+    // column) that DOCX reproduces exactly but PDF may not.
+    const _ADV_FMT_LAYOUTS = { rModern: 1, rSidebar: 1 };
+    function _maybeShowExportWarn(layout) {
+      if (!_ADV_FMT_LAYOUTS[layout]) return;
+      if (sessionStorage.getItem('rt_export_warn_dismissed')) return;
+      document.getElementById('exportWarnModal').style.display = 'flex';
+    }
+    function dismissExportWarn() {
+      sessionStorage.setItem('rt_export_warn_dismissed', '1');
+      document.getElementById('exportWarnModal').style.display = 'none';
+    }
+
     function openTpl(type,id){
       const list=type==='resume'?resumeTemplates:coverTemplates;
       const tpl=list.find(t=>t.id===id);
@@ -4183,6 +4217,7 @@
       const locked=!tpl.free&&!isSubscriberFlag;
       document.getElementById('tplModalLock').style.display=locked?'flex':'none';
       document.getElementById('tplModal').style.display='flex';
+      _maybeShowExportWarn(tpl.layout);
     }
 
     function closeTplModal(e){
@@ -5213,26 +5248,36 @@ Aaliyah Washington`
       row.innerHTML = `<button class="btn btn-primary" onclick="openPreview()" style="font-size:15px;padding:12px 28px;margin-top:4px;">👁 Preview →</button>`;
     }
 
+    // Sticky note above the format buttons when the chosen template's
+    // formatting is Word-optimized. Informational only — never blocks PDF.
+    function _exportFmtBannerHtml() {
+      const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
+      const tpl = OUT_TPLS[cat] && OUT_TPLS[cat].find(t => t.id === selectedOutputTpl[cat]);
+      if (!tpl || !_ADV_FMT_LAYOUTS[tpl.layout]) return '';
+      return `<div class="export-fmt-banner">⚠️<span><strong>Note:</strong> This template's advanced formatting is optimized for Word. DOCX export will match your preview; PDF export may differ. <a href="/help/template-export-formats" target="_blank" rel="noopener">Learn more</a></span></div>`;
+    }
+
     function renderPreviewDownloadButtons() {
       const row = document.getElementById('previewDownloadRow');
       if (!row) return;
+      const fmtBanner = _exportFmtBannerHtml();
       const showVideo = selectedMode !== 'cover_letter';
       if (isSubscriberFlag) {
         const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
-        row.innerHTML = `
+        row.innerHTML = `${fmtBanner}
           <button class="download-btn download-btn-pdf" onclick="downloadPdf()">Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="downloadDocx()">Download Word</button>
           <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>${videoBtn}`;
       } else if (!isLoggedIn) {
         const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
-        row.innerHTML = `
+        row.innerHTML = `${fmtBanner}
           <button class="download-btn download-btn-pdf" onclick="showDownloadGate(downloadPdf)" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);">⬇ Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="showDownloadGate(downloadDocx)">⬇ Download Word</button>
           <button class="download-btn download-btn-txt" onclick="showDownloadGate(downloadTxt)">⬇ Download Text</button>${videoBtn}
           <div style="width:100%;font-size:11px;color:#64748b;margin-top:6px;">Free account required to download — takes 5 seconds</div>`;
       } else {
         const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
-        row.innerHTML = `
+        row.innerHTML = `${fmtBanner}
           <button class="download-btn download-btn-pdf" onclick="adGate(downloadPdf)" style="background:#b91c1c;">▶ Ad → PDF</button>
           <button class="download-btn download-btn-docx" onclick="adGate(downloadDocx)" style="background:#7c3aed;">▶ Ad → Word</button>
           <button class="download-btn download-btn-txt" onclick="adGate(downloadTxt)" style="background:#374151;">▶ Ad → Text</button>${videoBtn}`;
