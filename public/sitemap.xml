@@ -82,8 +82,8 @@
 
   <!-- Blog -->
   <url>
-    <loc>https://resumetailored.com/blog</loc>
-    <lastmod>2026-06-14</lastmod>
+    <loc>https://resumetailored.com/blog/</loc>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
@@ -189,7 +189,7 @@
 
   <url>
     <loc>https://resumetailored.com/alternatives/jobscan</loc>
-    <lastmod>2026-06-14</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.92</priority>
   </url>
@@ -404,7 +404,7 @@
   <!-- Blog: best AI resume builders 2026 -->
   <url>
     <loc>https://resumetailored.com/blog/best-ai-resume-builders-2026</loc>
-    <lastmod>2026-06-26</lastmod>
+    <lastmod>2026-07-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>

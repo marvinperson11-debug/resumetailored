@@ -2472,6 +2472,13 @@ function broadcastEmailHtml(username) {
 </html>`;
 }
 
+// Branded 404 for anything that fell through every route above (replaces
+// Express's default "Cannot GET /…" page). API paths keep a JSON error.
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found.' });
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+});
+
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
   app.listen(PORT, () => console.log(`ResumeTailored running on http://localhost:${PORT}`));
