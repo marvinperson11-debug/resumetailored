@@ -149,6 +149,8 @@
     .tpl-pick-badge { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
     .tpl-pick-badge-free { background: rgba(16,185,129,0.15); color: #34d399; }
     .tpl-pick-badge-pro { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+    .tpl-ats-badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; display: inline-block; margin: 0 0 8px 4px; background: rgba(16,185,129,0.12); color: #6ee7b7; letter-spacing: .3px; }
+    .tpl-human-note { font-size: 9.5px; color: #94a3b8; margin: -4px 0 8px; line-height: 1.4; }
     .tpl-pick-btn { display: block; width: 100%; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 700; text-align: center; border: none; cursor: pointer; transition: background .15s; font-family: inherit; box-sizing: border-box; }
     .tpl-pick-btn-select { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; }
     .tpl-pick-btn-select:hover { opacity: 0.9; }
@@ -3450,6 +3452,21 @@
       }
     }
 
+    // Single-column resume layouts parse cleanly in ATS software; the
+    // table-based ones (Word tables in the .docx) are best sent to humans.
+    const _ATS_SAFE_LAYOUTS = { rClassic: 1, rMinimal: 1, rExecutive: 1, rBanner: 1 };
+    const _TABLE_LAYOUTS = { rSidebar: 1, rTwoCol: 1, rModern: 1 };
+    function _tplAtsBadge(tpl) {
+      const zh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      if (_ATS_SAFE_LAYOUTS[tpl.layout]) return `<span class="tpl-ats-badge">${zh ? '✓ ATS 安全' : '✓ ATS-safe'}</span>`;
+      return '';
+    }
+    function _tplAtsNote(tpl) {
+      const zh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+      if (_TABLE_LAYOUTS[tpl.layout]) return `<div class="tpl-human-note">${zh ? '最适合直接投递给招聘者' : 'Best for direct-to-human applications'}</div>`;
+      return '';
+    }
+
     function renderTplPicker() {
       const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
       const list = OUT_TPLS[cat];
@@ -3473,8 +3490,8 @@
           </div>
           <div class="tpl-pick-body">
             <div class="tpl-pick-name">${tpl.name}</div>
-            <div class="tpl-pick-badge ${tpl.free ? 'tpl-pick-badge-free' : 'tpl-pick-badge-pro'}">${tpl.free ? 'FREE' : 'PRO'}</div>
-            <button class="tpl-pick-btn ${btnClass}" onclick="${btnClick}">${btnText}</button>
+            <div class="tpl-pick-badge ${tpl.free ? 'tpl-pick-badge-free' : 'tpl-pick-badge-pro'}">${tpl.free ? 'FREE' : 'PRO'}</div>${_tplAtsBadge(tpl)}
+            ${_tplAtsNote(tpl)}<button class="tpl-pick-btn ${btnClass}" onclick="${btnClick}">${btnText}</button>
           </div>
         </div>`;
       }).join('');
@@ -4129,12 +4146,13 @@
         const badge=tpl.free
           ?`<div class="tpl-free-badge">FREE</div>`
           :`<div class="tpl-lock-overlay"><span style="font-size:20px;">🔒</span><span class="tpl-pro-badge">PRO</span></div>`;
-        return `<div class="tpl-card${locked?' locked':''}" onclick="openTpl('${_activeType}',${tpl.id})">
+        return `<div class="tpl-card${locked?' locked':''}" onclick="openTpl('${_activeType}','${tpl.id}')">
           <div class="tpl-preview-wrap">
             <div class="tpl-preview-inner">${html}</div>
             ${badge}
           </div>
-          <div class="tpl-card-label">${label}</div>
+          <div class="tpl-card-label">${label}${_tplAtsBadge(tpl)}</div>
+          ${_tplAtsNote(tpl)}
         </div>`;
       }).join('');
       updateTplScales();
