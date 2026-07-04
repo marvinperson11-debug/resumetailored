@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const compression = require('compression');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const Anthropic = require('@anthropic-ai/sdk');
@@ -17,6 +18,10 @@ const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 
 const app = express();
+app.disable('x-powered-by');
+// Gzip every compressible response (the landing page alone is ~237KB of HTML
+// raw, ~40KB gzipped) — Railway's proxy does not compress for us.
+app.use(compression());
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -230,9 +235,20 @@ app.get('/app', (req, res) => res.redirect(301, '/dashboard'));
 app.use(express.static(path.join(__dirname, 'public'), {
   extensions: ['html'],
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    else if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css; charset=utf-8');
-    else if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      // HTML must stay fresh so content/SEO fixes ship instantly.
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    } else if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    } else if (/\.(png|jpe?g|svg|webp|ico|gif|woff2?)$/i.test(filePath)) {
+      // Images/fonts change rarely and are the heaviest assets.
+      res.setHeader('Cache-Control', 'public, max-age=2592000');
+    }
   }
 }));
 
@@ -724,19 +740,33 @@ function _dxParseCover(text, meta) {
   for (const line of rawBody) { if (!line) { if (acc.length) { paragraphs.push(acc.join(' ')); acc = []; } } else acc.push(line); }
   if (acc.length) paragraphs.push(acc.join(' '));
   const CLOSE_RE = /^(sincerely|best regards|regards|warm regards|respectfully|yours truly|cordially|thank you)[,\s]/i;
-  // Drop closings and any salutation — the layout renders its own "Dear Hiring Manager,"
+  // Keep the AI-written salutation (it may address the hiring manager by
+  // name); the layout only falls back to "Dear Hiring Manager," without one.
   const SALUT_RE = /^dear\b.{0,60}$/i;
-  const body = paragraphs.filter(p => !CLOSE_RE.test(p) && !SALUT_RE.test(p));
+  let salutation = '';
+  const body = paragraphs.filter(p => {
+    if (CLOSE_RE.test(p)) return false;
+    if (SALUT_RE.test(p)) { if (!salutation) salutation = p; return false; }
+    return true;
+  });
   const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   return {
     name: name || meta.name || 'Applicant',
     contact: contactStr || [meta.email, meta.phone, meta.location].filter(Boolean).join(' | '),
-    company: meta.company || '', role: meta.role || '', date: today, body,
+    company: meta.company || '', role: meta.role || '', date: today, body, salutation,
   };
 }
 
-// A single resume/cover content line → Word paragraph(s)
-function _dxLinePara(raw, o) {
+// Company/date line, e.g. "DataLoom Inc | 2021 – Present" or "Acme — 2019"
+function _dxIsCompanyLine(clean) {
+  return !!clean && (clean.includes('—') || clean.includes('–') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 150;
+}
+
+// A single resume/cover content line → Word paragraph(s). `nextRaw` (the line
+// that follows, if any) lets us recognise a job title: the gallery cards render
+// the title as the bold prominent element and the company line as smaller
+// accent text below it — the docx must match that hierarchy.
+function _dxLinePara(raw, o, nextRaw) {
   const trimmed = String(raw).trim();
   const clean = _dxClean(trimmed);
   if (!clean) return [];
@@ -747,13 +777,27 @@ function _dxLinePara(raw, o) {
     return [new Paragraph({ children: [new TextRun({ text: clean.replace(/^[•·\-\*]\s*/, ''), font: o.font, size: sz, color: bodyColor })], bullet: { level: 0 }, spacing: { after: 40 } })];
   }
   const wasBold = /^\*\*[^*]+\*\*$/.test(trimmed);
-  if (wasBold && clean.length < 70) {
-    return [new Paragraph({ children: [new TextRun({ text: clean, font: o.font, size: sz + 2, bold: true, color: titleColor })], spacing: { before: 140, after: 20 }, keepNext: true })];
+  const nextClean = nextRaw === undefined ? '' : _dxClean(String(nextRaw).trim());
+  const isTitle = (wasBold && clean.length < 70) ||
+    (!_dxIsCompanyLine(clean) && _dxIsCompanyLine(nextClean) && clean.length < 80);
+  if (isTitle) {
+    // Job title — bold, dark, with breathing room above so consecutive
+    // positions read as separate blocks (matches the gallery cards).
+    return [new Paragraph({ children: [new TextRun({ text: clean, font: o.font, size: sz + 2, bold: true, color: titleColor })], spacing: { before: 200, after: 20 }, keepNext: true })];
   }
-  if ((clean.includes('—') || clean.includes('–') || (clean.includes('|') && /\d{4}/.test(clean))) && clean.length < 150) {
-    return [new Paragraph({ children: [new TextRun({ text: clean, font: o.font, size: sz - 1, bold: true, color: o.accentHex })], spacing: { after: 50 }, keepNext: true })];
+  if (_dxIsCompanyLine(clean)) {
+    return [new Paragraph({ children: [new TextRun({ text: clean, font: o.font, size: sz - 1, bold: true, color: o.accentHex })], spacing: { after: 60 }, keepNext: true })];
   }
   return [new Paragraph({ children: [new TextRun({ text: clean, font: o.font, size: sz, color: bodyColor })], spacing: { after: 50 } })];
+}
+
+// Render a section's lines with one-line lookahead (for job-title detection)
+function _dxLines(lines, o) {
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    for (const p of _dxLinePara(lines[i], o, lines[i + 1])) out.push(p);
+  }
+  return out;
 }
 
 // Section heading in the main column, styled per layout family
@@ -782,13 +826,17 @@ function _dxSideHeading(title, o) {
   });
 }
 
-// Signature: line (top border) + cursive-style name. No literal label.
+// Signature: line (top border) + name in a script font. OOXML can't express a
+// font-fallback chain, but Word substitutes a missing font itself — Segoe
+// Script ships with Windows/Office, and machines without it (older Macs) fall
+// back via Word's font substitution; italics keeps the substituted face
+// signature-like either way.
 function _dxSig(sigName, primaryHex, font) {
   if (!sigName || !String(sigName).trim()) return [];
   const sig = String(sigName).trim();
   return [
     new Paragraph({ children: [new TextRun({ text: '', font, size: 22 })], spacing: { before: 420 }, border: { top: { style: BorderStyle.SINGLE, size: 6, color: 'CBD5E1', space: 6 } }, keepNext: true, keepLines: true }),
-    new Paragraph({ children: [new TextRun({ text: sig, font, size: 44, bold: true, italics: true, color: primaryHex })], spacing: { before: 80, after: 0 }, keepLines: true }),
+    new Paragraph({ children: [new TextRun({ text: sig, font: 'Segoe Script', size: 40, italics: true, color: primaryHex })], spacing: { before: 80, after: 0 }, keepLines: true }),
   ];
 }
 
@@ -814,7 +862,9 @@ function _dxTwoCol(name, contactParts, sections, o) {
   for (const sec of sections) (_DX_SIDE_KEYS.some(k => sec.title.toUpperCase().includes(k)) ? sideSecs : mainSecs).push(sec);
   const leftW = Math.round(o.contentWidth * (isSidebar ? 0.34 : 0.32));
   const rightW = o.contentWidth - leftW;
-  const headColor = isSidebar ? 'FFFFFF' : o.primaryHex;
+  // Sidebar card renders its side headings in the accent colour on the dark
+  // column; the plain two-column card uses the primary colour.
+  const headColor = isSidebar ? o.accentHex : o.primaryHex;
   const onDark = isSidebar;
 
   const left = [];
@@ -828,14 +878,14 @@ function _dxTwoCol(name, contactParts, sections, o) {
   for (const cp of contactParts) left.push(new Paragraph({ children: [new TextRun({ text: cp, font: o.font, size: 18, color: onDark ? 'E6E6E6' : '555555' })], spacing: { after: 40 } }));
   for (const sec of sideSecs) {
     left.push(_dxSideHeading(sec.title, { font: o.font, headColor, accentHex: o.accentHex }));
-    for (const raw of sec.lines) for (const p of _dxLinePara(raw, { font: o.font, accentHex: o.accentHex, onDark, small: true })) left.push(p);
+    for (const p of _dxLines(sec.lines, { font: o.font, accentHex: o.accentHex, onDark, small: true })) left.push(p);
   }
 
   const right = [];
   const mainStyle = isSidebar ? 'underline' : 'icon-bar';
   mainSecs.forEach(sec => {
     right.push(_dxHeading(sec.title, { style: mainStyle, primaryHex: o.primaryHex, accentHex: o.accentHex, font: o.font }));
-    for (const raw of sec.lines) for (const p of _dxLinePara(raw, { font: o.font, accentHex: o.accentHex, onDark: false })) right.push(p);
+    for (const p of _dxLines(sec.lines, { font: o.font, accentHex: o.accentHex, onDark: false })) right.push(p);
   });
   for (const p of _dxSig(o.sigName, o.primaryHex, o.font)) right.push(p);
   if (!left.length) left.push(new Paragraph({}));
@@ -875,7 +925,7 @@ function _dxRenderResume(text, o) {
     const body = [];
     sections.forEach(sec => {
       body.push(_dxHeading(sec.title, { style: 'icon-bar', primaryHex: o.primaryHex, accentHex: o.accentHex, font }));
-      for (const raw of sec.lines) for (const p of _dxLinePara(raw, { font, accentHex: o.accentHex, onDark: false })) body.push(p);
+      for (const p of _dxLines(sec.lines, { font, accentHex: o.accentHex, onDark: false })) body.push(p);
     });
     for (const p of _dxSig(o.sigName, o.primaryHex, font)) body.push(p);
     const inset = new TableCell({ width: { size: o.contentWidth, type: WidthType.DXA }, margins: { top: 240, bottom: 120, left: 720, right: 720 }, children: body.length ? body : [new Paragraph({})] });
@@ -889,7 +939,8 @@ function _dxRenderResume(text, o) {
     out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], border: { left: { style: BorderStyle.SINGLE, size: 36, color: o.primaryHex, space: 12 } }, indent: { left: 130 }, spacing: { after: 40 } }));
     if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   ·   '), font, size: 18, color: '666666' })], indent: { left: 130 }, spacing: { after: 80 }, border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.accentHex, space: 6 } } }));
   } else if (o.layout === 'rMinimal') {
-    out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 40, color: '111827', characterSpacing: 60 })], spacing: { after: 60 } }));
+    // Card shows the name bold with tight tracking, not letterspaced-light.
+    out.push(new Paragraph({ children: [new TextRun({ text: name, font, size: 40, bold: true, color: '111827' })], spacing: { after: 60 } }));
     if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 18, color: '666666' })], spacing: { after: 160 }, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: o.primaryHex, space: 6 } } }));
   } else if (o.layout === 'rExecutive') {
     // Coloured left bar on the name + contact, matching the gallery card.
@@ -898,7 +949,8 @@ function _dxRenderResume(text, o) {
     if (contactParts.length) out.push(new Paragraph({ children: [new TextRun({ text: contactParts.join('   |   '), font, size: 19, color: '555555' })], border: lb, indent: { left: 60 }, spacing: { after: 120 } }));
   } else {
     // rClassic — centred name + contact with a full-width rule underneath.
-    out.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex })], spacing: { after: 40 } }));
+    // The gallery card sets the name in caps with letter-spacing.
+    out.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: name, font, size: 44, bold: true, color: o.primaryHex, allCaps: true, characterSpacing: 40 })], spacing: { after: 40 } }));
     if (contactParts.length) {
       out.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: contactParts.join('   |   '), font, size: 19, color: '555555' })], spacing: { after: 120 }, border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex, space: 6 } } }));
     } else {
@@ -908,7 +960,7 @@ function _dxRenderResume(text, o) {
   const headStyle = { rClassic: 'underline', rExecutive: 'left-bar', rMinimal: 'minimal', rModern: 'icon-bar', rBanner: 'banner-pill' }[o.layout] || 'underline';
   sections.forEach(sec => {
     out.push(_dxHeading(sec.title, { style: headStyle, primaryHex: o.primaryHex, accentHex: o.accentHex, font }));
-    for (const raw of sec.lines) for (const p of _dxLinePara(raw, { font, accentHex: o.accentHex, onDark: false })) out.push(p);
+    for (const p of _dxLines(sec.lines, { font, accentHex: o.accentHex, onDark: false })) out.push(p);
   });
   for (const p of _dxSig(o.sigName, o.primaryHex, font)) out.push(p);
   return out;
@@ -943,14 +995,18 @@ function _dxRenderCover(text, o, meta) {
     out.push(new Paragraph({ children: [new TextRun({ text: '', font, size: 8 })], border: { bottom: { style: BorderStyle.SINGLE, size: 16, color: o.accentHex, space: 2 } }, spacing: { after: 160 } }));
     out.push(new Paragraph({ children: [new TextRun({ text: [p.date, roleLine ? 'Re: ' + roleLine : ''].filter(Boolean).join('    ·    '), font, size: 18, color: o.primaryHex })], spacing: { after: 200 } }));
   } else {
-    // cFormal — classic business letter
+    // cFormal — classic business letter. The card shows a recipient block
+    // ("[Role] Hiring Team" + company) between the date and the salutation.
     out.push(new Paragraph({ children: [new TextRun({ text: p.name, font, size: 30, bold: true, color: o.primaryHex })], spacing: { after: 40 }, border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: o.primaryHex, space: 6 } } }));
     if (p.contact) out.push(new Paragraph({ children: [new TextRun({ text: p.contact, font, size: 18, color: '888888' })], spacing: { before: 80, after: 200 } }));
-    out.push(new Paragraph({ children: [new TextRun({ text: p.date, font, size: 19, color: '777777' })], spacing: { after: 80 } }));
-    if (roleLine) out.push(new Paragraph({ children: [new TextRun({ text: roleLine, font, size: 19, color: '666666' })], spacing: { after: 160 } }));
+    out.push(new Paragraph({ children: [new TextRun({ text: p.date, font, size: 19, color: '777777' })], spacing: { after: 160 } }));
+    if (p.role) out.push(new Paragraph({ children: [new TextRun({ text: p.role + ' Hiring Team', font, size: 20, bold: true, color: '333333' })], spacing: { after: 20 } }));
+    if (p.company) out.push(new Paragraph({ children: [new TextRun({ text: p.company, font, size: 19, color: '666666' })], spacing: { after: 160 } }));
   }
 
-  out.push(new Paragraph({ children: [new TextRun({ text: 'Dear Hiring Manager,', font, size: 23, bold: true, color: o.primaryHex })], spacing: { before: 120, after: 180 } }));
+  // Salutation as plain body text; preserve the AI's "Dear [Name]," when present.
+  const salutation = p.salutation || 'Dear Hiring Manager,';
+  out.push(new Paragraph({ children: [new TextRun({ text: salutation, font, size: 22, color: '333333' })], spacing: { before: 120, after: 180 } }));
   p.body.forEach(para => out.push(new Paragraph({ children: [new TextRun({ text: para, font, size: 22, color: '333333' })], spacing: { after: 200, line: 300, lineRule: 'auto' } })));
   // Complimentary close. A cover letter ends with "Sincerely, <name>" — NOT the
   // resume-style horizontal signature rule. This matches the on-screen/PDF cover
@@ -2415,6 +2471,13 @@ function broadcastEmailHtml(username) {
 </body>
 </html>`;
 }
+
+// Branded 404 for anything that fell through every route above (replaces
+// Express's default "Cannot GET /…" page). API paths keep a JSON error.
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found.' });
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+});
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
