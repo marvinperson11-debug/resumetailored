@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const compression = require('compression');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const Anthropic = require('@anthropic-ai/sdk');
@@ -17,6 +18,10 @@ const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 
 const app = express();
+app.disable('x-powered-by');
+// Gzip every compressible response (the landing page alone is ~237KB of HTML
+// raw, ~40KB gzipped) — Railway's proxy does not compress for us.
+app.use(compression());
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -230,9 +235,20 @@ app.get('/app', (req, res) => res.redirect(301, '/dashboard'));
 app.use(express.static(path.join(__dirname, 'public'), {
   extensions: ['html'],
   setHeaders: (res, filePath) => {
-    if (filePath.endsWith('.html')) res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    else if (filePath.endsWith('.css')) res.setHeader('Content-Type', 'text/css; charset=utf-8');
-    else if (filePath.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      // HTML must stay fresh so content/SEO fixes ship instantly.
+      res.setHeader('Cache-Control', 'no-cache');
+    } else if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    } else if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    } else if (/\.(png|jpe?g|svg|webp|ico|gif|woff2?)$/i.test(filePath)) {
+      // Images/fonts change rarely and are the heaviest assets.
+      res.setHeader('Cache-Control', 'public, max-age=2592000');
+    }
   }
 }));
 
