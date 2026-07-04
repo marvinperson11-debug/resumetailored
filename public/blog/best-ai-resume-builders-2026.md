@@ -18,7 +18,7 @@ Built around one job: rewriting your existing resume to match each job descripti
 Strong free job-application tracker and Chrome extension. Its AI resume features and unlimited use sit behind a higher-priced subscription, and it does not generate cover letters on the free tier.
 
 ### 3. Jobscan
-**Best keyword scorer** — ~$30/mo
+**Best keyword scorer** — $49.95/mo (~$30/mo annual)
 
 Excellent at scoring how well your resume matches a job description and flagging missing keywords. It tells you what's missing — but it scores rather than rewrites your resume for you.
 
