@@ -3528,6 +3528,10 @@
 
     function chooseTpl(id, cat) {
       selectedOutputTpl[cat] = id;
+      // Warn on selection in the tailor-tab picker too (not just the gallery)
+      // when it's an advanced-formatting family (Modern/Sidebar).
+      const _chosen = OUT_TPLS[cat] && OUT_TPLS[cat].find(t => t.id === id);
+      if (_chosen) _maybeShowExportWarn(_chosen.layout);
       renderTplPicker();
       const box = document.getElementById('outputBox');
       if (!box || selectedMode === 'both') return;
