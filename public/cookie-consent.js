@@ -60,17 +60,6 @@
   style.textContent = css;
   document.head.appendChild(style);
 
-  var banner = document.createElement('div');
-  banner.id = 'rta-consent';
-  banner.innerHTML = [
-    '<p>We use cookies to improve your experience and measure site performance. ',
-    'See our <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>.</p>',
-    '<div class="rta-btns">',
-    '<button id="rta-reject">Reject</button>',
-    '<button id="rta-accept">Accept All</button>',
-    '</div>'
-  ].join('');
-
   function dismiss(choice) {
     localStorage.setItem(STORAGE_KEY, choice);
     applyConsent(choice);
@@ -78,9 +67,34 @@
     if (el) el.remove();
   }
 
-  document.addEventListener('DOMContentLoaded', function() {
+  function buildBanner() {
+    // Decide language here (not at script-parse time) so <html lang> is fully
+    // available — Chinese on /zh/, English everywhere else.
+    var isZh = (document.documentElement.lang || '').toLowerCase().indexOf('zh') === 0;
+    var T = isZh ? {
+      body: '我们使用 Cookie 来改善您的体验并评估网站性能。请参阅我们的<a href="/privacy">隐私政策</a>和<a href="/terms">服务条款</a>。',
+      reject: '拒绝', accept: '全部接受'
+    } : {
+      body: 'We use cookies to improve your experience and measure site performance. See our <a href="/privacy">Privacy Policy</a> and <a href="/terms">Terms of Service</a>.',
+      reject: 'Reject', accept: 'Accept All'
+    };
+    var banner = document.createElement('div');
+    banner.id = 'rta-consent';
+    banner.innerHTML = [
+      '<p>', T.body, '</p>',
+      '<div class="rta-btns">',
+      '<button id="rta-reject">', T.reject, '</button>',
+      '<button id="rta-accept">', T.accept, '</button>',
+      '</div>'
+    ].join('');
     document.body.appendChild(banner);
     document.getElementById('rta-accept').addEventListener('click', function() { dismiss('accepted'); });
     document.getElementById('rta-reject').addEventListener('click', function() { dismiss('rejected'); });
-  });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', buildBanner);
+  } else {
+    buildBanner();
+  }
 })();
