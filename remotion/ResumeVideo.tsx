@@ -65,7 +65,7 @@ const SyncedScenes: React.FC<{
       case 'greeting':
         return <Greeting recipientName={props.recipientName || ''} recipientTitle={props.recipientTitle} accent={accent} lang={props.lang} />;
       case 'intro':
-        return <Intro name={props.name} title={props.title} summary="" accent={accent} photoUrl={props.photoUrl} />;
+        return <Intro name={props.name} title={props.title} summary="" accent={accent} photoUrl={props.photoUrl} lang={props.lang} />;
       case 'summary':
         return <Summary summary={props.summary} accent={accent} />;
       case 'highlight':
@@ -115,7 +115,7 @@ const FixedScenes: React.FC<{ props: ResumeVideoProps; accent: string; fps: numb
   return (
     <>
       <Sequence durationInFrames={f.intro} name="Intro">
-        <Intro name={props.name} title={props.title} summary={props.summary} accent={accent} photoUrl={props.photoUrl} />
+        <Intro name={props.name} title={props.title} summary={props.summary} accent={accent} photoUrl={props.photoUrl} lang={props.lang} />
       </Sequence>
       <Sequence from={f.intro} durationInFrames={f.highlights} name="Highlights">
         <Highlights highlights={props.highlights} accent={accent} />

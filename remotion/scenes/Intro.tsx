@@ -8,7 +8,8 @@ export const Intro: React.FC<{
   summary: string;
   accent: string;
   photoUrl?: string;
-}> = ({ name, title, summary, accent, photoUrl }) => {
+  lang?: string;
+}> = ({ name, title, summary, accent, photoUrl, lang }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -57,7 +58,7 @@ export const Intro: React.FC<{
         )}
 
         <div style={{ fontSize: 40, color: theme.subtext, opacity: nameIn, letterSpacing: 1 }}>
-          I&rsquo;m
+          {lang === 'zh' ? '我是' : 'I’m'}
         </div>
         <div
           style={{
