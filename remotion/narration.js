@@ -73,9 +73,17 @@ function hasPiperModule() {
 // Default Piper voice models per gender. lessac (female) was the original single
 // voice; ryan (male) is added so a "male" pick is never silently rendered in the
 // female voice. Both are standard en_US Piper voices; all env-overridable.
-const PIPER_VOICE_FEMALE = process.env.PIPER_VOICE_ID_FEMALE || process.env.PIPER_VOICE_ID || 'en_US-lessac-medium';
-const PIPER_VOICE_MALE   = process.env.PIPER_VOICE_ID_MALE   || 'en_US-ryan-high';
-function piperVoiceIdFor(gender) { return gender === 'male' ? PIPER_VOICE_MALE : PIPER_VOICE_FEMALE; }
+// Chinese narration uses huayan — the one widely-distributed zh_CN Piper voice
+// (female); there is no standard male zh_CN model, so both genders speak it
+// unless PIPER_VOICE_ID_ZH_MALE points at a custom one.
+const PIPER_VOICE_FEMALE  = process.env.PIPER_VOICE_ID_FEMALE || process.env.PIPER_VOICE_ID || 'en_US-lessac-medium';
+const PIPER_VOICE_MALE    = process.env.PIPER_VOICE_ID_MALE   || 'en_US-ryan-high';
+const PIPER_VOICE_ZH      = process.env.PIPER_VOICE_ID_ZH      || 'zh_CN-huayan-medium';
+const PIPER_VOICE_ZH_MALE = process.env.PIPER_VOICE_ID_ZH_MALE || PIPER_VOICE_ZH;
+function piperVoiceIdFor(gender, lang) {
+  if (lang === 'zh') return gender === 'male' ? PIPER_VOICE_ZH_MALE : PIPER_VOICE_ZH;
+  return gender === 'male' ? PIPER_VOICE_MALE : PIPER_VOICE_FEMALE;
+}
 
 // Decide which gender of voice to render locally. An explicit voiceGender wins;
 // otherwise infer it from the catalog key the user picked (e.g. "adam" -> male);
@@ -98,10 +106,11 @@ function piperVoiceDirs() {
 
 // Locate a Piper voice model by id, downloading it once (best-effort) if absent.
 // `PIPER_VOICE` (an explicit file path) still wins as a global override, but only
-// for the female/default request — a male request must not be forced to a single
-// female file, so it falls through to per-gender id resolution.
-function resolvePiperVoice(voiceId, gender) {
-  if (gender !== 'male' && process.env.PIPER_VOICE && fs.existsSync(process.env.PIPER_VOICE)) {
+// for the female/default English request — a male request must not be forced to
+// a single female file, and a Chinese request must not be forced to an English
+// model, so those fall through to per-gender/per-language id resolution.
+function resolvePiperVoice(voiceId, gender, lang) {
+  if (gender !== 'male' && lang !== 'zh' && process.env.PIPER_VOICE && fs.existsSync(process.env.PIPER_VOICE)) {
     return process.env.PIPER_VOICE;
   }
   for (const dir of piperVoiceDirs()) {
@@ -127,8 +136,8 @@ function resolvePiperVoice(voiceId, gender) {
 }
 
 // Build a Piper engine descriptor if a binary + model are available.
-function piperEngine(gender) {
-  const voice = resolvePiperVoice(piperVoiceIdFor(gender), gender);
+function piperEngine(gender, lang) {
+  const voice = resolvePiperVoice(piperVoiceIdFor(gender, lang), gender, lang);
   if (!voice) return null;
   if (process.env.PIPER_BIN) {
     return { name: 'piper', bin: process.env.PIPER_BIN, args: (wav) => ['--model', voice, '--output_file', wav] };
@@ -144,19 +153,25 @@ function piperEngine(gender) {
 
 // Returns { name, bin, args(wavPath) } for the first available engine, or null.
 // `gender` ('male'|'female') selects a matching local voice so the rendered
-// fallback voiceover matches the gender the user picked.
-function pickEngine(gender) {
+// fallback voiceover matches the gender the user picked; `lang` ('en'|'zh')
+// selects a voice that can actually speak the script's language.
+function pickEngine(gender, lang) {
   if (process.env.RESUME_VIDEO_VOICE === 'off') return null;
 
-  const piper = piperEngine(gender);
+  const piper = piperEngine(gender, lang);
   if (piper) return piper;
 
-  // espeak voice variants: en-us+m1..m7 (male) / en-us+f1..f5 (female). A global
-  // ESPEAK_VOICE override still wins for back-compat; otherwise pick per gender.
+  // espeak voice variants: en-us+m1..m7 (male) / en-us+f1..f5 (female); Mandarin
+  // is 'cmn' with the same +m/+f variants. A global ESPEAK_VOICE override still
+  // wins for back-compat; otherwise pick per language + gender.
   const voice = process.env.ESPEAK_VOICE
-    || (gender === 'male'
-        ? (process.env.ESPEAK_VOICE_MALE || 'en-us+m3')
-        : (process.env.ESPEAK_VOICE_FEMALE || 'en-us+f3'));
+    || (lang === 'zh'
+        ? (gender === 'male'
+            ? (process.env.ESPEAK_VOICE_ZH_MALE || 'cmn+m3')
+            : (process.env.ESPEAK_VOICE_ZH || 'cmn+f3'))
+        : (gender === 'male'
+            ? (process.env.ESPEAK_VOICE_MALE || 'en-us+m3')
+            : (process.env.ESPEAK_VOICE_FEMALE || 'en-us+f3')));
   if (onPath('espeak-ng')) {
     return { name: 'espeak-ng', bin: 'espeak-ng', args: (wav) => ['-v', voice, '-s', '165', '-w', wav] };
   }
@@ -193,7 +208,7 @@ function generateNarration(props, opts = {}) {
   const { script, segments } = narrationTimeline(props);
   if (!script) return null;
 
-  const engine = pickEngine(desiredGender(opts));
+  const engine = pickEngine(desiredGender(opts), props && props.lang === 'zh' ? 'zh' : 'en');
   if (!engine) return null;
 
   const wavPath = path.join(os.tmpdir(), `vo-${crypto.randomUUID()}.wav`);

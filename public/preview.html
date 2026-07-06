@@ -169,25 +169,48 @@
       brand: 'ResumeTailored AI',
     };
 
-    // Voiceover script (mirrors remotion/data.js narrationScript).
+    // Voiceover script (mirrors remotion/data.js narrationScript, incl. the
+    // Chinese connectives used when the resume is predominantly Chinese).
     function narrationScript(p) {
+      const zh = p.lang === 'zh';
       const parts = [];
       const sp = (n) => String(n||'').replace(/\bMrs\b\.?/gi,'Missus').replace(/\bMr\b\.?/gi,'Mister').replace(/\bMs\b\.?/gi,'Miz').replace(/\bDr\b\.?/gi,'Doctor').replace(/\bProf\b\.?/gi,'Professor').replace(/\bJr\b\.?/gi,'Junior').replace(/\bSr\b\.?/gi,'Senior').replace(/\bIII\b/g,'the Third').replace(/\bIV\b/g,'the Fourth').replace(/\bII\b/g,'the Second').replace(/\s+/g,' ').trim();
-      if (p.name) parts.push(`Hello. My name is ${sp(p.name)}.`);
+      if (p.name) parts.push(zh ? `您好。我叫${p.name}。` : `Hello. My name is ${sp(p.name)}.`);
       if (p.summary) parts.push(p.summary);
       const hs = (p.highlights || []).slice(0, 3);
-      if (hs.length) parts.push("Here are a few things I'm proud of. " + hs.join('. ') + '.');
+      if (hs.length) parts.push(zh ? '以下是我引以为傲的几项成绩。' + hs.join('。') + '。' : "Here are a few things I'm proud of. " + hs.join('. ') + '.');
       const sk = (p.skills || []).slice(0, 6);
-      if (sk.length) parts.push('My core skills include ' + sk.join(', ') + '.');
+      if (sk.length) parts.push(zh ? `我的核心技能包括${sk.join('、')}。` : 'My core skills include ' + sk.join(', ') + '.');
       // Polite spoken closing line (mirrors the default outro in data.js).
-      parts.push('Thank you for your time, and have a great day.');
+      parts.push(zh ? '感谢您抽出宝贵时间，祝您有美好的一天。' : 'Thank you for your time, and have a great day.');
       return parts.join(' ').replace(/\s+/g, ' ').trim();
     }
 
     // ── Resume parser (mirrors remotion/parseResume.js) ────────────────────────
     const BULLET_RE = /^\s*[•\-*–·▪]\s+/;
     const clean = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+    // Chinese section names normalise onto the English keys (mirrors parseResume.js).
+    const ZH_HEADERS = [
+      [/^(个人简介|个人总结|职业总结|个人概述|简介|概述|自我评价)[:：]?$/, 'SUMMARY'],
+      [/^(工作经历|工作经验|职业经历|项目经历|实习经历)[:：]?$/, 'EXPERIENCE'],
+      [/^(专业技能|核心技能|技能专长|技能)[:：]?$/, 'SKILLS'],
+      [/^(教育背景|教育经历|学历)[:：]?$/, 'EDUCATION'],
+    ];
+    const zhHeaderKey = (line) => {
+      const t = line.trim();
+      if (!t || t.length > 12) return null;
+      for (const [re, key] of ZH_HEADERS) if (re.test(t)) return key;
+      return null;
+    };
+    const CJK_RE = /[一-鿿㐀-䶿]/;
+    const cjkShare = (text) => {
+      const t = String(text || '');
+      const cjk = (t.match(/[一-鿿㐀-䶿]/g) || []).length;
+      const latin = (t.match(/[A-Za-z]/g) || []).length;
+      return cjk + latin === 0 ? 0 : cjk / (cjk + latin);
+    };
     function isHeader(line) {
+      if (zhHeaderKey(line)) return true;
       const t = line.trim();
       if (!t || t.length > 34) return false;
       if (t.replace(/[^A-Za-z]/g, '').length < 3) return false;
@@ -198,14 +221,17 @@
     function pickName(lines) {
       const cands = lines.map((l) => l.trim()).filter(Boolean);
       const ok = (t) => {
-        if (t.length < 3 || t.length > 60) return false;
+        if (t.length > 60) return false;
         if (/[@|]/.test(t)) return false;
         if (/\d{3,}/.test(t)) return false;
+        if (zhHeaderKey(t)) return false;
+        if (CJK_RE.test(t)) return t.replace(/[^一-鿿㐀-䶿A-Za-z·]/g, '').length >= 2;
+        if (t.length < 3) return false;
         if (t.replace(/[^A-Za-z]/g, '').length < 3) return false;
         if (t === t.toUpperCase() && !/\s/.test(t)) return false;
         return true;
       };
-      return clean(cands.find((t) => ok(t) && /\s/.test(t)) || cands.find(ok) || cands[0] || '').slice(0, 60);
+      return clean(cands.find((t) => ok(t) && (/\s/.test(t) || CJK_RE.test(t))) || cands.find(ok) || cands[0] || '').slice(0, 60);
     }
     function parseResume(text) {
       const raw = String(text || '').replace(/\r/g, '').replace(/\*\*/g, '');
@@ -214,7 +240,7 @@
       const sections = { _head: [] };
       let current = '_head';
       for (const line of lines) {
-        if (isHeader(line)) { current = line.trim().toUpperCase(); sections[current] = sections[current] || []; }
+        if (isHeader(line)) { current = zhHeaderKey(line) || line.trim().toUpperCase(); sections[current] = sections[current] || []; }
         else { sections[current].push(line); }
       }
       const findSection = (keys) => {
@@ -229,15 +255,17 @@
       const quant = bullets.filter((b) => /\d/.test(b));
       const rest = bullets.filter((b) => !/\d/.test(b));
       const highlights = [...quant, ...rest].slice(0, 5).map((b) => b.replace(/[.;]+$/, '').slice(0, 130));
-      const skills = clean(findSection(['SKILLS']).join(', ')).split(/[,|•\n]/).map((s) => s.trim()).filter((s) => s.length > 1 && s.length < 40).slice(0, 8);
+      const skills = clean(findSection(['SKILLS']).join(', ')).split(/[,，、|•\n]/).map((s) => s.trim()).filter((s) => s.length > 1 && s.length < 40).slice(0, 8);
+      const lang = cjkShare(raw) > 0.25 ? 'zh' : 'en';
       return {
         name: name || defaultProps.name,
-        title: title || 'Professional',
+        title: title || (lang === 'zh' ? '专业人士' : 'Professional'),
         summary,
         highlights: highlights.length ? highlights : defaultProps.highlights,
         skills: skills.length ? skills : defaultProps.skills,
         accentColor: defaultProps.accentColor,
         brand: defaultProps.brand,
+        lang,
       };
     }
 
@@ -352,7 +380,7 @@
           <${Skills} skills=${props.skills} accent=${accent} />
         <//>
         <${Sequence} from=${f.intro + f.highlights + f.skills} durationInFrames=${f.outro}>
-          <${Outro} text=${'Thank you for your time, and have a great day.'} name=${props.name} accent=${accent} />
+          <${Outro} text=${props.lang === 'zh' ? '感谢您抽出宝贵时间，祝您有美好的一天。' : 'Thank you for your time, and have a great day.'} name=${props.name} accent=${accent} />
         <//>
         <${Watermark} brand=${props.brand} accent=${accent} />
       <//>`;
@@ -429,32 +457,38 @@
 
       const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
-      // Load available English voices and default to the best-sounding one.
+      // Load available voices in the narration language (Chinese resumes get
+      // zh voices) and default to the best-sounding one.
       React.useEffect(() => {
         if (!hasSpeech) return;
+        const wantZh = props.lang === 'zh';
         const pickBest = (list) => {
           const score = (v) => {
             const n = (v.name + ' ' + v.voiceURI).toLowerCase();
             let s = 0;
             if (/natural|neural|enhanced|premium|siri/.test(n)) s += 6;
             if (/google/.test(n)) s += 4;
-            if (/samantha|allison|ava|evan|zoe|jenny|aria|guy|nova/.test(n)) s += 3;
-            if (v.lang && v.lang.toLowerCase() === 'en-us') s += 2;
+            if (/samantha|allison|ava|evan|zoe|jenny|aria|guy|nova|tingting|meijia|sinji|yaoyao|huihui/.test(n)) s += 3;
+            if (v.lang && v.lang.toLowerCase() === (wantZh ? 'zh-cn' : 'en-us')) s += 2;
             if (!v.localService) s += 1;
             return s;
           };
           return list.slice().sort((a, b) => score(b) - score(a))[0];
         };
         const load = () => {
-          const all = window.speechSynthesis.getVoices().filter((v) => /^en[-_]?/i.test(v.lang || ''));
+          const re = wantZh ? /^zh/i : /^en[-_]?/i;
+          let all = window.speechSynthesis.getVoices().filter((v) => re.test(v.lang || ''));
+          // No matching voice installed (e.g. no zh voice on this device) —
+          // fall back to every voice rather than an empty picker.
+          if (!all.length) all = window.speechSynthesis.getVoices();
           if (!all.length) return;
           setVoices(all);
-          setVoiceURI((prev) => prev || (pickBest(all) || {}).voiceURI || '');
+          setVoiceURI((prev) => (all.some((v) => v.voiceURI === prev) ? prev : (pickBest(all) || {}).voiceURI || ''));
         };
         load();
         window.speechSynthesis.addEventListener('voiceschanged', load);
         return () => window.speechSynthesis.removeEventListener('voiceschanged', load);
-      }, [hasSpeech]);
+      }, [hasSpeech, props.lang]);
 
       // Load ElevenLabs voices whenever a key is present.
       React.useEffect(() => {
@@ -477,7 +511,7 @@
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(narrationScript(props));
         const v = window.speechSynthesis.getVoices().find((x) => x.voiceURI === voiceURI);
-        if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = 'en-US'; }
+        if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = props.lang === 'zh' ? 'zh-CN' : 'en-US'; }
         u.rate = 1.0;
         u.pitch = 1.0;
         window.speechSynthesis.speak(u);

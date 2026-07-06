@@ -30,6 +30,10 @@ export type ResumeVideoProps = {
   // Optional closing line the candidate speaks at the end (preset key or custom
   // text). Resolved to the spoken/shown text in data.js (outroText).
   outro?: string;
+  // Narration/display language. 'zh' switches the spoken connective phrases,
+  // outro presets, and on-screen greeting to Chinese (auto-detected from the
+  // resume text by parseResume). Defaults to English.
+  lang?: 'en' | 'zh';
 };
 
 export type NarrationSegment = {
