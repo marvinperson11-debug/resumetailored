@@ -63,7 +63,7 @@ const SyncedScenes: React.FC<{
   const sceneFor = (seg: NarrationSegment) => {
     switch (seg.kind) {
       case 'greeting':
-        return <Greeting recipientName={props.recipientName || ''} recipientTitle={props.recipientTitle} accent={accent} />;
+        return <Greeting recipientName={props.recipientName || ''} recipientTitle={props.recipientTitle} accent={accent} lang={props.lang} />;
       case 'intro':
         return <Intro name={props.name} title={props.title} summary="" accent={accent} photoUrl={props.photoUrl} />;
       case 'summary':
@@ -128,7 +128,7 @@ const FixedScenes: React.FC<{ props: ResumeVideoProps; accent: string; fps: numb
         durationInFrames={outroDuration}
         name="Outro"
       >
-        <Outro text={outroText(props.outro)} name={props.name} accent={accent} />
+        <Outro text={outroText(props.outro, props.lang)} name={props.name} accent={accent} />
       </Sequence>
     </>
   );

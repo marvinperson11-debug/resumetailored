@@ -98,19 +98,26 @@ function speakable(s) {
 // nothing is chosen. Single source of truth — the front-end fetches the labels
 // from /api/video-outros so the picker can't drift from what is spoken.
 const OUTRO_PRESETS = {
-  default:     { label: 'Thank you & have a great day (default)',          text: 'Thank you for your time, and have a great day.' },
-  considering: { label: 'Thrilled to bring my experience to your team',    text: 'Thank you for considering my application. I would be thrilled to bring my experience to your team, and I look forward to the possibility of discussing this further.' },
-  excited:     { label: 'Excited about the role — looking forward',         text: 'I am very excited about this role, and I am confident my background is a great fit. I look forward to hearing from you to discuss the next steps.' },
-  reviewing:   { label: 'Thanks for reviewing — hope to hear soon',         text: 'Thank you for your time, and for reviewing my video. I hope to hear from you soon regarding an interview.' },
-  contribute:  { label: 'Eager to contribute — thank you for considering',  text: 'I am eager to contribute to the success of your team, and I believe my skills align perfectly with your goals. Thank you for your consideration.' },
+  default:     { label: 'Thank you & have a great day (default)',          text: 'Thank you for your time, and have a great day.',
+                 textZh: '感谢您抽出宝贵时间，祝您有美好的一天。' },
+  considering: { label: 'Thrilled to bring my experience to your team',    text: 'Thank you for considering my application. I would be thrilled to bring my experience to your team, and I look forward to the possibility of discussing this further.',
+                 textZh: '感谢您考虑我的申请。我非常期待能将我的经验带到您的团队，并希望有机会进一步交流。' },
+  excited:     { label: 'Excited about the role — looking forward',         text: 'I am very excited about this role, and I am confident my background is a great fit. I look forward to hearing from you to discuss the next steps.',
+                 textZh: '我对这个职位充满热情，并且相信我的背景与之高度契合。期待您的回复，进一步商讨后续安排。' },
+  reviewing:   { label: 'Thanks for reviewing — hope to hear soon',         text: 'Thank you for your time, and for reviewing my video. I hope to hear from you soon regarding an interview.',
+                 textZh: '感谢您抽时间观看我的视频。期待很快能收到您的面试邀请。' },
+  contribute:  { label: 'Eager to contribute — thank you for considering',  text: 'I am eager to contribute to the success of your team, and I believe my skills align perfectly with your goals. Thank you for your consideration.',
+                 textZh: '我渴望为您团队的成功贡献力量，相信我的技能与贵司的目标高度一致。感谢您的考虑。' },
 };
 
-// Resolve the spoken/shown outro text. A known preset key wins; otherwise any
-// non-empty custom string is used (trimmed and capped); otherwise the default.
-function outroText(outro) {
+// Resolve the spoken/shown outro text. A known preset key wins (in the video's
+// language); otherwise any non-empty custom string is used (trimmed and
+// capped); otherwise the default.
+function outroText(outro, lang) {
+  const zh = lang === 'zh';
   const raw = String(outro == null ? '' : outro).replace(/\s+/g, ' ').trim();
-  if (!raw) return OUTRO_PRESETS.default.text;
-  if (OUTRO_PRESETS[raw]) return OUTRO_PRESETS[raw].text;
+  if (!raw) return zh ? OUTRO_PRESETS.default.textZh : OUTRO_PRESETS.default.text;
+  if (OUTRO_PRESETS[raw]) return zh ? OUTRO_PRESETS[raw].textZh : OUTRO_PRESETS[raw].text;
   return raw.slice(0, 400);
 }
 
@@ -121,24 +128,41 @@ function outroOptions() {
 
 function narrationSegments(props) {
   const p = props || {};
+  const zh = p.lang === 'zh';
   const segs = [];
   // Optionally address the recipient first (e.g. "Hi Mr. Smith, Hiring Manager.").
   const rcpt = String(p.recipientName || '').trim();
   const rcptTitle = String(p.recipientTitle || '').trim();
-  if (rcpt) segs.push({ kind: 'greeting', text: `Hi ${speakable(rcpt)}${rcptTitle ? ', ' + speakable(rcptTitle) : ''}.` });
+  if (rcpt) {
+    segs.push({ kind: 'greeting', text: zh
+      ? `您好，${rcpt}${rcptTitle ? '，' + rcptTitle : ''}。`
+      : `Hi ${speakable(rcpt)}${rcptTitle ? ', ' + speakable(rcptTitle) : ''}.` });
+  }
   // Candidate introduces themselves (no title — the focus is name + story).
-  if (p.name) segs.push({ kind: 'intro', text: `${rcpt ? '' : 'Hello. '}My name is ${speakable(p.name)}.` });
+  if (p.name) {
+    segs.push({ kind: 'intro', text: zh
+      ? `${rcpt ? '' : '您好。'}我叫${p.name}。`
+      : `${rcpt ? '' : 'Hello. '}My name is ${speakable(p.name)}.` });
+  }
   if (p.summary) segs.push({ kind: 'summary', text: String(p.summary).replace(/\s+/g, ' ').trim() });
   const hs = (p.highlights || []).slice(0, 3);
   hs.forEach((h, i) => {
     const t = String(h).replace(/\s+/g, ' ').trim();
-    if (t) segs.push({ kind: 'highlight', index: i, text: `${i === 0 ? 'Here are a few things I’m proud of. ' : ''}${t}.` });
+    if (t) {
+      segs.push({ kind: 'highlight', index: i, text: zh
+        ? `${i === 0 ? '以下是我引以为傲的几项成绩。' : ''}${t}。`
+        : `${i === 0 ? 'Here are a few things I’m proud of. ' : ''}${t}.` });
+    }
   });
   const skills = (p.skills || []).slice(0, 6);
-  if (skills.length) segs.push({ kind: 'skills', text: `My core skills include ${skills.join(', ')}.` });
+  if (skills.length) {
+    segs.push({ kind: 'skills', text: zh
+      ? `我的核心技能包括${skills.join('、')}。`
+      : `My core skills include ${skills.join(', ')}.` });
+  }
   // The candidate's spoken closing line (chosen preset or custom; defaults to a
   // polite thank-you). The brand stays silent in the small corner watermark.
-  segs.push({ kind: 'outro', text: outroText(p.outro) });
+  segs.push({ kind: 'outro', text: outroText(p.outro, p.lang) });
   return segs;
 }
 

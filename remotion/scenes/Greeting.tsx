@@ -8,7 +8,8 @@ export const Greeting: React.FC<{
   recipientName: string;
   recipientTitle?: string;
   accent: string;
-}> = ({ recipientName, recipientTitle, accent }) => {
+  lang?: string;
+}> = ({ recipientName, recipientTitle, accent, lang }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const hiIn = spring({ frame, fps, config: { damping: 200 } });
@@ -19,7 +20,7 @@ export const Greeting: React.FC<{
   return (
     <AbsoluteFill style={{ justifyContent: 'center', alignItems: 'center', padding: 90, flexDirection: 'column' }}>
       <div style={{ transform: `translateY(${float}px)`, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <div style={{ fontSize: 56, color: theme.subtext, opacity: hiIn, letterSpacing: 1 }}>Hi</div>
+        <div style={{ fontSize: 56, color: theme.subtext, opacity: hiIn, letterSpacing: 1 }}>{lang === 'zh' ? '您好' : 'Hi'}</div>
         <div
           style={{
             fontSize: 100,
