@@ -5177,9 +5177,13 @@ Aaliyah Washington`
     checkAuth();
     // Init template picker after DOM is ready (template functions are hoisted)
     setTimeout(renderTplPicker, 0);
-    // Apply saved language preference
+    // Apply language preference. An explicit ?lang= in the URL wins and is
+    // persisted — this is how the /zh/ landing pages hand a Chinese visitor
+    // into a Chinese dashboard instead of dropping them back to English.
     (function() {
-      const saved = localStorage.getItem('rt_lang') || 'en';
+      const urlLang = new URLSearchParams(window.location.search).get('lang');
+      const saved = (urlLang === 'zh' || urlLang === 'en') ? urlLang : (localStorage.getItem('rt_lang') || 'en');
+      if (urlLang === 'zh' || urlLang === 'en') localStorage.setItem('rt_lang', urlLang);
       if (saved !== 'en') applyLangApp(saved);
     })();
   </script>

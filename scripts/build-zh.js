@@ -87,6 +87,13 @@ const ZH = {
   html = html.replace(/(<link rel="icon" href=")favicon\.svg/, '$1/favicon.svg')
              .replace(/(<link rel="icon" href=")favicon-32\.png/, '$1/favicon-32.png')
              .replace(/(<link rel="apple-touch-icon" href=")apple-touch-icon\.png/, '$1/apple-touch-icon.png');
+  // Dashboard CTAs carry the language into the app (?lang=zh), so a Chinese
+  // visitor lands in a Chinese dashboard instead of the English default.
+  html = html.replace(/href="\/dashboard"/g, 'href="/dashboard?lang=zh"');
+  // Crawlable links to the Chinese-only pages (landing page + guide), injected
+  // above the footer copyright so they're both visible and indexable.
+  const ZH_LINKS = `<p style="margin:0 0 10px;"><a href="/zh/english-resume" style="color:#818CF8;font-weight:600;margin:0 10px;">英文简历生成器</a>·<a href="/zh/blog/english-resume-guide" style="color:#818CF8;font-weight:600;margin:0 10px;">英文简历怎么写</a></p>`;
+  rep(/(© 2026 ResumeTailored AI. 保留所有权利。)/, ZH_LINKS + '$1', 'zh footer links');
   // Language switch = real URL navigation back to the English page (SEO-correct).
   html = html.replace(/<\/body>/, `<script>function toggleLang(){window.location.href='/';}</script>\n</body>`);
 

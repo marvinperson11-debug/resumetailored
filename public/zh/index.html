@@ -786,8 +786,8 @@
       <a href="#pricing" data-i18n="nav_pricing">定价</a>
     </div>
     <div class="nav-actions">
-      <a href="/dashboard" class="btn btn-ghost" data-i18n="nav_login">登录</a>
-      <a href="/dashboard" class="btn btn-primary" data-i18n="nav_cta">免费定制我的简历 →</a>
+      <a href="/dashboard?lang=zh" class="btn btn-ghost" data-i18n="nav_login">登录</a>
+      <a href="/dashboard?lang=zh" class="btn btn-primary" data-i18n="nav_cta">免费定制我的简历 →</a>
     </div>
     <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">EN</button>
     <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.add('open')" aria-label="Open menu">
@@ -805,8 +805,8 @@
   <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_features">功能特性</a>
   <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_templates">简历模板</a>
   <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_pricing">定价</a>
-  <a href="/dashboard" class="btn btn-ghost btn-lg" style="border-color:#2563eb;color:#2563eb;" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_login">登录</a>
-  <a href="/dashboard" class="btn btn-primary btn-lg" data-i18n="mobile_cta">免费定制我的简历 →</a>
+  <a href="/dashboard?lang=zh" class="btn btn-ghost btn-lg" style="border-color:#2563eb;color:#2563eb;" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_login">登录</a>
+  <a href="/dashboard?lang=zh" class="btn btn-primary btn-lg" data-i18n="mobile_cta">免费定制我的简历 →</a>
 </div>
 
 <!-- HERO -->
@@ -818,7 +818,7 @@
     <p class="hero-sub">粘贴简历和职位描述，AI将用精准关键词重写你的简历，并在30秒内生成有力的求职信。</p>
     <div class="hero-cta">
       <div class="hero-cta-row">
-        <a href="/dashboard" class="btn btn-primary btn-lg">免费定制我的简历 →</a>
+        <a href="/dashboard?lang=zh" class="btn btn-primary btn-lg">免费定制我的简历 →</a>
         <a href="/how-it-works" class="btn btn-ghost btn-lg">了解工作原理</a>
       </div>
       <span class="hero-note">每日1次免费定制 · 无需付款</span>
@@ -1984,7 +1984,7 @@
   <div class="container">
     <h2>今天开始获得更多面试机会</h2>
     <p>加入数千名已使用AI定制简历的求职者。免费版可用——无需信用卡。</p>
-    <a href="/dashboard" class="btn btn-white btn-lg">免费定制我的简历 →</a>
+    <a href="/dashboard?lang=zh" class="btn btn-white btn-lg">免费定制我的简历 →</a>
   </div>
 </section>
 
@@ -2144,7 +2144,7 @@
           <li><span class="cross-icon">✗</span> <span style="color:#9ca3af;">职业发展中心</span></li>
           <li><span class="cross-icon">✗</span> <span style="color:#9ca3af;">全部104个模板</span></li>
         </ul>
-        <a href="/dashboard" class="btn btn-ghost btn-full btn-shine">免费开始</a>
+        <a href="/dashboard?lang=zh" class="btn btn-ghost btn-full btn-shine">免费开始</a>
       </div>
       <div class="pricing-card pricing-card-featured reveal">
         <div class="plan-badge">✦ 最受欢迎</div>
@@ -2235,7 +2235,7 @@
         <a href="/ai-cover-letter-generator">求职信AI</a>
         <a href="/free-ats-resume-checker">ATS检查器</a>
         <a href="/cancel.html">随时取消</a>
-        <a href="/dashboard" data-i18n="footer_dashboard">控制台</a>
+        <a href="/dashboard?lang=zh" data-i18n="footer_dashboard">控制台</a>
         <a href="#" onclick="event.preventDefault();openContactModal()" data-i18n="footer_contact">联系我们</a>
         <a href="/privacy">Privacy Policy</a>
         <a href="/terms">Terms of Service</a>
@@ -2261,7 +2261,7 @@
       </div>
       <button onclick="toggleLang()" id="langToggleBtnFooter" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;color:#9ca3af;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'" title="Switch language / 切换语言">EN / 中文</button>
     </div>
-    <span class="footer-copy" data-i18n="footer_copy">© 2025 ResumeTailored AI. 保留所有权利。</span>
+    <span class="footer-copy" data-i18n="footer_copy"><p style="margin:0 0 10px;"><a href="/zh/english-resume" style="color:#818CF8;font-weight:600;margin:0 10px;">英文简历生成器</a>·<a href="/zh/blog/english-resume-guide" style="color:#818CF8;font-weight:600;margin:0 10px;">英文简历怎么写</a></p>© 2026 ResumeTailored AI. 保留所有权利。</span>
   </div>
 <!-- Free Tools CTA Banner -->
 <div style="background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12));border-top:1px solid rgba(99,102,241,0.3);padding:28px 24px;text-align:center;">
@@ -2598,7 +2598,7 @@
       label_manual: '手动', label_with_ai: 'AI辅助',
       footer_dashboard: '控制台', footer_contact: '联系我们',
       footer_payments: '支持的支付方式', footer_pay_note: '国际信用卡 · 支付宝 · 微信支付',
-      footer_copy: '© 2025 ResumeTailored AI. 保留所有权利。',
+      footer_copy: '© 2026 ResumeTailored AI. 保留所有权利。',
       promo_eyebrow: '100% 免费 · 无需账户',
       promo_title: '你的简历<span style="background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">通过ATS了吗？</span>',
       promo_desc: '粘贴您的简历和职位描述。Claude AI 分析关键词匹配度，标记缺失项，并给出5个具体改进建议——几秒内完成。无需登录，无需信用卡。',
