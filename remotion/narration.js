@@ -303,13 +303,17 @@ async function elevenNarration(props, opts = {}) {
   // times to drive the reveal sync. mp3 works on every ElevenLabs tier.
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=mp3_44100_128`;
   const vs = {
-    // Lower stability + more style = warmer, more expressive and less monotone
-    // (the "robotic" feel comes from flat, over-stable delivery); higher
-    // similarity hews closer to the real human recording; speed < 1 relaxes the
-    // pace. All env-tunable so the voice can be dialled in without a code change.
-    stability: clampNum(process.env.ELEVENLABS_STABILITY, 0.3, 0, 1),
+    // Balanced for natural-but-RELIABLE delivery. The previous tuning
+    // (stability 0.3 + style 0.55) was warmer but caused audible artifacts —
+    // stuttered/garbled syllables and warble — on longer scripts: low
+    // stability lets the model drift and style exaggeration amplifies it.
+    // 0.5/0.3 keeps expressiveness inside the artifact-free zone; higher
+    // similarity hews closer to the real human recording; speed < 1 relaxes
+    // the pace. All env-tunable so the voice can be dialled in without a
+    // code change (ELEVENLABS_STABILITY / _SIMILARITY / _STYLE / _SPEED).
+    stability: clampNum(process.env.ELEVENLABS_STABILITY, 0.5, 0, 1),
     similarity_boost: clampNum(process.env.ELEVENLABS_SIMILARITY, 0.85, 0, 1),
-    style: clampNum(process.env.ELEVENLABS_STYLE, 0.55, 0, 1),
+    style: clampNum(process.env.ELEVENLABS_STYLE, 0.3, 0, 1),
     use_speaker_boost: true,
     // A subscriber-chosen pace (opts.speed) wins over the env default. 1.0 is
     // natural; lower is slower/calmer, higher is faster. Clamped to a safe range.
