@@ -8,6 +8,7 @@
 - The free tier includes the full AI resume rewrite and a cover letter, not just a keyword score.
 - Imports job descriptions automatically from a LinkedIn, Indeed, Glassdoor, or 40+ job-board URL.
 - Bilingual: full English/Chinese interface plus AI translation of non-English resumes.
+- Export as Word (.docx) or PDF, or share as a private web link that opens instantly in the browser — great for sending on LinkedIn with no attachment to download.
 - Never fabricates experience — it only rewrites and reframes what you already have.
 
 ## Pricing

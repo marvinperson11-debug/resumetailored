@@ -116,6 +116,7 @@ To switch from Stripe test mode to live mode: replace all three Stripe env vars 
 - **Free Tier**: 1 completely free, full resume tailoring + cover letter per day — no credit card, no time limit, forever
 - **Job URL Import**: Paste any LinkedIn, Indeed, Glassdoor, or 40+ job board URL — AI auto-extracts the full job description (no competitor offers this)
 - **Bilingual**: Full English/Chinese UI + AI-powered translation for non-English resumes (unique in market)
+- **Share as Link**: Turn any tailored resume into a private, unlisted web link (`/r/:slug`) that opens instantly in the browser — great for sending on LinkedIn or by email with no attachment/download
 - **Pricing**: $19/mo (35% cheaper than Teal $29 and Jobscan ~$30) | $129 lifetime deal (vs Rezi $149)
 
 ### Competitor Intelligence
