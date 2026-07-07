@@ -4590,7 +4590,8 @@ Aaliyah Washington`
             sigName: sigName || null, sigFont: sigFont || null, pageSize: selectedPageSize,
             mode: selectedMode, docFont: selectedDocFont,
             primary: tplMeta(primaryTpl), cover: tplMeta(cTpl),
-            meta: window.lastCoverMeta || null
+            meta: window.lastCoverMeta || null,
+            photoUrl: videoPhotoDataUrl || undefined
           })
         });
         if (!res.ok) {

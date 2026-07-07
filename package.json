@@ -22,6 +22,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
+    "jimp": "^1.6.1",
     "mammoth": "^1.8.0",
     "motion": "^12.40.0",
     "multer": "^2.2.0",
