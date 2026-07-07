@@ -4890,9 +4890,75 @@ Aaliyah Washington`
       if (!isSubscriberFlag) { showTab('video'); startPro(); return; }
       const resumeText = (lastRawResult || '').trim();
       if (!resumeText) { showToast('Tailor a resume first, then make its video.'); return; }
+      // Let the user address the video to a person/team first, then render.
+      openVideoRecipientModal(resumeText);
+    }
+
+    // ── Resume Video recipient chooser ─────────────────────────────────────────
+    // Preset roles the "Dear …" dropdown maps to (name-only greetings).
+    const _VIDEO_RECIPIENT_PRESETS = ['Hiring Manager', 'Recruiter', 'Hiring Team', 'Talent Acquisition Team', 'Hiring Committee'];
+    let _videoRecipientResumeText = '';
+    function openVideoRecipientModal(resumeText) {
+      _videoRecipientResumeText = resumeText;
+      // Prefill from anything already set in the Video tab so the choice persists.
+      const existingName = ((document.getElementById('videoRecipientName') || {}).value || '').trim();
+      const existingTitle = ((document.getElementById('videoRecipientTitle') || {}).value || '').trim();
+      const preset = document.getElementById('videoRecipientPreset');
+      const nameModal = document.getElementById('videoRecipientNameModal');
+      const titleModal = document.getElementById('videoRecipientTitleModal');
+      if (existingName && _VIDEO_RECIPIENT_PRESETS.includes(existingName) && !existingTitle) {
+        preset.value = existingName;
+        nameModal.value = ''; titleModal.value = '';
+      } else if (existingName) {
+        preset.value = '__custom__';
+        nameModal.value = existingName; titleModal.value = existingTitle;
+      } else {
+        preset.value = '';
+        nameModal.value = ''; titleModal.value = '';
+      }
+      onVideoRecipientPresetChange();
+      document.getElementById('videoRecipientModal').style.display = 'flex';
+    }
+    function closeVideoRecipientModal() {
+      const m = document.getElementById('videoRecipientModal'); if (m) m.style.display = 'none';
+    }
+    function onVideoRecipientPresetChange() {
+      const preset = document.getElementById('videoRecipientPreset').value;
+      document.getElementById('videoRecipientCustom').style.display = preset === '__custom__' ? 'block' : 'none';
+      _updateVideoRecipientPreview();
+    }
+    function _resolveVideoRecipient() {
+      const preset = document.getElementById('videoRecipientPreset').value;
+      if (preset === '__custom__') {
+        return {
+          name: ((document.getElementById('videoRecipientNameModal') || {}).value || '').trim(),
+          title: ((document.getElementById('videoRecipientTitleModal') || {}).value || '').trim(),
+        };
+      }
+      if (preset) return { name: preset, title: '' };
+      return { name: '', title: '' };
+    }
+    function _updateVideoRecipientPreview() {
+      const { name, title } = _resolveVideoRecipient();
+      const line = document.getElementById('videoRecipientPreviewLine');
+      if (!line) return;
+      if (!name) { line.style.display = 'none'; return; }
+      line.style.display = 'block';
+      line.textContent = `🔊 Your video will open: “Hi ${name}${title ? ', ' + title : ''}…”`;
+    }
+    function confirmVideoRecipient() {
+      const { name, title } = _resolveVideoRecipient();
+      // Sync the choice into the Video tab fields so renderServerVideo picks it up
+      // and the user can see/tweak it there afterwards.
+      const nEl = document.getElementById('videoRecipientName');
+      const tEl = document.getElementById('videoRecipientTitle');
+      if (nEl) nEl.value = name;
+      if (tEl) tEl.value = title;
+      closeVideoRecipientModal();
       showTab('video');
-      const ta = document.getElementById('videoResume'); if (ta && !ta.value.trim()) ta.value = resumeText;
-      renderServerVideo(resumeText);
+      const ta = document.getElementById('videoResume');
+      if (ta && !ta.value.trim()) ta.value = _videoRecipientResumeText;
+      renderServerVideo(_videoRecipientResumeText);
     }
 
     // Optional candidate photo for the video intro — center-cropped + downscaled
@@ -5257,16 +5323,59 @@ Aaliyah Washington`
         <input id="shareLinkBox" readonly value="" style="flex:1;min-width:0;font-size:13px;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;color:#111827;background:#f9fafb;font-family:inherit;" />
         <button onclick="copyShareLink()" class="btn btn-primary" style="font-size:13px;padding:10px 16px;white-space:nowrap;">Copy</button>
       </div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;margin-bottom:16px;cursor:pointer;">
-        <input type="checkbox" onchange="toggleShareContact(this)" style="width:15px;height:15px;cursor:pointer;" />
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;margin-bottom:14px;cursor:pointer;">
+        <input type="checkbox" id="shareHideContact" onchange="refreshShareLink()" style="width:15px;height:15px;cursor:pointer;" />
         Hide my phone &amp; address on the shared page
       </label>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+        <label class="input-label" for="shareExpiry" style="margin:0;font-size:13px;color:#374151;white-space:nowrap;">Link expires</label>
+        <select id="shareExpiry" class="text-input" style="flex:1;min-width:150px;font-size:13px;padding:8px 10px;" onchange="refreshShareLink()">
+          <option value="0">Never (default)</option>
+          <option value="1">After 24 hours</option>
+          <option value="7">After 7 days</option>
+          <option value="30">After 30 days</option>
+          <option value="90">After 90 days</option>
+        </select>
+      </div>
+      <div id="shareExpiryNote" style="font-size:12px;color:#6b7280;margin-bottom:14px;">This link never expires — it works until you delete it.</div>
       <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:11px 14px;font-size:12px;color:#0369a1;margin-bottom:18px;line-height:1.5;">
         🔒 The link is private and unlisted — only people you send it to can open it, and it won't appear in Google. It's a snapshot: re-tailoring later won't change this link.
       </div>
       <div style="display:flex;gap:10px;">
         <button onclick="openShareLink()" class="btn btn-outline" style="flex:1;font-size:13px;padding:10px;">Open link ↗</button>
         <button onclick="closeShareModal()" class="btn btn-primary" style="flex:1;font-size:13px;padding:10px;">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Resume Video Recipient Modal ── -->
+  <!-- Pops up when the "🎬 Resume Video" download button is clicked so the user can
+       address the video to a person or team before it renders. Writes its choice
+       into the #videoRecipient* fields in the Video tab, then kicks off the render. -->
+  <div id="videoRecipientModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeVideoRecipientModal()">
+    <div style="background:#fff;border-radius:20px;padding:28px 26px;max-width:460px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-size:22px;">🎬</span><h2 style="font-size:19px;font-weight:800;color:#111827;">Who's this video for?</h2></div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">Open your video by addressing the person or team you're sending it to — a personal touch that shows it was made just for them.</p>
+      <label class="input-label" for="videoRecipientPreset" style="display:block;margin-bottom:6px;">Greeting</label>
+      <select id="videoRecipientPreset" class="text-input" style="width:100%;margin-bottom:14px;" onchange="onVideoRecipientPresetChange()">
+        <option value="">No greeting — jump straight to my intro</option>
+        <option value="Hiring Manager">Dear Hiring Manager</option>
+        <option value="Recruiter">Dear Recruiter</option>
+        <option value="Hiring Team">Dear Hiring Team</option>
+        <option value="Talent Acquisition Team">Dear Talent Acquisition Team</option>
+        <option value="Hiring Committee">Dear Hiring Committee</option>
+        <option value="__custom__">Address someone by name…</option>
+      </select>
+      <div id="videoRecipientCustom" style="display:none;margin-bottom:14px;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <input type="text" id="videoRecipientNameModal" class="text-input" style="flex:1;min-width:150px;" placeholder="Name — e.g. Mr. Smith" oninput="_updateVideoRecipientPreview()" />
+          <input type="text" id="videoRecipientTitleModal" class="text-input" style="flex:1;min-width:150px;" placeholder="Title (optional) — e.g. Hiring Manager" oninput="_updateVideoRecipientPreview()" />
+        </div>
+      </div>
+      <div id="videoRecipientPreviewLine" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:11px 14px;font-size:12.5px;color:#0369a1;margin-bottom:18px;line-height:1.5;display:none;"></div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="closeVideoRecipientModal()" class="btn btn-outline" style="flex:1;font-size:13px;padding:11px;">Cancel</button>
+        <button onclick="confirmVideoRecipient()" class="btn btn-primary" style="flex:1.4;font-size:13px;padding:11px;white-space:nowrap;">🎬 Generate video →</button>
       </div>
     </div>
   </div>
@@ -5347,7 +5456,17 @@ Aaliyah Washington`
 
     // ── Share resume as a public link ─────────────────────────────────────────
     let _lastShareUrl = '';
-    async function shareResumeLink(hideContact) {
+    // Entry point from the "Share as Link" buttons — reset the modal controls to
+    // their defaults (show contact, never expire), then create a fresh link.
+    async function shareResumeLink() {
+      const cb = document.getElementById('shareHideContact'); if (cb) cb.checked = false;
+      const exp = document.getElementById('shareExpiry'); if (exp) exp.value = '0';
+      return _createShareLink();
+    }
+    // Re-create the link with whatever the modal controls currently say (called when
+    // the hide-contact checkbox or the expiry dropdown changes).
+    function refreshShareLink() { return _createShareLink(); }
+    async function _createShareLink() {
       let text = getOutputText();
       if (!text) { showToast('Nothing to share yet — tailor a resume first.'); return; }
       if (sigName && text.endsWith(sigName)) text = text.slice(0, text.length - sigName.length).trimEnd();
@@ -5355,6 +5474,8 @@ Aaliyah Washington`
       if (selectedMode === 'both') text = (text.split(/\n\n-{3,}\n\n/)[0] || text).trim();
       const rTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
       const name = (document.getElementById('outputTitle').textContent || '').replace(/resume/i, '').trim();
+      const hideContact = !!((document.getElementById('shareHideContact') || {}).checked);
+      const expiresDays = Number((document.getElementById('shareExpiry') || {}).value || 0) || 0;
       const modal = document.getElementById('shareModal');
       const linkBox = document.getElementById('shareLinkBox');
       if (modal) modal.style.display = 'flex';
@@ -5367,17 +5488,26 @@ Aaliyah Washington`
             colors: { primary: rTpl.c.p, accent: rTpl.c.a },
             serif: !!rTpl.serif,
             photoUrl: (window.rtResumePhoto || undefined),
-            hideContact: !!hideContact
+            hideContact,
+            expiresDays
           })
         });
         const d = await res.json();
         if (!res.ok || !d.url) throw new Error(d.error || 'Could not create link.');
         _lastShareUrl = d.url;
         if (linkBox) linkBox.value = d.url;
+        _updateShareExpiryNote(d.expiresAt);
       } catch (err) {
         if (linkBox) linkBox.value = '';
         showToast('Could not create share link: ' + (err && err.message ? err.message : 'try again'), 5000);
       }
+    }
+    function _updateShareExpiryNote(expiresAt) {
+      const el = document.getElementById('shareExpiryNote');
+      if (!el) return;
+      if (!expiresAt) { el.textContent = 'This link never expires — it works until you delete it.'; return; }
+      const dt = new Date(expiresAt);
+      el.textContent = '⏱ This link stops working on ' + dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) + '.';
     }
     function copyShareLink() {
       const box = document.getElementById('shareLinkBox');
@@ -5386,7 +5516,7 @@ Aaliyah Washington`
       navigator.clipboard?.writeText(box.value).then(() => showToast('Link copied!'))
         .catch(() => { document.execCommand('copy'); showToast('Link copied!'); });
     }
-    function toggleShareContact(cb) { shareResumeLink(cb.checked); }
+    function toggleShareContact(cb) { refreshShareLink(); }
     function closeShareModal() { const m = document.getElementById('shareModal'); if (m) m.style.display = 'none'; }
     function openShareLink() { if (_lastShareUrl) window.open(_lastShareUrl, '_blank', 'noopener'); }
 
@@ -5425,8 +5555,13 @@ Aaliyah Washington`
         const raw = lastRawResult || outputBox.innerText;
         const noPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
         const pagePad = noPagePad ? '0' : '0 1in 0 1in';
-        // All cover templates embed the signature inside the body content (no sigBlock for covers)
-        const _embedSig = selectedMode === 'cover_letter' ? _prevSig : '';
+        // Embed the signature inside the body content for BOTH resumes and cover
+        // letters, exactly like the PDF export path does. Resumes previously used an
+        // absolutely-positioned sig block whose top was derived from the main
+        // column's scrollHeight — unreliable for the table-cell layouts (sidebar /
+        // two-column), which made the signature float over the body text. Letting it
+        // flow after the last section (inside the right column) matches the export.
+        const _embedSig = _prevSig;
         const printHtml = renderAIOutput(raw, tplId, selectedMode, true, _embedSig);
         contentHtml = `<div style="padding:${pagePad};box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${printHtml}</div>`;
       }
@@ -5442,10 +5577,6 @@ Aaliyah Washington`
       measure.innerHTML = contentHtml;
       document.body.appendChild(measure);
       const rawContentH = measure.scrollHeight;
-      // For two-column layouts (sidebar, two-col) the table height = max(left, right).
-      // The sig should appear after the RIGHT column ends, not after the taller left column.
-      const _mainColEl = measure.querySelector('[data-rt-main-col]');
-      const mainColH = _mainColEl ? _mainColEl.scrollHeight : null;
       document.body.removeChild(measure);
 
       const PAGE_H = 1056;         // 11in × 96dpi
@@ -5468,21 +5599,10 @@ Aaliyah Washington`
 
       const isBothMode = selectedMode === 'both' && lastRawCoverResult;
       const totalPages = numPages;
-      // For non-both mode: absolutely position the sig below the last page's actual content.
-      // CSS page-break-inside:avoid has no effect on JS-based pagination, so we handle
-      // sig placement here in screen-space coordinates rather than relying on the renderer grouping.
-      let sigBlock = '';
-      if (!isBothMode && sigName && selectedMode !== 'cover_letter') {
-        const _sigNoPagePad = ['rSidebar','rModern','rTwoCol','rBanner','cModern','cSplit','cBold'].includes(tpl.layout);
-        const _sigPad = _sigNoPagePad ? '0' : '0 1in';
-        const _sigInner = renderSignatureHtml(tpl.c.p, _sigPrintIndent(tpl.layout), true);
-        // For two-column templates, position sig after the right column ends on the last page,
-        // not after the full table height (which is determined by whichever column is taller).
-        const _refH = mainColH !== null ? mainColH : rawContentH;
-        const _refLastPageH = Math.max(0, Math.min(PAGE_CONTENT_H + lastPageOverflow, _refH - (numPages - 1) * PAGE_CONTENT_H));
-        const _sigTopPx = PAGE_MARGIN_T + _refLastPageH;
-        sigBlock = `<div style="position:absolute;top:${_sigTopPx}px;left:0;width:816px;padding:${_sigPad};box-sizing:border-box;">${_sigInner}</div>`;
-      }
+      // The signature now flows inside the body content (see _embedSig above), so it
+      // paginates naturally with everything else — no separate absolutely-positioned
+      // block is needed. Kept as '' so the per-page template below stays unchanged.
+      const sigBlock = '';
 
       // Page background: sidebar templates get a gradient so the sidebar color fills
       // the full page height on every page (including top/bottom margin zones).
@@ -5498,8 +5618,9 @@ Aaliyah Washington`
       // The bottom PAGE_MARGIN_B (96px) is naturally empty below the clip on every page.
       // On the last page the clip and page height expand by lastPageOverflow so that
       // merged content is fully visible and the signature clears it.
-      // Extra height on the last page so the absolutely-positioned sig isn't clipped
-      const sigExtra = (!isBothMode && sigName) ? 120 : 0;
+      // The signature flows inside the content now (measured into rawContentH), so
+      // the last page needs no extra height beyond its content.
+      const sigExtra = 0;
       const pagesHtml = Array.from({length: totalPages}, (_, i) => {
         const isLast = i === totalPages - 1;
         const clipH = isLast ? PAGE_CONTENT_H + lastPageOverflow : PAGE_CONTENT_H;
