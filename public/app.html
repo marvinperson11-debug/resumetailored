@@ -3604,11 +3604,36 @@
       }
       if (cur.length) groups.push(cur);
       if (groups.length === 0) return (headerHtml || footerHtml) ? `<div style="${grpStyle}">${headerHtml||''}${footerHtml||''}</div>` : '';
-      return groups.map((g, i) => {
+
+      // On screen: wrap each entry as one keep-together block (no pagination).
+      if (!printMode) {
+        return groups.map((g, i) => {
+          const pre = i === 0 ? (headerHtml || '') : '';
+          const suf = i === groups.length - 1 ? (footerHtml || '') : '';
+          return `<div style="${grpStyle}">${pre}${g.map(r => _lineHtml(r, c)).join('')}${suf}</div>`;
+        }).join('<div style="height:6px;"></div>');
+      }
+
+      // In print: keeping a whole multi-bullet entry unbreakable makes a tall
+      // entry jump entirely to the next page, stranding half a page of white
+      // (the bug behind the awkward 2-page split). Instead keep only the entry's
+      // HEAD together — its title/date line + first bullet, so a title never
+      // orphans — and let the remaining bullets flow and break across the page
+      // boundary so pages fill top-to-bottom. Each bullet is itself
+      // break-inside:avoid (via _lineHtml) so no single bullet splits.
+      const isBullet = (raw) => /^[•·\-\*]\s/.test(raw.trim());
+      const out = [];
+      groups.forEach((g, i) => {
         const pre = i === 0 ? (headerHtml || '') : '';
-        const suf = i === groups.length - 1 ? (footerHtml || '') : '';
-        return `<div style="${grpStyle}">${pre}${g.map(r => _lineHtml(r, c)).join('')}${suf}</div>`;
-      }).join('<div style="height:6px;"></div>');
+        let k = 0;
+        while (k < g.length && !isBullet(g[k])) k++; // leading title/date lines
+        if (k < g.length) k++;                        // + the first bullet
+        const head = g.slice(0, k), rest = g.slice(k);
+        out.push(`<div style="display:table;width:100%;${pbi}">${pre}${head.map(r => _lineHtml(r, c)).join('')}</div>`);
+        if (rest.length) out.push(rest.map(r => _lineHtml(r, c)).join(''));
+      });
+      if (footerHtml) out.push(`<div style="display:table;width:100%;${pbi}">${footerHtml}</div>`);
+      return out.join('');
     }
 
     function renderSidebarOutput(parsed, c, font, printMode, sigHtml='') {
@@ -4590,7 +4615,8 @@ Aaliyah Washington`
             sigName: sigName || null, sigFont: sigFont || null, pageSize: selectedPageSize,
             mode: selectedMode, docFont: selectedDocFont,
             primary: tplMeta(primaryTpl), cover: tplMeta(cTpl),
-            meta: window.lastCoverMeta || null
+            meta: window.lastCoverMeta || null,
+            photoUrl: videoPhotoDataUrl || undefined
           })
         });
         if (!res.ok) {

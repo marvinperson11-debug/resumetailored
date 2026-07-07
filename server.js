@@ -13,7 +13,7 @@ const os = require('os');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType, HeightRule } = require('docx');
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType, HeightRule, ImageRun } = require('docx');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 
@@ -704,6 +704,30 @@ const _DOCX_FONTS = { arial: 'Arial', calibri: 'Calibri', times: 'Times New Roma
 const _dxFont = (serif, docFont) => _DOCX_FONTS[docFont] || (serif ? 'Georgia' : 'Arial');
 const _DX_SIDE_KEYS = ['SKILL', 'CERTIF', 'LICENSE', 'LICENS', 'EDUCAT', 'LANGUAGE', 'AWARD', 'COMPETENC', 'TOOL', 'TECHNOLOG', 'PROFICIEN'];
 
+// Crop an uploaded headshot (data: URL) into a circular PNG buffer so the
+// Sidebar template's avatar circle shows the real photo in the .docx — matching
+// the on-screen/PDF preview. Best-effort: any failure returns null and the
+// renderer falls back to the styled initial. jimp is pure-JS (no native deps).
+async function _dxCirclePhoto(dataUrl, size) {
+  try {
+    const m = /^data:image\/(png|jpe?g|webp);base64,(.+)$/i.exec(String(dataUrl || ''));
+    if (!m) return null;
+    const { Jimp, JimpMime } = require('jimp');
+    const img = await Jimp.read(Buffer.from(m[2], 'base64'));
+    const D = size || 240;
+    img.cover({ w: D, h: D });
+    const r = D / 2;
+    img.scan(0, 0, D, D, function (x, y, idx) {
+      const dx = x - r + 0.5, dy = y - r + 0.5;
+      if (dx * dx + dy * dy > r * r) this.bitmap.data[idx + 3] = 0; // outside circle → transparent
+    });
+    return await img.getBuffer(JimpMime.png);
+  } catch (err) {
+    console.error('[docx] photo crop failed:', err && err.message ? err.message : err);
+    return null;
+  }
+}
+
 function _dxParseResume(text) {
   const lines = String(text || '').split('\n');
   let name = '', contactParts = [], sections = [], cur = null;
@@ -869,7 +893,13 @@ function _dxTwoCol(name, contactParts, sections, o) {
 
   const left = [];
   if (isSidebar) {
-    left.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: (name.trim()[0] || '?').toUpperCase(), font: o.font, size: 56, bold: true, color: o.accentHex })] }));
+    // Circular headshot when the user uploaded one (matches the on-screen/PDF
+    // preview); otherwise the styled initial.
+    if (o.photoBuf) {
+      left.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 90 }, children: [new ImageRun({ type: 'png', data: o.photoBuf, transformation: { width: 104, height: 104 } })] }));
+    } else {
+      left.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: (name.trim()[0] || '?').toUpperCase(), font: o.font, size: 56, bold: true, color: o.accentHex })] }));
+    }
     left.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 120 }, children: [new TextRun({ text: name, font: o.font, size: 24, bold: true, color: 'FFFFFF' })] }));
   } else {
     left.push(new Paragraph({ children: [new TextRun({ text: name, font: o.font, size: 30, bold: true, color: o.primaryHex })], spacing: { after: 80 } }));
@@ -1032,10 +1062,14 @@ function _dxMargins(layout) {
 
 function _dxHex(c, fallback) { return (c || fallback).replace('#', ''); }
 
-async function buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mode, primary, cover, meta, docFont }) {
+async function buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mode, primary, cover, meta, docFont, photoUrl }) {
   const isA4 = pageSize === 'a4';
   const PAGE_WIDTH = isA4 ? 11906 : 12240;
   const PAGE_HEIGHT = isA4 ? 16838 : 15840;
+
+  // Pre-process the headshot once (async) into a circular PNG the sync renderers
+  // can drop straight into the Sidebar avatar.
+  const photoBuf = photoUrl ? await _dxCirclePhoto(photoUrl) : null;
 
   const buildOpts = (tpl, withSig) => {
     const layout = (tpl && tpl.layout) || 'rClassic';
@@ -1049,6 +1083,7 @@ async function buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mo
         lightHex: _dxHex(colors.light, '#e8eaf6'), sigName: withSig ? (sigName || null) : null,
         contentWidth: PAGE_WIDTH - m.left - m.right,
         pageContentHeight: PAGE_HEIGHT - m.top - m.bottom,
+        photoBuf,
       },
       margin: m,
     };
@@ -1071,7 +1106,12 @@ async function buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mo
 
 async function handleTemplatedDocx(req, res) {
   const { text, coverText, filename, sigName, pageSize, mode, primary, cover, meta, docFont } = req.body;
-  const buffer = await buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mode, primary, cover, meta, docFont });
+  // Validate the optional headshot the same way the video route does.
+  let photoUrl = req.body.photoUrl;
+  if (!(typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000)) {
+    photoUrl = null;
+  }
+  const buffer = await buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mode, primary, cover, meta, docFont, photoUrl });
 
   const safeName = (filename || 'tailored-resume').replace(/[^a-z0-9-_\s]/gi, '_');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
