@@ -53,7 +53,7 @@ Tables (all created with `CREATE TABLE IF NOT EXISTS` at startup):
 |---|---|
 | `usage_store` | Free-tier usage counts, keyed by `${ip}_${date}_${type}` (`count`); `type` ∈ `resume`, `cover_letter`, `translate`, `video`, … |
 | `subscribers` | Active Stripe subscribers (`email` PK, `customer_id`) |
-| `users` | User accounts (`email` PK, `username`, SHA-256 `password_hash`) |
+| `users` | User accounts (`email` PK, `username`, bcrypt `password_hash`) |
 | `sessions` | Auth tokens (`token` PK → `email`) |
 | `reset_tokens` | Password reset tokens (`token` PK, `email`, `expires_at`) |
 | `check_ins` | Career check-in data by `email` |
@@ -65,7 +65,7 @@ Access is via prepared statements (`db.prepare(...).run/get/all`). Note: several
 
 Sessions use UUID tokens stored in the browser's `localStorage` (`rt_token`, `rt_email`, `rt_username`). The server validates tokens via `GET /api/auth/me`. `app.html` forces the auth modal on load if no valid token exists.
 
-Passwords are hashed with SHA-256 using a static salt (`rta_salt_2026_` prefix). This is not bcrypt — do not treat it as production-grade.
+Passwords are hashed with **bcrypt** (`bcryptjs`, per-record salt, `BCRYPT_ROUNDS=10`). Legacy accounts created before the migration used static-salt SHA-256 (`rta_salt_2026_` prefix); those hashes are still verified so nobody is locked out, and are transparently re-hashed to bcrypt on the user's next successful login (lazy migration — see `verifyPassword`/`isLegacyHash` in `server.js`). New signups and password resets always write bcrypt.
 
 ## Free tier gating
 

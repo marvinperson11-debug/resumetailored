@@ -1254,11 +1254,19 @@ function _shareResumeHtml(row, origin) {
 const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'Too many share links — please wait a minute.' } });
 app.post('/api/share', shareLimiter, (req, res) => {
   try {
-    const { text, name, colors, photoUrl, hideContact, serif } = req.body || {};
+    const { text, name, colors, photoUrl, hideContact, serif, expiresDays } = req.body || {};
     if (!text || typeof text !== 'string' || text.trim().length < 20) return res.status(400).json({ error: 'No resume to share.' });
     if (text.length > 40000) return res.status(400).json({ error: 'Resume is too long to share.' });
     let photo = null;
     if (typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000) photo = photoUrl;
+    // Optional expiry — the link auto-expires N days after creation. Absent, 0, or a
+    // non-positive value means it never expires. Capped at 1 year so a bad value
+    // can't create a permanent-but-huge timestamp.
+    let expiresAt = null;
+    const _days = Number(expiresDays);
+    if (Number.isFinite(_days) && _days > 0) {
+      expiresAt = Date.now() + Math.min(Math.floor(_days), 365) * 24 * 60 * 60 * 1000;
+    }
     const slug = _shareSlug();
     db.prepare(`INSERT INTO shared_resumes (slug, name, text, accent, primary_hex, serif, photo, hide_contact, created_at, expires_at, views)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`).run(
@@ -1271,10 +1279,10 @@ app.post('/api/share', shareLimiter, (req, res) => {
       photo,
       hideContact ? 1 : 0,
       Date.now(),
-      null
+      expiresAt
     );
     const origin = `${req.protocol}://${req.get('host')}`;
-    res.json({ url: `${origin}/r/${slug}`, slug });
+    res.json({ url: `${origin}/r/${slug}`, slug, expiresAt });
   } catch (err) {
     console.error('[share] create failed:', err && err.message ? err.message : err);
     res.status(500).json({ error: 'Could not create share link.' });
