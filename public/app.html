@@ -5248,6 +5248,29 @@ Aaliyah Washington`
     </div>
   </div>
 
+  <!-- ── Share-as-Link Modal ── -->
+  <div id="shareModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeShareModal()">
+    <div style="background:#fff;border-radius:20px;padding:28px 26px;max-width:460px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-size:22px;">🔗</span><h2 style="font-size:19px;font-weight:800;color:#111827;">Share your resume as a link</h2></div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px;">Send this link on LinkedIn, in an email, or anywhere. It opens your resume right in the browser — no download needed.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input id="shareLinkBox" readonly value="" style="flex:1;min-width:0;font-size:13px;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:10px;color:#111827;background:#f9fafb;font-family:inherit;" />
+        <button onclick="copyShareLink()" class="btn btn-primary" style="font-size:13px;padding:10px 16px;white-space:nowrap;">Copy</button>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;margin-bottom:16px;cursor:pointer;">
+        <input type="checkbox" onchange="toggleShareContact(this)" style="width:15px;height:15px;cursor:pointer;" />
+        Hide my phone &amp; address on the shared page
+      </label>
+      <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:11px 14px;font-size:12px;color:#0369a1;margin-bottom:18px;line-height:1.5;">
+        🔒 The link is private and unlisted — only people you send it to can open it, and it won't appear in Google. It's a snapshot: re-tailoring later won't change this link.
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="openShareLink()" class="btn btn-outline" style="flex:1;font-size:13px;padding:10px;">Open link ↗</button>
+        <button onclick="closeShareModal()" class="btn btn-primary" style="flex:1;font-size:13px;padding:10px;">Done</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Ad Gate Modal ── -->
   <div id="adGateModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;">
     <div style="background:#fff;border-radius:20px;padding:32px 28px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
@@ -5296,27 +5319,76 @@ Aaliyah Washington`
       if (!row) return;
       const fmtBanner = _exportFmtBannerHtml();
       const showVideo = selectedMode !== 'cover_letter';
+      // Share-as-link is for the resume (a shareable web page), not the cover
+      // letter. Free for everyone — it spreads the brand.
+      const shareBtn = selectedMode !== 'cover_letter'
+        ? `<button class="download-btn" onclick="shareResumeLink()" style="background:linear-gradient(135deg,#10b981,#0ea5e9);">🔗 Share as Link</button>` : '';
       if (isSubscriberFlag) {
         const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `${fmtBanner}
           <button class="download-btn download-btn-pdf" onclick="downloadPdf()">Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="downloadDocx()">Download Word</button>
-          <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>${videoBtn}`;
+          <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>${shareBtn}${videoBtn}`;
       } else if (!isLoggedIn) {
         const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `${fmtBanner}
           <button class="download-btn download-btn-pdf" onclick="showDownloadGate(downloadPdf)" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);">⬇ Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="showDownloadGate(downloadDocx)">⬇ Download Word</button>
-          <button class="download-btn download-btn-txt" onclick="showDownloadGate(downloadTxt)">⬇ Download Text</button>${videoBtn}
+          <button class="download-btn download-btn-txt" onclick="showDownloadGate(downloadTxt)">⬇ Download Text</button>${shareBtn ? `<button class="download-btn" onclick="showDownloadGate(shareResumeLink)" style="background:linear-gradient(135deg,#10b981,#0ea5e9);">🔗 Share as Link</button>` : ''}${videoBtn}
           <div style="width:100%;font-size:11px;color:#64748b;margin-top:6px;">Free account required to download — takes 5 seconds</div>`;
       } else {
         const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `${fmtBanner}
           <button class="download-btn download-btn-pdf" onclick="adGate(downloadPdf)" style="background:#b91c1c;">▶ Ad → PDF</button>
           <button class="download-btn download-btn-docx" onclick="adGate(downloadDocx)" style="background:#7c3aed;">▶ Ad → Word</button>
-          <button class="download-btn download-btn-txt" onclick="adGate(downloadTxt)" style="background:#374151;">▶ Ad → Text</button>${videoBtn}`;
+          <button class="download-btn download-btn-txt" onclick="adGate(downloadTxt)" style="background:#374151;">▶ Ad → Text</button>${shareBtn}${videoBtn}`;
       }
     }
+
+    // ── Share resume as a public link ─────────────────────────────────────────
+    let _lastShareUrl = '';
+    async function shareResumeLink(hideContact) {
+      let text = getOutputText();
+      if (!text) { showToast('Nothing to share yet — tailor a resume first.'); return; }
+      if (sigName && text.endsWith(sigName)) text = text.slice(0, text.length - sigName.length).trimEnd();
+      // In 'both' mode share the resume half only.
+      if (selectedMode === 'both') text = (text.split(/\n\n-{3,}\n\n/)[0] || text).trim();
+      const rTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
+      const name = (document.getElementById('outputTitle').textContent || '').replace(/resume/i, '').trim();
+      const modal = document.getElementById('shareModal');
+      const linkBox = document.getElementById('shareLinkBox');
+      if (modal) modal.style.display = 'flex';
+      if (linkBox) linkBox.value = 'Creating your link…';
+      try {
+        const res = await fetch('/api/share', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text, name,
+            colors: { primary: rTpl.c.p, accent: rTpl.c.a },
+            serif: !!rTpl.serif,
+            photoUrl: (window.rtResumePhoto || undefined),
+            hideContact: !!hideContact
+          })
+        });
+        const d = await res.json();
+        if (!res.ok || !d.url) throw new Error(d.error || 'Could not create link.');
+        _lastShareUrl = d.url;
+        if (linkBox) linkBox.value = d.url;
+      } catch (err) {
+        if (linkBox) linkBox.value = '';
+        showToast('Could not create share link: ' + (err && err.message ? err.message : 'try again'), 5000);
+      }
+    }
+    function copyShareLink() {
+      const box = document.getElementById('shareLinkBox');
+      if (!box || !box.value || box.value.startsWith('Creating')) return;
+      box.select();
+      navigator.clipboard?.writeText(box.value).then(() => showToast('Link copied!'))
+        .catch(() => { document.execCommand('copy'); showToast('Link copied!'); });
+    }
+    function toggleShareContact(cb) { shareResumeLink(cb.checked); }
+    function closeShareModal() { const m = document.getElementById('shareModal'); if (m) m.style.display = 'none'; }
+    function openShareLink() { if (_lastShareUrl) window.open(_lastShareUrl, '_blank', 'noopener'); }
 
     function openPreview() {
       const outputBox = document.getElementById('outputBox');
