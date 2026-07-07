@@ -154,6 +154,19 @@ db.exec(`
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_saved_resumes_email ON saved_resumes(email);
+  CREATE TABLE IF NOT EXISTS shared_resumes (
+    slug         TEXT PRIMARY KEY,
+    name         TEXT,
+    text         TEXT NOT NULL,
+    accent       TEXT,
+    primary_hex  TEXT,
+    serif        INTEGER DEFAULT 0,
+    photo        TEXT,
+    hide_contact INTEGER DEFAULT 0,
+    created_at   INTEGER NOT NULL,
+    expires_at   INTEGER,
+    views        INTEGER DEFAULT 0
+  );
 `);
 
 // Seed default forum posts on first run
@@ -1125,6 +1138,163 @@ async function handleTemplatedDocx(req, res) {
     html: `<p>A user just downloaded <strong>${safeName}.docx</strong>.</p><p>Time: ${new Date().toUTCString()}</p>`
   }).catch(err => console.error('[Alert] Download email failed:', err.message));
 }
+
+// ─── Share resume as a public link ────────────────────────────────────────────
+// Snapshot a tailored resume to an unguessable public URL (/r/<slug>) that opens
+// in the browser — no download — for sharing on LinkedIn/email. The stored data
+// is the raw resume text + template accent + optional photo; the public page is
+// rendered server-side from that structured data (every user value escaped), so
+// there is no stored-HTML/XSS surface. Pages are noindex so personal info never
+// lands in Google.
+function _escHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function _shareSlug() {
+  // ~10 chars of url-safe base62 from crypto bytes.
+  const b = crypto.randomBytes(8).toString('base64').replace(/[^a-zA-Z0-9]/g, '');
+  return (b + crypto.randomBytes(4).toString('hex')).slice(0, 10);
+}
+
+// Render one resume section's lines to safe HTML (bullets, job titles, company/
+// date lines, plain paragraphs) — mirrors the docx line classification.
+function _shareLinesHtml(lines, accent) {
+  const out = [];
+  let openUl = false;
+  const closeUl = () => { if (openUl) { out.push('</ul>'); openUl = false; } };
+  for (let i = 0; i < lines.length; i++) {
+    const raw = String(lines[i]).trim();
+    const clean = _dxClean(raw);
+    if (!clean) continue;
+    if (/^[•·\-\*]\s/.test(raw)) {
+      if (!openUl) { out.push('<ul class="r-bul">'); openUl = true; }
+      out.push('<li>' + _escHtml(clean.replace(/^[•·\-\*]\s*/, '')) + '</li>');
+      continue;
+    }
+    closeUl();
+    const nextClean = _dxClean(String(lines[i + 1] || '').trim());
+    const wasBold = /^\*\*[^*]+\*\*$/.test(raw);
+    const isTitle = (wasBold && clean.length < 70) || (!_dxIsCompanyLine(clean) && _dxIsCompanyLine(nextClean) && clean.length < 80);
+    if (isTitle) { out.push('<div class="r-title">' + _escHtml(clean) + '</div>'); continue; }
+    if (_dxIsCompanyLine(clean)) { out.push('<div class="r-co" style="color:' + accent + '">' + _escHtml(clean) + '</div>'); continue; }
+    out.push('<p class="r-p">' + _escHtml(clean) + '</p>');
+  }
+  closeUl();
+  return out.join('');
+}
+
+function _shareResumeHtml(row, origin) {
+  const { name, contactParts, sections } = _dxParseResume(row.text || '');
+  const accent = '#' + String(row.primary_hex || '4a1042').replace('#', '');
+  const light = '#' + String(row.accent || '8b5cf6').replace('#', '');
+  const serif = row.serif ? "Georgia,'Times New Roman',serif" : "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+  const displayName = name || 'Resume';
+  const summarySec = sections.find(s => /SUMMARY|PROFILE/i.test(s.title));
+  const ogDesc = _escHtml(((summarySec && summarySec.lines.join(' ')) || 'Professional resume').replace(/\s+/g, ' ').replace(/[*#]/g, '').trim().slice(0, 160));
+  const avatar = row.photo
+    ? `<div class="r-avatar" style="background-image:url('${_escHtml(row.photo)}')"></div>`
+    : `<div class="r-avatar r-avatar-mono" style="background:linear-gradient(135deg,${light},${accent})">${_escHtml((displayName.trim()[0] || '?').toUpperCase())}</div>`;
+  const contactHtml = row.hide_contact
+    ? ''
+    : `<div class="r-contact">${contactParts.map(c => `<span>${_escHtml(c)}</span>`).join('<span class="r-dot">·</span>')}</div>`;
+  const sectionsHtml = sections.map(sec => `
+    <section class="r-sec">
+      <h2 style="color:${accent};border-color:${light}">${_escHtml(sec.title)}</h2>
+      ${_shareLinesHtml(sec.lines, accent)}
+    </section>`).join('');
+  const shareUrl = `${origin}/r/${row.slug}`;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="robots" content="noindex,nofollow"/>
+  <title>${_escHtml(displayName)} — Resume</title>
+  <meta property="og:type" content="profile"/>
+  <meta property="og:title" content="${_escHtml(displayName)} — Resume"/>
+  <meta property="og:description" content="${ogDesc}"/>
+  <meta property="og:url" content="${_escHtml(shareUrl)}"/>
+  <meta property="og:image" content="${origin}/og-image.png"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:${serif};background:#eef0f4;color:#1f2430;line-height:1.6;padding:24px 14px 60px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .sheet{max-width:760px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:44px 44px 36px;}
+    .r-head{display:flex;align-items:center;gap:20px;border-bottom:3px solid ${accent};padding-bottom:20px;margin-bottom:24px;}
+    .r-avatar{width:88px;height:88px;border-radius:50%;flex-shrink:0;background-size:cover;background-position:center;box-shadow:0 0 0 3px ${light}33;}
+    .r-avatar-mono{display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px;font-weight:800;}
+    .r-name{font-size:30px;font-weight:800;letter-spacing:-.5px;color:${accent};line-height:1.15;}
+    .r-contact{font-size:13.5px;color:#5b6472;margin-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+    .r-dot{color:#c3c9d4;}
+    .r-sec{margin-bottom:22px;}
+    .r-sec h2{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;border-bottom:2px solid;padding-bottom:5px;margin-bottom:12px;}
+    .r-title{font-size:15.5px;font-weight:800;color:#1a1f2b;margin-top:12px;}
+    .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
+    .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
+    .r-bul{list-style:none;margin:2px 0 8px;}
+    .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
+    .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:${light};}
+    .r-foot{max-width:760px;margin:20px auto 0;text-align:center;font-size:13px;color:#8a93a3;}
+    .r-foot a{color:${accent};font-weight:700;text-decoration:none;}
+    @media(max-width:560px){.sheet{padding:28px 20px;}.r-head{gap:14px;}.r-avatar{width:66px;height:66px;}.r-name{font-size:24px;}}
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <div class="r-head">${avatar}<div><div class="r-name">${_escHtml(displayName)}</div>${contactHtml}</div></div>
+    ${sectionsHtml}
+  </div>
+  <div class="r-foot">Made with <a href="${origin}/?utm_source=shared_resume" target="_blank" rel="noopener">ResumeTailored AI</a> — tailor your resume to any job in 60 seconds</div>
+</body>
+</html>`;
+}
+
+const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'Too many share links — please wait a minute.' } });
+app.post('/api/share', shareLimiter, (req, res) => {
+  try {
+    const { text, name, colors, photoUrl, hideContact, serif } = req.body || {};
+    if (!text || typeof text !== 'string' || text.trim().length < 20) return res.status(400).json({ error: 'No resume to share.' });
+    if (text.length > 40000) return res.status(400).json({ error: 'Resume is too long to share.' });
+    let photo = null;
+    if (typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000) photo = photoUrl;
+    const slug = _shareSlug();
+    db.prepare(`INSERT INTO shared_resumes (slug, name, text, accent, primary_hex, serif, photo, hide_contact, created_at, expires_at, views)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`).run(
+      slug,
+      (name || '').toString().slice(0, 80),
+      text,
+      (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
+      (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
+      serif ? 1 : 0,
+      photo,
+      hideContact ? 1 : 0,
+      Date.now(),
+      null
+    );
+    const origin = `${req.protocol}://${req.get('host')}`;
+    res.json({ url: `${origin}/r/${slug}`, slug });
+  } catch (err) {
+    console.error('[share] create failed:', err && err.message ? err.message : err);
+    res.status(500).json({ error: 'Could not create share link.' });
+  }
+});
+
+app.get('/r/:slug', (req, res) => {
+  const slug = String(req.params.slug || '').replace(/[^a-zA-Z0-9]/g, '');
+  const row = slug ? db.prepare('SELECT * FROM shared_resumes WHERE slug = ?').get(slug) : null;
+  if (!row || (row.expires_at && Date.now() > row.expires_at)) {
+    res.status(404);
+    return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
+  try { db.prepare('UPDATE shared_resumes SET views = views + 1 WHERE slug = ?').run(slug); } catch (_) {}
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.send(_shareResumeHtml(row, origin));
+});
 
 app.post('/api/download-docx', async (req, res) => {
   const { text, filename, colors, sigName, sigFont: sigFontName, pageSize } = req.body;
