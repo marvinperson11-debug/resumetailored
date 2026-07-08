@@ -5485,7 +5485,8 @@ Aaliyah Washington`
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             text, name,
-            colors: { primary: rTpl.c.p, accent: rTpl.c.a },
+            layout: rTpl.layout,
+            colors: { primary: rTpl.c.p, accent: rTpl.c.a, light: rTpl.c.l },
             serif: !!rTpl.serif,
             photoUrl: (window.rtResumePhoto || undefined),
             hideContact,
