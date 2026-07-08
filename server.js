@@ -169,6 +169,18 @@ db.exec(`
   );
 `);
 
+// Lightweight column migrations for tables that predate a new column. SQLite has
+// no "ADD COLUMN IF NOT EXISTS", so we check PRAGMA table_info first.
+function _ensureColumn(table, column, ddl) {
+  try {
+    const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+    if (!cols.some(c => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  } catch (e) { console.error(`[migrate] ${table}.${column} failed:`, e && e.message ? e.message : e); }
+}
+// Remember which template family a shared resume was created with, so /r/:slug can
+// render it in the layout the user actually chose (sidebar, two-column, etc.).
+_ensureColumn('shared_resumes', 'layout', 'layout TEXT');
+
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
   const ins = db.prepare('INSERT INTO forum_posts (author, role, time, text, likes) VALUES (?, ?, ?, ?, ?)');
@@ -1182,26 +1194,88 @@ function _shareLinesHtml(lines, accent) {
   return out.join('');
 }
 
+// Template families the shared page knows how to render. Anything else → linear.
+const _SHARE_LAYOUTS = new Set(['rClassic', 'rExecutive', 'rMinimal', 'rModern', 'rSidebar', 'rTwoCol', 'rBanner']);
+
+// Skills/education-type lines → chips (splitting a single comma list into items).
+function _shareChips(lines, cls) {
+  let items = (lines || []).map(l => _dxClean(String(l).trim()).replace(/^[•·\-\*]\s*/, '')).filter(Boolean);
+  if (items.length === 1 && items[0].includes(',')) items = items[0].split(/\s*,\s*/).filter(Boolean);
+  return items.map(i => `<span class="${cls}">${_escHtml(i)}</span>`).join('');
+}
+
 function _shareResumeHtml(row, origin) {
   const { name, contactParts, sections } = _dxParseResume(row.text || '');
-  const accent = '#' + String(row.primary_hex || '4a1042').replace('#', '');
-  const light = '#' + String(row.accent || '8b5cf6').replace('#', '');
+  const primary = '#' + String(row.primary_hex || '4a1042').replace('#', '');
+  const accent = '#' + String(row.accent || '8b5cf6').replace('#', '');
   const serif = row.serif ? "Georgia,'Times New Roman',serif" : "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+  const layout = _SHARE_LAYOUTS.has(row.layout) ? row.layout : 'rClassic';
   const displayName = name || 'Resume';
+  const initial = (displayName.trim()[0] || '?').toUpperCase();
   const summarySec = sections.find(s => /SUMMARY|PROFILE/i.test(s.title));
   const ogDesc = _escHtml(((summarySec && summarySec.lines.join(' ')) || 'Professional resume').replace(/\s+/g, ' ').replace(/[*#]/g, '').trim().slice(0, 160));
-  const avatar = row.photo
-    ? `<div class="r-avatar" style="background-image:url('${_escHtml(row.photo)}')"></div>`
-    : `<div class="r-avatar r-avatar-mono" style="background:linear-gradient(135deg,${light},${accent})">${_escHtml((displayName.trim()[0] || '?').toUpperCase())}</div>`;
-  const contactHtml = row.hide_contact
-    ? ''
-    : `<div class="r-contact">${contactParts.map(c => `<span>${_escHtml(c)}</span>`).join('<span class="r-dot">·</span>')}</div>`;
-  const sectionsHtml = sections.map(sec => `
-    <section class="r-sec">
-      <h2 style="color:${accent};border-color:${light}">${_escHtml(sec.title)}</h2>
-      ${_shareLinesHtml(sec.lines, accent)}
-    </section>`).join('');
   const shareUrl = `${origin}/r/${row.slug}`;
+
+  // A resume's contact line is usually one "a | b | c" string — split it so the
+  // pieces render as clean rows (in a rail) or ·-separated spans (inline).
+  const contactItems = contactParts.flatMap(p => String(p).split(/\s*\|\s*/)).map(s => s.trim()).filter(Boolean);
+  const contactSpans = contactItems.map(c => `<span>${_escHtml(c)}</span>`).join('<span class="r-dot">·</span>');
+  const contactHtml = row.hide_contact ? '' : contactSpans;
+  const avatar = (ring) => row.photo
+    ? `<div class="r-av" style="background-image:url('${_escHtml(row.photo)}')"></div>`
+    : `<div class="r-av r-av-mono" style="background:linear-gradient(135deg,${accent},${primary})${ring ? `;box-shadow:0 0 0 3px ${ring}` : ''}">${_escHtml(initial)}</div>`;
+
+  // Two-column families split skills/education/etc. into a side rail.
+  const sideSecs = [], mainSecs = [];
+  for (const sec of sections) (_DX_SIDE_KEYS.some(k => sec.title.toUpperCase().includes(k)) ? sideSecs : mainSecs).push(sec);
+
+  // A main content section; `kind` picks the header treatment per family.
+  const mainSec = (sec, kind) => {
+    let h;
+    if (kind === 'modern') h = `<h2 class="r-h r-h-modern"><span class="r-bar"></span>${_escHtml(sec.title)}</h2>`;
+    else if (kind === 'banner') h = `<span class="r-h-badge">${_escHtml(sec.title)}</span>`;
+    else h = `<h2 class="r-h">${_escHtml(sec.title)}</h2>`;
+    return `<section class="r-sec">${h}${_shareLinesHtml(sec.lines, accent)}</section>`;
+  };
+
+  let bodyClass, bodyHtml;
+  if (layout === 'rSidebar') {
+    bodyClass = 'lay-sidebar';
+    const sideHtml = sideSecs.map(s => `<div class="r-side-sec"><h3>${_escHtml(s.title)}</h3><div class="r-chips">${_shareChips(s.lines, 'r-chip')}</div></div>`).join('');
+    bodyHtml = `<div class="sheet">
+      <aside class="r-aside">${avatar('rgba(255,255,255,.4)')}<div class="r-aside-name">${_escHtml(displayName)}</div>
+        ${contactHtml ? `<div class="r-side-sec"><h3>Contact</h3><div class="r-side-contact">${contactItems.map(c => `<div>${_escHtml(c)}</div>`).join('')}</div></div>` : ''}
+        ${sideHtml}</aside>
+      <main class="r-main">${mainSecs.map(s => mainSec(s, 'plain')).join('')}</main>
+    </div>`;
+  } else if (layout === 'rTwoCol') {
+    bodyClass = 'lay-twocol';
+    const sideHtml = sideSecs.map(s => `<section class="r-sec r-sec-sm"><h2 class="r-h">${_escHtml(s.title)}</h2>${_shareLinesHtml(s.lines, accent)}</section>`).join('');
+    bodyHtml = `<div class="sheet">
+      <aside class="r-left"><div class="r-left-name">${_escHtml(displayName)}</div>
+        ${contactHtml ? `<div class="r-left-contact">${contactItems.map(c => `<div>${_escHtml(c)}</div>`).join('')}</div>` : ''}
+        ${sideHtml}</aside>
+      <main class="r-main">${mainSecs.map(s => mainSec(s, 'plain')).join('')}</main>
+    </div>`;
+  } else if (layout === 'rModern') {
+    bodyClass = 'lay-modern';
+    bodyHtml = `<div class="sheet">
+      <header class="r-banner"><div class="r-banner-name">${_escHtml(displayName)}</div>${contactHtml ? `<div class="r-banner-contact">${contactHtml}</div>` : ''}</header>
+      <div class="r-body">${sections.map(s => mainSec(s, 'modern')).join('')}</div>
+    </div>`;
+  } else if (layout === 'rBanner') {
+    bodyClass = 'lay-banner';
+    bodyHtml = `<div class="sheet">
+      <header class="r-bhead"><div class="r-bhead-name">${_escHtml(displayName)}</div>${contactHtml ? `<div class="r-bhead-contact">${contactHtml}</div>` : ''}<div class="r-bhead-rule"></div></header>
+      <div class="r-body">${sections.map(s => mainSec(s, 'banner')).join('')}</div>
+    </div>`;
+  } else {
+    // Linear: rClassic (centered/underline), rExecutive (left bar), rMinimal (thin).
+    bodyClass = layout === 'rExecutive' ? 'lay-exec' : layout === 'rMinimal' ? 'lay-minimal' : 'lay-classic';
+    const head = `<div class="r-head"><div class="r-name">${_escHtml(displayName)}</div>${contactHtml ? `<div class="r-contact">${contactHtml}</div>` : ''}</div>`;
+    bodyHtml = `<div class="sheet"><div class="r-body">${head}${sections.map(s => mainSec(s, 'plain')).join('')}</div></div>`;
+  }
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1219,33 +1293,78 @@ function _shareResumeHtml(row, origin) {
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <style>
+    :root{--p:${primary};--a:${accent};}
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:${serif};background:#eef0f4;color:#1f2430;line-height:1.6;padding:24px 14px 60px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-    .sheet{max-width:760px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:44px 44px 36px;}
-    .r-head{display:flex;align-items:center;gap:20px;border-bottom:3px solid ${accent};padding-bottom:20px;margin-bottom:24px;}
-    .r-avatar{width:88px;height:88px;border-radius:50%;flex-shrink:0;background-size:cover;background-position:center;box-shadow:0 0 0 3px ${light}33;}
-    .r-avatar-mono{display:flex;align-items:center;justify-content:center;color:#fff;font-size:34px;font-weight:800;}
-    .r-name{font-size:30px;font-weight:800;letter-spacing:-.5px;color:${accent};line-height:1.15;}
-    .r-contact{font-size:13.5px;color:#5b6472;margin-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
-    .r-dot{color:#c3c9d4;}
+    .sheet{max-width:820px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);overflow:hidden;}
+    .r-body{padding:44px 46px 38px;}
+    /* shared content styling */
     .r-sec{margin-bottom:22px;}
-    .r-sec h2{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;border-bottom:2px solid;padding-bottom:5px;margin-bottom:12px;}
+    .r-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--p);border-bottom:2px solid var(--a);padding-bottom:5px;margin-bottom:12px;}
     .r-title{font-size:15.5px;font-weight:800;color:#1a1f2b;margin-top:12px;}
     .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
     .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
     .r-bul{list-style:none;margin:2px 0 8px;}
     .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
-    .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:${light};}
-    .r-foot{max-width:760px;margin:20px auto 0;text-align:center;font-size:13px;color:#8a93a3;}
-    .r-foot a{color:${accent};font-weight:700;text-decoration:none;}
-    @media(max-width:560px){.sheet{padding:28px 20px;}.r-head{gap:14px;}.r-avatar{width:66px;height:66px;}.r-name{font-size:24px;}}
+    .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--a);}
+    .r-dot{color:#c3c9d4;}
+    .r-av{width:96px;height:96px;border-radius:50%;flex-shrink:0;background-size:cover;background-position:center;}
+    .r-av-mono{display:flex;align-items:center;justify-content:center;color:#fff;font-size:38px;font-weight:800;}
+    .r-foot{max-width:820px;margin:20px auto 0;text-align:center;font-size:13px;color:#8a93a3;}
+    .r-foot a{color:var(--p);font-weight:700;text-decoration:none;}
+    /* Linear header variants */
+    .r-head{margin-bottom:24px;}
+    .r-name{font-size:32px;font-weight:800;letter-spacing:-.5px;color:var(--p);line-height:1.15;}
+    .r-contact{font-size:13.5px;color:#5b6472;margin-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+    .lay-classic .r-head{text-align:center;border-bottom:2px solid var(--p);padding-bottom:18px;}
+    .lay-classic .r-contact{justify-content:center;}
+    .lay-exec .r-head{border-left:5px solid var(--p);padding-left:16px;}
+    .lay-minimal .r-name{font-weight:300;text-transform:uppercase;letter-spacing:5px;font-size:26px;color:#111;}
+    .lay-minimal .r-head{border-bottom:1px solid var(--p);padding-bottom:14px;}
+    .lay-minimal .r-h{border-bottom:none;letter-spacing:3px;}
+    /* Modern banner */
+    .r-banner{background:var(--p);color:#fff;padding:30px 46px;}
+    .r-banner-name{font-size:30px;font-weight:900;letter-spacing:-.5px;}
+    .r-banner-contact{margin-top:8px;font-size:13px;color:rgba(255,255,255,.82);display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+    .lay-modern .r-h-modern{display:flex;align-items:center;gap:9px;border-bottom:none;}
+    .lay-modern .r-bar{width:4px;height:16px;background:var(--a);border-radius:2px;display:inline-block;}
+    /* Banner (badge pills) */
+    .r-bhead{padding:30px 46px 0;border-left:5px solid var(--p);margin:22px 0 4px;}
+    .r-bhead-name{font-size:30px;font-weight:900;color:var(--p);letter-spacing:-.5px;}
+    .r-bhead-contact{font-size:13px;color:#5b6472;margin-top:7px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+    .r-bhead-rule{height:2px;background:linear-gradient(to right,var(--p),var(--a),transparent);margin-top:14px;border-radius:1px;}
+    .r-h-badge{display:inline-block;background:var(--p);color:#fff;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;padding:4px 12px;border-radius:4px;margin-bottom:11px;}
+    /* Sidebar (dark rail) */
+    .lay-sidebar .sheet,.lay-twocol .sheet{display:flex;align-items:stretch;}
+    .r-aside{width:270px;flex-shrink:0;background:var(--p);color:#fff;padding:38px 26px;}
+    .r-aside .r-av{margin:0 auto 16px;box-shadow:0 0 0 3px rgba(255,255,255,.35);}
+    .r-aside-name{text-align:center;font-size:20px;font-weight:800;line-height:1.25;margin-bottom:22px;}
+    .r-side-sec{margin-bottom:20px;}
+    .r-side-sec h3{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);border-bottom:1px solid rgba(255,255,255,.22);padding-bottom:5px;margin-bottom:10px;}
+    .r-side-contact{font-size:12.5px;color:rgba(255,255,255,.85);line-height:1.85;word-break:break-word;}
+    .r-chips{display:flex;flex-wrap:wrap;gap:6px;}
+    .r-chip{background:rgba(255,255,255,.14);color:#fff;font-size:11.5px;padding:4px 10px;border-radius:5px;}
+    .lay-sidebar .r-main{flex:1;min-width:0;padding:40px 40px 34px;}
+    /* Two-column (light rail) */
+    .r-left{width:250px;flex-shrink:0;padding:38px 22px 34px 30px;border-right:2px solid var(--a);}
+    .r-left-name{font-size:22px;font-weight:900;color:var(--p);line-height:1.2;margin-bottom:12px;}
+    .r-left-contact{font-size:12px;color:#5b6472;line-height:1.9;margin-bottom:20px;word-break:break-word;}
+    .r-sec-sm .r-h{font-size:11px;}
+    .r-sec-sm .r-p,.r-sec-sm .r-bul li{font-size:12.5px;}
+    .lay-twocol .r-main{flex:1;min-width:0;padding:38px 34px 34px;}
+    @media(max-width:640px){
+      body{padding:14px 10px 44px;}
+      .r-body,.r-banner,.r-bhead{padding-left:24px;padding-right:24px;}
+      .lay-sidebar .sheet,.lay-twocol .sheet{flex-direction:column;}
+      .r-aside{width:auto;}
+      .r-left{width:auto;border-right:none;border-bottom:2px solid var(--a);padding:30px 24px;}
+      .lay-sidebar .r-main,.lay-twocol .r-main{padding:30px 24px;}
+      .r-name,.r-banner-name,.r-bhead-name{font-size:25px;}
+    }
   </style>
 </head>
-<body>
-  <div class="sheet">
-    <div class="r-head">${avatar}<div><div class="r-name">${_escHtml(displayName)}</div>${contactHtml}</div></div>
-    ${sectionsHtml}
-  </div>
+<body class="${bodyClass}">
+  ${bodyHtml}
   <div class="r-foot">Made with <a href="${origin}/?utm_source=shared_resume" target="_blank" rel="noopener">ResumeTailored AI</a> — tailor your resume to any job in 60 seconds</div>
 </body>
 </html>`;
@@ -1254,7 +1373,7 @@ function _shareResumeHtml(row, origin) {
 const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'Too many share links — please wait a minute.' } });
 app.post('/api/share', shareLimiter, (req, res) => {
   try {
-    const { text, name, colors, photoUrl, hideContact, serif, expiresDays } = req.body || {};
+    const { text, name, colors, photoUrl, hideContact, serif, expiresDays, layout } = req.body || {};
     if (!text || typeof text !== 'string' || text.trim().length < 20) return res.status(400).json({ error: 'No resume to share.' });
     if (text.length > 40000) return res.status(400).json({ error: 'Resume is too long to share.' });
     let photo = null;
@@ -1267,9 +1386,12 @@ app.post('/api/share', shareLimiter, (req, res) => {
     if (Number.isFinite(_days) && _days > 0) {
       expiresAt = Date.now() + Math.min(Math.floor(_days), 365) * 24 * 60 * 60 * 1000;
     }
+    // Only persist a template family we know how to render; anything else falls
+    // back to the linear layout at render time.
+    const _layout = _SHARE_LAYOUTS.has(layout) ? layout : null;
     const slug = _shareSlug();
-    db.prepare(`INSERT INTO shared_resumes (slug, name, text, accent, primary_hex, serif, photo, hide_contact, created_at, expires_at, views)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`).run(
+    db.prepare(`INSERT INTO shared_resumes (slug, name, text, accent, primary_hex, serif, photo, hide_contact, created_at, expires_at, views, layout)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`).run(
       slug,
       (name || '').toString().slice(0, 80),
       text,
@@ -1279,7 +1401,8 @@ app.post('/api/share', shareLimiter, (req, res) => {
       photo,
       hideContact ? 1 : 0,
       Date.now(),
-      expiresAt
+      expiresAt,
+      _layout
     );
     const origin = `${req.protocol}://${req.get('host')}`;
     res.json({ url: `${origin}/r/${slug}`, slug, expiresAt });
