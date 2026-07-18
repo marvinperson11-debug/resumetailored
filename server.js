@@ -257,6 +257,18 @@ app.use((req, res, next) => {
 // static handler serves public/app.html for /app and shadows this redirect.
 app.get('/app', (req, res) => res.redirect(301, '/dashboard'));
 
+// Consolidate competitor comparison pages onto the /alternatives/* structure
+// (the scalable, canonical home for these). The legacy flat /x-alternative URLs
+// 301 to their /alternatives/x equivalent so existing backlinks/bookmarks funnel
+// to one page and link equity isn't split. Must run BEFORE express.static so the
+// redirect wins over the on-disk flat HTML file. Only the four competitors that
+// have an /alternatives/ page are redirected; enhancv/resume-io/zety have no
+// /alternatives/ counterpart and are intentionally left as-is.
+const ALTERNATIVE_REDIRECTS = { teal: 'teal', jobscan: 'jobscan', rezi: 'rezi', kickresume: 'kickresume' };
+for (const [flat, slug] of Object.entries(ALTERNATIVE_REDIRECTS)) {
+  app.get(`/${flat}-alternative`, (req, res) => res.redirect(301, `/alternatives/${slug}`));
+}
+
 app.use(express.static(path.join(__dirname, 'public'), {
   extensions: ['html'],
   setHeaders: (res, filePath) => {
