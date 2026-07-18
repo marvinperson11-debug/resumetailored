@@ -258,6 +258,13 @@
     <priority>0.88</priority>
   </url>
 
+  <url>
+    <loc>https://resumetailored.com/blog/resumetailored-vs-canva</loc>
+    <lastmod>2026-07-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.88</priority>
+  </url>
+
   <!-- Free Tools -->
   <url>
     <loc>https://resumetailored.com/tools/ats-keyword-extractor</loc>
