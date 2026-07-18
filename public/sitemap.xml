@@ -59,33 +59,10 @@
   </url>
 
   <!-- Competitor Comparison Pages -->
-  <url>
-    <loc>https://resumetailored.com/jobscan-alternative</loc>
-    <lastmod>2026-06-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://resumetailored.com/rezi-alternative</loc>
-    <lastmod>2026-06-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://resumetailored.com/teal-alternative</loc>
-    <lastmod>2026-06-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://resumetailored.com/kickresume-alternative</loc>
-    <lastmod>2026-06-08</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>
+  <!-- The flat /jobscan-alternative, /rezi-alternative, /teal-alternative, and
+       /kickresume-alternative URLs now 301-redirect to their /alternatives/* pages
+       (listed further below), so they are intentionally omitted here — a sitemap
+       should only contain canonical, 200-status URLs. -->
 
   <url>
     <loc>https://resumetailored.com/resume-io-alternative</loc>
