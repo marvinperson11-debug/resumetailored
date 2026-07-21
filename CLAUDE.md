@@ -138,7 +138,9 @@ To switch from Stripe test mode to live mode: replace all three Stripe env vars 
 - `/kickresume-alternative` → public/kickresume-alternative.html (existing)
 - `/tools/ats-keyword-extractor` → public/tools/ats-keyword-extractor.html (free tool, lead magnet)
 - `/tools/resume-video` → public/tools/resume-video.html (free tool — embeds the in-browser `/preview` resume-video maker)
-- `/resume-examples` → public/resume-examples.html (hub page targeting "resume examples" head term; internally links all 14 `*-resume.html` role pages, which link back from their footers. `ItemList` + `BreadcrumbList` + `FAQPage` schema. Linked from homepage nav + footer.)
+- `/resume-examples` → public/resume-examples.html (hub page targeting "resume examples" head term; internally links all 26 `*-resume.html` role pages grouped by category, which link back from their footers. `ItemList` + `BreadcrumbList` + `FAQPage` schema. Linked from homepage nav + footer.)
+- `/cover-letter-examples` → public/cover-letter-examples.html (hub targeting "cover letter examples" head term; links all 26 `*-cover-letter.html` role pages. Each role page has a role-specific sample opening + AI generator CTA and cross-links to its matching `*-resume` page. `ItemList` + `BreadcrumbList` + `FAQPage` schema. Both hubs and their role pages are generated from a shared role dataset — see scripts in git history — so counts/categories stay in sync.)
+- `*-resume.html` / `*-cover-letter.html` → 26 role pages each (software-engineer, data-analyst, product-manager, project-manager, business-analyst, marketing-manager, human-resources-manager, accountant, sales-representative, customer-service-representative, registered-nurse, teacher, mechanical-engineer, graphic-designer, financial-analyst, devops-engineer, web-developer, ux-designer, cybersecurity-analyst, operations-manager, executive-assistant, account-manager, recruiter, nurse-practitioner, social-worker, medical-assistant). Served at `/{slug}-resume` and `/{slug}-cover-letter` via `express.static({ extensions: ['html'] })`.
 - `/blog/` → public/blog/index.html (blog index)
 
 ### Blog Content (public/blog/)
