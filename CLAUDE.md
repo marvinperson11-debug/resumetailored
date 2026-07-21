@@ -138,6 +138,7 @@ To switch from Stripe test mode to live mode: replace all three Stripe env vars 
 - `/kickresume-alternative` → public/kickresume-alternative.html (existing)
 - `/tools/ats-keyword-extractor` → public/tools/ats-keyword-extractor.html (free tool, lead magnet)
 - `/tools/resume-video` → public/tools/resume-video.html (free tool — embeds the in-browser `/preview` resume-video maker)
+- `/resume-examples` → public/resume-examples.html (hub page targeting "resume examples" head term; internally links all 14 `*-resume.html` role pages, which link back from their footers. `ItemList` + `BreadcrumbList` + `FAQPage` schema. Linked from homepage nav + footer.)
 - `/blog/` → public/blog/index.html (blog index)
 
 ### Blog Content (public/blog/)

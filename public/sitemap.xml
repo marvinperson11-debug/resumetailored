@@ -300,6 +300,14 @@
   </url>
 
 
+  <!-- Resume examples hub -->
+  <url>
+    <loc>https://resumetailored.com/resume-examples</loc>
+    <lastmod>2026-07-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
   <!-- Role landing pages -->
   <url>
     <loc>https://resumetailored.com/software-engineer-resume</loc>
