@@ -13,7 +13,7 @@ const os = require('os');
 const multer = require('multer');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
-const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType, HeightRule, ImageRun } = require('docx');
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType, HeightRule, ImageRun, Footer } = require('docx');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 
@@ -1099,10 +1099,21 @@ function _dxMargins(layout) {
 
 function _dxHex(c, fallback) { return (c || fallback).replace('#', ''); }
 
-async function buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mode, primary, cover, meta, docFont, photoUrl }) {
+async function buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mode, primary, cover, meta, docFont, photoUrl, watermark }) {
   const isA4 = pageSize === 'a4';
   const PAGE_WIDTH = isA4 ? 11906 : 12240;
   const PAGE_HEIGHT = isA4 ? 16838 : 15840;
+
+  // Free-tier watermark: a single small, muted, centered line pinned to the page
+  // footer. Fresh instance per section (docx footers are not shared across
+  // sections). Pro exports pass watermark=false and get no footer.
+  const wmFooter = () => new Footer({
+    children: [new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 120 },
+      children: [new TextRun({ text: 'Made with ResumeTailored AI  ·  resumetailored.com', size: 15, color: '9aa3af', font: 'Arial' })],
+    })],
+  });
 
   // Pre-process the headshot once (async) into a circular PNG the sync renderers
   // can drop straight into the Sidebar avatar.
@@ -1131,24 +1142,48 @@ async function buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mo
 
   const prim = buildOpts(primary, !isBoth); // in 'both' mode the signature lives on the cover
   const primChildren = isCover ? _dxRenderCover(text, prim.opts, meta) : _dxRenderResume(text, prim.opts);
-  const sections = [{ properties: { page: { size: { width: PAGE_WIDTH, height: PAGE_HEIGHT }, margin: prim.margin } }, children: primChildren }];
+  const sections = [{
+    properties: { page: { size: { width: PAGE_WIDTH, height: PAGE_HEIGHT }, margin: prim.margin } },
+    children: primChildren,
+    ...(watermark ? { footers: { default: wmFooter() } } : {}),
+  }];
 
   if (isBoth && coverText) {
     const cv = buildOpts(cover, true);
-    sections.push({ properties: { page: { size: { width: PAGE_WIDTH, height: PAGE_HEIGHT }, margin: cv.margin } }, children: _dxRenderCover(coverText, cv.opts, meta) });
+    sections.push({
+      properties: { page: { size: { width: PAGE_WIDTH, height: PAGE_HEIGHT }, margin: cv.margin } },
+      children: _dxRenderCover(coverText, cv.opts, meta),
+      ...(watermark ? { footers: { default: wmFooter() } } : {}),
+    });
   }
 
   return Packer.toBuffer(new Document({ sections }));
 }
 
 async function handleTemplatedDocx(req, res) {
-  const { text, coverText, filename, sigName, pageSize, mode, primary, cover, meta, docFont } = req.body;
+  const { text, coverText, filename, sigName, pageSize, mode, primary, cover, meta, docFont, email } = req.body;
+  const subscribed = isSubscriber(email);
+
+  // Server-side template gating: non-subscribers may only render free templates.
+  // In 'both' mode the resume uses `primary` and the cover uses `cover`; in the
+  // single modes only `primary` is used. Reject a Pro template rather than
+  // silently downgrading, so the client shows a clear upgrade prompt.
+  if (!subscribed) {
+    const primaryOk = isFreeTemplateMeta(primary);
+    const coverOk = mode === 'both' ? isFreeTemplateMeta(cover) : true;
+    if (!primaryOk || !coverOk) {
+      res.status(402).json({ error: 'pro_template', message: 'This template is Pro-only. Upgrade to unlock all templates, or pick a free template.' });
+      return;
+    }
+  }
+
   // Validate the optional headshot the same way the video route does.
   let photoUrl = req.body.photoUrl;
   if (!(typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000)) {
     photoUrl = null;
   }
-  const buffer = await buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mode, primary, cover, meta, docFont, photoUrl });
+  // Free-tier exports carry a subtle bottom watermark; Pro exports are clean.
+  const buffer = await buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mode, primary, cover, meta, docFont, photoUrl, watermark: !subscribed });
 
   const safeName = (filename || 'tailored-resume').replace(/[^a-z0-9-_\s]/gi, '_');
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -1666,6 +1701,32 @@ function isSubscriber(email) {
   return !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(e);
 }
 
+// ─── Free-tier template allow-list ────────────────────────────────────────────
+// Kept in sync with the `free:true` entries in OUT_TPLS (public/app.html): the
+// only free templates are Classic/Executive/Minimal (resume) and
+// Formal/Bold/Clean (cover). Every other template is Pro. Template gating is
+// enforced server-side here — not just in the client picker — so a crafted API
+// call can't render a Pro layout or a Pro color variant. A template is
+// identified by (layout + primary color) so both the layout AND the specific
+// color must match a free template. See PLAN.md §2.
+const FREE_TPL_SIGS = new Set([
+  'rClassic|1a237e', 'rExecutive|004d40', 'rMinimal|b71c1c', // resume: Classic, Executive, Minimal
+  'cFormal|0c4a6e', 'cBold|7c2d12', 'cClean|1e293b',         // cover:  Formal, Bold, Clean
+]);
+function _tplSig(meta) {
+  if (!meta || !meta.layout) return null;
+  const prim = String((meta.colors && meta.colors.primary) || '').replace('#', '').toLowerCase().slice(0, 6);
+  return `${meta.layout}|${prim}`;
+}
+// True when the chosen template metadata is one of the free templates. Missing/
+// empty metadata (legacy single-column path) counts as free — it uses no
+// premium layout.
+function isFreeTemplateMeta(meta) {
+  if (!meta || !meta.layout) return true;
+  const sig = _tplSig(meta);
+  return sig ? FREE_TPL_SIGS.has(sig) : false;
+}
+
 // ─── API: Free Tool — ATS Keyword Extractor ──────────────────────────────────
 const keywordExtractorLimiter = rateLimit({ windowMs: 60 * 1000, max: 8, message: { error: 'Too many requests — please wait a minute and try again.' } });
 
@@ -1889,16 +1950,9 @@ app.post('/api/ats-scan', async (req, res) => {
     return res.status(400).json({ error: 'Resume and job posting are required.' });
   }
 
-  const usageKey = getUsageKey(req);
   const email = getSessionEmail(req);
   const subscribed = isSubscriber(email);
-
-  if (!subscribed && !hasFreeTierLeft(usageKey, 'ats_scan')) {
-    return res.status(402).json({
-      error: 'free_limit_reached',
-      message: 'You\'ve used your free daily ATS scan. Upgrade to Pro for unlimited scans.'
-    });
-  }
+  // ATS scanner is a free-tier feature and now unlimited — no per-day cap.
 
   try {
     const msg = await anthropic.messages.create({
@@ -1938,7 +1992,6 @@ ${jobPosting.slice(0, 4000)}`
     if (!jsonMatch) throw new Error('No JSON in response');
     const result = JSON.parse(jsonMatch[0]);
 
-    if (!subscribed) consumeFreeTier(usageKey, 'ats_scan');
     res.json(result);
   } catch(e) {
     console.error('ATS scan error:', e.message);
@@ -1947,8 +2000,14 @@ ${jobPosting.slice(0, 4000)}`
 });
 
 // ─── API: Tailor resume ───────────────────────────────────────────────────────
-app.post('/api/tailor', async (req, res) => {
-  const { resume, jobPosting, mode, email } = req.body;
+// Per-IP rate limit for the (now unlimited-and-free) tailoring endpoint. The
+// free tier no longer has a daily cap, so this limiter is what protects the
+// Anthropic API budget from a runaway client or abuse. Generous enough for a
+// real user iterating on several applications in a sitting.
+const tailorLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, message: { error: 'rate_limited', message: 'You\'re tailoring very quickly — please wait a minute and try again.' } });
+
+app.post('/api/tailor', tailorLimiter, async (req, res) => {
+  const { resume, jobPosting, mode } = req.body;
 
   if (!['resume', 'cover_letter', 'both'].includes(mode)) {
     return res.status(400).json({ error: 'Invalid mode.' });
@@ -1960,23 +2019,20 @@ app.post('/api/tailor', async (req, res) => {
     return res.status(400).json({ error: 'Resume is required.' });
   }
 
-  const usageKey = getUsageKey(req);
-  const subscribed = isSubscriber(email);
-
-  if (!subscribed) {
-    const resumeLeft = hasFreeTierLeft(usageKey, 'resume');
-    const coverLeft = hasFreeTierLeft(usageKey, 'cover_letter');
-
-    if (mode === 'resume' && !resumeLeft) {
-      return res.status(402).json({ error: 'free_limit_reached', mode: 'resume', message: 'You\'ve used your free daily resume tailoring. Upgrade to Pro for unlimited access.' });
-    }
-    if (mode === 'cover_letter' && !coverLeft) {
-      return res.status(402).json({ error: 'free_limit_reached', mode: 'cover_letter', message: 'You\'ve used your free daily cover letter. Upgrade to Pro for unlimited access.' });
-    }
-    if (mode === 'both' && !resumeLeft && !coverLeft) {
-      return res.status(402).json({ error: 'free_limit_reached', mode: 'both', message: 'You\'ve used your free daily tailorings. Upgrade to Pro for unlimited access.' });
-    }
+  // Tailoring requires a signed-in account. The free tier is now unlimited, so
+  // an account — not a per-day cap — is what guards against anonymous API-cost
+  // abuse. The dashboard already forces login before this screen is reachable.
+  // Using the session email (not a body-supplied one) also prevents spoofing
+  // someone else's subscription status.
+  const email = getSessionEmail(req);
+  if (!email) {
+    return res.status(401).json({ error: 'login_required', message: 'Please sign in to tailor your resume — it\'s free and unlimited.' });
   }
+
+  const subscribed = isSubscriber(email);
+  // Free tier now includes unlimited resumes and cover letters — no per-day
+  // gating here anymore. Pro-only features (video, personal website, premium
+  // templates) are gated at their own routes.
 
   try {
     // Detect Chinese job board context to add bilingual keyword guidance
@@ -2134,14 +2190,11 @@ OUTPUT: Cover Letter
       messages: [{ role: 'user', content: userPrompt }]
     });
 
-    if (!subscribed) {
-      if (mode === 'resume' || mode === 'both') consumeFreeTier(usageKey, 'resume');
-      if (mode === 'cover_letter' || mode === 'both') consumeFreeTier(usageKey, 'cover_letter');
-    }
+    // Free tier is unlimited now — nothing to consume.
 
     res.json({ result: message.content[0].text });
 
-    const who = email ? email : `anonymous (${usageKey})`;
+    const who = email;
     const what = mode === 'both' ? 'a resume + cover letter' : (mode === 'cover_letter' ? 'a cover letter' : 'a resume');
     notifyOwner(`[ResumeTailored] Tailored: ${who}`,
       `<p>✍️ <strong>${who}</strong> just tailored <strong>${what}</strong>${subscribed ? ' (Pro)' : ' (free tier)'}.</p>`);
@@ -2425,12 +2478,7 @@ app.post('/api/optimize-linkedin', async (req, res) => {
   if (!profileText) return res.status(400).json({ error: 'Profile text is required.' });
   if (!targetRole)  return res.status(400).json({ error: 'Target role is required.' });
 
-  const usageKey = getUsageKey(req);
-  const subscribed = isSubscriber(email);
-  if (!subscribed && !hasFreeTierLeft(usageKey, 'linkedin')) {
-    return res.status(402).json({ error: 'free_limit_reached', message: 'You\'ve used your free LinkedIn optimization today. Upgrade to Pro for unlimited access.' });
-  }
-
+  // LinkedIn optimization is a free-tier feature and now unlimited — no cap.
   try {
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
@@ -2471,7 +2519,6 @@ OUTPUT: LinkedIn Optimization (three labeled sections only — no preamble or ex
       }]
     });
 
-    if (!subscribed) consumeFreeTier(usageKey, 'linkedin');
     res.json({ result: message.content[0].text });
   } catch (err) {
     console.error('LinkedIn optimizer error:', err?.status, err?.message || err);

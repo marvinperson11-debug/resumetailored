@@ -2568,11 +2568,16 @@
       try {
         const res = await fetch('/api/tailor', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({ resume, jobPosting: job, mode: selectedMode, email })
         });
         const data = await res.json();
 
+        if (res.status === 401) {
+          showAuthModal('tailor');
+          showToast('Please sign in — tailoring is free and unlimited.');
+          return;
+        }
         if (res.status === 402) {
           document.getElementById('limitBanner').style.display = 'flex';
           await checkStatus();
@@ -3208,7 +3213,7 @@
         { id:'r23', name:'Classic Espresso',   free:false, serif:true,  style:'underline', layout:'rClassic',  c:{p:'#3b1c0a',a:'#b45309',l:'#fffbeb'} },
         { id:'r24', name:'Classic Steel',      free:false, serif:true,  style:'underline', layout:'rClassic',  c:{p:'#37474f',a:'#90a4ae',l:'#eceff1'} },
         // Executive — sans-serif, left-border accent
-        { id:'r5',  name:'Executive',          free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#004d40',a:'#00897b',l:'#e0f2f1'} },
+        { id:'r5',  name:'Executive',          free:true,  serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#004d40',a:'#00897b',l:'#e0f2f1'} },
         { id:'r6',  name:'Executive Amber',    free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#3e2723',a:'#f59e0b',l:'#fffbeb'} },
         { id:'r7',  name:'Executive Indigo',   free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#1a0050',a:'#7c3aed',l:'#ede9fe'} },
         { id:'r8',  name:'Executive Slate',    free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#1c2333',a:'#607d8b',l:'#eceff1'} },
@@ -3235,7 +3240,7 @@
         { id:'r35', name:'Sidebar Indigo',     free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#1e1b4b',a:'#818cf8',l:'#eef2ff'} },
         { id:'r36', name:'Sidebar Charcoal',   free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#1f2937',a:'#6b7280',l:'#f9fafb'} },
         // Minimal — ultra-clean, generous whitespace
-        { id:'r17', name:'Minimal',            free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
+        { id:'r17', name:'Minimal',            free:true,  serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
         { id:'r18', name:'Minimal Midnight',   free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#0d1117',a:'#4299e1',l:'#ebf8ff'} },
         { id:'r19', name:'Minimal Sage',       free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#2d4a22',a:'#7cb342',l:'#f9fbe7'} },
         { id:'r20', name:'Minimal Graphite',   free:false, serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#212121',a:'#9e9e9e',l:'#fafafa'} },
@@ -3273,7 +3278,7 @@
         { id:'c23', name:'Formal Crimson',     free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#7f1d1d',a:'#ef4444',l:'#fef2f2'} },
         { id:'c24', name:'Formal Charcoal',    free:false, serif:true,  style:'underline', layout:'cFormal', c:{p:'#1f2937',a:'#6b7280',l:'#f9fafb'} },
         // Bold — strong header, left-border
-        { id:'c5',  name:'Bold',               free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#7c2d12',a:'#fb923c',l:'#fff7ed'} },
+        { id:'c5',  name:'Bold',               free:true,  serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#7c2d12',a:'#fb923c',l:'#fff7ed'} },
         { id:'c6',  name:'Bold Navy',          free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#172554',a:'#60a5fa',l:'#eff6ff'} },
         { id:'c7',  name:'Bold Teal',          free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'} },
         { id:'c8',  name:'Bold Violet',        free:false, serif:false, style:'left-bar',  layout:'cBold',   c:{p:'#3b0764',a:'#c084fc',l:'#faf5ff'} },
@@ -3300,7 +3305,7 @@
         { id:'c35', name:'Split Sage',         free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#14532d',a:'#65a30d',l:'#ecfccb'} },
         { id:'c36', name:'Split Plum',         free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#3b0764',a:'#a855f7',l:'#faf5ff'} },
         // Clean — ultra-minimal
-        { id:'c17', name:'Clean',              free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#1e293b',a:'#64748b',l:'#f8fafc'} },
+        { id:'c17', name:'Clean',              free:true,  serif:false, style:'minimal',   layout:'cClean',  c:{p:'#1e293b',a:'#64748b',l:'#f8fafc'} },
         { id:'c18', name:'Clean Ocean',        free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#0c4a6e',a:'#0284c7',l:'#e0f2fe'} },
         { id:'c19', name:'Clean Sage',         free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#1a2e05',a:'#65a30d',l:'#ecfccb'} },
         { id:'c20', name:'Clean Rose',         free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#4c0519',a:'#fb7185',l:'#fff1f2'} },
@@ -4569,8 +4574,10 @@ Aaliyah Washington`
     }
 
     function downloadTxt() {
-      const text = getOutputText();
+      let text = getOutputText();
       if (!text) return;
+      // Free-tier watermark (Pro exports are clean).
+      if (!isSubscriberFlag) text += '\n\n—\nMade with ResumeTailored AI · resumetailored.com';
       const blob = new Blob([text], { type: 'text/plain' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -4616,6 +4623,7 @@ Aaliyah Washington`
             mode: selectedMode, docFont: selectedDocFont,
             primary: tplMeta(primaryTpl), cover: tplMeta(cTpl),
             meta: window.lastCoverMeta || null,
+            email: getStoredEmail() || undefined,
             photoUrl: videoPhotoDataUrl || undefined
           })
         });
@@ -5208,6 +5216,7 @@ Aaliyah Washington`
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     @page { size: letter; margin: ${isCoverBanner ? '0' : '0.5in'}; }
+    .rt-watermark { position: fixed; bottom: 6px; left: 0; right: 0; text-align: center; font-size: 8px; color: #9aa3af; letter-spacing: .3px; font-family: Arial, sans-serif; }
     html { background: ${isSidebar ? bodyBg : '#fff'}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     body { font-family: ${font}; color: #222; background: ${isSidebar ? 'transparent' : bodyBg}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; overflow-wrap: anywhere; word-break: normal; hyphens: none; -webkit-hyphens: none; }
     .page { width: 100%; min-width: 0; }
@@ -5219,6 +5228,7 @@ Aaliyah Washington`
   <div class="page">
     ${printContent}
   </div>
+  ${isSubscriberFlag ? '' : '<div class="rt-watermark">Made with ResumeTailored AI · resumetailored.com</div>'}
   <script>window.onload = function(){
     ${selectedMode === 'cover_letter' ? `var p = document.querySelector('.page');
     if (p) { var ph = ${isCoverBanner ? 1056 : 960}, ch = p.scrollHeight; if (ch > ph) document.documentElement.style.zoom = ph / ch; }` : ''}
