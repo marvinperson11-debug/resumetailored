@@ -476,11 +476,14 @@
 
             <!-- UPLOAD / PASTE PANE -->
             <div id="resumeUploadPane">
-              <div style="margin-bottom:6px;">
+              <div style="margin-bottom:6px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                 <button class="upload-btn" onclick="document.getElementById('resumeFileInput').click()">
                   <span id="uploadBtnText" data-i18n="upload_btn">⬆ Upload File</span>
                 </button>
                 <input type="file" id="resumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleResumeUpload(this)" />
+                <button id="linkedinImportBtn" onclick="startLinkedInImport()" style="display:none;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
+                  <span>in</span> <span id="linkedinImportText">Import from LinkedIn</span>
+                </button>
               </div>
               <textarea id="resume" placeholder="Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file." data-i18n-placeholder="resume_placeholder" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
               <div id="translateBar" style="margin-top:8px;display:none;">
@@ -5277,12 +5280,73 @@ Aaliyah Washington`
       t._timer = setTimeout(() => t.classList.remove('show'), ms || 3000);
     }
 
+    // ── LinkedIn import (free) ────────────────────────────────────────────────
+    // Show the button only when the server has LinkedIn OAuth configured.
+    async function initLinkedInImport() {
+      try {
+        const r = await fetch('/api/auth/linkedin/status');
+        const d = await r.json();
+        const btn = document.getElementById('linkedinImportBtn');
+        if (btn && d && d.enabled) btn.style.display = 'inline-flex';
+      } catch (_) {}
+    }
+    function startLinkedInImport() {
+      // Full-page redirect to LinkedIn consent; we come back to /dashboard.
+      window.location.href = '/api/auth/linkedin';
+    }
+    // On return from LinkedIn, pull the one-time draft and prefill the builder.
+    async function handleLinkedInReturn() {
+      const q = new URLSearchParams(window.location.search);
+      const err = q.get('linkedin_error');
+      if (err) {
+        showToast('LinkedIn import failed: ' + err.replace(/_/g, ' '));
+        history.replaceState(null, '', window.location.pathname);
+        return;
+      }
+      const handoff = q.get('linkedin');
+      if (!handoff) return;
+      history.replaceState(null, '', window.location.pathname); // don't leave the token in the URL
+      try {
+        const r = await fetch('/api/auth/linkedin/draft?token=' + encodeURIComponent(handoff));
+        if (!r.ok) { showToast('LinkedIn import link expired — please try again.'); return; }
+        const { profile } = await r.json();
+        prefillFromLinkedIn(profile);
+      } catch (_) { showToast('Could not load your LinkedIn profile.'); }
+    }
+    // Drop the imported fields into the resume textarea as a starter, and stash
+    // the photo for the Sidebar avatar. LinkedIn's API only returns basics, so
+    // we scaffold the rest and tell the user to complete it.
+    function prefillFromLinkedIn(p) {
+      if (!p) return;
+      const ta = document.getElementById('resume');
+      if (ta) {
+        const lines = [];
+        if (p.name) lines.push(p.name);
+        const contact = [p.email].filter(Boolean).join(' | ');
+        if (contact) lines.push(contact);
+        if (p.headline) lines.push('\n' + p.headline);
+        lines.push('\n\nSUMMARY\n[Add a 2–3 sentence professional summary]');
+        lines.push('\n\nEXPERIENCE\n[Add your roles — LinkedIn does not share full work history via its API, so paste or type them here]');
+        lines.push('\n\nEDUCATION\n[Add your education]');
+        lines.push('\n\nSKILLS\n[Add your skills, comma-separated]');
+        const draftText = lines.join('\n');
+        // Only overwrite if the box is empty, so we never clobber existing text.
+        if (!ta.value.trim()) ta.value = draftText;
+        else ta.value = draftText + '\n\n---\n' + ta.value;
+        ta.dispatchEvent(new Event('input'));
+      }
+      if (p.photo) { try { window.rtResumePhoto = p.photo; videoPhotoDataUrl = p.photo; } catch (_) {} }
+      showToast('Imported from LinkedIn — fill in your experience, education & skills to finish.', 6000);
+    }
+
     // ── Page load ─────────────────────────────────────────────────────────────
     // If landing from "Start Pro" on the pricing page, trigger payment after login
     if (new URLSearchParams(window.location.search).get('plan') === 'pro') {
       pendingPro = true;
     }
     checkAuth();
+    initLinkedInImport();
+    handleLinkedInReturn();
     // Init template picker after DOM is ready (template functions are hoisted)
     setTimeout(renderTplPicker, 0);
     // Apply language preference. An explicit ?lang= in the URL wins and is
@@ -5448,12 +5512,15 @@ Aaliyah Washington`
       // letter. Free for everyone — it spreads the brand.
       const shareBtn = selectedMode !== 'cover_letter'
         ? `<button class="download-btn" onclick="shareResumeLink()" style="background:linear-gradient(135deg,#10b981,#0ea5e9);">🔗 Share as Link</button>` : '';
+      // Personal website — Pro only, resume only (a live public page).
+      const siteBtn = (isSubscriberFlag && selectedMode !== 'cover_letter')
+        ? `<button class="download-btn" onclick="publishPersonalSite()" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);">🌐 Publish as Website</button>` : '';
       if (isSubscriberFlag) {
         const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `${fmtBanner}
           <button class="download-btn download-btn-pdf" onclick="downloadPdf()">Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="downloadDocx()">Download Word</button>
-          <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>${shareBtn}${videoBtn}`;
+          <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>${shareBtn}${siteBtn}${videoBtn}`;
       } else if (!isLoggedIn) {
         const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `${fmtBanner}
@@ -5478,6 +5545,44 @@ Aaliyah Washington`
       const cb = document.getElementById('shareHideContact'); if (cb) cb.checked = false;
       const exp = document.getElementById('shareExpiry'); if (exp) exp.value = '0';
       return _createShareLink();
+    }
+
+    // ── Personal website (Pro) ────────────────────────────────────────────────
+    // Publish the tailored resume as a live public page at /site/<address>.
+    async function publishPersonalSite() {
+      if (!isSubscriberFlag) { showToast('Publishing a personal website is a Pro feature.'); startPro(); return; }
+      let text = getOutputText();
+      if (!text) { showToast('Tailor a resume first, then publish it.'); return; }
+      if (sigName && text.endsWith(sigName)) text = text.slice(0, text.length - sigName.length).trimEnd();
+      if (selectedMode === 'both') text = (text.split(/\n\n-{3,}\n\n/)[0] || text).trim();
+
+      // Suggest an address from the resume title; let the user edit it.
+      const title = (document.getElementById('outputTitle').textContent || '').replace(/resume/i, '').trim();
+      const suggested = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
+      const input = window.prompt('Choose your website address:\n\n' + window.location.origin + '/site/______\n\n3–30 letters, numbers or hyphens.', suggested || '');
+      if (input === null) return;
+      const sub = input.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, '');
+      if (sub.length < 3) { showToast('That address is too short — use 3–30 characters.'); return; }
+
+      const rTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
+      try {
+        const res = await fetch('/api/personal-site', {
+          method: 'POST', headers: authHeaders(),
+          body: JSON.stringify({
+            subdomain: sub, text, name: title,
+            layout: rTpl.layout,
+            colors: { primary: rTpl.c.p, accent: rTpl.c.a, light: rTpl.c.l },
+            serif: !!rTpl.serif,
+            photoUrl: (window.rtResumePhoto || undefined),
+            hideContact: false,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) { showToast(data.message || data.error || 'Could not publish your website.', 6000); return; }
+        try { await navigator.clipboard.writeText(data.url); } catch (_) {}
+        showToast('🌐 Live at ' + data.url + ' (link copied)', 8000);
+        window.open(data.url, '_blank');
+      } catch (_) { showToast('Could not publish your website — please try again.'); }
     }
     // Re-create the link with whatever the modal controls currently say (called when
     // the hide-contact checkbox or the expiry dropdown changes).

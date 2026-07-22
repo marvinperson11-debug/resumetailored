@@ -167,6 +167,22 @@ db.exec(`
     expires_at   INTEGER,
     views        INTEGER DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS personal_sites (
+    subdomain    TEXT PRIMARY KEY,
+    email        TEXT NOT NULL,
+    name         TEXT,
+    text         TEXT NOT NULL,
+    accent       TEXT,
+    primary_hex  TEXT,
+    serif        INTEGER DEFAULT 0,
+    photo        TEXT,
+    hide_contact INTEGER DEFAULT 0,
+    layout       TEXT,
+    published    INTEGER DEFAULT 1,
+    created_at   INTEGER NOT NULL,
+    updated_at   INTEGER NOT NULL,
+    views        INTEGER DEFAULT 0
+  );
 `);
 
 // Lightweight column migrations for tables that predate a new column. SQLite has
@@ -473,6 +489,115 @@ app.post('/api/auth/logout', (req, res) => {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   if (token) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
   res.json({ success: true });
+});
+
+// ─── LinkedIn OAuth import (free onboarding feature) ──────────────────────────
+// Official "Sign In with LinkedIn using OpenID Connect" flow (no scraping). We
+// use it only to PRE-FILL the resume builder — name/email/photo (and headline
+// if the granted scopes return it). Standard OIDC does NOT expose full work
+// history / education / skills, so the client prompts the user to complete the
+// rest by hand. The feature is optional: if LINKEDIN_CLIENT_ID/SECRET are
+// unset, the routes report disabled and the client hides the button — nothing
+// else breaks (same pattern as Resend/ElevenLabs).
+const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID || '';
+const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET || '';
+function linkedInRedirectUri(req) {
+  return process.env.LINKEDIN_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/linkedin/callback`;
+}
+const linkedInConfigured = () => !!(LINKEDIN_CLIENT_ID && LINKEDIN_CLIENT_SECRET);
+
+// Short-lived in-memory stores. `states` guards CSRF on the round-trip;
+// `drafts` hands the parsed profile back to the SPA exactly once. Both expire.
+const _liStates = new Map();
+const _liDrafts = new Map();
+function _liSweep() {
+  const now = Date.now();
+  for (const [k, v] of _liStates) if (v < now) _liStates.delete(k);
+  for (const [k, v] of _liDrafts) if (v.exp < now) _liDrafts.delete(k);
+}
+
+// Whether the button should show. The client calls this on load.
+app.get('/api/auth/linkedin/status', (req, res) => {
+  res.json({ enabled: linkedInConfigured() });
+});
+
+// Step 1 — send the user to LinkedIn's consent screen.
+app.get('/api/auth/linkedin', (req, res) => {
+  if (!linkedInConfigured()) return res.status(501).json({ error: 'LinkedIn import is not configured.' });
+  _liSweep();
+  const state = crypto.randomBytes(16).toString('hex');
+  _liStates.set(state, Date.now() + 10 * 60 * 1000); // 10-min validity
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: LINKEDIN_CLIENT_ID,
+    redirect_uri: linkedInRedirectUri(req),
+    scope: 'openid profile email',
+    state,
+  });
+  res.redirect(`https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`);
+});
+
+// Step 2 — LinkedIn redirects back with a code; exchange it, fetch the profile,
+// stash a one-time draft, and bounce to the dashboard with a handoff token.
+app.get('/api/auth/linkedin/callback', async (req, res) => {
+  const backTo = (msg) => res.redirect(`/dashboard?linkedin_error=${encodeURIComponent(msg)}`);
+  try {
+    if (!linkedInConfigured()) return backTo('not_configured');
+    const { code, state, error, error_description } = req.query;
+    if (error) return backTo(String(error_description || error).slice(0, 120));
+    _liSweep();
+    if (!code || !state || !_liStates.has(String(state))) return backTo('invalid_state');
+    _liStates.delete(String(state));
+
+    // Exchange the authorization code for an access token.
+    const tokRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: String(code),
+        client_id: LINKEDIN_CLIENT_ID,
+        client_secret: LINKEDIN_CLIENT_SECRET,
+        redirect_uri: linkedInRedirectUri(req),
+      }),
+    });
+    if (!tokRes.ok) return backTo('token_exchange_failed');
+    const tok = await tokRes.json();
+    if (!tok.access_token) return backTo('no_token');
+
+    // Fetch the OIDC userinfo (name, email, picture; headline only if the
+    // account's granted scopes include it — usually not on standard apps).
+    const uiRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tok.access_token}` },
+    });
+    if (!uiRes.ok) return backTo('profile_fetch_failed');
+    const ui = await uiRes.json();
+
+    const draft = {
+      name: ui.name || [ui.given_name, ui.family_name].filter(Boolean).join(' ') || '',
+      headline: ui.headline || '', // typically empty on standard OIDC
+      email: ui.email || '',
+      photo: ui.picture || '',
+      locale: (ui.locale && (ui.locale.language || ui.locale)) || '',
+      partial: true, // signals the client to prompt the user to complete the rest
+    };
+    const handoff = crypto.randomBytes(16).toString('hex');
+    _liDrafts.set(handoff, { draft, exp: Date.now() + 5 * 60 * 1000 });
+    res.redirect(`/dashboard?linkedin=${handoff}`);
+  } catch (err) {
+    console.error('[linkedin] callback failed:', err && err.message ? err.message : err);
+    backTo('unexpected_error');
+  }
+});
+
+// Step 3 — the SPA exchanges the handoff token for the parsed profile, once.
+app.get('/api/auth/linkedin/draft', (req, res) => {
+  _liSweep();
+  const t = String(req.query.token || '');
+  const entry = t && _liDrafts.get(t);
+  if (!entry) return res.status(404).json({ error: 'expired' });
+  _liDrafts.delete(t);
+  res.json({ profile: entry.draft });
 });
 
 // ── Saved resumes (per signed-in user, so they're available on every device) ──
@@ -1251,7 +1376,13 @@ function _shareChips(lines, cls) {
   return items.map(i => `<span class="${cls}">${_escHtml(i)}</span>`).join('');
 }
 
-function _shareResumeHtml(row, origin) {
+// Renders a stored resume to a standalone HTML page. Used by two features:
+//  • Share links (/r/:slug) — noindex, carries a "Made with ResumeTailored"
+//    footer, canonical URL /r/<slug>.
+//  • Personal websites (/site/:name) — a Pro feature: indexable, watermark-free
+//    (no footer), canonical URL from opts.canonicalUrl.
+// opts: { indexable?:bool, footer?:string (html or ''), canonicalUrl?:string }
+function _shareResumeHtml(row, origin, opts = {}) {
   const { name, contactParts, sections } = _dxParseResume(row.text || '');
   const primary = '#' + String(row.primary_hex || '4a1042').replace('#', '');
   const accent = '#' + String(row.accent || '8b5cf6').replace('#', '');
@@ -1261,7 +1392,11 @@ function _shareResumeHtml(row, origin) {
   const initial = (displayName.trim()[0] || '?').toUpperCase();
   const summarySec = sections.find(s => /SUMMARY|PROFILE/i.test(s.title));
   const ogDesc = _escHtml(((summarySec && summarySec.lines.join(' ')) || 'Professional resume').replace(/\s+/g, ' ').replace(/[*#]/g, '').trim().slice(0, 160));
-  const shareUrl = `${origin}/r/${row.slug}`;
+  const indexable = !!opts.indexable;
+  const shareUrl = opts.canonicalUrl || `${origin}/r/${row.slug}`;
+  const footerHtml = opts.footer !== undefined
+    ? opts.footer
+    : `<div class="r-foot">Made with <a href="${origin}/?utm_source=shared_resume" target="_blank" rel="noopener">ResumeTailored AI</a> — tailor your resume to any job in 60 seconds</div>`;
 
   // A resume's contact line is usually one "a | b | c" string — split it so the
   // pieces render as clean rows (in a rail) or ·-separated spans (inline).
@@ -1328,7 +1463,7 @@ function _shareResumeHtml(row, origin) {
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <meta name="robots" content="noindex,nofollow"/>
+  <meta name="robots" content="${indexable ? 'index,follow' : 'noindex,nofollow'}"/>
   <title>${_escHtml(displayName)} — Resume</title>
   <meta property="og:type" content="profile"/>
   <meta property="og:title" content="${_escHtml(displayName)} — Resume"/>
@@ -1412,7 +1547,7 @@ function _shareResumeHtml(row, origin) {
 </head>
 <body class="${bodyClass}">
   ${bodyHtml}
-  <div class="r-foot">Made with <a href="${origin}/?utm_source=shared_resume" target="_blank" rel="noopener">ResumeTailored AI</a> — tailor your resume to any job in 60 seconds</div>
+  ${footerHtml}
 </body>
 </html>`;
 }
@@ -1472,6 +1607,104 @@ app.get('/r/:slug', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
   res.send(_shareResumeHtml(row, origin));
+});
+
+// ─── Personal portfolio website (Pro feature) ─────────────────────────────────
+// Publish a resume as a live, indexable, watermark-free personal site. Served
+// at /site/:name for now (path-based). When wildcard DNS + TLS are available
+// for *.resumetailored.com, a host-based middleware can map
+// name.resumetailored.com → the same renderer (see PLAN.md §5 / RAILWAY_SETUP).
+// Gated behind Pro because each site consumes our hosting per visitor.
+const RESERVED_SUBDOMAINS = new Set([
+  'www', 'app', 'api', 'mail', 'admin', 'blog', 'static', 'cdn', 'assets', 'r',
+  'preview', 'dashboard', 'help', 'support', 'login', 'signup', 'account',
+  'site', 'sites', 'about', 'pricing', 'terms', 'privacy', 'status', 'docs',
+  'resumetailored', 'ftp', 'smtp', 'ns', 'test', 'dev', 'staging',
+]);
+function _validSubdomain(s) {
+  const v = String(s || '').toLowerCase().trim();
+  if (!/^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])$/.test(v)) return null; // 3–30 chars, no leading/trailing hyphen
+  if (RESERVED_SUBDOMAINS.has(v)) return null;
+  return v;
+}
+
+// Fetch the signed-in user's current personal site (if any).
+app.get('/api/personal-site', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const row = db.prepare('SELECT subdomain, name, published, views, updated_at FROM personal_sites WHERE email = ?').get(email);
+  res.json({ site: row || null });
+});
+
+// Publish / update the signed-in Pro user's personal site.
+app.post('/api/personal-site', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) {
+    return res.status(402).json({ error: 'pro_required', message: 'Publishing a personal website is a Pro feature. Upgrade to unlock it.' });
+  }
+  const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout } = req.body || {};
+  const sub = _validSubdomain(subdomain);
+  if (!sub) return res.status(400).json({ error: 'invalid_subdomain', message: 'Choose 3–30 letters, numbers or hyphens (not a reserved word).' });
+  if (!text || typeof text !== 'string' || text.trim().length < 20) return res.status(400).json({ error: 'No resume content to publish.' });
+  if (text.length > 40000) return res.status(400).json({ error: 'Resume is too long to publish.' });
+
+  // The subdomain must be free — unless it already belongs to this user (rename
+  // / re-publish). One site per user: an existing row for this email is updated.
+  const owner = db.prepare('SELECT email FROM personal_sites WHERE subdomain = ?').get(sub);
+  if (owner && owner.email.toLowerCase() !== email.toLowerCase()) {
+    return res.status(409).json({ error: 'taken', message: 'That address is already taken — try another.' });
+  }
+  let photo = null;
+  if (typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000) photo = photoUrl;
+  const _layout = _SHARE_LAYOUTS.has(layout) ? layout : null;
+  const now = Date.now();
+
+  // Remove any previous site this user had under a different subdomain, so a
+  // rename doesn't leave an orphaned live page.
+  const existing = db.prepare('SELECT subdomain FROM personal_sites WHERE email = ?').get(email);
+  if (existing && existing.subdomain !== sub) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(existing.subdomain);
+
+  db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, published, created_at, updated_at, views)
+              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, 1, @now, @now, 0)
+              ON CONFLICT(subdomain) DO UPDATE SET
+                name=@name, text=@text, accent=@accent, primary_hex=@primary_hex, serif=@serif,
+                photo=@photo, hide_contact=@hide_contact, layout=@layout, published=1, updated_at=@now`).run({
+    subdomain: sub, email: email.toLowerCase(),
+    name: (name || '').toString().slice(0, 80), text,
+    accent: (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
+    primary_hex: (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
+    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, now,
+  });
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.json({ url: `${origin}/site/${sub}`, subdomain: sub });
+});
+
+// Unpublish (delete) the signed-in user's personal site.
+app.delete('/api/personal-site', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  db.prepare('DELETE FROM personal_sites WHERE email = ?').run(email.toLowerCase());
+  res.json({ success: true });
+});
+
+// Public render of a personal site — indexable, watermark-free.
+app.get('/site/:sub', (req, res) => {
+  const sub = _validSubdomain(req.params.sub);
+  const row = sub ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub) : null;
+  if (!row) {
+    res.status(404);
+    return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
+  try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.send(_shareResumeHtml(row, origin, {
+    indexable: true,
+    footer: '', // Pro personal sites are watermark-free
+    canonicalUrl: `${origin}/site/${sub}`,
+  }));
 });
 
 app.post('/api/download-docx', async (req, res) => {
