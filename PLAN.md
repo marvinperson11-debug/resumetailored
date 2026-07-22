@@ -1,6 +1,6 @@
 # Implementation Plan — Pricing Restructure + LinkedIn Import + Personal Websites
 
-**Status:** Draft for review. No implementation code has been written. Nothing below is committed until you approve it.
+**Status:** ✅ Implemented (approved 2026-07-22). All seven steps below are built, tested, committed, and pushed on `claude/resumetailored-pricing-plan-iwy6un`. This file is retained as the design record. Open items still needing your input: the canonical **CNY (¥) price** (left unchanged site-wide) and the **ad-gate vs watermark** overlap on free downloads (see the PR summary).
 
 This plan covers five changes:
 1. Restructure the free tier (unlimited resumes/cover letters, watermarked, 3+3 basic templates).
