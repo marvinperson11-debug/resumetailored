@@ -53,11 +53,14 @@ After redeploy:
 ## 6. Exercise the flows
 
 Then run `docs/TESTING.md`. Highlights:
-- [ ] Tailor a resume → real AI output; 2nd free use same day → `402`.
+- [ ] Sign in (required) → tailor a resume → real AI output. Free tier is now
+      **unlimited** — repeated tailorings should keep working (no `402` cap).
+- [ ] As a free user, export a PDF/DOCX → confirm the small footer watermark;
+      as Pro, confirm exports are watermark-free.
 - [ ] Upgrade → pay with test card `4242 4242 4242 4242` (any future expiry / CVC /
       ZIP) → lands on `/success.html`.
 - [ ] Stripe → Webhooks → endpoint → recent deliveries show `200`; that email now
-      has unlimited tailoring.
+      has Pro (premium templates, resume video, personal website, no watermark).
 - [ ] Cancel the test subscription → `customer.subscription.deleted` delivered →
       access revoked.
 
@@ -67,3 +70,33 @@ Then run `docs/TESTING.md`. Highlights:
 - Recreate the product/price in Stripe **live mode**; update the price IDs.
 - Add a **second** webhook endpoint in **live mode** pointing at the same
   `/webhook` URL, with its own `whsec_…` signing secret.
+
+## 8. LinkedIn OAuth import (optional, free feature)
+
+To enable the "Import from LinkedIn" button:
+- Create a LinkedIn app and request the **"Sign In with LinkedIn using OpenID
+  Connect"** product (scopes `openid profile email`).
+- Add its OAuth redirect URL: `https://<your-railway-url>/api/auth/linkedin/callback`.
+- Set `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` in Railway (and
+  `LINKEDIN_REDIRECT_URI` if your public origin differs from the default).
+- If these are unset, the button is simply hidden — nothing breaks.
+
+Note: standard LinkedIn OIDC returns name/email/photo only. Full work history,
+education and skills are **not** available without LinkedIn Partner API access,
+so the import prefills what it can and asks the user to complete the rest.
+
+## 9. Personal websites (Pro) — path-based today, wildcard subdomain later
+
+Pro users publish a resume at **`/site/:name`** (e.g. `/site/john`). This works
+today with no extra infra.
+
+The intended end state is `john.resumetailored.com`. To switch to host-based
+subdomains later:
+1. Add a wildcard DNS record `*.resumetailored.com` pointing at the Railway app,
+   and add `*.resumetailored.com` as a custom domain in Railway so it issues a
+   **wildcard TLS certificate**.
+2. Add an early host-inspection middleware in `server.js` (before
+   `express.static`) that maps `<sub>.resumetailored.com` → the same
+   `personal_sites` lookup + `_shareResumeHtml(..., { indexable:true, footer:'' })`
+   renderer already used by `/site/:name`, leaving the apex + `www` untouched.
+Until wildcard DNS/TLS is provisioned, keep the path-based route.
