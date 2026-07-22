@@ -269,6 +269,31 @@ app.use((req, res, next) => {
   next();
 });
 
+// ─── Host-based personal websites (name.resumetailored.com) ───────────────────
+// When a request arrives on a personal-site subdomain, serve that user's
+// published resume page directly — the same renderer as the path-based
+// /site/:name route. This is INERT until a wildcard *.resumetailored.com DNS
+// record + TLS actually point such hosts at this app (see docs/RAILWAY_SETUP.md
+// §9): the apex, www, reserved names, the Railway/Netlify hosts and localhost
+// never match, so behaviour is unchanged today. Only the root document is
+// intercepted — assets and API paths fall through to their normal handlers.
+const PERSONAL_SITE_HOST_RE = /^([a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9]))\.resumetailored\.com$/i;
+app.use((req, res, next) => {
+  const host = String(req.hostname || '').toLowerCase();
+  const m = host.match(PERSONAL_SITE_HOST_RE);
+  if (!m) return next();
+  const sub = _validSubdomain(m[1]);          // rejects reserved names (www, api, …)
+  if (!sub || req.path !== '/') return next(); // reserved host or a sub-path → normal handling
+  const row = db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub);
+  if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
+  try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  return res.send(_shareResumeHtml(row, `${req.protocol}://${host}`, {
+    indexable: true, footer: '', canonicalUrl: `${req.protocol}://${host}/`,
+  }));
+});
+
 // Redirect /app -> /dashboard. Must run BEFORE express.static, otherwise the
 // static handler serves public/app.html for /app and shadows this redirect.
 app.get('/app', (req, res) => res.redirect(301, '/dashboard'));
