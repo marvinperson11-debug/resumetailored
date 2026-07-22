@@ -4,7 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-ResumeTailored AI is a SaaS product that uses Claude (claude-sonnet-4-6) to tailor resumes and generate cover letters from job postings. It charges $19/month via Stripe and offers 1 free tailoring/day on the free tier.
+ResumeTailored AI is a SaaS product that uses Claude (claude-sonnet-4-6) to tailor resumes and generate cover letters from job postings. It charges **$19.99/month** (or $129 lifetime) via Stripe. The **free tier is unlimited** — unlimited resume tailoring, cover letters, ATS scans, and LinkedIn optimizations — differentiated from Pro by a small watermark on exports and a limited template set. Tailoring requires a (free) signed-in account.
+
+### Free vs Pro (2026 structure)
+
+| | Free | Pro ($19.99/mo or $129 lifetime) |
+|---|---|---|
+| Resume tailoring + cover letters | ✅ unlimited (login required, IP rate-limited) | ✅ unlimited |
+| ATS scanner, LinkedIn optimizer, LinkedIn import | ✅ | ✅ |
+| Templates | 6 basic (3 resume: Classic `r1`, Executive `r5`, Minimal `r17`; 3 cover: Formal `c1`, Bold `c5`, Clean `c17`) | all 104 |
+| Export watermark | small footer mark on PDF/DOCX/TXT | ✅ watermark-free |
+| Resume video, personal website | ❌ Pro-only | ✅ |
+
+Template gating is enforced **server-side** in `/api/download-docx` by the free-template `(layout + primary color)` signature — see `FREE_TPL_SIGS` / `isFreeTemplateMeta` in `server.js`. The client picker (`OUT_TPLS` in `public/app.html`, `free:true` flags) mirrors it. Keep the two in sync when changing the free set.
 
 ## Commands
 
@@ -37,7 +49,7 @@ A tailored resume can be turned into a short vertical MP4 (1080×1920, ~18s) for
   - `parseResume.js` — converts the plain-text tailor output into `ResumeVideoProps` (name, title, summary, top-5 highlights preferring quantified bullets, skills).
   - `render.js` — server-side renderer: `bundle()` once (cached) + `selectComposition()` + `renderMedia()`. Uses Remotion's own **chrome-headless-shell** (downloaded via `ensureBrowser()`, pre-fetched at build in the `Dockerfile`); it does **not** auto-detect a system Chromium, because recent Chromium builds removed the old headless mode Remotion needs ("Old Headless mode has been removed from the Chrome binary"). The build runs on a **Debian `Dockerfile`** (not Nixpacks) because the prebuilt headless shell can't link against Nixpacks' library paths (it failed to launch with "Closed with 127"); the Dockerfile apt-installs the shell's runtime libs + fonts. An explicit `REMOTION_BROWSER_EXECUTABLE`/`CHROME_PATH` overrides, but only point it at a binary that still supports old headless.
   - `narration.js` — voiceover for the MP4. `generateNarrationAsync` tries, in order: **ElevenLabs** (studio-quality, when `ELEVENLABS_API_KEY` is set — uses the `/with-timestamps` endpoint for an mp3 + exact duration), then the local engine **Piper** (natural neural voice; Piper binary via `PIPER_BIN`/PATH/`python3 -m piper` + a voice model resolved from `PIPER_VOICE`/common dirs or best-effort downloaded), then **espeak-ng** (robotic), else silent. **All three engines are gender-aware:** the voice the user picks (ElevenLabs catalog key, or an explicit `voiceGender`) selects a matching local voice too — Piper uses `en_US-ryan-high` (male) / `en_US-lessac-medium` (female) and espeak uses `en-us+m3` / `en-us+f3` — so a male pick is never rendered in the female fallback voice (env-overridable via `PIPER_VOICE_ID_MALE`/`_FEMALE`, `ESPEAK_VOICE_MALE`/`_FEMALE`). **The pipeline is also language-aware:** `parseResume` auto-detects a predominantly-Chinese resume (CJK share > 25%) and sets `props.lang = 'zh'`, which switches the narration connectives + outro presets to Chinese (`data.js`), the on-screen greeting to 您好, and the local voices to Chinese — Piper `zh_CN-huayan-medium` (the one standard zh voice, used for both genders; `PIPER_VOICE_ID_ZH`/`_ZH_MALE` override) and espeak `cmn+m3`/`cmn+f3` (`ESPEAK_VOICE_ZH`/`_ZH_MALE`); ElevenLabs needs no switch (`eleven_multilingual_v2` speaks the Chinese script natively). Chinese section headers (个人简介/工作经历/专业技能/教育背景 …) normalise onto the English section keys in `parseResume`. The script comes from `narrationScript` in `data.js`. The `Dockerfile` installs Piper + the `en_US-lessac-medium` (female), `en_US-ryan-high` (male), and `zh_CN-huayan-medium` (Chinese) voices on Railway (guarded with `|| true`). The composition muxes the audio via `<Audio>` and extends to fit (`audioDurationInFrames`). The `/api/resume-video` route gates ElevenLabs to **subscribers** by default (`ELEVENLABS_FREE_TIER=on` opens it to all); `RESUME_VIDEO_VOICE=off` disables voice. Best-effort throughout: any failure ⇒ silent video, and the route retries silently if an audio render fails.
-- **Endpoint**: `POST /api/resume-video` (`server.js`) takes `{ resume, name?, accentColor?, email }`, gated like other features (subscribers unlimited; free tier = 1/day via the `video` usage key). It renders one video at a time (`videoRenderInFlight` lock → 429 if busy), streams the MP4, and deletes the temp file. The heavy Remotion packages are `require()`d lazily inside the handler, so the server boots even if they aren't installed (route returns 501).
+- **Endpoint**: `POST /api/resume-video` (`server.js`) takes `{ resume, name?, accentColor?, email }`, **Pro-only** — non-subscribers get a `402 pro_only`. It renders one video at a time (`videoRenderInFlight` lock → 429 if busy), streams the MP4, and deletes the temp file. The heavy Remotion packages are `require()`d lazily inside the handler, so the server boots even if they aren't installed (route returns 501).
 - **Frontend**: a "🎬 Resume Video" button in `renderPreviewDownloadButtons()` (`app.html`, hidden for cover-letter-only mode) calls `downloadVideo()`.
 - **Web preview (no server render)**: `public/preview.html` (served at `/preview`) plays the composition live in the browser via [`@remotion/player`](https://www.remotion.dev/docs/player), loaded from esm.sh with React pinned through an import map — so it works on static hosting (Netlify deploy previews, mobile) with no Chromium. Supports **upload (PDF/DOCX/TXT, parsed client-side)** or paste, plus a voiceover synced to the player: a free **device voice** (Web Speech API, with a voice picker) or a **pro voice via ElevenLabs** (browser-direct — the user pastes their own API key, kept only in `localStorage` and sent only to ElevenLabs; no server key involved). Its scenes/parser/narration **mirror** the TSX + `data.js` in `remotion/` (kept deliberately in sync); the server-rendered MP4 remains the source of truth.
 - **Local dev**: `npm run remotion:studio` (live preview/editor) and `npm run remotion:render` (CLI render to `out/`).
@@ -51,13 +63,15 @@ Tables (all created with `CREATE TABLE IF NOT EXISTS` at startup):
 
 | Table | What it tracks |
 |---|---|
-| `usage_store` | Free-tier usage counts, keyed by `${ip}_${date}_${type}` (`count`); `type` ∈ `resume`, `cover_letter`, `translate`, `video`, … |
+| `usage_store` | Per-feature usage counts, keyed by `${ip}_${date}_${type}` (`count`). Since the 2026 change, resume/cover/ATS/LinkedIn are unlimited and no longer written here; still used for `translate` (1/day) and `video`. |
 | `subscribers` | Active Stripe subscribers (`email` PK, `customer_id`) |
 | `users` | User accounts (`email` PK, `username`, bcrypt `password_hash`) |
 | `sessions` | Auth tokens (`token` PK → `email`) |
 | `reset_tokens` | Password reset tokens (`token` PK, `email`, `expires_at`) |
 | `check_ins` | Career check-in data by `email` |
 | `forum_posts` / `forum_replies` | Community forum posts and their replies |
+| `shared_resumes` | Snapshot resumes behind `/r/:slug` share links (noindex, watermarked footer) |
+| `personal_sites` | Pro personal websites at `/site/:name` (`subdomain` PK, indexable, watermark-free) |
 
 Access is via prepared statements (`db.prepare(...).run/get/all`). Note: several older docs/comments still reference in-memory `Map` objects — that design has been replaced by the SQLite tables above.
 
@@ -69,11 +83,23 @@ Passwords are hashed with **bcrypt** (`bcryptjs`, per-record salt, `BCRYPT_ROUND
 
 ## Free tier gating
 
-`/api/tailor` checks two things before calling Claude:
-1. Is the `email` parameter in an active Stripe subscription? (`isSubscriber()`)
-2. If not subscribed, has the IP used its free quota today? (`hasFreeTierLeft()`)
+As of the 2026 pricing change, **the free tier is unlimited** for resume tailoring, cover letters, ATS scans, and LinkedIn optimizations — there is no per-day cap on those. Instead:
 
-Free usage is tracked per-feature in the `usage_store` table, keyed by `${ip}_${date}_${type}` (e.g. `resume`, `cover_letter`). It resets naturally at midnight because the date string changes; old rows simply stop being read.
+- **`/api/tailor` requires a signed-in account** (`getSessionEmail(req)` → 401 if absent) and is **IP rate-limited** (`tailorLimiter`, 20/min). An account, not a daily quota, is what guards the Anthropic API budget now.
+- **Watermark**: non-subscribers' exports carry a small footer mark (DOCX `Footer` in `buildTemplatedDocxBuffer`, PDF print footer in `downloadPdf`, TXT trailer). Pro exports are clean. Gated by `isSubscriber(email)`.
+- **Templates** are gated server-side (`FREE_TPL_SIGS`, see the table above).
+
+The `usage_store` table still exists and is used for the remaining metered feature (`translate`, 1/day free; `video` is Pro-only). Legacy `hasFreeTierLeft`/`consumeFreeTier`/`getUsageKey` helpers remain for those. The `/api/status` endpoint still returns `freeXLeft` fields, but the client shows "Free — Unlimited Tailoring" rather than a remaining count.
+
+## LinkedIn OAuth import (free)
+
+Optional onboarding feature (`server.js`, routes `/api/auth/linkedin`, `/callback`, `/draft`, `/status`). Uses **"Sign In with LinkedIn using OpenID Connect"** (scope `openid profile email`) — official API, no scraping. Prefills the builder with name/email/photo (headline only if the app's granted scopes return it; standard OIDC does not expose full work history / education / skills, so the client scaffolds those and prompts the user to complete them). Hidden unless `LINKEDIN_CLIENT_ID`/`LINKEDIN_CLIENT_SECRET` are set. CSRF `state` and one-time profile drafts are held in short-lived in-memory maps.
+
+## Personal portfolio websites (Pro)
+
+Pro users publish a resume as a live public page (`personal_sites` table; `POST/GET/DELETE /api/personal-site`, Pro-gated via `isSubscriber`). Rendered at **`/site/:name`** — indexable and **watermark-free** — by the shared `_shareResumeHtml(row, origin, opts)` renderer (also used by `/r/:slug` share links, which stay noindex and keep the brand footer). Subdomains are validated (3–30 chars, `RESERVED_SUBDOMAINS` blocklist); one site per user.
+
+Path-based (`/site/:name`) is the current implementation. The intended end state is host-based `name.resumetailored.com` via a wildcard `*.resumetailored.com` DNS record + wildcard TLS and an early host-inspection middleware in `server.js`; that switch is deferred pending DNS/TLS provisioning (see `docs/RAILWAY_SETUP.md`).
 
 ## Stripe integration
 
@@ -101,6 +127,9 @@ PORT                  # defaults to 3000
 DATA_DIR              # optional — SQLite dir (default ./data; set /data + mount a Railway Volume to persist)
 RESEND_API_KEY        # optional — enables real emails
 OWNER_EMAIL           # optional — where support messages go (defaults to support@resumetailored.com)
+LINKEDIN_CLIENT_ID     # optional — enables the free LinkedIn OAuth import button
+LINKEDIN_CLIENT_SECRET # optional — pairs with LINKEDIN_CLIENT_ID
+LINKEDIN_REDIRECT_URI  # optional — defaults to <origin>/api/auth/linkedin/callback
 ```
 
 ## Deployment
@@ -113,11 +142,11 @@ To switch from Stripe test mode to live mode: replace all three Stripe env vars 
 
 ### Core Value Props (use consistently across all landing pages and content)
 - **AI Model**: Powered by Anthropic Claude (claude-sonnet-4-6) — produces more natural, contextually rich writing than GPT-4 variants used by Teal, Kickresume, and most competitors
-- **Free Tier**: 1 completely free, full resume tailoring + cover letter per day — no credit card, no time limit, forever
+- **Free Tier**: unlimited free resume tailoring + cover letters, plus ATS scanner and LinkedIn optimizer/import — no credit card, no daily cap, forever (free account + small export watermark; premium templates, resume video and personal website are Pro)
 - **Job URL Import**: Paste any LinkedIn, Indeed, Glassdoor, or 40+ job board URL — AI auto-extracts the full job description (no competitor offers this)
 - **Bilingual**: Full English/Chinese UI + AI-powered translation for non-English resumes (unique in market)
 - **Share as Link**: Turn any tailored resume into a private, unlisted web link (`/r/:slug`) that opens instantly in the browser — great for sending on LinkedIn or by email with no attachment/download
-- **Pricing**: $19/mo (35% cheaper than Teal $29 and Jobscan ~$30) | $129 lifetime deal (vs Rezi $149)
+- **Pricing**: $19.99/mo (cheaper than Teal $29 and Jobscan ~$30) | $129 lifetime deal (vs Rezi $149)
 
 ### Competitor Intelligence
 | Competitor | Monthly Traffic | Price | Key Weakness |
