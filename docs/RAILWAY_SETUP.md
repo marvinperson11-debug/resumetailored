@@ -90,13 +90,14 @@ so the import prefills what it can and asks the user to complete the rest.
 Pro users publish a resume at **`/site/:name`** (e.g. `/site/john`). This works
 today with no extra infra.
 
-The intended end state is `john.resumetailored.com`. To switch to host-based
-subdomains later:
-1. Add a wildcard DNS record `*.resumetailored.com` pointing at the Railway app,
-   and add `*.resumetailored.com` as a custom domain in Railway so it issues a
+Host-based `john.resumetailored.com` is **already implemented in code** — an
+early middleware (`PERSONAL_SITE_HOST_RE` in `server.js`, before
+`express.static`) maps `<sub>.resumetailored.com` → the same `personal_sites`
+lookup + `_shareResumeHtml(..., { indexable:true, footer:'' })` renderer, leaving
+the apex, `www`, reserved names and non-matching hosts untouched. It stays inert
+until the DNS/TLS below exist, so nothing needs redeploying to turn it on. To
+activate:
+1. Add a wildcard DNS record `*.resumetailored.com` pointing at the Railway app.
+2. Add `*.resumetailored.com` as a custom domain in Railway so it issues a
    **wildcard TLS certificate**.
-2. Add an early host-inspection middleware in `server.js` (before
-   `express.static`) that maps `<sub>.resumetailored.com` → the same
-   `personal_sites` lookup + `_shareResumeHtml(..., { indexable:true, footer:'' })`
-   renderer already used by `/site/:name`, leaving the apex + `www` untouched.
-Until wildcard DNS/TLS is provisioned, keep the path-based route.
+Until then, the path-based `/site/:name` route remains the way to reach sites.

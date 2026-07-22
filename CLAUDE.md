@@ -99,7 +99,7 @@ Optional onboarding feature (`server.js`, routes `/api/auth/linkedin`, `/callbac
 
 Pro users publish a resume as a live public page (`personal_sites` table; `POST/GET/DELETE /api/personal-site`, Pro-gated via `isSubscriber`). Rendered at **`/site/:name`** — indexable and **watermark-free** — by the shared `_shareResumeHtml(row, origin, opts)` renderer (also used by `/r/:slug` share links, which stay noindex and keep the brand footer). Subdomains are validated (3–30 chars, `RESERVED_SUBDOMAINS` blocklist); one site per user.
 
-Path-based (`/site/:name`) is the current implementation. The intended end state is host-based `name.resumetailored.com` via a wildcard `*.resumetailored.com` DNS record + wildcard TLS and an early host-inspection middleware in `server.js`; that switch is deferred pending DNS/TLS provisioning (see `docs/RAILWAY_SETUP.md`).
+Both routes exist: **path-based `/site/:name`** and **host-based `name.resumetailored.com`**. The host-based path is an early middleware in `server.js` (`PERSONAL_SITE_HOST_RE`, before `express.static`) that maps a `<sub>.resumetailored.com` root request to the same renderer — it's **inert until a wildcard `*.resumetailored.com` DNS record + wildcard TLS point such hosts at the app** (apex, `www`, reserved names, the Railway/Netlify hosts and localhost all fall through unchanged). Provision DNS/TLS to activate it (see `docs/RAILWAY_SETUP.md` §9).
 
 ## Stripe integration
 
