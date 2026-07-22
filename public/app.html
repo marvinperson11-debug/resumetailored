@@ -5230,7 +5230,13 @@ Aaliyah Washington`
     }
 
     function startPro() {
-      showAuthModal('subscribe');
+      // Already logged in? Go straight to Stripe checkout with the known email.
+      // Only guests need the login/signup modal first.
+      if (isLoggedIn && getStoredEmail()) {
+        subscribe();
+      } else {
+        showAuthModal('subscribe');
+      }
     }
 
     async function doModalSubscribe() {
