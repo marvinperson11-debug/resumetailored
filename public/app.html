@@ -300,7 +300,7 @@
       <!-- Subscribe -->
       <div id="authSubscribeForm" style="display:none;">
         <div style="background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
-          <div style="font-size:13px;font-weight:800;color:#6366F1;margin-bottom:8px;">✦ Pro — $19/month</div>
+          <div style="font-size:13px;font-weight:800;color:#6366F1;margin-bottom:8px;">✦ Pro — $19.99/month</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
             <div style="font-size:12px;color:#374151;">✓ Unlimited resume tailoring &amp; cover letters</div>
             <div style="font-size:12px;color:#374151;">✓ Unlimited ATS scans</div>
@@ -311,7 +311,7 @@
         </div>
         <div class="auth-field"><input type="email" id="subscribeEmail" placeholder="Your email address" autocomplete="email" /></div>
         <div class="auth-error" id="subscribeError"></div>
-        <button class="btn btn-primary btn-full" id="subscribeBtn" onclick="doModalSubscribe()">Subscribe — $19/mo →</button>
+        <button class="btn btn-primary btn-full" id="subscribeBtn" onclick="doModalSubscribe()">Subscribe — $19.99/mo →</button>
         <p style="font-size:11px;color:#9ca3af;text-align:center;margin-top:10px;line-height:1.5;">You'll be taken to Stripe for secure checkout. Pro access activates instantly after payment.</p>
         <div class="auth-switch">Already subscribed? <a onclick="switchAuthTab('login')">Log in →</a></div>
       </div>
@@ -339,7 +339,7 @@
       <div style="display:flex;gap:12px;align-items:center;">
         <span id="navStatus"></span>
         <span id="navUsername" style="color:#9490b5;font-size:13px;font-weight:600;display:none;"></span>
-        <button class="btn btn-outline" id="goProNavBtn" onclick="startPro()" style="font-size:13px;padding:8px 14px;" data-i18n="nav_go_pro">Go Pro — $19/mo</button>
+        <button class="btn btn-outline" id="goProNavBtn" onclick="startPro()" style="font-size:13px;padding:8px 14px;" data-i18n="nav_go_pro">Go Pro — $19.99/mo</button>
         <button class="btn btn-outline" id="loginNavBtn" onclick="showAuthModal('login')" style="font-size:13px;padding:8px 14px;display:none;">Log In</button>
         <button onclick="toggleLang()" id="langToggleBtn" style="background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.1);border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;color:#94a3b8;cursor:pointer;font-family:inherit;transition:all .15s;" title="Switch language / 切换语言">中文</button>
         <button class="btn btn-outline" id="logoutBtn" onclick="doLogout()" style="display:none;font-size:13px;padding:8px 14px;" data-i18n="nav_logout">Log Out</button>
@@ -404,7 +404,7 @@
       <div class="sidebar-pro-box" id="sidebarProBox">
         <div class="sidebar-pro-title" data-i18n="sidebar_pro_title">✦ Unlock Full Access</div>
         <div class="sidebar-pro-text" data-i18n="sidebar_pro_text">Career Hub features are available to Pro members.</div>
-        <button class="btn btn-primary" style="width:100%;margin-top:10px;font-size:13px;" onclick="startPro()" data-i18n="sidebar_pro_btn">Upgrade — $19/mo</button>
+        <button class="btn btn-primary" style="width:100%;margin-top:10px;font-size:13px;" onclick="startPro()" data-i18n="sidebar_pro_btn">Upgrade — $19.99/mo</button>
       </div>
     </aside>
 
@@ -430,7 +430,7 @@
 
         <div class="mobile-upgrade-banner" id="mobileUpgradeBanner" style="display:none;">
           <p data-i18n="mobile_upgrade_p">✦ Unlock unlimited tailorings, cover letters & Career Hub features.</p>
-          <button class="btn btn-primary" onclick="startPro()" data-i18n="mobile_upgrade_btn">Upgrade — $19/mo</button>
+          <button class="btn btn-primary" onclick="startPro()" data-i18n="mobile_upgrade_btn">Upgrade — $19.99/mo</button>
         </div>
 
         <div id="statusBadge" style="margin-bottom:16px;"></div>
@@ -443,7 +443,7 @@
 
         <!-- Template Picker -->
         <div class="tpl-pick-section" id="tplPickSection">
-          <div class="tpl-pick-label">Choose Your Template <span id="tplCountHint">↔ scroll to see all 20</span></div>
+          <div class="tpl-pick-label">Choose Your Template <span id="tplCountHint">↔ scroll to see all</span></div>
           <div class="tpl-pick-outer">
             <div class="tpl-pick-row" id="tplPickRow"></div>
           </div>
@@ -641,12 +641,12 @@
         </div>
 
         <div class="upsell" id="upsell" style="display:none;">
-          <p>Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19/month, cancel anytime.</p>
+          <p>Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19.99/month, cancel anytime.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
 
         <div class="upsell" id="limitBanner" style="display:none;">
-          <p>You've used your <strong>free daily use</strong> for this mode. You get 1 free resume tailoring + 1 free cover letter per day. Upgrade to Pro for unlimited access — $19/month.</p>
+          <p>Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports — $19.99/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -666,7 +666,7 @@
 
         <!-- Free tier status -->
         <div id="linkedinFreeStatus" style="display:none;background:rgba(37,99,235,0.06);border:1px solid rgba(37,99,235,0.18);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#2563eb;font-weight:600;">
-          <span id="linkedinFreeText">✓ 1 free LinkedIn optimization available today</span>
+          <span id="linkedinFreeText">✓ LinkedIn optimization — free &amp; unlimited</span>
         </div>
 
         <div class="input-section">
@@ -719,7 +719,7 @@
 
         <!-- Limit / upsell banners -->
         <div class="upsell" id="linkedinLimitBanner" style="display:none;margin-top:20px;">
-          <p>You've used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19/month.</p>
+          <p>You've used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19.99/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -822,7 +822,7 @@
         <!-- Upsell: free users get the in-browser maker above; Pro gets the
              server-rendered studio MP4 (natural voice, synced reveal, download). -->
         <div class="upsell" id="videoUpsell" style="display:none;margin-top:20px;">
-          <p><strong>Want the studio version?</strong> Pro renders your video on our servers with a natural human voiceover synced to the narration, and downloads a polished, shareable <strong>.mp4</strong> — $19/month.</p>
+          <p><strong>Want the studio version?</strong> Pro renders your video on our servers with a natural human voiceover synced to the narration, and downloads a polished, shareable <strong>.mp4</strong> — $19.99/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -929,7 +929,7 @@
 
         <!-- Free limit banner -->
         <div class="upsell" id="atsLimitBanner" style="display:none;margin-top:20px;">
-          <p>You've used your <strong>free daily ATS scan</strong>. Pro members get unlimited scans — upgrade for $19/month.</p>
+          <p>You've used your <strong>free daily ATS scan</strong>. Pro members get unlimited scans — upgrade for $19.99/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -1193,7 +1193,7 @@
                 <div class="faq-q" onclick="toggleFaq(this)">
                   <span>How does the free tier work?</span><span class="faq-arrow">▾</span>
                 </div>
-                <div class="faq-a">You get 1 free resume tailoring per day — no credit card required. Each day at midnight the counter resets. Upgrade to Pro for unlimited tailorings.</div>
+                <div class="faq-a">You get unlimited free resume tailoring and cover letters — no credit card required. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports.</div>
               </div>
 
               <div class="faq-item">
@@ -1288,8 +1288,8 @@
 
           <div class="salary-resource-card">
             <div class="resource-icon">💰</div>
-            <h3>$19/mo vs. $40–$100/mo Elsewhere</h3>
-            <p>Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19 — the most value in the market.</p>
+            <h3>$19.99/mo vs. $40–$100/mo Elsewhere</h3>
+            <p>Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19.99 — the most value in the market.</p>
           </div>
 
           <div class="salary-resource-card">
@@ -1357,7 +1357,7 @@
               </tr>
               <tr>
                 <td style="padding:12px 16px;font-weight:700;">Monthly price (Pro)</td>
-                <td style="padding:12px 16px;text-align:center;color:#f5c842;font-weight:800;">$19</td>
+                <td style="padding:12px 16px;text-align:center;color:#f5c842;font-weight:800;">$19.99</td>
                 <td style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">$49</td>
                 <td style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">$45</td>
                 <td style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">$29</td>
@@ -1368,7 +1368,7 @@
 
         <div style="margin-top:32px;text-align:center;">
           <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try It Free Now →</button>
-          <p style="color:var(--text-muted,#9490b5);font-size:13px;margin-top:12px;">1 free tailoring per day</p>
+          <p style="color:var(--text-muted,#9490b5);font-size:13px;margin-top:12px;">Unlimited free tailoring</p>
         </div>
       </div>
 
@@ -1376,7 +1376,7 @@
       <div class="tab-content" id="panel-samples">
         <div class="panel-header">
           <h1>Resume & Cover Letter Templates</h1>
-          <p>56 beautifully designed resume templates + 48 cover letter templates. Every style, every industry. Free members get 2 free templates — Pro unlocks all 104.</p>
+          <p>56 beautifully designed resume templates + 48 cover letter templates. Every style, every industry. Free members get 6 basic templates (3 resume + 3 cover letter) — Pro unlocks all 104.</p>
         </div>
 
         <div class="sample-toggle">
@@ -1385,7 +1385,7 @@
         </div>
 
         <div class="tpl-free-note">
-          <span>✦ <strong style="color:#f5c842;">2 free templates</strong> included — upgrade to Pro to unlock all 104 templates.</span>
+          <span>✦ <strong style="color:#f5c842;">6 free templates</strong> included (3 resume + 3 cover letter) — upgrade to Pro to unlock all 104 templates.</span>
           <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">Unlock All 104 →</button>
         </div>
 
@@ -1430,7 +1430,7 @@
               <li>You keep full Pro access until then</li>
               <li>No partial-month charges — ever</li>
               <li>No data deleted — your check-ins stay saved</li>
-              <li>Resubscribe anytime at the same $19/mo price</li>
+              <li>Resubscribe anytime at the same $19.99/mo price</li>
               <li>No penalty, no re-enrollment fee</li>
             </ul>
           </div>
@@ -1455,7 +1455,7 @@
             <div class="faq-q" onclick="toggleFaq(this)">
               <span>Can I pause instead of cancel?</span><span class="faq-arrow">▾</span>
             </div>
-            <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as easy. You'll always get the same $19/month rate — we don't price-lock or penalize returning members.</div>
+            <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as easy. You'll always get the same $19.99/month rate — we don't price-lock or penalize returning members.</div>
           </div>
           <div class="faq-item">
             <div class="faq-q" onclick="toggleFaq(this)">
@@ -1474,7 +1474,7 @@
         <!-- Bottom CTA -->
         <div style="margin-top:40px;padding:32px;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:16px;text-align:center;">
           <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;">Still deciding whether to subscribe?</h3>
-          <p style="color:var(--text-muted,#9490b5);margin-bottom:20px;">Try it free first — 1 tailoring per day. Upgrade only when you're convinced it works.</p>
+          <p style="color:var(--text-muted,#9490b5);margin-bottom:20px;">Try it free first — unlimited tailoring. Upgrade only when you're convinced it works.</p>
           <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try Free First →</button>
         </div>
       </div>
@@ -1498,8 +1498,8 @@
         <div class="tpl-modal-lock" id="tplModalLock" style="display:none;">
           <div class="tpl-modal-lock-icon">🔒</div>
           <div class="tpl-modal-lock-title">Pro Template</div>
-          <div class="tpl-modal-lock-sub">Upgrade to Pro to unlock all 20 premium templates per type and unlimited tailorings.</div>
-          <button class="btn btn-primary" style="font-size:16px;padding:14px 36px;" onclick="startPro()">Upgrade to Pro — $19/mo →</button>
+          <div class="tpl-modal-lock-sub">Upgrade to Pro to unlock all 104 premium templates, the resume video, your personal website, and watermark-free exports.</div>
+          <button class="btn btn-primary" style="font-size:16px;padding:14px 36px;" onclick="startPro()">Upgrade to Pro — $19.99/mo →</button>
           <div class="tpl-modal-lock-peek" onclick="document.getElementById('tplModalLock').style.display='none'">View preview only ↓</div>
         </div>
         <iframe id="tplFrame" sandbox="allow-same-origin" style="width:794px;min-height:1123px;border:none;display:block;margin:0 auto;background:#fff;"></iframe>
@@ -1555,7 +1555,7 @@
     // ── Bilingual i18n (English / Simplified Chinese) ─────────────────────────
     const APP_I18N = {
       en: {
-        nav_go_pro: 'Go Pro — $19/mo', nav_logout: 'Log Out',
+        nav_go_pro: 'Go Pro — $19.99/mo', nav_logout: 'Log Out',
         sidebar_jobsearch: 'Job Search', sidebar_tailor: 'Resume Tailor', sidebar_linkedin: 'LinkedIn Optimizer',
         sidebar_careerhub: 'Career Hub',
         sidebar_forum: 'Community Forum', sidebar_salary: 'Salary Guide',
@@ -1564,9 +1564,9 @@
         sidebar_about: 'How Does It Work?', sidebar_cancel: 'Cancel Anytime',
         sidebar_pro_title: '✦ Unlock Full Access',
         sidebar_pro_text: 'Career Hub features are available to Pro members.',
-        sidebar_pro_btn: 'Upgrade — $19/mo',
+        sidebar_pro_btn: 'Upgrade — $19.99/mo',
         mobile_upgrade_p: '✦ Unlock unlimited tailorings, cover letters & Career Hub features.',
-        mobile_upgrade_btn: 'Upgrade — $19/mo',
+        mobile_upgrade_btn: 'Upgrade — $19.99/mo',
         tailor_title: 'Tailor Your Resume',
         tailor_sub: 'Paste your resume and the job posting. We\'ll match your experience to what they\'re looking for.',
         li_banner_title: 'LinkedIn Profile Optimizer',
@@ -1650,7 +1650,7 @@
           authHeadingEl.textContent = isZh ? '忘记密码？' : 'Forgot Password?';
         } else if (isSubscribeActive) {
           authHeadingEl.textContent = isZh ? '升级专业版' : 'Go Pro';
-          if (authSubtextEl) authSubtextEl.textContent = isZh ? '无限次定制简历，$19/月。' : 'Unlimited tailoring, ATS scans & more — $19/mo.';
+          if (authSubtextEl) authSubtextEl.textContent = isZh ? '无限次定制简历，$19.99/月。' : 'Unlimited tailoring, ATS scans & more — $19.99/mo.';
         } else {
           authHeadingEl.textContent = isZh ? '欢迎回来' : 'Welcome Back';
           if (authSubtextEl) authSubtextEl.textContent = isZh ? '登录以访问你的控制台。' : 'Log in to access your dashboard.';
@@ -1670,7 +1670,7 @@
       var forgotBtnEl = document.getElementById('forgotBtn');
       if (forgotBtnEl) forgotBtnEl.textContent = isZh ? '发送重置链接 →' : 'Send Reset Link →';
       var subscribeBtnEl = document.getElementById('subscribeBtn');
-      if (subscribeBtnEl) subscribeBtnEl.textContent = isZh ? '订阅 — $19/月 →' : 'Subscribe — $19/mo →';
+      if (subscribeBtnEl) subscribeBtnEl.textContent = isZh ? '订阅 — $19.99/月 →' : 'Subscribe — $19.99/mo →';
       var loginBtnEl = document.getElementById('loginBtn');
       if (loginBtnEl) loginBtnEl.textContent = isZh ? '登录 →' : 'Log In →';
       // 5. Remember email label & forgot link
@@ -1687,7 +1687,7 @@
       var tplPickLabel = document.querySelector('.tpl-pick-label');
       if (tplPickLabel) {
         var tplHint = document.getElementById('tplCountHint');
-        var hintTxt = tplHint ? tplHint.textContent : '↔ scroll to see all 20';
+        var hintTxt = tplHint ? tplHint.textContent : '↔ scroll to see all';
         tplPickLabel.innerHTML = (isZh ? '选择你的模板 ' : 'Choose Your Template ') + '<span id="tplCountHint">' + hintTxt + '</span>';
       }
       // 8. Tailor button (respects current mode)
@@ -1701,17 +1701,17 @@
       if (editBarEl) editBarEl.innerHTML = (isZh ? '✏️ 点击任意文字进行编辑' : '✏️ Click any text to edit it directly') + '<button class="eb-btn eb-save" onclick="saveEdit()">' + (isZh ? '保存修改' : 'Save Changes') + '</button><button class="eb-btn eb-cancel" onclick="cancelEdit()">' + (isZh ? '取消' : 'Cancel') + '</button>';
       // 10. Upsell/limit banners
       var upsellP = document.querySelector('#upsell p');
-      if (upsellP) upsellP.innerHTML = isZh ? '想要<strong>无限次定制</strong>？升级专业版 — ¥19/月，随时取消。' : 'Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19/month, cancel anytime.';
+      if (upsellP) upsellP.innerHTML = isZh ? '想要<strong>无限次定制</strong>？升级专业版 — ¥19/月，随时取消。' : 'Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19.99/month, cancel anytime.';
       document.querySelectorAll('.upsell .btn-primary').forEach(function(btn) { btn.textContent = isZh ? '升级专业版 →' : 'Upgrade to Pro →'; });
       var limitPEl = document.querySelector('#limitBanner p');
-      if (limitPEl) limitPEl.innerHTML = isZh ? '你已用完今日<strong>免费使用次数</strong>。每日可免费定制1次简历+1封求职信。升级专业版享无限次 — ¥19/月。' : 'You\'ve used your <strong>free daily use</strong> for this mode. You get 1 free resume tailoring + 1 free cover letter per day. Upgrade to Pro for unlimited access — $19/month.';
+      if (limitPEl) limitPEl.innerHTML = isZh ? '简历定制和求职信<strong>免费且无限次</strong>。升级专业版解锁100+高级模板、简历视频、个人网站和无水印导出 — ¥19/月。' : 'Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports — $19.99/month.';
       // 11. LinkedIn output section
       var liH3 = document.querySelector('#linkedinHeadlineBlock h3'); if (liH3) liH3.textContent = isZh ? '✦ 优化后的标题' : '✦ Optimized Headline';
       var liAboutH3 = document.querySelector('#linkedinAboutBlock h3'); if (liAboutH3) liAboutH3.textContent = isZh ? '✦ 优化后的个人简介' : '✦ Optimized About Section';
       var liExpH3 = document.querySelector('#linkedinExpBlock h3'); if (liExpH3) liExpH3.textContent = isZh ? '✦ 优化后的工作经历' : '✦ Optimized Experience Bullets';
       document.querySelectorAll('#linkedinHeadlineBlock .btn-outline, #linkedinAboutBlock .btn-outline, #linkedinExpBlock .btn-outline').forEach(function(btn) { btn.textContent = isZh ? '复制' : 'Copy'; });
       var liLimitP = document.querySelector('#linkedinLimitBanner p');
-      if (liLimitP) liLimitP.innerHTML = isZh ? '你已使用今日<strong>免费LinkedIn优化次数</strong>。升级专业版享无限次 — ¥19/月。' : 'You\'ve used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19/month.';
+      if (liLimitP) liLimitP.innerHTML = isZh ? '你已使用今日<strong>免费LinkedIn优化次数</strong>。升级专业版享无限次 — ¥19/月。' : 'You\'ve used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19.99/month.';
       var liLimitBtn = document.querySelector('#linkedinLimitBanner .btn-primary');
       if (liLimitBtn) liLimitBtn.textContent = isZh ? '升级专业版 →' : 'Upgrade to Pro →';
       // 12. Template preview modal
@@ -1783,7 +1783,7 @@
       var helpFaqQs = document.querySelectorAll('#panel-help .faq-q > span:first-child');
       var helpFaqAs = document.querySelectorAll('#panel-help .faq-a');
       var hFaqQD = isZh ? ['免费版是如何工作的？','如何验证我的专业版订阅？','AI会编造我没有的经历吗？','如何取消专业版订阅？','我应该以什么格式粘贴简历？'] : ['How does the free tier work?','How do I verify my Pro subscription?','Will the AI make up experience I don\'t have?','How do I cancel my Pro subscription?','What format should I paste my resume in?'];
-      var hFaqAD = isZh ? ['每天可免费定制1次简历——无需信用卡。每天午夜计数器重置。升级专业版可享受无限次定制。','订阅后，在简历定制标签页的邮箱字段输入结账时使用的邮箱，然后点击其他地方。专业版状态将自动激活。','不会。我们的AI严格使用职位描述的语言和关键词改写和重构你现有的经历。它不会添加你原始简历中没有的技能或经历。','使用本页面的表单发送消息，附上你的邮箱，我们将立即为你取消。无需解释。也可以回复我们的任何邮件。','纯文本效果最佳。在Word或Google文档中打开简历，全选（Ctrl+A），复制（Ctrl+C），粘贴到简历字段。AI会处理格式。'] : ['You get 1 free resume tailoring per day — no credit card required. Each day at midnight the counter resets. Upgrade to Pro for unlimited tailorings.','After subscribing, enter the email you used at checkout into the email field on the Resume Tailor tab and click away. Your Pro status will activate automatically.','No. Our AI strictly rewrites and reframes your existing experience using the job posting\'s language and keywords. It never adds skills or experience you didn\'t include in your original resume.','Send us a message using the form on this page with your email and we\'ll cancel immediately. No questions asked. You can also reply to any of our emails.','Plain text works best. Open your resume in Word or Google Docs, select all (Ctrl+A), copy (Ctrl+C), and paste into the resume field. The AI handles the formatting.'];
+      var hFaqAD = isZh ? ['免费无限次定制简历和求职信——无需信用卡。升级专业版可解锁100+高级模板、简历视频、个人网站和无水印导出。','订阅后，在简历定制标签页的邮箱字段输入结账时使用的邮箱，然后点击其他地方。专业版状态将自动激活。','不会。我们的AI严格使用职位描述的语言和关键词改写和重构你现有的经历。它不会添加你原始简历中没有的技能或经历。','使用本页面的表单发送消息，附上你的邮箱，我们将立即为你取消。无需解释。也可以回复我们的任何邮件。','纯文本效果最佳。在Word或Google文档中打开简历，全选（Ctrl+A），复制（Ctrl+C），粘贴到简历字段。AI会处理格式。'] : ['You get unlimited free resume tailoring and cover letters — no credit card required. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports.','After subscribing, enter the email you used at checkout into the email field on the Resume Tailor tab and click away. Your Pro status will activate automatically.','No. Our AI strictly rewrites and reframes your existing experience using the job posting\'s language and keywords. It never adds skills or experience you didn\'t include in your original resume.','Send us a message using the form on this page with your email and we\'ll cancel immediately. No questions asked. You can also reply to any of our emails.','Plain text works best. Open your resume in Word or Google Docs, select all (Ctrl+A), copy (Ctrl+C), and paste into the resume field. The AI handles the formatting.'];
       helpFaqQs.forEach(function(el, i) { if (hFaqQD[i]) el.textContent = hFaqQD[i]; });
       helpFaqAs.forEach(function(el, i) { if (hFaqAD[i]) el.textContent = hFaqAD[i]; });
       // 19. About panel
@@ -1797,7 +1797,7 @@
       if (aboutWhyH2s[0]) aboutWhyH2s[0].textContent = isZh ? '为什么ResumeTailored AI优于竞品' : 'Why ResumeTailored AI Beats the Competition';
       if (aboutWhyH2s[1]) aboutWhyH2s[1].textContent = isZh ? '竞品对比' : 'Head-to-Head Comparison';
       var aboutCards = document.querySelectorAll('#panel-about .salary-grid .salary-resource-card');
-      var aCD = isZh ? [{h3:'由Claude AI驱动',p:'我们使用Anthropic的Claude——同样被财富500强企业信赖的AI。大多数竞品使用更旧、更廉价的模型，产出通用的机器人式内容。Claude写作就像一位拥有15年以上经验的职业顾问。'},{h3:'真正针对具体职位',p:'Jobscan和Resume Worded等工具会对你的简历关键词评分，但不会<em>改写</em>它。ResumeTailored AI同时读取你的简历和职位描述，然后改写你的工作要点，精确匹配招聘经理使用的语言。'},{h3:'绝不捏造经历',p:'与某些AI工具不同，我们绝不虚构你没有的技能或经历。我们使用职位的语言重新表达你已有的经历。你始终100%诚实——只是更清晰地传达了你的价值。'},{h3:'30秒，而非45分钟',p:'普通求职者每次申请花45分钟定制简历。我们在30秒内完成。以更高质量的申请，比手动操作的候选人投递更多职位，效率更快。'},{h3:'¥19/月，竞品需¥40–¥100/月',p:'Resume.io收费¥44.95/月。Zety仅下载就收费¥23.70/月。Teal+收费¥29/月。ResumeTailored AI提供无限次AI定制加完整职业中心，仅¥19——市场上最高性价比。'},{h3:'不只是一个简历工具',p:'专业版会员获得完整职业中心：薪资谈判指南、逐字谈判话术、专业社区论坛和季度职业回顾。没有任何竞品能以这个价格提供如此多的职业价值。'}] : [{h3:'Powered by Claude AI',p:'We use Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.'},{h3:'Actually Job-Specific',p:'Tools like Jobscan and Resume Worded score your resume for keywords but don\'t <em>rewrite</em> it. ResumeTailored AI reads both your resume AND the job posting, then rewrites your bullets to mirror the exact language the hiring manager used.'},{h3:'Never Fabricates Experience',p:'Unlike some AI tools, we never invent skills or experience you don\'t have. We reframe what you already did using the role\'s language. You stay 100% truthful — you just communicate your value more clearly.'},{h3:'30 Seconds, Not 45 Minutes',p:'The average job seeker spends 45 minutes tailoring each application. We do it in under 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it manually.'},{h3:'$19/mo vs. $40–$100/mo Elsewhere',p:'Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19 — the most value in the market.'},{h3:'More Than a Resume Tool',p:'Pro members get the full Career Hub: salary negotiation guides, word-for-word negotiation scripts, a professional community forum, and quarterly career check-ins. No competitor bundles this much career value at this price.'}];
+      var aCD = isZh ? [{h3:'由Claude AI驱动',p:'我们使用Anthropic的Claude——同样被财富500强企业信赖的AI。大多数竞品使用更旧、更廉价的模型，产出通用的机器人式内容。Claude写作就像一位拥有15年以上经验的职业顾问。'},{h3:'真正针对具体职位',p:'Jobscan和Resume Worded等工具会对你的简历关键词评分，但不会<em>改写</em>它。ResumeTailored AI同时读取你的简历和职位描述，然后改写你的工作要点，精确匹配招聘经理使用的语言。'},{h3:'绝不捏造经历',p:'与某些AI工具不同，我们绝不虚构你没有的技能或经历。我们使用职位的语言重新表达你已有的经历。你始终100%诚实——只是更清晰地传达了你的价值。'},{h3:'30秒，而非45分钟',p:'普通求职者每次申请花45分钟定制简历。我们在30秒内完成。以更高质量的申请，比手动操作的候选人投递更多职位，效率更快。'},{h3:'¥19/月，竞品需¥40–¥100/月',p:'Resume.io收费¥44.95/月。Zety仅下载就收费¥23.70/月。Teal+收费¥29/月。ResumeTailored AI提供无限次AI定制加完整职业中心，仅¥19——市场上最高性价比。'},{h3:'不只是一个简历工具',p:'专业版会员获得完整职业中心：薪资谈判指南、逐字谈判话术、专业社区论坛和季度职业回顾。没有任何竞品能以这个价格提供如此多的职业价值。'}] : [{h3:'Powered by Claude AI',p:'We use Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.'},{h3:'Actually Job-Specific',p:'Tools like Jobscan and Resume Worded score your resume for keywords but don\'t <em>rewrite</em> it. ResumeTailored AI reads both your resume AND the job posting, then rewrites your bullets to mirror the exact language the hiring manager used.'},{h3:'Never Fabricates Experience',p:'Unlike some AI tools, we never invent skills or experience you don\'t have. We reframe what you already did using the role\'s language. You stay 100% truthful — you just communicate your value more clearly.'},{h3:'30 Seconds, Not 45 Minutes',p:'The average job seeker spends 45 minutes tailoring each application. We do it in under 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it manually.'},{h3:'$19.99/mo vs. $40–$100/mo Elsewhere',p:'Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19.99 — the most value in the market.'},{h3:'More Than a Resume Tool',p:'Pro members get the full Career Hub: salary negotiation guides, word-for-word negotiation scripts, a professional community forum, and quarterly career check-ins. No competitor bundles this much career value at this price.'}];
       aboutCards.forEach(function(card, i) { if(!aCD[i]) return; var h3=card.querySelector('h3'); if(h3) h3.textContent=aCD[i].h3; var p=card.querySelector('p'); if(p) p.innerHTML=aCD[i].p; });
       var aboutTable = document.querySelector('#panel-about table');
       if (aboutTable) {
@@ -1814,14 +1814,14 @@
         });
       }
       var aboutTryBtn = document.querySelector('#panel-about .btn-primary'); if (aboutTryBtn) aboutTryBtn.textContent = isZh ? '立即免费试用 →' : 'Try It Free Now →';
-      var aboutNote = document.querySelector('#panel-about > div:last-of-type p'); if (aboutNote) aboutNote.textContent = isZh ? '每日1次免费定制' : '1 free tailoring per day';
+      var aboutNote = document.querySelector('#panel-about > div:last-of-type p'); if (aboutNote) aboutNote.textContent = isZh ? '无限次免费定制' : 'Unlimited free tailoring';
       // 20. Samples panel
       var samplesH1 = document.querySelector('#panel-samples h1'); if (samplesH1) samplesH1.textContent = isZh ? '简历和求职信模板' : 'Resume & Cover Letter Templates';
-      var samplesSubP = document.querySelector('#panel-samples .panel-header p'); if (samplesSubP) samplesSubP.textContent = isZh ? '56个精美简历模板 + 48个求职信模板。涵盖各种风格和行业。免费会员获2个免费模板——专业版解锁全部104个。' : '56 beautifully designed resume templates + 48 cover letter templates. Every style, every industry. Free members get 2 free templates — Pro unlocks all 104.';
+      var samplesSubP = document.querySelector('#panel-samples .panel-header p'); if (samplesSubP) samplesSubP.textContent = isZh ? '56个精美简历模板 + 48个求职信模板。涵盖各种风格和行业。免费会员获6个基础模板（3个简历 + 3个求职信）——专业版解锁全部104个。' : '56 beautifully designed resume templates + 48 cover letter templates. Every style, every industry. Free members get 6 basic templates (3 resume + 3 cover letter) — Pro unlocks all 104.';
       var toggleResumesEl = document.getElementById('toggleResumes'); if (toggleResumesEl) toggleResumesEl.textContent = isZh ? '📄 简历模板（56）' : '📄 Resume Templates (56)';
       var toggleCoversEl = document.getElementById('toggleCovers'); if (toggleCoversEl) toggleCoversEl.textContent = isZh ? '✉️ 求职信模板（48）' : '✉️ Cover Letter Templates (48)';
       var tplFreeNote = document.querySelector('#panel-samples .tpl-free-note');
-      if (tplFreeNote) tplFreeNote.innerHTML = '<span>✦ <strong style="color:#f5c842;">' + (isZh ? '2个免费模板' : '2 free templates') + '</strong> ' + (isZh ? '已包含——升级专业版解锁全部104个模板。' : 'included — upgrade to Pro to unlock all 104 templates.') + '</span><button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">' + (isZh ? '解锁全部104个 →' : 'Unlock All 104 →') + '</button>';
+      if (tplFreeNote) tplFreeNote.innerHTML = '<span>✦ <strong style="color:#f5c842;">' + (isZh ? '6个免费模板' : '6 free templates') + '</strong> ' + (isZh ? '已包含（3个简历 + 3个求职信）——升级专业版解锁全部104个模板。' : 'included (3 resume + 3 cover letter) — upgrade to Pro to unlock all 104 templates.') + '</span><button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">' + (isZh ? '解锁全部104个 →' : 'Unlock All 104 →') + '</button>';
       // 21. Cancel panel
       var cancelH1 = document.querySelector('#panel-cancel h1'); if (cancelH1) cancelH1.textContent = isZh ? '随时取消 — 无需解释' : 'Cancel Anytime — No Questions Asked';
       var cancelSubP = document.querySelector('#panel-cancel .panel-header p'); if (cancelSubP) cancelSubP.textContent = isZh ? '我们相信你只应为你喜爱的服务付费。取消订阅即时生效，简单轻松。' : 'We believe you should only pay for what you love. Canceling is instant and effortless.';
@@ -1834,18 +1834,18 @@
       var cStepD = isZh ? ['前往 <strong>帮助与支持</strong> 标签','发送消息，主题：<strong>"取消我的订阅"</strong>','附上你订阅时使用的邮箱','我们将在 <strong>1小时</strong> 内取消并确认'] : ['Go to the <strong>Help & Support</strong> tab','Send a message with subject: <strong>"Cancel my subscription"</strong>','Include the email you used to subscribe','We\'ll cancel and confirm within <strong>1 hour</strong>'];
       cancelSteps.forEach(function(li, i) { if (cStepD[i]) li.innerHTML = cStepD[i]; });
       var cancelTips = document.querySelectorAll('#panel-cancel .salary-tips li');
-      var cTipD = isZh ? ['订阅在当前计费周期结束时停止','在此之前保留完整专业版权限','不收取部分月份费用——永远不会','不删除数据——你的回顾记录保持保存','随时以相同的¥19/月价格重新订阅','无罚款，无重新注册费'] : ['Subscription stops at end of current billing period','You keep full Pro access until then','No partial-month charges — ever','No data deleted — your check-ins stay saved','Resubscribe anytime at the same $19/mo price','No penalty, no re-enrollment fee'];
+      var cTipD = isZh ? ['订阅在当前计费周期结束时停止','在此之前保留完整专业版权限','不收取部分月份费用——永远不会','不删除数据——你的回顾记录保持保存','随时以相同的¥19/月价格重新订阅','无罚款，无重新注册费'] : ['Subscription stops at end of current billing period','You keep full Pro access until then','No partial-month charges — ever','No data deleted — your check-ins stay saved','Resubscribe anytime at the same $19.99/mo price','No penalty, no re-enrollment fee'];
       cancelTips.forEach(function(li, i) { if (cTipD[i]) li.textContent = cTipD[i]; });
       var cancelGoHelpBtn = document.querySelector('#panel-cancel .btn-outline'); if (cancelGoHelpBtn) cancelGoHelpBtn.textContent = isZh ? '前往帮助与支持 →' : 'Go to Help & Support →';
       var cancelFaqH2 = document.querySelector('#panel-cancel h2'); if (cancelFaqH2) cancelFaqH2.textContent = isZh ? '取消订阅常见问题' : 'Cancellation FAQs';
       var cancelFaqQs = document.querySelectorAll('#panel-cancel .faq-q > span:first-child');
       var cancelFaqAs = document.querySelectorAll('#panel-cancel .faq-a');
       var cFaqQD = isZh ? ['取消后能退款吗？','取消生效需要多长时间？','我可以暂停而不是取消吗？','如果我被扣款但不是有意订阅怎么办？','取消后我的简历历史会被删除吗？'] : ['Do I get a refund if I cancel mid-month?','How fast does cancellation take effect?','Can I pause instead of cancel?','What if I was charged but didn\'t mean to subscribe?','Will my resume history be deleted if I cancel?'];
-      var cFaqAD = isZh ? ['我们不提供按比例退款，但你将在当前计费周期结束前保留完整专业版权限。因此，如果你已支付当月费用，你就可以使用整个月。','我们在1小时内处理所有取消请求。完成后你会收到确认邮件。你的专业版权限将持续到计费周期结束。','我们目前不提供暂停功能，但取消并在之后重新订阅同样简单。你始终享有相同的¥19/月费率——我们不对价格锁定或惩罚回归会员。','在扣款7天内联系我们，我们将全额退款，无需解释。我们从不希望有人为无意购买的服务付费。','不会。你的职业回顾数据和社区帖子保持完整。如果你之后重新订阅，一切都在你离开的地方。'] : ['We don\'t offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.','We process all cancellation requests within 1 hour. You\'ll receive a confirmation email once it\'s done. Your Pro access continues until your billing period ends.','We don\'t currently offer a pause feature, but canceling and re-subscribing later is just as easy. You\'ll always get the same $19/month rate — we don\'t price-lock or penalize returning members.','Contact us within 7 days of the charge and we\'ll issue a full refund, no questions asked. We never want anyone paying for something they didn\'t intend to buy.','No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.'];
+      var cFaqAD = isZh ? ['我们不提供按比例退款，但你将在当前计费周期结束前保留完整专业版权限。因此，如果你已支付当月费用，你就可以使用整个月。','我们在1小时内处理所有取消请求。完成后你会收到确认邮件。你的专业版权限将持续到计费周期结束。','我们目前不提供暂停功能，但取消并在之后重新订阅同样简单。你始终享有相同的¥19/月费率——我们不对价格锁定或惩罚回归会员。','在扣款7天内联系我们，我们将全额退款，无需解释。我们从不希望有人为无意购买的服务付费。','不会。你的职业回顾数据和社区帖子保持完整。如果你之后重新订阅，一切都在你离开的地方。'] : ['We don\'t offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.','We process all cancellation requests within 1 hour. You\'ll receive a confirmation email once it\'s done. Your Pro access continues until your billing period ends.','We don\'t currently offer a pause feature, but canceling and re-subscribing later is just as easy. You\'ll always get the same $19.99/month rate — we don\'t price-lock or penalize returning members.','Contact us within 7 days of the charge and we\'ll issue a full refund, no questions asked. We never want anyone paying for something they didn\'t intend to buy.','No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.'];
       cancelFaqQs.forEach(function(el, i) { if (cFaqQD[i]) el.textContent = cFaqQD[i]; });
       cancelFaqAs.forEach(function(el, i) { if (cFaqAD[i]) el.textContent = cFaqAD[i]; });
       var cancelBottomH3 = document.querySelector('#panel-cancel > div:last-of-type h3'); if (cancelBottomH3) cancelBottomH3.textContent = isZh ? '还在考虑是否订阅？' : 'Still deciding whether to subscribe?';
-      var cancelBottomP = document.querySelector('#panel-cancel > div:last-of-type p'); if (cancelBottomP) cancelBottomP.textContent = isZh ? '先免费试用——每日1次定制。只有在确认有效后再升级。' : 'Try it free first — 1 tailoring per day. Upgrade only when you\'re convinced it works.';
+      var cancelBottomP = document.querySelector('#panel-cancel > div:last-of-type p'); if (cancelBottomP) cancelBottomP.textContent = isZh ? '先免费试用——无限次定制。只有在确认有效后再升级。' : 'Try it free first — unlimited tailoring. Upgrade only when you\'re convinced it works.';
       var cancelTryBtn = document.querySelector('#panel-cancel .btn-primary'); if (cancelTryBtn) cancelTryBtn.textContent = isZh ? '先免费试用 →' : 'Try Free First →';
       // 22. Signature section
       var sigTitle = document.querySelector('.sig-section > div > div:first-child');
@@ -1904,14 +1904,14 @@
         ? '粘贴你的LinkedIn标题、个人简介和工作经历要点...\n\n示例：\n标题：Acme Corp产品经理\n\n个人简介：我是一位充满热情的产品经理，拥有5年经验...\n\n工作经历：\n产品经理，Acme Corp（2020–至今）\n- 管理产品路线图\n- 与工程团队协作\n- 协助推出新功能'
         : 'Paste your LinkedIn headline, About section, and experience bullets here...\n\nExample:\nHeadline: Product Manager at Acme Corp\n\nAbout: I am a passionate product manager with 5 years of experience...\n\nExperience:\nProduct Manager, Acme Corp (2020–Present)\n- Managed product roadmap\n- Worked with engineering team\n- Helped launch new features';
       var linkedinFreeTextEl = document.getElementById('linkedinFreeText');
-      if (linkedinFreeTextEl) linkedinFreeTextEl.textContent = isZh ? '✓ 今日还有1次免费LinkedIn优化' : '✓ 1 free LinkedIn optimization available today';
+      if (linkedinFreeTextEl) linkedinFreeTextEl.textContent = isZh ? '✓ LinkedIn 优化 — 免费且无限次' : '✓ LinkedIn optimization — free & unlimited';
       // 22d. Template modal lock content
       var tplLockTitle = document.querySelector('.tpl-modal-lock-title');
       if (tplLockTitle) tplLockTitle.textContent = isZh ? '专业版模板' : 'Pro Template';
       var tplLockSub = document.querySelector('.tpl-modal-lock-sub');
-      if (tplLockSub) tplLockSub.textContent = isZh ? '升级专业版以解锁每种类型的全部20个高级模板和无限次定制。' : 'Upgrade to Pro to unlock all 20 premium templates per type and unlimited tailorings.';
+      if (tplLockSub) tplLockSub.textContent = isZh ? '升级专业版以解锁全部104个高级模板、简历视频、个人网站和无水印导出。' : 'Upgrade to Pro to unlock all 104 premium templates, the resume video, your personal website, and watermark-free exports.';
       var tplLockBtn = document.querySelector('.tpl-modal-lock .btn-primary');
-      if (tplLockBtn) tplLockBtn.textContent = isZh ? '升级专业版 — ¥19/月 →' : 'Upgrade to Pro — $19/mo →';
+      if (tplLockBtn) tplLockBtn.textContent = isZh ? '升级专业版 — ¥19/月 →' : 'Upgrade to Pro — $19.99/mo →';
       var tplLockPeek = document.querySelector('.tpl-modal-lock-peek');
       if (tplLockPeek) tplLockPeek.textContent = isZh ? '仅查看预览 ↓' : 'View preview only ↓';
       // 22e. Dynamic work/edu entries — update already-rendered entries
@@ -1943,11 +1943,7 @@
         if (isSubscriberFlag) {
           statusBadgeEl.innerHTML = '<span class="free-badge pro-badge">✦ ' + (isZh ? '专业版 — 无限次定制已激活' : 'Pro — Unlimited Tailorings Active') + '</span>';
         } else {
-          var parts3 = [];
-          if (freeResumesLeft > 0) parts3.push(isZh ? '1次免费简历定制' : '1 free resume');
-          if (freeCoverLettersLeft > 0) parts3.push(isZh ? '1次免费求职信' : '1 free cover letter');
-          var badgeTxt2 = parts3.length > 0 ? parts3.join(' + ') + (isZh ? '（今日可用）' : ' available today') : (isZh ? '今日免费次数已用完' : '0 free uses left today');
-          statusBadgeEl.innerHTML = '<span class="free-badge">' + badgeTxt2 + '</span>';
+          statusBadgeEl.innerHTML = '<span class="free-badge">' + (isZh ? '免费版 — 无限次定制' : 'Free — Unlimited Tailoring') + '</span>';
         }
       }
       // 22g. Nav username greeting
@@ -2157,7 +2153,7 @@
         : (isZh ? '升级专业版' : 'Go Pro');
       document.getElementById('authSubtext').textContent = isLogin
         ? (isZh ? '登录以访问你的控制台。' : 'Log in to access your dashboard.')
-        : (isZh ? '无限次定制简历，$19/月。' : 'Unlimited tailoring, ATS scans & more — $19/mo.');
+        : (isZh ? '无限次定制简历，$19.99/月。' : 'Unlimited tailoring, ATS scans & more — $19.99/mo.');
       document.getElementById('loginError').textContent = '';
       if (document.getElementById('subscribeError')) document.getElementById('subscribeError').textContent = '';
       if (isLogin) {
@@ -2364,23 +2360,15 @@
           document.getElementById('goProNavBtn').style.display = 'none';
           if (mobileBanner) mobileBanner.style.display = 'none';
         } else {
-          const parts = [];
-          if (freeResumesLeft > 0) parts.push(_isZhS ? '1次免费简历定制' : '1 free resume');
-          if (freeCoverLettersLeft > 0) parts.push(_isZhS ? '1次免费求职信' : '1 free cover letter');
-          const badgeText = parts.length > 0
-            ? parts.join(' + ') + (_isZhS ? '（今日可用）' : ' available today')
-            : (_isZhS ? '今日免费次数已用完' : '0 free uses left today');
-          badge.innerHTML = `<span class="free-badge">${badgeText}</span>`;
+          // Free tier is unlimited now — show that, not a remaining-count.
+          badge.innerHTML = `<span class="free-badge">${_isZhS ? '免费版 — 无限次定制' : 'Free — Unlimited Tailoring'}</span>`;
           document.getElementById('sidebarProBox').style.display = '';
           if (mobileBanner) mobileBanner.style.display = '';
         }
 
-        const modeExhausted = (!isSubscriberFlag) && (
-          (selectedMode === 'resume' && freeResumesLeft === 0) ||
-          (selectedMode === 'cover_letter' && freeCoverLettersLeft === 0) ||
-          (selectedMode === 'both' && freeResumesLeft === 0 && freeCoverLettersLeft === 0)
-        );
-        document.getElementById('limitBanner').style.display = modeExhausted ? 'flex' : 'none';
+        // The old per-day limit banner no longer applies — free tailoring is
+        // unlimited, so it never shows.
+        document.getElementById('limitBanner').style.display = 'none';
       } catch(e) {}
     }
 
@@ -2768,15 +2756,13 @@
       if (isSubscriberFlag) {
         statusEl.style.display = 'none';
       } else {
+        // LinkedIn optimization is free and unlimited now — no per-day cap.
         statusEl.style.display = 'block';
-        if (freeLinkedInLeft > 0) {
-          textEl.textContent = '✓ 1 free LinkedIn optimization available today';
-          textEl.style.color = '#2563eb';
-        } else {
-          textEl.textContent = '✗ Free optimization used today — upgrade for unlimited access';
-          textEl.style.color = '#dc2626';
-          document.getElementById('linkedinLimitBanner').style.display = 'block';
-        }
+        const _zl = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+        textEl.textContent = _zl ? '✓ LinkedIn 优化 — 免费且无限次' : '✓ LinkedIn optimization — free & unlimited';
+        textEl.style.color = '#2563eb';
+        const lb = document.getElementById('linkedinLimitBanner');
+        if (lb) lb.style.display = 'none';
       }
     }
 
@@ -5268,8 +5254,8 @@ Aaliyah Washington`
         });
         const data = await res.json();
         if (data.url) { window.location.href = data.url; }
-        else { errEl.textContent = data.error || 'Could not start checkout. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19/mo →'; }
-      } catch { errEl.textContent = 'Connection error. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19/mo →'; }
+        else { errEl.textContent = data.error || 'Could not start checkout. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19.99/mo →'; }
+      } catch { errEl.textContent = 'Connection error. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19.99/mo →'; }
     }
 
     function showToast(msg, ms) {
