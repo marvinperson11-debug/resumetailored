@@ -1031,6 +1031,10 @@
           <div class="wc-card">
             <div class="wc-step" data-i18n="wc_step_layout">2. Design your layout</div>
             <p style="font-size:13px;color:#6b7280;margin-bottom:12px;" data-i18n="wc_layout_help">Add blocks and drag to reorder. Set each block's width — blocks flow into rows, so two half-width blocks sit side by side. On phones everything stacks.</p>
+            <div style="margin-bottom:14px;">
+              <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:6px;" data-i18n="wc_bg_title">Background</div>
+              <div id="wcBgPicker" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+            </div>
             <div class="wc-palette" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('heading')" data-i18n="wc_add_heading">+ Heading</button>
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('text')" data-i18n="wc_add_text">+ Text</button>
@@ -1752,6 +1756,8 @@
         wc_view_edit: '✏️ Edit', wc_view_preview: '👁 Preview',
         wc_step_layout: '2. Design your layout',
         wc_layout_help: "Add blocks and drag to reorder. Set each block's width — blocks flow into rows, so two half-width blocks sit side by side. On phones everything stacks.",
+        wc_bg_title: 'Background', wc_bg_animated: 'animated',
+        wc_bg_midnight: 'Midnight', wc_bg_aurora: 'Aurora', wc_bg_paper: 'Paper', wc_bg_mesh: 'Mesh', wc_bg_particles: 'Particles',
         wc_add_heading: '+ Heading', wc_add_text: '+ Text', wc_add_resume: '+ Resume',
         wc_add_image: '+ Image', wc_add_gallery: '+ Gallery', wc_add_video: '+ Video', wc_add_audio: '+ Audio', wc_add_spacer: '+ Spacer',
         wc_blk_gallery: 'Gallery', wc_blk_audio: 'Audio',
@@ -1866,6 +1872,8 @@
         wc_view_edit: '✏️ 编辑', wc_view_preview: '👁 预览',
         wc_step_layout: '2. 设计你的布局',
         wc_layout_help: '添加区块并拖动排序。设置每个区块的宽度——区块会自动排入行，因此两个半宽区块会并排显示。在手机上全部纵向堆叠。',
+        wc_bg_title: '背景', wc_bg_animated: '动态',
+        wc_bg_midnight: '午夜', wc_bg_aurora: '极光', wc_bg_paper: '纸白', wc_bg_mesh: '网格', wc_bg_particles: '粒子',
         wc_add_heading: '+ 标题', wc_add_text: '+ 文本', wc_add_resume: '+ 简历',
         wc_add_image: '+ 图片', wc_add_gallery: '+ 相册', wc_add_video: '+ 视频', wc_add_audio: '+ 音频', wc_add_spacer: '+ 间距',
         wc_blk_gallery: '相册', wc_blk_audio: '音频',
@@ -6153,6 +6161,7 @@ Aaliyah Washington`
           if (cfg.assets.resumeId && rSel.querySelector(`option[value="${cfg.assets.resumeId}"]`)) rSel.value = String(cfg.assets.resumeId);
           if (cfg.assets.coverLetterId && cSel.querySelector(`option[value="${cfg.assets.coverLetterId}"]`)) cSel.value = String(cfg.assets.coverLetterId);
         }
+        wcBackground = (cfg && cfg.background) || 'midnight';
         // Load saved blocks, or seed a default layout if the site predates the editor.
         if (cfg && Array.isArray(cfg.blocks) && cfg.blocks.length) {
           wcBlocks = cfg.blocks.map(b => Object.assign({ id: wcNewId() }, b));
@@ -6161,8 +6170,10 @@ Aaliyah Washington`
         }
       } else {
         if (viewLive) viewLive.style.display = 'none';
+        wcBackground = 'midnight';
         wcSeedDefaultBlocks();
       }
+      wcRenderBgPicker();
       wcRenderBlocks();
       wcLoadMediaUsage();
       wcLoadSiteExtras();
@@ -6278,7 +6289,27 @@ Aaliyah Washington`
 
     // ── Website Creator: block/layout editor (Phase 3b) ───────────────────────
     let wcBlocks = [];
+    let wcBackground = 'midnight';
     let _wcDragId = null;
+    const WC_BACKGROUNDS = [
+      ['midnight', 'Midnight', '#030712'],
+      ['aurora', 'Aurora', 'linear-gradient(120deg,#0f172a,#3b0764,#1e1b4b)'],
+      ['paper', 'Paper', '#f8fafc'],
+      ['mesh', 'Mesh', 'radial-gradient(at 20% 20%,#eef2ff,transparent 50%),radial-gradient(at 80% 0,#fce7f3,transparent 50%),#f8fafc'],
+      ['particles', 'Particles', '#0b1020'],
+    ];
+    function wcRenderBgPicker() {
+      const el = document.getElementById('wcBgPicker'); if (!el) return;
+      el.innerHTML = WC_BACKGROUNDS.map(([id, label, css]) => {
+        const on = wcBackground === id;
+        const anim = (id === 'aurora' || id === 'particles') ? ` · ${_t('wc_bg_animated', 'animated')}` : '';
+        return `<button type="button" onclick="wcSetBackground('${id}')" style="border:2px solid ${on ? '#6366f1' : '#e5e7eb'};border-radius:10px;padding:4px;background:none;cursor:pointer;width:96px;">
+          <span style="display:block;height:34px;border-radius:6px;background:${css};"></span>
+          <span style="display:block;font-size:11px;font-weight:700;color:#374151;margin-top:4px;">${wcEsc(_t('wc_bg_' + id, label))}${anim}</span>
+        </button>`;
+      }).join('');
+    }
+    function wcSetBackground(id) { wcBackground = id; wcRenderBgPicker(); }
     const WC_WIDTHS = [[12, 'Full'], [8, 'Two-thirds'], [6, 'Half'], [4, 'Third']];
     const WC_VIDEO_LABELS = ['Meet Me', 'About Me', 'Why Hire Me', 'My Story', 'Elevator Pitch'];
     function wcAttr(s) { return wcEsc(s).replace(/"/g, '&quot;'); }
@@ -6585,6 +6616,7 @@ Aaliyah Washington`
       return {
         v: 1,
         lang: _lang(),
+        background: wcBackground,
         theme: { primary: (rTpl.c.p || '').replace('#', ''), accent: (rTpl.c.a || '').replace('#', '') },
         assets: { resumeId: rSel && rSel.value ? Number(rSel.value) : null, coverLetterId: cSel && cSel.value ? Number(cSel.value) : null },
         blocks: wcBlocks.map(b => ({ type: b.type, colSpan: Number(b.colSpan) || 12, text: b.text, src: b.src, caption: b.caption, label: b.label, alt: b.alt, images: b.images, items: b.items, mode: b.mode })),

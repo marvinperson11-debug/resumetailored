@@ -1974,6 +1974,25 @@ function _renderPersonalSite(row, origin, opts = {}) {
   return _shareResumeHtml(row, origin, opts);
 }
 
+// Personal-site background themes. `animated` themes are gated by shouldAnimate()
+// on the client (reduced-motion / low core count / small viewport) and fall back
+// to `fallback`. fg/muted adapt text that sits directly on the background (cards
+// keep their own light styling). Default 'midnight' mirrors the homepage (#030712).
+const _SITE_THEMES = {
+  midnight: { animated: false, bg: 'radial-gradient(1200px 600px at 50% -10%, rgba(99,102,241,0.18), transparent), #030712', fallback: '#030712', fg: '#e2e8f0', muted: '#94a3b8', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
+  aurora: { animated: true, bg: 'linear-gradient(120deg, #0f172a, #3b0764, #1e1b4b, #0f172a)', fallback: 'linear-gradient(120deg,#0f172a,#1e1b4b)', fg: '#e2e8f0', muted: '#a5b4fc', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
+  paper: { animated: false, bg: '#f8fafc', fallback: '#f8fafc', fg: '#1f2430', muted: '#6b7280', langBtn: 'rgba(0,0,0,.05)', langFg: '#475569', langBorder: 'rgba(0,0,0,.1)' },
+  mesh: { animated: false, bg: 'radial-gradient(at 20% 20%, #eef2ff, transparent 50%), radial-gradient(at 80% 0%, #fce7f3, transparent 50%), radial-gradient(at 60% 80%, #dbeafe, transparent 50%), #f8fafc', fallback: '#f8fafc', fg: '#1f2430', muted: '#6b7280', langBtn: 'rgba(0,0,0,.05)', langFg: '#475569', langBorder: 'rgba(0,0,0,.1)' },
+  particles: { animated: true, bg: '#0b1020', fallback: '#0b1020', fg: '#e2e8f0', muted: '#94a3b8', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
+};
+
+// Public-site chrome strings (user content is shown as authored). Shared by the
+// grid renderer and the contact block so a zh site renders in Chinese server-side.
+const _SITE_I18N = {
+  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume' },
+  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历' },
+};
+
 // A resume rendered as a self-contained fragment (used by a `resume` block).
 // Built from the standalone _dxParseResume/_shareLinesHtml helpers so it never
 // touches _shareResumeHtml (which the Link relies on staying byte-identical).
@@ -2023,7 +2042,8 @@ const _safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/|data:image\/
 
 // One block → HTML on a 12-column grid. On mobile the grid collapses (CSS) so
 // blocks stack full-width in source order; placement is desktop-only.
-function _renderSiteBlock(b, row, accent) {
+function _renderSiteBlock(b, row, accent, lang) {
+  const SI = _SITE_I18N[lang === 'zh' ? 'zh' : 'en'];
   const span = _clampInt(b.colSpan, 1, 12, 12);
   // Explicit start column → fixed placement; no column → auto-flow (blocks fill
   // rows left-to-right, so two half-width blocks sit side by side). The editor
@@ -2085,13 +2105,13 @@ function _renderSiteBlock(b, row, accent) {
       // Lead-capture form. mode 'pdf' = "Request my resume PDF" gate; else a
       // plain contact form. Posts to /api/site-lead (persist-first server-side).
       const isPdf = b.mode === 'pdf';
-      const heading = _escHtml(String(b.label || (isPdf ? 'Request my resume' : 'Get in touch')).slice(0, 120));
+      const heading = _escHtml(String(b.label || (isPdf ? SI.request_h : SI.contact_h)).slice(0, 120));
       inner = `<div class="sg-contact"><div class="sg-blk-label">${heading}</div>
         <form class="sg-lead-form" onsubmit="return _sgLead(event,this)" data-sub="${_escHtml(row.subdomain || '')}" data-mode="${isPdf ? 'pdf' : 'contact'}">
-          <input name="name" placeholder="Your name" maxlength="120"/>
-          <input name="email" type="email" required placeholder="Your email" maxlength="200"/>
-          ${isPdf ? '' : '<textarea name="message" placeholder="Message" maxlength="2000"></textarea>'}
-          <button type="submit">${isPdf ? 'Send me the resume' : 'Send'}</button>
+          <input name="name" placeholder="${_escHtml(SI.c_name)}" maxlength="120"/>
+          <input name="email" type="email" required placeholder="${_escHtml(SI.c_email)}" maxlength="200"/>
+          ${isPdf ? '' : `<textarea name="message" placeholder="${_escHtml(SI.c_msg)}" maxlength="2000"></textarea>`}
+          <button type="submit">${isPdf ? _escHtml(SI.c_send_pdf) : _escHtml(SI.c_send)}</button>
           <div class="sg-lead-msg" style="display:none;"></div>
         </form></div>`;
       break;
@@ -2106,18 +2126,21 @@ function _renderSiteBlock(b, row, accent) {
 function _renderSiteGrid(row, origin, opts, config) {
   const primary = '#' + String((config.theme && config.theme.primary) || row.primary_hex || '4a1042').replace('#', '');
   const accent = '#' + String((config.theme && config.theme.accent) || row.accent || '8b5cf6').replace('#', '');
-  const bg = (config.theme && config.theme.bg) ? String(config.theme.bg) : '#eef0f4';
+  // Background theme. Default 'midnight' mirrors the platform homepage (#030712).
+  // Animated themes (aurora, particles) degrade to a static fallback on the client
+  // via shouldAnimate() (reduced-motion, low core count, or small viewport).
+  const theme = _SITE_THEMES[config.background] ? config.background : 'midnight';
+  const T = _SITE_THEMES[theme];
   const lang = config.lang === 'zh' ? 'zh' : 'en';
   const displayName = _escHtml((row.name || _dxParseResume(row.text || '').name || 'Resume'));
   const indexable = !!opts.indexable;
   const canonical = opts.canonicalUrl || `${origin}/site/${row.subdomain}`;
-  const blocksHtml = config.blocks.map(b => _renderSiteBlock(b, row, accent)).join('');
+  const blocksHtml = config.blocks.map(b => _renderSiteBlock(b, row, accent, lang)).join('');
   const footerHtml = opts.footer !== undefined ? opts.footer : '';
 
-  // Public-site i18n scaffold (chrome only — user content is shown as authored).
-  // Structure mirrors zh/index.html: a small dictionary + a toggle that swaps
-  // any [data-si] element. Copy is filled out in the dedicated i18n phase.
-  const SITE_I18N = { en: { lang_toggle: '中文' }, zh: { lang_toggle: 'EN' } };
+  // Public-site i18n (chrome only — user content is shown as authored). Shared
+  // module dictionary; a toggle swaps any [data-si] element (mirrors zh/index.html).
+  const SITE_I18N = _SITE_I18N;
 
   return `<!DOCTYPE html>
 <html lang="${lang}">
@@ -2135,25 +2158,31 @@ function _renderSiteGrid(row, origin, opts, config) {
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <style>
-    :root{--p:${primary};--a:${accent};}
+    :root{--p:${primary};--a:${accent};--fg:${T.fg};--muted:${T.muted};}
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:${bg};color:#1f2430;line-height:1.6;padding:24px 14px 60px;}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:${T.fallback};color:var(--fg);line-height:1.6;padding:24px 14px 60px;position:relative;min-height:100vh;}
+    /* Background layer: static by default; shouldAnimate() adds .sg-animate to <html>. */
+    .sg-bg{position:fixed;inset:0;z-index:-2;background:${T.fallback};}
+    html.sg-animate .sg-bg{background:${T.bg};${theme === 'aurora' ? 'background-size:200% 200%;animation:sgAurora 18s ease infinite;' : ''}}
+    .sg-bg-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none;}
+    @keyframes sgAurora{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+    @media (prefers-reduced-motion: reduce){html.sg-animate .sg-bg{animation:none;}}
     .sg-topbar{max-width:1100px;margin:0 auto 16px;display:flex;justify-content:flex-end;}
-    .sg-lang{background:rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.1);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;}
+    .sg-lang{background:${T.langBtn};border:1px solid ${T.langBorder};border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:${T.langFg};cursor:pointer;}
     .site-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;max-width:1100px;margin:0 auto;align-items:start;}
     .sg-block{min-width:0;}
-    .sg-blk-h{font-size:26px;font-weight:900;color:var(--p);letter-spacing:-.5px;margin-bottom:6px;}
+    .sg-blk-h{font-size:26px;font-weight:900;color:var(--fg);letter-spacing:-.5px;margin-bottom:6px;}
     .sg-blk-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
-    .sg-blk-text{font-size:15px;color:#39414f;}
+    .sg-blk-text{font-size:15px;color:var(--muted);}
     .sg-fig{margin:0;}
     .sg-fig img{width:100%;height:auto;border-radius:14px;display:block;}
-    .sg-fig figcaption{font-size:12.5px;color:#6b7280;margin-top:6px;text-align:center;}
+    .sg-fig figcaption{font-size:12.5px;color:var(--muted);margin-top:6px;text-align:center;}
     .sg-video{width:100%;border-radius:14px;background:#000;display:block;}
     .sg-audio{width:100%;}
     .sg-gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
     .sg-gitem{flex:0 0 auto;width:min(78%,320px);scroll-snap-align:start;margin:0;}
     .sg-gitem img{width:100%;height:auto;border-radius:12px;display:block;}
-    .sg-gitem figcaption{font-size:12.5px;color:#6b7280;margin-top:5px;}
+    .sg-gitem figcaption{font-size:12.5px;color:var(--muted);margin-top:5px;}
     .sg-cs-wrap{display:flex;flex-direction:column;gap:10px;}
     .sg-cs{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;}
     .sg-cs summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;}
@@ -2191,13 +2220,26 @@ function _renderSiteGrid(row, origin, opts, config) {
   </style>
 </head>
 <body>
+  <div class="sg-bg"></div>${theme === 'particles' ? '<canvas class="sg-bg-canvas" id="sgCanvas"></canvas>' : ''}
   <div class="sg-topbar"><button class="sg-lang" data-si="lang_toggle" onclick="_sgToggleLang()">${SITE_I18N[lang].lang_toggle}</button></div>
   <div class="site-grid">${blocksHtml}</div>
   ${footerHtml}
   <script>
     var SITE_I18N=${JSON.stringify(SITE_I18N)};
+    var SG_ANIMATED=${T.animated ? 'true' : 'false'}, SG_THEME=${JSON.stringify(theme)};
+    // Degrade gate: only animate when the device can comfortably handle it.
+    function shouldAnimate(){
+      try{
+        if(!SG_ANIMATED) return false;
+        if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+        if(navigator.hardwareConcurrency && navigator.hardwareConcurrency<=4) return false;
+        if(Math.min(window.innerWidth,window.innerHeight)<768) return false;
+        return true;
+      }catch(_){return false;}
+    }
     function _sgLead(e,f){
       e.preventDefault();
+      var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;
       var fd=new FormData(f), msg=f.querySelector('.sg-lead-msg');
       var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||''};
       fetch('/api/site-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
@@ -2205,9 +2247,9 @@ function _renderSiteGrid(row, origin, opts, config) {
         .then(function(){
           f.querySelectorAll('input,textarea,button').forEach(function(el){el.style.display='none';});
           msg.style.display='block';
-          msg.textContent=(f.dataset.mode==='pdf')?'Thanks! I\\'ll be in touch with my resume shortly.':'Thanks — your message was sent.';
+          msg.textContent=(f.dataset.mode==='pdf')?L.c_thanks_pdf:L.c_thanks;
         })
-        .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent='Something went wrong — please try again.';});
+        .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
       return false;
     }
     function _sgToggleLang(){
@@ -2217,7 +2259,24 @@ function _renderSiteGrid(row, origin, opts, config) {
       document.querySelectorAll('[data-si]').forEach(function(el){
         var k=el.getAttribute('data-si'); if(SITE_I18N[next] && SITE_I18N[next][k]!=null) el.textContent=SITE_I18N[next][k];
       });
+      document.querySelectorAll('.sg-lead-form input[name=name]').forEach(function(el){el.placeholder=SITE_I18N[next].c_name;});
+      document.querySelectorAll('.sg-lead-form input[name=email]').forEach(function(el){el.placeholder=SITE_I18N[next].c_email;});
+      document.querySelectorAll('.sg-lead-form textarea[name=message]').forEach(function(el){el.placeholder=SITE_I18N[next].c_msg;});
     }
+    // Apply the animation gate, then run the particle field if that theme is active.
+    (function(){
+      if(!shouldAnimate()) return;
+      document.documentElement.classList.add('sg-animate');
+      if(SG_THEME!=='particles') return;
+      var cv=document.getElementById('sgCanvas'); if(!cv) return;
+      var ctx=cv.getContext('2d'), parts=[], raf=0, running=true;
+      function size(){cv.width=window.innerWidth;cv.height=window.innerHeight;}
+      function init(){parts=[];var n=Math.min(60,Math.round(window.innerWidth/24));for(var i=0;i<n;i++)parts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.8+.6});}
+      function tick(){if(!running)return;ctx.clearRect(0,0,cv.width,cv.height);ctx.fillStyle='rgba(148,163,184,0.5)';for(var i=0;i<parts.length;i++){var p=parts[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>cv.width)p.vx*=-1;if(p.y<0||p.y>cv.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill();}raf=requestAnimationFrame(tick);}
+      size();init();tick();
+      window.addEventListener('resize',function(){size();init();});
+      document.addEventListener('visibilitychange',function(){running=!document.hidden;if(running){raf=requestAnimationFrame(tick);}else{cancelAnimationFrame(raf);}});
+    })();
   </script>
 </body>
 </html>`;
