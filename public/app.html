@@ -481,7 +481,7 @@
                   <span id="uploadBtnText" data-i18n="upload_btn">⬆ Upload File</span>
                 </button>
                 <input type="file" id="resumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleResumeUpload(this)" />
-                <button id="linkedinImportBtn" onclick="startLinkedInImport()" style="display:none;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
+                <button id="linkedinImportBtn" onclick="startLinkedInImport('resume')" style="display:inline-flex;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
                   <span>in</span> <span id="linkedinImportText">Import from LinkedIn</span>
                 </button>
               </div>
@@ -677,7 +677,10 @@
 
           <div class="input-group" style="margin-top:16px;">
             <label class="input-label" for="linkedinProfileText">Your Current LinkedIn Profile Text</label>
-            <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">Paste your current headline, About section, and experience descriptions. The more detail you provide, the better the optimization.</p>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">Paste your current headline, About section, and experience descriptions — or import them straight from your LinkedIn account. The more detail you provide, the better the optimization.</p>
+            <button id="linkedinOptImportBtn" onclick="startLinkedInImport('linkedin')" style="display:inline-flex;margin-bottom:10px;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
+              <span style="font-weight:800;">in</span> <span data-i18n="li_import_btn">Import from LinkedIn</span>
+            </button>
             <textarea id="linkedinProfileText" class="resume-textarea" style="min-height:200px;" placeholder="Paste your LinkedIn headline, About section, and experience bullets here...&#10;&#10;Example:&#10;Headline: Product Manager at Acme Corp&#10;&#10;About: I am a passionate product manager with 5 years of experience...&#10;&#10;Experience:&#10;Product Manager, Acme Corp (2020–Present)&#10;- Managed product roadmap&#10;- Worked with engineering team&#10;- Helped launch new features"></textarea>
           </div>
 
@@ -1587,6 +1590,7 @@
         btn_edit: 'Edit', btn_copy: 'Copy',
         tailor_btn: 'Tailor My Resume →', tailor_btn_cover: 'Tailor My Cover Letter →',
         li_optimize_btn: 'Optimize My LinkedIn Profile →',
+        li_import_btn: 'Import from LinkedIn',
         auth_tab_subscribe: 'Subscribe', auth_tab_login: 'Log In'
       },
       zh: {
@@ -1622,6 +1626,7 @@
         btn_edit: '编辑', btn_copy: '复制',
         tailor_btn: '开始定制简历 →', tailor_btn_cover: '定制我的求职信 →',
         li_optimize_btn: '优化我的LinkedIn资料 →',
+        li_import_btn: '从 LinkedIn 导入',
         auth_tab_subscribe: '订阅', auth_tab_login: '登录'
       }
     };
@@ -5273,17 +5278,27 @@ Aaliyah Washington`
     }
 
     // ── LinkedIn import (free) ────────────────────────────────────────────────
-    // Show the button only when the server has LinkedIn OAuth configured.
+    // The import buttons are visible by default. If the server reports LinkedIn
+    // OAuth is NOT configured, hide them (nothing to import). If the status check
+    // itself fails, leave them visible — the OAuth route degrades gracefully with
+    // a clear message, which also helps surface a misconfiguration.
     async function initLinkedInImport() {
       try {
         const r = await fetch('/api/auth/linkedin/status');
         const d = await r.json();
-        const btn = document.getElementById('linkedinImportBtn');
-        if (btn && d && d.enabled) btn.style.display = 'inline-flex';
+        if (d && d.enabled === false) {
+          ['linkedinImportBtn', 'linkedinOptImportBtn'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.style.display = 'none';
+          });
+        }
       } catch (_) {}
     }
-    function startLinkedInImport() {
-      // Full-page redirect to LinkedIn consent; we come back to /dashboard.
+    // `target` decides which field the imported profile lands in after the
+    // OAuth round-trip: 'resume' (the builder) or 'linkedin' (the optimizer).
+    // We stash it because LinkedIn OAuth is a full-page redirect.
+    function startLinkedInImport(target) {
+      try { localStorage.setItem('rt_li_import_target', target === 'linkedin' ? 'linkedin' : 'resume'); } catch (_) {}
       window.location.href = '/api/auth/linkedin';
     }
     // On return from LinkedIn, pull the one-time draft and prefill the builder.
@@ -5291,7 +5306,9 @@ Aaliyah Washington`
       const q = new URLSearchParams(window.location.search);
       const err = q.get('linkedin_error');
       if (err) {
-        showToast('LinkedIn import failed: ' + err.replace(/_/g, ' '));
+        showToast(err === 'not_configured'
+          ? 'LinkedIn import isn\'t connected yet — set LINKEDIN_CLIENT_ID & LINKEDIN_CLIENT_SECRET in your server env.'
+          : 'LinkedIn import failed: ' + err.replace(/_/g, ' '), 7000);
         history.replaceState(null, '', window.location.pathname);
         return;
       }
@@ -5305,11 +5322,36 @@ Aaliyah Washington`
         prefillFromLinkedIn(profile);
       } catch (_) { showToast('Could not load your LinkedIn profile.'); }
     }
-    // Drop the imported fields into the resume textarea as a starter, and stash
-    // the photo for the Sidebar avatar. LinkedIn's API only returns basics, so
-    // we scaffold the rest and tell the user to complete it.
+    // Route the imported profile to whichever tool started the import. LinkedIn's
+    // API only returns basics (name/headline/email/photo), so both flows scaffold
+    // the rest and tell the user to complete it.
     function prefillFromLinkedIn(p) {
       if (!p) return;
+      let target = 'resume';
+      try { target = localStorage.getItem('rt_li_import_target') || 'resume'; localStorage.removeItem('rt_li_import_target'); } catch (_) {}
+
+      if (target === 'linkedin') {
+        // Fill the LinkedIn Optimizer's profile box and open that tab.
+        const ta = document.getElementById('linkedinProfileText');
+        if (ta) {
+          const lines = [];
+          if (p.headline) lines.push('Headline: ' + p.headline);
+          else lines.push('Headline: [Add your LinkedIn headline]');
+          lines.push('\nAbout: [Paste your LinkedIn About section here]');
+          lines.push('\nExperience:\n[Paste your experience — LinkedIn does not share full work history via its API, so add your roles and bullets here]');
+          const draft = lines.join('\n');
+          if (!ta.value.trim()) ta.value = draft;
+          else ta.value = draft + '\n\n---\n' + ta.value;
+          ta.dispatchEvent(new Event('input'));
+        }
+        const roleEl = document.getElementById('linkedinTargetRole');
+        if (roleEl && p.headline && !roleEl.value.trim()) roleEl.value = p.headline;
+        try { showTab('linkedin'); } catch (_) {}
+        showToast('Imported from LinkedIn — paste your About & experience to finish, then optimize.', 6000);
+        return;
+      }
+
+      // Default: the resume builder.
       const ta = document.getElementById('resume');
       if (ta) {
         const lines = [];
@@ -5322,7 +5364,6 @@ Aaliyah Washington`
         lines.push('\n\nEDUCATION\n[Add your education]');
         lines.push('\n\nSKILLS\n[Add your skills, comma-separated]');
         const draftText = lines.join('\n');
-        // Only overwrite if the box is empty, so we never clobber existing text.
         if (!ta.value.trim()) ta.value = draftText;
         else ta.value = draftText + '\n\n---\n' + ta.value;
         ta.dispatchEvent(new Event('input'));

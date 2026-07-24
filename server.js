@@ -546,9 +546,12 @@ app.get('/api/auth/linkedin/status', (req, res) => {
   res.json({ enabled: linkedInConfigured() });
 });
 
-// Step 1 — send the user to LinkedIn's consent screen.
+// Step 1 — send the user to LinkedIn's consent screen. If the feature isn't
+// configured, bounce back to the dashboard with a friendly error (a full-page
+// redirect must never dump raw JSON at the user) — this also makes a missing
+// LINKEDIN_CLIENT_ID/SECRET obvious instead of failing silently.
 app.get('/api/auth/linkedin', (req, res) => {
-  if (!linkedInConfigured()) return res.status(501).json({ error: 'LinkedIn import is not configured.' });
+  if (!linkedInConfigured()) return res.redirect('/dashboard?linkedin_error=not_configured');
   _liSweep();
   const state = crypto.randomBytes(16).toString('hex');
   _liStates.set(state, Date.now() + 10 * 60 * 1000); // 10-min validity
