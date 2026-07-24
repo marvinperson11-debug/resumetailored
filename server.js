@@ -800,6 +800,22 @@ app.delete('/api/cover-letters/:id', (req, res) => {
   res.json({ success: true });
 });
 
+// Duplicate a saved resume / cover letter (Back Office bulk action).
+function _duplicateAsset(table, req, res) {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const row = db.prepare(`SELECT title, content FROM ${table} WHERE id = ? AND email = ?`).get(req.params.id, email);
+  if (!row) return res.status(404).json({ error: 'Not found.' });
+  const title = (row.title || 'Untitled').slice(0, 74) + ' (copy)';
+  const info = db.prepare(`INSERT INTO ${table} (email, title, content, created_at) VALUES (?, ?, ?, ?)`)
+    .run(email, title, row.content, Date.now());
+  // Honor the same keep-latest-20 cap as the create routes.
+  db.prepare(`DELETE FROM ${table} WHERE email = ? AND id NOT IN (SELECT id FROM ${table} WHERE email = ? ORDER BY created_at DESC LIMIT 20)`).run(email, email);
+  res.json({ success: true, id: info.lastInsertRowid, title });
+}
+app.post('/api/resumes/:id/duplicate', (req, res) => _duplicateAsset('saved_resumes', req, res));
+app.post('/api/cover-letters/:id/duplicate', (req, res) => _duplicateAsset('saved_cover_letters', req, res));
+
 // ── Saved resume videos ──────────────────────────────────────────────────────
 // Metadata rows for persisted MP4s (generated or user-uploaded). The file bytes
 // are written under DATA_DIR by the media/persist paths in later phases; here we
@@ -2370,6 +2386,17 @@ app.post('/api/personal-site/preview', (req, res) => {
   };
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(_renderPersonalSite(row, `${req.protocol}://${req.get('host')}`, { indexable: false, footer: '' }));
+});
+
+// Toggle publish/unpublish without deleting (Back Office). Unpublished sites 404
+// publicly but the row (and its config) is kept so the owner can republish.
+app.patch('/api/personal-site', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const published = req.body && req.body.published ? 1 : 0;
+  const info = db.prepare('UPDATE personal_sites SET published = ?, updated_at = ? WHERE email = ?').run(published, Date.now(), email.toLowerCase());
+  if (!info.changes) return res.status(404).json({ error: 'No site to update.' });
+  res.json({ success: true, published: !!published });
 });
 
 // Unpublish (delete) the signed-in user's personal site.

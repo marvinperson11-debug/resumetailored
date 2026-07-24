@@ -281,6 +281,14 @@
     .wc-blk-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .wc-blk input.text-input, .wc-blk textarea.text-input, .wc-blk select.text-input { font-size: 13px; }
     .wc-blk-width { font-size: 12px; color: #6b7280; }
+    .bo-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #f1f5f9; }
+    .bo-row:first-child { border-top: none; }
+    .bo-row-title { flex: 1; min-width: 0; font-size: 14px; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bo-row-meta { font-size: 12px; color: #9ca3af; white-space: nowrap; }
+    .bo-act { border: 1.5px solid #e5e7eb; background: #fff; color: #374151; font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 8px; cursor: pointer; }
+    .bo-act.bo-danger { color: #dc2626; border-color: #fecaca; }
+    .bo-empty { font-size: 13px; color: #9ca3af; padding: 6px 0; }
+    .bo-bulk { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -409,6 +417,11 @@
         <button class="sidebar-btn" onclick="openWebsiteCreator()" id="tab-website" data-label="Website" title="Build & publish your live personal website">
           <span class="sidebar-icon">🌐</span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_website">Personal Website</span>
+          <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
+        </button>
+        <button class="sidebar-btn" onclick="openBackOffice()" id="tab-backoffice" data-label="Back Office" title="Manage all your resumes, cover letters, videos & website">
+          <span class="sidebar-icon">🗂️</span>
+          <span style="flex:1;text-align:left;" data-i18n="sidebar_backoffice">Back Office</span>
           <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
         </button>
       </div>
@@ -1089,6 +1102,18 @@
         </div>
       </div>
 
+      <!-- ═══ TAB: BACK OFFICE (Pro asset hub) ═══ -->
+      <div class="tab-content" id="panel-backoffice">
+        <div class="panel-header">
+          <h1 data-i18n="bo_title">Back Office</h1>
+          <p data-i18n="bo_subtitle">Manage everything in one place — your saved resumes, cover letters, videos and personal website.</p>
+        </div>
+        <div id="bo-resumes" class="wc-card"><div class="wc-step" data-i18n="bo_resumes">Resumes</div><div class="bo-list"></div></div>
+        <div id="bo-covers" class="wc-card"><div class="wc-step" data-i18n="bo_covers">Cover letters</div><div class="bo-list"></div></div>
+        <div id="bo-videos" class="wc-card"><div class="wc-step" data-i18n="bo_videos">Resume videos</div><div class="bo-list"></div></div>
+        <div id="bo-site" class="wc-card"><div class="wc-step" data-i18n="bo_website">Personal website</div><div class="bo-list"></div></div>
+      </div>
+
       <!-- ═══ TAB: COMMUNITY FORUM ═══ -->
       <div class="tab-content" id="panel-forum">
         <div class="panel-header">
@@ -1712,7 +1737,16 @@
       en: {
         nav_go_pro: 'Go Pro — $19.99/mo', nav_logout: 'Log Out',
         sidebar_jobsearch: 'Job Search', sidebar_tailor: 'Resume Tailor', sidebar_linkedin: 'LinkedIn Optimizer',
-        sidebar_sharelink: 'Resume Link', sidebar_website: 'Personal Website',
+        sidebar_sharelink: 'Resume Link', sidebar_website: 'Personal Website', sidebar_backoffice: 'Back Office',
+        bo_title: 'Back Office', bo_subtitle: 'Manage everything in one place — your saved resumes, cover letters, videos and personal website.',
+        bo_resumes: 'Resumes', bo_covers: 'Cover letters', bo_videos: 'Resume videos', bo_website: 'Personal website',
+        bo_empty: 'Nothing here yet.', bo_novideos: 'No saved videos yet — make one in the Resume Video tab.', bo_nosite: 'No website yet — build one in the Website Creator.',
+        bo_use: 'Use', bo_duplicate: 'Duplicate', bo_delete: 'Delete', bo_edit: 'Edit', bo_viewlive: 'View live',
+        bo_publish: 'Publish', bo_unpublish: 'Unpublish', bo_live: 'Live', bo_hidden: 'Hidden',
+        bo_bulk_dup: 'Duplicate selected', bo_bulk_del: 'Delete selected',
+        bo_pro: 'The Back Office is a Pro feature.', bo_loaded: 'Loaded into the Tailor tab.',
+        bo_none_sel: 'Select some items first.', bo_confirm_del: 'Delete this item? This cannot be undone.',
+        bo_confirm_bulk: 'Delete the selected items? This cannot be undone.', bo_confirm_site: 'Delete your website? This removes the live page.',
         wc_title: 'Website Creator',
         wc_subtitle: 'Build a live, customizable personal website from your saved resumes and cover letters.',
         wc_view_edit: '✏️ Edit', wc_view_preview: '👁 Preview',
@@ -1817,7 +1851,16 @@
       zh: {
         nav_go_pro: '升级专业版 — ¥19.99/月', nav_logout: '退出登录',
         sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
-        sidebar_sharelink: '简历链接', sidebar_website: '个人网站',
+        sidebar_sharelink: '简历链接', sidebar_website: '个人网站', sidebar_backoffice: '后台管理',
+        bo_title: '后台管理', bo_subtitle: '一站式管理——你保存的简历、求职信、视频和个人网站。',
+        bo_resumes: '简历', bo_covers: '求职信', bo_videos: '简历视频', bo_website: '个人网站',
+        bo_empty: '暂无内容。', bo_novideos: '暂无保存的视频——在简历视频标签页制作一个。', bo_nosite: '暂无网站——在网站创建器中制作一个。',
+        bo_use: '使用', bo_duplicate: '复制', bo_delete: '删除', bo_edit: '编辑', bo_viewlive: '查看网站',
+        bo_publish: '发布', bo_unpublish: '取消发布', bo_live: '已上线', bo_hidden: '已隐藏',
+        bo_bulk_dup: '复制所选', bo_bulk_del: '删除所选',
+        bo_pro: '后台管理是专业版功能。', bo_loaded: '已加载到定制标签页。',
+        bo_none_sel: '请先选择项目。', bo_confirm_del: '删除此项？此操作无法撤销。',
+        bo_confirm_bulk: '删除所选项目？此操作无法撤销。', bo_confirm_site: '删除你的网站？这会移除已上线的页面。',
         wc_title: '网站创建器',
         wc_subtitle: '用你保存的简历和求职信，打造一个可自定义的个人网站。',
         wc_view_edit: '✏️ 编辑', wc_view_preview: '👁 预览',
@@ -2593,6 +2636,7 @@
       if (name === 'linkedin') updateLinkedInFreeStatus();
       if (name === 'video') updateVideoGate();
       if (name === 'website') loadWebsiteCreator();
+      if (name === 'backoffice') loadBackOffice();
     }
 
     // ── Mode buttons ───────────────────────────────────────────────────────────
@@ -6345,6 +6389,117 @@ Aaliyah Washington`
     function wcDownloadQr() {
       const img = document.getElementById('wcQrImg');
       if (img && img.src) { const a = document.createElement('a'); a.href = img.src; a.download = 'site-qr.svg'; a.click(); }
+    }
+
+    // ── Back Office (Pro asset hub, Phase 6) ──────────────────────────────────
+    let boSel = { resumes: new Set(), covers: new Set() };
+    function openBackOffice() {
+      if (!isSubscriberFlag) { showToast(_t('bo_pro', 'The Back Office is a Pro feature.')); startPro(); return; }
+      showTab('backoffice');
+    }
+    const _boDate = (ms) => { try { return new Date(ms).toLocaleDateString(); } catch (_) { return ''; } };
+    async function loadBackOffice() {
+      boSel = { resumes: new Set(), covers: new Set() };
+      let resumes = [], covers = [], videos = [], site = null;
+      try {
+        const [r, c, v, s] = await Promise.all([
+          fetch('/api/resumes', { headers: authHeaders() }),
+          fetch('/api/cover-letters', { headers: authHeaders() }),
+          fetch('/api/videos', { headers: authHeaders() }),
+          fetch('/api/personal-site', { headers: authHeaders() }),
+        ]);
+        resumes = (await r.json().catch(() => ({}))).resumes || [];
+        covers = (await c.json().catch(() => ({}))).coverLetters || [];
+        videos = (await v.json().catch(() => ({}))).videos || [];
+        site = (await s.json().catch(() => ({}))).site || null;
+      } catch (_) {}
+      boRenderAssets('resumes', resumes);
+      boRenderAssets('covers', covers);
+      boRenderVideos(videos);
+      boRenderSite(site);
+    }
+
+    function boRenderAssets(kind, items) {
+      const wrap = document.querySelector(`#bo-${kind} .bo-list`);
+      if (!wrap) return;
+      const single = kind === 'resumes' ? 'resume' : 'cover-letters';
+      if (!items.length) { wrap.innerHTML = `<div class="bo-empty">${wcEsc(_t('bo_empty', 'Nothing here yet.'))}</div>`; return; }
+      wrap.innerHTML = items.map(it => `<div class="bo-row">
+        <input type="checkbox" onchange="boToggle('${kind}',${it.id},this.checked)" ${boSel[kind].has(it.id) ? 'checked' : ''}/>
+        <span class="bo-row-title">${wcEsc(it.title || 'Untitled')}</span>
+        <span class="bo-row-meta">${_boDate(it.created_at)}</span>
+        <button class="bo-act" onclick="boUse('${kind}',${it.id})" data-i18n="bo_use">Use</button>
+        <button class="bo-act" onclick="boDuplicate('${single}',${it.id})" data-i18n="bo_duplicate">Duplicate</button>
+        <button class="bo-act bo-danger" onclick="boDelete('${single}',${it.id})" data-i18n="bo_delete">Delete</button>
+      </div>`).join('') +
+        `<div class="bo-bulk">
+          <button class="bo-act" onclick="boBulkDuplicate('${kind}')" data-i18n="bo_bulk_dup">Duplicate selected</button>
+          <button class="bo-act bo-danger" onclick="boBulkDelete('${kind}')" data-i18n="bo_bulk_del">Delete selected</button>
+        </div>`;
+    }
+    function boRenderVideos(items) {
+      const wrap = document.querySelector('#bo-videos .bo-list');
+      if (!wrap) return;
+      wrap.innerHTML = items.length ? items.map(it => `<div class="bo-row">
+        <span class="bo-row-title">${wcEsc(it.title || 'Resume Video')}</span>
+        <span class="bo-row-meta">${it.source || ''} · ${_boDate(it.created_at)}</span>
+        <button class="bo-act bo-danger" onclick="boDeleteVideo(${it.id})" data-i18n="bo_delete">Delete</button>
+      </div>`).join('') : `<div class="bo-empty">${wcEsc(_t('bo_novideos', 'No saved videos yet — make one in the Resume Video tab.'))}</div>`;
+    }
+    function boRenderSite(site) {
+      const wrap = document.querySelector('#bo-site .bo-list');
+      if (!wrap) return;
+      if (!site || !site.subdomain) { wrap.innerHTML = `<div class="bo-empty">${wcEsc(_t('bo_nosite', 'No website yet — build one in the Website Creator.'))}</div>`; return; }
+      const live = window.location.origin + '/site/' + site.subdomain;
+      const pubLabel = site.published ? _t('bo_unpublish', 'Unpublish') : _t('bo_publish', 'Publish');
+      wrap.innerHTML = `<div class="bo-row">
+        <span class="bo-row-title">/site/${wcEsc(site.subdomain)}</span>
+        <span class="bo-row-meta">${site.published ? _t('bo_live', 'Live') : _t('bo_hidden', 'Hidden')} · ${(site.views || 0)} ${_t('wc_stat_views', 'Views')}</span>
+        <button class="bo-act" onclick="showTab('website')" data-i18n="bo_edit">Edit</button>
+        <a class="bo-act" href="${wcEsc(live)}" target="_blank" rel="noopener" data-i18n="bo_viewlive">View live</a>
+        <button class="bo-act" onclick="boToggleSite(${site.published ? 0 : 1})">${wcEsc(pubLabel)}</button>
+        <button class="bo-act bo-danger" onclick="boDeleteSite()" data-i18n="bo_delete">Delete</button>
+      </div>`;
+    }
+
+    function boToggle(kind, id, on) { if (on) boSel[kind].add(id); else boSel[kind].delete(id); }
+    function boUse(kind, id) {
+      fetch(`/api/${kind === 'resumes' ? 'resumes' : 'cover-letters'}`, { headers: authHeaders() })
+        .then(r => r.json()).then(d => {
+          const list = d.resumes || d.coverLetters || [];
+          const it = list.find(x => x.id === id);
+          if (it) { const ta = document.getElementById('resume'); if (ta) { ta.value = it.content; ta.dispatchEvent(new Event('input')); } showTab('tailor'); showToast(_t('bo_loaded', 'Loaded into the Tailor tab.')); }
+        }).catch(() => {});
+    }
+    async function boDuplicate(single, id) {
+      try { const r = await fetch(`/api/${single}/${id}/duplicate`, { method: 'POST', headers: authHeaders() }); if (r.ok) loadBackOffice(); } catch (_) {}
+    }
+    async function boDelete(single, id) {
+      if (!confirm(_t('bo_confirm_del', 'Delete this item? This cannot be undone.'))) return;
+      try { const r = await fetch(`/api/${single}/${id}`, { method: 'DELETE', headers: authHeaders() }); if (r.ok) loadBackOffice(); } catch (_) {}
+    }
+    async function boBulkDuplicate(kind) {
+      const single = kind === 'resumes' ? 'resumes' : 'cover-letters';
+      for (const id of Array.from(boSel[kind])) { try { await fetch(`/api/${single}/${id}/duplicate`, { method: 'POST', headers: authHeaders() }); } catch (_) {} }
+      loadBackOffice();
+    }
+    async function boBulkDelete(kind) {
+      if (!boSel[kind].size) { showToast(_t('bo_none_sel', 'Select some items first.')); return; }
+      if (!confirm(_t('bo_confirm_bulk', 'Delete the selected items? This cannot be undone.'))) return;
+      const single = kind === 'resumes' ? 'resumes' : 'cover-letters';
+      for (const id of Array.from(boSel[kind])) { try { await fetch(`/api/${single}/${id}`, { method: 'DELETE', headers: authHeaders() }); } catch (_) {} }
+      loadBackOffice();
+    }
+    async function boDeleteVideo(id) {
+      if (!confirm(_t('bo_confirm_del', 'Delete this item? This cannot be undone.'))) return;
+      try { const r = await fetch('/api/videos/' + id, { method: 'DELETE', headers: authHeaders() }); if (r.ok) loadBackOffice(); } catch (_) {}
+    }
+    async function boToggleSite(pub) {
+      try { const r = await fetch('/api/personal-site', { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ published: !!pub }) }); if (r.ok) loadBackOffice(); } catch (_) {}
+    }
+    async function boDeleteSite() {
+      if (!confirm(_t('bo_confirm_site', 'Delete your website? This removes the live page.'))) return;
+      try { const r = await fetch('/api/personal-site', { method: 'DELETE', headers: authHeaders() }); if (r.ok) loadBackOffice(); } catch (_) {}
     }
 
     function wcRenderBlocks() {
