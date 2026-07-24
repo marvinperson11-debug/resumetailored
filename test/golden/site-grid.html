@@ -33,6 +33,20 @@
     .sg-gitem{flex:0 0 auto;width:min(78%,320px);scroll-snap-align:start;margin:0;}
     .sg-gitem img{width:100%;height:auto;border-radius:12px;display:block;}
     .sg-gitem figcaption{font-size:12.5px;color:#6b7280;margin-top:5px;}
+    .sg-cs-wrap{display:flex;flex-direction:column;gap:10px;}
+    .sg-cs{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;}
+    .sg-cs summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;}
+    .sg-cs summary::-webkit-details-marker{display:none;}
+    .sg-cs-title{font-weight:700;color:#1a1f2b;flex:1;}
+    .sg-cs-chip{background:var(--a);color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap;}
+    .sg-cs-detail{font-size:14px;color:#39414f;margin-top:10px;}
+    .sg-cs-img{width:100%;border-radius:10px;margin-top:10px;}
+    .sg-contact{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;}
+    .sg-lead-form{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+    .sg-lead-form input,.sg-lead-form textarea{border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;}
+    .sg-lead-form textarea{min-height:80px;}
+    .sg-lead-form button{background:var(--p);color:#fff;border:none;border-radius:9px;padding:10px;font-weight:700;cursor:pointer;}
+    .sg-lead-msg{font-size:13px;color:#059669;}
     .sg-spacer{height:24px;}
     .sg-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:38px 40px;}
     .sg-rhead{margin-bottom:20px;border-bottom:2px solid var(--p);padding-bottom:14px;}
@@ -61,6 +75,20 @@
   
   <script>
     var SITE_I18N={"en":{"lang_toggle":"中文"},"zh":{"lang_toggle":"EN"}};
+    function _sgLead(e,f){
+      e.preventDefault();
+      var fd=new FormData(f), msg=f.querySelector('.sg-lead-msg');
+      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||''};
+      fetch('/api/site-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+        .then(function(r){return r.json().catch(function(){return {};});})
+        .then(function(){
+          f.querySelectorAll('input,textarea,button').forEach(function(el){el.style.display='none';});
+          msg.style.display='block';
+          msg.textContent=(f.dataset.mode==='pdf')?'Thanks! I\'ll be in touch with my resume shortly.':'Thanks — your message was sent.';
+        })
+        .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent='Something went wrong — please try again.';});
+      return false;
+    }
     function _sgToggleLang(){
       var cur=document.documentElement.lang==='zh'?'zh':'en';
       var next=cur==='zh'?'en':'zh';

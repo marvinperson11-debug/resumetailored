@@ -182,6 +182,23 @@ db.exec(`
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_site_media_email ON site_media(email);
+  CREATE TABLE IF NOT EXISTS site_leads (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    sub        TEXT NOT NULL,
+    email      TEXT NOT NULL,
+    name       TEXT DEFAULT '',
+    visitor_email TEXT DEFAULT '',
+    message    TEXT DEFAULT '',
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_site_leads_email ON site_leads(email);
+  CREATE TABLE IF NOT EXISTS site_visits (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    sub           TEXT NOT NULL,
+    ts            INTEGER NOT NULL,
+    referrer_host TEXT DEFAULT ''
+  );
+  CREATE INDEX IF NOT EXISTS idx_site_visits_sub ON site_visits(sub);
   CREATE TABLE IF NOT EXISTS shared_resumes (
     slug         TEXT PRIMARY KEY,
     name         TEXT,
@@ -320,6 +337,7 @@ app.use((req, res, next) => {
   const row = db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub);
   if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
   try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
+  _recordVisit(sub, req);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
   return res.send(_renderPersonalSite(row, `${req.protocol}://${host}`, {
@@ -919,6 +937,91 @@ app.get('/media/:id', (req, res) => {
   res.setHeader('Content-Type', row.mime);
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
   res.sendFile(row.path);
+});
+
+// ── Case studies: auto-generate editable candidates from a resume (Pro) ───────
+app.post('/api/case-studies', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
+  const text = (req.body && typeof req.body.text === 'string') ? req.body.text : '';
+  if (text.trim().length < 20) return res.status(400).json({ error: 'No resume text to analyze.' });
+  res.json({ items: _extractCaseStudies(text) });
+});
+
+// ── Lead capture (public, persist-first) ─────────────────────────────────────
+const leadLimiter = rateLimit({ windowMs: 60 * 1000, max: 6, message: { error: 'Too many submissions — please wait a minute.' } });
+app.post('/api/site-lead', leadLimiter, async (req, res) => {
+  const { sub, name, email: visitorEmail, message, mode, website } = req.body || {};
+  // Honeypot: bots fill the hidden "website" field; humans never see it.
+  if (website) return res.json({ success: true });
+  const s = _validSubdomain(sub);
+  if (!s) return res.status(400).json({ error: 'Unknown site.' });
+  const site = db.prepare('SELECT email FROM personal_sites WHERE subdomain = ?').get(s);
+  if (!site) return res.status(404).json({ error: 'Unknown site.' });
+  const ve = String(visitorEmail || '').trim().slice(0, 200);
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ve)) return res.status(400).json({ error: 'A valid email is required.' });
+  // Persist FIRST — a missing RESEND_API_KEY must never lose a lead.
+  db.prepare('INSERT INTO site_leads (sub, email, name, visitor_email, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(s, site.email.toLowerCase(), String(name || '').slice(0, 120), ve, String(message || '').slice(0, 2000), Date.now());
+  // Best-effort notify the owner.
+  try {
+    const what = mode === 'pdf' ? 'requested your resume' : 'sent you a message';
+    await sendEmail({
+      to: site.email,
+      subject: `New lead from your site (${s}) — someone ${what}`,
+      html: `<p><strong>${_escHtml(String(name || 'A visitor'))}</strong> (${_escHtml(ve)}) ${what} via your personal site <b>${_escHtml(s)}</b>.</p>${message ? `<p>${_escHtml(String(message).slice(0, 2000))}</p>` : ''}`,
+      replyTo: ve,
+    });
+  } catch (_) { /* email is best-effort; the lead is already stored */ }
+  res.json({ success: true });
+});
+
+// Owner: list leads captured across their site.
+app.get('/api/site-leads', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const rows = db.prepare('SELECT id, sub, name, visitor_email, message, created_at FROM site_leads WHERE email = ? ORDER BY created_at DESC LIMIT 200').all(email.toLowerCase());
+  res.json({ leads: rows, emailEnabled: !!(process.env.RESEND_API_KEY || (process.env.SMTP_USER && process.env.SMTP_PASS)) });
+});
+
+// ── Themed QR code (Pro) — SVG tinted to the site's colors ───────────────────
+app.get('/api/site-qr', async (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
+  const site = db.prepare('SELECT subdomain FROM personal_sites WHERE email = ?').get(email.toLowerCase());
+  if (!site) return res.status(404).json({ error: 'Publish your site first.' });
+  const origin = `${req.protocol}://${req.get('host')}`;
+  const dark = '#' + String(req.query.color || '111827').replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+  try {
+    const QRCode = require('qrcode');
+    const svg = await QRCode.toString(`${origin}/site/${site.subdomain}`, { type: 'svg', margin: 1, color: { dark: dark || '#111827', light: '#0000' } });
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.send(svg);
+  } catch (e) {
+    res.status(500).json({ error: 'Could not generate the QR code.' });
+  }
+});
+
+// ── Simple analytics (owner) — views + top referrer ──────────────────────────
+function _recordVisit(sub, req) {
+  try {
+    let host = '';
+    const ref = req.get('referer') || req.get('referrer') || '';
+    if (ref) { try { host = new URL(ref).hostname.replace(/^www\./, ''); } catch (_) {} }
+    db.prepare('INSERT INTO site_visits (sub, ts, referrer_host) VALUES (?, ?, ?)').run(sub, Date.now(), host);
+  } catch (_) {}
+}
+app.get('/api/site-analytics', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const site = db.prepare('SELECT subdomain, views FROM personal_sites WHERE email = ?').get(email.toLowerCase());
+  if (!site) return res.json({ views: 0, topReferrers: [] });
+  const top = db.prepare(`SELECT CASE WHEN referrer_host = '' THEN 'direct' ELSE referrer_host END AS host, COUNT(*) AS n
+                          FROM site_visits WHERE sub = ? GROUP BY host ORDER BY n DESC LIMIT 5`).all(site.subdomain);
+  res.json({ views: site.views || 0, topReferrers: top });
 });
 
 app.post('/api/auth/forgot-password', async (req, res) => {
@@ -1868,6 +1971,36 @@ function _renderResumeFragment(row, accent) {
   return `<div class="sg-resume"><div class="sg-rhead"><div class="sg-rname">${_escHtml(displayName)}</div>${contactHtml ? `<div class="sg-rcontact">${contactHtml}</div>` : ''}</div>${secHtml}</div>`;
 }
 
+// Auto-generate case-study candidates from resume bullets. Tiered: Tier-1 bullets
+// (strong metric: %, $, ×, time-delta) always qualify; Tier-2 (generic "N noun"
+// counts) only fill up to a 3-card minimum, so metric-rich resumes stay clean and
+// sparse ones still get a respectable set. Output is editable by the user.
+const _CS_BULLET_RE = /^\s*[•\-*–·▪]\s+/;
+const _CS_TIER1_RE = /(\$\s?\d[\d,.]*\s?(k|m|bn|billion|million|thousand)?|\d[\d,.]*\s?%|\b\d+(\.\d+)?\s?x\b|\bfrom\s+\d[\d,.]*\w*\s+to\s+\d[\d,.]*\w*|\d[\d,.]*\s?(ms|hours?|days?|weeks?|months?)\b)/i;
+const _CS_TIER2_RE = /\b\d{1,3}[\d,.]*\+?\s?[A-Za-z][A-Za-z-]{2,}\b/;
+function _csTitle(b) {
+  let head = String(b).split(/,|—|–| by | that | which | to /i)[0];
+  head = head.replace(/\s+/g, ' ').trim().replace(/[.;:]+$/, '');
+  if (head.length > 60) head = head.slice(0, 57).replace(/\s\S*$/, '') + '…';
+  return head || 'Project';
+}
+function _extractCaseStudies(text, max = 6) {
+  const bullets = String(text || '').split('\n')
+    .filter(l => _CS_BULLET_RE.test(l))
+    .map(l => l.replace(_CS_BULLET_RE, '').replace(/\s+/g, ' ').trim())
+    .filter(b => b.length > 12);
+  const tier1 = [], tier2 = [];
+  for (const b of bullets) {
+    const m1 = b.match(_CS_TIER1_RE);
+    if (m1) { tier1.push({ title: _csTitle(b), metric: m1[0].trim(), body: b }); continue; }
+    const m2 = b.match(_CS_TIER2_RE);
+    if (m2) tier2.push({ title: _csTitle(b), metric: m2[0].trim(), body: b });
+  }
+  const out = tier1.slice(0, max);
+  for (const c of tier2) { if (out.length >= Math.max(3, tier1.length)) break; if (out.length >= max) break; out.push(c); }
+  return out;
+}
+
 // Clamp helpers for untrusted numeric block placement.
 const _clampInt = (v, lo, hi, dflt) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt; };
 const _safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/|data:image\/(png|jpe?g|webp);base64,)/i.test(u) && u.length < 2000000) ? u : '';
@@ -1916,6 +2049,35 @@ function _renderSiteBlock(b, row, accent) {
       }).join('');
       if (!items) return '';
       inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<div class="sg-gallery">${items}</div>`;
+      break;
+    }
+    case 'casestudies': {
+      const items = Array.isArray(b.items) ? b.items.slice(0, 12) : [];
+      const cards = items.map(it => {
+        const title = _escHtml(String((it && it.title) || '').slice(0, 160));
+        if (!title) return '';
+        const chip = it && it.metric ? `<span class="sg-cs-chip">${_escHtml(String(it.metric).slice(0, 40))}</span>` : '';
+        const detail = it && it.detail ? `<p class="sg-cs-detail">${_escHtml(String(it.detail).slice(0, 2000))}</p>` : (it && it.body ? `<p class="sg-cs-detail">${_escHtml(String(it.body).slice(0, 2000))}</p>` : '');
+        const img = it && _safeUrl(it.image) ? `<img class="sg-cs-img" src="${_escHtml(_safeUrl(it.image))}" alt="" loading="lazy"/>` : '';
+        return `<details class="sg-cs"><summary><span class="sg-cs-title">${title}</span>${chip}</summary>${img}${detail}</details>`;
+      }).join('');
+      if (!cards) return '';
+      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<div class="sg-cs-wrap">${cards}</div>`;
+      break;
+    }
+    case 'contact': {
+      // Lead-capture form. mode 'pdf' = "Request my resume PDF" gate; else a
+      // plain contact form. Posts to /api/site-lead (persist-first server-side).
+      const isPdf = b.mode === 'pdf';
+      const heading = _escHtml(String(b.label || (isPdf ? 'Request my resume' : 'Get in touch')).slice(0, 120));
+      inner = `<div class="sg-contact"><div class="sg-blk-label">${heading}</div>
+        <form class="sg-lead-form" onsubmit="return _sgLead(event,this)" data-sub="${_escHtml(row.subdomain || '')}" data-mode="${isPdf ? 'pdf' : 'contact'}">
+          <input name="name" placeholder="Your name" maxlength="120"/>
+          <input name="email" type="email" required placeholder="Your email" maxlength="200"/>
+          ${isPdf ? '' : '<textarea name="message" placeholder="Message" maxlength="2000"></textarea>'}
+          <button type="submit">${isPdf ? 'Send me the resume' : 'Send'}</button>
+          <div class="sg-lead-msg" style="display:none;"></div>
+        </form></div>`;
       break;
     }
     case 'spacer': inner = '<div class="sg-spacer"></div>'; break;
@@ -1976,6 +2138,20 @@ function _renderSiteGrid(row, origin, opts, config) {
     .sg-gitem{flex:0 0 auto;width:min(78%,320px);scroll-snap-align:start;margin:0;}
     .sg-gitem img{width:100%;height:auto;border-radius:12px;display:block;}
     .sg-gitem figcaption{font-size:12.5px;color:#6b7280;margin-top:5px;}
+    .sg-cs-wrap{display:flex;flex-direction:column;gap:10px;}
+    .sg-cs{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;}
+    .sg-cs summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;}
+    .sg-cs summary::-webkit-details-marker{display:none;}
+    .sg-cs-title{font-weight:700;color:#1a1f2b;flex:1;}
+    .sg-cs-chip{background:var(--a);color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap;}
+    .sg-cs-detail{font-size:14px;color:#39414f;margin-top:10px;}
+    .sg-cs-img{width:100%;border-radius:10px;margin-top:10px;}
+    .sg-contact{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;}
+    .sg-lead-form{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+    .sg-lead-form input,.sg-lead-form textarea{border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;}
+    .sg-lead-form textarea{min-height:80px;}
+    .sg-lead-form button{background:var(--p);color:#fff;border:none;border-radius:9px;padding:10px;font-weight:700;cursor:pointer;}
+    .sg-lead-msg{font-size:13px;color:#059669;}
     .sg-spacer{height:24px;}
     .sg-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:38px 40px;}
     .sg-rhead{margin-bottom:20px;border-bottom:2px solid var(--p);padding-bottom:14px;}
@@ -2004,6 +2180,20 @@ function _renderSiteGrid(row, origin, opts, config) {
   ${footerHtml}
   <script>
     var SITE_I18N=${JSON.stringify(SITE_I18N)};
+    function _sgLead(e,f){
+      e.preventDefault();
+      var fd=new FormData(f), msg=f.querySelector('.sg-lead-msg');
+      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||''};
+      fetch('/api/site-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+        .then(function(r){return r.json().catch(function(){return {};});})
+        .then(function(){
+          f.querySelectorAll('input,textarea,button').forEach(function(el){el.style.display='none';});
+          msg.style.display='block';
+          msg.textContent=(f.dataset.mode==='pdf')?'Thanks! I\\'ll be in touch with my resume shortly.':'Thanks — your message was sent.';
+        })
+        .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent='Something went wrong — please try again.';});
+      return false;
+    }
     function _sgToggleLang(){
       var cur=document.documentElement.lang==='zh'?'zh':'en';
       var next=cur==='zh'?'en':'zh';
@@ -2199,6 +2389,7 @@ app.get('/site/:sub', (req, res) => {
     return res.sendFile(path.join(__dirname, 'public', '404.html'));
   }
   try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
+  _recordVisit(sub, req);
   const origin = `${req.protocol}://${req.get('host')}`;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');

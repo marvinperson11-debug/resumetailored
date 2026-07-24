@@ -1026,6 +1026,8 @@
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('gallery')" data-i18n="wc_add_gallery">+ Gallery</button>
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('video')" data-i18n="wc_add_video">+ Video</button>
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('audio')" data-i18n="wc_add_audio">+ Audio</button>
+              <button type="button" class="wc-pal-btn" onclick="wcAddBlock('casestudies')" data-i18n="wc_add_cs">+ Case Studies</button>
+              <button type="button" class="wc-pal-btn" onclick="wcAddBlock('contact')" data-i18n="wc_add_contact">+ Contact</button>
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('spacer')" data-i18n="wc_add_spacer">+ Spacer</button>
             </div>
             <div id="wcMediaMeter" style="font-size:12px;color:#6b7280;margin-bottom:14px;"></div>
@@ -1062,6 +1064,19 @@
               <a id="wcViewLive" href="#" target="_blank" rel="noopener" class="btn btn-outline" style="display:none;font-size:14px;padding:12px 18px;" data-i18n="wc_view_live">View live ↗</a>
             </div>
             <div id="wcPublishStatus" style="font-size:13px;margin-top:12px;"></div>
+
+            <div id="wcSiteExtras" style="display:none;margin-top:18px;border-top:1px solid #eef0f4;padding-top:16px;">
+              <div id="wcStats" style="font-size:13px;color:#374151;font-weight:600;margin-bottom:6px;"></div>
+              <div id="wcLeadsEmailNote" style="display:none;font-size:12px;color:#b45309;margin-bottom:12px;" data-i18n="wc_leads_emailoff">Leads are saved here. Add RESEND_API_KEY in your environment to also get them by email.</div>
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                <img id="wcQrImg" alt="Site QR code" style="width:110px;height:110px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:6px;"/>
+                <div>
+                  <div style="font-size:13px;color:#374151;font-weight:700;margin-bottom:4px;" data-i18n="wc_qr_title">Your site QR code</div>
+                  <div style="font-size:12px;color:#6b7280;margin-bottom:8px;" data-i18n="wc_qr_help">For resume footers, business cards or LinkedIn.</div>
+                  <button type="button" class="btn btn-outline" style="font-size:13px;padding:8px 14px;" onclick="wcDownloadQr()" data-i18n="wc_qr_download">⬇ Download QR</button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <p style="font-size:12px;color:#9ca3af;margin-top:6px;" data-i18n="wc_more_soon">More customization — themes, backgrounds, and drag-and-drop layout — is coming next.</p>
@@ -1711,6 +1726,17 @@
         wc_gallery_empty: 'No images yet.', wc_gallery_add: '+ Add image',
         wc_media_usage: 'Storage', wc_media_imgaudio: 'images & audio', wc_media_video: 'video',
         wc_video_added: '✓ Video added to your layout below.',
+        wc_add_cs: '+ Case Studies', wc_add_contact: '+ Contact',
+        wc_blk_casestudies: 'Case Studies', wc_blk_contact: 'Contact',
+        wc_cs_title: 'Title', wc_cs_metric: 'Metric', wc_cs_detail: 'Detail (optional)',
+        wc_cs_auto: '✨ Auto-generate from résumé', wc_cs_add: '+ Add card',
+        wc_cs_empty: 'No cards yet — auto-generate from your résumé or add one.',
+        wc_cs_generating: 'Analyzing your résumé…', wc_cs_err: 'Could not generate case studies.',
+        wc_cs_none: 'No quantified achievements found — add cards manually.',
+        wc_contact_mode_msg: 'Contact form', wc_contact_mode_pdf: 'Request my resume (PDF)', wc_contact_label: 'Heading (optional)',
+        wc_stat_views: 'Views', wc_stat_topref: 'Top source', wc_stat_leads: 'Leads',
+        wc_leads_emailoff: 'Leads are saved here. Add RESEND_API_KEY in your environment to also get them by email.',
+        wc_qr_title: 'Your site QR code', wc_qr_help: 'For resume footers, business cards or LinkedIn.', wc_qr_download: '⬇ Download QR',
         wc_blocks_empty: 'No blocks yet — add one above to start building your page.',
         wc_width: 'Width', wc_width_12: 'Full', wc_width_8: 'Two-thirds', wc_width_6: 'Half', wc_width_4: 'Third',
         wc_blk_heading: 'Heading', wc_blk_text: 'Text', wc_blk_resume: 'Resume', wc_blk_image: 'Image', wc_blk_video: 'Video', wc_blk_spacer: 'Spacer',
@@ -1805,6 +1831,17 @@
         wc_gallery_empty: '还没有图片。', wc_gallery_add: '+ 添加图片',
         wc_media_usage: '存储', wc_media_imgaudio: '图片和音频', wc_media_video: '视频',
         wc_video_added: '✓ 视频已添加到下方布局。',
+        wc_add_cs: '+ 案例', wc_add_contact: '+ 联系表单',
+        wc_blk_casestudies: '案例', wc_blk_contact: '联系表单',
+        wc_cs_title: '标题', wc_cs_metric: '数据', wc_cs_detail: '详情（可选）',
+        wc_cs_auto: '✨ 从简历自动生成', wc_cs_add: '+ 添加卡片',
+        wc_cs_empty: '还没有卡片——从简历自动生成或手动添加。',
+        wc_cs_generating: '正在分析你的简历…', wc_cs_err: '无法生成案例。',
+        wc_cs_none: '未找到量化成果——请手动添加卡片。',
+        wc_contact_mode_msg: '联系表单', wc_contact_mode_pdf: '索取我的简历（PDF）', wc_contact_label: '标题（可选）',
+        wc_stat_views: '浏览量', wc_stat_topref: '主要来源', wc_stat_leads: '线索',
+        wc_leads_emailoff: '线索已保存在此。在环境中添加 RESEND_API_KEY 即可同时通过邮件接收。',
+        wc_qr_title: '你的网站二维码', wc_qr_help: '用于简历页脚、名片或 LinkedIn。', wc_qr_download: '⬇ 下载二维码',
         wc_blocks_empty: '还没有区块——在上方添加一个开始搭建你的页面。',
         wc_width: '宽度', wc_width_12: '整宽', wc_width_8: '三分之二', wc_width_6: '一半', wc_width_4: '三分之一',
         wc_blk_heading: '标题', wc_blk_text: '文本', wc_blk_resume: '简历', wc_blk_image: '图片', wc_blk_video: '视频', wc_blk_spacer: '间距',
@@ -6084,6 +6121,7 @@ Aaliyah Washington`
       }
       wcRenderBlocks();
       wcLoadMediaUsage();
+      wcLoadSiteExtras();
       wcSetView('edit');
     }
 
@@ -6186,6 +6224,7 @@ Aaliyah Washington`
         if (viewLive) { viewLive.style.display = 'inline-block'; viewLive.href = data.url; }
         try { await navigator.clipboard.writeText(data.url); } catch (_) {}
         setStatus('🌐 ' + _t('wc_live_at', 'Live at') + ' ' + data.url + ' — ' + _t('wc_link_copied', 'link copied'), true);
+        wcLoadSiteExtras();
       } catch (_) {
         setStatus(_t('wc_err_publish', 'Could not publish your website.'), false);
       } finally {
@@ -6210,6 +6249,8 @@ Aaliyah Washington`
         gallery: { images: [], label: '', colSpan: 12 },
         video: { src: '', label: '', colSpan: 12 },
         audio: { src: '', label: '', colSpan: 12 },
+        casestudies: { items: [], label: 'Selected work', colSpan: 12 },
+        contact: { mode: 'contact', label: '', colSpan: 12 },
         spacer: { colSpan: 12 },
       };
       wcBlocks.push(Object.assign({ id: wcNewId(), type }, defaults[type] || { colSpan: 12 }));
@@ -6260,6 +6301,52 @@ Aaliyah Washington`
     function wcGalleryCaption(id, idx, val) { const b = wcBlocks.find(x => x.id === id); if (b && b.images && b.images[idx]) b.images[idx].caption = val; }
     function wcGalleryDel(id, idx) { const b = wcBlocks.find(x => x.id === id); if (b && b.images) { b.images.splice(idx, 1); wcRenderBlocks(); } }
 
+    // ── Case studies (Phase 5) ────────────────────────────────────────────────
+    function wcCsField(id, idx, field, val) { const b = wcBlocks.find(x => x.id === id); if (b && b.items && b.items[idx]) b.items[idx][field] = val; }
+    function wcCsDel(id, idx) { const b = wcBlocks.find(x => x.id === id); if (b && b.items) { b.items.splice(idx, 1); wcRenderBlocks(); } }
+    function wcCsAddItem(id) { const b = wcBlocks.find(x => x.id === id); if (b) { (b.items = b.items || []).push({ title: '', metric: '', detail: '' }); wcRenderBlocks(); } }
+    async function wcCsAuto(id) {
+      const rSel = document.getElementById('wcResumeSelect');
+      const resume = wcResumes.find(x => String(x.id) === (rSel && rSel.value));
+      if (!resume) { showToast(_t('wc_err_no_resume', 'Pick a resume to publish first.')); return; }
+      showToast(_t('wc_cs_generating', 'Analyzing your résumé…'));
+      try {
+        const r = await fetch('/api/case-studies', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ text: resume.content }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { showToast(d.error || _t('wc_cs_err', 'Could not generate case studies.')); return; }
+        const b = wcBlocks.find(x => x.id === id);
+        if (b) { b.items = (d.items || []).map(it => ({ title: it.title || '', metric: it.metric || '', detail: it.body || '' })); wcRenderBlocks(); }
+        if (!d.items || !d.items.length) showToast(_t('wc_cs_none', 'No quantified achievements found — add cards manually.'));
+      } catch (_) { showToast(_t('wc_cs_err', 'Could not generate case studies.')); }
+    }
+
+    // ── QR + stats (shown once a site is published) ───────────────────────────
+    async function wcLoadSiteExtras() {
+      const box = document.getElementById('wcSiteExtras');
+      if (!box) return;
+      if (!wcSite || !wcSite.subdomain) { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      const primary = (OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0]).c.p.replace('#', '');
+      const qr = document.getElementById('wcQrImg');
+      if (qr) qr.src = '/api/site-qr?color=' + encodeURIComponent(primary) + '&t=' + Date.now();
+      try {
+        const [aRes, lRes] = await Promise.all([
+          fetch('/api/site-analytics', { headers: authHeaders() }),
+          fetch('/api/site-leads', { headers: authHeaders() }),
+        ]);
+        const a = await aRes.json().catch(() => ({})); const l = await lRes.json().catch(() => ({}));
+        const topRef = (a.topReferrers && a.topReferrers[0]) ? a.topReferrers[0].host : '—';
+        const stats = document.getElementById('wcStats');
+        if (stats) stats.textContent = `${_t('wc_stat_views', 'Views')}: ${a.views || 0} · ${_t('wc_stat_topref', 'Top source')}: ${topRef} · ${_t('wc_stat_leads', 'Leads')}: ${(l.leads || []).length}`;
+        const em = document.getElementById('wcLeadsEmailNote');
+        if (em) em.style.display = (l.emailEnabled === false && (l.leads || []).length) ? 'block' : 'none';
+      } catch (_) {}
+    }
+    function wcDownloadQr() {
+      const img = document.getElementById('wcQrImg');
+      if (img && img.src) { const a = document.createElement('a'); a.href = img.src; a.download = 'site-qr.svg'; a.click(); }
+    }
+
     function wcRenderBlocks() {
       const wrap = document.getElementById('wcBlocksList');
       if (!wrap) return;
@@ -6281,6 +6368,15 @@ Aaliyah Washington`
         else if (b.type === 'gallery') {
           const imgs = (b.images || []).map((im, idx) => `<div class="wc-blk-row" style="margin-bottom:6px;"><span style="font-size:12px;color:#6b7280;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${wcEsc(im.src || '')}</span><input type="text" class="text-input" style="flex:1;min-width:120px;" placeholder="${wcAttr(_t('wc_ph_caption', 'Caption (optional)'))}" value="${wcAttr(im.caption || '')}" oninput="wcGalleryCaption('${b.id}',${idx},this.value)"/><button type="button" class="wc-blk-del" onclick="wcGalleryDel('${b.id}',${idx})">×</button></div>`).join('');
           body = `${imgs || `<div style="font-size:13px;color:#9ca3af;margin-bottom:6px;">${wcEsc(_t('wc_gallery_empty', 'No images yet.'))}</div>`}<button type="button" class="wc-pal-btn" onclick="wcGalleryAdd('${b.id}')" data-i18n="wc_gallery_add">+ Add image</button>`;
+        }
+        else if (b.type === 'casestudies') {
+          const items = (b.items || []).map((it, idx) => `<div style="border:1px solid #e5e7eb;border-radius:9px;padding:8px;margin-bottom:6px;background:#fff;">
+            <div class="wc-blk-row" style="margin-bottom:5px;"><input type="text" class="text-input" style="flex:1;min-width:120px;" placeholder="${wcAttr(_t('wc_cs_title', 'Title'))}" value="${wcAttr(it.title || '')}" oninput="wcCsField('${b.id}',${idx},'title',this.value)"/><input type="text" class="text-input" style="max-width:90px;" placeholder="${wcAttr(_t('wc_cs_metric', 'Metric'))}" value="${wcAttr(it.metric || '')}" oninput="wcCsField('${b.id}',${idx},'metric',this.value)"/><button type="button" class="wc-blk-del" onclick="wcCsDel('${b.id}',${idx})">×</button></div>
+            <textarea class="text-input" style="width:100%;min-height:44px;" placeholder="${wcAttr(_t('wc_cs_detail', 'Detail (optional)'))}" oninput="wcCsField('${b.id}',${idx},'detail',this.value)">${wcEsc(it.detail || it.body || '')}</textarea></div>`).join('');
+          body = `<div class="wc-blk-row" style="margin-bottom:8px;"><button type="button" class="wc-pal-btn" onclick="wcCsAuto('${b.id}')" data-i18n="wc_cs_auto">✨ Auto-generate from résumé</button><button type="button" class="wc-pal-btn" onclick="wcCsAddItem('${b.id}')" data-i18n="wc_cs_add">+ Add card</button></div>${items || `<div style="font-size:13px;color:#9ca3af;">${wcEsc(_t('wc_cs_empty', 'No cards yet — auto-generate from your résumé or add one.'))}</div>`}`;
+        }
+        else if (b.type === 'contact') {
+          body = `<div class="wc-blk-row" style="margin-bottom:6px;"><select class="text-input" style="max-width:220px;" onchange="wcBlockField('${b.id}','mode',this.value)"><option value="contact"${b.mode !== 'pdf' ? ' selected' : ''}>${wcEsc(_t('wc_contact_mode_msg', 'Contact form'))}</option><option value="pdf"${b.mode === 'pdf' ? ' selected' : ''}>${wcEsc(_t('wc_contact_mode_pdf', 'Request my resume (PDF)'))}</option></select></div><input type="text" class="text-input" style="width:100%;" placeholder="${wcAttr(_t('wc_contact_label', 'Heading (optional)'))}" value="${wcAttr(b.label || '')}" oninput="wcBlockField('${b.id}','label',this.value)"/>`;
         }
         else if (b.type === 'spacer') body = `<div style="font-size:13px;color:#9ca3af;">${wcEsc(_t('wc_blk_spacer_note', 'Adds vertical space.'))}</div>`;
         const width = b.type === 'spacer' ? '' : `<span class="wc-blk-width">${wcEsc(_t('wc_width', 'Width'))}:</span>${widthSel(b)}`;
@@ -6336,7 +6432,7 @@ Aaliyah Washington`
         lang: _lang(),
         theme: { primary: (rTpl.c.p || '').replace('#', ''), accent: (rTpl.c.a || '').replace('#', '') },
         assets: { resumeId: rSel && rSel.value ? Number(rSel.value) : null, coverLetterId: cSel && cSel.value ? Number(cSel.value) : null },
-        blocks: wcBlocks.map(b => ({ type: b.type, colSpan: Number(b.colSpan) || 12, text: b.text, src: b.src, caption: b.caption, label: b.label, alt: b.alt, images: b.images })),
+        blocks: wcBlocks.map(b => ({ type: b.type, colSpan: Number(b.colSpan) || 12, text: b.text, src: b.src, caption: b.caption, label: b.label, alt: b.alt, images: b.images, items: b.items, mode: b.mode })),
       };
     }
 
