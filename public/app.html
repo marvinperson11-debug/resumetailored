@@ -3481,9 +3481,15 @@
       return '';
     }
 
+    // Show the free/basic templates first so the 3-resume + 3-cover "basic set"
+    // is immediately visible. Without this the free ones (r1, r5, r17 / c1, c5,
+    // c17) are scattered among the 98 Pro templates and easy to miss in the
+    // scroll strip. Array.sort is stable, so order within each group is kept.
+    function _freeFirst(list){ return list.slice().sort((a, b) => (a.free === b.free) ? 0 : (a.free ? -1 : 1)); }
+
     function renderTplPicker() {
       const cat = selectedMode === 'cover_letter' ? 'cover' : 'resume';
-      const list = OUT_TPLS[cat];
+      const list = _freeFirst(OUT_TPLS[cat]);
       const activeTplId = selectedOutputTpl[cat];
       const row = document.getElementById('tplPickRow');
       row.innerHTML = list.map(tpl => {
@@ -4151,7 +4157,7 @@
     }
 
     function renderTemplateGallery(){
-      const list=_activeType==='resume'?resumeTemplates:coverTemplates;
+      const list=_freeFirst(_activeType==='resume'?resumeTemplates:coverTemplates);
       const gallery=document.getElementById('templateGallery');
       const _isZhG=(localStorage.getItem('rt_lang')||'en')==='zh';
       const _tplNamesZh={
