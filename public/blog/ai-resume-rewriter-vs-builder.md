@@ -96,4 +96,4 @@ The time savings compound fast. If tailoring manually takes 45 minutes and a rew
 | First job or returning to workforce after gap | AI Resume Builder first, then Rewriter |
 | Actively job searching across multiple roles | AI Resume Rewriter |
 
-**Bottom line:** If you have a resume and you are actively applying, use a rewriter. [ResumeTailored AI](https://resumetailored.com/dashboard) rewrites your resume to match any job posting and generates a job-specific cover letter alongside it — one free rewrite per day, no credit card required.
+**Bottom line:** If you have a resume and you are actively applying, use a rewriter. [ResumeTailored AI](https://resumetailored.com/dashboard) rewrites your resume to match any job posting and generates a job-specific cover letter alongside it — unlimited free rewrites, no credit card required.

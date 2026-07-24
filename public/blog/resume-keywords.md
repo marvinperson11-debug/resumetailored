@@ -142,4 +142,4 @@ Leadership: interdisciplinary team, care management, clinical workflow, regulato
 
 Manual keyword extraction for every application takes 5–10 minutes. Multiply that by 30 applications and you've spent hours just on keyword research before writing a single word.
 
-[ResumeTailored AI](https://resumetailored.com/dashboard) does this automatically: paste the job description and your resume, and the AI identifies every keyword your resume is missing, then rewrites your resume to include them naturally. You get the output in under 30 seconds — one free rewrite per day, no credit card required.
+[ResumeTailored AI](https://resumetailored.com/dashboard) does this automatically: paste the job description and your resume, and the AI identifies every keyword your resume is missing, then rewrites your resume to include them naturally. You get the output in under 30 seconds — unlimited free rewrites, no credit card required.

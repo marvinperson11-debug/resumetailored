@@ -121,6 +121,28 @@ const LITERAL = [
   ['每天 1 次免费', '无限次免费'],
   ['每天1次ATS扫描', '无限次ATS扫描'],
   ['每天可免费使用1次', '可免费无限次使用'],
+  // ── Blog / comparison prose (2nd pass, .html + .md). Longer first. ─────────
+  ['1 full rewrite + cover letter/day, no card', 'unlimited rewrites + cover letters, no card'],
+  ['1 full rewrite + cover letter/day, free', 'unlimited rewrites + cover letters, free'],
+  ['1 full rewrite + cover letter/day', 'unlimited rewrites + cover letters'],
+  ['ResumeTailored — 1 tailoring + cover letter/day', 'ResumeTailored — unlimited tailoring + cover letters'],
+  ['1 tailoring + cover letter/day', 'unlimited tailoring + cover letters'],
+  ['1 full rewrite/day, no card', 'unlimited rewrites, no card'],
+  ['1 full rewrite/day', 'unlimited rewrites'],
+  ['One full tailoring free per day, no card', 'Unlimited tailoring, free, no card'],
+  ['Free tier: one complete application package per day', 'Free tier: unlimited tailoring'],
+  ['Free tier: 1 tailoring per day', 'Free tier: unlimited tailoring'],
+  ['Free (1/day)', 'Free (unlimited)'],
+  ['Free tier: 1/day; Pro:', 'Free tier: unlimited; Pro:'],
+  ['one complete, AI-powered resume rewrite per day', 'unlimited AI-powered resume rewrites'],
+  ['one complete resume rewrite and cover letter per day', 'unlimited resume rewrites and cover letters'],
+  ['1 full rewrite per day, no credit', 'unlimited rewrites, no credit'],
+  ['1 full rewrite per day', 'unlimited rewrites'],
+  ['one free rewrite per day', 'unlimited free rewrites'],
+  ['1 tailoring per day', 'unlimited tailoring'],
+  ['one tailored resume and cover letter a day is more than most people submit', 'unlimited tailored resumes and cover letters covers a full search'],
+  ['1/day, forever', 'unlimited, forever'],
+  ['1/day', 'unlimited'],
 ];
 
 // Final pass: $19 -> $19.99, but never $19.99 (already dotted) or $190+ (digit).
@@ -145,7 +167,7 @@ function walk(dir, acc = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) walk(p, acc);
-    else if (e.isFile() && p.endsWith('.html')) acc.push(p);
+    else if (e.isFile() && (p.endsWith('.html') || p.endsWith('.md'))) acc.push(p);
   }
   return acc;
 }

@@ -8,9 +8,9 @@ An honest comparison of the top AI resume tools — what each does best, what it
 ## The 2026 shortlist
 
 ### 1. ResumeTailored AI
-**Best for tailoring to a specific job** — $19/mo · free tier
+**Best for tailoring to a specific job** — $19.99/mo · free tier
 
-Built around one job: rewriting your existing resume to match each job description using Anthropic's Claude, then writing a matching cover letter. Includes a job-URL importer, 100+ ATS-ready templates, PDF/Word export and a bilingual English/Chinese interface. One full tailoring free per day, no card.
+Built around one job: rewriting your existing resume to match each job description using Anthropic's Claude, then writing a matching cover letter. Includes a job-URL importer, 100+ ATS-ready templates, PDF/Word export and a bilingual English/Chinese interface. Unlimited tailoring, free, no card.
 
 ### 2. Teal
 **Best free job-tracker** — Free · AI features ~$29/mo

@@ -34,10 +34,10 @@ The Claude output includes a specific team structure, a specific feature, specif
 
 | Feature | Rezi | ResumeTailored AI |
 |---------|------|-------------------|
-| Monthly price | $29/mo | **$19/mo — 35% less** |
+| Monthly price | $29/mo | **$19.99/mo — over 30% less** |
 | Lifetime deal | $149 | **$129 — $20 less** |
 | AI model | GPT-4 | **Anthropic Claude** |
-| Free tier | Trial only | **1 full rewrite + cover letter/day, no card** |
+| Free tier | Trial only | **unlimited rewrites + cover letters, no card** |
 | Cover letter generation | Yes (needs editing) | **Yes — ready to send** |
 | Job URL import | Manual paste | **40+ job boards** |
 | ATS optimization | Yes | **Yes — embedded in every rewrite** |

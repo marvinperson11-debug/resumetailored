@@ -719,7 +719,7 @@
 
         <!-- Limit / upsell banners -->
         <div class="upsell" id="linkedinLimitBanner" style="display:none;margin-top:20px;">
-          <p>You've used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19.99/month.</p>
+          <p>LinkedIn optimization is free and unlimited. Upgrade to Pro for premium templates, the resume video, a personal website & watermark-free exports — $19.99/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -929,7 +929,7 @@
 
         <!-- Free limit banner -->
         <div class="upsell" id="atsLimitBanner" style="display:none;margin-top:20px;">
-          <p>You've used your <strong>free daily ATS scan</strong>. Pro members get unlimited scans — upgrade for $19.99/month.</p>
+          <p>ATS scans are free and unlimited. Upgrade to Pro for premium templates, the resume video, a personal website & watermark-free exports — $19.99/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -1711,7 +1711,7 @@
       var liExpH3 = document.querySelector('#linkedinExpBlock h3'); if (liExpH3) liExpH3.textContent = isZh ? '✦ 优化后的工作经历' : '✦ Optimized Experience Bullets';
       document.querySelectorAll('#linkedinHeadlineBlock .btn-outline, #linkedinAboutBlock .btn-outline, #linkedinExpBlock .btn-outline').forEach(function(btn) { btn.textContent = isZh ? '复制' : 'Copy'; });
       var liLimitP = document.querySelector('#linkedinLimitBanner p');
-      if (liLimitP) liLimitP.innerHTML = isZh ? '你已使用今日<strong>免费LinkedIn优化次数</strong>。升级专业版享无限次 — ¥19.99/月。' : 'You\'ve used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19.99/month.';
+      if (liLimitP) liLimitP.innerHTML = isZh ? 'LinkedIn 优化免费且无限次。升级专业版解锁高级模板、简历视频、个人网站和无水印导出 — ¥19.99/月。' : 'LinkedIn optimization is free and unlimited. Upgrade to Pro for premium templates, the resume video, a personal website & watermark-free exports — $19.99/month.';
       var liLimitBtn = document.querySelector('#linkedinLimitBanner .btn-primary');
       if (liLimitBtn) liLimitBtn.textContent = isZh ? '升级专业版 →' : 'Upgrade to Pro →';
       // 12. Template preview modal
@@ -3003,7 +3003,7 @@
         if (res.status === 402) {
           document.getElementById('atsLimitBanner').style.display = 'block';
           document.getElementById('atsProStatus').style.display = 'block';
-          document.getElementById('atsProStatus').textContent = '✗ Free daily scan used — upgrade to Pro for unlimited ATS scans';
+          document.getElementById('atsProStatus').textContent = '✓ ATS scans — free & unlimited';
           document.getElementById('atsProStatus').style.color = '#dc2626';
           return;
         }

@@ -105,7 +105,7 @@ The first paragraph is not bad writing. It is just not about this job. The secon
 | Achievement matching | No — summarizes resume only | Yes — matches your accomplishments to job requirements |
 | Opening hook | Template phrase ("I am writing to...") | Job-specific reference |
 | Generated with resume rewrite | Separate, disconnected step | Simultaneous, same context |
-| Price for cover letter access | Included ($149 lifetime / $29/mo) | Free tier: 1/day; Pro: $19/mo |
+| Price for cover letter access | Included ($149 lifetime / $29/mo) | Free tier: unlimited; Pro: $19.99/mo |
 
 ---
 
@@ -115,4 +115,4 @@ Rezi is a solid resume builder and ATS optimization tool. If you are building a 
 
 But for cover letters, the structural limitation is real. A tool that cannot read the job description cannot write a job-specific letter. If cover letters are part of your application workflow — and for most white-collar roles, they are — you need a tool that uses the job posting as input.
 
-[ResumeTailored AI](https://resumetailored.com/dashboard) takes both your resume and the job description, and generates a tailored resume and a job-specific cover letter simultaneously. Free tier: one complete application package per day, no credit card required.
+[ResumeTailored AI](https://resumetailored.com/dashboard) takes both your resume and the job description, and generates a tailored resume and a job-specific cover letter simultaneously. Free tier: unlimited tailoring, no credit card required.

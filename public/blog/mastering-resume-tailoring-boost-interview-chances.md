@@ -74,7 +74,7 @@ Done by hand, tailoring is effective but slow — realistically 30–45 minutes 
 
 This is where AI changes the math. **ResumeTailored** runs all five steps for you: paste your resume and a job posting (or a job URL from 40+ boards), and Claude decodes the role, mirrors the language, reprioritizes your experience, and generates a matching cover letter — in about 30 seconds, while keeping the output clean and ATS-friendly.
 
-**[Tailor your resume and cover letter to any job in under a minute — free. →](/dashboard)** One free tailoring every day, forever.
+**[Tailor your resume and cover letter to any job in under a minute — free. →](/dashboard)** Unlimited free tailoring, forever.
 
 ---
 
