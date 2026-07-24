@@ -382,6 +382,16 @@
           <span style="flex:1;text-align:left;">Resume Video</span>
           <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
         </button>
+        <button class="sidebar-btn" onclick="shareResumeLink()" id="tab-sharelink" data-label="Link" title="Turn your tailored resume into a shareable web link">
+          <span class="sidebar-icon">🔗</span>
+          <span style="flex:1;text-align:left;" data-i18n="sidebar_sharelink">Resume Link</span>
+          <span style="background:#16a34a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">FREE</span>
+        </button>
+        <button class="sidebar-btn" onclick="publishPersonalSite()" id="tab-website" data-label="Website" title="Publish your resume as a live personal website">
+          <span class="sidebar-icon">🌐</span>
+          <span style="flex:1;text-align:left;" data-i18n="sidebar_website">Personal Website</span>
+          <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
+        </button>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-label" data-i18n="sidebar_careerhub">Career Hub</div>
@@ -689,7 +699,7 @@
             <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">Import your profile from LinkedIn as a PDF, or paste it below.</p>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
               <button id="linkedinOptImportBtn" onclick="document.getElementById('linkedinProfileFileInput').click()" style="display:inline-flex;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
-                <span style="font-weight:800;">in</span> <span data-i18n="li_upload_btn">Import PDF from LinkedIn</span>
+                <span data-i18n="li_upload_btn">Import PDF from LinkedIn</span>
               </button>
               <button id="linkedinHowToBtn" onclick="openLinkedInHowTo()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(10,102,194,0.08);color:#0a66c2;border:1px solid rgba(10,102,194,0.35);border-radius:6px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;">
                 <span style="font-weight:800;">?</span> <span data-i18n="li_howto_btn">How to</span>
@@ -1575,6 +1585,7 @@
       en: {
         nav_go_pro: 'Go Pro — $19.99/mo', nav_logout: 'Log Out',
         sidebar_jobsearch: 'Job Search', sidebar_tailor: 'Resume Tailor', sidebar_linkedin: 'LinkedIn Optimizer',
+        sidebar_sharelink: 'Resume Link', sidebar_website: 'Personal Website',
         sidebar_careerhub: 'Career Hub',
         sidebar_forum: 'Community Forum', sidebar_salary: 'Salary Guide',
         sidebar_checkin: 'Career Check-In', sidebar_help: 'Help & Support',
@@ -1625,6 +1636,7 @@
       zh: {
         nav_go_pro: '升级专业版 — ¥19.99/月', nav_logout: '退出登录',
         sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
+        sidebar_sharelink: '简历链接', sidebar_website: '个人网站',
         sidebar_careerhub: '职业中心',
         sidebar_forum: '社区论坛', sidebar_salary: '薪资指南',
         sidebar_checkin: '职业回顾', sidebar_help: '帮助与支持',
