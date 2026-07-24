@@ -294,6 +294,15 @@
         <div class="auth-field"><input type="password" id="loginPassword" placeholder="Password" /></div>
         <div class="auth-error" id="loginError"></div>
         <button class="btn btn-primary btn-full" id="loginBtn" onclick="doLogin()">Log In →</button>
+        <div id="linkedinLoginWrap">
+          <div style="display:flex;align-items:center;gap:10px;margin:16px 0;color:#64748b;font-size:12px;font-weight:700;">
+            <span style="flex:1;height:1px;background:rgba(255,255,255,0.12);"></span>OR<span style="flex:1;height:1px;background:rgba(255,255,255,0.12);"></span>
+          </div>
+          <button class="btn btn-full" id="linkedinLoginBtn" onclick="startLinkedInLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#0a66c2;color:#fff;border:none;font-weight:700;">
+            <span style="font-weight:900;font-size:15px;">in</span> <span data-i18n="li_login_btn">Continue with LinkedIn</span>
+          </button>
+          <p style="font-size:11px;color:#9ca3af;text-align:center;margin-top:8px;line-height:1.5;">New here? LinkedIn creates your free account automatically.</p>
+        </div>
         <div class="auth-switch">Not a subscriber yet? <a onclick="switchAuthTab('subscribe')">See plans →</a></div>
       </div>
 
@@ -1591,6 +1600,7 @@
         tailor_btn: 'Tailor My Resume →', tailor_btn_cover: 'Tailor My Cover Letter →',
         li_optimize_btn: 'Optimize My LinkedIn Profile →',
         li_import_btn: 'Import from LinkedIn',
+        li_login_btn: 'Continue with LinkedIn',
         auth_tab_subscribe: 'Subscribe', auth_tab_login: 'Log In'
       },
       zh: {
@@ -1627,6 +1637,7 @@
         tailor_btn: '开始定制简历 →', tailor_btn_cover: '定制我的求职信 →',
         li_optimize_btn: '优化我的LinkedIn资料 →',
         li_import_btn: '从 LinkedIn 导入',
+        li_login_btn: '使用 LinkedIn 继续',
         auth_tab_subscribe: '订阅', auth_tab_login: '登录'
       }
     };
@@ -5291,6 +5302,10 @@ Aaliyah Washington`
             const btn = document.getElementById(id);
             if (btn) btn.style.display = 'none';
           });
+          // No LinkedIn OAuth configured → hide the whole "Continue with LinkedIn"
+          // block on the auth modal (divider + button + note).
+          const loginWrap = document.getElementById('linkedinLoginWrap');
+          if (loginWrap) loginWrap.style.display = 'none';
         }
       } catch (_) {}
     }
@@ -5300,6 +5315,31 @@ Aaliyah Washington`
     function startLinkedInImport(target) {
       try { localStorage.setItem('rt_li_import_target', target === 'linkedin' ? 'linkedin' : 'resume'); } catch (_) {}
       window.location.href = '/api/auth/linkedin';
+    }
+    // "Continue with LinkedIn" on the auth modal — LinkedIn signs the user in
+    // (creating a free account on first use) rather than importing a profile.
+    function startLinkedInLogin() {
+      window.location.href = '/api/auth/linkedin?mode=login';
+    }
+    // On return from a LinkedIn *login*, exchange the one-time handoff for a
+    // session and drop the user into the dashboard (mirrors doLogin success).
+    async function handleLinkedInLoginReturn() {
+      const q = new URLSearchParams(window.location.search);
+      const handoff = q.get('linkedin_login');
+      if (!handoff) return false;
+      history.replaceState(null, '', window.location.pathname);
+      try {
+        const r = await fetch('/api/auth/linkedin/session?token=' + encodeURIComponent(handoff));
+        if (!r.ok) { showToast('LinkedIn sign-in link expired — please try again.'); return true; }
+        const data = await r.json();
+        if (!data.token) { showToast('LinkedIn sign-in failed — please try again.'); return true; }
+        localStorage.setItem('rt_token', data.token);
+        localStorage.setItem('rt_email', data.email);
+        localStorage.setItem('rt_username', data.username);
+        hideAuthModal();
+        showToast('Signed in with LinkedIn. Welcome!');
+      } catch (_) { showToast('Could not complete LinkedIn sign-in.'); }
+      return true;
     }
     // On return from LinkedIn, pull the one-time draft and prefill the builder.
     async function handleLinkedInReturn() {
@@ -5379,7 +5419,9 @@ Aaliyah Washington`
     }
     checkAuth();
     initLinkedInImport();
-    handleLinkedInReturn();
+    // A LinkedIn *login* return takes priority; only try an *import* return if
+    // this wasn't a login round-trip.
+    handleLinkedInLoginReturn().then(wasLogin => { if (!wasLogin) handleLinkedInReturn(); });
     // Init template picker after DOM is ready (template functions are hoisted)
     setTimeout(renderTplPicker, 0);
     // Apply language preference. An explicit ?lang= in the URL wins and is
