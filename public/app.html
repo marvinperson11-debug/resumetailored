@@ -1608,12 +1608,13 @@
         li_import_btn: 'Import from LinkedIn',
         li_upload_btn: 'Import PDF from LinkedIn',
         li_howto_btn: 'How to',
-        li_howto_title: 'Get your LinkedIn profile as a PDF',
-        li_howto_intro: "LinkedIn lets you download your own profile as a PDF. It only takes a few taps — then upload it here and we'll fill in your headline, About, and experience automatically.",
-        li_howto_s1: 'Open the LinkedIn app or website and go to <strong>your own profile</strong> (tap your photo → <strong>View Profile</strong>).',
-        li_howto_s2: 'Tap the <strong>More</strong> button (below your headline, next to “Add section” / “Open to”).',
-        li_howto_s3: 'Choose <strong>Save to PDF</strong>. LinkedIn generates and downloads the file.',
-        li_howto_s4: 'Come back here, tap <strong>Import PDF from LinkedIn</strong>, and select that file.',
+        li_howto_title: 'Save your LinkedIn profile as a PDF',
+        li_howto_intro: "LinkedIn doesn't offer a direct link to it, so here's exactly where the button is hiding:",
+        li_howto_s1: 'Go to <strong>your own profile</strong> — tap your photo (top-left), then <strong>“View Profile.”</strong>',
+        li_howto_s2: 'Look just under your name &amp; headline, in the same row as <strong>“Open to,” “Add profile section,”</strong> and <strong>“Enhance profile.”</strong> At the end of that row, tap <strong>“More”</strong> (on a computer it may say <strong>“Resources”</strong>).',
+        li_howto_s3: 'In the menu that pops up, tap <strong>“Save to PDF.”</strong> The file downloads to your device.',
+        li_howto_s4: 'Come back here and tap <strong>“Import PDF from LinkedIn”</strong> to upload that file.',
+        li_howto_tip: '📱 Can\'t find "More" or "Save to PDF" on your phone? It\'s easiest on a computer — go to linkedin.com, open your profile, and the button is right under your name.',
         li_howto_open: 'Open my LinkedIn profile →',
         li_howto_upload: 'I have the PDF — upload it',
         li_login_btn: 'Continue with LinkedIn',
@@ -1656,11 +1657,12 @@
         li_upload_btn: '从 LinkedIn 导入 PDF',
         li_howto_btn: '操作方法',
         li_howto_title: '将你的 LinkedIn 个人资料保存为 PDF',
-        li_howto_intro: 'LinkedIn 允许你将自己的个人资料下载为 PDF。只需几步——然后在此上传，我们会自动填入你的标题、简介和工作经历。',
-        li_howto_s1: '打开 LinkedIn 应用或网站，进入<strong>你自己的个人资料</strong>（点击你的头像 → <strong>查看资料</strong>）。',
-        li_howto_s2: '点击<strong>更多（More）</strong>按钮（在你的标题下方）。',
-        li_howto_s3: '选择<strong>保存为 PDF（Save to PDF）</strong>。LinkedIn 会生成并下载文件。',
-        li_howto_s4: '回到这里，点击<strong>从 LinkedIn 导入 PDF</strong>，选择该文件。',
+        li_howto_intro: 'LinkedIn 没有直接链接，所以这里告诉你按钮藏在哪：',
+        li_howto_s1: '进入<strong>你自己的个人资料</strong>——点击左上角你的头像，然后选择<strong>“查看资料（View Profile）”</strong>。',
+        li_howto_s2: '在你的姓名和标题下方，与<strong>“开放求职（Open to）”“添加板块（Add profile section）”</strong>和<strong>“完善资料（Enhance profile）”</strong>同一行的末尾，点击<strong>“更多（More）”</strong>（在电脑上可能显示为<strong>“资源（Resources）”</strong>）。',
+        li_howto_s3: '在弹出的菜单中，点击<strong>“保存为 PDF（Save to PDF）”</strong>。文件会下载到你的设备。',
+        li_howto_s4: '回到这里，点击<strong>“从 LinkedIn 导入 PDF”</strong>上传该文件。',
+        li_howto_tip: '📱 在手机上找不到“更多”或“保存为 PDF”？用电脑最简单——访问 linkedin.com，打开你的资料，按钮就在你姓名下方。',
         li_howto_open: '打开我的 LinkedIn 资料 →',
         li_howto_upload: '我已有 PDF——上传',
         li_login_btn: '使用 LinkedIn 继续',
@@ -5544,16 +5546,17 @@ Aaliyah Washington`
   <div id="linkedinHowToModal" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeLinkedInHowTo()">
     <div style="background:#fff;border-radius:20px;padding:26px 24px;max-width:480px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.35);max-height:88vh;overflow-y:auto;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="display:flex;align-items:center;gap:10px;"><span style="background:#0a66c2;color:#fff;font-weight:900;border-radius:5px;padding:2px 7px;font-size:15px;">in</span><h2 style="font-size:18px;font-weight:800;color:#111827;" data-i18n="li_howto_title">Get your LinkedIn profile as a PDF</h2></div>
+        <div style="display:flex;align-items:center;gap:10px;"><span style="background:#0a66c2;color:#fff;font-weight:900;border-radius:5px;padding:2px 7px;font-size:15px;">in</span><h2 style="font-size:18px;font-weight:800;color:#111827;" data-i18n="li_howto_title">Save your LinkedIn profile as a PDF</h2></div>
         <button onclick="closeLinkedInHowTo()" style="background:none;border:none;font-size:22px;line-height:1;color:#9ca3af;cursor:pointer;">×</button>
       </div>
-      <p style="font-size:13px;color:#6b7280;margin-bottom:16px;" data-i18n="li_howto_intro">LinkedIn lets you download your own profile as a PDF. It only takes a few taps — then upload it here and we'll fill in your headline, About, and experience automatically.</p>
-      <ol style="margin:0 0 18px;padding-left:20px;display:flex;flex-direction:column;gap:11px;font-size:13.5px;color:#374151;line-height:1.55;">
-        <li data-i18n="li_howto_s1">Open the LinkedIn app or website and go to <strong>your own profile</strong> (tap your photo → <strong>View Profile</strong>).</li>
-        <li data-i18n="li_howto_s2">Tap the <strong>More</strong> button (below your headline, next to “Add section”/“Open to”).</li>
-        <li data-i18n="li_howto_s3">Choose <strong>Save to PDF</strong>. LinkedIn generates and downloads the file.</li>
-        <li data-i18n="li_howto_s4">Come back here, tap <strong>Import PDF from LinkedIn</strong>, and select that file.</li>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px;" data-i18n="li_howto_intro">LinkedIn doesn't offer a direct link to it, so here's exactly where the button is hiding:</p>
+      <ol style="margin:0 0 14px;padding-left:20px;display:flex;flex-direction:column;gap:12px;font-size:13.5px;color:#374151;line-height:1.6;">
+        <li data-i18n="li_howto_s1">Go to <strong>your own profile</strong> — tap your photo (top-left), then <strong>“View Profile.”</strong></li>
+        <li data-i18n="li_howto_s2">Look just under your name &amp; headline, in the same row as <strong>“Open to,” “Add profile section,”</strong> and <strong>“Enhance profile.”</strong> At the end of that row, tap <strong>“More”</strong> (on a computer it may say <strong>“Resources”</strong>).</li>
+        <li data-i18n="li_howto_s3">In the menu that pops up, tap <strong>“Save to PDF.”</strong> The file downloads to your device.</li>
+        <li data-i18n="li_howto_s4">Come back here and tap <strong>“Import PDF from LinkedIn”</strong> to upload that file.</li>
       </ol>
+      <div style="background:rgba(10,102,194,0.07);border:1px solid rgba(10,102,194,0.18);border-radius:10px;padding:11px 13px;margin-bottom:18px;font-size:12.5px;color:#334155;line-height:1.55;" data-i18n="li_howto_tip">📱 Can't find "More" or "Save to PDF" on your phone? It's easiest on a computer — go to linkedin.com, open your profile, and the button is right under your name.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="window.open('https://www.linkedin.com/in/me/','_blank','noopener')" class="btn btn-primary" style="flex:1;min-width:150px;font-size:13px;padding:11px 14px;background:#0a66c2;border-color:#0a66c2;" data-i18n="li_howto_open">Open my LinkedIn profile →</button>
         <button onclick="closeLinkedInHowTo();document.getElementById('linkedinProfileFileInput').click();" class="btn" style="flex:1;min-width:150px;font-size:13px;padding:11px 14px;background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;" data-i18n="li_howto_upload">I have the PDF — upload it</button>
