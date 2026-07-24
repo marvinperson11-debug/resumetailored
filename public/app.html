@@ -1590,7 +1590,7 @@
         auth_tab_subscribe: 'Subscribe', auth_tab_login: 'Log In'
       },
       zh: {
-        nav_go_pro: '升级专业版 — ¥138/月', nav_logout: '退出登录',
+        nav_go_pro: '升级专业版 — ¥19.99/月', nav_logout: '退出登录',
         sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
         sidebar_careerhub: '职业中心',
         sidebar_forum: '社区论坛', sidebar_salary: '薪资指南',
@@ -1599,9 +1599,9 @@
         sidebar_about: '它是如何工作的？', sidebar_cancel: '随时取消',
         sidebar_pro_title: '✦ 解锁完整权限',
         sidebar_pro_text: '职业中心功能仅限专业版会员使用。',
-        sidebar_pro_btn: '升级 — ¥138/月',
+        sidebar_pro_btn: '升级 — ¥19.99/月',
         mobile_upgrade_p: '✦ 解锁无限次简历定制、求职信及职业中心功能。',
-        mobile_upgrade_btn: '立即升级 — ¥138/月',
+        mobile_upgrade_btn: '立即升级 — ¥19.99/月',
         tailor_title: '定制你的简历',
         tailor_sub: '粘贴你的简历和职位描述，AI将根据招聘要求优化你的简历关键词和经历描述。',
         li_banner_title: 'LinkedIn 个人资料优化',
@@ -1701,17 +1701,17 @@
       if (editBarEl) editBarEl.innerHTML = (isZh ? '✏️ 点击任意文字进行编辑' : '✏️ Click any text to edit it directly') + '<button class="eb-btn eb-save" onclick="saveEdit()">' + (isZh ? '保存修改' : 'Save Changes') + '</button><button class="eb-btn eb-cancel" onclick="cancelEdit()">' + (isZh ? '取消' : 'Cancel') + '</button>';
       // 10. Upsell/limit banners
       var upsellP = document.querySelector('#upsell p');
-      if (upsellP) upsellP.innerHTML = isZh ? '想要<strong>无限次定制</strong>？升级专业版 — ¥138/月，随时取消。' : 'Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19.99/month, cancel anytime.';
+      if (upsellP) upsellP.innerHTML = isZh ? '想要<strong>无限次定制</strong>？升级专业版 — ¥19.99/月，随时取消。' : 'Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19.99/month, cancel anytime.';
       document.querySelectorAll('.upsell .btn-primary').forEach(function(btn) { btn.textContent = isZh ? '升级专业版 →' : 'Upgrade to Pro →'; });
       var limitPEl = document.querySelector('#limitBanner p');
-      if (limitPEl) limitPEl.innerHTML = isZh ? '简历定制和求职信<strong>免费且无限次</strong>。升级专业版解锁100+高级模板、简历视频、个人网站和无水印导出 — ¥138/月。' : 'Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports — $19.99/month.';
+      if (limitPEl) limitPEl.innerHTML = isZh ? '简历定制和求职信<strong>免费且无限次</strong>。升级专业版解锁100+高级模板、简历视频、个人网站和无水印导出 — ¥19.99/月。' : 'Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports — $19.99/month.';
       // 11. LinkedIn output section
       var liH3 = document.querySelector('#linkedinHeadlineBlock h3'); if (liH3) liH3.textContent = isZh ? '✦ 优化后的标题' : '✦ Optimized Headline';
       var liAboutH3 = document.querySelector('#linkedinAboutBlock h3'); if (liAboutH3) liAboutH3.textContent = isZh ? '✦ 优化后的个人简介' : '✦ Optimized About Section';
       var liExpH3 = document.querySelector('#linkedinExpBlock h3'); if (liExpH3) liExpH3.textContent = isZh ? '✦ 优化后的工作经历' : '✦ Optimized Experience Bullets';
       document.querySelectorAll('#linkedinHeadlineBlock .btn-outline, #linkedinAboutBlock .btn-outline, #linkedinExpBlock .btn-outline').forEach(function(btn) { btn.textContent = isZh ? '复制' : 'Copy'; });
       var liLimitP = document.querySelector('#linkedinLimitBanner p');
-      if (liLimitP) liLimitP.innerHTML = isZh ? '你已使用今日<strong>免费LinkedIn优化次数</strong>。升级专业版享无限次 — ¥138/月。' : 'You\'ve used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19.99/month.';
+      if (liLimitP) liLimitP.innerHTML = isZh ? '你已使用今日<strong>免费LinkedIn优化次数</strong>。升级专业版享无限次 — ¥19.99/月。' : 'You\'ve used your <strong>free daily LinkedIn optimization</strong>. Upgrade to Pro for unlimited access — $19.99/month.';
       var liLimitBtn = document.querySelector('#linkedinLimitBanner .btn-primary');
       if (liLimitBtn) liLimitBtn.textContent = isZh ? '升级专业版 →' : 'Upgrade to Pro →';
       // 12. Template preview modal
@@ -1797,7 +1797,7 @@
       if (aboutWhyH2s[0]) aboutWhyH2s[0].textContent = isZh ? '为什么ResumeTailored AI优于竞品' : 'Why ResumeTailored AI Beats the Competition';
       if (aboutWhyH2s[1]) aboutWhyH2s[1].textContent = isZh ? '竞品对比' : 'Head-to-Head Comparison';
       var aboutCards = document.querySelectorAll('#panel-about .salary-grid .salary-resource-card');
-      var aCD = isZh ? [{h3:'由Claude AI驱动',p:'我们使用Anthropic的Claude——同样被财富500强企业信赖的AI。大多数竞品使用更旧、更廉价的模型，产出通用的机器人式内容。Claude写作就像一位拥有15年以上经验的职业顾问。'},{h3:'真正针对具体职位',p:'Jobscan和Resume Worded等工具会对你的简历关键词评分，但不会<em>改写</em>它。ResumeTailored AI同时读取你的简历和职位描述，然后改写你的工作要点，精确匹配招聘经理使用的语言。'},{h3:'绝不捏造经历',p:'与某些AI工具不同，我们绝不虚构你没有的技能或经历。我们使用职位的语言重新表达你已有的经历。你始终100%诚实——只是更清晰地传达了你的价值。'},{h3:'30秒，而非45分钟',p:'普通求职者每次申请花45分钟定制简历。我们在30秒内完成。以更高质量的申请，比手动操作的候选人投递更多职位，效率更快。'},{h3:'¥138/月，竞品需¥40–¥100/月',p:'Resume.io收费¥44.95/月。Zety仅下载就收费¥23.70/月。Teal+收费¥29/月。ResumeTailored AI提供无限次AI定制加完整职业中心，仅¥138——市场上最高性价比。'},{h3:'不只是一个简历工具',p:'专业版会员获得完整职业中心：薪资谈判指南、逐字谈判话术、专业社区论坛和季度职业回顾。没有任何竞品能以这个价格提供如此多的职业价值。'}] : [{h3:'Powered by Claude AI',p:'We use Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.'},{h3:'Actually Job-Specific',p:'Tools like Jobscan and Resume Worded score your resume for keywords but don\'t <em>rewrite</em> it. ResumeTailored AI reads both your resume AND the job posting, then rewrites your bullets to mirror the exact language the hiring manager used.'},{h3:'Never Fabricates Experience',p:'Unlike some AI tools, we never invent skills or experience you don\'t have. We reframe what you already did using the role\'s language. You stay 100% truthful — you just communicate your value more clearly.'},{h3:'30 Seconds, Not 45 Minutes',p:'The average job seeker spends 45 minutes tailoring each application. We do it in under 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it manually.'},{h3:'$19.99/mo vs. $40–$100/mo Elsewhere',p:'Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19.99 — the most value in the market.'},{h3:'More Than a Resume Tool',p:'Pro members get the full Career Hub: salary negotiation guides, word-for-word negotiation scripts, a professional community forum, and quarterly career check-ins. No competitor bundles this much career value at this price.'}];
+      var aCD = isZh ? [{h3:'由Claude AI驱动',p:'我们使用Anthropic的Claude——同样被财富500强企业信赖的AI。大多数竞品使用更旧、更廉价的模型，产出通用的机器人式内容。Claude写作就像一位拥有15年以上经验的职业顾问。'},{h3:'真正针对具体职位',p:'Jobscan和Resume Worded等工具会对你的简历关键词评分，但不会<em>改写</em>它。ResumeTailored AI同时读取你的简历和职位描述，然后改写你的工作要点，精确匹配招聘经理使用的语言。'},{h3:'绝不捏造经历',p:'与某些AI工具不同，我们绝不虚构你没有的技能或经历。我们使用职位的语言重新表达你已有的经历。你始终100%诚实——只是更清晰地传达了你的价值。'},{h3:'30秒，而非45分钟',p:'普通求职者每次申请花45分钟定制简历。我们在30秒内完成。以更高质量的申请，比手动操作的候选人投递更多职位，效率更快。'},{h3:'¥19.99/月，竞品需¥40–¥100/月',p:'Resume.io收费¥44.95/月。Zety仅下载就收费¥23.70/月。Teal+收费¥29/月。ResumeTailored AI提供无限次AI定制加完整职业中心，仅¥19.99——市场上最高性价比。'},{h3:'不只是一个简历工具',p:'专业版会员获得完整职业中心：薪资谈判指南、逐字谈判话术、专业社区论坛和季度职业回顾。没有任何竞品能以这个价格提供如此多的职业价值。'}] : [{h3:'Powered by Claude AI',p:'We use Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.'},{h3:'Actually Job-Specific',p:'Tools like Jobscan and Resume Worded score your resume for keywords but don\'t <em>rewrite</em> it. ResumeTailored AI reads both your resume AND the job posting, then rewrites your bullets to mirror the exact language the hiring manager used.'},{h3:'Never Fabricates Experience',p:'Unlike some AI tools, we never invent skills or experience you don\'t have. We reframe what you already did using the role\'s language. You stay 100% truthful — you just communicate your value more clearly.'},{h3:'30 Seconds, Not 45 Minutes',p:'The average job seeker spends 45 minutes tailoring each application. We do it in under 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it manually.'},{h3:'$19.99/mo vs. $40–$100/mo Elsewhere',p:'Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19.99 — the most value in the market.'},{h3:'More Than a Resume Tool',p:'Pro members get the full Career Hub: salary negotiation guides, word-for-word negotiation scripts, a professional community forum, and quarterly career check-ins. No competitor bundles this much career value at this price.'}];
       aboutCards.forEach(function(card, i) { if(!aCD[i]) return; var h3=card.querySelector('h3'); if(h3) h3.textContent=aCD[i].h3; var p=card.querySelector('p'); if(p) p.innerHTML=aCD[i].p; });
       var aboutTable = document.querySelector('#panel-about table');
       if (aboutTable) {
@@ -1834,14 +1834,14 @@
       var cStepD = isZh ? ['前往 <strong>帮助与支持</strong> 标签','发送消息，主题：<strong>"取消我的订阅"</strong>','附上你订阅时使用的邮箱','我们将在 <strong>1小时</strong> 内取消并确认'] : ['Go to the <strong>Help & Support</strong> tab','Send a message with subject: <strong>"Cancel my subscription"</strong>','Include the email you used to subscribe','We\'ll cancel and confirm within <strong>1 hour</strong>'];
       cancelSteps.forEach(function(li, i) { if (cStepD[i]) li.innerHTML = cStepD[i]; });
       var cancelTips = document.querySelectorAll('#panel-cancel .salary-tips li');
-      var cTipD = isZh ? ['订阅在当前计费周期结束时停止','在此之前保留完整专业版权限','不收取部分月份费用——永远不会','不删除数据——你的回顾记录保持保存','随时以相同的¥138/月价格重新订阅','无罚款，无重新注册费'] : ['Subscription stops at end of current billing period','You keep full Pro access until then','No partial-month charges — ever','No data deleted — your check-ins stay saved','Resubscribe anytime at the same $19.99/mo price','No penalty, no re-enrollment fee'];
+      var cTipD = isZh ? ['订阅在当前计费周期结束时停止','在此之前保留完整专业版权限','不收取部分月份费用——永远不会','不删除数据——你的回顾记录保持保存','随时以相同的¥19.99/月价格重新订阅','无罚款，无重新注册费'] : ['Subscription stops at end of current billing period','You keep full Pro access until then','No partial-month charges — ever','No data deleted — your check-ins stay saved','Resubscribe anytime at the same $19.99/mo price','No penalty, no re-enrollment fee'];
       cancelTips.forEach(function(li, i) { if (cTipD[i]) li.textContent = cTipD[i]; });
       var cancelGoHelpBtn = document.querySelector('#panel-cancel .btn-outline'); if (cancelGoHelpBtn) cancelGoHelpBtn.textContent = isZh ? '前往帮助与支持 →' : 'Go to Help & Support →';
       var cancelFaqH2 = document.querySelector('#panel-cancel h2'); if (cancelFaqH2) cancelFaqH2.textContent = isZh ? '取消订阅常见问题' : 'Cancellation FAQs';
       var cancelFaqQs = document.querySelectorAll('#panel-cancel .faq-q > span:first-child');
       var cancelFaqAs = document.querySelectorAll('#panel-cancel .faq-a');
       var cFaqQD = isZh ? ['取消后能退款吗？','取消生效需要多长时间？','我可以暂停而不是取消吗？','如果我被扣款但不是有意订阅怎么办？','取消后我的简历历史会被删除吗？'] : ['Do I get a refund if I cancel mid-month?','How fast does cancellation take effect?','Can I pause instead of cancel?','What if I was charged but didn\'t mean to subscribe?','Will my resume history be deleted if I cancel?'];
-      var cFaqAD = isZh ? ['我们不提供按比例退款，但你将在当前计费周期结束前保留完整专业版权限。因此，如果你已支付当月费用，你就可以使用整个月。','我们在1小时内处理所有取消请求。完成后你会收到确认邮件。你的专业版权限将持续到计费周期结束。','我们目前不提供暂停功能，但取消并在之后重新订阅同样简单。你始终享有相同的¥138/月费率——我们不对价格锁定或惩罚回归会员。','在扣款7天内联系我们，我们将全额退款，无需解释。我们从不希望有人为无意购买的服务付费。','不会。你的职业回顾数据和社区帖子保持完整。如果你之后重新订阅，一切都在你离开的地方。'] : ['We don\'t offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.','We process all cancellation requests within 1 hour. You\'ll receive a confirmation email once it\'s done. Your Pro access continues until your billing period ends.','We don\'t currently offer a pause feature, but canceling and re-subscribing later is just as easy. You\'ll always get the same $19.99/month rate — we don\'t price-lock or penalize returning members.','Contact us within 7 days of the charge and we\'ll issue a full refund, no questions asked. We never want anyone paying for something they didn\'t intend to buy.','No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.'];
+      var cFaqAD = isZh ? ['我们不提供按比例退款，但你将在当前计费周期结束前保留完整专业版权限。因此，如果你已支付当月费用，你就可以使用整个月。','我们在1小时内处理所有取消请求。完成后你会收到确认邮件。你的专业版权限将持续到计费周期结束。','我们目前不提供暂停功能，但取消并在之后重新订阅同样简单。你始终享有相同的¥19.99/月费率——我们不对价格锁定或惩罚回归会员。','在扣款7天内联系我们，我们将全额退款，无需解释。我们从不希望有人为无意购买的服务付费。','不会。你的职业回顾数据和社区帖子保持完整。如果你之后重新订阅，一切都在你离开的地方。'] : ['We don\'t offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.','We process all cancellation requests within 1 hour. You\'ll receive a confirmation email once it\'s done. Your Pro access continues until your billing period ends.','We don\'t currently offer a pause feature, but canceling and re-subscribing later is just as easy. You\'ll always get the same $19.99/month rate — we don\'t price-lock or penalize returning members.','Contact us within 7 days of the charge and we\'ll issue a full refund, no questions asked. We never want anyone paying for something they didn\'t intend to buy.','No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.'];
       cancelFaqQs.forEach(function(el, i) { if (cFaqQD[i]) el.textContent = cFaqQD[i]; });
       cancelFaqAs.forEach(function(el, i) { if (cFaqAD[i]) el.textContent = cFaqAD[i]; });
       var cancelBottomH3 = document.querySelector('#panel-cancel > div:last-of-type h3'); if (cancelBottomH3) cancelBottomH3.textContent = isZh ? '还在考虑是否订阅？' : 'Still deciding whether to subscribe?';
@@ -1911,7 +1911,7 @@
       var tplLockSub = document.querySelector('.tpl-modal-lock-sub');
       if (tplLockSub) tplLockSub.textContent = isZh ? '升级专业版以解锁全部104个高级模板、简历视频、个人网站和无水印导出。' : 'Upgrade to Pro to unlock all 104 premium templates, the resume video, your personal website, and watermark-free exports.';
       var tplLockBtn = document.querySelector('.tpl-modal-lock .btn-primary');
-      if (tplLockBtn) tplLockBtn.textContent = isZh ? '升级专业版 — ¥138/月 →' : 'Upgrade to Pro — $19.99/mo →';
+      if (tplLockBtn) tplLockBtn.textContent = isZh ? '升级专业版 — ¥19.99/月 →' : 'Upgrade to Pro — $19.99/mo →';
       var tplLockPeek = document.querySelector('.tpl-modal-lock-peek');
       if (tplLockPeek) tplLockPeek.textContent = isZh ? '仅查看预览 ↓' : 'View preview only ↓';
       // 22e. Dynamic work/edu entries — update already-rendered entries
