@@ -1729,9 +1729,149 @@ function _shareResumeHtml(row, origin, opts = {}) {
 function _renderPersonalSite(row, origin, opts = {}) {
   let config = null;
   if (row && row.config) { try { config = JSON.parse(row.config); } catch (_) { config = null; } }
-  // config === null → legacy default (today's output). Config-driven rendering
-  // (hero, sections, media, download toggle, i18n) is added in later phases.
+  // Grid layout (Website Creator, Phase 3): render from config.blocks once the
+  // user has arranged blocks. Legacy sites (config null, or a config without a
+  // non-empty blocks array — e.g. Phase 2 publishes that only stored asset ids)
+  // fall through to the shared resume-document renderer, byte-identical to before.
+  if (config && Array.isArray(config.blocks) && config.blocks.length) {
+    return _renderSiteGrid(row, origin, opts, config);
+  }
   return _shareResumeHtml(row, origin, opts);
+}
+
+// A resume rendered as a self-contained fragment (used by a `resume` block).
+// Built from the standalone _dxParseResume/_shareLinesHtml helpers so it never
+// touches _shareResumeHtml (which the Link relies on staying byte-identical).
+function _renderResumeFragment(row, accent) {
+  const { name, contactParts, sections } = _dxParseResume(row.text || '');
+  const displayName = name || 'Resume';
+  const contactItems = contactParts.flatMap(p => String(p).split(/\s*\|\s*/)).map(s => s.trim()).filter(Boolean);
+  const contactHtml = row.hide_contact ? '' :
+    contactItems.map(c => `<span>${_escHtml(c)}</span>`).join('<span class="sg-dot">·</span>');
+  const secHtml = sections.map(s => `<section class="sg-sec"><h2 class="sg-h">${_escHtml(s.title)}</h2>${_shareLinesHtml(s.lines, accent)}</section>`).join('');
+  return `<div class="sg-resume"><div class="sg-rhead"><div class="sg-rname">${_escHtml(displayName)}</div>${contactHtml ? `<div class="sg-rcontact">${contactHtml}</div>` : ''}</div>${secHtml}</div>`;
+}
+
+// Clamp helpers for untrusted numeric block placement.
+const _clampInt = (v, lo, hi, dflt) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt; };
+const _safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/|data:image\/(png|jpe?g|webp);base64,)/i.test(u) && u.length < 2000000) ? u : '';
+
+// One block → HTML on a 12-column grid. On mobile the grid collapses (CSS) so
+// blocks stack full-width in source order; placement is desktop-only.
+function _renderSiteBlock(b, row, accent) {
+  const col = _clampInt(b.col, 1, 12, 1);
+  const span = _clampInt(b.colSpan, 1, 12, 12);
+  const place = `grid-column:${col} / span ${Math.min(span, 13 - col)};`;
+  let inner = '';
+  switch (b.type) {
+    case 'heading': inner = `<h2 class="sg-blk-h">${_escHtml(String(b.text || '').slice(0, 200))}</h2>`; break;
+    case 'text': inner = `<div class="sg-blk-text">${_escHtml(String(b.text || '').slice(0, 4000)).replace(/\n/g, '<br/>')}</div>`; break;
+    case 'resume': inner = _renderResumeFragment(row, accent); break;
+    case 'image': {
+      const src = _safeUrl(b.src);
+      if (!src) return '';
+      inner = `<figure class="sg-fig"><img src="${_escHtml(src)}" alt="${_escHtml(String(b.alt || '').slice(0, 200))}" loading="lazy"/>${b.caption ? `<figcaption>${_escHtml(String(b.caption).slice(0, 300))}</figcaption>` : ''}</figure>`;
+      break;
+    }
+    case 'video': {
+      const src = _safeUrl(b.src);
+      if (!src) return '';
+      // No autoplay-with-sound: controls are visible and the video starts paused.
+      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<video class="sg-video" controls preload="metadata"${b.poster ? ` poster="${_escHtml(_safeUrl(b.poster))}"` : ''}><source src="${_escHtml(src)}"/></video>`;
+      break;
+    }
+    case 'spacer': inner = '<div class="sg-spacer"></div>'; break;
+    default: return '';
+  }
+  return `<div class="sg-block" style="${place}">${inner}</div>`;
+}
+
+// Full personal-site page rendered from config.blocks on a responsive 12-col grid.
+function _renderSiteGrid(row, origin, opts, config) {
+  const primary = '#' + String((config.theme && config.theme.primary) || row.primary_hex || '4a1042').replace('#', '');
+  const accent = '#' + String((config.theme && config.theme.accent) || row.accent || '8b5cf6').replace('#', '');
+  const bg = (config.theme && config.theme.bg) ? String(config.theme.bg) : '#eef0f4';
+  const lang = config.lang === 'zh' ? 'zh' : 'en';
+  const displayName = _escHtml((row.name || _dxParseResume(row.text || '').name || 'Resume'));
+  const indexable = !!opts.indexable;
+  const canonical = opts.canonicalUrl || `${origin}/site/${row.subdomain}`;
+  const blocksHtml = config.blocks.map(b => _renderSiteBlock(b, row, accent)).join('');
+  const footerHtml = opts.footer !== undefined ? opts.footer : '';
+
+  // Public-site i18n scaffold (chrome only — user content is shown as authored).
+  // Structure mirrors zh/index.html: a small dictionary + a toggle that swaps
+  // any [data-si] element. Copy is filled out in the dedicated i18n phase.
+  const SITE_I18N = { en: { lang_toggle: '中文' }, zh: { lang_toggle: 'EN' } };
+
+  return `<!DOCTYPE html>
+<html lang="${lang}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="robots" content="${indexable ? 'index,follow' : 'noindex,nofollow'}"/>
+  <title>${displayName}</title>
+  <meta property="og:type" content="profile"/>
+  <meta property="og:title" content="${displayName}"/>
+  <meta property="og:url" content="${_escHtml(canonical)}"/>
+  <meta property="og:image" content="${origin}/og-image.png"/>
+  <link rel="canonical" href="${_escHtml(canonical)}"/>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--p:${primary};--a:${accent};}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:${bg};color:#1f2430;line-height:1.6;padding:24px 14px 60px;}
+    .sg-topbar{max-width:1100px;margin:0 auto 16px;display:flex;justify-content:flex-end;}
+    .sg-lang{background:rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.1);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;}
+    .site-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;max-width:1100px;margin:0 auto;align-items:start;}
+    .sg-block{min-width:0;}
+    .sg-blk-h{font-size:26px;font-weight:900;color:var(--p);letter-spacing:-.5px;margin-bottom:6px;}
+    .sg-blk-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
+    .sg-blk-text{font-size:15px;color:#39414f;}
+    .sg-fig{margin:0;}
+    .sg-fig img{width:100%;height:auto;border-radius:14px;display:block;}
+    .sg-fig figcaption{font-size:12.5px;color:#6b7280;margin-top:6px;text-align:center;}
+    .sg-video{width:100%;border-radius:14px;background:#000;display:block;}
+    .sg-spacer{height:24px;}
+    .sg-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:38px 40px;}
+    .sg-rhead{margin-bottom:20px;border-bottom:2px solid var(--p);padding-bottom:14px;}
+    .sg-rname{font-size:28px;font-weight:800;color:var(--p);letter-spacing:-.4px;}
+    .sg-rcontact{font-size:13.5px;color:#5b6472;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+    .sg-dot{color:#c3c9d4;}
+    .sg-sec{margin-bottom:20px;}
+    .sg-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--p);border-bottom:2px solid var(--a);padding-bottom:5px;margin-bottom:12px;}
+    .sg-resume .r-title{font-size:15px;font-weight:800;color:#1a1f2b;margin-top:10px;}
+    .sg-resume .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
+    .sg-resume .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
+    .sg-resume .r-bul{list-style:none;margin:2px 0 8px;}
+    .sg-resume .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
+    .sg-resume .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--a);}
+    .sg-foot{max-width:1100px;margin:24px auto 0;text-align:center;font-size:13px;color:#8a93a3;}
+    @media(max-width:760px){
+      .site-grid{display:block;}
+      .sg-block{margin-bottom:20px;}
+      .sg-resume{padding:28px 22px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="sg-topbar"><button class="sg-lang" data-si="lang_toggle" onclick="_sgToggleLang()">${SITE_I18N[lang].lang_toggle}</button></div>
+  <div class="site-grid">${blocksHtml}</div>
+  ${footerHtml}
+  <script>
+    var SITE_I18N=${JSON.stringify(SITE_I18N)};
+    function _sgToggleLang(){
+      var cur=document.documentElement.lang==='zh'?'zh':'en';
+      var next=cur==='zh'?'en':'zh';
+      document.documentElement.lang=next;
+      document.querySelectorAll('[data-si]').forEach(function(el){
+        var k=el.getAttribute('data-si'); if(SITE_I18N[next] && SITE_I18N[next][k]!=null) el.textContent=SITE_I18N[next][k];
+      });
+    }
+  </script>
+</body>
+</html>`;
 }
 
 const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'Too many share links — please wait a minute.' } });

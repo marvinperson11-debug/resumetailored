@@ -26,6 +26,18 @@ process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-snap-'));
 
 const { _shareResumeHtml, _renderPersonalSite } = require('../server.js');
 
+// A site row WITH a config.blocks grid layout (Phase 3a), to snapshot the grid
+// renderer alongside the legacy path.
+const GRID_CONFIG = JSON.stringify({
+  v: 1, lang: 'en', theme: { primary: '0f172a', accent: '6366f1' },
+  blocks: [
+    { id: 'h', type: 'heading', col: 1, colSpan: 12, text: 'Jordan Rivera' },
+    { id: 't', type: 'text', col: 1, colSpan: 6, text: 'Product manager based in NYC.' },
+    { id: 'v', type: 'video', col: 7, colSpan: 6, src: 'https://example.com/v.mp4', label: 'About Me' },
+    { id: 'r', type: 'resume', col: 1, colSpan: 12 },
+  ],
+});
+
 const GOLDEN_DIR = path.join(__dirname, 'golden');
 const UPDATE = process.argv.includes('--update');
 const ORIGIN = 'https://resumetailored.com';
@@ -68,6 +80,10 @@ const cases = {
   'site.html': () => _renderPersonalSite(SAMPLE_ROW, ORIGIN, {
     indexable: true, footer: '', canonicalUrl: `${ORIGIN}/site/${SAMPLE_ROW.subdomain}`,
   }),
+  'site-grid.html': () => _renderPersonalSite(
+    { ...SAMPLE_ROW, config: GRID_CONFIG }, ORIGIN,
+    { indexable: true, footer: '', canonicalUrl: `${ORIGIN}/site/${SAMPLE_ROW.subdomain}` },
+  ),
 };
 
 fs.mkdirSync(GOLDEN_DIR, { recursive: true });

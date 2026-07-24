@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="robots" content="index,follow"/>
+  <title>Jordan Rivera</title>
+  <meta property="og:type" content="profile"/>
+  <meta property="og:title" content="Jordan Rivera"/>
+  <meta property="og:url" content="https://resumetailored.com/site/sample"/>
+  <meta property="og:image" content="https://resumetailored.com/og-image.png"/>
+  <link rel="canonical" href="https://resumetailored.com/site/sample"/>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--p:#0f172a;--a:#6366f1;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#eef0f4;color:#1f2430;line-height:1.6;padding:24px 14px 60px;}
+    .sg-topbar{max-width:1100px;margin:0 auto 16px;display:flex;justify-content:flex-end;}
+    .sg-lang{background:rgba(0,0,0,.05);border:1px solid rgba(0,0,0,.1);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;}
+    .site-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;max-width:1100px;margin:0 auto;align-items:start;}
+    .sg-block{min-width:0;}
+    .sg-blk-h{font-size:26px;font-weight:900;color:var(--p);letter-spacing:-.5px;margin-bottom:6px;}
+    .sg-blk-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
+    .sg-blk-text{font-size:15px;color:#39414f;}
+    .sg-fig{margin:0;}
+    .sg-fig img{width:100%;height:auto;border-radius:14px;display:block;}
+    .sg-fig figcaption{font-size:12.5px;color:#6b7280;margin-top:6px;text-align:center;}
+    .sg-video{width:100%;border-radius:14px;background:#000;display:block;}
+    .sg-spacer{height:24px;}
+    .sg-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:38px 40px;}
+    .sg-rhead{margin-bottom:20px;border-bottom:2px solid var(--p);padding-bottom:14px;}
+    .sg-rname{font-size:28px;font-weight:800;color:var(--p);letter-spacing:-.4px;}
+    .sg-rcontact{font-size:13.5px;color:#5b6472;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+    .sg-dot{color:#c3c9d4;}
+    .sg-sec{margin-bottom:20px;}
+    .sg-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--p);border-bottom:2px solid var(--a);padding-bottom:5px;margin-bottom:12px;}
+    .sg-resume .r-title{font-size:15px;font-weight:800;color:#1a1f2b;margin-top:10px;}
+    .sg-resume .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
+    .sg-resume .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
+    .sg-resume .r-bul{list-style:none;margin:2px 0 8px;}
+    .sg-resume .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
+    .sg-resume .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--a);}
+    .sg-foot{max-width:1100px;margin:24px auto 0;text-align:center;font-size:13px;color:#8a93a3;}
+    @media(max-width:760px){
+      .site-grid{display:block;}
+      .sg-block{margin-bottom:20px;}
+      .sg-resume{padding:28px 22px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="sg-topbar"><button class="sg-lang" data-si="lang_toggle" onclick="_sgToggleLang()">中文</button></div>
+  <div class="site-grid"><div class="sg-block" style="grid-column:1 / span 12;"><h2 class="sg-blk-h">Jordan Rivera</h2></div><div class="sg-block" style="grid-column:1 / span 6;"><div class="sg-blk-text">Product manager based in NYC.</div></div><div class="sg-block" style="grid-column:7 / span 6;"><div class="sg-blk-label">About Me</div><video class="sg-video" controls preload="metadata"><source src="https://example.com/v.mp4"/></video></div><div class="sg-block" style="grid-column:1 / span 12;"><div class="sg-resume"><div class="sg-rhead"><div class="sg-rname">Jordan Rivera</div><div class="sg-rcontact"><span>jordan@example.com</span><span class="sg-dot">·</span><span>San Francisco, CA</span><span class="sg-dot">·</span><span>linkedin.com/in/jordanrivera</span></div></div><section class="sg-sec"><h2 class="sg-h">SUMMARY</h2><p class="r-p">Senior product manager with 8 years shipping data products.</p></section><section class="sg-sec"><h2 class="sg-h">EXPERIENCE</h2><div class="r-co" style="color:#6366f1">Senior PM, DataCorp | 2020–Present</div><ul class="r-bul"><li>Led migration reducing infra costs 30%</li><li>Grew activation 22% via lifecycle redesign</li></ul></section><section class="sg-sec"><h2 class="sg-h">SKILLS</h2><p class="r-p">Product Strategy, SQL, Roadmapping, A/B Testing</p></section><section class="sg-sec"><h2 class="sg-h">EDUCATION</h2><p class="r-p">B.S. Computer Science, UC Berkeley</p></section></div></div></div>
+  
+  <script>
+    var SITE_I18N={"en":{"lang_toggle":"中文"},"zh":{"lang_toggle":"EN"}};
+    function _sgToggleLang(){
+      var cur=document.documentElement.lang==='zh'?'zh':'en';
+      var next=cur==='zh'?'en':'zh';
+      document.documentElement.lang=next;
+      document.querySelectorAll('[data-si]').forEach(function(el){
+        var k=el.getAttribute('data-si'); if(SITE_I18N[next] && SITE_I18N[next][k]!=null) el.textContent=SITE_I18N[next][k];
+      });
+    }
+  </script>
+</body>
+</html>
