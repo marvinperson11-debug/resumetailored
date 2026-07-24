@@ -79,7 +79,19 @@ To enable the "Import from LinkedIn" button:
 - Add its OAuth redirect URL: `https://<your-railway-url>/api/auth/linkedin/callback`.
 - Set `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET` in Railway (and
   `LINKEDIN_REDIRECT_URI` if your public origin differs from the default).
-- If these are unset, the button is simply hidden — nothing breaks.
+- If these are unset, the buttons are hidden and nothing breaks.
+
+Once set, LinkedIn powers BOTH: a **"Continue with LinkedIn"** button on the
+login modal (creates/opens the account for the LinkedIn email) and **"Import
+from LinkedIn"** buttons in the resume builder and the LinkedIn Optimizer.
+Double-check that:
+- the LinkedIn app's **Authorized redirect URL** exactly matches
+  `https://<your-domain>/api/auth/linkedin/callback`, and
+- `CLIENT_ID` + `CLIENT_SECRET` are set on the **Railway service** and it has
+  **redeployed** — not just saved in the LinkedIn developer app.
+
+If a button appears but clicking it says "not connected yet," those env vars
+aren't reaching the running server.
 
 Note: standard LinkedIn OIDC returns name/email/photo only. Full work history,
 education and skills are **not** available without LinkedIn Partner API access,

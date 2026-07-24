@@ -531,14 +531,33 @@ function linkedInRedirectUri(req) {
 }
 const linkedInConfigured = () => !!(LINKEDIN_CLIENT_ID && LINKEDIN_CLIENT_SECRET);
 
-// Short-lived in-memory stores. `states` guards CSRF on the round-trip;
-// `drafts` hands the parsed profile back to the SPA exactly once. Both expire.
-const _liStates = new Map();
+// Short-lived in-memory stores. `states` guards CSRF on the round-trip and
+// remembers whether this trip is a profile IMPORT or a LOGIN; `drafts` hands the
+// result (parsed profile, or a session for login) back to the SPA exactly once.
+const _liStates = new Map(); // state -> { exp, mode }
 const _liDrafts = new Map();
 function _liSweep() {
   const now = Date.now();
-  for (const [k, v] of _liStates) if (v < now) _liStates.delete(k);
+  for (const [k, v] of _liStates) if (v.exp < now) _liStates.delete(k);
   for (const [k, v] of _liDrafts) if (v.exp < now) _liDrafts.delete(k);
+}
+
+// Create or fetch the account for a LinkedIn-authenticated email and open a
+// session for it. New accounts are created password-less (a random bcrypt hash);
+// the user can set a password later via "forgot password". An existing email
+// (whether it signed up with a password or LinkedIn) is simply logged in.
+function _linkedInUpsertSession(email, name) {
+  const key = String(email).toLowerCase().trim();
+  let user = db.prepare('SELECT email, username FROM users WHERE email = ?').get(key);
+  if (!user) {
+    const uname = (String(name || '').trim().slice(0, 30)) || key.split('@')[0];
+    db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)')
+      .run(key, uname, hashPassword(crypto.randomBytes(24).toString('hex')));
+    user = { email: key, username: uname };
+  }
+  const token = uuidv4();
+  db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
+  return { token, email: key, username: user.username };
 }
 
 // Whether the button should show. The client calls this on load.
@@ -553,8 +572,9 @@ app.get('/api/auth/linkedin/status', (req, res) => {
 app.get('/api/auth/linkedin', (req, res) => {
   if (!linkedInConfigured()) return res.redirect('/dashboard?linkedin_error=not_configured');
   _liSweep();
+  const mode = req.query.mode === 'login' ? 'login' : 'import';
   const state = crypto.randomBytes(16).toString('hex');
-  _liStates.set(state, Date.now() + 10 * 60 * 1000); // 10-min validity
+  _liStates.set(state, { exp: Date.now() + 10 * 60 * 1000, mode }); // 10-min validity
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: LINKEDIN_CLIENT_ID,
@@ -574,8 +594,10 @@ app.get('/api/auth/linkedin/callback', async (req, res) => {
     const { code, state, error, error_description } = req.query;
     if (error) return backTo(String(error_description || error).slice(0, 120));
     _liSweep();
-    if (!code || !state || !_liStates.has(String(state))) return backTo('invalid_state');
+    const stateEntry = state && _liStates.get(String(state));
+    if (!code || !stateEntry) return backTo('invalid_state');
     _liStates.delete(String(state));
+    const mode = stateEntry.mode || 'import';
 
     // Exchange the authorization code for an access token.
     const tokRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -601,8 +623,22 @@ app.get('/api/auth/linkedin/callback', async (req, res) => {
     if (!uiRes.ok) return backTo('profile_fetch_failed');
     const ui = await uiRes.json();
 
+    const fullName = ui.name || [ui.given_name, ui.family_name].filter(Boolean).join(' ') || '';
+
+    // LOGIN mode: authenticate the account tied to this LinkedIn email and hand
+    // a fresh session back to the SPA (which stores the token and drops into the
+    // dashboard). Requires an email from LinkedIn.
+    if (mode === 'login') {
+      if (!ui.email) return backTo('no_email');
+      const sess = _linkedInUpsertSession(ui.email, fullName);
+      const handoff = crypto.randomBytes(16).toString('hex');
+      _liDrafts.set(handoff, { session: sess, exp: Date.now() + 5 * 60 * 1000 });
+      return res.redirect(`/dashboard?linkedin_login=${handoff}`);
+    }
+
+    // IMPORT mode: hand the parsed profile back to prefill a tool.
     const draft = {
-      name: ui.name || [ui.given_name, ui.family_name].filter(Boolean).join(' ') || '',
+      name: fullName,
       headline: ui.headline || '', // typically empty on standard OIDC
       email: ui.email || '',
       photo: ui.picture || '',
@@ -618,14 +654,24 @@ app.get('/api/auth/linkedin/callback', async (req, res) => {
   }
 });
 
-// Step 3 — the SPA exchanges the handoff token for the parsed profile, once.
+// Step 3a (import) — the SPA exchanges the handoff token for the parsed profile.
 app.get('/api/auth/linkedin/draft', (req, res) => {
   _liSweep();
   const t = String(req.query.token || '');
   const entry = t && _liDrafts.get(t);
-  if (!entry) return res.status(404).json({ error: 'expired' });
+  if (!entry || !entry.draft) return res.status(404).json({ error: 'expired' });
   _liDrafts.delete(t);
   res.json({ profile: entry.draft });
+});
+
+// Step 3b (login) — the SPA exchanges the handoff token for a session, once.
+app.get('/api/auth/linkedin/session', (req, res) => {
+  _liSweep();
+  const t = String(req.query.token || '');
+  const entry = t && _liDrafts.get(t);
+  if (!entry || !entry.session) return res.status(404).json({ error: 'expired' });
+  _liDrafts.delete(t);
+  res.json(entry.session); // { token, email, username }
 });
 
 // ── Saved resumes (per signed-in user, so they're available on every device) ──

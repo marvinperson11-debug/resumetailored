@@ -91,9 +91,14 @@ As of the 2026 pricing change, **the free tier is unlimited** for resume tailori
 
 The `usage_store` table still exists and is used for the remaining metered feature (`translate`, 1/day free; `video` is Pro-only). Legacy `hasFreeTierLeft`/`consumeFreeTier`/`getUsageKey` helpers remain for those. The `/api/status` endpoint still returns `freeXLeft` fields, but the client shows "Free — Unlimited Tailoring" rather than a remaining count.
 
-## LinkedIn OAuth import (free)
+## LinkedIn OAuth (free) — login + profile import
 
-Optional onboarding feature (`server.js`, routes `/api/auth/linkedin`, `/callback`, `/draft`, `/status`). Uses **"Sign In with LinkedIn using OpenID Connect"** (scope `openid profile email`) — official API, no scraping. Prefills the builder with name/email/photo (headline only if the app's granted scopes return it; standard OIDC does not expose full work history / education / skills, so the client scaffolds those and prompts the user to complete them). Hidden unless `LINKEDIN_CLIENT_ID`/`LINKEDIN_CLIENT_SECRET` are set. CSRF `state` and one-time profile drafts are held in short-lived in-memory maps.
+Optional feature (`server.js`, routes `/api/auth/linkedin`, `/callback`, `/draft`, `/session`, `/status`). Uses **"Sign In with LinkedIn using OpenID Connect"** (scope `openid profile email`) — official API, no scraping. The OAuth trip carries a `mode` (stored server-side against the CSRF `state`):
+
+- **`mode=login`** — "Continue with LinkedIn" on the auth modal. The callback upserts the account for the LinkedIn email (creating a free, password-less account on first use — `_linkedInUpsertSession`), opens a session, and hands a one-time session token back to the SPA (`?linkedin_login=<handoff>` → `/api/auth/linkedin/session`).
+- **`mode=import`** (default) — "Import from LinkedIn" buttons in the resume builder and the LinkedIn Optimizer. The callback returns a one-time profile draft (`?linkedin=<handoff>` → `/api/auth/linkedin/draft`) to prefill the tool that started it (client stashes the target in `localStorage`). Name/email/photo (headline only if the app's granted scopes return it; standard OIDC does not expose full work history / education / skills, so the client scaffolds those and prompts the user to complete them).
+
+Buttons are visible by default and hidden only when `/api/auth/linkedin/status` reports it unconfigured (`LINKEDIN_CLIENT_ID`/`LINKEDIN_CLIENT_SECRET` unset); the authorize route redirects back with a friendly `not_configured` message rather than dumping JSON. CSRF `state` and one-time handoffs are held in short-lived in-memory maps.
 
 ## Personal portfolio websites (Pro)
 
