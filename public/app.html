@@ -366,16 +366,16 @@
         <button class="sidebar-btn active" onclick="showTab('tailor')" id="tab-tailor" data-label="Tailor">
           <span class="sidebar-icon">✦</span> <span data-i18n="sidebar_tailor">Resume Tailor</span>
         </button>
-        <!-- LinkedIn Optimizer — highlighted as a featured Pro tool -->
-        <button class="sidebar-btn sidebar-btn-linkedin" onclick="showTab('linkedin')" id="tab-linkedin" data-label="LinkedIn" title="LinkedIn Profile Optimizer — Pro Feature">
+        <!-- LinkedIn Optimizer — free, unlimited -->
+        <button class="sidebar-btn sidebar-btn-linkedin" onclick="showTab('linkedin')" id="tab-linkedin" data-label="LinkedIn" title="LinkedIn Profile Optimizer — free">
           <span class="sidebar-icon">🔗</span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_linkedin">LinkedIn Optimizer</span>
-          <span style="background:#0077b5;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
+          <span style="background:#16a34a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">FREE</span>
         </button>
         <button class="sidebar-btn" onclick="showTab('ats')" id="tab-ats" data-label="ATS">
           <span class="sidebar-icon">🎯</span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_ats">ATS Scanner</span>
-          <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">∞ PRO</span>
+          <span style="background:#16a34a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">FREE</span>
         </button>
         <button class="sidebar-btn" onclick="showTab('video')" id="tab-video" data-label="Video" title="Resume Video Maker — Pro studio video">
           <span class="sidebar-icon">🎬</span>
@@ -431,7 +431,7 @@
         <div class="linkedin-shortcut-banner" onclick="showTab('linkedin')" id="linkedinShortcutBanner" title="Open LinkedIn Optimizer">
           <div class="li-icon">🔗</div>
           <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:800;color:#0077b5;margin-bottom:2px;" data-i18n="li_banner_title">LinkedIn Profile Optimizer <span style="background:#0077b5;color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;margin-left:4px;font-weight:800;">PRO</span></div>
+            <div style="font-size:13px;font-weight:800;color:#0077b5;margin-bottom:2px;" data-i18n="li_banner_title">LinkedIn Profile Optimizer <span style="background:#16a34a;color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;margin-left:4px;font-weight:800;">FREE</span></div>
             <div style="font-size:12px;color:#4b5563;" data-i18n="li_banner_desc">Get an AI-optimized headline, About section &amp; experience bullets. Click here to open →</div>
           </div>
           <svg width="18" height="18" fill="none" stroke="#0077b5" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0;opacity:.7;"><path d="M9 18l6-6-6-6"/></svg>
@@ -667,7 +667,7 @@
             <div style="width:44px;height:44px;background:#0077b5;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🔗</div>
             <div>
               <h1 style="color:#0077b5;" data-i18n="li_title">LinkedIn Profile Optimizer</h1>
-              <span style="background:#0077b5;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ PRO FEATURE</span>
+              <span style="background:#16a34a;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;" data-i18n="li_free_badge">✓ FREE &amp; UNLIMITED</span>
             </div>
           </div>
           <p data-i18n="li_sub">Paste your current LinkedIn profile and target role — get an AI-optimized headline, About section, and experience bullets that get recruiters to click. Works for all industries and global markets including MNCs.</p>
@@ -852,7 +852,7 @@
             <div style="width:44px;height:44px;background:linear-gradient(135deg,#6366F1,#8B5CF6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎯</div>
             <div>
               <h1 style="color:#6366F1;">ATS Match Scanner</h1>
-              <span style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">∞ UNLIMITED FOR PRO</span>
+              <span style="background:#16a34a;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;" data-i18n="ats_free_badge">✓ FREE &amp; UNLIMITED</span>
             </div>
           </div>
           <p>Paste your resume and a job posting — get an ATS keyword match score, see exactly which keywords are missing, and receive 5 specific AI rewrite suggestions to close the gap.</p>
@@ -1590,6 +1590,8 @@
         li_banner_title: 'LinkedIn Profile Optimizer',
         li_banner_desc: 'Get an AI-optimized headline, About section & experience bullets. Click here to open →',
         li_title: 'LinkedIn Profile Optimizer',
+        li_free_badge: '✓ FREE &amp; UNLIMITED',
+        ats_free_badge: '✓ FREE &amp; UNLIMITED',
         li_sub: 'Paste your current LinkedIn profile and target role — get an AI-optimized headline, About section, and experience bullets that get recruiters to click. Works for all industries and global markets including MNCs.',
         mode_label: 'Generate:',
         mode_resume: 'Resume', mode_cover: 'Cover Letter',
@@ -1638,6 +1640,8 @@
         li_banner_title: 'LinkedIn 个人资料优化',
         li_banner_desc: '获取AI优化的标题、个人简介和工作经历要点，点击此处打开 →',
         li_title: 'LinkedIn 个人资料优化器',
+        li_free_badge: '✓ 免费且无限次',
+        ats_free_badge: '✓ 免费且无限次',
         li_sub: '粘贴你当前的LinkedIn个人资料和目标职位——获取AI优化的标题、个人简介和工作经历要点，让更多招聘人员主动联系你。适用于所有行业和全球市场，包括跨国企业。',
         mode_label: '生成内容：',
         mode_resume: '简历', mode_cover: '求职信',

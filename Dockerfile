@@ -9,7 +9,7 @@ FROM node:20-bookworm-slim
 # Chrome Headless Shell runtime dependencies (Remotion's documented Linux set)
 # + fonts, espeak-ng (fallback voice), Python/pip (Piper voice), build tools
 # (native npm modules like better-sqlite3).
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get -o Acquire::Retries=3 update && apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
       libnss3 \
       libdbus-1-3 \
       libatk1.0-0 \
@@ -37,8 +37,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Install production deps first so this layer is cached across code changes.
+# Retry the install so a transient npm-registry/network hiccup doesn't fail the
+# whole Docker build (this is the most common cause of a flaky build here).
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm config set fetch-retries 5 \
+ && npm config set fetch-retry-maxtimeout 120000 \
+ && (npm install --omit=dev --no-audit --no-fund \
+     || (echo "npm install failed — retrying in 10s" && sleep 10 && npm install --omit=dev --no-audit --no-fund) \
+     || (echo "npm install failed again — final retry in 20s" && sleep 20 && npm install --omit=dev --no-audit --no-fund))
 
 # App source.
 COPY . .
