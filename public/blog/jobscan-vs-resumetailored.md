@@ -30,8 +30,8 @@ Whether that difference matters depends on how you work. Some people genuinely p
 
 | Feature | Jobscan | ResumeTailored AI |
 |---|---|---|
-| Monthly price | $49.95/mo | $19/mo |
-| Free tier | 5 scans/month | 1 full rewrite/day, no card needed |
+| Monthly price | $49.95/mo | $19.99/mo |
+| Free tier | 5 scans/month | unlimited rewrites, no card needed |
 | ATS keyword score | Yes — detailed scoring | Optimizes without showing a score |
 | Rewrites your resume | No — you do it yourself | Yes — fully rewritten output |
 | Cover letter generation | No | Yes — included with every tailoring |
@@ -40,11 +40,11 @@ Whether that difference matters depends on how you work. Some people genuinely p
 
 ---
 
-## Pricing: $49.95/mo vs $19/mo
+## Pricing: $49.95/mo vs $19.99/mo
 
 Jobscan charges $49.95 per month for unlimited scans. There's a 5-scan-per-month free tier, but if you're actively applying to jobs — which often means 10–30 applications a week — you'll hit that ceiling fast.
 
-ResumeTailored AI costs $19/month for unlimited tailorings. The free tier gives you one complete resume rewrite and cover letter per day, which is actually sufficient for most job seekers who are sending 1–2 targeted applications daily.
+ResumeTailored AI costs $19.99/month for unlimited tailorings. The free tier gives you unlimited resume rewrites and cover letters, which is actually sufficient for most job seekers who are sending 1–2 targeted applications daily.
 
 Over a 3-month job search (a reasonable average), Jobscan costs $149.85. ResumeTailored AI costs $57. That's $93 in your pocket while you wait for offers.
 

@@ -118,7 +118,7 @@ The differences: specificity, metric inclusion, active verb precision, and natur
 
 [ResumeTailored AI](/) uses Claude (claude-sonnet-4-6) to do the full tailoring workflow in one step — upload your resume, paste a job URL or description, get a tailored resume and cover letter in under 60 seconds.
 
-Free tier: 1 tailoring per day. Pro: unlimited at $19/month.
+Free tier: unlimited tailoring. Pro: unlimited at $19.99/month.
 
 **[Try it free — no credit card required →](/signup)**
 

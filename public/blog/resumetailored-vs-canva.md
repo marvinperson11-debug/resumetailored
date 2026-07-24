@@ -22,7 +22,7 @@ But a resume has a job that a poster doesn't: before a human ever sees it, it us
 | Job-specific tailoring | Generic AI writing suggestions, not tied to a job post | AI resume tailoring to the exact job description |
 | Cover letters | Static design templates only — you write every word | Matching cover letter generated automatically |
 | Unique features | No resume video | AI resume video generator (vertical MP4 for LinkedIn/Shorts) |
-| Pricing for job seekers | Free plan; Pro ~$15/mo (design suite) | Free daily tailoring · $19/mo Pro · $129 lifetime |
+| Pricing for job seekers | Free plan; Pro ~$15/mo (design suite) | Unlimited free tailoring · $19.99/mo Pro · $129 lifetime |
 
 ## 1. ATS Compatibility: Pretty Design vs. Parseable Text
 
@@ -65,10 +65,10 @@ ResumeTailored is priced for one job: getting you hired.
 | Plan | Price | What you get |
 |---|---|---|
 | Free | $0 forever | 1 full AI resume tailoring + matching cover letter every day. No credit card. |
-| Pro | $19/mo | Unlimited tailorings & cover letters, 100+ premium templates, resume video, Career Hub. |
+| Pro | $19.99/mo | 100+ premium templates, resume video, personal website, watermark-free exports, Career Hub. |
 | Lifetime | $129 once | Everything in Pro, paid one time — never renews. |
 
-For anyone actively applying, the free tier alone often covers a full search: one tailored resume and cover letter a day is more than most people submit. And if you want unlimited, $19/month — or a one-time $129 for lifetime access — is a small price for the tool that's meant to get you the offer, not just design the page. That focus is what makes it the **best resume builder for job seekers** rather than a design app moonlighting as one.
+For anyone actively applying, the free tier alone covers a full search — unlimited tailored resumes and cover letters, free forever. And if you want premium templates, the resume video, a personal website and watermark-free exports, Pro is $19.99/month — or a one-time $129 for lifetime access — a small price for the tool that's meant to get you the offer, not just design the page. That focus is what makes it the **best resume builder for job seekers** rather than a design app moonlighting as one.
 
 ## So, Which One Actually Gets You Hired?
 
@@ -78,7 +78,7 @@ For anyone actively applying, the free tier alone often covers a full search: on
 
 Canva makes your resume look hired-ready. ResumeTailored makes it actually get read, ranked, and tailored to the role — which is what turns an application into an interview.
 
-**[Try ResumeTailored free — no card, no risk. →](/dashboard)** One free tailoring every day, forever.
+**[Try ResumeTailored free — no card, no risk. →](/dashboard)** Unlimited free tailoring, forever.
 
 ---
 

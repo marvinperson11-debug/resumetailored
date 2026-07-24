@@ -29,7 +29,7 @@ However, there is a crucial distinction that most tools blur: **identifying miss
 | Jobscan | 5 scans/month | Yes — detailed | No | No | Easy |
 | Teal | Limited (requires setup) | Yes | No AI on free tier | No | Medium |
 | Resume Worded | 5 scans/month | Yes | No | No | Easy |
-| ResumeTailored AI | 1 full rewrite/day | Optimizes directly | Yes — full AI rewrite | Yes — included | Very easy |
+| ResumeTailored AI | unlimited rewrites | Optimizes directly | Yes — full AI rewrite | Yes — included | Very easy |
 
 ---
 
@@ -65,7 +65,7 @@ Resume Worded has a LinkedIn profile review feature similar to Jobscan's, which 
 
 ## ResumeTailored AI Free Tier
 
-ResumeTailored AI takes a different approach to the free tier entirely. Instead of offering a limited number of scans or a score, the free tier gives you **one complete, AI-powered resume rewrite per day** — no credit card required.
+ResumeTailored AI takes a different approach to the free tier entirely. Instead of offering a limited number of scans or a score, the free tier gives you **unlimited AI-powered resume rewrites** — no credit card required.
 
 Here is how it works: you paste your existing resume text and the full job posting. The AI reads both, identifies the keywords, skills, and requirements that matter, and rewrites your resume to reflect them naturally. The output is a complete, submission-ready resume — not a list of suggestions. Alongside it, the AI generates a job-specific cover letter.
 
@@ -85,4 +85,4 @@ The limitation compared to paid scoring tools is that ResumeTailored AI does not
 
 > The most useful free ATS tool is the one that gets you to a submitted application fastest. For most job seekers, that is the one that rewrites the resume — not the one that tells you what to rewrite.
 
-Try ResumeTailored AI free at [resumetailored.com](https://resumetailored.com/dashboard) — 1 full rewrite per day, no credit card needed.
+Try ResumeTailored AI free at [resumetailored.com](https://resumetailored.com/dashboard) — unlimited rewrites, no credit card needed.

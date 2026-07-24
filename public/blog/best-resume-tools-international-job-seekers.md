@@ -60,7 +60,7 @@ Before comparing tools, know the criteria that matter for international use:
 
 **Best for:** Non-native English speakers applying to English-speaking markets  
 **Supports:** Any language input → English output with native-level quality  
-**Price:** Free (1/day) · $19/month unlimited
+**Price:** Free (unlimited) · $19.99/month unlimited
 
 Claude (the AI model powering ResumeTailored AI) is trained on multilingual data and handles Chinese → English, Spanish → English, and other transitions with significantly better fluency than GPT-based tools. When you paste a job description in English and your resume content in Chinese, it produces output that reads as written by a native English speaker — not translated.
 
@@ -68,7 +68,7 @@ Claude (the AI model powering ResumeTailored AI) is trained on multilingual data
 - Handles mixed-language input naturally
 - Produces US-standard formatting and verb choices
 - Generates cover letters that explain international background in positive framing
-- $19/month vs $29-30/month for most competitors
+- $19.99/month vs $29-30/month for most competitors
 
 **Limitations:**
 - Doesn't generate non-English output (US market focus)
@@ -141,8 +141,8 @@ The cover letter is where you contextualize your international background. Claud
 | Resume rewriting | ✓ | ✓ | ✗ |
 | Cover letter generation | ✓ | ✓ | ✗ |
 | Job URL import | ✓ | ✗ | ✓ |
-| Price | $19/mo | $29/mo | $29/mo |
-| Free tier | 1/day | Trial only | Limited |
+| Price | $19.99/mo | $29/mo | $29/mo |
+| Free tier | unlimited | Trial only | Limited |
 | International formats | US/UK focus | More templates | Basic |
 
 ---
