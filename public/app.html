@@ -363,8 +363,10 @@
     <aside class="sidebar">
       <div class="sidebar-section">
         <div class="sidebar-label" data-i18n="sidebar_jobsearch">Job Search</div>
-        <button class="sidebar-btn active" onclick="showTab('tailor')" id="tab-tailor" data-label="Tailor">
-          <span class="sidebar-icon">✦</span> <span data-i18n="sidebar_tailor">Resume Tailor</span>
+        <button class="sidebar-btn active" onclick="showTab('tailor')" id="tab-tailor" data-label="Tailor" title="Resume Tailor — free &amp; unlimited">
+          <span class="sidebar-icon">✦</span>
+          <span style="flex:1;text-align:left;" data-i18n="sidebar_tailor">Resume Tailor</span>
+          <span style="background:#16a34a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">∞ FREE</span>
         </button>
         <!-- LinkedIn Optimizer — free, unlimited -->
         <button class="sidebar-btn sidebar-btn-linkedin" onclick="showTab('linkedin')" id="tab-linkedin" data-label="LinkedIn" title="LinkedIn Profile Optimizer — free">
