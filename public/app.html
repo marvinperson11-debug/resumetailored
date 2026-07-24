@@ -686,9 +686,9 @@
 
           <div class="input-group" style="margin-top:16px;">
             <label class="input-label" for="linkedinProfileText">Your Current LinkedIn Profile Text</label>
-            <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">Paste your current headline, About section, and experience descriptions — or import them straight from your LinkedIn account. The more detail you provide, the better the optimization.</p>
-            <button id="linkedinOptImportBtn" onclick="startLinkedInImport('linkedin')" style="display:inline-flex;margin-bottom:10px;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
-              <span style="font-weight:800;">in</span> <span data-i18n="li_import_btn">Import from LinkedIn</span>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">Paste your current headline, About section, and experience descriptions. The more detail you provide, the better the optimization. <span style="color:#94a3b8;">(LinkedIn doesn't let apps read your profile text, so tap below to open your profile and copy it.)</span></p>
+            <button id="linkedinOptImportBtn" onclick="copyFromLinkedIn()" style="display:inline-flex;margin-bottom:10px;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
+              <span style="font-weight:800;">in</span> <span data-i18n="li_copy_btn">Open my LinkedIn to copy</span>
             </button>
             <textarea id="linkedinProfileText" class="resume-textarea" style="min-height:200px;" placeholder="Paste your LinkedIn headline, About section, and experience bullets here...&#10;&#10;Example:&#10;Headline: Product Manager at Acme Corp&#10;&#10;About: I am a passionate product manager with 5 years of experience...&#10;&#10;Experience:&#10;Product Manager, Acme Corp (2020–Present)&#10;- Managed product roadmap&#10;- Worked with engineering team&#10;- Helped launch new features"></textarea>
           </div>
@@ -1600,6 +1600,7 @@
         tailor_btn: 'Tailor My Resume →', tailor_btn_cover: 'Tailor My Cover Letter →',
         li_optimize_btn: 'Optimize My LinkedIn Profile →',
         li_import_btn: 'Import from LinkedIn',
+        li_copy_btn: 'Open my LinkedIn to copy',
         li_login_btn: 'Continue with LinkedIn',
         auth_tab_subscribe: 'Subscribe', auth_tab_login: 'Log In'
       },
@@ -1637,6 +1638,7 @@
         tailor_btn: '开始定制简历 →', tailor_btn_cover: '定制我的求职信 →',
         li_optimize_btn: '优化我的LinkedIn资料 →',
         li_import_btn: '从 LinkedIn 导入',
+        li_copy_btn: '打开我的 LinkedIn 复制',
         li_login_btn: '使用 LinkedIn 继续',
         auth_tab_subscribe: '订阅', auth_tab_login: '登录'
       }
@@ -5298,10 +5300,11 @@ Aaliyah Washington`
         const r = await fetch('/api/auth/linkedin/status');
         const d = await r.json();
         if (d && d.enabled === false) {
-          ['linkedinImportBtn', 'linkedinOptImportBtn'].forEach(id => {
-            const btn = document.getElementById(id);
-            if (btn) btn.style.display = 'none';
-          });
+          // Only the resume-builder button uses OAuth; the optimizer's button is
+          // now a manual copy helper that works without LinkedIn OAuth, so it
+          // stays visible.
+          const rb = document.getElementById('linkedinImportBtn');
+          if (rb) rb.style.display = 'none';
           // No LinkedIn OAuth configured → hide the whole "Continue with LinkedIn"
           // block on the auth modal (divider + button + note).
           const loginWrap = document.getElementById('linkedinLoginWrap');
@@ -5320,6 +5323,19 @@ Aaliyah Washington`
     // (creating a free account on first use) rather than importing a profile.
     function startLinkedInLogin() {
       window.location.href = '/api/auth/linkedin?mode=login';
+    }
+    // LinkedIn's API does NOT expose your About section or work history to apps
+    // (only name/email/photo via OpenID Connect) — so a true "import" of profile
+    // TEXT is impossible. The honest, useful path for the optimizer: open the
+    // user's own LinkedIn profile so they can copy it, and lay out the fields.
+    function copyFromLinkedIn() {
+      try { window.open('https://www.linkedin.com/in/me/', '_blank', 'noopener'); } catch (_) {}
+      const ta = document.getElementById('linkedinProfileText');
+      if (ta && !ta.value.trim()) {
+        ta.value = 'Headline: \n\nAbout: \n\nExperience:\n';
+        ta.dispatchEvent(new Event('input'));
+      }
+      showToast('Opened your LinkedIn profile in a new tab — copy your Headline, About & Experience, paste them here, then Optimize. (LinkedIn only shares basic info with apps, so this step is manual.)', 9000);
     }
     // On return from a LinkedIn *login*, exchange the one-time handoff for a
     // session and drop the user into the dashboard (mirrors doLogin success).
