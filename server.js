@@ -196,6 +196,11 @@ function _ensureColumn(table, column, ddl) {
 // Remember which template family a shared resume was created with, so /r/:slug can
 // render it in the layout the user actually chose (sidebar, two-column, etc.).
 _ensureColumn('shared_resumes', 'layout', 'layout TEXT');
+// Website Creator (Pro) config blob: theme, section order/placement, selected
+// asset ids, media refs, feature toggles. NULL on sites that predate the creator
+// — _renderPersonalSite() treats NULL as a legacy default (renders exactly like
+// today's output) and the column is populated lazily on first save in the creator.
+_ensureColumn('personal_sites', 'config', 'config TEXT');
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
@@ -289,7 +294,7 @@ app.use((req, res, next) => {
   try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
-  return res.send(_shareResumeHtml(row, `${req.protocol}://${host}`, {
+  return res.send(_renderPersonalSite(row, `${req.protocol}://${host}`, {
     indexable: true, footer: '', canonicalUrl: `${req.protocol}://${host}/`,
   }));
 });
@@ -1626,6 +1631,24 @@ function _shareResumeHtml(row, origin, opts = {}) {
 </html>`;
 }
 
+// ── Personal website renderer (Pro) ─────────────────────────────────────────
+// SEPARATE from _shareResumeHtml on purpose: "Create a Link" (/r/:slug) stays a
+// plain resume snapshot, while the Pro website is free to grow into a full
+// multi-section, media-rich, config-driven page. Keeping the two renderers apart
+// is what lets us change one without disturbing the other (the /r/:slug output is
+// covered by a byte-identical snapshot in test/render-snapshot.js).
+//
+// Phase 1: no site has a `config` yet, and legacy sites have `config IS NULL`, so
+// this delegates to the shared resume-document renderer — byte-identical to the
+// previous /site output. Later phases parse `config` and build the site here.
+function _renderPersonalSite(row, origin, opts = {}) {
+  let config = null;
+  if (row && row.config) { try { config = JSON.parse(row.config); } catch (_) { config = null; } }
+  // config === null → legacy default (today's output). Config-driven rendering
+  // (hero, sections, media, download toggle, i18n) is added in later phases.
+  return _shareResumeHtml(row, origin, opts);
+}
+
 const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'Too many share links — please wait a minute.' } });
 app.post('/api/share', shareLimiter, (req, res) => {
   try {
@@ -1774,7 +1797,7 @@ app.get('/site/:sub', (req, res) => {
   const origin = `${req.protocol}://${req.get('host')}`;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
-  res.send(_shareResumeHtml(row, origin, {
+  res.send(_renderPersonalSite(row, origin, {
     indexable: true,
     footer: '', // Pro personal sites are watermark-free
     canonicalUrl: `${origin}/site/${sub}`,
@@ -3192,4 +3215,4 @@ if (require.main === module) {
 }
 
 // Exported for offline rendering/tests (e.g. DOCX alignment verification).
-module.exports = { app, buildTemplatedDocxBuffer };
+module.exports = { app, buildTemplatedDocxBuffer, _shareResumeHtml, _renderPersonalSite };
