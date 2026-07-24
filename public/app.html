@@ -686,10 +686,15 @@
 
           <div class="input-group" style="margin-top:16px;">
             <label class="input-label" for="linkedinProfileText">Your Current LinkedIn Profile Text</label>
-            <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">Import it straight from your LinkedIn profile export, or paste it below. <span style="color:#94a3b8;">Get the file from LinkedIn: <a onclick="window.open('https://www.linkedin.com/in/me/','_blank','noopener')" style="color:#0a66c2;cursor:pointer;font-weight:600;">open your profile</a> → <strong>More → Save to PDF</strong>, then upload it here.</span></p>
-            <button id="linkedinOptImportBtn" onclick="document.getElementById('linkedinProfileFileInput').click()" style="display:inline-flex;margin-bottom:10px;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
-              <span style="font-weight:800;">in</span> <span data-i18n="li_upload_btn">Import from LinkedIn (upload PDF)</span>
-            </button>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">Import your profile from LinkedIn as a PDF, or paste it below.</p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+              <button id="linkedinOptImportBtn" onclick="document.getElementById('linkedinProfileFileInput').click()" style="display:inline-flex;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
+                <span style="font-weight:800;">in</span> <span data-i18n="li_upload_btn">Import PDF from LinkedIn</span>
+              </button>
+              <button id="linkedinHowToBtn" onclick="openLinkedInHowTo()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(10,102,194,0.08);color:#0a66c2;border:1px solid rgba(10,102,194,0.35);border-radius:6px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;">
+                <span style="font-weight:800;">?</span> <span data-i18n="li_howto_btn">How to</span>
+              </button>
+            </div>
             <input type="file" id="linkedinProfileFileInput" accept=".pdf,.txt,.doc,.docx" style="display:none;" onchange="handleLinkedInProfileUpload(this)" />
             <textarea id="linkedinProfileText" class="resume-textarea" style="min-height:200px;" placeholder="Paste your LinkedIn headline, About section, and experience bullets here...&#10;&#10;Example:&#10;Headline: Product Manager at Acme Corp&#10;&#10;About: I am a passionate product manager with 5 years of experience...&#10;&#10;Experience:&#10;Product Manager, Acme Corp (2020–Present)&#10;- Managed product roadmap&#10;- Worked with engineering team&#10;- Helped launch new features"></textarea>
           </div>
@@ -1601,7 +1606,16 @@
         tailor_btn: 'Tailor My Resume →', tailor_btn_cover: 'Tailor My Cover Letter →',
         li_optimize_btn: 'Optimize My LinkedIn Profile →',
         li_import_btn: 'Import from LinkedIn',
-        li_upload_btn: 'Import from LinkedIn (upload PDF)',
+        li_upload_btn: 'Import PDF from LinkedIn',
+        li_howto_btn: 'How to',
+        li_howto_title: 'Get your LinkedIn profile as a PDF',
+        li_howto_intro: "LinkedIn lets you download your own profile as a PDF. It only takes a few taps — then upload it here and we'll fill in your headline, About, and experience automatically.",
+        li_howto_s1: 'Open the LinkedIn app or website and go to <strong>your own profile</strong> (tap your photo → <strong>View Profile</strong>).',
+        li_howto_s2: 'Tap the <strong>More</strong> button (below your headline, next to “Add section” / “Open to”).',
+        li_howto_s3: 'Choose <strong>Save to PDF</strong>. LinkedIn generates and downloads the file.',
+        li_howto_s4: 'Come back here, tap <strong>Import PDF from LinkedIn</strong>, and select that file.',
+        li_howto_open: 'Open my LinkedIn profile →',
+        li_howto_upload: 'I have the PDF — upload it',
         li_login_btn: 'Continue with LinkedIn',
         auth_tab_subscribe: 'Subscribe', auth_tab_login: 'Log In'
       },
@@ -1639,7 +1653,16 @@
         tailor_btn: '开始定制简历 →', tailor_btn_cover: '定制我的求职信 →',
         li_optimize_btn: '优化我的LinkedIn资料 →',
         li_import_btn: '从 LinkedIn 导入',
-        li_upload_btn: '从 LinkedIn 导入（上传 PDF）',
+        li_upload_btn: '从 LinkedIn 导入 PDF',
+        li_howto_btn: '操作方法',
+        li_howto_title: '将你的 LinkedIn 个人资料保存为 PDF',
+        li_howto_intro: 'LinkedIn 允许你将自己的个人资料下载为 PDF。只需几步——然后在此上传，我们会自动填入你的标题、简介和工作经历。',
+        li_howto_s1: '打开 LinkedIn 应用或网站，进入<strong>你自己的个人资料</strong>（点击你的头像 → <strong>查看资料</strong>）。',
+        li_howto_s2: '点击<strong>更多（More）</strong>按钮（在你的标题下方）。',
+        li_howto_s3: '选择<strong>保存为 PDF（Save to PDF）</strong>。LinkedIn 会生成并下载文件。',
+        li_howto_s4: '回到这里，点击<strong>从 LinkedIn 导入 PDF</strong>，选择该文件。',
+        li_howto_open: '打开我的 LinkedIn 资料 →',
+        li_howto_upload: '我已有 PDF——上传',
         li_login_btn: '使用 LinkedIn 继续',
         auth_tab_subscribe: '订阅', auth_tab_login: '登录'
       }
@@ -5329,6 +5352,16 @@ Aaliyah Washington`
     // can't pull the profile TEXT over OAuth. The real import: the user exports
     // their own profile from LinkedIn ("More → Save to PDF") and uploads it here;
     // we parse it (same extractor as the resume uploader) into the optimizer.
+    // "How to" popup explaining how to export a LinkedIn profile as a PDF.
+    function openLinkedInHowTo() {
+      const m = document.getElementById('linkedinHowToModal');
+      if (m) m.style.display = 'flex';
+    }
+    function closeLinkedInHowTo() {
+      const m = document.getElementById('linkedinHowToModal');
+      if (m) m.style.display = 'none';
+    }
+
     async function handleLinkedInProfileUpload(input) {
       const file = input.files[0];
       if (!file) return;
@@ -5503,6 +5536,27 @@ Aaliyah Washington`
       <div style="flex-shrink:0;padding:16px 24px calc(16px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid #e5e7eb;max-height:42dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
         <div style="font-size:12px;color:#9ca3af;margin-bottom:10px;">Looks good? Download your document:</div>
         <div id="previewDownloadRow" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LinkedIn "Save to PDF" How-To Modal ── -->
+  <div id="linkedinHowToModal" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeLinkedInHowTo()">
+    <div style="background:#fff;border-radius:20px;padding:26px 24px;max-width:480px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.35);max-height:88vh;overflow-y:auto;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="background:#0a66c2;color:#fff;font-weight:900;border-radius:5px;padding:2px 7px;font-size:15px;">in</span><h2 style="font-size:18px;font-weight:800;color:#111827;" data-i18n="li_howto_title">Get your LinkedIn profile as a PDF</h2></div>
+        <button onclick="closeLinkedInHowTo()" style="background:none;border:none;font-size:22px;line-height:1;color:#9ca3af;cursor:pointer;">×</button>
+      </div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px;" data-i18n="li_howto_intro">LinkedIn lets you download your own profile as a PDF. It only takes a few taps — then upload it here and we'll fill in your headline, About, and experience automatically.</p>
+      <ol style="margin:0 0 18px;padding-left:20px;display:flex;flex-direction:column;gap:11px;font-size:13.5px;color:#374151;line-height:1.55;">
+        <li data-i18n="li_howto_s1">Open the LinkedIn app or website and go to <strong>your own profile</strong> (tap your photo → <strong>View Profile</strong>).</li>
+        <li data-i18n="li_howto_s2">Tap the <strong>More</strong> button (below your headline, next to “Add section”/“Open to”).</li>
+        <li data-i18n="li_howto_s3">Choose <strong>Save to PDF</strong>. LinkedIn generates and downloads the file.</li>
+        <li data-i18n="li_howto_s4">Come back here, tap <strong>Import PDF from LinkedIn</strong>, and select that file.</li>
+      </ol>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="window.open('https://www.linkedin.com/in/me/','_blank','noopener')" class="btn btn-primary" style="flex:1;min-width:150px;font-size:13px;padding:11px 14px;background:#0a66c2;border-color:#0a66c2;" data-i18n="li_howto_open">Open my LinkedIn profile →</button>
+        <button onclick="closeLinkedInHowTo();document.getElementById('linkedinProfileFileInput').click();" class="btn" style="flex:1;min-width:150px;font-size:13px;padding:11px 14px;background:#f1f5f9;color:#0f172a;border:1px solid #e2e8f0;" data-i18n="li_howto_upload">I have the PDF — upload it</button>
       </div>
     </div>
   </div>
