@@ -264,6 +264,12 @@
     .job-platform-note { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
     .platform-chip { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,0.06); color: #94a3b8; white-space: nowrap; }
     .platform-chip-cn { background: rgba(251,191,36,0.1); color: #fbbf24; }
+
+    /* ── Website Creator ── */
+    .wc-vtab { flex: 1; border: none; background: transparent; color: #64748b; font-size: 13px; font-weight: 700; padding: 8px 10px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
+    .wc-vtab-active { background: #fff; color: #4338ca; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .wc-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 16px; padding: 22px; margin-bottom: 18px; }
+    .wc-step { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 14px; }
   </style>
 </head>
 <body>
@@ -389,7 +395,7 @@
           <span style="flex:1;text-align:left;" data-i18n="sidebar_sharelink">Resume Link</span>
           <span style="background:#16a34a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">FREE</span>
         </button>
-        <button class="sidebar-btn" onclick="publishPersonalSite()" id="tab-website" data-label="Website" title="Publish your resume as a live personal website">
+        <button class="sidebar-btn" onclick="openWebsiteCreator()" id="tab-website" data-label="Website" title="Build & publish your live personal website">
           <span class="sidebar-icon">🌐</span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_website">Personal Website</span>
           <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
@@ -967,6 +973,75 @@
         <div class="upsell" id="atsLimitBanner" style="display:none;margin-top:20px;">
           <p>ATS scans are free and unlimited. Upgrade to Pro for premium templates, the resume video, a personal website & watermark-free exports — $19.99/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: PERSONAL WEBSITE (Website Creator, Pro) ═══ -->
+      <div class="tab-content" id="panel-website">
+        <div class="panel-header">
+          <h1 data-i18n="wc_title">Website Creator</h1>
+          <p data-i18n="wc_subtitle">Build a live, customizable personal website from your saved resumes and cover letters.</p>
+        </div>
+
+        <!-- Edit / Preview toggle — always visible while editing -->
+        <div style="display:flex;gap:6px;background:#f1f5f9;border-radius:12px;padding:5px;max-width:280px;margin-bottom:22px;">
+          <button id="wcTabEdit" class="wc-vtab wc-vtab-active" onclick="wcSetView('edit')" data-i18n="wc_view_edit">✏️ Edit</button>
+          <button id="wcTabPreview" class="wc-vtab" onclick="wcSetView('preview')" data-i18n="wc_view_preview">👁 Preview</button>
+        </div>
+
+        <!-- EDIT VIEW -->
+        <div id="wcEditor">
+          <!-- 1. Content -->
+          <div class="wc-card">
+            <div class="wc-step" data-i18n="wc_step_content">1. Choose your content</div>
+            <label class="input-label" for="wcResumeSelect" data-i18n="wc_resume_label">Resume (shown on your site)</label>
+            <select id="wcResumeSelect" class="text-input" style="width:100%;margin-bottom:14px;"></select>
+            <label class="input-label" for="wcCoverSelect" data-i18n="wc_cover_label">Cover letter (optional)</label>
+            <select id="wcCoverSelect" class="text-input" style="width:100%;">
+              <option value="" data-i18n="wc_cover_none">None</option>
+            </select>
+            <p id="wcNoAssets" style="display:none;font-size:13px;color:#6b7280;margin-top:10px;" data-i18n="wc_no_assets">No saved resumes yet — tailor one in the Tailor tab and it'll appear here automatically.</p>
+          </div>
+
+          <!-- 2. Video (surface the generator + upload entry points) -->
+          <div class="wc-card">
+            <div class="wc-step" data-i18n="wc_step_video">2. Add a video (optional)</div>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:12px;" data-i18n="wc_video_help">Add a video hero to your site — generate one from your résumé, or upload your own.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-outline" onclick="wcGoGenerateVideo()" style="font-size:13px;padding:10px 16px;">
+                <span data-i18n="wc_video_generate">🎬 Generate from my résumé</span>
+              </button>
+              <button class="btn btn-outline" onclick="wcUploadOwnVideo()" style="font-size:13px;padding:10px 16px;">
+                <span data-i18n="wc_video_upload">⬆ Upload your own video</span>
+              </button>
+            </div>
+            <div id="wcVideoNote" style="font-size:12px;color:#9ca3af;margin-top:10px;"></div>
+          </div>
+
+          <!-- 3. Publish -->
+          <div class="wc-card">
+            <div class="wc-step" data-i18n="wc_step_publish">3. Publish</div>
+            <label class="input-label" for="wcAddress" data-i18n="wc_address_label">Your website address</label>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+              <span id="wcAddressOrigin" style="font-size:13px;color:#6b7280;"></span>
+              <input type="text" id="wcAddress" class="text-input" placeholder="your-name" style="flex:1;min-width:140px;" maxlength="30" oninput="wcSanitizeAddress()" />
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+              <button class="btn btn-primary" id="wcPublishBtn" onclick="wcPublish()" style="font-size:14px;padding:12px 22px;">
+                <span data-i18n="wc_publish_btn">🌐 Publish my website</span>
+              </button>
+              <a id="wcViewLive" href="#" target="_blank" rel="noopener" class="btn btn-outline" style="display:none;font-size:14px;padding:12px 18px;" data-i18n="wc_view_live">View live ↗</a>
+            </div>
+            <div id="wcPublishStatus" style="font-size:13px;margin-top:12px;"></div>
+          </div>
+
+          <p style="font-size:12px;color:#9ca3af;margin-top:6px;" data-i18n="wc_more_soon">More customization — themes, backgrounds, and drag-and-drop layout — is coming next.</p>
+        </div>
+
+        <!-- PREVIEW VIEW -->
+        <div id="wcPreview" style="display:none;">
+          <div id="wcPreviewEmpty" style="text-align:center;color:#6b7280;font-size:14px;padding:40px 20px;border:1.5px dashed #e5e7eb;border-radius:14px;" data-i18n="wc_preview_empty">Publish your site to preview it live here.</div>
+          <iframe id="wcPreviewFrame" title="Website preview" style="display:none;width:100%;height:70vh;border:1.5px solid #e5e7eb;border-radius:14px;background:#fff;"></iframe>
         </div>
       </div>
 
@@ -1594,6 +1669,30 @@
         nav_go_pro: 'Go Pro — $19.99/mo', nav_logout: 'Log Out',
         sidebar_jobsearch: 'Job Search', sidebar_tailor: 'Resume Tailor', sidebar_linkedin: 'LinkedIn Optimizer',
         sidebar_sharelink: 'Resume Link', sidebar_website: 'Personal Website',
+        wc_title: 'Website Creator',
+        wc_subtitle: 'Build a live, customizable personal website from your saved resumes and cover letters.',
+        wc_view_edit: '✏️ Edit', wc_view_preview: '👁 Preview',
+        wc_step_content: '1. Choose your content',
+        wc_resume_label: 'Resume (shown on your site)', wc_resume_none: 'No saved resumes yet',
+        wc_cover_label: 'Cover letter (optional)', wc_cover_none: 'None',
+        wc_no_assets: "No saved resumes yet — tailor one in the Tailor tab and it'll appear here automatically.",
+        wc_step_video: '2. Add a video (optional)',
+        wc_video_help: 'Add a video hero to your site — generate one from your résumé, or upload your own.',
+        wc_video_generate: '🎬 Generate from my résumé', wc_video_upload: '⬆ Upload your own video',
+        wc_video_upload_soon: 'Uploading your own video unlocks with media uploads in the next update — for now, generate one from your résumé.',
+        wc_step_publish: '3. Publish', wc_address_label: 'Your website address',
+        wc_publish_btn: '🌐 Publish my website', wc_view_live: 'View live ↗',
+        wc_more_soon: 'More customization — themes, backgrounds, and drag-and-drop layout — is coming next.',
+        wc_preview_empty: 'Publish your site to preview it live here.',
+        wc_publishing: 'Publishing…', wc_live_at: 'Live at', wc_link_copied: 'link copied',
+        wc_err_no_resume: 'Pick a resume to publish first.',
+        wc_err_addr: 'Choose an address of 3–30 letters, numbers or hyphens.',
+        wc_err_publish: 'Could not publish your website.',
+        wc_gate_title: 'Tailor a resume first',
+        wc_gate_body: "Your website is built from your saved resumes and cover letters. Tailor one (it's free) and it'll appear here automatically.",
+        wc_gate_go: 'Go to Tailor →', wc_gate_blank: 'Start from a blank site anyway',
+        wc_nudge_text: '💡 Want recipients to download your resume directly? Upgrade to Pro to publish a Personal Website with a built-in download button.',
+        wc_nudge_cta: 'See Pro →',
         sidebar_careerhub: 'Career Hub',
         sidebar_forum: 'Community Forum', sidebar_salary: 'Salary Guide',
         sidebar_checkin: 'Career Check-In', sidebar_help: 'Help & Support',
@@ -1645,6 +1744,30 @@
         nav_go_pro: '升级专业版 — ¥19.99/月', nav_logout: '退出登录',
         sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
         sidebar_sharelink: '简历链接', sidebar_website: '个人网站',
+        wc_title: '网站创建器',
+        wc_subtitle: '用你保存的简历和求职信，打造一个可自定义的个人网站。',
+        wc_view_edit: '✏️ 编辑', wc_view_preview: '👁 预览',
+        wc_step_content: '1. 选择内容',
+        wc_resume_label: '简历（显示在你的网站上）', wc_resume_none: '暂无已保存的简历',
+        wc_cover_label: '求职信（可选）', wc_cover_none: '无',
+        wc_no_assets: '暂无已保存的简历——在"定制"标签页定制一份，它会自动出现在这里。',
+        wc_step_video: '2. 添加视频（可选）',
+        wc_video_help: '为你的网站添加视频封面——用简历生成，或上传你自己的视频。',
+        wc_video_generate: '🎬 用我的简历生成', wc_video_upload: '⬆ 上传我自己的视频',
+        wc_video_upload_soon: '上传自己的视频将随媒体上传功能在下次更新中开放——目前请先用简历生成。',
+        wc_step_publish: '3. 发布', wc_address_label: '你的网站地址',
+        wc_publish_btn: '🌐 发布我的网站', wc_view_live: '查看网站 ↗',
+        wc_more_soon: '更多自定义功能——主题、背景和拖拽布局——即将推出。',
+        wc_preview_empty: '发布你的网站后即可在此实时预览。',
+        wc_publishing: '发布中…', wc_live_at: '已上线：', wc_link_copied: '链接已复制',
+        wc_err_no_resume: '请先选择要发布的简历。',
+        wc_err_addr: '请选择3–30位字母、数字或连字符的地址。',
+        wc_err_publish: '无法发布你的网站。',
+        wc_gate_title: '请先定制一份简历',
+        wc_gate_body: '你的网站由你保存的简历和求职信生成。免费定制一份，它会自动出现在这里。',
+        wc_gate_go: '前往定制 →', wc_gate_blank: '仍然从空白网站开始',
+        wc_nudge_text: '💡 想让收件人直接下载你的简历？升级专业版，发布带有下载按钮的个人网站。',
+        wc_nudge_cta: '查看专业版 →',
         sidebar_careerhub: '职业中心',
         sidebar_forum: '社区论坛', sidebar_salary: '薪资指南',
         sidebar_checkin: '职业回顾', sidebar_help: '帮助与支持',
@@ -2365,6 +2488,7 @@
       if (name === 'samples') initSamples();
       if (name === 'linkedin') updateLinkedInFreeStatus();
       if (name === 'video') updateVideoGate();
+      if (name === 'website') loadWebsiteCreator();
     }
 
     // ── Mode buttons ───────────────────────────────────────────────────────────
@@ -2696,6 +2820,9 @@
         }
         // Persist the tailored resume so it's saved for later (e.g. the video maker, other devices).
         if (lastRawResult && selectedMode !== 'cover_letter') saveTailoredResume(lastRawResult);
+        // Persist the cover letter too (from 'both' split, or the cover_letter run itself).
+        if (selectedMode === 'both' && lastRawCoverResult) saveTailoredCoverLetter(lastRawCoverResult);
+        else if (selectedMode === 'cover_letter' && lastRawResult) saveTailoredCoverLetter(lastRawResult);
         document.getElementById('editBtn').style.display = 'inline-flex';
         document.getElementById('editBar').style.display = 'none';
         document.getElementById('outputBox').removeAttribute('contenteditable');
@@ -4762,6 +4889,14 @@ Aaliyah Washington`
       } catch (_) {}
     }
 
+    // Silently persist a generated cover letter so the Website Creator + Back
+    // Office can list it (same dedupe/keep-20 behavior as resumes).
+    async function saveTailoredCoverLetter(content) {
+      const t = (content || '').trim();
+      if (!t || t.length < 40 || !getToken()) return;
+      try { await fetch('/api/cover-letters', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ content: t }) }); } catch (_) {}
+    }
+
     async function fetchSavedResumes() {
       if (!getToken()) return [];
       try {
@@ -5628,6 +5763,19 @@ Aaliyah Washington`
   </div>
 
   <!-- ── Share-as-Link Modal ── -->
+  <!-- ── Website Creator pop-up gate ── -->
+  <!-- Shown only when the user has zero saved resumes AND cover letters. Primary
+       CTA sends them to tailor; a low-emphasis escape hatch lets them explore. -->
+  <div id="wcGateModal" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeWcGate()">
+    <div style="background:#fff;border-radius:20px;padding:28px 26px;max-width:440px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.3);text-align:center;">
+      <div style="font-size:34px;margin-bottom:8px;">🌐</div>
+      <h2 style="font-size:19px;font-weight:800;color:#111827;margin-bottom:8px;" data-i18n="wc_gate_title">Tailor a resume first</h2>
+      <p style="font-size:14px;color:#6b7280;margin-bottom:20px;line-height:1.5;" data-i18n="wc_gate_body">Your website is built from your saved resumes and cover letters. Tailor one (it's free) and it'll appear here automatically.</p>
+      <button class="btn btn-primary" onclick="wcGateGoTailor()" style="width:100%;padding:13px;font-size:15px;margin-bottom:12px;" data-i18n="wc_gate_go">Go to Tailor →</button>
+      <div><a href="javascript:void(0)" onclick="wcGateStartBlank()" style="font-size:13px;color:#6b7280;text-decoration:underline;" data-i18n="wc_gate_blank">Start from a blank site anyway</a></div>
+    </div>
+  </div>
+
   <div id="shareModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeShareModal()">
     <div style="background:#fff;border-radius:20px;padding:28px 26px;max-width:460px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-size:22px;">🔗</span><h2 style="font-size:19px;font-weight:800;color:#111827;">Share your resume as a link</h2></div>
@@ -5653,6 +5801,11 @@ Aaliyah Washington`
       <div id="shareExpiryNote" style="font-size:12px;color:#6b7280;margin-bottom:14px;">This link never expires — it works until you delete it.</div>
       <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:11px 14px;font-size:12px;color:#0369a1;margin-bottom:18px;line-height:1.5;">
         🔒 The link is private and unlisted — only people you send it to can open it, and it won't appear in Google. It's a snapshot: re-tailoring later won't change this link.
+      </div>
+      <div id="wcUpgradeNudge" style="display:none;background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:12px 14px;margin-bottom:16px;position:relative;">
+        <button onclick="dismissShareNudge()" aria-label="Dismiss" style="position:absolute;top:6px;right:8px;background:none;border:none;color:#a78bfa;font-size:16px;cursor:pointer;line-height:1;">×</button>
+        <div style="font-size:12.5px;color:#6b21a8;line-height:1.5;padding-right:14px;" data-i18n="wc_nudge_text">💡 Want recipients to download your resume directly? Upgrade to Pro to publish a Personal Website with a built-in download button.</div>
+        <a href="javascript:void(0)" onclick="closeShareModal();startPro();" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;color:#7c3aed;text-decoration:none;" data-i18n="wc_nudge_cta">See Pro →</a>
       </div>
       <div style="display:flex;gap:10px;">
         <button onclick="openShareLink()" class="btn btn-outline" style="flex:1;font-size:13px;padding:10px;">Open link ↗</button>
@@ -5784,6 +5937,159 @@ Aaliyah Washington`
       return _createShareLink();
     }
 
+    // ── Website Creator (Pro) ─────────────────────────────────────────────────
+    // Entry point from the sidebar. Pro-gates, then applies the pop-up gate: the
+    // "tailor first" modal only shows when the user has zero saved resumes AND
+    // cover letters. Users with assets go straight into the creator tab.
+    let wcResumes = [], wcCovers = [], wcSite = null;
+    async function openWebsiteCreator() {
+      if (!isSubscriberFlag) { showToast('The Website Creator is a Pro feature.'); startPro(); return; }
+      try {
+        const res = await fetch('/api/assets/summary', { headers: authHeaders() });
+        const data = await res.json().catch(() => ({}));
+        const total = (data.resumes || 0) + (data.coverLetters || 0);
+        if (total === 0) { openWcGate(); return; }
+      } catch (_) { /* on error, let them in rather than hard-block */ }
+      showTab('website');
+    }
+    // Pop-up gate modal controls.
+    function openWcGate() { const m = document.getElementById('wcGateModal'); if (m) m.style.display = 'flex'; }
+    function closeWcGate() { const m = document.getElementById('wcGateModal'); if (m) m.style.display = 'none'; }
+    function wcGateGoTailor() { closeWcGate(); showTab('tailor'); }
+    // Escape hatch: let the curious explore the creator with a blank site.
+    function wcGateStartBlank() { closeWcGate(); showTab('website'); }
+
+    const _lang = () => (localStorage.getItem('rt_lang') || 'en');
+    const _t = (k, fb) => ((APP_I18N[_lang()] || APP_I18N.en)[k] || fb);
+    // Escape user-supplied text (resume/cover-letter titles) before dropping it
+    // into <option> markup.
+    function wcEsc(s) { const d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
+
+    // Load saved resumes + cover letters into the pickers, plus any existing site.
+    async function loadWebsiteCreator() {
+      const originSpan = document.getElementById('wcAddressOrigin');
+      if (originSpan) originSpan.textContent = window.location.origin + '/site/';
+      const rSel = document.getElementById('wcResumeSelect');
+      const cSel = document.getElementById('wcCoverSelect');
+      const noAssets = document.getElementById('wcNoAssets');
+      if (!rSel) return;
+      try {
+        const [rRes, cRes, sRes] = await Promise.all([
+          fetch('/api/resumes', { headers: authHeaders() }),
+          fetch('/api/cover-letters', { headers: authHeaders() }),
+          fetch('/api/personal-site', { headers: authHeaders() }),
+        ]);
+        wcResumes = (await rRes.json().catch(() => ({}))).resumes || [];
+        wcCovers = (await cRes.json().catch(() => ({}))).coverLetters || [];
+        wcSite = (await sRes.json().catch(() => ({}))).site || null;
+      } catch (_) { wcResumes = []; wcCovers = []; wcSite = null; }
+
+      // Resumes: most-recent selected by default (list is created_at DESC).
+      rSel.innerHTML = wcResumes.length
+        ? wcResumes.map((r, i) => `<option value="${r.id}"${i === 0 ? ' selected' : ''}>${wcEsc(r.title)}</option>`).join('')
+        : `<option value="">${wcEsc(_t('wc_resume_none', 'No saved resumes yet'))}</option>`;
+      if (noAssets) noAssets.style.display = wcResumes.length ? 'none' : 'block';
+
+      // Cover letters: optional, "None" default (off).
+      cSel.innerHTML = `<option value="">${wcEsc(_t('wc_cover_none', 'None'))}</option>` +
+        wcCovers.map(c => `<option value="${c.id}">${wcEsc(c.title)}</option>`).join('');
+
+      // Prefill address + selection from an existing site, and show the live link.
+      const addr = document.getElementById('wcAddress');
+      const viewLive = document.getElementById('wcViewLive');
+      if (wcSite && wcSite.subdomain) {
+        if (addr) addr.value = wcSite.subdomain;
+        if (viewLive) { viewLive.style.display = 'inline-block'; viewLive.href = window.location.origin + '/site/' + wcSite.subdomain; }
+        let cfg = null; try { cfg = wcSite.config ? JSON.parse(wcSite.config) : null; } catch (_) {}
+        if (cfg && cfg.assets) {
+          if (cfg.assets.resumeId && rSel.querySelector(`option[value="${cfg.assets.resumeId}"]`)) rSel.value = String(cfg.assets.resumeId);
+          if (cfg.assets.coverLetterId && cSel.querySelector(`option[value="${cfg.assets.coverLetterId}"]`)) cSel.value = String(cfg.assets.coverLetterId);
+        }
+      } else if (viewLive) {
+        viewLive.style.display = 'none';
+      }
+      wcSetView('edit');
+    }
+
+    function wcSetView(view) {
+      const edit = view !== 'preview';
+      document.getElementById('wcEditor').style.display = edit ? 'block' : 'none';
+      document.getElementById('wcPreview').style.display = edit ? 'none' : 'block';
+      document.getElementById('wcTabEdit').classList.toggle('wc-vtab-active', edit);
+      document.getElementById('wcTabPreview').classList.toggle('wc-vtab-active', !edit);
+      if (!edit) {
+        // Phase 2 preview = the live published site (a full config-driven preview
+        // endpoint arrives with the customization phase). Show a prompt until published.
+        const frame = document.getElementById('wcPreviewFrame');
+        const empty = document.getElementById('wcPreviewEmpty');
+        if (wcSite && wcSite.subdomain) {
+          frame.src = window.location.origin + '/site/' + wcSite.subdomain + '?preview=' + Date.now();
+          frame.style.display = 'block'; empty.style.display = 'none';
+        } else {
+          frame.style.display = 'none'; empty.style.display = 'block';
+        }
+      }
+    }
+
+    function wcSanitizeAddress() {
+      const el = document.getElementById('wcAddress');
+      if (el) el.value = el.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
+    }
+
+    // The video entry points: "Generate from résumé" reuses the existing (working)
+    // Video tool; "Upload your own" is surfaced now, wired to storage in the media phase.
+    function wcGoGenerateVideo() { showTab('video'); }
+    function wcUploadOwnVideo() {
+      const note = document.getElementById('wcVideoNote');
+      if (note) note.textContent = _t('wc_video_upload_soon', 'Uploading your own video unlocks with media uploads in the next update — for now, generate one from your résumé.');
+    }
+
+    async function wcPublish() {
+      if (!isSubscriberFlag) { showToast('The Website Creator is a Pro feature.'); startPro(); return; }
+      const rSel = document.getElementById('wcResumeSelect');
+      const cSel = document.getElementById('wcCoverSelect');
+      const addr = (document.getElementById('wcAddress').value || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
+      const statusEl = document.getElementById('wcPublishStatus');
+      const setStatus = (msg, ok) => { if (statusEl) { statusEl.textContent = msg; statusEl.style.color = ok ? '#059669' : '#dc2626'; } };
+      const resumeId = rSel && rSel.value ? Number(rSel.value) : null;
+      const resume = wcResumes.find(r => r.id === resumeId);
+      if (!resume) { setStatus(_t('wc_err_no_resume', 'Pick a resume to publish first.'), false); return; }
+      if (addr.length < 3) { setStatus(_t('wc_err_addr', 'Choose an address of 3–30 letters, numbers or hyphens.'), false); return; }
+      const coverId = cSel && cSel.value ? Number(cSel.value) : null;
+
+      const rTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
+      const config = { v: 1, assets: { resumeId, coverLetterId: coverId || null } };
+      const btn = document.getElementById('wcPublishBtn');
+      if (btn) btn.disabled = true;
+      setStatus(_t('wc_publishing', 'Publishing…'), true);
+      try {
+        const res = await fetch('/api/personal-site', {
+          method: 'POST', headers: authHeaders(),
+          body: JSON.stringify({
+            subdomain: addr,
+            text: resume.content,
+            name: (resume.title || '').replace(/resume/i, '').trim(),
+            layout: rTpl.layout,
+            colors: { primary: rTpl.c.p, accent: rTpl.c.a, light: rTpl.c.l },
+            serif: !!rTpl.serif,
+            hideContact: false,
+            config,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { setStatus(data.message || data.error || _t('wc_err_publish', 'Could not publish your website.'), false); return; }
+        wcSite = { subdomain: data.subdomain, config: JSON.stringify(config) };
+        const viewLive = document.getElementById('wcViewLive');
+        if (viewLive) { viewLive.style.display = 'inline-block'; viewLive.href = data.url; }
+        try { await navigator.clipboard.writeText(data.url); } catch (_) {}
+        setStatus('🌐 ' + _t('wc_live_at', 'Live at') + ' ' + data.url + ' — ' + _t('wc_link_copied', 'link copied'), true);
+      } catch (_) {
+        setStatus(_t('wc_err_publish', 'Could not publish your website.'), false);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
     // ── Personal website (Pro) ────────────────────────────────────────────────
     // Publish the tailored resume as a live public page at /site/<address>.
     async function publishPersonalSite() {
@@ -5837,6 +6143,7 @@ Aaliyah Washington`
       const modal = document.getElementById('shareModal');
       const linkBox = document.getElementById('shareLinkBox');
       if (modal) modal.style.display = 'flex';
+      maybeShowShareNudge();
       if (linkBox) linkBox.value = 'Creating your link…';
       try {
         const res = await fetch('/api/share', {
@@ -5877,6 +6184,18 @@ Aaliyah Washington`
     }
     function toggleShareContact(cb) { refreshShareLink(); }
     function closeShareModal() { const m = document.getElementById('shareModal'); if (m) m.style.display = 'none'; }
+    // Upgrade nudge in the share modal — points free users to the Pro Website's
+    // download button. Non-subscribers only, dismissible, remembered in localStorage.
+    function maybeShowShareNudge() {
+      const el = document.getElementById('wcUpgradeNudge');
+      if (!el) return;
+      const dismissed = localStorage.getItem('rt_share_nudge_dismissed') === '1';
+      el.style.display = (!isSubscriberFlag && !dismissed) ? 'block' : 'none';
+    }
+    function dismissShareNudge() {
+      try { localStorage.setItem('rt_share_nudge_dismissed', '1'); } catch (_) {}
+      const el = document.getElementById('wcUpgradeNudge'); if (el) el.style.display = 'none';
+    }
     function openShareLink() { if (_lastShareUrl) window.open(_lastShareUrl, '_blank', 'noopener'); }
 
     function openPreview() {

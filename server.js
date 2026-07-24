@@ -1814,7 +1814,7 @@ function _validSubdomain(s) {
 app.get('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  const row = db.prepare('SELECT subdomain, name, published, views, updated_at FROM personal_sites WHERE email = ?').get(email);
+  const row = db.prepare('SELECT subdomain, name, published, views, updated_at, config FROM personal_sites WHERE email = ?').get(email);
   res.json({ site: row || null });
 });
 
@@ -1825,7 +1825,7 @@ app.post('/api/personal-site', (req, res) => {
   if (!isSubscriber(email)) {
     return res.status(402).json({ error: 'pro_required', message: 'Publishing a personal website is a Pro feature. Upgrade to unlock it.' });
   }
-  const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout } = req.body || {};
+  const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config } = req.body || {};
   const sub = _validSubdomain(subdomain);
   if (!sub) return res.status(400).json({ error: 'invalid_subdomain', message: 'Choose 3–30 letters, numbers or hyphens (not a reserved word).' });
   if (!text || typeof text !== 'string' || text.trim().length < 20) return res.status(400).json({ error: 'No resume content to publish.' });
@@ -1840,6 +1840,16 @@ app.post('/api/personal-site', (req, res) => {
   let photo = null;
   if (typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000) photo = photoUrl;
   const _layout = _SHARE_LAYOUTS.has(layout) ? layout : null;
+  // Website Creator config blob (theme, section order/placement, selected asset
+  // ids, feature toggles). Stored as a JSON string; accept an object or a string,
+  // cap the size, and fall back to NULL (legacy default) on anything invalid.
+  let _config = null;
+  if (config != null) {
+    try {
+      const s = typeof config === 'string' ? config : JSON.stringify(config);
+      if (s && s.length <= 200000) { JSON.parse(s); _config = s; }
+    } catch (_) { _config = null; }
+  }
   const now = Date.now();
 
   // Remove any previous site this user had under a different subdomain, so a
@@ -1847,16 +1857,16 @@ app.post('/api/personal-site', (req, res) => {
   const existing = db.prepare('SELECT subdomain FROM personal_sites WHERE email = ?').get(email);
   if (existing && existing.subdomain !== sub) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(existing.subdomain);
 
-  db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, published, created_at, updated_at, views)
-              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, 1, @now, @now, 0)
+  db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, config, published, created_at, updated_at, views)
+              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, @config, 1, @now, @now, 0)
               ON CONFLICT(subdomain) DO UPDATE SET
                 name=@name, text=@text, accent=@accent, primary_hex=@primary_hex, serif=@serif,
-                photo=@photo, hide_contact=@hide_contact, layout=@layout, published=1, updated_at=@now`).run({
+                photo=@photo, hide_contact=@hide_contact, layout=@layout, config=@config, published=1, updated_at=@now`).run({
     subdomain: sub, email: email.toLowerCase(),
     name: (name || '').toString().slice(0, 80), text,
     accent: (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
     primary_hex: (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
-    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, now,
+    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, config: _config, now,
   });
   const origin = `${req.protocol}://${req.get('host')}`;
   res.json({ url: `${origin}/site/${sub}`, subdomain: sub });
