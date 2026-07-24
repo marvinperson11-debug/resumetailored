@@ -154,6 +154,24 @@ db.exec(`
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_saved_resumes_email ON saved_resumes(email);
+  CREATE TABLE IF NOT EXISTS saved_cover_letters (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL,
+    title      TEXT NOT NULL DEFAULT 'Cover Letter',
+    content    TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_saved_cover_letters_email ON saved_cover_letters(email);
+  CREATE TABLE IF NOT EXISTS saved_videos (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL,
+    title      TEXT NOT NULL DEFAULT 'Resume Video',
+    path       TEXT NOT NULL,
+    source     TEXT NOT NULL DEFAULT 'generated',
+    bytes      INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_saved_videos_email ON saved_videos(email);
   CREATE TABLE IF NOT EXISTS shared_resumes (
     slug         TEXT PRIMARY KEY,
     name         TEXT,
@@ -718,6 +736,73 @@ app.delete('/api/resumes/:id', (req, res) => {
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   db.prepare('DELETE FROM saved_resumes WHERE id = ? AND email = ?').run(req.params.id, email);
   res.json({ success: true });
+});
+
+// ── Saved cover letters (mirror of saved_resumes) ────────────────────────────
+// Persist generated cover letters so the Website Creator + Back Office can list
+// them and let the user pick which one a site displays. The client POSTs here
+// after a cover_letter / both run.
+app.get('/api/cover-letters', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const rows = db.prepare('SELECT id, title, content, created_at FROM saved_cover_letters WHERE email = ? ORDER BY created_at DESC').all(email);
+  res.json({ coverLetters: rows });
+});
+
+app.post('/api/cover-letters', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const content = (req.body && typeof req.body.content === 'string') ? req.body.content.trim() : '';
+  if (content.length < 40) return res.status(400).json({ error: 'Cover letter content is required.' });
+  const rawTitle = (req.body && typeof req.body.title === 'string' && req.body.title.trim())
+    ? req.body.title.trim()
+    : (content.split('\n').find((l) => l.trim()) || 'Cover Letter').trim();
+  const title = rawTitle.slice(0, 80);
+  db.prepare('DELETE FROM saved_cover_letters WHERE email = ? AND content = ?').run(email, content);
+  const info = db.prepare('INSERT INTO saved_cover_letters (email, title, content, created_at) VALUES (?, ?, ?, ?)')
+    .run(email, title, content.slice(0, 60000), Date.now());
+  db.prepare('DELETE FROM saved_cover_letters WHERE email = ? AND id NOT IN (SELECT id FROM saved_cover_letters WHERE email = ? ORDER BY created_at DESC LIMIT 20)').run(email, email);
+  res.json({ success: true, id: info.lastInsertRowid, title });
+});
+
+app.delete('/api/cover-letters/:id', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  db.prepare('DELETE FROM saved_cover_letters WHERE id = ? AND email = ?').run(req.params.id, email);
+  res.json({ success: true });
+});
+
+// ── Saved resume videos ──────────────────────────────────────────────────────
+// Metadata rows for persisted MP4s (generated or user-uploaded). The file bytes
+// are written under DATA_DIR by the media/persist paths in later phases; here we
+// expose list + delete so the Website Creator and Back Office can manage them.
+app.get('/api/videos', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const rows = db.prepare('SELECT id, title, source, bytes, created_at FROM saved_videos WHERE email = ? ORDER BY created_at DESC').all(email);
+  res.json({ videos: rows });
+});
+
+app.delete('/api/videos/:id', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const row = db.prepare('SELECT path FROM saved_videos WHERE id = ? AND email = ?').get(req.params.id, email);
+  db.prepare('DELETE FROM saved_videos WHERE id = ? AND email = ?').run(req.params.id, email);
+  if (row && row.path) { try { fs.unlink(row.path, () => {}); } catch (_) {} }
+  res.json({ success: true });
+});
+
+// Asset counts for the Website Creator pop-up gate: the "tailor first" modal only
+// shows when the user has zero saved resumes AND zero saved cover letters.
+app.get('/api/assets/summary', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const count = (t) => db.prepare(`SELECT COUNT(*) AS n FROM ${t} WHERE email = ?`).get(email).n;
+  res.json({
+    resumes: count('saved_resumes'),
+    coverLetters: count('saved_cover_letters'),
+    videos: count('saved_videos'),
+  });
 });
 
 app.post('/api/auth/forgot-password', async (req, res) => {
