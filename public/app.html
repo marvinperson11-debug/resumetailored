@@ -1023,9 +1023,12 @@
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('text')" data-i18n="wc_add_text">+ Text</button>
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('resume')" data-i18n="wc_add_resume">+ Resume</button>
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('image')" data-i18n="wc_add_image">+ Image</button>
+              <button type="button" class="wc-pal-btn" onclick="wcAddBlock('gallery')" data-i18n="wc_add_gallery">+ Gallery</button>
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('video')" data-i18n="wc_add_video">+ Video</button>
+              <button type="button" class="wc-pal-btn" onclick="wcAddBlock('audio')" data-i18n="wc_add_audio">+ Audio</button>
               <button type="button" class="wc-pal-btn" onclick="wcAddBlock('spacer')" data-i18n="wc_add_spacer">+ Spacer</button>
             </div>
+            <div id="wcMediaMeter" style="font-size:12px;color:#6b7280;margin-bottom:14px;"></div>
             <div id="wcBlocksList"></div>
           </div>
 
@@ -1701,7 +1704,13 @@
         wc_step_layout: '2. Design your layout',
         wc_layout_help: "Add blocks and drag to reorder. Set each block's width — blocks flow into rows, so two half-width blocks sit side by side. On phones everything stacks.",
         wc_add_heading: '+ Heading', wc_add_text: '+ Text', wc_add_resume: '+ Resume',
-        wc_add_image: '+ Image', wc_add_video: '+ Video', wc_add_spacer: '+ Spacer',
+        wc_add_image: '+ Image', wc_add_gallery: '+ Gallery', wc_add_video: '+ Video', wc_add_audio: '+ Audio', wc_add_spacer: '+ Spacer',
+        wc_blk_gallery: 'Gallery', wc_blk_audio: 'Audio',
+        wc_upload: 'Upload', wc_uploading: 'Uploading…', wc_upload_err: 'Upload failed.',
+        wc_ph_audio: 'Audio URL (mp3) — or upload', wc_ph_alabel: 'Label — e.g. Voiceover',
+        wc_gallery_empty: 'No images yet.', wc_gallery_add: '+ Add image',
+        wc_media_usage: 'Storage', wc_media_imgaudio: 'images & audio', wc_media_video: 'video',
+        wc_video_added: '✓ Video added to your layout below.',
         wc_blocks_empty: 'No blocks yet — add one above to start building your page.',
         wc_width: 'Width', wc_width_12: 'Full', wc_width_8: 'Two-thirds', wc_width_6: 'Half', wc_width_4: 'Third',
         wc_blk_heading: 'Heading', wc_blk_text: 'Text', wc_blk_resume: 'Resume', wc_blk_image: 'Image', wc_blk_video: 'Video', wc_blk_spacer: 'Spacer',
@@ -1789,7 +1798,13 @@
         wc_step_layout: '2. 设计你的布局',
         wc_layout_help: '添加区块并拖动排序。设置每个区块的宽度——区块会自动排入行，因此两个半宽区块会并排显示。在手机上全部纵向堆叠。',
         wc_add_heading: '+ 标题', wc_add_text: '+ 文本', wc_add_resume: '+ 简历',
-        wc_add_image: '+ 图片', wc_add_video: '+ 视频', wc_add_spacer: '+ 间距',
+        wc_add_image: '+ 图片', wc_add_gallery: '+ 相册', wc_add_video: '+ 视频', wc_add_audio: '+ 音频', wc_add_spacer: '+ 间距',
+        wc_blk_gallery: '相册', wc_blk_audio: '音频',
+        wc_upload: '上传', wc_uploading: '上传中…', wc_upload_err: '上传失败。',
+        wc_ph_audio: '音频链接（mp3）——或上传', wc_ph_alabel: '标签——例如"配音"',
+        wc_gallery_empty: '还没有图片。', wc_gallery_add: '+ 添加图片',
+        wc_media_usage: '存储', wc_media_imgaudio: '图片和音频', wc_media_video: '视频',
+        wc_video_added: '✓ 视频已添加到下方布局。',
         wc_blocks_empty: '还没有区块——在上方添加一个开始搭建你的页面。',
         wc_width: '宽度', wc_width_12: '整宽', wc_width_8: '三分之二', wc_width_6: '一半', wc_width_4: '三分之一',
         wc_blk_heading: '标题', wc_blk_text: '文本', wc_blk_resume: '简历', wc_blk_image: '图片', wc_blk_video: '视频', wc_blk_spacer: '间距',
@@ -6068,6 +6083,7 @@ Aaliyah Washington`
         wcSeedDefaultBlocks();
       }
       wcRenderBlocks();
+      wcLoadMediaUsage();
       wcSetView('edit');
     }
 
@@ -6123,9 +6139,14 @@ Aaliyah Washington`
     // The video entry points: "Generate from résumé" reuses the existing (working)
     // Video tool; "Upload your own" is surfaced now, wired to storage in the media phase.
     function wcGoGenerateVideo() { showTab('video'); }
+    // Add a video block and immediately upload a file into it.
     function wcUploadOwnVideo() {
-      const note = document.getElementById('wcVideoNote');
-      if (note) note.textContent = _t('wc_video_upload_soon', 'Uploading your own video unlocks with media uploads in the next update — for now, generate one from your résumé.');
+      wcUploadMedia('video/mp4', (url) => {
+        wcBlocks.push({ id: wcNewId(), type: 'video', src: url, label: '', colSpan: 12 });
+        wcRenderBlocks();
+        const note = document.getElementById('wcVideoNote');
+        if (note) note.textContent = _t('wc_video_added', '✓ Video added to your layout below.');
+      });
     }
 
     async function wcPublish() {
@@ -6186,7 +6207,9 @@ Aaliyah Washington`
         text: { text: '', colSpan: 12 },
         resume: { colSpan: 12 },
         image: { src: '', caption: '', colSpan: 6 },
+        gallery: { images: [], label: '', colSpan: 12 },
         video: { src: '', label: '', colSpan: 12 },
+        audio: { src: '', label: '', colSpan: 12 },
         spacer: { colSpan: 12 },
       };
       wcBlocks.push(Object.assign({ id: wcNewId(), type }, defaults[type] || { colSpan: 12 }));
@@ -6194,6 +6217,48 @@ Aaliyah Washington`
     }
     function wcDelBlock(id) { wcBlocks = wcBlocks.filter(b => b.id !== id); wcRenderBlocks(); }
     function wcBlockField(id, field, value) { const b = wcBlocks.find(x => x.id === id); if (b) b[field] = (field === 'colSpan') ? Number(value) : value; }
+
+    // ── Media uploads (Phase 4) ───────────────────────────────────────────────
+    let wcMediaUsage = null;
+    const _mb = (n) => (n / 1024 / 1024).toFixed(n > 1024 * 1024 ? 1 : 0);
+    async function wcLoadMediaUsage() {
+      try { const r = await fetch('/api/site-media', { headers: authHeaders() }); if (r.ok) { wcMediaUsage = (await r.json()).usage; wcRenderMediaMeter(); } } catch (_) {}
+    }
+    function wcRenderMediaMeter() {
+      const el = document.getElementById('wcMediaMeter'); if (!el || !wcMediaUsage) return;
+      const L = wcMediaUsage.limits;
+      el.textContent = _t('wc_media_usage', 'Storage') + ': ' +
+        _mb(wcMediaUsage.imageAudioBytes) + '/' + _mb(L.imageAudioPool) + ' MB ' + _t('wc_media_imgaudio', 'images & audio') + ' · ' +
+        _mb(wcMediaUsage.videoBytes) + '/' + _mb(L.videoPool) + ' MB ' + _t('wc_media_video', 'video') + ' (' + wcMediaUsage.videoCount + '/' + L.videoMaxCount + ')';
+    }
+    // Upload a file and hand the resulting /media/<id> URL to `onUrl`.
+    function wcUploadMedia(accept, onUrl) {
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = accept;
+      inp.onchange = async () => {
+        const f = inp.files[0]; if (!f) return;
+        showToast(_t('wc_uploading', 'Uploading…'));
+        const fd = new FormData(); fd.append('file', f);
+        try {
+          const r = await fetch('/api/site-media', { method: 'POST', headers: authHeaders(), body: fd });
+          const d = await r.json().catch(() => ({}));
+          if (!r.ok) { showToast(d.error || _t('wc_upload_err', 'Upload failed.')); return; }
+          if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }
+          onUrl(d.url);
+        } catch (_) { showToast(_t('wc_upload_err', 'Upload failed.')); }
+      };
+      inp.click();
+    }
+    // Block-scoped helpers used by the editor UI.
+    function wcUploadToBlock(id, kind) {
+      const accept = kind === 'image' ? 'image/jpeg,image/png,image/webp' : kind === 'audio' ? 'audio/mpeg,audio/mp4,audio/aac' : 'video/mp4';
+      wcUploadMedia(accept, (url) => { wcBlockField(id, 'src', url); wcRenderBlocks(); });
+    }
+    function wcGalleryAdd(id) {
+      wcUploadMedia('image/jpeg,image/png,image/webp', (url) => { const b = wcBlocks.find(x => x.id === id); if (b) { (b.images = b.images || []).push({ src: url, caption: '' }); wcRenderBlocks(); } });
+    }
+    function wcGalleryCaption(id, idx, val) { const b = wcBlocks.find(x => x.id === id); if (b && b.images && b.images[idx]) b.images[idx].caption = val; }
+    function wcGalleryDel(id, idx) { const b = wcBlocks.find(x => x.id === id); if (b && b.images) { b.images.splice(idx, 1); wcRenderBlocks(); } }
 
     function wcRenderBlocks() {
       const wrap = document.getElementById('wcBlocksList');
@@ -6210,8 +6275,13 @@ Aaliyah Washington`
         if (b.type === 'heading') body = `<input type="text" class="text-input" style="width:100%;" placeholder="${wcAttr(_t('wc_ph_heading', 'Heading text'))}" value="${wcAttr(b.text || '')}" oninput="wcBlockField('${b.id}','text',this.value)"/>`;
         else if (b.type === 'text') body = `<textarea class="text-input" style="width:100%;min-height:70px;" placeholder="${wcAttr(_t('wc_ph_text', 'Write a paragraph…'))}" oninput="wcBlockField('${b.id}','text',this.value)">${wcEsc(b.text || '')}</textarea>`;
         else if (b.type === 'resume') body = `<div style="font-size:13px;color:#6b7280;">${wcEsc(_t('wc_blk_resume_note', 'Shows your selected resume from step 1.'))}</div>`;
-        else if (b.type === 'image') body = `<input type="url" class="text-input" style="width:100%;margin-bottom:6px;" placeholder="${wcAttr(_t('wc_ph_image', 'Image URL (https://…)'))}" value="${wcAttr(b.src || '')}" oninput="wcBlockField('${b.id}','src',this.value)"/><input type="text" class="text-input" style="width:100%;" placeholder="${wcAttr(_t('wc_ph_caption', 'Caption (optional)'))}" value="${wcAttr(b.caption || '')}" oninput="wcBlockField('${b.id}','caption',this.value)"/>`;
-        else if (b.type === 'video') body = `<input type="url" class="text-input" style="width:100%;margin-bottom:6px;" placeholder="${wcAttr(_t('wc_ph_video', 'Video URL (mp4) — or generate one above'))}" value="${wcAttr(b.src || '')}" oninput="wcBlockField('${b.id}','src',this.value)"/><input type="text" class="text-input" list="wcVideoLabels" style="width:100%;" placeholder="${wcAttr(_t('wc_ph_vlabel', 'Label — e.g. About Me'))}" value="${wcAttr(b.label || '')}" oninput="wcBlockField('${b.id}','label',this.value)"/>`;
+        else if (b.type === 'image') body = `<div class="wc-blk-row" style="margin-bottom:6px;"><input type="url" class="text-input" style="flex:1;min-width:140px;" placeholder="${wcAttr(_t('wc_ph_image', 'Image URL (https://…)'))}" value="${wcAttr(b.src || '')}" oninput="wcBlockField('${b.id}','src',this.value)"/><button type="button" class="wc-pal-btn" onclick="wcUploadToBlock('${b.id}','image')" data-i18n="wc_upload">Upload</button></div><input type="text" class="text-input" style="width:100%;" placeholder="${wcAttr(_t('wc_ph_caption', 'Caption (optional)'))}" value="${wcAttr(b.caption || '')}" oninput="wcBlockField('${b.id}','caption',this.value)"/>`;
+        else if (b.type === 'video') body = `<div class="wc-blk-row" style="margin-bottom:6px;"><input type="url" class="text-input" style="flex:1;min-width:140px;" placeholder="${wcAttr(_t('wc_ph_video', 'Video URL (mp4) — or generate one above'))}" value="${wcAttr(b.src || '')}" oninput="wcBlockField('${b.id}','src',this.value)"/><button type="button" class="wc-pal-btn" onclick="wcUploadToBlock('${b.id}','video')" data-i18n="wc_upload">Upload</button></div><input type="text" class="text-input" list="wcVideoLabels" style="width:100%;" placeholder="${wcAttr(_t('wc_ph_vlabel', 'Label — e.g. About Me'))}" value="${wcAttr(b.label || '')}" oninput="wcBlockField('${b.id}','label',this.value)"/>`;
+        else if (b.type === 'audio') body = `<div class="wc-blk-row" style="margin-bottom:6px;"><input type="url" class="text-input" style="flex:1;min-width:140px;" placeholder="${wcAttr(_t('wc_ph_audio', 'Audio URL (mp3) — or upload'))}" value="${wcAttr(b.src || '')}" oninput="wcBlockField('${b.id}','src',this.value)"/><button type="button" class="wc-pal-btn" onclick="wcUploadToBlock('${b.id}','audio')" data-i18n="wc_upload">Upload</button></div><input type="text" class="text-input" style="width:100%;" placeholder="${wcAttr(_t('wc_ph_alabel', 'Label — e.g. Voiceover'))}" value="${wcAttr(b.label || '')}" oninput="wcBlockField('${b.id}','label',this.value)"/>`;
+        else if (b.type === 'gallery') {
+          const imgs = (b.images || []).map((im, idx) => `<div class="wc-blk-row" style="margin-bottom:6px;"><span style="font-size:12px;color:#6b7280;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${wcEsc(im.src || '')}</span><input type="text" class="text-input" style="flex:1;min-width:120px;" placeholder="${wcAttr(_t('wc_ph_caption', 'Caption (optional)'))}" value="${wcAttr(im.caption || '')}" oninput="wcGalleryCaption('${b.id}',${idx},this.value)"/><button type="button" class="wc-blk-del" onclick="wcGalleryDel('${b.id}',${idx})">×</button></div>`).join('');
+          body = `${imgs || `<div style="font-size:13px;color:#9ca3af;margin-bottom:6px;">${wcEsc(_t('wc_gallery_empty', 'No images yet.'))}</div>`}<button type="button" class="wc-pal-btn" onclick="wcGalleryAdd('${b.id}')" data-i18n="wc_gallery_add">+ Add image</button>`;
+        }
         else if (b.type === 'spacer') body = `<div style="font-size:13px;color:#9ca3af;">${wcEsc(_t('wc_blk_spacer_note', 'Adds vertical space.'))}</div>`;
         const width = b.type === 'spacer' ? '' : `<span class="wc-blk-width">${wcEsc(_t('wc_width', 'Width'))}:</span>${widthSel(b)}`;
         return `<div class="wc-blk" draggable="true" data-id="${b.id}">
@@ -6266,7 +6336,7 @@ Aaliyah Washington`
         lang: _lang(),
         theme: { primary: (rTpl.c.p || '').replace('#', ''), accent: (rTpl.c.a || '').replace('#', '') },
         assets: { resumeId: rSel && rSel.value ? Number(rSel.value) : null, coverLetterId: cSel && cSel.value ? Number(cSel.value) : null },
-        blocks: wcBlocks.map(b => ({ type: b.type, colSpan: Number(b.colSpan) || 12, text: b.text, src: b.src, caption: b.caption, label: b.label, alt: b.alt })),
+        blocks: wcBlocks.map(b => ({ type: b.type, colSpan: Number(b.colSpan) || 12, text: b.text, src: b.src, caption: b.caption, label: b.label, alt: b.alt, images: b.images })),
       };
     }
 

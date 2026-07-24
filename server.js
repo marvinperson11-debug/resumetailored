@@ -172,6 +172,16 @@ db.exec(`
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_saved_videos_email ON saved_videos(email);
+  CREATE TABLE IF NOT EXISTS site_media (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL,
+    kind       TEXT NOT NULL,
+    path       TEXT NOT NULL,
+    mime       TEXT NOT NULL,
+    bytes      INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_site_media_email ON site_media(email);
   CREATE TABLE IF NOT EXISTS shared_resumes (
     slug         TEXT PRIMARY KEY,
     name         TEXT,
@@ -803,6 +813,112 @@ app.get('/api/assets/summary', (req, res) => {
     coverLetters: count('saved_cover_letters'),
     videos: count('saved_videos'),
   });
+});
+
+// ── Site media uploads (Pro) ─────────────────────────────────────────────────
+// Images/audio share one quota pool; video has its own pool + a hard file count
+// cap (Option B). Files live under ${DATA_DIR}/site-media/<email-hash>/ so they
+// persist across deploys when a Railway volume is mounted at /data.
+const MEDIA_LIMITS = {
+  imageAudioPool: 300 * 1024 * 1024, // 300 MB shared by images + audio
+  videoPool: 300 * 1024 * 1024,      // 300 MB for video
+  videoMaxCount: 5,
+  perFile: { image: 8 * 1024 * 1024, audio: 25 * 1024 * 1024, video: 25 * 1024 * 1024 },
+};
+const MEDIA_MIME = {
+  image: ['image/jpeg', 'image/png', 'image/webp'],
+  audio: ['audio/mpeg', 'audio/mp4', 'audio/aac'],
+  video: ['video/mp4'],
+};
+function _mediaKind(mime) {
+  for (const k of Object.keys(MEDIA_MIME)) if (MEDIA_MIME[k].includes(mime)) return k;
+  return null;
+}
+function _mediaExt(mime) {
+  return ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/aac': 'aac', 'video/mp4': 'mp4' })[mime] || 'bin';
+}
+function _emailHash(email) { return crypto.createHash('sha256').update(String(email).toLowerCase()).digest('hex').slice(0, 16); }
+const mediaUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 26 * 1024 * 1024 } });
+function mediaUploadSingle(req, res, next) {
+  mediaUpload.single('file')(req, res, (err) => {
+    if (err) {
+      const msg = err.code === 'LIMIT_FILE_SIZE' ? 'File is too large (max 25 MB).' : (err.message || 'Upload failed.');
+      return res.status(400).json({ error: msg });
+    }
+    next();
+  });
+}
+
+function _mediaUsage(email) {
+  const rows = db.prepare('SELECT kind, bytes FROM site_media WHERE email = ?').all(email);
+  let imageAudioBytes = 0, videoBytes = 0, videoCount = 0;
+  for (const r of rows) {
+    if (r.kind === 'video') { videoBytes += r.bytes; videoCount++; }
+    else imageAudioBytes += r.bytes;
+  }
+  return { imageAudioBytes, videoBytes, videoCount, limits: MEDIA_LIMITS };
+}
+
+app.get('/api/site-media', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const items = db.prepare('SELECT id, kind, mime, bytes, created_at FROM site_media WHERE email = ? ORDER BY created_at DESC').all(email);
+  res.json({ items: items.map(i => ({ ...i, url: `/media/${i.id}` })), usage: _mediaUsage(email) });
+});
+
+app.post('/api/site-media', mediaUploadSingle, (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Media uploads are a Pro feature.' });
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+  const kind = _mediaKind(req.file.mimetype);
+  if (!kind) return res.status(400).json({ error: 'Unsupported file type. Use JPG/PNG/WebP, MP3/M4A, or MP4.' });
+  const bytes = req.file.size;
+  if (bytes > MEDIA_LIMITS.perFile[kind]) {
+    return res.status(400).json({ error: `That ${kind} is too large (max ${Math.round(MEDIA_LIMITS.perFile[kind] / 1024 / 1024)} MB).` });
+  }
+  const usage = _mediaUsage(email);
+  if (kind === 'video') {
+    if (usage.videoCount >= MEDIA_LIMITS.videoMaxCount) return res.status(400).json({ error: `Video limit reached (max ${MEDIA_LIMITS.videoMaxCount}). Delete one first.` });
+    if (usage.videoBytes + bytes > MEDIA_LIMITS.videoPool) return res.status(400).json({ error: 'Video storage full — delete a video to free space.' });
+  } else if (usage.imageAudioBytes + bytes > MEDIA_LIMITS.imageAudioPool) {
+    return res.status(400).json({ error: 'Image/audio storage full — delete some files to free space.' });
+  }
+  try {
+    const dir = path.join(dataDir, 'site-media', _emailHash(email));
+    fs.mkdirSync(dir, { recursive: true });
+    const fname = `${crypto.randomBytes(8).toString('hex')}.${_mediaExt(req.file.mimetype)}`;
+    const full = path.join(dir, fname);
+    fs.writeFileSync(full, req.file.buffer);
+    const info = db.prepare('INSERT INTO site_media (email, kind, path, mime, bytes, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(email.toLowerCase(), kind, full, req.file.mimetype, bytes, Date.now());
+    res.json({ id: info.lastInsertRowid, url: `/media/${info.lastInsertRowid}`, kind, bytes, usage: _mediaUsage(email) });
+  } catch (e) {
+    res.status(500).json({ error: 'Could not save the file.' });
+  }
+});
+
+app.delete('/api/site-media/:id', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const row = db.prepare('SELECT path FROM site_media WHERE id = ? AND email = ?').get(req.params.id, email);
+  db.prepare('DELETE FROM site_media WHERE id = ? AND email = ?').run(req.params.id, email);
+  if (row && row.path) { try { fs.unlink(row.path, () => {}); } catch (_) {} }
+  res.json({ success: true, usage: _mediaUsage(email) });
+});
+
+// Public media serving — personal sites are public, so no auth on GET. Streams
+// the stored file by id with its content-type. Long cache (content is immutable).
+app.get('/media/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const row = Number.isFinite(id) ? db.prepare('SELECT path, mime FROM site_media WHERE id = ?').get(id) : null;
+  if (!row || !row.path || !fs.existsSync(row.path)) {
+    res.status(404);
+    return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
+  res.setHeader('Content-Type', row.mime);
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(row.path);
 });
 
 app.post('/api/auth/forgot-password', async (req, res) => {
@@ -1784,6 +1900,24 @@ function _renderSiteBlock(b, row, accent) {
       inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<video class="sg-video" controls preload="metadata"${b.poster ? ` poster="${_escHtml(_safeUrl(b.poster))}"` : ''}><source src="${_escHtml(src)}"/></video>`;
       break;
     }
+    case 'audio': {
+      const src = _safeUrl(b.src);
+      if (!src) return '';
+      // No autoplay: a visible play/pause control, starts paused.
+      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<audio class="sg-audio" controls preload="none"><source src="${_escHtml(src)}"/></audio>`;
+      break;
+    }
+    case 'gallery': {
+      const imgs = Array.isArray(b.images) ? b.images.slice(0, 20) : [];
+      const items = imgs.map(im => {
+        const s = _safeUrl(im && im.src);
+        if (!s) return '';
+        return `<figure class="sg-gitem"><img src="${_escHtml(s)}" alt="${_escHtml(String((im && im.alt) || '').slice(0, 200))}" loading="lazy"/>${im && im.caption ? `<figcaption>${_escHtml(String(im.caption).slice(0, 300))}</figcaption>` : ''}</figure>`;
+      }).join('');
+      if (!items) return '';
+      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<div class="sg-gallery">${items}</div>`;
+      break;
+    }
     case 'spacer': inner = '<div class="sg-spacer"></div>'; break;
     default: return '';
   }
@@ -1837,6 +1971,11 @@ function _renderSiteGrid(row, origin, opts, config) {
     .sg-fig img{width:100%;height:auto;border-radius:14px;display:block;}
     .sg-fig figcaption{font-size:12.5px;color:#6b7280;margin-top:6px;text-align:center;}
     .sg-video{width:100%;border-radius:14px;background:#000;display:block;}
+    .sg-audio{width:100%;}
+    .sg-gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
+    .sg-gitem{flex:0 0 auto;width:min(78%,320px);scroll-snap-align:start;margin:0;}
+    .sg-gitem img{width:100%;height:auto;border-radius:12px;display:block;}
+    .sg-gitem figcaption{font-size:12.5px;color:#6b7280;margin-top:5px;}
     .sg-spacer{height:24px;}
     .sg-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:38px 40px;}
     .sg-rhead{margin-bottom:20px;border-bottom:2px solid var(--p);padding-bottom:14px;}
