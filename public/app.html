@@ -502,12 +502,14 @@
                   <span id="uploadBtnText" data-i18n="upload_btn">⬆ Upload File</span>
                 </button>
                 <input type="file" id="resumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleResumeUpload(this)" />
-                <button id="linkedinImportBtn" onclick="document.getElementById('linkedinResumeFileInput').click()" style="display:inline-flex;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
-                  <span>in</span> <span id="linkedinImportText" data-i18n="li_upload_btn">Import PDF from LinkedIn</span>
-                </button>
-                <button id="linkedinResumeHowToBtn" onclick="openLinkedInHowTo()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(10,102,194,0.08);color:#0a66c2;border:1px solid rgba(10,102,194,0.35);border-radius:6px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;">
-                  <span style="font-weight:800;">?</span> <span data-i18n="li_howto_btn">How to</span>
-                </button>
+                <span style="display:inline-flex;gap:8px;align-items:center;">
+                  <button id="linkedinImportBtn" onclick="document.getElementById('linkedinResumeFileInput').click()" style="display:inline-flex;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
+                    <span id="linkedinImportText" data-i18n="li_upload_btn">Import PDF from LinkedIn</span>
+                  </button>
+                  <button id="linkedinResumeHowToBtn" onclick="openLinkedInHowTo()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(10,102,194,0.08);color:#0a66c2;border:1px solid rgba(10,102,194,0.35);border-radius:6px;padding:7px 11px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">
+                    <span style="font-weight:800;">?</span> <span data-i18n="li_howto_btn">How to</span>
+                  </button>
+                </span>
                 <input type="file" id="linkedinResumeFileInput" accept=".pdf,.txt,.doc,.docx" style="display:none;" onchange="handleLinkedInResumeUpload(this)" />
               </div>
               <textarea id="resume" placeholder="Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file." data-i18n-placeholder="resume_placeholder" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
