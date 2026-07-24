@@ -270,6 +270,17 @@
     .wc-vtab-active { background: #fff; color: #4338ca; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .wc-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 16px; padding: 22px; margin-bottom: 18px; }
     .wc-step { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 14px; }
+    .wc-pal-btn { border: 1.5px solid #c7d2fe; background: #eef2ff; color: #4338ca; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 9px; cursor: pointer; }
+    .wc-pal-btn:hover { background: #e0e7ff; }
+    .wc-blk { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: #fafafa; }
+    .wc-blk.wc-drag-over { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+    .wc-blk-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .wc-blk-handle { cursor: grab; color: #9ca3af; font-size: 15px; user-select: none; }
+    .wc-blk-type { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #6366f1; flex: 1; }
+    .wc-blk-del { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; line-height: 1; }
+    .wc-blk-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .wc-blk input.text-input, .wc-blk textarea.text-input, .wc-blk select.text-input { font-size: 13px; }
+    .wc-blk-width { font-size: 12px; color: #6b7280; }
   </style>
 </head>
 <body>
@@ -1003,9 +1014,24 @@
             <p id="wcNoAssets" style="display:none;font-size:13px;color:#6b7280;margin-top:10px;" data-i18n="wc_no_assets">No saved resumes yet — tailor one in the Tailor tab and it'll appear here automatically.</p>
           </div>
 
-          <!-- 2. Video (surface the generator + upload entry points) -->
+          <!-- 2. Layout / blocks editor -->
           <div class="wc-card">
-            <div class="wc-step" data-i18n="wc_step_video">2. Add a video (optional)</div>
+            <div class="wc-step" data-i18n="wc_step_layout">2. Design your layout</div>
+            <p style="font-size:13px;color:#6b7280;margin-bottom:12px;" data-i18n="wc_layout_help">Add blocks and drag to reorder. Set each block's width — blocks flow into rows, so two half-width blocks sit side by side. On phones everything stacks.</p>
+            <div class="wc-palette" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+              <button type="button" class="wc-pal-btn" onclick="wcAddBlock('heading')" data-i18n="wc_add_heading">+ Heading</button>
+              <button type="button" class="wc-pal-btn" onclick="wcAddBlock('text')" data-i18n="wc_add_text">+ Text</button>
+              <button type="button" class="wc-pal-btn" onclick="wcAddBlock('resume')" data-i18n="wc_add_resume">+ Resume</button>
+              <button type="button" class="wc-pal-btn" onclick="wcAddBlock('image')" data-i18n="wc_add_image">+ Image</button>
+              <button type="button" class="wc-pal-btn" onclick="wcAddBlock('video')" data-i18n="wc_add_video">+ Video</button>
+              <button type="button" class="wc-pal-btn" onclick="wcAddBlock('spacer')" data-i18n="wc_add_spacer">+ Spacer</button>
+            </div>
+            <div id="wcBlocksList"></div>
+          </div>
+
+          <!-- 3. Video (surface the generator + upload entry points) -->
+          <div class="wc-card">
+            <div class="wc-step" data-i18n="wc_step_video">3. Add a video (optional)</div>
             <p style="font-size:13px;color:#6b7280;margin-bottom:12px;" data-i18n="wc_video_help">Add a video hero to your site — generate one from your résumé, or upload your own.</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
               <button class="btn btn-outline" onclick="wcGoGenerateVideo()" style="font-size:13px;padding:10px 16px;">
@@ -1020,7 +1046,7 @@
 
           <!-- 3. Publish -->
           <div class="wc-card">
-            <div class="wc-step" data-i18n="wc_step_publish">3. Publish</div>
+            <div class="wc-step" data-i18n="wc_step_publish">4. Publish</div>
             <label class="input-label" for="wcAddress" data-i18n="wc_address_label">Your website address</label>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
               <span id="wcAddressOrigin" style="font-size:13px;color:#6b7280;"></span>
@@ -1672,15 +1698,28 @@
         wc_title: 'Website Creator',
         wc_subtitle: 'Build a live, customizable personal website from your saved resumes and cover letters.',
         wc_view_edit: '✏️ Edit', wc_view_preview: '👁 Preview',
+        wc_step_layout: '2. Design your layout',
+        wc_layout_help: "Add blocks and drag to reorder. Set each block's width — blocks flow into rows, so two half-width blocks sit side by side. On phones everything stacks.",
+        wc_add_heading: '+ Heading', wc_add_text: '+ Text', wc_add_resume: '+ Resume',
+        wc_add_image: '+ Image', wc_add_video: '+ Video', wc_add_spacer: '+ Spacer',
+        wc_blocks_empty: 'No blocks yet — add one above to start building your page.',
+        wc_width: 'Width', wc_width_12: 'Full', wc_width_8: 'Two-thirds', wc_width_6: 'Half', wc_width_4: 'Third',
+        wc_blk_heading: 'Heading', wc_blk_text: 'Text', wc_blk_resume: 'Resume', wc_blk_image: 'Image', wc_blk_video: 'Video', wc_blk_spacer: 'Spacer',
+        wc_blk_resume_note: 'Shows your selected resume from step 1.', wc_blk_spacer_note: 'Adds vertical space.',
+        wc_ph_heading: 'Heading text', wc_ph_text: 'Write a paragraph…',
+        wc_ph_image: 'Image URL (https://…)', wc_ph_caption: 'Caption (optional)',
+        wc_ph_video: 'Video URL (mp4) — or generate one above', wc_ph_vlabel: 'Label — e.g. About Me',
+        wc_preview_norecipient: 'Pick a resume in step 1 to preview your site.',
+        wc_preview_loading: 'Building preview…', wc_preview_err: 'Could not build the preview — try again.',
         wc_step_content: '1. Choose your content',
         wc_resume_label: 'Resume (shown on your site)', wc_resume_none: 'No saved resumes yet',
         wc_cover_label: 'Cover letter (optional)', wc_cover_none: 'None',
         wc_no_assets: "No saved resumes yet — tailor one in the Tailor tab and it'll appear here automatically.",
-        wc_step_video: '2. Add a video (optional)',
+        wc_step_video: '3. Add a video (optional)',
         wc_video_help: 'Add a video hero to your site — generate one from your résumé, or upload your own.',
         wc_video_generate: '🎬 Generate from my résumé', wc_video_upload: '⬆ Upload your own video',
         wc_video_upload_soon: 'Uploading your own video unlocks with media uploads in the next update — for now, generate one from your résumé.',
-        wc_step_publish: '3. Publish', wc_address_label: 'Your website address',
+        wc_step_publish: '4. Publish', wc_address_label: 'Your website address',
         wc_publish_btn: '🌐 Publish my website', wc_view_live: 'View live ↗',
         wc_more_soon: 'More customization — themes, backgrounds, and drag-and-drop layout — is coming next.',
         wc_preview_empty: 'Publish your site to preview it live here.',
@@ -1747,15 +1786,28 @@
         wc_title: '网站创建器',
         wc_subtitle: '用你保存的简历和求职信，打造一个可自定义的个人网站。',
         wc_view_edit: '✏️ 编辑', wc_view_preview: '👁 预览',
+        wc_step_layout: '2. 设计你的布局',
+        wc_layout_help: '添加区块并拖动排序。设置每个区块的宽度——区块会自动排入行，因此两个半宽区块会并排显示。在手机上全部纵向堆叠。',
+        wc_add_heading: '+ 标题', wc_add_text: '+ 文本', wc_add_resume: '+ 简历',
+        wc_add_image: '+ 图片', wc_add_video: '+ 视频', wc_add_spacer: '+ 间距',
+        wc_blocks_empty: '还没有区块——在上方添加一个开始搭建你的页面。',
+        wc_width: '宽度', wc_width_12: '整宽', wc_width_8: '三分之二', wc_width_6: '一半', wc_width_4: '三分之一',
+        wc_blk_heading: '标题', wc_blk_text: '文本', wc_blk_resume: '简历', wc_blk_image: '图片', wc_blk_video: '视频', wc_blk_spacer: '间距',
+        wc_blk_resume_note: '显示你在第1步选择的简历。', wc_blk_spacer_note: '添加纵向间距。',
+        wc_ph_heading: '标题文字', wc_ph_text: '写一段文字…',
+        wc_ph_image: '图片链接（https://…）', wc_ph_caption: '说明文字（可选）',
+        wc_ph_video: '视频链接（mp4）——或在上方生成一个', wc_ph_vlabel: '标签——例如"关于我"',
+        wc_preview_norecipient: '在第1步选择一份简历以预览你的网站。',
+        wc_preview_loading: '正在生成预览…', wc_preview_err: '无法生成预览——请重试。',
         wc_step_content: '1. 选择内容',
         wc_resume_label: '简历（显示在你的网站上）', wc_resume_none: '暂无已保存的简历',
         wc_cover_label: '求职信（可选）', wc_cover_none: '无',
         wc_no_assets: '暂无已保存的简历——在"定制"标签页定制一份，它会自动出现在这里。',
-        wc_step_video: '2. 添加视频（可选）',
+        wc_step_video: '3. 添加视频（可选）',
         wc_video_help: '为你的网站添加视频封面——用简历生成，或上传你自己的视频。',
         wc_video_generate: '🎬 用我的简历生成', wc_video_upload: '⬆ 上传我自己的视频',
         wc_video_upload_soon: '上传自己的视频将随媒体上传功能在下次更新中开放——目前请先用简历生成。',
-        wc_step_publish: '3. 发布', wc_address_label: '你的网站地址',
+        wc_step_publish: '4. 发布', wc_address_label: '你的网站地址',
         wc_publish_btn: '🌐 发布我的网站', wc_view_live: '查看网站 ↗',
         wc_more_soon: '更多自定义功能——主题、背景和拖拽布局——即将推出。',
         wc_preview_empty: '发布你的网站后即可在此实时预览。',
@@ -6005,9 +6057,17 @@ Aaliyah Washington`
           if (cfg.assets.resumeId && rSel.querySelector(`option[value="${cfg.assets.resumeId}"]`)) rSel.value = String(cfg.assets.resumeId);
           if (cfg.assets.coverLetterId && cSel.querySelector(`option[value="${cfg.assets.coverLetterId}"]`)) cSel.value = String(cfg.assets.coverLetterId);
         }
-      } else if (viewLive) {
-        viewLive.style.display = 'none';
+        // Load saved blocks, or seed a default layout if the site predates the editor.
+        if (cfg && Array.isArray(cfg.blocks) && cfg.blocks.length) {
+          wcBlocks = cfg.blocks.map(b => Object.assign({ id: wcNewId() }, b));
+        } else {
+          wcSeedDefaultBlocks();
+        }
+      } else {
+        if (viewLive) viewLive.style.display = 'none';
+        wcSeedDefaultBlocks();
       }
+      wcRenderBlocks();
       wcSetView('edit');
     }
 
@@ -6017,17 +6077,41 @@ Aaliyah Washington`
       document.getElementById('wcPreview').style.display = edit ? 'none' : 'block';
       document.getElementById('wcTabEdit').classList.toggle('wc-vtab-active', edit);
       document.getElementById('wcTabPreview').classList.toggle('wc-vtab-active', !edit);
-      if (!edit) {
-        // Phase 2 preview = the live published site (a full config-driven preview
-        // endpoint arrives with the customization phase). Show a prompt until published.
-        const frame = document.getElementById('wcPreviewFrame');
-        const empty = document.getElementById('wcPreviewEmpty');
-        if (wcSite && wcSite.subdomain) {
-          frame.src = window.location.origin + '/site/' + wcSite.subdomain + '?preview=' + Date.now();
-          frame.style.display = 'block'; empty.style.display = 'none';
-        } else {
-          frame.style.display = 'none'; empty.style.display = 'block';
-        }
+      if (!edit) wcLoadPreview();
+    }
+
+    // WYSIWYG preview of the CURRENT (unpublished) edits via /api/personal-site/preview.
+    async function wcLoadPreview() {
+      const frame = document.getElementById('wcPreviewFrame');
+      const empty = document.getElementById('wcPreviewEmpty');
+      const rSel = document.getElementById('wcResumeSelect');
+      const resume = wcResumes.find(x => String(x.id) === (rSel && rSel.value));
+      if (!resume) {
+        frame.style.display = 'none';
+        empty.textContent = _t('wc_preview_norecipient', 'Pick a resume in step 1 to preview your site.');
+        empty.style.display = 'block';
+        return;
+      }
+      empty.textContent = _t('wc_preview_loading', 'Building preview…'); empty.style.display = 'block'; frame.style.display = 'none';
+      const rTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
+      try {
+        const res = await fetch('/api/personal-site/preview', {
+          method: 'POST', headers: authHeaders(),
+          body: JSON.stringify({
+            text: resume.content,
+            name: (resume.title || '').replace(/resume/i, '').trim(),
+            layout: rTpl.layout,
+            colors: { primary: rTpl.c.p, accent: rTpl.c.a, light: rTpl.c.l },
+            serif: !!rTpl.serif, hideContact: false,
+            config: wcBuildConfig(),
+          }),
+        });
+        if (!res.ok) throw new Error('preview failed');
+        frame.srcdoc = await res.text();
+        frame.style.display = 'block'; empty.style.display = 'none';
+      } catch (_) {
+        empty.textContent = _t('wc_preview_err', 'Could not build the preview — try again.');
+        empty.style.display = 'block'; frame.style.display = 'none';
       }
     }
 
@@ -6055,10 +6139,8 @@ Aaliyah Washington`
       const resume = wcResumes.find(r => r.id === resumeId);
       if (!resume) { setStatus(_t('wc_err_no_resume', 'Pick a resume to publish first.'), false); return; }
       if (addr.length < 3) { setStatus(_t('wc_err_addr', 'Choose an address of 3–30 letters, numbers or hyphens.'), false); return; }
-      const coverId = cSel && cSel.value ? Number(cSel.value) : null;
-
       const rTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
-      const config = { v: 1, assets: { resumeId, coverLetterId: coverId || null } };
+      const config = wcBuildConfig();
       const btn = document.getElementById('wcPublishBtn');
       if (btn) btn.disabled = true;
       setStatus(_t('wc_publishing', 'Publishing…'), true);
@@ -6088,6 +6170,104 @@ Aaliyah Washington`
       } finally {
         if (btn) btn.disabled = false;
       }
+    }
+
+    // ── Website Creator: block/layout editor (Phase 3b) ───────────────────────
+    let wcBlocks = [];
+    let _wcDragId = null;
+    const WC_WIDTHS = [[12, 'Full'], [8, 'Two-thirds'], [6, 'Half'], [4, 'Third']];
+    const WC_VIDEO_LABELS = ['Meet Me', 'About Me', 'Why Hire Me', 'My Story', 'Elevator Pitch'];
+    function wcAttr(s) { return wcEsc(s).replace(/"/g, '&quot;'); }
+    function wcNewId() { return 'b' + Math.random().toString(36).slice(2, 9); }
+
+    function wcAddBlock(type) {
+      const defaults = {
+        heading: { text: '', colSpan: 12 },
+        text: { text: '', colSpan: 12 },
+        resume: { colSpan: 12 },
+        image: { src: '', caption: '', colSpan: 6 },
+        video: { src: '', label: '', colSpan: 12 },
+        spacer: { colSpan: 12 },
+      };
+      wcBlocks.push(Object.assign({ id: wcNewId(), type }, defaults[type] || { colSpan: 12 }));
+      wcRenderBlocks();
+    }
+    function wcDelBlock(id) { wcBlocks = wcBlocks.filter(b => b.id !== id); wcRenderBlocks(); }
+    function wcBlockField(id, field, value) { const b = wcBlocks.find(x => x.id === id); if (b) b[field] = (field === 'colSpan') ? Number(value) : value; }
+
+    function wcRenderBlocks() {
+      const wrap = document.getElementById('wcBlocksList');
+      if (!wrap) return;
+      if (!wcBlocks.length) {
+        wrap.innerHTML = `<p style="font-size:13px;color:#9ca3af;">${wcEsc(_t('wc_blocks_empty', 'No blocks yet — add one above to start building your page.'))}</p>`;
+        return;
+      }
+      const widthSel = (b) => `<select class="text-input wc-blk-width" style="max-width:130px;padding:5px 8px;" onchange="wcBlockField('${b.id}','colSpan',this.value)">` +
+        WC_WIDTHS.map(([v, lbl]) => `<option value="${v}"${Number(b.colSpan) === v ? ' selected' : ''}>${wcEsc(_t('wc_width_' + v, lbl))}</option>`).join('') + `</select>`;
+      const typeName = (t) => _t('wc_blk_' + t, t.charAt(0).toUpperCase() + t.slice(1));
+      wrap.innerHTML = wcBlocks.map(b => {
+        let body = '';
+        if (b.type === 'heading') body = `<input type="text" class="text-input" style="width:100%;" placeholder="${wcAttr(_t('wc_ph_heading', 'Heading text'))}" value="${wcAttr(b.text || '')}" oninput="wcBlockField('${b.id}','text',this.value)"/>`;
+        else if (b.type === 'text') body = `<textarea class="text-input" style="width:100%;min-height:70px;" placeholder="${wcAttr(_t('wc_ph_text', 'Write a paragraph…'))}" oninput="wcBlockField('${b.id}','text',this.value)">${wcEsc(b.text || '')}</textarea>`;
+        else if (b.type === 'resume') body = `<div style="font-size:13px;color:#6b7280;">${wcEsc(_t('wc_blk_resume_note', 'Shows your selected resume from step 1.'))}</div>`;
+        else if (b.type === 'image') body = `<input type="url" class="text-input" style="width:100%;margin-bottom:6px;" placeholder="${wcAttr(_t('wc_ph_image', 'Image URL (https://…)'))}" value="${wcAttr(b.src || '')}" oninput="wcBlockField('${b.id}','src',this.value)"/><input type="text" class="text-input" style="width:100%;" placeholder="${wcAttr(_t('wc_ph_caption', 'Caption (optional)'))}" value="${wcAttr(b.caption || '')}" oninput="wcBlockField('${b.id}','caption',this.value)"/>`;
+        else if (b.type === 'video') body = `<input type="url" class="text-input" style="width:100%;margin-bottom:6px;" placeholder="${wcAttr(_t('wc_ph_video', 'Video URL (mp4) — or generate one above'))}" value="${wcAttr(b.src || '')}" oninput="wcBlockField('${b.id}','src',this.value)"/><input type="text" class="text-input" list="wcVideoLabels" style="width:100%;" placeholder="${wcAttr(_t('wc_ph_vlabel', 'Label — e.g. About Me'))}" value="${wcAttr(b.label || '')}" oninput="wcBlockField('${b.id}','label',this.value)"/>`;
+        else if (b.type === 'spacer') body = `<div style="font-size:13px;color:#9ca3af;">${wcEsc(_t('wc_blk_spacer_note', 'Adds vertical space.'))}</div>`;
+        const width = b.type === 'spacer' ? '' : `<span class="wc-blk-width">${wcEsc(_t('wc_width', 'Width'))}:</span>${widthSel(b)}`;
+        return `<div class="wc-blk" draggable="true" data-id="${b.id}">
+          <div class="wc-blk-top">
+            <span class="wc-blk-handle" title="Drag to reorder">⠿</span>
+            <span class="wc-blk-type">${wcEsc(typeName(b.type))}</span>
+            <div class="wc-blk-row">${width}</div>
+            <button type="button" class="wc-blk-del" title="Delete" onclick="wcDelBlock('${b.id}')">×</button>
+          </div>
+          <div>${body}</div>
+        </div>`;
+      }).join('') + `<datalist id="wcVideoLabels">${WC_VIDEO_LABELS.map(l => `<option value="${wcAttr(l)}"></option>`).join('')}</datalist>`;
+      wcBindBlockDnD();
+    }
+
+    // Drag-to-reorder the block cards (HTML5 DnD, reliable for lists).
+    function wcBindBlockDnD() {
+      const wrap = document.getElementById('wcBlocksList');
+      if (!wrap) return;
+      wrap.querySelectorAll('.wc-blk').forEach(el => {
+        el.addEventListener('dragstart', e => { _wcDragId = el.dataset.id; try { e.dataTransfer.effectAllowed = 'move'; } catch (_) {} });
+        el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('wc-drag-over'); });
+        el.addEventListener('dragleave', () => el.classList.remove('wc-drag-over'));
+        el.addEventListener('drop', e => {
+          e.preventDefault(); el.classList.remove('wc-drag-over');
+          const from = wcBlocks.findIndex(b => b.id === _wcDragId);
+          const to = wcBlocks.findIndex(b => b.id === el.dataset.id);
+          if (from > -1 && to > -1 && from !== to) { const [m] = wcBlocks.splice(from, 1); wcBlocks.splice(to, 0, m); wcRenderBlocks(); }
+          _wcDragId = null;
+        });
+      });
+    }
+
+    // Seed a sensible starter layout for a brand-new (blank) site.
+    function wcSeedDefaultBlocks() {
+      const rSel = document.getElementById('wcResumeSelect');
+      const r = wcResumes.find(x => String(x.id) === (rSel && rSel.value));
+      const name = r ? (r.title || '').replace(/resume/i, '').trim() : '';
+      wcBlocks = [
+        { id: wcNewId(), type: 'heading', text: name || 'Your Name', colSpan: 12 },
+        { id: wcNewId(), type: 'resume', colSpan: 12 },
+      ];
+    }
+
+    // Assemble the config object sent to publish/preview.
+    function wcBuildConfig() {
+      const rSel = document.getElementById('wcResumeSelect');
+      const cSel = document.getElementById('wcCoverSelect');
+      const rTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
+      return {
+        v: 1,
+        lang: _lang(),
+        theme: { primary: (rTpl.c.p || '').replace('#', ''), accent: (rTpl.c.a || '').replace('#', '') },
+        assets: { resumeId: rSel && rSel.value ? Number(rSel.value) : null, coverLetterId: cSel && cSel.value ? Number(cSel.value) : null },
+        blocks: wcBlocks.map(b => ({ type: b.type, colSpan: Number(b.colSpan) || 12, text: b.text, src: b.src, caption: b.caption, label: b.label, alt: b.alt })),
+      };
     }
 
     // ── Personal website (Pro) ────────────────────────────────────────────────

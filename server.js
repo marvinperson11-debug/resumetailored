@@ -1759,9 +1759,13 @@ const _safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/|data:image\/
 // One block → HTML on a 12-column grid. On mobile the grid collapses (CSS) so
 // blocks stack full-width in source order; placement is desktop-only.
 function _renderSiteBlock(b, row, accent) {
-  const col = _clampInt(b.col, 1, 12, 1);
   const span = _clampInt(b.colSpan, 1, 12, 12);
-  const place = `grid-column:${col} / span ${Math.min(span, 13 - col)};`;
+  // Explicit start column → fixed placement; no column → auto-flow (blocks fill
+  // rows left-to-right, so two half-width blocks sit side by side). The editor
+  // uses auto-flow (width-only) by default.
+  const place = (b.col != null && Number.isFinite(Number(b.col)))
+    ? (() => { const col = _clampInt(b.col, 1, 12, 1); return `grid-column:${col} / span ${Math.min(span, 13 - col)};`; })()
+    : `grid-column:span ${span};`;
   let inner = '';
   switch (b.type) {
     case 'heading': inner = `<h2 class="sg-blk-h">${_escHtml(String(b.text || '').slice(0, 200))}</h2>`; break;
@@ -2010,6 +2014,33 @@ app.post('/api/personal-site', (req, res) => {
   });
   const origin = `${req.protocol}://${req.get('host')}`;
   res.json({ url: `${origin}/site/${sub}`, subdomain: sub });
+});
+
+// WYSIWYG preview: render the personal site from posted fields WITHOUT saving,
+// so the Website Creator's Edit/Preview toggle can show unpublished edits. Pro-gated.
+app.post('/api/personal-site/preview', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
+  const { text, name, colors, photoUrl, hideContact, serif, layout, config } = req.body || {};
+  if (!text || typeof text !== 'string' || text.trim().length < 10) {
+    return res.status(400).json({ error: 'Nothing to preview yet.' });
+  }
+  let _config = null;
+  if (config != null) {
+    try { const s = typeof config === 'string' ? config : JSON.stringify(config); if (s && s.length <= 200000) { JSON.parse(s); _config = s; } } catch (_) { _config = null; }
+  }
+  let photo = null;
+  if (typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000) photo = photoUrl;
+  const row = {
+    subdomain: 'preview', name: (name || '').toString().slice(0, 80), text: text.slice(0, 40000),
+    accent: (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
+    primary_hex: (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
+    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0,
+    layout: (_SHARE_LAYOUTS.has(layout) ? layout : null), config: _config,
+  };
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(_renderPersonalSite(row, `${req.protocol}://${req.get('host')}`, { indexable: false, footer: '' }));
 });
 
 // Unpublish (delete) the signed-in user's personal site.
