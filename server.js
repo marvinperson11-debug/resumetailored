@@ -1984,7 +1984,13 @@ function _shareResumeHtml(row, origin, opts = {}) {
 function _renderPersonalSite(row, origin, opts = {}) {
   let config = null;
   if (row && row.config) { try { config = JSON.parse(row.config); } catch (_) { config = null; } }
-  // Grid layout (Website Creator, Phase 3): render from config.blocks once the
+  // Website Builder v2 (site document: pages → sections → absolutely-positioned
+  // elements). This is the renderer the editor canvas also runs through, so
+  // preview is the published page by construction.
+  if (config && Array.isArray(config.pages) && config.pages.length) {
+    return _renderSiteDoc(row, origin, opts, config);
+  }
+  // Grid layout (Website Creator v1): render from config.blocks once the
   // user has arranged blocks. Legacy sites (config null, or a config without a
   // non-empty blocks array — e.g. Phase 2 publishes that only stored asset ids)
   // fall through to the shared resume-document renderer, byte-identical to before.
@@ -2302,6 +2308,309 @@ function _renderSiteGrid(row, origin, opts, config) {
 </html>`;
 }
 
+// ─── Website Builder v2 — site-document renderer ─────────────────────────────
+// A site document is: pages → sections → absolutely-positioned elements.
+//
+//   { v:2, theme:{...}, pages:[ { id,name,slug,isHome,seo,
+//       sections:[ { id,h,bg,els:[ { id,type,x,y,w,h,z,mhide,props } ] } ] } ] }
+//
+// Elements are laid out on a 1200px-wide design canvas. x/w are emitted as
+// percentages (so the canvas is fluid), y/h stay in px (vertical rhythm).
+//
+// MOBILE: elements are emitted in reading order (sorted by y, then x) and the
+// mobile stylesheet drops them to static full-width flow — so a template stacks
+// correctly on a phone with no per-element work. Per-element mobile overrides
+// come later; `mhide` (hide on mobile) is honored now.
+const SD_CANVAS = 1200;
+const _sdPct = (v) => (Math.max(0, Math.min(SD_CANVAS, Number(v) || 0)) / SD_CANVAS * 100).toFixed(4) + '%';
+const _sdPx = (v, dflt = 0) => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.round(n)) : dflt; };
+const _sdColor = (c, dflt) => (typeof c === 'string' && /^#?[0-9a-fA-F]{3,8}$/.test(c.replace('#', '')) ? ('#' + c.replace('#', '')) : dflt);
+const _sdText = (s, max = 4000) => _escHtml(String(s == null ? '' : s).slice(0, max));
+
+// A section background: solid colour, gradient, or an image from the media library.
+function _sdSectionBg(bg) {
+  if (!bg || typeof bg !== 'object') return '';
+  if (bg.type === 'image') { const u = _safeUrl(bg.value); return u ? `background-image:url('${_escHtml(u)}');background-size:cover;background-position:center;` : ''; }
+  if (bg.type === 'gradient' && typeof bg.value === 'string') {
+    // Only allow a simple, well-formed gradient string (no arbitrary CSS).
+    const g = bg.value.slice(0, 300);
+    return /^(linear|radial)-gradient\([^;{}]*\)$/.test(g) ? `background-image:${g};` : '';
+  }
+  if (bg.type === 'color') { const c = _sdColor(bg.value, ''); return c ? `background-color:${c};` : ''; }
+  return '';
+}
+
+// One element → HTML. `ctx` carries row/theme/lang/pages for elements that need
+// site-level data (resume, nav, forms).
+function _sdElement(el, ctx) {
+  const p = (el && el.props) || {};
+  const T = ctx.theme;
+  const align = ['left', 'center', 'right'].includes(p.align) ? p.align : 'left';
+  const color = _sdColor(p.color, '');
+  const styleText = `text-align:${align};${color ? `color:${color};` : ''}`;
+  switch (el.type) {
+    case 'heading':
+      return `<h1 class="sd-h1" style="${styleText}${p.size ? `font-size:${_sdPx(p.size, 48)}px;` : ''}">${_sdText(p.text, 300)}</h1>`;
+    case 'subheading':
+      return `<h2 class="sd-h2" style="${styleText}${p.size ? `font-size:${_sdPx(p.size, 24)}px;` : ''}">${_sdText(p.text, 300)}</h2>`;
+    case 'paragraph':
+      return `<div class="sd-p" style="${styleText}">${_sdText(p.text, 4000).replace(/\n/g, '<br/>')}</div>`;
+    case 'image': {
+      const u = _safeUrl(p.src); if (!u) return '';
+      return `<img class="sd-img" src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy" style="border-radius:${_sdPx(p.radius, 12)}px;object-fit:${p.fit === 'contain' ? 'contain' : 'cover'};"/>`;
+    }
+    case 'imagebox': {
+      const u = _safeUrl(p.src); if (!u) return '';
+      return `<figure class="sd-ibox" style="border-radius:${_sdPx(p.radius, 14)}px;"><img src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy"/>${p.caption ? `<figcaption>${_sdText(p.caption, 300)}</figcaption>` : ''}</figure>`;
+    }
+    case 'gallery': {
+      const items = Array.isArray(p.items) ? p.items.slice(0, 40) : [];
+      const cells = items.map((it) => {
+        const u = _safeUrl(it && it.src); if (!u) return '';
+        const cap = it.caption || it.title ? `<figcaption>${_sdText(it.title || '', 120)}${it.caption ? `<span>${_sdText(it.caption, 200)}</span>` : ''}</figcaption>` : '';
+        const img = `<img src="${_escHtml(u)}" alt="${_sdText(it.alt || it.title || '', 200)}" loading="lazy"/>`;
+        const inner = `<figure class="sd-gcell">${img}${cap}</figure>`;
+        const href = _safeUrl(it && it.link);
+        return href ? `<a href="${_escHtml(href)}" target="_blank" rel="noopener">${inner}</a>` : inner;
+      }).join('');
+      if (!cells) return '';
+      const layout = ['grid', 'masonry', 'slider'].includes(p.layout) ? p.layout : 'grid';
+      const cols = Math.max(1, Math.min(6, _sdPx(p.cols, 3)));
+      const gap = Math.max(0, Math.min(48, _sdPx(p.gap, 14)));
+      return `<div class="sd-gal sd-gal--${layout}" style="--gcols:${cols};--ggap:${gap}px;">${cells}</div>`;
+    }
+    case 'video': {
+      const u = _safeUrl(p.src); if (!u) return '';
+      const poster = _safeUrl(p.poster);
+      return `${p.label ? `<div class="sd-elabel">${_sdText(p.label, 120)}</div>` : ''}<video class="sd-video" controls preload="metadata"${poster ? ` poster="${_escHtml(poster)}"` : ''}><source src="${_escHtml(u)}"/></video>`;
+    }
+    case 'audio': {
+      const u = _safeUrl(p.src); if (!u) return '';
+      return `${p.label ? `<div class="sd-elabel">${_sdText(p.label, 120)}</div>` : ''}<audio class="sd-audio" controls preload="none"><source src="${_escHtml(u)}"/></audio>`;
+    }
+    case 'button': {
+      const href = _sdLink(p, ctx);
+      const ghost = p.style === 'ghost';
+      return `<a class="sd-btn${ghost ? ' sd-btn--ghost' : ''}" href="${_escHtml(href || '#')}"${/^https?:/i.test(href) ? ' target="_blank" rel="noopener"' : ''}>${_sdText(p.text || 'Learn more', 80)}</a>`;
+    }
+    case 'social': {
+      const items = Array.isArray(p.items) ? p.items.slice(0, 10) : [];
+      const links = items.map((it) => {
+        const u = _safeUrl(it && it.url); if (!u) return '';
+        return `<a class="sd-soc" href="${_escHtml(u)}" target="_blank" rel="noopener" aria-label="${_sdText(it.network || 'link', 40)}">${_sdText((it.network || '?').slice(0, 2).toUpperCase(), 4)}</a>`;
+      }).join('');
+      return links ? `<div class="sd-socs">${links}</div>` : '';
+    }
+    case 'form': {
+      const isPdf = p.mode === 'pdf';
+      const SI = ctx.SI;
+      return `<div class="sd-form"><div class="sd-elabel">${_sdText(p.heading || (isPdf ? SI.request_h : SI.contact_h), 120)}</div>
+        <form class="sg-lead-form" onsubmit="return _sgLead(event,this)" data-sub="${_escHtml(ctx.sub)}" data-mode="${isPdf ? 'pdf' : 'contact'}">
+          <input name="name" placeholder="${_escHtml(SI.c_name)}" maxlength="120"/>
+          <input name="email" type="email" required placeholder="${_escHtml(SI.c_email)}" maxlength="200"/>
+          ${isPdf ? '' : `<textarea name="message" placeholder="${_escHtml(SI.c_msg)}" maxlength="2000"></textarea>`}
+          <button type="submit">${isPdf ? _escHtml(SI.c_send_pdf) : _escHtml(SI.c_send)}</button>
+          <div class="sg-lead-msg" style="display:none;"></div>
+        </form></div>`;
+    }
+    case 'divider':
+      return `<hr class="sd-divider" style="border-top-width:${_sdPx(p.thickness, 1)}px;${color ? `border-top-color:${color};` : ''}"/>`;
+    case 'box':
+      return `<div class="sd-box" style="${_sdColor(p.bg, '') ? `background:${_sdColor(p.bg, '')};` : ''}border-radius:${_sdPx(p.radius, 14)}px;"></div>`;
+    case 'spacer':
+      return '<div class="sd-spacer"></div>';
+    case 'nav': {
+      const links = (ctx.pages || []).map((pg) => {
+        const href = pg.isHome ? ctx.base : `${ctx.base}/${encodeURIComponent(pg.slug)}`;
+        const on = pg.slug === ctx.currentSlug;
+        return `<a class="sd-navlink${on ? ' is-on' : ''}" href="${_escHtml(href)}">${_sdText(pg.name, 60)}</a>`;
+      }).join('');
+      return links ? `<nav class="sd-nav">${links}</nav>` : '';
+    }
+    case 'resume':
+      return `<div class="sd-resume">${_renderResumeFragment(ctx.row, T.accent)}</div>`;
+    case 'casestudies': {
+      const items = Array.isArray(p.items) ? p.items.slice(0, 12) : [];
+      const cards = items.map((it) => {
+        const title = _sdText((it && it.title) || '', 160); if (!title) return '';
+        const chip = it && it.metric ? `<span class="sd-cs-chip">${_sdText(it.metric, 40)}</span>` : '';
+        const body = it && (it.detail || it.body) ? `<p>${_sdText(it.detail || it.body, 2000)}</p>` : '';
+        return `<details class="sd-cs"><summary><span>${title}</span>${chip}</summary>${body}</details>`;
+      }).join('');
+      return cards ? `<div class="sd-cswrap">${cards}</div>` : '';
+    }
+    case 'qr':
+      return `<img class="sd-qr" src="${_escHtml(ctx.base)}/qr.svg" alt="QR code" loading="lazy"/>`;
+    default:
+      return '';
+  }
+}
+
+// Resolve a button/link target: an external URL, another page, or an anchor.
+function _sdLink(p, ctx) {
+  if (p.page) { const pg = (ctx.pages || []).find((x) => x.slug === p.page); if (pg) return pg.isHome ? ctx.base : `${ctx.base}/${encodeURIComponent(pg.slug)}`; }
+  if (p.anchor) return '#' + String(p.anchor).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
+  return _safeUrl(p.href) || '';
+}
+
+function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
+  const pages = (Array.isArray(doc.pages) ? doc.pages : []).filter((p) => p && typeof p === 'object');
+  const wanted = String(opts.page || '').toLowerCase();
+  const page = (wanted && pages.find((p) => String(p.slug || '').toLowerCase() === wanted))
+    || pages.find((p) => p.isHome) || pages[0];
+  if (!page) return _shareResumeHtml(row, origin, opts); // empty doc → never render a blank page
+
+  const th = doc.theme || {};
+  const theme = {
+    primary: _sdColor(th.primary, '#6366F1'),
+    accent: _sdColor(th.accent, '#8B5CF6'),
+    ink: _sdColor(th.ink, '#0f172a'),
+    paper: _sdColor(th.paper, '#ffffff'),
+    muted: _sdColor(th.muted, '#64748b'),
+  };
+  const lang = doc.lang === 'zh' ? 'zh' : 'en';
+  const SI = _SITE_I18N[lang];
+  const sub = row.subdomain || '';
+  const base = opts.baseUrl || `${origin}/site/${sub}`;
+  const ctx = { row, theme, SI, sub, pages, currentSlug: page.slug, base, lang };
+
+  const sections = (Array.isArray(page.sections) ? page.sections : []).map((sec) => {
+    const h = _sdPx(sec && sec.h, 400);
+    // DOM order == mobile stacking order: sort by y, then x.
+    const els = (Array.isArray(sec && sec.els) ? sec.els : [])
+      .filter((e) => e && typeof e === 'object' && e.type)
+      .slice()
+      .sort((a, b) => (_sdPx(a.y) - _sdPx(b.y)) || (_sdPx(a.x) - _sdPx(b.x)));
+    const inner = els.map((el) => {
+      const html = _sdElement(el, ctx);
+      if (!html) return '';
+      const st = `left:${_sdPct(el.x)};top:${_sdPx(el.y)}px;width:${_sdPct(el.w)};min-height:${_sdPx(el.h, 0)}px;${el.z ? `z-index:${_sdPx(el.z)};` : ''}`;
+      return `<div class="sd-el${el.mhide ? ' sd-el--mhide' : ''}" style="${st}">${html}</div>`;
+    }).join('');
+    return `<section class="sd-sec" style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
+  }).join('');
+
+  const title = _sdText((page.seo && page.seo.title) || row.name || page.name || 'Portfolio', 120);
+  const desc = _sdText((page.seo && page.seo.description) || '', 300);
+  const indexable = !!opts.indexable;
+  const canonical = opts.canonicalUrl || base;
+  const footerHtml = opts.footer !== undefined ? opts.footer : '';
+
+  return `<!DOCTYPE html>
+<html lang="${lang}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="robots" content="${indexable ? 'index,follow' : 'noindex,nofollow'}"/>
+  <title>${title}</title>
+  ${desc ? `<meta name="description" content="${desc}"/>` : ''}
+  <meta property="og:type" content="profile"/>
+  <meta property="og:title" content="${title}"/>
+  <meta property="og:url" content="${_escHtml(canonical)}"/>
+  <meta property="og:image" content="${origin}/og-image.png"/>
+  <link rel="canonical" href="${_escHtml(canonical)}"/>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--p:${theme.primary};--a:${theme.accent};--ink:${theme.ink};--paper:${theme.paper};--muted:${theme.muted};}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
+    .sd-sec{position:relative;width:100%;background-repeat:no-repeat;}
+    .sd-inner{position:relative;max-width:${SD_CANVAS}px;margin:0 auto;}
+    .sd-el{position:absolute;}
+    .sd-h1{font-size:48px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
+    .sd-h2{font-size:24px;font-weight:700;line-height:1.25;}
+    .sd-p{font-size:16px;color:var(--muted);}
+    .sd-img{width:100%;height:100%;display:block;}
+    .sd-ibox{width:100%;height:100%;overflow:hidden;position:relative;margin:0;}
+    .sd-ibox img{width:100%;height:100%;object-fit:cover;display:block;}
+    .sd-ibox figcaption{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;font-size:13px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.65));}
+    .sd-elabel{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
+    .sd-gal{width:100%;}
+    .sd-gal--grid{display:grid;grid-template-columns:repeat(var(--gcols),1fr);gap:var(--ggap);}
+    .sd-gal--masonry{columns:var(--gcols);column-gap:var(--ggap);}
+    .sd-gal--masonry .sd-gcell{break-inside:avoid;margin-bottom:var(--ggap);}
+    .sd-gal--slider{display:flex;gap:var(--ggap);overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+    .sd-gal--slider .sd-gcell{flex:0 0 auto;width:min(72%,340px);scroll-snap-align:start;}
+    .sd-gcell{position:relative;margin:0;overflow:hidden;border-radius:12px;}
+    .sd-gcell img{width:100%;height:auto;display:block;transition:transform .35s ease;}
+    .sd-gcell:hover img{transform:scale(1.05);}
+    .sd-gcell figcaption{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.7));}
+    .sd-gcell figcaption span{display:block;font-weight:400;opacity:.85;font-size:12px;}
+    .sd-video,.sd-audio{width:100%;display:block;border-radius:12px;}
+    .sd-video{background:#000;}
+    .sd-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 26px;border-radius:999px;background:linear-gradient(135deg,var(--p),var(--a));color:#fff;font-weight:700;text-decoration:none;font-size:15px;}
+    .sd-btn--ghost{background:none;border:2px solid currentColor;color:var(--p);}
+    .sd-socs{display:flex;gap:10px;}
+    .sd-soc{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--p);color:#fff;font-size:12px;font-weight:800;text-decoration:none;}
+    .sd-divider{border:none;border-top:1px solid rgba(127,127,127,.35);width:100%;}
+    .sd-box{width:100%;height:100%;}
+    .sd-nav{display:flex;gap:22px;flex-wrap:wrap;align-items:center;}
+    .sd-navlink{font-size:15px;font-weight:600;color:inherit;text-decoration:none;opacity:.8;}
+    .sd-navlink.is-on,.sd-navlink:hover{opacity:1;color:var(--p);}
+    .sd-form{background:rgba(255,255,255,.9);border:1px solid rgba(15,23,42,.08);border-radius:14px;padding:18px;}
+    .sd-form .sg-lead-form{display:flex;flex-direction:column;gap:8px;}
+    .sd-form input,.sd-form textarea{border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;}
+    .sd-form textarea{min-height:80px;}
+    .sd-form button{background:var(--p);color:#fff;border:none;border-radius:9px;padding:10px;font-weight:700;cursor:pointer;}
+    .sd-form .sg-lead-msg{font-size:13px;color:#059669;}
+    .sd-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:32px 34px;color:#1f2430;}
+    .sd-resume .r-title{font-size:15px;font-weight:800;margin-top:10px;}
+    .sd-resume .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
+    .sd-resume .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
+    .sd-resume .r-bul{list-style:none;margin:2px 0 8px;}
+    .sd-resume .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
+    .sd-resume .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--a);}
+    .sd-cswrap{display:flex;flex-direction:column;gap:10px;}
+    .sd-cs{background:rgba(255,255,255,.92);border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:14px 16px;color:#1f2430;}
+    .sd-cs summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;font-weight:700;}
+    .sd-cs summary::-webkit-details-marker{display:none;}
+    .sd-cs summary span:first-child{flex:1;}
+    .sd-cs-chip{background:var(--a);color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;}
+    .sd-cs p{font-size:14px;color:#39414f;margin-top:10px;}
+    .sd-qr{width:100%;max-width:150px;}
+    .sd-foot{text-align:center;font-size:13px;color:var(--muted);padding:24px 16px;}
+    /* MOBILE: sections grow to fit, elements drop to full-width static flow in
+       DOM order (which the renderer already sorted top-to-bottom). */
+    @media(max-width:820px){
+      .sd-inner{height:auto!important;padding:30px 18px;}
+      .sd-el{position:static!important;width:100%!important;min-height:0!important;margin:0 0 18px;}
+      .sd-el:last-child{margin-bottom:0;}
+      .sd-el--mhide{display:none!important;}
+      .sd-h1{font-size:32px;}
+      .sd-h2{font-size:20px;}
+      .sd-gal--grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
+      .sd-gal--masonry{columns:2;}
+      .sd-ibox,.sd-img{height:auto!important;}
+    }
+  </style>
+</head>
+<body>
+  ${sections}
+  ${footerHtml ? `<div class="sd-foot">${footerHtml}</div>` : ''}
+  <script>
+    var SITE_I18N=${JSON.stringify(_SITE_I18N)};
+    function _sgLead(e,f){
+      e.preventDefault();
+      var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;
+      var fd=new FormData(f), msg=f.querySelector('.sg-lead-msg');
+      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||''};
+      fetch('/api/site-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+        .then(function(r){return r.json().catch(function(){return {};});})
+        .then(function(){
+          f.querySelectorAll('input,textarea,button').forEach(function(el){el.style.display='none';});
+          msg.style.display='block';
+          msg.textContent=(f.dataset.mode==='pdf')?L.c_thanks_pdf:L.c_thanks;
+        })
+        .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
+      return false;
+    }
+  </script>
+</body>
+</html>`;
+}
+
 const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'Too many share links — please wait a minute.' } });
 app.post('/api/share', shareLimiter, (req, res) => {
   try {
@@ -2446,7 +2755,7 @@ app.post('/api/personal-site/preview', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
-  const { text, name, colors, photoUrl, hideContact, serif, layout, config } = req.body || {};
+  const { text, name, colors, photoUrl, hideContact, serif, layout, config, subdomain, page } = req.body || {};
   if (!text || typeof text !== 'string' || text.trim().length < 10) {
     return res.status(400).json({ error: 'Nothing to preview yet.' });
   }
@@ -2456,15 +2765,24 @@ app.post('/api/personal-site/preview', (req, res) => {
   }
   let photo = null;
   if (typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000) photo = photoUrl;
+  // Preview renders as the user's real subdomain when they have one, so the
+  // output is identical to the published page (see test/preview-parity.js).
+  const sub = _validSubdomain(subdomain) || 'preview';
   const row = {
-    subdomain: 'preview', name: (name || '').toString().slice(0, 80), text: text.slice(0, 40000),
+    subdomain: sub, name: (name || '').toString().slice(0, 80), text: text.slice(0, 40000),
     accent: (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
     primary_hex: (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
     serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0,
     layout: (_SHARE_LAYOUTS.has(layout) ? layout : null), config: _config,
   };
+  const origin = `${req.protocol}://${req.get('host')}`;
+  const pageSlug = String(page || '').toLowerCase().slice(0, 60);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.send(_renderPersonalSite(row, `${req.protocol}://${req.get('host')}`, { indexable: false, footer: '' }));
+  res.send(_renderPersonalSite(row, origin, {
+    indexable: false, footer: '',
+    baseUrl: `${origin}/site/${sub}`,
+    page: pageSlug,
+  }));
 });
 
 // Toggle publish/unpublish without deleting (Back Office). Unpublished sites 404
@@ -2487,12 +2805,23 @@ app.delete('/api/personal-site', (req, res) => {
 });
 
 // Public render of a personal site — indexable, watermark-free.
-app.get('/site/:sub', (req, res) => {
+// Public render of a personal site. `:page` (optional) selects a page in a v2
+// site document; v1/legacy sites ignore it and always render their single page.
+function _serveSite(req, res, pageSlug) {
   const sub = _validSubdomain(req.params.sub);
   const row = sub ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub) : null;
   if (!row) {
     res.status(404);
     return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
+  // A page slug that doesn't exist in the document is a 404, not a silent home page.
+  if (pageSlug) {
+    let cfg = null; try { cfg = row.config ? JSON.parse(row.config) : null; } catch (_) {}
+    const pages = cfg && Array.isArray(cfg.pages) ? cfg.pages : null;
+    if (!pages || !pages.some((p) => String(p && p.slug || '').toLowerCase() === pageSlug)) {
+      res.status(404);
+      return res.sendFile(path.join(__dirname, 'public', '404.html'));
+    }
   }
   try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
   _recordVisit(sub, req);
@@ -2502,9 +2831,13 @@ app.get('/site/:sub', (req, res) => {
   res.send(_renderPersonalSite(row, origin, {
     indexable: true,
     footer: '', // Pro personal sites are watermark-free
-    canonicalUrl: `${origin}/site/${sub}`,
+    canonicalUrl: `${origin}/site/${sub}${pageSlug ? '/' + pageSlug : ''}`,
+    baseUrl: `${origin}/site/${sub}`,
+    page: pageSlug || '',
   }));
-});
+}
+app.get('/site/:sub', (req, res) => _serveSite(req, res, ''));
+app.get('/site/:sub/:page', (req, res) => _serveSite(req, res, String(req.params.page || '').toLowerCase().slice(0, 60)));
 
 app.post('/api/download-docx', async (req, res) => {
   const { text, filename, colors, sigName, sigFont: sigFontName, pageSize } = req.body;
