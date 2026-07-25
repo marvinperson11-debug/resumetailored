@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="robots" content="index,follow"/>
+  <title>Jordan Rivera</title>
+  <meta property="og:type" content="profile"/>
+  <meta property="og:title" content="Jordan Rivera"/>
+  <meta property="og:url" content="https://resumetailored.com/site/sample"/>
+  <meta property="og:image" content="https://resumetailored.com/og-image.png"/>
+  <link rel="canonical" href="https://resumetailored.com/site/sample"/>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--p:#0f172a;--a:#6366f1;--fg:#e2e8f0;--muted:#94a3b8;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#030712;color:var(--fg);line-height:1.6;padding:24px 14px 60px;position:relative;min-height:100vh;}
+    /* Background layer: static by default; shouldAnimate() adds .sg-animate to <html>. */
+    .sg-bg{position:fixed;inset:0;z-index:-2;background:#030712;}
+    html.sg-animate .sg-bg{background:radial-gradient(1200px 600px at 50% -10%, rgba(99,102,241,0.18), transparent), #030712;}
+    .sg-bg-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none;}
+    @keyframes sgAurora{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+    @media (prefers-reduced-motion: reduce){html.sg-animate .sg-bg{animation:none;}}
+    .sg-topbar{max-width:1100px;margin:0 auto 16px;display:flex;justify-content:flex-end;}
+    .sg-lang{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:#cbd5e1;cursor:pointer;}
+    .site-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;max-width:1100px;margin:0 auto;align-items:start;}
+    .sg-block{min-width:0;}
+    .sg-blk-h{font-size:26px;font-weight:900;color:var(--fg);letter-spacing:-.5px;margin-bottom:6px;}
+    .sg-blk-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
+    .sg-blk-text{font-size:15px;color:var(--muted);}
+    .sg-fig{margin:0;}
+    .sg-fig img{width:100%;height:auto;border-radius:14px;display:block;}
+    .sg-fig figcaption{font-size:12.5px;color:var(--muted);margin-top:6px;text-align:center;}
+    .sg-video{width:100%;border-radius:14px;background:#000;display:block;}
+    .sg-audio{width:100%;}
+    .sg-gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
+    .sg-gitem{flex:0 0 auto;width:min(78%,320px);scroll-snap-align:start;margin:0;}
+    .sg-gitem img{width:100%;height:auto;border-radius:12px;display:block;}
+    .sg-gitem figcaption{font-size:12.5px;color:var(--muted);margin-top:5px;}
+    .sg-cs-wrap{display:flex;flex-direction:column;gap:10px;}
+    .sg-cs{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;}
+    .sg-cs summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;}
+    .sg-cs summary::-webkit-details-marker{display:none;}
+    .sg-cs-title{font-weight:700;color:#1a1f2b;flex:1;}
+    .sg-cs-chip{background:var(--a);color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap;}
+    .sg-cs-detail{font-size:14px;color:#39414f;margin-top:10px;}
+    .sg-cs-img{width:100%;border-radius:10px;margin-top:10px;}
+    .sg-contact{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;}
+    .sg-lead-form{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+    .sg-lead-form input,.sg-lead-form textarea{border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;}
+    .sg-lead-form textarea{min-height:80px;}
+    .sg-lead-form button{background:var(--p);color:#fff;border:none;border-radius:9px;padding:10px;font-weight:700;cursor:pointer;}
+    .sg-lead-msg{font-size:13px;color:#059669;}
+    .sg-spacer{height:24px;}
+    .sg-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:38px 40px;}
+    .sg-rhead{margin-bottom:20px;border-bottom:2px solid var(--p);padding-bottom:14px;}
+    .sg-rname{font-size:28px;font-weight:800;color:var(--p);letter-spacing:-.4px;}
+    .sg-rcontact{font-size:13.5px;color:#5b6472;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+    .sg-dot{color:#c3c9d4;}
+    .sg-sec{margin-bottom:20px;}
+    .sg-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--p);border-bottom:2px solid var(--a);padding-bottom:5px;margin-bottom:12px;}
+    .sg-resume .r-title{font-size:15px;font-weight:800;color:#1a1f2b;margin-top:10px;}
+    .sg-resume .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
+    .sg-resume .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
+    .sg-resume .r-bul{list-style:none;margin:2px 0 8px;}
+    .sg-resume .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
+    .sg-resume .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--a);}
+    .sg-foot{max-width:1100px;margin:24px auto 0;text-align:center;font-size:13px;color:#8a93a3;}
+    @media(max-width:760px){
+      .site-grid{display:block;}
+      .sg-block{margin-bottom:20px;}
+      .sg-resume{padding:28px 22px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="sg-bg"></div>
+  <div class="sg-topbar"><button class="sg-lang" data-si="lang_toggle" onclick="_sgToggleLang()">中文</button></div>
+  <div class="site-grid"><div class="sg-block" style="grid-column:1 / span 12;"><h2 class="sg-blk-h">Jordan Rivera</h2></div><div class="sg-block" style="grid-column:1 / span 6;"><div class="sg-blk-text">Product manager based in NYC.</div></div><div class="sg-block" style="grid-column:7 / span 6;"><div class="sg-blk-label">About Me</div><video class="sg-video" controls preload="metadata"><source src="https://example.com/v.mp4"/></video></div><div class="sg-block" style="grid-column:1 / span 12;"><div class="sg-resume"><div class="sg-rhead"><div class="sg-rname">Jordan Rivera</div><div class="sg-rcontact"><span>jordan@example.com</span><span class="sg-dot">·</span><span>San Francisco, CA</span><span class="sg-dot">·</span><span>linkedin.com/in/jordanrivera</span></div></div><section class="sg-sec"><h2 class="sg-h">SUMMARY</h2><p class="r-p">Senior product manager with 8 years shipping data products.</p></section><section class="sg-sec"><h2 class="sg-h">EXPERIENCE</h2><div class="r-co" style="color:#6366f1">Senior PM, DataCorp | 2020–Present</div><ul class="r-bul"><li>Led migration reducing infra costs 30%</li><li>Grew activation 22% via lifecycle redesign</li></ul></section><section class="sg-sec"><h2 class="sg-h">SKILLS</h2><p class="r-p">Product Strategy, SQL, Roadmapping, A/B Testing</p></section><section class="sg-sec"><h2 class="sg-h">EDUCATION</h2><p class="r-p">B.S. Computer Science, UC Berkeley</p></section></div></div></div>
+  
+  <script>
+    var SITE_I18N={"en":{"lang_toggle":"中文","c_name":"Your name","c_email":"Your email","c_msg":"Message","c_send":"Send","c_send_pdf":"Send me the resume","c_thanks":"Thanks — your message was sent.","c_thanks_pdf":"Thanks! I'll be in touch with my resume shortly.","c_err":"Something went wrong — please try again.","contact_h":"Get in touch","request_h":"Request my resume"},"zh":{"lang_toggle":"EN","c_name":"你的姓名","c_email":"你的邮箱","c_msg":"留言","c_send":"发送","c_send_pdf":"把简历发给我","c_thanks":"谢谢——你的留言已发送。","c_thanks_pdf":"谢谢！我会尽快把简历发给你。","c_err":"出了点问题——请重试。","contact_h":"联系我","request_h":"索取我的简历"}};
+    var SG_ANIMATED=false, SG_THEME="midnight";
+    // Degrade gate: only animate when the device can comfortably handle it.
+    function shouldAnimate(){
+      try{
+        if(!SG_ANIMATED) return false;
+        if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+        if(navigator.hardwareConcurrency && navigator.hardwareConcurrency<=4) return false;
+        if(Math.min(window.innerWidth,window.innerHeight)<768) return false;
+        return true;
+      }catch(_){return false;}
+    }
+    function _sgLead(e,f){
+      e.preventDefault();
+      var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;
+      var fd=new FormData(f), msg=f.querySelector('.sg-lead-msg');
+      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||''};
+      fetch('/api/site-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+        .then(function(r){return r.json().catch(function(){return {};});})
+        .then(function(){
+          f.querySelectorAll('input,textarea,button').forEach(function(el){el.style.display='none';});
+          msg.style.display='block';
+          msg.textContent=(f.dataset.mode==='pdf')?L.c_thanks_pdf:L.c_thanks;
+        })
+        .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
+      return false;
+    }
+    function _sgToggleLang(){
+      var cur=document.documentElement.lang==='zh'?'zh':'en';
+      var next=cur==='zh'?'en':'zh';
+      document.documentElement.lang=next;
+      document.querySelectorAll('[data-si]').forEach(function(el){
+        var k=el.getAttribute('data-si'); if(SITE_I18N[next] && SITE_I18N[next][k]!=null) el.textContent=SITE_I18N[next][k];
+      });
+      document.querySelectorAll('.sg-lead-form input[name=name]').forEach(function(el){el.placeholder=SITE_I18N[next].c_name;});
+      document.querySelectorAll('.sg-lead-form input[name=email]').forEach(function(el){el.placeholder=SITE_I18N[next].c_email;});
+      document.querySelectorAll('.sg-lead-form textarea[name=message]').forEach(function(el){el.placeholder=SITE_I18N[next].c_msg;});
+    }
+    // Apply the animation gate, then run the particle field if that theme is active.
+    (function(){
+      if(!shouldAnimate()) return;
+      document.documentElement.classList.add('sg-animate');
+      if(SG_THEME!=='particles') return;
+      var cv=document.getElementById('sgCanvas'); if(!cv) return;
+      var ctx=cv.getContext('2d'), parts=[], raf=0, running=true;
+      function size(){cv.width=window.innerWidth;cv.height=window.innerHeight;}
+      function init(){parts=[];var n=Math.min(60,Math.round(window.innerWidth/24));for(var i=0;i<n;i++)parts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.8+.6});}
+      function tick(){if(!running)return;ctx.clearRect(0,0,cv.width,cv.height);ctx.fillStyle='rgba(148,163,184,0.5)';for(var i=0;i<parts.length;i++){var p=parts[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>cv.width)p.vx*=-1;if(p.y<0||p.y>cv.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill();}raf=requestAnimationFrame(tick);}
+      size();init();tick();
+      window.addEventListener('resize',function(){size();init();});
+      document.addEventListener('visibilitychange',function(){running=!document.hidden;if(running){raf=requestAnimationFrame(tick);}else{cancelAnimationFrame(raf);}});
+    })();
+  </script>
+</body>
+</html>
