@@ -23,6 +23,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="/site-doc-store.js"></script>
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9896489046536589" crossorigin="anonymous"></script>
   <style>
@@ -301,6 +302,12 @@
     .wc-tpl-on { font-size: 10px; font-weight: 800; color: #4338ca; background: #eef2ff; padding: 2px 6px; border-radius: 8px; }
     .wc-tpl-cat { font-size: 11px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
     .wc-tpl-blurb { font-size: 12.5px; color: #6b7280; margin-top: 6px; line-height: 1.45; }
+    .ed-box { position: absolute; border: 1px dashed rgba(99,102,241,.45); cursor: move; }
+    .ed-box:hover { border-color: #6366f1; background: rgba(99,102,241,.06); }
+    .ed-box.is-sel { border: 2px solid #6366f1; background: rgba(99,102,241,.08); }
+    .ed-tag { position: absolute; top: -20px; left: -2px; background: #6366f1; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+    .ed-h { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #6366f1; border-radius: 3px; }
+    .ed-h-se { right: -8px; bottom: -8px; cursor: nwse-resize; }
   </style>
 </head>
 <body>
@@ -1048,9 +1055,29 @@
             <div id="wcMediaMeter" style="font-size:12px;color:#6b7280;margin-top:14px;"></div>
           </div>
 
-          <!-- 3. Video (surface the generator + upload entry points) -->
+          <!-- 3. Canvas editor (appears once a template is picked) -->
+          <div class="wc-card" id="wcEdCard" style="display:none;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+              <div class="wc-step" style="margin:0;flex:1;" data-i18n="wc_step_design">3. Design your page</div>
+              <button type="button" class="bo-act" id="wcEdUndo" onclick="edUndo()" title="Undo (Ctrl+Z)" disabled>↶ <span data-i18n="wc_ed_undo">Undo</span></button>
+              <button type="button" class="bo-act" id="wcEdRedo" onclick="edRedo()" title="Redo (Ctrl+Shift+Z)" disabled>↷ <span data-i18n="wc_ed_redo">Redo</span></button>
+              <select id="wcEdPage" class="text-input" style="max-width:170px;font-size:13px;padding:6px 8px;" onchange="edSetPage(this.value)"></select>
+            </div>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
+              <div id="wcEdStage" style="flex:1;min-width:280px;background:#e9edf3;border-radius:12px;padding:12px;overflow:hidden;">
+                <div id="wcEdWrap" style="position:relative;width:1200px;transform-origin:top left;">
+                  <iframe id="wcEdFrame" title="Canvas" style="width:1200px;border:0;display:block;background:#fff;border-radius:8px;" scrolling="no"></iframe>
+                  <div id="wcEdOverlay" style="position:absolute;inset:0;"></div>
+                </div>
+              </div>
+              <div id="wcEdInspector" style="width:250px;flex-shrink:0;border:1.5px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff;"></div>
+            </div>
+            <p style="font-size:12px;color:#9ca3af;margin-top:10px;" data-i18n="wc_ed_hint">Click an element to select it. Drag to move, or drag a corner handle to resize. Ctrl/Cmd+Z undoes.</p>
+          </div>
+
+          <!-- 4. Video (surface the generator + upload entry points) -->
           <div class="wc-card">
-            <div class="wc-step" data-i18n="wc_step_video">3. Add a video (optional)</div>
+            <div class="wc-step" data-i18n="wc_step_video">4. Add a video (optional)</div>
             <p style="font-size:13px;color:#6b7280;margin-bottom:12px;" data-i18n="wc_video_help">Add a video hero to your site — generate one from your résumé, or upload your own.</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
               <button class="btn btn-outline" onclick="wcGoGenerateVideo()" style="font-size:13px;padding:10px 16px;">
@@ -1068,7 +1095,7 @@
 
           <!-- 3. Publish -->
           <div class="wc-card">
-            <div class="wc-step" data-i18n="wc_step_publish">4. Publish</div>
+            <div class="wc-step" data-i18n="wc_step_publish">5. Publish</div>
             <label class="input-label" for="wcAddress" data-i18n="wc_address_label">Your website address</label>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
               <span id="wcAddressOrigin" style="font-size:13px;color:#6b7280;"></span>
@@ -1751,6 +1778,13 @@
         bo_pro: 'The Back Office is a Pro feature.', bo_loaded: 'Loaded into the Tailor tab.',
         bo_none_sel: 'Select some items first.', bo_confirm_del: 'Delete this item? This cannot be undone.',
         bo_confirm_bulk: 'Delete the selected items? This cannot be undone.', bo_confirm_site: 'Delete your website? This removes the live page.',
+        wc_step_design: '3. Design your page',
+        wc_ed_undo: 'Undo', wc_ed_redo: 'Redo', wc_ed_undone: 'Undone',
+        wc_ed_hint: 'Click an element to select it. Drag to move, or drag a corner handle to resize. Ctrl/Cmd+Z undoes.',
+        wc_ed_noselect: 'Select an element on the canvas to edit it.',
+        wc_ed_text: 'Text', wc_ed_src: 'Media', wc_ed_caption: 'Caption', wc_ed_label: 'Label',
+        wc_ed_color: 'Colour', wc_ed_pos: 'Position & size', wc_ed_mhide: 'Hide on mobile',
+        wc_ed_delete: 'Delete element', wc_upload2: 'Upload',
         wc_step_template: '2. Pick a template',
         wc_template_help: 'Every template is a complete, multi-section site. Preview it on desktop and mobile before you choose — then make it yours.',
         wc_tpl_desktop: '🖥 Desktop', wc_tpl_mobile: '📱 Mobile', wc_tpl_close: 'Close', wc_tpl_use: 'Use this template →',
@@ -1787,11 +1821,11 @@
         wc_resume_label: 'Resume (shown on your site)', wc_resume_none: 'No saved resumes yet',
         wc_cover_label: 'Cover letter (optional)', wc_cover_none: 'None',
         wc_no_assets: "No saved resumes yet — tailor one in the Tailor tab and it'll appear here automatically.",
-        wc_step_video: '3. Add a video (optional)',
+        wc_step_video: '4. Add a video (optional)',
         wc_video_help: 'Add a video hero to your site — generate one from your résumé, or upload your own.',
         wc_video_generate: '🎬 Generate from my résumé', wc_video_upload: '⬆ Upload your own video',
         wc_video_upload_soon: 'Uploading your own video unlocks with media uploads in the next update — for now, generate one from your résumé.',
-        wc_step_publish: '4. Publish', wc_address_label: 'Your website address',
+        wc_step_publish: '5. Publish', wc_address_label: 'Your website address',
         wc_publish_btn: '🌐 Publish my website', wc_view_live: 'View live ↗',
         wc_more_soon: 'More customization — themes, backgrounds, and drag-and-drop layout — is coming next.',
         wc_preview_empty: 'Publish your site to preview it live here.',
@@ -1864,6 +1898,13 @@
         bo_pro: '后台管理是专业版功能。', bo_loaded: '已加载到定制标签页。',
         bo_none_sel: '请先选择项目。', bo_confirm_del: '删除此项？此操作无法撤销。',
         bo_confirm_bulk: '删除所选项目？此操作无法撤销。', bo_confirm_site: '删除你的网站？这会移除已上线的页面。',
+        wc_step_design: '3. 设计你的页面',
+        wc_ed_undo: '撤销', wc_ed_redo: '重做', wc_ed_undone: '已撤销',
+        wc_ed_hint: '点击元素以选中。拖动移动，拖动右下角手柄调整大小。Ctrl/Cmd+Z 撤销。',
+        wc_ed_noselect: '在画布上选择一个元素进行编辑。',
+        wc_ed_text: '文字', wc_ed_src: '媒体', wc_ed_caption: '说明', wc_ed_label: '标签',
+        wc_ed_color: '颜色', wc_ed_pos: '位置和尺寸', wc_ed_mhide: '在手机上隐藏',
+        wc_ed_delete: '删除元素', wc_upload2: '上传',
         wc_step_template: '2. 选择模板',
         wc_template_help: '每个模板都是完整的多板块网站。选择前可在桌面和手机视图预览——然后把它变成你的。',
         wc_tpl_desktop: '🖥 桌面', wc_tpl_mobile: '📱 手机', wc_tpl_close: '关闭', wc_tpl_use: '使用此模板 →',
@@ -1899,11 +1940,11 @@
         wc_resume_label: '简历（显示在你的网站上）', wc_resume_none: '暂无已保存的简历',
         wc_cover_label: '求职信（可选）', wc_cover_none: '无',
         wc_no_assets: '暂无已保存的简历——在"定制"标签页定制一份，它会自动出现在这里。',
-        wc_step_video: '3. 添加视频（可选）',
+        wc_step_video: '4. 添加视频（可选）',
         wc_video_help: '为你的网站添加视频封面——用简历生成，或上传你自己的视频。',
         wc_video_generate: '🎬 用我的简历生成', wc_video_upload: '⬆ 上传我自己的视频',
         wc_video_upload_soon: '上传自己的视频将随媒体上传功能在下次更新中开放——目前请先用简历生成。',
-        wc_step_publish: '4. 发布', wc_address_label: '你的网站地址',
+        wc_step_publish: '5. 发布', wc_address_label: '你的网站地址',
         wc_publish_btn: '🌐 发布我的网站', wc_view_live: '查看网站 ↗',
         wc_more_soon: '更多自定义功能——主题、背景和拖拽布局——即将推出。',
         wc_preview_empty: '发布你的网站后即可在此实时预览。',
@@ -6204,6 +6245,7 @@ Aaliyah Washington`
         wcDoc = null; wcTplId = null;
       }
       wcLoadTemplates();
+      if (wcDoc) edInit(wcDoc); else { const c = document.getElementById('wcEdCard'); if (c) c.style.display = 'none'; }
       wcLoadMediaUsage();
       wcLoadSiteExtras();
       wcSetView('edit');
@@ -6397,13 +6439,15 @@ Aaliyah Washington`
         if (!r.ok || !d.doc) { showToast(_t('wc_tpl_err', 'Could not load that template.')); return; }
         wcDoc = d.doc; wcTplId = id;
         wcRenderTplGrid();
-        showToast(_t('wc_tpl_applied', '✓ Template applied — preview it, then publish.'), 5000);
+        edInit(d.doc);
+        showToast(_t('wc_tpl_applied', '✓ Template applied — edit it below, then publish.'), 5000);
       } catch (_) { showToast(_t('wc_tpl_err', 'Could not load that template.')); }
     }
 
     // The site document sent to publish/preview: the chosen template plus the
     // selected assets and the UI language.
     function wcBuildConfig() {
+      if (edStore) wcDoc = edStore.getDoc();   // editor is the source of truth
       if (!wcDoc) return null;
       const rSel = document.getElementById('wcResumeSelect');
       const cSel = document.getElementById('wcCoverSelect');
@@ -6415,6 +6459,234 @@ Aaliyah Washington`
           coverLetterId: cSel && cSel.value ? Number(cSel.value) : null,
         },
       });
+    }
+
+    // ── Canvas editor (V3a) ───────────────────────────────────────────────────
+    // Built on the immutable document store: every edit goes through edApply so
+    // undo/redo is a property of the data, not of the drag handlers.
+    const ED_CANVAS = 1200;
+    let edStore = null, edPageId = null, edSel = null, _edRenderTimer = null, _edDrag = null;
+
+    function edInit(doc) {
+      edStore = SiteDocStore.createStore(doc);
+      edPageId = (doc.pages && doc.pages[0] && doc.pages[0].id) || null;
+      edSel = null;
+      edStore.subscribe(() => { edSyncButtons(); edRenderCanvas(); edRenderOverlay(); edRenderInspector(); });
+      edSyncPageSelect();
+      edSyncButtons();
+      edRenderCanvas();
+      edRenderOverlay();
+      edRenderInspector();
+      document.getElementById('wcEdCard').style.display = 'block';
+    }
+
+    // Any edit — the ONLY path that mutates the document.
+    function edApply(mutator, opts) { if (edStore) edStore.apply(mutator, opts); }
+    function edUndo() { if (edStore && edStore.undo()) showToast(_t('wc_ed_undone', 'Undone')); }
+    function edRedo() { if (edStore) edStore.redo(); }
+    function edSyncButtons() {
+      const u = document.getElementById('wcEdUndo'), r = document.getElementById('wcEdRedo');
+      if (u) u.disabled = !edStore || !edStore.canUndo();
+      if (r) r.disabled = !edStore || !edStore.canRedo();
+      // Keep the publish/preview document in sync with the editor.
+      if (edStore) wcDoc = edStore.getDoc();
+    }
+    document.addEventListener('keydown', (e) => {
+      if (!edStore || document.getElementById('panel-website') === null) return;
+      if (!document.getElementById('panel-website').classList.contains('active')) return;
+      const meta = e.ctrlKey || e.metaKey;
+      if (!meta || String(e.key).toLowerCase() !== 'z') return;
+      const t = (e.target && e.target.tagName) || '';
+      if (t === 'INPUT' || t === 'TEXTAREA') return;
+      e.preventDefault();
+      if (e.shiftKey) edRedo(); else edUndo();
+    });
+
+    function edPage() { return edStore ? SiteDocStore.findPage(edStore.getDoc(), edPageId) : null; }
+    function edSyncPageSelect() {
+      const sel = document.getElementById('wcEdPage'); if (!sel || !edStore) return;
+      const pages = edStore.getDoc().pages || [];
+      sel.innerHTML = pages.map(p => `<option value="${wcEsc(p.id)}"${p.id === edPageId ? ' selected' : ''}>${wcEsc(p.name || p.slug)}</option>`).join('');
+      sel.style.display = pages.length > 1 ? 'block' : 'none';
+    }
+    function edSetPage(id) { edPageId = id; edSel = null; edRenderCanvas(); edRenderOverlay(); edRenderInspector(); }
+
+    // The canvas renders through the SAME endpoint/renderer as the published
+    // site, so what you edit is what visitors get.
+    function edRenderCanvas() {
+      clearTimeout(_edRenderTimer);
+      _edRenderTimer = setTimeout(async () => {
+        const frame = document.getElementById('wcEdFrame'); if (!frame || !edStore) return;
+        const rSel = document.getElementById('wcResumeSelect');
+        const resume = wcResumes.find(x => String(x.id) === (rSel && rSel.value));
+        const page = edPage();
+        try {
+          const res = await fetch('/api/personal-site/preview', {
+            method: 'POST', headers: authHeaders(),
+            body: JSON.stringify({
+              text: (resume && resume.content) || 'Your Name\nyou@example.com\n\nSUMMARY\nYour summary goes here.',
+              name: (resume && resume.title) || 'Your Name',
+              config: edStore.getDoc(), page: page && !page.isHome ? page.slug : '',
+            }),
+          });
+          if (!res.ok) return;
+          frame.srcdoc = await res.text();
+          frame.style.height = edDocHeight() + 'px';
+          edFitStage();
+        } catch (_) {}
+      }, 220);
+    }
+
+    function edDocHeight() {
+      const page = edPage(); if (!page) return 600;
+      return (page.sections || []).reduce((a, s) => a + (Number(s.h) || 0), 0) || 600;
+    }
+    // Scale the 1200px canvas down to whatever width the stage has.
+    function edFitStage() {
+      const stage = document.getElementById('wcEdStage'), wrap = document.getElementById('wcEdWrap');
+      if (!stage || !wrap) return;
+      const avail = Math.max(240, stage.clientWidth - 24);
+      const k = Math.min(1, avail / ED_CANVAS);
+      wrap.style.transform = `scale(${k})`;
+      stage.style.height = (edDocHeight() * k + 24) + 'px';
+    }
+    window.addEventListener('resize', () => { if (edStore) edFitStage(); });
+
+    // ── Selection overlay ─────────────────────────────────────────────────────
+    // Boxes are computed from the document (not the iframe DOM), so selection
+    // works without reaching across the frame boundary.
+    function edRenderOverlay() {
+      const ov = document.getElementById('wcEdOverlay'); if (!ov) return;
+      const page = edPage(); if (!page) { ov.innerHTML = ''; return; }
+      let top = 0, html = '';
+      (page.sections || []).forEach((s) => {
+        (s.els || []).forEach((e) => {
+          const on = edSel === e.id;
+          const y = top + (Number(e.y) || 0);
+          html += `<div class="ed-box${on ? ' is-sel' : ''}" data-el="${wcEsc(e.id)}" style="left:${Number(e.x) || 0}px;top:${y}px;width:${Number(e.w) || 0}px;height:${Math.max(Number(e.h) || 0, 24)}px;">
+            ${on ? `<span class="ed-tag">${wcEsc(e.type)}</span><i class="ed-h ed-h-se"></i>` : ''}
+          </div>`;
+        });
+        top += Number(s.h) || 0;
+      });
+      ov.innerHTML = html;
+      ov.querySelectorAll('.ed-box').forEach((b) => {
+        b.addEventListener('pointerdown', (ev) => edPointerDown(ev, b));
+      });
+    }
+
+    function edSelect(id) { edSel = id; edRenderOverlay(); edRenderInspector(); }
+
+    // ── Drag to move / resize ─────────────────────────────────────────────────
+    function edPointerDown(ev, box) {
+      if (!edStore) return;
+      const id = box.dataset.el;
+      if (edSel !== id) edSelect(id);
+      const wrap = document.getElementById('wcEdWrap');
+      const k = (wrap.getBoundingClientRect().width / ED_CANVAS) || 1;
+      const resize = ev.target && ev.target.classList.contains('ed-h');
+      const hit = SiteDocStore.findElement(edStore.getDoc(), id); if (!hit) return;
+      _edDrag = {
+        id, resize, k,
+        sx: ev.clientX, sy: ev.clientY,
+        ox: Number(hit.el.x) || 0, oy: Number(hit.el.y) || 0,
+        ow: Number(hit.el.w) || 0, oh: Number(hit.el.h) || 0,
+      };
+      ev.preventDefault();
+      try { box.setPointerCapture(ev.pointerId); } catch (_) {}
+      window.addEventListener('pointermove', edPointerMove);
+      window.addEventListener('pointerup', edPointerUp, { once: true });
+    }
+    const edSnap = (v) => Math.round(v / 10) * 10; // 10px grid
+    function edPointerMove(ev) {
+      if (!_edDrag) return;
+      const dx = (ev.clientX - _edDrag.sx) / _edDrag.k;
+      const dy = (ev.clientY - _edDrag.sy) / _edDrag.k;
+      const d = _edDrag;
+      edApply((doc) => {
+        const hit = SiteDocStore.findElement(doc, d.id); if (!hit) return;
+        if (d.resize) {
+          hit.el.w = Math.max(40, Math.min(ED_CANVAS, edSnap(d.ow + dx)));
+          hit.el.h = Math.max(24, edSnap(d.oh + dy));
+        } else {
+          hit.el.x = Math.max(0, Math.min(ED_CANVAS - (Number(hit.el.w) || 0), edSnap(d.ox + dx)));
+          hit.el.y = Math.max(0, edSnap(d.oy + dy));
+        }
+      }, { coalesce: (d.resize ? 'resize:' : 'move:') + d.id });
+      edRenderOverlay(); // move the box live; the iframe re-renders debounced
+    }
+    function edPointerUp() {
+      window.removeEventListener('pointermove', edPointerMove);
+      if (edStore) edStore.endGesture(); // close the undo step for this gesture
+      _edDrag = null;
+    }
+
+    // ── Inspector ─────────────────────────────────────────────────────────────
+    function edRenderInspector() {
+      const box = document.getElementById('wcEdInspector'); if (!box) return;
+      if (!edStore || !edSel) {
+        box.innerHTML = `<div style="font-size:13px;color:#9ca3af;">${wcEsc(_t('wc_ed_noselect', 'Select an element on the canvas to edit it.'))}</div>`;
+        return;
+      }
+      const hit = SiteDocStore.findElement(edStore.getDoc(), edSel);
+      if (!hit) { box.innerHTML = ''; return; }
+      const e = hit.el, p = e.props || {};
+      const row = (label, input) => `<label style="display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 4px;">${wcEsc(label)}</label>${input}`;
+      let fields = '';
+      if (['heading', 'subheading', 'paragraph', 'button'].includes(e.type)) {
+        fields += row(_t('wc_ed_text', 'Text'), `<textarea class="text-input" style="width:100%;min-height:60px;font-size:13px;" oninput="edSetProp('text',this.value)">${wcEsc(p.text || '')}</textarea>`);
+      }
+      if (['image', 'imagebox', 'video', 'audio'].includes(e.type)) {
+        fields += row(_t('wc_ed_src', 'Media'), `<div style="display:flex;gap:6px;"><input class="text-input" style="flex:1;min-width:0;font-size:12px;" value="${wcEsc(p.src || '')}" oninput="edSetProp('src',this.value)"/><button type="button" class="bo-act" onclick="edPickMedia('${e.type}')">${wcEsc(_t('wc_upload2', 'Upload'))}</button></div>`);
+      }
+      if (['imagebox', 'image'].includes(e.type)) {
+        fields += row(_t('wc_ed_caption', 'Caption'), `<input class="text-input" style="width:100%;font-size:13px;" value="${wcEsc(p.caption || '')}" oninput="edSetProp('caption',this.value)"/>`);
+      }
+      if (['video', 'audio', 'gallery', 'form', 'casestudies'].includes(e.type)) {
+        fields += row(_t('wc_ed_label', 'Label'), `<input class="text-input" style="width:100%;font-size:13px;" value="${wcEsc(p.label || p.heading || '')}" oninput="edSetProp('${e.type === 'form' ? 'heading' : 'label'}',this.value)"/>`);
+      }
+      if (['heading', 'subheading', 'paragraph'].includes(e.type)) {
+        fields += row(_t('wc_ed_color', 'Colour'), `<input type="color" style="width:100%;height:32px;border:1px solid #e5e7eb;border-radius:8px;" value="${wcEsc(p.color || '#111827')}" oninput="edSetProp('color',this.value)"/>`);
+      }
+      box.innerHTML = `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6366f1;">${wcEsc(e.type)}</div>
+        ${fields}
+        ${row(_t('wc_ed_pos', 'Position & size'), `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+          <input class="text-input" style="font-size:12px;" type="number" value="${Number(e.x) || 0}" oninput="edSetGeom('x',this.value)" title="X"/>
+          <input class="text-input" style="font-size:12px;" type="number" value="${Number(e.y) || 0}" oninput="edSetGeom('y',this.value)" title="Y"/>
+          <input class="text-input" style="font-size:12px;" type="number" value="${Number(e.w) || 0}" oninput="edSetGeom('w',this.value)" title="W"/>
+          <input class="text-input" style="font-size:12px;" type="number" value="${Number(e.h) || 0}" oninput="edSetGeom('h',this.value)" title="H"/>
+        </div>`)}
+        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#374151;margin-top:12px;cursor:pointer;">
+          <input type="checkbox" ${e.mhide ? 'checked' : ''} onchange="edSetHidden(this.checked)"/> ${wcEsc(_t('wc_ed_mhide', 'Hide on mobile'))}
+        </label>
+        <button type="button" class="bo-act bo-danger" style="width:100%;margin-top:12px;" onclick="edDeleteSel()">${wcEsc(_t('wc_ed_delete', 'Delete element'))}</button>`;
+    }
+    function edSetProp(key, val) {
+      const id = edSel;
+      edApply((doc) => { const h = SiteDocStore.findElement(doc, id); if (h) { h.el.props = h.el.props || {}; h.el.props[key] = val; } }, { coalesce: 'prop:' + id + ':' + key });
+    }
+    function edSetGeom(key, val) {
+      const id = edSel, n = Math.max(0, Math.round(Number(val) || 0));
+      edApply((doc) => { const h = SiteDocStore.findElement(doc, id); if (h) h.el[key] = n; }, { coalesce: 'geom:' + id + ':' + key });
+    }
+    function edSetHidden(on) {
+      const id = edSel;
+      edStore.endGesture();
+      edApply((doc) => { const h = SiteDocStore.findElement(doc, id); if (h) h.el.mhide = !!on; });
+    }
+    function edDeleteSel() {
+      const id = edSel;
+      edStore.endGesture();
+      edApply((doc) => {
+        (doc.pages || []).forEach((pg) => (pg.sections || []).forEach((s) => {
+          s.els = (s.els || []).filter((x) => x.id !== id);
+        }));
+      });
+      edSel = null;
+    }
+    function edPickMedia(type) {
+      const accept = type === 'video' ? 'video/mp4,video/webm' : type === 'audio' ? 'audio/*' : 'image/jpeg,image/png,image/webp';
+      wcUploadMedia(accept, (url) => { edStore.endGesture(); edSetProp('src', url); });
     }
 
     // ── Media uploads (Phase 4) ───────────────────────────────────────────────
