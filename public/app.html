@@ -1062,6 +1062,9 @@
               <button class="btn btn-outline" onclick="wcUploadOwnVideo()" style="font-size:13px;padding:10px 16px;">
                 <span data-i18n="wc_video_upload">⬆ Upload your own video</span>
               </button>
+              <button class="btn btn-outline" onclick="openTextVideo()" style="font-size:13px;padding:10px 16px;">
+                <span data-i18n="wc_video_text">✍️ Create a text video</span>
+              </button>
             </div>
             <div id="wcVideoNote" style="font-size:12px;color:#9ca3af;margin-top:10px;"></div>
           </div>
@@ -1766,6 +1769,21 @@
         wc_gallery_empty: 'No images yet.', wc_gallery_add: '+ Add image',
         wc_media_usage: 'Storage', wc_media_imgaudio: 'images & audio', wc_media_video: 'video',
         wc_video_added: '✓ Video added to your layout below.',
+        wc_video_text: '✍️ Create a text video', wc_pro_video: 'Video features are Pro.',
+        tv_title: 'Create a text video',
+        tv_help: "Type a short script, add a voiceover (record or upload), and we'll turn it into a video with your text on screen — generated right in your browser.",
+        tv_script_label: 'On-screen text / script', tv_voice_label: 'Voiceover',
+        tv_record: '🎙️ Record', tv_stop: '⏹ Stop', tv_upload_audio: '⬆ Upload audio',
+        tv_cancel: 'Cancel', tv_generate: 'Generate video →',
+        tv_voice_ready: 'Voiceover ready. Add your text, then Generate.',
+        tv_recording: 'Recording… tap Stop when done.', tv_mic_err: 'Could not access the microphone.',
+        tv_no_record: 'Recording is not supported in this browser — upload an audio file instead.',
+        tv_need_voice: 'Add a voiceover first.', tv_generating: 'Generating your video… (this plays through your voiceover once)',
+        tv_added_video: '✓ Text video added to your layout.', tv_added_audio: '✓ Voiceover + text added to your layout.',
+        tv_fallback: "Your browser can't encode video — saving as a voiceover + text block instead…",
+        tv_too_big: 'That video is over 25 MB — try a shorter voiceover.',
+        tv_audio_err: 'Could not read the voiceover audio.', tv_play_err: 'Could not play the voiceover to record it.',
+        tv_err: 'Something went wrong.',
         wc_add_cs: '+ Case Studies', wc_add_contact: '+ Contact',
         wc_blk_casestudies: 'Case Studies', wc_blk_contact: 'Contact',
         wc_cs_title: 'Title', wc_cs_metric: 'Metric', wc_cs_detail: 'Detail (optional)',
@@ -1882,6 +1900,21 @@
         wc_gallery_empty: '还没有图片。', wc_gallery_add: '+ 添加图片',
         wc_media_usage: '存储', wc_media_imgaudio: '图片和音频', wc_media_video: '视频',
         wc_video_added: '✓ 视频已添加到下方布局。',
+        wc_video_text: '✍️ 制作文字视频', wc_pro_video: '视频功能是专业版。',
+        tv_title: '制作文字视频',
+        tv_help: '输入一段简短脚本，添加配音（录制或上传），我们会在你的浏览器中直接生成一段带文字画面的视频。',
+        tv_script_label: '屏幕文字/脚本', tv_voice_label: '配音',
+        tv_record: '🎙️ 录制', tv_stop: '⏹ 停止', tv_upload_audio: '⬆ 上传音频',
+        tv_cancel: '取消', tv_generate: '生成视频 →',
+        tv_voice_ready: '配音已就绪。添加文字后点击生成。',
+        tv_recording: '录制中……完成后点击停止。', tv_mic_err: '无法访问麦克风。',
+        tv_no_record: '此浏览器不支持录制——请改为上传音频文件。',
+        tv_need_voice: '请先添加配音。', tv_generating: '正在生成视频……（会完整播放一遍你的配音）',
+        tv_added_video: '✓ 文字视频已添加到布局。', tv_added_audio: '✓ 配音和文字已添加到布局。',
+        tv_fallback: '你的浏览器无法编码视频——改为保存为配音和文字区块……',
+        tv_too_big: '视频超过 25 MB——请尝试更短的配音。',
+        tv_audio_err: '无法读取配音音频。', tv_play_err: '无法播放配音以进行录制。',
+        tv_err: '出了点问题。',
         wc_add_cs: '+ 案例', wc_add_contact: '+ 联系表单',
         wc_blk_casestudies: '案例', wc_blk_contact: '联系表单',
         wc_cs_title: '标题', wc_cs_metric: '数据', wc_cs_detail: '详情（可选）',
@@ -5932,6 +5965,27 @@ Aaliyah Washington`
     </div>
   </div>
 
+  <!-- ── Text-video generator (Phase 5b) ── -->
+  <div id="textVideoModal" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeTextVideo()">
+    <div style="background:#fff;border-radius:20px;padding:26px 24px;max-width:520px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.3);max-height:90vh;overflow:auto;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-size:22px;">✍️</span><h2 style="font-size:19px;font-weight:800;color:#111827;" data-i18n="tv_title">Create a text video</h2></div>
+      <p style="font-size:13px;color:#6b7280;margin-bottom:16px;" data-i18n="tv_help">Type a short script, add a voiceover (record or upload), and we'll turn it into a video with your text on screen — generated right in your browser.</p>
+      <label class="input-label" data-i18n="tv_script_label">On-screen text / script</label>
+      <textarea id="tvScript" class="text-input" style="width:100%;min-height:90px;margin-bottom:14px;" placeholder="Hi, I'm Jane — a product manager who ships data products people love…"></textarea>
+      <label class="input-label" data-i18n="tv_voice_label">Voiceover</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 8px;">
+        <button type="button" class="btn btn-outline" id="tvRecBtn" onclick="tvToggleRecord()" style="font-size:13px;padding:9px 14px;"><span data-i18n="tv_record">🎙️ Record</span></button>
+        <button type="button" class="btn btn-outline" onclick="tvPickAudio()" style="font-size:13px;padding:9px 14px;"><span data-i18n="tv_upload_audio">⬆ Upload audio</span></button>
+      </div>
+      <audio id="tvAudioPreview" controls style="display:none;width:100%;margin-bottom:8px;"></audio>
+      <div id="tvStatus" style="font-size:12.5px;color:#6b7280;margin-bottom:14px;min-height:16px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button type="button" class="btn btn-outline" onclick="closeTextVideo()" style="flex:1;font-size:13px;padding:11px;" data-i18n="tv_cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="tvGenBtn" onclick="tvGenerate()" disabled style="flex:1;font-size:13px;padding:11px;" data-i18n="tv_generate">Generate video →</button>
+      </div>
+    </div>
+  </div>
+
   <div id="shareModal" style="display:none;position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeShareModal()">
     <div style="background:#fff;border-radius:20px;padding:28px 26px;max-width:460px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.3);">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;"><span style="font-size:22px;">🔗</span><h2 style="font-size:19px;font-weight:800;color:#111827;">Share your resume as a link</h2></div>
@@ -6420,6 +6474,156 @@ Aaliyah Washington`
     function wcDownloadQr() {
       const img = document.getElementById('wcQrImg');
       if (img && img.src) { const a = document.createElement('a'); a.href = img.src; a.download = 'site-qr.svg'; a.click(); }
+    }
+
+    // ── Text-video generator (Phase 5b) ───────────────────────────────────────
+    // Reliable core: record/upload a voiceover. Best-effort: encode a text-on-screen
+    // video in-browser (canvas.captureStream + MediaRecorder) so no heavy server
+    // render is needed. If encoding isn't supported, we fall back to adding the
+    // voiceover as an audio block plus the script as a text block.
+    let tvAudioBlob = null, tvRecorder = null, tvRecording = false, tvChunks = [];
+    function tvStatus(msg) { const el = document.getElementById('tvStatus'); if (el) el.textContent = msg || ''; }
+    function openTextVideo() {
+      if (!isSubscriberFlag) { showToast(_t('wc_pro_video', 'Video features are Pro.')); startPro(); return; }
+      tvAudioBlob = null; tvChunks = [];
+      const pv = document.getElementById('tvAudioPreview'); if (pv) { pv.style.display = 'none'; pv.removeAttribute('src'); }
+      const gen = document.getElementById('tvGenBtn'); if (gen) gen.disabled = true;
+      tvStatus('');
+      const s = document.getElementById('tvScript');
+      if (s && !s.value) { const r = wcResumes.find(x => String(x.id) === (document.getElementById('wcResumeSelect') || {}).value); if (r) s.value = ''; }
+      const m = document.getElementById('textVideoModal'); if (m) m.style.display = 'flex';
+    }
+    function closeTextVideo() {
+      try { if (tvRecorder && tvRecording) tvRecorder.stop(); } catch (_) {}
+      tvRecording = false;
+      const m = document.getElementById('textVideoModal'); if (m) m.style.display = 'none';
+    }
+    function _tvAudioReady(blob) {
+      tvAudioBlob = blob;
+      const pv = document.getElementById('tvAudioPreview');
+      if (pv) { pv.src = URL.createObjectURL(blob); pv.style.display = 'block'; }
+      const gen = document.getElementById('tvGenBtn'); if (gen) gen.disabled = false;
+      tvStatus(_t('tv_voice_ready', 'Voiceover ready. Add your text, then Generate.'));
+    }
+    async function tvToggleRecord() {
+      const btn = document.getElementById('tvRecBtn');
+      if (tvRecording) { try { tvRecorder.stop(); } catch (_) {} return; }
+      if (!navigator.mediaDevices || !window.MediaRecorder) { tvStatus(_t('tv_no_record', 'Recording is not supported in this browser — upload an audio file instead.')); return; }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        tvChunks = [];
+        tvRecorder = new MediaRecorder(stream);
+        tvRecorder.ondataavailable = e => { if (e.data && e.data.size) tvChunks.push(e.data); };
+        tvRecorder.onstop = () => {
+          tvRecording = false;
+          stream.getTracks().forEach(t => t.stop());
+          if (btn) btn.querySelector('span').textContent = _t('tv_record', '🎙️ Record');
+          if (tvChunks.length) _tvAudioReady(new Blob(tvChunks, { type: tvChunks[0].type || 'audio/webm' }));
+        };
+        tvRecorder.start();
+        tvRecording = true;
+        if (btn) btn.querySelector('span').textContent = _t('tv_stop', '⏹ Stop');
+        tvStatus(_t('tv_recording', 'Recording… tap Stop when done.'));
+      } catch (_) { tvStatus(_t('tv_mic_err', 'Could not access the microphone.')); }
+    }
+    function tvPickAudio() {
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'audio/*';
+      inp.onchange = () => { const f = inp.files[0]; if (f) _tvAudioReady(f); };
+      inp.click();
+    }
+    async function _tvUploadMedia(blob, filename) {
+      // Re-wrap with a clean base type (strip ";codecs=…") so the multipart part's
+      // Content-Type has no unquoted comma that could downgrade it server-side.
+      const baseType = (blob.type || '').split(';')[0] || (filename.endsWith('.webm') ? 'video/webm' : '');
+      const clean = baseType ? new Blob([blob], { type: baseType }) : blob;
+      const fd = new FormData(); fd.append('file', clean, filename);
+      const r = await fetch('/api/site-media', { method: 'POST', headers: authHeaders(), body: fd });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Upload failed.');
+      if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }
+      return d.url;
+    }
+    // Draw the script onto a canvas, capture it + the audio, record to webm, upload
+    // as a video, and drop a video block into the layout.
+    async function tvGenerate() {
+      if (!tvAudioBlob) { tvStatus(_t('tv_need_voice', 'Add a voiceover first.')); return; }
+      const script = (document.getElementById('tvScript').value || '').trim();
+      const canRecord = window.MediaRecorder && HTMLCanvasElement.prototype.captureStream && (window.AudioContext || window.webkitAudioContext);
+      const gen = document.getElementById('tvGenBtn'); if (gen) gen.disabled = true;
+      // Fallback: browser can't encode video → save voiceover as audio + text block.
+      if (!canRecord) {
+        try {
+          tvStatus(_t('tv_fallback', 'Your browser cannot encode video — saving as a voiceover + text block instead…'));
+          const ext = (tvAudioBlob.type || 'audio/webm').indexOf('mp') > -1 ? 'm4a' : 'weba';
+          const url = await _tvUploadMedia(tvAudioBlob, 'voiceover.' + ext);
+          if (script) wcBlocks.push({ id: wcNewId(), type: 'heading', text: script.slice(0, 120), colSpan: 12 });
+          wcBlocks.push({ id: wcNewId(), type: 'audio', src: url, label: 'Voiceover', colSpan: 12 });
+          wcRenderBlocks(); closeTextVideo(); showToast(_t('tv_added_audio', '✓ Voiceover + text added to your layout.'));
+        } catch (e) { tvStatus(e.message || _t('tv_err', 'Something went wrong.')); if (gen) gen.disabled = false; }
+        return;
+      }
+      try {
+        tvStatus(_t('tv_generating', 'Generating your video… (this plays through your voiceover once)'));
+        const accent = (OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0]).c.p || '#4a1042';
+        const url = await _tvEncode(script, accent, tvAudioBlob);
+        wcBlocks.push({ id: wcNewId(), type: 'video', src: url, label: 'About Me', colSpan: 12 });
+        wcRenderBlocks(); closeTextVideo(); showToast(_t('tv_added_video', '✓ Text video added to your layout.'));
+      } catch (e) {
+        tvStatus((e && e.message) || _t('tv_err', 'Something went wrong.'));
+        if (gen) gen.disabled = false;
+      }
+    }
+    // The actual in-browser encode. Resolves to the uploaded /media URL.
+    function _tvEncode(script, accent, audioBlob) {
+      return new Promise((resolve, reject) => {
+        try {
+          const W = 1280, H = 720;
+          const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+          const ctx = canvas.getContext('2d');
+          const audioEl = new Audio(); audioEl.src = URL.createObjectURL(audioBlob);
+          const AC = new (window.AudioContext || window.webkitAudioContext)();
+          const srcNode = AC.createMediaElementSource(audioEl);
+          const dest = AC.createMediaStreamDestination();
+          srcNode.connect(dest); // record the audio (don't connect to speakers → silent capture)
+          const cStream = canvas.captureStream(30);
+          const mixed = new MediaStream([...cStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+          const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || 'video/webm';
+          const rec = new MediaRecorder(mixed, { mimeType: mime });
+          const chunks = [];
+          rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+          rec.onstop = async () => {
+            try { AC.close(); } catch (_) {}
+            try {
+              const blob = new Blob(chunks, { type: mime.split(';')[0] });
+              if (blob.size > 25 * 1024 * 1024) { reject(new Error(_t('tv_too_big', 'That video is over 25 MB — try a shorter voiceover.'))); return; }
+              const uurl = await _tvUploadMedia(blob, 'text-video.webm');
+              resolve(uurl);
+            } catch (err) { reject(err); }
+          };
+          // wrap the script into lines for centered drawing
+          const words = (script || 'Hello!').split(/\s+/); const lines = []; let line = '';
+          ctx.font = '600 44px Inter, Arial, sans-serif';
+          for (const w of words) { const test = line ? line + ' ' + w : w; if (ctx.measureText(test).width > W * 0.8 && line) { lines.push(line); line = w; } else line = test; }
+          if (line) lines.push(line);
+          let raf;
+          function draw() {
+            const dur = audioEl.duration || 1, t = audioEl.currentTime || 0, p = Math.min(1, t / dur);
+            const g = ctx.createLinearGradient(0, 0, W, H); g.addColorStop(0, accent); g.addColorStop(1, '#0b1020');
+            ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.font = '700 46px Inter, Arial, sans-serif';
+            const lh = 60, startY = H / 2 - (lines.length - 1) * lh / 2;
+            lines.forEach((ln, i) => ctx.fillText(ln, W / 2, startY + i * lh));
+            ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.fillRect(0, H - 8, W, 8);
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, H - 8, W * p, 8);
+            raf = requestAnimationFrame(draw);
+          }
+          audioEl.onended = () => { cancelAnimationFrame(raf); try { rec.stop(); } catch (_) {} };
+          audioEl.onerror = () => { cancelAnimationFrame(raf); reject(new Error(_t('tv_audio_err', 'Could not read the voiceover audio.'))); };
+          rec.start(); draw();
+          audioEl.play().catch(() => { cancelAnimationFrame(raf); reject(new Error(_t('tv_play_err', 'Could not play the voiceover to record it.'))); });
+        } catch (err) { reject(err); }
+      });
     }
 
     // ── Back Office (Pro asset hub, Phase 6) ──────────────────────────────────

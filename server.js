@@ -860,16 +860,29 @@ const MEDIA_LIMITS = {
   perFile: { image: 8 * 1024 * 1024, audio: 25 * 1024 * 1024, video: 25 * 1024 * 1024 },
 };
 const MEDIA_MIME = {
+  // webm audio/video accepted for browser-recorded voiceovers and the in-browser
+  // text-video generator (MediaRecorder outputs webm on most browsers).
   image: ['image/jpeg', 'image/png', 'image/webp'],
-  audio: ['audio/mpeg', 'audio/mp4', 'audio/aac'],
-  video: ['video/mp4'],
+  audio: ['audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/webm', 'audio/ogg'],
+  video: ['video/mp4', 'video/webm'],
 };
 function _mediaKind(mime) {
-  for (const k of Object.keys(MEDIA_MIME)) if (MEDIA_MIME[k].includes(mime)) return k;
+  const base = String(mime || '').split(';')[0].trim(); // strip ";codecs=..."
+  for (const k of Object.keys(MEDIA_MIME)) if (MEDIA_MIME[k].includes(base)) return k;
   return null;
 }
 function _mediaExt(mime) {
-  return ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/aac': 'aac', 'video/mp4': 'mp4' })[mime] || 'bin';
+  const base = String(mime || '').split(';')[0].trim();
+  return ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/aac': 'aac', 'audio/webm': 'weba', 'audio/ogg': 'ogg', 'video/mp4': 'mp4', 'video/webm': 'webm' })[base] || 'bin';
+}
+// Fallback kind + mime by file extension, for uploads whose part Content-Type is
+// unreliable (e.g. busboy downgrades a webm blob whose type carries an unquoted
+// "codecs=vp8,opus" to text/plain). Keeps browser-recorded media working.
+const _EXT_MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', weba: 'audio/webm', ogg: 'audio/ogg', oga: 'audio/ogg', mp4: 'video/mp4', webm: 'video/webm' };
+function _mediaFromName(name) {
+  const ext = String(name || '').toLowerCase().split('.').pop();
+  const mime = _EXT_MIME[ext];
+  return mime ? { kind: _mediaKind(mime), mime } : null;
 }
 function _emailHash(email) { return crypto.createHash('sha256').update(String(email).toLowerCase()).digest('hex').slice(0, 16); }
 const mediaUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 26 * 1024 * 1024 } });
@@ -905,8 +918,15 @@ app.post('/api/site-media', mediaUploadSingle, (req, res) => {
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Media uploads are a Pro feature.' });
   if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
-  const kind = _mediaKind(req.file.mimetype);
-  if (!kind) return res.status(400).json({ error: 'Unsupported file type. Use JPG/PNG/WebP, MP3/M4A, or MP4.' });
+  // Prefer the part's Content-Type, but fall back to the filename extension when
+  // it's unreliable (browser blobs with unquoted codecs downgrade to text/plain).
+  let kind = _mediaKind(req.file.mimetype);
+  let storeMime = req.file.mimetype;
+  if (!kind) {
+    const byName = _mediaFromName(req.file.originalname);
+    if (byName && byName.kind) { kind = byName.kind; storeMime = byName.mime; }
+  }
+  if (!kind) return res.status(400).json({ error: 'Unsupported file type. Use JPG/PNG/WebP, MP3/M4A/WebM, or MP4/WebM.' });
   const bytes = req.file.size;
   if (bytes > MEDIA_LIMITS.perFile[kind]) {
     return res.status(400).json({ error: `That ${kind} is too large (max ${Math.round(MEDIA_LIMITS.perFile[kind] / 1024 / 1024)} MB).` });
@@ -921,11 +941,11 @@ app.post('/api/site-media', mediaUploadSingle, (req, res) => {
   try {
     const dir = path.join(dataDir, 'site-media', _emailHash(email));
     fs.mkdirSync(dir, { recursive: true });
-    const fname = `${crypto.randomBytes(8).toString('hex')}.${_mediaExt(req.file.mimetype)}`;
+    const fname = `${crypto.randomBytes(8).toString('hex')}.${_mediaExt(storeMime)}`;
     const full = path.join(dir, fname);
     fs.writeFileSync(full, req.file.buffer);
     const info = db.prepare('INSERT INTO site_media (email, kind, path, mime, bytes, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(email.toLowerCase(), kind, full, req.file.mimetype, bytes, Date.now());
+      .run(email.toLowerCase(), kind, full, (storeMime || '').split(';')[0].trim() || storeMime, bytes, Date.now());
     res.json({ id: info.lastInsertRowid, url: `/media/${info.lastInsertRowid}`, kind, bytes, usage: _mediaUsage(email) });
   } catch (e) {
     res.status(500).json({ error: 'Could not save the file.' });
