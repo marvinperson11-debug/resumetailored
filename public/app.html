@@ -316,6 +316,10 @@
     .ed-pal-item:active { cursor: grabbing; }
     .ed-pal-ico { font-size: 15px; line-height: 1; }
     .ed-pal-lbl { font-size: 10px; font-weight: 700; color: #4b5563; text-align: center; line-height: 1.2; }
+    .wc-pg { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 10px; background: #fff; }
+    .wc-pg.is-on { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
+    .wc-pg-home { font-size: 10px; font-weight: 800; color: #4338ca; background: #eef2ff; padding: 4px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: .5px; }
+    .bo-act:disabled { opacity: .4; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -1069,7 +1073,8 @@
               <div class="wc-step" style="margin:0;flex:1;" data-i18n="wc_step_design">3. Design your page</div>
               <button type="button" class="bo-act" id="wcEdUndo" onclick="edUndo()" title="Undo (Ctrl+Z)" disabled>↶ <span data-i18n="wc_ed_undo">Undo</span></button>
               <button type="button" class="bo-act" id="wcEdRedo" onclick="edRedo()" title="Redo (Ctrl+Shift+Z)" disabled>↷ <span data-i18n="wc_ed_redo">Redo</span></button>
-              <select id="wcEdPage" class="text-input" style="max-width:170px;font-size:13px;padding:6px 8px;" onchange="edSetPage(this.value)"></select>
+              <select id="wcEdPage" class="text-input" style="max-width:150px;font-size:13px;padding:6px 8px;" onchange="edSetPage(this.value)"></select>
+              <button type="button" class="bo-act" onclick="edOpenPages()" data-i18n="wc_ed_pages">⧉ Pages</button>
             </div>
             <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
               <div id="wcEdPalWrap" style="width:190px;flex-shrink:0;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;background:#fff;max-height:520px;overflow:auto;">
@@ -1801,6 +1806,14 @@
         wc_ed_gallayout: 'Layout', wc_ed_galcols: 'Columns', wc_ed_galitems: 'Items', wc_ed_galtitle: 'Title',
         wc_ed_galadd: '+ Add image', wc_ed_soclinks: 'Links', wc_ed_socadd: '+ Add link',
         wc_ed_cards: 'Cards', wc_ed_cardadd: '+ Add card',
+        wc_ed_pages: '⧉ Pages', wc_pg_title: 'Pages', wc_pg_add: '+ Add page', wc_pg_done: 'Done',
+        wc_pg_help: 'Your home page is served at /site/your-name. Other pages live at /site/your-name/their-slug.',
+        wc_pg_home: 'Home', wc_pg_sethome: 'Set home', wc_pg_edit: 'Edit page',
+        wc_pg_seotitle: 'SEO title', wc_pg_seodesc: 'SEO description',
+        wc_pg_prompt: 'Name this page:', wc_pg_added: 'Page added.', wc_pg_homeset: 'Home page updated.',
+        wc_pg_duped: 'Page duplicated.', wc_pg_deleted: 'Page deleted.',
+        wc_pg_last: 'A site needs at least one page.',
+        wc_pg_confirm: 'Delete this page? This cannot be undone from the published site until you republish.',
         wc_step_design: '3. Design your page',
         wc_ed_undo: 'Undo', wc_ed_redo: 'Redo', wc_ed_undone: 'Undone',
         wc_ed_hint: 'Click an element to select it. Drag to move, or drag a corner handle to resize. Ctrl/Cmd+Z undoes.',
@@ -1931,6 +1944,14 @@
         wc_ed_gallayout: '布局', wc_ed_galcols: '列数', wc_ed_galitems: '项目', wc_ed_galtitle: '标题',
         wc_ed_galadd: '+ 添加图片', wc_ed_soclinks: '链接', wc_ed_socadd: '+ 添加链接',
         wc_ed_cards: '卡片', wc_ed_cardadd: '+ 添加卡片',
+        wc_ed_pages: '⧉ 页面', wc_pg_title: '页面', wc_pg_add: '+ 添加页面', wc_pg_done: '完成',
+        wc_pg_help: '首页地址为 /site/你的名称，其他页面为 /site/你的名称/页面标识。',
+        wc_pg_home: '首页', wc_pg_sethome: '设为首页', wc_pg_edit: '编辑页面',
+        wc_pg_seotitle: 'SEO 标题', wc_pg_seodesc: 'SEO 描述',
+        wc_pg_prompt: '为此页面命名：', wc_pg_added: '页面已添加。', wc_pg_homeset: '首页已更新。',
+        wc_pg_duped: '页面已复制。', wc_pg_deleted: '页面已删除。',
+        wc_pg_last: '网站至少需要一个页面。',
+        wc_pg_confirm: '删除此页面？在重新发布之前，已发布的网站不会恢复。',
         wc_step_design: '3. 设计你的页面',
         wc_ed_undo: '撤销', wc_ed_redo: '重做', wc_ed_undone: '已撤销',
         wc_ed_hint: '点击元素以选中。拖动移动，拖动右下角手柄调整大小。Ctrl/Cmd+Z 撤销。',
@@ -5999,6 +6020,19 @@ Aaliyah Washington`
     </div>
   </div>
 
+  <!-- ── Page manager (V5) ── -->
+  <div id="wcPagesModal" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)edClosePages()">
+    <div style="background:#fff;border-radius:18px;padding:22px;max-width:560px;width:100%;max-height:90vh;overflow:auto;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <h2 style="font-size:18px;font-weight:800;color:#111827;flex:1;" data-i18n="wc_pg_title">Pages</h2>
+        <button type="button" class="bo-act" onclick="edAddPage()" data-i18n="wc_pg_add">+ Add page</button>
+        <button type="button" class="btn btn-primary" style="font-size:13px;padding:8px 14px;" onclick="edClosePages()" data-i18n="wc_pg_done">Done</button>
+      </div>
+      <p style="font-size:12.5px;color:#6b7280;margin-bottom:14px;" data-i18n="wc_pg_help">Your home page is served at /site/your-name. Other pages live at /site/your-name/their-slug.</p>
+      <div id="wcPagesList"></div>
+    </div>
+  </div>
+
   <!-- ── Template preview: desktop / mobile, before picking ── -->
   <div id="wcTplModal" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeTplPreview()">
     <div style="background:#fff;border-radius:18px;width:100%;max-width:1060px;max-height:94vh;display:flex;flex-direction:column;overflow:hidden;">
@@ -6677,6 +6711,71 @@ Aaliyah Washington`
       sel.style.display = pages.length > 1 ? 'block' : 'none';
     }
     function edSetPage(id) { edPageId = id; edSel = null; edRenderCanvas(); edRenderOverlay(); edRenderInspector(); }
+
+    // ── Page manager (V5) ─────────────────────────────────────────────────────
+    // All mutations go through SiteDocStore's pure page ops (unit-tested in
+    // test/page-ops.js), applied via the store so each one is undoable.
+    function edOpenPages() { if (!edStore) return; edRenderPages(); document.getElementById('wcPagesModal').style.display = 'flex'; }
+    function edClosePages() { const m = document.getElementById('wcPagesModal'); if (m) m.style.display = 'none'; }
+
+    function edRenderPages() {
+      const box = document.getElementById('wcPagesList'); if (!box || !edStore) return;
+      const pages = edStore.getDoc().pages || [];
+      const origin = window.location.origin + '/site/' + ((wcSite && wcSite.subdomain) || 'your-name');
+      box.innerHTML = pages.map((p, i) => `
+        <div class="wc-pg${p.id === edPageId ? ' is-on' : ''}">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <input class="text-input" style="flex:1;min-width:120px;font-size:13px;font-weight:700;" value="${wcEsc(p.name || '')}" oninput="edRenamePage('${wcEsc(p.id)}',this.value)"/>
+            ${p.isHome
+              ? `<span class="wc-pg-home">${wcEsc(_t('wc_pg_home', 'Home'))}</span>`
+              : `<button type="button" class="bo-act" onclick="edSetHome('${wcEsc(p.id)}')">${wcEsc(_t('wc_pg_sethome', 'Set home'))}</button>`}
+            <button type="button" class="bo-act" onclick="edMovePage('${wcEsc(p.id)}',-1)" ${i === 0 ? 'disabled' : ''}>↑</button>
+            <button type="button" class="bo-act" onclick="edMovePage('${wcEsc(p.id)}',1)" ${i === pages.length - 1 ? 'disabled' : ''}>↓</button>
+            <button type="button" class="bo-act" onclick="edDuplicatePage('${wcEsc(p.id)}')">${wcEsc(_t('bo_duplicate', 'Duplicate'))}</button>
+            <button type="button" class="bo-act bo-danger" onclick="edDeletePage('${wcEsc(p.id)}')" ${pages.length <= 1 ? 'disabled' : ''}>${wcEsc(_t('bo_delete', 'Delete'))}</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap;">
+            <span style="font-size:11.5px;color:#9ca3af;">${wcEsc(origin)}${p.isHome ? '' : '/'}</span>
+            ${p.isHome ? '' : `<input class="text-input" style="width:150px;font-size:12px;" value="${wcEsc(p.slug || '')}" onchange="edSetSlug('${wcEsc(p.id)}',this.value)"/>`}
+            <button type="button" class="bo-act" style="margin-left:auto;" onclick="edSetPage('${wcEsc(p.id)}');edClosePages();">${wcEsc(_t('wc_pg_edit', 'Edit page'))}</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px;">
+            <input class="text-input" style="font-size:12px;" placeholder="${wcEsc(_t('wc_pg_seotitle', 'SEO title'))}" value="${wcEsc((p.seo && p.seo.title) || '')}" oninput="edSetSeo('${wcEsc(p.id)}','title',this.value)"/>
+            <input class="text-input" style="font-size:12px;" placeholder="${wcEsc(_t('wc_pg_seodesc', 'SEO description'))}" value="${wcEsc((p.seo && p.seo.description) || '')}" oninput="edSetSeo('${wcEsc(p.id)}','description',this.value)"/>
+          </div>
+        </div>`).join('');
+    }
+
+    function _edPageOp(fn, opts) {
+      if (!edStore) return;
+      if (!opts || !opts.coalesce) edStore.endGesture();
+      edApply(fn, opts);
+      // Keep the selected page valid (it may have been deleted).
+      const pages = edStore.getDoc().pages || [];
+      if (!pages.some((p) => p.id === edPageId)) { edPageId = (pages[0] || {}).id || null; edSel = null; }
+      edSyncPageSelect(); edRenderPages();
+    }
+    function edAddPage() {
+      const name = window.prompt(_t('wc_pg_prompt', 'Name this page:'), 'About');
+      if (name === null) return;
+      _edPageOp((d) => { SiteDocStore.addPage(d, name || 'New page'); });
+      showToast(_t('wc_pg_added', 'Page added.'));
+    }
+    function edRenamePage(id, name) { _edPageOp((d) => { SiteDocStore.renamePage(d, id, name); }, { coalesce: 'pgname:' + id }); }
+    function edSetSlug(id, slug) { _edPageOp((d) => { SiteDocStore.setPageSlug(d, id, slug); }); }
+    function edSetHome(id) { _edPageOp((d) => { SiteDocStore.setHome(d, id); }); showToast(_t('wc_pg_homeset', 'Home page updated.')); }
+    function edMovePage(id, delta) { _edPageOp((d) => { SiteDocStore.movePage(d, id, delta); }); }
+    function edDuplicatePage(id) { _edPageOp((d) => { SiteDocStore.duplicatePage(d, id); }); showToast(_t('wc_pg_duped', 'Page duplicated.')); }
+    function edDeletePage(id) {
+      const pages = (edStore.getDoc().pages || []);
+      if (pages.length <= 1) { showToast(_t('wc_pg_last', 'A site needs at least one page.')); return; }
+      if (!confirm(_t('wc_pg_confirm', 'Delete this page? This cannot be undone from the published site until you republish.'))) return;
+      _edPageOp((d) => { SiteDocStore.deletePage(d, id); });
+      showToast(_t('wc_pg_deleted', 'Page deleted.'));
+    }
+    function edSetSeo(id, key, val) {
+      _edPageOp((d) => { SiteDocStore.setPageSeo(d, id, { [key]: val }); }, { coalesce: 'pgseo:' + id + ':' + key });
+    }
 
     // The canvas renders through the SAME endpoint/renderer as the published
     // site, so what you edit is what visitors get.

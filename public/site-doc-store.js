@@ -144,6 +144,131 @@
     return (prefix || 'e') + Math.random().toString(36).slice(2, 9);
   }
 
+  // ── Page operations (V5) ──────────────────────────────────────────────────
+  // Pure mutators over a DRAFT document (the clone `apply` hands out). Kept here
+  // rather than in the UI so page management is unit-tested independently.
+
+  var RESERVED_SLUGS = ['api', 'media', 'site', 'admin', 'assets', 'static'];
+
+  /** URL-safe, unique-within-the-document slug. */
+  function slugify(name, taken) {
+    var base = String(name || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40) || 'page';
+    if (RESERVED_SLUGS.indexOf(base) !== -1) base = base + '-page';
+    var used = taken || [];
+    if (used.indexOf(base) === -1) return base;
+    for (var i = 2; i < 500; i++) {
+      if (used.indexOf(base + '-' + i) === -1) return base + '-' + i;
+    }
+    return base + '-' + Date.now();
+  }
+
+  function pageSlugs(draft, exceptId) {
+    return ((draft && draft.pages) || [])
+      .filter(function (p) { return p.id !== exceptId; })
+      .map(function (p) { return p.slug; });
+  }
+
+  function addPage(draft, name) {
+    draft.pages = draft.pages || [];
+    var id = newId('p');
+    var title = String(name || 'New page').slice(0, 60);
+    // Seed a nav + heading. A blank page would be a navigational dead end for
+    // visitors (no way back to the rest of the site), so every new page starts
+    // with the page menu and a title the user can edit or delete.
+    var page = {
+      id: id,
+      name: title,
+      slug: slugify(name || 'New page', pageSlugs(draft)),
+      isHome: draft.pages.length === 0,
+      seo: { title: '', description: '' },
+      sections: [{
+        id: newId('s'), h: 400, bg: { type: 'color', value: '#ffffff' },
+        els: [
+          { id: newId('e'), type: 'nav', x: 80, y: 30, w: 900, h: 40, props: {} },
+          { id: newId('e'), type: 'heading', x: 80, y: 120, w: 700, h: 90, props: { text: title } },
+        ],
+      }],
+    };
+    draft.pages.push(page);
+    return id;
+  }
+
+  function renamePage(draft, pageId, name) {
+    var p = (draft.pages || []).filter(function (x) { return x.id === pageId; })[0];
+    if (!p) return false;
+    p.name = String(name || '').slice(0, 60) || p.name;
+    return true;
+  }
+
+  /** Rename the URL segment. Slug stays unique and URL-safe. */
+  function setPageSlug(draft, pageId, slug) {
+    var p = (draft.pages || []).filter(function (x) { return x.id === pageId; })[0];
+    if (!p) return false;
+    p.slug = slugify(slug, pageSlugs(draft, pageId));
+    return true;
+  }
+
+  function duplicatePage(draft, pageId) {
+    var idx = (draft.pages || []).map(function (p) { return p.id; }).indexOf(pageId);
+    if (idx === -1) return null;
+    var copy = JSON.parse(JSON.stringify(draft.pages[idx]));
+    copy.id = newId('p');
+    copy.isHome = false;                       // a copy is never the home page
+    copy.name = (copy.name || 'Page') + ' copy';
+    copy.slug = slugify(copy.name, pageSlugs(draft));
+    // Fresh ids for every section and element, so nothing aliases the original.
+    (copy.sections || []).forEach(function (s) {
+      s.id = newId('s');
+      (s.els || []).forEach(function (e) { e.id = newId('e'); });
+    });
+    draft.pages.splice(idx + 1, 0, copy);
+    return copy.id;
+  }
+
+  /** Delete a page. Refuses to remove the last one; reassigns home if needed. */
+  function deletePage(draft, pageId) {
+    var pages = draft.pages || [];
+    if (pages.length <= 1) return false;
+    var idx = pages.map(function (p) { return p.id; }).indexOf(pageId);
+    if (idx === -1) return false;
+    var wasHome = pages[idx].isHome;
+    pages.splice(idx, 1);
+    if (wasHome && pages.length) pages[0].isHome = true;
+    return true;
+  }
+
+  /** Move a page by `delta` positions, clamped to the ends. */
+  function movePage(draft, pageId, delta) {
+    var pages = draft.pages || [];
+    var idx = pages.map(function (p) { return p.id; }).indexOf(pageId);
+    if (idx === -1) return false;
+    var to = Math.max(0, Math.min(pages.length - 1, idx + (Number(delta) || 0)));
+    if (to === idx) return false;
+    pages.splice(to, 0, pages.splice(idx, 1)[0]);
+    return true;
+  }
+
+  /** Exactly one page is home at any time. */
+  function setHome(draft, pageId) {
+    var pages = draft.pages || [];
+    if (!pages.some(function (p) { return p.id === pageId; })) return false;
+    pages.forEach(function (p) { p.isHome = (p.id === pageId); });
+    return true;
+  }
+
+  function setPageSeo(draft, pageId, seo) {
+    var p = (draft.pages || []).filter(function (x) { return x.id === pageId; })[0];
+    if (!p) return false;
+    p.seo = p.seo || {};
+    if (seo && typeof seo.title === 'string') p.seo.title = seo.title.slice(0, 120);
+    if (seo && typeof seo.description === 'string') p.seo.description = seo.description.slice(0, 300);
+    return true;
+  }
+
   return {
     createStore: createStore,
     findPage: findPage,
@@ -151,5 +276,16 @@
     eachElement: eachElement,
     newId: newId,
     HISTORY_LIMIT: LIMIT,
+    // page ops
+    slugify: slugify,
+    addPage: addPage,
+    renamePage: renamePage,
+    setPageSlug: setPageSlug,
+    duplicatePage: duplicatePage,
+    deletePage: deletePage,
+    movePage: movePage,
+    setHome: setHome,
+    setPageSeo: setPageSeo,
+    RESERVED_SLUGS: RESERVED_SLUGS,
   };
 }));
