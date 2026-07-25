@@ -154,6 +154,51 @@ db.exec(`
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_saved_resumes_email ON saved_resumes(email);
+  CREATE TABLE IF NOT EXISTS saved_cover_letters (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL,
+    title      TEXT NOT NULL DEFAULT 'Cover Letter',
+    content    TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_saved_cover_letters_email ON saved_cover_letters(email);
+  CREATE TABLE IF NOT EXISTS saved_videos (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL,
+    title      TEXT NOT NULL DEFAULT 'Resume Video',
+    path       TEXT NOT NULL,
+    source     TEXT NOT NULL DEFAULT 'generated',
+    bytes      INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_saved_videos_email ON saved_videos(email);
+  CREATE TABLE IF NOT EXISTS site_media (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL,
+    kind       TEXT NOT NULL,
+    path       TEXT NOT NULL,
+    mime       TEXT NOT NULL,
+    bytes      INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_site_media_email ON site_media(email);
+  CREATE TABLE IF NOT EXISTS site_leads (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    sub        TEXT NOT NULL,
+    email      TEXT NOT NULL,
+    name       TEXT DEFAULT '',
+    visitor_email TEXT DEFAULT '',
+    message    TEXT DEFAULT '',
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_site_leads_email ON site_leads(email);
+  CREATE TABLE IF NOT EXISTS site_visits (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    sub           TEXT NOT NULL,
+    ts            INTEGER NOT NULL,
+    referrer_host TEXT DEFAULT ''
+  );
+  CREATE INDEX IF NOT EXISTS idx_site_visits_sub ON site_visits(sub);
   CREATE TABLE IF NOT EXISTS shared_resumes (
     slug         TEXT PRIMARY KEY,
     name         TEXT,
@@ -196,6 +241,11 @@ function _ensureColumn(table, column, ddl) {
 // Remember which template family a shared resume was created with, so /r/:slug can
 // render it in the layout the user actually chose (sidebar, two-column, etc.).
 _ensureColumn('shared_resumes', 'layout', 'layout TEXT');
+// Website Creator (Pro) config blob: theme, section order/placement, selected
+// asset ids, media refs, feature toggles. NULL on sites that predate the creator
+// — _renderPersonalSite() treats NULL as a legacy default (renders exactly like
+// today's output) and the column is populated lazily on first save in the creator.
+_ensureColumn('personal_sites', 'config', 'config TEXT');
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
@@ -287,9 +337,10 @@ app.use((req, res, next) => {
   const row = db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub);
   if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
   try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
+  _recordVisit(sub, req);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
-  return res.send(_shareResumeHtml(row, `${req.protocol}://${host}`, {
+  return res.send(_renderPersonalSite(row, `${req.protocol}://${host}`, {
     indexable: true, footer: '', canonicalUrl: `${req.protocol}://${host}/`,
   }));
 });
@@ -713,6 +764,280 @@ app.delete('/api/resumes/:id', (req, res) => {
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   db.prepare('DELETE FROM saved_resumes WHERE id = ? AND email = ?').run(req.params.id, email);
   res.json({ success: true });
+});
+
+// ── Saved cover letters (mirror of saved_resumes) ────────────────────────────
+// Persist generated cover letters so the Website Creator + Back Office can list
+// them and let the user pick which one a site displays. The client POSTs here
+// after a cover_letter / both run.
+app.get('/api/cover-letters', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const rows = db.prepare('SELECT id, title, content, created_at FROM saved_cover_letters WHERE email = ? ORDER BY created_at DESC').all(email);
+  res.json({ coverLetters: rows });
+});
+
+app.post('/api/cover-letters', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const content = (req.body && typeof req.body.content === 'string') ? req.body.content.trim() : '';
+  if (content.length < 40) return res.status(400).json({ error: 'Cover letter content is required.' });
+  const rawTitle = (req.body && typeof req.body.title === 'string' && req.body.title.trim())
+    ? req.body.title.trim()
+    : (content.split('\n').find((l) => l.trim()) || 'Cover Letter').trim();
+  const title = rawTitle.slice(0, 80);
+  db.prepare('DELETE FROM saved_cover_letters WHERE email = ? AND content = ?').run(email, content);
+  const info = db.prepare('INSERT INTO saved_cover_letters (email, title, content, created_at) VALUES (?, ?, ?, ?)')
+    .run(email, title, content.slice(0, 60000), Date.now());
+  db.prepare('DELETE FROM saved_cover_letters WHERE email = ? AND id NOT IN (SELECT id FROM saved_cover_letters WHERE email = ? ORDER BY created_at DESC LIMIT 20)').run(email, email);
+  res.json({ success: true, id: info.lastInsertRowid, title });
+});
+
+app.delete('/api/cover-letters/:id', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  db.prepare('DELETE FROM saved_cover_letters WHERE id = ? AND email = ?').run(req.params.id, email);
+  res.json({ success: true });
+});
+
+// Duplicate a saved resume / cover letter (Back Office bulk action).
+function _duplicateAsset(table, req, res) {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const row = db.prepare(`SELECT title, content FROM ${table} WHERE id = ? AND email = ?`).get(req.params.id, email);
+  if (!row) return res.status(404).json({ error: 'Not found.' });
+  const title = (row.title || 'Untitled').slice(0, 74) + ' (copy)';
+  const info = db.prepare(`INSERT INTO ${table} (email, title, content, created_at) VALUES (?, ?, ?, ?)`)
+    .run(email, title, row.content, Date.now());
+  // Honor the same keep-latest-20 cap as the create routes.
+  db.prepare(`DELETE FROM ${table} WHERE email = ? AND id NOT IN (SELECT id FROM ${table} WHERE email = ? ORDER BY created_at DESC LIMIT 20)`).run(email, email);
+  res.json({ success: true, id: info.lastInsertRowid, title });
+}
+app.post('/api/resumes/:id/duplicate', (req, res) => _duplicateAsset('saved_resumes', req, res));
+app.post('/api/cover-letters/:id/duplicate', (req, res) => _duplicateAsset('saved_cover_letters', req, res));
+
+// ── Saved resume videos ──────────────────────────────────────────────────────
+// Metadata rows for persisted MP4s (generated or user-uploaded). The file bytes
+// are written under DATA_DIR by the media/persist paths in later phases; here we
+// expose list + delete so the Website Creator and Back Office can manage them.
+app.get('/api/videos', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const rows = db.prepare('SELECT id, title, source, bytes, created_at FROM saved_videos WHERE email = ? ORDER BY created_at DESC').all(email);
+  res.json({ videos: rows });
+});
+
+app.delete('/api/videos/:id', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const row = db.prepare('SELECT path FROM saved_videos WHERE id = ? AND email = ?').get(req.params.id, email);
+  db.prepare('DELETE FROM saved_videos WHERE id = ? AND email = ?').run(req.params.id, email);
+  if (row && row.path) { try { fs.unlink(row.path, () => {}); } catch (_) {} }
+  res.json({ success: true });
+});
+
+// Asset counts for the Website Creator pop-up gate: the "tailor first" modal only
+// shows when the user has zero saved resumes AND zero saved cover letters.
+app.get('/api/assets/summary', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const count = (t) => db.prepare(`SELECT COUNT(*) AS n FROM ${t} WHERE email = ?`).get(email).n;
+  res.json({
+    resumes: count('saved_resumes'),
+    coverLetters: count('saved_cover_letters'),
+    videos: count('saved_videos'),
+  });
+});
+
+// ── Site media uploads (Pro) ─────────────────────────────────────────────────
+// Images/audio share one quota pool; video has its own pool + a hard file count
+// cap (Option B). Files live under ${DATA_DIR}/site-media/<email-hash>/ so they
+// persist across deploys when a Railway volume is mounted at /data.
+const MEDIA_LIMITS = {
+  imageAudioPool: 300 * 1024 * 1024, // 300 MB shared by images + audio
+  videoPool: 300 * 1024 * 1024,      // 300 MB for video
+  videoMaxCount: 5,
+  perFile: { image: 8 * 1024 * 1024, audio: 25 * 1024 * 1024, video: 25 * 1024 * 1024 },
+};
+const MEDIA_MIME = {
+  image: ['image/jpeg', 'image/png', 'image/webp'],
+  audio: ['audio/mpeg', 'audio/mp4', 'audio/aac'],
+  video: ['video/mp4'],
+};
+function _mediaKind(mime) {
+  for (const k of Object.keys(MEDIA_MIME)) if (MEDIA_MIME[k].includes(mime)) return k;
+  return null;
+}
+function _mediaExt(mime) {
+  return ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/aac': 'aac', 'video/mp4': 'mp4' })[mime] || 'bin';
+}
+function _emailHash(email) { return crypto.createHash('sha256').update(String(email).toLowerCase()).digest('hex').slice(0, 16); }
+const mediaUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 26 * 1024 * 1024 } });
+function mediaUploadSingle(req, res, next) {
+  mediaUpload.single('file')(req, res, (err) => {
+    if (err) {
+      const msg = err.code === 'LIMIT_FILE_SIZE' ? 'File is too large (max 25 MB).' : (err.message || 'Upload failed.');
+      return res.status(400).json({ error: msg });
+    }
+    next();
+  });
+}
+
+function _mediaUsage(email) {
+  const rows = db.prepare('SELECT kind, bytes FROM site_media WHERE email = ?').all(email);
+  let imageAudioBytes = 0, videoBytes = 0, videoCount = 0;
+  for (const r of rows) {
+    if (r.kind === 'video') { videoBytes += r.bytes; videoCount++; }
+    else imageAudioBytes += r.bytes;
+  }
+  return { imageAudioBytes, videoBytes, videoCount, limits: MEDIA_LIMITS };
+}
+
+app.get('/api/site-media', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const items = db.prepare('SELECT id, kind, mime, bytes, created_at FROM site_media WHERE email = ? ORDER BY created_at DESC').all(email);
+  res.json({ items: items.map(i => ({ ...i, url: `/media/${i.id}` })), usage: _mediaUsage(email) });
+});
+
+app.post('/api/site-media', mediaUploadSingle, (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Media uploads are a Pro feature.' });
+  if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
+  const kind = _mediaKind(req.file.mimetype);
+  if (!kind) return res.status(400).json({ error: 'Unsupported file type. Use JPG/PNG/WebP, MP3/M4A, or MP4.' });
+  const bytes = req.file.size;
+  if (bytes > MEDIA_LIMITS.perFile[kind]) {
+    return res.status(400).json({ error: `That ${kind} is too large (max ${Math.round(MEDIA_LIMITS.perFile[kind] / 1024 / 1024)} MB).` });
+  }
+  const usage = _mediaUsage(email);
+  if (kind === 'video') {
+    if (usage.videoCount >= MEDIA_LIMITS.videoMaxCount) return res.status(400).json({ error: `Video limit reached (max ${MEDIA_LIMITS.videoMaxCount}). Delete one first.` });
+    if (usage.videoBytes + bytes > MEDIA_LIMITS.videoPool) return res.status(400).json({ error: 'Video storage full — delete a video to free space.' });
+  } else if (usage.imageAudioBytes + bytes > MEDIA_LIMITS.imageAudioPool) {
+    return res.status(400).json({ error: 'Image/audio storage full — delete some files to free space.' });
+  }
+  try {
+    const dir = path.join(dataDir, 'site-media', _emailHash(email));
+    fs.mkdirSync(dir, { recursive: true });
+    const fname = `${crypto.randomBytes(8).toString('hex')}.${_mediaExt(req.file.mimetype)}`;
+    const full = path.join(dir, fname);
+    fs.writeFileSync(full, req.file.buffer);
+    const info = db.prepare('INSERT INTO site_media (email, kind, path, mime, bytes, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(email.toLowerCase(), kind, full, req.file.mimetype, bytes, Date.now());
+    res.json({ id: info.lastInsertRowid, url: `/media/${info.lastInsertRowid}`, kind, bytes, usage: _mediaUsage(email) });
+  } catch (e) {
+    res.status(500).json({ error: 'Could not save the file.' });
+  }
+});
+
+app.delete('/api/site-media/:id', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const row = db.prepare('SELECT path FROM site_media WHERE id = ? AND email = ?').get(req.params.id, email);
+  db.prepare('DELETE FROM site_media WHERE id = ? AND email = ?').run(req.params.id, email);
+  if (row && row.path) { try { fs.unlink(row.path, () => {}); } catch (_) {} }
+  res.json({ success: true, usage: _mediaUsage(email) });
+});
+
+// Public media serving — personal sites are public, so no auth on GET. Streams
+// the stored file by id with its content-type. Long cache (content is immutable).
+app.get('/media/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const row = Number.isFinite(id) ? db.prepare('SELECT path, mime FROM site_media WHERE id = ?').get(id) : null;
+  if (!row || !row.path || !fs.existsSync(row.path)) {
+    res.status(404);
+    return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
+  res.setHeader('Content-Type', row.mime);
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(row.path);
+});
+
+// ── Case studies: auto-generate editable candidates from a resume (Pro) ───────
+app.post('/api/case-studies', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
+  const text = (req.body && typeof req.body.text === 'string') ? req.body.text : '';
+  if (text.trim().length < 20) return res.status(400).json({ error: 'No resume text to analyze.' });
+  res.json({ items: _extractCaseStudies(text) });
+});
+
+// ── Lead capture (public, persist-first) ─────────────────────────────────────
+const leadLimiter = rateLimit({ windowMs: 60 * 1000, max: 6, message: { error: 'Too many submissions — please wait a minute.' } });
+app.post('/api/site-lead', leadLimiter, async (req, res) => {
+  const { sub, name, email: visitorEmail, message, mode, website } = req.body || {};
+  // Honeypot: bots fill the hidden "website" field; humans never see it.
+  if (website) return res.json({ success: true });
+  const s = _validSubdomain(sub);
+  if (!s) return res.status(400).json({ error: 'Unknown site.' });
+  const site = db.prepare('SELECT email FROM personal_sites WHERE subdomain = ?').get(s);
+  if (!site) return res.status(404).json({ error: 'Unknown site.' });
+  const ve = String(visitorEmail || '').trim().slice(0, 200);
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ve)) return res.status(400).json({ error: 'A valid email is required.' });
+  // Persist FIRST — a missing RESEND_API_KEY must never lose a lead.
+  db.prepare('INSERT INTO site_leads (sub, email, name, visitor_email, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(s, site.email.toLowerCase(), String(name || '').slice(0, 120), ve, String(message || '').slice(0, 2000), Date.now());
+  // Best-effort notify the owner.
+  try {
+    const what = mode === 'pdf' ? 'requested your resume' : 'sent you a message';
+    await sendEmail({
+      to: site.email,
+      subject: `New lead from your site (${s}) — someone ${what}`,
+      html: `<p><strong>${_escHtml(String(name || 'A visitor'))}</strong> (${_escHtml(ve)}) ${what} via your personal site <b>${_escHtml(s)}</b>.</p>${message ? `<p>${_escHtml(String(message).slice(0, 2000))}</p>` : ''}`,
+      replyTo: ve,
+    });
+  } catch (_) { /* email is best-effort; the lead is already stored */ }
+  res.json({ success: true });
+});
+
+// Owner: list leads captured across their site.
+app.get('/api/site-leads', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const rows = db.prepare('SELECT id, sub, name, visitor_email, message, created_at FROM site_leads WHERE email = ? ORDER BY created_at DESC LIMIT 200').all(email.toLowerCase());
+  res.json({ leads: rows, emailEnabled: !!(process.env.RESEND_API_KEY || (process.env.SMTP_USER && process.env.SMTP_PASS)) });
+});
+
+// ── Themed QR code (Pro) — SVG tinted to the site's colors ───────────────────
+app.get('/api/site-qr', async (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
+  const site = db.prepare('SELECT subdomain FROM personal_sites WHERE email = ?').get(email.toLowerCase());
+  if (!site) return res.status(404).json({ error: 'Publish your site first.' });
+  const origin = `${req.protocol}://${req.get('host')}`;
+  const dark = '#' + String(req.query.color || '111827').replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+  try {
+    const QRCode = require('qrcode');
+    const svg = await QRCode.toString(`${origin}/site/${site.subdomain}`, { type: 'svg', margin: 1, color: { dark: dark || '#111827', light: '#0000' } });
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.send(svg);
+  } catch (e) {
+    res.status(500).json({ error: 'Could not generate the QR code.' });
+  }
+});
+
+// ── Simple analytics (owner) — views + top referrer ──────────────────────────
+function _recordVisit(sub, req) {
+  try {
+    let host = '';
+    const ref = req.get('referer') || req.get('referrer') || '';
+    if (ref) { try { host = new URL(ref).hostname.replace(/^www\./, ''); } catch (_) {} }
+    db.prepare('INSERT INTO site_visits (sub, ts, referrer_host) VALUES (?, ?, ?)').run(sub, Date.now(), host);
+  } catch (_) {}
+}
+app.get('/api/site-analytics', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const site = db.prepare('SELECT subdomain, views FROM personal_sites WHERE email = ?').get(email.toLowerCase());
+  if (!site) return res.json({ views: 0, topReferrers: [] });
+  const top = db.prepare(`SELECT CASE WHEN referrer_host = '' THEN 'direct' ELSE referrer_host END AS host, COUNT(*) AS n
+                          FROM site_visits WHERE sub = ? GROUP BY host ORDER BY n DESC LIMIT 5`).all(site.subdomain);
+  res.json({ views: site.views || 0, topReferrers: top });
 });
 
 app.post('/api/auth/forgot-password', async (req, res) => {
@@ -1626,6 +1951,337 @@ function _shareResumeHtml(row, origin, opts = {}) {
 </html>`;
 }
 
+// ── Personal website renderer (Pro) ─────────────────────────────────────────
+// SEPARATE from _shareResumeHtml on purpose: "Create a Link" (/r/:slug) stays a
+// plain resume snapshot, while the Pro website is free to grow into a full
+// multi-section, media-rich, config-driven page. Keeping the two renderers apart
+// is what lets us change one without disturbing the other (the /r/:slug output is
+// covered by a byte-identical snapshot in test/render-snapshot.js).
+//
+// Phase 1: no site has a `config` yet, and legacy sites have `config IS NULL`, so
+// this delegates to the shared resume-document renderer — byte-identical to the
+// previous /site output. Later phases parse `config` and build the site here.
+function _renderPersonalSite(row, origin, opts = {}) {
+  let config = null;
+  if (row && row.config) { try { config = JSON.parse(row.config); } catch (_) { config = null; } }
+  // Grid layout (Website Creator, Phase 3): render from config.blocks once the
+  // user has arranged blocks. Legacy sites (config null, or a config without a
+  // non-empty blocks array — e.g. Phase 2 publishes that only stored asset ids)
+  // fall through to the shared resume-document renderer, byte-identical to before.
+  if (config && Array.isArray(config.blocks) && config.blocks.length) {
+    return _renderSiteGrid(row, origin, opts, config);
+  }
+  return _shareResumeHtml(row, origin, opts);
+}
+
+// Personal-site background themes. `animated` themes are gated by shouldAnimate()
+// on the client (reduced-motion / low core count / small viewport) and fall back
+// to `fallback`. fg/muted adapt text that sits directly on the background (cards
+// keep their own light styling). Default 'midnight' mirrors the homepage (#030712).
+const _SITE_THEMES = {
+  midnight: { animated: false, bg: 'radial-gradient(1200px 600px at 50% -10%, rgba(99,102,241,0.18), transparent), #030712', fallback: '#030712', fg: '#e2e8f0', muted: '#94a3b8', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
+  aurora: { animated: true, bg: 'linear-gradient(120deg, #0f172a, #3b0764, #1e1b4b, #0f172a)', fallback: 'linear-gradient(120deg,#0f172a,#1e1b4b)', fg: '#e2e8f0', muted: '#a5b4fc', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
+  paper: { animated: false, bg: '#f8fafc', fallback: '#f8fafc', fg: '#1f2430', muted: '#6b7280', langBtn: 'rgba(0,0,0,.05)', langFg: '#475569', langBorder: 'rgba(0,0,0,.1)' },
+  mesh: { animated: false, bg: 'radial-gradient(at 20% 20%, #eef2ff, transparent 50%), radial-gradient(at 80% 0%, #fce7f3, transparent 50%), radial-gradient(at 60% 80%, #dbeafe, transparent 50%), #f8fafc', fallback: '#f8fafc', fg: '#1f2430', muted: '#6b7280', langBtn: 'rgba(0,0,0,.05)', langFg: '#475569', langBorder: 'rgba(0,0,0,.1)' },
+  particles: { animated: true, bg: '#0b1020', fallback: '#0b1020', fg: '#e2e8f0', muted: '#94a3b8', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
+};
+
+// Public-site chrome strings (user content is shown as authored). Shared by the
+// grid renderer and the contact block so a zh site renders in Chinese server-side.
+const _SITE_I18N = {
+  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume' },
+  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历' },
+};
+
+// A resume rendered as a self-contained fragment (used by a `resume` block).
+// Built from the standalone _dxParseResume/_shareLinesHtml helpers so it never
+// touches _shareResumeHtml (which the Link relies on staying byte-identical).
+function _renderResumeFragment(row, accent) {
+  const { name, contactParts, sections } = _dxParseResume(row.text || '');
+  const displayName = name || 'Resume';
+  const contactItems = contactParts.flatMap(p => String(p).split(/\s*\|\s*/)).map(s => s.trim()).filter(Boolean);
+  const contactHtml = row.hide_contact ? '' :
+    contactItems.map(c => `<span>${_escHtml(c)}</span>`).join('<span class="sg-dot">·</span>');
+  const secHtml = sections.map(s => `<section class="sg-sec"><h2 class="sg-h">${_escHtml(s.title)}</h2>${_shareLinesHtml(s.lines, accent)}</section>`).join('');
+  return `<div class="sg-resume"><div class="sg-rhead"><div class="sg-rname">${_escHtml(displayName)}</div>${contactHtml ? `<div class="sg-rcontact">${contactHtml}</div>` : ''}</div>${secHtml}</div>`;
+}
+
+// Auto-generate case-study candidates from resume bullets. Tiered: Tier-1 bullets
+// (strong metric: %, $, ×, time-delta) always qualify; Tier-2 (generic "N noun"
+// counts) only fill up to a 3-card minimum, so metric-rich resumes stay clean and
+// sparse ones still get a respectable set. Output is editable by the user.
+const _CS_BULLET_RE = /^\s*[•\-*–·▪]\s+/;
+const _CS_TIER1_RE = /(\$\s?\d[\d,.]*\s?(k|m|bn|billion|million|thousand)?|\d[\d,.]*\s?%|\b\d+(\.\d+)?\s?x\b|\bfrom\s+\d[\d,.]*\w*\s+to\s+\d[\d,.]*\w*|\d[\d,.]*\s?(ms|hours?|days?|weeks?|months?)\b)/i;
+const _CS_TIER2_RE = /\b\d{1,3}[\d,.]*\+?\s?[A-Za-z][A-Za-z-]{2,}\b/;
+function _csTitle(b) {
+  let head = String(b).split(/,|—|–| by | that | which | to /i)[0];
+  head = head.replace(/\s+/g, ' ').trim().replace(/[.;:]+$/, '');
+  if (head.length > 60) head = head.slice(0, 57).replace(/\s\S*$/, '') + '…';
+  return head || 'Project';
+}
+function _extractCaseStudies(text, max = 6) {
+  const bullets = String(text || '').split('\n')
+    .filter(l => _CS_BULLET_RE.test(l))
+    .map(l => l.replace(_CS_BULLET_RE, '').replace(/\s+/g, ' ').trim())
+    .filter(b => b.length > 12);
+  const tier1 = [], tier2 = [];
+  for (const b of bullets) {
+    const m1 = b.match(_CS_TIER1_RE);
+    if (m1) { tier1.push({ title: _csTitle(b), metric: m1[0].trim(), body: b }); continue; }
+    const m2 = b.match(_CS_TIER2_RE);
+    if (m2) tier2.push({ title: _csTitle(b), metric: m2[0].trim(), body: b });
+  }
+  const out = tier1.slice(0, max);
+  for (const c of tier2) { if (out.length >= Math.max(3, tier1.length)) break; if (out.length >= max) break; out.push(c); }
+  return out;
+}
+
+// Clamp helpers for untrusted numeric block placement.
+const _clampInt = (v, lo, hi, dflt) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt; };
+const _safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/|data:image\/(png|jpe?g|webp);base64,)/i.test(u) && u.length < 2000000) ? u : '';
+
+// One block → HTML on a 12-column grid. On mobile the grid collapses (CSS) so
+// blocks stack full-width in source order; placement is desktop-only.
+function _renderSiteBlock(b, row, accent, lang) {
+  const SI = _SITE_I18N[lang === 'zh' ? 'zh' : 'en'];
+  const span = _clampInt(b.colSpan, 1, 12, 12);
+  // Explicit start column → fixed placement; no column → auto-flow (blocks fill
+  // rows left-to-right, so two half-width blocks sit side by side). The editor
+  // uses auto-flow (width-only) by default.
+  const place = (b.col != null && Number.isFinite(Number(b.col)))
+    ? (() => { const col = _clampInt(b.col, 1, 12, 1); return `grid-column:${col} / span ${Math.min(span, 13 - col)};`; })()
+    : `grid-column:span ${span};`;
+  let inner = '';
+  switch (b.type) {
+    case 'heading': inner = `<h2 class="sg-blk-h">${_escHtml(String(b.text || '').slice(0, 200))}</h2>`; break;
+    case 'text': inner = `<div class="sg-blk-text">${_escHtml(String(b.text || '').slice(0, 4000)).replace(/\n/g, '<br/>')}</div>`; break;
+    case 'resume': inner = _renderResumeFragment(row, accent); break;
+    case 'image': {
+      const src = _safeUrl(b.src);
+      if (!src) return '';
+      inner = `<figure class="sg-fig"><img src="${_escHtml(src)}" alt="${_escHtml(String(b.alt || '').slice(0, 200))}" loading="lazy"/>${b.caption ? `<figcaption>${_escHtml(String(b.caption).slice(0, 300))}</figcaption>` : ''}</figure>`;
+      break;
+    }
+    case 'video': {
+      const src = _safeUrl(b.src);
+      if (!src) return '';
+      // No autoplay-with-sound: controls are visible and the video starts paused.
+      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<video class="sg-video" controls preload="metadata"${b.poster ? ` poster="${_escHtml(_safeUrl(b.poster))}"` : ''}><source src="${_escHtml(src)}"/></video>`;
+      break;
+    }
+    case 'audio': {
+      const src = _safeUrl(b.src);
+      if (!src) return '';
+      // No autoplay: a visible play/pause control, starts paused.
+      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<audio class="sg-audio" controls preload="none"><source src="${_escHtml(src)}"/></audio>`;
+      break;
+    }
+    case 'gallery': {
+      const imgs = Array.isArray(b.images) ? b.images.slice(0, 20) : [];
+      const items = imgs.map(im => {
+        const s = _safeUrl(im && im.src);
+        if (!s) return '';
+        return `<figure class="sg-gitem"><img src="${_escHtml(s)}" alt="${_escHtml(String((im && im.alt) || '').slice(0, 200))}" loading="lazy"/>${im && im.caption ? `<figcaption>${_escHtml(String(im.caption).slice(0, 300))}</figcaption>` : ''}</figure>`;
+      }).join('');
+      if (!items) return '';
+      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<div class="sg-gallery">${items}</div>`;
+      break;
+    }
+    case 'casestudies': {
+      const items = Array.isArray(b.items) ? b.items.slice(0, 12) : [];
+      const cards = items.map(it => {
+        const title = _escHtml(String((it && it.title) || '').slice(0, 160));
+        if (!title) return '';
+        const chip = it && it.metric ? `<span class="sg-cs-chip">${_escHtml(String(it.metric).slice(0, 40))}</span>` : '';
+        const detail = it && it.detail ? `<p class="sg-cs-detail">${_escHtml(String(it.detail).slice(0, 2000))}</p>` : (it && it.body ? `<p class="sg-cs-detail">${_escHtml(String(it.body).slice(0, 2000))}</p>` : '');
+        const img = it && _safeUrl(it.image) ? `<img class="sg-cs-img" src="${_escHtml(_safeUrl(it.image))}" alt="" loading="lazy"/>` : '';
+        return `<details class="sg-cs"><summary><span class="sg-cs-title">${title}</span>${chip}</summary>${img}${detail}</details>`;
+      }).join('');
+      if (!cards) return '';
+      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<div class="sg-cs-wrap">${cards}</div>`;
+      break;
+    }
+    case 'contact': {
+      // Lead-capture form. mode 'pdf' = "Request my resume PDF" gate; else a
+      // plain contact form. Posts to /api/site-lead (persist-first server-side).
+      const isPdf = b.mode === 'pdf';
+      const heading = _escHtml(String(b.label || (isPdf ? SI.request_h : SI.contact_h)).slice(0, 120));
+      inner = `<div class="sg-contact"><div class="sg-blk-label">${heading}</div>
+        <form class="sg-lead-form" onsubmit="return _sgLead(event,this)" data-sub="${_escHtml(row.subdomain || '')}" data-mode="${isPdf ? 'pdf' : 'contact'}">
+          <input name="name" placeholder="${_escHtml(SI.c_name)}" maxlength="120"/>
+          <input name="email" type="email" required placeholder="${_escHtml(SI.c_email)}" maxlength="200"/>
+          ${isPdf ? '' : `<textarea name="message" placeholder="${_escHtml(SI.c_msg)}" maxlength="2000"></textarea>`}
+          <button type="submit">${isPdf ? _escHtml(SI.c_send_pdf) : _escHtml(SI.c_send)}</button>
+          <div class="sg-lead-msg" style="display:none;"></div>
+        </form></div>`;
+      break;
+    }
+    case 'spacer': inner = '<div class="sg-spacer"></div>'; break;
+    default: return '';
+  }
+  return `<div class="sg-block" style="${place}">${inner}</div>`;
+}
+
+// Full personal-site page rendered from config.blocks on a responsive 12-col grid.
+function _renderSiteGrid(row, origin, opts, config) {
+  const primary = '#' + String((config.theme && config.theme.primary) || row.primary_hex || '4a1042').replace('#', '');
+  const accent = '#' + String((config.theme && config.theme.accent) || row.accent || '8b5cf6').replace('#', '');
+  // Background theme. Default 'midnight' mirrors the platform homepage (#030712).
+  // Animated themes (aurora, particles) degrade to a static fallback on the client
+  // via shouldAnimate() (reduced-motion, low core count, or small viewport).
+  const theme = _SITE_THEMES[config.background] ? config.background : 'midnight';
+  const T = _SITE_THEMES[theme];
+  const lang = config.lang === 'zh' ? 'zh' : 'en';
+  const displayName = _escHtml((row.name || _dxParseResume(row.text || '').name || 'Resume'));
+  const indexable = !!opts.indexable;
+  const canonical = opts.canonicalUrl || `${origin}/site/${row.subdomain}`;
+  const blocksHtml = config.blocks.map(b => _renderSiteBlock(b, row, accent, lang)).join('');
+  const footerHtml = opts.footer !== undefined ? opts.footer : '';
+
+  // Public-site i18n (chrome only — user content is shown as authored). Shared
+  // module dictionary; a toggle swaps any [data-si] element (mirrors zh/index.html).
+  const SITE_I18N = _SITE_I18N;
+
+  return `<!DOCTYPE html>
+<html lang="${lang}">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="robots" content="${indexable ? 'index,follow' : 'noindex,nofollow'}"/>
+  <title>${displayName}</title>
+  <meta property="og:type" content="profile"/>
+  <meta property="og:title" content="${displayName}"/>
+  <meta property="og:url" content="${_escHtml(canonical)}"/>
+  <meta property="og:image" content="${origin}/og-image.png"/>
+  <link rel="canonical" href="${_escHtml(canonical)}"/>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--p:${primary};--a:${accent};--fg:${T.fg};--muted:${T.muted};}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:${T.fallback};color:var(--fg);line-height:1.6;padding:24px 14px 60px;position:relative;min-height:100vh;}
+    /* Background layer: static by default; shouldAnimate() adds .sg-animate to <html>. */
+    .sg-bg{position:fixed;inset:0;z-index:-2;background:${T.fallback};}
+    html.sg-animate .sg-bg{background:${T.bg};${theme === 'aurora' ? 'background-size:200% 200%;animation:sgAurora 18s ease infinite;' : ''}}
+    .sg-bg-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none;}
+    @keyframes sgAurora{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+    @media (prefers-reduced-motion: reduce){html.sg-animate .sg-bg{animation:none;}}
+    .sg-topbar{max-width:1100px;margin:0 auto 16px;display:flex;justify-content:flex-end;}
+    .sg-lang{background:${T.langBtn};border:1px solid ${T.langBorder};border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:${T.langFg};cursor:pointer;}
+    .site-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;max-width:1100px;margin:0 auto;align-items:start;}
+    .sg-block{min-width:0;}
+    .sg-blk-h{font-size:26px;font-weight:900;color:var(--fg);letter-spacing:-.5px;margin-bottom:6px;}
+    .sg-blk-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
+    .sg-blk-text{font-size:15px;color:var(--muted);}
+    .sg-fig{margin:0;}
+    .sg-fig img{width:100%;height:auto;border-radius:14px;display:block;}
+    .sg-fig figcaption{font-size:12.5px;color:var(--muted);margin-top:6px;text-align:center;}
+    .sg-video{width:100%;border-radius:14px;background:#000;display:block;}
+    .sg-audio{width:100%;}
+    .sg-gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
+    .sg-gitem{flex:0 0 auto;width:min(78%,320px);scroll-snap-align:start;margin:0;}
+    .sg-gitem img{width:100%;height:auto;border-radius:12px;display:block;}
+    .sg-gitem figcaption{font-size:12.5px;color:var(--muted);margin-top:5px;}
+    .sg-cs-wrap{display:flex;flex-direction:column;gap:10px;}
+    .sg-cs{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;}
+    .sg-cs summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;}
+    .sg-cs summary::-webkit-details-marker{display:none;}
+    .sg-cs-title{font-weight:700;color:#1a1f2b;flex:1;}
+    .sg-cs-chip{background:var(--a);color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap;}
+    .sg-cs-detail{font-size:14px;color:#39414f;margin-top:10px;}
+    .sg-cs-img{width:100%;border-radius:10px;margin-top:10px;}
+    .sg-contact{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;}
+    .sg-lead-form{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+    .sg-lead-form input,.sg-lead-form textarea{border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;}
+    .sg-lead-form textarea{min-height:80px;}
+    .sg-lead-form button{background:var(--p);color:#fff;border:none;border-radius:9px;padding:10px;font-weight:700;cursor:pointer;}
+    .sg-lead-msg{font-size:13px;color:#059669;}
+    .sg-spacer{height:24px;}
+    .sg-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:38px 40px;}
+    .sg-rhead{margin-bottom:20px;border-bottom:2px solid var(--p);padding-bottom:14px;}
+    .sg-rname{font-size:28px;font-weight:800;color:var(--p);letter-spacing:-.4px;}
+    .sg-rcontact{font-size:13.5px;color:#5b6472;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+    .sg-dot{color:#c3c9d4;}
+    .sg-sec{margin-bottom:20px;}
+    .sg-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--p);border-bottom:2px solid var(--a);padding-bottom:5px;margin-bottom:12px;}
+    .sg-resume .r-title{font-size:15px;font-weight:800;color:#1a1f2b;margin-top:10px;}
+    .sg-resume .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
+    .sg-resume .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
+    .sg-resume .r-bul{list-style:none;margin:2px 0 8px;}
+    .sg-resume .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
+    .sg-resume .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--a);}
+    .sg-foot{max-width:1100px;margin:24px auto 0;text-align:center;font-size:13px;color:#8a93a3;}
+    @media(max-width:760px){
+      .site-grid{display:block;}
+      .sg-block{margin-bottom:20px;}
+      .sg-resume{padding:28px 22px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="sg-bg"></div>${theme === 'particles' ? '<canvas class="sg-bg-canvas" id="sgCanvas"></canvas>' : ''}
+  <div class="sg-topbar"><button class="sg-lang" data-si="lang_toggle" onclick="_sgToggleLang()">${SITE_I18N[lang].lang_toggle}</button></div>
+  <div class="site-grid">${blocksHtml}</div>
+  ${footerHtml}
+  <script>
+    var SITE_I18N=${JSON.stringify(SITE_I18N)};
+    var SG_ANIMATED=${T.animated ? 'true' : 'false'}, SG_THEME=${JSON.stringify(theme)};
+    // Degrade gate: only animate when the device can comfortably handle it.
+    function shouldAnimate(){
+      try{
+        if(!SG_ANIMATED) return false;
+        if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+        if(navigator.hardwareConcurrency && navigator.hardwareConcurrency<=4) return false;
+        if(Math.min(window.innerWidth,window.innerHeight)<768) return false;
+        return true;
+      }catch(_){return false;}
+    }
+    function _sgLead(e,f){
+      e.preventDefault();
+      var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;
+      var fd=new FormData(f), msg=f.querySelector('.sg-lead-msg');
+      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||''};
+      fetch('/api/site-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+        .then(function(r){return r.json().catch(function(){return {};});})
+        .then(function(){
+          f.querySelectorAll('input,textarea,button').forEach(function(el){el.style.display='none';});
+          msg.style.display='block';
+          msg.textContent=(f.dataset.mode==='pdf')?L.c_thanks_pdf:L.c_thanks;
+        })
+        .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
+      return false;
+    }
+    function _sgToggleLang(){
+      var cur=document.documentElement.lang==='zh'?'zh':'en';
+      var next=cur==='zh'?'en':'zh';
+      document.documentElement.lang=next;
+      document.querySelectorAll('[data-si]').forEach(function(el){
+        var k=el.getAttribute('data-si'); if(SITE_I18N[next] && SITE_I18N[next][k]!=null) el.textContent=SITE_I18N[next][k];
+      });
+      document.querySelectorAll('.sg-lead-form input[name=name]').forEach(function(el){el.placeholder=SITE_I18N[next].c_name;});
+      document.querySelectorAll('.sg-lead-form input[name=email]').forEach(function(el){el.placeholder=SITE_I18N[next].c_email;});
+      document.querySelectorAll('.sg-lead-form textarea[name=message]').forEach(function(el){el.placeholder=SITE_I18N[next].c_msg;});
+    }
+    // Apply the animation gate, then run the particle field if that theme is active.
+    (function(){
+      if(!shouldAnimate()) return;
+      document.documentElement.classList.add('sg-animate');
+      if(SG_THEME!=='particles') return;
+      var cv=document.getElementById('sgCanvas'); if(!cv) return;
+      var ctx=cv.getContext('2d'), parts=[], raf=0, running=true;
+      function size(){cv.width=window.innerWidth;cv.height=window.innerHeight;}
+      function init(){parts=[];var n=Math.min(60,Math.round(window.innerWidth/24));for(var i=0;i<n;i++)parts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.8+.6});}
+      function tick(){if(!running)return;ctx.clearRect(0,0,cv.width,cv.height);ctx.fillStyle='rgba(148,163,184,0.5)';for(var i=0;i<parts.length;i++){var p=parts[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>cv.width)p.vx*=-1;if(p.y<0||p.y>cv.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill();}raf=requestAnimationFrame(tick);}
+      size();init();tick();
+      window.addEventListener('resize',function(){size();init();});
+      document.addEventListener('visibilitychange',function(){running=!document.hidden;if(running){raf=requestAnimationFrame(tick);}else{cancelAnimationFrame(raf);}});
+    })();
+  </script>
+</body>
+</html>`;
+}
+
 const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'Too many share links — please wait a minute.' } });
 app.post('/api/share', shareLimiter, (req, res) => {
   try {
@@ -1706,7 +2362,7 @@ function _validSubdomain(s) {
 app.get('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  const row = db.prepare('SELECT subdomain, name, published, views, updated_at FROM personal_sites WHERE email = ?').get(email);
+  const row = db.prepare('SELECT subdomain, name, published, views, updated_at, config FROM personal_sites WHERE email = ?').get(email);
   res.json({ site: row || null });
 });
 
@@ -1717,7 +2373,7 @@ app.post('/api/personal-site', (req, res) => {
   if (!isSubscriber(email)) {
     return res.status(402).json({ error: 'pro_required', message: 'Publishing a personal website is a Pro feature. Upgrade to unlock it.' });
   }
-  const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout } = req.body || {};
+  const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config } = req.body || {};
   const sub = _validSubdomain(subdomain);
   if (!sub) return res.status(400).json({ error: 'invalid_subdomain', message: 'Choose 3–30 letters, numbers or hyphens (not a reserved word).' });
   if (!text || typeof text !== 'string' || text.trim().length < 20) return res.status(400).json({ error: 'No resume content to publish.' });
@@ -1732,6 +2388,16 @@ app.post('/api/personal-site', (req, res) => {
   let photo = null;
   if (typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000) photo = photoUrl;
   const _layout = _SHARE_LAYOUTS.has(layout) ? layout : null;
+  // Website Creator config blob (theme, section order/placement, selected asset
+  // ids, feature toggles). Stored as a JSON string; accept an object or a string,
+  // cap the size, and fall back to NULL (legacy default) on anything invalid.
+  let _config = null;
+  if (config != null) {
+    try {
+      const s = typeof config === 'string' ? config : JSON.stringify(config);
+      if (s && s.length <= 200000) { JSON.parse(s); _config = s; }
+    } catch (_) { _config = null; }
+  }
   const now = Date.now();
 
   // Remove any previous site this user had under a different subdomain, so a
@@ -1739,19 +2405,57 @@ app.post('/api/personal-site', (req, res) => {
   const existing = db.prepare('SELECT subdomain FROM personal_sites WHERE email = ?').get(email);
   if (existing && existing.subdomain !== sub) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(existing.subdomain);
 
-  db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, published, created_at, updated_at, views)
-              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, 1, @now, @now, 0)
+  db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, config, published, created_at, updated_at, views)
+              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, @config, 1, @now, @now, 0)
               ON CONFLICT(subdomain) DO UPDATE SET
                 name=@name, text=@text, accent=@accent, primary_hex=@primary_hex, serif=@serif,
-                photo=@photo, hide_contact=@hide_contact, layout=@layout, published=1, updated_at=@now`).run({
+                photo=@photo, hide_contact=@hide_contact, layout=@layout, config=@config, published=1, updated_at=@now`).run({
     subdomain: sub, email: email.toLowerCase(),
     name: (name || '').toString().slice(0, 80), text,
     accent: (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
     primary_hex: (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
-    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, now,
+    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, config: _config, now,
   });
   const origin = `${req.protocol}://${req.get('host')}`;
   res.json({ url: `${origin}/site/${sub}`, subdomain: sub });
+});
+
+// WYSIWYG preview: render the personal site from posted fields WITHOUT saving,
+// so the Website Creator's Edit/Preview toggle can show unpublished edits. Pro-gated.
+app.post('/api/personal-site/preview', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
+  const { text, name, colors, photoUrl, hideContact, serif, layout, config } = req.body || {};
+  if (!text || typeof text !== 'string' || text.trim().length < 10) {
+    return res.status(400).json({ error: 'Nothing to preview yet.' });
+  }
+  let _config = null;
+  if (config != null) {
+    try { const s = typeof config === 'string' ? config : JSON.stringify(config); if (s && s.length <= 200000) { JSON.parse(s); _config = s; } } catch (_) { _config = null; }
+  }
+  let photo = null;
+  if (typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000) photo = photoUrl;
+  const row = {
+    subdomain: 'preview', name: (name || '').toString().slice(0, 80), text: text.slice(0, 40000),
+    accent: (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
+    primary_hex: (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
+    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0,
+    layout: (_SHARE_LAYOUTS.has(layout) ? layout : null), config: _config,
+  };
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(_renderPersonalSite(row, `${req.protocol}://${req.get('host')}`, { indexable: false, footer: '' }));
+});
+
+// Toggle publish/unpublish without deleting (Back Office). Unpublished sites 404
+// publicly but the row (and its config) is kept so the owner can republish.
+app.patch('/api/personal-site', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const published = req.body && req.body.published ? 1 : 0;
+  const info = db.prepare('UPDATE personal_sites SET published = ?, updated_at = ? WHERE email = ?').run(published, Date.now(), email.toLowerCase());
+  if (!info.changes) return res.status(404).json({ error: 'No site to update.' });
+  res.json({ success: true, published: !!published });
 });
 
 // Unpublish (delete) the signed-in user's personal site.
@@ -1771,10 +2475,11 @@ app.get('/site/:sub', (req, res) => {
     return res.sendFile(path.join(__dirname, 'public', '404.html'));
   }
   try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
+  _recordVisit(sub, req);
   const origin = `${req.protocol}://${req.get('host')}`;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
-  res.send(_shareResumeHtml(row, origin, {
+  res.send(_renderPersonalSite(row, origin, {
     indexable: true,
     footer: '', // Pro personal sites are watermark-free
     canonicalUrl: `${origin}/site/${sub}`,
@@ -3192,4 +3897,4 @@ if (require.main === module) {
 }
 
 // Exported for offline rendering/tests (e.g. DOCX alignment verification).
-module.exports = { app, buildTemplatedDocxBuffer };
+module.exports = { app, buildTemplatedDocxBuffer, _shareResumeHtml, _renderPersonalSite };
