@@ -320,6 +320,60 @@
     .wc-pg.is-on { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
     .wc-pg-home { font-size: 10px; font-weight: 800; color: #4338ca; background: #eef2ff; padding: 4px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: .5px; }
     .bo-act:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Canva-style website editor shell ── */
+    #panel-website.active { display: block; padding: 0 !important; }
+    .cv-shell { position: fixed; inset: 0; left: 0; display: flex; flex-direction: column; background: #18191b; z-index: 60; }
+    @media (min-width: 981px) { .cv-shell { left: 240px; } }
+    .cv-top { height: 54px; flex-shrink: 0; background: linear-gradient(90deg,#4338ca,#6366F1); display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #fff; }
+    .cv-logo { font-weight: 900; font-size: 14px; letter-spacing: -.02em; margin-right: 6px; }
+    .cv-title { flex: 1; text-align: center; font-size: 13px; opacity: .85; }
+    .cv-top-right { display: flex; align-items: center; gap: 8px; }
+    .cv-tbtn { background: rgba(255,255,255,.14); border: none; color: #fff; font: inherit; font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 8px; cursor: pointer; }
+    .cv-tbtn:hover { background: rgba(255,255,255,.24); }
+    .cv-tbtn:disabled { opacity: .4; cursor: not-allowed; }
+    .cv-publish { background: #fff; color: #4338ca; border: none; font: inherit; font-size: 13px; font-weight: 800; padding: 8px 16px; border-radius: 8px; cursor: pointer; }
+    .cv-seg { display: flex; gap: 3px; background: rgba(255,255,255,.14); border-radius: 8px; padding: 3px; }
+    .cv-segbtn { background: none; border: none; color: #fff; font-size: 13px; padding: 4px 9px; border-radius: 6px; cursor: pointer; }
+    .cv-segbtn.is-on { background: #fff; color: #4338ca; }
+    .cv-body { flex: 1; display: flex; min-height: 0; }
+    .cv-rail { width: 74px; flex-shrink: 0; background: #1f2023; display: flex; flex-direction: column; padding: 8px 0; overflow-y: auto; }
+    .cv-rbtn { background: none; border: none; color: #9ca3af; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 11px 4px; cursor: pointer; border-radius: 9px; margin: 0 6px 2px; }
+    .cv-rbtn span { font-size: 18px; line-height: 1; }
+    .cv-rbtn em { font-style: normal; font-size: 10px; font-weight: 600; }
+    .cv-rbtn:hover { background: rgba(255,255,255,.07); color: #e5e7eb; }
+    .cv-rbtn.is-on { background: rgba(99,102,241,.22); color: #fff; }
+    .cv-panel { width: 300px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 12px; }
+    @media (max-width: 780px) { .cv-panel { width: 220px; } .cv-inspector { display: none !important; } }
+    .cv-search input { width: 100%; background: #34353a; border: 1px solid #45464c; color: #f3f4f6; border-radius: 9px; padding: 10px 12px; font: inherit; font-size: 13px; }
+    .cv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+    .cv-tplgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .cv-lbl { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; margin: 12px 0 5px; }
+    .cv-input { width: 100%; background: #34353a; border: 1px solid #45464c; color: #f3f4f6; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px; }
+    .cv-wide { display: block; width: 100%; margin-top: 8px; background: #34353a; border: 1px solid #45464c; color: #e5e7eb; font: inherit; font-size: 12.5px; font-weight: 700; padding: 9px; border-radius: 8px; cursor: pointer; }
+    .cv-wide:hover { background: #3f4046; }
+    .cv-note { font-size: 11.5px; color: #9ca3af; margin-top: 8px; line-height: 1.45; }
+    .cv-meter { font-size: 11px; color: #9ca3af; margin: 8px 0; }
+    .cv-updgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .cv-addr { display: flex; align-items: center; gap: 5px; }
+    .cv-addr span { font-size: 11px; color: #9ca3af; white-space: nowrap; }
+    .cv-stage { flex: 1; min-width: 0; overflow: auto; background: #303136; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 40px; }
+    .cv-canvasbox { display: flex; flex-direction: column; align-items: center; }
+    #wcEdFrame { border: 0; display: block; background: #fff; box-shadow: 0 8px 40px rgba(0,0,0,.45); }
+    #wcEdOverlay { position: absolute; inset: 0; }
+    .cv-addpage { margin-top: 16px; background: #3b3c42; border: 1px dashed #5a5b62; color: #cbd5e1; font: inherit; font-size: 12.5px; font-weight: 700; padding: 10px 26px; border-radius: 9px; cursor: pointer; }
+    .cv-addpage:hover { background: #45464c; }
+    .cv-inspector { width: 250px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 14px; color: #e5e7eb; }
+    .cv-inspector .text-input, .cv-inspector input, .cv-inspector select, .cv-inspector textarea { background: #34353a; border: 1px solid #45464c; color: #f3f4f6; }
+    .cv-inspector .bo-act { background: #34353a; border-color: #45464c; color: #e5e7eb; }
+    .cv-bottom { height: 44px; flex-shrink: 0; background: #1f2023; display: flex; align-items: center; gap: 14px; padding: 0 14px; color: #9ca3af; font-size: 12px; }
+    .cv-bottom .cv-tbtn { background: rgba(255,255,255,.1); }
+    .cv-zoom { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .cv-zoom input { width: 180px; max-width: 40vw; }
+    .cv-pagecount { white-space: nowrap; }
+    .cv-upitem { height: 78px; border-radius: 8px; border: 1px solid #45464c; background-size: cover; background-position: center; cursor: pointer; background-color: #34353a; }
+    .cv-upitem--file { display: flex; align-items: center; justify-content: center; font-size: 22px; color: #cbd5e1; }
+    .cv-upitem:hover { border-color: #6366f1; }
   </style>
 </head>
 <body>
@@ -1032,128 +1086,123 @@
       </div>
 
       <!-- ═══ TAB: PERSONAL WEBSITE (Website Creator, Pro) ═══ -->
+      <!-- ═══ TAB: WEBSITE BUILDER (Canva-style editor) ═══ -->
       <div class="tab-content" id="panel-website">
-        <div class="panel-header">
-          <h1 data-i18n="wc_title">Website Builder</h1>
-          <p data-i18n="wc_subtitle">Start from a designed template, then make it yours.</p>
-        </div>
+        <div class="cv-shell">
 
-        <!-- Edit / Preview toggle — always visible while editing -->
-        <div style="display:flex;gap:6px;background:#f1f5f9;border-radius:12px;padding:5px;max-width:280px;margin-bottom:22px;">
-          <button id="wcTabEdit" class="wc-vtab wc-vtab-active" onclick="wcSetView('edit')" data-i18n="wc_view_edit">✏️ Edit</button>
-          <button id="wcTabPreview" class="wc-vtab" onclick="wcSetView('preview')" data-i18n="wc_view_preview">👁 Preview</button>
-        </div>
-
-        <!-- EDIT VIEW -->
-        <div id="wcEditor">
-          <!-- 1. Content -->
-          <div class="wc-card">
-            <div class="wc-step" data-i18n="wc_step_content">1. Choose your content</div>
-            <label class="input-label" for="wcResumeSelect" data-i18n="wc_resume_label">Resume (shown on your site)</label>
-            <select id="wcResumeSelect" class="text-input" style="width:100%;margin-bottom:14px;"></select>
-            <label class="input-label" for="wcCoverSelect" data-i18n="wc_cover_label">Cover letter (optional)</label>
-            <select id="wcCoverSelect" class="text-input" style="width:100%;">
-              <option value="" data-i18n="wc_cover_none">None</option>
-            </select>
-            <p id="wcNoAssets" style="display:none;font-size:13px;color:#6b7280;margin-top:10px;" data-i18n="wc_no_assets">No saved resumes yet — tailor one in the Tailor tab and it'll appear here automatically.</p>
-          </div>
-
-          <!-- 2. Template gallery -->
-          <div class="wc-card">
-            <div class="wc-step" data-i18n="wc_step_template">2. Pick a template</div>
-            <p style="font-size:13px;color:#6b7280;margin-bottom:14px;" data-i18n="wc_template_help">Every template is a complete, multi-section site. Preview it on desktop and mobile before you choose — then make it yours.</p>
-            <div id="wcTplCats" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;"></div>
-            <div id="wcTplGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;"></div>
-            <div id="wcMediaMeter" style="font-size:12px;color:#6b7280;margin-top:14px;"></div>
-          </div>
-
-          <!-- 3. Canvas editor (appears once a template is picked) -->
-          <div class="wc-card" id="wcEdCard" style="display:none;">
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-              <div class="wc-step" style="margin:0;flex:1;" data-i18n="wc_step_design">3. Design your page</div>
-              <button type="button" class="bo-act" id="wcEdUndo" onclick="edUndo()" title="Undo (Ctrl+Z)" disabled>↶ <span data-i18n="wc_ed_undo">Undo</span></button>
-              <button type="button" class="bo-act" id="wcEdRedo" onclick="edRedo()" title="Redo (Ctrl+Shift+Z)" disabled>↷ <span data-i18n="wc_ed_redo">Redo</span></button>
-              <select id="wcEdPage" class="text-input" style="max-width:150px;font-size:13px;padding:6px 8px;" onchange="edSetPage(this.value)"></select>
-              <button type="button" class="bo-act" onclick="edOpenPages()" data-i18n="wc_ed_pages">⧉ Pages</button>
-              <div style="display:flex;gap:4px;background:#f1f5f9;border-radius:9px;padding:3px;">
-                <button type="button" id="wcEdDeskBtn" class="wc-vtab wc-vtab-active" onclick="edSetDevice('desktop')" title="Desktop">🖥</button>
-                <button type="button" id="wcEdMobBtn" class="wc-vtab" onclick="edSetDevice('mobile')" title="Mobile">📱</button>
+          <!-- Top bar -->
+          <div class="cv-top">
+            <span class="cv-logo">ResumeTailored</span>
+            <button class="cv-tbtn" onclick="edOpenPages()" data-i18n="cv_pages">Pages</button>
+            <button class="cv-tbtn" onclick="edUndo()" id="wcEdUndo" disabled title="Undo (Ctrl+Z)">↶</button>
+            <button class="cv-tbtn" onclick="edRedo()" id="wcEdRedo" disabled title="Redo (Ctrl+Shift+Z)">↷</button>
+            <span class="cv-title" id="cvDocTitle">Untitled site</span>
+            <div class="cv-top-right">
+              <div class="cv-seg">
+                <button id="wcEdDeskBtn" class="cv-segbtn is-on" onclick="edSetDevice('desktop')" title="Desktop">🖥</button>
+                <button id="wcEdMobBtn" class="cv-segbtn" onclick="edSetDevice('mobile')" title="Mobile">📱</button>
               </div>
+              <button class="cv-tbtn" onclick="wcSetView('preview')" data-i18n="cv_preview">Preview</button>
+              <button class="cv-publish" onclick="wcPublish()" data-i18n="cv_publish">Publish website</button>
             </div>
-            <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
-              <div id="wcEdPalWrap" style="width:190px;flex-shrink:0;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;background:#fff;max-height:520px;overflow:auto;">
-                <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6366f1;margin-bottom:8px;">＋ <span data-i18n="wc_ed_addel">Add elements</span></div>
+          </div>
+
+          <div class="cv-body">
+            <!-- Icon rail -->
+            <div class="cv-rail">
+              <button class="cv-rbtn is-on" data-panel="templates" onclick="cvPanel('templates')"><span>▦</span><em data-i18n="cv_r_templates">Templates</em></button>
+              <button class="cv-rbtn" data-panel="elements" onclick="cvPanel('elements')"><span>◈</span><em data-i18n="cv_r_elements">Elements</em></button>
+              <button class="cv-rbtn" data-panel="text" onclick="cvPanel('text')"><span>T</span><em data-i18n="cv_r_text">Text</em></button>
+              <button class="cv-rbtn" data-panel="brand" onclick="cvPanel('brand')"><span>◐</span><em data-i18n="cv_r_brand">Brand</em></button>
+              <button class="cv-rbtn" data-panel="uploads" onclick="cvPanel('uploads')"><span>☁</span><em data-i18n="cv_r_uploads">Uploads</em></button>
+              <button class="cv-rbtn" data-panel="content" onclick="cvPanel('content')"><span>▤</span><em data-i18n="cv_r_content">Content</em></button>
+            </div>
+
+            <!-- Swappable panel -->
+            <div class="cv-panel" id="cvPanel">
+              <!-- Templates -->
+              <div class="cv-pane" data-pane="templates">
+                <div class="cv-search">
+                  <input id="cvTplSearch" placeholder="Describe your ideal site" oninput="wcRenderTplGrid()"/>
+                </div>
+                <div id="wcTplCats" class="cv-chips"></div>
+                <div id="wcTplGrid" class="cv-tplgrid"></div>
+              </div>
+              <!-- Elements -->
+              <div class="cv-pane" data-pane="elements" style="display:none;">
                 <div id="wcEdPalette"></div>
-                <button type="button" class="bo-act" style="width:100%;margin-top:10px;" onclick="edAddSection()" data-i18n="wc_ed_addsection">+ Add section</button>
+                <button type="button" class="cv-wide" onclick="edAddSection()" data-i18n="wc_ed_addsection">+ Add section</button>
               </div>
-              <div id="wcEdStage" style="flex:1;min-width:280px;background:#e9edf3;border-radius:12px;padding:12px;overflow:hidden;">
-                <div id="wcEdWrap" style="position:relative;width:1200px;transform-origin:top left;">
-                  <iframe id="wcEdFrame" title="Canvas" style="width:1200px;border:0;display:block;background:#fff;border-radius:8px;" scrolling="no"></iframe>
-                  <div id="wcEdOverlay" style="position:absolute;inset:0;"></div>
-                </div>
+              <!-- Text -->
+              <div class="cv-pane" data-pane="text" style="display:none;">
+                <div id="cvTextPanel"></div>
               </div>
-              <div id="wcEdInspector" style="width:250px;flex-shrink:0;border:1.5px solid #e5e7eb;border-radius:12px;padding:14px;background:#fff;"></div>
-            </div>
-            <p style="font-size:12px;color:#9ca3af;margin-top:10px;" data-i18n="wc_ed_hint">Click an element to select it. Drag to move, or drag a corner handle to resize. Ctrl/Cmd+Z undoes.</p>
-          </div>
-
-          <!-- 4. Video (surface the generator + upload entry points) -->
-          <div class="wc-card">
-            <div class="wc-step" data-i18n="wc_step_video">4. Add a video (optional)</div>
-            <p style="font-size:13px;color:#6b7280;margin-bottom:12px;" data-i18n="wc_video_help">Add a video hero to your site — generate one from your résumé, or upload your own.</p>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <button class="btn btn-outline" onclick="wcGoGenerateVideo()" style="font-size:13px;padding:10px 16px;">
-                <span data-i18n="wc_video_generate">🎬 Generate from my résumé</span>
-              </button>
-              <button class="btn btn-outline" onclick="wcUploadOwnVideo()" style="font-size:13px;padding:10px 16px;">
-                <span data-i18n="wc_video_upload">⬆ Upload your own video</span>
-              </button>
-              <button class="btn btn-outline" onclick="openTextVideo()" style="font-size:13px;padding:10px 16px;">
-                <span data-i18n="wc_video_text">✍️ Create a text video</span>
-              </button>
-            </div>
-            <div id="wcVideoNote" style="font-size:12px;color:#9ca3af;margin-top:10px;"></div>
-          </div>
-
-          <!-- 3. Publish -->
-          <div class="wc-card">
-            <div class="wc-step" data-i18n="wc_step_publish">5. Publish</div>
-            <label class="input-label" for="wcAddress" data-i18n="wc_address_label">Your website address</label>
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
-              <span id="wcAddressOrigin" style="font-size:13px;color:#6b7280;"></span>
-              <input type="text" id="wcAddress" class="text-input" placeholder="your-name" style="flex:1;min-width:140px;" maxlength="30" oninput="wcSanitizeAddress()" />
-            </div>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <button class="btn btn-primary" id="wcPublishBtn" onclick="wcPublish()" style="font-size:14px;padding:12px 22px;">
-                <span data-i18n="wc_publish_btn">🌐 Publish my website</span>
-              </button>
-              <a id="wcViewLive" href="#" target="_blank" rel="noopener" class="btn btn-outline" style="display:none;font-size:14px;padding:12px 18px;" data-i18n="wc_view_live">View live ↗</a>
-            </div>
-            <div id="wcPublishStatus" style="font-size:13px;margin-top:12px;"></div>
-
-            <div id="wcSiteExtras" style="display:none;margin-top:18px;border-top:1px solid #eef0f4;padding-top:16px;">
-              <div id="wcStats" style="font-size:13px;color:#374151;font-weight:600;margin-bottom:6px;"></div>
-              <div id="wcLeadsEmailNote" style="display:none;font-size:12px;color:#b45309;margin-bottom:12px;" data-i18n="wc_leads_emailoff">Leads are saved here. Add RESEND_API_KEY in your environment to also get them by email.</div>
-              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-                <img id="wcQrImg" alt="Site QR code" style="width:110px;height:110px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:6px;"/>
-                <div>
-                  <div style="font-size:13px;color:#374151;font-weight:700;margin-bottom:4px;" data-i18n="wc_qr_title">Your site QR code</div>
-                  <div style="font-size:12px;color:#6b7280;margin-bottom:8px;" data-i18n="wc_qr_help">For resume footers, business cards or LinkedIn.</div>
-                  <button type="button" class="btn btn-outline" style="font-size:13px;padding:8px 14px;" onclick="wcDownloadQr()" data-i18n="wc_qr_download">⬇ Download QR</button>
+              <!-- Brand -->
+              <div class="cv-pane" data-pane="brand" style="display:none;">
+                <div id="cvBrandPanel"></div>
+              </div>
+              <!-- Uploads -->
+              <div class="cv-pane" data-pane="uploads" style="display:none;">
+                <button type="button" class="cv-wide" onclick="cvUpload()" data-i18n="cv_upload">⬆ Upload media</button>
+                <div id="wcMediaMeter" class="cv-meter"></div>
+                <div id="cvUploadGrid" class="cv-updgrid"></div>
+              </div>
+              <!-- Content (resume/cover/video) -->
+              <div class="cv-pane" data-pane="content" style="display:none;">
+                <label class="cv-lbl" for="wcResumeSelect" data-i18n="wc_resume_label">Resume</label>
+                <select id="wcResumeSelect" class="cv-input" onchange="edRenderCanvas()"></select>
+                <label class="cv-lbl" for="wcCoverSelect" data-i18n="wc_cover_label">Cover letter</label>
+                <select id="wcCoverSelect" class="cv-input"><option value="">None</option></select>
+                <p id="wcNoAssets" class="cv-note" style="display:none;" data-i18n="wc_no_assets">No saved resumes yet.</p>
+                <label class="cv-lbl" data-i18n="wc_step_video">Video</label>
+                <button type="button" class="cv-wide" onclick="wcGoGenerateVideo()" data-i18n="wc_video_generate">🎬 Generate from résumé</button>
+                <button type="button" class="cv-wide" onclick="wcUploadOwnVideo()" data-i18n="wc_video_upload">⬆ Upload your own</button>
+                <button type="button" class="cv-wide" onclick="openTextVideo()" data-i18n="wc_video_text">✍️ Text video</button>
+                <div id="wcVideoNote" class="cv-note"></div>
+                <label class="cv-lbl" data-i18n="wc_address_label">Website address</label>
+                <div class="cv-addr"><span id="wcEdAddressOrigin"></span><input type="text" id="wcAddress" class="cv-input" placeholder="your-name" maxlength="30" oninput="wcSanitizeAddress()"/></div>
+                <a id="wcViewLive" href="#" target="_blank" rel="noopener" class="cv-wide" style="display:none;text-align:center;text-decoration:none;" data-i18n="wc_view_live">View live ↗</a>
+                <div id="wcPublishStatus" class="cv-note"></div>
+                <div id="wcSiteExtras" style="display:none;margin-top:12px;">
+                  <div id="wcStats" class="cv-note"></div>
+                  <div id="wcLeadsEmailNote" class="cv-note" style="display:none;color:#b45309;" data-i18n="wc_leads_emailoff">Add RESEND_API_KEY to get leads by email.</div>
+                  <img id="wcQrImg" alt="QR" style="width:110px;background:#fff;border-radius:8px;padding:6px;margin-top:8px;"/>
+                  <button type="button" class="cv-wide" onclick="wcDownloadQr()" data-i18n="wc_qr_download">⬇ Download QR</button>
                 </div>
               </div>
             </div>
+
+            <!-- Canvas stage -->
+            <div class="cv-stage" id="wcEdStage">
+              <div class="cv-canvasbox">
+                <div id="wcEdWrap" style="position:relative;transform-origin:top center;">
+                  <iframe id="wcEdFrame" title="Canvas" scrolling="no"></iframe>
+                  <div id="wcEdOverlay"></div>
+                </div>
+                <button type="button" class="cv-addpage" onclick="edAddSection()" data-i18n="cv_addsection">+ Add section</button>
+              </div>
+              <div id="wcPreview" style="display:none;height:100%;">
+                <div id="wcPreviewEmpty" class="cv-note" style="padding:40px;text-align:center;"></div>
+                <iframe id="wcPreviewFrame" title="Preview" style="display:none;width:100%;height:100%;border:0;background:#fff;"></iframe>
+              </div>
+            </div>
+
+            <!-- Inspector -->
+            <div class="cv-inspector" id="wcEdInspector"></div>
           </div>
 
-          <p style="font-size:12px;color:#9ca3af;margin-top:6px;" data-i18n="wc_more_soon">More customization — themes, backgrounds, and drag-and-drop layout — is coming next.</p>
-        </div>
-
-        <!-- PREVIEW VIEW -->
-        <div id="wcPreview" style="display:none;">
-          <div id="wcPreviewEmpty" style="text-align:center;color:#6b7280;font-size:14px;padding:40px 20px;border:1.5px dashed #e5e7eb;border-radius:14px;" data-i18n="wc_preview_empty">Publish your site to preview it live here.</div>
-          <iframe id="wcPreviewFrame" title="Website preview" style="display:none;width:100%;height:70vh;border:1.5px solid #e5e7eb;border-radius:14px;background:#fff;"></iframe>
+          <!-- Bottom bar -->
+          <div class="cv-bottom">
+            <button class="cv-tbtn" onclick="wcSetView('edit')" data-i18n="cv_edit">✏️ Edit</button>
+            <div class="cv-zoom">
+              <input type="range" id="cvZoom" min="25" max="150" value="100" oninput="cvSetZoom(this.value)"/>
+              <span id="cvZoomLbl">100%</span>
+            </div>
+            <span class="cv-pagecount" id="cvPageCount">Pages 1 / 1</span>
+          </div>
         </div>
       </div>
+
 
       <!-- ═══ TAB: BACK OFFICE (Pro asset hub) ═══ -->
       <div class="tab-content" id="panel-backoffice">
@@ -1813,6 +1862,12 @@
         wc_ed_mobile: 'Mobile', wc_ed_mwidth: 'Width on mobile', wc_ed_malign: 'Align on mobile',
         wc_ed_mfull: 'Full width', wc_ed_mauto: 'Default', wc_ed_morder: 'Stack order',
         wc_ed_mup: 'Move earlier', wc_ed_mdown: 'Move later', wc_ed_mreset: 'Auto',
+        cv_pages: 'Pages', cv_preview: 'Preview', cv_publish: 'Publish website', cv_edit: '✏️ Edit',
+        cv_r_templates: 'Templates', cv_r_elements: 'Elements', cv_r_text: 'Text', cv_r_brand: 'Brand',
+        cv_r_uploads: 'Uploads', cv_r_content: 'Content', cv_upload: '⬆ Upload media',
+        cv_addsection: '+ Add section', cv_pagesword: 'Pages', cv_up_empty: 'Nothing uploaded yet.',
+        cv_b_primary: 'Primary', cv_b_accent: 'Accent', cv_b_paper: 'Page background', cv_b_ink: 'Text',
+        cv_b_note: 'Colours apply to the whole site. Undo works here too.',
         wc_ed_pages: '⧉ Pages', wc_pg_title: 'Pages', wc_pg_add: '+ Add page', wc_pg_done: 'Done',
         wc_pg_help: 'Your home page is served at /site/your-name. Other pages live at /site/your-name/their-slug.',
         wc_pg_home: 'Home', wc_pg_sethome: 'Set home', wc_pg_edit: 'Edit page',
@@ -1954,6 +2009,12 @@
         wc_ed_mobile: '手机', wc_ed_mwidth: '手机宽度', wc_ed_malign: '手机对齐',
         wc_ed_mfull: '整宽', wc_ed_mauto: '默认', wc_ed_morder: '堆叠顺序',
         wc_ed_mup: '上移', wc_ed_mdown: '下移', wc_ed_mreset: '自动',
+        cv_pages: '页面', cv_preview: '预览', cv_publish: '发布网站', cv_edit: '✏️ 编辑',
+        cv_r_templates: '模板', cv_r_elements: '元素', cv_r_text: '文字', cv_r_brand: '品牌',
+        cv_r_uploads: '上传', cv_r_content: '内容', cv_upload: '⬆ 上传媒体',
+        cv_addsection: '+ 添加板块', cv_pagesword: '页面', cv_up_empty: '还没有上传内容。',
+        cv_b_primary: '主色', cv_b_accent: '强调色', cv_b_paper: '页面背景', cv_b_ink: '文字',
+        cv_b_note: '颜色应用于整个网站。撤销同样有效。',
         wc_ed_pages: '⧉ 页面', wc_pg_title: '页面', wc_pg_add: '+ 添加页面', wc_pg_done: '完成',
         wc_pg_help: '首页地址为 /site/你的名称，其他页面为 /site/你的名称/页面标识。',
         wc_pg_home: '首页', wc_pg_sethome: '设为首页', wc_pg_edit: '编辑页面',
@@ -6276,7 +6337,7 @@ Aaliyah Washington`
 
     // Load saved resumes + cover letters into the pickers, plus any existing site.
     async function loadWebsiteCreator() {
-      const originSpan = document.getElementById('wcAddressOrigin');
+      const originSpan = document.getElementById('wcEdAddressOrigin');
       if (originSpan) originSpan.textContent = window.location.origin + '/site/';
       const rSel = document.getElementById('wcResumeSelect');
       const cSel = document.getElementById('wcCoverSelect');
@@ -6465,7 +6526,10 @@ Aaliyah Washington`
 
     function wcRenderTplGrid() {
       const el = document.getElementById('wcTplGrid'); if (!el) return;
-      const list = wcTemplates.filter(t => wcTplCat === 'All' || t.category === wcTplCat);
+      const q = ((document.getElementById('cvTplSearch') || {}).value || '').toLowerCase().trim();
+      const list = wcTemplates
+        .filter(t => wcTplCat === 'All' || t.category === wcTplCat)
+        .filter(t => !q || (t.name + ' ' + t.category + ' ' + t.blurb).toLowerCase().includes(q));
       if (!list.length) { el.innerHTML = `<p style="font-size:13px;color:#9ca3af;">${wcEsc(_t('wc_tpl_none', 'No templates available.'))}</p>`; return; }
       el.innerHTML = list.map(t => {
         const on = wcTplId === t.id;
@@ -6536,6 +6600,90 @@ Aaliyah Washington`
           coverLetterId: cSel && cSel.value ? Number(cSel.value) : null,
         },
       });
+    }
+
+
+    // ── Canva-style editor shell (rail panels, zoom, uploads/text/brand panes) ──
+    function cvPanel(name) {
+      document.querySelectorAll('.cv-rbtn').forEach(b => b.classList.toggle('is-on', b.dataset.panel === name));
+      document.querySelectorAll('.cv-pane').forEach(p => { p.style.display = p.dataset.pane === name ? 'block' : 'none'; });
+      if (name === 'uploads') cvRenderUploads();
+      if (name === 'text') cvRenderTextPane();
+      if (name === 'brand') cvRenderBrandPane();
+    }
+
+    // Zoom: 100% means "fit the stage", so the slider scales around the fit factor.
+    let cvZoomPct = 100;
+    function cvSetZoom(v) {
+      cvZoomPct = Math.max(25, Math.min(150, Number(v) || 100));
+      const lbl = document.getElementById('cvZoomLbl'); if (lbl) lbl.textContent = cvZoomPct + '%';
+      edFitStage();
+    }
+
+    // Text pane: the three text elements, click to drop one in.
+    function cvRenderTextPane() {
+      const el = document.getElementById('cvTextPanel'); if (!el) return;
+      const gi = ED_PALETTE.findIndex(g => g.group === 'Text');
+      if (gi < 0) return;
+      el.innerHTML = ED_PALETTE[gi].items.map((it, ii) =>
+        `<button type="button" class="cv-wide" style="text-align:left;font-size:${ii === 0 ? '19px' : ii === 1 ? '15px' : '13px'};" onclick="edAddFromPalette(${gi},${ii})">${wcEsc(it.props.text || it.label)}</button>`
+      ).join('');
+    }
+
+    // Brand pane: site palette. Recolours the whole document through the store.
+    function cvRenderBrandPane() {
+      const el = document.getElementById('cvBrandPanel'); if (!el || !edStore) return;
+      const th = (edStore.getDoc().theme) || {};
+      const row = (key, label, dflt) => `<label class="cv-lbl">${wcEsc(label)}</label>
+        <input type="color" class="cv-input" style="height:36px;padding:3px;" value="#${wcEsc(String(th[key] || dflt).replace('#',''))}" oninput="cvSetTheme('${key}',this.value)"/>`;
+      el.innerHTML = row('primary', _t('cv_b_primary', 'Primary'), '6366F1')
+        + row('accent', _t('cv_b_accent', 'Accent'), '8B5CF6')
+        + row('paper', _t('cv_b_paper', 'Page background'), 'ffffff')
+        + row('ink', _t('cv_b_ink', 'Text'), '0f172a')
+        + `<p class="cv-note">${wcEsc(_t('cv_b_note', 'Colours apply to the whole site. Undo works here too.'))}</p>`;
+    }
+    function cvSetTheme(key, val) {
+      edStore.endGesture();
+      edApply((d) => { d.theme = d.theme || {}; d.theme[key] = String(val).replace('#', ''); }, { coalesce: 'theme:' + key });
+    }
+
+    // Uploads pane: the media library, click an item to place it on the canvas.
+    async function cvRenderUploads() {
+      const grid = document.getElementById('cvUploadGrid'); if (!grid) return;
+      try {
+        const r = await fetch('/api/site-media', { headers: authHeaders() });
+        const d = await r.json().catch(() => ({}));
+        if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }
+        const items = d.items || [];
+        grid.innerHTML = items.length ? items.map(i => i.kind === 'image'
+          ? `<button type="button" class="cv-upitem" onclick="cvPlaceMedia('${wcEsc(i.url)}','image')" style="background-image:url('${wcEsc(i.url)}');"></button>`
+          : `<button type="button" class="cv-upitem cv-upitem--file" onclick="cvPlaceMedia('${wcEsc(i.url)}','${wcEsc(i.kind)}')">${i.kind === 'video' ? '🎬' : '🔊'}</button>`
+        ).join('') : `<p class="cv-note">${wcEsc(_t('cv_up_empty', 'Nothing uploaded yet.'))}</p>`;
+      } catch (_) {}
+    }
+    function cvUpload() {
+      wcUploadMedia('image/jpeg,image/png,image/webp,video/mp4,audio/mpeg', () => cvRenderUploads());
+    }
+    // Drop an uploaded asset onto the canvas as the matching element type.
+    function cvPlaceMedia(url, kind) {
+      const type = kind === 'video' ? 'video' : kind === 'audio' ? 'audio' : 'image';
+      let gi = -1, ii = -1;
+      ED_PALETTE.forEach((g, x) => g.items.forEach((it, y) => { if (it.type === type && gi < 0) { gi = x; ii = y; } }));
+      if (gi < 0) return;
+      const spec = JSON.parse(JSON.stringify(ED_PALETTE[gi].items[ii]));
+      spec.props = Object.assign({}, spec.props, { src: url });
+      delete spec.props.ph;
+      edInsertElement(spec, ED_CANVAS / 2, 80);
+    }
+
+    function cvSyncChrome() {
+      if (!edStore) return;
+      const pages = edStore.getDoc().pages || [];
+      const idx = Math.max(0, pages.findIndex(p => p.id === edPageId));
+      const pc = document.getElementById('cvPageCount');
+      if (pc) pc.textContent = `${_t('cv_pagesword', 'Pages')} ${idx + 1} / ${pages.length}`;
+      const t = document.getElementById('cvDocTitle');
+      if (t) t.textContent = (pages[idx] && pages[idx].name) || 'Untitled site';
     }
 
     // ── Element library (V4) ──────────────────────────────────────────────────
@@ -6715,7 +6863,7 @@ Aaliyah Washington`
 
     function edPage() { return edStore ? SiteDocStore.findPage(edStore.getDoc(), edPageId) : null; }
     function edSyncPageSelect() {
-      const sel = document.getElementById('wcEdPage'); if (!sel || !edStore) return;
+      const sel = document.getElementById('wcEdPage'); if (!sel || !edStore) { if (typeof cvSyncChrome === 'function') cvSyncChrome(); return; }
       const pages = edStore.getDoc().pages || [];
       sel.innerHTML = pages.map(p => `<option value="${wcEsc(p.id)}"${p.id === edPageId ? ' selected' : ''}>${wcEsc(p.name || p.slug)}</option>`).join('');
       sel.style.display = pages.length > 1 ? 'block' : 'none';
@@ -6763,7 +6911,7 @@ Aaliyah Washington`
       // Keep the selected page valid (it may have been deleted).
       const pages = edStore.getDoc().pages || [];
       if (!pages.some((p) => p.id === edPageId)) { edPageId = (pages[0] || {}).id || null; edSel = null; }
-      edSyncPageSelect(); edRenderPages();
+      edSyncPageSelect(); edRenderPages(); if (typeof cvSyncChrome==='function') cvSyncChrome();
     }
     function edAddPage() {
       const name = window.prompt(_t('wc_pg_prompt', 'Name this page:'), 'About');
@@ -6826,11 +6974,13 @@ Aaliyah Washington`
       const canvasW = mobile ? 390 : ED_CANVAS;
       if (wrap) wrap.style.width = canvasW + 'px';
       if (frame) frame.style.width = canvasW + 'px';
-      const avail = Math.max(240, stage.clientWidth - 24);
-      const k = Math.min(1, avail / canvasW);
+      const avail = Math.max(240, stage.clientWidth - 40);
+      const fit = Math.min(1, avail / canvasW);
+      const k = fit * ((typeof cvZoomPct !== 'undefined' ? cvZoomPct : 100) / 100);
       wrap.style.transform = `scale(${k})`;
       // In mobile view the page grows taller as elements stack, so give it room.
-      stage.style.height = ((mobile ? edDocHeight() * 1.6 : edDocHeight()) * k + 24) + 'px';
+      if (wrap) wrap.style.height = ((mobile ? edDocHeight() * 1.6 : edDocHeight()) * k) + 'px';
+      if (typeof cvSyncChrome === 'function') cvSyncChrome();
     }
     window.addEventListener('resize', () => { if (edStore) edFitStage(); });
 
