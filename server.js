@@ -1981,36 +1981,42 @@ function _shareResumeHtml(row, origin, opts = {}) {
 // Phase 1: no site has a `config` yet, and legacy sites have `config IS NULL`, so
 // this delegates to the shared resume-document renderer — byte-identical to the
 // previous /site output. Later phases parse `config` and build the site here.
+// Personal sites are rendered by exactly one renderer: the Website Builder v2
+// site-document renderer. The editor canvas and the preview endpoint run through
+// this same function, so preview is the published page by construction.
+// (`_shareResumeHtml` is now used only by Create-a-Link at /r/:slug.)
 function _renderPersonalSite(row, origin, opts = {}) {
   let config = null;
   if (row && row.config) { try { config = JSON.parse(row.config); } catch (_) { config = null; } }
-  // Grid layout (Website Creator, Phase 3): render from config.blocks once the
-  // user has arranged blocks. Legacy sites (config null, or a config without a
-  // non-empty blocks array — e.g. Phase 2 publishes that only stored asset ids)
-  // fall through to the shared resume-document renderer, byte-identical to before.
-  if (config && Array.isArray(config.blocks) && config.blocks.length) {
-    return _renderSiteGrid(row, origin, opts, config);
+  if (config && Array.isArray(config.pages) && config.pages.length) {
+    return _renderSiteDoc(row, origin, opts, config);
   }
-  return _shareResumeHtml(row, origin, opts);
+  return _renderSiteUnbuilt(row, origin, opts);
 }
 
-// Personal-site background themes. `animated` themes are gated by shouldAnimate()
-// on the client (reduced-motion / low core count / small viewport) and fall back
-// to `fallback`. fg/muted adapt text that sits directly on the background (cards
-// keep their own light styling). Default 'midnight' mirrors the homepage (#030712).
-const _SITE_THEMES = {
-  midnight: { animated: false, bg: 'radial-gradient(1200px 600px at 50% -10%, rgba(99,102,241,0.18), transparent), #030712', fallback: '#030712', fg: '#e2e8f0', muted: '#94a3b8', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
-  aurora: { animated: true, bg: 'linear-gradient(120deg, #0f172a, #3b0764, #1e1b4b, #0f172a)', fallback: 'linear-gradient(120deg,#0f172a,#1e1b4b)', fg: '#e2e8f0', muted: '#a5b4fc', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
-  paper: { animated: false, bg: '#f8fafc', fallback: '#f8fafc', fg: '#1f2430', muted: '#6b7280', langBtn: 'rgba(0,0,0,.05)', langFg: '#475569', langBorder: 'rgba(0,0,0,.1)' },
-  mesh: { animated: false, bg: 'radial-gradient(at 20% 20%, #eef2ff, transparent 50%), radial-gradient(at 80% 0%, #fce7f3, transparent 50%), radial-gradient(at 60% 80%, #dbeafe, transparent 50%), #f8fafc', fallback: '#f8fafc', fg: '#1f2430', muted: '#6b7280', langBtn: 'rgba(0,0,0,.05)', langFg: '#475569', langBorder: 'rgba(0,0,0,.1)' },
-  particles: { animated: true, bg: '#0b1020', fallback: '#0b1020', fg: '#e2e8f0', muted: '#94a3b8', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
-};
+// A site row with no v2 document (e.g. an old test site) renders a small
+// placeholder rather than 500ing. There is no legacy rendering path.
+function _renderSiteUnbuilt(row, origin, opts = {}) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="robots" content="noindex,nofollow"/><title>Site not published yet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>body{font-family:'Inter',sans-serif;background:#030712;color:#e2e8f0;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center;padding:24px;}
+.b{max-width:420px}h1{font-size:24px;font-weight:900;margin-bottom:10px}p{color:#94a3b8;font-size:15px}
+a{display:inline-block;margin-top:18px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;text-decoration:none;font-weight:700;padding:11px 22px;border-radius:999px}</style></head>
+<body><div class="b"><h1>This site hasn't been built yet</h1>
+<p>Pick a template in the Website Builder to publish it.</p>
+<a href="${origin}/dashboard">Open the Website Builder</a></div></body></html>`;
+}
+
 
 // Public-site chrome strings (user content is shown as authored). Shared by the
 // grid renderer and the contact block so a zh site renders in Chinese server-side.
 const _SITE_I18N = {
-  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume' },
-  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历' },
+  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume', add_video: 'Add a video', add_audio: 'Add audio' },
+  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历', add_video: '添加视频', add_audio: '添加音频' },
 };
 
 // A resume rendered as a self-contained fragment (used by a `resume` block).
@@ -2060,107 +2066,222 @@ function _extractCaseStudies(text, max = 6) {
 const _clampInt = (v, lo, hi, dflt) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt; };
 const _safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/|data:image\/(png|jpe?g|webp);base64,)/i.test(u) && u.length < 2000000) ? u : '';
 
-// One block → HTML on a 12-column grid. On mobile the grid collapses (CSS) so
-// blocks stack full-width in source order; placement is desktop-only.
-function _renderSiteBlock(b, row, accent, lang) {
-  const SI = _SITE_I18N[lang === 'zh' ? 'zh' : 'en'];
-  const span = _clampInt(b.colSpan, 1, 12, 12);
-  // Explicit start column → fixed placement; no column → auto-flow (blocks fill
-  // rows left-to-right, so two half-width blocks sit side by side). The editor
-  // uses auto-flow (width-only) by default.
-  const place = (b.col != null && Number.isFinite(Number(b.col)))
-    ? (() => { const col = _clampInt(b.col, 1, 12, 1); return `grid-column:${col} / span ${Math.min(span, 13 - col)};`; })()
-    : `grid-column:span ${span};`;
-  let inner = '';
-  switch (b.type) {
-    case 'heading': inner = `<h2 class="sg-blk-h">${_escHtml(String(b.text || '').slice(0, 200))}</h2>`; break;
-    case 'text': inner = `<div class="sg-blk-text">${_escHtml(String(b.text || '').slice(0, 4000)).replace(/\n/g, '<br/>')}</div>`; break;
-    case 'resume': inner = _renderResumeFragment(row, accent); break;
+
+// ─── Website Builder v2 — site-document renderer ─────────────────────────────
+// A site document is: pages → sections → absolutely-positioned elements.
+//
+//   { v:2, theme:{...}, pages:[ { id,name,slug,isHome,seo,
+//       sections:[ { id,h,bg,els:[ { id,type,x,y,w,h,z,mhide,props } ] } ] } ] }
+//
+// Elements are laid out on a 1200px-wide design canvas. x/w are emitted as
+// percentages (so the canvas is fluid), y/h stay in px (vertical rhythm).
+//
+// MOBILE: elements are emitted in reading order (sorted by y, then x) and the
+// mobile stylesheet drops them to static full-width flow — so a template stacks
+// correctly on a phone with no per-element work. Per-element mobile overrides
+// come later; `mhide` (hide on mobile) is honored now.
+const SD_CANVAS = 1200;
+const _sdPct = (v) => (Math.max(0, Math.min(SD_CANVAS, Number(v) || 0)) / SD_CANVAS * 100).toFixed(4) + '%';
+const _sdPx = (v, dflt = 0) => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.round(n)) : dflt; };
+const _sdColor = (c, dflt) => (typeof c === 'string' && /^#?[0-9a-fA-F]{3,8}$/.test(c.replace('#', '')) ? ('#' + c.replace('#', '')) : dflt);
+const _sdText = (s, max = 4000) => _escHtml(String(s == null ? '' : s).slice(0, max));
+
+// A section background: solid colour, gradient, or an image from the media library.
+function _sdSectionBg(bg) {
+  if (!bg || typeof bg !== 'object') return '';
+  if (bg.type === 'image') { const u = _safeUrl(bg.value); return u ? `background-image:url('${_escHtml(u)}');background-size:cover;background-position:center;` : ''; }
+  if (bg.type === 'gradient' && typeof bg.value === 'string') {
+    // Only allow a simple, well-formed gradient string (no arbitrary CSS).
+    const g = bg.value.slice(0, 300);
+    return /^(linear|radial)-gradient\([^;{}]*\)$/.test(g) ? `background-image:${g};` : '';
+  }
+  if (bg.type === 'color') { const c = _sdColor(bg.value, ''); return c ? `background-color:${c};` : ''; }
+  return '';
+}
+
+// Templates ship without binary assets: an image slot with no `src` renders a
+// self-contained gradient placeholder (optionally captioned) that the user
+// replaces with a real upload from the media library. `ph` is a two-colour spec
+// like { from:'6366F1', to:'8B5CF6', label:'Your photo' } — colours are validated.
+function _sdPlaceholder(p, radius) {
+  const ph = p && p.ph;
+  if (!ph) return '';
+  const from = _sdColor(ph.from, '#6366F1');
+  const to = _sdColor(ph.to, '#8B5CF6');
+  const round = ph.shape === 'circle' ? '50%' : `${_sdPx(radius, 12)}px`;
+  return `<div class="sd-ph" style="background:linear-gradient(135deg,${from},${to});border-radius:${round};">${ph.label ? `<span>${_sdText(ph.label, 60)}</span>` : ''}</div>`;
+}
+
+// One element → HTML. `ctx` carries row/theme/lang/pages for elements that need
+// site-level data (resume, nav, forms).
+function _sdElement(el, ctx) {
+  const p = (el && el.props) || {};
+  const T = ctx.theme;
+  const align = ['left', 'center', 'right'].includes(p.align) ? p.align : 'left';
+  const color = _sdColor(p.color, '');
+  const styleText = `text-align:${align};${color ? `color:${color};` : ''}`;
+  switch (el.type) {
+    case 'heading':
+      return `<h1 class="sd-h1" style="${styleText}${p.size ? `font-size:${_sdPx(p.size, 48)}px;` : ''}">${_sdText(p.text, 300)}</h1>`;
+    case 'subheading':
+      return `<h2 class="sd-h2" style="${styleText}${p.size ? `font-size:${_sdPx(p.size, 24)}px;` : ''}">${_sdText(p.text, 300)}</h2>`;
+    case 'paragraph':
+      return `<div class="sd-p" style="${styleText}">${_sdText(p.text, 4000).replace(/\n/g, '<br/>')}</div>`;
     case 'image': {
-      const src = _safeUrl(b.src);
-      if (!src) return '';
-      inner = `<figure class="sg-fig"><img src="${_escHtml(src)}" alt="${_escHtml(String(b.alt || '').slice(0, 200))}" loading="lazy"/>${b.caption ? `<figcaption>${_escHtml(String(b.caption).slice(0, 300))}</figcaption>` : ''}</figure>`;
-      break;
+      const u = _safeUrl(p.src);
+      if (!u) return _sdPlaceholder(p, _sdPx(p.radius, 12));
+      return `<img class="sd-img" src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy" style="border-radius:${_sdPx(p.radius, 12)}px;object-fit:${p.fit === 'contain' ? 'contain' : 'cover'};"/>`;
     }
-    case 'video': {
-      const src = _safeUrl(b.src);
-      if (!src) return '';
-      // No autoplay-with-sound: controls are visible and the video starts paused.
-      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<video class="sg-video" controls preload="metadata"${b.poster ? ` poster="${_escHtml(_safeUrl(b.poster))}"` : ''}><source src="${_escHtml(src)}"/></video>`;
-      break;
-    }
-    case 'audio': {
-      const src = _safeUrl(b.src);
-      if (!src) return '';
-      // No autoplay: a visible play/pause control, starts paused.
-      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<audio class="sg-audio" controls preload="none"><source src="${_escHtml(src)}"/></audio>`;
-      break;
+    case 'imagebox': {
+      const u = _safeUrl(p.src);
+      const inner = u
+        ? `<img src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy"/>`
+        : _sdPlaceholder(p, 0);
+      if (!u && !p.ph) return '';
+      return `<figure class="sd-ibox" style="border-radius:${_sdPx(p.radius, 14)}px;">${inner}${p.caption ? `<figcaption>${_sdText(p.caption, 300)}</figcaption>` : ''}</figure>`;
     }
     case 'gallery': {
-      const imgs = Array.isArray(b.images) ? b.images.slice(0, 20) : [];
-      const items = imgs.map(im => {
-        const s = _safeUrl(im && im.src);
-        if (!s) return '';
-        return `<figure class="sg-gitem"><img src="${_escHtml(s)}" alt="${_escHtml(String((im && im.alt) || '').slice(0, 200))}" loading="lazy"/>${im && im.caption ? `<figcaption>${_escHtml(String(im.caption).slice(0, 300))}</figcaption>` : ''}</figure>`;
+      const items = Array.isArray(p.items) ? p.items.slice(0, 40) : [];
+      const cells = items.map((it) => {
+        const u = _safeUrl(it && it.src);
+        if (!u && !(it && it.ph)) return '';
+        const cap = it.caption || it.title ? `<figcaption>${_sdText(it.title || '', 120)}${it.caption ? `<span>${_sdText(it.caption, 200)}</span>` : ''}</figcaption>` : '';
+        const img = u
+          ? `<img src="${_escHtml(u)}" alt="${_sdText(it.alt || it.title || '', 200)}" loading="lazy"/>`
+          : `<div class="sd-ph sd-ph--cell" style="background:linear-gradient(135deg,${_sdColor(it.ph.from, '#6366F1')},${_sdColor(it.ph.to, '#8B5CF6')});height:${_sdPx(it.ph.h, 220)}px;"></div>`;
+        const inner = `<figure class="sd-gcell">${img}${cap}</figure>`;
+        const href = _safeUrl(it && it.link);
+        return href ? `<a href="${_escHtml(href)}" target="_blank" rel="noopener">${inner}</a>` : inner;
       }).join('');
-      if (!items) return '';
-      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<div class="sg-gallery">${items}</div>`;
-      break;
+      if (!cells) return '';
+      const layout = ['grid', 'masonry', 'slider'].includes(p.layout) ? p.layout : 'grid';
+      const cols = Math.max(1, Math.min(6, _sdPx(p.cols, 3)));
+      const gap = Math.max(0, Math.min(48, _sdPx(p.gap, 14)));
+      return `<div class="sd-gal sd-gal--${layout}" style="--gcols:${cols};--ggap:${gap}px;">${cells}</div>`;
     }
-    case 'casestudies': {
-      const items = Array.isArray(b.items) ? b.items.slice(0, 12) : [];
-      const cards = items.map(it => {
-        const title = _escHtml(String((it && it.title) || '').slice(0, 160));
-        if (!title) return '';
-        const chip = it && it.metric ? `<span class="sg-cs-chip">${_escHtml(String(it.metric).slice(0, 40))}</span>` : '';
-        const detail = it && it.detail ? `<p class="sg-cs-detail">${_escHtml(String(it.detail).slice(0, 2000))}</p>` : (it && it.body ? `<p class="sg-cs-detail">${_escHtml(String(it.body).slice(0, 2000))}</p>` : '');
-        const img = it && _safeUrl(it.image) ? `<img class="sg-cs-img" src="${_escHtml(_safeUrl(it.image))}" alt="" loading="lazy"/>` : '';
-        return `<details class="sg-cs"><summary><span class="sg-cs-title">${title}</span>${chip}</summary>${img}${detail}</details>`;
+    case 'video': {
+      const lbl = p.label ? `<div class="sd-elabel">${_sdText(p.label, 120)}</div>` : '';
+      const u = _safeUrl(p.src);
+      // No source yet (e.g. just dropped from the palette): show an empty-state
+      // block so the element is visible and selectable instead of rendering
+      // nothing. Replaced as soon as a video is chosen in the inspector.
+      if (!u) return `${lbl}<div class="sd-ph sd-ph--empty">🎬<span>${_escHtml(ctx.SI.add_video)}</span></div>`;
+      const poster = _safeUrl(p.poster);
+      return `${lbl}<video class="sd-video" controls preload="metadata"${poster ? ` poster="${_escHtml(poster)}"` : ''}><source src="${_escHtml(u)}"/></video>`;
+    }
+    case 'audio': {
+      const lbl = p.label ? `<div class="sd-elabel">${_sdText(p.label, 120)}</div>` : '';
+      const u = _safeUrl(p.src);
+      if (!u) return `${lbl}<div class="sd-ph sd-ph--empty">🔊<span>${_escHtml(ctx.SI.add_audio)}</span></div>`;
+      return `${lbl}<audio class="sd-audio" controls preload="none"><source src="${_escHtml(u)}"/></audio>`;
+    }
+    case 'button': {
+      const href = _sdLink(p, ctx);
+      const ghost = p.style === 'ghost';
+      return `<a class="sd-btn${ghost ? ' sd-btn--ghost' : ''}" href="${_escHtml(href || '#')}"${/^https?:/i.test(href) ? ' target="_blank" rel="noopener"' : ''}>${_sdText(p.text || 'Learn more', 80)}</a>`;
+    }
+    case 'social': {
+      const items = Array.isArray(p.items) ? p.items.slice(0, 10) : [];
+      const links = items.map((it) => {
+        const u = _safeUrl(it && it.url); if (!u) return '';
+        return `<a class="sd-soc" href="${_escHtml(u)}" target="_blank" rel="noopener" aria-label="${_sdText(it.network || 'link', 40)}">${_sdText((it.network || '?').slice(0, 2).toUpperCase(), 4)}</a>`;
       }).join('');
-      if (!cards) return '';
-      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<div class="sg-cs-wrap">${cards}</div>`;
-      break;
+      return links ? `<div class="sd-socs">${links}</div>` : '';
     }
-    case 'contact': {
-      // Lead-capture form. mode 'pdf' = "Request my resume PDF" gate; else a
-      // plain contact form. Posts to /api/site-lead (persist-first server-side).
-      const isPdf = b.mode === 'pdf';
-      const heading = _escHtml(String(b.label || (isPdf ? SI.request_h : SI.contact_h)).slice(0, 120));
-      inner = `<div class="sg-contact"><div class="sg-blk-label">${heading}</div>
-        <form class="sg-lead-form" onsubmit="return _sgLead(event,this)" data-sub="${_escHtml(row.subdomain || '')}" data-mode="${isPdf ? 'pdf' : 'contact'}">
+    case 'form': {
+      const isPdf = p.mode === 'pdf';
+      const SI = ctx.SI;
+      return `<div class="sd-form"><div class="sd-elabel">${_sdText(p.heading || (isPdf ? SI.request_h : SI.contact_h), 120)}</div>
+        <form class="sg-lead-form" onsubmit="return _sgLead(event,this)" data-sub="${_escHtml(ctx.sub)}" data-mode="${isPdf ? 'pdf' : 'contact'}">
           <input name="name" placeholder="${_escHtml(SI.c_name)}" maxlength="120"/>
           <input name="email" type="email" required placeholder="${_escHtml(SI.c_email)}" maxlength="200"/>
           ${isPdf ? '' : `<textarea name="message" placeholder="${_escHtml(SI.c_msg)}" maxlength="2000"></textarea>`}
           <button type="submit">${isPdf ? _escHtml(SI.c_send_pdf) : _escHtml(SI.c_send)}</button>
           <div class="sg-lead-msg" style="display:none;"></div>
         </form></div>`;
-      break;
     }
-    case 'spacer': inner = '<div class="sg-spacer"></div>'; break;
-    default: return '';
+    case 'divider':
+      return `<hr class="sd-divider" style="border-top-width:${_sdPx(p.thickness, 1)}px;${color ? `border-top-color:${color};` : ''}"/>`;
+    case 'box':
+      return `<div class="sd-box" style="${_sdColor(p.bg, '') ? `background:${_sdColor(p.bg, '')};` : ''}border-radius:${_sdPx(p.radius, 14)}px;"></div>`;
+    case 'spacer':
+      return '<div class="sd-spacer"></div>';
+    case 'nav': {
+      const links = (ctx.pages || []).map((pg) => {
+        const href = pg.isHome ? ctx.base : `${ctx.base}/${encodeURIComponent(pg.slug)}`;
+        const on = pg.slug === ctx.currentSlug;
+        return `<a class="sd-navlink${on ? ' is-on' : ''}" href="${_escHtml(href)}">${_sdText(pg.name, 60)}</a>`;
+      }).join('');
+      return links ? `<nav class="sd-nav">${links}</nav>` : '';
+    }
+    case 'resume':
+      return `<div class="sd-resume">${_renderResumeFragment(ctx.row, T.accent)}</div>`;
+    case 'casestudies': {
+      const items = Array.isArray(p.items) ? p.items.slice(0, 12) : [];
+      const cards = items.map((it) => {
+        const title = _sdText((it && it.title) || '', 160); if (!title) return '';
+        const chip = it && it.metric ? `<span class="sd-cs-chip">${_sdText(it.metric, 40)}</span>` : '';
+        const body = it && (it.detail || it.body) ? `<p>${_sdText(it.detail || it.body, 2000)}</p>` : '';
+        return `<details class="sd-cs"><summary><span>${title}</span>${chip}</summary>${body}</details>`;
+      }).join('');
+      return cards ? `<div class="sd-cswrap">${cards}</div>` : '';
+    }
+    case 'qr':
+      return `<img class="sd-qr" src="${_escHtml(ctx.base)}/qr.svg" alt="QR code" loading="lazy"/>`;
+    default:
+      return '';
   }
-  return `<div class="sg-block" style="${place}">${inner}</div>`;
 }
 
-// Full personal-site page rendered from config.blocks on a responsive 12-col grid.
-function _renderSiteGrid(row, origin, opts, config) {
-  const primary = '#' + String((config.theme && config.theme.primary) || row.primary_hex || '4a1042').replace('#', '');
-  const accent = '#' + String((config.theme && config.theme.accent) || row.accent || '8b5cf6').replace('#', '');
-  // Background theme. Default 'midnight' mirrors the platform homepage (#030712).
-  // Animated themes (aurora, particles) degrade to a static fallback on the client
-  // via shouldAnimate() (reduced-motion, low core count, or small viewport).
-  const theme = _SITE_THEMES[config.background] ? config.background : 'midnight';
-  const T = _SITE_THEMES[theme];
-  const lang = config.lang === 'zh' ? 'zh' : 'en';
-  const displayName = _escHtml((row.name || _dxParseResume(row.text || '').name || 'Resume'));
-  const indexable = !!opts.indexable;
-  const canonical = opts.canonicalUrl || `${origin}/site/${row.subdomain}`;
-  const blocksHtml = config.blocks.map(b => _renderSiteBlock(b, row, accent, lang)).join('');
-  const footerHtml = opts.footer !== undefined ? opts.footer : '';
+// Resolve a button/link target: an external URL, another page, or an anchor.
+function _sdLink(p, ctx) {
+  if (p.page) { const pg = (ctx.pages || []).find((x) => x.slug === p.page); if (pg) return pg.isHome ? ctx.base : `${ctx.base}/${encodeURIComponent(pg.slug)}`; }
+  if (p.anchor) return '#' + String(p.anchor).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
+  return _safeUrl(p.href) || '';
+}
 
-  // Public-site i18n (chrome only — user content is shown as authored). Shared
-  // module dictionary; a toggle swaps any [data-si] element (mirrors zh/index.html).
-  const SITE_I18N = _SITE_I18N;
+function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
+  const pages = (Array.isArray(doc.pages) ? doc.pages : []).filter((p) => p && typeof p === 'object');
+  const wanted = String(opts.page || '').toLowerCase();
+  const page = (wanted && pages.find((p) => String(p.slug || '').toLowerCase() === wanted))
+    || pages.find((p) => p.isHome) || pages[0];
+  if (!page) return _shareResumeHtml(row, origin, opts); // empty doc → never render a blank page
+
+  const th = doc.theme || {};
+  const theme = {
+    primary: _sdColor(th.primary, '#6366F1'),
+    accent: _sdColor(th.accent, '#8B5CF6'),
+    ink: _sdColor(th.ink, '#0f172a'),
+    paper: _sdColor(th.paper, '#ffffff'),
+    muted: _sdColor(th.muted, '#64748b'),
+  };
+  const lang = doc.lang === 'zh' ? 'zh' : 'en';
+  const SI = _SITE_I18N[lang];
+  const sub = row.subdomain || '';
+  const base = opts.baseUrl || `${origin}/site/${sub}`;
+  const ctx = { row, theme, SI, sub, pages, currentSlug: page.slug, base, lang };
+
+  const sections = (Array.isArray(page.sections) ? page.sections : []).map((sec) => {
+    const h = _sdPx(sec && sec.h, 400);
+    // DOM order == mobile stacking order: sort by y, then x.
+    const els = (Array.isArray(sec && sec.els) ? sec.els : [])
+      .filter((e) => e && typeof e === 'object' && e.type)
+      .slice()
+      .sort((a, b) => (_sdPx(a.y) - _sdPx(b.y)) || (_sdPx(a.x) - _sdPx(b.x)));
+    const inner = els.map((el) => {
+      const html = _sdElement(el, ctx);
+      if (!html) return '';
+      const st = `left:${_sdPct(el.x)};top:${_sdPx(el.y)}px;width:${_sdPct(el.w)};min-height:${_sdPx(el.h, 0)}px;${el.z ? `z-index:${_sdPx(el.z)};` : ''}`;
+      return `<div class="sd-el${el.mhide ? ' sd-el--mhide' : ''}" style="${st}">${html}</div>`;
+    }).join('');
+    return `<section class="sd-sec" style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
+  }).join('');
+
+  const title = _sdText((page.seo && page.seo.title) || row.name || page.name || 'Portfolio', 120);
+  const desc = _sdText((page.seo && page.seo.description) || '', 300);
+  const indexable = !!opts.indexable;
+  const canonical = opts.canonicalUrl || base;
+  const footerHtml = opts.footer !== undefined ? opts.footer : '';
 
   return `<!DOCTYPE html>
 <html lang="${lang}">
@@ -2168,9 +2289,10 @@ function _renderSiteGrid(row, origin, opts, config) {
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <meta name="robots" content="${indexable ? 'index,follow' : 'noindex,nofollow'}"/>
-  <title>${displayName}</title>
+  <title>${title}</title>
+  ${desc ? `<meta name="description" content="${desc}"/>` : ''}
   <meta property="og:type" content="profile"/>
-  <meta property="og:title" content="${displayName}"/>
+  <meta property="og:title" content="${title}"/>
   <meta property="og:url" content="${_escHtml(canonical)}"/>
   <meta property="og:image" content="${origin}/og-image.png"/>
   <link rel="canonical" href="${_escHtml(canonical)}"/>
@@ -2178,85 +2300,89 @@ function _renderSiteGrid(row, origin, opts, config) {
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <style>
-    :root{--p:${primary};--a:${accent};--fg:${T.fg};--muted:${T.muted};}
+    :root{--p:${theme.primary};--a:${theme.accent};--ink:${theme.ink};--paper:${theme.paper};--muted:${theme.muted};}
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:${T.fallback};color:var(--fg);line-height:1.6;padding:24px 14px 60px;position:relative;min-height:100vh;}
-    /* Background layer: static by default; shouldAnimate() adds .sg-animate to <html>. */
-    .sg-bg{position:fixed;inset:0;z-index:-2;background:${T.fallback};}
-    html.sg-animate .sg-bg{background:${T.bg};${theme === 'aurora' ? 'background-size:200% 200%;animation:sgAurora 18s ease infinite;' : ''}}
-    .sg-bg-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none;}
-    @keyframes sgAurora{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
-    @media (prefers-reduced-motion: reduce){html.sg-animate .sg-bg{animation:none;}}
-    .sg-topbar{max-width:1100px;margin:0 auto 16px;display:flex;justify-content:flex-end;}
-    .sg-lang{background:${T.langBtn};border:1px solid ${T.langBorder};border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:${T.langFg};cursor:pointer;}
-    .site-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;max-width:1100px;margin:0 auto;align-items:start;}
-    .sg-block{min-width:0;}
-    .sg-blk-h{font-size:26px;font-weight:900;color:var(--fg);letter-spacing:-.5px;margin-bottom:6px;}
-    .sg-blk-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
-    .sg-blk-text{font-size:15px;color:var(--muted);}
-    .sg-fig{margin:0;}
-    .sg-fig img{width:100%;height:auto;border-radius:14px;display:block;}
-    .sg-fig figcaption{font-size:12.5px;color:var(--muted);margin-top:6px;text-align:center;}
-    .sg-video{width:100%;border-radius:14px;background:#000;display:block;}
-    .sg-audio{width:100%;}
-    .sg-gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
-    .sg-gitem{flex:0 0 auto;width:min(78%,320px);scroll-snap-align:start;margin:0;}
-    .sg-gitem img{width:100%;height:auto;border-radius:12px;display:block;}
-    .sg-gitem figcaption{font-size:12.5px;color:var(--muted);margin-top:5px;}
-    .sg-cs-wrap{display:flex;flex-direction:column;gap:10px;}
-    .sg-cs{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;}
-    .sg-cs summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;}
-    .sg-cs summary::-webkit-details-marker{display:none;}
-    .sg-cs-title{font-weight:700;color:#1a1f2b;flex:1;}
-    .sg-cs-chip{background:var(--a);color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap;}
-    .sg-cs-detail{font-size:14px;color:#39414f;margin-top:10px;}
-    .sg-cs-img{width:100%;border-radius:10px;margin-top:10px;}
-    .sg-contact{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;}
-    .sg-lead-form{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
-    .sg-lead-form input,.sg-lead-form textarea{border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;}
-    .sg-lead-form textarea{min-height:80px;}
-    .sg-lead-form button{background:var(--p);color:#fff;border:none;border-radius:9px;padding:10px;font-weight:700;cursor:pointer;}
-    .sg-lead-msg{font-size:13px;color:#059669;}
-    .sg-spacer{height:24px;}
-    .sg-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:38px 40px;}
-    .sg-rhead{margin-bottom:20px;border-bottom:2px solid var(--p);padding-bottom:14px;}
-    .sg-rname{font-size:28px;font-weight:800;color:var(--p);letter-spacing:-.4px;}
-    .sg-rcontact{font-size:13.5px;color:#5b6472;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
-    .sg-dot{color:#c3c9d4;}
-    .sg-sec{margin-bottom:20px;}
-    .sg-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--p);border-bottom:2px solid var(--a);padding-bottom:5px;margin-bottom:12px;}
-    .sg-resume .r-title{font-size:15px;font-weight:800;color:#1a1f2b;margin-top:10px;}
-    .sg-resume .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
-    .sg-resume .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
-    .sg-resume .r-bul{list-style:none;margin:2px 0 8px;}
-    .sg-resume .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
-    .sg-resume .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--a);}
-    .sg-foot{max-width:1100px;margin:24px auto 0;text-align:center;font-size:13px;color:#8a93a3;}
-    @media(max-width:760px){
-      .site-grid{display:block;}
-      .sg-block{margin-bottom:20px;}
-      .sg-resume{padding:28px 22px;}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
+    .sd-sec{position:relative;width:100%;background-repeat:no-repeat;}
+    .sd-inner{position:relative;max-width:${SD_CANVAS}px;margin:0 auto;}
+    .sd-el{position:absolute;}
+    .sd-h1{font-size:48px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
+    .sd-h2{font-size:24px;font-weight:700;line-height:1.25;}
+    .sd-p{font-size:16px;color:var(--muted);}
+    .sd-img{width:100%;height:100%;display:block;}
+    .sd-ibox{width:100%;height:100%;overflow:hidden;position:relative;margin:0;}
+    .sd-ibox img{width:100%;height:100%;object-fit:cover;display:block;}
+    .sd-ibox figcaption{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;font-size:13px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.65));}
+    .sd-elabel{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
+    .sd-ph{width:100%;height:100%;min-height:120px;display:flex;align-items:center;justify-content:center;}
+    .sd-ph span{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);}
+    .sd-ph--cell{min-height:0;}
+    .sd-ph--empty{flex-direction:column;gap:6px;font-size:26px;background:rgba(127,127,127,.12);border:2px dashed rgba(127,127,127,.35);color:inherit;border-radius:12px;}
+    .sd-ph--empty span{font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.75;color:inherit;}
+    .sd-gal{width:100%;}
+    .sd-gal--grid{display:grid;grid-template-columns:repeat(var(--gcols),1fr);gap:var(--ggap);}
+    .sd-gal--masonry{columns:var(--gcols);column-gap:var(--ggap);}
+    .sd-gal--masonry .sd-gcell{break-inside:avoid;margin-bottom:var(--ggap);}
+    .sd-gal--slider{display:flex;gap:var(--ggap);overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+    .sd-gal--slider .sd-gcell{flex:0 0 auto;width:min(72%,340px);scroll-snap-align:start;}
+    .sd-gcell{position:relative;margin:0;overflow:hidden;border-radius:12px;}
+    .sd-gcell img{width:100%;height:auto;display:block;transition:transform .35s ease;}
+    .sd-gcell:hover img{transform:scale(1.05);}
+    .sd-gcell figcaption{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.7));}
+    .sd-gcell figcaption span{display:block;font-weight:400;opacity:.85;font-size:12px;}
+    .sd-video,.sd-audio{width:100%;display:block;border-radius:12px;}
+    .sd-video{background:#000;}
+    .sd-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 26px;border-radius:999px;background:linear-gradient(135deg,var(--p),var(--a));color:#fff;font-weight:700;text-decoration:none;font-size:15px;}
+    .sd-btn--ghost{background:none;border:2px solid currentColor;color:var(--p);}
+    .sd-socs{display:flex;gap:10px;}
+    .sd-soc{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--p);color:#fff;font-size:12px;font-weight:800;text-decoration:none;}
+    .sd-divider{border:none;border-top:1px solid rgba(127,127,127,.35);width:100%;}
+    .sd-box{width:100%;height:100%;}
+    .sd-nav{display:flex;gap:22px;flex-wrap:wrap;align-items:center;}
+    .sd-navlink{font-size:15px;font-weight:600;color:inherit;text-decoration:none;opacity:.8;}
+    .sd-navlink.is-on,.sd-navlink:hover{opacity:1;color:var(--p);}
+    .sd-form{background:rgba(255,255,255,.9);border:1px solid rgba(15,23,42,.08);border-radius:14px;padding:18px;}
+    .sd-form .sg-lead-form{display:flex;flex-direction:column;gap:8px;}
+    .sd-form input,.sd-form textarea{border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;}
+    .sd-form textarea{min-height:80px;}
+    .sd-form button{background:var(--p);color:#fff;border:none;border-radius:9px;padding:10px;font-weight:700;cursor:pointer;}
+    .sd-form .sg-lead-msg{font-size:13px;color:#059669;}
+    .sd-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:32px 34px;color:#1f2430;}
+    .sd-resume .r-title{font-size:15px;font-weight:800;margin-top:10px;}
+    .sd-resume .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
+    .sd-resume .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
+    .sd-resume .r-bul{list-style:none;margin:2px 0 8px;}
+    .sd-resume .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
+    .sd-resume .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--a);}
+    .sd-cswrap{display:flex;flex-direction:column;gap:10px;}
+    .sd-cs{background:rgba(255,255,255,.92);border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:14px 16px;color:#1f2430;}
+    .sd-cs summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;font-weight:700;}
+    .sd-cs summary::-webkit-details-marker{display:none;}
+    .sd-cs summary span:first-child{flex:1;}
+    .sd-cs-chip{background:var(--a);color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;}
+    .sd-cs p{font-size:14px;color:#39414f;margin-top:10px;}
+    .sd-qr{width:100%;max-width:150px;}
+    .sd-foot{text-align:center;font-size:13px;color:var(--muted);padding:24px 16px;}
+    /* MOBILE: sections grow to fit, elements drop to full-width static flow in
+       DOM order (which the renderer already sorted top-to-bottom). */
+    @media(max-width:820px){
+      .sd-inner{height:auto!important;padding:30px 18px;}
+      .sd-el{position:static!important;width:100%!important;min-height:0!important;margin:0 0 18px;}
+      .sd-el:last-child{margin-bottom:0;}
+      .sd-el--mhide{display:none!important;}
+      .sd-h1{font-size:32px;}
+      .sd-h2{font-size:20px;}
+      .sd-gal--grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
+      .sd-gal--masonry{columns:2;}
+      .sd-ibox,.sd-img{height:auto!important;}
     }
   </style>
 </head>
 <body>
-  <div class="sg-bg"></div>${theme === 'particles' ? '<canvas class="sg-bg-canvas" id="sgCanvas"></canvas>' : ''}
-  <div class="sg-topbar"><button class="sg-lang" data-si="lang_toggle" onclick="_sgToggleLang()">${SITE_I18N[lang].lang_toggle}</button></div>
-  <div class="site-grid">${blocksHtml}</div>
-  ${footerHtml}
+  ${sections}
+  ${footerHtml ? `<div class="sd-foot">${footerHtml}</div>` : ''}
   <script>
-    var SITE_I18N=${JSON.stringify(SITE_I18N)};
-    var SG_ANIMATED=${T.animated ? 'true' : 'false'}, SG_THEME=${JSON.stringify(theme)};
-    // Degrade gate: only animate when the device can comfortably handle it.
-    function shouldAnimate(){
-      try{
-        if(!SG_ANIMATED) return false;
-        if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-        if(navigator.hardwareConcurrency && navigator.hardwareConcurrency<=4) return false;
-        if(Math.min(window.innerWidth,window.innerHeight)<768) return false;
-        return true;
-      }catch(_){return false;}
-    }
+    var SITE_I18N=${JSON.stringify(_SITE_I18N)};
     function _sgLead(e,f){
       e.preventDefault();
       var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;
@@ -2272,31 +2398,6 @@ function _renderSiteGrid(row, origin, opts, config) {
         .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
       return false;
     }
-    function _sgToggleLang(){
-      var cur=document.documentElement.lang==='zh'?'zh':'en';
-      var next=cur==='zh'?'en':'zh';
-      document.documentElement.lang=next;
-      document.querySelectorAll('[data-si]').forEach(function(el){
-        var k=el.getAttribute('data-si'); if(SITE_I18N[next] && SITE_I18N[next][k]!=null) el.textContent=SITE_I18N[next][k];
-      });
-      document.querySelectorAll('.sg-lead-form input[name=name]').forEach(function(el){el.placeholder=SITE_I18N[next].c_name;});
-      document.querySelectorAll('.sg-lead-form input[name=email]').forEach(function(el){el.placeholder=SITE_I18N[next].c_email;});
-      document.querySelectorAll('.sg-lead-form textarea[name=message]').forEach(function(el){el.placeholder=SITE_I18N[next].c_msg;});
-    }
-    // Apply the animation gate, then run the particle field if that theme is active.
-    (function(){
-      if(!shouldAnimate()) return;
-      document.documentElement.classList.add('sg-animate');
-      if(SG_THEME!=='particles') return;
-      var cv=document.getElementById('sgCanvas'); if(!cv) return;
-      var ctx=cv.getContext('2d'), parts=[], raf=0, running=true;
-      function size(){cv.width=window.innerWidth;cv.height=window.innerHeight;}
-      function init(){parts=[];var n=Math.min(60,Math.round(window.innerWidth/24));for(var i=0;i<n;i++)parts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.8+.6});}
-      function tick(){if(!running)return;ctx.clearRect(0,0,cv.width,cv.height);ctx.fillStyle='rgba(148,163,184,0.5)';for(var i=0;i<parts.length;i++){var p=parts[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>cv.width)p.vx*=-1;if(p.y<0||p.y>cv.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill();}raf=requestAnimationFrame(tick);}
-      size();init();tick();
-      window.addEventListener('resize',function(){size();init();});
-      document.addEventListener('visibilitychange',function(){running=!document.hidden;if(running){raf=requestAnimationFrame(tick);}else{cancelAnimationFrame(raf);}});
-    })();
   </script>
 </body>
 </html>`;
@@ -2446,7 +2547,7 @@ app.post('/api/personal-site/preview', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
-  const { text, name, colors, photoUrl, hideContact, serif, layout, config } = req.body || {};
+  const { text, name, colors, photoUrl, hideContact, serif, layout, config, subdomain, page } = req.body || {};
   if (!text || typeof text !== 'string' || text.trim().length < 10) {
     return res.status(400).json({ error: 'Nothing to preview yet.' });
   }
@@ -2456,15 +2557,62 @@ app.post('/api/personal-site/preview', (req, res) => {
   }
   let photo = null;
   if (typeof photoUrl === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) && photoUrl.length < 2000000) photo = photoUrl;
+  // Preview renders as the user's real subdomain when they have one, so the
+  // output is identical to the published page (see test/preview-parity.js).
+  const sub = _validSubdomain(subdomain) || 'preview';
   const row = {
-    subdomain: 'preview', name: (name || '').toString().slice(0, 80), text: text.slice(0, 40000),
+    subdomain: sub, name: (name || '').toString().slice(0, 80), text: text.slice(0, 40000),
     accent: (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
     primary_hex: (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
     serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0,
     layout: (_SHARE_LAYOUTS.has(layout) ? layout : null), config: _config,
   };
+  const origin = `${req.protocol}://${req.get('host')}`;
+  const pageSlug = String(page || '').toLowerCase().slice(0, 60);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.send(_renderPersonalSite(row, `${req.protocol}://${req.get('host')}`, { indexable: false, footer: '' }));
+  res.send(_renderPersonalSite(row, origin, {
+    indexable: false, footer: '',
+    baseUrl: `${origin}/site/${sub}`,
+    page: pageSlug,
+  }));
+});
+
+// ── Website Builder v2: starter templates ────────────────────────────────────
+const { templateList, templateDoc } = require('./site-templates');
+
+// Catalogue for the template gallery.
+app.get('/api/site-templates', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  res.json({ templates: templateList() });
+});
+
+// The full document for one template (used when the user picks it).
+app.get('/api/site-templates/:id', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const doc = templateDoc(String(req.params.id || '').slice(0, 40));
+  if (!doc) return res.status(404).json({ error: 'Unknown template.' });
+  res.json({ doc });
+});
+
+// Rendered preview of a template, for the gallery's desktop/mobile preview
+// frames. Rendered by the SAME renderer the published site uses.
+app.get('/api/site-templates/:id/preview', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const doc = templateDoc(String(req.params.id || '').slice(0, 40));
+  if (!doc) return res.status(404).json({ error: 'Unknown template.' });
+  const page = String(req.query.page || '').toLowerCase().slice(0, 60);
+  const origin = `${req.protocol}://${req.get('host')}`;
+  // Sample résumé text so a template's `resume` element has something to show.
+  const row = {
+    subdomain: 'preview', name: 'Alex Morgan', accent: '8b5cf6', primary_hex: '4a1042',
+    serif: 0, photo: null, hide_contact: 0, layout: null, config: JSON.stringify(doc),
+    text: 'Alex Morgan\nalex@example.com | New York, NY\n\nSUMMARY\nOperations leader with 15 years scaling teams through hypergrowth.\n\nEXPERIENCE\nVP Operations, Northwind (2020–Present)\n• Owned a $40M P&L across four countries\n• Doubled on-time delivery in two quarters\n\nSKILLS\nOperating cadence, GTM, Org design',
+  };
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(_renderPersonalSite(row, origin, { indexable: false, footer: '', baseUrl: `${origin}/site/preview`, page }));
 });
 
 // Toggle publish/unpublish without deleting (Back Office). Unpublished sites 404
@@ -2487,12 +2635,23 @@ app.delete('/api/personal-site', (req, res) => {
 });
 
 // Public render of a personal site — indexable, watermark-free.
-app.get('/site/:sub', (req, res) => {
+// Public render of a personal site. `:page` (optional) selects a page in a v2
+// site document; v1/legacy sites ignore it and always render their single page.
+function _serveSite(req, res, pageSlug) {
   const sub = _validSubdomain(req.params.sub);
   const row = sub ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub) : null;
   if (!row) {
     res.status(404);
     return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
+  // A page slug that doesn't exist in the document is a 404, not a silent home page.
+  if (pageSlug) {
+    let cfg = null; try { cfg = row.config ? JSON.parse(row.config) : null; } catch (_) {}
+    const pages = cfg && Array.isArray(cfg.pages) ? cfg.pages : null;
+    if (!pages || !pages.some((p) => String(p && p.slug || '').toLowerCase() === pageSlug)) {
+      res.status(404);
+      return res.sendFile(path.join(__dirname, 'public', '404.html'));
+    }
   }
   try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
   _recordVisit(sub, req);
@@ -2502,9 +2661,13 @@ app.get('/site/:sub', (req, res) => {
   res.send(_renderPersonalSite(row, origin, {
     indexable: true,
     footer: '', // Pro personal sites are watermark-free
-    canonicalUrl: `${origin}/site/${sub}`,
+    canonicalUrl: `${origin}/site/${sub}${pageSlug ? '/' + pageSlug : ''}`,
+    baseUrl: `${origin}/site/${sub}`,
+    page: pageSlug || '',
   }));
-});
+}
+app.get('/site/:sub', (req, res) => _serveSite(req, res, ''));
+app.get('/site/:sub/:page', (req, res) => _serveSite(req, res, String(req.params.page || '').toLowerCase().slice(0, 60)));
 
 app.post('/api/download-docx', async (req, res) => {
   const { text, filename, colors, sigName, sigFont: sigFontName, pageSize } = req.body;
