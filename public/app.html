@@ -374,6 +374,17 @@
     .cv-upitem { height: 78px; border-radius: 8px; border: 1px solid #45464c; background-size: cover; background-position: center; cursor: pointer; background-color: #34353a; }
     .cv-upitem--file { display: flex; align-items: center; justify-content: center; font-size: 22px; color: #cbd5e1; }
     .cv-upitem:hover { border-color: #6366f1; }
+    .cv-gate { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; background: #0f1014; z-index: 61; }
+    @media (min-width: 981px) { .cv-gate { left: 240px; } }
+    .cv-gate-card { max-width: 420px; text-align: center; color: #e5e7eb; }
+    .cv-gate-ico { font-size: 46px; margin-bottom: 12px; }
+    .cv-gate-card h2 { font-size: 21px; font-weight: 800; color: #fff; margin-bottom: 10px; }
+    .cv-gate-card p { font-size: 14.5px; color: #9ca3af; line-height: 1.6; margin-bottom: 16px; }
+    .cv-gate-note { font-size: 13px; color: #6ee7b7; background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.25); border-radius: 10px; padding: 10px 14px; margin-bottom: 20px; line-height: 1.5; }
+    .cv-gate-actions { display: flex; flex-direction: column; gap: 9px; }
+    .cv-gate-actions .btn { width: 100%; padding: 12px; font-size: 14px; }
+    .cv-gate-live { margin-top: 16px; font-size: 13px; color: #cbd5e1; background: rgba(255,255,255,.06); border-radius: 10px; padding: 12px; word-break: break-all; }
+    .cv-gate-live a { color: #a5b4fc; font-weight: 700; }
   </style>
 </head>
 <body>
@@ -499,7 +510,7 @@
           <span style="flex:1;text-align:left;" data-i18n="sidebar_sharelink">Resume Link</span>
           <span style="background:#16a34a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">FREE</span>
         </button>
-        <button class="sidebar-btn" onclick="openWebsiteCreator()" id="tab-website" data-label="Website" title="Build & publish your live personal website">
+        <button class="sidebar-btn" onclick="openWebsiteCreator()" id="tab-website" data-label="Website" title="Build & publish your live personal website (desktop only)">
           <span class="sidebar-icon">🌐</span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_website">Personal Website</span>
           <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
@@ -1088,7 +1099,23 @@
       <!-- ═══ TAB: PERSONAL WEBSITE (Website Creator, Pro) ═══ -->
       <!-- ═══ TAB: WEBSITE BUILDER (Canva-style editor) ═══ -->
       <div class="tab-content" id="panel-website">
-        <div class="cv-shell">
+        <!-- Desktop-only gate. Building a site means dragging elements around a
+             large canvas, which is not workable on a phone. Published sites are
+             still fully responsive — this gate is about the EDITOR only. -->
+        <div class="cv-gate" id="cvGate" style="display:none;">
+          <div class="cv-gate-card">
+            <div class="cv-gate-ico">🖥️</div>
+            <h2 data-i18n="cv_gate_title">Build your website on a desktop</h2>
+            <p data-i18n="cv_gate_body">The website builder uses a large drag-and-drop canvas, so it needs a bigger screen than a phone. Open ResumeTailored on a laptop or desktop to design and publish your site.</p>
+            <div class="cv-gate-note" data-i18n="cv_gate_note">✓ Your published website will still look great on phones — visitors can view it anywhere.</div>
+            <div class="cv-gate-actions">
+              <button class="btn btn-primary" onclick="cvCopyDesktopLink()" data-i18n="cv_gate_copy">Copy link for desktop</button>
+              <button class="btn btn-outline" onclick="showTab('tailor')" data-i18n="cv_gate_back">← Back to Resume Tailor</button>
+            </div>
+            <div id="cvGateLive" class="cv-gate-live" style="display:none;"></div>
+          </div>
+        </div>
+        <div class="cv-shell" id="cvShell">
 
           <!-- Top bar -->
           <div class="cv-top">
@@ -1862,6 +1889,11 @@
         wc_ed_mobile: 'Mobile', wc_ed_mwidth: 'Width on mobile', wc_ed_malign: 'Align on mobile',
         wc_ed_mfull: 'Full width', wc_ed_mauto: 'Default', wc_ed_morder: 'Stack order',
         wc_ed_mup: 'Move earlier', wc_ed_mdown: 'Move later', wc_ed_mreset: 'Auto',
+        cv_gate_title: 'Build your website on a desktop',
+        cv_gate_body: 'The website builder uses a large drag-and-drop canvas, so it needs a bigger screen than a phone. Open ResumeTailored on a laptop or desktop to design and publish your site.',
+        cv_gate_note: '✓ Your published website will still look great on phones — visitors can view it anywhere.',
+        cv_gate_copy: 'Copy link for desktop', cv_gate_back: '← Back to Resume Tailor',
+        cv_gate_copied: 'Link copied — open it on your desktop.', cv_gate_yoursite: 'Your live site:',
         cv_pages: 'Pages', cv_preview: 'Preview', cv_publish: 'Publish website', cv_edit: '✏️ Edit',
         cv_r_templates: 'Templates', cv_r_elements: 'Elements', cv_r_text: 'Text', cv_r_brand: 'Brand',
         cv_r_uploads: 'Uploads', cv_r_content: 'Content', cv_upload: '⬆ Upload media',
@@ -2009,6 +2041,11 @@
         wc_ed_mobile: '手机', wc_ed_mwidth: '手机宽度', wc_ed_malign: '手机对齐',
         wc_ed_mfull: '整宽', wc_ed_mauto: '默认', wc_ed_morder: '堆叠顺序',
         wc_ed_mup: '上移', wc_ed_mdown: '下移', wc_ed_mreset: '自动',
+        cv_gate_title: '请在电脑上创建你的网站',
+        cv_gate_body: '网站构建器使用大尺寸拖放画布，需要比手机更大的屏幕。请在笔记本或台式电脑上打开 ResumeTailored 来设计和发布你的网站。',
+        cv_gate_note: '✓ 发布后的网站在手机上依然美观——访客可随时随地查看。',
+        cv_gate_copy: '复制链接到电脑打开', cv_gate_back: '← 返回简历定制',
+        cv_gate_copied: '链接已复制——请在电脑上打开。', cv_gate_yoursite: '你的网站：',
         cv_pages: '页面', cv_preview: '预览', cv_publish: '发布网站', cv_edit: '✏️ 编辑',
         cv_r_templates: '模板', cv_r_elements: '元素', cv_r_text: '文字', cv_r_brand: '品牌',
         cv_r_uploads: '上传', cv_r_content: '内容', cv_upload: '⬆ 上传媒体',
@@ -6382,8 +6419,9 @@ Aaliyah Washington`
         if (viewLive) viewLive.style.display = 'none';
         wcDoc = null; wcTplId = null;
       }
+      if (!cvApplyGate()) return;   // phone: show the desktop gate, skip editor boot
       wcLoadTemplates();
-      if (wcDoc) edInit(wcDoc); else { const c = document.getElementById('wcEdCard'); if (c) c.style.display = 'none'; }
+      if (wcDoc) edInit(wcDoc);
       wcLoadMediaUsage();
       wcLoadSiteExtras();
       wcSetView('edit');
@@ -6602,6 +6640,47 @@ Aaliyah Washington`
       });
     }
 
+
+    // The builder needs a real canvas, so it is desktop-only. This gates the
+    // EDITOR, not the published site — published sites stay fully responsive.
+    const CV_MIN_WIDTH = 900;
+    function cvIsDesktop() {
+      try { return window.innerWidth >= CV_MIN_WIDTH; } catch (_) { return true; }
+    }
+    function cvApplyGate() {
+      const gate = document.getElementById('cvGate'), shell = document.getElementById('cvShell');
+      if (!gate || !shell) return false;
+      const ok = cvIsDesktop();
+      gate.style.display = ok ? 'none' : 'flex';
+      shell.style.display = ok ? 'flex' : 'none';
+      if (!ok) cvGateShowLive();
+      return ok;
+    }
+    // If they already have a published site, show the live link on the gate so a
+    // phone visit is not a dead end.
+    async function cvGateShowLive() {
+      const box = document.getElementById('cvGateLive'); if (!box) return;
+      try {
+        const r = await fetch('/api/personal-site', { headers: authHeaders() });
+        const site = (await r.json().catch(() => ({}))).site;
+        if (site && site.subdomain && site.published) {
+          const url = window.location.origin + '/site/' + site.subdomain;
+          box.innerHTML = `${wcEsc(_t('cv_gate_yoursite', 'Your live site:'))} <a href="${wcEsc(url)}" target="_blank" rel="noopener">${wcEsc(url)}</a>`;
+          box.style.display = 'block';
+        }
+      } catch (_) {}
+    }
+    function cvCopyDesktopLink() {
+      const url = window.location.origin + '/dashboard';
+      try {
+        navigator.clipboard.writeText(url);
+        showToast(_t('cv_gate_copied', 'Link copied — open it on your desktop.'), 5000);
+      } catch (_) { showToast(url, 6000); }
+    }
+    window.addEventListener('resize', () => {
+      const p = document.getElementById('panel-website');
+      if (p && p.classList.contains('active')) cvApplyGate();
+    });
 
     // ── Canva-style editor shell (rail panels, zoom, uploads/text/brand panes) ──
     function cvPanel(name) {
