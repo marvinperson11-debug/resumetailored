@@ -126,6 +126,38 @@ const server = app.listen(0, async () => {
     // Unknown page 404s rather than silently serving home.
     check('unknown page 404s', (await fetch(`${B}/site/${SUB}/nope`)).status === 404);
 
+    // Per-element mobile overrides (V6) must survive publish and stay identical
+    // between preview and the public page — including the generated class names.
+    const MDOC = {
+      v: 2, lang: 'en', theme: { primary: '6366F1', accent: '8B5CF6' },
+      pages: [{
+        id: 'home', name: 'Home', slug: 'home', isHome: true,
+        sections: [{
+          id: 's1', h: 500, bg: { type: 'color', value: '#ffffff' },
+          els: [
+            { id: 'm1', type: 'heading', x: 80, y: 40, w: 600, h: 90, props: { text: 'First on desktop' }, mobile: { order: 2 } },
+            { id: 'm2', type: 'paragraph', x: 80, y: 160, w: 500, h: 80, props: { text: 'Second on desktop' }, mobile: { order: 1, w: 50, align: 'center' } },
+            { id: 'm3', type: 'paragraph', x: 80, y: 260, w: 500, h: 80, props: { text: 'Hidden on phones' }, mobile: { hidden: true } },
+          ],
+        }],
+      }],
+    };
+    await fetch(`${B}/api/personal-site`, {
+      method: 'POST', headers: AJ,
+      body: JSON.stringify({ subdomain: 'mobileovr', text: RESUME, name: 'Jane', config: MDOC }),
+    });
+    const mPub = await (await fetch(`${B}/site/mobileovr`)).text();
+    const mPubBody = bodyOf(mPub).trim();
+    const mPrev = bodyOf(await (await fetch(`${B}/api/personal-site/preview`, {
+      method: 'POST', headers: AJ,
+      body: JSON.stringify({ subdomain: 'mobileovr', text: RESUME, name: 'Jane', config: MDOC }),
+    })).text()).trim();
+    check('mobile overrides: preview === public', mPubBody === mPrev);
+    check('mobile order restacks the DOM', mPubBody.indexOf('Second on desktop') < mPubBody.indexOf('First on desktop'));
+    check('mobile width/align rules emitted', /width:50%!important/.test(mPub) && /text-align:center!important/.test(mPub));
+    check('mobile hidden element flagged', /sd-el--mhide/.test(mPubBody));
+    check('mobile classes are deterministic (id-derived)', /sd-m-m2/.test(mPubBody));
+
     // There is exactly one renderer now: a site row without a v2 document gets a
     // placeholder, never a legacy grid/résumé render.
     await fetch(`${B}/api/personal-site`, {
