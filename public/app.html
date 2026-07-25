@@ -308,6 +308,14 @@
     .ed-tag { position: absolute; top: -20px; left: -2px; background: #6366f1; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
     .ed-h { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #6366f1; border-radius: 3px; }
     .ed-h-se { right: -8px; bottom: -8px; cursor: nwse-resize; }
+    #wcEdOverlay.is-drop { background: rgba(99,102,241,.08); outline: 2px dashed #6366f1; outline-offset: -4px; }
+    .ed-pal-group { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #9ca3af; margin: 10px 0 5px; }
+    .ed-pal-items { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .ed-pal-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border: 1.5px solid #e5e7eb; border-radius: 9px; background: #fff; cursor: grab; font: inherit; }
+    .ed-pal-item:hover { border-color: #6366f1; background: #eef2ff; }
+    .ed-pal-item:active { cursor: grabbing; }
+    .ed-pal-ico { font-size: 15px; line-height: 1; }
+    .ed-pal-lbl { font-size: 10px; font-weight: 700; color: #4b5563; text-align: center; line-height: 1.2; }
   </style>
 </head>
 <body>
@@ -1064,6 +1072,11 @@
               <select id="wcEdPage" class="text-input" style="max-width:170px;font-size:13px;padding:6px 8px;" onchange="edSetPage(this.value)"></select>
             </div>
             <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
+              <div id="wcEdPalWrap" style="width:190px;flex-shrink:0;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;background:#fff;max-height:520px;overflow:auto;">
+                <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6366f1;margin-bottom:8px;">＋ <span data-i18n="wc_ed_addel">Add elements</span></div>
+                <div id="wcEdPalette"></div>
+                <button type="button" class="bo-act" style="width:100%;margin-top:10px;" onclick="edAddSection()" data-i18n="wc_ed_addsection">+ Add section</button>
+              </div>
               <div id="wcEdStage" style="flex:1;min-width:280px;background:#e9edf3;border-radius:12px;padding:12px;overflow:hidden;">
                 <div id="wcEdWrap" style="position:relative;width:1200px;transform-origin:top left;">
                   <iframe id="wcEdFrame" title="Canvas" style="width:1200px;border:0;display:block;background:#fff;border-radius:8px;" scrolling="no"></iframe>
@@ -1778,6 +1791,16 @@
         bo_pro: 'The Back Office is a Pro feature.', bo_loaded: 'Loaded into the Tailor tab.',
         bo_none_sel: 'Select some items first.', bo_confirm_del: 'Delete this item? This cannot be undone.',
         bo_confirm_bulk: 'Delete the selected items? This cannot be undone.', bo_confirm_site: 'Delete your website? This removes the live page.',
+        wc_ed_addel: 'Add elements', wc_ed_addsection: '+ Add section', wc_ed_added: 'Added — drag to position it.',
+        wc_ed_sectionadded: 'Section added.', wc_ed_nosection: 'Add a section first.',
+        wc_pal_text: 'Text', wc_pal_media: 'Media', wc_pal_gallery: 'Gallery', wc_pal_interactive: 'Interactive',
+        wc_pal_layout: 'Layout', wc_pal_resumetailored: 'ResumeTailored',
+        wc_ed_align: 'Align', wc_ed_link: 'Links to', wc_ed_linkpage: 'or a page', wc_ed_style: 'Style',
+        wc_ed_formmode: 'Form type', wc_contact_msg: 'Contact form', wc_contact_pdf: 'Request my resume',
+        wc_ed_bg: 'Background', wc_ed_radius: 'Corner radius', wc_ed_thickness: 'Thickness',
+        wc_ed_gallayout: 'Layout', wc_ed_galcols: 'Columns', wc_ed_galitems: 'Items', wc_ed_galtitle: 'Title',
+        wc_ed_galadd: '+ Add image', wc_ed_soclinks: 'Links', wc_ed_socadd: '+ Add link',
+        wc_ed_cards: 'Cards', wc_ed_cardadd: '+ Add card',
         wc_step_design: '3. Design your page',
         wc_ed_undo: 'Undo', wc_ed_redo: 'Redo', wc_ed_undone: 'Undone',
         wc_ed_hint: 'Click an element to select it. Drag to move, or drag a corner handle to resize. Ctrl/Cmd+Z undoes.',
@@ -1898,6 +1921,16 @@
         bo_pro: '后台管理是专业版功能。', bo_loaded: '已加载到定制标签页。',
         bo_none_sel: '请先选择项目。', bo_confirm_del: '删除此项？此操作无法撤销。',
         bo_confirm_bulk: '删除所选项目？此操作无法撤销。', bo_confirm_site: '删除你的网站？这会移除已上线的页面。',
+        wc_ed_addel: '添加元素', wc_ed_addsection: '+ 添加板块', wc_ed_added: '已添加——拖动以调整位置。',
+        wc_ed_sectionadded: '板块已添加。', wc_ed_nosection: '请先添加一个板块。',
+        wc_pal_text: '文字', wc_pal_media: '媒体', wc_pal_gallery: '相册', wc_pal_interactive: '互动',
+        wc_pal_layout: '布局', wc_pal_resumetailored: 'ResumeTailored',
+        wc_ed_align: '对齐', wc_ed_link: '链接到', wc_ed_linkpage: '或某个页面', wc_ed_style: '样式',
+        wc_ed_formmode: '表单类型', wc_contact_msg: '联系表单', wc_contact_pdf: '索取我的简历',
+        wc_ed_bg: '背景', wc_ed_radius: '圆角', wc_ed_thickness: '粗细',
+        wc_ed_gallayout: '布局', wc_ed_galcols: '列数', wc_ed_galitems: '项目', wc_ed_galtitle: '标题',
+        wc_ed_galadd: '+ 添加图片', wc_ed_soclinks: '链接', wc_ed_socadd: '+ 添加链接',
+        wc_ed_cards: '卡片', wc_ed_cardadd: '+ 添加卡片',
         wc_step_design: '3. 设计你的页面',
         wc_ed_undo: '撤销', wc_ed_redo: '重做', wc_ed_undone: '已撤销',
         wc_ed_hint: '点击元素以选中。拖动移动，拖动右下角手柄调整大小。Ctrl/Cmd+Z 撤销。',
@@ -6461,6 +6494,139 @@ Aaliyah Washington`
       });
     }
 
+    // ── Element library (V4) ──────────────────────────────────────────────────
+    // Every entry is a renderer-supported element type plus the geometry/props a
+    // freshly-dropped instance starts with. Adding one is just another store
+    // apply(), so undo/redo covers it for free.
+    const ED_PALETTE = [
+      { group: 'Text', items: [
+        { type: 'heading', label: 'Heading', icon: 'H', w: 600, h: 90, props: { text: 'Your heading' } },
+        { type: 'subheading', label: 'Subheading', icon: 'h', w: 500, h: 50, props: { text: 'A subheading' } },
+        { type: 'paragraph', label: 'Paragraph', icon: '¶', w: 500, h: 100, props: { text: 'Write something about yourself here.' } },
+      ] },
+      { group: 'Media', items: [
+        { type: 'image', label: 'Image', icon: '🖼', w: 360, h: 260, props: { ph: { from: '6366F1', to: '8B5CF6', label: 'Image' } } },
+        { type: 'imagebox', label: 'Image box', icon: '🖻', w: 360, h: 280, props: { ph: { from: '1e1b4b', to: '6366F1', label: 'Image' }, caption: 'Caption' } },
+        { type: 'video', label: 'Video', icon: '🎬', w: 560, h: 320, props: { label: 'About me' } },
+        { type: 'audio', label: 'Audio', icon: '🔊', w: 420, h: 80, props: { label: 'Voiceover' } },
+      ] },
+      { group: 'Gallery', items: [
+        { type: 'gallery', label: 'Grid', icon: '▦', w: 900, h: 380, props: { layout: 'grid', cols: 3, gap: 16, items: [
+          { ph: { from: '6366F1', to: '8B5CF6', h: 220 }, title: 'Project one' },
+          { ph: { from: '8B5CF6', to: 'ec4899', h: 220 }, title: 'Project two' },
+          { ph: { from: '0ea5e9', to: '6366F1', h: 220 }, title: 'Project three' },
+        ] } },
+        { type: 'gallery', label: 'Masonry', icon: '▤', w: 900, h: 420, props: { layout: 'masonry', cols: 3, gap: 16, items: [
+          { ph: { from: '6366F1', to: '8B5CF6', h: 260 }, title: 'Project one' },
+          { ph: { from: 'ec4899', to: '8B5CF6', h: 200 }, title: 'Project two' },
+          { ph: { from: '0ea5e9', to: '6366F1', h: 300 }, title: 'Project three' },
+        ] } },
+        { type: 'gallery', label: 'Slider', icon: '⇥', w: 900, h: 340, props: { layout: 'slider', gap: 18, items: [
+          { ph: { from: '6366F1', to: '8B5CF6', h: 300 }, title: 'Project one' },
+          { ph: { from: '8B5CF6', to: 'ec4899', h: 300 }, title: 'Project two' },
+        ] } },
+      ] },
+      { group: 'Interactive', items: [
+        { type: 'button', label: 'Button', icon: '⬭', w: 220, h: 52, props: { text: 'Learn more' } },
+        { type: 'form', label: 'Contact form', icon: '✉', w: 480, h: 300, props: { mode: 'contact' } },
+        { type: 'form', label: 'Request resume', icon: '📄', w: 480, h: 240, props: { mode: 'pdf' } },
+        { type: 'social', label: 'Social icons', icon: '◎', w: 220, h: 44, props: { items: [{ network: 'LinkedIn', url: 'https://linkedin.com' }] } },
+        { type: 'nav', label: 'Page menu', icon: '☰', w: 900, h: 40, props: {} },
+      ] },
+      { group: 'Layout', items: [
+        { type: 'box', label: 'Box', icon: '▭', w: 360, h: 220, props: { bg: 'f8fafc', radius: 16 } },
+        { type: 'divider', label: 'Divider', icon: '—', w: 600, h: 2, props: { thickness: 1 } },
+        { type: 'spacer', label: 'Spacer', icon: '␣', w: 1040, h: 40, props: {} },
+      ] },
+      { group: 'ResumeTailored', items: [
+        { type: 'resume', label: 'Résumé', icon: '📋', w: 1040, h: 440, props: {} },
+        { type: 'casestudies', label: 'Case studies', icon: '★', w: 1040, h: 280, props: { items: [{ title: 'A result you drove', metric: '30%', detail: 'What you did and what changed.' }] } },
+        { type: 'qr', label: 'QR code', icon: '▩', w: 160, h: 160, props: {} },
+      ] },
+    ];
+
+    function edRenderPalette() {
+      const box = document.getElementById('wcEdPalette'); if (!box) return;
+      box.innerHTML = ED_PALETTE.map((g, gi) => `<div class="ed-pal-group">${wcEsc(_t('wc_pal_' + g.group.toLowerCase().replace(/[^a-z]/g, ''), g.group))}</div>
+        <div class="ed-pal-items">${g.items.map((it, ii) => `
+          <button type="button" class="ed-pal-item" draggable="true" data-gi="${gi}" data-ii="${ii}"
+                  onclick="edAddFromPalette(${gi},${ii})" title="${wcEsc(it.label)}">
+            <span class="ed-pal-ico">${wcEsc(it.icon)}</span><span class="ed-pal-lbl">${wcEsc(it.label)}</span>
+          </button>`).join('')}</div>`).join('');
+      box.querySelectorAll('.ed-pal-item').forEach((b) => {
+        b.addEventListener('dragstart', (ev) => {
+          _edPalDrag = { gi: Number(b.dataset.gi), ii: Number(b.dataset.ii) };
+          try { ev.dataTransfer.setData('text/plain', 'el'); ev.dataTransfer.effectAllowed = 'copy'; } catch (_) {}
+        });
+        b.addEventListener('dragend', () => { _edPalDrag = null; });
+      });
+    }
+    let _edPalDrag = null;
+
+    // Which section contains a given y on the canvas, and the y offset within it.
+    function edSectionAtY(y) {
+      const page = edPage(); if (!page) return null;
+      let top = 0;
+      const secs = page.sections || [];
+      for (let i = 0; i < secs.length; i++) {
+        const h = Number(secs[i].h) || 0;
+        if (y < top + h || i === secs.length - 1) return { section: secs[i], localY: Math.max(0, Math.round(y - top)) };
+        top += h;
+      }
+      return null;
+    }
+
+    function edInsertElement(spec, x, y) {
+      if (!edStore) return;
+      const hit = edSectionAtY(y); if (!hit) { showToast(_t('wc_ed_nosection', 'Add a section first.')); return; }
+      const secId = hit.section.id;
+      const id = SiteDocStore.newId('e');
+      const nx = Math.max(0, Math.min(ED_CANVAS - spec.w, Math.round((x - spec.w / 2) / 10) * 10));
+      const ny = Math.max(0, Math.round(hit.localY / 10) * 10);
+      edStore.endGesture();
+      edApply((doc) => {
+        const page = SiteDocStore.findPage(doc, edPageId); if (!page) return;
+        const sec = (page.sections || []).filter((s) => s.id === secId)[0]; if (!sec) return;
+        sec.els = sec.els || [];
+        sec.els.push({ id, type: spec.type, x: nx, y: ny, w: spec.w, h: spec.h, props: JSON.parse(JSON.stringify(spec.props || {})) });
+        // Grow the section if the new element would fall off the bottom.
+        const need = ny + spec.h + 40;
+        if (need > (Number(sec.h) || 0)) sec.h = need;
+      });
+      edSel = id;
+      edRenderOverlay(); edRenderInspector();
+      showToast(_t('wc_ed_added', 'Added — drag to position it.'));
+    }
+
+    function edAddFromPalette(gi, ii) {
+      const spec = ED_PALETTE[gi] && ED_PALETTE[gi].items[ii]; if (!spec) return;
+      // Click-to-add drops it below the current selection (or at the top of the
+      // last section), so the palette works without a mouse drag too.
+      const page = edPage(); if (!page) return;
+      let y = 40;
+      if (edSel) {
+        const hit = SiteDocStore.findElement(edStore.getDoc(), edSel);
+        if (hit) {
+          let top = 0;
+          for (const s of page.sections || []) { if (s.id === hit.section.id) break; top += Number(s.h) || 0; }
+          y = top + (Number(hit.el.y) || 0) + (Number(hit.el.h) || 0) + 20;
+        }
+      }
+      edInsertElement(spec, ED_CANVAS / 2, y);
+    }
+
+    function edAddSection() {
+      if (!edStore) return;
+      edStore.endGesture();
+      const id = SiteDocStore.newId('s');
+      edApply((doc) => {
+        const page = SiteDocStore.findPage(doc, edPageId); if (!page) return;
+        page.sections = page.sections || [];
+        page.sections.push({ id, h: 400, bg: { type: 'color', value: '#ffffff' }, els: [] });
+      });
+      showToast(_t('wc_ed_sectionadded', 'Section added.'));
+    }
+
     // ── Canvas editor (V3a) ───────────────────────────────────────────────────
     // Built on the immutable document store: every edit goes through edApply so
     // undo/redo is a property of the data, not of the drag handlers.
@@ -6473,6 +6639,7 @@ Aaliyah Washington`
       edSel = null;
       edStore.subscribe(() => { edSyncButtons(); edRenderCanvas(); edRenderOverlay(); edRenderInspector(); });
       edSyncPageSelect();
+      edRenderPalette();
       edSyncButtons();
       edRenderCanvas();
       edRenderOverlay();
@@ -6573,6 +6740,22 @@ Aaliyah Washington`
       ov.querySelectorAll('.ed-box').forEach((b) => {
         b.addEventListener('pointerdown', (ev) => edPointerDown(ev, b));
       });
+      if (!ov._dropWired) {
+        ov._dropWired = true;
+        ov.addEventListener('dragover', (ev) => { if (_edPalDrag) { ev.preventDefault(); ov.classList.add('is-drop'); } });
+        ov.addEventListener('dragleave', () => ov.classList.remove('is-drop'));
+        ov.addEventListener('drop', (ev) => {
+          ov.classList.remove('is-drop');
+          if (!_edPalDrag) return;
+          ev.preventDefault();
+          const wrap = document.getElementById('wcEdWrap');
+          const k = (wrap.getBoundingClientRect().width / ED_CANVAS) || 1;
+          const r = ov.getBoundingClientRect();
+          const spec = ED_PALETTE[_edPalDrag.gi] && ED_PALETTE[_edPalDrag.gi].items[_edPalDrag.ii];
+          _edPalDrag = null;
+          if (spec) edInsertElement(spec, (ev.clientX - r.left) / k, (ev.clientY - r.top) / k);
+        });
+      }
     }
 
     function edSelect(id) { edSel = id; edRenderOverlay(); edRenderInspector(); }
@@ -6647,6 +6830,51 @@ Aaliyah Washington`
       }
       if (['heading', 'subheading', 'paragraph'].includes(e.type)) {
         fields += row(_t('wc_ed_color', 'Colour'), `<input type="color" style="width:100%;height:32px;border:1px solid #e5e7eb;border-radius:8px;" value="${wcEsc(p.color || '#111827')}" oninput="edSetProp('color',this.value)"/>`);
+        fields += row(_t('wc_ed_align', 'Align'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('align',this.value)">${['left','center','right'].map(a=>`<option value="${a}"${(p.align||'left')===a?' selected':''}>${a}</option>`).join('')}</select>`);
+      }
+      if (e.type === 'button') {
+        fields += row(_t('wc_ed_link', 'Links to'), `<input class="text-input" style="width:100%;font-size:13px;" placeholder="https://…" value="${wcEsc(p.href || '')}" oninput="edSetProp('href',this.value)"/>`);
+        const pages = (edStore.getDoc().pages || []);
+        fields += row(_t('wc_ed_linkpage', 'or a page'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('page',this.value)"><option value="">—</option>${pages.map(pg=>`<option value="${wcEsc(pg.slug)}"${p.page===pg.slug?' selected':''}>${wcEsc(pg.name||pg.slug)}</option>`).join('')}</select>`);
+        fields += row(_t('wc_ed_style', 'Style'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('style',this.value)"><option value="">Solid</option><option value="ghost"${p.style==='ghost'?' selected':''}>Outline</option></select>`);
+      }
+      if (e.type === 'form') {
+        fields += row(_t('wc_ed_formmode', 'Form type'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('mode',this.value)"><option value="contact"${p.mode!=='pdf'?' selected':''}>${wcEsc(_t('wc_contact_msg','Contact form'))}</option><option value="pdf"${p.mode==='pdf'?' selected':''}>${wcEsc(_t('wc_contact_pdf','Request my resume'))}</option></select>`);
+      }
+      if (e.type === 'box') {
+        fields += row(_t('wc_ed_bg', 'Background'), `<input type="color" style="width:100%;height:32px;border:1px solid #e5e7eb;border-radius:8px;" value="#${wcEsc((p.bg||'f8fafc').replace('#',''))}" oninput="edSetProp('bg',this.value.replace('#',''))"/>`);
+        fields += row(_t('wc_ed_radius', 'Corner radius'), `<input class="text-input" type="number" style="width:100%;font-size:13px;" value="${Number(p.radius)||0}" oninput="edSetProp('radius',Number(this.value)||0)"/>`);
+      }
+      if (e.type === 'divider') {
+        fields += row(_t('wc_ed_thickness', 'Thickness'), `<input class="text-input" type="number" style="width:100%;font-size:13px;" value="${Number(p.thickness)||1}" oninput="edSetProp('thickness',Number(this.value)||1)"/>`);
+      }
+      if (e.type === 'gallery') {
+        fields += row(_t('wc_ed_gallayout', 'Layout'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('layout',this.value)">${['grid','masonry','slider'].map(l=>`<option value="${l}"${(p.layout||'grid')===l?' selected':''}>${l}</option>`).join('')}</select>`);
+        fields += row(_t('wc_ed_galcols', 'Columns'), `<input class="text-input" type="number" min="1" max="6" style="width:100%;font-size:13px;" value="${Number(p.cols)||3}" oninput="edSetProp('cols',Number(this.value)||3)"/>`);
+        const items = p.items || [];
+        fields += row(_t('wc_ed_galitems', 'Items'), items.map((it, i) => `<div style="display:flex;gap:5px;margin-bottom:5px;align-items:center;">
+            <input class="text-input" style="flex:1;min-width:0;font-size:12px;" placeholder="${wcEsc(_t('wc_ed_galtitle','Title'))}" value="${wcEsc(it.title||'')}" oninput="edSetItem(${i},'title',this.value)"/>
+            <button type="button" class="bo-act" style="padding:4px 7px;" onclick="edItemUpload(${i})">↑</button>
+            <button type="button" class="bo-act bo-danger" style="padding:4px 7px;" onclick="edDelItem(${i})">×</button>
+          </div>`).join('') + `<button type="button" class="bo-act" style="width:100%;margin-top:4px;" onclick="edAddItem()">${wcEsc(_t('wc_ed_galadd','+ Add image'))}</button>`);
+      }
+      if (e.type === 'social') {
+        const items = p.items || [];
+        fields += row(_t('wc_ed_soclinks', 'Links'), items.map((it, i) => `<div style="display:flex;gap:5px;margin-bottom:5px;">
+            <input class="text-input" style="width:70px;font-size:12px;" placeholder="Name" value="${wcEsc(it.network||'')}" oninput="edSetItem(${i},'network',this.value)"/>
+            <input class="text-input" style="flex:1;min-width:0;font-size:12px;" placeholder="https://…" value="${wcEsc(it.url||'')}" oninput="edSetItem(${i},'url',this.value)"/>
+            <button type="button" class="bo-act bo-danger" style="padding:4px 7px;" onclick="edDelItem(${i})">×</button>
+          </div>`).join('') + `<button type="button" class="bo-act" style="width:100%;margin-top:4px;" onclick="edAddItem()">${wcEsc(_t('wc_ed_socadd','+ Add link'))}</button>`);
+      }
+      if (e.type === 'casestudies') {
+        const items = p.items || [];
+        fields += row(_t('wc_ed_cards', 'Cards'), items.map((it, i) => `<div style="border:1px solid #eef0f4;border-radius:8px;padding:6px;margin-bottom:6px;">
+            <input class="text-input" style="width:100%;font-size:12px;margin-bottom:4px;" placeholder="${wcEsc(_t('wc_ed_galtitle','Title'))}" value="${wcEsc(it.title||'')}" oninput="edSetItem(${i},'title',this.value)"/>
+            <div style="display:flex;gap:5px;">
+              <input class="text-input" style="width:70px;font-size:12px;" placeholder="30%" value="${wcEsc(it.metric||'')}" oninput="edSetItem(${i},'metric',this.value)"/>
+              <button type="button" class="bo-act bo-danger" style="padding:4px 7px;" onclick="edDelItem(${i})">×</button>
+            </div>
+          </div>`).join('') + `<button type="button" class="bo-act" style="width:100%;" onclick="edAddItem()">${wcEsc(_t('wc_ed_cardadd','+ Add card'))}</button>`);
       }
       box.innerHTML = `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6366f1;">${wcEsc(e.type)}</div>
         ${fields}
@@ -6684,6 +6912,41 @@ Aaliyah Washington`
       });
       edSel = null;
     }
+    // Array-prop helpers (gallery items, social links, case-study cards).
+    function edItems() {
+      const hit = edStore && edSel ? SiteDocStore.findElement(edStore.getDoc(), edSel) : null;
+      return (hit && hit.el.props && hit.el.props.items) || [];
+    }
+    function edSetItem(i, key, val) {
+      const id = edSel;
+      edApply((doc) => { const h = SiteDocStore.findElement(doc, id); if (h && h.el.props && h.el.props.items && h.el.props.items[i]) h.el.props.items[i][key] = val; },
+        { coalesce: 'item:' + id + ':' + i + ':' + key });
+    }
+    function edAddItem() {
+      const id = edSel; edStore.endGesture();
+      edApply((doc) => {
+        const h = SiteDocStore.findElement(doc, id); if (!h) return;
+        h.el.props = h.el.props || {}; h.el.props.items = h.el.props.items || [];
+        const t = h.el.type;
+        h.el.props.items.push(t === 'social' ? { network: 'Link', url: '' }
+          : t === 'casestudies' ? { title: 'A result you drove', metric: '', detail: '' }
+          : { ph: { from: '6366F1', to: '8B5CF6', h: 220 }, title: 'New item' });
+      });
+      edRenderInspector();
+    }
+    function edDelItem(i) {
+      const id = edSel; edStore.endGesture();
+      edApply((doc) => { const h = SiteDocStore.findElement(doc, id); if (h && h.el.props && h.el.props.items) h.el.props.items.splice(i, 1); });
+      edRenderInspector();
+    }
+    function edItemUpload(i) {
+      wcUploadMedia('image/jpeg,image/png,image/webp', (url) => {
+        const id = edSel; edStore.endGesture();
+        edApply((doc) => { const h = SiteDocStore.findElement(doc, id); if (h && h.el.props && h.el.props.items && h.el.props.items[i]) { h.el.props.items[i].src = url; delete h.el.props.items[i].ph; } });
+        edRenderInspector();
+      });
+    }
+
     function edPickMedia(type) {
       const accept = type === 'video' ? 'video/mp4,video/webm' : type === 'audio' ? 'audio/*' : 'image/jpeg,image/png,image/webp';
       wcUploadMedia(accept, (url) => { edStore.endGesture(); edSetProp('src', url); });

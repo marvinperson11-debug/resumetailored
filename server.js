@@ -2015,8 +2015,8 @@ a{display:inline-block;margin-top:18px;background:linear-gradient(135deg,#6366F1
 // Public-site chrome strings (user content is shown as authored). Shared by the
 // grid renderer and the contact block so a zh site renders in Chinese server-side.
 const _SITE_I18N = {
-  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume' },
-  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历' },
+  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume', add_video: 'Add a video', add_audio: 'Add audio' },
+  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历', add_video: '添加视频', add_audio: '添加音频' },
 };
 
 // A resume rendered as a self-contained fragment (used by a `resume` block).
@@ -2160,13 +2160,20 @@ function _sdElement(el, ctx) {
       return `<div class="sd-gal sd-gal--${layout}" style="--gcols:${cols};--ggap:${gap}px;">${cells}</div>`;
     }
     case 'video': {
-      const u = _safeUrl(p.src); if (!u) return '';
+      const lbl = p.label ? `<div class="sd-elabel">${_sdText(p.label, 120)}</div>` : '';
+      const u = _safeUrl(p.src);
+      // No source yet (e.g. just dropped from the palette): show an empty-state
+      // block so the element is visible and selectable instead of rendering
+      // nothing. Replaced as soon as a video is chosen in the inspector.
+      if (!u) return `${lbl}<div class="sd-ph sd-ph--empty">🎬<span>${_escHtml(ctx.SI.add_video)}</span></div>`;
       const poster = _safeUrl(p.poster);
-      return `${p.label ? `<div class="sd-elabel">${_sdText(p.label, 120)}</div>` : ''}<video class="sd-video" controls preload="metadata"${poster ? ` poster="${_escHtml(poster)}"` : ''}><source src="${_escHtml(u)}"/></video>`;
+      return `${lbl}<video class="sd-video" controls preload="metadata"${poster ? ` poster="${_escHtml(poster)}"` : ''}><source src="${_escHtml(u)}"/></video>`;
     }
     case 'audio': {
-      const u = _safeUrl(p.src); if (!u) return '';
-      return `${p.label ? `<div class="sd-elabel">${_sdText(p.label, 120)}</div>` : ''}<audio class="sd-audio" controls preload="none"><source src="${_escHtml(u)}"/></audio>`;
+      const lbl = p.label ? `<div class="sd-elabel">${_sdText(p.label, 120)}</div>` : '';
+      const u = _safeUrl(p.src);
+      if (!u) return `${lbl}<div class="sd-ph sd-ph--empty">🔊<span>${_escHtml(ctx.SI.add_audio)}</span></div>`;
+      return `${lbl}<audio class="sd-audio" controls preload="none"><source src="${_escHtml(u)}"/></audio>`;
     }
     case 'button': {
       const href = _sdLink(p, ctx);
@@ -2310,6 +2317,8 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     .sd-ph{width:100%;height:100%;min-height:120px;display:flex;align-items:center;justify-content:center;}
     .sd-ph span{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);}
     .sd-ph--cell{min-height:0;}
+    .sd-ph--empty{flex-direction:column;gap:6px;font-size:26px;background:rgba(127,127,127,.12);border:2px dashed rgba(127,127,127,.35);color:inherit;border-radius:12px;}
+    .sd-ph--empty span{font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.75;color:inherit;}
     .sd-gal{width:100%;}
     .sd-gal--grid{display:grid;grid-template-columns:repeat(var(--gcols),1fr);gap:var(--ggap);}
     .sd-gal--masonry{columns:var(--gcols);column-gap:var(--ggap);}
