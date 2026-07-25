@@ -26,16 +26,28 @@ process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-snap-'));
 
 const { _shareResumeHtml, _renderPersonalSite } = require('../server.js');
 
-// A site row WITH a config.blocks grid layout (Phase 3a), to snapshot the grid
-// renderer alongside the legacy path.
+// A Website Builder v2 site document: sections with absolutely-positioned
+// elements. Snapshotted so unintended renderer changes are caught.
 const GRID_CONFIG = JSON.stringify({
-  v: 1, lang: 'en', theme: { primary: '0f172a', accent: '6366f1' },
-  blocks: [
-    { id: 'h', type: 'heading', col: 1, colSpan: 12, text: 'Jordan Rivera' },
-    { id: 't', type: 'text', col: 1, colSpan: 6, text: 'Product manager based in NYC.' },
-    { id: 'v', type: 'video', col: 7, colSpan: 6, src: 'https://example.com/v.mp4', label: 'About Me' },
-    { id: 'r', type: 'resume', col: 1, colSpan: 12 },
-  ],
+  v: 2, lang: 'en', theme: { primary: '6366F1', accent: '8B5CF6' },
+  pages: [{
+    id: 'home', name: 'Home', slug: 'home', isHome: true,
+    sections: [
+      {
+        id: 's1', h: 520, bg: { type: 'gradient', value: 'linear-gradient(135deg,#030712,#1e1b4b)' },
+        els: [
+          { id: 'n', type: 'nav', x: 80, y: 30, w: 900, h: 40 },
+          { id: 'h', type: 'heading', x: 80, y: 160, w: 700, h: 120, props: { text: 'Jordan Rivera', color: '#ffffff' } },
+          { id: 't', type: 'paragraph', x: 80, y: 300, w: 520, h: 70, props: { text: 'Product manager based in NYC.', color: '#cbd5e1' } },
+          { id: 'v', type: 'video', x: 640, y: 160, w: 480, h: 260, props: { src: 'https://example.com/v.mp4', label: 'About Me' } },
+        ],
+      },
+      {
+        id: 's2', h: 460, bg: { type: 'color', value: '#ffffff' },
+        els: [{ id: 'r', type: 'resume', x: 80, y: 40, w: 1040, h: 380 }],
+      },
+    ],
+  }],
 });
 
 const GOLDEN_DIR = path.join(__dirname, 'golden');
@@ -76,11 +88,10 @@ const SAMPLE_ROW = {
 };
 
 const cases = {
+  // Create-a-Link. This one is a hard guarantee: it must never change.
   'link.html': () => _shareResumeHtml(SAMPLE_ROW, ORIGIN),
-  'site.html': () => _renderPersonalSite(SAMPLE_ROW, ORIGIN, {
-    indexable: true, footer: '', canonicalUrl: `${ORIGIN}/site/${SAMPLE_ROW.subdomain}`,
-  }),
-  'site-grid.html': () => _renderPersonalSite(
+  // A Website Builder v2 site document.
+  'site-doc.html': () => _renderPersonalSite(
     { ...SAMPLE_ROW, config: GRID_CONFIG }, ORIGIN,
     { indexable: true, footer: '', canonicalUrl: `${ORIGIN}/site/${SAMPLE_ROW.subdomain}` },
   ),

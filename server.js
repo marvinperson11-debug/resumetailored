@@ -1981,36 +1981,36 @@ function _shareResumeHtml(row, origin, opts = {}) {
 // Phase 1: no site has a `config` yet, and legacy sites have `config IS NULL`, so
 // this delegates to the shared resume-document renderer — byte-identical to the
 // previous /site output. Later phases parse `config` and build the site here.
+// Personal sites are rendered by exactly one renderer: the Website Builder v2
+// site-document renderer. The editor canvas and the preview endpoint run through
+// this same function, so preview is the published page by construction.
+// (`_shareResumeHtml` is now used only by Create-a-Link at /r/:slug.)
 function _renderPersonalSite(row, origin, opts = {}) {
   let config = null;
   if (row && row.config) { try { config = JSON.parse(row.config); } catch (_) { config = null; } }
-  // Website Builder v2 (site document: pages → sections → absolutely-positioned
-  // elements). This is the renderer the editor canvas also runs through, so
-  // preview is the published page by construction.
   if (config && Array.isArray(config.pages) && config.pages.length) {
     return _renderSiteDoc(row, origin, opts, config);
   }
-  // Grid layout (Website Creator v1): render from config.blocks once the
-  // user has arranged blocks. Legacy sites (config null, or a config without a
-  // non-empty blocks array — e.g. Phase 2 publishes that only stored asset ids)
-  // fall through to the shared resume-document renderer, byte-identical to before.
-  if (config && Array.isArray(config.blocks) && config.blocks.length) {
-    return _renderSiteGrid(row, origin, opts, config);
-  }
-  return _shareResumeHtml(row, origin, opts);
+  return _renderSiteUnbuilt(row, origin, opts);
 }
 
-// Personal-site background themes. `animated` themes are gated by shouldAnimate()
-// on the client (reduced-motion / low core count / small viewport) and fall back
-// to `fallback`. fg/muted adapt text that sits directly on the background (cards
-// keep their own light styling). Default 'midnight' mirrors the homepage (#030712).
-const _SITE_THEMES = {
-  midnight: { animated: false, bg: 'radial-gradient(1200px 600px at 50% -10%, rgba(99,102,241,0.18), transparent), #030712', fallback: '#030712', fg: '#e2e8f0', muted: '#94a3b8', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
-  aurora: { animated: true, bg: 'linear-gradient(120deg, #0f172a, #3b0764, #1e1b4b, #0f172a)', fallback: 'linear-gradient(120deg,#0f172a,#1e1b4b)', fg: '#e2e8f0', muted: '#a5b4fc', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
-  paper: { animated: false, bg: '#f8fafc', fallback: '#f8fafc', fg: '#1f2430', muted: '#6b7280', langBtn: 'rgba(0,0,0,.05)', langFg: '#475569', langBorder: 'rgba(0,0,0,.1)' },
-  mesh: { animated: false, bg: 'radial-gradient(at 20% 20%, #eef2ff, transparent 50%), radial-gradient(at 80% 0%, #fce7f3, transparent 50%), radial-gradient(at 60% 80%, #dbeafe, transparent 50%), #f8fafc', fallback: '#f8fafc', fg: '#1f2430', muted: '#6b7280', langBtn: 'rgba(0,0,0,.05)', langFg: '#475569', langBorder: 'rgba(0,0,0,.1)' },
-  particles: { animated: true, bg: '#0b1020', fallback: '#0b1020', fg: '#e2e8f0', muted: '#94a3b8', langBtn: 'rgba(255,255,255,.08)', langFg: '#cbd5e1', langBorder: 'rgba(255,255,255,.16)' },
-};
+// A site row with no v2 document (e.g. an old test site) renders a small
+// placeholder rather than 500ing. There is no legacy rendering path.
+function _renderSiteUnbuilt(row, origin, opts = {}) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="robots" content="noindex,nofollow"/><title>Site not published yet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>body{font-family:'Inter',sans-serif;background:#030712;color:#e2e8f0;display:flex;min-height:100vh;align-items:center;justify-content:center;text-align:center;padding:24px;}
+.b{max-width:420px}h1{font-size:24px;font-weight:900;margin-bottom:10px}p{color:#94a3b8;font-size:15px}
+a{display:inline-block;margin-top:18px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;text-decoration:none;font-weight:700;padding:11px 22px;border-radius:999px}</style></head>
+<body><div class="b"><h1>This site hasn't been built yet</h1>
+<p>Pick a template in the Website Builder to publish it.</p>
+<a href="${origin}/dashboard">Open the Website Builder</a></div></body></html>`;
+}
+
 
 // Public-site chrome strings (user content is shown as authored). Shared by the
 // grid renderer and the contact block so a zh site renders in Chinese server-side.
@@ -2066,247 +2066,6 @@ function _extractCaseStudies(text, max = 6) {
 const _clampInt = (v, lo, hi, dflt) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt; };
 const _safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/|data:image\/(png|jpe?g|webp);base64,)/i.test(u) && u.length < 2000000) ? u : '';
 
-// One block → HTML on a 12-column grid. On mobile the grid collapses (CSS) so
-// blocks stack full-width in source order; placement is desktop-only.
-function _renderSiteBlock(b, row, accent, lang) {
-  const SI = _SITE_I18N[lang === 'zh' ? 'zh' : 'en'];
-  const span = _clampInt(b.colSpan, 1, 12, 12);
-  // Explicit start column → fixed placement; no column → auto-flow (blocks fill
-  // rows left-to-right, so two half-width blocks sit side by side). The editor
-  // uses auto-flow (width-only) by default.
-  const place = (b.col != null && Number.isFinite(Number(b.col)))
-    ? (() => { const col = _clampInt(b.col, 1, 12, 1); return `grid-column:${col} / span ${Math.min(span, 13 - col)};`; })()
-    : `grid-column:span ${span};`;
-  let inner = '';
-  switch (b.type) {
-    case 'heading': inner = `<h2 class="sg-blk-h">${_escHtml(String(b.text || '').slice(0, 200))}</h2>`; break;
-    case 'text': inner = `<div class="sg-blk-text">${_escHtml(String(b.text || '').slice(0, 4000)).replace(/\n/g, '<br/>')}</div>`; break;
-    case 'resume': inner = _renderResumeFragment(row, accent); break;
-    case 'image': {
-      const src = _safeUrl(b.src);
-      if (!src) return '';
-      inner = `<figure class="sg-fig"><img src="${_escHtml(src)}" alt="${_escHtml(String(b.alt || '').slice(0, 200))}" loading="lazy"/>${b.caption ? `<figcaption>${_escHtml(String(b.caption).slice(0, 300))}</figcaption>` : ''}</figure>`;
-      break;
-    }
-    case 'video': {
-      const src = _safeUrl(b.src);
-      if (!src) return '';
-      // No autoplay-with-sound: controls are visible and the video starts paused.
-      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<video class="sg-video" controls preload="metadata"${b.poster ? ` poster="${_escHtml(_safeUrl(b.poster))}"` : ''}><source src="${_escHtml(src)}"/></video>`;
-      break;
-    }
-    case 'audio': {
-      const src = _safeUrl(b.src);
-      if (!src) return '';
-      // No autoplay: a visible play/pause control, starts paused.
-      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<audio class="sg-audio" controls preload="none"><source src="${_escHtml(src)}"/></audio>`;
-      break;
-    }
-    case 'gallery': {
-      const imgs = Array.isArray(b.images) ? b.images.slice(0, 20) : [];
-      const items = imgs.map(im => {
-        const s = _safeUrl(im && im.src);
-        if (!s) return '';
-        return `<figure class="sg-gitem"><img src="${_escHtml(s)}" alt="${_escHtml(String((im && im.alt) || '').slice(0, 200))}" loading="lazy"/>${im && im.caption ? `<figcaption>${_escHtml(String(im.caption).slice(0, 300))}</figcaption>` : ''}</figure>`;
-      }).join('');
-      if (!items) return '';
-      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<div class="sg-gallery">${items}</div>`;
-      break;
-    }
-    case 'casestudies': {
-      const items = Array.isArray(b.items) ? b.items.slice(0, 12) : [];
-      const cards = items.map(it => {
-        const title = _escHtml(String((it && it.title) || '').slice(0, 160));
-        if (!title) return '';
-        const chip = it && it.metric ? `<span class="sg-cs-chip">${_escHtml(String(it.metric).slice(0, 40))}</span>` : '';
-        const detail = it && it.detail ? `<p class="sg-cs-detail">${_escHtml(String(it.detail).slice(0, 2000))}</p>` : (it && it.body ? `<p class="sg-cs-detail">${_escHtml(String(it.body).slice(0, 2000))}</p>` : '');
-        const img = it && _safeUrl(it.image) ? `<img class="sg-cs-img" src="${_escHtml(_safeUrl(it.image))}" alt="" loading="lazy"/>` : '';
-        return `<details class="sg-cs"><summary><span class="sg-cs-title">${title}</span>${chip}</summary>${img}${detail}</details>`;
-      }).join('');
-      if (!cards) return '';
-      inner = `${b.label ? `<div class="sg-blk-label">${_escHtml(String(b.label).slice(0, 120))}</div>` : ''}<div class="sg-cs-wrap">${cards}</div>`;
-      break;
-    }
-    case 'contact': {
-      // Lead-capture form. mode 'pdf' = "Request my resume PDF" gate; else a
-      // plain contact form. Posts to /api/site-lead (persist-first server-side).
-      const isPdf = b.mode === 'pdf';
-      const heading = _escHtml(String(b.label || (isPdf ? SI.request_h : SI.contact_h)).slice(0, 120));
-      inner = `<div class="sg-contact"><div class="sg-blk-label">${heading}</div>
-        <form class="sg-lead-form" onsubmit="return _sgLead(event,this)" data-sub="${_escHtml(row.subdomain || '')}" data-mode="${isPdf ? 'pdf' : 'contact'}">
-          <input name="name" placeholder="${_escHtml(SI.c_name)}" maxlength="120"/>
-          <input name="email" type="email" required placeholder="${_escHtml(SI.c_email)}" maxlength="200"/>
-          ${isPdf ? '' : `<textarea name="message" placeholder="${_escHtml(SI.c_msg)}" maxlength="2000"></textarea>`}
-          <button type="submit">${isPdf ? _escHtml(SI.c_send_pdf) : _escHtml(SI.c_send)}</button>
-          <div class="sg-lead-msg" style="display:none;"></div>
-        </form></div>`;
-      break;
-    }
-    case 'spacer': inner = '<div class="sg-spacer"></div>'; break;
-    default: return '';
-  }
-  return `<div class="sg-block" style="${place}">${inner}</div>`;
-}
-
-// Full personal-site page rendered from config.blocks on a responsive 12-col grid.
-function _renderSiteGrid(row, origin, opts, config) {
-  const primary = '#' + String((config.theme && config.theme.primary) || row.primary_hex || '4a1042').replace('#', '');
-  const accent = '#' + String((config.theme && config.theme.accent) || row.accent || '8b5cf6').replace('#', '');
-  // Background theme. Default 'midnight' mirrors the platform homepage (#030712).
-  // Animated themes (aurora, particles) degrade to a static fallback on the client
-  // via shouldAnimate() (reduced-motion, low core count, or small viewport).
-  const theme = _SITE_THEMES[config.background] ? config.background : 'midnight';
-  const T = _SITE_THEMES[theme];
-  const lang = config.lang === 'zh' ? 'zh' : 'en';
-  const displayName = _escHtml((row.name || _dxParseResume(row.text || '').name || 'Resume'));
-  const indexable = !!opts.indexable;
-  const canonical = opts.canonicalUrl || `${origin}/site/${row.subdomain}`;
-  const blocksHtml = config.blocks.map(b => _renderSiteBlock(b, row, accent, lang)).join('');
-  const footerHtml = opts.footer !== undefined ? opts.footer : '';
-
-  // Public-site i18n (chrome only — user content is shown as authored). Shared
-  // module dictionary; a toggle swaps any [data-si] element (mirrors zh/index.html).
-  const SITE_I18N = _SITE_I18N;
-
-  return `<!DOCTYPE html>
-<html lang="${lang}">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <meta name="robots" content="${indexable ? 'index,follow' : 'noindex,nofollow'}"/>
-  <title>${displayName}</title>
-  <meta property="og:type" content="profile"/>
-  <meta property="og:title" content="${displayName}"/>
-  <meta property="og:url" content="${_escHtml(canonical)}"/>
-  <meta property="og:image" content="${origin}/og-image.png"/>
-  <link rel="canonical" href="${_escHtml(canonical)}"/>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-  <style>
-    :root{--p:${primary};--a:${accent};--fg:${T.fg};--muted:${T.muted};}
-    *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:${T.fallback};color:var(--fg);line-height:1.6;padding:24px 14px 60px;position:relative;min-height:100vh;}
-    /* Background layer: static by default; shouldAnimate() adds .sg-animate to <html>. */
-    .sg-bg{position:fixed;inset:0;z-index:-2;background:${T.fallback};}
-    html.sg-animate .sg-bg{background:${T.bg};${theme === 'aurora' ? 'background-size:200% 200%;animation:sgAurora 18s ease infinite;' : ''}}
-    .sg-bg-canvas{position:fixed;inset:0;z-index:-1;pointer-events:none;}
-    @keyframes sgAurora{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
-    @media (prefers-reduced-motion: reduce){html.sg-animate .sg-bg{animation:none;}}
-    .sg-topbar{max-width:1100px;margin:0 auto 16px;display:flex;justify-content:flex-end;}
-    .sg-lang{background:${T.langBtn};border:1px solid ${T.langBorder};border-radius:8px;padding:5px 12px;font-size:12px;font-weight:700;color:${T.langFg};cursor:pointer;}
-    .site-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;max-width:1100px;margin:0 auto;align-items:start;}
-    .sg-block{min-width:0;}
-    .sg-blk-h{font-size:26px;font-weight:900;color:var(--fg);letter-spacing:-.5px;margin-bottom:6px;}
-    .sg-blk-label{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
-    .sg-blk-text{font-size:15px;color:var(--muted);}
-    .sg-fig{margin:0;}
-    .sg-fig img{width:100%;height:auto;border-radius:14px;display:block;}
-    .sg-fig figcaption{font-size:12.5px;color:var(--muted);margin-top:6px;text-align:center;}
-    .sg-video{width:100%;border-radius:14px;background:#000;display:block;}
-    .sg-audio{width:100%;}
-    .sg-gallery{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;-webkit-overflow-scrolling:touch;}
-    .sg-gitem{flex:0 0 auto;width:min(78%,320px);scroll-snap-align:start;margin:0;}
-    .sg-gitem img{width:100%;height:auto;border-radius:12px;display:block;}
-    .sg-gitem figcaption{font-size:12.5px;color:var(--muted);margin-top:5px;}
-    .sg-cs-wrap{display:flex;flex-direction:column;gap:10px;}
-    .sg-cs{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 16px;}
-    .sg-cs summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;}
-    .sg-cs summary::-webkit-details-marker{display:none;}
-    .sg-cs-title{font-weight:700;color:#1a1f2b;flex:1;}
-    .sg-cs-chip{background:var(--a);color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;white-space:nowrap;}
-    .sg-cs-detail{font-size:14px;color:#39414f;margin-top:10px;}
-    .sg-cs-img{width:100%;border-radius:10px;margin-top:10px;}
-    .sg-contact{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:18px;}
-    .sg-lead-form{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
-    .sg-lead-form input,.sg-lead-form textarea{border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;}
-    .sg-lead-form textarea{min-height:80px;}
-    .sg-lead-form button{background:var(--p);color:#fff;border:none;border-radius:9px;padding:10px;font-weight:700;cursor:pointer;}
-    .sg-lead-msg{font-size:13px;color:#059669;}
-    .sg-spacer{height:24px;}
-    .sg-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:38px 40px;}
-    .sg-rhead{margin-bottom:20px;border-bottom:2px solid var(--p);padding-bottom:14px;}
-    .sg-rname{font-size:28px;font-weight:800;color:var(--p);letter-spacing:-.4px;}
-    .sg-rcontact{font-size:13.5px;color:#5b6472;margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
-    .sg-dot{color:#c3c9d4;}
-    .sg-sec{margin-bottom:20px;}
-    .sg-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--p);border-bottom:2px solid var(--a);padding-bottom:5px;margin-bottom:12px;}
-    .sg-resume .r-title{font-size:15px;font-weight:800;color:#1a1f2b;margin-top:10px;}
-    .sg-resume .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
-    .sg-resume .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
-    .sg-resume .r-bul{list-style:none;margin:2px 0 8px;}
-    .sg-resume .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
-    .sg-resume .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--a);}
-    .sg-foot{max-width:1100px;margin:24px auto 0;text-align:center;font-size:13px;color:#8a93a3;}
-    @media(max-width:760px){
-      .site-grid{display:block;}
-      .sg-block{margin-bottom:20px;}
-      .sg-resume{padding:28px 22px;}
-    }
-  </style>
-</head>
-<body>
-  <div class="sg-bg"></div>${theme === 'particles' ? '<canvas class="sg-bg-canvas" id="sgCanvas"></canvas>' : ''}
-  <div class="sg-topbar"><button class="sg-lang" data-si="lang_toggle" onclick="_sgToggleLang()">${SITE_I18N[lang].lang_toggle}</button></div>
-  <div class="site-grid">${blocksHtml}</div>
-  ${footerHtml}
-  <script>
-    var SITE_I18N=${JSON.stringify(SITE_I18N)};
-    var SG_ANIMATED=${T.animated ? 'true' : 'false'}, SG_THEME=${JSON.stringify(theme)};
-    // Degrade gate: only animate when the device can comfortably handle it.
-    function shouldAnimate(){
-      try{
-        if(!SG_ANIMATED) return false;
-        if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-        if(navigator.hardwareConcurrency && navigator.hardwareConcurrency<=4) return false;
-        if(Math.min(window.innerWidth,window.innerHeight)<768) return false;
-        return true;
-      }catch(_){return false;}
-    }
-    function _sgLead(e,f){
-      e.preventDefault();
-      var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;
-      var fd=new FormData(f), msg=f.querySelector('.sg-lead-msg');
-      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||''};
-      fetch('/api/site-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-        .then(function(r){return r.json().catch(function(){return {};});})
-        .then(function(){
-          f.querySelectorAll('input,textarea,button').forEach(function(el){el.style.display='none';});
-          msg.style.display='block';
-          msg.textContent=(f.dataset.mode==='pdf')?L.c_thanks_pdf:L.c_thanks;
-        })
-        .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
-      return false;
-    }
-    function _sgToggleLang(){
-      var cur=document.documentElement.lang==='zh'?'zh':'en';
-      var next=cur==='zh'?'en':'zh';
-      document.documentElement.lang=next;
-      document.querySelectorAll('[data-si]').forEach(function(el){
-        var k=el.getAttribute('data-si'); if(SITE_I18N[next] && SITE_I18N[next][k]!=null) el.textContent=SITE_I18N[next][k];
-      });
-      document.querySelectorAll('.sg-lead-form input[name=name]').forEach(function(el){el.placeholder=SITE_I18N[next].c_name;});
-      document.querySelectorAll('.sg-lead-form input[name=email]').forEach(function(el){el.placeholder=SITE_I18N[next].c_email;});
-      document.querySelectorAll('.sg-lead-form textarea[name=message]').forEach(function(el){el.placeholder=SITE_I18N[next].c_msg;});
-    }
-    // Apply the animation gate, then run the particle field if that theme is active.
-    (function(){
-      if(!shouldAnimate()) return;
-      document.documentElement.classList.add('sg-animate');
-      if(SG_THEME!=='particles') return;
-      var cv=document.getElementById('sgCanvas'); if(!cv) return;
-      var ctx=cv.getContext('2d'), parts=[], raf=0, running=true;
-      function size(){cv.width=window.innerWidth;cv.height=window.innerHeight;}
-      function init(){parts=[];var n=Math.min(60,Math.round(window.innerWidth/24));for(var i=0;i<n;i++)parts.push({x:Math.random()*cv.width,y:Math.random()*cv.height,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.8+.6});}
-      function tick(){if(!running)return;ctx.clearRect(0,0,cv.width,cv.height);ctx.fillStyle='rgba(148,163,184,0.5)';for(var i=0;i<parts.length;i++){var p=parts[i];p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>cv.width)p.vx*=-1;if(p.y<0||p.y>cv.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill();}raf=requestAnimationFrame(tick);}
-      size();init();tick();
-      window.addEventListener('resize',function(){size();init();});
-      document.addEventListener('visibilitychange',function(){running=!document.hidden;if(running){raf=requestAnimationFrame(tick);}else{cancelAnimationFrame(raf);}});
-    })();
-  </script>
-</body>
-</html>`;
-}
 
 // ─── Website Builder v2 — site-document renderer ─────────────────────────────
 // A site document is: pages → sections → absolutely-positioned elements.
@@ -2340,6 +2099,19 @@ function _sdSectionBg(bg) {
   return '';
 }
 
+// Templates ship without binary assets: an image slot with no `src` renders a
+// self-contained gradient placeholder (optionally captioned) that the user
+// replaces with a real upload from the media library. `ph` is a two-colour spec
+// like { from:'6366F1', to:'8B5CF6', label:'Your photo' } — colours are validated.
+function _sdPlaceholder(p, radius) {
+  const ph = p && p.ph;
+  if (!ph) return '';
+  const from = _sdColor(ph.from, '#6366F1');
+  const to = _sdColor(ph.to, '#8B5CF6');
+  const round = ph.shape === 'circle' ? '50%' : `${_sdPx(radius, 12)}px`;
+  return `<div class="sd-ph" style="background:linear-gradient(135deg,${from},${to});border-radius:${round};">${ph.label ? `<span>${_sdText(ph.label, 60)}</span>` : ''}</div>`;
+}
+
 // One element → HTML. `ctx` carries row/theme/lang/pages for elements that need
 // site-level data (resume, nav, forms).
 function _sdElement(el, ctx) {
@@ -2356,19 +2128,27 @@ function _sdElement(el, ctx) {
     case 'paragraph':
       return `<div class="sd-p" style="${styleText}">${_sdText(p.text, 4000).replace(/\n/g, '<br/>')}</div>`;
     case 'image': {
-      const u = _safeUrl(p.src); if (!u) return '';
+      const u = _safeUrl(p.src);
+      if (!u) return _sdPlaceholder(p, _sdPx(p.radius, 12));
       return `<img class="sd-img" src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy" style="border-radius:${_sdPx(p.radius, 12)}px;object-fit:${p.fit === 'contain' ? 'contain' : 'cover'};"/>`;
     }
     case 'imagebox': {
-      const u = _safeUrl(p.src); if (!u) return '';
-      return `<figure class="sd-ibox" style="border-radius:${_sdPx(p.radius, 14)}px;"><img src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy"/>${p.caption ? `<figcaption>${_sdText(p.caption, 300)}</figcaption>` : ''}</figure>`;
+      const u = _safeUrl(p.src);
+      const inner = u
+        ? `<img src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy"/>`
+        : _sdPlaceholder(p, 0);
+      if (!u && !p.ph) return '';
+      return `<figure class="sd-ibox" style="border-radius:${_sdPx(p.radius, 14)}px;">${inner}${p.caption ? `<figcaption>${_sdText(p.caption, 300)}</figcaption>` : ''}</figure>`;
     }
     case 'gallery': {
       const items = Array.isArray(p.items) ? p.items.slice(0, 40) : [];
       const cells = items.map((it) => {
-        const u = _safeUrl(it && it.src); if (!u) return '';
+        const u = _safeUrl(it && it.src);
+        if (!u && !(it && it.ph)) return '';
         const cap = it.caption || it.title ? `<figcaption>${_sdText(it.title || '', 120)}${it.caption ? `<span>${_sdText(it.caption, 200)}</span>` : ''}</figcaption>` : '';
-        const img = `<img src="${_escHtml(u)}" alt="${_sdText(it.alt || it.title || '', 200)}" loading="lazy"/>`;
+        const img = u
+          ? `<img src="${_escHtml(u)}" alt="${_sdText(it.alt || it.title || '', 200)}" loading="lazy"/>`
+          : `<div class="sd-ph sd-ph--cell" style="background:linear-gradient(135deg,${_sdColor(it.ph.from, '#6366F1')},${_sdColor(it.ph.to, '#8B5CF6')});height:${_sdPx(it.ph.h, 220)}px;"></div>`;
         const inner = `<figure class="sd-gcell">${img}${cap}</figure>`;
         const href = _safeUrl(it && it.link);
         return href ? `<a href="${_escHtml(href)}" target="_blank" rel="noopener">${inner}</a>` : inner;
@@ -2527,6 +2307,9 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     .sd-ibox img{width:100%;height:100%;object-fit:cover;display:block;}
     .sd-ibox figcaption{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;font-size:13px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.65));}
     .sd-elabel{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
+    .sd-ph{width:100%;height:100%;min-height:120px;display:flex;align-items:center;justify-content:center;}
+    .sd-ph span{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);}
+    .sd-ph--cell{min-height:0;}
     .sd-gal{width:100%;}
     .sd-gal--grid{display:grid;grid-template-columns:repeat(var(--gcols),1fr);gap:var(--ggap);}
     .sd-gal--masonry{columns:var(--gcols);column-gap:var(--ggap);}
@@ -2783,6 +2566,44 @@ app.post('/api/personal-site/preview', (req, res) => {
     baseUrl: `${origin}/site/${sub}`,
     page: pageSlug,
   }));
+});
+
+// ── Website Builder v2: starter templates ────────────────────────────────────
+const { templateList, templateDoc } = require('./site-templates');
+
+// Catalogue for the template gallery.
+app.get('/api/site-templates', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  res.json({ templates: templateList() });
+});
+
+// The full document for one template (used when the user picks it).
+app.get('/api/site-templates/:id', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const doc = templateDoc(String(req.params.id || '').slice(0, 40));
+  if (!doc) return res.status(404).json({ error: 'Unknown template.' });
+  res.json({ doc });
+});
+
+// Rendered preview of a template, for the gallery's desktop/mobile preview
+// frames. Rendered by the SAME renderer the published site uses.
+app.get('/api/site-templates/:id/preview', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const doc = templateDoc(String(req.params.id || '').slice(0, 40));
+  if (!doc) return res.status(404).json({ error: 'Unknown template.' });
+  const page = String(req.query.page || '').toLowerCase().slice(0, 60);
+  const origin = `${req.protocol}://${req.get('host')}`;
+  // Sample résumé text so a template's `resume` element has something to show.
+  const row = {
+    subdomain: 'preview', name: 'Alex Morgan', accent: '8b5cf6', primary_hex: '4a1042',
+    serif: 0, photo: null, hide_contact: 0, layout: null, config: JSON.stringify(doc),
+    text: 'Alex Morgan\nalex@example.com | New York, NY\n\nSUMMARY\nOperations leader with 15 years scaling teams through hypergrowth.\n\nEXPERIENCE\nVP Operations, Northwind (2020–Present)\n• Owned a $40M P&L across four countries\n• Doubled on-time delivery in two quarters\n\nSKILLS\nOperating cadence, GTM, Org design',
+  };
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(_renderPersonalSite(row, origin, { indexable: false, footer: '', baseUrl: `${origin}/site/preview`, page }));
 });
 
 // Toggle publish/unpublish without deleting (Back Office). Unpublished sites 404

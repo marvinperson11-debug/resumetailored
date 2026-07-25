@@ -126,13 +126,36 @@ const server = app.listen(0, async () => {
     // Unknown page 404s rather than silently serving home.
     check('unknown page 404s', (await fetch(`${B}/site/${SUB}/nope`)).status === 404);
 
-    // Legacy sites must keep working untouched.
+    // There is exactly one renderer now: a site row without a v2 document gets a
+    // placeholder, never a legacy grid/résumé render.
     await fetch(`${B}/api/personal-site`, {
       method: 'POST', headers: AJ,
-      body: JSON.stringify({ subdomain: 'legacyone', text: RESUME, name: 'Jane', config: { v: 1, blocks: [{ type: 'heading', colSpan: 12, text: 'Hi' }] } }),
+      body: JSON.stringify({ subdomain: 'nodoc', text: RESUME, name: 'Jane', config: { v: 1, blocks: [{ type: 'heading', colSpan: 12, text: 'Hi' }] } }),
     });
-    const legacy = await (await fetch(`${B}/site/legacyone`)).text();
-    check('legacy config.blocks still renders v1 grid', legacy.includes('site-grid') && !legacy.includes('sd-sec'));
+    const nodoc = await (await fetch(`${B}/site/nodoc`)).text();
+    check('no v2 document → placeholder, no legacy renderer', nodoc.includes("hasn't been built yet") && !nodoc.includes('site-grid') && !nodoc.includes('sd-sec'));
+
+    // Every starter template must render through the same renderer.
+    const { templateList, templateDoc } = require('../site-templates.js');
+    const cat = await (await fetch(`${B}/api/site-templates`, { headers: AJ })).json();
+    check('template catalogue served', Array.isArray(cat.templates) && cat.templates.length === 4);
+    for (const t of templateList()) {
+      const html = await (await fetch(`${B}/api/site-templates/${t.id}/preview`, { headers: AJ })).text();
+      const body = bodyOf(html);
+      check(`template "${t.id}" renders sections+elements`, /class="sd-sec"/.test(body) && /class="sd-el/.test(body));
+      // Publishing a template document and previewing it must still match.
+      await fetch(`${B}/api/personal-site`, {
+        method: 'POST', headers: AJ,
+        body: JSON.stringify({ subdomain: 'tpl' + t.id.replace(/[^a-z]/g, ''), text: RESUME, name: 'Alex Morgan', config: templateDoc(t.id) }),
+      });
+      const sub2 = 'tpl' + t.id.replace(/[^a-z]/g, '');
+      const pubT = bodyOf(await (await fetch(`${B}/site/${sub2}`)).text()).trim();
+      const prevT = bodyOf(await (await fetch(`${B}/api/personal-site/preview`, {
+        method: 'POST', headers: AJ,
+        body: JSON.stringify({ subdomain: sub2, text: RESUME, name: 'Alex Morgan', config: templateDoc(t.id) }),
+      })).text()).trim();
+      check(`template "${t.id}" preview === public`, pubT === prevT);
+    }
   } catch (e) {
     failures++;
     console.error('FAIL  unexpected error —', e && e.message);

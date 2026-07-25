@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="robots" content="index,follow"/>
+  <title>Jordan Rivera</title>
+  
+  <meta property="og:type" content="profile"/>
+  <meta property="og:title" content="Jordan Rivera"/>
+  <meta property="og:url" content="https://resumetailored.com/site/sample"/>
+  <meta property="og:image" content="https://resumetailored.com/og-image.png"/>
+  <link rel="canonical" href="https://resumetailored.com/site/sample"/>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--p:#6366F1;--a:#8B5CF6;--ink:#0f172a;--paper:#ffffff;--muted:#64748b;}
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
+    .sd-sec{position:relative;width:100%;background-repeat:no-repeat;}
+    .sd-inner{position:relative;max-width:1200px;margin:0 auto;}
+    .sd-el{position:absolute;}
+    .sd-h1{font-size:48px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
+    .sd-h2{font-size:24px;font-weight:700;line-height:1.25;}
+    .sd-p{font-size:16px;color:var(--muted);}
+    .sd-img{width:100%;height:100%;display:block;}
+    .sd-ibox{width:100%;height:100%;overflow:hidden;position:relative;margin:0;}
+    .sd-ibox img{width:100%;height:100%;object-fit:cover;display:block;}
+    .sd-ibox figcaption{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;font-size:13px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.65));}
+    .sd-elabel{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:8px;}
+    .sd-ph{width:100%;height:100%;min-height:120px;display:flex;align-items:center;justify-content:center;}
+    .sd-ph span{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.85);}
+    .sd-ph--cell{min-height:0;}
+    .sd-gal{width:100%;}
+    .sd-gal--grid{display:grid;grid-template-columns:repeat(var(--gcols),1fr);gap:var(--ggap);}
+    .sd-gal--masonry{columns:var(--gcols);column-gap:var(--ggap);}
+    .sd-gal--masonry .sd-gcell{break-inside:avoid;margin-bottom:var(--ggap);}
+    .sd-gal--slider{display:flex;gap:var(--ggap);overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;}
+    .sd-gal--slider .sd-gcell{flex:0 0 auto;width:min(72%,340px);scroll-snap-align:start;}
+    .sd-gcell{position:relative;margin:0;overflow:hidden;border-radius:12px;}
+    .sd-gcell img{width:100%;height:auto;display:block;transition:transform .35s ease;}
+    .sd-gcell:hover img{transform:scale(1.05);}
+    .sd-gcell figcaption{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.7));}
+    .sd-gcell figcaption span{display:block;font-weight:400;opacity:.85;font-size:12px;}
+    .sd-video,.sd-audio{width:100%;display:block;border-radius:12px;}
+    .sd-video{background:#000;}
+    .sd-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 26px;border-radius:999px;background:linear-gradient(135deg,var(--p),var(--a));color:#fff;font-weight:700;text-decoration:none;font-size:15px;}
+    .sd-btn--ghost{background:none;border:2px solid currentColor;color:var(--p);}
+    .sd-socs{display:flex;gap:10px;}
+    .sd-soc{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--p);color:#fff;font-size:12px;font-weight:800;text-decoration:none;}
+    .sd-divider{border:none;border-top:1px solid rgba(127,127,127,.35);width:100%;}
+    .sd-box{width:100%;height:100%;}
+    .sd-nav{display:flex;gap:22px;flex-wrap:wrap;align-items:center;}
+    .sd-navlink{font-size:15px;font-weight:600;color:inherit;text-decoration:none;opacity:.8;}
+    .sd-navlink.is-on,.sd-navlink:hover{opacity:1;color:var(--p);}
+    .sd-form{background:rgba(255,255,255,.9);border:1px solid rgba(15,23,42,.08);border-radius:14px;padding:18px;}
+    .sd-form .sg-lead-form{display:flex;flex-direction:column;gap:8px;}
+    .sd-form input,.sd-form textarea{border:1.5px solid #e5e7eb;border-radius:9px;padding:9px 11px;font:inherit;font-size:14px;}
+    .sd-form textarea{min-height:80px;}
+    .sd-form button{background:var(--p);color:#fff;border:none;border-radius:9px;padding:10px;font-weight:700;cursor:pointer;}
+    .sd-form .sg-lead-msg{font-size:13px;color:#059669;}
+    .sd-resume{background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);padding:32px 34px;color:#1f2430;}
+    .sd-resume .r-title{font-size:15px;font-weight:800;margin-top:10px;}
+    .sd-resume .r-co{font-size:13px;font-weight:700;margin:1px 0 6px;}
+    .sd-resume .r-p{font-size:14px;color:#39414f;margin-bottom:8px;}
+    .sd-resume .r-bul{list-style:none;margin:2px 0 8px;}
+    .sd-resume .r-bul li{font-size:14px;color:#39414f;padding-left:18px;position:relative;margin-bottom:6px;}
+    .sd-resume .r-bul li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--a);}
+    .sd-cswrap{display:flex;flex-direction:column;gap:10px;}
+    .sd-cs{background:rgba(255,255,255,.92);border:1px solid rgba(15,23,42,.08);border-radius:12px;padding:14px 16px;color:#1f2430;}
+    .sd-cs summary{cursor:pointer;display:flex;align-items:center;gap:10px;list-style:none;font-weight:700;}
+    .sd-cs summary::-webkit-details-marker{display:none;}
+    .sd-cs summary span:first-child{flex:1;}
+    .sd-cs-chip{background:var(--a);color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:999px;}
+    .sd-cs p{font-size:14px;color:#39414f;margin-top:10px;}
+    .sd-qr{width:100%;max-width:150px;}
+    .sd-foot{text-align:center;font-size:13px;color:var(--muted);padding:24px 16px;}
+    /* MOBILE: sections grow to fit, elements drop to full-width static flow in
+       DOM order (which the renderer already sorted top-to-bottom). */
+    @media(max-width:820px){
+      .sd-inner{height:auto!important;padding:30px 18px;}
+      .sd-el{position:static!important;width:100%!important;min-height:0!important;margin:0 0 18px;}
+      .sd-el:last-child{margin-bottom:0;}
+      .sd-el--mhide{display:none!important;}
+      .sd-h1{font-size:32px;}
+      .sd-h2{font-size:20px;}
+      .sd-gal--grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
+      .sd-gal--masonry{columns:2;}
+      .sd-ibox,.sd-img{height:auto!important;}
+    }
+  </style>
+</head>
+<body>
+  <section class="sd-sec" style="background-image:linear-gradient(135deg,#030712,#1e1b4b);"><div class="sd-inner" style="height:520px;"><div class="sd-el" style="left:6.6667%;top:30px;width:75.0000%;min-height:40px;"><nav class="sd-nav"><a class="sd-navlink is-on" href="https://resumetailored.com/site/sample">Home</a></nav></div><div class="sd-el" style="left:6.6667%;top:160px;width:58.3333%;min-height:120px;"><h1 class="sd-h1" style="text-align:left;color:#ffffff;">Jordan Rivera</h1></div><div class="sd-el" style="left:53.3333%;top:160px;width:40.0000%;min-height:260px;"><div class="sd-elabel">About Me</div><video class="sd-video" controls preload="metadata"><source src="https://example.com/v.mp4"/></video></div><div class="sd-el" style="left:6.6667%;top:300px;width:43.3333%;min-height:70px;"><div class="sd-p" style="text-align:left;color:#cbd5e1;">Product manager based in NYC.</div></div></div></section><section class="sd-sec" style="background-color:#ffffff;"><div class="sd-inner" style="height:460px;"><div class="sd-el" style="left:6.6667%;top:40px;width:86.6667%;min-height:380px;"><div class="sd-resume"><div class="sg-resume"><div class="sg-rhead"><div class="sg-rname">Jordan Rivera</div><div class="sg-rcontact"><span>jordan@example.com</span><span class="sg-dot">·</span><span>San Francisco, CA</span><span class="sg-dot">·</span><span>linkedin.com/in/jordanrivera</span></div></div><section class="sg-sec"><h2 class="sg-h">SUMMARY</h2><p class="r-p">Senior product manager with 8 years shipping data products.</p></section><section class="sg-sec"><h2 class="sg-h">EXPERIENCE</h2><div class="r-co" style="color:#8B5CF6">Senior PM, DataCorp | 2020–Present</div><ul class="r-bul"><li>Led migration reducing infra costs 30%</li><li>Grew activation 22% via lifecycle redesign</li></ul></section><section class="sg-sec"><h2 class="sg-h">SKILLS</h2><p class="r-p">Product Strategy, SQL, Roadmapping, A/B Testing</p></section><section class="sg-sec"><h2 class="sg-h">EDUCATION</h2><p class="r-p">B.S. Computer Science, UC Berkeley</p></section></div></div></div></div></section>
+  
+  <script>
+    var SITE_I18N={"en":{"lang_toggle":"中文","c_name":"Your name","c_email":"Your email","c_msg":"Message","c_send":"Send","c_send_pdf":"Send me the resume","c_thanks":"Thanks — your message was sent.","c_thanks_pdf":"Thanks! I'll be in touch with my resume shortly.","c_err":"Something went wrong — please try again.","contact_h":"Get in touch","request_h":"Request my resume"},"zh":{"lang_toggle":"EN","c_name":"你的姓名","c_email":"你的邮箱","c_msg":"留言","c_send":"发送","c_send_pdf":"把简历发给我","c_thanks":"谢谢——你的留言已发送。","c_thanks_pdf":"谢谢！我会尽快把简历发给你。","c_err":"出了点问题——请重试。","contact_h":"联系我","request_h":"索取我的简历"}};
+    function _sgLead(e,f){
+      e.preventDefault();
+      var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;
+      var fd=new FormData(f), msg=f.querySelector('.sg-lead-msg');
+      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||''};
+      fetch('/api/site-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+        .then(function(r){return r.json().catch(function(){return {};});})
+        .then(function(){
+          f.querySelectorAll('input,textarea,button').forEach(function(el){el.style.display='none';});
+          msg.style.display='block';
+          msg.textContent=(f.dataset.mode==='pdf')?L.c_thanks_pdf:L.c_thanks;
+        })
+        .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
+      return false;
+    }
+  </script>
+</body>
+</html>
