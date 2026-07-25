@@ -357,13 +357,13 @@
     .cv-updgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
     .cv-addr { display: flex; align-items: center; gap: 5px; }
     .cv-addr span { font-size: 11px; color: #9ca3af; white-space: nowrap; }
-    .cv-stage { flex: 1; min-width: 0; overflow: auto; background: #303136; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 40px; }
+    .cv-stage { flex: 1; min-width: 0; overflow: auto; background: #303136; display: flex; flex-direction: column; align-items: center; padding: 16px 10px 32px; }
     .cv-canvasbox { display: flex; flex-direction: column; align-items: center; }
     #wcEdFrame { border: 0; display: block; background: #fff; box-shadow: 0 8px 40px rgba(0,0,0,.45); }
     #wcEdOverlay { position: absolute; inset: 0; }
     .cv-addpage { margin-top: 16px; background: #3b3c42; border: 1px dashed #5a5b62; color: #cbd5e1; font: inherit; font-size: 12.5px; font-weight: 700; padding: 10px 26px; border-radius: 9px; cursor: pointer; }
     .cv-addpage:hover { background: #45464c; }
-    .cv-inspector { width: 250px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 14px; color: #e5e7eb; }
+    .cv-inspector { width: 230px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 14px; color: #e5e7eb; }
     .cv-inspector .text-input, .cv-inspector input, .cv-inspector select, .cv-inspector textarea { background: #34353a; border: 1px solid #45464c; color: #f3f4f6; }
     .cv-inspector .bo-act { background: #34353a; border-color: #45464c; color: #e5e7eb; }
     .cv-bottom { height: 44px; flex-shrink: 0; background: #1f2023; display: flex; align-items: center; gap: 14px; padding: 0 14px; color: #9ca3af; font-size: 12px; }
@@ -385,6 +385,22 @@
     .cv-gate-actions .btn { width: 100%; padding: 12px; font-size: 14px; }
     .cv-gate-live { margin-top: 16px; font-size: 13px; color: #cbd5e1; background: rgba(255,255,255,.06); border-radius: 10px; padding: 12px; word-break: break-all; }
     .cv-gate-live a { color: #a5b4fc; font-weight: 700; }
+    /* Live template thumbnails: a real render, scaled down like Canva's. */
+    .wc-tpl-thumb { position: relative; overflow: hidden; background: #fff; }
+    .wc-tpl-shot { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .wc-tpl-shot iframe { width: 1200px; height: 900px; border: 0; transform: scale(.115); transform-origin: top left; pointer-events: none; }
+    .cv-tplgrid .wc-tpl-thumb { height: 104px; }
+    .cv-tplgrid .wc-tpl { background: #34353a; border-color: #45464c; }
+    .cv-tplgrid .wc-tpl-name { color: #f3f4f6; }
+    .cv-tplgrid .wc-tpl-blurb, .cv-tplgrid .wc-tpl-cat { color: #9ca3af; }
+    .cv-tplgrid .bo-act { background: #3f4046; border-color: #55565c; color: #e5e7eb; }
+    /* Wide mode: hide the app sidebar and the editor panel for a full-width canvas. */
+    .cv-collapse { border-top: 1px solid rgba(255,255,255,.08); margin-top: 6px !important; padding-top: 12px !important; }
+    body.cv-wide .sidebar { display: none !important; }
+    body.cv-wide .cv-shell { left: 0 !important; }
+    body.cv-wide .cv-gate { left: 0 !important; }
+    body.cv-wide .cv-panel { display: none !important; }
+    .cv-shell, .cv-panel { transition: left .18s ease, width .18s ease; }
   </style>
 </head>
 <body>
@@ -1137,6 +1153,7 @@
           <div class="cv-body">
             <!-- Icon rail -->
             <div class="cv-rail">
+              <button class="cv-rbtn cv-collapse" onclick="cvToggleChrome()" title="Hide/show sidebars for a wider canvas"><span id="cvCollapseIco">⇤</span><em data-i18n="cv_r_wide">Wide</em></button>
               <button class="cv-rbtn is-on" data-panel="templates" onclick="cvPanel('templates')"><span>▦</span><em data-i18n="cv_r_templates">Templates</em></button>
               <button class="cv-rbtn" data-panel="elements" onclick="cvPanel('elements')"><span>◈</span><em data-i18n="cv_r_elements">Elements</em></button>
               <button class="cv-rbtn" data-panel="text" onclick="cvPanel('text')"><span>T</span><em data-i18n="cv_r_text">Text</em></button>
@@ -1171,6 +1188,8 @@
               <!-- Uploads -->
               <div class="cv-pane" data-pane="uploads" style="display:none;">
                 <button type="button" class="cv-wide" onclick="cvUpload()" data-i18n="cv_upload">⬆ Upload media</button>
+                <button type="button" class="cv-wide" id="cvRecBtn" onclick="cvToggleVoice()" data-i18n="cv_record">🎙️ Record a voice clip</button>
+                <div id="cvRecNote" class="cv-note"></div>
                 <div id="wcMediaMeter" class="cv-meter"></div>
                 <div id="cvUploadGrid" class="cv-updgrid"></div>
               </div>
@@ -1894,6 +1913,13 @@
         cv_gate_note: '✓ Your published website will still look great on phones — visitors can view it anywhere.',
         cv_gate_copy: 'Copy link for desktop', cv_gate_back: '← Back to Resume Tailor',
         cv_gate_copied: 'Link copied — open it on your desktop.', cv_gate_yoursite: 'Your live site:',
+        cv_record: '🎙️ Record a voice clip', cv_rec_stop: '⏹ Stop recording',
+        cv_rec_recording: 'Recording… tap Stop when done.', cv_rec_saving: 'Saving…',
+        cv_rec_saved: '✓ Saved to your uploads.', cv_rec_err: 'Could not save the recording.',
+        cv_rec_mic: 'Could not access the microphone.',
+        cv_rec_unsupported: 'Recording is not supported in this browser — upload an audio file instead.',
+        wc_pal_shapes: 'Shapes',
+        cv_r_wide: 'Wide',
         cv_pages: 'Pages', cv_preview: 'Preview', cv_publish: 'Publish website', cv_edit: '✏️ Edit',
         cv_r_templates: 'Templates', cv_r_elements: 'Elements', cv_r_text: 'Text', cv_r_brand: 'Brand',
         cv_r_uploads: 'Uploads', cv_r_content: 'Content', cv_upload: '⬆ Upload media',
@@ -2046,6 +2072,13 @@
         cv_gate_note: '✓ 发布后的网站在手机上依然美观——访客可随时随地查看。',
         cv_gate_copy: '复制链接到电脑打开', cv_gate_back: '← 返回简历定制',
         cv_gate_copied: '链接已复制——请在电脑上打开。', cv_gate_yoursite: '你的网站：',
+        cv_record: '🎙️ 录制语音', cv_rec_stop: '⏹ 停止录制',
+        cv_rec_recording: '录制中……完成后点击停止。', cv_rec_saving: '保存中…',
+        cv_rec_saved: '✓ 已保存到上传。', cv_rec_err: '无法保存录音。',
+        cv_rec_mic: '无法访问麦克风。',
+        cv_rec_unsupported: '此浏览器不支持录制——请改为上传音频文件。',
+        wc_pal_shapes: '形状',
+        cv_r_wide: '宽屏',
         cv_pages: '页面', cv_preview: '预览', cv_publish: '发布网站', cv_edit: '✏️ 编辑',
         cv_r_templates: '模板', cv_r_elements: '元素', cv_r_text: '文字', cv_r_brand: '品牌',
         cv_r_uploads: '上传', cv_r_content: '内容', cv_upload: '⬆ 上传媒体',
@@ -6573,7 +6606,8 @@ Aaliyah Washington`
         const on = wcTplId === t.id;
         const sw = t.swatch || ['6366F1', '8B5CF6'];
         return `<div class="wc-tpl${on ? ' is-on' : ''}">
-          <button type="button" class="wc-tpl-thumb" onclick="openTplPreview('${wcEsc(t.id)}')" style="background:linear-gradient(135deg,#${wcEsc(sw[0])},#${wcEsc(sw[1])});">
+          <button type="button" class="wc-tpl-thumb" onclick="openTplPreview('${wcEsc(t.id)}')">
+            <span class="wc-tpl-shot"><iframe src="/api/site-templates/${wcEsc(t.id)}/preview" loading="lazy" scrolling="no" tabindex="-1" title="${wcEsc(t.name)}"></iframe></span>
             <span class="wc-tpl-eye">${wcEsc(_t('wc_tpl_previewbtn', 'Preview'))}</span>
           </button>
           <div class="wc-tpl-body">
@@ -6640,6 +6674,17 @@ Aaliyah Washington`
       });
     }
 
+
+    // Collapse the app sidebar and the editor panel to give the canvas the full
+    // window — the single biggest complaint about the editor being cramped.
+    let cvWide = false;
+    function cvToggleChrome() {
+      cvWide = !cvWide;
+      document.body.classList.toggle('cv-wide', cvWide);
+      const ico = document.getElementById('cvCollapseIco');
+      if (ico) ico.textContent = cvWide ? '⇥' : '⇤';
+      setTimeout(() => { if (typeof edFitStage === 'function') edFitStage(); }, 220);
+    }
 
     // The builder needs a real canvas, so it is desktop-only. This gates the
     // EDITOR, not the published site — published sites stay fully responsive.
@@ -6740,6 +6785,40 @@ Aaliyah Washington`
         ).join('') : `<p class="cv-note">${wcEsc(_t('cv_up_empty', 'Nothing uploaded yet.'))}</p>`;
       } catch (_) {}
     }
+    // Record a voice clip straight into the media library, then place it as an
+    // audio element. Same MediaRecorder path as the text-video voiceover.
+    let cvRec = null, cvRecChunks = [], cvRecording = false;
+    async function cvToggleVoice() {
+      const btn = document.getElementById('cvRecBtn'), note = document.getElementById('cvRecNote');
+      const say = (m) => { if (note) note.textContent = m; };
+      if (cvRecording) { try { cvRec.stop(); } catch (_) {} return; }
+      if (!navigator.mediaDevices || !window.MediaRecorder) { say(_t('cv_rec_unsupported', 'Recording is not supported in this browser — upload an audio file instead.')); return; }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        cvRecChunks = [];
+        cvRec = new MediaRecorder(stream);
+        cvRec.ondataavailable = (e) => { if (e.data && e.data.size) cvRecChunks.push(e.data); };
+        cvRec.onstop = async () => {
+          cvRecording = false;
+          stream.getTracks().forEach((t) => t.stop());
+          if (btn) btn.textContent = _t('cv_record', '🎙️ Record a voice clip');
+          if (!cvRecChunks.length) return;
+          say(_t('cv_rec_saving', 'Saving…'));
+          try {
+            const type = (cvRecChunks[0].type || 'audio/webm').split(';')[0];
+            const url = await _tvUploadMedia(new Blob(cvRecChunks, { type }), 'voice.' + (type.includes('mp') ? 'm4a' : 'weba'));
+            say(_t('cv_rec_saved', '✓ Saved to your uploads.'));
+            cvRenderUploads();
+            cvPlaceMedia(url, 'audio');
+          } catch (e) { say((e && e.message) || _t('cv_rec_err', 'Could not save the recording.')); }
+        };
+        cvRec.start();
+        cvRecording = true;
+        if (btn) btn.textContent = _t('cv_rec_stop', '⏹ Stop recording');
+        say(_t('cv_rec_recording', 'Recording… tap Stop when done.'));
+      } catch (_) { say(_t('cv_rec_mic', 'Could not access the microphone.')); }
+    }
+
     function cvUpload() {
       wcUploadMedia('image/jpeg,image/png,image/webp,video/mp4,audio/mpeg', () => cvRenderUploads());
     }
@@ -6803,6 +6882,14 @@ Aaliyah Washington`
         { type: 'form', label: 'Request resume', icon: '📄', w: 480, h: 240, props: { mode: 'pdf' } },
         { type: 'social', label: 'Social icons', icon: '◎', w: 220, h: 44, props: { items: [{ network: 'LinkedIn', url: 'https://linkedin.com' }] } },
         { type: 'nav', label: 'Page menu', icon: '☰', w: 900, h: 40, props: {} },
+      ] },
+      { group: 'Shapes', items: [
+        { type: 'box', label: 'Rectangle', icon: '▭', w: 320, h: 200, props: { bg: '6366F1', radius: 8 } },
+        { type: 'box', label: 'Rounded', icon: '▢', w: 320, h: 200, props: { bg: '8B5CF6', radius: 28 } },
+        { type: 'box', label: 'Circle', icon: '●', w: 220, h: 220, props: { bg: 'ec4899', radius: 999 } },
+        { type: 'box', label: 'Accent bar', icon: '▬', w: 420, h: 12, props: { bg: '6366F1', radius: 999 } },
+        { type: 'heading', label: 'Emoji', icon: '★', w: 120, h: 120, props: { text: '⭐', size: 84, align: 'center' } },
+        { type: 'heading', label: 'Badge', icon: '🏷', w: 240, h: 60, props: { text: '✦ Available for work', size: 18 } },
       ] },
       { group: 'Layout', items: [
         { type: 'box', label: 'Box', icon: '▭', w: 360, h: 220, props: { bg: 'f8fafc', radius: 16 } },

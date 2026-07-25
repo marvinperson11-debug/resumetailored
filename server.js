@@ -2645,9 +2645,11 @@ app.get('/api/site-templates/:id', (req, res) => {
 
 // Rendered preview of a template, for the gallery's desktop/mobile preview
 // frames. Rendered by the SAME renderer the published site uses.
+// NOT auth-gated, deliberately: this renders a STATIC template with placeholder
+// sample content — no user data of any kind. It is loaded via <iframe src=...>
+// for the gallery thumbnails and previews, and an iframe cannot send the Bearer
+// token, so requiring a session here made every template preview 401.
 app.get('/api/site-templates/:id/preview', (req, res) => {
-  const email = getSessionEmail(req);
-  if (!email) return res.status(401).json({ error: 'Please sign in.' });
   const doc = templateDoc(String(req.params.id || '').slice(0, 40));
   if (!doc) return res.status(404).json({ error: 'Unknown template.' });
   const page = String(req.query.page || '').toLowerCase().slice(0, 60);
