@@ -1075,6 +1075,10 @@
               <button type="button" class="bo-act" id="wcEdRedo" onclick="edRedo()" title="Redo (Ctrl+Shift+Z)" disabled>↷ <span data-i18n="wc_ed_redo">Redo</span></button>
               <select id="wcEdPage" class="text-input" style="max-width:150px;font-size:13px;padding:6px 8px;" onchange="edSetPage(this.value)"></select>
               <button type="button" class="bo-act" onclick="edOpenPages()" data-i18n="wc_ed_pages">⧉ Pages</button>
+              <div style="display:flex;gap:4px;background:#f1f5f9;border-radius:9px;padding:3px;">
+                <button type="button" id="wcEdDeskBtn" class="wc-vtab wc-vtab-active" onclick="edSetDevice('desktop')" title="Desktop">🖥</button>
+                <button type="button" id="wcEdMobBtn" class="wc-vtab" onclick="edSetDevice('mobile')" title="Mobile">📱</button>
+              </div>
             </div>
             <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;">
               <div id="wcEdPalWrap" style="width:190px;flex-shrink:0;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px;background:#fff;max-height:520px;overflow:auto;">
@@ -1806,6 +1810,9 @@
         wc_ed_gallayout: 'Layout', wc_ed_galcols: 'Columns', wc_ed_galitems: 'Items', wc_ed_galtitle: 'Title',
         wc_ed_galadd: '+ Add image', wc_ed_soclinks: 'Links', wc_ed_socadd: '+ Add link',
         wc_ed_cards: 'Cards', wc_ed_cardadd: '+ Add card',
+        wc_ed_mobile: 'Mobile', wc_ed_mwidth: 'Width on mobile', wc_ed_malign: 'Align on mobile',
+        wc_ed_mfull: 'Full width', wc_ed_mauto: 'Default', wc_ed_morder: 'Stack order',
+        wc_ed_mup: 'Move earlier', wc_ed_mdown: 'Move later', wc_ed_mreset: 'Auto',
         wc_ed_pages: '⧉ Pages', wc_pg_title: 'Pages', wc_pg_add: '+ Add page', wc_pg_done: 'Done',
         wc_pg_help: 'Your home page is served at /site/your-name. Other pages live at /site/your-name/their-slug.',
         wc_pg_home: 'Home', wc_pg_sethome: 'Set home', wc_pg_edit: 'Edit page',
@@ -1944,6 +1951,9 @@
         wc_ed_gallayout: '布局', wc_ed_galcols: '列数', wc_ed_galitems: '项目', wc_ed_galtitle: '标题',
         wc_ed_galadd: '+ 添加图片', wc_ed_soclinks: '链接', wc_ed_socadd: '+ 添加链接',
         wc_ed_cards: '卡片', wc_ed_cardadd: '+ 添加卡片',
+        wc_ed_mobile: '手机', wc_ed_mwidth: '手机宽度', wc_ed_malign: '手机对齐',
+        wc_ed_mfull: '整宽', wc_ed_mauto: '默认', wc_ed_morder: '堆叠顺序',
+        wc_ed_mup: '上移', wc_ed_mdown: '下移', wc_ed_mreset: '自动',
         wc_ed_pages: '⧉ 页面', wc_pg_title: '页面', wc_pg_add: '+ 添加页面', wc_pg_done: '完成',
         wc_pg_help: '首页地址为 /site/你的名称，其他页面为 /site/你的名称/页面标识。',
         wc_pg_home: '首页', wc_pg_sethome: '设为首页', wc_pg_edit: '编辑页面',
@@ -6811,10 +6821,16 @@ Aaliyah Washington`
     function edFitStage() {
       const stage = document.getElementById('wcEdStage'), wrap = document.getElementById('wcEdWrap');
       if (!stage || !wrap) return;
+      const frame = document.getElementById('wcEdFrame');
+      const mobile = (typeof edDevice !== 'undefined' && edDevice === 'mobile');
+      const canvasW = mobile ? 390 : ED_CANVAS;
+      if (wrap) wrap.style.width = canvasW + 'px';
+      if (frame) frame.style.width = canvasW + 'px';
       const avail = Math.max(240, stage.clientWidth - 24);
-      const k = Math.min(1, avail / ED_CANVAS);
+      const k = Math.min(1, avail / canvasW);
       wrap.style.transform = `scale(${k})`;
-      stage.style.height = (edDocHeight() * k + 24) + 'px';
+      // In mobile view the page grows taller as elements stack, so give it room.
+      stage.style.height = ((mobile ? edDocHeight() * 1.6 : edDocHeight()) * k + 24) + 'px';
     }
     window.addEventListener('resize', () => { if (edStore) edFitStage(); });
 
@@ -6983,9 +6999,26 @@ Aaliyah Washington`
           <input class="text-input" style="font-size:12px;" type="number" value="${Number(e.w) || 0}" oninput="edSetGeom('w',this.value)" title="W"/>
           <input class="text-input" style="font-size:12px;" type="number" value="${Number(e.h) || 0}" oninput="edSetGeom('h',this.value)" title="H"/>
         </div>`)}
-        <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#374151;margin-top:12px;cursor:pointer;">
-          <input type="checkbox" ${e.mhide ? 'checked' : ''} onchange="edSetHidden(this.checked)"/> ${wcEsc(_t('wc_ed_mhide', 'Hide on mobile'))}
-        </label>
+        <div style="border-top:1px solid #eef0f4;margin-top:14px;padding-top:10px;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#6366f1;margin-bottom:6px;">📱 ${wcEsc(_t('wc_ed_mobile', 'Mobile'))}</div>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#374151;cursor:pointer;">
+            <input type="checkbox" ${_edMHidden(e) ? 'checked' : ''} onchange="edSetHidden(this.checked)"/> ${wcEsc(_t('wc_ed_mhide', 'Hide on mobile'))}
+          </label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;">
+            <select class="text-input" style="font-size:12px;" onchange="edSetMobile('w',this.value)" title="${wcEsc(_t('wc_ed_mwidth', 'Width on mobile'))}">
+              ${[['', _t('wc_ed_mfull', 'Full width')], ['75', '75%'], ['50', '50%'], ['33', '33%']].map(([v, l]) => `<option value="${v}"${String((e.mobile && e.mobile.w) || '') === v ? ' selected' : ''}>${wcEsc(l)}</option>`).join('')}
+            </select>
+            <select class="text-input" style="font-size:12px;" onchange="edSetMobile('align',this.value)" title="${wcEsc(_t('wc_ed_malign', 'Align on mobile'))}">
+              ${[['', _t('wc_ed_mauto', 'Default')], ['left', 'Left'], ['center', 'Center'], ['right', 'Right']].map(([v, l]) => `<option value="${v}"${String((e.mobile && e.mobile.align) || '') === v ? ' selected' : ''}>${wcEsc(l)}</option>`).join('')}
+            </select>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+            <span style="font-size:12px;color:#6b7280;flex:1;">${wcEsc(_t('wc_ed_morder', 'Stack order'))}</span>
+            <button type="button" class="bo-act" onclick="edNudgeMobileOrder(-1)" title="${wcEsc(_t('wc_ed_mup', 'Move earlier'))}">↑</button>
+            <button type="button" class="bo-act" onclick="edNudgeMobileOrder(1)" title="${wcEsc(_t('wc_ed_mdown', 'Move later'))}">↓</button>
+            <button type="button" class="bo-act" onclick="edSetMobile('order','')" title="${wcEsc(_t('wc_ed_mreset', 'Auto'))}">↺</button>
+          </div>
+        </div>
         <button type="button" class="bo-act bo-danger" style="width:100%;margin-top:12px;" onclick="edDeleteSel()">${wcEsc(_t('wc_ed_delete', 'Delete element'))}</button>`;
     }
     function edSetProp(key, val) {
@@ -6996,10 +7029,41 @@ Aaliyah Washington`
       const id = edSel, n = Math.max(0, Math.round(Number(val) || 0));
       edApply((doc) => { const h = SiteDocStore.findElement(doc, id); if (h) h.el[key] = n; }, { coalesce: 'geom:' + id + ':' + key });
     }
+    const _edMHidden = (e) => !!(e && (e.mhide || (e.mobile && e.mobile.hidden)));
     function edSetHidden(on) {
       const id = edSel;
       edStore.endGesture();
-      edApply((doc) => { const h = SiteDocStore.findElement(doc, id); if (h) h.el.mhide = !!on; });
+      edApply((doc) => { const h = SiteDocStore.findElement(doc, id); if (h) { h.el.mobile = h.el.mobile || {}; h.el.mobile.hidden = !!on; delete h.el.mhide; } });
+    }
+    // Per-element mobile override (V6). Empty value clears the override so the
+    // element goes back to automatic behaviour.
+    function edSetMobile(key, val) {
+      const id = edSel;
+      edStore.endGesture();
+      edApply((doc) => {
+        const h = SiteDocStore.findElement(doc, id); if (!h) return;
+        h.el.mobile = h.el.mobile || {};
+        if (val === '' || val === null) delete h.el.mobile[key];
+        else h.el.mobile[key] = (key === 'w' || key === 'order') ? Number(val) : val;
+        if (!Object.keys(h.el.mobile).length) delete h.el.mobile;
+      });
+      edRenderInspector();
+    }
+    function edNudgeMobileOrder(delta) {
+      const id = edSel;
+      const hit = SiteDocStore.findElement(edStore.getDoc(), id); if (!hit) return;
+      const cur = Number(hit.el.mobile && hit.el.mobile.order) || 0;
+      edSetMobile('order', String(cur + delta));
+    }
+    // Preview the canvas at phone width so mobile overrides are visible while editing.
+    let edDevice = 'desktop';
+    function edSetDevice(mode) {
+      edDevice = mode === 'mobile' ? 'mobile' : 'desktop';
+      document.getElementById('wcEdDeskBtn').classList.toggle('wc-vtab-active', edDevice === 'desktop');
+      document.getElementById('wcEdMobBtn').classList.toggle('wc-vtab-active', edDevice === 'mobile');
+      const ov = document.getElementById('wcEdOverlay');
+      if (ov) ov.style.display = edDevice === 'mobile' ? 'none' : 'block'; // no dragging in mobile view
+      edFitStage();
     }
     function edDeleteSel() {
       const id = edSel;

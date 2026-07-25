@@ -2099,6 +2099,40 @@ function _sdSectionBg(bg) {
   return '';
 }
 
+// ── Per-element mobile overrides (V6) ───────────────────────────────────────
+// `el.mobile = { order, w, align, hidden }` lets an author adjust how a single
+// element behaves on phones without disturbing the desktop layout. Everything is
+// optional; absent values keep the automatic behaviour (reading-order stacking,
+// full width). `el.mhide` remains supported as the original hide flag.
+function _sdMobileOrder(el) {
+  const m = el && el.mobile;
+  const n = m && Number(m.order);
+  return Number.isFinite(n) ? n : 0;   // 0 = keep automatic reading order
+}
+function _sdMobileHidden(el) {
+  return !!(el && (el.mhide || (el.mobile && el.mobile.hidden)));
+}
+// Returns a class suffix (possibly '') and pushes any generated rules.
+function _sdMobileClass(el, rules) {
+  const m = el && el.mobile;
+  if (!m || typeof m !== 'object') return '';
+  const decls = [];
+  const w = Number(m.w);
+  if (Number.isFinite(w) && w > 0 && w <= 100) decls.push(`width:${Math.round(w)}%!important`);
+  if (['left', 'center', 'right'].includes(m.align)) {
+    decls.push(`margin-left:${m.align === 'left' ? '0' : m.align === 'right' ? 'auto' : 'auto'}!important`);
+    decls.push(`margin-right:${m.align === 'right' ? '0' : 'auto'}!important`);
+    decls.push(`text-align:${m.align}!important`);
+  }
+  if (!decls.length) return '';
+  // Derived from the element id, NOT a counter: the same document must render
+  // byte-identical every time, or preview would drift from the published page.
+  const cls = 'sd-m-' + String(el.id || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24)
+    || 'sd-m-' + Math.abs(JSON.stringify(m).split('').reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0)).toString(36);
+  rules.push(`.${cls}{${decls.join(';')};}`);
+  return ' ' + cls;
+}
+
 // Templates ship without binary assets: an image slot with no `src` renders a
 // self-contained gradient placeholder (optionally captioned) that the user
 // replaces with a real upload from the media library. `ph` is a two-colour spec
@@ -2261,18 +2295,30 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
   const base = opts.baseUrl || `${origin}/site/${sub}`;
   const ctx = { row, theme, SI, sub, pages, currentSlug: page.slug, base, lang };
 
+  // Per-element mobile overrides (V6) are emitted as a small stylesheet inside
+  // the mobile media query, keyed on a per-element class. Collected while
+  // building the sections.
+  const mobileRules = [];
+
   const sections = (Array.isArray(page.sections) ? page.sections : []).map((sec) => {
     const h = _sdPx(sec && sec.h, 400);
-    // DOM order == mobile stacking order: sort by y, then x.
+    // DOM order == mobile stacking order. Default is reading order (y, then x);
+    // an explicit `mobile.order` overrides it so the author can restack a
+    // section for phones without touching the desktop layout.
     const els = (Array.isArray(sec && sec.els) ? sec.els : [])
       .filter((e) => e && typeof e === 'object' && e.type)
       .slice()
-      .sort((a, b) => (_sdPx(a.y) - _sdPx(b.y)) || (_sdPx(a.x) - _sdPx(b.x)));
+      .sort((a, b) => {
+        const ao = _sdMobileOrder(a), bo = _sdMobileOrder(b);
+        if (ao !== bo) return ao - bo;
+        return (_sdPx(a.y) - _sdPx(b.y)) || (_sdPx(a.x) - _sdPx(b.x));
+      });
     const inner = els.map((el) => {
       const html = _sdElement(el, ctx);
       if (!html) return '';
+      const cls = _sdMobileClass(el, mobileRules);
       const st = `left:${_sdPct(el.x)};top:${_sdPx(el.y)}px;width:${_sdPct(el.w)};min-height:${_sdPx(el.h, 0)}px;${el.z ? `z-index:${_sdPx(el.z)};` : ''}`;
-      return `<div class="sd-el${el.mhide ? ' sd-el--mhide' : ''}" style="${st}">${html}</div>`;
+      return `<div class="sd-el${_sdMobileHidden(el) ? ' sd-el--mhide' : ''}${cls}" style="${st}">${html}</div>`;
     }).join('');
     return `<section class="sd-sec" style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
   }).join('');
@@ -2375,6 +2421,7 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
       .sd-gal--grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
       .sd-gal--masonry{columns:2;}
       .sd-ibox,.sd-img{height:auto!important;}
+      ${mobileRules.join('')}
     }
   </style>
 </head>
