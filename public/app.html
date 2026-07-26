@@ -322,6 +322,9 @@
     .bo-addr-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px;
       color: #374151; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; padding: 9px 12px; margin-bottom: 14px; }
     .bo-addr-bar b { font-weight: 800; color: #111827; }
+    .bo-sync { font-size: 10px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 999px; background: #ecfdf5; color: #047857; white-space: nowrap; vertical-align: 1px; }
+    .bo-sync.is-off { background: #fff7ed; color: #b45309; }
     .wc-pal-btn.is-on { background: #4338ca; color: #fff; border-color: #4338ca; }
     .wc-tpl { border: 2px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff; transition: border-color .15s, box-shadow .15s; }
     .wc-tpl:hover { border-color: #c7d2fe; box-shadow: 0 6px 18px rgba(99,102,241,.14); }
@@ -2290,6 +2293,13 @@
         sm_upload_err: "That didn't upload — try again.", sm_mic_err: 'We could not reach your microphone.',
         sm_edit_on: 'Edit', sm_edit_off: 'Done', sm_edit_hint: 'Click anything on your page to change it.',
         sm_edit_saved: 'Saved', sm_reset_done: 'Back in sync with your resume',
+        sm_sync_q: 'You changed your {f} on your website. Update it on your saved resume too?',
+        sm_sync_yes: 'Yes, update it', sm_sync_no: 'No, just here',
+        sm_sync_f_name: 'name', sm_sync_f_subtitle: 'headline', sm_sync_f_summary: 'summary',
+        sm_sync_ok: 'Updated on your saved resume too.',
+        sm_sync_ok_both: 'Updated on your resume and cover letter.',
+        sm_sync_fail: 'We couldn\u2019t update your resume automatically \u2014 your website is updated, but your saved resume stayed the same.',
+        bo_sync_ok: 'Synced with website', bo_sync_off: 'Out of sync with website',
         sm_section_gone: 'Section removed from your website — your resume is unchanged.',
         sm_last_section: 'A page needs at least one section.',
         sm_kept_edits: 'Updated from your resume — your own edits were kept.',
@@ -2503,6 +2513,13 @@
         sm_upload_err: '上传失败，请重试。', sm_mic_err: '无法访问你的麦克风。',
         sm_edit_on: '编辑', sm_edit_off: '完成', sm_edit_hint: '点击页面上的任何内容即可修改。',
         sm_edit_saved: '已保存', sm_reset_done: '已与你的简历重新同步',
+        sm_sync_q: '你在网站上更改了{f}。要同时更新已保存的简历吗？',
+        sm_sync_yes: '好，一起更新', sm_sync_no: '不用，只改这里',
+        sm_sync_f_name: '姓名', sm_sync_f_subtitle: '头衔', sm_sync_f_summary: '个人简介',
+        sm_sync_ok: '已同时更新你保存的简历。',
+        sm_sync_ok_both: '已更新你的简历和求职信。',
+        sm_sync_fail: '我们无法自动更新你的简历——网站已更新，但保存的简历保持不变。',
+        bo_sync_ok: '与网站同步', bo_sync_off: '与网站不同步',
         sm_section_gone: '该板块已从网站移除——你的简历没有改动。',
         sm_last_section: '页面至少需要保留一个板块。',
         sm_kept_edits: '已根据简历更新——你自己修改过的内容已保留。',
@@ -7371,7 +7388,9 @@ Aaliyah Washington`
       const m = ev && ev.data;
       if (!m || m.__rtEdit !== 1 || !wcDoc || !window.SiteFields) return;
 
-      if (m.kind === 'ready') { smPushChips(); return; }
+      if (m.kind === 'ready') { smPushChips(); smPushSyncAsk(); return; }
+
+      if (m.kind === 'syncAnswer') { smSyncAnswer(m); return; }
       // Clicking the page counts as clicking away from the helper.
       if (m.kind === 'pageclick') { smHelpClose(); return; }
 
@@ -7383,6 +7402,7 @@ Aaliyah Washington`
       if (m.kind === 'edit') {
         smMutate(d => { SiteFields.applyEdit(d, m.el, m.value); }, 'inline-edit');
         smMarkAction({ el: m.el });
+        smMaybeAskSync(m.el);
         return;
       }
 
@@ -7680,6 +7700,133 @@ Aaliyah Washington`
         }, smUndoAnchor), '*');
       } catch (_) {}
       _smChipHint = false;   // once, then never again this session
+    }
+
+    /* ── Keeping the resume in step (Feature C) ───────────────────────────
+       Editing a field on the site detaches it: the site owns it from then on,
+       and later resume updates leave it alone. That is the right default —
+       without it, "your site follows your resume" would silently throw away
+       whatever they typed.
+
+       But most of the time someone fixing their headline on their website means
+       it everywhere. So once, quietly, beside the thing they just changed, we
+       offer to carry it back. Never a browser dialog, never blocking: this
+       lands in the middle of an ordinary edit in a flow whose whole premise is
+       not asking questions, so it has to be ignorable.
+
+       When it does not ask:
+         - the field is not one the resume can be edited through
+         - the resume already says this (nothing to carry)
+         - they have already declined this field twice — then never again
+         - they have already been asked about this field this session
+
+       A ten-second timeout is not a decline. Counting silence would take the
+       offer away from someone who was reading it. */
+    const SYNC_FIELDS = { name: 1, subtitle: 1, summary: 1 };
+    const _smSyncAsked = new Set();   // this session only
+    let _smSyncPending = null;
+
+    function smMaybeAskSync(elId) {
+      if (!wcDoc || !window.SiteFields || !window.SiteDocStore) return;
+      const el = SiteFields.findById(wcDoc, elId);
+      const field = el && el.props && el.props.field;
+      if (!field || !SYNC_FIELDS[field]) return;
+      if (_smSyncAsked.has(field)) return;
+      if (Number(el.props.syncNo || 0) >= 2) return;      // asked and declined twice
+
+      const value = String(el.props.text || '').trim();
+      if (!value) return;
+      const derived = String((SiteFields.deriveFields(smResumeText()) || {})[field] || '').trim();
+      if (!derived) return;                                // never found it; nothing to update
+      if (derived === value) return;                       // the resume already agrees
+
+      _smSyncAsked.add(field);
+      // The edit re-renders the frame, which throws away anything already drawn
+      // inside it. Queue the ask and let the new frame's "ready" deliver it —
+      // the same reason the undo chips are pushed that way.
+      _smSyncPending = { el: elId, field, previous: derived, next: value };
+      smPushSyncAsk();
+    }
+
+    const SYNC_LABEL = () => ({
+      name: _t('sm_sync_f_name', 'name'),
+      subtitle: _t('sm_sync_f_subtitle', 'headline'),
+      summary: _t('sm_sync_f_summary', 'summary'),
+    });
+
+    function smPushSyncAsk() {
+      const p = _smSyncPending;
+      const f = document.getElementById('smFrame');
+      if (!p || !f || !f.contentWindow) return;
+      try {
+        f.contentWindow.postMessage({
+          __rtSync: 1, el: p.el, field: p.field,
+          question: _t('sm_sync_q', 'You changed your {f} on your website. Update it on your saved resume too?')
+            .replace('{f}', SYNC_LABEL()[p.field] || p.field),
+          yes: _t('sm_sync_yes', 'Yes, update it'),
+          no: _t('sm_sync_no', 'No, just here'),
+        }, '*');
+      } catch (_) {}
+    }
+
+    async function smSyncAnswer(m) {
+      const p = _smSyncPending;
+      _smSyncPending = null;
+      if (!p || m.field !== p.field) return;
+
+      // Silence is not a decline — it does not count toward the two.
+      if (m.answer !== 'yes') {
+        if (m.answer === 'no') {
+          smMutate(d => {
+            const el = SiteFields.findById(d, p.el);
+            if (el && el.props) el.props.syncNo = Number(el.props.syncNo || 0) + 1;
+          }, 'sync-declined');
+        }
+        return;
+      }
+
+      try {
+        const r = await fetch('/api/resume-sync', {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+          body: JSON.stringify({ field: p.field, previous: p.previous, next: p.next }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.ok && d.ok) {
+          // The resume now says what the site says, so the field can follow it
+          // again — leaving it detached would mean the next resume edit silently
+          // stopped reaching a field the user just asked to keep in step.
+          smMutate(doc => {
+            const el = SiteFields.findById(doc, p.el);
+            if (el && el.props) { delete el.props.detached; delete el.props.detachedAt; delete el.props.syncNo; }
+          }, 'sync-applied');
+          // The saved resume has changed underneath us. Re-read it, or the next
+          // save would push the old text back over the top of the edit we just
+          // made — and the field would read as out of sync again immediately.
+          try {
+            const rr = await fetch('/api/resumes', { headers: authHeaders() });
+            const rd = await rr.json().catch(() => ({}));
+            if (rd.resumes && rd.resumes.length) { wcResumes = rd.resumes; wcSiteText = ''; }
+          } catch (_) {}
+          showToast(d.coverLetter
+            ? _t('sm_sync_ok_both', 'Updated on your resume and cover letter.')
+            : _t('sm_sync_ok', 'Updated on your saved resume too.'), 3200);
+          return;
+        }
+        // Could not find the field with certainty. Say so and change nothing —
+        // a resume that quietly gains a stray line is far worse than a sync
+        // that occasionally cannot run.
+        smSyncRefused(p);
+      } catch (_) { smSyncRefused(p); }
+    }
+
+    function smSyncRefused(p) {
+      smMutate(d => {
+        const el = SiteFields.findById(d, p.el);
+        if (el && el.props) el.props.syncNo = 2;   // do not offer again for this field
+      }, 'sync-refused');
+      showToast(_t('sm_sync_fail',
+        'We couldn’t update your resume automatically — your website is updated, but your saved resume stayed the same.'), 6000);
     }
 
     /* Keyboard undo/redo. Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y, driving the same
@@ -9124,6 +9271,12 @@ Aaliyah Washington`
       showTab('backoffice');
     }
     const _boDate = (ms) => { try { return new Date(ms).toLocaleDateString(); } catch (_) { return ''; } };
+    /* Only the resume the website was built from can be out of step with it, so
+       every other row shows nothing at all — a reassuring "synced" badge on a
+       resume the site has never read would be a claim we have not earned. */
+    const _boSyncTag = (st) => st === 'out_of_sync'
+      ? ` <span class="bo-sync is-off">${wcEsc(_t('bo_sync_off', 'Out of sync with website'))}</span>`
+      : (st === 'synced' ? ` <span class="bo-sync">${wcEsc(_t('bo_sync_ok', 'Synced with website'))}</span>` : '');
     async function loadBackOffice() {
       boSel = { resumes: new Set(), covers: new Set() };
       let resumes = [], covers = [], videos = [], sites = [];
@@ -9152,7 +9305,7 @@ Aaliyah Washington`
       if (!items.length) { wrap.innerHTML = `<div class="bo-empty">${wcEsc(_t('bo_empty', 'Nothing here yet.'))}</div>`; return; }
       wrap.innerHTML = items.map(it => `<div class="bo-row">
         <input type="checkbox" onchange="boToggle('${kind}',${it.id},this.checked)" ${boSel[kind].has(it.id) ? 'checked' : ''}/>
-        <span class="bo-row-title">${wcEsc(it.title || 'Untitled')}</span>
+        <span class="bo-row-title">${wcEsc(it.title || 'Untitled')}${_boSyncTag(it.siteSync)}</span>
         <span class="bo-row-meta">${_boDate(it.created_at)}</span>
         <button class="bo-act" onclick="boUse('${kind}',${it.id})" data-i18n="bo_use">Use</button>
         <button class="bo-act" onclick="boDuplicate('${single}',${it.id})" data-i18n="bo_duplicate">Duplicate</button>

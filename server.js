@@ -797,7 +797,105 @@ app.get('/api/resumes', (req, res) => {
   const email = emailFromToken(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   const rows = db.prepare('SELECT id, title, content, created_at FROM saved_resumes WHERE email = ? ORDER BY created_at DESC').all(email);
-  res.json({ resumes: rows });
+  res.json({ resumes: rows.map((r) => Object.assign({}, r, { siteSync: _siteSyncStatus(email, r) })) });
+});
+
+/**
+ * Does this resume still say what the user's website says?
+ *
+ * Only the resume the site was built from can be out of step with it — the
+ * others were never claimed by it. And only fields the user has taken ownership
+ * of are compared: a field still following the resume cannot disagree with it
+ * by definition, so counting those would mark every resume out of sync forever.
+ *
+ * Returns null when the question does not apply, so the client can show nothing
+ * rather than a reassuring badge it has not earned.
+ */
+function _siteSyncStatus(email, resume) {
+  try {
+    const site = _currentSite(email);
+    if (!site || !site.config) return null;
+    const cfg = JSON.parse(site.config);
+    const linked = cfg && cfg.assets && cfg.assets.resumeId;
+    if (!linked || Number(linked) !== Number(resume.id)) return null;
+    const SF = require('./public/site-fields.js');
+    const WB = require('./resume-writeback.js');
+    const owned = {};
+    SF.detachedFields(cfg).forEach((f) => {
+      const el = SF.findField(cfg, f);
+      if (el && el.props && el.props.text) owned[f] = el.props.text;
+    });
+    if (!Object.keys(owned).length) return 'synced';
+    return WB.diffFields(resume.content, owned).length ? 'out_of_sync' : 'synced';
+  } catch (_) { return null; }
+}
+
+/**
+ * Push one website edit back into the saved resume.
+ *
+ * The site is generated from the resume and then owned by the user: editing a
+ * field on the site detaches it, and the resume stops driving it. This is the
+ * offer to keep them together — "you changed your headline here, change it
+ * there too?" — and it is the ONLY path in the product that writes to the
+ * document people apply to jobs with.
+ *
+ * It refuses rather than guesses. If the field cannot be located in the resume
+ * with certainty, nothing is written and the client says so plainly. A resume
+ * that quietly gains a stray line is far worse than a sync that occasionally
+ * cannot run: see resume-writeback.js for what "certainty" means here.
+ */
+app.post('/api/resume-sync', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const WB = require('./resume-writeback.js');
+
+  const field = String((req.body && req.body.field) || '');
+  const previous = String((req.body && req.body.previous) || '');
+  const next = String((req.body && req.body.next) || '');
+
+  // The site's subtitle carries two resume facts — "Director of Product ·
+  // Portland" is a job title and a city living in one line. Split it back into
+  // the two places they came from, and only for the halves that actually
+  // changed: rewriting the role because the city moved would put a title the
+  // user never touched into their employment history.
+  let edits;
+  if (field === 'subtitle') {
+    const SEP = /\s*·\s*/;
+    const was = previous.split(SEP), now = next.split(SEP);
+    // A different number of parts means we cannot tell which half is which.
+    if (was.length !== now.length || was.length > 2) {
+      return res.json({ ok: false, reason: 'ambiguous' });
+    }
+    const slots = ['role', 'location'];
+    edits = was.map((p, i) => ({ field: slots[i], previous: p, next: now[i] }))
+      .filter((e) => e.previous.trim() !== e.next.trim());
+  } else if (field === 'name' || field === 'summary') {
+    edits = [{ field, previous, next }];
+  } else {
+    return res.json({ ok: false, reason: 'unknown_field' });
+  }
+  if (!edits.length) return res.json({ ok: true, written: [] });
+
+  const resume = db.prepare('SELECT id, content FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+  if (!resume) return res.json({ ok: false, reason: 'no_resume' });
+
+  const r = WB.writeFields(resume.content, edits);
+  if (!r.ok) return res.json({ ok: false, reason: r.reason, field: r.field });
+  db.prepare('UPDATE saved_resumes SET content = ? WHERE id = ?').run(r.text, resume.id);
+
+  // The cover letter is a different document that may or may not mention the
+  // same fact. Not finding it there is not a failure — the name simply may not
+  // be in it — but it is still written only on an exact anchor, never appended.
+  let cover = false;
+  const cl = db.prepare('SELECT id, content FROM saved_cover_letters WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+  if (cl) {
+    const c = WB.writeFields(cl.content, edits);
+    if (c.ok && c.written.length) {
+      db.prepare('UPDATE saved_cover_letters SET content = ? WHERE id = ?').run(c.text, cl.id);
+      cover = true;
+    }
+  }
+  res.json({ ok: true, written: r.written, resumeId: resume.id, coverLetter: cover });
 });
 
 // Save a tailored resume (dedupes identical content; keeps the latest 20).
@@ -2620,6 +2718,20 @@ function _sdEditLayer() {
     .sd-ed-bar--pulse{animation:sd-pulse 1.4s ease-in-out 3;}
     .sd-ed-chips--hint button{animation:sd-pulse 1s ease-in-out 2;}
     @keyframes sd-pulse{0%,100%{transform:scale(1);box-shadow:0 8px 24px rgba(0,0,0,.3);}50%{transform:scale(1.06);box-shadow:0 8px 30px rgba(99,102,241,.75);}}
+    /* The resume-sync offer. On the canvas next to what they just changed, not
+       a browser confirm(): this appears after an ordinary edit in a flow whose
+       premise is not being interrupted, so it must be ignorable. It answers
+       itself with "no" after ten seconds and never blocks anything. */
+    .sd-ed-sync{position:absolute;z-index:99998;max-width:min(330px,calc(100vw - 24px));background:#fff;color:#111827;
+      border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.22);padding:13px 15px;
+      font:inherit;font-size:13px;line-height:1.45;opacity:1;transition:opacity .4s ease;}
+    .sd-ed-sync.is-gone{opacity:0;}
+    .sd-ed-sync p{margin:0 0 11px;}
+    .sd-ed-sync .sd-ed-sync-btns{display:flex;gap:8px;}
+    .sd-ed-sync button{font:inherit;font-size:12.5px;font-weight:700;border-radius:999px;padding:8px 16px;cursor:pointer;
+      border:1.5px solid #e5e7eb;background:#fff;color:#374151;}
+    .sd-ed-sync button.yes{background:#4338ca;border-color:#4338ca;color:#fff;}
+    @media(max-width:820px){.sd-ed-sync{font-size:15px;}.sd-ed-sync button{font-size:14px;padding:12px 20px;}}
   </style>
   <script>
   (function(){
@@ -2834,6 +2946,62 @@ function _sdEditLayer() {
       startChipTimer(CHIP_MS);
     }
 
+    /* "Update your resume too?" — offered beside the field they just changed.
+       Silence is not an answer: it times out into "no" for this edit, but the
+       parent only counts an explicit No against the ask-twice-then-stop rule.
+       Burning someone's two chances while they were reading would be a way of
+       taking the offer away without them ever declining it. */
+    var sync = null, syncTimer = null;
+    function hideSync(){
+      if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
+      if (sync) { sync.remove(); sync = null; }
+    }
+    function showSync(m){
+      hideSync();
+      var t = document.querySelector('[data-el="' + String(m.el).replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      if (!t) return;
+      sync = document.createElement('div');
+      sync.className = 'sd-ed-sync';
+      var p = document.createElement('p');
+      p.textContent = m.question;
+      sync.appendChild(p);
+      var row = document.createElement('div');
+      row.className = 'sd-ed-sync-btns';
+      var answer = function(a){ return function(ev){
+        ev.stopPropagation(); ev.preventDefault();
+        hideSync();
+        post({ kind: 'syncAnswer', el: m.el, field: m.field, answer: a });
+      }; };
+      var yes = document.createElement('button');
+      yes.className = 'yes'; yes.textContent = m.yes; yes.onclick = answer('yes');
+      var no = document.createElement('button');
+      no.textContent = m.no; no.onclick = answer('no');
+      row.appendChild(yes); row.appendChild(no);
+      sync.appendChild(row);
+      document.body.appendChild(sync);
+
+      var r = t.getBoundingClientRect(), w = sync.getBoundingClientRect();
+      // Below the field — but below the undo chips too when they are showing.
+      // Both are anchored to the element that just changed, so without this the
+      // chip sits on top of the question and hides the first words of it.
+      var below = r.bottom;
+      if (chips) {
+        var cr = chips.getBoundingClientRect();
+        if (cr.height) below = Math.max(below, cr.bottom);   // both viewport-relative
+      }
+      var top = below + scrollY + 10;
+      if (top + w.height > document.documentElement.scrollHeight - 4) top = r.top + scrollY - w.height - 10;
+      sync.style.top = Math.max(scrollY + 8, Math.min(top, scrollY + innerHeight - w.height - 12)) + 'px';
+      sync.style.left = Math.max(8, Math.min(r.left + scrollX, innerWidth - w.width - 12)) + 'px';
+
+      syncTimer = setTimeout(function(){
+        if (!sync) return;
+        sync.classList.add('is-gone');
+        setTimeout(function(){ hideSync(); }, 420);
+        post({ kind: 'syncAnswer', el: m.el, field: m.field, answer: 'timeout' });
+      }, 10000);
+    }
+
     addEventListener('message', function(ev){
       var m = ev && ev.data;
       if (!m) return;
@@ -2842,6 +3010,7 @@ function _sdEditLayer() {
         showChips(m);
         return;
       }
+      if (m.__rtSync === 1) { showSync(m); return; }
       // "I want to move something": put a bar on every section at once and
       // bring the first into view, so the controls end up under their eyes
       // rather than needing to be discovered by clicking around.

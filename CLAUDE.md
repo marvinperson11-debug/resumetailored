@@ -26,7 +26,7 @@ npm run dev       # run with nodemon (auto-restarts on file changes)
 npm start         # run without nodemon (production)
 ```
 
-There are no tests and no linter configured.
+No linter is configured. Tests are plain Node scripts under `test/`, each run directly (`node test/site-publish.js`) and each printing `ALL PASS` or a list of failures — run them all with `for f in test/*.js; do node $f; done`. They cover the Website Creator's document model, rendering parity, publishing, inline editing, and the resume write-back.
 
 ## Architecture
 
@@ -71,7 +71,8 @@ Tables (all created with `CREATE TABLE IF NOT EXISTS` at startup):
 | `check_ins` | Career check-in data by `email` |
 | `forum_posts` / `forum_replies` | Community forum posts and their replies |
 | `shared_resumes` | Snapshot resumes behind `/r/:slug` share links (noindex, watermarked footer) |
-| `personal_sites` | Pro personal websites at `/site/:name` (`subdomain` PK, indexable, watermark-free) |
+| `personal_sites` | Pro personal websites at `/site/:name` (`subdomain` PK, indexable, watermark-free). Several rows per user; at most one with `published = 1` |
+| `site_aliases` | Forwarding addresses left behind by a rename (`old_sub` PK → `new_sub`), so old links 301 to the current site |
 
 Access is via prepared statements (`db.prepare(...).run/get/all`). Note: several older docs/comments still reference in-memory `Map` objects — that design has been replaced by the SQLite tables above.
 
@@ -102,7 +103,19 @@ Buttons are visible by default and hidden only when `/api/auth/linkedin/status` 
 
 ## Personal portfolio websites (Pro)
 
-Pro users publish a resume as a live public page (`personal_sites` table; `POST/GET/DELETE /api/personal-site`, Pro-gated via `isSubscriber`). Rendered at **`/site/:name`** — indexable and **watermark-free** — by the shared `_shareResumeHtml(row, origin, opts)` renderer (also used by `/r/:slug` share links, which stay noindex and keep the brand footer). Subdomains are validated (3–30 chars, `RESERVED_SUBDOMAINS` blocklist); one site per user.
+Pro users publish a resume as a live public page (`personal_sites` table; `POST/GET/DELETE /api/personal-site`, Pro-gated via `isSubscriber`). Rendered at **`/site/:name`** — indexable and **watermark-free** — by the shared `_shareResumeHtml(row, origin, opts)` renderer (also used by `/r/:slug` share links, which stay noindex and keep the brand footer). Subdomains are validated (3–30 chars, `RESERVED_SUBDOMAINS` blocklist).
+
+**A user may keep several sites** — one per template they have tried — but only **one is ever published**: publishing a site unpublishes the others server-side (both `POST /api/personal-site` with `publish:true` and `PATCH /api/personal-site`). `GET /api/personal-sites` lists them all; `DELETE /api/personal-sites/:sub` removes one by name; `GET /api/personal-sites/:sub/render` returns an owner-only noindex render used for the Back Office thumbnails. Renaming an address leaves a row in `site_aliases`, and the old address 301s to the new one (`_movedTarget`), so links already shared keep working.
+
+The **Back Office** (`public/app.html`, `boRenderSites`) lists every site as a card — live thumbnail, template name, last edited, address, Edit / Publish / Delete — with the Published badge read directly off `published`. "Edit" stashes `wcOpenSub` and lets `showTab('website')` do the single load; passing it as an argument raced the tab's own call.
+
+### Resume sync (Feature C)
+
+Editing a field on the site **detaches** it (`site-fields.js`): the site owns it and later resume updates leave it alone. After such an edit the canvas offers, once, to carry the change back to the saved resume — `POST /api/resume-sync`, backed by **`resume-writeback.js`**.
+
+That module is the only code in the product that writes to `saved_resumes`, and its rule is: **if the field cannot be located with certainty, write nothing.** Never a best-effort append — a resume that quietly gains a stray line is worse than a sync that occasionally cannot run. Certainty means the text at the located position is exactly what the site had before the edit; a resume of an unanticipated shape simply fails to match. `writeFields` is all-or-nothing, because the site's `subtitle` is "role · location" and half a write would leave the resume saying something the user never approved.
+
+Fields: `name` (first non-empty line), `location` (contact-line segment, refused if ambiguous), `role` (title prefix of the first EXPERIENCE entry), `summary` (body under SUMMARY/PROFILE/OBJECTIVE/ABOUT). Skills and per-entry experience are **not** editable fields on the site, so there is nothing to sync for them. Declining twice for a field stops the offer permanently (`props.syncNo`); a ten-second timeout is not a decline. `GET /api/resumes` returns `siteSync` (`synced` / `out_of_sync` / `null`) for the Back Office badge — only for the resume the site was built from.
 
 Both routes exist: **path-based `/site/:name`** and **host-based `name.resumetailored.com`**. The host-based path is an early middleware in `server.js` (`PERSONAL_SITE_HOST_RE`, before `express.static`) that maps a `<sub>.resumetailored.com` root request to the same renderer — it's **inert until a wildcard `*.resumetailored.com` DNS record + wildcard TLS point such hosts at the app** (apex, `www`, reserved names, the Railway/Netlify hosts and localhost all fall through unchanged). Provision DNS/TLS to activate it (see `docs/RAILWAY_SETUP.md` §9).
 
