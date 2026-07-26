@@ -420,6 +420,29 @@ const server = app.listen(0, async () => {
       (await fetch(`${B}/api/personal-sites/${dev.subdomain}`, { method: 'DELETE', headers: AJ('tokB') })).status === 403);
     check('and it is still there', (await fetch(`${B}/site/${dev.subdomain}`)).status === 200);
 
+    /* AN EXPLICIT TEMPLATE CHOICE IS NEVER SILENTLY DISCARDED.
+       autogen returned the existing site whenever there was one, so picking a
+       template while you already had a site handed back the OLD one, built
+       from a different template — "this is not even the template I chose". */
+    const had = await (await fetch(`${B}/api/personal-site/autogen`, {
+      method: 'POST', headers: AJ('tokC'), body: JSON.stringify({ templateId: 'executive' }),
+    })).json();
+    check('a site exists, built from one template', had.config.templateId === 'executive', had.config.templateId);
+    const picked = await (await fetch(`${B}/api/personal-site/autogen`, {
+      method: 'POST', headers: AJ('tokC'), body: JSON.stringify({ templateId: 'studio' }),
+    })).json();
+    check('choosing a different template gives THAT template',
+      picked.config.templateId === 'studio', picked.config.templateId);
+    check('and it is a new site rather than the old one relabelled', picked.created === true);
+    check('the site they already had still exists',
+      (await (await fetch(`${B}/api/personal-sites`, { headers: AJ('tokC') })).json())
+        .sites.some(x => x.subdomain === had.subdomain));
+    // Reopening without naming a template must still return what they had.
+    const reopen = await (await fetch(`${B}/api/personal-site/autogen`, {
+      method: 'POST', headers: AJ('tokC'),
+    })).json();
+    check('reopening without a template choice creates nothing', reopen.created === false);
+
     // Reopening returns the live one, which is what they were last looking at.
     const cur = await (await fetch(`${B}/api/personal-site`, { headers: AJ('tokA') })).json();
     check('reopening lands on the live site', cur.site.subdomain === dev.subdomain, cur.site.subdomain);
@@ -561,6 +584,20 @@ const server = app.listen(0, async () => {
     check('full screen pushes a history entry', /history\.pushState\(\{ rtSite: 1 \}/.test(appJs));
     check('and Back is caught rather than leaving the app',
       /addEventListener\('popstate'/.test(appJs) && /_smPopped/.test(appJs));
+
+    /* Two controls per state, never seven. Checked through the STYLESHEET, not
+       the `hidden` property: `[hidden]` is a UA rule that any class setting
+       `display` silently beats, so a button can hold hidden=true and still be
+       on screen — a property check would have confirmed it was hidden while
+       the user could see it. */
+    check('hiding a bar control actually hides it',
+      /\.sm-bar \[hidden\] \{ display: none !important; \}/.test(appJs));
+    check('the bar no longer carries the look/address/advanced buttons',
+      !/onclick="smStripOpen\(1\)"[^>]*sm_change_look/.test(appJs) && !/id="smAddrBtn"/.test(appJs));
+    check('the advanced editor keeps a door inside the page',
+      /smHelpPick\('advanced'\)/.test(appJs) && /what === 'advanced'/.test(appJs));
+    check('Back is one step back rather than a fixed destination',
+      /_smPreviewFromEditor/.test(appJs) && /function smBack\(\)/.test(appJs));
 
     check('the replacement neither posts a site nor asks for an address',
       /function startPersonalSite\(\)[\s\S]{0,600}?\n    \}/.test(appJs) &&

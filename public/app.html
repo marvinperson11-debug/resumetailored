@@ -446,6 +446,11 @@
       padding: 8px 15px; cursor: pointer;
     }
     .sm-look:hover { background: #e0e7ff; }
+    /* `[hidden]` is a UA-stylesheet rule, so any class here that sets `display`
+       silently beats it — the button kept its `hidden` property AND stayed on
+       screen. Checking the property in a test would confirm it was hidden while
+       the user could still see it, so state this explicitly. */
+    .sm-bar [hidden] { display: none !important; }
     .sm-look.is-on { background: #4338ca; border-color: #4338ca; color: #fff; }
     /* On a phone the bar has to hold four things. Labels collapse to their
        icons rather than overlapping, and the note keeps only its badge. */
@@ -1405,14 +1410,23 @@
              button. The editor below only appears once they ask for it. -->
         <div class="sm-view" id="smView">
           <div class="sm-bar">
-            <button type="button" class="sm-back" onclick="smExit()" title="Back to ResumeTailored"><span aria-hidden="true">←</span><span class="sm-lbl" data-i18n="sm_back_short">Back</span></button>
+            <!-- TWO controls per state, never more. Seven of them wrapped to
+                 three rows on a phone — 187px of chrome before you saw any of
+                 your own website — and it read as a second editor sitting on
+                 top of the site rather than the site itself.
+
+                 Editing:  Preview  ·  Publish
+                 Viewing:  Back     ·  Publish
+
+                 Everything else — a different look, the web address, a
+                 different design, the advanced editor — lives INSIDE the page,
+                 in the 💬 Not sure? panel and the guided strip, where it is
+                 reached in the context of the thing it changes. -->
+            <button type="button" class="sm-back" id="smBackBtn" onclick="smBack()"><span aria-hidden="true">←</span><span class="sm-lbl" data-i18n="sm_back_short">Back</span></button>
             <div class="sm-note" id="smNote"></div>
-            <button type="button" class="sm-look" id="smEditBtn" onclick="smToggleEdit()" title="Edit the page"><span aria-hidden="true">✏️</span><span class="sm-lbl" data-i18n="sm_edit_on">Edit</span></button>
-            <button type="button" class="sm-look" onclick="smStripOpen(1)" title="Change the look"><span aria-hidden="true">🎨</span><span class="sm-lbl" data-i18n="sm_change_look">Change the look</span></button>
-            <button type="button" class="sm-look" id="smAddrBtn" onclick="smChangeAddress()" title="Change my web address"><span aria-hidden="true">🔗</span><span class="sm-lbl" data-i18n="sm_addr_btn">My address</span></button>
+            <button type="button" class="sm-look" id="smPreviewBtn" onclick="smSetEditing(false)" title="See it the way visitors will"><span aria-hidden="true">👁</span><span class="sm-lbl" data-i18n="sm_preview_btn">Preview</span></button>
             <button type="button" class="sm-publish" id="smPublishBtn" onclick="smPublish()" data-i18n="sm_publish">Publish my website</button>
             <a class="sm-live" id="smLiveLink" target="_blank" rel="noopener" style="display:none;" data-i18n="sm_visit">Visit my website ↗</a>
-            <button type="button" class="sm-back" onclick="smAdvanced()" title="Advanced editor"><span aria-hidden="true">⚙</span><span class="sm-lbl" data-i18n="sm_advanced">Advanced</span></button>
           </div>
           <iframe class="sm-frame" id="smFrame" title="Your website"></iframe>
           <div class="sm-hint" id="smHint" hidden>
@@ -1431,6 +1445,7 @@
             <button type="button" class="sm-help-opt" onclick="smHelpPick('links')" data-i18n="sm_help_links">I want to add my links</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('address')" data-i18n="sm_help_address">I want to change my web address</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('template')" data-i18n="sm_help_template">I want to try a different design</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('advanced')" data-i18n="sm_help_advanced">I want the advanced editor</button>
             <button type="button" class="sm-help-never" onclick="smHelpClose()" data-i18n="sm_help_never">Never mind</button>
           </div>
           <div class="sm-strip" id="smStrip">
@@ -2297,6 +2312,7 @@
         sm_advanced: 'Advanced', sm_adv_desktop: 'The advanced editor needs a bigger screen.',
         sm_upload_err: "That didn't upload — try again.", sm_mic_err: 'We could not reach your microphone.',
         sm_edit_on: 'Edit', sm_edit_off: 'Done', sm_edit_hint: 'Click anything on your page to change it.',
+        sm_preview_btn: 'Preview', sm_help_advanced: 'I want the advanced editor',
         sm_edit_saved: 'Saved', sm_reset_done: 'Back in sync with your resume',
         sm_sync_q: 'You changed your {f} on your website. Update it on your saved resume too?',
         sm_sync_yes: 'Yes, update it', sm_sync_no: 'No, just here',
@@ -2517,6 +2533,7 @@
         sm_advanced: '高级', sm_adv_desktop: '高级编辑器需要更大的屏幕。',
         sm_upload_err: '上传失败，请重试。', sm_mic_err: '无法访问你的麦克风。',
         sm_edit_on: '编辑', sm_edit_off: '完成', sm_edit_hint: '点击页面上的任何内容即可修改。',
+        sm_preview_btn: '预览', sm_help_advanced: '我想使用高级编辑器',
         sm_edit_saved: '已保存', sm_reset_done: '已与你的简历重新同步',
         sm_sync_q: '你在网站上更改了{f}。要同时更新已保存的简历吗？',
         sm_sync_yes: '好，一起更新', sm_sync_no: '不用，只改这里',
@@ -7405,13 +7422,12 @@ Aaliyah Washington`
     let smEditing = false;
 
     async function smSetEditing(on) {
+      const wasEditing = smEditing;
       smEditing = !!on;
-      const b = document.getElementById('smEditBtn');
-      if (b) {
-        b.classList.toggle('is-on', smEditing);
-        const lbl = b.querySelector('.sm-lbl');
-        if (lbl) lbl.textContent = smEditing ? _t('sm_edit_off', 'Done') : _t('sm_edit_on', 'Edit');
-      }
+      // Remember how we got to the preview, so Back knows whether it is
+      // returning to the editor or leaving the Website Creator.
+      if (!smEditing && wasEditing) _smPreviewFromEditor = true;
+      if (smEditing) _smPreviewFromEditor = false;
       smHelpSync();
       smSyncChrome();
       await smRenderSite();
@@ -7632,6 +7648,17 @@ Aaliyah Washington`
        Public view is the site and nothing else. Edit mode keeps the left rail
        and the top controls. One function decides, so the two can never
        disagree. */
+    /* Back always means one step back, never a dead end.
+       From a preview you opened FROM the editor it returns to the editor; from
+       the view you landed on it leaves the Website Creator. That is why the
+       editing state needs no Back of its own — Preview is the only forward
+       move, and Back undoes whichever move you made. */
+    let _smPreviewFromEditor = false;
+    function smBack() {
+      if (_smPreviewFromEditor) { _smPreviewFromEditor = false; smSetEditing(true); return; }
+      smExit();
+    }
+
     function smSyncChrome() {
       const b = document.body;
       // `wb-picker` is owned by the first-run flow, not by this. Clearing it
@@ -7642,6 +7669,13 @@ Aaliyah Washington`
       b.classList.toggle('wb-public', inPublic);
       const shell = document.getElementById('cvShell');
       if (shell && !inPicker) shell.style.display = (smOn && !smEditing) ? 'none' : '';
+
+      // Two controls, and which two depends on what you are doing. Publish is
+      // in both because going live is the point of the whole thing.
+      const back = document.getElementById('smBackBtn');
+      const prev = document.getElementById('smPreviewBtn');
+      if (back) back.hidden = !!smEditing;
+      if (prev) prev.hidden = !smEditing;
     }
 
     function smHelpSync() {
@@ -7679,6 +7713,10 @@ Aaliyah Washington`
       if (what === 'links') { smLinksOpen(); return; }
       if (what === 'address') { smChangeAddress(); return; }
       if (what === 'template') { smTryTemplate(); return; }
+      // The advanced editor lost its bar button along with the rest of the
+      // chrome, so this is now its only door — inside the page, where someone
+      // goes looking when the simple controls are not enough.
+      if (what === 'advanced') { smAdvanced(); return; }
     }
 
     // Straight to the file picker. If this vibe's page has no photo slot, one is
