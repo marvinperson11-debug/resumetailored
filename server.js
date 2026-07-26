@@ -398,9 +398,27 @@ app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
+// Set only by the test harness, which fires a few hundred requests from one IP
+// in a couple of seconds and would otherwise measure throttling, not rendering.
+const RATE_LIMIT_OFF = process.env.RT_DISABLE_RATE_LIMIT === '1';
+
+// The Templates panel loads every starter template as a live <iframe> thumbnail,
+// so opening it is a dozen requests in one second. That route renders static
+// HTML with no database or AI work behind it, so it gets its own generous
+// budget rather than eating the shared 30/min one and locking the user out of
+// the rest of the app for a minute.
+const TPL_PREVIEW_PATH_RE = /^\/site-templates\/[^/]+\/preview\/?$/;
+const tplPreviewLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 180,
+  skip: () => RATE_LIMIT_OFF,
+  message: { error: 'Too many requests, please slow down.' },
+});
+
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
+  skip: (req) => RATE_LIMIT_OFF || TPL_PREVIEW_PATH_RE.test(req.path),
   message: { error: 'Too many requests, please slow down.' }
 });
 app.use('/api/', apiLimiter);
@@ -2066,6 +2084,16 @@ function _extractCaseStudies(text, max = 6) {
 const _clampInt = (v, lo, hi, dflt) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt; };
 const _safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/|data:image\/(png|jpe?g|webp);base64,)/i.test(u) && u.length < 2000000) ? u : '';
 
+// For hrefs rather than asset sources. `_safeUrl` deliberately rejects
+// `mailto:`/`tel:` because it also guards <img src>, but a social link or
+// button pointing at an email address is legitimate — and silently dropping it
+// meant every "Email" button in the templates rendered as nothing.
+const _safeLinkUrl = (u) => {
+  if (typeof u !== 'string') return '';
+  if (/^mailto:[^\s"'<>]{3,320}$/i.test(u) || /^tel:\+?[0-9()\-.\s]{3,32}$/i.test(u)) return u;
+  return _safeUrl(u);
+};
+
 
 // ─── Website Builder v2 — site-document renderer ─────────────────────────────
 // A site document is: pages → sections → absolutely-positioned elements.
@@ -2137,13 +2165,19 @@ function _sdMobileClass(el, rules) {
 // self-contained gradient placeholder (optionally captioned) that the user
 // replaces with a real upload from the media library. `ph` is a two-colour spec
 // like { from:'6366F1', to:'8B5CF6', label:'Your photo' } — colours are validated.
-function _sdPlaceholder(p, radius) {
+// `minH` is the element's drawn height. Elements are positioned with min-height
+// (so text can grow) and no fixed height, which means the stylesheet's
+// `height:100%` on the placeholder resolves against an auto-height parent and
+// collapses to the 120px floor — every image slot rendered as a short band no
+// matter how large you drew it. Passing the height through fixes that.
+function _sdPlaceholder(p, radius, minH) {
   const ph = p && p.ph;
   if (!ph) return '';
   const from = _sdColor(ph.from, '#6366F1');
   const to = _sdColor(ph.to, '#8B5CF6');
   const round = ph.shape === 'circle' ? '50%' : `${_sdPx(radius, 12)}px`;
-  return `<div class="sd-ph" style="background:linear-gradient(135deg,${from},${to});border-radius:${round};">${ph.label ? `<span>${_sdText(ph.label, 60)}</span>` : ''}</div>`;
+  const h = _sdPx(minH, 0);
+  return `<div class="sd-ph" style="background:linear-gradient(135deg,${from},${to});border-radius:${round};${h > 0 ? `min-height:${h}px;` : ''}">${ph.label ? `<span>${_sdText(ph.label, 60)}</span>` : ''}</div>`;
 }
 
 // One element → HTML. `ctx` carries row/theme/lang/pages for elements that need
@@ -2154,6 +2188,9 @@ function _sdElement(el, ctx) {
   const align = ['left', 'center', 'right'].includes(p.align) ? p.align : 'left';
   const color = _sdColor(p.color, '');
   const styleText = `text-align:${align};${color ? `color:${color};` : ''}`;
+  // The height the element was drawn at. Media slots honour it; text elements
+  // ignore it and grow with their content.
+  const drawnH = _sdPx(el && el.h, 0);
   switch (el.type) {
     case 'heading':
       return `<h1 class="sd-h1" style="${styleText}${p.size ? `font-size:${_sdPx(p.size, 48)}px;` : ''}">${_sdText(p.text, 300)}</h1>`;
@@ -2163,16 +2200,16 @@ function _sdElement(el, ctx) {
       return `<div class="sd-p" style="${styleText}">${_sdText(p.text, 4000).replace(/\n/g, '<br/>')}</div>`;
     case 'image': {
       const u = _safeUrl(p.src);
-      if (!u) return _sdPlaceholder(p, _sdPx(p.radius, 12));
-      return `<img class="sd-img" src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy" style="border-radius:${_sdPx(p.radius, 12)}px;object-fit:${p.fit === 'contain' ? 'contain' : 'cover'};"/>`;
+      if (!u) return _sdPlaceholder(p, _sdPx(p.radius, 12), drawnH);
+      return `<img class="sd-img" src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy" style="border-radius:${_sdPx(p.radius, 12)}px;object-fit:${p.fit === 'contain' ? 'contain' : 'cover'};${drawnH ? `min-height:${drawnH}px;` : ''}"/>`;
     }
     case 'imagebox': {
       const u = _safeUrl(p.src);
       const inner = u
         ? `<img src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy"/>`
-        : _sdPlaceholder(p, 0);
+        : _sdPlaceholder(p, 0, drawnH);
       if (!u && !p.ph) return '';
-      return `<figure class="sd-ibox" style="border-radius:${_sdPx(p.radius, 14)}px;">${inner}${p.caption ? `<figcaption>${_sdText(p.caption, 300)}</figcaption>` : ''}</figure>`;
+      return `<figure class="sd-ibox" style="border-radius:${_sdPx(p.radius, 14)}px;${drawnH ? `min-height:${drawnH}px;` : ''}">${inner}${p.caption ? `<figcaption>${_sdText(p.caption, 300)}</figcaption>` : ''}</figure>`;
     }
     case 'gallery': {
       const items = Array.isArray(p.items) ? p.items.slice(0, 40) : [];
@@ -2184,7 +2221,7 @@ function _sdElement(el, ctx) {
           ? `<img src="${_escHtml(u)}" alt="${_sdText(it.alt || it.title || '', 200)}" loading="lazy"/>`
           : `<div class="sd-ph sd-ph--cell" style="background:linear-gradient(135deg,${_sdColor(it.ph.from, '#6366F1')},${_sdColor(it.ph.to, '#8B5CF6')});height:${_sdPx(it.ph.h, 220)}px;"></div>`;
         const inner = `<figure class="sd-gcell">${img}${cap}</figure>`;
-        const href = _safeUrl(it && it.link);
+        const href = _safeLinkUrl(it && it.link);
         return href ? `<a href="${_escHtml(href)}" target="_blank" rel="noopener">${inner}</a>` : inner;
       }).join('');
       if (!cells) return '';
@@ -2217,7 +2254,7 @@ function _sdElement(el, ctx) {
     case 'social': {
       const items = Array.isArray(p.items) ? p.items.slice(0, 10) : [];
       const links = items.map((it) => {
-        const u = _safeUrl(it && it.url); if (!u) return '';
+        const u = _safeLinkUrl(it && it.url); if (!u) return '';
         return `<a class="sd-soc" href="${_escHtml(u)}" target="_blank" rel="noopener" aria-label="${_sdText(it.network || 'link', 40)}">${_sdText((it.network || '?').slice(0, 2).toUpperCase(), 4)}</a>`;
       }).join('');
       return links ? `<div class="sd-socs">${links}</div>` : '';
@@ -2237,7 +2274,9 @@ function _sdElement(el, ctx) {
     case 'divider':
       return `<hr class="sd-divider" style="border-top-width:${_sdPx(p.thickness, 1)}px;${color ? `border-top-color:${color};` : ''}"/>`;
     case 'box':
-      return `<div class="sd-box" style="${_sdColor(p.bg, '') ? `background:${_sdColor(p.bg, '')};` : ''}border-radius:${_sdPx(p.radius, 14)}px;"></div>`;
+      // Same collapse as the placeholder: `height:100%` against an auto-height
+      // parent is 0, so a card background drawn 250px tall rendered as nothing.
+      return `<div class="sd-box" style="${_sdColor(p.bg, '') ? `background:${_sdColor(p.bg, '')};` : ''}border-radius:${_sdPx(p.radius, 14)}px;${drawnH ? `min-height:${drawnH}px;` : ''}"></div>`;
     case 'spacer':
       return '<div class="sd-spacer"></div>';
     case 'nav': {
@@ -2271,7 +2310,7 @@ function _sdElement(el, ctx) {
 function _sdLink(p, ctx) {
   if (p.page) { const pg = (ctx.pages || []).find((x) => x.slug === p.page); if (pg) return pg.isHome ? ctx.base : `${ctx.base}/${encodeURIComponent(pg.slug)}`; }
   if (p.anchor) return '#' + String(p.anchor).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
-  return _safeUrl(p.href) || '';
+  return _safeLinkUrl(p.href) || '';
 }
 
 function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
@@ -2320,7 +2359,12 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
       const st = `left:${_sdPct(el.x)};top:${_sdPx(el.y)}px;width:${_sdPct(el.w)};min-height:${_sdPx(el.h, 0)}px;${el.z ? `z-index:${_sdPx(el.z)};` : ''}`;
       return `<div class="sd-el${_sdMobileHidden(el) ? ' sd-el--mhide' : ''}${cls}" style="${st}">${html}</div>`;
     }).join('');
-    return `<section class="sd-sec" style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
+    // The section id doubles as the anchor target: a button with
+    // `props.anchor: 'contact'` links to `#contact`, which only scrolls if the
+    // section actually carries that id. Without this every in-page CTA in every
+    // template was a dead link.
+    const anchorId = String((sec && sec.id) || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
+    return `<section class="sd-sec"${anchorId ? ` id="${anchorId}"` : ''} style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
   }).join('');
 
   const title = _sdText((page.seo && page.seo.title) || row.name || page.name || 'Portfolio', 120);
@@ -2348,8 +2392,9 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
   <style>
     :root{--p:${theme.primary};--a:${theme.accent};--ink:${theme.ink};--paper:${theme.paper};--muted:${theme.muted};}
     *{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
     body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
-    .sd-sec{position:relative;width:100%;background-repeat:no-repeat;}
+    .sd-sec{position:relative;width:100%;background-repeat:no-repeat;scroll-margin-top:12px;}
     .sd-inner{position:relative;max-width:${SD_CANVAS}px;margin:0 auto;}
     .sd-el{position:absolute;}
     .sd-h1{font-size:48px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
@@ -2383,7 +2428,9 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     .sd-socs{display:flex;gap:10px;}
     .sd-soc{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--p);color:#fff;font-size:12px;font-weight:800;text-decoration:none;}
     .sd-divider{border:none;border-top:1px solid rgba(127,127,127,.35);width:100%;}
-    .sd-box{width:100%;height:100%;}
+    /* Boxes are almost always card backgrounds sat behind text. Without a
+       shadow a near-white card on a near-white section is invisible. */
+    .sd-box{width:100%;height:100%;box-shadow:0 1px 3px rgba(15,23,42,.07),0 8px 24px -12px rgba(15,23,42,.18);}
     .sd-nav{display:flex;gap:22px;flex-wrap:wrap;align-items:center;}
     .sd-navlink{font-size:15px;font-weight:600;color:inherit;text-decoration:none;opacity:.8;}
     .sd-navlink.is-on,.sd-navlink:hover{opacity:1;color:var(--p);}
@@ -2649,7 +2696,7 @@ app.get('/api/site-templates/:id', (req, res) => {
 // sample content — no user data of any kind. It is loaded via <iframe src=...>
 // for the gallery thumbnails and previews, and an iframe cannot send the Bearer
 // token, so requiring a session here made every template preview 401.
-app.get('/api/site-templates/:id/preview', (req, res) => {
+app.get('/api/site-templates/:id/preview', tplPreviewLimiter, (req, res) => {
   const doc = templateDoc(String(req.params.id || '').slice(0, 40));
   if (!doc) return res.status(404).json({ error: 'Unknown template.' });
   const page = String(req.query.page || '').toLowerCase().slice(0, 60);
