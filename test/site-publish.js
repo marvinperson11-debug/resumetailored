@@ -607,8 +607,17 @@ const server = app.listen(0, async () => {
        and undo all run through it. The surface went, not the engine. */
     check('the document store simple mode depends on is still wired',
       /edApply\(/.test(appJs) && /edStore\.subscribe/.test(appJs));
-    check('Back is one step back rather than a fixed destination',
-      /_smPreviewFromEditor/.test(appJs) && /function smBack\(\)/.test(appJs));
+    /* ONE PAGE. The read-only view of the site — banner, Back, live link, a
+       Customize button and no way to edit anything — is deleted. Pressing
+       "Personal Website" landed there, so someone who came to change something
+       arrived somewhere they could not, with the editor unreachable behind it.
+       Simple mode IS the editor now; the live address is how you see the site
+       as visitors do. */
+    check('there is no read-only state to land in', !/_smPreviewFromEditor/.test(appJs));
+    check('and no button that opens one', !/id="smPreviewBtn"/.test(appJs) && !/smSetEditing\(false\)/.test(appJs));
+    check('Back leaves the Website Creator', /function smBack\(\) \{ smExit\(\); \}/.test(appJs));
+    check('editing is the only state', /let smEditing = true;/.test(appJs));
+    check('and the dead read-only styling went with it', !/wb-public/.test(appJs));
 
     check('the replacement neither posts a site nor asks for an address',
       /function startPersonalSite\(\)[\s\S]{0,600}?\n    \}/.test(appJs) &&

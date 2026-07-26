@@ -365,8 +365,6 @@
        Three states, one switch. Public view is the site and nothing else;
        edit mode keeps the left rail; the template picker is shown alone to
        someone who has no site yet. */
-    body.wb-public .cv-shell,
-    body.wb-public .sidebar { display: none !important; }
     body.wb-picker .sidebar,
     body.wb-picker .sm-view { display: none !important; }
     /* The first-run picker borrows the editor's shell to host the template
@@ -1436,7 +1434,6 @@
                  reached in the context of the thing it changes. -->
             <button type="button" class="sm-back" id="smBackBtn" onclick="smBack()"><span aria-hidden="true">←</span><span class="sm-lbl" data-i18n="sm_back_short">Back</span></button>
             <div class="sm-note" id="smNote"></div>
-            <button type="button" class="sm-look" id="smPreviewBtn" onclick="smSetEditing(false)" title="See it the way visitors will"><span aria-hidden="true">👁</span><span class="sm-lbl" data-i18n="sm_preview_btn">Preview</span></button>
             <button type="button" class="sm-publish" id="smPublishBtn" onclick="smPublish()" data-i18n="sm_publish">Publish my website</button>
             <a class="sm-live" id="smLiveLink" target="_blank" rel="noopener" style="display:none;" data-i18n="sm_visit">Visit my website ↗</a>
           </div>
@@ -2323,7 +2320,7 @@
         sm_advanced: 'Advanced', sm_adv_desktop: 'The advanced editor needs a bigger screen.',
         sm_upload_err: "That didn't upload — try again.", sm_mic_err: 'We could not reach your microphone.',
         sm_edit_on: 'Edit', sm_edit_off: 'Done', sm_edit_hint: 'Click anything on your page to change it.',
-        sm_preview_btn: 'Preview', sm_help_advanced: 'I want the advanced editor',
+        sm_help_advanced: 'I want the advanced editor',
         sm_edit_saved: 'Saved', sm_reset_done: 'Back in sync with your resume',
         sm_sync_q: 'You changed your {f} on your website. Update it on your saved resume too?',
         sm_sync_yes: 'Yes, update it', sm_sync_no: 'No, just here',
@@ -2544,7 +2541,7 @@
         sm_advanced: '高级', sm_adv_desktop: '高级编辑器需要更大的屏幕。',
         sm_upload_err: '上传失败，请重试。', sm_mic_err: '无法访问你的麦克风。',
         sm_edit_on: '编辑', sm_edit_off: '完成', sm_edit_hint: '点击页面上的任何内容即可修改。',
-        sm_preview_btn: '预览', sm_help_advanced: '我想使用高级编辑器',
+        sm_help_advanced: '我想使用高级编辑器',
         sm_edit_saved: '已保存', sm_reset_done: '已与你的简历重新同步',
         sm_sync_q: '你在网站上更改了{f}。要同时更新已保存的简历吗？',
         sm_sync_yes: '好，一起更新', sm_sync_no: '不用，只改这里',
@@ -7430,21 +7427,23 @@ Aaliyah Washington`
        The rule behind all of it: editing a field on the site DETACHES it from
        the resume. Later resume updates leave it alone until the user presses
        "reset to my resume". */
-    let smEditing = false;
+    /* THERE IS ONE PAGE. `smEditing` used to have a false state: a read-only
+       view of the site with a Customize button and no way through to the
+       editor. Pressing "Personal Website" landed there, so someone who came to
+       change something arrived somewhere they could not. That page is deleted.
+       Simple mode IS the editor; to see the site the way visitors do, open the
+       live address. */
+    let smEditing = true;
 
     async function smSetEditing(on) {
-      const wasEditing = smEditing;
-      smEditing = !!on;
-      // Remember how we got to the preview, so Back knows whether it is
-      // returning to the editor or leaving the Website Creator.
-      if (!smEditing && wasEditing) _smPreviewFromEditor = true;
-      if (smEditing) _smPreviewFromEditor = false;
+      smEditing = true;   // the only state there is
       smHelpSync();
       smSyncChrome();
       await smRenderSite();
       if (smEditing) smShowHint();
     }
-    function smToggleEdit() { smSetEditing(!smEditing); }
+    // Nothing to toggle to any more — kept so old call sites stay harmless.
+    function smToggleEdit() { smSetEditing(true); }
 
     window.addEventListener('message', async (ev) => {
       const m = ev && ev.data;
@@ -7659,16 +7658,9 @@ Aaliyah Washington`
        Public view is the site and nothing else. Edit mode keeps the left rail
        and the top controls. One function decides, so the two can never
        disagree. */
-    /* Back always means one step back, never a dead end.
-       From a preview you opened FROM the editor it returns to the editor; from
-       the view you landed on it leaves the Website Creator. That is why the
-       editing state needs no Back of its own — Preview is the only forward
-       move, and Back undoes whichever move you made. */
-    let _smPreviewFromEditor = false;
-    function smBack() {
-      if (_smPreviewFromEditor) { _smPreviewFromEditor = false; smSetEditing(true); return; }
-      smExit();
-    }
+    /* One page means Back has one meaning: leave the Website Creator. It used
+       to also have to return from the read-only view, which no longer exists. */
+    function smBack() { smExit(); }
 
     function smSyncChrome() {
       const b = document.body;
@@ -7676,17 +7668,13 @@ Aaliyah Washington`
       // here raced smShowPicker and put the app chrome back up underneath the
       // picker it had just opened.
       const inPicker = b.classList.contains('wb-picker');
-      const inPublic = smOn && !smEditing && !inPicker;
-      b.classList.toggle('wb-public', inPublic);
       const shell = document.getElementById('cvShell');
-      if (shell && !inPicker) shell.style.display = (smOn && !smEditing) ? 'none' : '';
+      if (shell && !inPicker) shell.style.display = 'none';
 
-      // Two controls, and which two depends on what you are doing. Publish is
-      // in both because going live is the point of the whole thing.
+      // Back is always there. It is the only way out, and burying it is how
+      // this got stuck in the first place.
       const back = document.getElementById('smBackBtn');
-      const prev = document.getElementById('smPreviewBtn');
-      if (back) back.hidden = !!smEditing;
-      if (prev) prev.hidden = !smEditing;
+      if (back) back.hidden = false;
     }
 
     function smHelpSync() {
