@@ -212,6 +212,17 @@ db.exec(`
     expires_at   INTEGER,
     views        INTEGER DEFAULT 0
   );
+  /* Where an address used to point. When someone changes their web address the
+     old one must not simply die — they may already have put it on an
+     application, and a bare 404 tells the reader nothing. */
+  CREATE TABLE IF NOT EXISTS site_aliases (
+    old_sub    TEXT PRIMARY KEY,
+    new_sub    TEXT NOT NULL,
+    email      TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_site_aliases_new ON site_aliases(new_sub);
+
   CREATE TABLE IF NOT EXISTS personal_sites (
     subdomain    TEXT PRIMARY KEY,
     email        TEXT NOT NULL,
@@ -339,8 +350,14 @@ app.use((req, res, next) => {
   const seg = req.path === '/' ? '' : (req.path.match(/^\/([a-z0-9-]{1,60})\/?$/i) || [])[1];
   if (req.path !== '/' && !seg) return next();
   const row = db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub);
-  if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
   const origin = `${req.protocol}://${host}`;
+  if (!row) {
+    // A renamed address forwards here too, or the fix would only work on the
+    // path-based URL and not the one people are actually given.
+    const moved = _movedTarget(sub, origin, req.path === '/' ? '' : req.path.slice(1));
+    if (moved) return res.redirect(301, moved);
+    res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
   // A multi-page site's nav must stay ON the subdomain. Without an explicit
   // baseUrl the renderer builds links as `<origin>/site/<sub>/<page>`, so page
   // two of alice.resumetailored.com landed on
@@ -2999,6 +3016,8 @@ function sitePublicUrl(sub, origin, pageSlug) {
  * means the live one if there is one, otherwise the most recently touched,
  * because that is the one they were last looking at.
  */
+const now0 = () => Date.now();
+
 function _currentSite(email) {
   const e = String(email || '').toLowerCase();
   return db.prepare(
@@ -3114,7 +3133,20 @@ app.post('/api/personal-site', (req, res) => {
   // goes dark and the visit count comes with it, because changing your address
   // is not the same as starting over.
   const carriedViews = (target && target.views) || (moving && moving.views) || 0;
-  if (moving) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(moving.subdomain);
+  if (moving) {
+    db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(moving.subdomain);
+    // Leave a forwarding address. Anyone holding the old link — an application
+    // sent last week, a message on LinkedIn — lands on the site rather than a
+    // dead page.
+    db.prepare('INSERT OR REPLACE INTO site_aliases (old_sub, new_sub, email, created_at) VALUES (?,?,?,?)')
+      .run(moving.subdomain, sub, email.toLowerCase(), now0());
+    // Renaming twice must not leave a chain that has to be walked; point every
+    // older address straight at the current one.
+    db.prepare('UPDATE site_aliases SET new_sub = ? WHERE new_sub = ?').run(sub, moving.subdomain);
+  }
+  // A live site always beats a forwarding address: if this name used to
+  // forward somewhere, it stops now that something really lives here.
+  db.prepare('DELETE FROM site_aliases WHERE old_sub = ?').run(sub);
   const existing = target || moving;
 
   const publishedFlag = typeof publish === 'boolean'
@@ -3388,10 +3420,31 @@ app.delete('/api/personal-site', (req, res) => {
 // Public render of a personal site — indexable, watermark-free.
 // Public render of a personal site. `:page` (optional) selects a page in a v2
 // site document; v1/legacy sites ignore it and always render their single page.
+/**
+ * Where an address that no longer hosts a site should send someone.
+ *
+ * A 301 rather than a page: the person holding the old link wants the site,
+ * not an explanation. Search engines move their ranking across too, which
+ * matters for a page whose whole job is being found.
+ *
+ * Only forwards to a site that is actually live — forwarding to a draft would
+ * bounce them from one 404 to another.
+ */
+function _movedTarget(sub, origin, pageSlug) {
+  const alias = db.prepare('SELECT new_sub FROM site_aliases WHERE old_sub = ?').get(sub);
+  if (!alias) return null;
+  const live = db.prepare('SELECT subdomain FROM personal_sites WHERE subdomain = ? AND published = 1').get(alias.new_sub);
+  if (!live) return null;
+  return sitePublicUrl(live.subdomain, origin, pageSlug);
+}
+
 function _serveSite(req, res, pageSlug) {
   const sub = _validSubdomain(req.params.sub);
   const row = sub ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub) : null;
   if (!row) {
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const moved = sub ? _movedTarget(sub, origin, pageSlug) : null;
+    if (moved) return res.redirect(301, moved);
     res.status(404);
     return res.sendFile(path.join(__dirname, 'public', '404.html'));
   }
@@ -3422,7 +3475,11 @@ function _serveSite(req, res, pageSlug) {
 app.get('/site/:sub/cover-letter', (req, res) => {
   const sub = _validSubdomain(req.params.sub);
   const row = sub ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub) : null;
-  if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
+  if (!row) {
+    const moved = sub ? _movedTarget(sub, `${req.protocol}://${req.get('host')}`, 'cover-letter') : null;
+    if (moved) return res.redirect(301, moved);
+    res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
   let cfg = null; try { cfg = row.config ? JSON.parse(row.config) : null; } catch (_) { cfg = null; }
   const text = cfg && cfg.assets && typeof cfg.assets.coverLetterText === 'string' ? cfg.assets.coverLetterText : '';
   if (!text.trim()) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }

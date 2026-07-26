@@ -2261,7 +2261,7 @@
         sm_links_saved: 'Your links are on your website.', sm_links_cleared: 'Links removed.',
         sm_help_address: 'I want to change my web address', sm_addr_btn: 'My address',
         sm_addr_prompt: 'Your web address. 3–30 letters, numbers or hyphens.',
-        sm_addr_warn: 'Your website is live. Changing this breaks the old link — anyone you have already sent it to will get a "not found" page.',
+        sm_addr_warn: 'Your website is live. The old address will send visitors to the new one automatically, so links you have already shared keep working.',
         sm_addr_taken: 'That address is taken — try another.',
         sm_addr_len: 'Use 3 to 30 letters, numbers or hyphens.',
         sm_addr_err: 'Could not change your address — try again.',
@@ -2466,7 +2466,7 @@
         sm_links_saved: '链接已添加到你的网站。', sm_links_cleared: '链接已移除。',
         sm_help_address: '我想更改我的网址', sm_addr_btn: '我的网址',
         sm_addr_prompt: '你的网址，3–30 个字母、数字或连字符。',
-        sm_addr_warn: '你的网站已上线。更改网址会让旧链接失效——已经收到旧链接的人会看到"页面不存在"。',
+        sm_addr_warn: '你的网站已上线。旧网址会自动跳转到新网址，你已经分享出去的链接仍然有效。',
         sm_addr_taken: '该网址已被占用，请换一个。',
         sm_addr_len: '请使用 3 到 30 个字母、数字或连字符。',
         sm_addr_err: '更改网址失败，请重试。',
@@ -7392,7 +7392,7 @@ Aaliyah Washington`
       const suffix = (smSiteUrl && /^https?:\/\/[^.]+\.(.+?)(\/|$)/.exec(smSiteUrl) || [])[1] || '';
       const shape = suffix ? `yourname.${suffix}` : 'yoursite.com/site/yourname';
       const warn = smPublished
-        ? '\n\n' + _t('sm_addr_warn', 'Your website is live. Changing this breaks the old link — anyone you have already sent it to will get a "not found" page.')
+        ? '\n\n' + _t('sm_addr_warn', 'Your website is live. The old address will send visitors to the new one automatically, so links you have already shared keep working.')
         : '';
       const raw = window.prompt(
         _t('sm_addr_prompt', 'Your web address. 3–30 letters, numbers or hyphens.') + '\n\n' + shape + warn,

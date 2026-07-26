@@ -224,7 +224,8 @@ const server = app.listen(0, async () => {
     });
     check('the address can be changed', renamed.status === 200);
     check('the site answers on the new address', (await fetch(`${B}/site/maya-chen`)).status === 200);
-    check('the old address stops working', (await fetch(`${B}/site/alice`)).status === 404);
+    check('the old address no longer serves the site itself',
+      (await fetch(`${B}/site/alice`, { redirect: 'manual' })).status === 301);
     check('a rename keeps the site published', (await (await fetch(`${B}/api/personal-site`, { headers: AJ('tokA') })).json()).site.published === 1);
     // >= 42 rather than == 42: the check above visits the new address, which
     // legitimately counts. The property is that the count CARRIED, not reset.
@@ -251,10 +252,58 @@ const server = app.listen(0, async () => {
       check(`"${bad}" is refused as an address`, r.status === 400);
     }
 
-    // Put it back so the checks below still find it.
+
+
+    // ── An old address forwards rather than dying ───────────────────────
+    // Someone may have put the old link on an application last week. A bare
+    // 404 tells them nothing; a redirect puts them where they were going.
+    const movedRes = await fetch(`${B}/site/alice`, { redirect: 'manual' });
+    check('the old address redirects rather than 404ing', movedRes.status === 301, String(movedRes.status));
+    check('it points at the new address', /\/site\/maya-chen$/.test(movedRes.headers.get('location') || ''),
+      movedRes.headers.get('location'));
+    check('following it lands on the site', (await fetch(`${B}/site/alice`)).status === 200);
+
+    // A sub-page under the old address forwards to the same page on the new
+    // one, rather than dumping them on the home page.
+    const movedPage = await fetch(`${B}/site/alice/nope`, { redirect: 'manual' });
+    check('a page under an old address keeps its page',
+      movedPage.status === 301 && /\/site\/maya-chen\/nope$/.test(movedPage.headers.get('location') || ''),
+      movedPage.headers.get('location'));
+
+    // Renaming twice must not build a chain that has to be walked.
     await fetch(`${B}/api/personal-site`, {
       method: 'POST', headers: AJ('tokA'),
-      body: JSON.stringify({ subdomain: 'alice', renameFrom: 'maya-chen', text: RESUME, name: 'Alice Nakamura', config: gen.config, publish: true }),
+      body: JSON.stringify({ subdomain: 'm-chen', renameFrom: 'maya-chen', text: RESUME, name: 'Alice', config: gen.config, publish: true }),
+    });
+    const hop1 = await fetch(`${B}/site/alice`, { redirect: 'manual' });
+    check('the oldest address points straight at the newest',
+      /\/site\/m-chen$/.test(hop1.headers.get('location') || ''), hop1.headers.get('location'));
+    const hop2 = await fetch(`${B}/site/maya-chen`, { redirect: 'manual' });
+    check('so does the one in between', /\/site\/m-chen$/.test(hop2.headers.get('location') || ''));
+
+    // A forwarding address must never shadow a real site that later takes the
+    // name. Moving back to 'alice' reclaims it: the live site wins and the
+    // forward is dropped.
+    await fetch(`${B}/api/personal-site`, {
+      method: 'POST', headers: AJ('tokA'),
+      body: JSON.stringify({ subdomain: 'alice', renameFrom: 'm-chen', text: RESUME, name: 'Alice Nakamura', config: gen.config, publish: true }),
+    });
+    const reclaimed = await fetch(`${B}/site/alice`, { redirect: 'manual' });
+    check('a reclaimed address serves its own site, not a redirect', reclaimed.status === 200, String(reclaimed.status));
+
+    // An unpublished target must not be forwarded to — that would bounce
+    // someone from one dead page to another.
+    await fetch(`${B}/api/personal-site`, {
+      method: 'POST', headers: AJ('tokA'),
+      body: JSON.stringify({ subdomain: 'alice', text: RESUME, name: 'Alice Nakamura', config: gen.config, publish: false }),
+    });
+    check('a forward to an unpublished site 404s instead of bouncing',
+      (await fetch(`${B}/site/m-chen`, { redirect: 'manual' })).status === 404);
+
+    // Live again for the checks below.
+    await fetch(`${B}/api/personal-site`, {
+      method: 'POST', headers: AJ('tokA'),
+      body: JSON.stringify({ subdomain: 'alice', text: RESUME, name: 'Alice Nakamura', config: gen.config, publish: true }),
     });
 
     // ── The server owns the public URL ──────────────────────────────────────
