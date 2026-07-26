@@ -212,6 +212,17 @@ db.exec(`
     expires_at   INTEGER,
     views        INTEGER DEFAULT 0
   );
+  /* Where an address used to point. When someone changes their web address the
+     old one must not simply die — they may already have put it on an
+     application, and a bare 404 tells the reader nothing. */
+  CREATE TABLE IF NOT EXISTS site_aliases (
+    old_sub    TEXT PRIMARY KEY,
+    new_sub    TEXT NOT NULL,
+    email      TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_site_aliases_new ON site_aliases(new_sub);
+
   CREATE TABLE IF NOT EXISTS personal_sites (
     subdomain    TEXT PRIMARY KEY,
     email        TEXT NOT NULL,
@@ -339,8 +350,14 @@ app.use((req, res, next) => {
   const seg = req.path === '/' ? '' : (req.path.match(/^\/([a-z0-9-]{1,60})\/?$/i) || [])[1];
   if (req.path !== '/' && !seg) return next();
   const row = db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub);
-  if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
   const origin = `${req.protocol}://${host}`;
+  if (!row) {
+    // A renamed address forwards here too, or the fix would only work on the
+    // path-based URL and not the one people are actually given.
+    const moved = _movedTarget(sub, origin, req.path === '/' ? '' : req.path.slice(1));
+    if (moved) return res.redirect(301, moved);
+    res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
   // A multi-page site's nav must stay ON the subdomain. Without an explicit
   // baseUrl the renderer builds links as `<origin>/site/<sub>/<page>`, so page
   // two of alice.resumetailored.com landed on
@@ -427,7 +444,11 @@ const RATE_LIMIT_OFF = process.env.RT_DISABLE_RATE_LIMIT === '1';
 // HTML with no database or AI work behind it, so it gets its own generous
 // budget rather than eating the shared 30/min one and locking the user out of
 // the rest of the app for a minute.
-const TPL_PREVIEW_PATH_RE = /^\/site-templates\/[^/]+\/preview\/?$/;
+// Site thumbnails, in both flavours: the template gallery's sample previews and
+// the Back Office's render of the user's own sites. Both are pure HTML off one
+// row, and a Back Office with eight sites would otherwise spend a quarter of the
+// shared 30/min budget just drawing itself.
+const TPL_PREVIEW_PATH_RE = /^\/(site-templates\/[^/]+\/preview|personal-sites\/[^/]+\/render)\/?$/;
 const tplPreviewLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 180,
@@ -776,7 +797,105 @@ app.get('/api/resumes', (req, res) => {
   const email = emailFromToken(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   const rows = db.prepare('SELECT id, title, content, created_at FROM saved_resumes WHERE email = ? ORDER BY created_at DESC').all(email);
-  res.json({ resumes: rows });
+  res.json({ resumes: rows.map((r) => Object.assign({}, r, { siteSync: _siteSyncStatus(email, r) })) });
+});
+
+/**
+ * Does this resume still say what the user's website says?
+ *
+ * Only the resume the site was built from can be out of step with it — the
+ * others were never claimed by it. And only fields the user has taken ownership
+ * of are compared: a field still following the resume cannot disagree with it
+ * by definition, so counting those would mark every resume out of sync forever.
+ *
+ * Returns null when the question does not apply, so the client can show nothing
+ * rather than a reassuring badge it has not earned.
+ */
+function _siteSyncStatus(email, resume) {
+  try {
+    const site = _currentSite(email);
+    if (!site || !site.config) return null;
+    const cfg = JSON.parse(site.config);
+    const linked = cfg && cfg.assets && cfg.assets.resumeId;
+    if (!linked || Number(linked) !== Number(resume.id)) return null;
+    const SF = require('./public/site-fields.js');
+    const WB = require('./resume-writeback.js');
+    const owned = {};
+    SF.detachedFields(cfg).forEach((f) => {
+      const el = SF.findField(cfg, f);
+      if (el && el.props && el.props.text) owned[f] = el.props.text;
+    });
+    if (!Object.keys(owned).length) return 'synced';
+    return WB.diffFields(resume.content, owned).length ? 'out_of_sync' : 'synced';
+  } catch (_) { return null; }
+}
+
+/**
+ * Push one website edit back into the saved resume.
+ *
+ * The site is generated from the resume and then owned by the user: editing a
+ * field on the site detaches it, and the resume stops driving it. This is the
+ * offer to keep them together — "you changed your headline here, change it
+ * there too?" — and it is the ONLY path in the product that writes to the
+ * document people apply to jobs with.
+ *
+ * It refuses rather than guesses. If the field cannot be located in the resume
+ * with certainty, nothing is written and the client says so plainly. A resume
+ * that quietly gains a stray line is far worse than a sync that occasionally
+ * cannot run: see resume-writeback.js for what "certainty" means here.
+ */
+app.post('/api/resume-sync', (req, res) => {
+  const email = emailFromToken(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const WB = require('./resume-writeback.js');
+
+  const field = String((req.body && req.body.field) || '');
+  const previous = String((req.body && req.body.previous) || '');
+  const next = String((req.body && req.body.next) || '');
+
+  // The site's subtitle carries two resume facts — "Director of Product ·
+  // Portland" is a job title and a city living in one line. Split it back into
+  // the two places they came from, and only for the halves that actually
+  // changed: rewriting the role because the city moved would put a title the
+  // user never touched into their employment history.
+  let edits;
+  if (field === 'subtitle') {
+    const SEP = /\s*·\s*/;
+    const was = previous.split(SEP), now = next.split(SEP);
+    // A different number of parts means we cannot tell which half is which.
+    if (was.length !== now.length || was.length > 2) {
+      return res.json({ ok: false, reason: 'ambiguous' });
+    }
+    const slots = ['role', 'location'];
+    edits = was.map((p, i) => ({ field: slots[i], previous: p, next: now[i] }))
+      .filter((e) => e.previous.trim() !== e.next.trim());
+  } else if (field === 'name' || field === 'summary') {
+    edits = [{ field, previous, next }];
+  } else {
+    return res.json({ ok: false, reason: 'unknown_field' });
+  }
+  if (!edits.length) return res.json({ ok: true, written: [] });
+
+  const resume = db.prepare('SELECT id, content FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+  if (!resume) return res.json({ ok: false, reason: 'no_resume' });
+
+  const r = WB.writeFields(resume.content, edits);
+  if (!r.ok) return res.json({ ok: false, reason: r.reason, field: r.field });
+  db.prepare('UPDATE saved_resumes SET content = ? WHERE id = ?').run(r.text, resume.id);
+
+  // The cover letter is a different document that may or may not mention the
+  // same fact. Not finding it there is not a failure — the name simply may not
+  // be in it — but it is still written only on an exact anchor, never appended.
+  let cover = false;
+  const cl = db.prepare('SELECT id, content FROM saved_cover_letters WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+  if (cl) {
+    const c = WB.writeFields(cl.content, edits);
+    if (c.ok && c.written.length) {
+      db.prepare('UPDATE saved_cover_letters SET content = ? WHERE id = ?').run(c.text, cl.id);
+      cover = true;
+    }
+  }
+  res.json({ ok: true, written: r.written, resumeId: resume.id, coverLetter: cover });
 });
 
 // Save a tailored resume (dedupes identical content; keeps the latest 20).
@@ -2599,6 +2718,20 @@ function _sdEditLayer() {
     .sd-ed-bar--pulse{animation:sd-pulse 1.4s ease-in-out 3;}
     .sd-ed-chips--hint button{animation:sd-pulse 1s ease-in-out 2;}
     @keyframes sd-pulse{0%,100%{transform:scale(1);box-shadow:0 8px 24px rgba(0,0,0,.3);}50%{transform:scale(1.06);box-shadow:0 8px 30px rgba(99,102,241,.75);}}
+    /* The resume-sync offer. On the canvas next to what they just changed, not
+       a browser confirm(): this appears after an ordinary edit in a flow whose
+       premise is not being interrupted, so it must be ignorable. It answers
+       itself with "no" after ten seconds and never blocks anything. */
+    .sd-ed-sync{position:absolute;z-index:99998;max-width:min(330px,calc(100vw - 24px));background:#fff;color:#111827;
+      border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 12px 34px rgba(0,0,0,.22);padding:13px 15px;
+      font:inherit;font-size:13px;line-height:1.45;opacity:1;transition:opacity .4s ease;}
+    .sd-ed-sync.is-gone{opacity:0;}
+    .sd-ed-sync p{margin:0 0 11px;}
+    .sd-ed-sync .sd-ed-sync-btns{display:flex;gap:8px;}
+    .sd-ed-sync button{font:inherit;font-size:12.5px;font-weight:700;border-radius:999px;padding:8px 16px;cursor:pointer;
+      border:1.5px solid #e5e7eb;background:#fff;color:#374151;}
+    .sd-ed-sync button.yes{background:#4338ca;border-color:#4338ca;color:#fff;}
+    @media(max-width:820px){.sd-ed-sync{font-size:15px;}.sd-ed-sync button{font-size:14px;padding:12px 20px;}}
   </style>
   <script>
   (function(){
@@ -2813,6 +2946,62 @@ function _sdEditLayer() {
       startChipTimer(CHIP_MS);
     }
 
+    /* "Update your resume too?" — offered beside the field they just changed.
+       Silence is not an answer: it times out into "no" for this edit, but the
+       parent only counts an explicit No against the ask-twice-then-stop rule.
+       Burning someone's two chances while they were reading would be a way of
+       taking the offer away without them ever declining it. */
+    var sync = null, syncTimer = null;
+    function hideSync(){
+      if (syncTimer) { clearTimeout(syncTimer); syncTimer = null; }
+      if (sync) { sync.remove(); sync = null; }
+    }
+    function showSync(m){
+      hideSync();
+      var t = document.querySelector('[data-el="' + String(m.el).replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      if (!t) return;
+      sync = document.createElement('div');
+      sync.className = 'sd-ed-sync';
+      var p = document.createElement('p');
+      p.textContent = m.question;
+      sync.appendChild(p);
+      var row = document.createElement('div');
+      row.className = 'sd-ed-sync-btns';
+      var answer = function(a){ return function(ev){
+        ev.stopPropagation(); ev.preventDefault();
+        hideSync();
+        post({ kind: 'syncAnswer', el: m.el, field: m.field, answer: a });
+      }; };
+      var yes = document.createElement('button');
+      yes.className = 'yes'; yes.textContent = m.yes; yes.onclick = answer('yes');
+      var no = document.createElement('button');
+      no.textContent = m.no; no.onclick = answer('no');
+      row.appendChild(yes); row.appendChild(no);
+      sync.appendChild(row);
+      document.body.appendChild(sync);
+
+      var r = t.getBoundingClientRect(), w = sync.getBoundingClientRect();
+      // Below the field — but below the undo chips too when they are showing.
+      // Both are anchored to the element that just changed, so without this the
+      // chip sits on top of the question and hides the first words of it.
+      var below = r.bottom;
+      if (chips) {
+        var cr = chips.getBoundingClientRect();
+        if (cr.height) below = Math.max(below, cr.bottom);   // both viewport-relative
+      }
+      var top = below + scrollY + 10;
+      if (top + w.height > document.documentElement.scrollHeight - 4) top = r.top + scrollY - w.height - 10;
+      sync.style.top = Math.max(scrollY + 8, Math.min(top, scrollY + innerHeight - w.height - 12)) + 'px';
+      sync.style.left = Math.max(8, Math.min(r.left + scrollX, innerWidth - w.width - 12)) + 'px';
+
+      syncTimer = setTimeout(function(){
+        if (!sync) return;
+        sync.classList.add('is-gone');
+        setTimeout(function(){ hideSync(); }, 420);
+        post({ kind: 'syncAnswer', el: m.el, field: m.field, answer: 'timeout' });
+      }, 10000);
+    }
+
     addEventListener('message', function(ev){
       var m = ev && ev.data;
       if (!m) return;
@@ -2821,6 +3010,7 @@ function _sdEditLayer() {
         showChips(m);
         return;
       }
+      if (m.__rtSync === 1) { showSync(m); return; }
       // "I want to move something": put a bar on every section at once and
       // bring the first into view, so the controls end up under their eyes
       // rather than needing to be discovered by clicking around.
@@ -2992,15 +3182,101 @@ function sitePublicUrl(sub, origin, pageSlug) {
   return `${origin}/site/${s}${page}`;
 }
 
+/**
+ * The site a user is currently working on.
+ *
+ * A user may now keep several — one per template they have tried. "Current"
+ * means the live one if there is one, otherwise the most recently touched,
+ * because that is the one they were last looking at.
+ */
+const now0 = () => Date.now();
+
+function _currentSite(email) {
+  const e = String(email || '').toLowerCase();
+  return db.prepare(
+    `SELECT * FROM personal_sites WHERE email = ?
+     ORDER BY published DESC, updated_at DESC LIMIT 1`).get(e) || null;
+}
+
 // Fetch the signed-in user's current personal site (if any).
 app.get('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  const row = db.prepare('SELECT subdomain, name, published, views, updated_at, config FROM personal_sites WHERE email = ?').get(email);
+  const row = _currentSite(email);
   const origin = `${req.protocol}://${req.get('host')}`;
   // The client must never build this URL itself — that is how it ended up
   // hard-coded in nine places and unable to follow the subdomain switch.
   res.json({ site: row || null, url: row ? sitePublicUrl(row.subdomain, origin) : null });
+});
+
+/**
+ * Every site this user has, newest first. One of them may be published; the
+ * rest are drafts they can come back to.
+ */
+app.get('/api/personal-sites', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const origin = `${req.protocol}://${req.get('host')}`;
+  const rows = db.prepare(
+    `SELECT subdomain, name, published, views, created_at, updated_at, config
+     FROM personal_sites WHERE email = ? ORDER BY updated_at DESC`).all(email.toLowerCase());
+  const { templateList } = require('./site-templates.js');
+  const names = {};
+  templateList().forEach((t) => { names[t.id] = t.name; });
+  res.json({
+    sites: rows.map((r) => {
+      let cfg = null; try { cfg = r.config ? JSON.parse(r.config) : null; } catch (_) { cfg = null; }
+      const tpl = (cfg && cfg.templateId) || null;
+      return {
+        subdomain: r.subdomain, name: r.name, published: !!r.published, views: r.views || 0,
+        createdAt: r.created_at, updatedAt: r.updated_at,
+        templateId: tpl, templateName: (tpl && names[tpl]) || null,
+        url: sitePublicUrl(r.subdomain, origin),
+      };
+    }),
+  });
+});
+
+// Remove one site. Deleting the live one takes it off the internet, so the
+// caller has to name it rather than relying on "the current one".
+app.delete('/api/personal-sites/:sub', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const sub = _validSubdomain(req.params.sub);
+  if (!sub) return res.status(400).json({ error: 'invalid_subdomain' });
+  const row = db.prepare('SELECT email FROM personal_sites WHERE subdomain = ?').get(sub);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  if (row.email.toLowerCase() !== email.toLowerCase()) return res.status(403).json({ error: 'not_yours' });
+  db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(sub);
+  res.json({ success: true });
+});
+
+/**
+ * Rendered HTML of ONE of the user's own sites — the Back Office thumbnail.
+ *
+ * The template gallery's preview would have been easier, but it shows the
+ * template's invented sample person. A list of sites all showing "Alex Morgan"
+ * cannot be told apart, which is the one thing a thumbnail exists to do. This
+ * renders their real content, draft or live, through the same renderer the
+ * public page uses.
+ *
+ * Owner-only and noindex — a draft rendered here is still private. It is
+ * fetched with the Bearer token and shown via `srcdoc`, because an iframe
+ * cannot send a header.
+ */
+app.get('/api/personal-sites/:sub/render', tplPreviewLimiter, (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const sub = _validSubdomain(req.params.sub);
+  if (!sub) return res.status(400).json({ error: 'invalid_subdomain' });
+  const row = db.prepare('SELECT * FROM personal_sites WHERE subdomain = ?').get(sub);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  if (row.email.toLowerCase() !== email.toLowerCase()) return res.status(403).json({ error: 'not_yours' });
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(_renderPersonalSite(row, origin, {
+    indexable: false, footer: '', baseUrl: `${origin}/site/${sub}`,
+  }));
 });
 
 // Publish / update the signed-in Pro user's personal site.
@@ -3045,13 +3321,34 @@ app.post('/api/personal-site', (req, res) => {
   }
   const now = Date.now();
 
-  // Remove any previous site this user had under a different subdomain, so a
-  // rename doesn't leave an orphaned live page. The visit count moves with it —
-  // changing your address is not the same as starting over, and silently
-  // zeroing someone's numbers would look like data loss.
-  const existing = db.prepare('SELECT subdomain, published, views FROM personal_sites WHERE email = ?').get(email);
-  const carriedViews = existing ? (existing.views || 0) : 0;
-  if (existing && existing.subdomain !== sub) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(existing.subdomain);
+  // A user may keep several sites — one per template they have tried. Saving
+  // one no longer destroys the others; only an explicit rename moves a site,
+  // and only an explicit delete removes one.
+  const target = db.prepare('SELECT subdomain, published, views FROM personal_sites WHERE subdomain = ? AND email = ?').get(sub, email.toLowerCase());
+  const renameFrom = (typeof req.body.renameFrom === 'string') ? _validSubdomain(req.body.renameFrom) : null;
+  const moving = renameFrom && renameFrom !== sub
+    ? db.prepare('SELECT subdomain, published, views FROM personal_sites WHERE subdomain = ? AND email = ?').get(renameFrom, email.toLowerCase())
+    : null;
+
+  // A rename carries the site across rather than copying it: the old address
+  // goes dark and the visit count comes with it, because changing your address
+  // is not the same as starting over.
+  const carriedViews = (target && target.views) || (moving && moving.views) || 0;
+  if (moving) {
+    db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(moving.subdomain);
+    // Leave a forwarding address. Anyone holding the old link — an application
+    // sent last week, a message on LinkedIn — lands on the site rather than a
+    // dead page.
+    db.prepare('INSERT OR REPLACE INTO site_aliases (old_sub, new_sub, email, created_at) VALUES (?,?,?,?)')
+      .run(moving.subdomain, sub, email.toLowerCase(), now0());
+    // Renaming twice must not leave a chain that has to be walked; point every
+    // older address straight at the current one.
+    db.prepare('UPDATE site_aliases SET new_sub = ? WHERE new_sub = ?').run(sub, moving.subdomain);
+  }
+  // A live site always beats a forwarding address: if this name used to
+  // forward somewhere, it stops now that something really lives here.
+  db.prepare('DELETE FROM site_aliases WHERE old_sub = ?').run(sub);
+  const existing = target || moving;
 
   const publishedFlag = typeof publish === 'boolean'
     ? (publish ? 1 : 0)
@@ -3069,6 +3366,12 @@ app.post('/api/personal-site', (req, res) => {
     serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, config: _config,
     published: publishedFlag, views: carriedViews, now,
   });
+  // Only ever one live site. Publishing this one takes the others down rather
+  // than leaving two versions of the same person on the internet.
+  if (publishedFlag === 1) {
+    db.prepare('UPDATE personal_sites SET published = 0 WHERE email = ? AND subdomain != ?')
+      .run(email.toLowerCase(), sub);
+  }
   const origin = `${req.protocol}://${req.get('host')}`;
   res.json({ url: sitePublicUrl(sub, origin), subdomain: sub, published: publishedFlag === 1 });
 });
@@ -3149,7 +3452,25 @@ app.post('/api/personal-site/autogen', (req, res) => {
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
 
-  const existing = db.prepare('SELECT * FROM personal_sites WHERE email = ?').get(email);
+  // `fresh` means "make me another one" — trying a different template rather
+  // than reopening what they already have. Each template gets its own site so
+  // switching never destroys the one they have been working on.
+  const fresh = !!(req.body && req.body.fresh);
+  // `subdomain` means "open THIS one" — the Back Office lists every site the
+  // user has, and Edit there has to reopen the card they pressed rather than
+  // whichever site happens to be current. Asking for a site that isn't theirs
+  // is a 404, never a silent fall-through into creating a new one.
+  const wantOpen = (req.body && typeof req.body.subdomain === 'string')
+    ? _validSubdomain(req.body.subdomain) : null;
+  if (!fresh && req.body && req.body.subdomain && !wantOpen) {
+    return res.status(400).json({ error: 'invalid_subdomain' });
+  }
+  const existing = fresh
+    ? null
+    : (wantOpen
+        ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND email = ?').get(wantOpen, email.toLowerCase())
+        : _currentSite(email));
+  if (!fresh && wantOpen && !existing) return res.status(404).json({ error: 'not_found' });
   if (existing) {
     const origin0 = `${req.protocol}://${req.get('host')}`;
     return res.json({
@@ -3172,23 +3493,31 @@ app.post('/api/personal-site/autogen', (req, res) => {
   // resume follows, and the same one the résumé renderer already relies on.
   const name = (text.split('\n').map((l) => l.trim()).find(Boolean) || '').slice(0, 80);
 
+  // Which template to build from. The picker sends the one they chose; without
+  // it we fall back to the calmest starter. Resolved here because the web
+  // address is named after it.
+  const { templateDoc: _tplDoc } = require('./site-templates.js');
+  const wantedTpl = String((req.body && req.body.templateId) || '').slice(0, 40);
+  const usedTemplate = (wantedTpl && _tplDoc(wantedTpl)) ? wantedTpl : 'minimal';
+
   // Address: their username, else their name, else the local part of their
   // email. Numbered if taken, so this can never fail on a collision.
   const user = db.prepare('SELECT username FROM users WHERE email = ?').get(email);
   const seed = String(user && user.username || name || email.split('@')[0] || 'me')
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'me';
-  let sub = _validSubdomain(seed.length >= 3 ? seed : seed + '-site');
+  // A second site needs its own address. Name it after the template so the
+  // list reads as "alice" and "alice-developer" rather than "alice-2".
+  const base = fresh && usedTemplate
+    ? `${seed.slice(0, 16)}-${String(usedTemplate).replace(/[^a-z0-9]/g, '').slice(0, 12)}`
+    : seed;
+  let sub = _validSubdomain(base.length >= 3 ? base : base + '-site');
   for (let i = 2; i <= 60 && (!sub || db.prepare('SELECT 1 FROM personal_sites WHERE subdomain = ?').get(sub)); i++) {
-    sub = _validSubdomain(`${seed.slice(0, 24)}-${i}`);
+    sub = _validSubdomain(`${base.slice(0, 24)}-${i}`);
   }
   if (!sub) return res.status(409).json({ error: 'no_address', message: 'Could not pick a web address — choose one yourself.' });
 
-  // Which template to build from. The first-run picker sends the one they
-  // chose; without it we fall back to the calmest starter.
   const { templateDoc } = require('./site-templates.js');
-  const wanted = String((req.body && req.body.templateId) || '').slice(0, 40);
-  const doc = (wanted && templateDoc(wanted)) || templateDoc('minimal') || templateDoc('executive');
-  const usedTemplate = (wanted && templateDoc(wanted)) ? wanted : 'minimal';
+  const doc = templateDoc(usedTemplate);
   _autogenFill(doc, text);
   doc.templateId = usedTemplate;
   doc.assets = { resumeId: resumeRow ? resumeRow.id : null, coverLetterId: cover ? cover.id : null };
@@ -3290,9 +3619,28 @@ app.patch('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   const published = req.body && req.body.published ? 1 : 0;
-  const info = db.prepare('UPDATE personal_sites SET published = ?, updated_at = ? WHERE email = ?').run(published, Date.now(), email.toLowerCase());
-  if (!info.changes) return res.status(404).json({ error: 'No site to update.' });
-  res.json({ success: true, published: !!published });
+
+  // Which site. This used to update every row for the email, which was
+  // harmless when a user could only have one site and is not now: pressing
+  // Publish on one card would have put all of them on the internet at once.
+  const wanted = (req.body && typeof req.body.subdomain === 'string')
+    ? _validSubdomain(req.body.subdomain) : null;
+  if (req.body && req.body.subdomain && !wanted) return res.status(400).json({ error: 'invalid_subdomain' });
+  const row = wanted
+    ? db.prepare('SELECT subdomain, email FROM personal_sites WHERE subdomain = ?').get(wanted)
+    : _currentSite(email);
+  if (!row) return res.status(404).json({ error: 'No site to update.' });
+  if (row.email.toLowerCase() !== email.toLowerCase()) return res.status(403).json({ error: 'not_yours' });
+
+  db.prepare('UPDATE personal_sites SET published = ?, updated_at = ? WHERE subdomain = ?')
+    .run(published, Date.now(), row.subdomain);
+  // Only ever one live site — the same rule the publish path enforces, for the
+  // same reason: two versions of the same person on the internet is the failure.
+  if (published === 1) {
+    db.prepare('UPDATE personal_sites SET published = 0 WHERE email = ? AND subdomain != ?')
+      .run(email.toLowerCase(), row.subdomain);
+  }
+  res.json({ success: true, published: !!published, subdomain: row.subdomain });
 });
 
 // Unpublish (delete) the signed-in user's personal site.
@@ -3306,10 +3654,31 @@ app.delete('/api/personal-site', (req, res) => {
 // Public render of a personal site — indexable, watermark-free.
 // Public render of a personal site. `:page` (optional) selects a page in a v2
 // site document; v1/legacy sites ignore it and always render their single page.
+/**
+ * Where an address that no longer hosts a site should send someone.
+ *
+ * A 301 rather than a page: the person holding the old link wants the site,
+ * not an explanation. Search engines move their ranking across too, which
+ * matters for a page whose whole job is being found.
+ *
+ * Only forwards to a site that is actually live — forwarding to a draft would
+ * bounce them from one 404 to another.
+ */
+function _movedTarget(sub, origin, pageSlug) {
+  const alias = db.prepare('SELECT new_sub FROM site_aliases WHERE old_sub = ?').get(sub);
+  if (!alias) return null;
+  const live = db.prepare('SELECT subdomain FROM personal_sites WHERE subdomain = ? AND published = 1').get(alias.new_sub);
+  if (!live) return null;
+  return sitePublicUrl(live.subdomain, origin, pageSlug);
+}
+
 function _serveSite(req, res, pageSlug) {
   const sub = _validSubdomain(req.params.sub);
   const row = sub ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub) : null;
   if (!row) {
+    const origin = `${req.protocol}://${req.get('host')}`;
+    const moved = sub ? _movedTarget(sub, origin, pageSlug) : null;
+    if (moved) return res.redirect(301, moved);
     res.status(404);
     return res.sendFile(path.join(__dirname, 'public', '404.html'));
   }
@@ -3340,7 +3709,11 @@ function _serveSite(req, res, pageSlug) {
 app.get('/site/:sub/cover-letter', (req, res) => {
   const sub = _validSubdomain(req.params.sub);
   const row = sub ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub) : null;
-  if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
+  if (!row) {
+    const moved = sub ? _movedTarget(sub, `${req.protocol}://${req.get('host')}`, 'cover-letter') : null;
+    if (moved) return res.redirect(301, moved);
+    res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
   let cfg = null; try { cfg = row.config ? JSON.parse(row.config) : null; } catch (_) { cfg = null; }
   const text = cfg && cfg.assets && typeof cfg.assets.coverLetterText === 'string' ? cfg.assets.coverLetterText : '';
   if (!text.trim()) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }

@@ -248,6 +248,21 @@ const server = app.listen(0, async () => {
     check('the editable page carries the chip layer',
       editPrev.includes('sd-ed-chips') && editPrev.includes('↩️ Undo') && editPrev.includes('↪️ Redo'));
     check('chips are not in the published page', !page.includes('sd-ed-chips'));
+
+    // ── The resume-sync offer (Feature C) ───────────────────────────────
+    // It appears on the canvas after an edit, so it lives in the edit layer —
+    // and it must never reach a visitor's copy of the page.
+    check('the editable page carries the sync prompt', editPrev.includes('sd-ed-sync'));
+    check('the sync prompt is not in the published page', !page.includes('sd-ed-sync'));
+    check('the sync prompt answers back rather than writing anything itself',
+      editPrev.includes("kind: 'syncAnswer'") && !editPrev.includes('/api/resume-sync'));
+    // Silence must be an answer the parent can distinguish from a decline: the
+    // ask-twice-then-stop rule counts refusals, not people who looked away.
+    check('a timeout is reported as its own answer', editPrev.includes("'timeout'"));
+    // The element id goes into a selector, so it is whitelisted rather than
+    // escaped — the same fix that stopped a generated regex collapsing before.
+    check('the sync prompt whitelists the element id it looks up',
+      /data-el="' \+ String\(m\.el\)\.replace\(\/\[\^A-Za-z0-9_-\]\/g/.test(editPrev));
     check('chips fade rather than vanish', /\.sd-ed-chips\{[^}]*transition:opacity/.test(editPrev));
     check('the wrapper lets clicks through to the page beneath',
       /\.sd-ed-chips\{[^}]*pointer-events:none/.test(editPrev) && /\.sd-ed-chips button\{[^}]*pointer-events:auto/.test(editPrev));

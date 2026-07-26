@@ -292,6 +292,39 @@
     .bo-act.bo-danger { color: #dc2626; border-color: #fecaca; }
     .bo-empty { font-size: 13px; color: #9ca3af; padding: 6px 0; }
     .bo-bulk { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+    /* Site cards. A website is a thing you look at, so the list shows the page
+       rather than a filename — thumbnails are a scaled-down live render of the
+       user's own site, not the template's sample person. */
+    .bo-sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .bo-site { border: 1.5px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+    .bo-site.is-live { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.09); }
+    .bo-thumb { position: relative; height: 150px; background: #f8fafc; border-bottom: 1px solid #eef2f7; overflow: hidden; }
+    /* 500% then scale(.2) — the two cancel out to exactly the card's width at
+       any column size, which a fixed pixel width cannot do in a fluid grid (it
+       left a white strip down the side of every card). The iframe's own
+       viewport ends up 5× the card, so the site inside lays out as desktop
+       rather than collapsing to its mobile breakpoint.
+       pointer-events off: the whole card is the target, and a live page inside
+       would swallow the click. */
+    .bo-thumb iframe { position: absolute; top: 0; left: 0; width: 500%; height: 500%; border: 0;
+      transform: scale(.2); transform-origin: 0 0; pointer-events: none; background: #fff; }
+    .bo-thumb-badge { position: absolute; top: 8px; left: 8px; z-index: 2; font-size: 10px; font-weight: 800;
+      letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+      background: #16a34a; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+    .bo-thumb-badge.is-draft { background: #fff; color: #6b7280; border: 1px solid #e5e7eb; box-shadow: none; }
+    .bo-site-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .bo-site-tpl { font-size: 13px; font-weight: 800; color: #111827; }
+    .bo-site-addr { font-size: 12px; color: #4338ca; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bo-site-addr:hover { text-decoration: underline; }
+    .bo-site-meta { font-size: 11px; color: #9ca3af; }
+    .bo-site-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .bo-addr-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px;
+      color: #374151; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; padding: 9px 12px; margin-bottom: 14px; }
+    .bo-addr-bar b { font-weight: 800; color: #111827; }
+    .bo-sync { font-size: 10px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 999px; background: #ecfdf5; color: #047857; white-space: nowrap; vertical-align: 1px; }
+    .bo-sync.is-off { background: #fff7ed; color: #b45309; }
     .wc-pal-btn.is-on { background: #4338ca; color: #fff; border-color: #4338ca; }
     .wc-tpl { border: 2px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff; transition: border-color .15s, box-shadow .15s; }
     .wc-tpl:hover { border-color: #c7d2fe; box-shadow: 0 6px 18px rgba(99,102,241,.14); }
@@ -1392,6 +1425,7 @@
             <button type="button" class="sm-help-opt" onclick="smHelpPick('voice')" data-i18n="sm_help_voice">I want to add my voice</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('links')" data-i18n="sm_help_links">I want to add my links</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('address')" data-i18n="sm_help_address">I want to change my web address</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('template')" data-i18n="sm_help_template">I want to try a different design</button>
             <button type="button" class="sm-help-never" onclick="smHelpClose()" data-i18n="sm_help_never">Never mind</button>
           </div>
           <div class="sm-strip" id="smStrip">
@@ -1553,7 +1587,7 @@
         <div id="bo-resumes" class="wc-card"><div class="wc-step" data-i18n="bo_resumes">Resumes</div><div class="bo-list"></div></div>
         <div id="bo-covers" class="wc-card"><div class="wc-step" data-i18n="bo_covers">Cover letters</div><div class="bo-list"></div></div>
         <div id="bo-videos" class="wc-card"><div class="wc-step" data-i18n="bo_videos">Resume videos</div><div class="bo-list"></div></div>
-        <div id="bo-site" class="wc-card"><div class="wc-step" data-i18n="bo_website">Personal website</div><div class="bo-list"></div></div>
+        <div id="bo-site" class="wc-card"><div class="wc-step" data-i18n="bo_websites">Your websites</div><div class="bo-list"></div></div>
       </div>
 
       <!-- ═══ TAB: COMMUNITY FORUM ═══ -->
@@ -2185,10 +2219,18 @@
         bo_empty: 'Nothing here yet.', bo_novideos: 'No saved videos yet — make one in the Resume Video tab.', bo_nosite: 'No website yet — build one in the Website Creator.',
         bo_use: 'Use', bo_duplicate: 'Duplicate', bo_delete: 'Delete', bo_edit: 'Edit', bo_viewlive: 'View live',
         bo_publish: 'Publish', bo_unpublish: 'Unpublish', bo_live: 'Live', bo_hidden: 'Hidden',
+        bo_websites: 'Your websites', bo_published: 'Published', bo_draft: 'Draft',
+        bo_site_untitled: 'My website', bo_makesite: 'Build my website',
+        bo_addr_live: 'Your web address:', bo_change_addr: 'Change address',
+        bo_addr_none: 'Nothing is published yet — these are all private drafts that only you can see.',
+        bo_edited: 'Edited {t}', bo_ago_now: 'just now', bo_ago_min: '{n} min ago', bo_ago_hr: '{n}h ago', bo_ago_day: '{n}d ago',
+        bo_confirm_pub: 'Publish this one? Only one website can be live at a time, so your current one comes down.',
+        bo_confirm_unpub: 'Take this website off the internet? Nothing is deleted — you can publish it again.',
+        bo_now_live: 'Your website is live.', bo_now_hidden: 'Your website is hidden.',
         bo_bulk_dup: 'Duplicate selected', bo_bulk_del: 'Delete selected',
         bo_pro: 'The Back Office is a Pro feature.', bo_loaded: 'Loaded into the Tailor tab.',
         bo_none_sel: 'Select some items first.', bo_confirm_del: 'Delete this item? This cannot be undone.',
-        bo_confirm_bulk: 'Delete the selected items? This cannot be undone.', bo_confirm_site: 'Delete your website? This removes the live page.',
+        bo_confirm_bulk: 'Delete the selected items? This cannot be undone.', bo_confirm_site: 'Delete this website? This cannot be undone.',
         wc_ed_addel: 'Add elements', wc_ed_addsection: '+ Add section', wc_ed_added: 'Added — drag to position it.',
         wc_ed_sectionadded: 'Section added.', wc_ed_nosection: 'Add a section first.',
         wc_pal_text: 'Text', wc_pal_media: 'Media', wc_pal_gallery: 'Gallery', wc_pal_interactive: 'Interactive',
@@ -2251,6 +2293,13 @@
         sm_upload_err: "That didn't upload — try again.", sm_mic_err: 'We could not reach your microphone.',
         sm_edit_on: 'Edit', sm_edit_off: 'Done', sm_edit_hint: 'Click anything on your page to change it.',
         sm_edit_saved: 'Saved', sm_reset_done: 'Back in sync with your resume',
+        sm_sync_q: 'You changed your {f} on your website. Update it on your saved resume too?',
+        sm_sync_yes: 'Yes, update it', sm_sync_no: 'No, just here',
+        sm_sync_f_name: 'name', sm_sync_f_subtitle: 'headline', sm_sync_f_summary: 'summary',
+        sm_sync_ok: 'Updated on your saved resume too.',
+        sm_sync_ok_both: 'Updated on your resume and cover letter.',
+        sm_sync_fail: 'We couldn\u2019t update your resume automatically \u2014 your website is updated, but your saved resume stayed the same.',
+        bo_sync_ok: 'Synced with website', bo_sync_off: 'Out of sync with website',
         sm_section_gone: 'Section removed from your website — your resume is unchanged.',
         sm_last_section: 'A page needs at least one section.',
         sm_kept_edits: 'Updated from your resume — your own edits were kept.',
@@ -2260,11 +2309,13 @@
         sm_links_saved: 'Your links are on your website.', sm_links_cleared: 'Links removed.',
         sm_help_address: 'I want to change my web address', sm_addr_btn: 'My address',
         sm_addr_prompt: 'Your web address. 3–30 letters, numbers or hyphens.',
-        sm_addr_warn: 'Your website is live. Changing this breaks the old link — anyone you have already sent it to will get a "not found" page.',
+        sm_addr_warn: 'Your website is live. The old address will send visitors to the new one automatically, so links you have already shared keep working.',
         sm_addr_taken: 'That address is taken — try another.',
         sm_addr_len: 'Use 3 to 30 letters, numbers or hyphens.',
         sm_addr_err: 'Could not change your address — try again.',
         sm_addr_done: 'Your website has a new address.',
+        sm_help_template: 'I want to try a different design',
+        sm_tpl_confirm: 'This makes a NEW website from your resume, using a different design.\n\nYour current website is kept — you can switch back any time. Only one can be live at once.',
         sm_help_btn: 'Not sure?', sm_help_q: 'Tell us what you want to change',
         sm_help_photo: 'I want to change my photo', sm_help_move: 'I want to move something',
         sm_help_look: 'I want a different look', sm_help_voice: 'I want to add my voice',
@@ -2388,10 +2439,18 @@
         bo_empty: '暂无内容。', bo_novideos: '暂无保存的视频——在简历视频标签页制作一个。', bo_nosite: '暂无网站——在网站创建器中制作一个。',
         bo_use: '使用', bo_duplicate: '复制', bo_delete: '删除', bo_edit: '编辑', bo_viewlive: '查看网站',
         bo_publish: '发布', bo_unpublish: '取消发布', bo_live: '已上线', bo_hidden: '已隐藏',
+        bo_websites: '你的网站', bo_published: '已发布', bo_draft: '草稿',
+        bo_site_untitled: '我的网站', bo_makesite: '制作我的网站',
+        bo_addr_live: '你的网址：', bo_change_addr: '更改网址',
+        bo_addr_none: '尚未发布——这些都是只有你能看到的私密草稿。',
+        bo_edited: '编辑于 {t}', bo_ago_now: '刚刚', bo_ago_min: '{n} 分钟前', bo_ago_hr: '{n} 小时前', bo_ago_day: '{n} 天前',
+        bo_confirm_pub: '发布这个？同一时间只能有一个网站上线，你当前的网站会下线。',
+        bo_confirm_unpub: '将这个网站从互联网上撤下？不会删除任何内容——你可以再次发布。',
+        bo_now_live: '你的网站已上线。', bo_now_hidden: '你的网站已隐藏。',
         bo_bulk_dup: '复制所选', bo_bulk_del: '删除所选',
         bo_pro: '后台管理是专业版功能。', bo_loaded: '已加载到定制标签页。',
         bo_none_sel: '请先选择项目。', bo_confirm_del: '删除此项？此操作无法撤销。',
-        bo_confirm_bulk: '删除所选项目？此操作无法撤销。', bo_confirm_site: '删除你的网站？这会移除已上线的页面。',
+        bo_confirm_bulk: '删除所选项目？此操作无法撤销。', bo_confirm_site: '删除这个网站？此操作无法撤销。',
         wc_ed_addel: '添加元素', wc_ed_addsection: '+ 添加板块', wc_ed_added: '已添加——拖动以调整位置。',
         wc_ed_sectionadded: '板块已添加。', wc_ed_nosection: '请先添加一个板块。',
         wc_pal_text: '文字', wc_pal_media: '媒体', wc_pal_gallery: '相册', wc_pal_interactive: '互动',
@@ -2454,6 +2513,13 @@
         sm_upload_err: '上传失败，请重试。', sm_mic_err: '无法访问你的麦克风。',
         sm_edit_on: '编辑', sm_edit_off: '完成', sm_edit_hint: '点击页面上的任何内容即可修改。',
         sm_edit_saved: '已保存', sm_reset_done: '已与你的简历重新同步',
+        sm_sync_q: '你在网站上更改了{f}。要同时更新已保存的简历吗？',
+        sm_sync_yes: '好，一起更新', sm_sync_no: '不用，只改这里',
+        sm_sync_f_name: '姓名', sm_sync_f_subtitle: '头衔', sm_sync_f_summary: '个人简介',
+        sm_sync_ok: '已同时更新你保存的简历。',
+        sm_sync_ok_both: '已更新你的简历和求职信。',
+        sm_sync_fail: '我们无法自动更新你的简历——网站已更新，但保存的简历保持不变。',
+        bo_sync_ok: '与网站同步', bo_sync_off: '与网站不同步',
         sm_section_gone: '该板块已从网站移除——你的简历没有改动。',
         sm_last_section: '页面至少需要保留一个板块。',
         sm_kept_edits: '已根据简历更新——你自己修改过的内容已保留。',
@@ -2463,11 +2529,13 @@
         sm_links_saved: '链接已添加到你的网站。', sm_links_cleared: '链接已移除。',
         sm_help_address: '我想更改我的网址', sm_addr_btn: '我的网址',
         sm_addr_prompt: '你的网址，3–30 个字母、数字或连字符。',
-        sm_addr_warn: '你的网站已上线。更改网址会让旧链接失效——已经收到旧链接的人会看到"页面不存在"。',
+        sm_addr_warn: '你的网站已上线。旧网址会自动跳转到新网址，你已经分享出去的链接仍然有效。',
         sm_addr_taken: '该网址已被占用，请换一个。',
         sm_addr_len: '请使用 3 到 30 个字母、数字或连字符。',
         sm_addr_err: '更改网址失败，请重试。',
         sm_addr_done: '你的网站已启用新网址。',
+        sm_help_template: '我想试试别的设计',
+        sm_tpl_confirm: '这会用你的简历重新生成一个新网站，采用不同的设计。\n\n你现在的网站会保留，随时可以切换回来。同一时间只能有一个网站上线。',
         sm_help_btn: '需要帮助？', sm_help_q: '告诉我们你想改什么',
         sm_help_photo: '我想换我的照片', sm_help_move: '我想调整顺序',
         sm_help_look: '我想换个样子', sm_help_voice: '我想加入我的声音',
@@ -6887,7 +6955,12 @@ Aaliyah Washington`
 
       // No site and no template chosen yet: show the picker and stop. Once
       // they choose one, smPickerChose comes back through here with it.
-      if (!existing && !(opts && opts.templateId)) { smShowPicker(); return; }
+      // A named subdomain (Back Office → Edit) is neither: that site exists
+      // and the server will hand it back, so the picker must not appear.
+      if (!existing && !(opts && (opts.templateId || opts.subdomain))) { smShowPicker(); return; }
+      // "Try a different template" always makes a new one, even though they
+      // already have a site.
+      if (opts && opts.fresh) existing = null;
 
       smShow(true);
       smPanel('smBusy');
@@ -6896,7 +6969,11 @@ Aaliyah Washington`
         const r = await fetch('/api/personal-site/autogen', {
           method: 'POST',
           headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
-          body: JSON.stringify({ templateId: (opts && opts.templateId) || undefined }),
+          body: JSON.stringify({
+            templateId: (opts && opts.templateId) || undefined,
+            subdomain: (opts && opts.subdomain) || undefined,
+            fresh: !!(opts && opts.fresh),
+          }),
         });
         data = await r.json().catch(() => null);
         if (r.status === 409 && data && data.error === 'no_resume') { smPanel('smEmpty'); return; }
@@ -6909,12 +6986,19 @@ Aaliyah Washington`
       smPublished = !!data.published;
       smSiteUrl = data.url || '';
 
+      // Switching to a different site must drop the old history. The store's
+      // subscriber saves whatever doc it holds into whatever `wcSite` currently
+      // is — keeping it across a switch would write one site's pages into
+      // another site's address.
+      if (edStore && edStore._smSub && edStore._smSub !== data.subdomain) edStore = null;
+
       // The undo store is created here, not when the advanced editor opens.
       // Inline edits, vibe changes and guided-strip answers are all edits and
       // all belong in one history — otherwise whichever path the user happens
       // to take decides whether their work is undoable.
       if (!edStore && wcDoc && window.SiteDocStore) {
         edStore = SiteDocStore.createStore(wcDoc);
+        edStore._smSub = data.subdomain;   // which site this history belongs to
         edPageId = (wcDoc.pages && wcDoc.pages[0] && wcDoc.pages[0].id) || null;
         edStore.subscribe(() => { wcDoc = edStore.getDoc(); smRenderSite(); smQueueSave(); });
       }
@@ -7304,7 +7388,9 @@ Aaliyah Washington`
       const m = ev && ev.data;
       if (!m || m.__rtEdit !== 1 || !wcDoc || !window.SiteFields) return;
 
-      if (m.kind === 'ready') { smPushChips(); return; }
+      if (m.kind === 'ready') { smPushChips(); smPushSyncAsk(); return; }
+
+      if (m.kind === 'syncAnswer') { smSyncAnswer(m); return; }
       // Clicking the page counts as clicking away from the helper.
       if (m.kind === 'pageclick') { smHelpClose(); return; }
 
@@ -7316,6 +7402,7 @@ Aaliyah Washington`
       if (m.kind === 'edit') {
         smMutate(d => { SiteFields.applyEdit(d, m.el, m.value); }, 'inline-edit');
         smMarkAction({ el: m.el });
+        smMaybeAskSync(m.el);
         return;
       }
 
@@ -7349,6 +7436,27 @@ Aaliyah Washington`
       }
     });
 
+    /* ── Trying a different template ──────────────────────────────────────
+       A different template is a different SITE, generated fresh from the
+       resume. It never overwrites the one they have been working on — that is
+       what makes trying one safe. Only one can be live at a time; publishing a
+       new one takes the old one down. */
+    async function smTryTemplate() {
+      const ok = window.confirm(_t('sm_tpl_confirm',
+        'This makes a NEW website from your resume, using a different design.\n\nYour current website is kept — you can switch back any time. Only one can be live at once.'));
+      if (!ok) return;
+      await smFlushSave();
+      document.body.classList.add('wb-picker');
+      smShow(false);
+      const shell = document.getElementById('cvShell');
+      if (shell) shell.style.display = '';
+      cvClosePanel();
+      cvPanel('templates');
+      wcLoadTemplates();
+      smPickerFresh = true;
+    }
+    let smPickerFresh = false;
+
     /* ── The web address ──────────────────────────────────────────────────
        The address is generated from the username they picked at signup, long
        before they knew it would become their web address. It has to be
@@ -7357,10 +7465,22 @@ Aaliyah Washington`
     async function smChangeAddress() {
       if (!wcSite || !wcSite.subdomain) return;
       const cur = wcSite.subdomain;
-      const suffix = (smSiteUrl && /^https?:\/\/[^.]+\.(.+?)(\/|$)/.exec(smSiteUrl) || [])[1] || '';
-      const shape = suffix ? `yourname.${suffix}` : 'yoursite.com/site/yourname';
+      // Show the shape their address actually has. Matching "something dot
+      // something" was not enough: a path-based URL like
+      // resumetailored.com/site/maya also matches, and the prompt then promised
+      // a subdomain the site does not have. The real test is whether the host
+      // BEGINS with their address — that is what makes it a subdomain.
+      const bare = String(smSiteUrl || '').replace(/^https?:\/\//, '');
+      const host = bare.split('/')[0];
+      let shape = '';
+      if (bare) {
+        shape = host.toLowerCase().startsWith(cur.toLowerCase() + '.')
+          ? 'yourname.' + host.slice(cur.length + 1)
+          : bare.replace('/' + cur, '/yourname');
+      }
+      if (!shape) shape = 'yoursite.com/site/yourname';
       const warn = smPublished
-        ? '\n\n' + _t('sm_addr_warn', 'Your website is live. Changing this breaks the old link — anyone you have already sent it to will get a "not found" page.')
+        ? '\n\n' + _t('sm_addr_warn', 'Your website is live. The old address will send visitors to the new one automatically, so links you have already shared keep working.')
         : '';
       const raw = window.prompt(
         _t('sm_addr_prompt', 'Your web address. 3–30 letters, numbers or hyphens.') + '\n\n' + shape + warn,
@@ -7375,7 +7495,10 @@ Aaliyah Washington`
         method: 'POST',
         headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
         body: JSON.stringify({
-          subdomain: next, text: smResumeText(), name: (wcSite && wcSite.name) || '', config: wcDoc,
+          // Say which site is moving. Without this the server would read it as
+          // "make me another one" and leave the old address live.
+          subdomain: next, renameFrom: cur,
+          text: smResumeText(), name: (wcSite && wcSite.name) || '', config: wcDoc,
         }),
       });
       const d = await r.json().catch(() => ({}));
@@ -7520,6 +7643,7 @@ Aaliyah Washington`
       if (what === 'voice') { smStripOpen(3); return; }   // step 4: voice intro
       if (what === 'links') { smLinksOpen(); return; }
       if (what === 'address') { smChangeAddress(); return; }
+      if (what === 'template') { smTryTemplate(); return; }
     }
 
     // Straight to the file picker. If this vibe's page has no photo slot, one is
@@ -7576,6 +7700,133 @@ Aaliyah Washington`
         }, smUndoAnchor), '*');
       } catch (_) {}
       _smChipHint = false;   // once, then never again this session
+    }
+
+    /* ── Keeping the resume in step (Feature C) ───────────────────────────
+       Editing a field on the site detaches it: the site owns it from then on,
+       and later resume updates leave it alone. That is the right default —
+       without it, "your site follows your resume" would silently throw away
+       whatever they typed.
+
+       But most of the time someone fixing their headline on their website means
+       it everywhere. So once, quietly, beside the thing they just changed, we
+       offer to carry it back. Never a browser dialog, never blocking: this
+       lands in the middle of an ordinary edit in a flow whose whole premise is
+       not asking questions, so it has to be ignorable.
+
+       When it does not ask:
+         - the field is not one the resume can be edited through
+         - the resume already says this (nothing to carry)
+         - they have already declined this field twice — then never again
+         - they have already been asked about this field this session
+
+       A ten-second timeout is not a decline. Counting silence would take the
+       offer away from someone who was reading it. */
+    const SYNC_FIELDS = { name: 1, subtitle: 1, summary: 1 };
+    const _smSyncAsked = new Set();   // this session only
+    let _smSyncPending = null;
+
+    function smMaybeAskSync(elId) {
+      if (!wcDoc || !window.SiteFields || !window.SiteDocStore) return;
+      const el = SiteFields.findById(wcDoc, elId);
+      const field = el && el.props && el.props.field;
+      if (!field || !SYNC_FIELDS[field]) return;
+      if (_smSyncAsked.has(field)) return;
+      if (Number(el.props.syncNo || 0) >= 2) return;      // asked and declined twice
+
+      const value = String(el.props.text || '').trim();
+      if (!value) return;
+      const derived = String((SiteFields.deriveFields(smResumeText()) || {})[field] || '').trim();
+      if (!derived) return;                                // never found it; nothing to update
+      if (derived === value) return;                       // the resume already agrees
+
+      _smSyncAsked.add(field);
+      // The edit re-renders the frame, which throws away anything already drawn
+      // inside it. Queue the ask and let the new frame's "ready" deliver it —
+      // the same reason the undo chips are pushed that way.
+      _smSyncPending = { el: elId, field, previous: derived, next: value };
+      smPushSyncAsk();
+    }
+
+    const SYNC_LABEL = () => ({
+      name: _t('sm_sync_f_name', 'name'),
+      subtitle: _t('sm_sync_f_subtitle', 'headline'),
+      summary: _t('sm_sync_f_summary', 'summary'),
+    });
+
+    function smPushSyncAsk() {
+      const p = _smSyncPending;
+      const f = document.getElementById('smFrame');
+      if (!p || !f || !f.contentWindow) return;
+      try {
+        f.contentWindow.postMessage({
+          __rtSync: 1, el: p.el, field: p.field,
+          question: _t('sm_sync_q', 'You changed your {f} on your website. Update it on your saved resume too?')
+            .replace('{f}', SYNC_LABEL()[p.field] || p.field),
+          yes: _t('sm_sync_yes', 'Yes, update it'),
+          no: _t('sm_sync_no', 'No, just here'),
+        }, '*');
+      } catch (_) {}
+    }
+
+    async function smSyncAnswer(m) {
+      const p = _smSyncPending;
+      _smSyncPending = null;
+      if (!p || m.field !== p.field) return;
+
+      // Silence is not a decline — it does not count toward the two.
+      if (m.answer !== 'yes') {
+        if (m.answer === 'no') {
+          smMutate(d => {
+            const el = SiteFields.findById(d, p.el);
+            if (el && el.props) el.props.syncNo = Number(el.props.syncNo || 0) + 1;
+          }, 'sync-declined');
+        }
+        return;
+      }
+
+      try {
+        const r = await fetch('/api/resume-sync', {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+          body: JSON.stringify({ field: p.field, previous: p.previous, next: p.next }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.ok && d.ok) {
+          // The resume now says what the site says, so the field can follow it
+          // again — leaving it detached would mean the next resume edit silently
+          // stopped reaching a field the user just asked to keep in step.
+          smMutate(doc => {
+            const el = SiteFields.findById(doc, p.el);
+            if (el && el.props) { delete el.props.detached; delete el.props.detachedAt; delete el.props.syncNo; }
+          }, 'sync-applied');
+          // The saved resume has changed underneath us. Re-read it, or the next
+          // save would push the old text back over the top of the edit we just
+          // made — and the field would read as out of sync again immediately.
+          try {
+            const rr = await fetch('/api/resumes', { headers: authHeaders() });
+            const rd = await rr.json().catch(() => ({}));
+            if (rd.resumes && rd.resumes.length) { wcResumes = rd.resumes; wcSiteText = ''; }
+          } catch (_) {}
+          showToast(d.coverLetter
+            ? _t('sm_sync_ok_both', 'Updated on your resume and cover letter.')
+            : _t('sm_sync_ok', 'Updated on your saved resume too.'), 3200);
+          return;
+        }
+        // Could not find the field with certainty. Say so and change nothing —
+        // a resume that quietly gains a stray line is far worse than a sync
+        // that occasionally cannot run.
+        smSyncRefused(p);
+      } catch (_) { smSyncRefused(p); }
+    }
+
+    function smSyncRefused(p) {
+      smMutate(d => {
+        const el = SiteFields.findById(d, p.el);
+        if (el && el.props) el.props.syncNo = 2;   // do not offer again for this field
+      }, 'sync-refused');
+      showToast(_t('sm_sync_fail',
+        'We couldn’t update your resume automatically — your website is updated, but your saved resume stayed the same.'), 6000);
     }
 
     /* Keyboard undo/redo. Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y, driving the same
@@ -7689,7 +7940,8 @@ Aaliyah Washington`
       cvClosePanel();
       const shell = document.getElementById('cvShell');
       if (shell) shell.style.display = 'none';
-      await smBoot({ templateId });
+      const fresh = smPickerFresh; smPickerFresh = false;
+      await smBoot({ templateId, fresh });
     }
 
     // The one way out of full-screen mode, since it covers the app's own
@@ -7732,8 +7984,17 @@ Aaliyah Washington`
       smPanel(ok ? '' : '');
     }
 
+    // Which site to open, set by the Back Office just before it switches tabs.
+    // Consumed once — coming back to the tab later reopens the current site.
+    let wcOpenSub = null, wcOpenRename = false;
+
     // Load saved resumes + cover letters into the pickers, plus any existing site.
-    async function loadWebsiteCreator() {
+    // `opts.subdomain` (or a stashed wcOpenSub) opens that particular site — the
+    // Back Office lists them all, and Edit there has to reopen the card pressed.
+    async function loadWebsiteCreator(opts) {
+      const openSub = (opts && opts.subdomain) || wcOpenSub;
+      const openRename = wcOpenRename;
+      wcOpenSub = null; wcOpenRename = false;
       const originSpan = document.getElementById('wcEdAddressOrigin');
       if (originSpan) originSpan.textContent = window.location.origin + '/site/';
       const rSel = document.getElementById('wcResumeSelect');
@@ -7744,11 +8005,17 @@ Aaliyah Washington`
         const [rRes, cRes, sRes] = await Promise.all([
           fetch('/api/resumes', { headers: authHeaders() }),
           fetch('/api/cover-letters', { headers: authHeaders() }),
-          fetch('/api/personal-site', { headers: authHeaders() }),
+          // Opening a named site must not prefill from a different one — the
+          // address field and the View live link would point at the wrong page
+          // if simple mode fell back to the editor.
+          fetch(openSub ? '/api/personal-sites' : '/api/personal-site', { headers: authHeaders() }),
         ]);
         wcResumes = (await rRes.json().catch(() => ({}))).resumes || [];
         wcCovers = (await cRes.json().catch(() => ({}))).coverLetters || [];
-        wcSite = (await sRes.json().catch(() => ({}))).site || null;
+        const sJson = await sRes.json().catch(() => ({}));
+        wcSite = openSub
+          ? ((sJson.sites || []).find(x => x.subdomain === openSub) || null)
+          : (sJson.site || null);
       } catch (_) { wcResumes = []; wcCovers = []; wcSite = null; }
 
       // Resumes: most-recent selected by default (list is created_at DESC).
@@ -7783,7 +8050,11 @@ Aaliyah Washington`
       // finished site, not a set of tools. smBoot generates one if they have
       // none, and falls back to the editor if it can't (e.g. not Pro).
       if (wcSite && wcSite.subdomain) { wcSiteText = wcSiteText || ''; smPublished = !!wcSite.published; }
-      await smBoot();
+      await smBoot(openSub ? { subdomain: openSub } : undefined);
+      // "Change address" in the Back Office opens the site AND the prompt —
+      // otherwise the button drops the user in the editor and leaves them to
+      // find it, which is not what the label promised.
+      if (smOn && openRename) { smChangeAddress(); return; }
       if (smOn) return;             // simple mode is up; the editor stays hidden
 
       wcLoadTemplates();
@@ -9000,25 +9271,31 @@ Aaliyah Washington`
       showTab('backoffice');
     }
     const _boDate = (ms) => { try { return new Date(ms).toLocaleDateString(); } catch (_) { return ''; } };
+    /* Only the resume the website was built from can be out of step with it, so
+       every other row shows nothing at all — a reassuring "synced" badge on a
+       resume the site has never read would be a claim we have not earned. */
+    const _boSyncTag = (st) => st === 'out_of_sync'
+      ? ` <span class="bo-sync is-off">${wcEsc(_t('bo_sync_off', 'Out of sync with website'))}</span>`
+      : (st === 'synced' ? ` <span class="bo-sync">${wcEsc(_t('bo_sync_ok', 'Synced with website'))}</span>` : '');
     async function loadBackOffice() {
       boSel = { resumes: new Set(), covers: new Set() };
-      let resumes = [], covers = [], videos = [], site = null;
+      let resumes = [], covers = [], videos = [], sites = [];
       try {
         const [r, c, v, s] = await Promise.all([
           fetch('/api/resumes', { headers: authHeaders() }),
           fetch('/api/cover-letters', { headers: authHeaders() }),
           fetch('/api/videos', { headers: authHeaders() }),
-          fetch('/api/personal-site', { headers: authHeaders() }),
+          fetch('/api/personal-sites', { headers: authHeaders() }),
         ]);
         resumes = (await r.json().catch(() => ({}))).resumes || [];
         covers = (await c.json().catch(() => ({}))).coverLetters || [];
         videos = (await v.json().catch(() => ({}))).videos || [];
-        site = (await s.json().catch(() => ({}))).site || null;
+        sites = (await s.json().catch(() => ({}))).sites || [];
       } catch (_) {}
       boRenderAssets('resumes', resumes);
       boRenderAssets('covers', covers);
       boRenderVideos(videos);
-      boRenderSite(site);
+      boRenderSites(sites);
     }
 
     function boRenderAssets(kind, items) {
@@ -9028,7 +9305,7 @@ Aaliyah Washington`
       if (!items.length) { wrap.innerHTML = `<div class="bo-empty">${wcEsc(_t('bo_empty', 'Nothing here yet.'))}</div>`; return; }
       wrap.innerHTML = items.map(it => `<div class="bo-row">
         <input type="checkbox" onchange="boToggle('${kind}',${it.id},this.checked)" ${boSel[kind].has(it.id) ? 'checked' : ''}/>
-        <span class="bo-row-title">${wcEsc(it.title || 'Untitled')}</span>
+        <span class="bo-row-title">${wcEsc(it.title || 'Untitled')}${_boSyncTag(it.siteSync)}</span>
         <span class="bo-row-meta">${_boDate(it.created_at)}</span>
         <button class="bo-act" onclick="boUse('${kind}',${it.id})" data-i18n="bo_use">Use</button>
         <button class="bo-act" onclick="boDuplicate('${single}',${it.id})" data-i18n="bo_duplicate">Duplicate</button>
@@ -9048,20 +9325,87 @@ Aaliyah Washington`
         <button class="bo-act bo-danger" onclick="boDeleteVideo(${it.id})" data-i18n="bo_delete">Delete</button>
       </div>`).join('') : `<div class="bo-empty">${wcEsc(_t('bo_novideos', 'No saved videos yet — make one in the Resume Video tab.'))}</div>`;
     }
-    function boRenderSite(site) {
+    /* ── Websites ─────────────────────────────────────────────────────────
+       Every site the user has, not just the current one. Trying a different
+       template makes another site rather than overwriting the one they have
+       been working on, so a list that showed one of them would quietly hide
+       the rest — including drafts they meant to come back to.
+
+       Exactly one card can carry the Published badge: the server enforces that
+       only one site is live, and the badge is read straight off `published`
+       rather than tracked separately, so the two can never disagree. */
+    const _boAgo = (ms) => {
+      const n = Number(ms); if (!Number.isFinite(n) || n <= 0) return '';
+      const s = Math.max(0, Math.floor((Date.now() - n) / 1000));
+      if (s < 90) return _t('bo_ago_now', 'just now');
+      const mins = Math.floor(s / 60);
+      if (mins < 60) return _t('bo_ago_min', '{n} min ago').replace('{n}', mins);
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return _t('bo_ago_hr', '{n}h ago').replace('{n}', hrs);
+      const days = Math.floor(hrs / 24);
+      if (days < 30) return _t('bo_ago_day', '{n}d ago').replace('{n}', days);
+      return _boDate(n);
+    };
+    // The address without its scheme — what someone would say out loud.
+    const _boAddr = (url, sub) => String(url || '').replace(/^https?:\/\//, '').replace(/\/$/, '') || ('/site/' + sub);
+
+    function boRenderSites(sites) {
       const wrap = document.querySelector('#bo-site .bo-list');
       if (!wrap) return;
-      if (!site || !site.subdomain) { wrap.innerHTML = `<div class="bo-empty">${wcEsc(_t('bo_nosite', 'No website yet — build one in the Website Creator.'))}</div>`; return; }
-      const live = window.location.origin + '/site/' + site.subdomain;
-      const pubLabel = site.published ? _t('bo_unpublish', 'Unpublish') : _t('bo_publish', 'Publish');
-      wrap.innerHTML = `<div class="bo-row">
-        <span class="bo-row-title">/site/${wcEsc(site.subdomain)}</span>
-        <span class="bo-row-meta">${site.published ? _t('bo_live', 'Live') : _t('bo_hidden', 'Hidden')} · ${(site.views || 0)} ${_t('wc_stat_views', 'Views')}</span>
-        <button class="bo-act" onclick="showTab('website')" data-i18n="bo_edit">Edit</button>
-        <a class="bo-act" href="${wcEsc(live)}" target="_blank" rel="noopener" data-i18n="bo_viewlive">View live</a>
-        <button class="bo-act" onclick="boToggleSite(${site.published ? 0 : 1})">${wcEsc(pubLabel)}</button>
-        <button class="bo-act bo-danger" onclick="boDeleteSite()" data-i18n="bo_delete">Delete</button>
-      </div>`;
+      if (!sites || !sites.length) {
+        wrap.innerHTML = `<div class="bo-empty">${wcEsc(_t('bo_nosite', 'No website yet — build one in the Website Creator.'))}</div>
+          <div class="bo-bulk"><button class="bo-act" onclick="showTab('website')">${wcEsc(_t('bo_makesite', 'Build my website'))}</button></div>`;
+        return;
+      }
+      // Feature B's current address, stated once at the top: with several
+      // drafts around, "my web address" means the live one.
+      const live = sites.find(s => s.published) || null;
+      const bar = live
+        ? `<div class="bo-addr-bar">${wcEsc(_t('bo_addr_live', 'Your web address:'))}
+             <b><a class="bo-site-addr" href="${wcEsc(live.url || '')}" target="_blank" rel="noopener">${wcEsc(_boAddr(live.url, live.subdomain))}</a></b>
+             <button class="bo-act" onclick="boEditSite('${wcEsc(live.subdomain)}', true)">${wcEsc(_t('bo_change_addr', 'Change address'))}</button>
+           </div>`
+        : `<div class="bo-addr-bar">${wcEsc(_t('bo_addr_none', 'Nothing is published yet — these are all private drafts that only you can see.'))}</div>`;
+
+      wrap.innerHTML = bar + '<div class="bo-sites">' + sites.map((s) => {
+        const sub = String(s.subdomain || '');
+        const badge = s.published
+          ? `<span class="bo-thumb-badge">${wcEsc(_t('bo_published', 'Published'))}</span>`
+          : `<span class="bo-thumb-badge is-draft">${wcEsc(_t('bo_draft', 'Draft'))}</span>`;
+        const meta = [
+          _t('bo_edited', 'Edited {t}').replace('{t}', _boAgo(s.updatedAt)),
+          s.published ? `${(s.views || 0)} ${_t('wc_stat_views', 'Views')}` : '',
+        ].filter(Boolean).join(' · ');
+        return `<div class="bo-site${s.published ? ' is-live' : ''}">
+          <div class="bo-thumb">${badge}<iframe title="" data-site-thumb="${wcEsc(sub)}" scrolling="no" tabindex="-1"></iframe></div>
+          <div class="bo-site-body">
+            <span class="bo-site-tpl">${wcEsc(s.templateName || s.name || _t('bo_site_untitled', 'My website'))}</span>
+            ${s.published
+              ? `<a class="bo-site-addr" href="${wcEsc(s.url || '')}" target="_blank" rel="noopener">${wcEsc(_boAddr(s.url, sub))}</a>`
+              : `<span class="bo-site-meta">${wcEsc(_boAddr(s.url, sub))}</span>`}
+            <span class="bo-site-meta">${wcEsc(meta)}</span>
+            <div class="bo-site-acts">
+              <button class="bo-act" onclick="boEditSite('${wcEsc(sub)}')">${wcEsc(_t('bo_edit', 'Edit'))}</button>
+              <button class="bo-act" onclick="boToggleSite('${wcEsc(sub)}',${s.published ? 0 : 1})">${wcEsc(s.published ? _t('bo_unpublish', 'Unpublish') : _t('bo_publish', 'Publish'))}</button>
+              <button class="bo-act bo-danger" onclick="boDeleteSite('${wcEsc(sub)}')">${wcEsc(_t('bo_delete', 'Delete'))}</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('') + '</div>';
+
+      wrap.querySelectorAll('iframe[data-site-thumb]').forEach(boLoadThumb);
+    }
+
+    // Thumbnails come through fetch + srcdoc rather than src, because the
+    // render is owner-only and an iframe cannot send the Bearer token.
+    async function boLoadThumb(frame) {
+      const sub = frame.getAttribute('data-site-thumb');
+      if (!sub) return;
+      try {
+        const r = await fetch(`/api/personal-sites/${encodeURIComponent(sub)}/render`, { headers: authHeaders() });
+        if (!r.ok) return;
+        frame.srcdoc = await r.text();
+      } catch (_) {}
     }
 
     function boToggle(kind, id, on) { if (on) boSel[kind].add(id); else boSel[kind].delete(id); }
@@ -9096,12 +9440,37 @@ Aaliyah Washington`
       if (!confirm(_t('bo_confirm_del', 'Delete this item? This cannot be undone.'))) return;
       try { const r = await fetch('/api/videos/' + id, { method: 'DELETE', headers: authHeaders() }); if (r.ok) loadBackOffice(); } catch (_) {}
     }
-    async function boToggleSite(pub) {
-      try { const r = await fetch('/api/personal-site', { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ published: !!pub }) }); if (r.ok) loadBackOffice(); } catch (_) {}
+    // Open THIS site in the Website Creator. Without the subdomain the creator
+    // reopens whichever site is current, which would ignore the card pressed.
+    //
+    // The target is stashed rather than passed, because showTab('website')
+    // already calls loadWebsiteCreator itself: calling it a second time here
+    // raced two loads, and the tab's own argument-less one won — so Edit landed
+    // on the current site no matter which card was pressed.
+    function boEditSite(sub, andRename) { wcOpenSub = sub; wcOpenRename = !!andRename; showTab('website'); }
+
+    async function boToggleSite(sub, pub) {
+      // Publishing takes their other sites down. Said plainly beforehand,
+      // because finding out afterwards means a link someone was given is dead.
+      if (pub) {
+        const others = document.querySelectorAll('#bo-site .bo-site.is-live').length;
+        if (others && !confirm(_t('bo_confirm_pub', 'Publish this one? Only one website can be live at a time, so your current one comes down.'))) return;
+      } else if (!confirm(_t('bo_confirm_unpub', 'Take this website off the internet? Nothing is deleted — you can publish it again.'))) return;
+      try {
+        const r = await fetch('/api/personal-site', {
+          method: 'PATCH',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+          body: JSON.stringify({ subdomain: sub, published: !!pub }),
+        });
+        if (r.ok) { showToast(pub ? _t('bo_now_live', 'Your website is live.') : _t('bo_now_hidden', 'Your website is hidden.')); loadBackOffice(); }
+      } catch (_) {}
     }
-    async function boDeleteSite() {
-      if (!confirm(_t('bo_confirm_site', 'Delete your website? This removes the live page.'))) return;
-      try { const r = await fetch('/api/personal-site', { method: 'DELETE', headers: authHeaders() }); if (r.ok) loadBackOffice(); } catch (_) {}
+    async function boDeleteSite(sub) {
+      if (!confirm(_t('bo_confirm_site', 'Delete this website? This cannot be undone.'))) return;
+      try {
+        const r = await fetch('/api/personal-sites/' + encodeURIComponent(sub), { method: 'DELETE', headers: authHeaders() });
+        if (r.ok) loadBackOffice();
+      } catch (_) {}
     }
 
 
