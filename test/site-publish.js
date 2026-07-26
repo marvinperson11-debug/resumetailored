@@ -613,6 +613,33 @@ const server = app.listen(0, async () => {
        arrived somewhere they could not, with the editor unreachable behind it.
        Simple mode IS the editor now; the live address is how you see the site
        as visitors do. */
+    /* THE BUILDER IS THE EDITOR AGAIN. "Personal Website" opened a simplified
+       view with the full builder — dark chrome, collapsible rail, templates,
+       canvas — sitting behind it, unreachable. It routes straight there now. */
+    check('Personal Website opens the builder', /wcSetView\('edit'\)/.test(appJs) && /function wcEnsureSite/.test(appJs));
+    check('and nothing shows the simplified view on the way',
+      !/await smBoot\(openSub/.test(appJs));
+    check('the builder is never force-hidden', !/shell\.style\.display = 'none';\n *\n *\/\/ Back is always/.test(appJs));
+
+    /* On a 390px phone the desktop layout put Preview and Publish off the right
+       edge — you could not publish at all — and a 74px rail plus a fixed 300px
+       panel left the canvas sixteen pixels wide. */
+    check('the builder has a phone layout', /@media \(max-width: 820px\)[\s\S]{0,900}?\.cv-publish/.test(appJs));
+    check('the top bar wraps instead of pushing Publish off the edge',
+      /\.cv-top \{ height: auto; min-height: 54px; flex-wrap: wrap;/.test(appJs));
+    check('the panel floats over the canvas rather than squeezing it out',
+      /\.cv-panel \{ position: absolute; left: 56px;/.test(appJs));
+    /* The collapse handle is KEPT and moved, not hidden. Pinned at top:50% it
+       landed on the "Uploads" rail button — measured overlapping on desktop as
+       well as on a phone — and hiding it to solve that removed a control the
+       spec asks for. Anchored to the bottom it clears the last rail item. */
+    check('the collapse handle still exists', /class="cv-railtoggle"/.test(appJs));
+    check('and is anchored to the bottom rather than mid-rail',
+      /\.cv-railtoggle \{\n *position: absolute; left: 0; top: auto; bottom: 56px;/.test(appJs));
+    check('with a phone position of its own', /\.cv-railtoggle \{ top: auto; bottom: 56px;[^}]*left: 56px;/.test(appJs));
+    check('the device toggle is kept at phone width',
+      /\.cv-logo, \.cv-title \{ display: none; \}/.test(appJs) && !/\.cv-seg \{ display: none/.test(appJs));
+
     check('there is no read-only state to land in', !/_smPreviewFromEditor/.test(appJs));
     check('and no button that opens one', !/id="smPreviewBtn"/.test(appJs) && !/smSetEditing\(false\)/.test(appJs));
     check('Back leaves the Website Creator', /function smBack\(\) \{ smExit\(\); \}/.test(appJs));
