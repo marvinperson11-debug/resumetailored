@@ -59,7 +59,11 @@ const html = _renderPersonalSite(
     primary_hex: '4a1042', hide_contact: 0, config: JSON.stringify(doc),
   },
   'https://resumetailored.com',
-  { indexable: false, footer: '' },
+  // Rendered as the AUTHOR sees it. The question this suite asks is "would
+  // someone who added this element see it", and an empty photo slot is now
+  // deliberately invisible to visitors while staying visible — and clickable —
+  // to the owner. Rendering as a visitor would fail on exactly that intent.
+  { indexable: false, footer: '', editable: true },
 );
 const body = (html.match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '';
 
@@ -83,12 +87,25 @@ specs.forEach((s) => {
   };
   const h1 = _renderPersonalSite(
     { subdomain: 'elib', name: 'Alex Morgan', text: RESUME, accent: '8b5cf6', primary_hex: '4a1042', hide_contact: 0, config: JSON.stringify(one) },
-    'https://resumetailored.com', { indexable: false, footer: '' },
+    'https://resumetailored.com', { indexable: false, footer: '', editable: true },
   );
   const b1 = (h1.match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '';
   const rendered = (b1.match(wrapperRe) || []).length === 1;
   ok(`"${s.group} / ${s.label}" (${s.type}) renders with default props`, rendered,
     'element produced no output — a user could drop this and see nothing');
+
+  // The other half of the photo-slot rule: what the AUTHOR sees above must be
+  // absent for a VISITOR, or the site advertises its own missing pieces.
+  if (s.type === 'image' || s.type === 'imagebox') {
+    const vis = _renderPersonalSite(
+      { subdomain: 'elib', name: 'Alex Morgan', text: RESUME, accent: '8b5cf6', primary_hex: '4a1042', hide_contact: 0, config: JSON.stringify(one) },
+      'https://resumetailored.com', { indexable: false, footer: '' },
+    );
+    const vb = (vis.match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '';
+    ok(`"${s.label}" with no photo yet is invisible to visitors`,
+      (vb.match(wrapperRe) || []).length === 0,
+      'an empty photo slot reached a visitor');
+  }
 });
 
 // A few element-specific sanity checks that catch silent misconfiguration.

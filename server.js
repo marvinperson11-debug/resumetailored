@@ -2347,14 +2347,33 @@ function _sdMobileClass(el, rules) {
 // `height:100%` on the placeholder resolves against an auto-height parent and
 // collapses to the 120px floor — every image slot rendered as a short band no
 // matter how large you drew it. Passing the height through fixes that.
-function _sdPlaceholder(p, radius, minH) {
+/**
+ * The stand-in for a photo that has not been added yet.
+ *
+ * A visitor never sees one. An empty photo slot used to render as a large
+ * gradient blob reading "YOUR HEADSHOT" — on a phone the hero's 310px circle
+ * stretched to the full width and became an ellipse covering most of the first
+ * screen, which is the first thing anyone opening the site would see. A page
+ * that announces its own missing pieces is worse than a page without them.
+ *
+ * It stays while EDITING, because the slot has to be clickable for a photo to
+ * be added to it, and it is drawn as an obvious empty slot rather than as
+ * decoration. (The 💬 Not sure? → "I want to change my photo" route works
+ * either way: it searches the document, not the rendered page.)
+ */
+function _sdPlaceholder(p, radius, minH, editable) {
   const ph = p && p.ph;
   if (!ph) return '';
+  if (!editable) return '';
   const from = _sdColor(ph.from, '#6366F1');
   const to = _sdColor(ph.to, '#8B5CF6');
   const round = ph.shape === 'circle' ? '50%' : `${_sdPx(radius, 12)}px`;
-  const h = _sdPx(minH, 0);
-  return `<div class="sd-ph" style="background:linear-gradient(135deg,${from},${to});border-radius:${round};${h > 0 ? `min-height:${h}px;` : ''}">${ph.label ? `<span>${_sdText(ph.label, 60)}</span>` : ''}</div>`;
+  // Capped: a slot drawn at its full designed height became a full-width
+  // ellipse on a phone. It only has to be big enough to tap.
+  const h = Math.min(_sdPx(minH, 0), 200);
+  // Styled inline rather than through a class: a rule in the shared stylesheet
+  // would ship to every published page for something a visitor can never see.
+  return `<div class="sd-ph sd-ph--slot" style="opacity:.55;background:linear-gradient(135deg,${from},${to});border-radius:${round};${h > 0 ? `min-height:${h}px;max-height:${h}px;` : ''}">${ph.label ? `<span>${_sdText(ph.label, 60)}</span>` : ''}</div>`;
 }
 
 // One element → HTML. `ctx` carries row/theme/lang/pages for elements that need
@@ -2377,15 +2396,17 @@ function _sdElement(el, ctx) {
       return `<div class="sd-p" style="${styleText}">${_sdText(p.text, 4000).replace(/\n/g, '<br/>')}</div>`;
     case 'image': {
       const u = _safeUrl(p.src);
-      if (!u) return _sdPlaceholder(p, _sdPx(p.radius, 12), drawnH);
+      if (!u) return _sdPlaceholder(p, _sdPx(p.radius, 12), drawnH, ctx.editable);
       return `<img class="sd-img" src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy" style="border-radius:${_sdPx(p.radius, 12)}px;object-fit:${p.fit === 'contain' ? 'contain' : 'cover'};${drawnH ? `min-height:${drawnH}px;` : ''}"/>`;
     }
     case 'imagebox': {
       const u = _safeUrl(p.src);
       const inner = u
         ? `<img src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy"/>`
-        : _sdPlaceholder(p, 0, drawnH);
-      if (!u && !p.ph) return '';
+        : _sdPlaceholder(p, 0, drawnH, ctx.editable);
+      // No image and nothing to stand in for it — including a placeholder that
+      // suppressed itself because this is not the editor — is an empty frame.
+      if (!u && (!p.ph || !inner)) return '';
       return `<figure class="sd-ibox" style="border-radius:${_sdPx(p.radius, 14)}px;${drawnH ? `min-height:${drawnH}px;` : ''}">${inner}${p.caption ? `<figcaption>${_sdText(p.caption, 300)}</figcaption>` : ''}</figure>`;
     }
     case 'gallery': {
@@ -2519,7 +2540,9 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
   let _assets = null;
   try { _assets = doc && doc.assets ? doc.assets : null; } catch (_) { _assets = null; }
   const hasCoverLetter = !!(_assets && typeof _assets.coverLetterText === 'string' && _assets.coverLetterText.trim().length > 20);
-  const ctx = { row, theme, SI, sub, pages, currentSlug: page.slug, base, lang, hasCoverLetter };
+  // `editable` belongs on ctx because element renderers need it: an empty photo
+  // slot is drawn for the owner and omitted for a visitor.
+  const ctx = { row, theme, SI, sub, pages, currentSlug: page.slug, base, lang, hasCoverLetter, editable: !!opts.editable };
 
   // Per-element mobile overrides (V6) are emitted as a small stylesheet inside
   // the mobile media query, keyed on a per-element class. Collected while

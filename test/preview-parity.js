@@ -185,9 +185,34 @@ const server = app.listen(0, async () => {
       body: JSON.stringify({ subdomain: 'renderfix', text: RESUME, name: 'Jane', config: RDOC }),
     });
     const rfx = bodyOf(await (await fetch(`${B}/site/renderfix`)).text());
-    check('image placeholder honours drawn height', /min-height:340px/.test(rfx));
-    check('imagebox honours drawn height', /min-height:320px/.test(rfx));
     check('box honours drawn height', /min-height:280px/.test(rfx));
+
+    /* A photo that has not been added yet shows a VISITOR nothing. It used to
+       render a gradient blob reading "YOUR HEADSHOT"; on a phone the hero's
+       circle stretched to full width and became an ellipse covering most of
+       the first screen. A page that announces its own missing pieces is worse
+       than a page without them. */
+    check('an empty photo slot is invisible to visitors', !/sd-ph/.test(rfx));
+    check('and leaves no empty frame behind', !/sd-ibox/.test(rfx));
+
+    /* It stays while EDITING — the slot has to be clickable for a photo to be
+       added to it — and there the old collapse still must not happen: an
+       absolutely positioned replaced element with `height:auto` falls back to
+       its intrinsic 150px. Capped, because drawing it at full designed height
+       is what produced the ellipse. */
+    const edrfx = await (await fetch(`${B}/api/personal-site/preview`, {
+      method: 'POST', headers: AJ,
+      body: JSON.stringify({ subdomain: 'renderfix', text: RESUME, name: 'Jane', config: RDOC, editable: true }),
+    })).text();
+    // Scoped to the slot's own tag: the element WRAPPER legitimately carries the
+    // full designed height, so testing the whole document would pass on the
+    // wrapper and prove nothing about the slot.
+    const slotTag = (edrfx.match(/<div class="sd-ph sd-ph--slot"[^>]*>/) || [''])[0];
+    check('the slot is there while editing', !!slotTag, edrfx.slice(0, 120));
+    check('and it never collapses to the intrinsic 150px',
+      /min-height:200px/.test(slotTag) && !/min-height:150px/.test(slotTag), slotTag);
+    check('but is capped rather than drawn at its full designed height',
+      !/min-height:340px/.test(slotTag), slotTag);
     check('mailto: social link rendered', /href="mailto:you@example\.com"/.test(rfx));
     check('tel: social link rendered', /href="tel:\+15551234567"/.test(rfx));
     check('javascript: link still rejected', !/javascript:/i.test(rfx));
