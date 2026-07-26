@@ -354,7 +354,11 @@
       display: flex; align-items: center; gap: 12px; padding: 0 14px;
       background: #fff; border-bottom: 1px solid rgba(15,23,42,.08);
     }
-    .sm-frame { position: absolute; top: 52px; left: 0; right: 0; bottom: 0; width: 100%; border: 0; display: block; background: #fff; }
+    /* An explicit height, NOT top+bottom offsets. An <iframe> is a replaced
+       element, so with `height:auto` an absolutely positioned one falls back to
+       its intrinsic 150px and ignores `bottom` entirely — the site rendered
+       into a 150px sliver with the rest of the screen blank. */
+    .sm-frame { position: absolute; top: 52px; left: 0; width: 100%; height: calc(100% - 52px); border: 0; display: block; background: #fff; }
     .sm-note {
       flex: 1; text-align: center; font-size: 12.5px; line-height: 1.4; color: #4b5563;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -7139,14 +7143,28 @@ Aaliyah Washington`
       const m = ev && ev.data;
       if (!m || m.__rtEdit !== 1 || !wcDoc || !window.SiteFields) return;
 
+      if (m.kind === 'ready') { smPushChips(); return; }
+
+      if (m.kind === 'undo') {
+        // No toast: the chip is the feedback, and it is already where the user
+        // is looking. A corner toast is the pattern the chips exist to replace.
+        if (edStore && edStore.undo()) smPushChips();
+        return;
+      }
+      if (m.kind === 'redo') {
+        if (edStore && edStore.redo()) smPushChips();
+        return;
+      }
+
       if (m.kind === 'edit') {
         smMutate(d => { SiteFields.applyEdit(d, m.el, m.value); }, 'inline-edit');
-        showToast(_t('sm_edit_saved', 'Saved'), 1600);
+        smMarkAction({ el: m.el });
         return;
       }
 
       if (m.kind === 'reset') {
         smMutate(d => { SiteFields.resetField(d, m.el, smResumeText()); }, 'inline-reset');
+        smMarkAction({ el: m.el });
         showToast(_t('sm_reset_done', 'Back in sync with your resume'), 2600);
         return;
       }
@@ -7154,19 +7172,57 @@ Aaliyah Washington`
       if (m.kind === 'photo') { smPickPhotoInto(m.el); return; }
 
       if (m.kind === 'moveSection') {
+        // Anchored to the section that moved, so the chips travel with it.
         smMutate(d => SiteFields.moveSection(d, 0, m.sec, m.delta), 'move-section');
+        smMarkAction({ sec: m.sec });
         return;
       }
 
       if (m.kind === 'deleteSection') {
         // Removes it from the SITE. The resume is a separate store and is never
         // touched by anything in here.
+        // Capture the index BEFORE deleting: afterwards the section is gone and
+        // there is nothing left to anchor the undo chip to. The chips land in
+        // the gap it left, which is where the user is looking.
+        const idx = (wcDoc.pages[0].sections || []).findIndex(x => x && x.id === m.sec);
         const ok = smMutate(d => SiteFields.deleteSection(d, 0, m.sec), 'delete-section');
         if (ok === false) { showToast(_t('sm_last_section', 'A page needs at least one section.'), 3000); return; }
-        showToast(_t('sm_section_gone', 'Section removed from your website — your resume is unchanged.'), 3600);
+        smMarkAction({ idx: Math.max(0, idx) });
         return;
       }
     });
+
+    /* ── Undo / redo chips ────────────────────────────────────────────────
+       They appear where the action happened. The page re-renders after every
+       change, which destroys anything in the iframe, so the anchor is held out
+       here and re-sent once each new render reports itself ready.
+
+       Only one set is ever on screen: each action replaces the last anchor, so
+       a second edit before the first fades simply moves the chips. */
+    let smUndoAnchor = null;
+
+    function smMarkAction(anchor) {
+      smUndoAnchor = anchor || null;
+      smPushChips();
+    }
+
+    function smPushChips() {
+      const f = document.getElementById('smFrame');
+      if (!f || !f.contentWindow) return;
+      if (!smEditing || !smUndoAnchor || !edStore) { smHideChips(); return; }
+      try {
+        f.contentWindow.postMessage(Object.assign({
+          __rtChips: 1,
+          canUndo: !!edStore.canUndo(),
+          canRedo: !!edStore.canRedo(),
+        }, smUndoAnchor), '*');
+      } catch (_) {}
+    }
+
+    function smHideChips() {
+      const f = document.getElementById('smFrame');
+      try { if (f && f.contentWindow) f.contentWindow.postMessage({ __rtChips: 1, hide: true }, '*'); } catch (_) {}
+    }
 
     // One writer. Through the store when it exists (so undo covers it), on a
     // clone otherwise.
@@ -7197,6 +7253,7 @@ Aaliyah Washington`
             const el = SiteFields.findById(d, elId);
             if (el) { el.props = el.props || {}; el.props.src = url; delete el.props.ph; }
           }, 'photo');
+          smMarkAction({ el: elId });
         } catch (_) { showToast(_t('sm_upload_err', "That photo didn't upload — try another.")); }
       };
       inp.click();

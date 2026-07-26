@@ -2587,6 +2587,13 @@ function _sdEditLayer() {
     .sd-ed-reset{position:absolute;z-index:99998;font:inherit;font-size:11px;font-weight:600;color:#4338ca;background:rgba(238,242,255,.96);border:1px solid #c7d2fe;border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap;}
     .sd-ed-reset:hover{background:#e0e7ff;}
     .sd-ed-hint{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:99999;background:rgba(17,24,39,.92);color:#fff;font-size:12px;font-weight:600;padding:8px 16px;border-radius:999px;pointer-events:none;}
+    /* Undo/redo chips. The wrapper ignores pointer events so the page
+       underneath stays clickable while they fade — only the pills catch clicks. */
+    .sd-ed-chips{position:absolute;z-index:99999;display:flex;gap:8px;pointer-events:none;opacity:1;transition:opacity .45s ease;}
+    .sd-ed-chips.is-gone{opacity:0;}
+    .sd-ed-chips button{pointer-events:auto;font:inherit;font-size:12.5px;font-weight:700;color:#fff;background:rgba(17,24,39,.94);border:none;border-radius:999px;padding:9px 15px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.28);white-space:nowrap;}
+    .sd-ed-chips button:hover{background:#111827;}
+    @media(max-width:820px){.sd-ed-chips button{font-size:14px;padding:12px 20px;}.sd-ed-chips{gap:10px;}}
   </style>
   <script>
   (function(){
@@ -2713,6 +2720,93 @@ function _sdEditLayer() {
       var a = ev.target.closest && ev.target.closest('a');
       if (a) ev.preventDefault();
     }, true);
+
+    /* ── Undo / redo chips ──────────────────────────────────────────────────
+       They appear where the action happened, not in a toolbar — a toast in the
+       corner does not read as "undo THAT". The page re-renders after every
+       change, which destroys them, so the parent re-requests them once the new
+       render says it is ready. */
+    var chips = null, chipTimer = null, chipEndsAt = 0, chipLeft = 0;
+    var CHIP_MS = 5000;
+
+    function hideChips(){
+      if (chipTimer) { clearTimeout(chipTimer); chipTimer = null; }
+      if (chips) { chips.remove(); chips = null; }
+    }
+
+    function startChipTimer(ms){
+      if (chipTimer) clearTimeout(chipTimer);
+      chipLeft = ms;
+      chipEndsAt = Date.now() + ms;
+      chipTimer = setTimeout(function(){
+        if (!chips) return;
+        chips.classList.add('is-gone');
+        setTimeout(hideChips, 500);
+      }, ms);
+    }
+
+    function anchorFor(d){
+      var t = null;
+      if (d.el) t = document.querySelector('.sd-el[data-el="' + String(d.el).replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      if (!t && d.sec) t = document.querySelector('section[data-sec="' + String(d.sec).replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      // A deleted section no longer exists, so fall back to whatever now sits
+      // at that index — the chips appear in the space it left behind.
+      if (!t && typeof d.idx === 'number') {
+        var secs = document.querySelectorAll('section[data-sec]');
+        if (secs.length) t = secs[Math.max(0, Math.min(d.idx, secs.length - 1))];
+      }
+      return t;
+    }
+
+    function showChips(d){
+      hideChips();
+      if (!d.canUndo && !d.canRedo) return;
+      var t = anchorFor(d);
+      if (!t) return;
+      var r = t.getBoundingClientRect();
+      chips = document.createElement('div');
+      chips.className = 'sd-ed-chips';
+
+      var mk = function(label, kind){
+        var b = document.createElement('button');
+        b.textContent = label;
+        b.onclick = function(ev){ ev.stopPropagation(); ev.preventDefault(); post({ kind: kind }); };
+        chips.appendChild(b);
+      };
+      if (d.canUndo) mk('↩️ Undo', 'undo');
+      if (d.canRedo) mk('↪️ Redo', 'redo');
+
+      // Hovering pauses the countdown; leaving resumes it with the time left.
+      chips.onmouseenter = function(){
+        if (chipTimer) { clearTimeout(chipTimer); chipTimer = null; }
+        chipLeft = Math.max(1200, chipEndsAt - Date.now());
+        chips.classList.remove('is-gone');
+      };
+      chips.onmouseleave = function(){ if (chips) startChipTimer(chipLeft); };
+
+      document.body.appendChild(chips);
+
+      // Below the anchor by default, above it if that would run off the page.
+      // Then clamped into the VISIBLE viewport: an undo chip you have to scroll
+      // to find is no safety net at all, and after undoing a section delete the
+      // restored section can easily be taller than the screen.
+      var w = chips.getBoundingClientRect();
+      var top = r.bottom + scrollY + 10;
+      if (top + w.height > document.documentElement.scrollHeight - 4) top = r.top + scrollY - w.height - 10;
+      var minTop = scrollY + 8;
+      var maxTop = scrollY + innerHeight - w.height - 12;
+      chips.style.top = Math.max(minTop, Math.min(top, maxTop)) + 'px';
+      chips.style.left = Math.max(8, Math.min(r.left + scrollX + 12, innerWidth - w.width - 12)) + 'px';
+
+      startChipTimer(CHIP_MS);
+    }
+
+    addEventListener('message', function(ev){
+      var m = ev && ev.data;
+      if (!m || m.__rtChips !== 1) return;
+      if (m.hide) { hideChips(); return; }
+      showChips(m);
+    });
 
     post({ kind: 'ready' });
   })();

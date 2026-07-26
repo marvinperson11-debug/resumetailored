@@ -243,6 +243,24 @@ const server = app.listen(0, async () => {
     check('emitted regexes are escaped, not literal newlines',
       /replace\(\/\\u00a0\/g/.test(editPrev) && !/replace\(\/\n/.test(editPrev));
 
+    // ── Undo / redo chips ───────────────────────────────────────────────
+    // The safety net for Delete, which is immediate.
+    check('the editable page carries the chip layer',
+      editPrev.includes('sd-ed-chips') && editPrev.includes('↩️ Undo') && editPrev.includes('↪️ Redo'));
+    check('chips are not in the published page', !page.includes('sd-ed-chips'));
+    check('chips fade rather than vanish', /\.sd-ed-chips\{[^}]*transition:opacity/.test(editPrev));
+    check('the wrapper lets clicks through to the page beneath',
+      /\.sd-ed-chips\{[^}]*pointer-events:none/.test(editPrev) && /\.sd-ed-chips button\{[^}]*pointer-events:auto/.test(editPrev));
+    check('hovering pauses the countdown',
+      editPrev.includes('onmouseenter') && editPrev.includes('onmouseleave'));
+    check('chips are bigger on a phone', /@media\(max-width:820px\)\{\.sd-ed-chips/.test(editPrev));
+    check('a deleted section falls back to its old position',
+      editPrev.includes("typeof d.idx === 'number'"));
+    check('chips can anchor to an element or a section',
+      editPrev.includes('data-el="') && editPrev.includes('section[data-sec="'));
+    check('the chip anchor is whitelisted, not escaped',
+      editPrev.includes("replace(/[^A-Za-z0-9_-]/g, '')"));
+
     // The detach survives a round trip through the database.
     const back = await (await fetch(`${B}/api/personal-site`, { headers: AJ })).json();
     const cfg = JSON.parse(back.site.config);
