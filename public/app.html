@@ -213,11 +213,11 @@
     .sig-preview { margin-top: 10px; padding: 14px 20px; background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px; }
 
     /* ── LinkedIn sidebar button highlight ── */
+    /* No standing highlight. This used to carry a blue background and border
+       unconditionally, so the button looked selected on every page — the
+       "active" gradient on top of it was indistinguishable at a glance. Only
+       .active is lit now. */
     .sidebar-btn-linkedin {
-      background: rgba(0,119,181,0.1) !important;
-      border: 1.5px solid rgba(0,119,181,0.35) !important;
-      color: #38bdf8 !important;
-      font-weight: 700 !important;
       display: flex !important;
       align-items: center !important;
     }
@@ -327,6 +327,28 @@
        position:sticky with z-index 100 inside a stacking context the editor
        cannot climb out of, so it is hidden outright rather than out-ranked. */
     body.wb-immersive .nav { display: none !important; }
+
+    /* ── What is visible in each mode ──────────────────────────────────────
+       Three states, one switch. Public view is the site and nothing else;
+       edit mode keeps the left rail; the template picker is shown alone to
+       someone who has no site yet. */
+    body.wb-public .cv-shell,
+    body.wb-public .sidebar { display: none !important; }
+    body.wb-picker .sidebar,
+    body.wb-picker .sm-view { display: none !important; }
+
+    /* Only one rail panel open at a time, and none of them to begin with. */
+    .cv-panel[hidden] { display: none !important; }
+    /* The rail can be pulled in so the page gets the whole width. */
+    .cv-shell.is-railed .cv-panel { display: none !important; }
+    .cv-shell.is-railed .cv-rail { width: 0; overflow: hidden; padding: 0; }
+    .cv-railtoggle {
+      position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      z-index: 12; width: 22px; height: 54px; border: none; cursor: pointer;
+      background: #3b3c42; color: #e5e7eb; font-size: 13px; line-height: 1;
+      border-radius: 0 8px 8px 0; box-shadow: 2px 0 8px rgba(0,0,0,.3);
+    }
+    .cv-railtoggle:hover { background: #4b4c53; }
     /* Toasts default to the bottom-right, which is exactly where the "Not sure?"
        button and its panel live. Centre them while the Website Creator is open
        so the two never sit on top of each other. */
@@ -388,14 +410,16 @@
     .sm-look.is-on { background: #4338ca; border-color: #4338ca; color: #fff; }
     /* On a phone the bar has to hold four things. Labels collapse to their
        icons rather than overlapping, and the note keeps only its badge. */
+    /* On a phone four controls on one 390px line meant every label was clipped
+       mid-word. Two rows, nothing truncated: the bar grows and the page starts
+       below it. */
     @media (max-width: 760px) {
-      .sm-bar { gap: 8px; padding: 0 10px; }
-      .sm-lbl { display: none; }
-      .sm-back, .sm-look { padding: 8px 12px; }
-      .sm-note { font-size: 0; }
-      .sm-note .sm-draft { font-size: 10.5px; margin-right: 0; }
-      .sm-publish { font-size: 12.5px; padding: 9px 14px; }
-      .sm-live { max-width: 140px; }
+      .sm-bar { height: auto; min-height: 52px; flex-wrap: wrap; gap: 6px; padding: 8px 10px; justify-content: center; }
+      .sm-frame { top: 96px; height: calc(100% - 96px); }
+      .sm-note { flex-basis: 100%; order: -1; font-size: 11.5px; white-space: normal; text-align: center; }
+      .sm-back, .sm-look { padding: 9px 12px; font-size: 12px; }
+      .sm-publish { font-size: 13px; padding: 10px 16px; }
+      .sm-live { max-width: 100%; font-size: 12px; }
     }
     /* Going public is the one deliberate act, so it gets the one green button.
        Once live it is replaced by the link itself. */
@@ -521,6 +545,22 @@
       .sm-help { right: 14px; bottom: 14px; font-size: 15px; padding: 14px 20px; }
       .sm-help-panel { left: 0; right: 0; bottom: 0; width: auto; border-radius: 18px 18px 0 0; padding: 18px 16px 22px; }
       .sm-help-opt { font-size: 15.5px; padding: 16px; }
+    }
+
+    /* First time into edit mode: one line near the middle, gone in four
+       seconds or when they say so. */
+    .sm-hint {
+      position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%);
+      z-index: 9; display: flex; align-items: center; gap: 14px;
+      background: rgba(17,24,39,.95); color: #fff; border-radius: 14px;
+      padding: 16px 20px; box-shadow: 0 14px 40px rgba(0,0,0,.35);
+      font-size: 15px; font-weight: 700; transition: opacity .4s ease;
+    }
+    .sm-hint[hidden] { display: none; }
+    .sm-hint.is-gone { opacity: 0; }
+    .sm-hint button {
+      font: inherit; font-size: 13px; font-weight: 800; color: #111827;
+      background: #fff; border: none; border-radius: 999px; padding: 8px 16px; cursor: pointer;
     }
 
     .sm-busy, .sm-empty {
@@ -1336,6 +1376,10 @@
             <button type="button" class="sm-back" onclick="smAdvanced()" title="Advanced editor"><span aria-hidden="true">⚙</span><span class="sm-lbl" data-i18n="sm_advanced">Advanced</span></button>
           </div>
           <iframe class="sm-frame" id="smFrame" title="Your website"></iframe>
+          <div class="sm-hint" id="smHint" hidden>
+            <span data-i18n="sm_hint">👆 Click anything to edit it</span>
+            <button type="button" onclick="smHideHint()" data-i18n="sm_hint_ok">Got it</button>
+          </div>
           <button type="button" class="sm-help" id="smHelpBtn" onclick="smHelpToggle()" hidden>
             <span aria-hidden="true">💬</span><span data-i18n="sm_help_btn">Not sure?</span>
           </button>
@@ -1345,6 +1389,7 @@
             <button type="button" class="sm-help-opt" onclick="smHelpPick('move')" data-i18n="sm_help_move">I want to move something</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('look')" data-i18n="sm_help_look">I want a different look</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('voice')" data-i18n="sm_help_voice">I want to add my voice</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('links')" data-i18n="sm_help_links">I want to add my links</button>
             <button type="button" class="sm-help-never" onclick="smHelpClose()" data-i18n="sm_help_never">Never mind</button>
           </div>
           <div class="sm-strip" id="smStrip">
@@ -1373,6 +1418,7 @@
         </div>
 
         <div class="cv-shell" id="cvShell">
+          <button type="button" class="cv-railtoggle" id="cvRailToggle" onclick="cvToggleRail()" title="Hide or show the panel">‹</button>
 
           <!-- Top bar -->
           <div class="cv-top">
@@ -1405,7 +1451,7 @@
             </div>
 
             <!-- Swappable panel -->
-            <div class="cv-panel" id="cvPanel">
+            <div class="cv-panel" id="cvPanel" hidden>
               <!-- Templates -->
               <div class="cv-pane" data-pane="templates">
                 <div class="cv-search">
@@ -1467,7 +1513,6 @@
                   <iframe id="wcEdFrame" title="Canvas" scrolling="no"></iframe>
                   <div id="wcEdOverlay"></div>
                 </div>
-                <button type="button" class="cv-addpage" onclick="edAddSection()" data-i18n="cv_addsection">+ Add section</button>
               </div>
               <div id="wcPreview" style="display:none;height:100%;">
                 <div id="wcPreviewEmpty" class="cv-note" style="padding:40px;text-align:center;"></div>
@@ -1476,7 +1521,12 @@
             </div>
 
             <!-- Inspector -->
-            <div class="cv-inspector" id="wcEdInspector"></div>
+            <!-- The right-hand properties panel is gone. Controls appear inline
+                 on the page, next to the thing being changed — a sidebar of
+                 properties is the opposite of "click it to change it". The
+                 element still exists, hidden, because the advanced editor's
+                 render functions write into it. -->
+            <div class="cv-inspector" id="wcEdInspector" hidden></div>
           </div>
 
           <!-- Bottom bar -->
@@ -2202,6 +2252,10 @@
         sm_section_gone: 'Section removed from your website — your resume is unchanged.',
         sm_last_section: 'A page needs at least one section.',
         sm_kept_edits: 'Updated from your resume — your own edits were kept.',
+        sm_hint: '👆 Click anything to edit it', sm_hint_ok: 'Got it',
+        sm_help_links: 'I want to add my links',
+        sm_links_prompt: 'Add a link. Type it as  name: address\nOne per line.\n\nFor example:\nLinkedIn: https://linkedin.com/in/you\nWebsite: https://yoursite.com',
+        sm_links_saved: 'Your links are on your website.', sm_links_cleared: 'Links removed.',
         sm_help_btn: 'Not sure?', sm_help_q: 'Tell us what you want to change',
         sm_help_photo: 'I want to change my photo', sm_help_move: 'I want to move something',
         sm_help_look: 'I want a different look', sm_help_voice: 'I want to add my voice',
@@ -2394,6 +2448,10 @@
         sm_section_gone: '该板块已从网站移除——你的简历没有改动。',
         sm_last_section: '页面至少需要保留一个板块。',
         sm_kept_edits: '已根据简历更新——你自己修改过的内容已保留。',
+        sm_hint: '👆 点击任何内容即可修改', sm_hint_ok: '知道了',
+        sm_help_links: '我想添加我的链接',
+        sm_links_prompt: '添加链接，格式为  名称: 网址\n每行一个。\n\n例如：\nLinkedIn: https://linkedin.com/in/you\n个人网站: https://yoursite.com',
+        sm_links_saved: '链接已添加到你的网站。', sm_links_cleared: '链接已移除。',
         sm_help_btn: '需要帮助？', sm_help_q: '告诉我们你想改什么',
         sm_help_photo: '我想换我的照片', sm_help_move: '我想调整顺序',
         sm_help_look: '我想换个样子', sm_help_voice: '我想加入我的声音',
@@ -3172,6 +3230,8 @@
     // ── Tab switching ──────────────────────────────────────────────────────────
     function showTab(name) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      // Every sidebar button, not just those matching a selector that has
+      // drifted — LinkedIn Optimizer was staying lit on other pages.
       document.querySelectorAll('.sidebar-btn').forEach(el => el.classList.remove('active'));
       document.getElementById('panel-' + name).classList.add('active');
       document.getElementById('tab-' + name).classList.add('active');
@@ -6731,6 +6791,7 @@ Aaliyah Washington`
 
     function smShow(on) {
       smOn = !!on;
+      setTimeout(smSyncChrome, 0);
       const v = document.getElementById('smView');
       if (v) v.classList.toggle('is-on', smOn);
       // Hide the editor entirely while simple mode is up, so there is no chrome
@@ -6797,12 +6858,30 @@ Aaliyah Washington`
     }
 
     // Entry point for the tab. Builds a site if they don't have one yet.
-    async function smBoot() {
+    async function smBoot(opts) {
+      // Someone who already has a website goes straight to it, full screen,
+      // ready to edit. Someone who has none sees the template picker and
+      // nothing else — no rails, no header, no empty canvas — and their site
+      // is built from whichever one they choose.
+      let existing = null;
+      try {
+        const r0 = await fetch('/api/personal-site', { headers: authHeaders() });
+        existing = (await r0.json().catch(() => ({}))).site || null;
+      } catch (_) { existing = null; }
+
+      // No site and no template chosen yet: show the picker and stop. Once
+      // they choose one, smPickerChose comes back through here with it.
+      if (!existing && !(opts && opts.templateId)) { smShowPicker(); return; }
+
       smShow(true);
       smPanel('smBusy');
       let data = null;
       try {
-        const r = await fetch('/api/personal-site/autogen', { method: 'POST', headers: authHeaders() });
+        const r = await fetch('/api/personal-site/autogen', {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+          body: JSON.stringify({ templateId: (opts && opts.templateId) || undefined }),
+        });
         data = await r.json().catch(() => null);
         if (r.status === 409 && data && data.error === 'no_resume') { smPanel('smEmpty'); return; }
         if (!r.ok) { smPanel(''); smShow(false); return; }   // Pro gate etc: fall back to the editor
@@ -7199,8 +7278,9 @@ Aaliyah Washington`
         if (lbl) lbl.textContent = smEditing ? _t('sm_edit_off', 'Done') : _t('sm_edit_on', 'Edit');
       }
       smHelpSync();
+      smSyncChrome();
       await smRenderSite();
-      if (smEditing) showToast(_t('sm_edit_hint', 'Click anything on your page to change it.'), 4000);
+      if (smEditing) smShowHint();
     }
     function smToggleEdit() { smSetEditing(!smEditing); }
 
@@ -7253,10 +7333,102 @@ Aaliyah Washington`
       }
     });
 
+    /* ── Links out ────────────────────────────────────────────────────────
+       LinkedIn, GitHub, a portfolio, anything. The renderer has always drawn a
+       `social` element; until now the only way to fill it was the advanced
+       editor. One prompt per link, written into the element the page already
+       has (or a new one at the foot of the page). */
+    const SM_LINK_KINDS = ['LinkedIn', 'GitHub', 'Website', 'Instagram', 'Email'];
+
+    function smLinksOpen() {
+      if (!wcDoc || !window.SiteFields) return;
+      const el = SiteFields.findById(wcDoc, (smFindSocial() || {}).id) || smFindSocial();
+      const current = (el && el.props && Array.isArray(el.props.items)) ? el.props.items : [];
+      const shown = current.map(i => `${i.network}: ${i.url}`).join('\n') || _t('sm_links_none', '(none yet)');
+      const raw = window.prompt(
+        _t('sm_links_prompt', 'Add a link. Type it as  name: address\nOne per line.\n\nFor example:\nLinkedIn: https://linkedin.com/in/you\nWebsite: https://yoursite.com'),
+        current.map(i => `${i.network}: ${i.url}`).join('\n'));
+      if (raw === null) return;
+      const items = String(raw).split('\n').map(line => {
+        const m = line.match(/^\s*([^:]{1,24})\s*:\s*(\S.*)$/);
+        if (!m) return null;
+        let url = m[2].trim();
+        // A bare address is what people actually type; make it a real link.
+        if (!/^(https?:|mailto:|tel:)/i.test(url)) {
+          url = /@/.test(url) && !/\//.test(url) ? 'mailto:' + url : 'https://' + url;
+        }
+        return { network: m[1].trim().slice(0, 24), url };
+      }).filter(Boolean).slice(0, 10);
+      smSetLinks(items);
+    }
+
+    function smFindSocial() {
+      let hit = null;
+      for (const pg of (wcDoc && wcDoc.pages) || []) for (const sec of pg.sections || []) for (const e of sec.els || []) {
+        if (!hit && e.type === 'social') hit = e;
+      }
+      return hit;
+    }
+
+    async function smSetLinks(items) {
+      smMutate(d => {
+        let el = null;
+        for (const pg of d.pages || []) for (const sec of pg.sections || []) for (const e of sec.els || []) {
+          if (!el && e.type === 'social') el = e;
+        }
+        if (!el) {
+          const secs = d.pages[0].sections;
+          const last = secs[secs.length - 1];
+          el = { id: (window.SiteDocStore ? SiteDocStore.newId('e') : 'e' + Date.now()),
+                 type: 'social', x: 80, y: Math.max(20, (last.h || 300) - 90), w: 400, h: 44, props: {} };
+          last.els.push(el);
+        }
+        el.props = el.props || {};
+        el.props.items = items;
+      }, 'links');
+      showToast(items.length
+        ? _t('sm_links_saved', 'Your links are on your website.')
+        : _t('sm_links_cleared', 'Links removed.'), 3000);
+    }
+
     /* ── "Not sure?" ──────────────────────────────────────────────────────
        Four plain-English wants, each wired to the control that satisfies it.
        The panel closes itself once the control opens — asking someone to
        dismiss a helper after it has helped them is one step too many. */
+    /* First time into edit mode, one line near the middle. Remembered, so it
+       never nags a second time. */
+    function smShowHint() {
+      try { if (localStorage.getItem('rt_site_hint') === '1') return; } catch (_) {}
+      const h = document.getElementById('smHint');
+      if (!h) return;
+      h.hidden = false; h.classList.remove('is-gone');
+      clearTimeout(smShowHint._t);
+      smShowHint._t = setTimeout(smHideHint, 4000);
+    }
+    function smHideHint() {
+      const h = document.getElementById('smHint');
+      if (!h || h.hidden) return;
+      h.classList.add('is-gone');
+      setTimeout(() => { h.hidden = true; }, 420);
+      try { localStorage.setItem('rt_site_hint', '1'); } catch (_) {}
+    }
+
+    /* ── 6/7: what is visible in each mode ─────────────────────────────────
+       Public view is the site and nothing else. Edit mode keeps the left rail
+       and the top controls. One function decides, so the two can never
+       disagree. */
+    function smSyncChrome() {
+      const b = document.body;
+      // `wb-picker` is owned by the first-run flow, not by this. Clearing it
+      // here raced smShowPicker and put the app chrome back up underneath the
+      // picker it had just opened.
+      const inPicker = b.classList.contains('wb-picker');
+      const inPublic = smOn && !smEditing && !inPicker;
+      b.classList.toggle('wb-public', inPublic);
+      const shell = document.getElementById('cvShell');
+      if (shell && !inPicker) shell.style.display = (smOn && !smEditing) ? 'none' : '';
+    }
+
     function smHelpSync() {
       const b = document.getElementById('smHelpBtn');
       if (b) b.hidden = !smEditing;          // never in the public view
@@ -7289,6 +7461,7 @@ Aaliyah Washington`
       if (what === 'move')  { smHelpShowMoves(); return; }
       if (what === 'look')  { smStripOpen(1); return; }   // step 2: pick your vibe
       if (what === 'voice') { smStripOpen(3); return; }   // step 4: voice intro
+      if (what === 'links') { smLinksOpen(); return; }
     }
 
     // Straight to the file picker. If this vibe's page has no photo slot, one is
@@ -7436,6 +7609,29 @@ Aaliyah Washington`
       let written = [];
       smMutate(d => { written = SiteFields.syncFromResume(d, smResumeText()); }, 'resume-sync');
       return written;
+    }
+
+    /* No website yet: the picker, alone. Choosing one builds the site and
+       drops them into it full-screen with everything else collapsed. */
+    function smShowPicker() {
+      smShow(false);
+      document.body.classList.add('wb-picker');
+      const shell = document.getElementById('cvShell');
+      if (shell) shell.style.display = '';
+      cvClosePanel();
+      cvPanel('templates');
+      wcLoadTemplates();
+    }
+
+    // Chosen a template: build the site FROM it, then straight into it. The
+    // template id has to go through, or autogen builds the default and the
+    // choice they just made is silently ignored.
+    async function smPickerChose(templateId) {
+      document.body.classList.remove('wb-picker');
+      cvClosePanel();
+      const shell = document.getElementById('cvShell');
+      if (shell) shell.style.display = 'none';
+      await smBoot({ templateId });
     }
 
     // The one way out of full-screen mode, since it covers the app's own
@@ -7700,7 +7896,6 @@ Aaliyah Washington`
           <div class="wc-tpl-body">
             <div class="wc-tpl-name">${wcEsc(t.name)}${on ? ` <span class="wc-tpl-on">${wcEsc(_t('wc_tpl_current', 'in use'))}</span>` : ''}</div>
             <div class="wc-tpl-cat">${wcEsc(t.category)}</div>
-            <div class="wc-tpl-blurb">${wcEsc(t.blurb)}</div>
             <div style="display:flex;gap:6px;margin-top:10px;">
               <button type="button" class="bo-act" onclick="openTplPreview('${wcEsc(t.id)}')">${wcEsc(_t('wc_tpl_previewbtn', 'Preview'))}</button>
               <button type="button" class="bo-act" style="border-color:#c7d2fe;color:#4338ca;" onclick="wcPickTemplate('${wcEsc(t.id)}')">${wcEsc(_t('wc_tpl_pick', 'Use'))}</button>
@@ -7739,6 +7934,9 @@ Aaliyah Washington`
         if (!r.ok || !d.doc) { showToast(_t('wc_tpl_err', 'Could not load that template.')); return; }
         wcDoc = d.doc; wcTplId = id;
         wcRenderTplGrid();
+        // First run: this is how the site comes into existence. Build it from
+        // the chosen template and drop them straight into it.
+        if (document.body.classList.contains('wb-picker')) { await smPickerChose(id); return; }
         edInit(d.doc);
         showToast(_t('wc_tpl_applied', '✓ Template applied — edit it below, then publish.'), 5000);
       } catch (_) { showToast(_t('wc_tpl_err', 'Could not load that template.')); }
@@ -7786,12 +7984,48 @@ Aaliyah Washington`
     }
 
     // ── Canva-style editor shell (rail panels, zoom, uploads/text/brand panes) ──
+    /* Panels start closed and only one is ever open. Clicking the open tab
+       closes it; clicking another swaps. Six panels hanging open at once was
+       the "twenty options on screen" problem in miniature. */
+    let cvOpenPanel = null;
+
     function cvPanel(name) {
-      document.querySelectorAll('.cv-rbtn').forEach(b => b.classList.toggle('is-on', b.dataset.panel === name));
-      document.querySelectorAll('.cv-pane').forEach(p => { p.style.display = p.dataset.pane === name ? 'block' : 'none'; });
-      if (name === 'uploads') cvRenderUploads();
-      if (name === 'text') cvRenderTextPane();
-      if (name === 'brand') cvRenderBrandPane();
+      const same = cvOpenPanel === name;
+      cvOpenPanel = same ? null : name;
+      cvSyncPanel();
+      if (cvOpenPanel === 'uploads') cvRenderUploads();
+      if (cvOpenPanel === 'text') cvRenderTextPane();
+      if (cvOpenPanel === 'brand') cvRenderBrandPane();
+    }
+
+    function cvSyncPanel() {
+      const box = document.getElementById('cvPanel');
+      if (box) box.hidden = !cvOpenPanel;
+      document.querySelectorAll('.cv-rbtn').forEach(b => b.classList.toggle('is-on', b.dataset.panel === cvOpenPanel));
+      document.querySelectorAll('.cv-pane').forEach(p => {
+        p.style.display = (cvOpenPanel && p.dataset.pane === cvOpenPanel) ? 'block' : 'none';
+      });
+    }
+    function cvClosePanel() { if (cvOpenPanel) { cvOpenPanel = null; cvSyncPanel(); } }
+
+    // Clicking the page itself retracts whatever is open.
+    document.addEventListener('click', (ev) => {
+      if (!cvOpenPanel) return;
+      const t = ev.target;
+      if (t.closest && (t.closest('.cv-panel') || t.closest('.cv-rail'))) return;
+      cvClosePanel();
+    });
+
+    /* ── 5: pull the rail in so the page gets the full width. ───────────── */
+    let cvRailed = false;
+    function cvToggleRail() {
+      cvRailed = !cvRailed;
+      const sh = document.getElementById('cvShell');
+      if (sh) sh.classList.toggle('is-railed', cvRailed);
+      const t = document.getElementById('cvRailToggle');
+      if (t) t.textContent = cvRailed ? '›' : '‹';
+      if (cvRailed) cvClosePanel();
+      setTimeout(() => { if (typeof edFitStage === 'function') edFitStage(); }, 200);
     }
 
     // Zoom: 100% means "fit the stage", so the slider scales around the fit factor.

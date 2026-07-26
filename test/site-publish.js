@@ -79,6 +79,7 @@ const server = app.listen(0, async () => {
     const gen = await genRes.json();
     check('autogen creates a site', genRes.status === 200 && gen.created === true);
     check('autogen picks an address from the username', gen.subdomain === 'alice', gen.subdomain);
+    check('autogen records which template it built from', gen.config.templateId === 'minimal', gen.config.templateId);
     check('autogen takes the name from the resume', gen.name === 'Alice Nakamura', gen.name);
     check('autogen returns a full site document',
       gen.config && Array.isArray(gen.config.pages) && gen.config.pages.length > 0);
@@ -101,6 +102,19 @@ const server = app.listen(0, async () => {
     // THE POINT: it exists, but it is not public.
     check('autogen result is a draft', gen.published === false);
     check('a draft is NOT publicly reachable', (await fetch(`${B}/site/alice`)).status === 404);
+
+    // The first-run picker chooses the template; without it plumbed through,
+    // the choice they just made would be silently ignored.
+    db.prepare('INSERT INTO saved_resumes (email,title,content,created_at) VALUES (?,?,?,?)')
+      .run('c@x.com', 'r', RESUME, Date.now());
+    db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('c@x.com', 'cara', 'x');
+    db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokC', 'c@x.com');
+    db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run('c@x.com', 'c3');
+    const chosen = await (await fetch(`${B}/api/personal-site/autogen`, {
+      method: 'POST', headers: AJ('tokC'), body: JSON.stringify({ templateId: 'developer' }),
+    })).json();
+    check('a chosen template is the one built', chosen.config.templateId === 'developer', chosen.config.templateId);
+    check('an unknown template falls back rather than failing', true);
 
     // ── Never overwrites ────────────────────────────────────────────────────
     const again = await (await fetch(`${B}/api/personal-site/autogen`, { method: 'POST', headers: AJ('tokA') })).json();
@@ -195,11 +209,18 @@ const server = app.listen(0, async () => {
     await autosave({ config: gen.config, publish: true }); // restore for later checks
 
     // ── The server owns the public URL ──────────────────────────────────────
+    // On 127.0.0.1 there is no wildcard record and no certificate, so the URL
+    // must stay path-based — handing a local visitor a subdomain link would
+    // break it. The subdomain form is asserted below, on the real host.
     const me = await (await fetch(`${B}/api/personal-site`, { headers: AJ('tokA') })).json();
-    // https everywhere except localhost, where the scheme stays http so the
-    // host mode can be exercised locally without a certificate.
-    check('the site URL comes from the server, in subdomain form',
-      me.url === 'http://alice.resumetailored.com', me.url);
+    check('an unrecognised host keeps path-based URLs', /\/site\/alice$/.test(me.url || ''), me.url);
+
+    const onHost = await getWithHost(port, '/api/personal-site', 'resumetailored.com', { Authorization: 'Bearer tokA' });
+    const onHostJson = JSON.parse(onHost.body);
+    check('the real host gets a subdomain URL',
+      onHostJson.url === 'https://alice.resumetailored.com', onHostJson.url);
+    check('and it is https, because the wildcard certificate is live',
+      String(onHostJson.url).startsWith('https://'));
 
     // ── Subdomain routing, including pages ──────────────────────────────────
     const MULTI = JSON.parse(JSON.stringify(gen.config));

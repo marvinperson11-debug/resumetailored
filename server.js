@@ -2593,7 +2593,9 @@ function _sdEditLayer() {
     .sd-ed-chips.is-gone{opacity:0;}
     .sd-ed-chips button{pointer-events:auto;font:inherit;font-size:12.5px;font-weight:700;color:#fff;background:rgba(17,24,39,.94);border:none;border-radius:999px;padding:9px 15px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.28);white-space:nowrap;}
     .sd-ed-chips button:hover{background:#111827;}
-    @media(max-width:820px){.sd-ed-chips button{font-size:14px;padding:12px 20px;}.sd-ed-chips{gap:10px;}}
+    /* Bigger, brighter and glowing on a phone — at 12.5px on a dark page the
+       chips were easy to miss entirely, which defeats the safety net. */
+    @media(max-width:820px){.sd-ed-chips{gap:12px;}.sd-ed-chips button{font-size:15px;font-weight:800;padding:15px 24px;background:#4338ca;box-shadow:0 0 0 4px rgba(67,56,202,.22),0 10px 28px rgba(0,0,0,.4);}}
     .sd-ed-bar--pulse{animation:sd-pulse 1.4s ease-in-out 3;}
     .sd-ed-chips--hint button{animation:sd-pulse 1s ease-in-out 2;}
     @keyframes sd-pulse{0%,100%{transform:scale(1);box-shadow:0 8px 24px rgba(0,0,0,.3);}50%{transform:scale(1.06);box-shadow:0 8px 30px rgba(99,102,241,.75);}}
@@ -2963,17 +2965,30 @@ function _validSubdomain(s) {
  * every link, QR code, share sheet and canonical tag switches over at once.
  * Leave it unset and nothing changes.
  */
-const SITE_PUBLIC_HOST = String(process.env.SITE_PUBLIC_HOST || '')
-  .trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[/].*$/, '');
+// Defaults to the production domain, whose wildcard DNS and wildcard TLS
+// certificate are live. An env var can still override or disable it.
+const SITE_PUBLIC_HOST = String(
+  process.env.SITE_PUBLIC_HOST === undefined ? 'resumetailored.com' : process.env.SITE_PUBLIC_HOST
+).trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[/].*$/, '');
+
+/**
+ * Whether subdomain URLs actually work for the host this request arrived on.
+ *
+ * Deriving it from the request rather than trusting a deploy-wide flag matters:
+ * a Railway preview URL or localhost has no wildcard record and no certificate
+ * for `<name>.resumetailored.com`, so handing those visitors a subdomain link
+ * would break every one of them. Same code, correct URL on every host.
+ */
+function _siteHostReady(origin) {
+  if (!SITE_PUBLIC_HOST) return false;
+  const host = String(origin || '').replace(/^https?:\/\//, '').replace(/[/:].*$/, '').toLowerCase();
+  return host === SITE_PUBLIC_HOST || host.endsWith('.' + SITE_PUBLIC_HOST);
+}
 
 function sitePublicUrl(sub, origin, pageSlug) {
   const s = String(sub || '');
   const page = pageSlug ? '/' + String(pageSlug).replace(/[^a-z0-9-]/gi, '') : '';
-  if (SITE_PUBLIC_HOST && s) {
-    // Keep http on localhost so local testing of the host mode still works.
-    const proto = /^http:\/\/(localhost|127\.)/i.test(String(origin || '')) ? 'http' : 'https';
-    return `${proto}://${s}.${SITE_PUBLIC_HOST}${page}`;
-  }
+  if (s && _siteHostReady(origin)) return `https://${s}.${SITE_PUBLIC_HOST}${page}`;
   return `${origin}/site/${s}${page}`;
 }
 
@@ -3165,10 +3180,14 @@ app.post('/api/personal-site/autogen', (req, res) => {
   }
   if (!sub) return res.status(409).json({ error: 'no_address', message: 'Could not pick a web address — choose one yourself.' });
 
+  // Which template to build from. The first-run picker sends the one they
+  // chose; without it we fall back to the calmest starter.
   const { templateDoc } = require('./site-templates.js');
-  const doc = templateDoc('minimal') || templateDoc('executive');
+  const wanted = String((req.body && req.body.templateId) || '').slice(0, 40);
+  const doc = (wanted && templateDoc(wanted)) || templateDoc('minimal') || templateDoc('executive');
+  const usedTemplate = (wanted && templateDoc(wanted)) ? wanted : 'minimal';
   _autogenFill(doc, text);
-  doc.templateId = 'minimal';
+  doc.templateId = usedTemplate;
   doc.assets = { resumeId: resumeRow ? resumeRow.id : null, coverLetterId: cover ? cover.id : null };
 
   const now = Date.now();
