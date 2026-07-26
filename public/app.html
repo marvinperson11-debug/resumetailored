@@ -369,6 +369,18 @@
     body.wb-public .sidebar { display: none !important; }
     body.wb-picker .sidebar,
     body.wb-picker .sm-view { display: none !important; }
+    /* The first-run picker borrows the editor's shell to host the template
+       grid, and borrowing it dragged the entire editor on screen: a top bar of
+       tools, a rail, a canvas and an inspector, before the user had chosen
+       anything. That is the "second editor" they landed in. Only the grid
+       shows now — the shell is a container, not a destination. */
+    body.wb-picker .cv-top,
+    body.wb-picker .cv-rail,
+    body.wb-picker .cv-canvasbox,
+    body.wb-picker .cv-inspector,
+    body.wb-picker .cv-railtoggle,
+    body.wb-picker .cv-bottom { display: none !important; }
+    body.wb-picker .cv-panel { width: 100%; max-width: none; }
 
     /* Only one rail panel open at a time, and none of them to begin with. */
     .cv-panel[hidden] { display: none !important; }
@@ -392,33 +404,39 @@
        This is what opening "My Website" shows. Someone who has never built a
        website should land on a finished page, not a set of tools. Every control
        is hidden until they ask for one. */
-    .sm-view { position: fixed; inset: 0; z-index: 220; background: #fff; display: none; }
-    .sm-view.is-on { display: block; }
+    /* A flex column, NOT absolute offsets. The bar's height depends on how many
+       controls wrap onto how many rows, which changes with screen width and
+       language; every hardcoded `top:` for the frame was a guess that went
+       stale. On a 390px phone the bar grew to three rows (187px) while the
+       frame still started at 96px, so the site rendered underneath its own
+       chrome. Flex makes the frame take whatever is left, always. */
+    .sm-view { position: fixed; inset: 0; z-index: 220; background: #fff; display: none;
+      flex-direction: column; }
+    .sm-view.is-on { display: flex; }
     /* Deliberately full-bleed — over the app nav and the sidebar both. "Zero
        chrome" means the whole screen is their website. The quiet back chip is
        the only way out, so it must always be there. */
-    .sm-back {
-      position: absolute; top: 14px; left: 14px; z-index: 3;
-      display: inline-flex; align-items: center; gap: 6px;
-      font: inherit; font-size: 12.5px; font-weight: 600; color: #4b5563;
-      background: rgba(255,255,255,.9); backdrop-filter: blur(8px);
-      border: 1px solid rgba(15,23,42,.08); border-radius: 999px;
-      padding: 7px 14px; cursor: pointer; box-shadow: 0 2px 10px rgba(15,23,42,.07);
-    }
-    .sm-back:hover { color: #111827; background: #fff; }
+    /* NOTE: `.sm-back` used to be declared twice. The first declaration was a
+       leftover floating chip — `position:absolute; top:14px; left:14px` — from
+       before this was a bar, and the in-bar declaration below never resets
+       `position`, so it stayed absolute. Both the Back button and the Advanced
+       button carry this class, so they were stacked on the same coordinates
+       with Advanced painted last: the only way out of full-screen mode was
+       sitting underneath the button covering it. Do not reintroduce a second
+       declaration. */
     /* A slim bar rather than a floating overlay: the note used to sit on top of
        the site's own navigation. This reads as minimal browser chrome and keeps
        the page itself completely unobstructed. */
     .sm-bar {
-      position: absolute; top: 0; left: 0; right: 0; height: 52px; z-index: 3;
-      display: flex; align-items: center; gap: 12px; padding: 0 14px;
+      flex: 0 0 auto; min-height: 52px; z-index: 3;
+      display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 7px 14px;
       background: #fff; border-bottom: 1px solid rgba(15,23,42,.08);
     }
-    /* An explicit height, NOT top+bottom offsets. An <iframe> is a replaced
-       element, so with `height:auto` an absolutely positioned one falls back to
-       its intrinsic 150px and ignores `bottom` entirely — the site rendered
-       into a 150px sliver with the rest of the screen blank. */
-    .sm-frame { position: absolute; top: 52px; left: 0; width: 100%; height: calc(100% - 52px); border: 0; display: block; background: #fff; }
+    /* `flex:1` plus `min-height:0` gives the iframe a DEFINITE height. That
+       matters: an <iframe> is a replaced element, so with `height:auto` it
+       falls back to its intrinsic 150px — which is exactly what happened when
+       this was absolutely positioned with top+bottom offsets and no height. */
+    .sm-frame { flex: 1 1 auto; min-height: 0; width: 100%; border: 0; display: block; background: #fff; }
     .sm-note {
       flex: 1; text-align: center; font-size: 12.5px; line-height: 1.4; color: #4b5563;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -440,6 +458,11 @@
       padding: 8px 15px; cursor: pointer;
     }
     .sm-look:hover { background: #e0e7ff; }
+    /* `[hidden]` is a UA-stylesheet rule, so any class here that sets `display`
+       silently beats it — the button kept its `hidden` property AND stayed on
+       screen. Checking the property in a test would confirm it was hidden while
+       the user could still see it, so state this explicitly. */
+    .sm-bar [hidden] { display: none !important; }
     .sm-look.is-on { background: #4338ca; border-color: #4338ca; color: #fff; }
     /* On a phone the bar has to hold four things. Labels collapse to their
        icons rather than overlapping, and the note keeps only its badge. */
@@ -447,8 +470,7 @@
        mid-word. Two rows, nothing truncated: the bar grows and the page starts
        below it. */
     @media (max-width: 760px) {
-      .sm-bar { height: auto; min-height: 52px; flex-wrap: wrap; gap: 6px; padding: 8px 10px; justify-content: center; }
-      .sm-frame { top: 96px; height: calc(100% - 96px); }
+      .sm-bar { gap: 6px; padding: 8px 10px; justify-content: center; }
       .sm-note { flex-basis: 100%; order: -1; font-size: 11.5px; white-space: normal; text-align: center; }
       .sm-back, .sm-look { padding: 9px 12px; font-size: 12px; }
       .sm-publish { font-size: 13px; padding: 10px 16px; }
@@ -1400,14 +1422,23 @@
              button. The editor below only appears once they ask for it. -->
         <div class="sm-view" id="smView">
           <div class="sm-bar">
-            <button type="button" class="sm-back" onclick="smExit()" title="Back to ResumeTailored"><span aria-hidden="true">←</span><span class="sm-lbl" data-i18n="sm_back_short">Back</span></button>
+            <!-- TWO controls per state, never more. Seven of them wrapped to
+                 three rows on a phone — 187px of chrome before you saw any of
+                 your own website — and it read as a second editor sitting on
+                 top of the site rather than the site itself.
+
+                 Editing:  Preview  ·  Publish
+                 Viewing:  Back     ·  Publish
+
+                 Everything else — a different look, the web address, a
+                 different design, the advanced editor — lives INSIDE the page,
+                 in the 💬 Not sure? panel and the guided strip, where it is
+                 reached in the context of the thing it changes. -->
+            <button type="button" class="sm-back" id="smBackBtn" onclick="smBack()"><span aria-hidden="true">←</span><span class="sm-lbl" data-i18n="sm_back_short">Back</span></button>
             <div class="sm-note" id="smNote"></div>
-            <button type="button" class="sm-look" id="smEditBtn" onclick="smToggleEdit()" title="Edit the page"><span aria-hidden="true">✏️</span><span class="sm-lbl" data-i18n="sm_edit_on">Edit</span></button>
-            <button type="button" class="sm-look" onclick="smStripOpen(1)" title="Change the look"><span aria-hidden="true">🎨</span><span class="sm-lbl" data-i18n="sm_change_look">Change the look</span></button>
-            <button type="button" class="sm-look" id="smAddrBtn" onclick="smChangeAddress()" title="Change my web address"><span aria-hidden="true">🔗</span><span class="sm-lbl" data-i18n="sm_addr_btn">My address</span></button>
+            <button type="button" class="sm-look" id="smPreviewBtn" onclick="smSetEditing(false)" title="See it the way visitors will"><span aria-hidden="true">👁</span><span class="sm-lbl" data-i18n="sm_preview_btn">Preview</span></button>
             <button type="button" class="sm-publish" id="smPublishBtn" onclick="smPublish()" data-i18n="sm_publish">Publish my website</button>
             <a class="sm-live" id="smLiveLink" target="_blank" rel="noopener" style="display:none;" data-i18n="sm_visit">Visit my website ↗</a>
-            <button type="button" class="sm-back" onclick="smAdvanced()" title="Advanced editor"><span aria-hidden="true">⚙</span><span class="sm-lbl" data-i18n="sm_advanced">Advanced</span></button>
           </div>
           <iframe class="sm-frame" id="smFrame" title="Your website"></iframe>
           <div class="sm-hint" id="smHint" hidden>
@@ -2292,6 +2323,7 @@
         sm_advanced: 'Advanced', sm_adv_desktop: 'The advanced editor needs a bigger screen.',
         sm_upload_err: "That didn't upload — try again.", sm_mic_err: 'We could not reach your microphone.',
         sm_edit_on: 'Edit', sm_edit_off: 'Done', sm_edit_hint: 'Click anything on your page to change it.',
+        sm_preview_btn: 'Preview', sm_help_advanced: 'I want the advanced editor',
         sm_edit_saved: 'Saved', sm_reset_done: 'Back in sync with your resume',
         sm_sync_q: 'You changed your {f} on your website. Update it on your saved resume too?',
         sm_sync_yes: 'Yes, update it', sm_sync_no: 'No, just here',
@@ -2512,6 +2544,7 @@
         sm_advanced: '高级', sm_adv_desktop: '高级编辑器需要更大的屏幕。',
         sm_upload_err: '上传失败，请重试。', sm_mic_err: '无法访问你的麦克风。',
         sm_edit_on: '编辑', sm_edit_off: '完成', sm_edit_hint: '点击页面上的任何内容即可修改。',
+        sm_preview_btn: '预览', sm_help_advanced: '我想使用高级编辑器',
         sm_edit_saved: '已保存', sm_reset_done: '已与你的简历重新同步',
         sm_sync_q: '你在网站上更改了{f}。要同时更新已保存的简历吗？',
         sm_sync_yes: '好，一起更新', sm_sync_no: '不用，只改这里',
@@ -6875,8 +6908,36 @@ Aaliyah Washington`
        the front door. */
     let smOn = false, smSiteUrl = '', smPublished = false, _smEditorWired = false;
 
+    /* Full-screen mode is a place, so the phone's Back gesture has to leave it.
+       The app is a single page with no routing, so nothing was ever pushed onto
+       the history stack: pressing Back walked off /dashboard altogether and
+       landed on the marketing site, with the user's work still open behind it.
+       One history entry while full screen, popped on the way out. */
+    let _smPopped = false;
+    function smPushHistory() {
+      try {
+        if (history.state && history.state.rtSite) return;   // already have one
+        history.pushState({ rtSite: 1 }, '', location.href);
+      } catch (_) {}
+    }
+    window.addEventListener('popstate', (ev) => {
+      if (!smOn) return;
+      // Back out of full screen instead of out of the product. The guard stops
+      // smShow from pushing another entry as it tears this one down.
+      _smPopped = true;
+      smExit();
+      _smPopped = false;
+    });
+
     function smShow(on) {
+      const was = smOn;
       smOn = !!on;
+      if (smOn && !was) smPushHistory();
+      // Leaving by a control rather than the Back button: drop the entry we
+      // added, or the stack keeps a step that goes nowhere.
+      if (!smOn && was && !_smPopped) {
+        try { if (history.state && history.state.rtSite) history.back(); } catch (_) {}
+      }
       setTimeout(smSyncChrome, 0);
       const v = document.getElementById('smView');
       if (v) v.classList.toggle('is-on', smOn);
@@ -7372,13 +7433,12 @@ Aaliyah Washington`
     let smEditing = false;
 
     async function smSetEditing(on) {
+      const wasEditing = smEditing;
       smEditing = !!on;
-      const b = document.getElementById('smEditBtn');
-      if (b) {
-        b.classList.toggle('is-on', smEditing);
-        const lbl = b.querySelector('.sm-lbl');
-        if (lbl) lbl.textContent = smEditing ? _t('sm_edit_off', 'Done') : _t('sm_edit_on', 'Edit');
-      }
+      // Remember how we got to the preview, so Back knows whether it is
+      // returning to the editor or leaving the Website Creator.
+      if (!smEditing && wasEditing) _smPreviewFromEditor = true;
+      if (smEditing) _smPreviewFromEditor = false;
       smHelpSync();
       smSyncChrome();
       await smRenderSite();
@@ -7599,6 +7659,17 @@ Aaliyah Washington`
        Public view is the site and nothing else. Edit mode keeps the left rail
        and the top controls. One function decides, so the two can never
        disagree. */
+    /* Back always means one step back, never a dead end.
+       From a preview you opened FROM the editor it returns to the editor; from
+       the view you landed on it leaves the Website Creator. That is why the
+       editing state needs no Back of its own — Preview is the only forward
+       move, and Back undoes whichever move you made. */
+    let _smPreviewFromEditor = false;
+    function smBack() {
+      if (_smPreviewFromEditor) { _smPreviewFromEditor = false; smSetEditing(true); return; }
+      smExit();
+    }
+
     function smSyncChrome() {
       const b = document.body;
       // `wb-picker` is owned by the first-run flow, not by this. Clearing it
@@ -7609,6 +7680,13 @@ Aaliyah Washington`
       b.classList.toggle('wb-public', inPublic);
       const shell = document.getElementById('cvShell');
       if (shell && !inPicker) shell.style.display = (smOn && !smEditing) ? 'none' : '';
+
+      // Two controls, and which two depends on what you are doing. Publish is
+      // in both because going live is the point of the whole thing.
+      const back = document.getElementById('smBackBtn');
+      const prev = document.getElementById('smPreviewBtn');
+      if (back) back.hidden = !!smEditing;
+      if (prev) prev.hidden = !smEditing;
     }
 
     function smHelpSync() {
@@ -7950,30 +8028,19 @@ Aaliyah Washington`
     // navigation. Quiet, but always present.
     function smExit() { smShow(false); showTab('tailor'); }
 
-    // "Customize My Site" opens the guided strip, on every screen size. The
-    // drag-and-drop editor is a separate, deliberate door — see smAdvanced.
+    // "Customize My Site" opens the guided strip. It is now the only way to
+    // change anything beyond clicking the page itself.
     function smCustomize() { smStripOpen(0); }
 
     // The advanced editor, for anyone who wants it. Not on the 3-minute path.
-    function smAdvanced() {
-      if (!cvIsDesktop()) { showToast(_t('sm_adv_desktop', 'The advanced editor needs a bigger screen.'), 5000); return; }
-      smStripClose();
-      smShow(false);
-      // The store already exists (created at boot). Wire up the editor's own
-      // views without replacing it — re-creating it here would throw away the
-      // undo history of everything done in simple mode.
-      if (wcDoc && edStore && !_smEditorWired) {
-        _smEditorWired = true;
-        edStore.subscribe(() => { edSyncButtons(); edRenderCanvas(); edRenderOverlay(); edRenderInspector(); });
-        edSyncPageSelect(); edRenderPalette(); edSyncButtons();
-        edRenderCanvas(); edRenderOverlay(); edRenderInspector();
-      } else if (!edStore && wcDoc) { edInit(wcDoc); _smEditorWired = true; }
-      wcLoadTemplates();
-      wcLoadMediaUsage();
-      wcLoadSiteExtras();
-      wcSetView('edit');
-      if (typeof edFitStage === 'function') setTimeout(edFitStage, 60);
-    }
+    /* The advanced editor is gone as a DESTINATION. Nothing routes here any
+       more: a drag-and-drop canvas with rails, an inspector and a toolbar was
+       a second, harder product bolted onto a flow whose premise is that you
+       never feel like you built anything.
+
+       Its document store is NOT gone, and cannot be — `edStore`/`edApply` are
+       what simple mode's inline edits, vibes, guided strip and undo all run
+       through. What was removed is the surface, not the engine. */
 
     // "Done Editing" — back to what visitors see, which is always the default.
     async function smDoneEditing() {
@@ -8263,6 +8330,12 @@ Aaliyah Washington`
         const r = await fetch('/api/site-templates/' + encodeURIComponent(id), { headers: authHeaders() });
         const d = await r.json().catch(() => ({}));
         if (!r.ok || !d.doc) { showToast(_t('wc_tpl_err', 'Could not load that template.')); return; }
+        // Swap in the template with the USER'S details, never the template's
+        // invented ones. This step existed only on the server, so switching
+        // template here adopted the sample person wholesale — "Alex Morgan, VP
+        // of Operations", with a fabricated biography, published under the
+        // user's own web address.
+        if (window.SiteFields) SiteFields.fillFromResume(d.doc, smResumeText());
         wcDoc = d.doc; wcTplId = id;
         wcRenderTplGrid();
         // First run: this is how the site comes into existence. Build it from

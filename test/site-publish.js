@@ -420,6 +420,29 @@ const server = app.listen(0, async () => {
       (await fetch(`${B}/api/personal-sites/${dev.subdomain}`, { method: 'DELETE', headers: AJ('tokB') })).status === 403);
     check('and it is still there', (await fetch(`${B}/site/${dev.subdomain}`)).status === 200);
 
+    /* AN EXPLICIT TEMPLATE CHOICE IS NEVER SILENTLY DISCARDED.
+       autogen returned the existing site whenever there was one, so picking a
+       template while you already had a site handed back the OLD one, built
+       from a different template — "this is not even the template I chose". */
+    const had = await (await fetch(`${B}/api/personal-site/autogen`, {
+      method: 'POST', headers: AJ('tokC'), body: JSON.stringify({ templateId: 'executive' }),
+    })).json();
+    check('a site exists, built from one template', had.config.templateId === 'executive', had.config.templateId);
+    const picked = await (await fetch(`${B}/api/personal-site/autogen`, {
+      method: 'POST', headers: AJ('tokC'), body: JSON.stringify({ templateId: 'studio' }),
+    })).json();
+    check('choosing a different template gives THAT template',
+      picked.config.templateId === 'studio', picked.config.templateId);
+    check('and it is a new site rather than the old one relabelled', picked.created === true);
+    check('the site they already had still exists',
+      (await (await fetch(`${B}/api/personal-sites`, { headers: AJ('tokC') })).json())
+        .sites.some(x => x.subdomain === had.subdomain));
+    // Reopening without naming a template must still return what they had.
+    const reopen = await (await fetch(`${B}/api/personal-site/autogen`, {
+      method: 'POST', headers: AJ('tokC'),
+    })).json();
+    check('reopening without a template choice creates nothing', reopen.created === false);
+
     // Reopening returns the live one, which is what they were last looking at.
     const cur = await (await fetch(`${B}/api/personal-site`, { headers: AJ('tokA') })).json();
     check('reopening lands on the live site', cur.site.subdomain === dev.subdomain, cur.site.subdomain);
@@ -514,6 +537,79 @@ const server = app.listen(0, async () => {
     check('the Tailor tab no longer publishes directly', !/function publishPersonalSite/.test(appJs));
     check('its button opens the Website Creator', /onclick="startPersonalSite\(\)"/.test(appJs));
     check('and it no longer promises to publish', !/Publish as Website/.test(appJs));
+    /* ── THE TEMPLATE'S INVENTED PERSON ─────────────────────────────────
+       Templates ship with "Alex Morgan · VP of Operations" and a fabricated
+       biography. The fill that replaces it lived only on the server, so the
+       editor's template swap adopted the sample person wholesale and published
+       it under the user's own address. The fill is now shared, and BOTH paths
+       must run it — this checks the client one is wired up, since that is the
+       one that was missing. */
+    check('the client fills a swapped template with the real person',
+      /SiteFields\.fillFromResume\(/.test(appJs));
+    const SFmod = require('../public/site-fields.js');
+    check('the shared module exposes the fill', typeof SFmod.fillFromResume === 'function');
+    const rawTpl = require('../site-templates.js').templateDoc('minimal');
+    const rawJson = JSON.stringify(rawTpl);
+    // Without this the next assertion could pass on a template that never had
+    // a sample person to begin with, proving nothing.
+    check('the raw template really does carry a sample person',
+      /Alex Morgan|Jordan Ellis|VP of Operations|Marketing Manager/.test(rawJson));
+    SFmod.fillFromResume(rawTpl, RESUME);
+    const filled = JSON.stringify(rawTpl);
+    check('filling replaces every trace of the sample person',
+      !/Alex Morgan|Jordan Ellis|VP of Operations|15 years scaling|Toronto/.test(filled), filled.slice(0, 200));
+    check('and puts the real one there instead', /Alice Nakamura/.test(filled));
+
+    /* ── THE WAY OUT OF FULL SCREEN ─────────────────────────────────────
+       `.sm-back` was declared twice: a leftover floating chip with
+       `position:absolute; top:14px; left:14px`, and the in-bar pill that never
+       resets `position`. Back and Advanced both carry the class, so they were
+       stacked on identical coordinates with Advanced painted on top — the only
+       exit from full-screen mode was underneath the button hiding it. */
+    check('.sm-back is declared exactly once',
+      (appJs.match(/\n    \.sm-back \{/g) || []).length === 1,
+      String((appJs.match(/\n    \.sm-back \{/g) || []).length));
+    check('and it is not absolutely positioned',
+      !/\.sm-back \{[^}]*position: *absolute/.test(appJs));
+
+    /* The bar wraps to three rows on a phone. Every hardcoded frame offset was
+       a guess that went stale, so the frame must size itself from what is left
+       rather than from a number. */
+    check('the frame is not positioned with a hardcoded offset',
+      !/\.sm-frame \{[^}]*top: *\d+px/.test(appJs));
+    check('the frame takes the remaining height', /\.sm-frame \{[^}]*flex: *1/.test(appJs));
+
+    /* Full screen is a place, so the phone's Back gesture must leave it rather
+       than walking off the product to the marketing site. */
+    check('full screen pushes a history entry', /history\.pushState\(\{ rtSite: 1 \}/.test(appJs));
+    check('and Back is caught rather than leaving the app',
+      /addEventListener\('popstate'/.test(appJs) && /_smPopped/.test(appJs));
+
+    /* Two controls per state, never seven. Checked through the STYLESHEET, not
+       the `hidden` property: `[hidden]` is a UA rule that any class setting
+       `display` silently beats, so a button can hold hidden=true and still be
+       on screen — a property check would have confirmed it was hidden while
+       the user could see it. */
+    check('hiding a bar control actually hides it',
+      /\.sm-bar \[hidden\] \{ display: none !important; \}/.test(appJs));
+    check('the bar no longer carries the look/address/advanced buttons',
+      !/onclick="smStripOpen\(1\)"[^>]*sm_change_look/.test(appJs) && !/id="smAddrBtn"/.test(appJs));
+    /* The advanced editor is gone as a destination — a drag-and-drop canvas
+       with rails and an inspector was a second, harder product bolted onto a
+       flow whose premise is never feeling like you built anything. Nothing
+       routes there any more. */
+    check('nothing routes to the advanced editor',
+      !/function smAdvanced\(/.test(appJs) && !/smHelpPick\('advanced'\)/.test(appJs));
+    check('the first-run picker shows the grid, not the editor around it',
+      ['cv-top', 'cv-rail', 'cv-canvasbox', 'cv-inspector', 'cv-railtoggle', 'cv-bottom']
+        .every(c => new RegExp('body\\.wb-picker \\.' + c + '[,{ ]').test(appJs)));
+    /* The document store stays: simple mode's inline edits, vibes, guided strip
+       and undo all run through it. The surface went, not the engine. */
+    check('the document store simple mode depends on is still wired',
+      /edApply\(/.test(appJs) && /edStore\.subscribe/.test(appJs));
+    check('Back is one step back rather than a fixed destination',
+      /_smPreviewFromEditor/.test(appJs) && /function smBack\(\)/.test(appJs));
+
     check('the replacement neither posts a site nor asks for an address',
       /function startPersonalSite\(\)[\s\S]{0,600}?\n    \}/.test(appJs) &&
       !/function startPersonalSite\(\)[\s\S]{0,600}?(personal-site|window\.prompt)/.test(appJs));

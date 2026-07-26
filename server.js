@@ -3413,40 +3413,10 @@ app.get('/api/site-vibes', (req, res) => {
  * thing.
  */
 function _autogenFill(doc, text) {
-  const SF = require('./public/site-fields.js');
-  if (!doc || !Array.isArray(doc.pages)) return doc;
-
-  SF.tagFields(doc);
-  // force: the template's sample prose is not a user edit, so it is replaced
-  // even though nothing is detached yet.
-  SF.syncFromResume(doc, text, { force: true });
-
-  const vals = SF.deriveFields(text);
-
-  // Anything we could not derive would otherwise keep the template's invented
-  // copy. Blank it, then drop the empty element rather than leave a hole.
-  for (const pg of doc.pages) {
-    const hero = (pg.sections || [])[0];
-    if (!hero) continue;
-    for (const el of hero.els || []) {
-      const f = el.props && el.props.field;
-      if (f && !vals[f]) el.props.text = '';
-    }
-  }
-  for (const pg of doc.pages) {
-    for (const s of pg.sections || []) {
-      s.els = (s.els || []).filter((el) =>
-        !(['heading', 'subheading', 'paragraph'].includes(el.type) && el.props && el.props.text === ''));
-    }
-  }
-
-  if (doc.pages[0] && doc.pages[0].seo && vals.name) {
-    doc.pages[0].seo.title = vals.name;
-    doc.pages[0].seo.description = vals.summary
-      ? vals.summary.slice(0, 160)
-      : `${vals.name}${vals.subtitle ? ' — ' + vals.subtitle : ''}`;
-  }
-  return doc;
+  // The implementation lives in public/site-fields.js so the editor's template
+  // swap runs the identical fill. It used to live here, server-side only, and
+  // the client path published the template's sample person as the user.
+  return require('./public/site-fields.js').fillFromResume(doc, text);
 }
 
 /**
@@ -3470,7 +3440,7 @@ app.post('/api/personal-site/autogen', (req, res) => {
   // `fresh` means "make me another one" — trying a different template rather
   // than reopening what they already have. Each template gets its own site so
   // switching never destroys the one they have been working on.
-  const fresh = !!(req.body && req.body.fresh);
+  let fresh = !!(req.body && req.body.fresh);
   // `subdomain` means "open THIS one" — the Back Office lists every site the
   // user has, and Edit there has to reopen the card they pressed rather than
   // whichever site happens to be current. Asking for a site that isn't theirs
@@ -3480,12 +3450,29 @@ app.post('/api/personal-site/autogen', (req, res) => {
   if (!fresh && req.body && req.body.subdomain && !wantOpen) {
     return res.status(400).json({ error: 'invalid_subdomain' });
   }
-  const existing = fresh
+  let existing = fresh
     ? null
     : (wantOpen
         ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND email = ?').get(wantOpen, email.toLowerCase())
         : _currentSite(email));
   if (!fresh && wantOpen && !existing) return res.status(404).json({ error: 'not_found' });
+
+  // An explicit template choice is never silently discarded.
+  //
+  // This returned the existing site whenever there was one, so picking a
+  // template while you already had a site handed back the OLD one — built from
+  // a different template — and the choice you had just made vanished. "This is
+  // not even the template I chose" is exactly what that looks like.
+  //
+  // Naming a template that is not what this site was built from means "build me
+  // this one", so it falls through to creation. The old site is kept rather
+  // than overwritten, which is the same rule as trying a different design: a
+  // template you are experimenting with must never destroy the one you have.
+  if (existing && !wantOpen && req.body && req.body.templateId) {
+    let curTpl = null;
+    try { curTpl = existing.config ? (JSON.parse(existing.config).templateId || null) : null; } catch (_) { curTpl = null; }
+    if (curTpl !== String(req.body.templateId)) { existing = null; fresh = true; }
+  }
   if (existing) {
     const origin0 = `${req.protocol}://${req.get('host')}`;
     return res.json({
