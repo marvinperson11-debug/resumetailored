@@ -2392,7 +2392,11 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
   // building the sections.
   const mobileRules = [];
 
-  const sections = (Array.isArray(page.sections) ? page.sections : []).map((sec) => {
+  // Editable mode adds hooks for the inline editor and nothing else. The
+  // published page and the ordinary preview never carry them, so what visitors
+  // are served is byte-identical either way.
+  const editable = !!opts.editable;
+  const sections = (Array.isArray(page.sections) ? page.sections : []).map((sec, secIdx) => {
     const h = _sdPx(sec && sec.h, 400);
     // DOM order == mobile stacking order. Default is reading order (y, then x);
     // an explicit `mobile.order` overrides it so the author can restack a
@@ -2410,14 +2414,18 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
       if (!html) return '';
       const cls = _sdMobileClass(el, mobileRules);
       const st = `left:${_sdPct(el.x)};top:${_sdPx(el.y)}px;width:${_sdPct(el.w)};min-height:${_sdPx(el.h, 0)}px;${el.z ? `z-index:${_sdPx(el.z)};` : ''}`;
-      return `<div class="sd-el${_sdMobileHidden(el) ? ' sd-el--mhide' : ''}${cls}" style="${st}">${html}</div>`;
+      const hooks = editable
+        ? ` data-el="${_escHtml(String(el.id || ''))}" data-type="${_escHtml(String(el.type || ''))}"${el.props && el.props.field ? ` data-field="${_escHtml(String(el.props.field))}"` : ''}${el.props && el.props.detached ? ' data-detached="1"' : ''}`
+        : '';
+      return `<div class="sd-el${_sdMobileHidden(el) ? ' sd-el--mhide' : ''}${cls}"${hooks} style="${st}">${html}</div>`;
     }).join('');
     // The section id doubles as the anchor target: a button with
     // `props.anchor: 'contact'` links to `#contact`, which only scrolls if the
     // section actually carries that id. Without this every in-page CTA in every
     // template was a dead link.
     const anchorId = String((sec && sec.id) || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
-    return `<section class="sd-sec${_sdSectionClass(sec && sec.bg)}"${anchorId ? ` id="${anchorId}"` : ''} style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
+    const secHooks = editable ? ` data-sec="${_escHtml(String((sec && sec.id) || ''))}" data-idx="${secIdx}"` : '';
+    return `<section class="sd-sec${_sdSectionClass(sec && sec.bg)}"${anchorId ? ` id="${anchorId}"` : ''}${secHooks} style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
   }).join('');
 
   const title = _sdText((page.seo && page.seo.title) || row.name || page.name || 'Portfolio', 120);
@@ -2546,9 +2554,169 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
         .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
       return false;
     }
-  </script>
+  </script>${editable ? '\n' + _sdEditLayer() : ''}
 </body>
 </html>`;
+}
+
+/**
+ * The inline editor, injected into the rendered page only when editing.
+ *
+ * It lives inside the iframe because that is where the real page is: reaching
+ * in from the parent with an absolutely-positioned overlay means re-deriving
+ * every element's box and keeping it in sync through scroll, resize and
+ * re-render. Editing in place and posting the result out is both simpler and
+ * always aligned with what the user is actually looking at.
+ *
+ * It never mutates the document itself. Every change is posted to the parent,
+ * which applies it through the undo store — so inline edits are undoable
+ * alongside everything else, and there is exactly one writer.
+ */
+function _sdEditLayer() {
+  return `<style>
+    .sd-el[data-type="heading"],.sd-el[data-type="subheading"],.sd-el[data-type="paragraph"],.sd-el[data-type="image"],.sd-el[data-type="imagebox"]{cursor:text;}
+    .sd-el[data-type="image"],.sd-el[data-type="imagebox"]{cursor:pointer;}
+    .sd-ed-hot{outline:2px dashed rgba(99,102,241,.55);outline-offset:4px;border-radius:6px;}
+    .sd-ed-on{outline:2px solid #6366F1;outline-offset:4px;border-radius:6px;background:rgba(99,102,241,.05);}
+    [contenteditable]{outline:none;}
+    .sd-ed-sec{outline:2px dashed rgba(99,102,241,.4);outline-offset:-2px;}
+    .sd-ed-bar{position:absolute;z-index:99999;display:flex;gap:6px;background:#111827;border-radius:999px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.3);}
+    .sd-ed-bar button{font:inherit;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border:none;border-radius:999px;padding:7px 12px;cursor:pointer;white-space:nowrap;}
+    .sd-ed-bar button:hover{background:rgba(255,255,255,.26);}
+    .sd-ed-bar button.danger:hover{background:#dc2626;}
+    .sd-ed-reset{position:absolute;z-index:99998;font:inherit;font-size:11px;font-weight:600;color:#4338ca;background:rgba(238,242,255,.96);border:1px solid #c7d2fe;border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap;}
+    .sd-ed-reset:hover{background:#e0e7ff;}
+    .sd-ed-hint{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:99999;background:rgba(17,24,39,.92);color:#fff;font-size:12px;font-weight:600;padding:8px 16px;border-radius:999px;pointer-events:none;}
+  </style>
+  <script>
+  (function(){
+    var TEXT = { heading:1, subheading:1, paragraph:1 };
+    var post = function(m){ try { parent.postMessage(Object.assign({ __rtEdit:1 }, m), '*'); } catch(e){} };
+    var bar = null, resetBtn = null, editing = null;
+
+    function clear(){
+      if (bar) { bar.remove(); bar = null; }
+      if (resetBtn) { resetBtn.remove(); resetBtn = null; }
+      document.querySelectorAll('.sd-ed-sec').forEach(function(s){ s.classList.remove('sd-ed-sec'); });
+    }
+
+    // ── Text: click to change it ────────────────────────────────────────────
+    function beginEdit(wrap){
+      if (editing) return;
+      var target = wrap.firstElementChild || wrap;
+      var before = target.textContent;
+      editing = { wrap: wrap, target: target, before: before };
+      wrap.classList.add('sd-ed-on');
+      target.setAttribute('contenteditable', 'plaintext-only');
+      target.focus();
+      try {
+        var r = document.createRange(); r.selectNodeContents(target);
+        var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      } catch(e){}
+      var multiline = wrap.dataset.type === 'paragraph';
+      hint(multiline ? 'Enter to save · Shift+Enter for a new line · Esc to cancel'
+                     : 'Enter to save · Esc to cancel');
+
+      target.onkeydown = function(ev){
+        if (ev.key === 'Escape') { ev.preventDefault(); target.textContent = before; finish(false); }
+        else if (ev.key === 'Enter' && !(multiline && ev.shiftKey)) { ev.preventDefault(); finish(true); }
+      };
+      target.onblur = function(){ finish(true); };
+    }
+
+    function finish(save){
+      if (!editing) return;
+      var e = editing; editing = null;
+      e.target.onkeydown = null; e.target.onblur = null;
+      e.target.removeAttribute('contenteditable');
+      e.wrap.classList.remove('sd-ed-on');
+      hint('');
+      // Escaped twice on purpose: this string is a JS template literal that
+      // EMITS JavaScript. A bare newline escape here becomes a REAL newline in
+      // the output, and a regex literal cannot contain one — a syntax error in
+      // the browser that takes the whole edit layer down with it.
+      var now = e.target.innerText.replace(/\\u00a0/g, ' ').replace(/\\n{3,}/g, '\\n\\n').trim();
+      if (!save || now === e.before.trim()) { e.target.textContent = e.before; return; }
+      if (!now) { e.target.textContent = e.before; return; }   // never leave it blank
+      post({ kind: 'edit', el: e.wrap.dataset.el, value: now });
+    }
+
+    var hintEl = null;
+    function hint(t){
+      if (!t) { if (hintEl) { hintEl.remove(); hintEl = null; } return; }
+      if (!hintEl) { hintEl = document.createElement('div'); hintEl.className = 'sd-ed-hint'; document.body.appendChild(hintEl); }
+      hintEl.textContent = t;
+    }
+
+    // ── The escape hatch: put this field back under the resume's control ────
+    function showReset(wrap){
+      if (resetBtn) resetBtn.remove();
+      if (wrap.dataset.detached !== '1') return;
+      var r = wrap.getBoundingClientRect();
+      resetBtn = document.createElement('button');
+      resetBtn.className = 'sd-ed-reset';
+      resetBtn.textContent = '↺ Reset to my resume';
+      resetBtn.style.left = (r.left + scrollX) + 'px';
+      resetBtn.style.top = (r.bottom + scrollY + 6) + 'px';
+      resetBtn.onmousedown = function(ev){ ev.preventDefault(); };
+      resetBtn.onclick = function(ev){
+        ev.stopPropagation();
+        post({ kind: 'reset', el: wrap.dataset.el });
+      };
+      document.body.appendChild(resetBtn);
+    }
+
+    // ── Sections: move and remove ───────────────────────────────────────────
+    function showSectionBar(sec){
+      clear();
+      sec.classList.add('sd-ed-sec');
+      var r = sec.getBoundingClientRect();
+      bar = document.createElement('div');
+      bar.className = 'sd-ed-bar';
+      bar.style.left = (r.left + scrollX + 12) + 'px';
+      bar.style.top = (r.top + scrollY + 12) + 'px';
+      var mk = function(label, cls, fn){
+        var b = document.createElement('button');
+        b.textContent = label; if (cls) b.className = cls;
+        b.onclick = function(ev){ ev.stopPropagation(); fn(); };
+        bar.appendChild(b);
+      };
+      mk('↑ Move Up', '', function(){ post({ kind: 'moveSection', sec: sec.dataset.sec, delta: -1 }); });
+      mk('↓ Move Down', '', function(){ post({ kind: 'moveSection', sec: sec.dataset.sec, delta: 1 }); });
+      mk('Delete', 'danger', function(){ post({ kind: 'deleteSection', sec: sec.dataset.sec }); });
+      document.body.appendChild(bar);
+    }
+
+    // ── Wiring ──────────────────────────────────────────────────────────────
+    document.addEventListener('mouseover', function(ev){
+      var w = ev.target.closest && ev.target.closest('.sd-el[data-el]');
+      document.querySelectorAll('.sd-ed-hot').forEach(function(x){ x.classList.remove('sd-ed-hot'); });
+      if (w && !editing) w.classList.add('sd-ed-hot');
+    });
+
+    document.addEventListener('click', function(ev){
+      if (ev.target.closest('.sd-ed-bar') || ev.target.closest('.sd-ed-reset')) return;
+      var wrap = ev.target.closest && ev.target.closest('.sd-el[data-el]');
+      if (wrap) {
+        var t = wrap.dataset.type;
+        if (TEXT[t]) { ev.preventDefault(); clear(); showReset(wrap); beginEdit(wrap); return; }
+        if (t === 'image' || t === 'imagebox') { ev.preventDefault(); clear(); post({ kind: 'photo', el: wrap.dataset.el }); return; }
+      }
+      // Anything else inside a section selects the section.
+      var sec = ev.target.closest && ev.target.closest('section[data-sec]');
+      if (sec) { ev.preventDefault(); showSectionBar(sec); return; }
+      clear();
+    });
+
+    // Links must not navigate while editing — it would look like the site broke.
+    document.addEventListener('click', function(ev){
+      var a = ev.target.closest && ev.target.closest('a');
+      if (a) ev.preventDefault();
+    }, true);
+
+    post({ kind: 'ready' });
+  })();
+  </script>`;
 }
 
 const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'Too many share links — please wait a minute.' } });
@@ -2732,6 +2900,13 @@ app.post('/api/personal-site', (req, res) => {
   res.json({ url: sitePublicUrl(sub, origin), subdomain: sub, published: publishedFlag === 1 });
 });
 
+// The ten Vibes. Public and unauthenticated for the same reason the template
+// preview is: it is a static list of colours and filenames, no user data.
+app.get('/api/site-vibes', (req, res) => {
+  const { list } = require('./public/site-vibes.js');
+  res.json({ vibes: list() });
+});
+
 /**
  * Replace a starter template's sample copy with the user's own.
  *
@@ -2740,87 +2915,48 @@ app.post('/api/personal-site', (req, res) => {
  * handing someone a page that makes false claims about them, on a URL they are
  * about to send to recruiters. Every visible line of sample prose is either
  * replaced with something true or removed.
+ *
+ * Derivation lives in public/site-fields.js so the generator and the inline
+ * editor agree on what "the name" or "the summary" means — two copies would
+ * drift, and the drift would only show up as a field resetting to the wrong
+ * thing.
  */
-function _autogenFill(doc, text, name) {
+function _autogenFill(doc, text) {
+  const SF = require('./public/site-fields.js');
   if (!doc || !Array.isArray(doc.pages)) return doc;
-  const lines = String(text || '').split('\n').map((l) => l.trim());
 
-  // Location: from the contact line, which conventionally sits under the name
-  // as "email | City, ST | linkedin…". Take the segment that isn't an email,
-  // URL or phone number.
-  const contact = lines[1] || '';
-  const location = contact.split(/[|·•]/).map((p) => p.trim()).find((p) =>
-    p && !/@/.test(p) && !/https?:|\.com|linkedin/i.test(p) && !/\d{3}[-.\s]?\d{3,4}/.test(p) && p.length < 40) || '';
+  SF.tagFields(doc);
+  // force: the template's sample prose is not a user edit, so it is replaced
+  // even though nothing is detached yet.
+  SF.syncFromResume(doc, text, { force: true });
 
-  // Role: the first job title under EXPERIENCE, minus the employer and dates.
-  let role = '';
-  const expAt = lines.findIndex((l) => /^(experience|work experience|employment)\b/i.test(l));
-  if (expAt >= 0) {
-    for (let i = expAt + 1; i < Math.min(lines.length, expAt + 6); i++) {
-      const l = lines[i];
-      if (!l || /^[•\-*]/.test(l)) continue;
-      role = l.split(/[|,–—]/)[0].trim();
-      break;
-    }
-  }
+  const vals = SF.deriveFields(text);
 
-  // Summary: the body of the SUMMARY / PROFILE / OBJECTIVE section.
-  let summary = '';
-  const sumAt = lines.findIndex((l) => /^(summary|profile|objective|about)\b/i.test(l));
-  if (sumAt >= 0) {
-    const body = [];
-    for (let i = sumAt + 1; i < lines.length; i++) {
-      const l = lines[i];
-      if (!l) { if (body.length) break; continue; }
-      if (/^[A-Z][A-Z\s&]{3,}$/.test(l)) break;   // next ALL-CAPS section heading
-      body.push(l.replace(/^[•\-*]\s*/, ''));
-    }
-    summary = body.join(' ').slice(0, 400);
-  }
-
-  const subtitle = [role, location].filter(Boolean).join(' · ');
-  let didHeading = false, didSub = false, didPara = false;
+  // Anything we could not derive would otherwise keep the template's invented
+  // copy. Blank it, then drop the empty element rather than leave a hole.
   for (const pg of doc.pages) {
-    for (const s of pg.sections || []) {
-      // Only the first section — the hero — carries the personal intro copy.
-      // Later sections are structural (headings like "Experience") and must be
-      // left alone.
-      if (s !== (pg.sections || [])[0]) continue;
-      for (const el of s.els || []) {
-        const p = el.props || {};
-        if (el.type === 'heading' && !didHeading && name) { p.text = name; didHeading = true; continue; }
-        if (el.type === 'subheading' && !didSub) {
-          // No role or location found → drop the line rather than keep a lie.
-          if (subtitle) p.text = subtitle; else p.text = '';
-          didSub = true; continue;
-        }
-        if (el.type === 'paragraph' && !didPara) {
-          if (summary) p.text = summary; else p.text = '';
-          didPara = true; continue;
-        }
-      }
+    const hero = (pg.sections || [])[0];
+    if (!hero) continue;
+    for (const el of hero.els || []) {
+      const f = el.props && el.props.field;
+      if (f && !vals[f]) el.props.text = '';
     }
   }
-  // Elements whose text we emptied would render as blank boxes; remove them.
   for (const pg of doc.pages) {
     for (const s of pg.sections || []) {
       s.els = (s.els || []).filter((el) =>
         !(['heading', 'subheading', 'paragraph'].includes(el.type) && el.props && el.props.text === ''));
     }
   }
-  if (doc.pages[0] && doc.pages[0].seo && name) {
-    doc.pages[0].seo.title = name;
-    doc.pages[0].seo.description = summary ? summary.slice(0, 160) : `${name}${subtitle ? ' — ' + subtitle : ''}`;
+
+  if (doc.pages[0] && doc.pages[0].seo && vals.name) {
+    doc.pages[0].seo.title = vals.name;
+    doc.pages[0].seo.description = vals.summary
+      ? vals.summary.slice(0, 160)
+      : `${vals.name}${vals.subtitle ? ' — ' + vals.subtitle : ''}`;
   }
   return doc;
 }
-
-// The ten Vibes. Public and unauthenticated for the same reason the template
-// preview is: it is a static list of colours and filenames, no user data.
-app.get('/api/site-vibes', (req, res) => {
-  const { list } = require('./public/site-vibes.js');
-  res.json({ vibes: list() });
-});
 
 /**
  * Auto-generate a starter site so the user never faces a blank screen.
@@ -2876,7 +3012,7 @@ app.post('/api/personal-site/autogen', (req, res) => {
 
   const { templateDoc } = require('./site-templates.js');
   const doc = templateDoc('minimal') || templateDoc('executive');
-  _autogenFill(doc, text, name);
+  _autogenFill(doc, text);
   doc.templateId = 'minimal';
   doc.assets = { resumeId: resumeRow ? resumeRow.id : null, coverLetterId: cover ? cover.id : null };
 
@@ -2898,7 +3034,7 @@ app.post('/api/personal-site/preview', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
-  const { text, name, colors, photoUrl, hideContact, serif, layout, config, subdomain, page } = req.body || {};
+  const { text, name, colors, photoUrl, hideContact, serif, layout, config, subdomain, page, editable } = req.body || {};
   if (!text || typeof text !== 'string' || text.trim().length < 10) {
     return res.status(400).json({ error: 'Nothing to preview yet.' });
   }
@@ -2925,6 +3061,9 @@ app.post('/api/personal-site/preview', (req, res) => {
     indexable: false, footer: '',
     baseUrl: `${origin}/site/${sub}`,
     page: pageSlug,
+    // Opt-in only. Without this the preview is byte-identical to the published
+    // page, which test/preview-parity.js asserts.
+    editable: editable === true,
   }));
 });
 

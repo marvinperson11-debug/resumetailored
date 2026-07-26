@@ -25,6 +25,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="/site-doc-store.js"></script>
   <script src="/site-vibes.js"></script>
+  <script src="/site-fields.js"></script>
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9896489046536589" crossorigin="anonymous"></script>
   <style>
@@ -375,6 +376,7 @@
       padding: 8px 15px; cursor: pointer;
     }
     .sm-look:hover { background: #e0e7ff; }
+    .sm-look.is-on { background: #4338ca; border-color: #4338ca; color: #fff; }
     /* On a phone the bar has to hold four things. Labels collapse to their
        icons rather than overlapping, and the note keeps only its badge. */
     @media (max-width: 760px) {
@@ -1280,6 +1282,7 @@
           <div class="sm-bar">
             <button type="button" class="sm-back" onclick="smExit()" title="Back to ResumeTailored"><span aria-hidden="true">←</span><span class="sm-lbl" data-i18n="sm_back_short">Back</span></button>
             <div class="sm-note" id="smNote"></div>
+            <button type="button" class="sm-look" id="smEditBtn" onclick="smToggleEdit()" title="Edit the page"><span aria-hidden="true">✏️</span><span class="sm-lbl" data-i18n="sm_edit_on">Edit</span></button>
             <button type="button" class="sm-look" onclick="smStripOpen(1)" title="Change the look"><span aria-hidden="true">🎨</span><span class="sm-lbl" data-i18n="sm_change_look">Change the look</span></button>
             <button type="button" class="sm-publish" id="smPublishBtn" onclick="smPublish()" data-i18n="sm_publish">Publish my website</button>
             <a class="sm-live" id="smLiveLink" target="_blank" rel="noopener" style="display:none;" data-i18n="sm_visit">Visit my website ↗</a>
@@ -2136,6 +2139,11 @@
         sm_next: 'Next →', sm_step_back: '← Back', sm_skip: 'Skip', sm_a_done_editing: 'Done',
         sm_advanced: 'Advanced', sm_adv_desktop: 'The advanced editor needs a bigger screen.',
         sm_upload_err: "That didn't upload — try again.", sm_mic_err: 'We could not reach your microphone.',
+        sm_edit_on: 'Edit', sm_edit_off: 'Done', sm_edit_hint: 'Click anything on your page to change it.',
+        sm_edit_saved: 'Saved', sm_reset_done: 'Back in sync with your resume',
+        sm_section_gone: 'Section removed from your website — your resume is unchanged.',
+        sm_last_section: 'A page needs at least one section.',
+        sm_kept_edits: 'Updated from your resume — your own edits were kept.',
         sm_vibe_q: 'Pick your vibe', sm_close: 'Close', sm_change_look: '🎨 Change the look',
         sm_lighten: 'Lighten', sm_darken: 'Darken',
         sm_published: '🌐 Your website is live — link copied.',
@@ -2319,6 +2327,11 @@
         sm_next: '下一步 →', sm_step_back: '← 上一步', sm_skip: '跳过', sm_a_done_editing: '完成',
         sm_advanced: '高级', sm_adv_desktop: '高级编辑器需要更大的屏幕。',
         sm_upload_err: '上传失败，请重试。', sm_mic_err: '无法访问你的麦克风。',
+        sm_edit_on: '编辑', sm_edit_off: '完成', sm_edit_hint: '点击页面上的任何内容即可修改。',
+        sm_edit_saved: '已保存', sm_reset_done: '已与你的简历重新同步',
+        sm_section_gone: '该板块已从网站移除——你的简历没有改动。',
+        sm_last_section: '页面至少需要保留一个板块。',
+        sm_kept_edits: '已根据简历更新——你自己修改过的内容已保留。',
         sm_vibe_q: '选择你的风格', sm_close: '关闭', sm_change_look: '🎨 更换外观',
         sm_lighten: '调亮', sm_darken: '调暗',
         sm_published: '🌐 您的网站已上线——链接已复制。',
@@ -6648,7 +6661,7 @@ Aaliyah Washington`
 
        The editor still exists behind "Customize My Site" — it is just no longer
        the front door. */
-    let smOn = false, smSiteUrl = '', smPublished = false, _smAutoSaveHooked = false;
+    let smOn = false, smSiteUrl = '', smPublished = false, _smEditorWired = false;
 
     function smShow(on) {
       smOn = !!on;
@@ -6689,6 +6702,7 @@ Aaliyah Washington`
           headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
           body: JSON.stringify({
             subdomain: wcSite.subdomain, text: smResumeText(), name: wcSite.name || '', config: wcDoc,
+            editable: smEditing,
           }),
         });
         if (!r.ok) return false;
@@ -6733,6 +6747,16 @@ Aaliyah Washington`
       if (data.config && Array.isArray(data.config.pages)) { wcDoc = data.config; wcTplId = data.config.templateId || null; }
       smPublished = !!data.published;
       smSiteUrl = data.url || '';
+
+      // The undo store is created here, not when the advanced editor opens.
+      // Inline edits, vibe changes and guided-strip answers are all edits and
+      // all belong in one history — otherwise whichever path the user happens
+      // to take decides whether their work is undoable.
+      if (!edStore && wcDoc && window.SiteDocStore) {
+        edStore = SiteDocStore.createStore(wcDoc);
+        edPageId = (wcDoc.pages && wcDoc.pages[0] && wcDoc.pages[0].id) || null;
+        edStore.subscribe(() => { wcDoc = edStore.getDoc(); smRenderSite(); smQueueSave(); });
+      }
 
       const ok = await smRenderSite();
       if (!ok) { smPanel(''); smShow(false); return; }
@@ -7063,7 +7087,12 @@ Aaliyah Washington`
       if (!r) return;
       wcSiteText = r.content || wcSiteText;
       smSetAssets({ resumeId: Number(id) });
+      // Follow the new resume — except for anything the user has edited on the
+      // site, which stays theirs.
+      const kept = (window.SiteFields && SiteFields.detachedFields(wcDoc)) || [];
+      smSyncFromResume();
       await smRenderSite(); smQueueSave();
+      if (kept.length) showToast(_t('sm_kept_edits', 'Updated from your resume — your own edits were kept.'), 4000);
     }
 
     async function smPickCover(id) {
@@ -7081,6 +7110,107 @@ Aaliyah Washington`
       else { const d = JSON.parse(JSON.stringify(wcDoc)); mutate(d); wcDoc = d; }
     }
 
+    /* ── Inline editing ───────────────────────────────────────────────────
+       The rendered page is an iframe, and the editor lives inside it — that is
+       where the real elements are. It never mutates the document itself; it
+       posts what happened out here, and everything is applied through the undo
+       store, so there is exactly one writer and inline edits are undoable
+       alongside vibe changes and everything else.
+
+       The rule behind all of it: editing a field on the site DETACHES it from
+       the resume. Later resume updates leave it alone until the user presses
+       "reset to my resume". */
+    let smEditing = false;
+
+    async function smSetEditing(on) {
+      smEditing = !!on;
+      const b = document.getElementById('smEditBtn');
+      if (b) {
+        b.classList.toggle('is-on', smEditing);
+        const lbl = b.querySelector('.sm-lbl');
+        if (lbl) lbl.textContent = smEditing ? _t('sm_edit_off', 'Done') : _t('sm_edit_on', 'Edit');
+      }
+      await smRenderSite();
+      if (smEditing) showToast(_t('sm_edit_hint', 'Click anything on your page to change it.'), 4000);
+    }
+    function smToggleEdit() { smSetEditing(!smEditing); }
+
+    window.addEventListener('message', async (ev) => {
+      const m = ev && ev.data;
+      if (!m || m.__rtEdit !== 1 || !wcDoc || !window.SiteFields) return;
+
+      if (m.kind === 'edit') {
+        smMutate(d => { SiteFields.applyEdit(d, m.el, m.value); }, 'inline-edit');
+        showToast(_t('sm_edit_saved', 'Saved'), 1600);
+        return;
+      }
+
+      if (m.kind === 'reset') {
+        smMutate(d => { SiteFields.resetField(d, m.el, smResumeText()); }, 'inline-reset');
+        showToast(_t('sm_reset_done', 'Back in sync with your resume'), 2600);
+        return;
+      }
+
+      if (m.kind === 'photo') { smPickPhotoInto(m.el); return; }
+
+      if (m.kind === 'moveSection') {
+        smMutate(d => SiteFields.moveSection(d, 0, m.sec, m.delta), 'move-section');
+        return;
+      }
+
+      if (m.kind === 'deleteSection') {
+        // Removes it from the SITE. The resume is a separate store and is never
+        // touched by anything in here.
+        const ok = smMutate(d => SiteFields.deleteSection(d, 0, m.sec), 'delete-section');
+        if (ok === false) { showToast(_t('sm_last_section', 'A page needs at least one section.'), 3000); return; }
+        showToast(_t('sm_section_gone', 'Section removed from your website — your resume is unchanged.'), 3600);
+        return;
+      }
+    });
+
+    // One writer. Through the store when it exists (so undo covers it), on a
+    // clone otherwise.
+    function smMutate(fn, reason) {
+      let ret;
+      if (edStore) {
+        // The store's subscriber re-renders and queues the save, so callers
+        // never do either — that is what makes undo redraw like anything else.
+        edApply(d => { ret = fn(d); }, { reason: reason || 'edit' });
+        wcDoc = edStore.getDoc();
+      } else {
+        const d = JSON.parse(JSON.stringify(wcDoc)); ret = fn(d); wcDoc = d;
+        smRenderSite(); smQueueSave();
+      }
+      return ret;
+    }
+
+    function smPickPhotoInto(elId) {
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*';
+      inp.onchange = async () => {
+        const f = inp.files && inp.files[0];
+        if (!f) return;
+        try {
+          const url = await _tvUploadMedia(f, f.name || 'photo.jpg');
+          if (!url) throw new Error('no url');
+          smMutate(d => {
+            const el = SiteFields.findById(d, elId);
+            if (el) { el.props = el.props || {}; el.props.src = url; delete el.props.ph; }
+          }, 'photo');
+        } catch (_) { showToast(_t('sm_upload_err', "That photo didn't upload — try another.")); }
+      };
+      inp.click();
+    }
+
+    // A resume change re-syncs the site — but only the fields the user has not
+    // taken over. That is the whole point of the detach.
+    function smSyncFromResume() {
+      if (!window.SiteFields || !wcDoc) return [];
+      let written = [];
+      smMutate(d => { written = SiteFields.syncFromResume(d, smResumeText()); }, 'resume-sync');
+      return written;
+    }
+
     // The one way out of full-screen mode, since it covers the app's own
     // navigation. Quiet, but always present.
     function smExit() { smShow(false); showTab('tailor'); }
@@ -7094,12 +7224,15 @@ Aaliyah Washington`
       if (!cvIsDesktop()) { showToast(_t('sm_adv_desktop', 'The advanced editor needs a bigger screen.'), 5000); return; }
       smStripClose();
       smShow(false);
-      if (!edStore && wcDoc) edInit(wcDoc);
-      // Every mutation goes through the store, so this is the only hook needed.
-      if (edStore && !_smAutoSaveHooked) {
-        _smAutoSaveHooked = true;
-        edStore.subscribe(() => { wcDoc = edStore.getDoc(); smQueueSave(); });
-      }
+      // The store already exists (created at boot). Wire up the editor's own
+      // views without replacing it — re-creating it here would throw away the
+      // undo history of everything done in simple mode.
+      if (wcDoc && edStore && !_smEditorWired) {
+        _smEditorWired = true;
+        edStore.subscribe(() => { edSyncButtons(); edRenderCanvas(); edRenderOverlay(); edRenderInspector(); });
+        edSyncPageSelect(); edRenderPalette(); edSyncButtons();
+        edRenderCanvas(); edRenderOverlay(); edRenderInspector();
+      } else if (!edStore && wcDoc) { edInit(wcDoc); _smEditorWired = true; }
       wcLoadTemplates();
       wcLoadMediaUsage();
       wcLoadSiteExtras();
