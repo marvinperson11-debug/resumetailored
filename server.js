@@ -333,15 +333,35 @@ app.use((req, res, next) => {
   const m = host.match(PERSONAL_SITE_HOST_RE);
   if (!m) return next();
   const sub = _validSubdomain(m[1]);          // rejects reserved names (www, api, …)
-  if (!sub || req.path !== '/') return next(); // reserved host or a sub-path → normal handling
+  if (!sub) return next();                    // reserved host → normal handling
+  // Root, or a single-segment page slug. Anything else (assets, /api/…, files
+  // with an extension) falls through to the normal handlers untouched.
+  const seg = req.path === '/' ? '' : (req.path.match(/^\/([a-z0-9-]{1,60})\/?$/i) || [])[1];
+  if (req.path !== '/' && !seg) return next();
   const row = db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub);
   if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
+  const origin = `${req.protocol}://${host}`;
+  // A multi-page site's nav must stay ON the subdomain. Without an explicit
+  // baseUrl the renderer builds links as `<origin>/site/<sub>/<page>`, so page
+  // two of alice.resumetailored.com landed on
+  // alice.resumetailored.com/site/alice/work — it resolved, but the URL was
+  // nonsense and the canonical tag disagreed with itself.
+  const pageSlug = (seg || '').toLowerCase();
+  if (pageSlug) {
+    let cfg = null; try { cfg = row.config ? JSON.parse(row.config) : null; } catch (_) {}
+    const pages = cfg && Array.isArray(cfg.pages) ? cfg.pages : null;
+    // Not a page of this site → let the normal routes have it rather than 404
+    // on something that might be a real path.
+    if (!pages || !pages.some((p) => String((p && p.slug) || '').toLowerCase() === pageSlug)) return next();
+  }
   try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
   _recordVisit(sub, req);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
-  return res.send(_renderPersonalSite(row, `${req.protocol}://${host}`, {
-    indexable: true, footer: '', canonicalUrl: `${req.protocol}://${host}/`,
+  return res.send(_renderPersonalSite(row, origin, {
+    indexable: true, footer: '', page: pageSlug,
+    baseUrl: origin,
+    canonicalUrl: `${origin}/${pageSlug}`,
   }));
 });
 
@@ -398,9 +418,27 @@ app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
+// Set only by the test harness, which fires a few hundred requests from one IP
+// in a couple of seconds and would otherwise measure throttling, not rendering.
+const RATE_LIMIT_OFF = process.env.RT_DISABLE_RATE_LIMIT === '1';
+
+// The Templates panel loads every starter template as a live <iframe> thumbnail,
+// so opening it is a dozen requests in one second. That route renders static
+// HTML with no database or AI work behind it, so it gets its own generous
+// budget rather than eating the shared 30/min one and locking the user out of
+// the rest of the app for a minute.
+const TPL_PREVIEW_PATH_RE = /^\/site-templates\/[^/]+\/preview\/?$/;
+const tplPreviewLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 180,
+  skip: () => RATE_LIMIT_OFF,
+  message: { error: 'Too many requests, please slow down.' },
+});
+
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
+  skip: (req) => RATE_LIMIT_OFF || TPL_PREVIEW_PATH_RE.test(req.path),
   message: { error: 'Too many requests, please slow down.' }
 });
 app.use('/api/', apiLimiter);
@@ -2066,6 +2104,16 @@ function _extractCaseStudies(text, max = 6) {
 const _clampInt = (v, lo, hi, dflt) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt; };
 const _safeUrl = (u) => (typeof u === 'string' && /^(https?:\/\/|\/|data:image\/(png|jpe?g|webp);base64,)/i.test(u) && u.length < 2000000) ? u : '';
 
+// For hrefs rather than asset sources. `_safeUrl` deliberately rejects
+// `mailto:`/`tel:` because it also guards <img src>, but a social link or
+// button pointing at an email address is legitimate — and silently dropping it
+// meant every "Email" button in the templates rendered as nothing.
+const _safeLinkUrl = (u) => {
+  if (typeof u !== 'string') return '';
+  if (/^mailto:[^\s"'<>]{3,320}$/i.test(u) || /^tel:\+?[0-9()\-.\s]{3,32}$/i.test(u)) return u;
+  return _safeUrl(u);
+};
+
 
 // ─── Website Builder v2 — site-document renderer ─────────────────────────────
 // A site document is: pages → sections → absolutely-positioned elements.
@@ -2089,14 +2137,37 @@ const _sdText = (s, max = 4000) => _escHtml(String(s == null ? '' : s).slice(0, 
 // A section background: solid colour, gradient, or an image from the media library.
 function _sdSectionBg(bg) {
   if (!bg || typeof bg !== 'object') return '';
-  if (bg.type === 'image') { const u = _safeUrl(bg.value); return u ? `background-image:url('${_escHtml(u)}');background-size:cover;background-position:center;` : ''; }
+  if (bg.type === 'image') {
+    const u = _safeUrl(bg.value);
+    if (!u) return '';
+    // A full-bleed photo with text on it is unreadable without a scrim, and
+    // "make sure the text is still legible" is not something to leave to
+    // whoever picks the photo. The overlay is part of the background.
+    const ov = Number(bg.overlay);
+    const a = Number.isFinite(ov) ? Math.max(0, Math.min(0.9, ov)) : 0;
+    const scrim = a > 0
+      ? `linear-gradient(rgba(8,12,22,${a.toFixed(2)}),rgba(8,12,22,${a.toFixed(2)})),`
+      : '';
+    return `background-image:${scrim}url('${_escHtml(u)}');background-size:cover;background-position:center;`;
+  }
   if (bg.type === 'gradient' && typeof bg.value === 'string') {
-    // Only allow a simple, well-formed gradient string (no arbitrary CSS).
-    const g = bg.value.slice(0, 300);
-    return /^(linear|radial)-gradient\([^;{}]*\)$/.test(g) ? `background-image:${g};` : '';
+    // A conservative whitelist rather than a shape match, so a stack of
+    // comma-separated gradients (used by the lighten/darken wash) is allowed
+    // while arbitrary CSS still is not.
+    const g = bg.value.slice(0, 400);
+    const safe = /^(linear|radial)-gradient\(/.test(g)
+      && /^[a-zA-Z0-9\s,.%#()-]+$/.test(g)
+      && !/url\(|expression|javascript:|@import/i.test(g);
+    return safe ? `background-image:${g};` : '';
   }
   if (bg.type === 'color') { const c = _sdColor(bg.value, ''); return c ? `background-color:${c};` : ''; }
   return '';
+}
+
+// Photo heroes get a text shadow on top of the scrim: the scrim handles the
+// average case, the shadow handles a bright patch landing behind a word.
+function _sdSectionClass(bg) {
+  return (bg && bg.type === 'image' && _safeUrl(bg.value)) ? ' sd-sec--photo' : '';
 }
 
 // ── Per-element mobile overrides (V6) ───────────────────────────────────────
@@ -2137,13 +2208,19 @@ function _sdMobileClass(el, rules) {
 // self-contained gradient placeholder (optionally captioned) that the user
 // replaces with a real upload from the media library. `ph` is a two-colour spec
 // like { from:'6366F1', to:'8B5CF6', label:'Your photo' } — colours are validated.
-function _sdPlaceholder(p, radius) {
+// `minH` is the element's drawn height. Elements are positioned with min-height
+// (so text can grow) and no fixed height, which means the stylesheet's
+// `height:100%` on the placeholder resolves against an auto-height parent and
+// collapses to the 120px floor — every image slot rendered as a short band no
+// matter how large you drew it. Passing the height through fixes that.
+function _sdPlaceholder(p, radius, minH) {
   const ph = p && p.ph;
   if (!ph) return '';
   const from = _sdColor(ph.from, '#6366F1');
   const to = _sdColor(ph.to, '#8B5CF6');
   const round = ph.shape === 'circle' ? '50%' : `${_sdPx(radius, 12)}px`;
-  return `<div class="sd-ph" style="background:linear-gradient(135deg,${from},${to});border-radius:${round};">${ph.label ? `<span>${_sdText(ph.label, 60)}</span>` : ''}</div>`;
+  const h = _sdPx(minH, 0);
+  return `<div class="sd-ph" style="background:linear-gradient(135deg,${from},${to});border-radius:${round};${h > 0 ? `min-height:${h}px;` : ''}">${ph.label ? `<span>${_sdText(ph.label, 60)}</span>` : ''}</div>`;
 }
 
 // One element → HTML. `ctx` carries row/theme/lang/pages for elements that need
@@ -2154,6 +2231,9 @@ function _sdElement(el, ctx) {
   const align = ['left', 'center', 'right'].includes(p.align) ? p.align : 'left';
   const color = _sdColor(p.color, '');
   const styleText = `text-align:${align};${color ? `color:${color};` : ''}`;
+  // The height the element was drawn at. Media slots honour it; text elements
+  // ignore it and grow with their content.
+  const drawnH = _sdPx(el && el.h, 0);
   switch (el.type) {
     case 'heading':
       return `<h1 class="sd-h1" style="${styleText}${p.size ? `font-size:${_sdPx(p.size, 48)}px;` : ''}">${_sdText(p.text, 300)}</h1>`;
@@ -2163,16 +2243,16 @@ function _sdElement(el, ctx) {
       return `<div class="sd-p" style="${styleText}">${_sdText(p.text, 4000).replace(/\n/g, '<br/>')}</div>`;
     case 'image': {
       const u = _safeUrl(p.src);
-      if (!u) return _sdPlaceholder(p, _sdPx(p.radius, 12));
-      return `<img class="sd-img" src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy" style="border-radius:${_sdPx(p.radius, 12)}px;object-fit:${p.fit === 'contain' ? 'contain' : 'cover'};"/>`;
+      if (!u) return _sdPlaceholder(p, _sdPx(p.radius, 12), drawnH);
+      return `<img class="sd-img" src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy" style="border-radius:${_sdPx(p.radius, 12)}px;object-fit:${p.fit === 'contain' ? 'contain' : 'cover'};${drawnH ? `min-height:${drawnH}px;` : ''}"/>`;
     }
     case 'imagebox': {
       const u = _safeUrl(p.src);
       const inner = u
         ? `<img src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy"/>`
-        : _sdPlaceholder(p, 0);
+        : _sdPlaceholder(p, 0, drawnH);
       if (!u && !p.ph) return '';
-      return `<figure class="sd-ibox" style="border-radius:${_sdPx(p.radius, 14)}px;">${inner}${p.caption ? `<figcaption>${_sdText(p.caption, 300)}</figcaption>` : ''}</figure>`;
+      return `<figure class="sd-ibox" style="border-radius:${_sdPx(p.radius, 14)}px;${drawnH ? `min-height:${drawnH}px;` : ''}">${inner}${p.caption ? `<figcaption>${_sdText(p.caption, 300)}</figcaption>` : ''}</figure>`;
     }
     case 'gallery': {
       const items = Array.isArray(p.items) ? p.items.slice(0, 40) : [];
@@ -2184,7 +2264,7 @@ function _sdElement(el, ctx) {
           ? `<img src="${_escHtml(u)}" alt="${_sdText(it.alt || it.title || '', 200)}" loading="lazy"/>`
           : `<div class="sd-ph sd-ph--cell" style="background:linear-gradient(135deg,${_sdColor(it.ph.from, '#6366F1')},${_sdColor(it.ph.to, '#8B5CF6')});height:${_sdPx(it.ph.h, 220)}px;"></div>`;
         const inner = `<figure class="sd-gcell">${img}${cap}</figure>`;
-        const href = _safeUrl(it && it.link);
+        const href = _safeLinkUrl(it && it.link);
         return href ? `<a href="${_escHtml(href)}" target="_blank" rel="noopener">${inner}</a>` : inner;
       }).join('');
       if (!cells) return '';
@@ -2217,7 +2297,7 @@ function _sdElement(el, ctx) {
     case 'social': {
       const items = Array.isArray(p.items) ? p.items.slice(0, 10) : [];
       const links = items.map((it) => {
-        const u = _safeUrl(it && it.url); if (!u) return '';
+        const u = _safeLinkUrl(it && it.url); if (!u) return '';
         return `<a class="sd-soc" href="${_escHtml(u)}" target="_blank" rel="noopener" aria-label="${_sdText(it.network || 'link', 40)}">${_sdText((it.network || '?').slice(0, 2).toUpperCase(), 4)}</a>`;
       }).join('');
       return links ? `<div class="sd-socs">${links}</div>` : '';
@@ -2237,7 +2317,9 @@ function _sdElement(el, ctx) {
     case 'divider':
       return `<hr class="sd-divider" style="border-top-width:${_sdPx(p.thickness, 1)}px;${color ? `border-top-color:${color};` : ''}"/>`;
     case 'box':
-      return `<div class="sd-box" style="${_sdColor(p.bg, '') ? `background:${_sdColor(p.bg, '')};` : ''}border-radius:${_sdPx(p.radius, 14)}px;"></div>`;
+      // Same collapse as the placeholder: `height:100%` against an auto-height
+      // parent is 0, so a card background drawn 250px tall rendered as nothing.
+      return `<div class="sd-box" style="${_sdColor(p.bg, '') ? `background:${_sdColor(p.bg, '')};` : ''}border-radius:${_sdPx(p.radius, 14)}px;${drawnH ? `min-height:${drawnH}px;` : ''}"></div>`;
     case 'spacer':
       return '<div class="sd-spacer"></div>';
     case 'nav': {
@@ -2271,7 +2353,7 @@ function _sdElement(el, ctx) {
 function _sdLink(p, ctx) {
   if (p.page) { const pg = (ctx.pages || []).find((x) => x.slug === p.page); if (pg) return pg.isHome ? ctx.base : `${ctx.base}/${encodeURIComponent(pg.slug)}`; }
   if (p.anchor) return '#' + String(p.anchor).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
-  return _safeUrl(p.href) || '';
+  return _safeLinkUrl(p.href) || '';
 }
 
 function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
@@ -2320,7 +2402,12 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
       const st = `left:${_sdPct(el.x)};top:${_sdPx(el.y)}px;width:${_sdPct(el.w)};min-height:${_sdPx(el.h, 0)}px;${el.z ? `z-index:${_sdPx(el.z)};` : ''}`;
       return `<div class="sd-el${_sdMobileHidden(el) ? ' sd-el--mhide' : ''}${cls}" style="${st}">${html}</div>`;
     }).join('');
-    return `<section class="sd-sec" style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
+    // The section id doubles as the anchor target: a button with
+    // `props.anchor: 'contact'` links to `#contact`, which only scrolls if the
+    // section actually carries that id. Without this every in-page CTA in every
+    // template was a dead link.
+    const anchorId = String((sec && sec.id) || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
+    return `<section class="sd-sec${_sdSectionClass(sec && sec.bg)}"${anchorId ? ` id="${anchorId}"` : ''} style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
   }).join('');
 
   const title = _sdText((page.seo && page.seo.title) || row.name || page.name || 'Portfolio', 120);
@@ -2348,8 +2435,10 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
   <style>
     :root{--p:${theme.primary};--a:${theme.accent};--ink:${theme.ink};--paper:${theme.paper};--muted:${theme.muted};}
     *{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
     body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
-    .sd-sec{position:relative;width:100%;background-repeat:no-repeat;}
+    .sd-sec{position:relative;width:100%;background-repeat:no-repeat;scroll-margin-top:12px;}
+    .sd-sec--photo .sd-h1,.sd-sec--photo .sd-h2,.sd-sec--photo .sd-p{text-shadow:0 1px 14px rgba(0,0,0,.5);}
     .sd-inner{position:relative;max-width:${SD_CANVAS}px;margin:0 auto;}
     .sd-el{position:absolute;}
     .sd-h1{font-size:48px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
@@ -2383,7 +2472,9 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     .sd-socs{display:flex;gap:10px;}
     .sd-soc{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--p);color:#fff;font-size:12px;font-weight:800;text-decoration:none;}
     .sd-divider{border:none;border-top:1px solid rgba(127,127,127,.35);width:100%;}
-    .sd-box{width:100%;height:100%;}
+    /* Boxes are almost always card backgrounds sat behind text. Without a
+       shadow a near-white card on a near-white section is invisible. */
+    .sd-box{width:100%;height:100%;box-shadow:0 1px 3px rgba(15,23,42,.07),0 8px 24px -12px rgba(15,23,42,.18);}
     .sd-nav{display:flex;gap:22px;flex-wrap:wrap;align-items:center;}
     .sd-navlink{font-size:15px;font-weight:600;color:inherit;text-decoration:none;opacity:.8;}
     .sd-navlink.is-on,.sd-navlink:hover{opacity:1;color:var(--p);}
@@ -2526,12 +2617,42 @@ function _validSubdomain(s) {
   return v;
 }
 
+/**
+ * The one place that decides what a published site's public URL looks like.
+ *
+ * Today that is `<origin>/site/<name>`. Host-based `<name>.resumetailored.com`
+ * is already implemented (see PERSONAL_SITE_HOST_RE above) but stays inert
+ * until a wildcard DNS record and a wildcard TLS certificate exist — without
+ * both, a subdomain link either fails to resolve or throws a certificate
+ * warning, which is worse than a long URL on a page you send to recruiters.
+ *
+ * Set SITE_PUBLIC_HOST=resumetailored.com once that infrastructure is live and
+ * every link, QR code, share sheet and canonical tag switches over at once.
+ * Leave it unset and nothing changes.
+ */
+const SITE_PUBLIC_HOST = String(process.env.SITE_PUBLIC_HOST || '')
+  .trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[/].*$/, '');
+
+function sitePublicUrl(sub, origin, pageSlug) {
+  const s = String(sub || '');
+  const page = pageSlug ? '/' + String(pageSlug).replace(/[^a-z0-9-]/gi, '') : '';
+  if (SITE_PUBLIC_HOST && s) {
+    // Keep http on localhost so local testing of the host mode still works.
+    const proto = /^http:\/\/(localhost|127\.)/i.test(String(origin || '')) ? 'http' : 'https';
+    return `${proto}://${s}.${SITE_PUBLIC_HOST}${page}`;
+  }
+  return `${origin}/site/${s}${page}`;
+}
+
 // Fetch the signed-in user's current personal site (if any).
 app.get('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   const row = db.prepare('SELECT subdomain, name, published, views, updated_at, config FROM personal_sites WHERE email = ?').get(email);
-  res.json({ site: row || null });
+  const origin = `${req.protocol}://${req.get('host')}`;
+  // The client must never build this URL itself — that is how it ended up
+  // hard-coded in nine places and unable to follow the subdomain switch.
+  res.json({ site: row || null, url: row ? sitePublicUrl(row.subdomain, origin) : null });
 });
 
 // Publish / update the signed-in Pro user's personal site.
@@ -2541,7 +2662,15 @@ app.post('/api/personal-site', (req, res) => {
   if (!isSubscriber(email)) {
     return res.status(402).json({ error: 'pro_required', message: 'Publishing a personal website is a Pro feature. Upgrade to unlock it.' });
   }
-  const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config } = req.body || {};
+  const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config, publish } = req.body || {};
+  // Drafts. A site is public the moment `published` is 1, so anything created
+  // on the user's behalf — the auto-generated starter site — must be able to
+  // save WITHOUT going live.
+  //
+  // Omitting `publish` PRESERVES whatever the site already is, so an auto-save
+  // can never publish a private site by forgetting a flag, and can never take a
+  // live site down either. Only an explicit `publish` changes that state, which
+  // means going public is always something the user asked for.
   const sub = _validSubdomain(subdomain);
   if (!sub) return res.status(400).json({ error: 'invalid_subdomain', message: 'Choose 3–30 letters, numbers or hyphens (not a reserved word).' });
   if (!text || typeof text !== 'string' || text.trim().length < 20) return res.status(400).json({ error: 'No resume content to publish.' });
@@ -2570,22 +2699,187 @@ app.post('/api/personal-site', (req, res) => {
 
   // Remove any previous site this user had under a different subdomain, so a
   // rename doesn't leave an orphaned live page.
-  const existing = db.prepare('SELECT subdomain FROM personal_sites WHERE email = ?').get(email);
+  const existing = db.prepare('SELECT subdomain, published FROM personal_sites WHERE email = ?').get(email);
   if (existing && existing.subdomain !== sub) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(existing.subdomain);
 
+  const publishedFlag = typeof publish === 'boolean'
+    ? (publish ? 1 : 0)
+    : (existing ? (existing.published ? 1 : 0) : 1); // new site with no flag: the legacy publish path
+
   db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, config, published, created_at, updated_at, views)
-              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, @config, 1, @now, @now, 0)
+              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, @config, @published, @now, @now, 0)
               ON CONFLICT(subdomain) DO UPDATE SET
                 name=@name, text=@text, accent=@accent, primary_hex=@primary_hex, serif=@serif,
-                photo=@photo, hide_contact=@hide_contact, layout=@layout, config=@config, published=1, updated_at=@now`).run({
+                photo=@photo, hide_contact=@hide_contact, layout=@layout, config=@config, published=@published, updated_at=@now`).run({
     subdomain: sub, email: email.toLowerCase(),
     name: (name || '').toString().slice(0, 80), text,
     accent: (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
     primary_hex: (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
-    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, config: _config, now,
+    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, config: _config,
+    published: publishedFlag, now,
   });
   const origin = `${req.protocol}://${req.get('host')}`;
-  res.json({ url: `${origin}/site/${sub}`, subdomain: sub });
+  res.json({ url: sitePublicUrl(sub, origin), subdomain: sub, published: publishedFlag === 1 });
+});
+
+/**
+ * Replace a starter template's sample copy with the user's own.
+ *
+ * This matters more than it looks. The template ships with "Marketing Manager ·
+ * Toronto" and a paragraph of invented biography; leaving those in place means
+ * handing someone a page that makes false claims about them, on a URL they are
+ * about to send to recruiters. Every visible line of sample prose is either
+ * replaced with something true or removed.
+ */
+function _autogenFill(doc, text, name) {
+  if (!doc || !Array.isArray(doc.pages)) return doc;
+  const lines = String(text || '').split('\n').map((l) => l.trim());
+
+  // Location: from the contact line, which conventionally sits under the name
+  // as "email | City, ST | linkedin…". Take the segment that isn't an email,
+  // URL or phone number.
+  const contact = lines[1] || '';
+  const location = contact.split(/[|·•]/).map((p) => p.trim()).find((p) =>
+    p && !/@/.test(p) && !/https?:|\.com|linkedin/i.test(p) && !/\d{3}[-.\s]?\d{3,4}/.test(p) && p.length < 40) || '';
+
+  // Role: the first job title under EXPERIENCE, minus the employer and dates.
+  let role = '';
+  const expAt = lines.findIndex((l) => /^(experience|work experience|employment)\b/i.test(l));
+  if (expAt >= 0) {
+    for (let i = expAt + 1; i < Math.min(lines.length, expAt + 6); i++) {
+      const l = lines[i];
+      if (!l || /^[•\-*]/.test(l)) continue;
+      role = l.split(/[|,–—]/)[0].trim();
+      break;
+    }
+  }
+
+  // Summary: the body of the SUMMARY / PROFILE / OBJECTIVE section.
+  let summary = '';
+  const sumAt = lines.findIndex((l) => /^(summary|profile|objective|about)\b/i.test(l));
+  if (sumAt >= 0) {
+    const body = [];
+    for (let i = sumAt + 1; i < lines.length; i++) {
+      const l = lines[i];
+      if (!l) { if (body.length) break; continue; }
+      if (/^[A-Z][A-Z\s&]{3,}$/.test(l)) break;   // next ALL-CAPS section heading
+      body.push(l.replace(/^[•\-*]\s*/, ''));
+    }
+    summary = body.join(' ').slice(0, 400);
+  }
+
+  const subtitle = [role, location].filter(Boolean).join(' · ');
+  let didHeading = false, didSub = false, didPara = false;
+  for (const pg of doc.pages) {
+    for (const s of pg.sections || []) {
+      // Only the first section — the hero — carries the personal intro copy.
+      // Later sections are structural (headings like "Experience") and must be
+      // left alone.
+      if (s !== (pg.sections || [])[0]) continue;
+      for (const el of s.els || []) {
+        const p = el.props || {};
+        if (el.type === 'heading' && !didHeading && name) { p.text = name; didHeading = true; continue; }
+        if (el.type === 'subheading' && !didSub) {
+          // No role or location found → drop the line rather than keep a lie.
+          if (subtitle) p.text = subtitle; else p.text = '';
+          didSub = true; continue;
+        }
+        if (el.type === 'paragraph' && !didPara) {
+          if (summary) p.text = summary; else p.text = '';
+          didPara = true; continue;
+        }
+      }
+    }
+  }
+  // Elements whose text we emptied would render as blank boxes; remove them.
+  for (const pg of doc.pages) {
+    for (const s of pg.sections || []) {
+      s.els = (s.els || []).filter((el) =>
+        !(['heading', 'subheading', 'paragraph'].includes(el.type) && el.props && el.props.text === ''));
+    }
+  }
+  if (doc.pages[0] && doc.pages[0].seo && name) {
+    doc.pages[0].seo.title = name;
+    doc.pages[0].seo.description = summary ? summary.slice(0, 160) : `${name}${subtitle ? ' — ' + subtitle : ''}`;
+  }
+  return doc;
+}
+
+// The ten Vibes. Public and unauthenticated for the same reason the template
+// preview is: it is a static list of colours and filenames, no user data.
+app.get('/api/site-vibes', (req, res) => {
+  const { list } = require('./public/site-vibes.js');
+  res.json({ vibes: list() });
+});
+
+/**
+ * Auto-generate a starter site so the user never faces a blank screen.
+ *
+ * The Website Creator is for people who have never built a website: they should
+ * land on a finished page and gently change it, not assemble one. This builds a
+ * complete site from their most recent saved resume and returns it.
+ *
+ * It saves as a DRAFT (`publish: false`). The page carries their name, work
+ * history and contact details, so it does not become publicly reachable until
+ * they press Publish themselves.
+ *
+ * If they already have a site, this returns it untouched — it never overwrites.
+ */
+app.post('/api/personal-site/autogen', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
+
+  const existing = db.prepare('SELECT * FROM personal_sites WHERE email = ?').get(email);
+  if (existing) {
+    const origin0 = `${req.protocol}://${req.get('host')}`;
+    return res.json({
+      created: false, subdomain: existing.subdomain, name: existing.name,
+      text: existing.text, published: !!existing.published,
+      config: existing.config ? JSON.parse(existing.config) : null,
+      url: sitePublicUrl(existing.subdomain, origin0),
+    });
+  }
+
+  const resume = db.prepare('SELECT title, content FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+  const text = resume && typeof resume.content === 'string' ? resume.content.trim() : '';
+  if (text.length < 20) {
+    return res.status(409).json({ error: 'no_resume', message: 'Tailor a resume first — your website is built from it.' });
+  }
+  const cover = db.prepare('SELECT id FROM saved_cover_letters WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+  const resumeRow = db.prepare('SELECT id FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+
+  // The name is the first non-empty line of the resume — the convention every
+  // resume follows, and the same one the résumé renderer already relies on.
+  const name = (text.split('\n').map((l) => l.trim()).find(Boolean) || '').slice(0, 80);
+
+  // Address: their username, else their name, else the local part of their
+  // email. Numbered if taken, so this can never fail on a collision.
+  const user = db.prepare('SELECT username FROM users WHERE email = ?').get(email);
+  const seed = String(user && user.username || name || email.split('@')[0] || 'me')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'me';
+  let sub = _validSubdomain(seed.length >= 3 ? seed : seed + '-site');
+  for (let i = 2; i <= 60 && (!sub || db.prepare('SELECT 1 FROM personal_sites WHERE subdomain = ?').get(sub)); i++) {
+    sub = _validSubdomain(`${seed.slice(0, 24)}-${i}`);
+  }
+  if (!sub) return res.status(409).json({ error: 'no_address', message: 'Could not pick a web address — choose one yourself.' });
+
+  const { templateDoc } = require('./site-templates.js');
+  const doc = templateDoc('minimal') || templateDoc('executive');
+  _autogenFill(doc, text, name);
+  doc.templateId = 'minimal';
+  doc.assets = { resumeId: resumeRow ? resumeRow.id : null, coverLetterId: cover ? cover.id : null };
+
+  const now = Date.now();
+  db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, config, published, created_at, updated_at, views)
+              VALUES (?,?,?,?,?,?,0,NULL,0,NULL,?,0,?,?,0)`)
+    .run(sub, email.toLowerCase(), name, text, '8b5cf6', '4a1042', JSON.stringify(doc), now, now);
+
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.json({
+    created: true, subdomain: sub, name, text, config: doc, published: false,
+    url: sitePublicUrl(sub, origin),
+  });
 });
 
 // WYSIWYG preview: render the personal site from posted fields WITHOUT saving,
@@ -2645,9 +2939,11 @@ app.get('/api/site-templates/:id', (req, res) => {
 
 // Rendered preview of a template, for the gallery's desktop/mobile preview
 // frames. Rendered by the SAME renderer the published site uses.
-app.get('/api/site-templates/:id/preview', (req, res) => {
-  const email = getSessionEmail(req);
-  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+// NOT auth-gated, deliberately: this renders a STATIC template with placeholder
+// sample content — no user data of any kind. It is loaded via <iframe src=...>
+// for the gallery thumbnails and previews, and an iframe cannot send the Bearer
+// token, so requiring a session here made every template preview 401.
+app.get('/api/site-templates/:id/preview', tplPreviewLimiter, (req, res) => {
   const doc = templateDoc(String(req.params.id || '').slice(0, 40));
   if (!doc) return res.status(404).json({ error: 'Unknown template.' });
   const page = String(req.query.page || '').toLowerCase().slice(0, 60);

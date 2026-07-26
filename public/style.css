@@ -397,6 +397,11 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   background: rgba(15,23,42,0.95); color: #fff;
   padding: 14px 22px; border-radius: 10px; font-size: 14px; font-weight: 600;
   opacity: 0; transform: translateY(10px); transition: all .22s; z-index: 9999;
+  /* The toast is fixed at z-index 9999 and, on phones, spans the full width.
+     Without this it swallowed taps on whatever sat underneath even while
+     invisible — on a 390px screen that is any bottom-anchored button. A toast
+     is never a click target, so it never needs pointer events. */
+  pointer-events: none;
   box-shadow: 0 8px 24px rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,0.08);
 }
 .toast.show { opacity: 1; transform: translateY(0); }

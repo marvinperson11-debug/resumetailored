@@ -19,6 +19,9 @@ const os = require('os');
 const path = require('path');
 
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-parity-'));
+// Hundreds of requests from one IP in a couple of seconds: measure rendering,
+// not the rate limiter.
+process.env.RT_DISABLE_RATE_LIMIT = '1';
 const { app } = require('../server.js');
 const Database = require('better-sqlite3');
 
@@ -158,6 +161,39 @@ const server = app.listen(0, async () => {
     check('mobile hidden element flagged', /sd-el--mhide/.test(mPubBody));
     check('mobile classes are deterministic (id-derived)', /sd-m-m2/.test(mPubBody));
 
+    // Media slots and card backgrounds must honour the height they were drawn
+    // at (the stylesheet's height:100% collapses against an auto-height parent),
+    // and mailto:/tel: links must survive the URL guard.
+    const RDOC = {
+      v: 2, lang: 'en', theme: { primary: '6366F1', accent: '8B5CF6' },
+      pages: [{
+        id: 'home', name: 'Home', slug: 'home', isHome: true,
+        sections: [{
+          id: 'only', h: 600, bg: { type: 'color', value: '#ffffff' },
+          els: [
+            { id: 'r1', type: 'image', x: 80, y: 20, w: 300, h: 340, props: { ph: { from: '6366F1', to: '8B5CF6' } } },
+            { id: 'r2', type: 'imagebox', x: 420, y: 20, w: 300, h: 320, props: { ph: { from: '6366F1', to: '8B5CF6' } } },
+            { id: 'r3', type: 'box', x: 760, y: 20, w: 300, h: 280, props: { bg: 'f8fafc' } },
+            { id: 'r4', type: 'social', x: 80, y: 420, w: 400, h: 44, props: { items: [{ network: 'Email', url: 'mailto:you@example.com' }, { network: 'Phone', url: 'tel:+15551234567' }, { network: 'Bad', url: 'javascript:alert(1)' }] } },
+            { id: 'r5', type: 'button', x: 80, y: 500, w: 240, h: 50, props: { text: 'Email me', href: 'mailto:you@example.com' } },
+          ],
+        }],
+      }],
+    };
+    await fetch(`${B}/api/personal-site`, {
+      method: 'POST', headers: AJ,
+      body: JSON.stringify({ subdomain: 'renderfix', text: RESUME, name: 'Jane', config: RDOC }),
+    });
+    const rfx = bodyOf(await (await fetch(`${B}/site/renderfix`)).text());
+    check('image placeholder honours drawn height', /min-height:340px/.test(rfx));
+    check('imagebox honours drawn height', /min-height:320px/.test(rfx));
+    check('box honours drawn height', /min-height:280px/.test(rfx));
+    check('mailto: social link rendered', /href="mailto:you@example\.com"/.test(rfx));
+    check('tel: social link rendered', /href="tel:\+15551234567"/.test(rfx));
+    check('javascript: link still rejected', !/javascript:/i.test(rfx));
+    check('mailto: button link rendered', (rfx.match(/href="mailto:you@example\.com"/g) || []).length === 2);
+    check('anchor id emitted on section', /<section class="sd-sec" id="only"/.test(rfx));
+
     // There is exactly one renderer now: a site row without a v2 document gets a
     // placeholder, never a legacy grid/résumé render.
     await fetch(`${B}/api/personal-site`, {
@@ -170,7 +206,7 @@ const server = app.listen(0, async () => {
     // Every starter template must render through the same renderer.
     const { templateList, templateDoc } = require('../site-templates.js');
     const cat = await (await fetch(`${B}/api/site-templates`, { headers: AJ })).json();
-    check('template catalogue served', Array.isArray(cat.templates) && cat.templates.length === 4);
+    check('template catalogue served', Array.isArray(cat.templates) && cat.templates.length === 12);
     for (const t of templateList()) {
       const html = await (await fetch(`${B}/api/site-templates/${t.id}/preview`, { headers: AJ })).text();
       const body = bodyOf(html);
@@ -187,6 +223,48 @@ const server = app.listen(0, async () => {
         body: JSON.stringify({ subdomain: sub2, text: RESUME, name: 'Alex Morgan', config: templateDoc(t.id) }),
       })).text()).trim();
       check(`template "${t.id}" preview === public`, pubT === prevT);
+
+      // Element ids must be unique across the WHOLE document: the editor's
+      // findElement searches the document and keeps the last match, and mobile
+      // CSS class names are derived from the id.
+      const doc = templateDoc(t.id);
+      const ids = [];
+      for (const pg of doc.pages) for (const s of pg.sections) for (const e of s.els) ids.push(e.id);
+      const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
+      check(`template "${t.id}" element ids unique`, dupes.length === 0, dupes.join(', '));
+
+      // Everything must sit inside the 1200px design canvas and inside its
+      // section. `h` is a min-height so overflow renders, but an element whose
+      // declared box escapes the section is an authoring mistake — it overlaps
+      // whatever comes next and drags the editor's selection box off-canvas.
+      let oob = '';
+      for (const pg of doc.pages) for (const s of pg.sections) for (const e of s.els) {
+        if (e.x < 0 || e.x + e.w > 1200) oob = `${e.id} x:${e.x}+${e.w}`;
+        else if (e.y < 0 || e.y + e.h > s.h) oob = `${e.id} y:${e.y}+${e.h} > section ${s.h}`;
+      }
+      check(`template "${t.id}" elements fit the canvas`, !oob, oob);
+
+      // Every in-page CTA must point at a section that exists on the same page,
+      // and every cross-page link at a page that exists.
+      const slugs = doc.pages.map((p) => p.slug);
+      let badLink = '';
+      for (const pg of doc.pages) {
+        const secIds = pg.sections.map((s) => s.id);
+        for (const s of pg.sections) for (const e of s.els) {
+          const p = e.props || {};
+          if (p.anchor && !secIds.includes(p.anchor)) badLink = `${e.id} → #${p.anchor}`;
+          if (p.page && !slugs.includes(p.page)) badLink = `${e.id} → page ${p.page}`;
+        }
+      }
+      check(`template "${t.id}" links resolve`, !badLink, badLink);
+
+      // …and the rendered page must actually carry the anchor ids, or the CTA
+      // scrolls nowhere.
+      const anchors = doc.pages[0].sections
+        .flatMap((s) => s.els).map((e) => (e.props || {}).anchor).filter(Boolean);
+      for (const a of new Set(anchors)) {
+        check(`template "${t.id}" anchor #${a} rendered`, pubT.includes(`id="${a}"`));
+      }
     }
   } catch (e) {
     failures++;
