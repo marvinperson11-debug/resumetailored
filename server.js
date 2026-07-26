@@ -333,15 +333,35 @@ app.use((req, res, next) => {
   const m = host.match(PERSONAL_SITE_HOST_RE);
   if (!m) return next();
   const sub = _validSubdomain(m[1]);          // rejects reserved names (www, api, …)
-  if (!sub || req.path !== '/') return next(); // reserved host or a sub-path → normal handling
+  if (!sub) return next();                    // reserved host → normal handling
+  // Root, or a single-segment page slug. Anything else (assets, /api/…, files
+  // with an extension) falls through to the normal handlers untouched.
+  const seg = req.path === '/' ? '' : (req.path.match(/^\/([a-z0-9-]{1,60})\/?$/i) || [])[1];
+  if (req.path !== '/' && !seg) return next();
   const row = db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub);
   if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
+  const origin = `${req.protocol}://${host}`;
+  // A multi-page site's nav must stay ON the subdomain. Without an explicit
+  // baseUrl the renderer builds links as `<origin>/site/<sub>/<page>`, so page
+  // two of alice.resumetailored.com landed on
+  // alice.resumetailored.com/site/alice/work — it resolved, but the URL was
+  // nonsense and the canonical tag disagreed with itself.
+  const pageSlug = (seg || '').toLowerCase();
+  if (pageSlug) {
+    let cfg = null; try { cfg = row.config ? JSON.parse(row.config) : null; } catch (_) {}
+    const pages = cfg && Array.isArray(cfg.pages) ? cfg.pages : null;
+    // Not a page of this site → let the normal routes have it rather than 404
+    // on something that might be a real path.
+    if (!pages || !pages.some((p) => String((p && p.slug) || '').toLowerCase() === pageSlug)) return next();
+  }
   try { db.prepare('UPDATE personal_sites SET views = views + 1 WHERE subdomain = ?').run(sub); } catch (_) {}
   _recordVisit(sub, req);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
-  return res.send(_renderPersonalSite(row, `${req.protocol}://${host}`, {
-    indexable: true, footer: '', canonicalUrl: `${req.protocol}://${host}/`,
+  return res.send(_renderPersonalSite(row, origin, {
+    indexable: true, footer: '', page: pageSlug,
+    baseUrl: origin,
+    canonicalUrl: `${origin}/${pageSlug}`,
   }));
 });
 
@@ -2573,12 +2593,42 @@ function _validSubdomain(s) {
   return v;
 }
 
+/**
+ * The one place that decides what a published site's public URL looks like.
+ *
+ * Today that is `<origin>/site/<name>`. Host-based `<name>.resumetailored.com`
+ * is already implemented (see PERSONAL_SITE_HOST_RE above) but stays inert
+ * until a wildcard DNS record and a wildcard TLS certificate exist — without
+ * both, a subdomain link either fails to resolve or throws a certificate
+ * warning, which is worse than a long URL on a page you send to recruiters.
+ *
+ * Set SITE_PUBLIC_HOST=resumetailored.com once that infrastructure is live and
+ * every link, QR code, share sheet and canonical tag switches over at once.
+ * Leave it unset and nothing changes.
+ */
+const SITE_PUBLIC_HOST = String(process.env.SITE_PUBLIC_HOST || '')
+  .trim().toLowerCase().replace(/^https?:\/\//, '').replace(/[/].*$/, '');
+
+function sitePublicUrl(sub, origin, pageSlug) {
+  const s = String(sub || '');
+  const page = pageSlug ? '/' + String(pageSlug).replace(/[^a-z0-9-]/gi, '') : '';
+  if (SITE_PUBLIC_HOST && s) {
+    // Keep http on localhost so local testing of the host mode still works.
+    const proto = /^http:\/\/(localhost|127\.)/i.test(String(origin || '')) ? 'http' : 'https';
+    return `${proto}://${s}.${SITE_PUBLIC_HOST}${page}`;
+  }
+  return `${origin}/site/${s}${page}`;
+}
+
 // Fetch the signed-in user's current personal site (if any).
 app.get('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   const row = db.prepare('SELECT subdomain, name, published, views, updated_at, config FROM personal_sites WHERE email = ?').get(email);
-  res.json({ site: row || null });
+  const origin = `${req.protocol}://${req.get('host')}`;
+  // The client must never build this URL itself — that is how it ended up
+  // hard-coded in nine places and unable to follow the subdomain switch.
+  res.json({ site: row || null, url: row ? sitePublicUrl(row.subdomain, origin) : null });
 });
 
 // Publish / update the signed-in Pro user's personal site.
@@ -2588,7 +2638,12 @@ app.post('/api/personal-site', (req, res) => {
   if (!isSubscriber(email)) {
     return res.status(402).json({ error: 'pro_required', message: 'Publishing a personal website is a Pro feature. Upgrade to unlock it.' });
   }
-  const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config } = req.body || {};
+  const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config, publish } = req.body || {};
+  // Drafts. A site is public the moment `published` is 1, so anything created
+  // on the user's behalf (the auto-generated starter site) must be able to save
+  // WITHOUT going live. Omitting `publish` keeps the original behaviour, so
+  // every existing caller still publishes.
+  const publishedFlag = publish === false ? 0 : 1;
   const sub = _validSubdomain(subdomain);
   if (!sub) return res.status(400).json({ error: 'invalid_subdomain', message: 'Choose 3–30 letters, numbers or hyphens (not a reserved word).' });
   if (!text || typeof text !== 'string' || text.trim().length < 20) return res.status(400).json({ error: 'No resume content to publish.' });
@@ -2621,18 +2676,172 @@ app.post('/api/personal-site', (req, res) => {
   if (existing && existing.subdomain !== sub) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(existing.subdomain);
 
   db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, config, published, created_at, updated_at, views)
-              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, @config, 1, @now, @now, 0)
+              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, @config, @published, @now, @now, 0)
               ON CONFLICT(subdomain) DO UPDATE SET
                 name=@name, text=@text, accent=@accent, primary_hex=@primary_hex, serif=@serif,
-                photo=@photo, hide_contact=@hide_contact, layout=@layout, config=@config, published=1, updated_at=@now`).run({
+                photo=@photo, hide_contact=@hide_contact, layout=@layout, config=@config, published=@published, updated_at=@now`).run({
     subdomain: sub, email: email.toLowerCase(),
     name: (name || '').toString().slice(0, 80), text,
     accent: (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
     primary_hex: (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
-    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, config: _config, now,
+    serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, config: _config,
+    published: publishedFlag, now,
   });
   const origin = `${req.protocol}://${req.get('host')}`;
-  res.json({ url: `${origin}/site/${sub}`, subdomain: sub });
+  res.json({ url: sitePublicUrl(sub, origin), subdomain: sub, published: publishedFlag === 1 });
+});
+
+/**
+ * Replace a starter template's sample copy with the user's own.
+ *
+ * This matters more than it looks. The template ships with "Marketing Manager ·
+ * Toronto" and a paragraph of invented biography; leaving those in place means
+ * handing someone a page that makes false claims about them, on a URL they are
+ * about to send to recruiters. Every visible line of sample prose is either
+ * replaced with something true or removed.
+ */
+function _autogenFill(doc, text, name) {
+  if (!doc || !Array.isArray(doc.pages)) return doc;
+  const lines = String(text || '').split('\n').map((l) => l.trim());
+
+  // Location: from the contact line, which conventionally sits under the name
+  // as "email | City, ST | linkedin…". Take the segment that isn't an email,
+  // URL or phone number.
+  const contact = lines[1] || '';
+  const location = contact.split(/[|·•]/).map((p) => p.trim()).find((p) =>
+    p && !/@/.test(p) && !/https?:|\.com|linkedin/i.test(p) && !/\d{3}[-.\s]?\d{3,4}/.test(p) && p.length < 40) || '';
+
+  // Role: the first job title under EXPERIENCE, minus the employer and dates.
+  let role = '';
+  const expAt = lines.findIndex((l) => /^(experience|work experience|employment)\b/i.test(l));
+  if (expAt >= 0) {
+    for (let i = expAt + 1; i < Math.min(lines.length, expAt + 6); i++) {
+      const l = lines[i];
+      if (!l || /^[•\-*]/.test(l)) continue;
+      role = l.split(/[|,–—]/)[0].trim();
+      break;
+    }
+  }
+
+  // Summary: the body of the SUMMARY / PROFILE / OBJECTIVE section.
+  let summary = '';
+  const sumAt = lines.findIndex((l) => /^(summary|profile|objective|about)\b/i.test(l));
+  if (sumAt >= 0) {
+    const body = [];
+    for (let i = sumAt + 1; i < lines.length; i++) {
+      const l = lines[i];
+      if (!l) { if (body.length) break; continue; }
+      if (/^[A-Z][A-Z\s&]{3,}$/.test(l)) break;   // next ALL-CAPS section heading
+      body.push(l.replace(/^[•\-*]\s*/, ''));
+    }
+    summary = body.join(' ').slice(0, 400);
+  }
+
+  const subtitle = [role, location].filter(Boolean).join(' · ');
+  let didHeading = false, didSub = false, didPara = false;
+  for (const pg of doc.pages) {
+    for (const s of pg.sections || []) {
+      // Only the first section — the hero — carries the personal intro copy.
+      // Later sections are structural (headings like "Experience") and must be
+      // left alone.
+      if (s !== (pg.sections || [])[0]) continue;
+      for (const el of s.els || []) {
+        const p = el.props || {};
+        if (el.type === 'heading' && !didHeading && name) { p.text = name; didHeading = true; continue; }
+        if (el.type === 'subheading' && !didSub) {
+          // No role or location found → drop the line rather than keep a lie.
+          if (subtitle) p.text = subtitle; else p.text = '';
+          didSub = true; continue;
+        }
+        if (el.type === 'paragraph' && !didPara) {
+          if (summary) p.text = summary; else p.text = '';
+          didPara = true; continue;
+        }
+      }
+    }
+  }
+  // Elements whose text we emptied would render as blank boxes; remove them.
+  for (const pg of doc.pages) {
+    for (const s of pg.sections || []) {
+      s.els = (s.els || []).filter((el) =>
+        !(['heading', 'subheading', 'paragraph'].includes(el.type) && el.props && el.props.text === ''));
+    }
+  }
+  if (doc.pages[0] && doc.pages[0].seo && name) {
+    doc.pages[0].seo.title = name;
+    doc.pages[0].seo.description = summary ? summary.slice(0, 160) : `${name}${subtitle ? ' — ' + subtitle : ''}`;
+  }
+  return doc;
+}
+
+/**
+ * Auto-generate a starter site so the user never faces a blank screen.
+ *
+ * The Website Creator is for people who have never built a website: they should
+ * land on a finished page and gently change it, not assemble one. This builds a
+ * complete site from their most recent saved resume and returns it.
+ *
+ * It saves as a DRAFT (`publish: false`). The page carries their name, work
+ * history and contact details, so it does not become publicly reachable until
+ * they press Publish themselves.
+ *
+ * If they already have a site, this returns it untouched — it never overwrites.
+ */
+app.post('/api/personal-site/autogen', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
+
+  const existing = db.prepare('SELECT * FROM personal_sites WHERE email = ?').get(email);
+  if (existing) {
+    const origin0 = `${req.protocol}://${req.get('host')}`;
+    return res.json({
+      created: false, subdomain: existing.subdomain, name: existing.name,
+      text: existing.text, published: !!existing.published,
+      config: existing.config ? JSON.parse(existing.config) : null,
+      url: sitePublicUrl(existing.subdomain, origin0),
+    });
+  }
+
+  const resume = db.prepare('SELECT title, content FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+  const text = resume && typeof resume.content === 'string' ? resume.content.trim() : '';
+  if (text.length < 20) {
+    return res.status(409).json({ error: 'no_resume', message: 'Tailor a resume first — your website is built from it.' });
+  }
+  const cover = db.prepare('SELECT id FROM saved_cover_letters WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+  const resumeRow = db.prepare('SELECT id FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+
+  // The name is the first non-empty line of the resume — the convention every
+  // resume follows, and the same one the résumé renderer already relies on.
+  const name = (text.split('\n').map((l) => l.trim()).find(Boolean) || '').slice(0, 80);
+
+  // Address: their username, else their name, else the local part of their
+  // email. Numbered if taken, so this can never fail on a collision.
+  const user = db.prepare('SELECT username FROM users WHERE email = ?').get(email);
+  const seed = String(user && user.username || name || email.split('@')[0] || 'me')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'me';
+  let sub = _validSubdomain(seed.length >= 3 ? seed : seed + '-site');
+  for (let i = 2; i <= 60 && (!sub || db.prepare('SELECT 1 FROM personal_sites WHERE subdomain = ?').get(sub)); i++) {
+    sub = _validSubdomain(`${seed.slice(0, 24)}-${i}`);
+  }
+  if (!sub) return res.status(409).json({ error: 'no_address', message: 'Could not pick a web address — choose one yourself.' });
+
+  const { templateDoc } = require('./site-templates.js');
+  const doc = templateDoc('minimal') || templateDoc('executive');
+  _autogenFill(doc, text, name);
+  doc.templateId = 'minimal';
+  doc.assets = { resumeId: resumeRow ? resumeRow.id : null, coverLetterId: cover ? cover.id : null };
+
+  const now = Date.now();
+  db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, config, published, created_at, updated_at, views)
+              VALUES (?,?,?,?,?,?,0,NULL,0,NULL,?,0,?,?,0)`)
+    .run(sub, email.toLowerCase(), name, text, '8b5cf6', '4a1042', JSON.stringify(doc), now, now);
+
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.json({
+    created: true, subdomain: sub, name, text, config: doc, published: false,
+    url: sitePublicUrl(sub, origin),
+  });
 });
 
 // WYSIWYG preview: render the personal site from posted fields WITHOUT saving,

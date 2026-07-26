@@ -321,9 +321,82 @@
     .wc-pg-home { font-size: 10px; font-weight: 800; color: #4338ca; background: #eef2ff; padding: 4px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: .5px; }
     .bo-act:disabled { opacity: .4; cursor: not-allowed; }
 
+    /* While the Website Creator is open it owns the screen. The app header is
+       position:sticky with z-index 100 inside a stacking context the editor
+       cannot climb out of, so it is hidden outright rather than out-ranked. */
+    body.wb-immersive .nav { display: none !important; }
+
+    /* ── Simple mode: the site, full screen, and almost nothing else ──
+       This is what opening "My Website" shows. Someone who has never built a
+       website should land on a finished page, not a set of tools. Every control
+       is hidden until they ask for one. */
+    .sm-view { position: fixed; inset: 0; z-index: 220; background: #fff; display: none; }
+    .sm-view.is-on { display: block; }
+    /* Deliberately full-bleed — over the app nav and the sidebar both. "Zero
+       chrome" means the whole screen is their website. The quiet back chip is
+       the only way out, so it must always be there. */
+    .sm-back {
+      position: absolute; top: 14px; left: 14px; z-index: 3;
+      display: inline-flex; align-items: center; gap: 6px;
+      font: inherit; font-size: 12.5px; font-weight: 600; color: #4b5563;
+      background: rgba(255,255,255,.9); backdrop-filter: blur(8px);
+      border: 1px solid rgba(15,23,42,.08); border-radius: 999px;
+      padding: 7px 14px; cursor: pointer; box-shadow: 0 2px 10px rgba(15,23,42,.07);
+    }
+    .sm-back:hover { color: #111827; background: #fff; }
+    /* A slim bar rather than a floating overlay: the note used to sit on top of
+       the site's own navigation. This reads as minimal browser chrome and keeps
+       the page itself completely unobstructed. */
+    .sm-bar {
+      position: absolute; top: 0; left: 0; right: 0; height: 52px; z-index: 3;
+      display: flex; align-items: center; gap: 12px; padding: 0 14px;
+      background: #fff; border-bottom: 1px solid rgba(15,23,42,.08);
+    }
+    .sm-frame { position: absolute; top: 52px; left: 0; right: 0; bottom: 0; width: 100%; border: 0; display: block; background: #fff; }
+    .sm-note {
+      flex: 1; text-align: center; font-size: 12.5px; line-height: 1.4; color: #4b5563;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .sm-draft { display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .4px;
+      text-transform: uppercase; color: #92400e; background: #fef3c7; border-radius: 999px;
+      padding: 2px 8px; margin-right: 7px; vertical-align: 1px; }
+    .sm-back {
+      flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
+      font: inherit; font-size: 12.5px; font-weight: 600; color: #4b5563;
+      background: #f3f4f6; border: 1px solid rgba(15,23,42,.08); border-radius: 999px;
+      padding: 7px 13px; cursor: pointer;
+    }
+    .sm-back:hover { color: #111827; background: #e5e7eb; }
+    /* Balances the back chip so the note stays optically centred. */
+    .sm-spacer { flex-shrink: 0; width: 150px; }
+    @media (max-width: 700px) { .sm-spacer { display: none; } .sm-note { text-align: right; } }
+    .sm-cta {
+      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: inline-flex; align-items: center; gap: 9px; z-index: 3;
+      background: linear-gradient(90deg,#4338ca,#6366F1); color: #fff;
+      border: none; font: inherit; font-size: 15px; font-weight: 800;
+      padding: 14px 26px; border-radius: 999px; cursor: pointer;
+      box-shadow: 0 8px 28px rgba(67,56,202,.4);
+    }
+    .sm-cta:hover { filter: brightness(1.07); }
+    .sm-busy, .sm-empty {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px; padding: 28px;
+      text-align: center; color: #4b5563; background: #fff; z-index: 4;
+    }
+    .sm-busy-ico { font-size: 40px; }
+    .sm-busy h3, .sm-empty h3 { font-size: 19px; font-weight: 800; color: #111827; }
+    .sm-busy p, .sm-empty p { font-size: 14px; max-width: 380px; line-height: 1.6; }
+    .sm-spin { width: 34px; height: 34px; border: 3px solid #e5e7eb; border-top-color: #6366F1;
+      border-radius: 50%; animation: sm-rot .8s linear infinite; }
+    @keyframes sm-rot { to { transform: rotate(360deg); } }
+
     /* ── Canva-style website editor shell ── */
     #panel-website.active { display: block; padding: 0 !important; }
-    .cv-shell { position: fixed; inset: 0; left: 0; display: flex; flex-direction: column; background: #18191b; z-index: 60; }
+    /* Above the app's sticky top nav (z-index 100), which was sitting over the
+       editor's own toolbar and swallowing every click on Pages, Undo, Preview and
+       Publish. Still far below the modals, which live in the 9500+ range. */
+    .cv-shell { position: fixed; inset: 0; left: 0; display: flex; flex-direction: column; background: #18191b; z-index: 200; }
     @media (min-width: 981px) { .cv-shell { left: 240px; } }
     .cv-top { height: 54px; flex-shrink: 0; background: linear-gradient(90deg,#4338ca,#6366F1); display: flex; align-items: center; gap: 8px; padding: 0 12px; color: #fff; }
     .cv-logo { font-weight: 900; font-size: 14px; letter-spacing: -.02em; margin-right: 6px; }
@@ -374,7 +447,7 @@
     .cv-upitem { height: 78px; border-radius: 8px; border: 1px solid #45464c; background-size: cover; background-position: center; cursor: pointer; background-color: #34353a; }
     .cv-upitem--file { display: flex; align-items: center; justify-content: center; font-size: 22px; color: #cbd5e1; }
     .cv-upitem:hover { border-color: #6366f1; }
-    .cv-gate { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; background: #0f1014; z-index: 61; }
+    .cv-gate { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; background: #0f1014; z-index: 210; }
     @media (min-width: 981px) { .cv-gate { left: 240px; } }
     .cv-gate-card { max-width: 420px; text-align: center; color: #e5e7eb; }
     .cv-gate-ico { font-size: 46px; margin-bottom: 12px; }
@@ -1118,6 +1191,31 @@
         <!-- Desktop-only gate. Building a site means dragging elements around a
              large canvas, which is not workable on a phone. Published sites are
              still fully responsive — this gate is about the EDITOR only. -->
+        <!-- Simple mode: the default. What visitors see, full screen, with one
+             button. The editor below only appears once they ask for it. -->
+        <div class="sm-view" id="smView">
+          <div class="sm-bar">
+            <button type="button" class="sm-back" onclick="smExit()" data-i18n="sm_back">← Back to ResumeTailored</button>
+            <div class="sm-note" id="smNote"></div>
+            <div class="sm-spacer"></div>
+          </div>
+          <iframe class="sm-frame" id="smFrame" title="Your website"></iframe>
+          <button type="button" class="sm-cta" id="smCta" onclick="smCustomize()">
+            <span>✏️</span><span data-i18n="sm_customize">Customize My Site</span>
+          </button>
+          <div class="sm-busy" id="smBusy">
+            <div class="sm-spin"></div>
+            <h3 data-i18n="sm_building">Building your website…</h3>
+            <p data-i18n="sm_building_sub">We're making it from your most recent resume. This takes a few seconds.</p>
+          </div>
+          <div class="sm-empty" id="smEmpty" style="display:none;">
+            <div class="sm-busy-ico">📄</div>
+            <h3 data-i18n="sm_need_resume">First, tailor a resume</h3>
+            <p data-i18n="sm_need_resume_sub">Your website is built from your resume, so we need one to start with. It only takes a minute.</p>
+            <button class="btn btn-primary" onclick="showTab('tailor')" data-i18n="sm_need_resume_cta">Tailor my resume →</button>
+          </div>
+        </div>
+
         <div class="cv-gate" id="cvGate" style="display:none;">
           <div class="cv-gate-card">
             <div class="cv-gate-ico">🖥️</div>
@@ -1139,6 +1237,7 @@
             <button class="cv-tbtn" onclick="edOpenPages()" data-i18n="cv_pages">Pages</button>
             <button class="cv-tbtn" onclick="edUndo()" id="wcEdUndo" disabled title="Undo (Ctrl+Z)">↶</button>
             <button class="cv-tbtn" onclick="edRedo()" id="wcEdRedo" disabled title="Redo (Ctrl+Shift+Z)">↷</button>
+            <button class="cv-tbtn" onclick="smDoneEditing()" id="cvDoneBtn" data-i18n="sm_done">✓ Done Editing</button>
             <span class="cv-title" id="cvDocTitle">Untitled site</span>
             <div class="cv-top-right">
               <div class="cv-seg">
@@ -1943,6 +2042,15 @@
         wc_ed_delete: 'Delete element', wc_upload2: 'Upload',
         wc_step_template: '2. Pick a template',
         wc_template_help: 'Every template is a complete, multi-section site. Preview it on desktop and mobile before you choose — then make it yours.',
+        sm_customize: 'Customize My Site', sm_done: '✓ Done Editing', sm_back: '← Back to ResumeTailored',
+        sm_building: 'Building your website…',
+        sm_building_sub: "We're making it from your most recent resume. This takes a few seconds.",
+        sm_need_resume: 'First, tailor a resume',
+        sm_need_resume_sub: 'Your website is built from your resume, so we need one to start with. It only takes a minute.',
+        sm_need_resume_cta: 'Tailor my resume →',
+        sm_draft: 'Private',
+        sm_note_live: 'This is your personal website. It updates automatically when you update your resume.',
+        sm_note_draft: 'This is your personal website. Only you can see it until you publish.',
         wc_tpl_desktop: '🖥 Desktop', wc_tpl_mobile: '📱 Mobile', wc_tpl_close: 'Close', wc_tpl_use: 'Use this template →',
         wc_tpl_none: 'No templates available.', wc_tpl_previewbtn: 'Preview', wc_tpl_current: 'in use', wc_tpl_pick: 'Use',
         wc_tpl_err: 'Could not load that template.', wc_tpl_applied: '✓ Template applied — preview it, then publish.',
@@ -2102,6 +2210,15 @@
         wc_ed_delete: '删除元素', wc_upload2: '上传',
         wc_step_template: '2. 选择模板',
         wc_template_help: '每个模板都是完整的多板块网站。选择前可在桌面和手机视图预览——然后把它变成你的。',
+        sm_customize: '修改我的网站', sm_done: '✓ 完成修改', sm_back: '← 返回 ResumeTailored',
+        sm_building: '正在生成您的网站…',
+        sm_building_sub: '我们正在用您最近的简历生成网站，只需几秒钟。',
+        sm_need_resume: '请先定制一份简历',
+        sm_need_resume_sub: '您的网站由简历生成，所以需要先有一份简历。只需一分钟。',
+        sm_need_resume_cta: '去定制简历 →',
+        sm_draft: '未公开',
+        sm_note_live: '这是您的个人网站。更新简历后，网站会自动同步。',
+        sm_note_draft: '这是您的个人网站。在您发布之前，只有您能看到。',
         wc_tpl_desktop: '🖥 桌面', wc_tpl_mobile: '📱 手机', wc_tpl_close: '关闭', wc_tpl_use: '使用此模板 →',
         wc_tpl_none: '暂无可用模板。', wc_tpl_previewbtn: '预览', wc_tpl_current: '使用中', wc_tpl_pick: '使用',
         wc_tpl_err: '无法加载该模板。', wc_tpl_applied: '✓ 模板已应用——预览后即可发布。',
@@ -2872,6 +2989,10 @@
       if (name === 'samples') initSamples();
       if (name === 'linkedin') updateLinkedInFreeStatus();
       if (name === 'video') updateVideoGate();
+      // The Website Creator takes over the screen: its own slim bar replaces
+      // the app header, which otherwise sits on top of the editor toolbar and
+      // eats every click on Pages, Undo, Preview and Publish.
+      document.body.classList.toggle('wb-immersive', name === 'website');
       if (name === 'website') loadWebsiteCreator();
       if (name === 'backoffice') loadBackOffice();
     }
@@ -6382,6 +6503,9 @@ Aaliyah Washington`
     // "tailor first" modal only shows when the user has zero saved resumes AND
     // cover letters. Users with assets go straight into the creator tab.
     let wcResumes = [], wcCovers = [], wcSite = null;
+    // The resume text the published site renders from (autogen supplies it; the
+    // resume picker overwrites it when the user chooses a different one).
+    let wcSiteText = '';
     async function openWebsiteCreator() {
       if (!isSubscriberFlag) { showToast('The Website Creator is a Pro feature.'); startPro(); return; }
       try {
@@ -6404,6 +6528,126 @@ Aaliyah Washington`
     // Escape user-supplied text (resume/cover-letter titles) before dropping it
     // into <option> markup.
     function wcEsc(s) { const d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
+
+    /* ═══ SIMPLE MODE ═══════════════════════════════════════════════════════
+       The default state of "My Website": their finished site, full screen, one
+       button. Nobody who has never built a website should have to look at a
+       toolbar before they have seen their own page.
+
+       The editor still exists behind "Customize My Site" — it is just no longer
+       the front door. */
+    let smOn = false, smSiteUrl = '', smPublished = false;
+
+    function smShow(on) {
+      smOn = !!on;
+      const v = document.getElementById('smView');
+      if (v) v.classList.toggle('is-on', smOn);
+      // Hide the editor entirely while simple mode is up, so there is no chrome
+      // peeking out from behind it.
+      const shell = document.getElementById('cvShell');
+      if (shell) shell.style.display = smOn ? 'none' : '';
+    }
+
+    function smPanel(which) {
+      for (const id of ['smBusy', 'smEmpty']) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = (id === which) ? 'flex' : 'none';
+      }
+    }
+
+    // Their site, rendered exactly as a visitor would see it. Drafts render too
+    // — the preview endpoint doesn't care whether the site is published, which
+    // is what lets them look before they leap.
+    // Whatever resume the site should show: the one the user picked if they
+    // have, otherwise the one it was generated from, otherwise the most recent.
+    function smResumeText() {
+      const sel = document.getElementById('wcResumeSelect');
+      const picked = sel && sel.value ? wcResumes.find(x => String(x.id) === String(sel.value)) : null;
+      if (picked && picked.content) return picked.content;
+      if (wcSiteText) return wcSiteText;
+      return (wcResumes[0] && wcResumes[0].content) || '';
+    }
+
+    async function smRenderSite() {
+      const frame = document.getElementById('smFrame');
+      if (!frame || !wcSite || !wcDoc) return false;
+      try {
+        const r = await fetch('/api/personal-site/preview', {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+          body: JSON.stringify({
+            subdomain: wcSite.subdomain, text: smResumeText(), name: wcSite.name || '', config: wcDoc,
+          }),
+        });
+        if (!r.ok) return false;
+        frame.srcdoc = await r.text();
+        return true;
+      } catch (_) { return false; }
+    }
+
+    function smUpdateNote() {
+      const note = document.getElementById('smNote');
+      if (!note) return;
+      const draft = smPublished
+        ? ''
+        : `<span class="sm-draft">${wcEsc(_t('sm_draft', 'Private'))}</span>`;
+      const body = smPublished
+        ? _t('sm_note_live', 'This is your personal website. It updates automatically when you update your resume.')
+        : _t('sm_note_draft', 'This is your personal website. Only you can see it until you publish.');
+      note.innerHTML = draft + wcEsc(body);
+    }
+
+    // Entry point for the tab. Builds a site if they don't have one yet.
+    async function smBoot() {
+      smShow(true);
+      smPanel('smBusy');
+      let data = null;
+      try {
+        const r = await fetch('/api/personal-site/autogen', { method: 'POST', headers: authHeaders() });
+        data = await r.json().catch(() => null);
+        if (r.status === 409 && data && data.error === 'no_resume') { smPanel('smEmpty'); return; }
+        if (!r.ok) { smPanel(''); smShow(false); return; }   // Pro gate etc: fall back to the editor
+      } catch (_) { smPanel(''); smShow(false); return; }
+
+      wcSite = { subdomain: data.subdomain, name: data.name, published: data.published ? 1 : 0 };
+      wcSiteText = data.text || wcSiteText;
+      if (data.config && Array.isArray(data.config.pages)) { wcDoc = data.config; wcTplId = data.config.templateId || null; }
+      smPublished = !!data.published;
+      smSiteUrl = data.url || '';
+
+      const ok = await smRenderSite();
+      if (!ok) { smPanel(''); smShow(false); return; }
+      smUpdateNote();
+      smPanel('');
+    }
+
+    // The one way out of full-screen mode, since it covers the app's own
+    // navigation. Quiet, but always present.
+    function smExit() { smShow(false); showTab('tailor'); }
+
+    // "Customize My Site" — the only door into the editor.
+    function smCustomize() {
+      // Dragging elements around needs a real screen. Viewing your own site
+      // does not, which is why the gate lives here and not on the whole tab.
+      if (!cvIsDesktop()) { smShow(false); cvApplyGate(); return; }
+      smShow(false);
+      if (!edStore && wcDoc) edInit(wcDoc);
+      wcLoadTemplates();
+      wcLoadMediaUsage();
+      wcLoadSiteExtras();
+      wcSetView('edit');
+      if (typeof edFitStage === 'function') setTimeout(edFitStage, 60);
+    }
+
+    // "Done Editing" — back to what visitors see, which is always the default.
+    async function smDoneEditing() {
+      if (edStore) wcDoc = edStore.getDoc();
+      smShow(true);
+      smPanel('smBusy');
+      const ok = await smRenderSite();
+      smUpdateNote();
+      smPanel(ok ? '' : '');
+    }
 
     // Load saved resumes + cover letters into the pickers, plus any existing site.
     async function loadWebsiteCreator() {
@@ -6452,6 +6696,13 @@ Aaliyah Washington`
         if (viewLive) viewLive.style.display = 'none';
         wcDoc = null; wcTplId = null;
       }
+      // SIMPLE MODE IS THE DEFAULT. Someone opening "My Website" sees their
+      // finished site, not a set of tools. smBoot generates one if they have
+      // none, and falls back to the editor if it can't (e.g. not Pro).
+      if (wcSite && wcSite.subdomain) { wcSiteText = wcSiteText || ''; smPublished = !!wcSite.published; }
+      await smBoot();
+      if (smOn) return;             // simple mode is up; the editor stays hidden
+
       if (!cvApplyGate()) return;   // phone: show the desktop gate, skip editor boot
       wcLoadTemplates();
       if (wcDoc) edInit(wcDoc);
@@ -6460,12 +6711,19 @@ Aaliyah Washington`
       wcSetView('edit');
     }
 
+    // Switches the editor stage between the design canvas and a visitor-view
+    // preview.
+    //
+    // This used to reach for #wcEditor, #wcTabEdit and #wcTabPreview, which were
+    // removed when the editor was rebuilt — so every call threw before reaching
+    // the end. It happened to be the last statement in its caller, which is why
+    // nothing looked broken. Now it only touches what exists.
     function wcSetView(view) {
       const edit = view !== 'preview';
-      document.getElementById('wcEditor').style.display = edit ? 'block' : 'none';
-      document.getElementById('wcPreview').style.display = edit ? 'none' : 'block';
-      document.getElementById('wcTabEdit').classList.toggle('wc-vtab-active', edit);
-      document.getElementById('wcTabPreview').classList.toggle('wc-vtab-active', !edit);
+      const canvas = document.querySelector('#wcEdStage .cv-canvasbox');
+      const preview = document.getElementById('wcPreview');
+      if (canvas) canvas.style.display = edit ? '' : 'none';
+      if (preview) preview.style.display = edit ? 'none' : 'block';
       if (!edit) wcLoadPreview();
     }
 
@@ -7002,7 +7260,10 @@ Aaliyah Washington`
       edRenderCanvas();
       edRenderOverlay();
       edRenderInspector();
-      document.getElementById('wcEdCard').style.display = 'block';
+      // #wcEdCard was removed when the editor was rebuilt. Guarded rather than
+      // deleted, because edInit threw here and took the rest of the boot with it.
+      const card = document.getElementById('wcEdCard');
+      if (card) card.style.display = 'block';
     }
 
     // Any edit — the ONLY path that mutates the document.
