@@ -292,6 +292,36 @@
     .bo-act.bo-danger { color: #dc2626; border-color: #fecaca; }
     .bo-empty { font-size: 13px; color: #9ca3af; padding: 6px 0; }
     .bo-bulk { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+    /* Site cards. A website is a thing you look at, so the list shows the page
+       rather than a filename — thumbnails are a scaled-down live render of the
+       user's own site, not the template's sample person. */
+    .bo-sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .bo-site { border: 1.5px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+    .bo-site.is-live { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.09); }
+    .bo-thumb { position: relative; height: 150px; background: #f8fafc; border-bottom: 1px solid #eef2f7; overflow: hidden; }
+    /* 500% then scale(.2) — the two cancel out to exactly the card's width at
+       any column size, which a fixed pixel width cannot do in a fluid grid (it
+       left a white strip down the side of every card). The iframe's own
+       viewport ends up 5× the card, so the site inside lays out as desktop
+       rather than collapsing to its mobile breakpoint.
+       pointer-events off: the whole card is the target, and a live page inside
+       would swallow the click. */
+    .bo-thumb iframe { position: absolute; top: 0; left: 0; width: 500%; height: 500%; border: 0;
+      transform: scale(.2); transform-origin: 0 0; pointer-events: none; background: #fff; }
+    .bo-thumb-badge { position: absolute; top: 8px; left: 8px; z-index: 2; font-size: 10px; font-weight: 800;
+      letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+      background: #16a34a; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+    .bo-thumb-badge.is-draft { background: #fff; color: #6b7280; border: 1px solid #e5e7eb; box-shadow: none; }
+    .bo-site-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .bo-site-tpl { font-size: 13px; font-weight: 800; color: #111827; }
+    .bo-site-addr { font-size: 12px; color: #4338ca; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bo-site-addr:hover { text-decoration: underline; }
+    .bo-site-meta { font-size: 11px; color: #9ca3af; }
+    .bo-site-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .bo-addr-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px;
+      color: #374151; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; padding: 9px 12px; margin-bottom: 14px; }
+    .bo-addr-bar b { font-weight: 800; color: #111827; }
     .wc-pal-btn.is-on { background: #4338ca; color: #fff; border-color: #4338ca; }
     .wc-tpl { border: 2px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff; transition: border-color .15s, box-shadow .15s; }
     .wc-tpl:hover { border-color: #c7d2fe; box-shadow: 0 6px 18px rgba(99,102,241,.14); }
@@ -1554,7 +1584,7 @@
         <div id="bo-resumes" class="wc-card"><div class="wc-step" data-i18n="bo_resumes">Resumes</div><div class="bo-list"></div></div>
         <div id="bo-covers" class="wc-card"><div class="wc-step" data-i18n="bo_covers">Cover letters</div><div class="bo-list"></div></div>
         <div id="bo-videos" class="wc-card"><div class="wc-step" data-i18n="bo_videos">Resume videos</div><div class="bo-list"></div></div>
-        <div id="bo-site" class="wc-card"><div class="wc-step" data-i18n="bo_website">Personal website</div><div class="bo-list"></div></div>
+        <div id="bo-site" class="wc-card"><div class="wc-step" data-i18n="bo_websites">Your websites</div><div class="bo-list"></div></div>
       </div>
 
       <!-- ═══ TAB: COMMUNITY FORUM ═══ -->
@@ -2186,10 +2216,18 @@
         bo_empty: 'Nothing here yet.', bo_novideos: 'No saved videos yet — make one in the Resume Video tab.', bo_nosite: 'No website yet — build one in the Website Creator.',
         bo_use: 'Use', bo_duplicate: 'Duplicate', bo_delete: 'Delete', bo_edit: 'Edit', bo_viewlive: 'View live',
         bo_publish: 'Publish', bo_unpublish: 'Unpublish', bo_live: 'Live', bo_hidden: 'Hidden',
+        bo_websites: 'Your websites', bo_published: 'Published', bo_draft: 'Draft',
+        bo_site_untitled: 'My website', bo_makesite: 'Build my website',
+        bo_addr_live: 'Your web address:', bo_change_addr: 'Change address',
+        bo_addr_none: 'Nothing is published yet — these are all private drafts that only you can see.',
+        bo_edited: 'Edited {t}', bo_ago_now: 'just now', bo_ago_min: '{n} min ago', bo_ago_hr: '{n}h ago', bo_ago_day: '{n}d ago',
+        bo_confirm_pub: 'Publish this one? Only one website can be live at a time, so your current one comes down.',
+        bo_confirm_unpub: 'Take this website off the internet? Nothing is deleted — you can publish it again.',
+        bo_now_live: 'Your website is live.', bo_now_hidden: 'Your website is hidden.',
         bo_bulk_dup: 'Duplicate selected', bo_bulk_del: 'Delete selected',
         bo_pro: 'The Back Office is a Pro feature.', bo_loaded: 'Loaded into the Tailor tab.',
         bo_none_sel: 'Select some items first.', bo_confirm_del: 'Delete this item? This cannot be undone.',
-        bo_confirm_bulk: 'Delete the selected items? This cannot be undone.', bo_confirm_site: 'Delete your website? This removes the live page.',
+        bo_confirm_bulk: 'Delete the selected items? This cannot be undone.', bo_confirm_site: 'Delete this website? This cannot be undone.',
         wc_ed_addel: 'Add elements', wc_ed_addsection: '+ Add section', wc_ed_added: 'Added — drag to position it.',
         wc_ed_sectionadded: 'Section added.', wc_ed_nosection: 'Add a section first.',
         wc_pal_text: 'Text', wc_pal_media: 'Media', wc_pal_gallery: 'Gallery', wc_pal_interactive: 'Interactive',
@@ -2391,10 +2429,18 @@
         bo_empty: '暂无内容。', bo_novideos: '暂无保存的视频——在简历视频标签页制作一个。', bo_nosite: '暂无网站——在网站创建器中制作一个。',
         bo_use: '使用', bo_duplicate: '复制', bo_delete: '删除', bo_edit: '编辑', bo_viewlive: '查看网站',
         bo_publish: '发布', bo_unpublish: '取消发布', bo_live: '已上线', bo_hidden: '已隐藏',
+        bo_websites: '你的网站', bo_published: '已发布', bo_draft: '草稿',
+        bo_site_untitled: '我的网站', bo_makesite: '制作我的网站',
+        bo_addr_live: '你的网址：', bo_change_addr: '更改网址',
+        bo_addr_none: '尚未发布——这些都是只有你能看到的私密草稿。',
+        bo_edited: '编辑于 {t}', bo_ago_now: '刚刚', bo_ago_min: '{n} 分钟前', bo_ago_hr: '{n} 小时前', bo_ago_day: '{n} 天前',
+        bo_confirm_pub: '发布这个？同一时间只能有一个网站上线，你当前的网站会下线。',
+        bo_confirm_unpub: '将这个网站从互联网上撤下？不会删除任何内容——你可以再次发布。',
+        bo_now_live: '你的网站已上线。', bo_now_hidden: '你的网站已隐藏。',
         bo_bulk_dup: '复制所选', bo_bulk_del: '删除所选',
         bo_pro: '后台管理是专业版功能。', bo_loaded: '已加载到定制标签页。',
         bo_none_sel: '请先选择项目。', bo_confirm_del: '删除此项？此操作无法撤销。',
-        bo_confirm_bulk: '删除所选项目？此操作无法撤销。', bo_confirm_site: '删除你的网站？这会移除已上线的页面。',
+        bo_confirm_bulk: '删除所选项目？此操作无法撤销。', bo_confirm_site: '删除这个网站？此操作无法撤销。',
         wc_ed_addel: '添加元素', wc_ed_addsection: '+ 添加板块', wc_ed_added: '已添加——拖动以调整位置。',
         wc_ed_sectionadded: '板块已添加。', wc_ed_nosection: '请先添加一个板块。',
         wc_pal_text: '文字', wc_pal_media: '媒体', wc_pal_gallery: '相册', wc_pal_interactive: '互动',
@@ -6892,7 +6938,9 @@ Aaliyah Washington`
 
       // No site and no template chosen yet: show the picker and stop. Once
       // they choose one, smPickerChose comes back through here with it.
-      if (!existing && !(opts && opts.templateId)) { smShowPicker(); return; }
+      // A named subdomain (Back Office → Edit) is neither: that site exists
+      // and the server will hand it back, so the picker must not appear.
+      if (!existing && !(opts && (opts.templateId || opts.subdomain))) { smShowPicker(); return; }
       // "Try a different template" always makes a new one, even though they
       // already have a site.
       if (opts && opts.fresh) existing = null;
@@ -6906,6 +6954,7 @@ Aaliyah Washington`
           headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
           body: JSON.stringify({
             templateId: (opts && opts.templateId) || undefined,
+            subdomain: (opts && opts.subdomain) || undefined,
             fresh: !!(opts && opts.fresh),
           }),
         });
@@ -6920,12 +6969,19 @@ Aaliyah Washington`
       smPublished = !!data.published;
       smSiteUrl = data.url || '';
 
+      // Switching to a different site must drop the old history. The store's
+      // subscriber saves whatever doc it holds into whatever `wcSite` currently
+      // is — keeping it across a switch would write one site's pages into
+      // another site's address.
+      if (edStore && edStore._smSub && edStore._smSub !== data.subdomain) edStore = null;
+
       // The undo store is created here, not when the advanced editor opens.
       // Inline edits, vibe changes and guided-strip answers are all edits and
       // all belong in one history — otherwise whichever path the user happens
       // to take decides whether their work is undoable.
       if (!edStore && wcDoc && window.SiteDocStore) {
         edStore = SiteDocStore.createStore(wcDoc);
+        edStore._smSub = data.subdomain;   // which site this history belongs to
         edPageId = (wcDoc.pages && wcDoc.pages[0] && wcDoc.pages[0].id) || null;
         edStore.subscribe(() => { wcDoc = edStore.getDoc(); smRenderSite(); smQueueSave(); });
       }
@@ -7389,8 +7445,20 @@ Aaliyah Washington`
     async function smChangeAddress() {
       if (!wcSite || !wcSite.subdomain) return;
       const cur = wcSite.subdomain;
-      const suffix = (smSiteUrl && /^https?:\/\/[^.]+\.(.+?)(\/|$)/.exec(smSiteUrl) || [])[1] || '';
-      const shape = suffix ? `yourname.${suffix}` : 'yoursite.com/site/yourname';
+      // Show the shape their address actually has. Matching "something dot
+      // something" was not enough: a path-based URL like
+      // resumetailored.com/site/maya also matches, and the prompt then promised
+      // a subdomain the site does not have. The real test is whether the host
+      // BEGINS with their address — that is what makes it a subdomain.
+      const bare = String(smSiteUrl || '').replace(/^https?:\/\//, '');
+      const host = bare.split('/')[0];
+      let shape = '';
+      if (bare) {
+        shape = host.toLowerCase().startsWith(cur.toLowerCase() + '.')
+          ? 'yourname.' + host.slice(cur.length + 1)
+          : bare.replace('/' + cur, '/yourname');
+      }
+      if (!shape) shape = 'yoursite.com/site/yourname';
       const warn = smPublished
         ? '\n\n' + _t('sm_addr_warn', 'Your website is live. The old address will send visitors to the new one automatically, so links you have already shared keep working.')
         : '';
@@ -7769,8 +7837,17 @@ Aaliyah Washington`
       smPanel(ok ? '' : '');
     }
 
+    // Which site to open, set by the Back Office just before it switches tabs.
+    // Consumed once — coming back to the tab later reopens the current site.
+    let wcOpenSub = null, wcOpenRename = false;
+
     // Load saved resumes + cover letters into the pickers, plus any existing site.
-    async function loadWebsiteCreator() {
+    // `opts.subdomain` (or a stashed wcOpenSub) opens that particular site — the
+    // Back Office lists them all, and Edit there has to reopen the card pressed.
+    async function loadWebsiteCreator(opts) {
+      const openSub = (opts && opts.subdomain) || wcOpenSub;
+      const openRename = wcOpenRename;
+      wcOpenSub = null; wcOpenRename = false;
       const originSpan = document.getElementById('wcEdAddressOrigin');
       if (originSpan) originSpan.textContent = window.location.origin + '/site/';
       const rSel = document.getElementById('wcResumeSelect');
@@ -7781,11 +7858,17 @@ Aaliyah Washington`
         const [rRes, cRes, sRes] = await Promise.all([
           fetch('/api/resumes', { headers: authHeaders() }),
           fetch('/api/cover-letters', { headers: authHeaders() }),
-          fetch('/api/personal-site', { headers: authHeaders() }),
+          // Opening a named site must not prefill from a different one — the
+          // address field and the View live link would point at the wrong page
+          // if simple mode fell back to the editor.
+          fetch(openSub ? '/api/personal-sites' : '/api/personal-site', { headers: authHeaders() }),
         ]);
         wcResumes = (await rRes.json().catch(() => ({}))).resumes || [];
         wcCovers = (await cRes.json().catch(() => ({}))).coverLetters || [];
-        wcSite = (await sRes.json().catch(() => ({}))).site || null;
+        const sJson = await sRes.json().catch(() => ({}));
+        wcSite = openSub
+          ? ((sJson.sites || []).find(x => x.subdomain === openSub) || null)
+          : (sJson.site || null);
       } catch (_) { wcResumes = []; wcCovers = []; wcSite = null; }
 
       // Resumes: most-recent selected by default (list is created_at DESC).
@@ -7820,7 +7903,11 @@ Aaliyah Washington`
       // finished site, not a set of tools. smBoot generates one if they have
       // none, and falls back to the editor if it can't (e.g. not Pro).
       if (wcSite && wcSite.subdomain) { wcSiteText = wcSiteText || ''; smPublished = !!wcSite.published; }
-      await smBoot();
+      await smBoot(openSub ? { subdomain: openSub } : undefined);
+      // "Change address" in the Back Office opens the site AND the prompt —
+      // otherwise the button drops the user in the editor and leaves them to
+      // find it, which is not what the label promised.
+      if (smOn && openRename) { smChangeAddress(); return; }
       if (smOn) return;             // simple mode is up; the editor stays hidden
 
       wcLoadTemplates();
@@ -9039,23 +9126,23 @@ Aaliyah Washington`
     const _boDate = (ms) => { try { return new Date(ms).toLocaleDateString(); } catch (_) { return ''; } };
     async function loadBackOffice() {
       boSel = { resumes: new Set(), covers: new Set() };
-      let resumes = [], covers = [], videos = [], site = null;
+      let resumes = [], covers = [], videos = [], sites = [];
       try {
         const [r, c, v, s] = await Promise.all([
           fetch('/api/resumes', { headers: authHeaders() }),
           fetch('/api/cover-letters', { headers: authHeaders() }),
           fetch('/api/videos', { headers: authHeaders() }),
-          fetch('/api/personal-site', { headers: authHeaders() }),
+          fetch('/api/personal-sites', { headers: authHeaders() }),
         ]);
         resumes = (await r.json().catch(() => ({}))).resumes || [];
         covers = (await c.json().catch(() => ({}))).coverLetters || [];
         videos = (await v.json().catch(() => ({}))).videos || [];
-        site = (await s.json().catch(() => ({}))).site || null;
+        sites = (await s.json().catch(() => ({}))).sites || [];
       } catch (_) {}
       boRenderAssets('resumes', resumes);
       boRenderAssets('covers', covers);
       boRenderVideos(videos);
-      boRenderSite(site);
+      boRenderSites(sites);
     }
 
     function boRenderAssets(kind, items) {
@@ -9085,20 +9172,87 @@ Aaliyah Washington`
         <button class="bo-act bo-danger" onclick="boDeleteVideo(${it.id})" data-i18n="bo_delete">Delete</button>
       </div>`).join('') : `<div class="bo-empty">${wcEsc(_t('bo_novideos', 'No saved videos yet — make one in the Resume Video tab.'))}</div>`;
     }
-    function boRenderSite(site) {
+    /* ── Websites ─────────────────────────────────────────────────────────
+       Every site the user has, not just the current one. Trying a different
+       template makes another site rather than overwriting the one they have
+       been working on, so a list that showed one of them would quietly hide
+       the rest — including drafts they meant to come back to.
+
+       Exactly one card can carry the Published badge: the server enforces that
+       only one site is live, and the badge is read straight off `published`
+       rather than tracked separately, so the two can never disagree. */
+    const _boAgo = (ms) => {
+      const n = Number(ms); if (!Number.isFinite(n) || n <= 0) return '';
+      const s = Math.max(0, Math.floor((Date.now() - n) / 1000));
+      if (s < 90) return _t('bo_ago_now', 'just now');
+      const mins = Math.floor(s / 60);
+      if (mins < 60) return _t('bo_ago_min', '{n} min ago').replace('{n}', mins);
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return _t('bo_ago_hr', '{n}h ago').replace('{n}', hrs);
+      const days = Math.floor(hrs / 24);
+      if (days < 30) return _t('bo_ago_day', '{n}d ago').replace('{n}', days);
+      return _boDate(n);
+    };
+    // The address without its scheme — what someone would say out loud.
+    const _boAddr = (url, sub) => String(url || '').replace(/^https?:\/\//, '').replace(/\/$/, '') || ('/site/' + sub);
+
+    function boRenderSites(sites) {
       const wrap = document.querySelector('#bo-site .bo-list');
       if (!wrap) return;
-      if (!site || !site.subdomain) { wrap.innerHTML = `<div class="bo-empty">${wcEsc(_t('bo_nosite', 'No website yet — build one in the Website Creator.'))}</div>`; return; }
-      const live = window.location.origin + '/site/' + site.subdomain;
-      const pubLabel = site.published ? _t('bo_unpublish', 'Unpublish') : _t('bo_publish', 'Publish');
-      wrap.innerHTML = `<div class="bo-row">
-        <span class="bo-row-title">/site/${wcEsc(site.subdomain)}</span>
-        <span class="bo-row-meta">${site.published ? _t('bo_live', 'Live') : _t('bo_hidden', 'Hidden')} · ${(site.views || 0)} ${_t('wc_stat_views', 'Views')}</span>
-        <button class="bo-act" onclick="showTab('website')" data-i18n="bo_edit">Edit</button>
-        <a class="bo-act" href="${wcEsc(live)}" target="_blank" rel="noopener" data-i18n="bo_viewlive">View live</a>
-        <button class="bo-act" onclick="boToggleSite(${site.published ? 0 : 1})">${wcEsc(pubLabel)}</button>
-        <button class="bo-act bo-danger" onclick="boDeleteSite()" data-i18n="bo_delete">Delete</button>
-      </div>`;
+      if (!sites || !sites.length) {
+        wrap.innerHTML = `<div class="bo-empty">${wcEsc(_t('bo_nosite', 'No website yet — build one in the Website Creator.'))}</div>
+          <div class="bo-bulk"><button class="bo-act" onclick="showTab('website')">${wcEsc(_t('bo_makesite', 'Build my website'))}</button></div>`;
+        return;
+      }
+      // Feature B's current address, stated once at the top: with several
+      // drafts around, "my web address" means the live one.
+      const live = sites.find(s => s.published) || null;
+      const bar = live
+        ? `<div class="bo-addr-bar">${wcEsc(_t('bo_addr_live', 'Your web address:'))}
+             <b><a class="bo-site-addr" href="${wcEsc(live.url || '')}" target="_blank" rel="noopener">${wcEsc(_boAddr(live.url, live.subdomain))}</a></b>
+             <button class="bo-act" onclick="boEditSite('${wcEsc(live.subdomain)}', true)">${wcEsc(_t('bo_change_addr', 'Change address'))}</button>
+           </div>`
+        : `<div class="bo-addr-bar">${wcEsc(_t('bo_addr_none', 'Nothing is published yet — these are all private drafts that only you can see.'))}</div>`;
+
+      wrap.innerHTML = bar + '<div class="bo-sites">' + sites.map((s) => {
+        const sub = String(s.subdomain || '');
+        const badge = s.published
+          ? `<span class="bo-thumb-badge">${wcEsc(_t('bo_published', 'Published'))}</span>`
+          : `<span class="bo-thumb-badge is-draft">${wcEsc(_t('bo_draft', 'Draft'))}</span>`;
+        const meta = [
+          _t('bo_edited', 'Edited {t}').replace('{t}', _boAgo(s.updatedAt)),
+          s.published ? `${(s.views || 0)} ${_t('wc_stat_views', 'Views')}` : '',
+        ].filter(Boolean).join(' · ');
+        return `<div class="bo-site${s.published ? ' is-live' : ''}">
+          <div class="bo-thumb">${badge}<iframe title="" data-site-thumb="${wcEsc(sub)}" scrolling="no" tabindex="-1"></iframe></div>
+          <div class="bo-site-body">
+            <span class="bo-site-tpl">${wcEsc(s.templateName || s.name || _t('bo_site_untitled', 'My website'))}</span>
+            ${s.published
+              ? `<a class="bo-site-addr" href="${wcEsc(s.url || '')}" target="_blank" rel="noopener">${wcEsc(_boAddr(s.url, sub))}</a>`
+              : `<span class="bo-site-meta">${wcEsc(_boAddr(s.url, sub))}</span>`}
+            <span class="bo-site-meta">${wcEsc(meta)}</span>
+            <div class="bo-site-acts">
+              <button class="bo-act" onclick="boEditSite('${wcEsc(sub)}')">${wcEsc(_t('bo_edit', 'Edit'))}</button>
+              <button class="bo-act" onclick="boToggleSite('${wcEsc(sub)}',${s.published ? 0 : 1})">${wcEsc(s.published ? _t('bo_unpublish', 'Unpublish') : _t('bo_publish', 'Publish'))}</button>
+              <button class="bo-act bo-danger" onclick="boDeleteSite('${wcEsc(sub)}')">${wcEsc(_t('bo_delete', 'Delete'))}</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('') + '</div>';
+
+      wrap.querySelectorAll('iframe[data-site-thumb]').forEach(boLoadThumb);
+    }
+
+    // Thumbnails come through fetch + srcdoc rather than src, because the
+    // render is owner-only and an iframe cannot send the Bearer token.
+    async function boLoadThumb(frame) {
+      const sub = frame.getAttribute('data-site-thumb');
+      if (!sub) return;
+      try {
+        const r = await fetch(`/api/personal-sites/${encodeURIComponent(sub)}/render`, { headers: authHeaders() });
+        if (!r.ok) return;
+        frame.srcdoc = await r.text();
+      } catch (_) {}
     }
 
     function boToggle(kind, id, on) { if (on) boSel[kind].add(id); else boSel[kind].delete(id); }
@@ -9133,12 +9287,37 @@ Aaliyah Washington`
       if (!confirm(_t('bo_confirm_del', 'Delete this item? This cannot be undone.'))) return;
       try { const r = await fetch('/api/videos/' + id, { method: 'DELETE', headers: authHeaders() }); if (r.ok) loadBackOffice(); } catch (_) {}
     }
-    async function boToggleSite(pub) {
-      try { const r = await fetch('/api/personal-site', { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ published: !!pub }) }); if (r.ok) loadBackOffice(); } catch (_) {}
+    // Open THIS site in the Website Creator. Without the subdomain the creator
+    // reopens whichever site is current, which would ignore the card pressed.
+    //
+    // The target is stashed rather than passed, because showTab('website')
+    // already calls loadWebsiteCreator itself: calling it a second time here
+    // raced two loads, and the tab's own argument-less one won — so Edit landed
+    // on the current site no matter which card was pressed.
+    function boEditSite(sub, andRename) { wcOpenSub = sub; wcOpenRename = !!andRename; showTab('website'); }
+
+    async function boToggleSite(sub, pub) {
+      // Publishing takes their other sites down. Said plainly beforehand,
+      // because finding out afterwards means a link someone was given is dead.
+      if (pub) {
+        const others = document.querySelectorAll('#bo-site .bo-site.is-live').length;
+        if (others && !confirm(_t('bo_confirm_pub', 'Publish this one? Only one website can be live at a time, so your current one comes down.'))) return;
+      } else if (!confirm(_t('bo_confirm_unpub', 'Take this website off the internet? Nothing is deleted — you can publish it again.'))) return;
+      try {
+        const r = await fetch('/api/personal-site', {
+          method: 'PATCH',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+          body: JSON.stringify({ subdomain: sub, published: !!pub }),
+        });
+        if (r.ok) { showToast(pub ? _t('bo_now_live', 'Your website is live.') : _t('bo_now_hidden', 'Your website is hidden.')); loadBackOffice(); }
+      } catch (_) {}
     }
-    async function boDeleteSite() {
-      if (!confirm(_t('bo_confirm_site', 'Delete your website? This removes the live page.'))) return;
-      try { const r = await fetch('/api/personal-site', { method: 'DELETE', headers: authHeaders() }); if (r.ok) loadBackOffice(); } catch (_) {}
+    async function boDeleteSite(sub) {
+      if (!confirm(_t('bo_confirm_site', 'Delete this website? This cannot be undone.'))) return;
+      try {
+        const r = await fetch('/api/personal-sites/' + encodeURIComponent(sub), { method: 'DELETE', headers: authHeaders() });
+        if (r.ok) loadBackOffice();
+      } catch (_) {}
     }
 
 

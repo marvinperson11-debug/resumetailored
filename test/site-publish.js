@@ -424,6 +424,82 @@ const server = app.listen(0, async () => {
     const cur = await (await fetch(`${B}/api/personal-site`, { headers: AJ('tokA') })).json();
     check('reopening lands on the live site', cur.site.subdomain === dev.subdomain, cur.site.subdomain);
 
+    /* ── THE BACK OFFICE ────────────────────────────────────────────────
+       Listing every site is only half of it. The Back Office also has to
+       open a named one, publish a named one, and draw a thumbnail of a
+       DRAFT — which means rendering a private page for its owner without
+       making it public. */
+
+    // Edit on a card must reopen THAT site. Autogen without a subdomain
+    // returns whichever is current, which would ignore the card pressed.
+    list = await (await fetch(`${B}/api/personal-sites`, { headers: AJ('tokA') })).json();
+    const boCard = list.sites.find(x => !x.published);
+    check('the list still has a draft to work with', !!boCard);
+    const opened = await fetch(`${B}/api/personal-site/autogen`, {
+      method: 'POST', headers: AJ('tokA'), body: JSON.stringify({ subdomain: boCard.subdomain }),
+    });
+    const openedJson = await opened.json();
+    check('Edit opens the named site, not the current one',
+      opened.status === 200 && openedJson.subdomain === boCard.subdomain, openedJson.subdomain);
+    check('and opening it creates nothing', openedJson.created === false);
+    check('opening a site that is not yours is a 404',
+      (await fetch(`${B}/api/personal-site/autogen`, {
+        method: 'POST', headers: AJ('tokB'), body: JSON.stringify({ subdomain: boCard.subdomain }),
+      })).status === 404);
+    check('a nonsense address does not fall through into making a new site',
+      (await fetch(`${B}/api/personal-site/autogen`, {
+        method: 'POST', headers: AJ('tokA'), body: JSON.stringify({ subdomain: 'no' }),
+      })).status === 400);
+
+    // Thumbnails. A draft is private to the world and visible to its owner —
+    // both halves matter, or the card is either blank or a leak.
+    const thumb = await fetch(`${B}/api/personal-sites/${boCard.subdomain}/render`, { headers: AJ('tokA') });
+    const thumbHtml = await thumb.text();
+    check('a draft renders a thumbnail for its owner', thumb.status === 200 && thumbHtml.includes('<body'));
+    check('and the thumbnail is noindex', /noindex/i.test(thumbHtml));
+    check('the draft is still not public', (await fetch(`${B}/site/${boCard.subdomain}`)).status === 404);
+    check("a thumbnail of someone else's site is refused",
+      (await fetch(`${B}/api/personal-sites/${boCard.subdomain}/render`, { headers: AJ('tokB') })).status === 403);
+    check('and signed out it is refused too',
+      (await fetch(`${B}/api/personal-sites/${boCard.subdomain}/render`)).status === 401);
+
+    // Publish from a card. This used to update every row for the email, which
+    // would have put all of the user's drafts on the internet at once.
+    const pat = await fetch(`${B}/api/personal-site`, {
+      method: 'PATCH', headers: AJ('tokA'), body: JSON.stringify({ subdomain: boCard.subdomain, published: true }),
+    });
+    check('publishing a card returns that card', pat.status === 200 && (await pat.json()).subdomain === boCard.subdomain);
+    list = await (await fetch(`${B}/api/personal-sites`, { headers: AJ('tokA') })).json();
+    check('publishing from the Back Office still leaves exactly one live',
+      list.sites.filter(x => x.published).length === 1, String(list.sites.filter(x => x.published).length));
+    check('and it is the one that was pressed', list.sites.find(x => x.published).subdomain === boCard.subdomain);
+    check('the site that was live comes down', (await fetch(`${B}/site/${dev.subdomain}`)).status === 404);
+    check('the newly published card is reachable', (await fetch(`${B}/site/${boCard.subdomain}`)).status === 200);
+
+    // Unpublishing keeps the row, so the card and its work survive.
+    await fetch(`${B}/api/personal-site`, {
+      method: 'PATCH', headers: AJ('tokA'), body: JSON.stringify({ subdomain: boCard.subdomain, published: false }),
+    });
+    check('unpublishing takes it off the internet', (await fetch(`${B}/site/${boCard.subdomain}`)).status === 404);
+    list = await (await fetch(`${B}/api/personal-sites`, { headers: AJ('tokA') })).json();
+    check('but the site is still listed', list.sites.some(x => x.subdomain === boCard.subdomain));
+    check('with no card claiming to be published', list.sites.filter(x => x.published).length === 0);
+
+    check("another user cannot publish someone else's site",
+      (await fetch(`${B}/api/personal-site`, {
+        method: 'PATCH', headers: AJ('tokB'), body: JSON.stringify({ subdomain: boCard.subdomain, published: true }),
+      })).status === 403);
+    check('and it stayed down', (await fetch(`${B}/site/${boCard.subdomain}`)).status === 404);
+
+    // Every card needs a template name and a timestamp to be told apart.
+    check('each site reports which template it came from',
+      list.sites.every(x => typeof x.templateName === 'string' && x.templateName.length > 0),
+      JSON.stringify(list.sites.map(x => x.templateName)));
+    check('each site reports when it was last edited',
+      list.sites.every(x => Number.isFinite(x.updatedAt) && x.updatedAt > 0));
+    check('each site reports its own address',
+      list.sites.every(x => typeof x.url === 'string' && x.url.includes(x.subdomain)));
+
   } catch (e) {
     failures++;
     console.error('FAIL  unexpected error —', e && e.stack);

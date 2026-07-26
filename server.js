@@ -444,7 +444,11 @@ const RATE_LIMIT_OFF = process.env.RT_DISABLE_RATE_LIMIT === '1';
 // HTML with no database or AI work behind it, so it gets its own generous
 // budget rather than eating the shared 30/min one and locking the user out of
 // the rest of the app for a minute.
-const TPL_PREVIEW_PATH_RE = /^\/site-templates\/[^/]+\/preview\/?$/;
+// Site thumbnails, in both flavours: the template gallery's sample previews and
+// the Back Office's render of the user's own sites. Both are pure HTML off one
+// row, and a Back Office with eight sites would otherwise spend a quarter of the
+// shared 30/min budget just drawing itself.
+const TPL_PREVIEW_PATH_RE = /^\/(site-templates\/[^/]+\/preview|personal-sites\/[^/]+\/render)\/?$/;
 const tplPreviewLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 180,
@@ -3078,6 +3082,34 @@ app.delete('/api/personal-sites/:sub', (req, res) => {
   res.json({ success: true });
 });
 
+/**
+ * Rendered HTML of ONE of the user's own sites — the Back Office thumbnail.
+ *
+ * The template gallery's preview would have been easier, but it shows the
+ * template's invented sample person. A list of sites all showing "Alex Morgan"
+ * cannot be told apart, which is the one thing a thumbnail exists to do. This
+ * renders their real content, draft or live, through the same renderer the
+ * public page uses.
+ *
+ * Owner-only and noindex — a draft rendered here is still private. It is
+ * fetched with the Bearer token and shown via `srcdoc`, because an iframe
+ * cannot send a header.
+ */
+app.get('/api/personal-sites/:sub/render', tplPreviewLimiter, (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const sub = _validSubdomain(req.params.sub);
+  if (!sub) return res.status(400).json({ error: 'invalid_subdomain' });
+  const row = db.prepare('SELECT * FROM personal_sites WHERE subdomain = ?').get(sub);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  if (row.email.toLowerCase() !== email.toLowerCase()) return res.status(403).json({ error: 'not_yours' });
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(_renderPersonalSite(row, origin, {
+    indexable: false, footer: '', baseUrl: `${origin}/site/${sub}`,
+  }));
+});
+
 // Publish / update the signed-in Pro user's personal site.
 app.post('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
@@ -3255,7 +3287,21 @@ app.post('/api/personal-site/autogen', (req, res) => {
   // than reopening what they already have. Each template gets its own site so
   // switching never destroys the one they have been working on.
   const fresh = !!(req.body && req.body.fresh);
-  const existing = fresh ? null : _currentSite(email);
+  // `subdomain` means "open THIS one" — the Back Office lists every site the
+  // user has, and Edit there has to reopen the card they pressed rather than
+  // whichever site happens to be current. Asking for a site that isn't theirs
+  // is a 404, never a silent fall-through into creating a new one.
+  const wantOpen = (req.body && typeof req.body.subdomain === 'string')
+    ? _validSubdomain(req.body.subdomain) : null;
+  if (!fresh && req.body && req.body.subdomain && !wantOpen) {
+    return res.status(400).json({ error: 'invalid_subdomain' });
+  }
+  const existing = fresh
+    ? null
+    : (wantOpen
+        ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND email = ?').get(wantOpen, email.toLowerCase())
+        : _currentSite(email));
+  if (!fresh && wantOpen && !existing) return res.status(404).json({ error: 'not_found' });
   if (existing) {
     const origin0 = `${req.protocol}://${req.get('host')}`;
     return res.json({
@@ -3404,9 +3450,28 @@ app.patch('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   const published = req.body && req.body.published ? 1 : 0;
-  const info = db.prepare('UPDATE personal_sites SET published = ?, updated_at = ? WHERE email = ?').run(published, Date.now(), email.toLowerCase());
-  if (!info.changes) return res.status(404).json({ error: 'No site to update.' });
-  res.json({ success: true, published: !!published });
+
+  // Which site. This used to update every row for the email, which was
+  // harmless when a user could only have one site and is not now: pressing
+  // Publish on one card would have put all of them on the internet at once.
+  const wanted = (req.body && typeof req.body.subdomain === 'string')
+    ? _validSubdomain(req.body.subdomain) : null;
+  if (req.body && req.body.subdomain && !wanted) return res.status(400).json({ error: 'invalid_subdomain' });
+  const row = wanted
+    ? db.prepare('SELECT subdomain, email FROM personal_sites WHERE subdomain = ?').get(wanted)
+    : _currentSite(email);
+  if (!row) return res.status(404).json({ error: 'No site to update.' });
+  if (row.email.toLowerCase() !== email.toLowerCase()) return res.status(403).json({ error: 'not_yours' });
+
+  db.prepare('UPDATE personal_sites SET published = ?, updated_at = ? WHERE subdomain = ?')
+    .run(published, Date.now(), row.subdomain);
+  // Only ever one live site — the same rule the publish path enforces, for the
+  // same reason: two versions of the same person on the internet is the failure.
+  if (published === 1) {
+    db.prepare('UPDATE personal_sites SET published = 0 WHERE email = ? AND subdomain != ?')
+      .run(email.toLowerCase(), row.subdomain);
+  }
+  res.json({ success: true, published: !!published, subdomain: row.subdomain });
 });
 
 // Unpublish (delete) the signed-in user's personal site.
