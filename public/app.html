@@ -686,10 +686,12 @@
       /* Wrap rather than overflow. Publish is the point of the whole screen and
          must never be the thing that falls off the edge. */
       .cv-top { height: auto; min-height: 54px; flex-wrap: wrap; gap: 6px; padding: 7px 10px; }
-      /* The brand, the document title and the desktop/mobile toggle are the
-         three things worth their width least — and a device toggle on a phone
-         is asking which device you are on. */
-      .cv-logo, .cv-title, .cv-seg { display: none; }
+      /* The brand and the document title are the two things worth their width
+         least. The desktop/mobile toggle STAYS: checking how the site looks on
+         a laptop is exactly what someone building it on a phone cannot do any
+         other way. */
+      .cv-logo, .cv-title { display: none; }
+      .cv-seg { transform: scale(.92); transform-origin: right center; }
       .cv-top-right { margin-left: auto; gap: 6px; }
       .cv-tbtn { font-size: 12px; padding: 7px 10px; }
       .cv-publish { font-size: 12px; padding: 8px 13px; }
