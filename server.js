@@ -2640,10 +2640,13 @@ app.post('/api/personal-site', (req, res) => {
   }
   const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config, publish } = req.body || {};
   // Drafts. A site is public the moment `published` is 1, so anything created
-  // on the user's behalf (the auto-generated starter site) must be able to save
-  // WITHOUT going live. Omitting `publish` keeps the original behaviour, so
-  // every existing caller still publishes.
-  const publishedFlag = publish === false ? 0 : 1;
+  // on the user's behalf — the auto-generated starter site — must be able to
+  // save WITHOUT going live.
+  //
+  // Omitting `publish` PRESERVES whatever the site already is, so an auto-save
+  // can never publish a private site by forgetting a flag, and can never take a
+  // live site down either. Only an explicit `publish` changes that state, which
+  // means going public is always something the user asked for.
   const sub = _validSubdomain(subdomain);
   if (!sub) return res.status(400).json({ error: 'invalid_subdomain', message: 'Choose 3–30 letters, numbers or hyphens (not a reserved word).' });
   if (!text || typeof text !== 'string' || text.trim().length < 20) return res.status(400).json({ error: 'No resume content to publish.' });
@@ -2672,8 +2675,12 @@ app.post('/api/personal-site', (req, res) => {
 
   // Remove any previous site this user had under a different subdomain, so a
   // rename doesn't leave an orphaned live page.
-  const existing = db.prepare('SELECT subdomain FROM personal_sites WHERE email = ?').get(email);
+  const existing = db.prepare('SELECT subdomain, published FROM personal_sites WHERE email = ?').get(email);
   if (existing && existing.subdomain !== sub) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(existing.subdomain);
+
+  const publishedFlag = typeof publish === 'boolean'
+    ? (publish ? 1 : 0)
+    : (existing ? (existing.published ? 1 : 0) : 1); // new site with no flag: the legacy publish path
 
   db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, config, published, created_at, updated_at, views)
               VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, @config, @published, @now, @now, 0)

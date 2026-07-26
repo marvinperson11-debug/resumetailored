@@ -367,9 +367,23 @@
       padding: 7px 13px; cursor: pointer;
     }
     .sm-back:hover { color: #111827; background: #e5e7eb; }
-    /* Balances the back chip so the note stays optically centred. */
-    .sm-spacer { flex-shrink: 0; width: 150px; }
-    @media (max-width: 700px) { .sm-spacer { display: none; } .sm-note { text-align: right; } }
+    /* Going public is the one deliberate act, so it gets the one green button.
+       Once live it is replaced by the link itself. */
+    .sm-publish {
+      flex-shrink: 0; font: inherit; font-size: 13px; font-weight: 800; color: #fff;
+      background: #059669; border: none; border-radius: 999px; padding: 9px 18px; cursor: pointer;
+      box-shadow: 0 2px 10px rgba(5,150,105,.3);
+    }
+    .sm-publish:hover { background: #047857; }
+    .sm-publish:disabled { opacity: .55; cursor: default; }
+    .sm-live {
+      flex-shrink: 0; font-size: 12.5px; font-weight: 700; color: #047857;
+      background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 999px;
+      padding: 8px 15px; text-decoration: none; max-width: 320px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .sm-live:hover { background: #d1fae5; }
+    @media (max-width: 700px) { .sm-note { text-align: right; } }
     .sm-cta {
       position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
       display: inline-flex; align-items: center; gap: 9px; z-index: 3;
@@ -1197,7 +1211,8 @@
           <div class="sm-bar">
             <button type="button" class="sm-back" onclick="smExit()" data-i18n="sm_back">← Back to ResumeTailored</button>
             <div class="sm-note" id="smNote"></div>
-            <div class="sm-spacer"></div>
+            <button type="button" class="sm-publish" id="smPublishBtn" onclick="smPublish()" data-i18n="sm_publish">Publish my website</button>
+            <a class="sm-live" id="smLiveLink" target="_blank" rel="noopener" style="display:none;" data-i18n="sm_visit">Visit my website ↗</a>
           </div>
           <iframe class="sm-frame" id="smFrame" title="Your website"></iframe>
           <button type="button" class="sm-cta" id="smCta" onclick="smCustomize()">
@@ -2043,6 +2058,9 @@
         wc_step_template: '2. Pick a template',
         wc_template_help: 'Every template is a complete, multi-section site. Preview it on desktop and mobile before you choose — then make it yours.',
         sm_customize: 'Customize My Site', sm_done: '✓ Done Editing', sm_back: '← Back to ResumeTailored',
+        sm_publish: 'Publish my website', sm_visit: 'Visit my website ↗',
+        sm_published: '🌐 Your website is live — link copied.',
+        sm_publish_err: 'Could not publish your website — try again.',
         sm_building: 'Building your website…',
         sm_building_sub: "We're making it from your most recent resume. This takes a few seconds.",
         sm_need_resume: 'First, tailor a resume',
@@ -2211,6 +2229,9 @@
         wc_step_template: '2. 选择模板',
         wc_template_help: '每个模板都是完整的多板块网站。选择前可在桌面和手机视图预览——然后把它变成你的。',
         sm_customize: '修改我的网站', sm_done: '✓ 完成修改', sm_back: '← 返回 ResumeTailored',
+        sm_publish: '发布我的网站', sm_visit: '访问我的网站 ↗',
+        sm_published: '🌐 您的网站已上线——链接已复制。',
+        sm_publish_err: '发布失败，请重试。',
         sm_building: '正在生成您的网站…',
         sm_building_sub: '我们正在用您最近的简历生成网站，只需几秒钟。',
         sm_need_resume: '请先定制一份简历',
@@ -6536,7 +6557,7 @@ Aaliyah Washington`
 
        The editor still exists behind "Customize My Site" — it is just no longer
        the front door. */
-    let smOn = false, smSiteUrl = '', smPublished = false;
+    let smOn = false, smSiteUrl = '', smPublished = false, _smAutoSaveHooked = false;
 
     function smShow(on) {
       smOn = !!on;
@@ -6595,6 +6616,13 @@ Aaliyah Washington`
         ? _t('sm_note_live', 'This is your personal website. It updates automatically when you update your resume.')
         : _t('sm_note_draft', 'This is your personal website. Only you can see it until you publish.');
       note.innerHTML = draft + wcEsc(body);
+      const pubBtn = document.getElementById('smPublishBtn');
+      const live = document.getElementById('smLiveLink');
+      if (pubBtn) pubBtn.style.display = smPublished ? 'none' : '';
+      if (live) {
+        live.style.display = smPublished ? '' : 'none';
+        if (smSiteUrl) { live.href = smSiteUrl; live.textContent = smSiteUrl.replace(/^https?:\/\//, '') + ' ↗'; }
+      }
     }
 
     // Entry point for the tab. Builds a site if they don't have one yet.
@@ -6621,6 +6649,66 @@ Aaliyah Washington`
       smPanel('');
     }
 
+    /* ── Saving ───────────────────────────────────────────────────────────
+       One save path, and it never decides publicity by itself. `publish` is
+       omitted unless the user explicitly asked, and the server preserves
+       whatever the site already is — so an auto-save can neither expose a
+       private site nor take a live one down. */
+    let _smSaveTimer = null, _smSaving = false, _smDirty = false;
+
+    async function smSave(opts) {
+      if (!wcSite || !wcSite.subdomain || !wcDoc) return null;
+      const body = {
+        subdomain: wcSite.subdomain,
+        text: smResumeText(),
+        name: wcSite.name || '',
+        config: wcDoc,
+      };
+      if (opts && typeof opts.publish === 'boolean') body.publish = opts.publish;
+      _smSaving = true;
+      try {
+        const r = await fetch('/api/personal-site', {
+          method: 'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+          body: JSON.stringify(body),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) return null;
+        smPublished = !!d.published;
+        smSiteUrl = d.url || smSiteUrl;
+        if (wcSite) wcSite.published = smPublished ? 1 : 0;
+        _smDirty = false;
+        return d;
+      } catch (_) { return null; } finally { _smSaving = false; }
+    }
+
+    // No Save button: edits persist on their own, a beat after the user stops.
+    function smQueueSave() {
+      _smDirty = true;
+      clearTimeout(_smSaveTimer);
+      _smSaveTimer = setTimeout(() => { smSave(); }, 1200);
+    }
+
+    // Flush before anything that would lose the edit.
+    async function smFlushSave() {
+      clearTimeout(_smSaveTimer);
+      if (_smDirty && !_smSaving) await smSave();
+    }
+    window.addEventListener('beforeunload', () => { if (_smDirty) smSave(); });
+
+    // The deliberate act. Everything else preserves state; only this publishes.
+    async function smPublish() {
+      const btn = document.getElementById('smPublishBtn');
+      if (btn) btn.disabled = true;
+      await smFlushSave();
+      const d = await smSave({ publish: true });
+      if (btn) btn.disabled = false;
+      if (!d) { showToast(_t('sm_publish_err', 'Could not publish your website — try again.')); return; }
+      smUpdateNote();
+      try { await navigator.clipboard.writeText(d.url); } catch (_) {}
+      showToast(_t('sm_published', '🌐 Your website is live — link copied.'), 6000);
+    }
+
     // The one way out of full-screen mode, since it covers the app's own
     // navigation. Quiet, but always present.
     function smExit() { smShow(false); showTab('tailor'); }
@@ -6632,6 +6720,11 @@ Aaliyah Washington`
       if (!cvIsDesktop()) { smShow(false); cvApplyGate(); return; }
       smShow(false);
       if (!edStore && wcDoc) edInit(wcDoc);
+      // Every mutation goes through the store, so this is the only hook needed.
+      if (edStore && !_smAutoSaveHooked) {
+        _smAutoSaveHooked = true;
+        edStore.subscribe(() => { wcDoc = edStore.getDoc(); smQueueSave(); });
+      }
       wcLoadTemplates();
       wcLoadMediaUsage();
       wcLoadSiteExtras();
@@ -6642,6 +6735,7 @@ Aaliyah Washington`
     // "Done Editing" — back to what visitors see, which is always the default.
     async function smDoneEditing() {
       if (edStore) wcDoc = edStore.getDoc();
+      await smFlushSave();
       smShow(true);
       smPanel('smBusy');
       const ok = await smRenderSite();
@@ -6814,6 +6908,7 @@ Aaliyah Washington`
             serif: !!rTpl.serif,
             hideContact: false,
             config,
+            publish: true,   // explicit: omission now preserves the current state
           }),
         });
         const data = await res.json().catch(() => ({}));

@@ -42,15 +42,27 @@ Both are worth fixing now so the switch is clean when you flip it.
 
 Only asking where a wrong guess means building the wrong thing.
 
-### Q1 — "Already live" vs. the Publish button
+### Q1 — "Already live" vs. the Publish button — **ANSWERED: private until they press publish**
 
-Item 1 says the user lands on a site that's **already live**. Item 4 ends with a big green **Publish!** button. Those can't both be true, and the difference matters: a live site is a public, indexable page carrying someone's name, employer history and email.
+Item 1 said the user lands on a site that's **already live**; item 4 ended with a **Publish!** button. You've settled it: **private until they press publish.** Built and shipped.
 
-I'm not willing to publish that on a user's behalf without them pressing something. My recommendation:
+What that means concretely:
 
-> **Generate it instantly, show it full-screen, but keep it private until they press Publish.** The top line becomes "This is your personal website — only you can see it until you publish." The experience is identical; the difference is that nothing reaches Google until they say so.
+- The auto-generated site is created as a draft. `/site/<name>` returns **404** until they publish — not a hidden-but-guessable page, genuinely not served.
+- Simple mode shows a **PRIVATE** badge and reads *"Only you can see it until you publish."*
+- One green **Publish my website** button. Once live it's replaced by the link itself.
 
-Tell me if you want true auto-publish and I'll do it, but I wanted you to make that call rather than me.
+The part worth knowing: I made this **structural rather than conventional**. `POST /api/personal-site` used to default to publishing when no flag was sent, so a single forgetful call site would have exposed a private site. Now:
+
+| Request | Result |
+|---|---|
+| No `publish` flag, existing site | **Preserves** whatever it already is |
+| `publish: true` | Goes live |
+| `publish: false` | Comes down |
+
+Auto-save sends no flag. So it can neither expose a private site nor take a live one down — going public is only ever something the user asked for. Three tests hold that in place.
+
+**Auto-save came with it** (your item 5, brought forward). There's no Save button: edits persist about a second after you stop, and flush on Done Editing and on leaving the page. Without it, "private until publish" would have meant every draft edit was silently lost.
 
 ### Q2 — Photographic vibes and image licensing
 
@@ -110,14 +122,14 @@ Starting with item 1 as you asked and working outward. Each phase ships independ
 | **2** | Edit mode: click-it-to-change-it inline editing (name, photo, section move/delete with floating controls), slim top bar with **Done Editing**. Sidebar and right panel start collapsed. |
 | **3** | The 10 Vibes, one-click apply, Lighten/Darken slider, readability overlay. |
 | **4** | The bottom strip conversation — one question at a time, skip and back on every step, ending in Publish. |
-| **5** | Auto-save with the inline **↩️ Undo** that appears where they acted and fades after 5s. (The undo engine already exists — this is surfacing it, not building it.) |
+| **5** | ~~Auto-save~~ **done** — shipped alongside the publish decision. Still to add: the inline **↩️ Undo** that appears where they acted and fades after 5s. (The undo engine already exists — this is surfacing it, not building it.) |
 | **6** | **💬 Not sure?** helper that jumps straight to the right control. |
 | **7** | Subdomain URLs behind `SITE_PUBLIC_HOST`, plus the two middleware fixes above. |
 | **8** | Full 中文 across every new string. |
 
 I'm treating your critical rules as constraints on all of it: no technical words, every button says what it does, never more than five or six choices on screen.
 
-**Phase 1 is in progress now.** I'll come back when it's on the branch and you can click it.
+**Phase 1 is done and pushed**, along with auto-save and publishing. I'll come back when it's on the branch and you can click it.
 
 ---
 

@@ -114,9 +114,11 @@ const server = app.listen(0, async () => {
     check('a taken address is numbered rather than failing', bob.subdomain === 'alice-2', bob.subdomain);
 
     // ── Publishing ──────────────────────────────────────────────────────────
+    // Explicit, always. This is the one call that makes a site public, and it
+    // corresponds to the user pressing one green button.
     const pub = await fetch(`${B}/api/personal-site`, {
       method: 'POST', headers: AJ('tokA'),
-      body: JSON.stringify({ subdomain: 'alice', text: RESUME, name: 'Alice Nakamura', config: gen.config }),
+      body: JSON.stringify({ subdomain: 'alice', text: RESUME, name: 'Alice Nakamura', config: gen.config, publish: true }),
     });
     check('publishing succeeds', pub.status === 200 && (await pub.json()).published === true);
     check('a published site IS publicly reachable', (await fetch(`${B}/site/alice`)).status === 200);
@@ -128,6 +130,33 @@ const server = app.listen(0, async () => {
     });
     check('publish:false saves without going live', draft.status === 200 && (await draft.json()).published === false);
     check('unpublishing actually takes the page down', (await fetch(`${B}/site/alice`)).status === 404);
+
+    // ── Omission preserves. THE guarantee behind "private until you publish" ──
+    // Auto-save sends no `publish` flag. If omission meant "publish", every
+    // keystroke on a private draft would expose it; if it meant "unpublish",
+    // editing a live site would silently take it down. Neither may happen.
+    const autosave = (extra) => fetch(`${B}/api/personal-site`, {
+      method: 'POST', headers: AJ('tokA'),
+      body: JSON.stringify(Object.assign({
+        subdomain: 'alice', text: RESUME, name: 'Alice Nakamura', config: gen.config,
+      }, extra || {})),
+    });
+
+    // Currently a draft (unpublished just above).
+    const a1 = await (await autosave()).json();
+    check('auto-save on a draft leaves it private', a1.published === false);
+    check('the draft is still not reachable', (await fetch(`${B}/site/alice`)).status === 404);
+
+    // Explicitly publish, then auto-save again.
+    await autosave({ publish: true });
+    const a2 = await (await autosave()).json();
+    check('auto-save on a live site keeps it live', a2.published === true);
+    check('the live site stays reachable', (await fetch(`${B}/site/alice`)).status === 200);
+
+    // And going private is equally explicit.
+    const a3 = await (await autosave({ publish: false })).json();
+    check('unpublishing requires an explicit flag', a3.published === false);
+    await autosave({ publish: true }); // restore for the subdomain checks below
 
     // ── The server owns the public URL ──────────────────────────────────────
     const me = await (await fetch(`${B}/api/personal-site`, { headers: AJ('tokA') })).json();
