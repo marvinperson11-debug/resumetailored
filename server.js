@@ -2595,6 +2595,7 @@ function _sdEditLayer() {
     .sd-ed-chips button:hover{background:#111827;}
     @media(max-width:820px){.sd-ed-chips button{font-size:14px;padding:12px 20px;}.sd-ed-chips{gap:10px;}}
     .sd-ed-bar--pulse{animation:sd-pulse 1.4s ease-in-out 3;}
+    .sd-ed-chips--hint button{animation:sd-pulse 1s ease-in-out 2;}
     @keyframes sd-pulse{0%,100%{transform:scale(1);box-shadow:0 8px 24px rgba(0,0,0,.3);}50%{transform:scale(1.06);box-shadow:0 8px 30px rgba(99,102,241,.75);}}
   </style>
   <script>
@@ -2781,6 +2782,9 @@ function _sdEditLayer() {
       };
       if (d.canUndo) mk('↩️ Undo', 'undo');
       if (d.canRedo) mk('↪️ Redo', 'redo');
+      // First keyboard undo of the session: make the chips wave, so the
+      // shortcut and the button are visibly the same thing.
+      if (d.hint) chips.classList.add('sd-ed-chips--hint');
 
       // Hovering pauses the countdown; leaving resumes it with the time left.
       chips.onmouseenter = function(){
@@ -2846,6 +2850,23 @@ function _sdEditLayer() {
           document.querySelectorAll('.sd-ed-sec').forEach(function(x){ x.classList.remove('sd-ed-sec'); });
         }, 7000);
       }
+    });
+
+    /* Keyboard. The page is an iframe, so keydown fires in whichever document
+       holds focus — after a single click on the page, that is this one. The
+       parent listens too; between them every case is covered.
+
+       While someone is typing in a field, Ctrl+Z belongs to the browser: it
+       should undo their typing, not their last site change. */
+    document.addEventListener('keydown', function(ev){
+      if (editing) return;                       // typing: leave it to the browser
+      var t = ev.target;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ''))) return;
+      var mod = ev.ctrlKey || ev.metaKey;
+      if (!mod) return;
+      var k = (ev.key || '').toLowerCase();
+      if (k === 'z' && !ev.shiftKey) { ev.preventDefault(); post({ kind: 'undo', viaKey: true }); }
+      else if ((k === 'z' && ev.shiftKey) || k === 'y') { ev.preventDefault(); post({ kind: 'redo', viaKey: true }); }
     });
 
     post({ kind: 'ready' });

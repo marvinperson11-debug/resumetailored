@@ -261,6 +261,22 @@ const server = app.listen(0, async () => {
     check('the chip anchor is whitelisted, not escaped',
       editPrev.includes("replace(/[^A-Za-z0-9_-]/g, '')"));
 
+    // ── Keyboard undo/redo ──────────────────────────────────────────────
+    // The frame listens too, because keydown only fires where focus is and the
+    // iframe is most of the screen.
+    check('the edit layer listens for the keyboard', /addEventListener\('keydown'/.test(editPrev));
+    check('Ctrl+Z is undo, Ctrl+Shift+Z and Ctrl+Y are redo',
+      /k === 'z' && !ev\.shiftKey/.test(editPrev) && /k === 'z' && ev\.shiftKey\) \|\| k === 'y'/.test(editPrev));
+    check('Cmd works as well as Ctrl', /ev\.ctrlKey \|\| ev\.metaKey/.test(editPrev));
+    // While typing, Ctrl+Z must undo the TYPING, not the last site change.
+    check('typing keeps its own undo', editPrev.includes('if (editing) return;')
+      && /isContentEditable/.test(editPrev));
+    check('the keyboard drives the same chips, flagged as keyboard-driven',
+      /post\(\{ kind: 'undo', viaKey: true \}\)/.test(editPrev));
+    check('the chips can announce themselves on first keyboard use',
+      editPrev.includes('sd-ed-chips--hint'));
+    check('no keyboard wiring reaches visitors', !page.includes("addEventListener('keydown'"));
+
     // ── "I want to move something" ──────────────────────────────────────
     check('the edit layer answers the help panel', editPrev.includes("m.__rtHelp === 1"));
     check('it shows every move control at once, pulsing', /sd-ed-bar--pulse/.test(editPrev)

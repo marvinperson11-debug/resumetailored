@@ -7212,16 +7212,10 @@ Aaliyah Washington`
       // Clicking the page counts as clicking away from the helper.
       if (m.kind === 'pageclick') { smHelpClose(); return; }
 
-      if (m.kind === 'undo') {
-        // No toast: the chip is the feedback, and it is already where the user
-        // is looking. A corner toast is the pattern the chips exist to replace.
-        if (edStore && edStore.undo()) smPushChips();
-        return;
-      }
-      if (m.kind === 'redo') {
-        if (edStore && edStore.redo()) smPushChips();
-        return;
-      }
+      // No toast: the chip is the feedback, and it is already where the user
+      // is looking. A corner toast is the pattern the chips exist to replace.
+      if (m.kind === 'undo') { smDoUndo(!!m.viaKey); return; }
+      if (m.kind === 'redo') { smDoRedo(!!m.viaKey); return; }
 
       if (m.kind === 'edit') {
         smMutate(d => { SiteFields.applyEdit(d, m.el, m.value); }, 'inline-edit');
@@ -7336,6 +7330,8 @@ Aaliyah Washington`
       smPushChips();
     }
 
+    let _smKeyHintUsed = false, _smChipHint = false;
+
     function smPushChips() {
       const f = document.getElementById('smFrame');
       if (!f || !f.contentWindow) return;
@@ -7345,8 +7341,52 @@ Aaliyah Washington`
           __rtChips: 1,
           canUndo: !!edStore.canUndo(),
           canRedo: !!edStore.canRedo(),
+          hint: _smChipHint,
         }, smUndoAnchor), '*');
       } catch (_) {}
+      _smChipHint = false;   // once, then never again this session
+    }
+
+    /* Keyboard undo/redo. Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y, driving the same
+       store as the chips — no second history.
+
+       Two documents listen: this one and the edit layer inside the iframe,
+       because keydown only fires where focus is and the iframe is most of the
+       screen. Whichever hears it, the result is identical.
+
+       While the user is typing, Ctrl+Z belongs to the browser: it should undo
+       their typing, not their last change to the site. */
+    function smKeyUndoRedo(ev) {
+      if (!smEditing || !edStore) return;
+      const p = document.getElementById('panel-website');
+      if (!p || !p.classList.contains('active')) return;
+      const t = document.activeElement;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ''))) return;
+      const mod = ev.ctrlKey || ev.metaKey;
+      if (!mod) return;
+      const k = (ev.key || '').toLowerCase();
+      if (k === 'z' && !ev.shiftKey) { ev.preventDefault(); smDoUndo(true); }
+      else if ((k === 'z' && ev.shiftKey) || k === 'y') { ev.preventDefault(); smDoRedo(true); }
+    }
+    document.addEventListener('keydown', smKeyUndoRedo);
+
+    // One path for both the chips and the keyboard, so they cannot drift.
+    // Neither of these pushes the chips itself. Undoing re-renders the page,
+    // which replaces the iframe — a push here would land on the frame that is
+    // about to be thrown away, and the first-use hint would be consumed by a
+    // document nobody ever sees. The new frame's "ready" does the push.
+    function smDoUndo(viaKey) {
+      if (!edStore || !edStore.canUndo()) return false;
+      if (viaKey && !_smKeyHintUsed) { _smKeyHintUsed = true; _smChipHint = true; }
+      if (!smUndoAnchor) smUndoAnchor = { idx: 0 };   // keyboard-first: anchor somewhere visible
+      edStore.undo();
+      return true;
+    }
+    function smDoRedo(viaKey) {
+      if (!edStore || !edStore.canRedo()) return false;
+      if (viaKey && !_smKeyHintUsed) { _smKeyHintUsed = true; _smChipHint = true; }
+      edStore.redo();
+      return true;
     }
 
     function smHideChips() {
