@@ -594,8 +594,19 @@ const server = app.listen(0, async () => {
       /\.sm-bar \[hidden\] \{ display: none !important; \}/.test(appJs));
     check('the bar no longer carries the look/address/advanced buttons',
       !/onclick="smStripOpen\(1\)"[^>]*sm_change_look/.test(appJs) && !/id="smAddrBtn"/.test(appJs));
-    check('the advanced editor keeps a door inside the page',
-      /smHelpPick\('advanced'\)/.test(appJs) && /what === 'advanced'/.test(appJs));
+    /* The advanced editor is gone as a destination — a drag-and-drop canvas
+       with rails and an inspector was a second, harder product bolted onto a
+       flow whose premise is never feeling like you built anything. Nothing
+       routes there any more. */
+    check('nothing routes to the advanced editor',
+      !/function smAdvanced\(/.test(appJs) && !/smHelpPick\('advanced'\)/.test(appJs));
+    check('the first-run picker shows the grid, not the editor around it',
+      ['cv-top', 'cv-rail', 'cv-canvasbox', 'cv-inspector', 'cv-railtoggle', 'cv-bottom']
+        .every(c => new RegExp('body\\.wb-picker \\.' + c + '[,{ ]').test(appJs)));
+    /* The document store stays: simple mode's inline edits, vibes, guided strip
+       and undo all run through it. The surface went, not the engine. */
+    check('the document store simple mode depends on is still wired',
+      /edApply\(/.test(appJs) && /edStore\.subscribe/.test(appJs));
     check('Back is one step back rather than a fixed destination',
       /_smPreviewFromEditor/.test(appJs) && /function smBack\(\)/.test(appJs));
 

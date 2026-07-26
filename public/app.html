@@ -369,6 +369,18 @@
     body.wb-public .sidebar { display: none !important; }
     body.wb-picker .sidebar,
     body.wb-picker .sm-view { display: none !important; }
+    /* The first-run picker borrows the editor's shell to host the template
+       grid, and borrowing it dragged the entire editor on screen: a top bar of
+       tools, a rail, a canvas and an inspector, before the user had chosen
+       anything. That is the "second editor" they landed in. Only the grid
+       shows now — the shell is a container, not a destination. */
+    body.wb-picker .cv-top,
+    body.wb-picker .cv-rail,
+    body.wb-picker .cv-canvasbox,
+    body.wb-picker .cv-inspector,
+    body.wb-picker .cv-railtoggle,
+    body.wb-picker .cv-bottom { display: none !important; }
+    body.wb-picker .cv-panel { width: 100%; max-width: none; }
 
     /* Only one rail panel open at a time, and none of them to begin with. */
     .cv-panel[hidden] { display: none !important; }
@@ -1445,7 +1457,6 @@
             <button type="button" class="sm-help-opt" onclick="smHelpPick('links')" data-i18n="sm_help_links">I want to add my links</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('address')" data-i18n="sm_help_address">I want to change my web address</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('template')" data-i18n="sm_help_template">I want to try a different design</button>
-            <button type="button" class="sm-help-opt" onclick="smHelpPick('advanced')" data-i18n="sm_help_advanced">I want the advanced editor</button>
             <button type="button" class="sm-help-never" onclick="smHelpClose()" data-i18n="sm_help_never">Never mind</button>
           </div>
           <div class="sm-strip" id="smStrip">
@@ -7713,10 +7724,6 @@ Aaliyah Washington`
       if (what === 'links') { smLinksOpen(); return; }
       if (what === 'address') { smChangeAddress(); return; }
       if (what === 'template') { smTryTemplate(); return; }
-      // The advanced editor lost its bar button along with the rest of the
-      // chrome, so this is now its only door — inside the page, where someone
-      // goes looking when the simple controls are not enough.
-      if (what === 'advanced') { smAdvanced(); return; }
     }
 
     // Straight to the file picker. If this vibe's page has no photo slot, one is
@@ -8021,30 +8028,19 @@ Aaliyah Washington`
     // navigation. Quiet, but always present.
     function smExit() { smShow(false); showTab('tailor'); }
 
-    // "Customize My Site" opens the guided strip, on every screen size. The
-    // drag-and-drop editor is a separate, deliberate door — see smAdvanced.
+    // "Customize My Site" opens the guided strip. It is now the only way to
+    // change anything beyond clicking the page itself.
     function smCustomize() { smStripOpen(0); }
 
     // The advanced editor, for anyone who wants it. Not on the 3-minute path.
-    function smAdvanced() {
-      if (!cvIsDesktop()) { showToast(_t('sm_adv_desktop', 'The advanced editor needs a bigger screen.'), 5000); return; }
-      smStripClose();
-      smShow(false);
-      // The store already exists (created at boot). Wire up the editor's own
-      // views without replacing it — re-creating it here would throw away the
-      // undo history of everything done in simple mode.
-      if (wcDoc && edStore && !_smEditorWired) {
-        _smEditorWired = true;
-        edStore.subscribe(() => { edSyncButtons(); edRenderCanvas(); edRenderOverlay(); edRenderInspector(); });
-        edSyncPageSelect(); edRenderPalette(); edSyncButtons();
-        edRenderCanvas(); edRenderOverlay(); edRenderInspector();
-      } else if (!edStore && wcDoc) { edInit(wcDoc); _smEditorWired = true; }
-      wcLoadTemplates();
-      wcLoadMediaUsage();
-      wcLoadSiteExtras();
-      wcSetView('edit');
-      if (typeof edFitStage === 'function') setTimeout(edFitStage, 60);
-    }
+    /* The advanced editor is gone as a DESTINATION. Nothing routes here any
+       more: a drag-and-drop canvas with rails, an inspector and a toolbar was
+       a second, harder product bolted onto a flow whose premise is that you
+       never feel like you built anything.
+
+       Its document store is NOT gone, and cannot be — `edStore`/`edApply` are
+       what simple mode's inline edits, vibes, guided strip and undo all run
+       through. What was removed is the surface, not the engine. */
 
     // "Done Editing" — back to what visitors see, which is always the default.
     async function smDoneEditing() {
