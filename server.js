@@ -3413,40 +3413,10 @@ app.get('/api/site-vibes', (req, res) => {
  * thing.
  */
 function _autogenFill(doc, text) {
-  const SF = require('./public/site-fields.js');
-  if (!doc || !Array.isArray(doc.pages)) return doc;
-
-  SF.tagFields(doc);
-  // force: the template's sample prose is not a user edit, so it is replaced
-  // even though nothing is detached yet.
-  SF.syncFromResume(doc, text, { force: true });
-
-  const vals = SF.deriveFields(text);
-
-  // Anything we could not derive would otherwise keep the template's invented
-  // copy. Blank it, then drop the empty element rather than leave a hole.
-  for (const pg of doc.pages) {
-    const hero = (pg.sections || [])[0];
-    if (!hero) continue;
-    for (const el of hero.els || []) {
-      const f = el.props && el.props.field;
-      if (f && !vals[f]) el.props.text = '';
-    }
-  }
-  for (const pg of doc.pages) {
-    for (const s of pg.sections || []) {
-      s.els = (s.els || []).filter((el) =>
-        !(['heading', 'subheading', 'paragraph'].includes(el.type) && el.props && el.props.text === ''));
-    }
-  }
-
-  if (doc.pages[0] && doc.pages[0].seo && vals.name) {
-    doc.pages[0].seo.title = vals.name;
-    doc.pages[0].seo.description = vals.summary
-      ? vals.summary.slice(0, 160)
-      : `${vals.name}${vals.subtitle ? ' — ' + vals.subtitle : ''}`;
-  }
-  return doc;
+  // The implementation lives in public/site-fields.js so the editor's template
+  // swap runs the identical fill. It used to live here, server-side only, and
+  // the client path published the template's sample person as the user.
+  return require('./public/site-fields.js').fillFromResume(doc, text);
 }
 
 /**

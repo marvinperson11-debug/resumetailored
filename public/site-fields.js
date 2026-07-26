@@ -202,6 +202,60 @@
     return out;
   }
 
+  /**
+   * Replace a template's invented sample person with the real one.
+   *
+   * Templates ship with "Alex Morgan · VP of Operations" and a paragraph of
+   * fabricated biography. Leaving any of it in place hands someone a page that
+   * makes FALSE CLAIMS ABOUT THEM, on a URL they are about to send to
+   * recruiters — so every visible line of sample prose is either replaced with
+   * something true or removed outright.
+   *
+   * This lives here, next to the derivation, because there is more than one way
+   * into a template: the server generates a starter site, and the editor swaps
+   * templates on an existing one. When this logic lived only on the server, the
+   * editor's swap adopted the raw template and published Alex Morgan under the
+   * user's own address. One implementation, shared, is the only version of this
+   * that cannot be skipped by whichever path someone happens to take.
+   */
+  function fillFromResume(doc, text) {
+    if (!doc || !Array.isArray(doc.pages)) return doc;
+
+    tagFields(doc);
+    // force: the template's sample prose is not a user edit, so it is replaced
+    // even though nothing is detached yet.
+    syncFromResume(doc, text, { force: true });
+
+    var vals = deriveFields(text);
+
+    // Anything we could not derive would otherwise keep the template's invented
+    // copy. Blank it, then drop the empty element rather than leave a hole.
+    doc.pages.forEach(function (pg) {
+      var hero = (pg.sections || [])[0];
+      if (!hero) return;
+      (hero.els || []).forEach(function (el) {
+        var f = el.props && el.props.field;
+        if (f && !vals[f]) el.props.text = '';
+      });
+    });
+    doc.pages.forEach(function (pg) {
+      (pg.sections || []).forEach(function (s) {
+        s.els = (s.els || []).filter(function (el) {
+          return !(['heading', 'subheading', 'paragraph'].indexOf(el.type) >= 0
+            && el.props && el.props.text === '');
+        });
+      });
+    });
+
+    if (doc.pages[0] && doc.pages[0].seo && vals.name) {
+      doc.pages[0].seo.title = vals.name;
+      doc.pages[0].seo.description = vals.summary
+        ? vals.summary.slice(0, 160)
+        : vals.name + (vals.subtitle ? ' — ' + vals.subtitle : '');
+    }
+    return doc;
+  }
+
   // ── Section ordering and removal ──────────────────────────────────────────
   // Removing a section takes it off the SITE. The resume is a separate store
   // and is never touched by any of this.
@@ -236,6 +290,7 @@
     deriveFields: deriveFields,
     tagFields: tagFields,
     syncFromResume: syncFromResume,
+    fillFromResume: fillFromResume,
     applyEdit: applyEdit,
     resetField: resetField,
     isDetached: isDetached,
