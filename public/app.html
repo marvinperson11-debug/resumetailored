@@ -6794,9 +6794,11 @@ Aaliyah Washington`
       // letter. Free for everyone — it spreads the brand.
       const shareBtn = selectedMode !== 'cover_letter'
         ? `<button class="download-btn" onclick="shareResumeLink()" style="background:linear-gradient(135deg,#10b981,#0ea5e9);">🔗 Share as Link</button>` : '';
-      // Personal website — Pro only, resume only (a live public page).
+      // Personal website — Pro only, resume only. It OPENS the Website Creator;
+      // it does not publish. The label says so, because a button called
+      // "Publish" that does not publish is worse than the bug it replaced.
       const siteBtn = (isSubscriberFlag && selectedMode !== 'cover_letter')
-        ? `<button class="download-btn" onclick="publishPersonalSite()" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);">🌐 Publish as Website</button>` : '';
+        ? `<button class="download-btn" onclick="startPersonalSite()" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);">🌐 Make a Website</button>` : '';
       if (isSubscriberFlag) {
         const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
         row.innerHTML = `${fmtBanner}
@@ -9479,40 +9481,37 @@ Aaliyah Washington`
 
     // ── Personal website (Pro) ────────────────────────────────────────────────
     // Publish the tailored resume as a live public page at /site/<address>.
-    async function publishPersonalSite() {
-      if (!isSubscriberFlag) { showToast('Publishing a personal website is a Pro feature.'); startPro(); return; }
-      let text = getOutputText();
-      if (!text) { showToast('Tailor a resume first, then publish it.'); return; }
-      if (sigName && text.endsWith(sigName)) text = text.slice(0, text.length - sigName.length).trimEnd();
-      if (selectedMode === 'both') text = (text.split(/\n\n-{3,}\n\n/)[0] || text).trim();
-
-      // Suggest an address from the resume title; let the user edit it.
-      const title = (document.getElementById('outputTitle').textContent || '').replace(/resume/i, '').trim();
-      const suggested = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30);
-      const input = window.prompt('Choose your website address:\n\n' + window.location.origin + '/site/______\n\n3–30 letters, numbers or hyphens.', suggested || '');
-      if (input === null) return;
-      const sub = input.toLowerCase().replace(/[^a-z0-9-]/g, '').replace(/^-+|-+$/g, '');
-      if (sub.length < 3) { showToast('That address is too short — use 3–30 characters.'); return; }
-
-      const rTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
-      try {
-        const res = await fetch('/api/personal-site', {
-          method: 'POST', headers: authHeaders(),
-          body: JSON.stringify({
-            subdomain: sub, text, name: title,
-            layout: rTpl.layout,
-            colors: { primary: rTpl.c.p, accent: rTpl.c.a, light: rTpl.c.l },
-            serif: !!rTpl.serif,
-            photoUrl: (window.rtResumePhoto || undefined),
-            hideContact: false,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) { showToast(data.message || data.error || 'Could not publish your website.', 6000); return; }
-        try { await navigator.clipboard.writeText(data.url); } catch (_) {}
-        showToast('🌐 Live at ' + data.url + ' (link copied)', 8000);
-        window.open(data.url, '_blank');
-      } catch (_) { showToast('Could not publish your website — please try again.'); }
+    /**
+     * "Make a Website" on a tailored resume — opens the Website Creator.
+     *
+     * This used to publish, immediately and directly: it prompted for an
+     * address and POSTed a site that went live on the spot. Three things were
+     * wrong with that by the time the Creator was rebuilt around them:
+     *
+     *   - it made the site PUBLIC with no draft step, while every other path
+     *     keeps a site private until the user presses Publish themselves;
+     *   - it built a v1 site — a bare resume page with a colour scheme — not
+     *     one of the twelve template documents;
+     *   - and once a user could have several sites, publishing a new one took
+     *     their real site DOWN. Someone who had built a site in the Creator,
+     *     then tailored another resume and pressed this button, would silently
+     *     replace it with a plain page at an address they had never seen.
+     *
+     * So it no longer publishes anything. It opens the Creator, which shows
+     * their existing site if they have one — untouched — or the template
+     * picker if they do not, and publishing stays where the user controls it.
+     *
+     * There is no resume to hand over explicitly: every successful tailoring is
+     * already saved, so the resume on screen IS the most recent saved one, and
+     * that is what the Creator generates from. Re-saving it here to be sure
+     * would delete and re-insert the row (that is how the save de-dupes),
+     * giving it a new id and breaking the link a site keeps to the resume it
+     * was built from.
+     */
+    function startPersonalSite() {
+      if (!isSubscriberFlag) { showToast('A personal website is a Pro feature.'); startPro(); return; }
+      if (!getOutputText()) { showToast('Tailor a resume first, then build your website from it.'); return; }
+      showTab('website');
     }
     // Re-create the link with whatever the modal controls currently say (called when
     // the hide-contact checkbox or the expiry dropdown changes).

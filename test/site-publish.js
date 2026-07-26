@@ -500,6 +500,24 @@ const server = app.listen(0, async () => {
     check('each site reports its own address',
       list.sites.every(x => typeof x.url === 'string' && x.url.includes(x.subdomain)));
 
+    /* ── ONLY ONE PLACE PUBLISHES ───────────────────────────────────────
+       The Tailor tab used to carry its own publish button that POSTed a site
+       directly: it went live immediately with no draft step, it built a v1
+       page rather than a template, and — once a user could have several sites
+       — publishing it took their real site DOWN, because the server's one-live
+       rule unpublishes the others. Someone who had built a site in the Creator
+       and then tailored another resume would silently lose it.
+
+       It now opens the Website Creator instead. This is a static check on the
+       shipped client, because the failure is a button existing at all. */
+    const appJs = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.html'), 'utf8');
+    check('the Tailor tab no longer publishes directly', !/function publishPersonalSite/.test(appJs));
+    check('its button opens the Website Creator', /onclick="startPersonalSite\(\)"/.test(appJs));
+    check('and it no longer promises to publish', !/Publish as Website/.test(appJs));
+    check('the replacement neither posts a site nor asks for an address',
+      /function startPersonalSite\(\)[\s\S]{0,600}?\n    \}/.test(appJs) &&
+      !/function startPersonalSite\(\)[\s\S]{0,600}?(personal-site|window\.prompt)/.test(appJs));
+
   } catch (e) {
     failures++;
     console.error('FAIL  unexpected error —', e && e.stack);

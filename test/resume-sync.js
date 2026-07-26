@@ -215,6 +215,22 @@ const server = app.listen(0, async () => {
       list.resumes.find(r => r.id === other).siteSync === null,
       JSON.stringify(list.resumes.map(r => [r.id, r.siteSync])));
 
+    // The site lookup is read ONCE and shared across every row rather than
+    // re-queried per resume. Hoisting shared state has exactly one failure
+    // mode — every row getting the same answer — so the status must still be
+    // per-row with a realistic number of resumes in the list.
+    for (let i = 0; i < 12; i++) {
+      newResume2('a@x.com', `Person ${i}\np${i}@example.com | Austin, TX\n\nSUMMARY\nFiller resume ${i}.`);
+    }
+    list = await (await fetch(`${B}/api/resumes`, { headers: AJ('tokA') })).json();
+    check('a long list still names exactly one resume as the site\'s',
+      list.resumes.filter(r => r.siteSync !== null).length === 1,
+      JSON.stringify(list.resumes.map(r => [r.id, r.siteSync])));
+    check('and it is the one the site was built from',
+      list.resumes.find(r => r.siteSync !== null).id === rid);
+    check('every other row makes no claim at all',
+      list.resumes.filter(r => r.id !== rid).every(r => r.siteSync === null));
+
   } catch (e) {
     failures++;
     console.error('FAIL  unexpected error —', e && e.stack);
