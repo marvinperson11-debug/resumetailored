@@ -629,8 +629,16 @@ const server = app.listen(0, async () => {
       /\.cv-top \{ height: auto; min-height: 54px; flex-wrap: wrap;/.test(appJs));
     check('the panel floats over the canvas rather than squeezing it out',
       /\.cv-panel \{ position: absolute; left: 56px;/.test(appJs));
-    check('and the collapse handle no longer sits on a rail button',
-      /\.cv-railtoggle \{ display: none; \}/.test(appJs));
+    /* The collapse handle is KEPT and moved, not hidden. Pinned at top:50% it
+       landed on the "Uploads" rail button — measured overlapping on desktop as
+       well as on a phone — and hiding it to solve that removed a control the
+       spec asks for. Anchored to the bottom it clears the last rail item. */
+    check('the collapse handle still exists', /class="cv-railtoggle"/.test(appJs));
+    check('and is anchored to the bottom rather than mid-rail',
+      /\.cv-railtoggle \{\n *position: absolute; left: 0; top: auto; bottom: 56px;/.test(appJs));
+    check('with a phone position of its own', /\.cv-railtoggle \{ top: auto; bottom: 56px;[^}]*left: 56px;/.test(appJs));
+    check('the device toggle is kept at phone width',
+      /\.cv-logo, \.cv-title \{ display: none; \}/.test(appJs) && !/\.cv-seg \{ display: none/.test(appJs));
 
     check('there is no read-only state to land in', !/_smPreviewFromEditor/.test(appJs));
     check('and no button that opens one', !/id="smPreviewBtn"/.test(appJs) && !/smSetEditing\(false\)/.test(appJs));

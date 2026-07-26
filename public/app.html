@@ -385,8 +385,11 @@
     /* The rail can be pulled in so the page gets the whole width. */
     .cv-shell.is-railed .cv-panel { display: none !important; }
     .cv-shell.is-railed .cv-rail { width: 0; overflow: hidden; padding: 0; }
+    /* Anchored to the BOTTOM, not the middle. Pinned at 50% it landed on top of
+       the "Uploads" rail button at every width — measured overlapping on
+       desktop as well as on a phone. Down here it clears the last rail item. */
     .cv-railtoggle {
-      position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      position: absolute; left: 0; top: auto; bottom: 56px; transform: none;
       z-index: 12; width: 22px; height: 54px; border: none; cursor: pointer;
       background: #3b3c42; color: #e5e7eb; font-size: 13px; line-height: 1;
       border-radius: 0 8px 8px 0; box-shadow: 2px 0 8px rgba(0,0,0,.3);
@@ -709,9 +712,12 @@
         z-index: 6; box-shadow: 8px 0 24px rgba(0,0,0,.4); }
       .cv-inspector { position: absolute; right: 0; top: 0; bottom: 0; z-index: 7;
         box-shadow: -8px 0 24px rgba(0,0,0,.4); }
-      /* It sat on top of the "Uploads" button. The rail is narrow enough now
-         that a handle for hiding it earns nothing. */
-      .cv-railtoggle { display: none; }
+      /* The collapse handle stays — it was only ever in the wrong PLACE. Pinned
+         mid-rail it sat on top of the "Uploads" button; moved down to the
+         bottom corner, clear of the last rail item and above the zoom bar, it
+         covers nothing and is still where a thumb naturally reaches. */
+      .cv-railtoggle { top: auto; bottom: 56px; transform: none; left: 56px;
+        width: 26px; height: 46px; border-radius: 0 10px 10px 0; }
     }
     .cv-bottom .cv-tbtn { background: rgba(255,255,255,.1); }
     .cv-zoom { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; }
