@@ -111,7 +111,7 @@ The drag-and-drop editor still opens only on a wider screen — but that's now a
 
 **The three-panel editor isn't going away, it's being demoted.** Everything I built over the last few rounds — drag-and-drop, pages, mobile overrides, the element library — stays. It just stops being the front door. A beginner never sees it; someone who wants it clicks past the simple flow. I'm not deleting work, and I'm not going to argue for keeping it in the user's face.
 
-**"Add Music" is in your bottom strip and I'd push back on one detail.** Auto-playing audio on a page a recruiter opens at their desk is the single fastest way to get a tab closed. I'll build it, but muted by default with a visible play control, and I'll label it "Add background music (visitors press play)" so nobody is surprised. Tell me if you want true autoplay and I'll do it.
+**"Add Music" — RESOLVED: cut from the first run entirely.** Your call, and the right one. There is no music step. Ambient sound stays reachable as an `audio` element in the advanced editor for anyone who goes looking for it, so nothing was deleted — it just never interrupts the three-minute path. A voice *introduction* is a different thing (the person speaking for themselves) and keeps its step, surfaced to visitors as **▶ Play my introduction**, which they choose to press.
 
 ---
 
@@ -124,7 +124,7 @@ Starting with item 1 as you asked and working outward. Each phase ships independ
 | **1** | Full-screen public view as the default state. Auto-generate a site from the most recent saved resume + cover letter on first open. One floating **✏️ Customize My Site** button, one subtle top line. Zero chrome. |
 | **2** | Edit mode: click-it-to-change-it inline editing (name, photo, section move/delete with floating controls), slim top bar with **Done Editing**. Sidebar and right panel start collapsed. |
 | **3** | ~~The 10 Vibes~~ **done** — one-click apply, lighten/darken, readability overlay, CC0 photography. |
-| **4** | The bottom strip conversation — one question at a time, skip and back on every step, ending in Publish. |
+| **4** | ~~The bottom strip~~ **done** — seven steps, one question at a time, skip and back on every step, ending in Publish. No music step. |
 | **5** | ~~Auto-save~~ **done** — shipped alongside the publish decision. Still to add: the inline **↩️ Undo** that appears where they acted and fades after 5s. (The undo engine already exists — this is surfacing it, not building it.) |
 | **6** | **💬 Not sure?** helper that jumps straight to the right control. |
 | **7** | Subdomain URLs behind `SITE_PUBLIC_HOST`, plus the two middleware fixes above. |

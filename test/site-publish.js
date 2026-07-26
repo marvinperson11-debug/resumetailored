@@ -158,6 +158,42 @@ const server = app.listen(0, async () => {
     check('unpublishing requires an explicit flag', a3.published === false);
     await autosave({ publish: true }); // restore for the subdomain checks below
 
+    // ── Cover letter: a download, never printed on the page ──────────────────
+    // A cover letter is addressed to one company. Rendered inline, every other
+    // recruiter reads a letter written to someone else.
+    const LETTER = 'Dear Hiring Manager,\n\nI am writing about the Staff Engineer role at Northwind.\n\nSincerely,\nAlice';
+    const CLDOC = JSON.parse(JSON.stringify(gen.config));
+    CLDOC.assets = Object.assign({}, CLDOC.assets, { coverLetterId: 7, coverLetterText: LETTER });
+    CLDOC.pages[0].sections[0].els.push({
+      id: 'cl1', type: 'coverletter', x: 80, y: 400, w: 300, h: 50, props: { text: 'Read my cover letter' },
+    });
+
+    // While it is still a draft, nothing about it may be reachable.
+    await autosave({ config: CLDOC, publish: false });
+    check('a draft does not leak the cover letter', (await fetch(`${B}/site/alice/cover-letter`)).status === 404);
+
+    await autosave({ config: CLDOC, publish: true });
+    const clPage = await (await fetch(`${B}/site/alice`)).text();
+    check('the page offers the cover letter as a download',
+      clPage.includes('/site/alice/cover-letter') && clPage.includes('Read my cover letter'));
+    check('the letter itself is NOT printed on the page', !clPage.includes('Dear Hiring Manager'));
+
+    const dl = await fetch(`${B}/site/alice/cover-letter`);
+    const dlText = await dl.text();
+    check('the download serves the letter', dl.status === 200 && dlText.includes('Dear Hiring Manager'));
+    check('the download is an attachment, not a page',
+      (dl.headers.get('content-disposition') || '').includes('attachment'));
+
+    // With no cover letter chosen, the button must not render a dead link.
+    const NOCL = JSON.parse(JSON.stringify(CLDOC));
+    NOCL.assets.coverLetterText = '';
+    await autosave({ config: NOCL, publish: true });
+    const noClPage = await (await fetch(`${B}/site/alice`)).text();
+    check('no cover letter → no download button', !noClPage.includes('/site/alice/cover-letter'));
+    check('no cover letter → the download 404s', (await fetch(`${B}/site/alice/cover-letter`)).status === 404);
+
+    await autosave({ config: gen.config, publish: true }); // restore for later checks
+
     // ── The server owns the public URL ──────────────────────────────────────
     const me = await (await fetch(`${B}/api/personal-site`, { headers: AJ('tokA') })).json();
     // https everywhere except localhost, where the scheme stays http so the

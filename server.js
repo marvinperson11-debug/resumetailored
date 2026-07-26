@@ -2053,8 +2053,8 @@ a{display:inline-block;margin-top:18px;background:linear-gradient(135deg,#6366F1
 // Public-site chrome strings (user content is shown as authored). Shared by the
 // grid renderer and the contact block so a zh site renders in Chinese server-side.
 const _SITE_I18N = {
-  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume', add_video: 'Add a video', add_audio: 'Add audio' },
-  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历', add_video: '添加视频', add_audio: '添加音频' },
+  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume', add_video: 'Add a video', add_audio: 'Add audio', cover_dl: 'Read my cover letter', voice_intro: '▶ Play my introduction' },
+  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历', add_video: '添加视频', add_audio: '添加音频', cover_dl: '下载我的求职信', voice_intro: '▶ 播放我的自我介绍' },
 };
 
 // A resume rendered as a self-contained fragment (used by a `resume` block).
@@ -2344,6 +2344,13 @@ function _sdElement(el, ctx) {
     }
     case 'qr':
       return `<img class="sd-qr" src="${_escHtml(ctx.base)}/qr.svg" alt="QR code" loading="lazy"/>`;
+    case 'coverletter': {
+      // A cover letter is addressed to one company, so it is offered as a
+      // download rather than rendered into the page — every other recruiter
+      // reading it inline would be reading a letter written to someone else.
+      if (!ctx.hasCoverLetter) return '';
+      return `<a class="sd-btn sd-btn--ghost" href="${_escHtml(ctx.base)}/cover-letter" download>${_sdText(p.text || ctx.SI.cover_dl, 80)}</a>`;
+    }
     default:
       return '';
   }
@@ -2375,7 +2382,10 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
   const SI = _SITE_I18N[lang];
   const sub = row.subdomain || '';
   const base = opts.baseUrl || `${origin}/site/${sub}`;
-  const ctx = { row, theme, SI, sub, pages, currentSlug: page.slug, base, lang };
+  let _assets = null;
+  try { _assets = doc && doc.assets ? doc.assets : null; } catch (_) { _assets = null; }
+  const hasCoverLetter = !!(_assets && typeof _assets.coverLetterText === 'string' && _assets.coverLetterText.trim().length > 20);
+  const ctx = { row, theme, SI, sub, pages, currentSlug: page.slug, base, lang, hasCoverLetter };
 
   // Per-element mobile overrides (V6) are emitted as a small stylesheet inside
   // the mobile media query, keyed on a per-element class. Collected while
@@ -3009,6 +3019,21 @@ function _serveSite(req, res, pageSlug) {
     page: pageSlug || '',
   }));
 }
+// The cover letter behind the download button. Published sites only — an
+// unpublished draft must not leak it any more than it leaks the page itself.
+app.get('/site/:sub/cover-letter', (req, res) => {
+  const sub = _validSubdomain(req.params.sub);
+  const row = sub ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub) : null;
+  if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
+  let cfg = null; try { cfg = row.config ? JSON.parse(row.config) : null; } catch (_) { cfg = null; }
+  const text = cfg && cfg.assets && typeof cfg.assets.coverLetterText === 'string' ? cfg.assets.coverLetterText : '';
+  if (!text.trim()) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
+  const name = String(row.name || sub).replace(/[^A-Za-z0-9 _-]/g, '').trim() || sub;
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${name} - Cover Letter.txt"`);
+  res.send(text);
+});
+
 app.get('/site/:sub', (req, res) => _serveSite(req, res, ''));
 app.get('/site/:sub/:page', (req, res) => _serveSite(req, res, String(req.params.page || '').toLowerCase().slice(0, 60)));
 
