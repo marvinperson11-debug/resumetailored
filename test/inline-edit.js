@@ -261,6 +261,15 @@ const server = app.listen(0, async () => {
     check('the chip anchor is whitelisted, not escaped',
       editPrev.includes("replace(/[^A-Za-z0-9_-]/g, '')"));
 
+    // ── "I want to move something" ──────────────────────────────────────
+    check('the edit layer answers the help panel', editPrev.includes("m.__rtHelp === 1"));
+    check('it shows every move control at once, pulsing', /sd-ed-bar--pulse/.test(editPrev)
+      && /@keyframes sd-pulse/.test(editPrev));
+    check('and brings the first one into view', editPrev.includes('scrollIntoView'));
+    check('the hint bars clean themselves up', editPrev.includes('sd-ed-bar--hint'));
+    check('none of the help wiring reaches visitors',
+      !page.includes('__rtHelp') && !page.includes('sd-ed-bar--pulse'));
+
     // The detach survives a round trip through the database.
     const back = await (await fetch(`${B}/api/personal-site`, { headers: AJ })).json();
     const cfg = JSON.parse(back.site.config);

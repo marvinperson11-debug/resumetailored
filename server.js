@@ -2594,6 +2594,8 @@ function _sdEditLayer() {
     .sd-ed-chips button{pointer-events:auto;font:inherit;font-size:12.5px;font-weight:700;color:#fff;background:rgba(17,24,39,.94);border:none;border-radius:999px;padding:9px 15px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.28);white-space:nowrap;}
     .sd-ed-chips button:hover{background:#111827;}
     @media(max-width:820px){.sd-ed-chips button{font-size:14px;padding:12px 20px;}.sd-ed-chips{gap:10px;}}
+    .sd-ed-bar--pulse{animation:sd-pulse 1.4s ease-in-out 3;}
+    @keyframes sd-pulse{0%,100%{transform:scale(1);box-shadow:0 8px 24px rgba(0,0,0,.3);}50%{transform:scale(1.06);box-shadow:0 8px 30px rgba(99,102,241,.75);}}
   </style>
   <script>
   (function(){
@@ -2702,6 +2704,10 @@ function _sdEditLayer() {
     });
 
     document.addEventListener('click', function(ev){
+      // A click on an iframe never reaches the parent document, and this iframe
+      // is most of the screen — so anything out there listening for "clicked
+      // away" (the help panel) has to be told.
+      post({ kind: 'pageclick' });
       if (ev.target.closest('.sd-ed-bar') || ev.target.closest('.sd-ed-reset')) return;
       var wrap = ev.target.closest && ev.target.closest('.sd-el[data-el]');
       if (wrap) {
@@ -2803,9 +2809,43 @@ function _sdEditLayer() {
 
     addEventListener('message', function(ev){
       var m = ev && ev.data;
-      if (!m || m.__rtChips !== 1) return;
-      if (m.hide) { hideChips(); return; }
-      showChips(m);
+      if (!m) return;
+      if (m.__rtChips === 1) {
+        if (m.hide) { hideChips(); return; }
+        showChips(m);
+        return;
+      }
+      // "I want to move something": put a bar on every section at once and
+      // bring the first into view, so the controls end up under their eyes
+      // rather than needing to be discovered by clicking around.
+      if (m.__rtHelp === 1 && m.action === 'showMoves') {
+        clear();
+        var secs = document.querySelectorAll('section[data-sec]');
+        secs.forEach(function(sec){
+          sec.classList.add('sd-ed-sec');
+          var r = sec.getBoundingClientRect();
+          var b = document.createElement('div');
+          b.className = 'sd-ed-bar sd-ed-bar--pulse sd-ed-bar--hint';
+          b.style.left = (r.left + scrollX + 12) + 'px';
+          b.style.top = (r.top + scrollY + 12) + 'px';
+          [['↑ Move Up', -1], ['↓ Move Down', 1]].forEach(function(p){
+            var btn = document.createElement('button');
+            btn.textContent = p[0];
+            btn.onclick = function(e){ e.stopPropagation(); post({ kind: 'moveSection', sec: sec.dataset.sec, delta: p[1] }); };
+            b.appendChild(btn);
+          });
+          var del = document.createElement('button');
+          del.textContent = 'Delete'; del.className = 'danger';
+          del.onclick = function(e){ e.stopPropagation(); post({ kind: 'deleteSection', sec: sec.dataset.sec }); };
+          b.appendChild(del);
+          document.body.appendChild(b);
+        });
+        if (secs.length) secs[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(function(){
+          document.querySelectorAll('.sd-ed-bar--hint').forEach(function(x){ x.remove(); });
+          document.querySelectorAll('.sd-ed-sec').forEach(function(x){ x.classList.remove('sd-ed-sec'); });
+        }, 7000);
+      }
     });
 
     post({ kind: 'ready' });

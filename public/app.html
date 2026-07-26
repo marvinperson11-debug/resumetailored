@@ -327,6 +327,11 @@
        position:sticky with z-index 100 inside a stacking context the editor
        cannot climb out of, so it is hidden outright rather than out-ranked. */
     body.wb-immersive .nav { display: none !important; }
+    /* Toasts default to the bottom-right, which is exactly where the "Not sure?"
+       button and its panel live. Centre them while the Website Creator is open
+       so the two never sit on top of each other. */
+    body.wb-immersive .toast { right: auto; left: 50%; transform: translateX(-50%) translateY(10px); }
+    body.wb-immersive .toast.show { transform: translateX(-50%) translateY(0); }
 
     /* ── Simple mode: the site, full screen, and almost nothing else ──
        This is what opening "My Website" shows. Someone who has never built a
@@ -479,6 +484,44 @@
     .sm-strip-back:hover, .sm-strip-skip:hover { color: #111827; }
     .sm-strip-back[hidden], .sm-strip-skip[hidden] { visibility: hidden; }
     .sm-strip-dots { font-size: 10px; letter-spacing: 4px; color: #d1d5db; }
+
+    /* "Not sure?" — a nudge, not an interruption. Only while editing; the
+       public view stays completely clean. */
+    .sm-help {
+      position: absolute; right: 20px; bottom: 20px; z-index: 7;
+      display: inline-flex; align-items: center; gap: 7px;
+      font: inherit; font-size: 13.5px; font-weight: 700; color: #fff;
+      background: rgba(17,24,39,.94); border: none; border-radius: 999px;
+      padding: 12px 18px; cursor: pointer; box-shadow: 0 6px 22px rgba(0,0,0,.28);
+    }
+    .sm-help:hover { background: #111827; }
+    .sm-help[hidden] { display: none; }
+    .sm-help-panel {
+      position: absolute; right: 20px; bottom: 74px; z-index: 8;
+      width: min(320px, calc(100% - 40px));
+      background: #fff; border: 1px solid rgba(15,23,42,.1); border-radius: 16px;
+      box-shadow: 0 16px 44px rgba(15,23,42,.22); padding: 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .sm-help-panel[hidden] { display: none; }
+    .sm-help-q { font-size: 14.5px; font-weight: 800; color: #111827; margin-bottom: 4px; }
+    .sm-help-opt {
+      font: inherit; font-size: 14px; font-weight: 600; color: #1f2937; text-align: left;
+      background: #f3f4f6; border: 1.5px solid transparent; border-radius: 12px;
+      padding: 13px 15px; cursor: pointer;
+    }
+    .sm-help-opt:hover { background: #e5e7eb; border-color: #c7d2fe; }
+    .sm-help-never {
+      font: inherit; font-size: 12.5px; font-weight: 600; color: #6b7280;
+      background: none; border: none; padding: 8px 4px 0; cursor: pointer; align-self: center;
+    }
+    .sm-help-never:hover { color: #111827; }
+    /* On a phone it slides up from the bottom and the targets get bigger. */
+    @media (max-width: 720px) {
+      .sm-help { right: 14px; bottom: 14px; font-size: 15px; padding: 14px 20px; }
+      .sm-help-panel { left: 0; right: 0; bottom: 0; width: auto; border-radius: 18px 18px 0 0; padding: 18px 16px 22px; }
+      .sm-help-opt { font-size: 15.5px; padding: 16px; }
+    }
 
     .sm-busy, .sm-empty {
       position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -1293,6 +1336,17 @@
             <button type="button" class="sm-back" onclick="smAdvanced()" title="Advanced editor"><span aria-hidden="true">⚙</span><span class="sm-lbl" data-i18n="sm_advanced">Advanced</span></button>
           </div>
           <iframe class="sm-frame" id="smFrame" title="Your website"></iframe>
+          <button type="button" class="sm-help" id="smHelpBtn" onclick="smHelpToggle()" hidden>
+            <span aria-hidden="true">💬</span><span data-i18n="sm_help_btn">Not sure?</span>
+          </button>
+          <div class="sm-help-panel" id="smHelpPanel" hidden>
+            <div class="sm-help-q" data-i18n="sm_help_q">Tell us what you want to change</div>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('photo')" data-i18n="sm_help_photo">I want to change my photo</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('move')" data-i18n="sm_help_move">I want to move something</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('look')" data-i18n="sm_help_look">I want a different look</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('voice')" data-i18n="sm_help_voice">I want to add my voice</button>
+            <button type="button" class="sm-help-never" onclick="smHelpClose()" data-i18n="sm_help_never">Never mind</button>
+          </div>
           <div class="sm-strip" id="smStrip">
             <div class="sm-strip-q" id="smStripQ"></div>
             <div class="sm-strip-body" id="smStripBody"></div>
@@ -2148,6 +2202,10 @@
         sm_section_gone: 'Section removed from your website — your resume is unchanged.',
         sm_last_section: 'A page needs at least one section.',
         sm_kept_edits: 'Updated from your resume — your own edits were kept.',
+        sm_help_btn: 'Not sure?', sm_help_q: 'Tell us what you want to change',
+        sm_help_photo: 'I want to change my photo', sm_help_move: 'I want to move something',
+        sm_help_look: 'I want a different look', sm_help_voice: 'I want to add my voice',
+        sm_help_never: 'Never mind',
         sm_vibe_q: 'Pick your vibe', sm_close: 'Close', sm_change_look: '🎨 Change the look',
         sm_lighten: 'Lighten', sm_darken: 'Darken',
         sm_published: '🌐 Your website is live — link copied.',
@@ -2336,6 +2394,10 @@
         sm_section_gone: '该板块已从网站移除——你的简历没有改动。',
         sm_last_section: '页面至少需要保留一个板块。',
         sm_kept_edits: '已根据简历更新——你自己修改过的内容已保留。',
+        sm_help_btn: '需要帮助？', sm_help_q: '告诉我们你想改什么',
+        sm_help_photo: '我想换我的照片', sm_help_move: '我想调整顺序',
+        sm_help_look: '我想换个样子', sm_help_voice: '我想加入我的声音',
+        sm_help_never: '算了',
         sm_vibe_q: '选择你的风格', sm_close: '关闭', sm_change_look: '🎨 更换外观',
         sm_lighten: '调亮', sm_darken: '调暗',
         sm_published: '🌐 您的网站已上线——链接已复制。',
@@ -7030,7 +7092,9 @@ Aaliyah Washington`
         try {
           const url = await _tvUploadMedia(f, f.name || 'photo.jpg');
           if (!url) throw new Error('no url');
-          smSetFirst('image', el => { el.props.src = url; delete el.props.ph; });
+          // createIfMissing: three templates have no image in the hero, and
+          // without this the step silently did nothing on them.
+          smSetFirst('image', el => { el.props.src = url; delete el.props.ph; }, true);
           await smRenderSite(); smQueueSave(); smStepNext();
         } catch (_) { showToast(_t('sm_upload_err', "That photo didn't upload — try another.")); }
       };
@@ -7134,6 +7198,7 @@ Aaliyah Washington`
         const lbl = b.querySelector('.sm-lbl');
         if (lbl) lbl.textContent = smEditing ? _t('sm_edit_off', 'Done') : _t('sm_edit_on', 'Edit');
       }
+      smHelpSync();
       await smRenderSite();
       if (smEditing) showToast(_t('sm_edit_hint', 'Click anything on your page to change it.'), 4000);
     }
@@ -7144,6 +7209,8 @@ Aaliyah Washington`
       if (!m || m.__rtEdit !== 1 || !wcDoc || !window.SiteFields) return;
 
       if (m.kind === 'ready') { smPushChips(); return; }
+      // Clicking the page counts as clicking away from the helper.
+      if (m.kind === 'pageclick') { smHelpClose(); return; }
 
       if (m.kind === 'undo') {
         // No toast: the chip is the feedback, and it is already where the user
@@ -7191,6 +7258,69 @@ Aaliyah Washington`
         return;
       }
     });
+
+    /* ── "Not sure?" ──────────────────────────────────────────────────────
+       Four plain-English wants, each wired to the control that satisfies it.
+       The panel closes itself once the control opens — asking someone to
+       dismiss a helper after it has helped them is one step too many. */
+    function smHelpSync() {
+      const b = document.getElementById('smHelpBtn');
+      if (b) b.hidden = !smEditing;          // never in the public view
+      if (!smEditing) smHelpClose();
+    }
+    function smHelpToggle() {
+      const p = document.getElementById('smHelpPanel');
+      if (!p) return;
+      if (p.hidden) { p.hidden = false; setTimeout(() => document.addEventListener('click', _smHelpAway, true), 0); }
+      else smHelpClose();
+    }
+    function smHelpClose() {
+      const p = document.getElementById('smHelpPanel');
+      if (p && !p.hidden) p.hidden = true;
+      document.removeEventListener('click', _smHelpAway, true);
+    }
+    // Clicking anywhere else dismisses it. Capture phase so it closes even when
+    // the click lands on something that handles its own events.
+    function _smHelpAway(ev) {
+      const p = document.getElementById('smHelpPanel');
+      const b = document.getElementById('smHelpBtn');
+      if (!p || p.hidden) return;
+      if (p.contains(ev.target) || (b && b.contains(ev.target))) return;
+      smHelpClose();
+    }
+
+    function smHelpPick(what) {
+      smHelpClose();
+      if (what === 'photo') { smHelpPhoto(); return; }
+      if (what === 'move')  { smHelpShowMoves(); return; }
+      if (what === 'look')  { smStripOpen(1); return; }   // step 2: pick your vibe
+      if (what === 'voice') { smStripOpen(3); return; }   // step 4: voice intro
+    }
+
+    // Straight to the file picker. If this vibe's page has no photo slot, one is
+    // added to the top — silently doing nothing is the worst possible answer to
+    // "I want to change my photo".
+    function smHelpPhoto() {
+      if (!window.SiteFields || !wcDoc) return;
+      let target = null;
+      for (const pg of wcDoc.pages || []) for (const sec of pg.sections || []) for (const el of sec.els || []) {
+        if (!target && (el.type === 'image' || el.type === 'imagebox')) target = el;
+      }
+      if (target) { smPickPhotoInto(target.id); return; }
+      const id = window.SiteDocStore ? SiteDocStore.newId('e') : 'e' + Date.now();
+      smMutate(d => {
+        const hero = d.pages[0].sections[0];
+        hero.els.push({ id, type: 'image', x: 820, y: 120, w: 280, h: 280, props: {} });
+      }, 'add-photo-slot');
+      smPickPhotoInto(id);
+    }
+
+    // Show every move/delete bar at once with a pulse, and bring the first into
+    // view — so "I want to move something" ends with the controls under their eyes.
+    function smHelpShowMoves() {
+      const f = document.getElementById('smFrame');
+      try { if (f && f.contentWindow) f.contentWindow.postMessage({ __rtHelp: 1, action: 'showMoves' }, '*'); } catch (_) {}
+    }
 
     /* ── Undo / redo chips ────────────────────────────────────────────────
        They appear where the action happened. The page re-renders after every
