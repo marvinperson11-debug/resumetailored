@@ -59,11 +59,7 @@ const html = _renderPersonalSite(
     primary_hex: '4a1042', hide_contact: 0, config: JSON.stringify(doc),
   },
   'https://resumetailored.com',
-  // Rendered as the AUTHOR sees it. The question this suite asks is "would
-  // someone who added this element see it", and an empty photo slot is now
-  // deliberately invisible to visitors while staying visible — and clickable —
-  // to the owner. Rendering as a visitor would fail on exactly that intent.
-  { indexable: false, footer: '', editable: true },
+  { indexable: false, footer: '' },
 );
 const body = (html.match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '';
 
@@ -73,7 +69,13 @@ const body = (html.match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '';
 // Anchor on the quote/space that terminates the class name.
 const wrapperRe = /<div class="sd-el(?:"|\s)/g;
 const wrapperCount = (body.match(wrapperRe) || []).length;
-ok('one wrapper rendered per palette entry', wrapperCount === specs.length, `${wrapperCount} wrappers for ${specs.length} palette entries`);
+// Every palette entry draws something EXCEPT an image slot with no photo yet.
+// Counted rather than hardcoded, so a new palette entry cannot slip past this.
+const photoSlots = specs.filter((s) => (s.type === 'image' || s.type === 'imagebox') && !(s.props && s.props.src));
+ok('one wrapper rendered per palette entry (bar empty photo slots)',
+  wrapperCount === specs.length - photoSlots.length,
+  `${wrapperCount} wrappers for ${specs.length} entries minus ${photoSlots.length} empty photo slots`);
+ok('and the exception really is only the photo slots', photoSlots.length === 2, String(photoSlots.length));
 
 // Render each element on its own so an empty render can be attributed exactly.
 specs.forEach((s) => {
@@ -87,24 +89,21 @@ specs.forEach((s) => {
   };
   const h1 = _renderPersonalSite(
     { subdomain: 'elib', name: 'Alex Morgan', text: RESUME, accent: '8b5cf6', primary_hex: '4a1042', hide_contact: 0, config: JSON.stringify(one) },
-    'https://resumetailored.com', { indexable: false, footer: '', editable: true },
+    'https://resumetailored.com', { indexable: false, footer: '' },
   );
   const b1 = (h1.match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '';
   const rendered = (b1.match(wrapperRe) || []).length === 1;
-  ok(`"${s.group} / ${s.label}" (${s.type}) renders with default props`, rendered,
-    'element produced no output — a user could drop this and see nothing');
-
-  // The other half of the photo-slot rule: what the AUTHOR sees above must be
-  // absent for a VISITOR, or the site advertises its own missing pieces.
-  if (s.type === 'image' || s.type === 'imagebox') {
-    const vis = _renderPersonalSite(
-      { subdomain: 'elib', name: 'Alex Morgan', text: RESUME, accent: '8b5cf6', primary_hex: '4a1042', hide_contact: 0, config: JSON.stringify(one) },
-      'https://resumetailored.com', { indexable: false, footer: '' },
-    );
-    const vb = (vis.match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '';
-    ok(`"${s.label}" with no photo yet is invisible to visitors`,
-      (vb.match(wrapperRe) || []).length === 0,
-      'an empty photo slot reached a visitor');
+  // image/imagebox are the deliberate exception: with no photo yet they render
+  // NOTHING, for the owner as well as for a visitor, so the page never
+  // advertises its own missing pieces. Every other element must draw something,
+  // or a user could add one and see nothing.
+  const photoSlot = (s.type === 'image' || s.type === 'imagebox') && !(s.props && s.props.src);
+  if (photoSlot) {
+    ok(`"${s.label}" with no photo yet renders nothing`, !rendered,
+      'an empty photo slot was drawn — it should be invisible until a photo is added');
+  } else {
+    ok(`"${s.group} / ${s.label}" (${s.type}) renders with default props`, rendered,
+      'element produced no output — a user could drop this and see nothing');
   }
 });
 

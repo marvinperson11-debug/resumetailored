@@ -195,24 +195,17 @@ const server = app.listen(0, async () => {
     check('an empty photo slot is invisible to visitors', !/sd-ph/.test(rfx));
     check('and leaves no empty frame behind', !/sd-ibox/.test(rfx));
 
-    /* It stays while EDITING — the slot has to be clickable for a photo to be
-       added to it — and there the old collapse still must not happen: an
-       absolutely positioned replaced element with `height:auto` falls back to
-       its intrinsic 150px. Capped, because drawing it at full designed height
-       is what produced the ellipse. */
+    /* Nobody sees an empty slot, the owner included. Keeping it for the owner
+       was tried and reverted: the read-only view was deleted, editing became
+       permanent, and the exception turned into "always" — putting the ellipse
+       back on every visit. Adding a photo goes through the help panel, which
+       searches the document rather than the rendered page. */
     const edrfx = await (await fetch(`${B}/api/personal-site/preview`, {
       method: 'POST', headers: AJ,
       body: JSON.stringify({ subdomain: 'renderfix', text: RESUME, name: 'Jane', config: RDOC, editable: true }),
     })).text();
-    // Scoped to the slot's own tag: the element WRAPPER legitimately carries the
-    // full designed height, so testing the whole document would pass on the
-    // wrapper and prove nothing about the slot.
-    const slotTag = (edrfx.match(/<div class="sd-ph sd-ph--slot"[^>]*>/) || [''])[0];
-    check('the slot is there while editing', !!slotTag, edrfx.slice(0, 120));
-    check('and it never collapses to the intrinsic 150px',
-      /min-height:200px/.test(slotTag) && !/min-height:150px/.test(slotTag), slotTag);
-    check('but is capped rather than drawn at its full designed height',
-      !/min-height:340px/.test(slotTag), slotTag);
+    check('an empty photo slot is invisible while editing too', !/sd-ph--slot/.test(edrfx));
+    check('and the editor still renders the rest of the page', /sd-el/.test(edrfx));
     check('mailto: social link rendered', /href="mailto:you@example\.com"/.test(rfx));
     check('tel: social link rendered', /href="tel:\+15551234567"/.test(rfx));
     check('javascript: link still rejected', !/javascript:/i.test(rfx));

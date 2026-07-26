@@ -2356,15 +2356,17 @@ function _sdMobileClass(el, rules) {
  * screen, which is the first thing anyone opening the site would see. A page
  * that announces its own missing pieces is worse than a page without them.
  *
- * It stays while EDITING, because the slot has to be clickable for a photo to
- * be added to it, and it is drawn as an obvious empty slot rather than as
- * decoration. (The 💬 Not sure? → "I want to change my photo" route works
- * either way: it searches the document, not the rendered page.)
+ * Nobody sees one, the owner included. It was briefly kept while editing so the
+ * slot stayed clickable — then the read-only view was deleted and editing
+ * became permanent, which turned that exception into "always", putting the
+ * ellipse back on every visit and undoing the thing it was meant to fix.
+ * Adding a photo lives in 💬 Not sure? → "I want to change my photo", which
+ * searches the document rather than the rendered page and needs nothing drawn.
  */
 function _sdPlaceholder(p, radius, minH, editable) {
   const ph = p && p.ph;
   if (!ph) return '';
-  if (!editable) return '';
+  return '';
   const from = _sdColor(ph.from, '#6366F1');
   const to = _sdColor(ph.to, '#8B5CF6');
   const round = ph.shape === 'circle' ? '50%' : `${_sdPx(radius, 12)}px`;
