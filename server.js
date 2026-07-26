@@ -2053,8 +2053,8 @@ a{display:inline-block;margin-top:18px;background:linear-gradient(135deg,#6366F1
 // Public-site chrome strings (user content is shown as authored). Shared by the
 // grid renderer and the contact block so a zh site renders in Chinese server-side.
 const _SITE_I18N = {
-  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume', add_video: 'Add a video', add_audio: 'Add audio' },
-  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历', add_video: '添加视频', add_audio: '添加音频' },
+  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume', add_video: 'Add a video', add_audio: 'Add audio', cover_dl: 'Read my cover letter', voice_intro: '▶ Play my introduction' },
+  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历', add_video: '添加视频', add_audio: '添加音频', cover_dl: '下载我的求职信', voice_intro: '▶ 播放我的自我介绍' },
 };
 
 // A resume rendered as a self-contained fragment (used by a `resume` block).
@@ -2344,6 +2344,13 @@ function _sdElement(el, ctx) {
     }
     case 'qr':
       return `<img class="sd-qr" src="${_escHtml(ctx.base)}/qr.svg" alt="QR code" loading="lazy"/>`;
+    case 'coverletter': {
+      // A cover letter is addressed to one company, so it is offered as a
+      // download rather than rendered into the page — every other recruiter
+      // reading it inline would be reading a letter written to someone else.
+      if (!ctx.hasCoverLetter) return '';
+      return `<a class="sd-btn sd-btn--ghost" href="${_escHtml(ctx.base)}/cover-letter" download>${_sdText(p.text || ctx.SI.cover_dl, 80)}</a>`;
+    }
     default:
       return '';
   }
@@ -2375,14 +2382,21 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
   const SI = _SITE_I18N[lang];
   const sub = row.subdomain || '';
   const base = opts.baseUrl || `${origin}/site/${sub}`;
-  const ctx = { row, theme, SI, sub, pages, currentSlug: page.slug, base, lang };
+  let _assets = null;
+  try { _assets = doc && doc.assets ? doc.assets : null; } catch (_) { _assets = null; }
+  const hasCoverLetter = !!(_assets && typeof _assets.coverLetterText === 'string' && _assets.coverLetterText.trim().length > 20);
+  const ctx = { row, theme, SI, sub, pages, currentSlug: page.slug, base, lang, hasCoverLetter };
 
   // Per-element mobile overrides (V6) are emitted as a small stylesheet inside
   // the mobile media query, keyed on a per-element class. Collected while
   // building the sections.
   const mobileRules = [];
 
-  const sections = (Array.isArray(page.sections) ? page.sections : []).map((sec) => {
+  // Editable mode adds hooks for the inline editor and nothing else. The
+  // published page and the ordinary preview never carry them, so what visitors
+  // are served is byte-identical either way.
+  const editable = !!opts.editable;
+  const sections = (Array.isArray(page.sections) ? page.sections : []).map((sec, secIdx) => {
     const h = _sdPx(sec && sec.h, 400);
     // DOM order == mobile stacking order. Default is reading order (y, then x);
     // an explicit `mobile.order` overrides it so the author can restack a
@@ -2400,14 +2414,18 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
       if (!html) return '';
       const cls = _sdMobileClass(el, mobileRules);
       const st = `left:${_sdPct(el.x)};top:${_sdPx(el.y)}px;width:${_sdPct(el.w)};min-height:${_sdPx(el.h, 0)}px;${el.z ? `z-index:${_sdPx(el.z)};` : ''}`;
-      return `<div class="sd-el${_sdMobileHidden(el) ? ' sd-el--mhide' : ''}${cls}" style="${st}">${html}</div>`;
+      const hooks = editable
+        ? ` data-el="${_escHtml(String(el.id || ''))}" data-type="${_escHtml(String(el.type || ''))}"${el.props && el.props.field ? ` data-field="${_escHtml(String(el.props.field))}"` : ''}${el.props && el.props.detached ? ' data-detached="1"' : ''}`
+        : '';
+      return `<div class="sd-el${_sdMobileHidden(el) ? ' sd-el--mhide' : ''}${cls}"${hooks} style="${st}">${html}</div>`;
     }).join('');
     // The section id doubles as the anchor target: a button with
     // `props.anchor: 'contact'` links to `#contact`, which only scrolls if the
     // section actually carries that id. Without this every in-page CTA in every
     // template was a dead link.
     const anchorId = String((sec && sec.id) || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
-    return `<section class="sd-sec${_sdSectionClass(sec && sec.bg)}"${anchorId ? ` id="${anchorId}"` : ''} style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
+    const secHooks = editable ? ` data-sec="${_escHtml(String((sec && sec.id) || ''))}" data-idx="${secIdx}"` : '';
+    return `<section class="sd-sec${_sdSectionClass(sec && sec.bg)}"${anchorId ? ` id="${anchorId}"` : ''}${secHooks} style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
   }).join('');
 
   const title = _sdText((page.seo && page.seo.title) || row.name || page.name || 'Portfolio', 120);
@@ -2536,9 +2554,324 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
         .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
       return false;
     }
-  </script>
+  </script>${editable ? '\n' + _sdEditLayer() : ''}
 </body>
 </html>`;
+}
+
+/**
+ * The inline editor, injected into the rendered page only when editing.
+ *
+ * It lives inside the iframe because that is where the real page is: reaching
+ * in from the parent with an absolutely-positioned overlay means re-deriving
+ * every element's box and keeping it in sync through scroll, resize and
+ * re-render. Editing in place and posting the result out is both simpler and
+ * always aligned with what the user is actually looking at.
+ *
+ * It never mutates the document itself. Every change is posted to the parent,
+ * which applies it through the undo store — so inline edits are undoable
+ * alongside everything else, and there is exactly one writer.
+ */
+function _sdEditLayer() {
+  return `<style>
+    .sd-el[data-type="heading"],.sd-el[data-type="subheading"],.sd-el[data-type="paragraph"],.sd-el[data-type="image"],.sd-el[data-type="imagebox"]{cursor:text;}
+    .sd-el[data-type="image"],.sd-el[data-type="imagebox"]{cursor:pointer;}
+    .sd-ed-hot{outline:2px dashed rgba(99,102,241,.55);outline-offset:4px;border-radius:6px;}
+    .sd-ed-on{outline:2px solid #6366F1;outline-offset:4px;border-radius:6px;background:rgba(99,102,241,.05);}
+    [contenteditable]{outline:none;}
+    .sd-ed-sec{outline:2px dashed rgba(99,102,241,.4);outline-offset:-2px;}
+    .sd-ed-bar{position:absolute;z-index:99999;display:flex;gap:6px;background:#111827;border-radius:999px;padding:6px;box-shadow:0 8px 24px rgba(0,0,0,.3);}
+    .sd-ed-bar button{font:inherit;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);border:none;border-radius:999px;padding:7px 12px;cursor:pointer;white-space:nowrap;}
+    .sd-ed-bar button:hover{background:rgba(255,255,255,.26);}
+    .sd-ed-bar button.danger:hover{background:#dc2626;}
+    .sd-ed-reset{position:absolute;z-index:99998;font:inherit;font-size:11px;font-weight:600;color:#4338ca;background:rgba(238,242,255,.96);border:1px solid #c7d2fe;border-radius:999px;padding:4px 10px;cursor:pointer;white-space:nowrap;}
+    .sd-ed-reset:hover{background:#e0e7ff;}
+    .sd-ed-hint{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:99999;background:rgba(17,24,39,.92);color:#fff;font-size:12px;font-weight:600;padding:8px 16px;border-radius:999px;pointer-events:none;}
+    /* Undo/redo chips. The wrapper ignores pointer events so the page
+       underneath stays clickable while they fade — only the pills catch clicks. */
+    .sd-ed-chips{position:absolute;z-index:99999;display:flex;gap:8px;pointer-events:none;opacity:1;transition:opacity .45s ease;}
+    .sd-ed-chips.is-gone{opacity:0;}
+    .sd-ed-chips button{pointer-events:auto;font:inherit;font-size:12.5px;font-weight:700;color:#fff;background:rgba(17,24,39,.94);border:none;border-radius:999px;padding:9px 15px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.28);white-space:nowrap;}
+    .sd-ed-chips button:hover{background:#111827;}
+    @media(max-width:820px){.sd-ed-chips button{font-size:14px;padding:12px 20px;}.sd-ed-chips{gap:10px;}}
+    .sd-ed-bar--pulse{animation:sd-pulse 1.4s ease-in-out 3;}
+    .sd-ed-chips--hint button{animation:sd-pulse 1s ease-in-out 2;}
+    @keyframes sd-pulse{0%,100%{transform:scale(1);box-shadow:0 8px 24px rgba(0,0,0,.3);}50%{transform:scale(1.06);box-shadow:0 8px 30px rgba(99,102,241,.75);}}
+  </style>
+  <script>
+  (function(){
+    var TEXT = { heading:1, subheading:1, paragraph:1 };
+    var post = function(m){ try { parent.postMessage(Object.assign({ __rtEdit:1 }, m), '*'); } catch(e){} };
+    var bar = null, resetBtn = null, editing = null;
+
+    function clear(){
+      if (bar) { bar.remove(); bar = null; }
+      if (resetBtn) { resetBtn.remove(); resetBtn = null; }
+      document.querySelectorAll('.sd-ed-sec').forEach(function(s){ s.classList.remove('sd-ed-sec'); });
+    }
+
+    // ── Text: click to change it ────────────────────────────────────────────
+    function beginEdit(wrap){
+      if (editing) return;
+      var target = wrap.firstElementChild || wrap;
+      var before = target.textContent;
+      editing = { wrap: wrap, target: target, before: before };
+      wrap.classList.add('sd-ed-on');
+      target.setAttribute('contenteditable', 'plaintext-only');
+      target.focus();
+      try {
+        var r = document.createRange(); r.selectNodeContents(target);
+        var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      } catch(e){}
+      var multiline = wrap.dataset.type === 'paragraph';
+      hint(multiline ? 'Enter to save · Shift+Enter for a new line · Esc to cancel'
+                     : 'Enter to save · Esc to cancel');
+
+      target.onkeydown = function(ev){
+        if (ev.key === 'Escape') { ev.preventDefault(); target.textContent = before; finish(false); }
+        else if (ev.key === 'Enter' && !(multiline && ev.shiftKey)) { ev.preventDefault(); finish(true); }
+      };
+      target.onblur = function(){ finish(true); };
+    }
+
+    function finish(save){
+      if (!editing) return;
+      var e = editing; editing = null;
+      e.target.onkeydown = null; e.target.onblur = null;
+      e.target.removeAttribute('contenteditable');
+      e.wrap.classList.remove('sd-ed-on');
+      hint('');
+      // Escaped twice on purpose: this string is a JS template literal that
+      // EMITS JavaScript. A bare newline escape here becomes a REAL newline in
+      // the output, and a regex literal cannot contain one — a syntax error in
+      // the browser that takes the whole edit layer down with it.
+      var now = e.target.innerText.replace(/\\u00a0/g, ' ').replace(/\\n{3,}/g, '\\n\\n').trim();
+      if (!save || now === e.before.trim()) { e.target.textContent = e.before; return; }
+      if (!now) { e.target.textContent = e.before; return; }   // never leave it blank
+      post({ kind: 'edit', el: e.wrap.dataset.el, value: now });
+    }
+
+    var hintEl = null;
+    function hint(t){
+      if (!t) { if (hintEl) { hintEl.remove(); hintEl = null; } return; }
+      if (!hintEl) { hintEl = document.createElement('div'); hintEl.className = 'sd-ed-hint'; document.body.appendChild(hintEl); }
+      hintEl.textContent = t;
+    }
+
+    // ── The escape hatch: put this field back under the resume's control ────
+    function showReset(wrap){
+      if (resetBtn) resetBtn.remove();
+      if (wrap.dataset.detached !== '1') return;
+      var r = wrap.getBoundingClientRect();
+      resetBtn = document.createElement('button');
+      resetBtn.className = 'sd-ed-reset';
+      resetBtn.textContent = '↺ Reset to my resume';
+      resetBtn.style.left = (r.left + scrollX) + 'px';
+      resetBtn.style.top = (r.bottom + scrollY + 6) + 'px';
+      resetBtn.onmousedown = function(ev){ ev.preventDefault(); };
+      resetBtn.onclick = function(ev){
+        ev.stopPropagation();
+        post({ kind: 'reset', el: wrap.dataset.el });
+      };
+      document.body.appendChild(resetBtn);
+    }
+
+    // ── Sections: move and remove ───────────────────────────────────────────
+    function showSectionBar(sec){
+      clear();
+      sec.classList.add('sd-ed-sec');
+      var r = sec.getBoundingClientRect();
+      bar = document.createElement('div');
+      bar.className = 'sd-ed-bar';
+      bar.style.left = (r.left + scrollX + 12) + 'px';
+      bar.style.top = (r.top + scrollY + 12) + 'px';
+      var mk = function(label, cls, fn){
+        var b = document.createElement('button');
+        b.textContent = label; if (cls) b.className = cls;
+        b.onclick = function(ev){ ev.stopPropagation(); fn(); };
+        bar.appendChild(b);
+      };
+      mk('↑ Move Up', '', function(){ post({ kind: 'moveSection', sec: sec.dataset.sec, delta: -1 }); });
+      mk('↓ Move Down', '', function(){ post({ kind: 'moveSection', sec: sec.dataset.sec, delta: 1 }); });
+      mk('Delete', 'danger', function(){ post({ kind: 'deleteSection', sec: sec.dataset.sec }); });
+      document.body.appendChild(bar);
+    }
+
+    // ── Wiring ──────────────────────────────────────────────────────────────
+    document.addEventListener('mouseover', function(ev){
+      var w = ev.target.closest && ev.target.closest('.sd-el[data-el]');
+      document.querySelectorAll('.sd-ed-hot').forEach(function(x){ x.classList.remove('sd-ed-hot'); });
+      if (w && !editing) w.classList.add('sd-ed-hot');
+    });
+
+    document.addEventListener('click', function(ev){
+      // A click on an iframe never reaches the parent document, and this iframe
+      // is most of the screen — so anything out there listening for "clicked
+      // away" (the help panel) has to be told.
+      post({ kind: 'pageclick' });
+      if (ev.target.closest('.sd-ed-bar') || ev.target.closest('.sd-ed-reset')) return;
+      var wrap = ev.target.closest && ev.target.closest('.sd-el[data-el]');
+      if (wrap) {
+        var t = wrap.dataset.type;
+        if (TEXT[t]) { ev.preventDefault(); clear(); showReset(wrap); beginEdit(wrap); return; }
+        if (t === 'image' || t === 'imagebox') { ev.preventDefault(); clear(); post({ kind: 'photo', el: wrap.dataset.el }); return; }
+      }
+      // Anything else inside a section selects the section.
+      var sec = ev.target.closest && ev.target.closest('section[data-sec]');
+      if (sec) { ev.preventDefault(); showSectionBar(sec); return; }
+      clear();
+    });
+
+    // Links must not navigate while editing — it would look like the site broke.
+    document.addEventListener('click', function(ev){
+      var a = ev.target.closest && ev.target.closest('a');
+      if (a) ev.preventDefault();
+    }, true);
+
+    /* ── Undo / redo chips ──────────────────────────────────────────────────
+       They appear where the action happened, not in a toolbar — a toast in the
+       corner does not read as "undo THAT". The page re-renders after every
+       change, which destroys them, so the parent re-requests them once the new
+       render says it is ready. */
+    var chips = null, chipTimer = null, chipEndsAt = 0, chipLeft = 0;
+    var CHIP_MS = 5000;
+
+    function hideChips(){
+      if (chipTimer) { clearTimeout(chipTimer); chipTimer = null; }
+      if (chips) { chips.remove(); chips = null; }
+    }
+
+    function startChipTimer(ms){
+      if (chipTimer) clearTimeout(chipTimer);
+      chipLeft = ms;
+      chipEndsAt = Date.now() + ms;
+      chipTimer = setTimeout(function(){
+        if (!chips) return;
+        chips.classList.add('is-gone');
+        setTimeout(hideChips, 500);
+      }, ms);
+    }
+
+    function anchorFor(d){
+      var t = null;
+      if (d.el) t = document.querySelector('.sd-el[data-el="' + String(d.el).replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      if (!t && d.sec) t = document.querySelector('section[data-sec="' + String(d.sec).replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      // A deleted section no longer exists, so fall back to whatever now sits
+      // at that index — the chips appear in the space it left behind.
+      if (!t && typeof d.idx === 'number') {
+        var secs = document.querySelectorAll('section[data-sec]');
+        if (secs.length) t = secs[Math.max(0, Math.min(d.idx, secs.length - 1))];
+      }
+      return t;
+    }
+
+    function showChips(d){
+      hideChips();
+      if (!d.canUndo && !d.canRedo) return;
+      var t = anchorFor(d);
+      if (!t) return;
+      var r = t.getBoundingClientRect();
+      chips = document.createElement('div');
+      chips.className = 'sd-ed-chips';
+
+      var mk = function(label, kind){
+        var b = document.createElement('button');
+        b.textContent = label;
+        b.onclick = function(ev){ ev.stopPropagation(); ev.preventDefault(); post({ kind: kind }); };
+        chips.appendChild(b);
+      };
+      if (d.canUndo) mk('↩️ Undo', 'undo');
+      if (d.canRedo) mk('↪️ Redo', 'redo');
+      // First keyboard undo of the session: make the chips wave, so the
+      // shortcut and the button are visibly the same thing.
+      if (d.hint) chips.classList.add('sd-ed-chips--hint');
+
+      // Hovering pauses the countdown; leaving resumes it with the time left.
+      chips.onmouseenter = function(){
+        if (chipTimer) { clearTimeout(chipTimer); chipTimer = null; }
+        chipLeft = Math.max(1200, chipEndsAt - Date.now());
+        chips.classList.remove('is-gone');
+      };
+      chips.onmouseleave = function(){ if (chips) startChipTimer(chipLeft); };
+
+      document.body.appendChild(chips);
+
+      // Below the anchor by default, above it if that would run off the page.
+      // Then clamped into the VISIBLE viewport: an undo chip you have to scroll
+      // to find is no safety net at all, and after undoing a section delete the
+      // restored section can easily be taller than the screen.
+      var w = chips.getBoundingClientRect();
+      var top = r.bottom + scrollY + 10;
+      if (top + w.height > document.documentElement.scrollHeight - 4) top = r.top + scrollY - w.height - 10;
+      var minTop = scrollY + 8;
+      var maxTop = scrollY + innerHeight - w.height - 12;
+      chips.style.top = Math.max(minTop, Math.min(top, maxTop)) + 'px';
+      chips.style.left = Math.max(8, Math.min(r.left + scrollX + 12, innerWidth - w.width - 12)) + 'px';
+
+      startChipTimer(CHIP_MS);
+    }
+
+    addEventListener('message', function(ev){
+      var m = ev && ev.data;
+      if (!m) return;
+      if (m.__rtChips === 1) {
+        if (m.hide) { hideChips(); return; }
+        showChips(m);
+        return;
+      }
+      // "I want to move something": put a bar on every section at once and
+      // bring the first into view, so the controls end up under their eyes
+      // rather than needing to be discovered by clicking around.
+      if (m.__rtHelp === 1 && m.action === 'showMoves') {
+        clear();
+        var secs = document.querySelectorAll('section[data-sec]');
+        secs.forEach(function(sec){
+          sec.classList.add('sd-ed-sec');
+          var r = sec.getBoundingClientRect();
+          var b = document.createElement('div');
+          b.className = 'sd-ed-bar sd-ed-bar--pulse sd-ed-bar--hint';
+          b.style.left = (r.left + scrollX + 12) + 'px';
+          b.style.top = (r.top + scrollY + 12) + 'px';
+          [['↑ Move Up', -1], ['↓ Move Down', 1]].forEach(function(p){
+            var btn = document.createElement('button');
+            btn.textContent = p[0];
+            btn.onclick = function(e){ e.stopPropagation(); post({ kind: 'moveSection', sec: sec.dataset.sec, delta: p[1] }); };
+            b.appendChild(btn);
+          });
+          var del = document.createElement('button');
+          del.textContent = 'Delete'; del.className = 'danger';
+          del.onclick = function(e){ e.stopPropagation(); post({ kind: 'deleteSection', sec: sec.dataset.sec }); };
+          b.appendChild(del);
+          document.body.appendChild(b);
+        });
+        if (secs.length) secs[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(function(){
+          document.querySelectorAll('.sd-ed-bar--hint').forEach(function(x){ x.remove(); });
+          document.querySelectorAll('.sd-ed-sec').forEach(function(x){ x.classList.remove('sd-ed-sec'); });
+        }, 7000);
+      }
+    });
+
+    /* Keyboard. The page is an iframe, so keydown fires in whichever document
+       holds focus — after a single click on the page, that is this one. The
+       parent listens too; between them every case is covered.
+
+       While someone is typing in a field, Ctrl+Z belongs to the browser: it
+       should undo their typing, not their last site change. */
+    document.addEventListener('keydown', function(ev){
+      if (editing) return;                       // typing: leave it to the browser
+      var t = ev.target;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ''))) return;
+      var mod = ev.ctrlKey || ev.metaKey;
+      if (!mod) return;
+      var k = (ev.key || '').toLowerCase();
+      if (k === 'z' && !ev.shiftKey) { ev.preventDefault(); post({ kind: 'undo', viaKey: true }); }
+      else if ((k === 'z' && ev.shiftKey) || k === 'y') { ev.preventDefault(); post({ kind: 'redo', viaKey: true }); }
+    });
+
+    post({ kind: 'ready' });
+  })();
+  </script>`;
 }
 
 const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'Too many share links — please wait a minute.' } });
@@ -2722,6 +3055,13 @@ app.post('/api/personal-site', (req, res) => {
   res.json({ url: sitePublicUrl(sub, origin), subdomain: sub, published: publishedFlag === 1 });
 });
 
+// The ten Vibes. Public and unauthenticated for the same reason the template
+// preview is: it is a static list of colours and filenames, no user data.
+app.get('/api/site-vibes', (req, res) => {
+  const { list } = require('./public/site-vibes.js');
+  res.json({ vibes: list() });
+});
+
 /**
  * Replace a starter template's sample copy with the user's own.
  *
@@ -2730,87 +3070,48 @@ app.post('/api/personal-site', (req, res) => {
  * handing someone a page that makes false claims about them, on a URL they are
  * about to send to recruiters. Every visible line of sample prose is either
  * replaced with something true or removed.
+ *
+ * Derivation lives in public/site-fields.js so the generator and the inline
+ * editor agree on what "the name" or "the summary" means — two copies would
+ * drift, and the drift would only show up as a field resetting to the wrong
+ * thing.
  */
-function _autogenFill(doc, text, name) {
+function _autogenFill(doc, text) {
+  const SF = require('./public/site-fields.js');
   if (!doc || !Array.isArray(doc.pages)) return doc;
-  const lines = String(text || '').split('\n').map((l) => l.trim());
 
-  // Location: from the contact line, which conventionally sits under the name
-  // as "email | City, ST | linkedin…". Take the segment that isn't an email,
-  // URL or phone number.
-  const contact = lines[1] || '';
-  const location = contact.split(/[|·•]/).map((p) => p.trim()).find((p) =>
-    p && !/@/.test(p) && !/https?:|\.com|linkedin/i.test(p) && !/\d{3}[-.\s]?\d{3,4}/.test(p) && p.length < 40) || '';
+  SF.tagFields(doc);
+  // force: the template's sample prose is not a user edit, so it is replaced
+  // even though nothing is detached yet.
+  SF.syncFromResume(doc, text, { force: true });
 
-  // Role: the first job title under EXPERIENCE, minus the employer and dates.
-  let role = '';
-  const expAt = lines.findIndex((l) => /^(experience|work experience|employment)\b/i.test(l));
-  if (expAt >= 0) {
-    for (let i = expAt + 1; i < Math.min(lines.length, expAt + 6); i++) {
-      const l = lines[i];
-      if (!l || /^[•\-*]/.test(l)) continue;
-      role = l.split(/[|,–—]/)[0].trim();
-      break;
-    }
-  }
+  const vals = SF.deriveFields(text);
 
-  // Summary: the body of the SUMMARY / PROFILE / OBJECTIVE section.
-  let summary = '';
-  const sumAt = lines.findIndex((l) => /^(summary|profile|objective|about)\b/i.test(l));
-  if (sumAt >= 0) {
-    const body = [];
-    for (let i = sumAt + 1; i < lines.length; i++) {
-      const l = lines[i];
-      if (!l) { if (body.length) break; continue; }
-      if (/^[A-Z][A-Z\s&]{3,}$/.test(l)) break;   // next ALL-CAPS section heading
-      body.push(l.replace(/^[•\-*]\s*/, ''));
-    }
-    summary = body.join(' ').slice(0, 400);
-  }
-
-  const subtitle = [role, location].filter(Boolean).join(' · ');
-  let didHeading = false, didSub = false, didPara = false;
+  // Anything we could not derive would otherwise keep the template's invented
+  // copy. Blank it, then drop the empty element rather than leave a hole.
   for (const pg of doc.pages) {
-    for (const s of pg.sections || []) {
-      // Only the first section — the hero — carries the personal intro copy.
-      // Later sections are structural (headings like "Experience") and must be
-      // left alone.
-      if (s !== (pg.sections || [])[0]) continue;
-      for (const el of s.els || []) {
-        const p = el.props || {};
-        if (el.type === 'heading' && !didHeading && name) { p.text = name; didHeading = true; continue; }
-        if (el.type === 'subheading' && !didSub) {
-          // No role or location found → drop the line rather than keep a lie.
-          if (subtitle) p.text = subtitle; else p.text = '';
-          didSub = true; continue;
-        }
-        if (el.type === 'paragraph' && !didPara) {
-          if (summary) p.text = summary; else p.text = '';
-          didPara = true; continue;
-        }
-      }
+    const hero = (pg.sections || [])[0];
+    if (!hero) continue;
+    for (const el of hero.els || []) {
+      const f = el.props && el.props.field;
+      if (f && !vals[f]) el.props.text = '';
     }
   }
-  // Elements whose text we emptied would render as blank boxes; remove them.
   for (const pg of doc.pages) {
     for (const s of pg.sections || []) {
       s.els = (s.els || []).filter((el) =>
         !(['heading', 'subheading', 'paragraph'].includes(el.type) && el.props && el.props.text === ''));
     }
   }
-  if (doc.pages[0] && doc.pages[0].seo && name) {
-    doc.pages[0].seo.title = name;
-    doc.pages[0].seo.description = summary ? summary.slice(0, 160) : `${name}${subtitle ? ' — ' + subtitle : ''}`;
+
+  if (doc.pages[0] && doc.pages[0].seo && vals.name) {
+    doc.pages[0].seo.title = vals.name;
+    doc.pages[0].seo.description = vals.summary
+      ? vals.summary.slice(0, 160)
+      : `${vals.name}${vals.subtitle ? ' — ' + vals.subtitle : ''}`;
   }
   return doc;
 }
-
-// The ten Vibes. Public and unauthenticated for the same reason the template
-// preview is: it is a static list of colours and filenames, no user data.
-app.get('/api/site-vibes', (req, res) => {
-  const { list } = require('./public/site-vibes.js');
-  res.json({ vibes: list() });
-});
 
 /**
  * Auto-generate a starter site so the user never faces a blank screen.
@@ -2866,7 +3167,7 @@ app.post('/api/personal-site/autogen', (req, res) => {
 
   const { templateDoc } = require('./site-templates.js');
   const doc = templateDoc('minimal') || templateDoc('executive');
-  _autogenFill(doc, text, name);
+  _autogenFill(doc, text);
   doc.templateId = 'minimal';
   doc.assets = { resumeId: resumeRow ? resumeRow.id : null, coverLetterId: cover ? cover.id : null };
 
@@ -2888,7 +3189,7 @@ app.post('/api/personal-site/preview', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
-  const { text, name, colors, photoUrl, hideContact, serif, layout, config, subdomain, page } = req.body || {};
+  const { text, name, colors, photoUrl, hideContact, serif, layout, config, subdomain, page, editable } = req.body || {};
   if (!text || typeof text !== 'string' || text.trim().length < 10) {
     return res.status(400).json({ error: 'Nothing to preview yet.' });
   }
@@ -2915,6 +3216,9 @@ app.post('/api/personal-site/preview', (req, res) => {
     indexable: false, footer: '',
     baseUrl: `${origin}/site/${sub}`,
     page: pageSlug,
+    // Opt-in only. Without this the preview is byte-identical to the published
+    // page, which test/preview-parity.js asserts.
+    editable: editable === true,
   }));
 });
 
@@ -3009,6 +3313,21 @@ function _serveSite(req, res, pageSlug) {
     page: pageSlug || '',
   }));
 }
+// The cover letter behind the download button. Published sites only — an
+// unpublished draft must not leak it any more than it leaks the page itself.
+app.get('/site/:sub/cover-letter', (req, res) => {
+  const sub = _validSubdomain(req.params.sub);
+  const row = sub ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub) : null;
+  if (!row) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
+  let cfg = null; try { cfg = row.config ? JSON.parse(row.config) : null; } catch (_) { cfg = null; }
+  const text = cfg && cfg.assets && typeof cfg.assets.coverLetterText === 'string' ? cfg.assets.coverLetterText : '';
+  if (!text.trim()) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
+  const name = String(row.name || sub).replace(/[^A-Za-z0-9 _-]/g, '').trim() || sub;
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${name} - Cover Letter.txt"`);
+  res.send(text);
+});
+
 app.get('/site/:sub', (req, res) => _serveSite(req, res, ''));
 app.get('/site/:sub/:page', (req, res) => _serveSite(req, res, String(req.params.page || '').toLowerCase().slice(0, 60)));
 

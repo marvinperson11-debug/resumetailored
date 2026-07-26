@@ -25,6 +25,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="/site-doc-store.js"></script>
   <script src="/site-vibes.js"></script>
+  <script src="/site-fields.js"></script>
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9896489046536589" crossorigin="anonymous"></script>
   <style>
@@ -326,6 +327,11 @@
        position:sticky with z-index 100 inside a stacking context the editor
        cannot climb out of, so it is hidden outright rather than out-ranked. */
     body.wb-immersive .nav { display: none !important; }
+    /* Toasts default to the bottom-right, which is exactly where the "Not sure?"
+       button and its panel live. Centre them while the Website Creator is open
+       so the two never sit on top of each other. */
+    body.wb-immersive .toast { right: auto; left: 50%; transform: translateX(-50%) translateY(10px); }
+    body.wb-immersive .toast.show { transform: translateX(-50%) translateY(0); }
 
     /* ── Simple mode: the site, full screen, and almost nothing else ──
        This is what opening "My Website" shows. Someone who has never built a
@@ -353,7 +359,11 @@
       display: flex; align-items: center; gap: 12px; padding: 0 14px;
       background: #fff; border-bottom: 1px solid rgba(15,23,42,.08);
     }
-    .sm-frame { position: absolute; top: 52px; left: 0; right: 0; bottom: 0; width: 100%; border: 0; display: block; background: #fff; }
+    /* An explicit height, NOT top+bottom offsets. An <iframe> is a replaced
+       element, so with `height:auto` an absolutely positioned one falls back to
+       its intrinsic 150px and ignores `bottom` entirely — the site rendered
+       into a 150px sliver with the rest of the screen blank. */
+    .sm-frame { position: absolute; top: 52px; left: 0; width: 100%; height: calc(100% - 52px); border: 0; display: block; background: #fff; }
     .sm-note {
       flex: 1; text-align: center; font-size: 12.5px; line-height: 1.4; color: #4b5563;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -375,6 +385,7 @@
       padding: 8px 15px; cursor: pointer;
     }
     .sm-look:hover { background: #e0e7ff; }
+    .sm-look.is-on { background: #4338ca; border-color: #4338ca; color: #fff; }
     /* On a phone the bar has to hold four things. Labels collapse to their
        icons rather than overlapping, and the note keeps only its badge. */
     @media (max-width: 760px) {
@@ -412,21 +423,9 @@
       box-shadow: 0 8px 28px rgba(67,56,202,.4);
     }
     .sm-cta:hover { filter: brightness(1.07); }
-    /* The vibe picker: a bottom sheet with ten big targets. Works the same on a
-       phone as on a desktop, which is the point — this is the control most
+    /* The ten vibe tiles — step 2 of the guided strip. Works the same with a
+       thumb as with a mouse, which is the point: this is the control most
        people will actually use, and most of them are holding a phone. */
-    .sm-sheet {
-      position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
-      background: #fff; border-top: 1px solid rgba(15,23,42,.1);
-      box-shadow: 0 -8px 32px rgba(15,23,42,.16);
-      padding: 14px 16px 18px; transform: translateY(105%);
-      transition: transform .22s ease; max-height: 72vh; overflow-y: auto;
-    }
-    .sm-sheet.is-open { transform: translateY(0); }
-    .sm-sheet-head { display: flex; align-items: center; justify-content: space-between;
-      font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 12px; }
-    .sm-sheet-x { font: inherit; font-size: 13px; font-weight: 600; color: #4b5563;
-      background: #f3f4f6; border: none; border-radius: 999px; padding: 7px 15px; cursor: pointer; }
     .sm-vibes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
     @media (max-width: 720px) { .sm-vibes { grid-template-columns: repeat(2, 1fr); } }
     .sm-vibe { border: 2px solid transparent; background: none; padding: 0; cursor: pointer;
@@ -442,6 +441,87 @@
       padding: 9px 18px; cursor: pointer; }
     .sm-tone-btn:hover { background: #e5e7eb; }
     .sm-tone-dots { font-size: 11px; letter-spacing: 3px; color: #9ca3af; }
+
+    /* The guided strip: one question at a time, never more than a handful of
+       choices, skip and back on every step. It replaces the vibe sheet as the
+       thing "Customize" opens — the vibe grid becomes step 2 of it. */
+    .sm-strip {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+      background: #fff; border-top: 1px solid rgba(15,23,42,.1);
+      box-shadow: 0 -8px 32px rgba(15,23,42,.16);
+      padding: 16px 16px 14px; transform: translateY(105%);
+      transition: transform .22s ease; max-height: 76vh; overflow-y: auto;
+    }
+    .sm-strip.is-open { transform: translateY(0); }
+    .sm-strip-q { font-size: 17px; font-weight: 800; color: #111827; margin-bottom: 14px; text-align: center; }
+    /* Block flow, not flex-wrap. The vibe step puts a 10-tile grid in here, and
+       as a flex child it laid out at the right size but overflowed below the
+       strip instead of growing it — visible in the DOM, off the screen. */
+    .sm-strip-body { text-align: center; }
+    .sm-strip-body > .sm-word { display: inline-block; margin: 5px; vertical-align: middle; }
+    .sm-strip-body > .sm-strip-sel { display: inline-block; margin: 5px; vertical-align: middle; }
+    .sm-strip-body .sm-vibes { margin: 0 0 4px; }
+    .sm-strip-body .sm-tone { margin-bottom: 10px; }
+    /* Words, never icons alone. */
+    .sm-word {
+      font: inherit; font-size: 14.5px; font-weight: 700; color: #1f2937;
+      background: #f3f4f6; border: 1.5px solid rgba(15,23,42,.1); border-radius: 12px;
+      padding: 14px 22px; cursor: pointer; min-width: 150px;
+    }
+    .sm-word:hover { background: #e5e7eb; }
+    .sm-word--go { background: linear-gradient(90deg,#4338ca,#6366F1); border-color: transparent; color: #fff; }
+    .sm-word--go:hover { filter: brightness(1.07); }
+    .sm-word--pub { background: #059669; border-color: transparent; color: #fff; font-size: 16px; padding: 16px 30px; }
+    .sm-word--pub:hover { background: #047857; }
+    .sm-strip-sel { font: inherit; font-size: 14.5px; padding: 13px 14px; border-radius: 12px;
+      border: 1.5px solid rgba(15,23,42,.12); background: #fff; color: #111827; min-width: 260px; max-width: 100%; }
+    .sm-strip-note { flex-basis: 100%; text-align: center; font-size: 12.5px; color: #6b7280; margin-top: 2px; }
+    .sm-strip-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+    .sm-strip-back, .sm-strip-skip {
+      font: inherit; font-size: 13px; font-weight: 600; color: #4b5563;
+      background: none; border: none; padding: 8px 10px; cursor: pointer;
+    }
+    .sm-strip-back:hover, .sm-strip-skip:hover { color: #111827; }
+    .sm-strip-back[hidden], .sm-strip-skip[hidden] { visibility: hidden; }
+    .sm-strip-dots { font-size: 10px; letter-spacing: 4px; color: #d1d5db; }
+
+    /* "Not sure?" — a nudge, not an interruption. Only while editing; the
+       public view stays completely clean. */
+    .sm-help {
+      position: absolute; right: 20px; bottom: 20px; z-index: 7;
+      display: inline-flex; align-items: center; gap: 7px;
+      font: inherit; font-size: 13.5px; font-weight: 700; color: #fff;
+      background: rgba(17,24,39,.94); border: none; border-radius: 999px;
+      padding: 12px 18px; cursor: pointer; box-shadow: 0 6px 22px rgba(0,0,0,.28);
+    }
+    .sm-help:hover { background: #111827; }
+    .sm-help[hidden] { display: none; }
+    .sm-help-panel {
+      position: absolute; right: 20px; bottom: 74px; z-index: 8;
+      width: min(320px, calc(100% - 40px));
+      background: #fff; border: 1px solid rgba(15,23,42,.1); border-radius: 16px;
+      box-shadow: 0 16px 44px rgba(15,23,42,.22); padding: 16px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .sm-help-panel[hidden] { display: none; }
+    .sm-help-q { font-size: 14.5px; font-weight: 800; color: #111827; margin-bottom: 4px; }
+    .sm-help-opt {
+      font: inherit; font-size: 14px; font-weight: 600; color: #1f2937; text-align: left;
+      background: #f3f4f6; border: 1.5px solid transparent; border-radius: 12px;
+      padding: 13px 15px; cursor: pointer;
+    }
+    .sm-help-opt:hover { background: #e5e7eb; border-color: #c7d2fe; }
+    .sm-help-never {
+      font: inherit; font-size: 12.5px; font-weight: 600; color: #6b7280;
+      background: none; border: none; padding: 8px 4px 0; cursor: pointer; align-self: center;
+    }
+    .sm-help-never:hover { color: #111827; }
+    /* On a phone it slides up from the bottom and the targets get bigger. */
+    @media (max-width: 720px) {
+      .sm-help { right: 14px; bottom: 14px; font-size: 15px; padding: 14px 20px; }
+      .sm-help-panel { left: 0; right: 0; bottom: 0; width: auto; border-radius: 18px 18px 0 0; padding: 18px 16px 22px; }
+      .sm-help-opt { font-size: 15.5px; padding: 16px; }
+    }
 
     .sm-busy, .sm-empty {
       position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -1249,21 +1329,31 @@
           <div class="sm-bar">
             <button type="button" class="sm-back" onclick="smExit()" title="Back to ResumeTailored"><span aria-hidden="true">←</span><span class="sm-lbl" data-i18n="sm_back_short">Back</span></button>
             <div class="sm-note" id="smNote"></div>
-            <button type="button" class="sm-look" onclick="smOpenVibes()" title="Change the look"><span aria-hidden="true">🎨</span><span class="sm-lbl" data-i18n="sm_change_look">Change the look</span></button>
+            <button type="button" class="sm-look" id="smEditBtn" onclick="smToggleEdit()" title="Edit the page"><span aria-hidden="true">✏️</span><span class="sm-lbl" data-i18n="sm_edit_on">Edit</span></button>
+            <button type="button" class="sm-look" onclick="smStripOpen(1)" title="Change the look"><span aria-hidden="true">🎨</span><span class="sm-lbl" data-i18n="sm_change_look">Change the look</span></button>
             <button type="button" class="sm-publish" id="smPublishBtn" onclick="smPublish()" data-i18n="sm_publish">Publish my website</button>
             <a class="sm-live" id="smLiveLink" target="_blank" rel="noopener" style="display:none;" data-i18n="sm_visit">Visit my website ↗</a>
+            <button type="button" class="sm-back" onclick="smAdvanced()" title="Advanced editor"><span aria-hidden="true">⚙</span><span class="sm-lbl" data-i18n="sm_advanced">Advanced</span></button>
           </div>
           <iframe class="sm-frame" id="smFrame" title="Your website"></iframe>
-          <div class="sm-sheet" id="smVibeSheet">
-            <div class="sm-sheet-head">
-              <span data-i18n="sm_vibe_q">Pick your vibe</span>
-              <button type="button" class="sm-sheet-x" onclick="smCloseVibes()" data-i18n="sm_close">Close</button>
-            </div>
-            <div class="sm-vibes" id="smVibeGrid"></div>
-            <div class="sm-tone">
-              <button type="button" class="sm-tone-btn" onclick="smTone(-1)" data-i18n="sm_lighten">Lighten</button>
-              <span class="sm-tone-dots" id="smToneDots"></span>
-              <button type="button" class="sm-tone-btn" onclick="smTone(1)" data-i18n="sm_darken">Darken</button>
+          <button type="button" class="sm-help" id="smHelpBtn" onclick="smHelpToggle()" hidden>
+            <span aria-hidden="true">💬</span><span data-i18n="sm_help_btn">Not sure?</span>
+          </button>
+          <div class="sm-help-panel" id="smHelpPanel" hidden>
+            <div class="sm-help-q" data-i18n="sm_help_q">Tell us what you want to change</div>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('photo')" data-i18n="sm_help_photo">I want to change my photo</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('move')" data-i18n="sm_help_move">I want to move something</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('look')" data-i18n="sm_help_look">I want a different look</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('voice')" data-i18n="sm_help_voice">I want to add my voice</button>
+            <button type="button" class="sm-help-never" onclick="smHelpClose()" data-i18n="sm_help_never">Never mind</button>
+          </div>
+          <div class="sm-strip" id="smStrip">
+            <div class="sm-strip-q" id="smStripQ"></div>
+            <div class="sm-strip-body" id="smStripBody"></div>
+            <div class="sm-strip-foot">
+              <button type="button" class="sm-strip-back" id="smStripBack" onclick="smStepBack()" data-i18n="sm_step_back">← Back</button>
+              <span class="sm-strip-dots" id="smStripDots"></span>
+              <button type="button" class="sm-strip-skip" id="smStripSkip" onclick="smStepNext()" data-i18n="sm_skip">Skip</button>
             </div>
           </div>
           <button type="button" class="sm-cta" id="smCta" onclick="smCustomize()">
@@ -2092,6 +2182,30 @@
         wc_template_help: 'Every template is a complete, multi-section site. Preview it on desktop and mobile before you choose — then make it yours.',
         sm_customize: 'Customize My Site', sm_done: '✓ Done Editing', sm_back: '← Back to ResumeTailored',
         sm_publish: 'Publish my website', sm_visit: 'Visit my website ↗',
+        sm_q_look: 'Looks good?', sm_a_done: "Yes, I'm done", sm_a_tweak: 'Let me tweak it',
+        sm_q_photo: 'Add a photo of yourself?', sm_a_upload: 'Upload a photo', sm_a_skip: 'Skip for now',
+        sm_photo_note: 'A friendly headshot. You can change it any time.',
+        sm_q_voice: 'Add a voice introduction?', sm_a_record: '🎙 Record 30 seconds', sm_a_stop: '⏹ Stop recording',
+        sm_voice_note: 'Visitors see "▶ Play my introduction" — they choose whether to listen.',
+        sm_voice_label: '▶ Play my introduction',
+        sm_q_resume: 'Which resume should visitors see?',
+        sm_q_cover: 'Offer a cover letter to download?', sm_cover_none: 'No cover letter',
+        sm_cover_note: 'Shown as a download button, not printed on the page — a cover letter is written to one company.',
+        sm_cover_none_yet: "You haven't saved a cover letter yet.", sm_cover_label: 'Read my cover letter',
+        sm_q_publish: 'Ready to publish?', sm_q_live: 'Your website is live.',
+        sm_publish_note: 'Nobody can see your site until you do this.',
+        sm_next: 'Next →', sm_step_back: '← Back', sm_skip: 'Skip', sm_a_done_editing: 'Done',
+        sm_advanced: 'Advanced', sm_adv_desktop: 'The advanced editor needs a bigger screen.',
+        sm_upload_err: "That didn't upload — try again.", sm_mic_err: 'We could not reach your microphone.',
+        sm_edit_on: 'Edit', sm_edit_off: 'Done', sm_edit_hint: 'Click anything on your page to change it.',
+        sm_edit_saved: 'Saved', sm_reset_done: 'Back in sync with your resume',
+        sm_section_gone: 'Section removed from your website — your resume is unchanged.',
+        sm_last_section: 'A page needs at least one section.',
+        sm_kept_edits: 'Updated from your resume — your own edits were kept.',
+        sm_help_btn: 'Not sure?', sm_help_q: 'Tell us what you want to change',
+        sm_help_photo: 'I want to change my photo', sm_help_move: 'I want to move something',
+        sm_help_look: 'I want a different look', sm_help_voice: 'I want to add my voice',
+        sm_help_never: 'Never mind',
         sm_vibe_q: 'Pick your vibe', sm_close: 'Close', sm_change_look: '🎨 Change the look',
         sm_lighten: 'Lighten', sm_darken: 'Darken',
         sm_published: '🌐 Your website is live — link copied.',
@@ -2260,6 +2374,30 @@
         wc_template_help: '每个模板都是完整的多板块网站。选择前可在桌面和手机视图预览——然后把它变成你的。',
         sm_customize: '修改我的网站', sm_done: '✓ 完成修改', sm_back: '← 返回 ResumeTailored',
         sm_publish: '发布我的网站', sm_visit: '访问我的网站 ↗',
+        sm_q_look: '看起来还满意吗？', sm_a_done: '很好，完成了', sm_a_tweak: '我想再调整一下',
+        sm_q_photo: '要添加你的照片吗？', sm_a_upload: '上传照片', sm_a_skip: '暂时跳过',
+        sm_photo_note: '一张亲切的头像照片，随时可以更换。',
+        sm_q_voice: '要添加语音自我介绍吗？', sm_a_record: '🎙 录制 30 秒', sm_a_stop: '⏹ 停止录制',
+        sm_voice_note: '访客会看到"▶ 播放我的自我介绍"，由他们决定是否收听。',
+        sm_voice_label: '▶ 播放我的自我介绍',
+        sm_q_resume: '访客应该看到哪一份简历？',
+        sm_q_cover: '要提供求职信下载吗？', sm_cover_none: '不提供求职信',
+        sm_cover_note: '以下载按钮的形式提供，不直接显示在页面上——求职信是写给某一家公司的。',
+        sm_cover_none_yet: '你还没有保存过求职信。', sm_cover_label: '下载我的求职信',
+        sm_q_publish: '准备好发布了吗？', sm_q_live: '你的网站已上线。',
+        sm_publish_note: '在你发布之前，没有人能看到你的网站。',
+        sm_next: '下一步 →', sm_step_back: '← 上一步', sm_skip: '跳过', sm_a_done_editing: '完成',
+        sm_advanced: '高级', sm_adv_desktop: '高级编辑器需要更大的屏幕。',
+        sm_upload_err: '上传失败，请重试。', sm_mic_err: '无法访问你的麦克风。',
+        sm_edit_on: '编辑', sm_edit_off: '完成', sm_edit_hint: '点击页面上的任何内容即可修改。',
+        sm_edit_saved: '已保存', sm_reset_done: '已与你的简历重新同步',
+        sm_section_gone: '该板块已从网站移除——你的简历没有改动。',
+        sm_last_section: '页面至少需要保留一个板块。',
+        sm_kept_edits: '已根据简历更新——你自己修改过的内容已保留。',
+        sm_help_btn: '需要帮助？', sm_help_q: '告诉我们你想改什么',
+        sm_help_photo: '我想换我的照片', sm_help_move: '我想调整顺序',
+        sm_help_look: '我想换个样子', sm_help_voice: '我想加入我的声音',
+        sm_help_never: '算了',
         sm_vibe_q: '选择你的风格', sm_close: '关闭', sm_change_look: '🎨 更换外观',
         sm_lighten: '调亮', sm_darken: '调暗',
         sm_published: '🌐 您的网站已上线——链接已复制。',
@@ -6589,7 +6727,7 @@ Aaliyah Washington`
 
        The editor still exists behind "Customize My Site" — it is just no longer
        the front door. */
-    let smOn = false, smSiteUrl = '', smPublished = false, _smAutoSaveHooked = false;
+    let smOn = false, smSiteUrl = '', smPublished = false, _smEditorWired = false;
 
     function smShow(on) {
       smOn = !!on;
@@ -6630,6 +6768,7 @@ Aaliyah Washington`
           headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
           body: JSON.stringify({
             subdomain: wcSite.subdomain, text: smResumeText(), name: wcSite.name || '', config: wcDoc,
+            editable: smEditing,
           }),
         });
         if (!r.ok) return false;
@@ -6674,6 +6813,16 @@ Aaliyah Washington`
       if (data.config && Array.isArray(data.config.pages)) { wcDoc = data.config; wcTplId = data.config.templateId || null; }
       smPublished = !!data.published;
       smSiteUrl = data.url || '';
+
+      // The undo store is created here, not when the advanced editor opens.
+      // Inline edits, vibe changes and guided-strip answers are all edits and
+      // all belong in one history — otherwise whichever path the user happens
+      // to take decides whether their work is undoable.
+      if (!edStore && wcDoc && window.SiteDocStore) {
+        edStore = SiteDocStore.createStore(wcDoc);
+        edPageId = (wcDoc.pages && wcDoc.pages[0] && wcDoc.pages[0].id) || null;
+        edStore.subscribe(() => { wcDoc = edStore.getDoc(); smRenderSite(); smQueueSave(); });
+      }
 
       const ok = await smRenderSite();
       if (!ok) { smPanel(''); smShow(false); return; }
@@ -6746,20 +6895,11 @@ Aaliyah Washington`
        No colour pickers, no hex codes — the only tweak is lighten/darken. */
     let smVibes = [], _smVibeOpen = false;
 
-    async function smOpenVibes() {
-      const sheet = document.getElementById('smVibeSheet');
-      if (!sheet) return;
+    async function smEnsureVibes() {
       if (!smVibes.length) {
         try { smVibes = (await (await fetch('/api/site-vibes')).json()).vibes || []; } catch (_) { smVibes = []; }
       }
-      smRenderVibes();
-      _smVibeOpen = true;
-      sheet.classList.add('is-open');
-    }
-    function smCloseVibes() {
-      _smVibeOpen = false;
-      const sheet = document.getElementById('smVibeSheet');
-      if (sheet) sheet.classList.remove('is-open');
+      return smVibes;
     }
 
     function smRenderVibes() {
@@ -6811,21 +6951,515 @@ Aaliyah Washington`
       smQueueSave();
     }
 
+    /* ── The guided strip ─────────────────────────────────────────────────
+       Seven steps, one question on screen at a time, skip and back on every
+       one. Deliberately NOT a form: nobody who has never built a website
+       should be looking at twenty options at once.
+
+       There is no "Add music" step. Background audio on a page a recruiter
+       opens at their desk is the fastest way to get a tab closed, and it has
+       no place in a first run. Ambient sound stays available as an `audio`
+       element in the advanced editor for anyone who goes looking. A voice
+       INTRO is different — that is the person speaking for themselves — so it
+       keeps its step. */
+    const SM_STEPS = ['look', 'vibe', 'photo', 'voice', 'resume', 'cover', 'publish'];
+    let smStep = -1;
+
+    function smStripOpen(at) {
+      smStep = typeof at === 'number' ? at : 0;
+      const el = document.getElementById('smStrip');
+      if (el) el.classList.add('is-open');
+      smRenderStep();
+    }
+    function smStripClose() {
+      smStep = -1;
+      const el = document.getElementById('smStrip');
+      if (el) el.classList.remove('is-open');
+    }
+    function smStepBack() { if (smStep > 0) { smStep--; smRenderStep(); } else { smStripClose(); } }
+    function smStepNext() {
+      if (smStep < SM_STEPS.length - 1) { smStep++; smRenderStep(); }
+      else smStripClose();
+    }
+
+    function smRenderStep() {
+      const q = document.getElementById('smStripQ');
+      const body = document.getElementById('smStripBody');
+      const back = document.getElementById('smStripBack');
+      const skip = document.getElementById('smStripSkip');
+      const dots = document.getElementById('smStripDots');
+      if (!q || !body) return;
+      const step = SM_STEPS[smStep];
+      dots.textContent = SM_STEPS.map((_, i) => (i === smStep ? '●' : '○')).join('');
+      back.hidden = false;
+      skip.hidden = false;
+      body.innerHTML = '';
+
+      if (step === 'look') {
+        q.textContent = _t('sm_q_look', 'Looks good?');
+        body.innerHTML = `
+          <button type="button" class="sm-word sm-word--go" onclick="smStripClose()">${wcEsc(_t('sm_a_done', "Yes, I'm done"))}</button>
+          <button type="button" class="sm-word" onclick="smStepNext()">${wcEsc(_t('sm_a_tweak', 'Let me tweak it'))}</button>`;
+        back.hidden = true; skip.hidden = true;
+        return;
+      }
+
+      if (step === 'vibe') {
+        q.textContent = _t('sm_vibe_q', 'Pick your vibe');
+        const cur = (wcDoc && wcDoc.vibe) || '';
+        body.innerHTML = `<div class="sm-vibes" id="smVibeGrid"></div>
+          <div class="sm-tone">
+            <button type="button" class="sm-tone-btn" onclick="smTone(-1)">${wcEsc(_t('sm_lighten', 'Lighten'))}</button>
+            <span class="sm-tone-dots" id="smToneDots"></span>
+            <button type="button" class="sm-tone-btn" onclick="smTone(1)">${wcEsc(_t('sm_darken', 'Darken'))}</button>
+          </div>
+          <button type="button" class="sm-word sm-word--go" style="min-width:200px;" onclick="smStepNext()">${wcEsc(_t('sm_next', 'Next →'))}</button>`;
+        smEnsureVibes().then(smRenderVibes);
+        skip.hidden = !!cur;
+        return;
+      }
+
+      if (step === 'photo') {
+        q.textContent = _t('sm_q_photo', 'Add a photo of yourself?');
+        body.innerHTML = `
+          <button type="button" class="sm-word sm-word--go" onclick="smPickPhoto()">${wcEsc(_t('sm_a_upload', 'Upload a photo'))}</button>
+          <button type="button" class="sm-word" onclick="smStepNext()">${wcEsc(_t('sm_a_skip', 'Skip for now'))}</button>
+          <div class="sm-strip-note">${wcEsc(_t('sm_photo_note', 'A friendly headshot. You can change it any time.'))}</div>`;
+        return;
+      }
+
+      if (step === 'voice') {
+        q.textContent = _t('sm_q_voice', 'Add a voice introduction?');
+        const rec = smRecording;
+        body.innerHTML = `
+          <button type="button" class="sm-word ${rec ? '' : 'sm-word--go'}" onclick="smToggleVoiceIntro()">${wcEsc(rec ? _t('sm_a_stop', '⏹ Stop recording') : _t('sm_a_record', '🎙 Record 30 seconds'))}</button>
+          <button type="button" class="sm-word" onclick="smStepNext()">${wcEsc(_t('sm_a_skip', 'Skip for now'))}</button>
+          <div class="sm-strip-note">${wcEsc(_t('sm_voice_note', 'Visitors see "▶ Play my introduction" — they choose whether to listen.'))}</div>`;
+        return;
+      }
+
+      if (step === 'resume') {
+        q.textContent = _t('sm_q_resume', 'Which resume should visitors see?');
+        const cur = (wcDoc && wcDoc.assets && wcDoc.assets.resumeId) || (wcResumes[0] && wcResumes[0].id);
+        body.innerHTML = `
+          <select class="sm-strip-sel" id="smResumePick" onchange="smPickResume(this.value)">
+            ${wcResumes.map(r => `<option value="${r.id}"${String(r.id) === String(cur) ? ' selected' : ''}>${wcEsc(r.title)}</option>`).join('')}
+          </select>
+          <button type="button" class="sm-word sm-word--go" onclick="smStepNext()">${wcEsc(_t('sm_next', 'Next →'))}</button>`;
+        skip.hidden = true;   // there is always a resume; that is what the site is
+        return;
+      }
+
+      if (step === 'cover') {
+        q.textContent = _t('sm_q_cover', 'Offer a cover letter to download?');
+        const cur = (wcDoc && wcDoc.assets && wcDoc.assets.coverLetterId) || '';
+        body.innerHTML = wcCovers.length
+          ? `<select class="sm-strip-sel" id="smCoverPick" onchange="smPickCover(this.value)">
+               <option value="">${wcEsc(_t('sm_cover_none', 'No cover letter'))}</option>
+               ${wcCovers.map(c => `<option value="${c.id}"${String(c.id) === String(cur) ? ' selected' : ''}>${wcEsc(c.title)}</option>`).join('')}
+             </select>
+             <button type="button" class="sm-word sm-word--go" onclick="smStepNext()">${wcEsc(_t('sm_next', 'Next →'))}</button>
+             <div class="sm-strip-note">${wcEsc(_t('sm_cover_note', 'Shown as a download button, not printed on the page — a cover letter is written to one company.'))}</div>`
+          : `<button type="button" class="sm-word" onclick="smStepNext()">${wcEsc(_t('sm_a_skip', 'Skip for now'))}</button>
+             <div class="sm-strip-note">${wcEsc(_t('sm_cover_none_yet', "You haven't saved a cover letter yet."))}</div>`;
+        return;
+      }
+
+      if (step === 'publish') {
+        q.textContent = smPublished
+          ? _t('sm_q_live', 'Your website is live.')
+          : _t('sm_q_publish', 'Ready to publish?');
+        body.innerHTML = smPublished
+          ? `<a class="sm-word sm-word--go" href="${wcEsc(smSiteUrl)}" target="_blank" rel="noopener">${wcEsc(_t('sm_visit', 'Visit my website ↗'))}</a>
+             <button type="button" class="sm-word" onclick="smStripClose()">${wcEsc(_t('sm_a_done_editing', 'Done'))}</button>`
+          : `<button type="button" class="sm-word sm-word--pub" onclick="smPublishFromStrip()">${wcEsc(_t('sm_publish', 'Publish my website'))}</button>
+             <div class="sm-strip-note">${wcEsc(_t('sm_publish_note', 'Nobody can see your site until you do this.'))}</div>`;
+        skip.hidden = true;
+        return;
+      }
+    }
+
+    async function smPublishFromStrip() { await smPublish(); smRenderStep(); }
+
+    // Step 3 — a photo. Placed into the first image slot the template already
+    // has, so it lands where a designer put it rather than floating.
+    function smPickPhoto() {
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*';
+      inp.onchange = async () => {
+        const f = inp.files && inp.files[0];
+        if (!f) return;
+        try {
+          const url = await _tvUploadMedia(f, f.name || 'photo.jpg');
+          if (!url) throw new Error('no url');
+          // createIfMissing: three templates have no image in the hero, and
+          // without this the step silently did nothing on them.
+          smSetFirst('image', el => { el.props.src = url; delete el.props.ph; }, true);
+          await smRenderSite(); smQueueSave(); smStepNext();
+        } catch (_) { showToast(_t('sm_upload_err', "That photo didn't upload — try another.")); }
+      };
+      inp.click();
+    }
+
+    // Step 4 — a voice introduction. NOT background music: it is the person
+    // speaking, and the visitor presses play.
+    let smRecording = false, _smRec = null, _smChunks = [];
+    async function smToggleVoiceIntro() {
+      if (smRecording && _smRec) { _smRec.stop(); return; }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        _smChunks = [];
+        _smRec = new MediaRecorder(stream);
+        _smRec.ondataavailable = e => { if (e.data && e.data.size) _smChunks.push(e.data); };
+        _smRec.onstop = async () => {
+          smRecording = false;
+          stream.getTracks().forEach(t => t.stop());
+          try {
+            const type = (_smChunks[0] && _smChunks[0].type) || 'audio/webm';
+            const url = await _tvUploadMedia(new Blob(_smChunks, { type }), 'intro.' + (type.includes('mp') ? 'm4a' : 'weba'));
+            if (!url) throw new Error('no url');
+            smSetFirst('audio', el => { el.props.src = url; el.props.label = _t('sm_voice_label', '▶ Play my introduction'); }, true);
+            await smRenderSite(); smQueueSave(); smStepNext();
+          } catch (_) { showToast(_t('sm_upload_err', "That didn't upload — try again.")); smRenderStep(); }
+        };
+        _smRec.start();
+        smRecording = true;
+        smRenderStep();
+        setTimeout(() => { if (smRecording && _smRec) _smRec.stop(); }, 30000);
+      } catch (_) { showToast(_t('sm_mic_err', 'We could not reach your microphone.')); }
+    }
+
+    // Find the first element of a type and mutate it; optionally append one to
+    // the hero if there isn't one, so a step never silently does nothing.
+    function smSetFirst(type, fn, createIfMissing) {
+      const mutate = (d) => {
+        let hit = null;
+        for (const pg of d.pages || []) for (const sec of pg.sections || []) for (const el of sec.els || []) {
+          if (el.type === type) { hit = el; break; }
+        }
+        if (!hit && createIfMissing) {
+          const sec = d.pages[0].sections[d.pages[0].sections.length - 1];
+          const y = (sec.h || 400) - 150;
+          hit = { id: (window.SiteDocStore ? SiteDocStore.newId('e') : 'e' + Date.now()),
+                  type, x: 80, y: Math.max(20, y), w: 500, h: 150, props: {} };
+          sec.els.push(hit);
+        }
+        if (hit) { hit.props = hit.props || {}; fn(hit); }
+      };
+      if (edStore) { edApply(mutate, { reason: 'guided' }); wcDoc = edStore.getDoc(); }
+      else { const d = JSON.parse(JSON.stringify(wcDoc)); mutate(d); wcDoc = d; }
+    }
+
+    async function smPickResume(id) {
+      const r = wcResumes.find(x => String(x.id) === String(id));
+      if (!r) return;
+      wcSiteText = r.content || wcSiteText;
+      smSetAssets({ resumeId: Number(id) });
+      // Follow the new resume — except for anything the user has edited on the
+      // site, which stays theirs.
+      const kept = (window.SiteFields && SiteFields.detachedFields(wcDoc)) || [];
+      smSyncFromResume();
+      await smRenderSite(); smQueueSave();
+      if (kept.length) showToast(_t('sm_kept_edits', 'Updated from your resume — your own edits were kept.'), 4000);
+    }
+
+    async function smPickCover(id) {
+      const c = wcCovers.find(x => String(x.id) === String(id));
+      // Store the TEXT alongside the id: the published page is served without a
+      // session, so it cannot look the cover letter up by id at render time.
+      smSetAssets({ coverLetterId: id ? Number(id) : null, coverLetterText: c ? (c.content || '') : '' });
+      if (c) smSetFirst('coverletter', el => { el.props.text = _t('sm_cover_label', 'Read my cover letter'); }, true);
+      await smRenderSite(); smQueueSave();
+    }
+
+    function smSetAssets(patch) {
+      const mutate = (d) => { d.assets = Object.assign({}, d.assets || {}, patch); };
+      if (edStore) { edApply(mutate, { reason: 'assets' }); wcDoc = edStore.getDoc(); }
+      else { const d = JSON.parse(JSON.stringify(wcDoc)); mutate(d); wcDoc = d; }
+    }
+
+    /* ── Inline editing ───────────────────────────────────────────────────
+       The rendered page is an iframe, and the editor lives inside it — that is
+       where the real elements are. It never mutates the document itself; it
+       posts what happened out here, and everything is applied through the undo
+       store, so there is exactly one writer and inline edits are undoable
+       alongside vibe changes and everything else.
+
+       The rule behind all of it: editing a field on the site DETACHES it from
+       the resume. Later resume updates leave it alone until the user presses
+       "reset to my resume". */
+    let smEditing = false;
+
+    async function smSetEditing(on) {
+      smEditing = !!on;
+      const b = document.getElementById('smEditBtn');
+      if (b) {
+        b.classList.toggle('is-on', smEditing);
+        const lbl = b.querySelector('.sm-lbl');
+        if (lbl) lbl.textContent = smEditing ? _t('sm_edit_off', 'Done') : _t('sm_edit_on', 'Edit');
+      }
+      smHelpSync();
+      await smRenderSite();
+      if (smEditing) showToast(_t('sm_edit_hint', 'Click anything on your page to change it.'), 4000);
+    }
+    function smToggleEdit() { smSetEditing(!smEditing); }
+
+    window.addEventListener('message', async (ev) => {
+      const m = ev && ev.data;
+      if (!m || m.__rtEdit !== 1 || !wcDoc || !window.SiteFields) return;
+
+      if (m.kind === 'ready') { smPushChips(); return; }
+      // Clicking the page counts as clicking away from the helper.
+      if (m.kind === 'pageclick') { smHelpClose(); return; }
+
+      // No toast: the chip is the feedback, and it is already where the user
+      // is looking. A corner toast is the pattern the chips exist to replace.
+      if (m.kind === 'undo') { smDoUndo(!!m.viaKey); return; }
+      if (m.kind === 'redo') { smDoRedo(!!m.viaKey); return; }
+
+      if (m.kind === 'edit') {
+        smMutate(d => { SiteFields.applyEdit(d, m.el, m.value); }, 'inline-edit');
+        smMarkAction({ el: m.el });
+        return;
+      }
+
+      if (m.kind === 'reset') {
+        smMutate(d => { SiteFields.resetField(d, m.el, smResumeText()); }, 'inline-reset');
+        smMarkAction({ el: m.el });
+        showToast(_t('sm_reset_done', 'Back in sync with your resume'), 2600);
+        return;
+      }
+
+      if (m.kind === 'photo') { smPickPhotoInto(m.el); return; }
+
+      if (m.kind === 'moveSection') {
+        // Anchored to the section that moved, so the chips travel with it.
+        smMutate(d => SiteFields.moveSection(d, 0, m.sec, m.delta), 'move-section');
+        smMarkAction({ sec: m.sec });
+        return;
+      }
+
+      if (m.kind === 'deleteSection') {
+        // Removes it from the SITE. The resume is a separate store and is never
+        // touched by anything in here.
+        // Capture the index BEFORE deleting: afterwards the section is gone and
+        // there is nothing left to anchor the undo chip to. The chips land in
+        // the gap it left, which is where the user is looking.
+        const idx = (wcDoc.pages[0].sections || []).findIndex(x => x && x.id === m.sec);
+        const ok = smMutate(d => SiteFields.deleteSection(d, 0, m.sec), 'delete-section');
+        if (ok === false) { showToast(_t('sm_last_section', 'A page needs at least one section.'), 3000); return; }
+        smMarkAction({ idx: Math.max(0, idx) });
+        return;
+      }
+    });
+
+    /* ── "Not sure?" ──────────────────────────────────────────────────────
+       Four plain-English wants, each wired to the control that satisfies it.
+       The panel closes itself once the control opens — asking someone to
+       dismiss a helper after it has helped them is one step too many. */
+    function smHelpSync() {
+      const b = document.getElementById('smHelpBtn');
+      if (b) b.hidden = !smEditing;          // never in the public view
+      if (!smEditing) smHelpClose();
+    }
+    function smHelpToggle() {
+      const p = document.getElementById('smHelpPanel');
+      if (!p) return;
+      if (p.hidden) { p.hidden = false; setTimeout(() => document.addEventListener('click', _smHelpAway, true), 0); }
+      else smHelpClose();
+    }
+    function smHelpClose() {
+      const p = document.getElementById('smHelpPanel');
+      if (p && !p.hidden) p.hidden = true;
+      document.removeEventListener('click', _smHelpAway, true);
+    }
+    // Clicking anywhere else dismisses it. Capture phase so it closes even when
+    // the click lands on something that handles its own events.
+    function _smHelpAway(ev) {
+      const p = document.getElementById('smHelpPanel');
+      const b = document.getElementById('smHelpBtn');
+      if (!p || p.hidden) return;
+      if (p.contains(ev.target) || (b && b.contains(ev.target))) return;
+      smHelpClose();
+    }
+
+    function smHelpPick(what) {
+      smHelpClose();
+      if (what === 'photo') { smHelpPhoto(); return; }
+      if (what === 'move')  { smHelpShowMoves(); return; }
+      if (what === 'look')  { smStripOpen(1); return; }   // step 2: pick your vibe
+      if (what === 'voice') { smStripOpen(3); return; }   // step 4: voice intro
+    }
+
+    // Straight to the file picker. If this vibe's page has no photo slot, one is
+    // added to the top — silently doing nothing is the worst possible answer to
+    // "I want to change my photo".
+    function smHelpPhoto() {
+      if (!window.SiteFields || !wcDoc) return;
+      let target = null;
+      for (const pg of wcDoc.pages || []) for (const sec of pg.sections || []) for (const el of sec.els || []) {
+        if (!target && (el.type === 'image' || el.type === 'imagebox')) target = el;
+      }
+      if (target) { smPickPhotoInto(target.id); return; }
+      const id = window.SiteDocStore ? SiteDocStore.newId('e') : 'e' + Date.now();
+      smMutate(d => {
+        const hero = d.pages[0].sections[0];
+        hero.els.push({ id, type: 'image', x: 820, y: 120, w: 280, h: 280, props: {} });
+      }, 'add-photo-slot');
+      smPickPhotoInto(id);
+    }
+
+    // Show every move/delete bar at once with a pulse, and bring the first into
+    // view — so "I want to move something" ends with the controls under their eyes.
+    function smHelpShowMoves() {
+      const f = document.getElementById('smFrame');
+      try { if (f && f.contentWindow) f.contentWindow.postMessage({ __rtHelp: 1, action: 'showMoves' }, '*'); } catch (_) {}
+    }
+
+    /* ── Undo / redo chips ────────────────────────────────────────────────
+       They appear where the action happened. The page re-renders after every
+       change, which destroys anything in the iframe, so the anchor is held out
+       here and re-sent once each new render reports itself ready.
+
+       Only one set is ever on screen: each action replaces the last anchor, so
+       a second edit before the first fades simply moves the chips. */
+    let smUndoAnchor = null;
+
+    function smMarkAction(anchor) {
+      smUndoAnchor = anchor || null;
+      smPushChips();
+    }
+
+    let _smKeyHintUsed = false, _smChipHint = false;
+
+    function smPushChips() {
+      const f = document.getElementById('smFrame');
+      if (!f || !f.contentWindow) return;
+      if (!smEditing || !smUndoAnchor || !edStore) { smHideChips(); return; }
+      try {
+        f.contentWindow.postMessage(Object.assign({
+          __rtChips: 1,
+          canUndo: !!edStore.canUndo(),
+          canRedo: !!edStore.canRedo(),
+          hint: _smChipHint,
+        }, smUndoAnchor), '*');
+      } catch (_) {}
+      _smChipHint = false;   // once, then never again this session
+    }
+
+    /* Keyboard undo/redo. Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y, driving the same
+       store as the chips — no second history.
+
+       Two documents listen: this one and the edit layer inside the iframe,
+       because keydown only fires where focus is and the iframe is most of the
+       screen. Whichever hears it, the result is identical.
+
+       While the user is typing, Ctrl+Z belongs to the browser: it should undo
+       their typing, not their last change to the site. */
+    function smKeyUndoRedo(ev) {
+      if (!smEditing || !edStore) return;
+      const p = document.getElementById('panel-website');
+      if (!p || !p.classList.contains('active')) return;
+      const t = document.activeElement;
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ''))) return;
+      const mod = ev.ctrlKey || ev.metaKey;
+      if (!mod) return;
+      const k = (ev.key || '').toLowerCase();
+      if (k === 'z' && !ev.shiftKey) { ev.preventDefault(); smDoUndo(true); }
+      else if ((k === 'z' && ev.shiftKey) || k === 'y') { ev.preventDefault(); smDoRedo(true); }
+    }
+    document.addEventListener('keydown', smKeyUndoRedo);
+
+    // One path for both the chips and the keyboard, so they cannot drift.
+    // Neither of these pushes the chips itself. Undoing re-renders the page,
+    // which replaces the iframe — a push here would land on the frame that is
+    // about to be thrown away, and the first-use hint would be consumed by a
+    // document nobody ever sees. The new frame's "ready" does the push.
+    function smDoUndo(viaKey) {
+      if (!edStore || !edStore.canUndo()) return false;
+      if (viaKey && !_smKeyHintUsed) { _smKeyHintUsed = true; _smChipHint = true; }
+      if (!smUndoAnchor) smUndoAnchor = { idx: 0 };   // keyboard-first: anchor somewhere visible
+      edStore.undo();
+      return true;
+    }
+    function smDoRedo(viaKey) {
+      if (!edStore || !edStore.canRedo()) return false;
+      if (viaKey && !_smKeyHintUsed) { _smKeyHintUsed = true; _smChipHint = true; }
+      edStore.redo();
+      return true;
+    }
+
+    function smHideChips() {
+      const f = document.getElementById('smFrame');
+      try { if (f && f.contentWindow) f.contentWindow.postMessage({ __rtChips: 1, hide: true }, '*'); } catch (_) {}
+    }
+
+    // One writer. Through the store when it exists (so undo covers it), on a
+    // clone otherwise.
+    function smMutate(fn, reason) {
+      let ret;
+      if (edStore) {
+        // The store's subscriber re-renders and queues the save, so callers
+        // never do either — that is what makes undo redraw like anything else.
+        edApply(d => { ret = fn(d); }, { reason: reason || 'edit' });
+        wcDoc = edStore.getDoc();
+      } else {
+        const d = JSON.parse(JSON.stringify(wcDoc)); ret = fn(d); wcDoc = d;
+        smRenderSite(); smQueueSave();
+      }
+      return ret;
+    }
+
+    function smPickPhotoInto(elId) {
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*';
+      inp.onchange = async () => {
+        const f = inp.files && inp.files[0];
+        if (!f) return;
+        try {
+          const url = await _tvUploadMedia(f, f.name || 'photo.jpg');
+          if (!url) throw new Error('no url');
+          smMutate(d => {
+            const el = SiteFields.findById(d, elId);
+            if (el) { el.props = el.props || {}; el.props.src = url; delete el.props.ph; }
+          }, 'photo');
+          smMarkAction({ el: elId });
+        } catch (_) { showToast(_t('sm_upload_err', "That photo didn't upload — try another.")); }
+      };
+      inp.click();
+    }
+
+    // A resume change re-syncs the site — but only the fields the user has not
+    // taken over. That is the whole point of the detach.
+    function smSyncFromResume() {
+      if (!window.SiteFields || !wcDoc) return [];
+      let written = [];
+      smMutate(d => { written = SiteFields.syncFromResume(d, smResumeText()); }, 'resume-sync');
+      return written;
+    }
+
     // The one way out of full-screen mode, since it covers the app's own
     // navigation. Quiet, but always present.
     function smExit() { smShow(false); showTab('tailor'); }
 
-    // "Customize My Site". On a phone this opens the vibe picker — the control
-    // that actually works with a thumb — rather than a drag-and-drop canvas.
-    function smCustomize() {
-      if (!cvIsDesktop()) { smOpenVibes(); return; }
+    // "Customize My Site" opens the guided strip, on every screen size. The
+    // drag-and-drop editor is a separate, deliberate door — see smAdvanced.
+    function smCustomize() { smStripOpen(0); }
+
+    // The advanced editor, for anyone who wants it. Not on the 3-minute path.
+    function smAdvanced() {
+      if (!cvIsDesktop()) { showToast(_t('sm_adv_desktop', 'The advanced editor needs a bigger screen.'), 5000); return; }
+      smStripClose();
       smShow(false);
-      if (!edStore && wcDoc) edInit(wcDoc);
-      // Every mutation goes through the store, so this is the only hook needed.
-      if (edStore && !_smAutoSaveHooked) {
-        _smAutoSaveHooked = true;
-        edStore.subscribe(() => { wcDoc = edStore.getDoc(); smQueueSave(); });
-      }
+      // The store already exists (created at boot). Wire up the editor's own
+      // views without replacing it — re-creating it here would throw away the
+      // undo history of everything done in simple mode.
+      if (wcDoc && edStore && !_smEditorWired) {
+        _smEditorWired = true;
+        edStore.subscribe(() => { edSyncButtons(); edRenderCanvas(); edRenderOverlay(); edRenderInspector(); });
+        edSyncPageSelect(); edRenderPalette(); edSyncButtons();
+        edRenderCanvas(); edRenderOverlay(); edRenderInspector();
+      } else if (!edStore && wcDoc) { edInit(wcDoc); _smEditorWired = true; }
       wcLoadTemplates();
       wcLoadMediaUsage();
       wcLoadSiteExtras();
