@@ -3046,8 +3046,11 @@ app.post('/api/personal-site', (req, res) => {
   const now = Date.now();
 
   // Remove any previous site this user had under a different subdomain, so a
-  // rename doesn't leave an orphaned live page.
-  const existing = db.prepare('SELECT subdomain, published FROM personal_sites WHERE email = ?').get(email);
+  // rename doesn't leave an orphaned live page. The visit count moves with it —
+  // changing your address is not the same as starting over, and silently
+  // zeroing someone's numbers would look like data loss.
+  const existing = db.prepare('SELECT subdomain, published, views FROM personal_sites WHERE email = ?').get(email);
+  const carriedViews = existing ? (existing.views || 0) : 0;
   if (existing && existing.subdomain !== sub) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(existing.subdomain);
 
   const publishedFlag = typeof publish === 'boolean'
@@ -3055,7 +3058,7 @@ app.post('/api/personal-site', (req, res) => {
     : (existing ? (existing.published ? 1 : 0) : 1); // new site with no flag: the legacy publish path
 
   db.prepare(`INSERT INTO personal_sites (subdomain, email, name, text, accent, primary_hex, serif, photo, hide_contact, layout, config, published, created_at, updated_at, views)
-              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, @config, @published, @now, @now, 0)
+              VALUES (@subdomain, @email, @name, @text, @accent, @primary_hex, @serif, @photo, @hide_contact, @layout, @config, @published, @now, @now, @views)
               ON CONFLICT(subdomain) DO UPDATE SET
                 name=@name, text=@text, accent=@accent, primary_hex=@primary_hex, serif=@serif,
                 photo=@photo, hide_contact=@hide_contact, layout=@layout, config=@config, published=@published, updated_at=@now`).run({
@@ -3064,7 +3067,7 @@ app.post('/api/personal-site', (req, res) => {
     accent: (colors && colors.accent ? String(colors.accent).replace('#', '').slice(0, 6) : '8b5cf6'),
     primary_hex: (colors && colors.primary ? String(colors.primary).replace('#', '').slice(0, 6) : '4a1042'),
     serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, config: _config,
-    published: publishedFlag, now,
+    published: publishedFlag, views: carriedViews, now,
   });
   const origin = `${req.protocol}://${req.get('host')}`;
   res.json({ url: sitePublicUrl(sub, origin), subdomain: sub, published: publishedFlag === 1 });

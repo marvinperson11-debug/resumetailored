@@ -208,6 +208,52 @@ const server = app.listen(0, async () => {
 
     await autosave({ config: gen.config, publish: true }); // restore for later checks
 
+    // ── Changing the web address ────────────────────────────────────────
+    // The address is generated from a username people chose long before they
+    // knew it would become their web address. Changing it has to work, and it
+    // has to take the site with it rather than leaving a copy behind.
+    await autosave({ publish: true });
+    db.prepare("UPDATE personal_sites SET views = 42 WHERE subdomain = 'alice'").run();
+
+    const renamed = await fetch(`${B}/api/personal-site`, {
+      method: 'POST', headers: AJ('tokA'),
+      body: JSON.stringify({ subdomain: 'maya-chen', text: RESUME, name: 'Alice Nakamura', config: gen.config }),
+    });
+    check('the address can be changed', renamed.status === 200);
+    check('the site answers on the new address', (await fetch(`${B}/site/maya-chen`)).status === 200);
+    check('the old address stops working', (await fetch(`${B}/site/alice`)).status === 404);
+    check('a rename keeps the site published', (await (await fetch(`${B}/api/personal-site`, { headers: AJ('tokA') })).json()).site.published === 1);
+    // >= 42 rather than == 42: the check above visits the new address, which
+    // legitimately counts. The property is that the count CARRIED, not reset.
+    check('the visit count moves with it',
+      db.prepare("SELECT views FROM personal_sites WHERE subdomain = 'maya-chen'").get().views >= 42,
+      String(db.prepare("SELECT views FROM personal_sites WHERE subdomain = 'maya-chen'").get().views));
+    check('exactly one site per user after a rename',
+      db.prepare("SELECT COUNT(*) c FROM personal_sites WHERE email = 'a@x.com'").get().c === 1);
+
+    // Someone else's address is refused with a reason, not a silent failure.
+    const clash = await fetch(`${B}/api/personal-site`, {
+      method: 'POST', headers: AJ('tokA'),
+      body: JSON.stringify({ subdomain: 'alice-2', text: RESUME, name: 'Alice', config: gen.config }),
+    });
+    check('a taken address is refused', clash.status === 409 && (await clash.json()).error === 'taken');
+    check('and the refusal leaves the site where it was', (await fetch(`${B}/site/maya-chen`)).status === 200);
+
+    // Reserved and malformed addresses are refused too.
+    for (const bad of ['api', 'www', 'ab', 'has spaces']) {
+      const r = await fetch(`${B}/api/personal-site`, {
+        method: 'POST', headers: AJ('tokA'),
+        body: JSON.stringify({ subdomain: bad, text: RESUME, name: 'Alice', config: gen.config }),
+      });
+      check(`"${bad}" is refused as an address`, r.status === 400);
+    }
+
+    // Put it back so the checks below still find it.
+    await fetch(`${B}/api/personal-site`, {
+      method: 'POST', headers: AJ('tokA'),
+      body: JSON.stringify({ subdomain: 'alice', text: RESUME, name: 'Alice Nakamura', config: gen.config }),
+    });
+
     // ── The server owns the public URL ──────────────────────────────────────
     // On 127.0.0.1 there is no wildcard record and no certificate, so the URL
     // must stay path-based — handing a local visitor a subdomain link would

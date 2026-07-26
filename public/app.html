@@ -1371,6 +1371,7 @@
             <div class="sm-note" id="smNote"></div>
             <button type="button" class="sm-look" id="smEditBtn" onclick="smToggleEdit()" title="Edit the page"><span aria-hidden="true">✏️</span><span class="sm-lbl" data-i18n="sm_edit_on">Edit</span></button>
             <button type="button" class="sm-look" onclick="smStripOpen(1)" title="Change the look"><span aria-hidden="true">🎨</span><span class="sm-lbl" data-i18n="sm_change_look">Change the look</span></button>
+            <button type="button" class="sm-look" id="smAddrBtn" onclick="smChangeAddress()" title="Change my web address"><span aria-hidden="true">🔗</span><span class="sm-lbl" data-i18n="sm_addr_btn">My address</span></button>
             <button type="button" class="sm-publish" id="smPublishBtn" onclick="smPublish()" data-i18n="sm_publish">Publish my website</button>
             <a class="sm-live" id="smLiveLink" target="_blank" rel="noopener" style="display:none;" data-i18n="sm_visit">Visit my website ↗</a>
             <button type="button" class="sm-back" onclick="smAdvanced()" title="Advanced editor"><span aria-hidden="true">⚙</span><span class="sm-lbl" data-i18n="sm_advanced">Advanced</span></button>
@@ -1390,6 +1391,7 @@
             <button type="button" class="sm-help-opt" onclick="smHelpPick('look')" data-i18n="sm_help_look">I want a different look</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('voice')" data-i18n="sm_help_voice">I want to add my voice</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('links')" data-i18n="sm_help_links">I want to add my links</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('address')" data-i18n="sm_help_address">I want to change my web address</button>
             <button type="button" class="sm-help-never" onclick="smHelpClose()" data-i18n="sm_help_never">Never mind</button>
           </div>
           <div class="sm-strip" id="smStrip">
@@ -2256,6 +2258,13 @@
         sm_help_links: 'I want to add my links',
         sm_links_prompt: 'Add a link. Type it as  name: address\nOne per line.\n\nFor example:\nLinkedIn: https://linkedin.com/in/you\nWebsite: https://yoursite.com',
         sm_links_saved: 'Your links are on your website.', sm_links_cleared: 'Links removed.',
+        sm_help_address: 'I want to change my web address', sm_addr_btn: 'My address',
+        sm_addr_prompt: 'Your web address. 3–30 letters, numbers or hyphens.',
+        sm_addr_warn: 'Your website is live. Changing this breaks the old link — anyone you have already sent it to will get a "not found" page.',
+        sm_addr_taken: 'That address is taken — try another.',
+        sm_addr_len: 'Use 3 to 30 letters, numbers or hyphens.',
+        sm_addr_err: 'Could not change your address — try again.',
+        sm_addr_done: 'Your website has a new address.',
         sm_help_btn: 'Not sure?', sm_help_q: 'Tell us what you want to change',
         sm_help_photo: 'I want to change my photo', sm_help_move: 'I want to move something',
         sm_help_look: 'I want a different look', sm_help_voice: 'I want to add my voice',
@@ -2452,6 +2461,13 @@
         sm_help_links: '我想添加我的链接',
         sm_links_prompt: '添加链接，格式为  名称: 网址\n每行一个。\n\n例如：\nLinkedIn: https://linkedin.com/in/you\n个人网站: https://yoursite.com',
         sm_links_saved: '链接已添加到你的网站。', sm_links_cleared: '链接已移除。',
+        sm_help_address: '我想更改我的网址', sm_addr_btn: '我的网址',
+        sm_addr_prompt: '你的网址，3–30 个字母、数字或连字符。',
+        sm_addr_warn: '你的网站已上线。更改网址会让旧链接失效——已经收到旧链接的人会看到"页面不存在"。',
+        sm_addr_taken: '该网址已被占用，请换一个。',
+        sm_addr_len: '请使用 3 到 30 个字母、数字或连字符。',
+        sm_addr_err: '更改网址失败，请重试。',
+        sm_addr_done: '你的网站已启用新网址。',
         sm_help_btn: '需要帮助？', sm_help_q: '告诉我们你想改什么',
         sm_help_photo: '我想换我的照片', sm_help_move: '我想调整顺序',
         sm_help_look: '我想换个样子', sm_help_voice: '我想加入我的声音',
@@ -7333,6 +7349,47 @@ Aaliyah Washington`
       }
     });
 
+    /* ── The web address ──────────────────────────────────────────────────
+       The address is generated from the username they picked at signup, long
+       before they knew it would become their web address. It has to be
+       changeable, and changing it has to be honest about what it costs: the
+       old link stops working, and they may already have sent it to people. */
+    async function smChangeAddress() {
+      if (!wcSite || !wcSite.subdomain) return;
+      const cur = wcSite.subdomain;
+      const suffix = (smSiteUrl && /^https?:\/\/[^.]+\.(.+?)(\/|$)/.exec(smSiteUrl) || [])[1] || '';
+      const shape = suffix ? `yourname.${suffix}` : 'yoursite.com/site/yourname';
+      const warn = smPublished
+        ? '\n\n' + _t('sm_addr_warn', 'Your website is live. Changing this breaks the old link — anyone you have already sent it to will get a "not found" page.')
+        : '';
+      const raw = window.prompt(
+        _t('sm_addr_prompt', 'Your web address. 3–30 letters, numbers or hyphens.') + '\n\n' + shape + warn,
+        cur);
+      if (raw === null) return;
+      const next = String(raw).toLowerCase().trim().replace(/^https?:\/\//, '').split('.')[0].replace(/[^a-z0-9-]/g, '');
+      if (!next || next === cur) return;
+      if (next.length < 3 || next.length > 30) { showToast(_t('sm_addr_len', 'Use 3 to 30 letters, numbers or hyphens.'), 4000); return; }
+
+      await smFlushSave();
+      const r = await fetch('/api/personal-site', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+        body: JSON.stringify({
+          subdomain: next, text: smResumeText(), name: (wcSite && wcSite.name) || '', config: wcDoc,
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 409) { showToast(_t('sm_addr_taken', 'That address is taken — try another.'), 4500); return; }
+      if (!r.ok) { showToast(d.message || _t('sm_addr_err', 'Could not change your address — try again.'), 4500); return; }
+
+      wcSite.subdomain = next;
+      smSiteUrl = d.url || smSiteUrl;
+      smPublished = !!d.published;
+      smUpdateNote();
+      await smRenderSite();
+      showToast(_t('sm_addr_done', 'Your website has a new address.') + ' ' + (d.url || ''), 6000);
+    }
+
     /* ── Links out ────────────────────────────────────────────────────────
        LinkedIn, GitHub, a portfolio, anything. The renderer has always drawn a
        `social` element; until now the only way to fill it was the advanced
@@ -7462,6 +7519,7 @@ Aaliyah Washington`
       if (what === 'look')  { smStripOpen(1); return; }   // step 2: pick your vibe
       if (what === 'voice') { smStripOpen(3); return; }   // step 4: voice intro
       if (what === 'links') { smLinksOpen(); return; }
+      if (what === 'address') { smChangeAddress(); return; }
     }
 
     // Straight to the file picker. If this vibe's page has no photo slot, one is
