@@ -797,36 +797,51 @@ app.get('/api/resumes', (req, res) => {
   const email = emailFromToken(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   const rows = db.prepare('SELECT id, title, content, created_at FROM saved_resumes WHERE email = ? ORDER BY created_at DESC').all(email);
-  res.json({ resumes: rows.map((r) => Object.assign({}, r, { siteSync: _siteSyncStatus(email, r) })) });
+  // The site and its field values are the same for every row, so they are read
+  // once. Asking per resume meant twenty identical site queries and twenty
+  // JSON.parse of the same config to render one page.
+  const owned = _siteOwnedFields(email);
+  res.json({ resumes: rows.map((r) => Object.assign({}, r, { siteSync: _siteSyncStatus(owned, r) })) });
 });
 
 /**
- * Does this resume still say what the user's website says?
+ * What the user's website currently claims, for the fields it has taken
+ * ownership of — plus which resume it was built from.
  *
- * Only the resume the site was built from can be out of step with it — the
- * others were never claimed by it. And only fields the user has taken ownership
- * of are compared: a field still following the resume cannot disagree with it
- * by definition, so counting those would mark every resume out of sync forever.
- *
- * Returns null when the question does not apply, so the client can show nothing
- * rather than a reassuring badge it has not earned.
+ * Only detached fields are collected: a field still following the resume
+ * cannot disagree with it by definition, so including those would mark every
+ * resume permanently out of sync.
  */
-function _siteSyncStatus(email, resume) {
+function _siteOwnedFields(email) {
   try {
     const site = _currentSite(email);
     if (!site || !site.config) return null;
     const cfg = JSON.parse(site.config);
-    const linked = cfg && cfg.assets && cfg.assets.resumeId;
-    if (!linked || Number(linked) !== Number(resume.id)) return null;
+    const resumeId = cfg && cfg.assets && cfg.assets.resumeId;
+    if (!resumeId) return null;
     const SF = require('./public/site-fields.js');
-    const WB = require('./resume-writeback.js');
-    const owned = {};
+    const values = {};
     SF.detachedFields(cfg).forEach((f) => {
       const el = SF.findField(cfg, f);
-      if (el && el.props && el.props.text) owned[f] = el.props.text;
+      if (el && el.props && el.props.text) values[f] = el.props.text;
     });
-    if (!Object.keys(owned).length) return 'synced';
-    return WB.diffFields(resume.content, owned).length ? 'out_of_sync' : 'synced';
+    return { resumeId, values };
+  } catch (_) { return null; }
+}
+
+/**
+ * Does this resume still say what the website says?
+ *
+ * Returns null when the question does not apply — no site, or a resume the site
+ * was never built from — so the client shows nothing rather than a reassuring
+ * badge it has not earned.
+ */
+function _siteSyncStatus(owned, resume) {
+  if (!owned || Number(owned.resumeId) !== Number(resume.id)) return null;
+  if (!Object.keys(owned.values).length) return 'synced';
+  try {
+    return require('./resume-writeback.js').diffFields(resume.content, owned.values).length
+      ? 'out_of_sync' : 'synced';
   } catch (_) { return null; }
 }
 
