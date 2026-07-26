@@ -2992,15 +2992,71 @@ function sitePublicUrl(sub, origin, pageSlug) {
   return `${origin}/site/${s}${page}`;
 }
 
+/**
+ * The site a user is currently working on.
+ *
+ * A user may now keep several — one per template they have tried. "Current"
+ * means the live one if there is one, otherwise the most recently touched,
+ * because that is the one they were last looking at.
+ */
+function _currentSite(email) {
+  const e = String(email || '').toLowerCase();
+  return db.prepare(
+    `SELECT * FROM personal_sites WHERE email = ?
+     ORDER BY published DESC, updated_at DESC LIMIT 1`).get(e) || null;
+}
+
 // Fetch the signed-in user's current personal site (if any).
 app.get('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  const row = db.prepare('SELECT subdomain, name, published, views, updated_at, config FROM personal_sites WHERE email = ?').get(email);
+  const row = _currentSite(email);
   const origin = `${req.protocol}://${req.get('host')}`;
   // The client must never build this URL itself — that is how it ended up
   // hard-coded in nine places and unable to follow the subdomain switch.
   res.json({ site: row || null, url: row ? sitePublicUrl(row.subdomain, origin) : null });
+});
+
+/**
+ * Every site this user has, newest first. One of them may be published; the
+ * rest are drafts they can come back to.
+ */
+app.get('/api/personal-sites', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const origin = `${req.protocol}://${req.get('host')}`;
+  const rows = db.prepare(
+    `SELECT subdomain, name, published, views, created_at, updated_at, config
+     FROM personal_sites WHERE email = ? ORDER BY updated_at DESC`).all(email.toLowerCase());
+  const { templateList } = require('./site-templates.js');
+  const names = {};
+  templateList().forEach((t) => { names[t.id] = t.name; });
+  res.json({
+    sites: rows.map((r) => {
+      let cfg = null; try { cfg = r.config ? JSON.parse(r.config) : null; } catch (_) { cfg = null; }
+      const tpl = (cfg && cfg.templateId) || null;
+      return {
+        subdomain: r.subdomain, name: r.name, published: !!r.published, views: r.views || 0,
+        createdAt: r.created_at, updatedAt: r.updated_at,
+        templateId: tpl, templateName: (tpl && names[tpl]) || null,
+        url: sitePublicUrl(r.subdomain, origin),
+      };
+    }),
+  });
+});
+
+// Remove one site. Deleting the live one takes it off the internet, so the
+// caller has to name it rather than relying on "the current one".
+app.delete('/api/personal-sites/:sub', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const sub = _validSubdomain(req.params.sub);
+  if (!sub) return res.status(400).json({ error: 'invalid_subdomain' });
+  const row = db.prepare('SELECT email FROM personal_sites WHERE subdomain = ?').get(sub);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  if (row.email.toLowerCase() !== email.toLowerCase()) return res.status(403).json({ error: 'not_yours' });
+  db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(sub);
+  res.json({ success: true });
 });
 
 // Publish / update the signed-in Pro user's personal site.
@@ -3045,13 +3101,21 @@ app.post('/api/personal-site', (req, res) => {
   }
   const now = Date.now();
 
-  // Remove any previous site this user had under a different subdomain, so a
-  // rename doesn't leave an orphaned live page. The visit count moves with it —
-  // changing your address is not the same as starting over, and silently
-  // zeroing someone's numbers would look like data loss.
-  const existing = db.prepare('SELECT subdomain, published, views FROM personal_sites WHERE email = ?').get(email);
-  const carriedViews = existing ? (existing.views || 0) : 0;
-  if (existing && existing.subdomain !== sub) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(existing.subdomain);
+  // A user may keep several sites — one per template they have tried. Saving
+  // one no longer destroys the others; only an explicit rename moves a site,
+  // and only an explicit delete removes one.
+  const target = db.prepare('SELECT subdomain, published, views FROM personal_sites WHERE subdomain = ? AND email = ?').get(sub, email.toLowerCase());
+  const renameFrom = (typeof req.body.renameFrom === 'string') ? _validSubdomain(req.body.renameFrom) : null;
+  const moving = renameFrom && renameFrom !== sub
+    ? db.prepare('SELECT subdomain, published, views FROM personal_sites WHERE subdomain = ? AND email = ?').get(renameFrom, email.toLowerCase())
+    : null;
+
+  // A rename carries the site across rather than copying it: the old address
+  // goes dark and the visit count comes with it, because changing your address
+  // is not the same as starting over.
+  const carriedViews = (target && target.views) || (moving && moving.views) || 0;
+  if (moving) db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(moving.subdomain);
+  const existing = target || moving;
 
   const publishedFlag = typeof publish === 'boolean'
     ? (publish ? 1 : 0)
@@ -3069,6 +3133,12 @@ app.post('/api/personal-site', (req, res) => {
     serif: serif ? 1 : 0, photo, hide_contact: hideContact ? 1 : 0, layout: _layout, config: _config,
     published: publishedFlag, views: carriedViews, now,
   });
+  // Only ever one live site. Publishing this one takes the others down rather
+  // than leaving two versions of the same person on the internet.
+  if (publishedFlag === 1) {
+    db.prepare('UPDATE personal_sites SET published = 0 WHERE email = ? AND subdomain != ?')
+      .run(email.toLowerCase(), sub);
+  }
   const origin = `${req.protocol}://${req.get('host')}`;
   res.json({ url: sitePublicUrl(sub, origin), subdomain: sub, published: publishedFlag === 1 });
 });
@@ -3149,7 +3219,11 @@ app.post('/api/personal-site/autogen', (req, res) => {
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required' });
 
-  const existing = db.prepare('SELECT * FROM personal_sites WHERE email = ?').get(email);
+  // `fresh` means "make me another one" — trying a different template rather
+  // than reopening what they already have. Each template gets its own site so
+  // switching never destroys the one they have been working on.
+  const fresh = !!(req.body && req.body.fresh);
+  const existing = fresh ? null : _currentSite(email);
   if (existing) {
     const origin0 = `${req.protocol}://${req.get('host')}`;
     return res.json({
@@ -3172,23 +3246,31 @@ app.post('/api/personal-site/autogen', (req, res) => {
   // resume follows, and the same one the résumé renderer already relies on.
   const name = (text.split('\n').map((l) => l.trim()).find(Boolean) || '').slice(0, 80);
 
+  // Which template to build from. The picker sends the one they chose; without
+  // it we fall back to the calmest starter. Resolved here because the web
+  // address is named after it.
+  const { templateDoc: _tplDoc } = require('./site-templates.js');
+  const wantedTpl = String((req.body && req.body.templateId) || '').slice(0, 40);
+  const usedTemplate = (wantedTpl && _tplDoc(wantedTpl)) ? wantedTpl : 'minimal';
+
   // Address: their username, else their name, else the local part of their
   // email. Numbered if taken, so this can never fail on a collision.
   const user = db.prepare('SELECT username FROM users WHERE email = ?').get(email);
   const seed = String(user && user.username || name || email.split('@')[0] || 'me')
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24) || 'me';
-  let sub = _validSubdomain(seed.length >= 3 ? seed : seed + '-site');
+  // A second site needs its own address. Name it after the template so the
+  // list reads as "alice" and "alice-developer" rather than "alice-2".
+  const base = fresh && usedTemplate
+    ? `${seed.slice(0, 16)}-${String(usedTemplate).replace(/[^a-z0-9]/g, '').slice(0, 12)}`
+    : seed;
+  let sub = _validSubdomain(base.length >= 3 ? base : base + '-site');
   for (let i = 2; i <= 60 && (!sub || db.prepare('SELECT 1 FROM personal_sites WHERE subdomain = ?').get(sub)); i++) {
-    sub = _validSubdomain(`${seed.slice(0, 24)}-${i}`);
+    sub = _validSubdomain(`${base.slice(0, 24)}-${i}`);
   }
   if (!sub) return res.status(409).json({ error: 'no_address', message: 'Could not pick a web address — choose one yourself.' });
 
-  // Which template to build from. The first-run picker sends the one they
-  // chose; without it we fall back to the calmest starter.
   const { templateDoc } = require('./site-templates.js');
-  const wanted = String((req.body && req.body.templateId) || '').slice(0, 40);
-  const doc = (wanted && templateDoc(wanted)) || templateDoc('minimal') || templateDoc('executive');
-  const usedTemplate = (wanted && templateDoc(wanted)) ? wanted : 'minimal';
+  const doc = templateDoc(usedTemplate);
   _autogenFill(doc, text);
   doc.templateId = usedTemplate;
   doc.assets = { resumeId: resumeRow ? resumeRow.id : null, coverLetterId: cover ? cover.id : null };

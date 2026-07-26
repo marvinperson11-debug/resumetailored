@@ -1392,6 +1392,7 @@
             <button type="button" class="sm-help-opt" onclick="smHelpPick('voice')" data-i18n="sm_help_voice">I want to add my voice</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('links')" data-i18n="sm_help_links">I want to add my links</button>
             <button type="button" class="sm-help-opt" onclick="smHelpPick('address')" data-i18n="sm_help_address">I want to change my web address</button>
+            <button type="button" class="sm-help-opt" onclick="smHelpPick('template')" data-i18n="sm_help_template">I want to try a different design</button>
             <button type="button" class="sm-help-never" onclick="smHelpClose()" data-i18n="sm_help_never">Never mind</button>
           </div>
           <div class="sm-strip" id="smStrip">
@@ -2265,6 +2266,8 @@
         sm_addr_len: 'Use 3 to 30 letters, numbers or hyphens.',
         sm_addr_err: 'Could not change your address — try again.',
         sm_addr_done: 'Your website has a new address.',
+        sm_help_template: 'I want to try a different design',
+        sm_tpl_confirm: 'This makes a NEW website from your resume, using a different design.\n\nYour current website is kept — you can switch back any time. Only one can be live at once.',
         sm_help_btn: 'Not sure?', sm_help_q: 'Tell us what you want to change',
         sm_help_photo: 'I want to change my photo', sm_help_move: 'I want to move something',
         sm_help_look: 'I want a different look', sm_help_voice: 'I want to add my voice',
@@ -2468,6 +2471,8 @@
         sm_addr_len: '请使用 3 到 30 个字母、数字或连字符。',
         sm_addr_err: '更改网址失败，请重试。',
         sm_addr_done: '你的网站已启用新网址。',
+        sm_help_template: '我想试试别的设计',
+        sm_tpl_confirm: '这会用你的简历重新生成一个新网站，采用不同的设计。\n\n你现在的网站会保留，随时可以切换回来。同一时间只能有一个网站上线。',
         sm_help_btn: '需要帮助？', sm_help_q: '告诉我们你想改什么',
         sm_help_photo: '我想换我的照片', sm_help_move: '我想调整顺序',
         sm_help_look: '我想换个样子', sm_help_voice: '我想加入我的声音',
@@ -6888,6 +6893,9 @@ Aaliyah Washington`
       // No site and no template chosen yet: show the picker and stop. Once
       // they choose one, smPickerChose comes back through here with it.
       if (!existing && !(opts && opts.templateId)) { smShowPicker(); return; }
+      // "Try a different template" always makes a new one, even though they
+      // already have a site.
+      if (opts && opts.fresh) existing = null;
 
       smShow(true);
       smPanel('smBusy');
@@ -6896,7 +6904,10 @@ Aaliyah Washington`
         const r = await fetch('/api/personal-site/autogen', {
           method: 'POST',
           headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
-          body: JSON.stringify({ templateId: (opts && opts.templateId) || undefined }),
+          body: JSON.stringify({
+            templateId: (opts && opts.templateId) || undefined,
+            fresh: !!(opts && opts.fresh),
+          }),
         });
         data = await r.json().catch(() => null);
         if (r.status === 409 && data && data.error === 'no_resume') { smPanel('smEmpty'); return; }
@@ -7349,6 +7360,27 @@ Aaliyah Washington`
       }
     });
 
+    /* ── Trying a different template ──────────────────────────────────────
+       A different template is a different SITE, generated fresh from the
+       resume. It never overwrites the one they have been working on — that is
+       what makes trying one safe. Only one can be live at a time; publishing a
+       new one takes the old one down. */
+    async function smTryTemplate() {
+      const ok = window.confirm(_t('sm_tpl_confirm',
+        'This makes a NEW website from your resume, using a different design.\n\nYour current website is kept — you can switch back any time. Only one can be live at once.'));
+      if (!ok) return;
+      await smFlushSave();
+      document.body.classList.add('wb-picker');
+      smShow(false);
+      const shell = document.getElementById('cvShell');
+      if (shell) shell.style.display = '';
+      cvClosePanel();
+      cvPanel('templates');
+      wcLoadTemplates();
+      smPickerFresh = true;
+    }
+    let smPickerFresh = false;
+
     /* ── The web address ──────────────────────────────────────────────────
        The address is generated from the username they picked at signup, long
        before they knew it would become their web address. It has to be
@@ -7375,7 +7407,10 @@ Aaliyah Washington`
         method: 'POST',
         headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
         body: JSON.stringify({
-          subdomain: next, text: smResumeText(), name: (wcSite && wcSite.name) || '', config: wcDoc,
+          // Say which site is moving. Without this the server would read it as
+          // "make me another one" and leave the old address live.
+          subdomain: next, renameFrom: cur,
+          text: smResumeText(), name: (wcSite && wcSite.name) || '', config: wcDoc,
         }),
       });
       const d = await r.json().catch(() => ({}));
@@ -7520,6 +7555,7 @@ Aaliyah Washington`
       if (what === 'voice') { smStripOpen(3); return; }   // step 4: voice intro
       if (what === 'links') { smLinksOpen(); return; }
       if (what === 'address') { smChangeAddress(); return; }
+      if (what === 'template') { smTryTemplate(); return; }
     }
 
     // Straight to the file picker. If this vibe's page has no photo slot, one is
@@ -7689,7 +7725,8 @@ Aaliyah Washington`
       cvClosePanel();
       const shell = document.getElementById('cvShell');
       if (shell) shell.style.display = 'none';
-      await smBoot({ templateId });
+      const fresh = smPickerFresh; smPickerFresh = false;
+      await smBoot({ templateId, fresh });
     }
 
     // The one way out of full-screen mode, since it covers the app's own

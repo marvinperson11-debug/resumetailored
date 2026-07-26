@@ -215,9 +215,12 @@ const server = app.listen(0, async () => {
     await autosave({ publish: true });
     db.prepare("UPDATE personal_sites SET views = 42 WHERE subdomain = 'alice'").run();
 
+    // `renameFrom` is required now that a user may keep several sites: without
+    // it, posting a new address means "make me another one", not "move this
+    // one". Ambiguity here would silently strand the old site.
     const renamed = await fetch(`${B}/api/personal-site`, {
       method: 'POST', headers: AJ('tokA'),
-      body: JSON.stringify({ subdomain: 'maya-chen', text: RESUME, name: 'Alice Nakamura', config: gen.config }),
+      body: JSON.stringify({ subdomain: 'maya-chen', renameFrom: 'alice', text: RESUME, name: 'Alice Nakamura', config: gen.config }),
     });
     check('the address can be changed', renamed.status === 200);
     check('the site answers on the new address', (await fetch(`${B}/site/maya-chen`)).status === 200);
@@ -251,7 +254,7 @@ const server = app.listen(0, async () => {
     // Put it back so the checks below still find it.
     await fetch(`${B}/api/personal-site`, {
       method: 'POST', headers: AJ('tokA'),
-      body: JSON.stringify({ subdomain: 'alice', text: RESUME, name: 'Alice Nakamura', config: gen.config }),
+      body: JSON.stringify({ subdomain: 'alice', renameFrom: 'maya-chen', text: RESUME, name: 'Alice Nakamura', config: gen.config, publish: true }),
     });
 
     // ── The server owns the public URL ──────────────────────────────────────
@@ -313,6 +316,65 @@ const server = app.listen(0, async () => {
       (await fetch(`${B}/api/personal-site/autogen`, { method: 'POST', headers: AJ('tokA') })).status === 402);
     check('autogen requires sign-in',
       (await fetch(`${B}/api/personal-site/autogen`, { method: 'POST' })).status === 401);
+    // ── Several sites, one live ─────────────────────────────────────────
+    // Trying a different template must not destroy the one they have been
+    // working on, and two versions of the same person must never be live at
+    // once.
+    // The gating checks above deliberately cancel this user's subscription;
+    // restore it, since everything below needs a Pro account.
+    db.prepare("INSERT OR REPLACE INTO subscribers (email,customer_id) VALUES ('a@x.com','c_alice')").run();
+    const mk = (tpl) => fetch(`${B}/api/personal-site/autogen`, {
+      method: 'POST', headers: AJ('tokA'), body: JSON.stringify({ templateId: tpl, fresh: true }),
+    }).then(r => r.json());
+
+    const dev = await mk('developer');
+    check('a second site can be created', dev.created === true && dev.subdomain !== 'alice', dev.subdomain);
+    check('it is named after its template', /developer/.test(dev.subdomain), dev.subdomain);
+    check('it is built from that template', dev.config.templateId === 'developer');
+    check('it starts as a draft', dev.published === false);
+    check('the first site still exists', (await fetch(`${B}/site/alice`)).status === 200);
+
+    const studio = await mk('studio');
+    check('a third site can be created', studio.created === true && studio.subdomain !== dev.subdomain);
+
+    let list = await (await fetch(`${B}/api/personal-sites`, { headers: AJ('tokA') })).json();
+    check('every site is listed', list.sites.length === 3, String(list.sites.length));
+    check('each carries its template name',
+      list.sites.every(x => x.templateName) && list.sites.some(x => x.templateName === 'Developer'));
+    check('each carries its own address', new Set(list.sites.map(x => x.url)).size === 3);
+    check('exactly one is published', list.sites.filter(x => x.published).length === 1);
+    check('and it is the original', list.sites.find(x => x.published).subdomain === 'alice');
+
+    // THE RULE: publishing one takes the others down.
+    await fetch(`${B}/api/personal-site`, {
+      method: 'POST', headers: AJ('tokA'),
+      body: JSON.stringify({ subdomain: dev.subdomain, text: RESUME, name: 'Alice', config: dev.config, publish: true }),
+    });
+    list = await (await fetch(`${B}/api/personal-sites`, { headers: AJ('tokA') })).json();
+    check('publishing another leaves exactly one live', list.sites.filter(x => x.published).length === 1);
+    check('the newly published one is the live one', list.sites.find(x => x.published).subdomain === dev.subdomain);
+    check('the previously live site goes dark', (await fetch(`${B}/site/alice`)).status === 404);
+    check('the newly published one is reachable', (await fetch(`${B}/site/${dev.subdomain}`)).status === 200);
+    check('nothing was deleted', list.sites.length === 3);
+
+    // A fresh generation is fresh — no edits carried across.
+    check('a new template starts from the resume, not the old site',
+      !JSON.stringify(dev.config).includes('M. Chen'));
+
+    // Deleting names its target, because deleting the live one takes a page
+    // off the internet.
+    const delRes = await fetch(`${B}/api/personal-sites/${studio.subdomain}`, { method: 'DELETE', headers: AJ('tokA') });
+    check('a site can be deleted by name', delRes.status === 200);
+    list = await (await fetch(`${B}/api/personal-sites`, { headers: AJ('tokA') })).json();
+    check('and only that one goes', list.sites.length === 2 && !list.sites.some(x => x.subdomain === studio.subdomain));
+    check("another user's site cannot be deleted",
+      (await fetch(`${B}/api/personal-sites/${dev.subdomain}`, { method: 'DELETE', headers: AJ('tokB') })).status === 403);
+    check('and it is still there', (await fetch(`${B}/site/${dev.subdomain}`)).status === 200);
+
+    // Reopening returns the live one, which is what they were last looking at.
+    const cur = await (await fetch(`${B}/api/personal-site`, { headers: AJ('tokA') })).json();
+    check('reopening lands on the live site', cur.site.subdomain === dev.subdomain, cur.site.subdomain);
+
   } catch (e) {
     failures++;
     console.error('FAIL  unexpected error —', e && e.stack);
