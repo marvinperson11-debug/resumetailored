@@ -2137,14 +2137,37 @@ const _sdText = (s, max = 4000) => _escHtml(String(s == null ? '' : s).slice(0, 
 // A section background: solid colour, gradient, or an image from the media library.
 function _sdSectionBg(bg) {
   if (!bg || typeof bg !== 'object') return '';
-  if (bg.type === 'image') { const u = _safeUrl(bg.value); return u ? `background-image:url('${_escHtml(u)}');background-size:cover;background-position:center;` : ''; }
+  if (bg.type === 'image') {
+    const u = _safeUrl(bg.value);
+    if (!u) return '';
+    // A full-bleed photo with text on it is unreadable without a scrim, and
+    // "make sure the text is still legible" is not something to leave to
+    // whoever picks the photo. The overlay is part of the background.
+    const ov = Number(bg.overlay);
+    const a = Number.isFinite(ov) ? Math.max(0, Math.min(0.9, ov)) : 0;
+    const scrim = a > 0
+      ? `linear-gradient(rgba(8,12,22,${a.toFixed(2)}),rgba(8,12,22,${a.toFixed(2)})),`
+      : '';
+    return `background-image:${scrim}url('${_escHtml(u)}');background-size:cover;background-position:center;`;
+  }
   if (bg.type === 'gradient' && typeof bg.value === 'string') {
-    // Only allow a simple, well-formed gradient string (no arbitrary CSS).
-    const g = bg.value.slice(0, 300);
-    return /^(linear|radial)-gradient\([^;{}]*\)$/.test(g) ? `background-image:${g};` : '';
+    // A conservative whitelist rather than a shape match, so a stack of
+    // comma-separated gradients (used by the lighten/darken wash) is allowed
+    // while arbitrary CSS still is not.
+    const g = bg.value.slice(0, 400);
+    const safe = /^(linear|radial)-gradient\(/.test(g)
+      && /^[a-zA-Z0-9\s,.%#()-]+$/.test(g)
+      && !/url\(|expression|javascript:|@import/i.test(g);
+    return safe ? `background-image:${g};` : '';
   }
   if (bg.type === 'color') { const c = _sdColor(bg.value, ''); return c ? `background-color:${c};` : ''; }
   return '';
+}
+
+// Photo heroes get a text shadow on top of the scrim: the scrim handles the
+// average case, the shadow handles a bright patch landing behind a word.
+function _sdSectionClass(bg) {
+  return (bg && bg.type === 'image' && _safeUrl(bg.value)) ? ' sd-sec--photo' : '';
 }
 
 // ── Per-element mobile overrides (V6) ───────────────────────────────────────
@@ -2384,7 +2407,7 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     // section actually carries that id. Without this every in-page CTA in every
     // template was a dead link.
     const anchorId = String((sec && sec.id) || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
-    return `<section class="sd-sec"${anchorId ? ` id="${anchorId}"` : ''} style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
+    return `<section class="sd-sec${_sdSectionClass(sec && sec.bg)}"${anchorId ? ` id="${anchorId}"` : ''} style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
   }).join('');
 
   const title = _sdText((page.seo && page.seo.title) || row.name || page.name || 'Portfolio', 120);
@@ -2415,6 +2438,7 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     html{scroll-behavior:smooth;}
     body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
     .sd-sec{position:relative;width:100%;background-repeat:no-repeat;scroll-margin-top:12px;}
+    .sd-sec--photo .sd-h1,.sd-sec--photo .sd-h2,.sd-sec--photo .sd-p{text-shadow:0 1px 14px rgba(0,0,0,.5);}
     .sd-inner{position:relative;max-width:${SD_CANVAS}px;margin:0 auto;}
     .sd-el{position:absolute;}
     .sd-h1{font-size:48px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
@@ -2780,6 +2804,13 @@ function _autogenFill(doc, text, name) {
   }
   return doc;
 }
+
+// The ten Vibes. Public and unauthenticated for the same reason the template
+// preview is: it is a static list of colours and filenames, no user data.
+app.get('/api/site-vibes', (req, res) => {
+  const { list } = require('./public/site-vibes.js');
+  res.json({ vibes: list() });
+});
 
 /**
  * Auto-generate a starter site so the user never faces a blank screen.

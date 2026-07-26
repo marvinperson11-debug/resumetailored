@@ -1,6 +1,6 @@
 # Website Creator — simple mode
 
-Your spec, checked against the code. One hard blocker, four questions, then the build order.
+Your spec, checked against the code. One hard blocker (still yours), four questions (all answered), then the build order.
 
 ---
 
@@ -38,9 +38,9 @@ Both are worth fixing now so the switch is clean when you flip it.
 
 ---
 
-## 2. Four questions
+## 2. Four questions — all answered
 
-Only asking where a wrong guess means building the wrong thing.
+All four are settled and built. Kept here as the record of what was decided and why.
 
 ### Q1 — "Already live" vs. the Publish button — **ANSWERED: private until they press publish**
 
@@ -64,43 +64,46 @@ Auto-save sends no flag. So it can neither expose a private site nor take a live
 
 **Auto-save came with it** (your item 5, brought forward). There's no Save button: edits persist about a second after you stop, and flush on Done Editing and on leaving the page. Without it, "private until publish" would have meant every draft edit was silently lost.
 
-### Q2 — Photographic vibes and image licensing
+### Q2 — Photo licensing — **ANSWERED: source CC0**
 
-Five of your ten vibes want real photos (Sunset Glow, Forest Canopy, City Lights, Ocean Breeze, Mountain Peak). I can't ship photos I don't have rights to, and I won't hotlink someone else's CDN into a product you charge for.
+Done. Five photographs, all **CC0 or public domain**, sourced from Wikimedia Commons where the licence is stated on the file page and can be checked:
 
-Three ways to do this:
-
-| Option | What it looks like | Cost |
+| Vibe | Licence | Source |
 |---|---|---|
-| **A. Source CC0 photos** (Unsplash/Pexels licence), self-host them | Genuine photographs, exactly what you described | ~5 × 200–400 KB bundled; I pick and you approve each |
-| **B. Generated scenic backgrounds** — layered mesh gradients + SVG | Reads as atmospheric, not literal. "Sunset Glow" works beautifully; "Forest Canopy" less so | Zero licensing risk, ~2 KB each, instant load |
-| **C. Let the user supply the photo** per vibe | Their own photo, full-bleed | Needs an upload step, which fights "under 3 minutes" |
+| Sunset Glow | CC0 | *Sunset sky water* |
+| Forest Canopy | Public domain | *A view up at an old growth canopy trees* (US Fish & Wildlife) |
+| City Lights | CC0 | *City Lights at Night* |
+| Ocean Breeze | CC0 | *Sky Clouds Sea* |
+| Mountain Peak | CC0 | *Imposing mountain under snow* |
 
-**My recommendation: A, with B as the fallback shipped first** — so the vibes exist and work immediately, and I swap in real photos once you've okayed a specific set. Sunset/Ocean/City look genuinely good generated; Forest and Mountain really do want a photo.
+Every one is recorded in **`public/vibes/CREDITS.md`** with its licence, source link and author — none of these require attribution, but provenance for anything shipped on a paying customer's site shouldn't be a matter of memory.
 
-Either way the readability rule you specified (automatic overlay + text shadow) is handled in the renderer, not per-vibe.
+They're **self-hosted, not hotlinked**, at 1200px wide. One image loads per published site: 104–478 KB. A test asserts each file exists, is under 600 KB, and is actually served — a missing one would render as a blank band on someone's live page.
 
-### Q3 — Do Vibes replace the 12 templates?
+**Readability is structural, not per-vibe.** Every photo hero gets a darkening scrim in the renderer plus a text shadow, and the lighten/darken control moves the scrim within a range that never goes light enough to lose contrast.
 
-I just shipped 12 starter templates. Your spec says "replace themes with 10 Vibes."
+### Q3 — Vibes vs templates — **ANSWERED: re-skin**
 
-Those are different axes: a **template** is the structure (what sections, in what order); a **vibe** is the look (colours, background, type). Right now they're welded together — each template hard-codes its own palette.
+`applyVibe` changes colour, background and text contrast on **whatever the user already has**. Sections, wording and uploaded photos are untouched. The 12 templates stay as the structures the generator picks from; a beginner never sees the word "template".
 
-My reading is that you want **vibes to be the only thing a beginner sees**, with templates behind the scenes. So:
+Two things that guarantee it's safe to click:
 
-> One click on a vibe re-skins **whatever structure they already have**. The 12 templates stay as the structures that the auto-generator picks from, but a first-time user never sees the word "template."
+- **It loses nothing.** Tests assert every word, every section, every element id and every uploaded image survives all ten vibes.
+- **It's repeatable, not cumulative.** Clicking through all ten and landing on the last gives byte-identical output to clicking that one first. Someone *will* try them all.
 
-Confirm, or tell me the templates should go away entirely.
+One deliberate exception: an element carrying `lockColor` keeps its colour, so a deliberate brand choice isn't overwritten.
 
-### Q4 — Does simple mode work on phones?
+The failure mode I built around: a `#ffffff` heading left over from a dark vibe becomes invisible on a light one. Contrast is recomputed per section from measured luminance, not guessed.
 
-Last time you were clear: *"This is a desktop feature."* That was about dragging elements on a large canvas — correct then, and the gate is still right for the advanced editor.
+### Q4 — Phones — **ANSWERED: simple mode works on phones; pop-up removed**
 
-But **this** flow — tap a section, tap a vibe, tap Publish — is genuinely fine on a phone, and a lot of people will open their site link on their phone and want to fix one thing.
+The desktop gate is gone — markup, styles, strings and all call sites.
 
-> **Recommendation: let simple mode run on phones. Keep the drag-and-drop editor desktop-only.** The gate stops being "you can't use this feature here" and becomes "the advanced editor needs a bigger screen" — shown only if they reach for it.
+On a phone, **Customize My Site** opens the vibe picker rather than a drag canvas: ten large targets, two per row, thumbnails showing the real photo. Verified end to end at 390×844 — lands on the site, opens the picker, applies Sunset Glow with its overlay.
 
-Say the word if you'd rather keep the whole thing desktop-only; it's less work, not more.
+**This turned up an app-wide bug.** `.toast` is `position:fixed`, `z-index:9999`, and on phones spans the full width at `bottom:70px` — with no `pointer-events:none`. While invisible it was swallowing taps on anything beneath it, **anywhere in the dashboard**, not just here. Any bottom-anchored button on a phone was dead. One line to fix.
+
+The drag-and-drop editor still opens only on a wider screen — but that's now a consequence of which control you reach for, not a wall in front of the feature.
 
 ---
 
@@ -120,7 +123,7 @@ Starting with item 1 as you asked and working outward. Each phase ships independ
 |---|---|
 | **1** | Full-screen public view as the default state. Auto-generate a site from the most recent saved resume + cover letter on first open. One floating **✏️ Customize My Site** button, one subtle top line. Zero chrome. |
 | **2** | Edit mode: click-it-to-change-it inline editing (name, photo, section move/delete with floating controls), slim top bar with **Done Editing**. Sidebar and right panel start collapsed. |
-| **3** | The 10 Vibes, one-click apply, Lighten/Darken slider, readability overlay. |
+| **3** | ~~The 10 Vibes~~ **done** — one-click apply, lighten/darken, readability overlay, CC0 photography. |
 | **4** | The bottom strip conversation — one question at a time, skip and back on every step, ending in Publish. |
 | **5** | ~~Auto-save~~ **done** — shipped alongside the publish decision. Still to add: the inline **↩️ Undo** that appears where they acted and fades after 5s. (The undo engine already exists — this is surfacing it, not building it.) |
 | **6** | **💬 Not sure?** helper that jumps straight to the right control. |
