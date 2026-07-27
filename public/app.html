@@ -9188,10 +9188,17 @@ Aaliyah Washington`
     // ── Inspector ─────────────────────────────────────────────────────────────
     function edRenderInspector() {
       const box = document.getElementById('wcEdInspector'); if (!box) return;
+      // It was `hidden` in the markup and NOTHING ever removed the attribute,
+      // so this panel has been rendering its contents into a box no one could
+      // see. Text, colour, alignment and media upload were all already built
+      // and simply unreachable. Shown whenever something is selected, hidden
+      // again when nothing is, so it never occupies the canvas for no reason.
       if (!edStore || !edSel) {
+        box.hidden = true;
         box.innerHTML = `<div style="font-size:13px;color:#9ca3af;">${wcEsc(_t('wc_ed_noselect', 'Select an element on the canvas to edit it.'))}</div>`;
         return;
       }
+      box.hidden = false;
       const hit = SiteDocStore.findElement(edStore.getDoc(), edSel);
       if (!hit) { box.innerHTML = ''; return; }
       const e = hit.el, p = e.props || {};
