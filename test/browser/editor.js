@@ -41,6 +41,11 @@ for (const u of Object.values(USERS)) {
   db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run(u.token, u.email);
   db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run(u.email, 'c_' + u.name);
 }
+/* A one-pixel PNG. The upload path is the thing under test, not the file. */
+const PIXEL = path.join(os.tmpdir(), 'rt-pixel.png');
+fs.writeFileSync(PIXEL, Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'));
+
 const RESUME = 'Alice Nakamura\nalice@example.com | Seattle\n\nSUMMARY\nStaff engineer with 10 years.\n\nEXPERIENCE\nStaff Engineer, Northwind\n• Cut p99 latency by 40%\n\nSKILLS\nGo, Postgres';
 
 let failures = 0;
@@ -730,7 +735,117 @@ const server = app.listen(0, async () => {
       await page.waitForTimeout(2500);
       check(`${width}: an edit autosaves`, posts.length > nPosts, `posts before=${nPosts} after=${posts.length}`);
 
-      // Done Editing lands in the Back Office, not a full-screen view.
+      /* ── UPLOAD, PREVIEW, SAVE, HEADER ──────────────────────────────────
+         A real file through the real picker, all the way to a decoded image in
+         the canvas. Every media upload in the Website Creator had been failing
+         with a 400 for months — `authHeaders()` declares application/json,
+         which overwrites the multipart Content-Type and makes express.json()
+         choke on the body before the route is reached — and the only way to
+         see that is to send a file. */
+      const upTarget = await page.evaluate(() => {
+        const id = SiteDocStore.newId('up');
+        edApply((d) => {
+          const p = SiteDocStore.findPage(d, edPageId);
+          const s = p.sections[0];
+          const y = (Number(s.h) || 0) + 40;
+          s.els.push({ id, type: 'image', x: 40, y, w: 300, h: 200, props: {} });
+          s.h = y + 260;
+        });
+        edSelect(id);
+        return id;
+      });
+      await page.waitForTimeout(900);
+      const [chooser] = await Promise.all([
+        page.waitForEvent('filechooser', { timeout: 8000 }).catch(() => null),
+        page.evaluate(() => edPickMedia('image')),
+      ]);
+      check(`${width}: choosing a photo opens a file picker`, !!chooser);
+      if (chooser) {
+        await chooser.setFiles(PIXEL);
+        await page.waitForFunction((i) => {
+          const f = document.getElementById('wcEdFrame');
+          const n = f && f.contentDocument && f.contentDocument.querySelector(`.sd-el[data-el="${i}"] img`);
+          return !!(n && n.naturalWidth > 0);
+        }, upTarget, { timeout: 12000 }).catch(() => {});
+        const up = await page.evaluate((i) => {
+          const hit = SiteDocStore.findElement(edStore.getDoc(), i);
+          const f = document.getElementById('wcEdFrame');
+          const n = f.contentDocument.querySelector(`.sd-el[data-el="${i}"] img`);
+          return {
+            src: hit ? (hit.el.props || {}).src : null,
+            inCanvas: n ? n.getAttribute('src') : null,
+            decoded: n ? n.naturalWidth : 0,
+            toast: (document.querySelector('.toast.show, #toast.show, .toast') || {}).textContent || '',
+          };
+        }, upTarget);
+        check(`${width}: the upload reaches the server and comes back with a URL`,
+          /^\/media\/\d+$/.test(up.src || ''), JSON.stringify(up));
+        check(`${width}: and the photo is IN the canvas, decoded`,
+          up.inCanvas === up.src && up.decoded > 0, JSON.stringify(up));
+        check(`${width}: with a toast saying so`, /uploaded/i.test(up.toast), JSON.stringify(up));
+      }
+
+      // PREVIEW: the device toggle drives it, and there is a way back.
+      await page.evaluate(() => { edSetDevice('desktop'); wcSetView('preview'); });
+      await page.waitForTimeout(900);
+      const pvDesk = await page.evaluate(() => {
+        const f = document.getElementById('wcPreviewFrame');
+        const b = document.getElementById('cvBackToEdit');
+        return { w: f.getBoundingClientRect().width, back: b && b.offsetWidth > 0,
+          prevBtn: (document.getElementById('cvPreviewBtn') || {}).offsetWidth };
+      });
+      await page.evaluate(() => edSetDevice('mobile'));
+      await page.waitForTimeout(500);
+      const pvMob = await page.evaluate(() => {
+        const f = document.getElementById('wcPreviewFrame');
+        return { w: f.getBoundingClientRect().width, style: f.style.width,
+          on: document.getElementById('wcEdMobBtn').classList.contains('is-on') };
+      });
+      /* The phone preview is 390px OR the stage, whichever is smaller. On a
+         390px viewport the stage is about 334px, so the two coincide — that is
+         correct, not a dead toggle, and asserting "narrower" there would have
+         been demanding a phone preview wider than the window it is in. */
+      const roomForPhone = pvDesk.w > 400;
+      check(`${width}: the device toggle drives the preview's width`,
+        pvMob.w <= 390 && pvMob.w <= pvDesk.w && (!roomForPhone || pvMob.w < pvDesk.w),
+        JSON.stringify({ pvDesk, pvMob, roomForPhone }));
+      check(`${width}: and the highlight moves with it`, pvMob.on, JSON.stringify(pvMob));
+      check(`${width}: preview offers a visible way back to editing`, pvDesk.back, JSON.stringify(pvDesk));
+      check(`${width}: and hides the Preview button while previewing`, pvDesk.prevBtn === 0, JSON.stringify(pvDesk));
+
+      await page.evaluate(() => { edSetDevice('desktop'); wcSetView('edit'); });
+      await page.waitForTimeout(600);
+      const backIn = await page.evaluate(() => ({
+        canvas: document.querySelector('#wcEdStage .cv-canvasbox').style.display,
+        preview: document.getElementById('wcPreview').style.display,
+        back: (document.getElementById('cvBackToEdit') || {}).style.display,
+      }));
+      check(`${width}: Back to editing returns to the canvas`,
+        backIn.canvas !== 'none' && backIn.preview === 'none' && backIn.back === 'none', JSON.stringify(backIn));
+
+      // SAVE saves and STAYS. The header no longer carries a bare page name.
+      const header = await page.evaluate(() => {
+        const t = document.getElementById('cvDocTitle');
+        const sv = document.getElementById('cvSaveBtn');
+        return { titleOnScreen: !!(t && t.offsetWidth > 0), titleText: t ? t.textContent : null,
+          titleGone: !t,
+          saveText: sv ? sv.textContent.trim() : null, doneGone: !document.getElementById('cvDoneBtn') };
+      });
+      check(`${width}: the page name is gone from the header`,
+        header.titleGone, JSON.stringify(header));
+      check(`${width}: the button says Save`, /save/i.test(header.saveText || ''), JSON.stringify(header));
+      const nSave = posts.length;
+      await page.evaluate(() => wcSaveNow());
+      await page.waitForTimeout(900);
+      const afterSave = await page.evaluate(() => ({
+        tab: (document.querySelector('.tab-content.active') || {}).id,
+        shell: (document.getElementById('cvShell') || {}).style.display,
+      }));
+      check(`${width}: Save writes to the server`, posts.length > nSave, `${nSave} -> ${posts.length}`);
+      check(`${width}: and leaves you in the editor`,
+        afterSave.tab === 'panel-website' && afterSave.shell !== 'none', JSON.stringify(afterSave));
+
+      // Leaving is still possible — the app's own navigation flushes and goes.
       await page.evaluate(() => wcDoneEditing());
       await page.waitForTimeout(600);
       const after = await page.evaluate(() => ({
