@@ -560,52 +560,53 @@ const server = app.listen(0, async () => {
       !/Alex Morgan|Jordan Ellis|VP of Operations|15 years scaling|Toronto/.test(filled), filled.slice(0, 200));
     check('and puts the real one there instead', /Alice Nakamura/.test(filled));
 
-    /* ── THE WAY OUT OF FULL SCREEN ─────────────────────────────────────
-       `.sm-back` was declared twice: a leftover floating chip with
-       `position:absolute; top:14px; left:14px`, and the in-bar pill that never
-       resets `position`. Back and Advanced both carry the class, so they were
-       stacked on identical coordinates with Advanced painted on top — the only
-       exit from full-screen mode was underneath the button hiding it. */
-    check('.sm-back is declared exactly once',
-      (appJs.match(/\n    \.sm-back \{/g) || []).length === 1,
-      String((appJs.match(/\n    \.sm-back \{/g) || []).length));
-    check('and it is not absolutely positioned',
-      !/\.sm-back \{[^}]*position: *absolute/.test(appJs));
+    /* ── SIMPLE MODE IS GONE ────────────────────────────────────────────
+       It was a second, competing product: the finished site full screen behind
+       one button, with its own guided strip, help panel, vibes picker and
+       inline-edit chips — reached through a chrome the user could get trapped
+       in. There is ONE editor now, the rail editor, and simple mode's surface
+       is deleted rather than merely unrouted.
 
-    /* The bar wraps to three rows on a phone. Every hardcoded frame offset was
-       a guess that went stale, so the frame must size itself from what is left
-       rather than from a number. */
-    check('the frame is not positioned with a hardcoded offset',
-      !/\.sm-frame \{[^}]*top: *\d+px/.test(appJs));
-    check('the frame takes the remaining height', /\.sm-frame \{[^}]*flex: *1/.test(appJs));
+       Checked as ABSENCE OF THE SOURCE, not absence of a route: leaving the
+       code in place and hiding the door is what made this a second product in
+       the first place. */
+    check('no simple-mode markup survives',
+      !/id="smView"|class="sm-view"|class="sm-strip"|class="sm-help/.test(appJs));
+    check('no simple-mode stylesheet survives',
+      !/\n    \.sm-[a-z]/.test(appJs) && !/@keyframes sm-rot/.test(appJs));
+    check('no simple-mode function survives',
+      !/\bsm[A-Z][A-Za-z0-9_]*\b/.test(appJs) && !/\b_sm[A-Za-z0-9_]+\b/.test(appJs));
+    check('and its history trap went with it — nothing pushes a fake entry',
+      !/history\.pushState\(\{ rtSite: 1 \}/.test(appJs));
+    check('the dead translations went too',
+      !/sm_customize|sm_help_btn|sm_vibe_q|sm_building/.test(appJs));
 
-    /* Full screen is a place, so the phone's Back gesture must leave it rather
-       than walking off the product to the marketing site. */
-    check('full screen pushes a history entry', /history\.pushState\(\{ rtSite: 1 \}/.test(appJs));
-    check('and Back is caught rather than leaving the app',
-      /addEventListener\('popstate'/.test(appJs) && /_smPopped/.test(appJs));
+    /* What was KEPT, renamed off the `sm` prefix: the save path, the resume the
+       site shows, the web address, and leaving. Deleting these with the surface
+       would have taken autosave with them. */
+    check('the one save path survives', /async function wcSaveSite\(/.test(appJs)
+      && /function wcQueueSave\(/.test(appJs) && /async function wcFlushSave\(/.test(appJs));
+    check('and still never publishes by itself',
+      /if \(opts && typeof opts\.publish === 'boolean'\) body\.publish = opts\.publish;/.test(appJs));
+    check('which resume the site shows survives', /function wcResumeText\(/.test(appJs));
+    check('changing the web address survives', /async function wcChangeAddress\(/.test(appJs));
+    check('and Done Editing survives, landing in the Back Office',
+      /async function wcDoneEditing\(\)[\s\S]{0,600}?showTab\('backoffice'\)/.test(appJs));
 
-    /* Two controls per state, never seven. Checked through the STYLESHEET, not
-       the `hidden` property: `[hidden]` is a UA rule that any class setting
-       `display` silently beats, so a button can hold hidden=true and still be
-       on screen — a property check would have confirmed it was hidden while
-       the user could see it. */
-    check('hiding a bar control actually hides it',
-      /\.sm-bar \[hidden\] \{ display: none !important; \}/.test(appJs));
-    check('the bar no longer carries the look/address/advanced buttons',
-      !/onclick="smStripOpen\(1\)"[^>]*sm_change_look/.test(appJs) && !/id="smAddrBtn"/.test(appJs));
-    /* The advanced editor is gone as a destination — a drag-and-drop canvas
-       with rails and an inspector was a second, harder product bolted onto a
-       flow whose premise is never feeling like you built anything. Nothing
-       routes there any more. */
-    check('nothing routes to the advanced editor',
-      !/function smAdvanced\(/.test(appJs) && !/smHelpPick\('advanced'\)/.test(appJs));
+    /* THE BUG THIS DELETION EXPOSED. Autosave was subscribed inside simple
+       mode's boot. Once the rail editor became the only way in, that boot never
+       ran, so nothing subscribed the save path at all — edits survived only if
+       the user pressed Publish. The subscription belongs to the editor. */
+    check('the editor itself subscribes autosave',
+      /edStore\.subscribe\(\(\) => \{[\s\S]{0,400}?wcQueueSave\(\);/.test(appJs));
+    check('and keeps wcDoc in step, since the save body reads it',
+      /edStore\.subscribe\(\(\) => \{[\s\S]{0,400}?wcDoc = edStore\.getDoc\(\);/.test(appJs));
     check('the first-run picker shows the grid, not the editor around it',
       ['cv-top', 'cv-rail', 'cv-canvasbox', 'cv-inspector', 'cv-railtoggle', 'cv-bottom']
         .every(c => new RegExp('body\\.wb-picker \\.' + c + '[,{ ]').test(appJs)));
-    /* The document store stays: simple mode's inline edits, vibes, guided strip
-       and undo all run through it. The surface went, not the engine. */
-    check('the document store simple mode depends on is still wired',
+    /* The document store stays — it was always the engine under both surfaces,
+       and it is what undo/redo, the inspector and autosave all run through. */
+    check('the document store is still wired',
       /edApply\(/.test(appJs) && /edStore\.subscribe/.test(appJs));
     /* ONE PAGE. The read-only view of the site — banner, Back, live link, a
        Customize button and no way to edit anything — is deleted. Pressing
@@ -656,8 +657,7 @@ const server = app.listen(0, async () => {
 
     check('Personal Website opens the builder', /wcSetView\('edit'\)/.test(appJs) && /function wcEnsureSite/.test(appJs));
     check('and nothing shows the simplified view on the way',
-      !/await smBoot\(openSub/.test(appJs));
-    check('the builder is never force-hidden', !/shell\.style\.display = 'none';\n *\n *\/\/ Back is always/.test(appJs));
+      !/smBoot/.test(appJs));
 
     /* On a 390px phone the desktop layout put Preview and Publish off the right
        edge — you could not publish at all — and a 74px rail plus a fixed 300px
@@ -677,11 +677,21 @@ const server = app.listen(0, async () => {
     check('with a phone position of its own', /\.cv-railtoggle \{ top: auto; bottom: 56px;[^}]*left: 56px;/.test(appJs));
     check('the device toggle is kept at phone width',
       /\.cv-logo, \.cv-title \{ display: none; \}/.test(appJs) && !/\.cv-seg \{ display: none/.test(appJs));
+    /* Two rules disagreed about the inspector on a phone: the ≤820px block
+       floats it over the canvas as a right-hand overlay, and a ≤780px rule
+       killed it outright with `display: none !important`. Both applied at
+       390px and !important won, so an element could be selected, its controls
+       rendered, and nothing appeared. The property panel is the whole point of
+       selecting something. */
+    check('the inspector is not hidden on a phone',
+      !/\.cv-inspector \{ display: none !important; \}/.test(appJs));
+    check('and floats over the canvas there',
+      /\.cv-inspector \{ position: absolute; right: 0; top: 0; bottom: 0;/.test(appJs));
 
     check('there is no read-only state to land in', !/_smPreviewFromEditor/.test(appJs));
-    check('and no button that opens one', !/id="smPreviewBtn"/.test(appJs) && !/smSetEditing\(false\)/.test(appJs));
-    check('Back leaves the Website Creator', /function smBack\(\) \{ smExit\(\); \}/.test(appJs));
-    check('editing is the only state', /let smEditing = true;/.test(appJs));
+    check('and no button that opens one', !/id="smPreviewBtn"/.test(appJs));
+    check('editing is the only state — the canvas is where you arrive',
+      /function wcEnterEditor\(\)[\s\S]{0,500}?wcSetView\('edit'\)/.test(appJs));
     check('and the dead read-only styling went with it', !/wb-public/.test(appJs));
 
     check('the replacement neither posts a site nor asks for an address',
