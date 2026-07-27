@@ -410,7 +410,15 @@ app.use(express.static(path.join(__dirname, 'public'), {
       res.setHeader('Cache-Control', 'public, max-age=86400');
     } else if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+      // The shared site-* modules are COUPLED to app.html, which is served
+      // no-cache. Caching them for a day while the HTML stays fresh means a
+      // returning browser runs new HTML against a day-old module — and any
+      // call added across that boundary throws "x is not a function" for up to
+      // 24 hours. That is exactly how `SiteFields.fillFromResume is not a
+      // function` reached a user while every clean-cache test passed.
+      // no-cache still revalidates (304 when unchanged); it is not "no store".
+      const coupled = /[\\/]site-(fields|vibes|doc-store)\.js$/.test(filePath);
+      res.setHeader('Cache-Control', coupled ? 'no-cache' : 'public, max-age=86400');
     } else if (/\.(png|jpe?g|svg|webp|ico|gif|woff2?)$/i.test(filePath)) {
       // Images/fonts change rarely and are the heaviest assets.
       res.setHeader('Cache-Control', 'public, max-age=2592000');
