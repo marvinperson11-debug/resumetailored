@@ -122,15 +122,19 @@ const server = app.listen(0, async () => {
       check(`${width}: the canvas is not blank`, inEditor.els > 0, 'elements=' + inEditor.els);
       check(`${width}: applying a template threw nothing`, errs.length === before, errs.slice(before).join(' | '));
 
-      // Select an element and prove the inspector shows its controls.
+      /* SELECTING IS SILENT. The panel used to appear the moment anything was
+         selected — a wall of controls over the canvas every time you touched
+         your own page. Measured as what is ON SCREEN, because `hidden` being
+         set has been true while the thing was still visible before. */
       const sel = await page.evaluate(() => {
         const el = document.querySelector('[data-el]');
         if (!el) return null;
         edSelect(el.getAttribute('data-el'));
         const box = document.getElementById('wcEdInspector');
-        return { id: edSel, hidden: box.hidden, visible: box.offsetWidth > 0, controls: box.querySelectorAll('input,select,textarea,button').length };
+        return { id: edSel, hidden: box.hidden, onScreen: box.offsetWidth > 0 && box.offsetHeight > 0 };
       });
-      check(`${width}: selecting shows the inspector`, sel && !sel.hidden && sel.visible && sel.controls > 0, JSON.stringify(sel));
+      check(`${width}: selecting an element does NOT open the panel`,
+        sel && sel.id && !sel.onScreen, JSON.stringify(sel));
 
       /* ── TYPING ON THE CANVAS ───────────────────────────────────────────
          Driven with the real mouse and the real keyboard, because the whole
@@ -146,13 +150,38 @@ const server = app.listen(0, async () => {
         if (found) edSelect(found);
         return found;
       });
-      // The canvas stage scrolls, so the box can sit outside the viewport. Ask
-      // Playwright for its real on-screen position rather than computing one.
+      /* A point that really belongs to this element.
+
+         The canvas stage scrolls, so a box can sit outside the viewport — and
+         template elements OVERLAP, so the geometric centre of one box is
+         sometimes inside another that paints on top of it. Pressing a computed
+         midpoint selected a photo when the test meant a heading, and every
+         typing assertion after it failed for a reason that had nothing to do
+         with typing.
+
+         So: scroll it in, then ask the browser what is actually at each
+         candidate point and take the first that answers with this element. */
       const boxAt = async (id) => {
         const loc = page.locator(`.ed-box[data-el="${id}"]`);
         await loc.scrollIntoViewIfNeeded().catch(() => {});
-        const b = await loc.boundingBox();
-        return b ? { x: b.x + b.width / 2, y: b.y + Math.min(12, b.height / 2), box: b } : null;
+        if (!(await loc.boundingBox())) return null;
+        return page.evaluate((i) => {
+          const b = document.querySelector(`.ed-box[data-el="${i}"]`);
+          if (!b) return null;
+          const r = b.getBoundingClientRect();
+          const cands = [
+            [r.left + r.width / 2, r.top + Math.min(12, r.height / 2)],
+            [r.left + r.width / 2, r.top + r.height / 2],
+            [r.left + 8, r.top + 8],
+            [r.right - 8, r.bottom - 8],
+            [r.left + r.width / 2, r.bottom - 8],
+          ];
+          for (const [x, y] of cands) {
+            const top = document.elementFromPoint(x, y);
+            if (top && top.closest && top.closest(`.ed-box[data-el="${i}"]`)) return { x, y, box: { x: r.x, y: r.y, width: r.width, height: r.height }, clean: true };
+          }
+          return { x: cands[0][0], y: cands[0][1], box: { x: r.x, y: r.y, width: r.width, height: r.height }, clean: false };
+        }, id);
       };
       const at = pickId ? await boxAt(pickId) : null;
       const target = at ? { id: pickId, x: at.x, y: at.y } : null;
@@ -161,13 +190,10 @@ const server = app.listen(0, async () => {
       /* Is that point actually CLICKABLE, or is something sitting on top of it?
          The floating inspector covered the canvas at phone width and made the
          second tap impossible — a bug that a coordinate check cannot see,
-         because the coordinates were perfectly correct. */
+         because the coordinates were perfectly correct. `clean` is false when
+         no point on the element could be reached at all. */
       if (target) {
-        const hit = await page.evaluate((t) => {
-          const top = document.elementFromPoint(t.x, t.y);
-          return { tag: top && top.tagName, cls: top && top.className, isBox: !!(top && top.closest && top.closest(`.ed-box[data-el="${t.id}"]`)) };
-        }, target);
-        check(`${width}: nothing covers the element you are trying to edit`, hit.isBox, JSON.stringify(hit));
+        check(`${width}: nothing covers the element you are trying to edit`, at.clean, JSON.stringify(at));
       }
 
       if (target) {
@@ -182,7 +208,25 @@ const server = app.listen(0, async () => {
         await page.mouse.move(target.x, target.y);
         await page.mouse.down();
         await page.mouse.up();
-        await page.waitForTimeout(500);
+        /* Wait for the CARET, not for a fixed number of milliseconds. The press
+           only asks the page to begin editing; the iframe answers when it gets
+           round to it, and a 500ms sleep passed here for weeks and then started
+           failing the moment the canvas got heavier. Sleeping a guess is how a
+           test tells you about your machine instead of your code. */
+        await page.waitForFunction((i) => {
+          const f = document.getElementById('wcEdFrame');
+          const w = f && f.contentDocument && f.contentDocument.querySelector(`.sd-el[data-el="${i}"]`);
+          const t = w && (w.firstElementChild || w);
+          return !!(t && t.isContentEditable);
+        }, target.id, { timeout: 6000 }).catch(() => {});
+        if (process.env.RT_DEBUG) console.log('DEBUG press:', JSON.stringify(await page.evaluate((i) => ({
+          sel: edSel, typing: _edTyping, gear: _edGearOpen, isText: edIsText(i), media: edMediaType(i),
+          ready: _edCanvasReady, pending: _edPendingEdit,
+          frameState: (() => { const f = document.getElementById('wcEdFrame'); return f && f.contentDocument ? f.contentDocument.readyState : 'no-doc'; })(),
+          layerRan: (() => { const f = document.getElementById('wcEdFrame'); const d = f && f.contentDocument; return d ? d.querySelectorAll('script').length : -1; })(),
+          box: !!document.querySelector(`.ed-box[data-el="${i}"]`),
+          top: (() => { const b = document.querySelector(`.ed-box[data-el="${i}"]`); if (!b) return null; const r = b.getBoundingClientRect(); const t = document.elementFromPoint(r.left + r.width / 2, r.top + 12); return t ? (t.className || t.tagName) : null; })(),
+        }), target.id)));
 
         const live = await page.evaluate((id) => {
           const f = document.getElementById('wcEdFrame');
@@ -268,6 +312,11 @@ const server = app.listen(0, async () => {
 
         await page.locator(`.ed-box[data-el="${target.id}"] .ed-gear`).click();
         await page.waitForTimeout(300);
+        const openedByGear = await page.evaluate(() => {
+          const b = document.getElementById('wcEdInspector');
+          return { onScreen: b.offsetWidth > 0 && b.offsetHeight > 0, float: b.classList.contains('is-float') };
+        });
+        check(`${width}: the gear is the thing that opens it`, openedByGear.onScreen, JSON.stringify(openedByGear));
         const panel = await page.evaluate((id) => {
           const b = document.getElementById('wcEdInspector');
           const r = b.getBoundingClientRect();
@@ -541,6 +590,132 @@ const server = app.listen(0, async () => {
         });
         check(`${width}: the section animation toggle writes the section`, animOut.stored === 'up', JSON.stringify(animOut));
         check(`${width}: but the canvas never animates, so nothing flickers`, !animOut.canvasAnimates, JSON.stringify(animOut));
+
+        /* ── OPEN ON THE GEAR, CLOSE ON ANYTHING ELSE ───────────────────────
+           Six rules, each driven with a real pointer and judged on whether the
+           panel is on the glass — not on `_edGearOpen`, which has been true of
+           a variable and false of the screen more than once in this feature. */
+        const panelOn = () => page.evaluate(() => {
+          const b = document.getElementById('wcEdInspector');
+          return b.offsetWidth > 0 && b.offsetHeight > 0;
+        });
+        /* The gear only exists on the SELECTED box, so select first. An earlier
+           version of this helper assumed the element from twenty lines up was
+           still selected; a test in between had moved the selection, and
+           Playwright waited thirty seconds for a button that was never going
+           to be rendered. */
+        const gearAt = async (id) => {
+          await page.evaluate((x) => edSelect(x), id);
+          const loc = page.locator(`.ed-box[data-el="${id}"] .ed-gear`);
+          await loc.scrollIntoViewIfNeeded().catch(() => {});
+          return loc;
+        };
+
+        /* TWO ELEMENTS OF THIS BLOCK'S OWN, in clear space below everything the
+           earlier checks left behind. Reusing an element from further up cost
+           thirty seconds of Playwright retries: a map added two tests ago was
+           sitting on top of its gear, and "intercepts pointer events" is not a
+           product bug, it is one test standing on another. */
+        const [pA, pB] = await page.evaluate(() => {
+          const a = SiteDocStore.newId('pa'), b = SiteDocStore.newId('pb');
+          edApply((d) => {
+            const p = SiteDocStore.findPage(d, edPageId);
+            const s = p.sections[0];
+            const y = Math.max(1200, (Number(s.h) || 0) + 60);
+            s.els.push({ id: a, type: 'heading', x: 40, y, w: 420, h: 90, props: { text: 'Panel A' } });
+            s.els.push({ id: b, type: 'heading', x: 40, y: y + 160, w: 420, h: 90, props: { text: 'Panel B' } });
+            s.h = y + 340;
+          });
+          return [a, b];
+        });
+        await page.waitForTimeout(700);
+
+        // 1. A press on the canvas closes it.
+        await (await gearAt(pA)).click();
+        await page.waitForTimeout(250);
+        const beforeCanvasPress = await panelOn();
+        const at3 = await boxAt(pA);
+        await page.mouse.move(at3.x, at3.y);
+        await page.mouse.down(); await page.mouse.up();
+        await page.waitForTimeout(400);
+        check(`${width}: a press on the canvas closes the panel`,
+          beforeCanvasPress && !(await panelOn()), `open before=${beforeCanvasPress}`);
+        await page.evaluate(() => { if (_edTyping) edEndTyping(); });
+
+        // 2. A click outside the canvas entirely — the rail — closes it too.
+        await (await gearAt(pA)).click();
+        await page.waitForTimeout(250);
+        const beforeOutside = await panelOn();
+        await page.evaluate(() => {
+          const r = document.querySelector('.cv-rail') || document.querySelector('.cv-top');
+          const b = r.getBoundingClientRect();
+          r.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: b.x + 4, clientY: b.y + 4 }));
+        });
+        await page.waitForTimeout(300);
+        check(`${width}: a click outside the panel closes it`,
+          beforeOutside && !(await panelOn()), `open before=${beforeOutside}`);
+
+        // 3. A click INSIDE the panel does not close it — it is where the
+        //    controls are, and a panel that shut on its own controls would be
+        //    unusable.
+        await (await gearAt(pA)).click();
+        await page.waitForTimeout(250);
+        await page.evaluate(() => {
+          const b = document.getElementById('wcEdInspector');
+          const r = b.getBoundingClientRect();
+          b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: r.x + 5, clientY: r.y + 5 }));
+        });
+        await page.waitForTimeout(250);
+        check(`${width}: clicking inside the panel keeps it open`, await panelOn());
+
+        // 4. Selecting a different element closes the old panel and opens none.
+        const at4 = await boxAt(pB);
+        await page.mouse.move(at4.x, at4.y);
+        await page.mouse.down(); await page.mouse.up();
+        await page.waitForTimeout(400);
+        const afterOther = await page.evaluate(() => ({ sel: edSel, on: (() => { const b = document.getElementById('wcEdInspector'); return b.offsetWidth > 0 && b.offsetHeight > 0; })() }));
+        check(`${width}: selecting another element closes the panel and opens none`,
+          afterOther.sel === pB && !afterOther.on, JSON.stringify({ afterOther, pB }));
+        await page.evaluate(() => { if (_edTyping) edEndTyping(); });
+
+        /* 5. A PHOTO OR VIDEO SLOT UPLOADS INSTEAD OF TYPING. Same gesture as
+              text — press an already-selected element and release without
+              moving — but there is no text to type into, so it opens the file
+              picker filtered to what the slot can hold. */
+        const mediaPress = await page.evaluate(async () => {
+          const out = {};
+          const realClick = HTMLInputElement.prototype.click;
+          for (const [kind, type] of [['photo', 'image'], ['video', 'video']]) {
+            const id = SiteDocStore.newId('slot');
+            edApply((d) => {
+              const p = SiteDocStore.findPage(d, edPageId);
+              const s = p.sections[0];
+              const y = (Number(s.h) || 0) + 40;      // clear of everything above
+              s.els.push({ id, type, x: 40, y, w: 300, h: 200, props: {} });
+              s.h = y + 260;
+            });
+            edSelect(id);                       // first press selects
+            let accept = null, typed = false;
+            HTMLInputElement.prototype.click = function () { if (this.type === 'file') { accept = this.accept; return; } return realClick.call(this); };
+            // Second press, no movement: what does it do?
+            const box = document.querySelector(`.ed-box[data-el="${id}"]`);
+            const r = box.getBoundingClientRect();
+            const opts = { bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, pointerId: 1 };
+            box.dispatchEvent(new PointerEvent('pointerdown', opts));
+            window.dispatchEvent(new PointerEvent('pointerup', opts));
+            await new Promise((rs) => setTimeout(rs, 120));
+            typed = !!_edTyping;
+            HTMLInputElement.prototype.click = realClick;
+            out[kind] = { accept, typed };
+          }
+          return out;
+        });
+        check(`${width}: pressing a photo slot opens the image picker, not a caret`,
+          /image\//.test(mediaPress.photo.accept || '') && !mediaPress.photo.typed, JSON.stringify(mediaPress));
+        check(`${width}: pressing a video slot asks for a video`,
+          /video\//.test(mediaPress.video.accept || '') && !mediaPress.video.typed, JSON.stringify(mediaPress));
+        check(`${width}: and both still carry a gear for everything else`,
+          await page.evaluate(() => !!document.querySelector('.ed-box.is-sel .ed-gear')));
 
         // Close the gear so the rest of the run is not behind a panel.
         await page.evaluate(() => { if (_edGearOpen) edToggleGear(); });
