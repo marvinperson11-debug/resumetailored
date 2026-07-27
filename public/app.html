@@ -23,9 +23,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="/site-doc-store.js"></script>
-  <script src="/site-vibes.js"></script>
-  <script src="/site-fields.js"></script>
+  <!-- ?v= is not decoration. These modules are coupled to this file, and this
+       file is served no-cache while they were cached for a day — so a returning
+       browser ran new HTML against an old module and any newly-added call threw
+       "is not a function". Bump v when their contract changes; a browser holding
+       a stale copy then has a different URL and must refetch. -->
+  <script src="/site-doc-store.js?v=2"></script>
+  <script src="/site-vibes.js?v=2"></script>
+  <script src="/site-fields.js?v=2"></script>
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9896489046536589" crossorigin="anonymous"></script>
   <style>
@@ -367,6 +372,12 @@
        someone who has no site yet. */
     body.wb-picker .sidebar,
     body.wb-picker .sm-view { display: none !important; }
+    /* Hiding the app sidebar is not enough: `.cv-shell` is offset by 240px to
+       make room for it (`@media (min-width:981px)`), so hiding one without
+       moving the other leaves a 240px blank strip down the left and the canvas
+       never fills it. The shell has to move too — the same pairing
+       `body.cv-wide` already does. */
+    body.wb-picker .cv-shell { left: 0 !important; }
     /* The first-run picker borrows the editor's shell to host the template
        grid, and borrowing it dragged the entire editor on screen: a top bar of
        tools, a rail, a canvas and an inspector, before the user had chosen
@@ -8522,7 +8533,18 @@ Aaliyah Washington`
         stage = 'fillFromResume';
         const resumeText = smResumeText();
         console.log('[USE] Resume text length:', (resumeText || '').length);
-        if (window.SiteFields) SiteFields.fillFromResume(d.doc, resumeText);
+        // Checked, not assumed. A browser running this HTML against an older
+        // cached site-fields.js has no fillFromResume, and calling it threw —
+        // taking the whole handler down and leaving a blank page. Filling is an
+        // IMPROVEMENT to the template, not a precondition for using it: without
+        // it the user gets the template carrying its sample text, which is
+        // recoverable. A blank screen is not.
+        if (window.SiteFields && typeof SiteFields.fillFromResume === 'function') {
+          SiteFields.fillFromResume(d.doc, resumeText);
+        } else {
+          console.warn('[USE] fillFromResume unavailable — applying template unfilled.');
+          showToast(_t('wc_tpl_stale', 'Applied, but your details could not be filled in. Reload the page to fix this.'), 8000);
+        }
 
         stage = 'assign';
         wcDoc = d.doc; wcTplId = id;
@@ -8548,6 +8570,15 @@ Aaliyah Washington`
         showToast(_t('wc_tpl_applied', '✓ Template applied — preview it, then publish.'), 5000);
       } catch (e) {
         fail(e);
+        // NEVER leave a blank page. The handler crashed part-way through
+        // swapping views, so put the user back somewhere usable: their editor
+        // if they have a site, the gallery if they do not. Losing the screen
+        // is worse than losing the action.
+        try {
+          if (wcDoc) wcEnterEditor(); else wcOpenPicker();
+        } catch (recoverErr) {
+          console.error('[USE] Recovery also failed:', recoverErr && recoverErr.message);
+        }
       }
     }
 
@@ -9279,8 +9310,14 @@ Aaliyah Washington`
     let edDevice = 'desktop';
     function edSetDevice(mode) {
       edDevice = mode === 'mobile' ? 'mobile' : 'desktop';
-      document.getElementById('wcEdDeskBtn').classList.toggle('wc-vtab-active', edDevice === 'desktop');
-      document.getElementById('wcEdMobBtn').classList.toggle('wc-vtab-active', edDevice === 'mobile');
+      // `is-on` is the class .cv-segbtn is actually styled by. This toggled
+      // `wc-vtab-active` — copied from the template gallery's device tabs,
+      // which are a different control with different CSS — so the highlight
+      // never moved off Desktop and the buttons read as dead, even though the
+      // canvas was switching underneath. Measuring `edDevice` said it worked;
+      // only looking at the button showed it did not.
+      document.getElementById('wcEdDeskBtn').classList.toggle('is-on', edDevice === 'desktop');
+      document.getElementById('wcEdMobBtn').classList.toggle('is-on', edDevice === 'mobile');
       const ov = document.getElementById('wcEdOverlay');
       if (ov) ov.style.display = edDevice === 'mobile' ? 'none' : 'block'; // no dragging in mobile view
       edFitStage();
