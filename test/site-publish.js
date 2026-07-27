@@ -776,6 +776,31 @@ const server = app.listen(0, async () => {
     check('a duplicate is offset and selected, not dropped invisibly on top',
       /\(Number\(copy\.x\) \|\| 0\) \+ 20/.test(appJs) && /if \(made\) edSelect\(made\)/.test(appJs));
 
+    /* ── ADD INTO A BOX ─────────────────────────────────────────────────
+       "Anything could be added to any box: photos, videos, voiceover, text."
+       The document is FLAT — sections hold elements at absolute coordinates and
+       nothing nests — so "into this box" means inside the selected element's
+       rectangle when it fits, and directly beneath it when it does not. That is
+       what someone means by it: the new thing appears where they were looking. */
+    check('the gear offers photo, video, voice and text',
+      /wc_ed_add_photo/.test(appJs) && /wc_ed_add_video/.test(appJs)
+      && /wc_ed_add_voice/.test(appJs) && /wc_ed_add_text/.test(appJs));
+    check('and voice really is an audio element, not a second video',
+      /voice: \{ type: 'audio'/.test(appJs));
+    check('it goes inside when there is room, beneath when there is not',
+      /const fits = hw - M \* 2 >= 80 && hh - M \* 2 >= 40;/.test(appJs)
+      && /fits \? hy \+ M : hy \+ hh \+ 20/.test(appJs));
+    check('and lands above the box, not behind it',
+      /const z = \(Number\(host\.z\) \|\| 0\) \+ 1;/.test(appJs));
+    /* Placed first, picker second: cancelling the upload then leaves a real
+       element with its placeholder rather than a press that did nothing. */
+    check('the element is placed before the file picker opens',
+      /edSelect\(id\);\n\n      if \(!spec\.accept\)/.test(appJs));
+    check('and each kind asks for the file type it can actually use',
+      /accept: 'image\/jpeg,image\/png,image\/webp'/.test(appJs)
+      && /accept: 'video\/mp4,video\/webm'/.test(appJs)
+      && /accept: 'audio\/\*'/.test(appJs));
+
     const srvJs = require('fs').readFileSync(require('path').join(__dirname, '..', 'server.js'), 'utf8');
     /* Typography reaches a `style` attribute on a PUBLIC page, so it is a
        whitelist with clamps — there is no case where echoing whatever was

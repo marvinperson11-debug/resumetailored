@@ -316,6 +316,85 @@ const server = app.listen(0, async () => {
         check(`${width}: with the same content, offset so you can see it`, dup.sameText && dup.offsetX === 20 && dup.offsetY === 20, JSON.stringify(dup));
         check(`${width}: and the copy is what is now selected`, dup.newSel, JSON.stringify(dup));
 
+        /* ── ADD INTO A BOX ─────────────────────────────────────────────────
+           The document is flat, so "into this box" means placed inside the
+           selected element's rectangle when it fits, and immediately beneath it
+           when it does not. Checked as geometry, and checked BOTH ways: a tall
+           box has an inside, a 40px heading does not. */
+        const addInto = await page.evaluate(() => {
+          // A host with room inside it.
+          const id = SiteDocStore.newId('host');
+          edApply((d) => {
+            const p = SiteDocStore.findPage(d, edPageId);
+            p.sections[0].els.push({ id, type: 'box', x: 100, y: 60, w: 500, h: 400, z: 3, props: { bg: 'eeeeee' } });
+            if (p.sections[0].h < 520) p.sections[0].h = 520;
+          });
+          edSelect(id);
+          const host = SiteDocStore.findElement(edStore.getDoc(), id).el;
+          edAddInto('text');
+          const kid = SiteDocStore.findElement(edStore.getDoc(), edSel).el;
+          return {
+            selectedIsNew: edSel !== id,
+            type: kid.type,
+            inside: kid.x >= host.x && kid.y >= host.y
+              && kid.x + kid.w <= host.x + host.w && kid.y + kid.h <= host.y + host.h,
+            above: (kid.z || 0) > (host.z || 0),
+            hasText: !!(kid.props || {}).text,
+          };
+        });
+        check(`${width}: adding into a box with room puts it inside`, addInto.inside, JSON.stringify(addInto));
+        check(`${width}: on top of the box, not behind it`, addInto.above, JSON.stringify(addInto));
+        check(`${width}: and selects what was just added`, addInto.selectedIsNew && addInto.type === 'paragraph', JSON.stringify(addInto));
+        check(`${width}: with real content, not an empty shell`, addInto.hasText, JSON.stringify(addInto));
+
+        const addBelow = await page.evaluate(() => {
+          const id = SiteDocStore.newId('thin');
+          edApply((d) => {
+            const p = SiteDocStore.findPage(d, edPageId);
+            p.sections[0].els.push({ id, type: 'heading', x: 100, y: 20, w: 300, h: 40, z: 1, props: { text: 'Thin' } });
+          });
+          edSelect(id);
+          const host = SiteDocStore.findElement(edStore.getDoc(), id).el;
+          edAddInto('text');
+          const kid = SiteDocStore.findElement(edStore.getDoc(), edSel).el;
+          return { hostBottom: host.y + host.h, kidY: kid.y, w: kid.w };
+        });
+        check(`${width}: a box with no room inside gets it directly beneath`,
+          addBelow.kidY >= addBelow.hostBottom, JSON.stringify(addBelow));
+
+        // Media kinds place a real element and go straight to the file picker.
+        const media = await page.evaluate(async () => {
+          const id = SiteDocStore.newId('m');
+          edApply((d) => {
+            const p = SiteDocStore.findPage(d, edPageId);
+            p.sections[0].els.push({ id, type: 'box', x: 100, y: 600, w: 500, h: 400, z: 1, props: {} });
+            if (p.sections[0].h < 1060) p.sections[0].h = 1060;
+          });
+          edSelect(id);
+          // Catch the file input the picker creates rather than opening a real
+          // OS dialog: what matters here is that the element is placed and the
+          // picker is offered with the right filter.
+          let accept = null;
+          const realClick = HTMLInputElement.prototype.click;
+          HTMLInputElement.prototype.click = function () { if (this.type === 'file') { accept = this.accept; return; } return realClick.call(this); };
+          const out = {};
+          for (const kind of ['photo', 'video', 'voice']) {
+            accept = null;
+            edSelect(id);
+            edAddInto(kind);
+            const kid = SiteDocStore.findElement(edStore.getDoc(), edSel).el;
+            out[kind] = { type: kid.type, accept };
+          }
+          HTMLInputElement.prototype.click = realClick;
+          return out;
+        });
+        check(`${width}: photo adds an image and asks for an image file`,
+          media.photo.type === 'image' && /image\//.test(media.photo.accept || ''), JSON.stringify(media));
+        check(`${width}: video adds a video and asks for a video file`,
+          media.video.type === 'video' && /video\//.test(media.video.accept || ''), JSON.stringify(media));
+        check(`${width}: voice adds audio and asks for an audio file`,
+          media.voice.type === 'audio' && /audio\//.test(media.voice.accept || ''), JSON.stringify(media));
+
         // Close the gear so the rest of the run is not behind a panel.
         await page.evaluate(() => { if (_edGearOpen) edToggleGear(); });
       }
