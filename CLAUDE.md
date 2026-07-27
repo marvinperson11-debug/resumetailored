@@ -111,11 +111,25 @@ The **Back Office** (`public/app.html`, `boRenderSites`) lists every site as a c
 
 ### Resume sync (Feature C)
 
-Editing a field on the site **detaches** it (`site-fields.js`): the site owns it and later resume updates leave it alone. After such an edit the canvas offers, once, to carry the change back to the saved resume — `POST /api/resume-sync`, backed by **`resume-writeback.js`**.
+Editing a field on the site **detaches** it (`site-fields.js`): the site owns it and later resume updates leave it alone. Carrying such a change back to the saved resume is `POST /api/resume-sync`, backed by **`resume-writeback.js`**.
+
+**The prompt that offered this is not currently wired.** It was part of the deleted simple-mode surface; the route, the write-back module, the in-page offer UI (`showSync` in `_sdEditLayer`) and the Back Office `siteSync` badge all remain, but nothing posts `__rtSync` into the canvas any more, so a user is never asked. Re-enabling it means posting that message after an inline edit and handling `syncAnswer` in the canvas message bridge in `app.html`.
 
 That module is the only code in the product that writes to `saved_resumes`, and its rule is: **if the field cannot be located with certainty, write nothing.** Never a best-effort append — a resume that quietly gains a stray line is worse than a sync that occasionally cannot run. Certainty means the text at the located position is exactly what the site had before the edit; a resume of an unanticipated shape simply fails to match. `writeFields` is all-or-nothing, because the site's `subtitle` is "role · location" and half a write would leave the resume saying something the user never approved.
 
 Fields: `name` (first non-empty line), `location` (contact-line segment, refused if ambiguous), `role` (title prefix of the first EXPERIENCE entry), `summary` (body under SUMMARY/PROFILE/OBJECTIVE/ABOUT). Skills and per-entry experience are **not** editable fields on the site, so there is nothing to sync for them. Declining twice for a field stops the offer permanently (`props.syncNo`); a ten-second timeout is not a decline. `GET /api/resumes` returns `siteSync` (`synced` / `out_of_sync` / `null`) for the Back Office badge — only for the resume the site was built from.
+
+### The editor (one editor, the rail editor)
+
+`cvShell` in `app.html` — dark chrome, left rail, scaled canvas, inspector. There is no second surface: the full-screen "simple mode" view was deleted, and the tests assert the **absence of its source**, not the absence of a route.
+
+- **The canvas** is an iframe rendered through `POST /api/personal-site/preview` with `editable: true`, so it is the same renderer as the published page **plus** the inline editor (`_sdEditLayer` in `server.js`). Typing therefore happens on the real text node in its real typography.
+- **Typing.** Press an already-selected text element and release without moving → the parent posts `{action:'beginEdit', el}` into the iframe. For the duration of a session the overlay gives up its pointer events (`#wcEdOverlay.is-typing`) and canvas re-renders are **deferred, not dropped** (rebuilding `srcdoc` destroys the caret). The page answers `editBegan` / `editEnd`; if it never answers, a watchdog takes the pointer events back. Moving the pointer past `ED_TYPE_SLOP` makes it a drag instead.
+- **The gear** (`.ed-gear`) floats `#wcEdInspector` beside the element on desktop (clamped into the viewport, repositioned on scroll/resize) and leaves it as a bottom sheet at ≤820px. It is the **same** panel as the docked one — do not build a second.
+- **Overlay chrome is counter-scaled.** The overlay lives inside the scaled wrap, so `edFitStage` publishes the scale as `--edk` and `.ed-chrome` / `.ed-h` divide it out. Anything added to the overlay that a user must hit needs the same treatment, or it will be a few physical pixels on a phone.
+- **Autosave** is subscribed in `edInit` (`wcQueueSave`). It used to live in simple mode's boot, which meant it silently stopped running when that became unreachable — keep it attached to the editor.
+- **Adding into a box** (`edAddInto`) places the new element inside the selected element's rect when it fits and directly beneath it when it does not; the document is flat and nothing nests.
+- **Verification.** `test/browser/editor.js` (Chromium, run by hand — it is deliberately outside the `test/*.js` loop) drives gallery → Use → editor → select → type → gear → add → Done at **1440px and 390px**, measuring rendered geometry, DOM presence and real network traffic. Every editor bug in this feature's history was true of a variable and false of the screen, so measure the screen.
 
 Both routes exist: **path-based `/site/:name`** and **host-based `name.resumetailored.com`**. The host-based path is an early middleware in `server.js` (`PERSONAL_SITE_HOST_RE`, before `express.static`) that maps a `<sub>.resumetailored.com` root request to the same renderer — it's **inert until a wildcard `*.resumetailored.com` DNS record + wildcard TLS point such hosts at the app** (apex, `www`, reserved names, the Railway/Netlify hosts and localhost all fall through unchanged). Provision DNS/TLS to activate it (see `docs/RAILWAY_SETUP.md` §9).
 
