@@ -370,7 +370,6 @@
        Three states, one switch. Public view is the site and nothing else;
        edit mode keeps the left rail; the template picker is shown alone to
        someone who has no site yet. */
-    body.wb-picker .sm-view { display: none !important; }
     /* The app sidebar STAYS on the picker, so the shell keeps its 240px offset
        and the two stay paired. (Hiding one without moving the other is what
        left a blank strip down the left.) */
@@ -417,235 +416,6 @@
     body.wb-immersive .toast { right: auto; left: 50%; transform: translateX(-50%) translateY(10px); }
     body.wb-immersive .toast.show { transform: translateX(-50%) translateY(0); }
 
-    /* ── Simple mode: the site, full screen, and almost nothing else ──
-       This is what opening "My Website" shows. Someone who has never built a
-       website should land on a finished page, not a set of tools. Every control
-       is hidden until they ask for one. */
-    /* A flex column, NOT absolute offsets. The bar's height depends on how many
-       controls wrap onto how many rows, which changes with screen width and
-       language; every hardcoded `top:` for the frame was a guess that went
-       stale. On a 390px phone the bar grew to three rows (187px) while the
-       frame still started at 96px, so the site rendered underneath its own
-       chrome. Flex makes the frame take whatever is left, always. */
-    .sm-view { position: fixed; inset: 0; z-index: 220; background: #fff; display: none;
-      flex-direction: column; }
-    .sm-view.is-on { display: flex; }
-    /* Deliberately full-bleed — over the app nav and the sidebar both. "Zero
-       chrome" means the whole screen is their website. The quiet back chip is
-       the only way out, so it must always be there. */
-    /* NOTE: `.sm-back` used to be declared twice. The first declaration was a
-       leftover floating chip — `position:absolute; top:14px; left:14px` — from
-       before this was a bar, and the in-bar declaration below never resets
-       `position`, so it stayed absolute. Both the Back button and the Advanced
-       button carry this class, so they were stacked on the same coordinates
-       with Advanced painted last: the only way out of full-screen mode was
-       sitting underneath the button covering it. Do not reintroduce a second
-       declaration. */
-    /* A slim bar rather than a floating overlay: the note used to sit on top of
-       the site's own navigation. This reads as minimal browser chrome and keeps
-       the page itself completely unobstructed. */
-    .sm-bar {
-      flex: 0 0 auto; min-height: 52px; z-index: 3;
-      display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 7px 14px;
-      background: #fff; border-bottom: 1px solid rgba(15,23,42,.08);
-    }
-    /* `flex:1` plus `min-height:0` gives the iframe a DEFINITE height. That
-       matters: an <iframe> is a replaced element, so with `height:auto` it
-       falls back to its intrinsic 150px — which is exactly what happened when
-       this was absolutely positioned with top+bottom offsets and no height. */
-    .sm-frame { flex: 1 1 auto; min-height: 0; width: 100%; border: 0; display: block; background: #fff; }
-    .sm-note {
-      flex: 1; text-align: center; font-size: 12.5px; line-height: 1.4; color: #4b5563;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .sm-draft { display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .4px;
-      text-transform: uppercase; color: #92400e; background: #fef3c7; border-radius: 999px;
-      padding: 2px 8px; margin-right: 7px; vertical-align: 1px; }
-    .sm-back {
-      flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
-      font: inherit; font-size: 12.5px; font-weight: 600; color: #4b5563;
-      background: #f3f4f6; border: 1px solid rgba(15,23,42,.08); border-radius: 999px;
-      padding: 7px 13px; cursor: pointer;
-    }
-    .sm-back:hover { color: #111827; background: #e5e7eb; }
-    .sm-look {
-      flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px;
-      font: inherit; font-size: 12.5px; font-weight: 700; color: #4338ca;
-      background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 999px;
-      padding: 8px 15px; cursor: pointer;
-    }
-    .sm-look:hover { background: #e0e7ff; }
-    /* `[hidden]` is a UA-stylesheet rule, so any class here that sets `display`
-       silently beats it — the button kept its `hidden` property AND stayed on
-       screen. Checking the property in a test would confirm it was hidden while
-       the user could still see it, so state this explicitly. */
-    .sm-bar [hidden] { display: none !important; }
-    .sm-look.is-on { background: #4338ca; border-color: #4338ca; color: #fff; }
-    /* On a phone the bar has to hold four things. Labels collapse to their
-       icons rather than overlapping, and the note keeps only its badge. */
-    /* On a phone four controls on one 390px line meant every label was clipped
-       mid-word. Two rows, nothing truncated: the bar grows and the page starts
-       below it. */
-    @media (max-width: 760px) {
-      .sm-bar { gap: 6px; padding: 8px 10px; justify-content: center; }
-      .sm-note { flex-basis: 100%; order: -1; font-size: 11.5px; white-space: normal; text-align: center; }
-      .sm-back, .sm-look { padding: 9px 12px; font-size: 12px; }
-      .sm-publish { font-size: 13px; padding: 10px 16px; }
-      .sm-live { max-width: 100%; font-size: 12px; }
-    }
-    /* Going public is the one deliberate act, so it gets the one green button.
-       Once live it is replaced by the link itself. */
-    .sm-publish {
-      flex-shrink: 0; font: inherit; font-size: 13px; font-weight: 800; color: #fff;
-      background: #059669; border: none; border-radius: 999px; padding: 9px 18px; cursor: pointer;
-      box-shadow: 0 2px 10px rgba(5,150,105,.3);
-    }
-    .sm-publish:hover { background: #047857; }
-    .sm-publish:disabled { opacity: .55; cursor: default; }
-    .sm-live {
-      flex-shrink: 0; font-size: 12.5px; font-weight: 700; color: #047857;
-      background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 999px;
-      padding: 8px 15px; text-decoration: none; max-width: 320px;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .sm-live:hover { background: #d1fae5; }
-    @media (max-width: 700px) { .sm-note { text-align: right; } }
-    .sm-cta {
-      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
-      display: inline-flex; align-items: center; gap: 9px; z-index: 3;
-      background: linear-gradient(90deg,#4338ca,#6366F1); color: #fff;
-      border: none; font: inherit; font-size: 15px; font-weight: 800;
-      padding: 14px 26px; border-radius: 999px; cursor: pointer;
-      box-shadow: 0 8px 28px rgba(67,56,202,.4);
-    }
-    .sm-cta:hover { filter: brightness(1.07); }
-    /* The ten vibe tiles — step 2 of the guided strip. Works the same with a
-       thumb as with a mouse, which is the point: this is the control most
-       people will actually use, and most of them are holding a phone. */
-    .sm-vibes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-    @media (max-width: 720px) { .sm-vibes { grid-template-columns: repeat(2, 1fr); } }
-    .sm-vibe { border: 2px solid transparent; background: none; padding: 0; cursor: pointer;
-      border-radius: 12px; overflow: hidden; text-align: center; }
-    .sm-vibe.is-on { border-color: #4f46e5; }
-    .sm-vibe-art { display: block; width: 100%; height: 74px; border-radius: 9px;
-      background-size: cover; background-position: center; }
-    .sm-vibe-name { display: block; font-size: 12px; font-weight: 700; color: #374151;
-      padding: 6px 2px 2px; line-height: 1.3; }
-    .sm-tone { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 14px; }
-    .sm-tone-btn { font: inherit; font-size: 13px; font-weight: 700; color: #374151;
-      background: #f3f4f6; border: 1px solid rgba(15,23,42,.08); border-radius: 999px;
-      padding: 9px 18px; cursor: pointer; }
-    .sm-tone-btn:hover { background: #e5e7eb; }
-    .sm-tone-dots { font-size: 11px; letter-spacing: 3px; color: #9ca3af; }
-
-    /* The guided strip: one question at a time, never more than a handful of
-       choices, skip and back on every step. It replaces the vibe sheet as the
-       thing "Customize" opens — the vibe grid becomes step 2 of it. */
-    .sm-strip {
-      position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
-      background: #fff; border-top: 1px solid rgba(15,23,42,.1);
-      box-shadow: 0 -8px 32px rgba(15,23,42,.16);
-      padding: 16px 16px 14px; transform: translateY(105%);
-      transition: transform .22s ease; max-height: 76vh; overflow-y: auto;
-    }
-    .sm-strip.is-open { transform: translateY(0); }
-    .sm-strip-q { font-size: 17px; font-weight: 800; color: #111827; margin-bottom: 14px; text-align: center; }
-    /* Block flow, not flex-wrap. The vibe step puts a 10-tile grid in here, and
-       as a flex child it laid out at the right size but overflowed below the
-       strip instead of growing it — visible in the DOM, off the screen. */
-    .sm-strip-body { text-align: center; }
-    .sm-strip-body > .sm-word { display: inline-block; margin: 5px; vertical-align: middle; }
-    .sm-strip-body > .sm-strip-sel { display: inline-block; margin: 5px; vertical-align: middle; }
-    .sm-strip-body .sm-vibes { margin: 0 0 4px; }
-    .sm-strip-body .sm-tone { margin-bottom: 10px; }
-    /* Words, never icons alone. */
-    .sm-word {
-      font: inherit; font-size: 14.5px; font-weight: 700; color: #1f2937;
-      background: #f3f4f6; border: 1.5px solid rgba(15,23,42,.1); border-radius: 12px;
-      padding: 14px 22px; cursor: pointer; min-width: 150px;
-    }
-    .sm-word:hover { background: #e5e7eb; }
-    .sm-word--go { background: linear-gradient(90deg,#4338ca,#6366F1); border-color: transparent; color: #fff; }
-    .sm-word--go:hover { filter: brightness(1.07); }
-    .sm-word--pub { background: #059669; border-color: transparent; color: #fff; font-size: 16px; padding: 16px 30px; }
-    .sm-word--pub:hover { background: #047857; }
-    .sm-strip-sel { font: inherit; font-size: 14.5px; padding: 13px 14px; border-radius: 12px;
-      border: 1.5px solid rgba(15,23,42,.12); background: #fff; color: #111827; min-width: 260px; max-width: 100%; }
-    .sm-strip-note { flex-basis: 100%; text-align: center; font-size: 12.5px; color: #6b7280; margin-top: 2px; }
-    .sm-strip-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
-    .sm-strip-back, .sm-strip-skip {
-      font: inherit; font-size: 13px; font-weight: 600; color: #4b5563;
-      background: none; border: none; padding: 8px 10px; cursor: pointer;
-    }
-    .sm-strip-back:hover, .sm-strip-skip:hover { color: #111827; }
-    .sm-strip-back[hidden], .sm-strip-skip[hidden] { visibility: hidden; }
-    .sm-strip-dots { font-size: 10px; letter-spacing: 4px; color: #d1d5db; }
-
-    /* "Not sure?" — a nudge, not an interruption. Only while editing; the
-       public view stays completely clean. */
-    .sm-help {
-      position: absolute; right: 20px; bottom: 20px; z-index: 7;
-      display: inline-flex; align-items: center; gap: 7px;
-      font: inherit; font-size: 13.5px; font-weight: 700; color: #fff;
-      background: rgba(17,24,39,.94); border: none; border-radius: 999px;
-      padding: 12px 18px; cursor: pointer; box-shadow: 0 6px 22px rgba(0,0,0,.28);
-    }
-    .sm-help:hover { background: #111827; }
-    .sm-help[hidden] { display: none; }
-    .sm-help-panel {
-      position: absolute; right: 20px; bottom: 74px; z-index: 8;
-      width: min(320px, calc(100% - 40px));
-      background: #fff; border: 1px solid rgba(15,23,42,.1); border-radius: 16px;
-      box-shadow: 0 16px 44px rgba(15,23,42,.22); padding: 16px;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .sm-help-panel[hidden] { display: none; }
-    .sm-help-q { font-size: 14.5px; font-weight: 800; color: #111827; margin-bottom: 4px; }
-    .sm-help-opt {
-      font: inherit; font-size: 14px; font-weight: 600; color: #1f2937; text-align: left;
-      background: #f3f4f6; border: 1.5px solid transparent; border-radius: 12px;
-      padding: 13px 15px; cursor: pointer;
-    }
-    .sm-help-opt:hover { background: #e5e7eb; border-color: #c7d2fe; }
-    .sm-help-never {
-      font: inherit; font-size: 12.5px; font-weight: 600; color: #6b7280;
-      background: none; border: none; padding: 8px 4px 0; cursor: pointer; align-self: center;
-    }
-    .sm-help-never:hover { color: #111827; }
-    /* On a phone it slides up from the bottom and the targets get bigger. */
-    @media (max-width: 720px) {
-      .sm-help { right: 14px; bottom: 14px; font-size: 15px; padding: 14px 20px; }
-      .sm-help-panel { left: 0; right: 0; bottom: 0; width: auto; border-radius: 18px 18px 0 0; padding: 18px 16px 22px; }
-      .sm-help-opt { font-size: 15.5px; padding: 16px; }
-    }
-
-    /* First time into edit mode: one line near the middle, gone in four
-       seconds or when they say so. */
-    .sm-hint {
-      position: absolute; left: 50%; top: 42%; transform: translate(-50%,-50%);
-      z-index: 9; display: flex; align-items: center; gap: 14px;
-      background: rgba(17,24,39,.95); color: #fff; border-radius: 14px;
-      padding: 16px 20px; box-shadow: 0 14px 40px rgba(0,0,0,.35);
-      font-size: 15px; font-weight: 700; transition: opacity .4s ease;
-    }
-    .sm-hint[hidden] { display: none; }
-    .sm-hint.is-gone { opacity: 0; }
-    .sm-hint button {
-      font: inherit; font-size: 13px; font-weight: 800; color: #111827;
-      background: #fff; border: none; border-radius: 999px; padding: 8px 16px; cursor: pointer;
-    }
-
-    .sm-busy, .sm-empty {
-      position: absolute; inset: 0; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 14px; padding: 28px;
-      text-align: center; color: #4b5563; background: #fff; z-index: 4;
-    }
-    .sm-busy-ico { font-size: 40px; }
-    .sm-busy h3, .sm-empty h3 { font-size: 19px; font-weight: 800; color: #111827; }
-    .sm-busy p, .sm-empty p { font-size: 14px; max-width: 380px; line-height: 1.6; }
-    .sm-spin { width: 34px; height: 34px; border: 3px solid #e5e7eb; border-top-color: #6366F1;
-      border-radius: 50%; animation: sm-rot .8s linear infinite; }
-    @keyframes sm-rot { to { transform: rotate(360deg); } }
 
     /* ── Canva-style website editor shell ── */
     #panel-website.active { display: block; padding: 0 !important; }
@@ -673,7 +443,13 @@
     .cv-rbtn:hover { background: rgba(255,255,255,.07); color: #e5e7eb; }
     .cv-rbtn.is-on { background: rgba(99,102,241,.22); color: #fff; }
     .cv-panel { width: 300px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 12px; }
-    @media (max-width: 780px) { .cv-panel { width: 220px; } .cv-inspector { display: none !important; } }
+    /* The inspector is NOT hidden on a phone. A `display: none !important` used
+       to live here, and it flatly contradicted the ≤820px rules below, which go
+       to the trouble of floating the inspector over the canvas as a right-hand
+       overlay. Both applied at phone width and `!important` won, so the phone
+       got the layout work and none of the panel: an element could be selected,
+       the controls were rendered, and nothing was on screen. */
+    @media (max-width: 780px) { .cv-panel { width: 220px; } }
     .cv-search input { width: 100%; background: #34353a; border: 1px solid #45464c; color: #f3f4f6; border-radius: 9px; padding: 10px 12px; font: inherit; font-size: 13px; }
     .cv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
     .cv-tplgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1489,70 +1265,6 @@
         <!-- Desktop-only gate. Building a site means dragging elements around a
              large canvas, which is not workable on a phone. Published sites are
              still fully responsive — this gate is about the EDITOR only. -->
-        <!-- Simple mode: the default. What visitors see, full screen, with one
-             button. The editor below only appears once they ask for it. -->
-        <div class="sm-view" id="smView">
-          <div class="sm-bar">
-            <!-- TWO controls per state, never more. Seven of them wrapped to
-                 three rows on a phone — 187px of chrome before you saw any of
-                 your own website — and it read as a second editor sitting on
-                 top of the site rather than the site itself.
-
-                 Editing:  Preview  ·  Publish
-                 Viewing:  Back     ·  Publish
-
-                 Everything else — a different look, the web address, a
-                 different design, the advanced editor — lives INSIDE the page,
-                 in the 💬 Not sure? panel and the guided strip, where it is
-                 reached in the context of the thing it changes. -->
-            <button type="button" class="sm-back" id="smBackBtn" onclick="smBack()"><span aria-hidden="true">←</span><span class="sm-lbl" data-i18n="sm_back_short">Back</span></button>
-            <div class="sm-note" id="smNote"></div>
-            <button type="button" class="sm-publish" id="smPublishBtn" onclick="smPublish()" data-i18n="sm_publish">Publish my website</button>
-            <a class="sm-live" id="smLiveLink" target="_blank" rel="noopener" style="display:none;" data-i18n="sm_visit">Visit my website ↗</a>
-          </div>
-          <iframe class="sm-frame" id="smFrame" title="Your website"></iframe>
-          <div class="sm-hint" id="smHint" hidden>
-            <span data-i18n="sm_hint">👆 Click anything to edit it</span>
-            <button type="button" onclick="smHideHint()" data-i18n="sm_hint_ok">Got it</button>
-          </div>
-          <button type="button" class="sm-help" id="smHelpBtn" onclick="smHelpToggle()" hidden>
-            <span aria-hidden="true">💬</span><span data-i18n="sm_help_btn">Not sure?</span>
-          </button>
-          <div class="sm-help-panel" id="smHelpPanel" hidden>
-            <div class="sm-help-q" data-i18n="sm_help_q">Tell us what you want to change</div>
-            <button type="button" class="sm-help-opt" onclick="smHelpPick('photo')" data-i18n="sm_help_photo">I want to change my photo</button>
-            <button type="button" class="sm-help-opt" onclick="smHelpPick('move')" data-i18n="sm_help_move">I want to move something</button>
-            <button type="button" class="sm-help-opt" onclick="smHelpPick('look')" data-i18n="sm_help_look">I want a different look</button>
-            <button type="button" class="sm-help-opt" onclick="smHelpPick('voice')" data-i18n="sm_help_voice">I want to add my voice</button>
-            <button type="button" class="sm-help-opt" onclick="smHelpPick('links')" data-i18n="sm_help_links">I want to add my links</button>
-            <button type="button" class="sm-help-opt" onclick="smHelpPick('address')" data-i18n="sm_help_address">I want to change my web address</button>
-            <button type="button" class="sm-help-opt" onclick="smHelpPick('template')" data-i18n="sm_help_template">I want to try a different design</button>
-            <button type="button" class="sm-help-never" onclick="smHelpClose()" data-i18n="sm_help_never">Never mind</button>
-          </div>
-          <div class="sm-strip" id="smStrip">
-            <div class="sm-strip-q" id="smStripQ"></div>
-            <div class="sm-strip-body" id="smStripBody"></div>
-            <div class="sm-strip-foot">
-              <button type="button" class="sm-strip-back" id="smStripBack" onclick="smStepBack()" data-i18n="sm_step_back">← Back</button>
-              <span class="sm-strip-dots" id="smStripDots"></span>
-              <button type="button" class="sm-strip-skip" id="smStripSkip" onclick="smStepNext()" data-i18n="sm_skip">Skip</button>
-            </div>
-          </div>
-          <button type="button" class="sm-cta" id="smCta" onclick="smCustomize()">
-            <span>✏️</span><span data-i18n="sm_customize">Customize My Site</span>
-          </button>
-          <div class="sm-busy" id="smBusy">
-            <div class="sm-spin"></div>
-            <h3 data-i18n="sm_building">Building your website…</h3>
-            <p data-i18n="sm_building_sub">We're making it from your most recent resume. This takes a few seconds.</p>
-          </div>
-          <div class="sm-empty" id="smEmpty" style="display:none;">
-            <div class="sm-busy-ico">📄</div>
-            <h3 data-i18n="sm_need_resume">First, tailor a resume</h3>
-            <p data-i18n="sm_need_resume_sub">Your website is built from your resume, so we need one to start with. It only takes a minute.</p>
-            <button class="btn btn-primary" onclick="showTab('tailor')" data-i18n="sm_need_resume_cta">Tailor my resume →</button>
-          </div>
-        </div>
 
         <div class="cv-shell" id="cvShell">
           <button type="button" class="cv-railtoggle" id="cvRailToggle" onclick="cvToggleRail()" title="Hide or show the panel">‹</button>
@@ -1563,7 +1275,7 @@
             <button class="cv-tbtn" onclick="edOpenPages()" data-i18n="cv_pages">Pages</button>
             <button class="cv-tbtn" onclick="edUndo()" id="wcEdUndo" disabled title="Undo (Ctrl+Z)">↶</button>
             <button class="cv-tbtn" onclick="edRedo()" id="wcEdRedo" disabled title="Redo (Ctrl+Shift+Z)">↷</button>
-            <button class="cv-tbtn" onclick="smDoneEditing()" id="cvDoneBtn" data-i18n="sm_done">✓ Done Editing</button>
+            <button class="cv-tbtn" onclick="wcDoneEditing()" id="cvDoneBtn" data-i18n="sm_done">✓ Done Editing</button>
             <span class="cv-title" id="cvDocTitle">Untitled site</span>
             <div class="cv-top-right">
               <div class="cv-seg">
@@ -2382,65 +2094,15 @@
         wc_ed_delete: 'Delete element', wc_upload2: 'Upload',
         wc_step_template: '2. Pick a template',
         wc_template_help: 'Every template is a complete, multi-section site. Preview it on desktop and mobile before you choose — then make it yours.',
-        sm_customize: 'Customize My Site', sm_done: '✓ Done Editing', sm_back: '← Back to ResumeTailored',
-        sm_publish: 'Publish my website', sm_visit: 'Visit my website ↗',
-        sm_q_look: 'Looks good?', sm_a_done: "Yes, I'm done", sm_a_tweak: 'Let me tweak it',
-        sm_q_photo: 'Add a photo of yourself?', sm_a_upload: 'Upload a photo', sm_a_skip: 'Skip for now',
-        sm_photo_note: 'A friendly headshot. You can change it any time.',
-        sm_q_voice: 'Add a voice introduction?', sm_a_record: '🎙 Record 30 seconds', sm_a_stop: '⏹ Stop recording',
-        sm_voice_note: 'Visitors see "▶ Play my introduction" — they choose whether to listen.',
-        sm_voice_label: '▶ Play my introduction',
-        sm_q_resume: 'Which resume should visitors see?',
-        sm_q_cover: 'Offer a cover letter to download?', sm_cover_none: 'No cover letter',
-        sm_cover_note: 'Shown as a download button, not printed on the page — a cover letter is written to one company.',
-        sm_cover_none_yet: "You haven't saved a cover letter yet.", sm_cover_label: 'Read my cover letter',
-        sm_q_publish: 'Ready to publish?', sm_q_live: 'Your website is live.',
-        sm_publish_note: 'Nobody can see your site until you do this.',
-        sm_next: 'Next →', sm_step_back: '← Back', sm_skip: 'Skip', sm_a_done_editing: 'Done',
-        sm_advanced: 'Advanced', sm_adv_desktop: 'The advanced editor needs a bigger screen.',
-        sm_upload_err: "That didn't upload — try again.", sm_mic_err: 'We could not reach your microphone.',
-        sm_edit_on: 'Edit', sm_edit_off: 'Done', sm_edit_hint: 'Click anything on your page to change it.',
-        sm_help_advanced: 'I want the advanced editor',
-        sm_edit_saved: 'Saved', sm_reset_done: 'Back in sync with your resume',
-        sm_sync_q: 'You changed your {f} on your website. Update it on your saved resume too?',
-        sm_sync_yes: 'Yes, update it', sm_sync_no: 'No, just here',
-        sm_sync_f_name: 'name', sm_sync_f_subtitle: 'headline', sm_sync_f_summary: 'summary',
-        sm_sync_ok: 'Updated on your saved resume too.',
-        sm_sync_ok_both: 'Updated on your resume and cover letter.',
-        sm_sync_fail: 'We couldn\u2019t update your resume automatically \u2014 your website is updated, but your saved resume stayed the same.',
+        sm_done: '✓ Done Editing', 
+        sm_edit_saved: 'Saved', 
         bo_sync_ok: 'Synced with website', bo_sync_off: 'Out of sync with website',
-        sm_section_gone: 'Section removed from your website — your resume is unchanged.',
-        sm_last_section: 'A page needs at least one section.',
-        sm_kept_edits: 'Updated from your resume — your own edits were kept.',
-        sm_hint: '👆 Click anything to edit it', sm_hint_ok: 'Got it',
-        sm_help_links: 'I want to add my links',
-        sm_links_prompt: 'Add a link. Type it as  name: address\nOne per line.\n\nFor example:\nLinkedIn: https://linkedin.com/in/you\nWebsite: https://yoursite.com',
-        sm_links_saved: 'Your links are on your website.', sm_links_cleared: 'Links removed.',
-        sm_help_address: 'I want to change my web address', sm_addr_btn: 'My address',
         sm_addr_prompt: 'Your web address. 3–30 letters, numbers or hyphens.',
         sm_addr_warn: 'Your website is live. The old address will send visitors to the new one automatically, so links you have already shared keep working.',
         sm_addr_taken: 'That address is taken — try another.',
         sm_addr_len: 'Use 3 to 30 letters, numbers or hyphens.',
         sm_addr_err: 'Could not change your address — try again.',
         sm_addr_done: 'Your website has a new address.',
-        sm_help_template: 'I want to try a different design',
-        sm_tpl_confirm: 'This makes a NEW website from your resume, using a different design.\n\nYour current website is kept — you can switch back any time. Only one can be live at once.',
-        sm_help_btn: 'Not sure?', sm_help_q: 'Tell us what you want to change',
-        sm_help_photo: 'I want to change my photo', sm_help_move: 'I want to move something',
-        sm_help_look: 'I want a different look', sm_help_voice: 'I want to add my voice',
-        sm_help_never: 'Never mind',
-        sm_vibe_q: 'Pick your vibe', sm_close: 'Close', sm_change_look: '🎨 Change the look',
-        sm_lighten: 'Lighten', sm_darken: 'Darken',
-        sm_published: '🌐 Your website is live — link copied.',
-        sm_publish_err: 'Could not publish your website — try again.',
-        sm_building: 'Building your website…',
-        sm_building_sub: "We're making it from your most recent resume. This takes a few seconds.",
-        sm_need_resume: 'First, tailor a resume',
-        sm_need_resume_sub: 'Your website is built from your resume, so we need one to start with. It only takes a minute.',
-        sm_need_resume_cta: 'Tailor my resume →',
-        sm_draft: 'Private',
-        sm_note_live: 'This is your personal website. It updates automatically when you update your resume.',
-        sm_note_draft: 'This is your personal website. Only you can see it until you publish.',
         wc_tpl_desktop: '🖥 Desktop', wc_tpl_mobile: '📱 Mobile', wc_tpl_close: 'Close', wc_tpl_use: 'Use this template →',
         wc_tpl_none: 'No templates available.', wc_tpl_previewbtn: 'Preview', wc_tpl_current: 'in use', wc_tpl_pick: 'Use',
         wc_tpl_err: 'Could not load that template.', wc_tpl_applied: '✓ Template applied — preview it, then publish.',
@@ -2603,65 +2265,15 @@
         wc_ed_delete: '删除元素', wc_upload2: '上传',
         wc_step_template: '2. 选择模板',
         wc_template_help: '每个模板都是完整的多板块网站。选择前可在桌面和手机视图预览——然后把它变成你的。',
-        sm_customize: '修改我的网站', sm_done: '✓ 完成修改', sm_back: '← 返回 ResumeTailored',
-        sm_publish: '发布我的网站', sm_visit: '访问我的网站 ↗',
-        sm_q_look: '看起来还满意吗？', sm_a_done: '很好，完成了', sm_a_tweak: '我想再调整一下',
-        sm_q_photo: '要添加你的照片吗？', sm_a_upload: '上传照片', sm_a_skip: '暂时跳过',
-        sm_photo_note: '一张亲切的头像照片，随时可以更换。',
-        sm_q_voice: '要添加语音自我介绍吗？', sm_a_record: '🎙 录制 30 秒', sm_a_stop: '⏹ 停止录制',
-        sm_voice_note: '访客会看到"▶ 播放我的自我介绍"，由他们决定是否收听。',
-        sm_voice_label: '▶ 播放我的自我介绍',
-        sm_q_resume: '访客应该看到哪一份简历？',
-        sm_q_cover: '要提供求职信下载吗？', sm_cover_none: '不提供求职信',
-        sm_cover_note: '以下载按钮的形式提供，不直接显示在页面上——求职信是写给某一家公司的。',
-        sm_cover_none_yet: '你还没有保存过求职信。', sm_cover_label: '下载我的求职信',
-        sm_q_publish: '准备好发布了吗？', sm_q_live: '你的网站已上线。',
-        sm_publish_note: '在你发布之前，没有人能看到你的网站。',
-        sm_next: '下一步 →', sm_step_back: '← 上一步', sm_skip: '跳过', sm_a_done_editing: '完成',
-        sm_advanced: '高级', sm_adv_desktop: '高级编辑器需要更大的屏幕。',
-        sm_upload_err: '上传失败，请重试。', sm_mic_err: '无法访问你的麦克风。',
-        sm_edit_on: '编辑', sm_edit_off: '完成', sm_edit_hint: '点击页面上的任何内容即可修改。',
-        sm_help_advanced: '我想使用高级编辑器',
-        sm_edit_saved: '已保存', sm_reset_done: '已与你的简历重新同步',
-        sm_sync_q: '你在网站上更改了{f}。要同时更新已保存的简历吗？',
-        sm_sync_yes: '好，一起更新', sm_sync_no: '不用，只改这里',
-        sm_sync_f_name: '姓名', sm_sync_f_subtitle: '头衔', sm_sync_f_summary: '个人简介',
-        sm_sync_ok: '已同时更新你保存的简历。',
-        sm_sync_ok_both: '已更新你的简历和求职信。',
-        sm_sync_fail: '我们无法自动更新你的简历——网站已更新，但保存的简历保持不变。',
+        sm_done: '✓ 完成修改', 
+        sm_edit_saved: '已保存', 
         bo_sync_ok: '与网站同步', bo_sync_off: '与网站不同步',
-        sm_section_gone: '该板块已从网站移除——你的简历没有改动。',
-        sm_last_section: '页面至少需要保留一个板块。',
-        sm_kept_edits: '已根据简历更新——你自己修改过的内容已保留。',
-        sm_hint: '👆 点击任何内容即可修改', sm_hint_ok: '知道了',
-        sm_help_links: '我想添加我的链接',
-        sm_links_prompt: '添加链接，格式为  名称: 网址\n每行一个。\n\n例如：\nLinkedIn: https://linkedin.com/in/you\n个人网站: https://yoursite.com',
-        sm_links_saved: '链接已添加到你的网站。', sm_links_cleared: '链接已移除。',
-        sm_help_address: '我想更改我的网址', sm_addr_btn: '我的网址',
         sm_addr_prompt: '你的网址，3–30 个字母、数字或连字符。',
         sm_addr_warn: '你的网站已上线。旧网址会自动跳转到新网址，你已经分享出去的链接仍然有效。',
         sm_addr_taken: '该网址已被占用，请换一个。',
         sm_addr_len: '请使用 3 到 30 个字母、数字或连字符。',
         sm_addr_err: '更改网址失败，请重试。',
         sm_addr_done: '你的网站已启用新网址。',
-        sm_help_template: '我想试试别的设计',
-        sm_tpl_confirm: '这会用你的简历重新生成一个新网站，采用不同的设计。\n\n你现在的网站会保留，随时可以切换回来。同一时间只能有一个网站上线。',
-        sm_help_btn: '需要帮助？', sm_help_q: '告诉我们你想改什么',
-        sm_help_photo: '我想换我的照片', sm_help_move: '我想调整顺序',
-        sm_help_look: '我想换个样子', sm_help_voice: '我想加入我的声音',
-        sm_help_never: '算了',
-        sm_vibe_q: '选择你的风格', sm_close: '关闭', sm_change_look: '🎨 更换外观',
-        sm_lighten: '调亮', sm_darken: '调暗',
-        sm_published: '🌐 您的网站已上线——链接已复制。',
-        sm_publish_err: '发布失败，请重试。',
-        sm_building: '正在生成您的网站…',
-        sm_building_sub: '我们正在用您最近的简历生成网站，只需几秒钟。',
-        sm_need_resume: '请先定制一份简历',
-        sm_need_resume_sub: '您的网站由简历生成，所以需要先有一份简历。只需一分钟。',
-        sm_need_resume_cta: '去定制简历 →',
-        sm_draft: '未公开',
-        sm_note_live: '这是您的个人网站。更新简历后，网站会自动同步。',
-        sm_note_draft: '这是您的个人网站。在您发布之前，只有您能看到。',
         wc_tpl_desktop: '🖥 桌面', wc_tpl_mobile: '📱 手机', wc_tpl_close: '关闭', wc_tpl_use: '使用此模板 →',
         wc_tpl_none: '暂无可用模板。', wc_tpl_previewbtn: '预览', wc_tpl_current: '使用中', wc_tpl_pick: '使用',
         wc_tpl_err: '无法加载该模板。', wc_tpl_applied: '✓ 模板已应用——预览后即可发布。',
@@ -6984,67 +6596,21 @@ Aaliyah Washington`
     // into <option> markup.
     function wcEsc(s) { const d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
 
-    /* ═══ SIMPLE MODE ═══════════════════════════════════════════════════════
-       The default state of "My Website": their finished site, full screen, one
-       button. Nobody who has never built a website should have to look at a
-       toolbar before they have seen their own page.
+    /* ═══ SITE PLUMBING ════════════════════════════════════════════════════
+       What is left of the "simple mode" full-screen view, which is gone. That
+       view was a second, competing product: a finished site behind one button,
+       with a guided strip, a help panel and its own vibes picker. There is now
+       ONE editor — the rail editor — and this section keeps only the machinery
+       that editor genuinely needs: which resume the site shows, autosave, the
+       web address, and leaving. */
 
-       The editor still exists behind "Customize My Site" — it is just no longer
-       the front door. */
-    let smOn = false, smSiteUrl = '', smPublished = false, _smEditorWired = false;
+    // Whether the current site is live, and where. Set by whatever last talked
+    // to the server about it (autogen, save, rename).
+    let wcPublished = false, wcSiteUrl = '';
 
-    /* Full-screen mode is a place, so the phone's Back gesture has to leave it.
-       The app is a single page with no routing, so nothing was ever pushed onto
-       the history stack: pressing Back walked off /dashboard altogether and
-       landed on the marketing site, with the user's work still open behind it.
-       One history entry while full screen, popped on the way out. */
-    let _smPopped = false;
-    function smPushHistory() {
-      try {
-        if (history.state && history.state.rtSite) return;   // already have one
-        history.pushState({ rtSite: 1 }, '', location.href);
-      } catch (_) {}
-    }
-    window.addEventListener('popstate', (ev) => {
-      if (!smOn) return;
-      // Back out of full screen instead of out of the product. The guard stops
-      // smShow from pushing another entry as it tears this one down.
-      _smPopped = true;
-      smExit();
-      _smPopped = false;
-    });
-
-    function smShow(on) {
-      const was = smOn;
-      smOn = !!on;
-      if (smOn && !was) smPushHistory();
-      // Leaving by a control rather than the Back button: drop the entry we
-      // added, or the stack keeps a step that goes nowhere.
-      if (!smOn && was && !_smPopped) {
-        try { if (history.state && history.state.rtSite) history.back(); } catch (_) {}
-      }
-      setTimeout(smSyncChrome, 0);
-      const v = document.getElementById('smView');
-      if (v) v.classList.toggle('is-on', smOn);
-      // Hide the editor entirely while simple mode is up, so there is no chrome
-      // peeking out from behind it.
-      const shell = document.getElementById('cvShell');
-      if (shell) shell.style.display = smOn ? 'none' : '';
-    }
-
-    function smPanel(which) {
-      for (const id of ['smBusy', 'smEmpty']) {
-        const el = document.getElementById(id);
-        if (el) el.style.display = (id === which) ? 'flex' : 'none';
-      }
-    }
-
-    // Their site, rendered exactly as a visitor would see it. Drafts render too
-    // — the preview endpoint doesn't care whether the site is published, which
-    // is what lets them look before they leap.
     // Whatever resume the site should show: the one the user picked if they
     // have, otherwise the one it was generated from, otherwise the most recent.
-    function smResumeText() {
+    function wcResumeText() {
       const sel = document.getElementById('wcResumeSelect');
       const picked = sel && sel.value ? wcResumes.find(x => String(x.id) === String(sel.value)) : null;
       if (picked && picked.content) return picked.content;
@@ -7052,128 +6618,23 @@ Aaliyah Washington`
       return (wcResumes[0] && wcResumes[0].content) || '';
     }
 
-    async function smRenderSite() {
-      const frame = document.getElementById('smFrame');
-      if (!frame || !wcSite || !wcDoc) return false;
-      try {
-        const r = await fetch('/api/personal-site/preview', {
-          method: 'POST',
-          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
-          body: JSON.stringify({
-            subdomain: wcSite.subdomain, text: smResumeText(), name: wcSite.name || '', config: wcDoc,
-            editable: smEditing,
-          }),
-        });
-        if (!r.ok) return false;
-        frame.srcdoc = await r.text();
-        return true;
-      } catch (_) { return false; }
-    }
-
-    function smUpdateNote() {
-      const note = document.getElementById('smNote');
-      if (!note) return;
-      const draft = smPublished
-        ? ''
-        : `<span class="sm-draft">${wcEsc(_t('sm_draft', 'Private'))}</span>`;
-      const body = smPublished
-        ? _t('sm_note_live', 'This is your personal website. It updates automatically when you update your resume.')
-        : _t('sm_note_draft', 'This is your personal website. Only you can see it until you publish.');
-      note.innerHTML = draft + wcEsc(body);
-      const pubBtn = document.getElementById('smPublishBtn');
-      const live = document.getElementById('smLiveLink');
-      if (pubBtn) pubBtn.style.display = smPublished ? 'none' : '';
-      if (live) {
-        live.style.display = smPublished ? '' : 'none';
-        if (smSiteUrl) { live.href = smSiteUrl; live.textContent = smSiteUrl.replace(/^https?:\/\//, '') + ' ↗'; }
-      }
-    }
-
-    // Entry point for the tab. Builds a site if they don't have one yet.
-    async function smBoot(opts) {
-      // Someone who already has a website goes straight to it, full screen,
-      // ready to edit. Someone who has none sees the template picker and
-      // nothing else — no rails, no header, no empty canvas — and their site
-      // is built from whichever one they choose.
-      let existing = null;
-      try {
-        const r0 = await fetch('/api/personal-site', { headers: authHeaders() });
-        existing = (await r0.json().catch(() => ({}))).site || null;
-      } catch (_) { existing = null; }
-
-      // No site and no template chosen yet: show the picker and stop. Once
-      // they choose one, smPickerChose comes back through here with it.
-      // A named subdomain (Back Office → Edit) is neither: that site exists
-      // and the server will hand it back, so the picker must not appear.
-      if (!existing && !(opts && (opts.templateId || opts.subdomain))) { smShowPicker(); return; }
-      // "Try a different template" always makes a new one, even though they
-      // already have a site.
-      if (opts && opts.fresh) existing = null;
-
-      smShow(true);
-      smPanel('smBusy');
-      let data = null;
-      try {
-        const r = await fetch('/api/personal-site/autogen', {
-          method: 'POST',
-          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
-          body: JSON.stringify({
-            templateId: (opts && opts.templateId) || undefined,
-            subdomain: (opts && opts.subdomain) || undefined,
-            fresh: !!(opts && opts.fresh),
-          }),
-        });
-        data = await r.json().catch(() => null);
-        if (r.status === 409 && data && data.error === 'no_resume') { smPanel('smEmpty'); return; }
-        if (!r.ok) { smPanel(''); smShow(false); return; }   // Pro gate etc: fall back to the editor
-      } catch (_) { smPanel(''); smShow(false); return; }
-
-      wcSite = { subdomain: data.subdomain, name: data.name, published: data.published ? 1 : 0 };
-      wcSiteText = data.text || wcSiteText;
-      if (data.config && Array.isArray(data.config.pages)) { wcDoc = data.config; wcTplId = data.config.templateId || null; }
-      smPublished = !!data.published;
-      smSiteUrl = data.url || '';
-
-      // Switching to a different site must drop the old history. The store's
-      // subscriber saves whatever doc it holds into whatever `wcSite` currently
-      // is — keeping it across a switch would write one site's pages into
-      // another site's address.
-      if (edStore && edStore._smSub && edStore._smSub !== data.subdomain) edStore = null;
-
-      // The undo store is created here, not when the advanced editor opens.
-      // Inline edits, vibe changes and guided-strip answers are all edits and
-      // all belong in one history — otherwise whichever path the user happens
-      // to take decides whether their work is undoable.
-      if (!edStore && wcDoc && window.SiteDocStore) {
-        edStore = SiteDocStore.createStore(wcDoc);
-        edStore._smSub = data.subdomain;   // which site this history belongs to
-        edPageId = (wcDoc.pages && wcDoc.pages[0] && wcDoc.pages[0].id) || null;
-        edStore.subscribe(() => { wcDoc = edStore.getDoc(); smRenderSite(); smQueueSave(); });
-      }
-
-      const ok = await smRenderSite();
-      if (!ok) { smPanel(''); smShow(false); return; }
-      smUpdateNote();
-      smPanel('');
-    }
-
     /* ── Saving ───────────────────────────────────────────────────────────
        One save path, and it never decides publicity by itself. `publish` is
        omitted unless the user explicitly asked, and the server preserves
        whatever the site already is — so an auto-save can neither expose a
        private site nor take a live one down. */
-    let _smSaveTimer = null, _smSaving = false, _smDirty = false;
+    let _wcSaveTimer = null, _wcSaving = false, _wcDirty = false;
 
-    async function smSave(opts) {
+    async function wcSaveSite(opts) {
       if (!wcSite || !wcSite.subdomain || !wcDoc) return null;
       const body = {
         subdomain: wcSite.subdomain,
-        text: smResumeText(),
+        text: wcResumeText(),
         name: wcSite.name || '',
         config: wcDoc,
       };
       if (opts && typeof opts.publish === 'boolean') body.publish = opts.publish;
-      _smSaving = true;
+      _wcSaving = true;
       try {
         const r = await fetch('/api/personal-site', {
           method: 'POST',
@@ -7182,436 +6643,34 @@ Aaliyah Washington`
         });
         const d = await r.json().catch(() => ({}));
         if (!r.ok) return null;
-        smPublished = !!d.published;
-        smSiteUrl = d.url || smSiteUrl;
-        if (wcSite) wcSite.published = smPublished ? 1 : 0;
-        _smDirty = false;
+        wcPublished = !!d.published;
+        wcSiteUrl = d.url || wcSiteUrl;
+        if (wcSite) wcSite.published = wcPublished ? 1 : 0;
+        _wcDirty = false;
         return d;
-      } catch (_) { return null; } finally { _smSaving = false; }
+      } catch (_) { return null; } finally { _wcSaving = false; }
     }
 
     // No Save button: edits persist on their own, a beat after the user stops.
-    function smQueueSave() {
-      _smDirty = true;
-      clearTimeout(_smSaveTimer);
-      _smSaveTimer = setTimeout(() => { smSave(); }, 1200);
+    function wcQueueSave() {
+      _wcDirty = true;
+      clearTimeout(_wcSaveTimer);
+      _wcSaveTimer = setTimeout(() => { wcSaveSite(); }, 1200);
     }
 
     // Flush before anything that would lose the edit.
-    async function smFlushSave() {
-      clearTimeout(_smSaveTimer);
-      if (_smDirty && !_smSaving) await smSave();
+    async function wcFlushSave() {
+      clearTimeout(_wcSaveTimer);
+      if (_wcDirty && !_wcSaving) await wcSaveSite();
     }
-    window.addEventListener('beforeunload', () => { if (_smDirty) smSave(); });
-
-    // The deliberate act. Everything else preserves state; only this publishes.
-    async function smPublish() {
-      const btn = document.getElementById('smPublishBtn');
-      if (btn) btn.disabled = true;
-      await smFlushSave();
-      const d = await smSave({ publish: true });
-      if (btn) btn.disabled = false;
-      if (!d) { showToast(_t('sm_publish_err', 'Could not publish your website — try again.')); return; }
-      smUpdateNote();
-      try { await navigator.clipboard.writeText(d.url); } catch (_) {}
-      showToast(_t('sm_published', '🌐 Your website is live — link copied.'), 6000);
-    }
-
-    /* ── Vibes ────────────────────────────────────────────────────────────
-       Ten looks, one click each, applied to whatever the user already has.
-       No colour pickers, no hex codes — the only tweak is lighten/darken. */
-    let smVibes = [], _smVibeOpen = false;
-
-    async function smEnsureVibes() {
-      if (!smVibes.length) {
-        try { smVibes = (await (await fetch('/api/site-vibes')).json()).vibes || []; } catch (_) { smVibes = []; }
-      }
-      return smVibes;
-    }
-
-    function smRenderVibes() {
-      const grid = document.getElementById('smVibeGrid');
-      if (!grid) return;
-      const cur = (wcDoc && wcDoc.vibe) || '';
-      grid.innerHTML = smVibes.map(v => {
-        // Photographic vibes show the actual photo; clean ones show their
-        // gradient. Either way the thumbnail is what they will get.
-        const art = v.preview
-          ? `background-image:url('${wcEsc(v.preview)}')`
-          : `background-image:linear-gradient(135deg,#${wcEsc(v.swatch[0])},#${wcEsc(v.swatch[1])})`;
-        return `<button type="button" class="sm-vibe${v.id === cur ? ' is-on' : ''}" onclick="smPickVibe('${wcEsc(v.id)}')">
-          <span class="sm-vibe-art" style="${art}"></span>
-          <span class="sm-vibe-name">${wcEsc(v.name)}</span>
-        </button>`;
-      }).join('');
-      const dots = document.getElementById('smToneDots');
-      if (dots) {
-        const t = (wcDoc && Number(wcDoc.vibeTone)) || 0;
-        dots.textContent = [-2, -1, 0, 1, 2].map(n => (n === t ? '●' : '○')).join('');
-      }
-    }
-
-    async function smPickVibe(id) {
-      if (!wcDoc || !window.SiteVibes) return;
-      const tone = Number(wcDoc.vibeTone) || 0;
-      // Through the store when the editor is open, so it lands in undo history;
-      // directly otherwise.
-      if (edStore) edApply(d => { SiteVibes.applyVibe(d, id, tone); }, { reason: 'vibe' });
-      else wcDoc = SiteVibes.applyVibe(JSON.parse(JSON.stringify(wcDoc)), id, tone);
-      if (edStore) wcDoc = edStore.getDoc();
-      smRenderVibes();
-      await smRenderSite();
-      smQueueSave();
-    }
-
-    function smTone(step) {
-      if (!wcDoc || !window.SiteVibes || !wcDoc.vibe) return;
-      const next = SiteVibes.clampTone((Number(wcDoc.vibeTone) || 0) + step);
-      if (next === (Number(wcDoc.vibeTone) || 0)) return;
-      smPickVibeTone(wcDoc.vibe, next);
-    }
-    async function smPickVibeTone(id, tone) {
-      if (edStore) { edApply(d => { SiteVibes.applyVibe(d, id, tone); }, { reason: 'vibe-tone' }); wcDoc = edStore.getDoc(); }
-      else wcDoc = SiteVibes.applyVibe(JSON.parse(JSON.stringify(wcDoc)), id, tone);
-      smRenderVibes();
-      await smRenderSite();
-      smQueueSave();
-    }
-
-    /* ── The guided strip ─────────────────────────────────────────────────
-       Seven steps, one question on screen at a time, skip and back on every
-       one. Deliberately NOT a form: nobody who has never built a website
-       should be looking at twenty options at once.
-
-       There is no "Add music" step. Background audio on a page a recruiter
-       opens at their desk is the fastest way to get a tab closed, and it has
-       no place in a first run. Ambient sound stays available as an `audio`
-       element in the advanced editor for anyone who goes looking. A voice
-       INTRO is different — that is the person speaking for themselves — so it
-       keeps its step. */
-    const SM_STEPS = ['look', 'vibe', 'photo', 'voice', 'resume', 'cover', 'publish'];
-    let smStep = -1;
-
-    function smStripOpen(at) {
-      smStep = typeof at === 'number' ? at : 0;
-      const el = document.getElementById('smStrip');
-      if (el) el.classList.add('is-open');
-      smRenderStep();
-    }
-    function smStripClose() {
-      smStep = -1;
-      const el = document.getElementById('smStrip');
-      if (el) el.classList.remove('is-open');
-    }
-    function smStepBack() { if (smStep > 0) { smStep--; smRenderStep(); } else { smStripClose(); } }
-    function smStepNext() {
-      if (smStep < SM_STEPS.length - 1) { smStep++; smRenderStep(); }
-      else smStripClose();
-    }
-
-    function smRenderStep() {
-      const q = document.getElementById('smStripQ');
-      const body = document.getElementById('smStripBody');
-      const back = document.getElementById('smStripBack');
-      const skip = document.getElementById('smStripSkip');
-      const dots = document.getElementById('smStripDots');
-      if (!q || !body) return;
-      const step = SM_STEPS[smStep];
-      dots.textContent = SM_STEPS.map((_, i) => (i === smStep ? '●' : '○')).join('');
-      back.hidden = false;
-      skip.hidden = false;
-      body.innerHTML = '';
-
-      if (step === 'look') {
-        q.textContent = _t('sm_q_look', 'Looks good?');
-        body.innerHTML = `
-          <button type="button" class="sm-word sm-word--go" onclick="smStripClose()">${wcEsc(_t('sm_a_done', "Yes, I'm done"))}</button>
-          <button type="button" class="sm-word" onclick="smStepNext()">${wcEsc(_t('sm_a_tweak', 'Let me tweak it'))}</button>`;
-        back.hidden = true; skip.hidden = true;
-        return;
-      }
-
-      if (step === 'vibe') {
-        q.textContent = _t('sm_vibe_q', 'Pick your vibe');
-        const cur = (wcDoc && wcDoc.vibe) || '';
-        body.innerHTML = `<div class="sm-vibes" id="smVibeGrid"></div>
-          <div class="sm-tone">
-            <button type="button" class="sm-tone-btn" onclick="smTone(-1)">${wcEsc(_t('sm_lighten', 'Lighten'))}</button>
-            <span class="sm-tone-dots" id="smToneDots"></span>
-            <button type="button" class="sm-tone-btn" onclick="smTone(1)">${wcEsc(_t('sm_darken', 'Darken'))}</button>
-          </div>
-          <button type="button" class="sm-word sm-word--go" style="min-width:200px;" onclick="smStepNext()">${wcEsc(_t('sm_next', 'Next →'))}</button>`;
-        smEnsureVibes().then(smRenderVibes);
-        skip.hidden = !!cur;
-        return;
-      }
-
-      if (step === 'photo') {
-        q.textContent = _t('sm_q_photo', 'Add a photo of yourself?');
-        body.innerHTML = `
-          <button type="button" class="sm-word sm-word--go" onclick="smPickPhoto()">${wcEsc(_t('sm_a_upload', 'Upload a photo'))}</button>
-          <button type="button" class="sm-word" onclick="smStepNext()">${wcEsc(_t('sm_a_skip', 'Skip for now'))}</button>
-          <div class="sm-strip-note">${wcEsc(_t('sm_photo_note', 'A friendly headshot. You can change it any time.'))}</div>`;
-        return;
-      }
-
-      if (step === 'voice') {
-        q.textContent = _t('sm_q_voice', 'Add a voice introduction?');
-        const rec = smRecording;
-        body.innerHTML = `
-          <button type="button" class="sm-word ${rec ? '' : 'sm-word--go'}" onclick="smToggleVoiceIntro()">${wcEsc(rec ? _t('sm_a_stop', '⏹ Stop recording') : _t('sm_a_record', '🎙 Record 30 seconds'))}</button>
-          <button type="button" class="sm-word" onclick="smStepNext()">${wcEsc(_t('sm_a_skip', 'Skip for now'))}</button>
-          <div class="sm-strip-note">${wcEsc(_t('sm_voice_note', 'Visitors see "▶ Play my introduction" — they choose whether to listen.'))}</div>`;
-        return;
-      }
-
-      if (step === 'resume') {
-        q.textContent = _t('sm_q_resume', 'Which resume should visitors see?');
-        const cur = (wcDoc && wcDoc.assets && wcDoc.assets.resumeId) || (wcResumes[0] && wcResumes[0].id);
-        body.innerHTML = `
-          <select class="sm-strip-sel" id="smResumePick" onchange="smPickResume(this.value)">
-            ${wcResumes.map(r => `<option value="${r.id}"${String(r.id) === String(cur) ? ' selected' : ''}>${wcEsc(r.title)}</option>`).join('')}
-          </select>
-          <button type="button" class="sm-word sm-word--go" onclick="smStepNext()">${wcEsc(_t('sm_next', 'Next →'))}</button>`;
-        skip.hidden = true;   // there is always a resume; that is what the site is
-        return;
-      }
-
-      if (step === 'cover') {
-        q.textContent = _t('sm_q_cover', 'Offer a cover letter to download?');
-        const cur = (wcDoc && wcDoc.assets && wcDoc.assets.coverLetterId) || '';
-        body.innerHTML = wcCovers.length
-          ? `<select class="sm-strip-sel" id="smCoverPick" onchange="smPickCover(this.value)">
-               <option value="">${wcEsc(_t('sm_cover_none', 'No cover letter'))}</option>
-               ${wcCovers.map(c => `<option value="${c.id}"${String(c.id) === String(cur) ? ' selected' : ''}>${wcEsc(c.title)}</option>`).join('')}
-             </select>
-             <button type="button" class="sm-word sm-word--go" onclick="smStepNext()">${wcEsc(_t('sm_next', 'Next →'))}</button>
-             <div class="sm-strip-note">${wcEsc(_t('sm_cover_note', 'Shown as a download button, not printed on the page — a cover letter is written to one company.'))}</div>`
-          : `<button type="button" class="sm-word" onclick="smStepNext()">${wcEsc(_t('sm_a_skip', 'Skip for now'))}</button>
-             <div class="sm-strip-note">${wcEsc(_t('sm_cover_none_yet', "You haven't saved a cover letter yet."))}</div>`;
-        return;
-      }
-
-      if (step === 'publish') {
-        q.textContent = smPublished
-          ? _t('sm_q_live', 'Your website is live.')
-          : _t('sm_q_publish', 'Ready to publish?');
-        body.innerHTML = smPublished
-          ? `<a class="sm-word sm-word--go" href="${wcEsc(smSiteUrl)}" target="_blank" rel="noopener">${wcEsc(_t('sm_visit', 'Visit my website ↗'))}</a>
-             <button type="button" class="sm-word" onclick="smStripClose()">${wcEsc(_t('sm_a_done_editing', 'Done'))}</button>`
-          : `<button type="button" class="sm-word sm-word--pub" onclick="smPublishFromStrip()">${wcEsc(_t('sm_publish', 'Publish my website'))}</button>
-             <div class="sm-strip-note">${wcEsc(_t('sm_publish_note', 'Nobody can see your site until you do this.'))}</div>`;
-        skip.hidden = true;
-        return;
-      }
-    }
-
-    async function smPublishFromStrip() { await smPublish(); smRenderStep(); }
-
-    // Step 3 — a photo. Placed into the first image slot the template already
-    // has, so it lands where a designer put it rather than floating.
-    function smPickPhoto() {
-      const inp = document.createElement('input');
-      inp.type = 'file'; inp.accept = 'image/*';
-      inp.onchange = async () => {
-        const f = inp.files && inp.files[0];
-        if (!f) return;
-        try {
-          const url = await _tvUploadMedia(f, f.name || 'photo.jpg');
-          if (!url) throw new Error('no url');
-          // createIfMissing: three templates have no image in the hero, and
-          // without this the step silently did nothing on them.
-          smSetFirst('image', el => { el.props.src = url; delete el.props.ph; }, true);
-          await smRenderSite(); smQueueSave(); smStepNext();
-        } catch (_) { showToast(_t('sm_upload_err', "That photo didn't upload — try another.")); }
-      };
-      inp.click();
-    }
-
-    // Step 4 — a voice introduction. NOT background music: it is the person
-    // speaking, and the visitor presses play.
-    let smRecording = false, _smRec = null, _smChunks = [];
-    async function smToggleVoiceIntro() {
-      if (smRecording && _smRec) { _smRec.stop(); return; }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        _smChunks = [];
-        _smRec = new MediaRecorder(stream);
-        _smRec.ondataavailable = e => { if (e.data && e.data.size) _smChunks.push(e.data); };
-        _smRec.onstop = async () => {
-          smRecording = false;
-          stream.getTracks().forEach(t => t.stop());
-          try {
-            const type = (_smChunks[0] && _smChunks[0].type) || 'audio/webm';
-            const url = await _tvUploadMedia(new Blob(_smChunks, { type }), 'intro.' + (type.includes('mp') ? 'm4a' : 'weba'));
-            if (!url) throw new Error('no url');
-            smSetFirst('audio', el => { el.props.src = url; el.props.label = _t('sm_voice_label', '▶ Play my introduction'); }, true);
-            await smRenderSite(); smQueueSave(); smStepNext();
-          } catch (_) { showToast(_t('sm_upload_err', "That didn't upload — try again.")); smRenderStep(); }
-        };
-        _smRec.start();
-        smRecording = true;
-        smRenderStep();
-        setTimeout(() => { if (smRecording && _smRec) _smRec.stop(); }, 30000);
-      } catch (_) { showToast(_t('sm_mic_err', 'We could not reach your microphone.')); }
-    }
-
-    // Find the first element of a type and mutate it; optionally append one to
-    // the hero if there isn't one, so a step never silently does nothing.
-    function smSetFirst(type, fn, createIfMissing) {
-      const mutate = (d) => {
-        let hit = null;
-        for (const pg of d.pages || []) for (const sec of pg.sections || []) for (const el of sec.els || []) {
-          if (el.type === type) { hit = el; break; }
-        }
-        if (!hit && createIfMissing) {
-          const sec = d.pages[0].sections[d.pages[0].sections.length - 1];
-          const y = (sec.h || 400) - 150;
-          hit = { id: (window.SiteDocStore ? SiteDocStore.newId('e') : 'e' + Date.now()),
-                  type, x: 80, y: Math.max(20, y), w: 500, h: 150, props: {} };
-          sec.els.push(hit);
-        }
-        if (hit) { hit.props = hit.props || {}; fn(hit); }
-      };
-      if (edStore) { edApply(mutate, { reason: 'guided' }); wcDoc = edStore.getDoc(); }
-      else { const d = JSON.parse(JSON.stringify(wcDoc)); mutate(d); wcDoc = d; }
-    }
-
-    async function smPickResume(id) {
-      const r = wcResumes.find(x => String(x.id) === String(id));
-      if (!r) return;
-      wcSiteText = r.content || wcSiteText;
-      smSetAssets({ resumeId: Number(id) });
-      // Follow the new resume — except for anything the user has edited on the
-      // site, which stays theirs.
-      const kept = (window.SiteFields && SiteFields.detachedFields(wcDoc)) || [];
-      smSyncFromResume();
-      await smRenderSite(); smQueueSave();
-      if (kept.length) showToast(_t('sm_kept_edits', 'Updated from your resume — your own edits were kept.'), 4000);
-    }
-
-    async function smPickCover(id) {
-      const c = wcCovers.find(x => String(x.id) === String(id));
-      // Store the TEXT alongside the id: the published page is served without a
-      // session, so it cannot look the cover letter up by id at render time.
-      smSetAssets({ coverLetterId: id ? Number(id) : null, coverLetterText: c ? (c.content || '') : '' });
-      if (c) smSetFirst('coverletter', el => { el.props.text = _t('sm_cover_label', 'Read my cover letter'); }, true);
-      await smRenderSite(); smQueueSave();
-    }
-
-    function smSetAssets(patch) {
-      const mutate = (d) => { d.assets = Object.assign({}, d.assets || {}, patch); };
-      if (edStore) { edApply(mutate, { reason: 'assets' }); wcDoc = edStore.getDoc(); }
-      else { const d = JSON.parse(JSON.stringify(wcDoc)); mutate(d); wcDoc = d; }
-    }
-
-    /* ── Inline editing ───────────────────────────────────────────────────
-       The rendered page is an iframe, and the editor lives inside it — that is
-       where the real elements are. It never mutates the document itself; it
-       posts what happened out here, and everything is applied through the undo
-       store, so there is exactly one writer and inline edits are undoable
-       alongside vibe changes and everything else.
-
-       The rule behind all of it: editing a field on the site DETACHES it from
-       the resume. Later resume updates leave it alone until the user presses
-       "reset to my resume". */
-    /* THERE IS ONE PAGE. `smEditing` used to have a false state: a read-only
-       view of the site with a Customize button and no way through to the
-       editor. Pressing "Personal Website" landed there, so someone who came to
-       change something arrived somewhere they could not. That page is deleted.
-       Simple mode IS the editor; to see the site the way visitors do, open the
-       live address. */
-    let smEditing = true;
-
-    async function smSetEditing(on) {
-      smEditing = true;   // the only state there is
-      smHelpSync();
-      smSyncChrome();
-      await smRenderSite();
-      if (smEditing) smShowHint();
-    }
-    // Nothing to toggle to any more — kept so old call sites stay harmless.
-    function smToggleEdit() { smSetEditing(true); }
-
-    window.addEventListener('message', async (ev) => {
-      const m = ev && ev.data;
-      if (!m || m.__rtEdit !== 1 || !wcDoc || !window.SiteFields) return;
-
-      if (m.kind === 'ready') { smPushChips(); smPushSyncAsk(); return; }
-
-      if (m.kind === 'syncAnswer') { smSyncAnswer(m); return; }
-      // Clicking the page counts as clicking away from the helper.
-      if (m.kind === 'pageclick') { smHelpClose(); return; }
-
-      // No toast: the chip is the feedback, and it is already where the user
-      // is looking. A corner toast is the pattern the chips exist to replace.
-      if (m.kind === 'undo') { smDoUndo(!!m.viaKey); return; }
-      if (m.kind === 'redo') { smDoRedo(!!m.viaKey); return; }
-
-      if (m.kind === 'edit') {
-        smMutate(d => { SiteFields.applyEdit(d, m.el, m.value); }, 'inline-edit');
-        smMarkAction({ el: m.el });
-        smMaybeAskSync(m.el);
-        return;
-      }
-
-      if (m.kind === 'reset') {
-        smMutate(d => { SiteFields.resetField(d, m.el, smResumeText()); }, 'inline-reset');
-        smMarkAction({ el: m.el });
-        showToast(_t('sm_reset_done', 'Back in sync with your resume'), 2600);
-        return;
-      }
-
-      if (m.kind === 'photo') { smPickPhotoInto(m.el); return; }
-
-      if (m.kind === 'moveSection') {
-        // Anchored to the section that moved, so the chips travel with it.
-        smMutate(d => SiteFields.moveSection(d, 0, m.sec, m.delta), 'move-section');
-        smMarkAction({ sec: m.sec });
-        return;
-      }
-
-      if (m.kind === 'deleteSection') {
-        // Removes it from the SITE. The resume is a separate store and is never
-        // touched by anything in here.
-        // Capture the index BEFORE deleting: afterwards the section is gone and
-        // there is nothing left to anchor the undo chip to. The chips land in
-        // the gap it left, which is where the user is looking.
-        const idx = (wcDoc.pages[0].sections || []).findIndex(x => x && x.id === m.sec);
-        const ok = smMutate(d => SiteFields.deleteSection(d, 0, m.sec), 'delete-section');
-        if (ok === false) { showToast(_t('sm_last_section', 'A page needs at least one section.'), 3000); return; }
-        smMarkAction({ idx: Math.max(0, idx) });
-        return;
-      }
-    });
-
-    /* ── Trying a different template ──────────────────────────────────────
-       A different template is a different SITE, generated fresh from the
-       resume. It never overwrites the one they have been working on — that is
-       what makes trying one safe. Only one can be live at a time; publishing a
-       new one takes the old one down. */
-    async function smTryTemplate() {
-      const ok = window.confirm(_t('sm_tpl_confirm',
-        'This makes a NEW website from your resume, using a different design.\n\nYour current website is kept — you can switch back any time. Only one can be live at once.'));
-      if (!ok) return;
-      await smFlushSave();
-      document.body.classList.add('wb-picker');
-      smShow(false);
-      const shell = document.getElementById('cvShell');
-      if (shell) shell.style.display = '';
-      cvClosePanel();
-      cvPanel('templates');
-      wcLoadTemplates();
-      smPickerFresh = true;
-    }
-    let smPickerFresh = false;
+    window.addEventListener('beforeunload', () => { if (_wcDirty) wcSaveSite(); });
 
     /* ── The web address ──────────────────────────────────────────────────
        The address is generated from the username they picked at signup, long
        before they knew it would become their web address. It has to be
        changeable, and changing it has to be honest about what it costs: the
        old link stops working, and they may already have sent it to people. */
-    async function smChangeAddress() {
+    async function wcChangeAddress() {
       if (!wcSite || !wcSite.subdomain) return;
       const cur = wcSite.subdomain;
       // Show the shape their address actually has. Matching "something dot
@@ -7619,7 +6678,7 @@ Aaliyah Washington`
       // resumetailored.com/site/maya also matches, and the prompt then promised
       // a subdomain the site does not have. The real test is whether the host
       // BEGINS with their address — that is what makes it a subdomain.
-      const bare = String(smSiteUrl || '').replace(/^https?:\/\//, '');
+      const bare = String(wcSiteUrl || '').replace(/^https?:\/\//, '');
       const host = bare.split('/')[0];
       let shape = '';
       if (bare) {
@@ -7628,7 +6687,7 @@ Aaliyah Washington`
           : bare.replace('/' + cur, '/yourname');
       }
       if (!shape) shape = 'yoursite.com/site/yourname';
-      const warn = smPublished
+      const warn = wcPublished
         ? '\n\n' + _t('sm_addr_warn', 'Your website is live. The old address will send visitors to the new one automatically, so links you have already shared keep working.')
         : '';
       const raw = window.prompt(
@@ -7639,7 +6698,7 @@ Aaliyah Washington`
       if (!next || next === cur) return;
       if (next.length < 3 || next.length > 30) { showToast(_t('sm_addr_len', 'Use 3 to 30 letters, numbers or hyphens.'), 4000); return; }
 
-      await smFlushSave();
+      await wcFlushSave();
       const r = await fetch('/api/personal-site', {
         method: 'POST',
         headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
@@ -7647,7 +6706,7 @@ Aaliyah Washington`
           // Say which site is moving. Without this the server would read it as
           // "make me another one" and leave the old address live.
           subdomain: next, renameFrom: cur,
-          text: smResumeText(), name: (wcSite && wcSite.name) || '', config: wcDoc,
+          text: wcResumeText(), name: (wcSite && wcSite.name) || '', config: wcDoc,
         }),
       });
       const d = await r.json().catch(() => ({}));
@@ -7655,481 +6714,24 @@ Aaliyah Washington`
       if (!r.ok) { showToast(d.message || _t('sm_addr_err', 'Could not change your address — try again.'), 4500); return; }
 
       wcSite.subdomain = next;
-      smSiteUrl = d.url || smSiteUrl;
-      smPublished = !!d.published;
-      smUpdateNote();
-      await smRenderSite();
+      wcSiteUrl = d.url || wcSiteUrl;
+      wcPublished = !!d.published;
+      const addrField = document.getElementById('wcAddress');
+      if (addrField) addrField.value = next;
       showToast(_t('sm_addr_done', 'Your website has a new address.') + ' ' + (d.url || ''), 6000);
     }
 
-    /* ── Links out ────────────────────────────────────────────────────────
-       LinkedIn, GitHub, a portfolio, anything. The renderer has always drawn a
-       `social` element; until now the only way to fill it was the advanced
-       editor. One prompt per link, written into the element the page already
-       has (or a new one at the foot of the page). */
-    const SM_LINK_KINDS = ['LinkedIn', 'GitHub', 'Website', 'Instagram', 'Email'];
-
-    function smLinksOpen() {
-      if (!wcDoc || !window.SiteFields) return;
-      const el = SiteFields.findById(wcDoc, (smFindSocial() || {}).id) || smFindSocial();
-      const current = (el && el.props && Array.isArray(el.props.items)) ? el.props.items : [];
-      const shown = current.map(i => `${i.network}: ${i.url}`).join('\n') || _t('sm_links_none', '(none yet)');
-      const raw = window.prompt(
-        _t('sm_links_prompt', 'Add a link. Type it as  name: address\nOne per line.\n\nFor example:\nLinkedIn: https://linkedin.com/in/you\nWebsite: https://yoursite.com'),
-        current.map(i => `${i.network}: ${i.url}`).join('\n'));
-      if (raw === null) return;
-      const items = String(raw).split('\n').map(line => {
-        const m = line.match(/^\s*([^:]{1,24})\s*:\s*(\S.*)$/);
-        if (!m) return null;
-        let url = m[2].trim();
-        // A bare address is what people actually type; make it a real link.
-        if (!/^(https?:|mailto:|tel:)/i.test(url)) {
-          url = /@/.test(url) && !/\//.test(url) ? 'mailto:' + url : 'https://' + url;
-        }
-        return { network: m[1].trim().slice(0, 24), url };
-      }).filter(Boolean).slice(0, 10);
-      smSetLinks(items);
-    }
-
-    function smFindSocial() {
-      let hit = null;
-      for (const pg of (wcDoc && wcDoc.pages) || []) for (const sec of pg.sections || []) for (const e of sec.els || []) {
-        if (!hit && e.type === 'social') hit = e;
-      }
-      return hit;
-    }
-
-    async function smSetLinks(items) {
-      smMutate(d => {
-        let el = null;
-        for (const pg of d.pages || []) for (const sec of pg.sections || []) for (const e of sec.els || []) {
-          if (!el && e.type === 'social') el = e;
-        }
-        if (!el) {
-          const secs = d.pages[0].sections;
-          const last = secs[secs.length - 1];
-          el = { id: (window.SiteDocStore ? SiteDocStore.newId('e') : 'e' + Date.now()),
-                 type: 'social', x: 80, y: Math.max(20, (last.h || 300) - 90), w: 400, h: 44, props: {} };
-          last.els.push(el);
-        }
-        el.props = el.props || {};
-        el.props.items = items;
-      }, 'links');
-      showToast(items.length
-        ? _t('sm_links_saved', 'Your links are on your website.')
-        : _t('sm_links_cleared', 'Links removed.'), 3000);
-    }
-
-    /* ── "Not sure?" ──────────────────────────────────────────────────────
-       Four plain-English wants, each wired to the control that satisfies it.
-       The panel closes itself once the control opens — asking someone to
-       dismiss a helper after it has helped them is one step too many. */
-    /* First time into edit mode, one line near the middle. Remembered, so it
-       never nags a second time. */
-    function smShowHint() {
-      try { if (localStorage.getItem('rt_site_hint') === '1') return; } catch (_) {}
-      const h = document.getElementById('smHint');
-      if (!h) return;
-      h.hidden = false; h.classList.remove('is-gone');
-      clearTimeout(smShowHint._t);
-      smShowHint._t = setTimeout(smHideHint, 4000);
-    }
-    function smHideHint() {
-      const h = document.getElementById('smHint');
-      if (!h || h.hidden) return;
-      h.classList.add('is-gone');
-      setTimeout(() => { h.hidden = true; }, 420);
-      try { localStorage.setItem('rt_site_hint', '1'); } catch (_) {}
-    }
-
-    /* ── 6/7: what is visible in each mode ─────────────────────────────────
-       Public view is the site and nothing else. Edit mode keeps the left rail
-       and the top controls. One function decides, so the two can never
-       disagree. */
-    /* One page means Back has one meaning: leave the Website Creator. It used
-       to also have to return from the read-only view, which no longer exists. */
-    function smBack() { smExit(); }
-
-    function smSyncChrome() {
-      const b = document.body;
-      // `wb-picker` is owned by the first-run flow, not by this. Clearing it
-      // here raced smShowPicker and put the app chrome back up underneath the
-      // picker it had just opened.
-      const inPicker = b.classList.contains('wb-picker');
-      // The builder is the editor now, so this must never hide it. This line
-      // force-hid the shell for the simplified view that used to sit on top;
-      // left alone it blanks the screen the moment anything calls this.
-      const shell = document.getElementById('cvShell');
-      if (shell && !inPicker) shell.style.display = '';
-
-      // Back is always there. It is the only way out, and burying it is how
-      // this got stuck in the first place.
-      const back = document.getElementById('smBackBtn');
-      if (back) back.hidden = false;
-    }
-
-    function smHelpSync() {
-      const b = document.getElementById('smHelpBtn');
-      if (b) b.hidden = !smEditing;          // never in the public view
-      if (!smEditing) smHelpClose();
-    }
-    function smHelpToggle() {
-      const p = document.getElementById('smHelpPanel');
-      if (!p) return;
-      if (p.hidden) { p.hidden = false; setTimeout(() => document.addEventListener('click', _smHelpAway, true), 0); }
-      else smHelpClose();
-    }
-    function smHelpClose() {
-      const p = document.getElementById('smHelpPanel');
-      if (p && !p.hidden) p.hidden = true;
-      document.removeEventListener('click', _smHelpAway, true);
-    }
-    // Clicking anywhere else dismisses it. Capture phase so it closes even when
-    // the click lands on something that handles its own events.
-    function _smHelpAway(ev) {
-      const p = document.getElementById('smHelpPanel');
-      const b = document.getElementById('smHelpBtn');
-      if (!p || p.hidden) return;
-      if (p.contains(ev.target) || (b && b.contains(ev.target))) return;
-      smHelpClose();
-    }
-
-    function smHelpPick(what) {
-      smHelpClose();
-      if (what === 'photo') { smHelpPhoto(); return; }
-      if (what === 'move')  { smHelpShowMoves(); return; }
-      if (what === 'look')  { smStripOpen(1); return; }   // step 2: pick your vibe
-      if (what === 'voice') { smStripOpen(3); return; }   // step 4: voice intro
-      if (what === 'links') { smLinksOpen(); return; }
-      if (what === 'address') { smChangeAddress(); return; }
-      if (what === 'template') { smTryTemplate(); return; }
-    }
-
-    // Straight to the file picker. If this vibe's page has no photo slot, one is
-    // added to the top — silently doing nothing is the worst possible answer to
-    // "I want to change my photo".
-    function smHelpPhoto() {
-      if (!window.SiteFields || !wcDoc) return;
-      let target = null;
-      for (const pg of wcDoc.pages || []) for (const sec of pg.sections || []) for (const el of sec.els || []) {
-        if (!target && (el.type === 'image' || el.type === 'imagebox')) target = el;
-      }
-      if (target) { smPickPhotoInto(target.id); return; }
-      const id = window.SiteDocStore ? SiteDocStore.newId('e') : 'e' + Date.now();
-      smMutate(d => {
-        const hero = d.pages[0].sections[0];
-        hero.els.push({ id, type: 'image', x: 820, y: 120, w: 280, h: 280, props: {} });
-      }, 'add-photo-slot');
-      smPickPhotoInto(id);
-    }
-
-    // Show every move/delete bar at once with a pulse, and bring the first into
-    // view — so "I want to move something" ends with the controls under their eyes.
-    function smHelpShowMoves() {
-      const f = document.getElementById('smFrame');
-      try { if (f && f.contentWindow) f.contentWindow.postMessage({ __rtHelp: 1, action: 'showMoves' }, '*'); } catch (_) {}
-    }
-
-    /* ── Undo / redo chips ────────────────────────────────────────────────
-       They appear where the action happened. The page re-renders after every
-       change, which destroys anything in the iframe, so the anchor is held out
-       here and re-sent once each new render reports itself ready.
-
-       Only one set is ever on screen: each action replaces the last anchor, so
-       a second edit before the first fades simply moves the chips. */
-    let smUndoAnchor = null;
-
-    function smMarkAction(anchor) {
-      smUndoAnchor = anchor || null;
-      smPushChips();
-    }
-
-    let _smKeyHintUsed = false, _smChipHint = false;
-
-    function smPushChips() {
-      const f = document.getElementById('smFrame');
-      if (!f || !f.contentWindow) return;
-      if (!smEditing || !smUndoAnchor || !edStore) { smHideChips(); return; }
-      try {
-        f.contentWindow.postMessage(Object.assign({
-          __rtChips: 1,
-          canUndo: !!edStore.canUndo(),
-          canRedo: !!edStore.canRedo(),
-          hint: _smChipHint,
-        }, smUndoAnchor), '*');
-      } catch (_) {}
-      _smChipHint = false;   // once, then never again this session
-    }
-
-    /* ── Keeping the resume in step (Feature C) ───────────────────────────
-       Editing a field on the site detaches it: the site owns it from then on,
-       and later resume updates leave it alone. That is the right default —
-       without it, "your site follows your resume" would silently throw away
-       whatever they typed.
-
-       But most of the time someone fixing their headline on their website means
-       it everywhere. So once, quietly, beside the thing they just changed, we
-       offer to carry it back. Never a browser dialog, never blocking: this
-       lands in the middle of an ordinary edit in a flow whose whole premise is
-       not asking questions, so it has to be ignorable.
-
-       When it does not ask:
-         - the field is not one the resume can be edited through
-         - the resume already says this (nothing to carry)
-         - they have already declined this field twice — then never again
-         - they have already been asked about this field this session
-
-       A ten-second timeout is not a decline. Counting silence would take the
-       offer away from someone who was reading it. */
-    const SYNC_FIELDS = { name: 1, subtitle: 1, summary: 1 };
-    const _smSyncAsked = new Set();   // this session only
-    let _smSyncPending = null;
-
-    function smMaybeAskSync(elId) {
-      if (!wcDoc || !window.SiteFields || !window.SiteDocStore) return;
-      const el = SiteFields.findById(wcDoc, elId);
-      const field = el && el.props && el.props.field;
-      if (!field || !SYNC_FIELDS[field]) return;
-      if (_smSyncAsked.has(field)) return;
-      if (Number(el.props.syncNo || 0) >= 2) return;      // asked and declined twice
-
-      const value = String(el.props.text || '').trim();
-      if (!value) return;
-      const derived = String((SiteFields.deriveFields(smResumeText()) || {})[field] || '').trim();
-      if (!derived) return;                                // never found it; nothing to update
-      if (derived === value) return;                       // the resume already agrees
-
-      _smSyncAsked.add(field);
-      // The edit re-renders the frame, which throws away anything already drawn
-      // inside it. Queue the ask and let the new frame's "ready" deliver it —
-      // the same reason the undo chips are pushed that way.
-      _smSyncPending = { el: elId, field, previous: derived, next: value };
-      smPushSyncAsk();
-    }
-
-    const SYNC_LABEL = () => ({
-      name: _t('sm_sync_f_name', 'name'),
-      subtitle: _t('sm_sync_f_subtitle', 'headline'),
-      summary: _t('sm_sync_f_summary', 'summary'),
-    });
-
-    function smPushSyncAsk() {
-      const p = _smSyncPending;
-      const f = document.getElementById('smFrame');
-      if (!p || !f || !f.contentWindow) return;
-      try {
-        f.contentWindow.postMessage({
-          __rtSync: 1, el: p.el, field: p.field,
-          question: _t('sm_sync_q', 'You changed your {f} on your website. Update it on your saved resume too?')
-            .replace('{f}', SYNC_LABEL()[p.field] || p.field),
-          yes: _t('sm_sync_yes', 'Yes, update it'),
-          no: _t('sm_sync_no', 'No, just here'),
-        }, '*');
-      } catch (_) {}
-    }
-
-    async function smSyncAnswer(m) {
-      const p = _smSyncPending;
-      _smSyncPending = null;
-      if (!p || m.field !== p.field) return;
-
-      // Silence is not a decline — it does not count toward the two.
-      if (m.answer !== 'yes') {
-        if (m.answer === 'no') {
-          smMutate(d => {
-            const el = SiteFields.findById(d, p.el);
-            if (el && el.props) el.props.syncNo = Number(el.props.syncNo || 0) + 1;
-          }, 'sync-declined');
-        }
-        return;
-      }
-
-      try {
-        const r = await fetch('/api/resume-sync', {
-          method: 'POST',
-          headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
-          body: JSON.stringify({ field: p.field, previous: p.previous, next: p.next }),
-        });
-        const d = await r.json().catch(() => ({}));
-        if (r.ok && d.ok) {
-          // The resume now says what the site says, so the field can follow it
-          // again — leaving it detached would mean the next resume edit silently
-          // stopped reaching a field the user just asked to keep in step.
-          smMutate(doc => {
-            const el = SiteFields.findById(doc, p.el);
-            if (el && el.props) { delete el.props.detached; delete el.props.detachedAt; delete el.props.syncNo; }
-          }, 'sync-applied');
-          // The saved resume has changed underneath us. Re-read it, or the next
-          // save would push the old text back over the top of the edit we just
-          // made — and the field would read as out of sync again immediately.
-          try {
-            const rr = await fetch('/api/resumes', { headers: authHeaders() });
-            const rd = await rr.json().catch(() => ({}));
-            if (rd.resumes && rd.resumes.length) { wcResumes = rd.resumes; wcSiteText = ''; }
-          } catch (_) {}
-          showToast(d.coverLetter
-            ? _t('sm_sync_ok_both', 'Updated on your resume and cover letter.')
-            : _t('sm_sync_ok', 'Updated on your saved resume too.'), 3200);
-          return;
-        }
-        // Could not find the field with certainty. Say so and change nothing —
-        // a resume that quietly gains a stray line is far worse than a sync
-        // that occasionally cannot run.
-        smSyncRefused(p);
-      } catch (_) { smSyncRefused(p); }
-    }
-
-    function smSyncRefused(p) {
-      smMutate(d => {
-        const el = SiteFields.findById(d, p.el);
-        if (el && el.props) el.props.syncNo = 2;   // do not offer again for this field
-      }, 'sync-refused');
-      showToast(_t('sm_sync_fail',
-        'We couldn’t update your resume automatically — your website is updated, but your saved resume stayed the same.'), 6000);
-    }
-
-    /* Keyboard undo/redo. Ctrl+Z, Ctrl+Shift+Z and Ctrl+Y, driving the same
-       store as the chips — no second history.
-
-       Two documents listen: this one and the edit layer inside the iframe,
-       because keydown only fires where focus is and the iframe is most of the
-       screen. Whichever hears it, the result is identical.
-
-       While the user is typing, Ctrl+Z belongs to the browser: it should undo
-       their typing, not their last change to the site. */
-    function smKeyUndoRedo(ev) {
-      if (!smEditing || !edStore) return;
-      const p = document.getElementById('panel-website');
-      if (!p || !p.classList.contains('active')) return;
-      const t = document.activeElement;
-      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName || ''))) return;
-      const mod = ev.ctrlKey || ev.metaKey;
-      if (!mod) return;
-      const k = (ev.key || '').toLowerCase();
-      if (k === 'z' && !ev.shiftKey) { ev.preventDefault(); smDoUndo(true); }
-      else if ((k === 'z' && ev.shiftKey) || k === 'y') { ev.preventDefault(); smDoRedo(true); }
-    }
-    document.addEventListener('keydown', smKeyUndoRedo);
-
-    // One path for both the chips and the keyboard, so they cannot drift.
-    // Neither of these pushes the chips itself. Undoing re-renders the page,
-    // which replaces the iframe — a push here would land on the frame that is
-    // about to be thrown away, and the first-use hint would be consumed by a
-    // document nobody ever sees. The new frame's "ready" does the push.
-    function smDoUndo(viaKey) {
-      if (!edStore || !edStore.canUndo()) return false;
-      if (viaKey && !_smKeyHintUsed) { _smKeyHintUsed = true; _smChipHint = true; }
-      if (!smUndoAnchor) smUndoAnchor = { idx: 0 };   // keyboard-first: anchor somewhere visible
-      edStore.undo();
-      return true;
-    }
-    function smDoRedo(viaKey) {
-      if (!edStore || !edStore.canRedo()) return false;
-      if (viaKey && !_smKeyHintUsed) { _smKeyHintUsed = true; _smChipHint = true; }
-      edStore.redo();
-      return true;
-    }
-
-    function smHideChips() {
-      const f = document.getElementById('smFrame');
-      try { if (f && f.contentWindow) f.contentWindow.postMessage({ __rtChips: 1, hide: true }, '*'); } catch (_) {}
-    }
-
-    // One writer. Through the store when it exists (so undo covers it), on a
-    // clone otherwise.
-    function smMutate(fn, reason) {
-      let ret;
-      if (edStore) {
-        // The store's subscriber re-renders and queues the save, so callers
-        // never do either — that is what makes undo redraw like anything else.
-        edApply(d => { ret = fn(d); }, { reason: reason || 'edit' });
-        wcDoc = edStore.getDoc();
-      } else {
-        const d = JSON.parse(JSON.stringify(wcDoc)); ret = fn(d); wcDoc = d;
-        smRenderSite(); smQueueSave();
-      }
-      return ret;
-    }
-
-    function smPickPhotoInto(elId) {
-      const inp = document.createElement('input');
-      inp.type = 'file'; inp.accept = 'image/*';
-      inp.onchange = async () => {
-        const f = inp.files && inp.files[0];
-        if (!f) return;
-        try {
-          const url = await _tvUploadMedia(f, f.name || 'photo.jpg');
-          if (!url) throw new Error('no url');
-          smMutate(d => {
-            const el = SiteFields.findById(d, elId);
-            if (el) { el.props = el.props || {}; el.props.src = url; delete el.props.ph; }
-          }, 'photo');
-          smMarkAction({ el: elId });
-        } catch (_) { showToast(_t('sm_upload_err', "That photo didn't upload — try another.")); }
-      };
-      inp.click();
-    }
-
-    // A resume change re-syncs the site — but only the fields the user has not
-    // taken over. That is the whole point of the detach.
-    function smSyncFromResume() {
-      if (!window.SiteFields || !wcDoc) return [];
-      let written = [];
-      smMutate(d => { written = SiteFields.syncFromResume(d, smResumeText()); }, 'resume-sync');
-      return written;
-    }
-
-    /* No website yet: the picker, alone. Choosing one builds the site and
-       drops them into it full-screen with everything else collapsed. */
-    function smShowPicker() {
-      smShow(false);
-      document.body.classList.add('wb-picker');
-      const shell = document.getElementById('cvShell');
-      if (shell) shell.style.display = '';
-      cvClosePanel();
-      cvPanel('templates');
-      wcLoadTemplates();
-    }
-
-    // Chosen a template: build the site FROM it, then straight into it. The
-    // template id has to go through, or autogen builds the default and the
-    // choice they just made is silently ignored.
-    async function smPickerChose(templateId) {
+    // "Done Editing" — save what is open and go back to the Back Office, which
+    // is where every site is listed. It used to drop into the full-screen view
+    // that no longer exists.
+    async function wcDoneEditing() {
+      if (edStore) wcDoc = edStore.getDoc();
+      await wcFlushSave();
       document.body.classList.remove('wb-picker');
-      cvClosePanel();
       const shell = document.getElementById('cvShell');
       if (shell) shell.style.display = 'none';
-      const fresh = smPickerFresh; smPickerFresh = false;
-      await smBoot({ templateId, fresh });
-    }
-
-    // The one way out of full-screen mode, since it covers the app's own
-    // navigation. Quiet, but always present.
-    function smExit() { smShow(false); showTab('tailor'); }
-
-    // "Customize My Site" opens the guided strip. It is now the only way to
-    // change anything beyond clicking the page itself.
-    function smCustomize() { smStripOpen(0); }
-
-    // The advanced editor, for anyone who wants it. Not on the 3-minute path.
-    /* The advanced editor is gone as a DESTINATION. Nothing routes here any
-       more: a drag-and-drop canvas with rails, an inspector and a toolbar was
-       a second, harder product bolted onto a flow whose premise is that you
-       never feel like you built anything.
-
-       Its document store is NOT gone, and cannot be — `edStore`/`edApply` are
-       what simple mode's inline edits, vibes, guided strip and undo all run
-       through. What was removed is the surface, not the engine. */
-
-    // "Done Editing" — back to what visitors see, which is always the default.
-    async function smDoneEditing() {
-      if (edStore) wcDoc = edStore.getDoc();
-      await smFlushSave();
-      smShow(true);
-      smPanel('smBusy');
-      const ok = await smRenderSite();
-      smUpdateNote();
-      smPanel(ok ? '' : '');
+      showToast(_t('sm_edit_saved', 'Saved.'));
+      showTab('backoffice');
     }
 
     // Which site to open, set by the Back Office just before it switches tabs.
@@ -8198,7 +6800,7 @@ Aaliyah Washington`
       // dark chrome, collapsible rail, templates, canvas — because that is the
       // thing people actually build their site in. It used to open a simplified
       // view instead, and the builder sat behind it, unreachable.
-      if (wcSite && wcSite.subdomain) { wcSiteText = wcSiteText || ''; smPublished = !!wcSite.published; }
+      if (wcSite && wcSite.subdomain) { wcSiteText = wcSiteText || ''; wcPublished = !!wcSite.published; }
 
       // Nobody should meet an empty canvas. If they have no site yet, one is
       // generated from their most recent resume first, and they change the
@@ -8215,7 +6817,7 @@ Aaliyah Washington`
 
       if (!wcDoc) await wcEnsureSite(openSub);
       wcEnterEditor();
-      if (openRename) { smChangeAddress(); return; }
+      if (openRename) { wcChangeAddress(); return; }
     }
 
     /**
@@ -8280,8 +6882,8 @@ Aaliyah Washington`
         if (!r.ok || !data) return false;
         wcSite = { subdomain: data.subdomain, name: data.name, published: data.published ? 1 : 0 };
         wcSiteText = data.text || wcSiteText;
-        smPublished = !!data.published;
-        smSiteUrl = data.url || '';
+        wcPublished = !!data.published;
+        wcSiteUrl = data.url || '';
         if (data.config && Array.isArray(data.config.pages)) { wcDoc = data.config; wcTplId = data.config.templateId || null; }
         const addr = document.getElementById('wcAddress');
         if (addr) addr.value = data.subdomain || '';
@@ -8546,7 +7148,7 @@ Aaliyah Washington`
 
         // ── everything after this point used to share the same catch ───────
         stage = 'fillFromResume';
-        const resumeText = smResumeText();
+        const resumeText = wcResumeText();
         console.log('[USE] Resume text length:', (resumeText || '').length);
         // Checked, not assumed. A browser running this HTML against an older
         // cached site-fields.js has no fillFromResume, and calling it threw —
@@ -8942,7 +7544,16 @@ Aaliyah Washington`
       edStore = SiteDocStore.createStore(doc);
       edPageId = (doc.pages && doc.pages[0] && doc.pages[0].id) || null;
       edSel = null;
-      edStore.subscribe(() => { edSyncButtons(); edRenderCanvas(); edRenderOverlay(); edRenderInspector(); });
+      // Autosave lives here now. It used to be wired inside simple mode's boot,
+      // which meant that once the rail editor became the only way in, nothing
+      // subscribed the save path at all — edits survived only if the user
+      // pressed Publish. `wcDoc` is kept in step because the save body, the
+      // preview and the publish path all read it rather than the store.
+      edStore.subscribe(() => {
+        wcDoc = edStore.getDoc();
+        edSyncButtons(); edRenderCanvas(); edRenderOverlay(); edRenderInspector();
+        wcQueueSave();
+      });
       edSyncPageSelect();
       edRenderPalette();
       edSyncButtons();
