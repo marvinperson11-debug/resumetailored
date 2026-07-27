@@ -616,6 +616,27 @@ const server = app.listen(0, async () => {
     /* THE BUILDER IS THE EDITOR AGAIN. "Personal Website" opened a simplified
        view with the full builder — dark chrome, collapsible rail, templates,
        canvas — sitting behind it, unreachable. It routes straight there now. */
+    /* THE PICKER IS THE FRONT DOOR. Personal Website dropped people straight
+       onto a canvas, so the twelve templates were something you had to go
+       looking for. Every entry point now starts at the gallery. */
+    check('Personal Website opens the picker, not the canvas',
+      /if \(!openSub && !openRename\) \{ wcOpenPicker\(\); return; \}/.test(appJs));
+    check('the gallery hides every editor part and the app sidebar',
+      ['cv-top','cv-rail','cv-canvasbox','cv-inspector','cv-bottom']
+        .every(c => new RegExp('body\\.wb-picker \\.' + c + '[,{ ]').test(appJs))
+      && /body\.wb-picker \.sidebar/.test(appJs));
+    check('choosing a template from the gallery builds the site from it',
+      /if \(document\.body\.classList\.contains\('wb-picker'\}?\)\) \{\n *const made = await wcEnsureSite\(null, id\);/.test(appJs)
+      || /const made = await wcEnsureSite\(null, id\);/.test(appJs));
+    check('someone with a site can skip the gallery',
+      /function wcEditCurrentSite/.test(appJs) && /id="cvEditMine"/.test(appJs));
+
+    /* The template DOCUMENT shares the preview's rate-limit budget. It did not,
+       so opening the editor and tapping Use a few times returned 429 — which
+       the client could only report as "Could not load that template." */
+    check('the template document is exempt from the shared limiter',
+      /site-templates\\\/\[\^\/\]\+\(\\\/preview\)\?/.test(require('fs').readFileSync(require('path').join(__dirname,'..','server.js'),'utf8')));
+
     check('Personal Website opens the builder', /wcSetView\('edit'\)/.test(appJs) && /function wcEnsureSite/.test(appJs));
     check('and nothing shows the simplified view on the way',
       !/await smBoot\(openSub/.test(appJs));

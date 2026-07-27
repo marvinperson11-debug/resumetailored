@@ -679,6 +679,11 @@
     .cv-inspector { width: 230px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 14px; color: #e5e7eb; }
     .cv-inspector .text-input, .cv-inspector input, .cv-inspector select, .cv-inspector textarea { background: #34353a; border: 1px solid #45464c; color: #f3f4f6; }
     .cv-inspector .bo-act { background: #34353a; border-color: #45464c; color: #e5e7eb; }
+    .cv-editmine { display: none; width: 100%; align-items: center; justify-content: center; gap: 8px;
+      font: inherit; font-size: 14px; font-weight: 800; color: #fff; cursor: pointer;
+      background: linear-gradient(90deg,#4338ca,#6366F1); border: none; border-radius: 12px;
+      padding: 13px 16px; margin-bottom: 12px; }
+    body.wb-picker .cv-editmine:not([hidden]) { display: flex; }
     .cv-bottom { height: 44px; flex-shrink: 0; background: #1f2023; display: flex; align-items: center; gap: 14px; padding: 0 14px; color: #9ca3af; font-size: 12px; }
 
     /* ── The builder on a phone ────────────────────────────────────────────
@@ -1560,6 +1565,13 @@
             <div class="cv-panel" id="cvPanel" hidden>
               <!-- Templates -->
               <div class="cv-pane" data-pane="templates">
+                <!-- Shown only in the gallery, and only when there is a site to
+                     go back to. Every tile below builds something NEW, so
+                     without this the gallery would stand between someone and
+                     the site they already have. -->
+                <button type="button" class="cv-editmine" id="cvEditMine" hidden onclick="wcEditCurrentSite()">
+                  <span aria-hidden="true">✏️</span><span data-i18n="wc_edit_mine">Edit my current site</span>
+                </button>
                 <div class="cv-search">
                   <input id="cvTplSearch" placeholder="Describe your ideal site" oninput="wcRenderTplGrid()"/>
                 </div>
@@ -8157,8 +8169,41 @@ Aaliyah Washington`
       // Nobody should meet an empty canvas. If they have no site yet, one is
       // generated from their most recent resume first, and they change the
       // template from the Templates panel like anything else.
-      if (!wcDoc) await wcEnsureSite(openSub);
+      // THE PICKER IS THE FRONT DOOR. Whichever way someone arrives — the nav,
+      // the dashboard, the Tailor tab — they choose a design first. Dropping
+      // them straight onto a canvas meant the twelve templates were something
+      // you had to go looking for, in a product whose whole promise is that you
+      // pick a look and it is done.
+      //
+      // Back Office "Edit this site" is the one exception: they named a site,
+      // so asking them to choose again would ignore what they pressed.
+      if (!openSub && !openRename) { wcOpenPicker(); return; }
 
+      if (!wcDoc) await wcEnsureSite(openSub);
+      wcEnterEditor();
+      if (openRename) { smChangeAddress(); return; }
+    }
+
+    /**
+     * Full-screen template gallery: the grid and nothing else. `wb-picker`
+     * hides the app sidebar and every part of the editor — top bar, rail,
+     * canvas, inspector, zoom bar — so this reads as a choice, not as an editor
+     * you have to understand before you can make one.
+     */
+    function wcOpenPicker() {
+      document.body.classList.add('wb-picker');
+      const shell = document.getElementById('cvShell');
+      if (shell) shell.style.display = '';
+      cvPanel('templates');
+      wcLoadTemplates();
+      // Only offered when there is actually a site behind it.
+      const mine = document.getElementById('cvEditMine');
+      if (mine) mine.hidden = !(wcSite && wcSite.subdomain);
+    }
+
+    /** Leave the gallery for the editor, with whatever is now in `wcDoc`. */
+    function wcEnterEditor() {
+      document.body.classList.remove('wb-picker');
       const shell = document.getElementById('cvShell');
       if (shell) shell.style.display = '';
       wcLoadTemplates();
@@ -8166,9 +8211,18 @@ Aaliyah Washington`
       wcLoadMediaUsage();
       wcLoadSiteExtras();
       wcSetView('edit');
-      // Straight to the template gallery on first run — with no site of their
-      // own to look at, a blank rail is not a starting point.
-      if (openRename) { smChangeAddress(); return; }
+      cvClosePanel();
+    }
+
+    /**
+     * "Edit my current site" — for someone who came to change what they have
+     * rather than start again. Without it the gallery would be a wall between a
+     * user and their own site, since every tile builds something new.
+     */
+    async function wcEditCurrentSite() {
+      if (!wcDoc) await wcEnsureSite(null);
+      if (!wcDoc) return;
+      wcEnterEditor();
     }
 
     /**
@@ -8177,12 +8231,12 @@ Aaliyah Washington`
      * saved resume yet), so the caller can say so rather than showing an empty
      * canvas that looks broken.
      */
-    async function wcEnsureSite(openSub) {
+    async function wcEnsureSite(openSub, templateId) {
       try {
         const r = await fetch('/api/personal-site/autogen', {
           method: 'POST',
           headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
-          body: JSON.stringify({ subdomain: openSub || undefined }),
+          body: JSON.stringify({ subdomain: openSub || undefined, templateId: templateId || undefined }),
         });
         const data = await r.json().catch(() => null);
         if (r.status === 409 && data && data.error === 'no_resume') {
@@ -8406,6 +8460,15 @@ Aaliyah Washington`
         if (window.SiteFields) SiteFields.fillFromResume(d.doc, smResumeText());
         wcDoc = d.doc; wcTplId = id;
         wcRenderTplGrid();
+
+        // Chosen from the gallery: this is how the site comes into existence.
+        // Build it server-side from that template, then open the editor on it.
+        if (document.body.classList.contains('wb-picker')) {
+          const made = await wcEnsureSite(null, id);
+          if (!made) return;
+          wcEnterEditor();
+          return;
+        }
         // First run: this is how the site comes into existence. Build it from
         // the chosen template and drop them straight into it.
         if (document.body.classList.contains('wb-picker')) { await smPickerChose(id); return; }
