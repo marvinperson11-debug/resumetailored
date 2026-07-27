@@ -13,18 +13,31 @@
   <link rel="canonical" href="https://resumetailored.com/site/sample"/>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
   <style>
-    :root{--p:#6366F1;--a:#8B5CF6;--ink:#0f172a;--paper:#ffffff;--muted:#64748b;}
+    :root{--p:#6366F1;--a:#8B5CF6;--ink:#0f172a;--paper:#ffffff;--muted:#64748b;
+      --fh:'Inter',system-ui,-apple-system,sans-serif;--fb:'Inter',system-ui,-apple-system,sans-serif;}
     *{box-sizing:border-box;margin:0;padding:0;}
     html{scroll-behavior:smooth;}
-    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
+    body{font-family:var(--fb);background:var(--paper);color:var(--ink);line-height:1.6;}
     .sd-sec{position:relative;width:100%;background-repeat:no-repeat;scroll-margin-top:12px;}
+    /* Entrance animations. Subtle on purpose: this is a resume site, and an
+       entrance that draws attention to itself works against the person whose
+       name is on it. The starting state is only applied once the script has
+       run — otherwise a visitor with JavaScript off, or a crawler, would be
+       served a page whose content is permanently invisible. */
+    html.sd-anim-on .sd-anim{opacity:0;transition:opacity .55s ease,transform .55s cubic-bezier(.22,.61,.36,1);}
+    html.sd-anim-on .sd-anim[data-anim="up"]{transform:translateY(22px);}
+    html.sd-anim-on .sd-anim[data-anim="scale"]{transform:scale(.97);}
+    html.sd-anim-on .sd-anim.is-in{opacity:1;transform:none;}
+    @media (prefers-reduced-motion: reduce){
+      html.sd-anim-on .sd-anim{opacity:1;transform:none;transition:none;}
+    }
     .sd-sec--photo .sd-h1,.sd-sec--photo .sd-h2,.sd-sec--photo .sd-p{text-shadow:0 1px 14px rgba(0,0,0,.5);}
     .sd-inner{position:relative;max-width:1200px;margin:0 auto;}
     .sd-el{position:absolute;}
-    .sd-h1{font-size:48px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
-    .sd-h2{font-size:24px;font-weight:700;line-height:1.25;}
+    .sd-h1{font-family:var(--fh);font-size:48px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
+    .sd-h2{font-family:var(--fh);font-size:24px;font-weight:700;line-height:1.25;}
     .sd-p{font-size:16px;color:var(--muted);}
     .sd-img{width:100%;height:100%;display:block;}
     .sd-ibox{width:100%;height:100%;overflow:hidden;position:relative;margin:0;}
@@ -51,8 +64,18 @@
     .sd-video{background:#000;}
     .sd-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 26px;border-radius:999px;background:linear-gradient(135deg,var(--p),var(--a));color:#fff;font-weight:700;text-decoration:none;font-size:15px;}
     .sd-btn--ghost{background:none;border:2px solid currentColor;color:var(--p);}
-    .sd-socs{display:flex;gap:10px;}
-    .sd-soc{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--p);color:#fff;font-size:12px;font-weight:800;text-decoration:none;}
+    .sd-socs{display:flex;gap:10px;flex-wrap:wrap;}
+    .sd-soc{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--p);color:#fff;font-size:12px;font-weight:800;text-decoration:none;transition:transform .15s ease,filter .15s ease;}
+    .sd-soc:hover{transform:translateY(-2px);filter:brightness(1.1);}
+    .sd-soc svg{display:block;}
+    /* The "Find me on X" form: the same links, read as sentences instead of a
+       row of badges. Useful when there is one profile that matters. */
+    .sd-soclinks{display:flex;flex-direction:column;gap:8px;align-items:flex-start;}
+    .sd-soclink{display:inline-flex;align-items:center;gap:9px;padding:9px 16px;border-radius:999px;border:1.5px solid var(--p);color:var(--p);font-weight:700;font-size:14.5px;text-decoration:none;}
+    .sd-soclink:hover{background:var(--p);color:#fff;}
+    /* A map is a fixed-height frame, not content that grows — the element's own
+       drawn height is what the user chose. */
+    .sd-map{width:100%;height:100%;min-height:180px;border:0;border-radius:14px;display:block;background:rgba(127,127,127,.1);}
     .sd-divider{border:none;border-top:1px solid rgba(127,127,127,.35);width:100%;}
     /* Boxes are almost always card backgrounds sat behind text. Without a
        shadow a near-white card on a near-white section is invisible. */
@@ -102,12 +125,19 @@
   <section class="sd-sec" id="s1" style="background-image:linear-gradient(135deg,#030712,#1e1b4b);"><div class="sd-inner" style="height:520px;"><div class="sd-el" style="left:6.6667%;top:30px;width:75.0000%;min-height:40px;"><nav class="sd-nav"><a class="sd-navlink is-on" href="https://resumetailored.com/site/sample">Home</a></nav></div><div class="sd-el" style="left:6.6667%;top:160px;width:58.3333%;min-height:120px;"><h1 class="sd-h1" style="text-align:left;color:#ffffff;">Jordan Rivera</h1></div><div class="sd-el" style="left:53.3333%;top:160px;width:40.0000%;min-height:260px;"><div class="sd-elabel">About Me</div><video class="sd-video" controls preload="metadata"><source src="https://example.com/v.mp4"/></video></div><div class="sd-el" style="left:6.6667%;top:300px;width:43.3333%;min-height:70px;"><div class="sd-p" style="text-align:left;color:#cbd5e1;">Product manager based in NYC.</div></div></div></section><section class="sd-sec" id="s2" style="background-color:#ffffff;"><div class="sd-inner" style="height:460px;"><div class="sd-el" style="left:6.6667%;top:40px;width:86.6667%;min-height:380px;"><div class="sd-resume"><div class="sg-resume"><div class="sg-rhead"><div class="sg-rname">Jordan Rivera</div><div class="sg-rcontact"><span>jordan@example.com</span><span class="sg-dot">·</span><span>San Francisco, CA</span><span class="sg-dot">·</span><span>linkedin.com/in/jordanrivera</span></div></div><section class="sg-sec"><h2 class="sg-h">SUMMARY</h2><p class="r-p">Senior product manager with 8 years shipping data products.</p></section><section class="sg-sec"><h2 class="sg-h">EXPERIENCE</h2><div class="r-co" style="color:#8B5CF6">Senior PM, DataCorp | 2020–Present</div><ul class="r-bul"><li>Led migration reducing infra costs 30%</li><li>Grew activation 22% via lifecycle redesign</li></ul></section><section class="sg-sec"><h2 class="sg-h">SKILLS</h2><p class="r-p">Product Strategy, SQL, Roadmapping, A/B Testing</p></section><section class="sg-sec"><h2 class="sg-h">EDUCATION</h2><p class="r-p">B.S. Computer Science, UC Berkeley</p></section></div></div></div></div></section>
   
   <script>
-    var SITE_I18N={"en":{"lang_toggle":"中文","c_name":"Your name","c_email":"Your email","c_msg":"Message","c_send":"Send","c_send_pdf":"Send me the resume","c_thanks":"Thanks — your message was sent.","c_thanks_pdf":"Thanks! I'll be in touch with my resume shortly.","c_err":"Something went wrong — please try again.","contact_h":"Get in touch","request_h":"Request my resume","add_video":"Add a video","add_audio":"Add audio","cover_dl":"Read my cover letter","voice_intro":"▶ Play my introduction"},"zh":{"lang_toggle":"EN","c_name":"你的姓名","c_email":"你的邮箱","c_msg":"留言","c_send":"发送","c_send_pdf":"把简历发给我","c_thanks":"谢谢——你的留言已发送。","c_thanks_pdf":"谢谢！我会尽快把简历发给你。","c_err":"出了点问题——请重试。","contact_h":"联系我","request_h":"索取我的简历","add_video":"添加视频","add_audio":"添加音频","cover_dl":"下载我的求职信","voice_intro":"▶ 播放我的自我介绍"}};
+    var SITE_I18N={"en":{"lang_toggle":"中文","c_name":"Your name","c_email":"Your email","c_msg":"Message","c_send":"Send","c_send_pdf":"Send me the resume","c_thanks":"Thanks — your message was sent.","c_thanks_pdf":"Thanks! I'll be in touch with my resume shortly.","c_err":"Something went wrong — please try again.","contact_h":"Get in touch","request_h":"Request my resume","add_video":"Add a video","add_audio":"Add audio","add_address":"Add an address","add_links":"Add your links","find_me":"Find me on {x}","cover_dl":"Read my cover letter","voice_intro":"▶ Play my introduction"},"zh":{"lang_toggle":"EN","c_name":"你的姓名","c_email":"你的邮箱","c_msg":"留言","c_send":"发送","c_send_pdf":"把简历发给我","c_thanks":"谢谢——你的留言已发送。","c_thanks_pdf":"谢谢！我会尽快把简历发给你。","c_err":"出了点问题——请重试。","contact_h":"联系我","request_h":"索取我的简历","add_video":"添加视频","add_audio":"添加音频","add_address":"添加地址","add_links":"添加你的链接","find_me":"在 {x} 上找到我","cover_dl":"下载我的求职信","voice_intro":"▶ 播放我的自我介绍"}};
     function _sgLead(e,f){
       e.preventDefault();
       var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;
       var fd=new FormData(f), msg=f.querySelector('.sg-lead-msg');
-      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||''};
+      /* Whatever fields the owner configured. name/email/message keep their own
+         columns because that is what the leads table and the notification email
+         were built around; everything else travels together in "extra" so a
+         custom field is never silently dropped on the way to the inbox.
+         NOTE: no backticks in here -- this comment is inside a template
+         literal, and one would end the string. */
+      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||'',extra:{}};
+      fd.forEach(function(v,k){ if(k!=='name'&&k!=='email'&&k!=='message'&&k!=='website'&&String(v).trim()) body.extra[k]=String(v).slice(0,500); });
       fetch('/api/site-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
         .then(function(r){return r.json().catch(function(){return {};});})
         .then(function(){
@@ -118,6 +148,24 @@
         .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
       return false;
     }
+    /* Scroll animations. The starting state lives behind the html.sd-anim-on
+       class, set here -- so a visitor without JavaScript, or a crawler, gets the
+       page fully visible rather than a document of invisible sections. No
+       IntersectionObserver means the class is never added and everything shows.
+       (No backticks: this comment is inside a template literal.) */
+    (function(){
+      var els=document.querySelectorAll('.sd-anim');
+      if(!els.length||!('IntersectionObserver' in window))return;
+      if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+      document.documentElement.className+=' sd-anim-on';
+      var io=new IntersectionObserver(function(entries){
+        entries.forEach(function(en){ if(en.isIntersecting){ en.target.className+=' is-in'; io.unobserve(en.target); } });
+      },{rootMargin:'0px 0px -8% 0px',threshold:0.06});
+      els.forEach(function(el){ io.observe(el); });
+      // Anything already on screen at load reveals immediately rather than
+      // waiting for a scroll that may never come on a short page.
+      setTimeout(function(){ els.forEach(function(el){ var r=el.getBoundingClientRect(); if(r.top<innerHeight&&r.bottom>0){ el.className+=' is-in'; io.unobserve(el); } }); },60);
+    })();
   </script>
 </body>
 </html>
