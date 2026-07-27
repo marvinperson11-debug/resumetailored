@@ -728,7 +728,65 @@ const server = app.listen(0, async () => {
     check('handing over the pointer is taken back if the page never answers',
       /_edTypingWatchdog = setTimeout\(/.test(appJs) && /wc_ed_type_slow/.test(appJs));
 
+    /* ── THE GEAR ───────────────────────────────────────────────────────
+       The property controls already existed, in a docked panel a long way from
+       the thing being changed. The gear brings the SAME panel to the element —
+       the same `#wcEdInspector`, floated — because two panels would mean two
+       implementations of every control and one of them going stale, which is
+       exactly how the last inspector ended up hidden for months. */
+    check('the selected element carries a gear', /class="ed-gear"/.test(appJs));
+    check('and it opens the panel that already exists, floated',
+      /box\.classList\.toggle\('is-float', _edGearOpen\)/.test(appJs)
+      && /\.cv-inspector\.is-float \{ position: fixed;/.test(appJs));
+    check('pressing it is not pressing the box',
+      /g\.addEventListener\('pointerdown', \(ev\) => \{ ev\.stopPropagation\(\); ev\.preventDefault\(\); \}\)/.test(appJs));
+    check('the panel is clamped into the viewport, not just anchored',
+      /left = Math\.max\(M, Math\.min\(left, innerWidth - w - M\)\)/.test(appJs));
+    check('and follows the canvas when it scrolls or resizes',
+      /document\.addEventListener\('scroll', edPositionInspector, true\)/.test(appJs));
+    check('selecting something else does not leave it pointing at nothing',
+      /if \(edSel !== id\) _edGearOpen = false;/.test(appJs));
+
+    /* OVERLAY CHROME AT A CONSTANT SIZE ON SCREEN. The overlay is inside the
+       scaled wrap, so a "28px" gear was measured at 7x5 physical pixels on a
+       390px viewport — present, correct, unhittable. Same family as every other
+       bug here: true of the CSS, false of the glass. */
+    check('the canvas scale is published to the overlay',
+      /ovEl\.style\.setProperty\('--edk', String\(k \|\| 1\)\)/.test(appJs));
+    check('and the chrome divides it back out',
+      /\.ed-chrome \{[^}]*transform: scale\(calc\(1 \/ var\(--edk, 1\)\)\)/.test(appJs));
+    check('including the resize handle',
+      /\.ed-h \{[^}]*transform: scale\(calc\(1 \/ var\(--edk, 1\)\)\)/.test(appJs));
+    check('the tag, the hint and the gear share one row so they cannot collide',
+      /<div class="ed-chrome">/.test(appJs));
+
+    /* Typography, duplicate and layer order — every one of these was already a
+       property the renderer could honour or a field on the element; the reason
+       you could not change the size of your own name is that nothing offered. */
+    check('text elements get size, weight, spacing and italic',
+      /edSetNum\('size'/.test(appJs) && /edSetProp\('weight'/.test(appJs)
+      && /edSetNum\('lh'/.test(appJs) && /edSetNum\('ls'/.test(appJs)
+      && /edSetProp\('italic'/.test(appJs));
+    /* Blank is not zero: an empty line-height box means "leave it to the
+       template", and storing 0 would flatten the text instead. */
+    check('clearing a number restores the template default rather than storing 0',
+      /if \(n === null \|\| !Number\.isFinite\(n\)\) delete h\.el\.props\[key\]/.test(appJs));
+    check('every element gets duplicate and layer order',
+      /function edDuplicateSel\(\)/.test(appJs) && /function edNudgeZ\(delta\)/.test(appJs));
+    check('a duplicate is offset and selected, not dropped invisibly on top',
+      /\(Number\(copy\.x\) \|\| 0\) \+ 20/.test(appJs) && /if \(made\) edSelect\(made\)/.test(appJs));
+
     const srvJs = require('fs').readFileSync(require('path').join(__dirname, '..', 'server.js'), 'utf8');
+    /* Typography reaches a `style` attribute on a PUBLIC page, so it is a
+       whitelist with clamps — there is no case where echoing whatever was
+       stored would be the right behaviour. */
+    check('the renderer whitelists font weight rather than echoing it',
+      /\['300', '400', '500', '600', '700', '800', '900'\]\.includes\(String\(p\.weight\)\)/.test(srvJs));
+    check('and clamps line height and letter spacing',
+      /Number\(p\.lh\) >= 0\.8 && Number\(p\.lh\) <= 3/.test(srvJs)
+      && /Number\(p\.ls\) >= -5 && Number\(p\.ls\) <= 20/.test(srvJs));
+    check('body text honours an explicit size too',
+      /case 'paragraph':[\s\S]{0,300}?p\.size \? `font-size:\$\{_sdPx\(p\.size, 16\)\}px;`/.test(srvJs));
     check('the page can be told to start editing by element name',
       /function beginEditById\(id\)\{/.test(srvJs)
       && /m\.__rtEdit === 1 && m\.action === 'beginEdit'/.test(srvJs));
