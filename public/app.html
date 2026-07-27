@@ -9310,8 +9310,14 @@ Aaliyah Washington`
     let edDevice = 'desktop';
     function edSetDevice(mode) {
       edDevice = mode === 'mobile' ? 'mobile' : 'desktop';
-      document.getElementById('wcEdDeskBtn').classList.toggle('wc-vtab-active', edDevice === 'desktop');
-      document.getElementById('wcEdMobBtn').classList.toggle('wc-vtab-active', edDevice === 'mobile');
+      // `is-on` is the class .cv-segbtn is actually styled by. This toggled
+      // `wc-vtab-active` — copied from the template gallery's device tabs,
+      // which are a different control with different CSS — so the highlight
+      // never moved off Desktop and the buttons read as dead, even though the
+      // canvas was switching underneath. Measuring `edDevice` said it worked;
+      // only looking at the button showed it did not.
+      document.getElementById('wcEdDeskBtn').classList.toggle('is-on', edDevice === 'desktop');
+      document.getElementById('wcEdMobBtn').classList.toggle('is-on', edDevice === 'mobile');
       const ov = document.getElementById('wcEdOverlay');
       if (ov) ov.style.display = edDevice === 'mobile' ? 'none' : 'block'; // no dragging in mobile view
       edFitStage();
