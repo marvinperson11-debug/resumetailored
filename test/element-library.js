@@ -53,15 +53,17 @@ const doc = {
   }],
 };
 
-const html = _renderPersonalSite(
+const render = (cfg, opts) => _renderPersonalSite(
   {
     subdomain: 'elib', name: 'Alex Morgan', text: RESUME, accent: '8b5cf6',
-    primary_hex: '4a1042', hide_contact: 0, config: JSON.stringify(doc),
+    primary_hex: '4a1042', hide_contact: 0, config: JSON.stringify(cfg),
   },
   'https://resumetailored.com',
-  { indexable: false, footer: '' },
+  Object.assign({ indexable: false, footer: '' }, opts || {}),
 );
+const html = render(doc);
 const body = (html.match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '';
+const bodyEd = ((render(doc, { editable: true }).match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '');
 
 // Count element WRAPPERS precisely. Note `class="sd-el"` is a prefix of
 // `class="sd-elabel"`, so a naive /class="sd-el/ match silently counts labels as
@@ -69,13 +71,35 @@ const body = (html.match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '';
 // Anchor on the quote/space that terminates the class name.
 const wrapperRe = /<div class="sd-el(?:"|\s)/g;
 const wrapperCount = (body.match(wrapperRe) || []).length;
-// Every palette entry draws something EXCEPT an image slot with no photo yet.
-// Counted rather than hardcoded, so a new palette entry cannot slip past this.
+/* THE RULE: whoever drops an element sees something. For the OWNER that is
+   unconditional — an element that renders nothing on the canvas reads as a
+   feature that failed. For a VISITOR it is the opposite: an element the owner
+   has not filled in yet (a photo slot with no photo, a map with no address,
+   social buttons with no handles) must be invisible, because publishing
+   "Add an address" on your own portfolio is worse than publishing nothing. */
+/* The one exception on the owner's side is an empty PHOTO slot, which was
+   deliberately made invisible everywhere: keeping it for the owner was tried
+   and reverted, because editing is permanent now and the ellipse came back on
+   every visit. Photos are added through the panel, not by clicking a ghost. */
 const photoSlots = specs.filter((s) => (s.type === 'image' || s.type === 'imagebox') && !(s.props && s.props.src));
-ok('one wrapper rendered per palette entry (bar empty photo slots)',
-  wrapperCount === specs.length - photoSlots.length,
-  `${wrapperCount} wrappers for ${specs.length} entries minus ${photoSlots.length} empty photo slots`);
-ok('and the exception really is only the photo slots', photoSlots.length === 2, String(photoSlots.length));
+const wrapperCountEd = (bodyEd.match(wrapperRe) || []).length;
+ok('every palette entry draws something for the OWNER (bar empty photo slots)',
+  wrapperCountEd === specs.length - photoSlots.length,
+  `${wrapperCountEd} wrappers for ${specs.length} entries minus ${photoSlots.length} photo slots`);
+ok('and that exception really is only the photo slots', photoSlots.length === 2, String(photoSlots.length));
+
+const unfilled = specs.filter((s) => {
+  const p = s.props || {};
+  if (s.type === 'image' || s.type === 'imagebox') return !p.src;
+  if (s.type === 'map') return !p.address;
+  if (s.type === 'social') return !(p.items || []).some((i) => i && i.url);
+  return false;
+});
+ok('and nothing half-finished reaches a VISITOR',
+  wrapperCount === specs.length - unfilled.length,
+  `${wrapperCount} wrappers for ${specs.length} entries minus ${unfilled.length} unfilled`);
+ok('the unfilled ones are exactly the slots with nothing in them yet',
+  unfilled.length === 5, String(unfilled.length));
 
 // Render each element on its own so an empty render can be attributed exactly.
 specs.forEach((s) => {
@@ -87,10 +111,9 @@ specs.forEach((s) => {
         els: [{ id: 'only', type: s.type, x: 40, y: 40, w: s.w, h: s.h, props: JSON.parse(JSON.stringify(s.props || {})) }] }],
     }],
   };
-  const h1 = _renderPersonalSite(
-    { subdomain: 'elib', name: 'Alex Morgan', text: RESUME, accent: '8b5cf6', primary_hex: '4a1042', hide_contact: 0, config: JSON.stringify(one) },
-    'https://resumetailored.com', { indexable: false, footer: '' },
-  );
+  // Editable: this asks "would the owner see it", which is the question that
+  // matters when they have just dragged it onto the canvas.
+  const h1 = render(one, { editable: true });
   const b1 = (h1.match(/<body[^>]*>([\s\S]*)<\/body>/) || [])[1] || '';
   const rendered = (b1.match(wrapperRe) || []).length === 1;
   // image/imagebox are the deliberate exception: with no photo yet they render

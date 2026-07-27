@@ -72,16 +72,23 @@ const server = app.listen(0, async () => {
         return /^(http:\/\/127\.0\.0\.1|data:|blob:)/.test(u) ? r.continue() : r.abort();
       });
       const page = await ctx.newPage();
-      page.on('pageerror', e => errs.push(width + 'px: ' + e.message));
+      page.on('pageerror', e => errs.push(width + 'px: ' + e.message + ' :: ' + String(e.stack || '').split('\n').slice(0, 3).join(' | ')));
       page.on('requestfailed', r => net.push(width + 'px FAILED ' + r.url() + ' — ' + (r.failure() || {}).errorText));
       page.on('response', r => { if (r.status() >= 400) net.push(width + 'px ' + r.status() + ' ' + r.url()); });
       page.on('request', r => { if (r.method() === 'POST' && r.url().includes('/api/personal-site')) posts.push({ width, url: r.url() }); });
 
       const who = USERS[width];
+      /* Top frame only, and guarded. addInitScript runs in EVERY frame — once a
+         map element exists the page contains a cross-origin maps.google.com
+         iframe where storage is denied, and seeding the session there threw a
+         SecurityError that looked like a product bug. */
       await page.addInitScript((u) => {
-        localStorage.setItem('rt_token', u.token);
-        localStorage.setItem('rt_email', u.email);
-        localStorage.setItem('rt_username', u.name);
+        if (window.top !== window.self) return;
+        try {
+          localStorage.setItem('rt_token', u.token);
+          localStorage.setItem('rt_email', u.email);
+          localStorage.setItem('rt_username', u.name);
+        } catch (_) {}
       }, who);
       await page.goto(B + '/app.html', { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => typeof window.showTab === 'function');
@@ -394,6 +401,146 @@ const server = app.listen(0, async () => {
           media.video.type === 'video' && /video\//.test(media.video.accept || ''), JSON.stringify(media));
         check(`${width}: voice adds audio and asks for an audio file`,
           media.voice.type === 'audio' && /audio\//.test(media.voice.accept || ''), JSON.stringify(media));
+
+        /* ── THE SIX ────────────────────────────────────────────────────────
+           Forms, maps, social, animations, fonts, buttons. Each one is checked
+           through the panel a user actually operates, and then read back off
+           the RENDERED page inside the canvas — the document agreeing with
+           itself proves nothing about what the page shows. */
+        const sixFromPalette = await page.evaluate(() => {
+          const want = ['Map', 'Social icons', 'Find me on…', 'Download CV', 'Email me', 'Book a call'];
+          const have = [];
+          ED_PALETTE.forEach((g) => g.items.forEach((i) => { if (want.includes(i.label)) have.push(i.label + ':' + i.type); }));
+          return have;
+        });
+        check(`${width}: the palette offers maps, social and the common buttons`,
+          sixFromPalette.length === 6 && sixFromPalette.includes('Map:map')
+          && sixFromPalette.includes('Find me on…:social'), JSON.stringify(sixFromPalette));
+
+        // MAP — typed address reaches the embed inside the canvas.
+        const mapOut = await page.evaluate(async () => {
+          const id = SiteDocStore.newId('map');
+          edApply((d) => {
+            const p = SiteDocStore.findPage(d, edPageId);
+            p.sections[0].els.push({ id, type: 'map', x: 40, y: 40, w: 500, h: 300, props: { zoom: 13 } });
+          });
+          edSelect(id);
+          edSetProp('address', '1 Market St, San Francisco');
+          edSetNum('zoom', '16', 1, 20);
+          await new Promise((r) => setTimeout(r, 1200));
+          const f = document.getElementById('wcEdFrame');
+          const fr = f.contentDocument.querySelector(`.sd-el[data-el="${id}"] iframe.sd-map`);
+          return { src: fr ? fr.getAttribute('src') : null };
+        });
+        check(`${width}: a map renders at the address typed, at the chosen zoom`,
+          !!mapOut.src && /1%20Market%20St/.test(mapOut.src) && /z=16/.test(mapOut.src), JSON.stringify(mapOut));
+
+        // SOCIAL — a bare handle becomes a real profile link with a real icon.
+        const socOut = await page.evaluate(async () => {
+          const id = SiteDocStore.newId('soc');
+          edApply((d) => {
+            const p = SiteDocStore.findPage(d, edPageId);
+            p.sections[0].els.push({ id, type: 'social', x: 40, y: 380, w: 300, h: 44, props: { display: 'icons', items: [{ network: 'linkedin', url: '' }] } });
+            if (p.sections[0].h < 600) p.sections[0].h = 600;
+          });
+          edSelect(id);
+          edSetItem(0, 'url', 'marvinperson');
+          await new Promise((r) => setTimeout(r, 1200));
+          const f = document.getElementById('wcEdFrame');
+          const a = f.contentDocument.querySelector(`.sd-el[data-el="${id}"] a.sd-soc`);
+          return { href: a ? a.getAttribute('href') : null, svg: !!(a && a.querySelector('svg')) };
+        });
+        check(`${width}: a bare social handle becomes a real profile link`,
+          socOut.href === 'https://www.linkedin.com/in/marvinperson', JSON.stringify(socOut));
+        check(`${width}: with a real icon, not two letters of text`, socOut.svg, JSON.stringify(socOut));
+
+        // FORM — add a field through the panel, see it on the page.
+        const formOut = await page.evaluate(async () => {
+          const id = SiteDocStore.newId('frm');
+          edApply((d) => {
+            const p = SiteDocStore.findPage(d, edPageId);
+            p.sections[0].els.push({ id, type: 'form', x: 40, y: 460, w: 480, h: 300, props: { mode: 'contact' } });
+            if (p.sections[0].h < 820) p.sections[0].h = 820;
+          });
+          edSelect(id);
+          edAddField();
+          const idx = edFormFields(SiteDocStore.findElement(edStore.getDoc(), id).el).length - 1;
+          edSetField(idx, 'label', 'Company');
+          await new Promise((r) => setTimeout(r, 1200));
+          const f = document.getElementById('wcEdFrame');
+          const form = f.contentDocument.querySelector(`.sd-el[data-el="${id}"] form`);
+          const names = form ? [...form.querySelectorAll('input,textarea')].map((x) => x.name) : [];
+          // And the fixed email row cannot be deleted.
+          const before = edFormFields(SiteDocStore.findElement(edStore.getDoc(), id).el);
+          edDelField(before.findIndex((x) => x.type === 'email'));
+          const after = edFormFields(SiteDocStore.findElement(edStore.getDoc(), id).el);
+          return { names, emailKept: after.some((x) => x.type === 'email'), n: after.length };
+        });
+        check(`${width}: a field added in the panel appears on the form`,
+          formOut.names.includes('company'), JSON.stringify(formOut));
+        check(`${width}: and the email field cannot be removed`, formOut.emailKept, JSON.stringify(formOut));
+
+        // BUTTON — colour reaches the rendered button.
+        const btnOut = await page.evaluate(async () => {
+          const id = SiteDocStore.newId('btn');
+          edApply((d) => {
+            const p = SiteDocStore.findPage(d, edPageId);
+            p.sections[0].els.push({ id, type: 'button', x: 560, y: 40, w: 220, h: 52, props: { text: 'Book a call' } });
+          });
+          edSelect(id);
+          edSetProp('color', '#e11d48');
+          edSetProp('href', 'https://cal.com/me');
+          await new Promise((r) => setTimeout(r, 1200));
+          const f = document.getElementById('wcEdFrame');
+          const a = f.contentDocument.querySelector(`.sd-el[data-el="${id}"] a.sd-btn`);
+          const cs = a && getComputedStyle(a);
+          return { bg: cs ? cs.backgroundColor : null, href: a ? a.getAttribute('href') : null };
+        });
+        check(`${width}: a button's colour reaches the rendered page`,
+          btnOut.bg === 'rgb(225, 29, 72)', JSON.stringify(btnOut));
+        check(`${width}: and it links where it was told to`, btnOut.href === 'https://cal.com/me', JSON.stringify(btnOut));
+
+        // FONTS — the Brand pane changes what the canvas is actually set in.
+        const fontOut = await page.evaluate(async () => {
+          cvPanel('brand');
+          const sel = document.querySelectorAll('#cvBrandPanel select');
+          const opts = sel.length ? [...sel[0].options].map((o) => o.value) : [];
+          cvSetTheme('fontHeading', 'playfair');
+          cvSetTheme('fontBody', 'karla');
+          await new Promise((r) => setTimeout(r, 1400));
+          const f = document.getElementById('wcEdFrame');
+          const doc2 = f.contentDocument;
+          const h1 = doc2.querySelector('.sd-h1');
+          // The stylesheet, NOT the preconnect that precedes it and matches the
+          // same host — reading the preconnect made this look like one family.
+          const link = doc2.querySelector('link[rel="stylesheet"][href*="fonts.googleapis"]');
+          return {
+            pickers: sel.length, count: opts.length,
+            headFam: h1 ? getComputedStyle(h1).fontFamily : null,
+            bodyFam: getComputedStyle(doc2.body).fontFamily,
+            link: link ? link.getAttribute('href') : null,
+          };
+        });
+        check(`${width}: the Brand pane offers a heading and a body font picker`,
+          fontOut.pickers >= 2 && fontOut.count >= 10, JSON.stringify({ p: fontOut.pickers, c: fontOut.count }));
+        check(`${width}: choosing them changes what the page is set in`,
+          /Playfair Display/.test(fontOut.headFam || '') && /Karla/.test(fontOut.bodyFam || ''), JSON.stringify(fontOut));
+        check(`${width}: and both are actually requested, in one stylesheet`,
+          /Playfair\+Display/.test(fontOut.link || '') && /Karla/.test(fontOut.link || ''), fontOut.link);
+        await page.evaluate(() => cvClosePanel());
+
+        // ANIMATION — the toggle writes the section, and the canvas stays still.
+        const animOut = await page.evaluate(async () => {
+          edSelect(document.querySelector('[data-el]').getAttribute('data-el'));
+          edSetSectionAnim('up');
+          await new Promise((r) => setTimeout(r, 1200));
+          const hit = SiteDocStore.findElement(edStore.getDoc(), edSel);
+          const f = document.getElementById('wcEdFrame');
+          const sec = f.contentDocument.querySelector('section');
+          return { stored: hit.section.anim, canvasAnimates: !!(sec && sec.getAttribute('data-anim')) };
+        });
+        check(`${width}: the section animation toggle writes the section`, animOut.stored === 'up', JSON.stringify(animOut));
+        check(`${width}: but the canvas never animates, so nothing flickers`, !animOut.canvasAnimates, JSON.stringify(animOut));
 
         // Close the gear so the rest of the run is not behind a panel.
         await page.evaluate(() => { if (_edGearOpen) edToggleGear(); });

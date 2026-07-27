@@ -257,6 +257,11 @@ _ensureColumn('shared_resumes', 'layout', 'layout TEXT');
 // — _renderPersonalSite() treats NULL as a legacy default (renders exactly like
 // today's output) and the column is populated lazily on first save in the creator.
 _ensureColumn('personal_sites', 'config', 'config TEXT');
+// Custom contact-form fields beyond name/email/message, as a JSON object. Those
+// three keep their own columns because the leads list and the notification email
+// were built around them; anything the owner adds lands here rather than being
+// dropped on the way to their inbox.
+_ensureColumn('site_leads', 'extra', "extra TEXT DEFAULT ''");
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
@@ -1183,15 +1188,32 @@ app.post('/api/site-lead', leadLimiter, async (req, res) => {
   const ve = String(visitorEmail || '').trim().slice(0, 200);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ve)) return res.status(400).json({ error: 'A valid email is required.' });
   // Persist FIRST — a missing RESEND_API_KEY must never lose a lead.
-  db.prepare('INSERT INTO site_leads (sub, email, name, visitor_email, message, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(s, site.email.toLowerCase(), String(name || '').slice(0, 120), ve, String(message || '').slice(0, 2000), Date.now());
+  // Custom fields, capped and stringified. A form is a public endpoint, so this
+  // takes only what it recognises: plain string values, 12 of them, 500 chars.
+  let extraJson = '';
+  try {
+    const src = (req.body && req.body.extra && typeof req.body.extra === 'object') ? req.body.extra : null;
+    if (src) {
+      const clean = {};
+      for (const k of Object.keys(src).slice(0, 12)) {
+        const key = String(k).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 30);
+        const val = src[k];
+        if (key && (typeof val === 'string' || typeof val === 'number')) clean[key] = String(val).slice(0, 500);
+      }
+      if (Object.keys(clean).length) extraJson = JSON.stringify(clean);
+    }
+  } catch (_) { extraJson = ''; }
+  db.prepare('INSERT INTO site_leads (sub, email, name, visitor_email, message, created_at, extra) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(s, site.email.toLowerCase(), String(name || '').slice(0, 120), ve, String(message || '').slice(0, 2000), Date.now(), extraJson);
   // Best-effort notify the owner.
   try {
     const what = mode === 'pdf' ? 'requested your resume' : 'sent you a message';
     await sendEmail({
       to: site.email,
       subject: `New lead from your site (${s}) — someone ${what}`,
-      html: `<p><strong>${_escHtml(String(name || 'A visitor'))}</strong> (${_escHtml(ve)}) ${what} via your personal site <b>${_escHtml(s)}</b>.</p>${message ? `<p>${_escHtml(String(message).slice(0, 2000))}</p>` : ''}`,
+      html: `<p><strong>${_escHtml(String(name || 'A visitor'))}</strong> (${_escHtml(ve)}) ${what} via your personal site <b>${_escHtml(s)}</b>.</p>`
+        + `${message ? `<p>${_escHtml(String(message).slice(0, 2000))}</p>` : ''}`
+        + `${extraJson ? `<ul>${Object.entries(JSON.parse(extraJson)).map(([k, v]) => `<li><b>${_escHtml(k)}</b>: ${_escHtml(String(v))}</li>`).join('')}</ul>` : ''}`,
       replyTo: ve,
     });
   } catch (_) { /* email is best-effort; the lead is already stored */ }
@@ -1202,7 +1224,7 @@ app.post('/api/site-lead', leadLimiter, async (req, res) => {
 app.get('/api/site-leads', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  const rows = db.prepare('SELECT id, sub, name, visitor_email, message, created_at FROM site_leads WHERE email = ? ORDER BY created_at DESC LIMIT 200').all(email.toLowerCase());
+  const rows = db.prepare('SELECT id, sub, name, visitor_email, message, created_at, extra FROM site_leads WHERE email = ? ORDER BY created_at DESC LIMIT 200').all(email.toLowerCase());
   res.json({ leads: rows, emailEnabled: !!(process.env.RESEND_API_KEY || (process.env.SMTP_USER && process.env.SMTP_PASS)) });
 });
 
@@ -2200,8 +2222,8 @@ a{display:inline-block;margin-top:18px;background:linear-gradient(135deg,#6366F1
 // Public-site chrome strings (user content is shown as authored). Shared by the
 // grid renderer and the contact block so a zh site renders in Chinese server-side.
 const _SITE_I18N = {
-  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume', add_video: 'Add a video', add_audio: 'Add audio', cover_dl: 'Read my cover letter', voice_intro: '▶ Play my introduction' },
-  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历', add_video: '添加视频', add_audio: '添加音频', cover_dl: '下载我的求职信', voice_intro: '▶ 播放我的自我介绍' },
+  en: { lang_toggle: '中文', c_name: 'Your name', c_email: 'Your email', c_msg: 'Message', c_send: 'Send', c_send_pdf: 'Send me the resume', c_thanks: 'Thanks — your message was sent.', c_thanks_pdf: "Thanks! I'll be in touch with my resume shortly.", c_err: 'Something went wrong — please try again.', contact_h: 'Get in touch', request_h: 'Request my resume', add_video: 'Add a video', add_audio: 'Add audio', add_address: 'Add an address', add_links: 'Add your links', find_me: 'Find me on {x}', cover_dl: 'Read my cover letter', voice_intro: '▶ Play my introduction' },
+  zh: { lang_toggle: 'EN', c_name: '你的姓名', c_email: '你的邮箱', c_msg: '留言', c_send: '发送', c_send_pdf: '把简历发给我', c_thanks: '谢谢——你的留言已发送。', c_thanks_pdf: '谢谢！我会尽快把简历发给你。', c_err: '出了点问题——请重试。', contact_h: '联系我', request_h: '索取我的简历', add_video: '添加视频', add_audio: '添加音频', add_address: '添加地址', add_links: '添加你的链接', find_me: '在 {x} 上找到我', cover_dl: '下载我的求职信', voice_intro: '▶ 播放我的自我介绍' },
 };
 
 // A resume rendered as a self-contained fragment (used by a `resume` block).
@@ -2280,6 +2302,129 @@ const _sdPct = (v) => (Math.max(0, Math.min(SD_CANVAS, Number(v) || 0)) / SD_CAN
 const _sdPx = (v, dflt = 0) => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.round(n)) : dflt; };
 const _sdColor = (c, dflt) => (typeof c === 'string' && /^#?[0-9a-fA-F]{3,8}$/.test(c.replace('#', '')) ? ('#' + c.replace('#', '')) : dflt);
 const _sdText = (s, max = 4000) => _escHtml(String(s == null ? '' : s).slice(0, max));
+
+/* ── Fonts ────────────────────────────────────────────────────────────────
+   A CURATED list, not a free-text family name. Two reasons, and the second is
+   the important one: a font name goes into a Google Fonts URL and into a CSS
+   `font-family`, so accepting arbitrary text would let a site document decide
+   what the page fetches; and a resume site with a novelty font on it is worse
+   for its owner than one with a slightly wrong-but-professional font.
+
+   Keys are what the document stores. Anything not in this table is ignored and
+   the template's own default stands. */
+const SD_FONTS = {
+  inter: { name: 'Inter', stack: "'Inter',system-ui,-apple-system,sans-serif", w: '400;500;600;700;800;900' },
+  dmsans: { name: 'DM Sans', stack: "'DM Sans',system-ui,sans-serif", w: '400;500;700' },
+  manrope: { name: 'Manrope', stack: "'Manrope',system-ui,sans-serif", w: '400;500;600;700;800' },
+  worksans: { name: 'Work Sans', stack: "'Work Sans',system-ui,sans-serif", w: '400;500;600;700' },
+  plexsans: { name: 'IBM Plex Sans', stack: "'IBM Plex Sans',system-ui,sans-serif", w: '400;500;600;700' },
+  sourcesans: { name: 'Source Sans 3', stack: "'Source Sans 3',system-ui,sans-serif", w: '400;600;700' },
+  nunitosans: { name: 'Nunito Sans', stack: "'Nunito Sans',system-ui,sans-serif", w: '400;600;700;800' },
+  karla: { name: 'Karla', stack: "'Karla',system-ui,sans-serif", w: '400;500;700' },
+  spacegrotesk: { name: 'Space Grotesk', stack: "'Space Grotesk',system-ui,sans-serif", w: '400;500;700' },
+  figtree: { name: 'Figtree', stack: "'Figtree',system-ui,sans-serif", w: '400;500;600;700;800' },
+  merriweather: { name: 'Merriweather', stack: "'Merriweather',Georgia,serif", w: '400;700;900' },
+  lora: { name: 'Lora', stack: "'Lora',Georgia,serif", w: '400;500;600;700' },
+  sourceserif: { name: 'Source Serif 4', stack: "'Source Serif 4',Georgia,serif", w: '400;600;700' },
+  playfair: { name: 'Playfair Display', stack: "'Playfair Display',Georgia,serif", w: '400;600;700;800;900' },
+  baskerville: { name: 'Libre Baskerville', stack: "'Libre Baskerville',Georgia,serif", w: '400;700' },
+};
+const _sdFont = (key) => (typeof key === 'string' && Object.prototype.hasOwnProperty.call(SD_FONTS, key) ? SD_FONTS[key] : null);
+
+/* One stylesheet request for whatever the page actually uses. Inter is always
+   included because it is the fallback every template was designed against —
+   dropping it when a custom heading font is chosen would restyle the body too. */
+function _sdFontLink(headingKey, bodyKey) {
+  const wanted = new Map([['inter', SD_FONTS.inter]]);
+  for (const k of [headingKey, bodyKey]) {
+    const f = _sdFont(k);
+    if (f) wanted.set(k, f);
+  }
+  const fams = [...wanted.values()]
+    .map((f) => `family=${encodeURIComponent(f.name).replace(/%20/g, '+')}:wght@${f.w}`)
+    .join('&');
+  return `https://fonts.googleapis.com/css2?${fams}&display=swap`;
+}
+
+/* ── Scroll animations ────────────────────────────────────────────────────
+   Per section, off by default, and deliberately a short whitelist. This is a
+   resume site: an entrance that draws attention to itself works against the
+   person whose name is on it. Anything not listed here means no animation. */
+const SD_ANIMS = { fade: 1, up: 1, scale: 1 };
+const _sdAnim = (a) => (typeof a === 'string' && SD_ANIMS[a] ? a : '');
+
+/* ── Social networks ──────────────────────────────────────────────────────
+   Inline SVG rather than an icon font or a sprite sheet: a published site is
+   one self-contained document, and a webfont for eight glyphs is a request
+   that can fail and leave empty squares where someone's LinkedIn should be.
+
+   `base` lets the user type a handle instead of a URL — "marvin" is what people
+   know their LinkedIn as, and asking for the full https:// form is a small tax
+   paid by everyone to save writing this table once. */
+const _svg = (d) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="${d}"/></svg>`;
+const SD_SOCIALS = {
+  linkedin: { name: 'LinkedIn', base: 'https://www.linkedin.com/in/', svg: _svg('M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.24 8h4.52v14H.24V8zM8.34 8h4.33v1.92h.06c.6-1.14 2.07-2.34 4.26-2.34 4.56 0 5.4 3 5.4 6.9V22h-4.5v-6.62c0-1.58-.03-3.61-2.2-3.61-2.2 0-2.54 1.72-2.54 3.5V22h-4.5V8z') },
+  github: { name: 'GitHub', base: 'https://github.com/', svg: _svg('M12 .5C5.73.5.9 5.34.9 11.6c0 4.9 3.18 9.06 7.6 10.53.56.1.76-.24.76-.53v-2.1c-3.09.67-3.74-1.32-3.74-1.32-.5-1.29-1.24-1.63-1.24-1.63-1.01-.7.08-.68.08-.68 1.12.08 1.7 1.15 1.7 1.15 1 1.71 2.62 1.22 3.26.93.1-.72.39-1.22.7-1.5-2.47-.28-5.06-1.24-5.06-5.5 0-1.22.43-2.21 1.14-2.99-.11-.28-.5-1.41.11-2.94 0 0 .94-.3 3.07 1.14a10.6 10.6 0 0 1 5.6 0c2.12-1.44 3.06-1.14 3.06-1.14.61 1.53.23 2.66.11 2.94.71.78 1.14 1.77 1.14 2.99 0 4.27-2.6 5.21-5.08 5.49.4.35.76 1.03.76 2.08v3.08c0 .3.2.64.77.53a11.11 11.11 0 0 0 7.59-10.53C23.1 5.34 18.27.5 12 .5z') },
+  x: { name: 'X', base: 'https://x.com/', svg: _svg('M18.24 2h3.31l-7.23 8.26L22.8 22h-6.66l-5.21-6.82L4.97 22H1.66l7.73-8.84L1.2 2h6.83l4.71 6.23L18.24 2zm-1.16 18h1.83L7.01 3.88H5.05L17.08 20z') },
+  instagram: { name: 'Instagram', base: 'https://instagram.com/', svg: _svg('M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41-.56-.22-.96-.48-1.38-.9-.42-.42-.68-.82-.9-1.38-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16zM12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.3-1.46.72-2.12 1.39C1.35 2.68.93 3.35.63 4.14.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.3.79.72 1.46 1.39 2.12.66.67 1.33 1.09 2.12 1.39.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56.79-.3 1.46-.72 2.12-1.39.67-.66 1.09-1.33 1.39-2.12.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91-.3-.79-.72-1.46-1.39-2.12-.66-.67-1.33-1.09-2.12-1.39-.76-.3-1.64-.5-2.91-.56C15.67.01 15.26 0 12 0zm0 5.84a6.16 6.16 0 1 0 0 12.32 6.16 6.16 0 0 0 0-12.32zm0 10.16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm7.85-10.4a1.44 1.44 0 1 1-2.88 0 1.44 1.44 0 0 1 2.88 0z') },
+  facebook: { name: 'Facebook', base: 'https://facebook.com/', svg: _svg('M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.96H15.83c-1.49 0-1.96.93-1.96 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.1 24 18.1 24 12.07z') },
+  youtube: { name: 'YouTube', base: 'https://youtube.com/@', svg: _svg('M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19C0 8.08 0 12 0 12s0 3.92.5 5.81a3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14C24 15.92 24 12 24 12s0-3.92-.5-5.81zM9.55 15.57V8.43L15.82 12l-6.27 3.57z') },
+  dribbble: { name: 'Dribbble', base: 'https://dribbble.com/', svg: _svg('M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm7.93 5.53a10.15 10.15 0 0 1 2.3 6.36c-.34-.07-3.72-.76-7.13-.33-.08-.18-.15-.36-.23-.55-.21-.5-.45-1-.69-1.48 3.77-1.54 5.49-3.75 5.75-4zM12 1.79c2.6 0 4.98.98 6.79 2.58-.22.31-1.77 2.38-5.4 3.75A52.6 52.6 0 0 0 9.6 2.19 10.2 10.2 0 0 1 12 1.79zM7.63 2.89a62.3 62.3 0 0 1 3.76 5.87c-4.75 1.27-8.95 1.24-9.4 1.24a10.26 10.26 0 0 1 5.64-7.11zM1.77 12.02v-.31c.44.01 5.37.07 10.45-1.45.29.57.57 1.15.82 1.73l-.4.12c-5.25 1.7-8.04 6.33-8.27 6.72a10.17 10.17 0 0 1-2.6-6.81zM12 22.23c-2.35 0-4.51-.8-6.23-2.15.18-.37 2.23-4.32 7.97-6.32l.07-.02a42.6 42.6 0 0 1 2.19 7.78A10.15 10.15 0 0 1 12 22.23zm5.73-1.66a44.6 44.6 0 0 0-2-7.63c3.21-.51 6.02.33 6.37.44a10.2 10.2 0 0 1-4.37 7.19z') },
+  behance: { name: 'Behance', base: 'https://behance.net/', svg: _svg('M7.44 4.5c.74 0 1.42.07 2.03.2.61.13 1.13.34 1.56.63.43.29.77.68 1.01 1.16.24.48.36 1.08.36 1.79 0 .77-.18 1.41-.53 1.92-.35.51-.87.93-1.55 1.26.94.27 1.64.74 2.1 1.42.46.68.69 1.5.69 2.46 0 .78-.15 1.45-.45 2.02-.3.57-.71 1.03-1.22 1.39-.51.36-1.1.63-1.76.8-.66.17-1.34.25-2.04.25H0V4.5h7.44zM7 10.63c.61 0 1.11-.15 1.5-.44.39-.29.58-.76.58-1.42 0-.36-.06-.66-.2-.9a1.35 1.35 0 0 0-.53-.53 2.2 2.2 0 0 0-.76-.26A5.4 5.4 0 0 0 6.7 7H3.3v3.63H7zm.2 6.44c.34 0 .66-.03.97-.1.31-.07.58-.18.81-.34.23-.16.42-.37.55-.65.14-.28.2-.63.2-1.05 0-.83-.23-1.42-.7-1.77-.47-.35-1.09-.53-1.86-.53H3.3v4.44h3.9zM17.1 17.1c.45.44 1.1.66 1.94.66.6 0 1.12-.15 1.55-.46.43-.3.7-.63.8-.97h2.36c-.38 1.17-.96 2.01-1.74 2.51-.78.5-1.72.76-2.83.76-.77 0-1.47-.13-2.09-.38a4.4 4.4 0 0 1-1.58-1.07 4.8 4.8 0 0 1-1-1.66 6.2 6.2 0 0 1-.35-2.12c0-.75.12-1.45.36-2.09a4.9 4.9 0 0 1 1.03-1.67 4.8 4.8 0 0 1 1.59-1.11c.62-.27 1.3-.4 2.05-.4.83 0 1.56.16 2.18.48.62.32 1.13.75 1.53 1.29.4.54.68 1.16.86 1.85.17.7.23 1.42.18 2.18h-7.11c0 .86.28 1.57.73 2.02zm3.4-5.5c-.36-.39-.94-.6-1.68-.6-.49 0-.89.08-1.21.25a2.4 2.4 0 0 0-.77.6c-.19.24-.32.5-.4.76-.07.27-.11.5-.13.71h4.4c-.13-.7-.36-1.24-.72-1.63zM15.2 5.9h5.5v1.34h-5.5V5.9z') },
+  medium: { name: 'Medium', base: 'https://medium.com/@', svg: _svg('M13.54 12a6.8 6.8 0 0 1-6.77 6.82A6.8 6.8 0 0 1 0 12a6.8 6.8 0 0 1 6.77-6.82A6.8 6.8 0 0 1 13.54 12zm7.42 0c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42 3.38 2.88 3.38 6.42zM24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75C23.47 6.25 24 8.83 24 12z') },
+  website: { name: 'Website', base: 'https://', svg: _svg('M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm7.94 7h-3.2a15.6 15.6 0 0 0-1.4-3.63A10.03 10.03 0 0 1 19.94 7zM12 2.06c.83 1.2 1.48 2.53 1.91 3.94h-3.82A13.6 13.6 0 0 1 12 2.06zM2.26 14a9.9 9.9 0 0 1 0-4h3.66a20.6 20.6 0 0 0 0 4H2.26zm.82 2h3.2c.35 1.28.82 2.5 1.4 3.63A10.03 10.03 0 0 1 3.08 16zm3.2-9h-3.2a10.03 10.03 0 0 1 4.6-3.63A15.6 15.6 0 0 0 6.28 7zM12 21.94c-.83-1.2-1.48-2.53-1.91-3.94h3.82A13.6 13.6 0 0 1 12 21.94zM14.34 16H9.66a18.4 18.4 0 0 1 0-4h4.68a18.4 18.4 0 0 1 0 4zm.26 5.63c.58-1.13 1.05-2.35 1.4-3.63h3.2a10.03 10.03 0 0 1-4.6 3.63zM18.08 14a20.6 20.6 0 0 0 0-4h3.66a9.9 9.9 0 0 1 0 4h-3.66z') },
+  email: { name: 'Email', base: 'mailto:', svg: _svg('M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4.24-8 4.99-8-4.99V6l8 5 8-5v2.24z') },
+};
+const _sdSocial = (k) => (typeof k === 'string' && Object.prototype.hasOwnProperty.call(SD_SOCIALS, k) ? SD_SOCIALS[k] : null);
+
+/* A handle OR a full URL. Someone who types "marvinperson" into the LinkedIn
+   row means their LinkedIn; someone who pastes the whole address means that.
+   Both are the same intention and neither should be rejected. */
+function _sdSocialUrl(it) {
+  if (!it) return '';
+  const raw = String(it.url == null ? '' : it.url).trim();
+  if (!raw) return '';
+  /* ANYTHING that already carries a scheme is passed straight through to
+     _safeLinkUrl, which is the security boundary and rejects javascript: and
+     friends. Only a BARE HANDLE gets a base prepended — an earlier version
+     tested for http/mailto specifically and quietly turned a working tel: link
+     into "https://tel:+1555…", which is the kind of breakage that looks like
+     the user typed it wrong. */
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return raw;
+  const net = _sdSocial(it.network);
+  if (!net) return 'https://' + raw.replace(/^\/+/, '');
+  if (net.base === 'mailto:') return raw.includes('@') ? 'mailto:' + raw : '';
+  return net.base + raw.replace(/^[@/]+/, '');
+}
+
+/* ── Form fields ──────────────────────────────────────────────────────────
+   Configurable, but ALWAYS carrying exactly one email field. The server needs a
+   valid visitor address to store a lead and to let the owner reply, so a form
+   without one is a form that collects nothing — and a user removing the email
+   row would be quietly breaking their own contact page. Anything else they can
+   add or take away. */
+const SD_FIELD_TYPES = { text: 1, email: 1, textarea: 1, tel: 1 };
+function _sdFormFields(p, isPdf, SI) {
+  const raw = Array.isArray(p && p.fields) ? p.fields : null;
+  let out = [];
+  if (raw) {
+    out = raw.slice(0, 8).map((f, i) => {
+      const type = f && SD_FIELD_TYPES[f.type] ? f.type : 'text';
+      const key = String((f && f.key) || ('field' + (i + 1))).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 30) || ('field' + (i + 1));
+      return { key, type, label: String((f && f.label) || key).slice(0, 60), required: !!(f && f.required) };
+    }).filter((f, i, a) => a.findIndex((x) => x.key === f.key) === i);
+  }
+  if (!out.length) {
+    out = [{ key: 'name', type: 'text', label: SI.c_name, required: false },
+      { key: 'email', type: 'email', label: SI.c_email, required: true }];
+    if (!isPdf) out.push({ key: 'message', type: 'textarea', label: SI.c_msg, required: false });
+    return out;
+  }
+  const em = out.find((f) => f.type === 'email');
+  if (em) em.required = true;
+  else out.splice(Math.min(1, out.length), 0, { key: 'email', type: 'email', label: SI.c_email, required: true });
+  return out;
+}
 
 // A section background: solid colour, gradient, or an image from the media library.
 function _sdSectionBg(bg) {
@@ -2473,24 +2618,65 @@ function _sdElement(el, ctx) {
     case 'button': {
       const href = _sdLink(p, ctx);
       const ghost = p.style === 'ghost';
-      return `<a class="sd-btn${ghost ? ' sd-btn--ghost' : ''}" href="${_escHtml(href || '#')}"${/^https?:/i.test(href) ? ' target="_blank" rel="noopener"' : ''}>${_sdText(p.text || 'Learn more', 80)}</a>`;
+      // An explicit colour overrides the theme's primary. Filled buttons take it
+      // as a background; outline buttons as the border and the text, or an
+      // outline button would be invisible against a page of the same colour.
+      const bc = _sdColor(p.color, '');
+      const st = bc ? (ghost ? `border-color:${bc};color:${bc};` : `background:${bc};border-color:${bc};`) : '';
+      return `<a class="sd-btn${ghost ? ' sd-btn--ghost' : ''}" href="${_escHtml(href || '#')}"${st ? ` style="${st}"` : ''}${/^https?:/i.test(href) ? ' target="_blank" rel="noopener"' : ''}>${_sdText(p.text || 'Learn more', 80)}</a>`;
     }
     case 'social': {
-      const items = Array.isArray(p.items) ? p.items.slice(0, 10) : [];
-      const links = items.map((it) => {
-        const u = _safeLinkUrl(it && it.url); if (!u) return '';
-        return `<a class="sd-soc" href="${_escHtml(u)}" target="_blank" rel="noopener" aria-label="${_sdText(it.network || 'link', 40)}">${_sdText((it.network || '?').slice(0, 2).toUpperCase(), 4)}</a>`;
+      const items = Array.isArray(p.items) ? p.items.slice(0, 12) : [];
+      // "A row of icon buttons" or "a single Find me on X link" — the same data
+      // either way, so switching between them never loses what was entered.
+      const asLink = p.display === 'link';
+      const parts = items.map((it) => {
+        const u = _safeLinkUrl(_sdSocialUrl(it)); if (!u) return '';
+        const net = _sdSocial(it && it.network);
+        const label = (it && it.label) || (net ? net.name : (it && it.network) || 'Link');
+        if (asLink) {
+          return `<a class="sd-soclink" href="${_escHtml(u)}" target="_blank" rel="noopener">`
+            + `${net ? net.svg : ''}<span>${_sdText(String(ctx.SI.find_me || 'Find me on {x}').replace('{x}', label), 60)}</span></a>`;
+        }
+        return `<a class="sd-soc" href="${_escHtml(u)}" target="_blank" rel="noopener" title="${_sdText(label, 40)}" aria-label="${_sdText(label, 40)}">`
+          + `${net ? net.svg : _sdText(String(label).slice(0, 2).toUpperCase(), 4)}</a>`;
       }).join('');
-      return links ? `<div class="sd-socs">${links}</div>` : '';
+      if (parts) return `<div class="${asLink ? 'sd-soclinks' : 'sd-socs'}">${parts}</div>`;
+      // Nothing filled in yet. A visitor sees nothing; the owner sees where to
+      // put their handles, or dropping this element would look like it failed.
+      return ctx.editable
+        ? `<div class="sd-ph sd-ph--empty">◎<span>${_escHtml(ctx.SI.add_links || 'Add your links')}</span></div>`
+        : '';
+    }
+    case 'map': {
+      // Google's keyless embed. A map on a resume site is "here is roughly where
+      // I am" — it does not need an API key, a billing account, or the exact
+      // pin-drop accuracy that the keyed Embed API buys.
+      const addr = String(p.address == null ? '' : p.address).slice(0, 200).trim();
+      if (!addr) {
+        return ctx.editable
+          ? `<div class="sd-ph sd-ph--empty">🗺<span>${_escHtml(ctx.SI.add_address || 'Add an address')}</span></div>`
+          : '';
+      }
+      const zoom = Math.max(1, Math.min(20, _sdPx(p.zoom, 13)));
+      const src = `https://maps.google.com/maps?q=${encodeURIComponent(addr)}&z=${zoom}&output=embed`;
+      const lbl = p.label ? `<div class="sd-elabel">${_sdText(p.label, 120)}</div>` : '';
+      return `${lbl}<iframe class="sd-map" src="${_escHtml(src)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade"`
+        + ` title="${_sdText(p.label || addr, 120)}" allowfullscreen></iframe>`;
     }
     case 'form': {
       const isPdf = p.mode === 'pdf';
       const SI = ctx.SI;
+      const fields = _sdFormFields(p, isPdf, SI);
+      const inputs = fields.map((f) => {
+        const common = `name="${_escHtml(f.key)}" placeholder="${_escHtml(f.label)}"${f.required ? ' required' : ''}`;
+        if (f.type === 'textarea') return `<textarea ${common} maxlength="2000"></textarea>`;
+        const t = f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text';
+        return `<input type="${t}" ${common} maxlength="${f.type === 'email' ? 200 : 200}"/>`;
+      }).join('\n          ');
       return `<div class="sd-form"><div class="sd-elabel">${_sdText(p.heading || (isPdf ? SI.request_h : SI.contact_h), 120)}</div>
         <form class="sg-lead-form" onsubmit="return _sgLead(event,this)" data-sub="${_escHtml(ctx.sub)}" data-mode="${isPdf ? 'pdf' : 'contact'}">
-          <input name="name" placeholder="${_escHtml(SI.c_name)}" maxlength="120"/>
-          <input name="email" type="email" required placeholder="${_escHtml(SI.c_email)}" maxlength="200"/>
-          ${isPdf ? '' : `<textarea name="message" placeholder="${_escHtml(SI.c_msg)}" maxlength="2000"></textarea>`}
+          ${inputs}
           <button type="submit">${isPdf ? _escHtml(SI.c_send_pdf) : _escHtml(SI.c_send)}</button>
           <div class="sg-lead-msg" style="display:none;"></div>
         </form></div>`;
@@ -2558,6 +2744,10 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     ink: _sdColor(th.ink, '#0f172a'),
     paper: _sdColor(th.paper, '#ffffff'),
     muted: _sdColor(th.muted, '#64748b'),
+    // Unknown keys fall back to Inter, which is what every template was drawn
+    // against — a typo in the document must not leave the page unstyled.
+    fontHeading: (_sdFont(th.fontHeading) || SD_FONTS.inter).stack,
+    fontBody: (_sdFont(th.fontBody) || SD_FONTS.inter).stack,
   };
   const lang = doc.lang === 'zh' ? 'zh' : 'en';
   const SI = _SITE_I18N[lang];
@@ -2608,7 +2798,11 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     // template was a dead link.
     const anchorId = String((sec && sec.id) || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
     const secHooks = editable ? ` data-sec="${_escHtml(String((sec && sec.id) || ''))}" data-idx="${secIdx}"` : '';
-    return `<section class="sd-sec${_sdSectionClass(sec && sec.bg)}"${anchorId ? ` id="${anchorId}"` : ''}${secHooks} style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
+    // Scroll animation, off unless the section asks for it. Never in the
+    // editor: an element that fades in every time the canvas re-renders would
+    // make the thing being edited flicker under the user's hands.
+    const anim = editable ? '' : _sdAnim(sec && sec.anim);
+    return `<section class="sd-sec${_sdSectionClass(sec && sec.bg)}${anim ? ' sd-anim' : ''}"${anim ? ` data-anim="${anim}"` : ''}${anchorId ? ` id="${anchorId}"` : ''}${secHooks} style="${_sdSectionBg(sec && sec.bg)}"><div class="sd-inner" style="height:${h}px;">${inner}</div></section>`;
   }).join('');
 
   const title = _sdText((page.seo && page.seo.title) || row.name || page.name || 'Portfolio', 120);
@@ -2632,18 +2826,31 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
   <link rel="canonical" href="${_escHtml(canonical)}"/>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="${_escHtml(_sdFontLink(th.fontHeading, th.fontBody))}" rel="stylesheet"/>
   <style>
-    :root{--p:${theme.primary};--a:${theme.accent};--ink:${theme.ink};--paper:${theme.paper};--muted:${theme.muted};}
+    :root{--p:${theme.primary};--a:${theme.accent};--ink:${theme.ink};--paper:${theme.paper};--muted:${theme.muted};
+      --fh:${theme.fontHeading};--fb:${theme.fontBody};}
     *{box-sizing:border-box;margin:0;padding:0;}
     html{scroll-behavior:smooth;}
-    body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;}
+    body{font-family:var(--fb);background:var(--paper);color:var(--ink);line-height:1.6;}
     .sd-sec{position:relative;width:100%;background-repeat:no-repeat;scroll-margin-top:12px;}
+    /* Entrance animations. Subtle on purpose: this is a resume site, and an
+       entrance that draws attention to itself works against the person whose
+       name is on it. The starting state is only applied once the script has
+       run — otherwise a visitor with JavaScript off, or a crawler, would be
+       served a page whose content is permanently invisible. */
+    html.sd-anim-on .sd-anim{opacity:0;transition:opacity .55s ease,transform .55s cubic-bezier(.22,.61,.36,1);}
+    html.sd-anim-on .sd-anim[data-anim="up"]{transform:translateY(22px);}
+    html.sd-anim-on .sd-anim[data-anim="scale"]{transform:scale(.97);}
+    html.sd-anim-on .sd-anim.is-in{opacity:1;transform:none;}
+    @media (prefers-reduced-motion: reduce){
+      html.sd-anim-on .sd-anim{opacity:1;transform:none;transition:none;}
+    }
     .sd-sec--photo .sd-h1,.sd-sec--photo .sd-h2,.sd-sec--photo .sd-p{text-shadow:0 1px 14px rgba(0,0,0,.5);}
     .sd-inner{position:relative;max-width:${SD_CANVAS}px;margin:0 auto;}
     .sd-el{position:absolute;}
-    .sd-h1{font-size:48px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
-    .sd-h2{font-size:24px;font-weight:700;line-height:1.25;}
+    .sd-h1{font-family:var(--fh);font-size:48px;font-weight:900;letter-spacing:-.02em;line-height:1.1;}
+    .sd-h2{font-family:var(--fh);font-size:24px;font-weight:700;line-height:1.25;}
     .sd-p{font-size:16px;color:var(--muted);}
     .sd-img{width:100%;height:100%;display:block;}
     .sd-ibox{width:100%;height:100%;overflow:hidden;position:relative;margin:0;}
@@ -2670,8 +2877,18 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     .sd-video{background:#000;}
     .sd-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 26px;border-radius:999px;background:linear-gradient(135deg,var(--p),var(--a));color:#fff;font-weight:700;text-decoration:none;font-size:15px;}
     .sd-btn--ghost{background:none;border:2px solid currentColor;color:var(--p);}
-    .sd-socs{display:flex;gap:10px;}
-    .sd-soc{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--p);color:#fff;font-size:12px;font-weight:800;text-decoration:none;}
+    .sd-socs{display:flex;gap:10px;flex-wrap:wrap;}
+    .sd-soc{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--p);color:#fff;font-size:12px;font-weight:800;text-decoration:none;transition:transform .15s ease,filter .15s ease;}
+    .sd-soc:hover{transform:translateY(-2px);filter:brightness(1.1);}
+    .sd-soc svg{display:block;}
+    /* The "Find me on X" form: the same links, read as sentences instead of a
+       row of badges. Useful when there is one profile that matters. */
+    .sd-soclinks{display:flex;flex-direction:column;gap:8px;align-items:flex-start;}
+    .sd-soclink{display:inline-flex;align-items:center;gap:9px;padding:9px 16px;border-radius:999px;border:1.5px solid var(--p);color:var(--p);font-weight:700;font-size:14.5px;text-decoration:none;}
+    .sd-soclink:hover{background:var(--p);color:#fff;}
+    /* A map is a fixed-height frame, not content that grows — the element's own
+       drawn height is what the user chose. */
+    .sd-map{width:100%;height:100%;min-height:180px;border:0;border-radius:14px;display:block;background:rgba(127,127,127,.1);}
     .sd-divider{border:none;border-top:1px solid rgba(127,127,127,.35);width:100%;}
     /* Boxes are almost always card backgrounds sat behind text. Without a
        shadow a near-white card on a near-white section is invisible. */
@@ -2726,7 +2943,14 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
       e.preventDefault();
       var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;
       var fd=new FormData(f), msg=f.querySelector('.sg-lead-msg');
-      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||''};
+      /* Whatever fields the owner configured. name/email/message keep their own
+         columns because that is what the leads table and the notification email
+         were built around; everything else travels together in "extra" so a
+         custom field is never silently dropped on the way to the inbox.
+         NOTE: no backticks in here -- this comment is inside a template
+         literal, and one would end the string. */
+      var body={sub:f.dataset.sub,mode:f.dataset.mode,name:fd.get('name')||'',email:fd.get('email')||'',message:fd.get('message')||'',extra:{}};
+      fd.forEach(function(v,k){ if(k!=='name'&&k!=='email'&&k!=='message'&&k!=='website'&&String(v).trim()) body.extra[k]=String(v).slice(0,500); });
       fetch('/api/site-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
         .then(function(r){return r.json().catch(function(){return {};});})
         .then(function(){
@@ -2737,6 +2961,24 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
         .catch(function(){msg.style.display='block';msg.style.color='#dc2626';msg.textContent=L.c_err;});
       return false;
     }
+    /* Scroll animations. The starting state lives behind the html.sd-anim-on
+       class, set here -- so a visitor without JavaScript, or a crawler, gets the
+       page fully visible rather than a document of invisible sections. No
+       IntersectionObserver means the class is never added and everything shows.
+       (No backticks: this comment is inside a template literal.) */
+    (function(){
+      var els=document.querySelectorAll('.sd-anim');
+      if(!els.length||!('IntersectionObserver' in window))return;
+      if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+      document.documentElement.className+=' sd-anim-on';
+      var io=new IntersectionObserver(function(entries){
+        entries.forEach(function(en){ if(en.isIntersecting){ en.target.className+=' is-in'; io.unobserve(en.target); } });
+      },{rootMargin:'0px 0px -8% 0px',threshold:0.06});
+      els.forEach(function(el){ io.observe(el); });
+      // Anything already on screen at load reveals immediately rather than
+      // waiting for a scroll that may never come on a short page.
+      setTimeout(function(){ els.forEach(function(el){ var r=el.getBoundingClientRect(); if(r.top<innerHeight&&r.bottom>0){ el.className+=' is-in'; io.unobserve(el); } }); },60);
+    })();
   </script>${editable ? '\n' + _sdEditLayer() : ''}
 </body>
 </html>`;

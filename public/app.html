@@ -1452,6 +1452,11 @@
         <div id="bo-covers" class="wc-card"><div class="wc-step" data-i18n="bo_covers">Cover letters</div><div class="bo-list"></div></div>
         <div id="bo-videos" class="wc-card"><div class="wc-step" data-i18n="bo_videos">Resume videos</div><div class="bo-list"></div></div>
         <div id="bo-site" class="wc-card"><div class="wc-step" data-i18n="bo_websites">Your websites</div><div class="bo-list"></div></div>
+        <!-- Contact-form submissions. They were stored and emailed from the
+             first day the form element existed, and there was nowhere in the
+             product to read them — so a lead arriving while the owner's email
+             was misconfigured was, from their side, a lead that never came. -->
+        <div id="bo-leads" class="wc-card"><div class="wc-step" data-i18n="bo_leads">Messages from your website</div><div class="bo-list"></div></div>
       </div>
 
       <!-- ═══ TAB: COMMUNITY FORUM ═══ -->
@@ -2137,6 +2142,21 @@
         wc_ed_color: 'Colour', wc_ed_pos: 'Position & size', wc_ed_mhide: 'Hide on mobile',
         wc_ed_delete: 'Delete element', wc_upload2: 'Upload',
         wc_ed_clicktotype: '✎ click to type', wc_ed_reset_done: 'Back in sync with your resume',
+        wc_ed_address2: 'Address', wc_ed_addrph: '1 Market St, San Francisco', wc_ed_zoom: 'Zoom',
+        wc_ed_socmode: 'Show as', wc_ed_socicons: 'A row of icons', wc_ed_soclink: 'Find me on…',
+        wc_ed_fields: 'Fields', wc_ed_flabel: 'Label', wc_ed_ftext: 'Text', wc_ed_flong: 'Long',
+        wc_ed_fphone: 'Phone', wc_ed_fkeep: 'Every form needs one email field',
+        wc_ed_faddfield: '+ Add a field', wc_ed_fnew: 'New field',
+        wc_ed_fmax: 'Eight fields is the most a contact form should ask for.',
+        wc_c_name: 'Your name', wc_c_email: 'Your email', wc_c_msg: 'Your message',
+        wc_ed_filled: 'Filled', wc_ed_outline: 'Outline', wc_ed_btncolor: 'Button colour',
+        wc_ed_usetheme: 'Use the theme colour',
+        wc_ed_section: 'This section', wc_ed_anim: 'Animate on scroll',
+        wc_ed_anim_up: 'Slide up', wc_ed_anim_fade: 'Fade in', wc_ed_anim_scale: 'Gentle zoom',
+        wc_ed_anim_note: 'Off on the canvas so nothing flickers while you work — open your live site to see it.',
+        cv_b_fonth: 'Heading font', cv_b_fontb: 'Body font', cv_b_fontmatch: 'Use the heading font for both',
+        bo_leads: 'Messages from your website', bo_lead_reply: 'Reply', bo_lead_anon: 'A visitor',
+        bo_leads_empty: 'No messages yet. Add a contact form to your website and they will appear here.',
         wc_ed_addinto: 'Add into this box', wc_ed_add_photo: '📷 Photo', wc_ed_add_video: '🎬 Video',
         wc_ed_add_voice: '🎙 Voice', wc_ed_add_text: '✍️ Text',
         wc_ed_gear: 'Options for this box', wc_ed_size: 'Size', wc_ed_weight: 'Weight',
@@ -2319,6 +2339,21 @@
         wc_ed_color: '颜色', wc_ed_pos: '位置和尺寸', wc_ed_mhide: '在手机上隐藏',
         wc_ed_delete: '删除元素', wc_upload2: '上传',
         wc_ed_clicktotype: '✎ 点击输入', wc_ed_reset_done: '已与你的简历重新同步',
+        wc_ed_address2: '地址', wc_ed_addrph: '北京市朝阳区…', wc_ed_zoom: '缩放',
+        wc_ed_socmode: '显示方式', wc_ed_socicons: '一排图标', wc_ed_soclink: '在……上找到我',
+        wc_ed_fields: '字段', wc_ed_flabel: '标签', wc_ed_ftext: '文本', wc_ed_flong: '长文本',
+        wc_ed_fphone: '电话', wc_ed_fkeep: '每个表单都需要一个邮箱字段',
+        wc_ed_faddfield: '+ 添加字段', wc_ed_fnew: '新字段',
+        wc_ed_fmax: '联系表单最多八个字段。',
+        wc_c_name: '你的姓名', wc_c_email: '你的邮箱', wc_c_msg: '你的留言',
+        wc_ed_filled: '实心', wc_ed_outline: '描边', wc_ed_btncolor: '按钮颜色',
+        wc_ed_usetheme: '使用主题颜色',
+        wc_ed_section: '当前板块', wc_ed_anim: '滚动时动画',
+        wc_ed_anim_up: '向上滑入', wc_ed_anim_fade: '淡入', wc_ed_anim_scale: '轻微缩放',
+        wc_ed_anim_note: '编辑画布上不播放动画，以免打扰你——请打开线上网站查看。',
+        cv_b_fonth: '标题字体', cv_b_fontb: '正文字体', cv_b_fontmatch: '标题与正文使用同一字体',
+        bo_leads: '来自网站的消息', bo_lead_reply: '回复', bo_lead_anon: '一位访客',
+        bo_leads_empty: '还没有消息。在网站上添加联系表单后，消息会显示在这里。',
         wc_ed_addinto: '向此区块添加', wc_ed_add_photo: '📷 照片', wc_ed_add_video: '🎬 视频',
         wc_ed_add_voice: '🎙 语音', wc_ed_add_text: '✍️ 文字',
         wc_ed_gear: '此区块的选项', wc_ed_size: '字号', wc_ed_weight: '字重',
@@ -7375,15 +7410,52 @@ Aaliyah Washington`
       const th = (edStore.getDoc().theme) || {};
       const row = (key, label, dflt) => `<label class="cv-lbl">${wcEsc(label)}</label>
         <input type="color" class="cv-input" style="height:36px;padding:3px;" value="#${wcEsc(String(th[key] || dflt).replace('#',''))}" oninput="cvSetTheme('${key}',this.value)"/>`;
+      /* A CURATED list, not a free-text family name. A font name goes into a
+         Google Fonts URL and a CSS font-family on a public page, and a resume
+         site with a novelty font is worse for its owner than one with a
+         slightly wrong but professional font. Mirrors SD_FONTS in server.js —
+         the server owns the stacks and weights; this is the list shown. */
+      const fontRow = (key, label) => `<label class="cv-lbl">${wcEsc(label)}</label>
+        <select class="cv-input" onchange="cvSetTheme('${key}',this.value)">
+          ${CV_FONTS.map(([k, name, kind]) => `<option value="${k}"${String(th[key] || 'inter') === k ? ' selected' : ''}>${wcEsc(name)}${kind ? ' · ' + wcEsc(kind) : ''}</option>`).join('')}
+        </select>`;
       el.innerHTML = row('primary', _t('cv_b_primary', 'Primary'), '6366F1')
         + row('accent', _t('cv_b_accent', 'Accent'), '8B5CF6')
         + row('paper', _t('cv_b_paper', 'Page background'), 'ffffff')
         + row('ink', _t('cv_b_ink', 'Text'), '0f172a')
+        + `<div style="border-top:1px solid #3b3c42;margin-top:12px;padding-top:8px;"></div>`
+        + fontRow('fontHeading', _t('cv_b_fonth', 'Heading font'))
+        + fontRow('fontBody', _t('cv_b_fontb', 'Body font'))
+        + `<button type="button" class="cv-wide" style="margin-top:6px;" onclick="cvMatchFonts()">${wcEsc(_t('cv_b_fontmatch', 'Use the heading font for both'))}</button>`
         + `<p class="cv-note">${wcEsc(_t('cv_b_note', 'Colours apply to the whole site. Undo works here too.'))}</p>`;
+    }
+    /* Fifteen, all of them ones a hiring manager would not notice — which is
+       the point. Sans first because that is what most templates want. */
+    const CV_FONTS = [
+      ['inter', 'Inter', 'sans'], ['dmsans', 'DM Sans', 'sans'], ['manrope', 'Manrope', 'sans'],
+      ['worksans', 'Work Sans', 'sans'], ['plexsans', 'IBM Plex Sans', 'sans'],
+      ['sourcesans', 'Source Sans 3', 'sans'], ['nunitosans', 'Nunito Sans', 'sans'],
+      ['karla', 'Karla', 'sans'], ['spacegrotesk', 'Space Grotesk', 'sans'], ['figtree', 'Figtree', 'sans'],
+      ['merriweather', 'Merriweather', 'serif'], ['lora', 'Lora', 'serif'],
+      ['sourceserif', 'Source Serif 4', 'serif'], ['playfair', 'Playfair Display', 'serif'],
+      ['baskerville', 'Libre Baskerville', 'serif'],
+    ];
+    // "Apply to both" in one press — the common case is one font everywhere.
+    function cvMatchFonts() {
+      const th = (edStore && edStore.getDoc().theme) || {};
+      const h = th.fontHeading || 'inter';
+      edStore.endGesture();
+      edApply((d) => { d.theme = d.theme || {}; d.theme.fontHeading = h; d.theme.fontBody = h; });
+      cvRenderBrandPane();
     }
     function cvSetTheme(key, val) {
       edStore.endGesture();
-      edApply((d) => { d.theme = d.theme || {}; d.theme[key] = String(val).replace('#', ''); }, { coalesce: 'theme:' + key });
+      // Colours are stored without the '#'; font keys are not colours and must
+      // survive verbatim, or "spacegrotesk" would be fine and any key with a
+      // hash in it would not.
+      const isFont = key === 'fontHeading' || key === 'fontBody';
+      edApply((d) => { d.theme = d.theme || {}; d.theme[key] = isFont ? String(val) : String(val).replace('#', ''); }, { coalesce: 'theme:' + key });
+      if (isFont) cvRenderBrandPane();
     }
 
     // Uploads pane: the media library, click an item to place it on the canvas.
@@ -7493,9 +7565,14 @@ Aaliyah Washington`
       ] },
       { group: 'Interactive', items: [
         { type: 'button', label: 'Button', icon: '⬭', w: 220, h: 52, props: { text: 'Learn more' } },
+        { type: 'button', label: 'Download CV', icon: '⬇', w: 240, h: 52, props: { text: '⬇ Download my resume', anchor: 'resume' } },
+        { type: 'button', label: 'Email me', icon: '✉', w: 200, h: 52, props: { text: '✉ Email me', href: 'mailto:' } },
+        { type: 'button', label: 'Book a call', icon: '📅', w: 220, h: 52, props: { text: '📅 Book a call', style: 'ghost' } },
         { type: 'form', label: 'Contact form', icon: '✉', w: 480, h: 300, props: { mode: 'contact' } },
         { type: 'form', label: 'Request resume', icon: '📄', w: 480, h: 240, props: { mode: 'pdf' } },
-        { type: 'social', label: 'Social icons', icon: '◎', w: 220, h: 44, props: { items: [{ network: 'LinkedIn', url: 'https://linkedin.com' }] } },
+        { type: 'social', label: 'Social icons', icon: '◎', w: 260, h: 44, props: { display: 'icons', items: [{ network: 'linkedin', url: '' }, { network: 'github', url: '' }] } },
+        { type: 'social', label: 'Find me on…', icon: '➜', w: 320, h: 120, props: { display: 'link', items: [{ network: 'linkedin', url: '' }] } },
+        { type: 'map', label: 'Map', icon: '🗺', w: 520, h: 300, props: { zoom: 13, address: '' } },
         { type: 'nav', label: 'Page menu', icon: '☰', w: 900, h: 40, props: {} },
       ] },
       { group: 'Shapes', items: [
@@ -8110,10 +8187,43 @@ Aaliyah Washington`
         fields += row(_t('wc_ed_link', 'Links to'), `<input class="text-input" style="width:100%;font-size:13px;" placeholder="https://…" value="${wcEsc(p.href || '')}" oninput="edSetProp('href',this.value)"/>`);
         const pages = (edStore.getDoc().pages || []);
         fields += row(_t('wc_ed_linkpage', 'or a page'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('page',this.value)"><option value="">—</option>${pages.map(pg=>`<option value="${wcEsc(pg.slug)}"${p.page===pg.slug?' selected':''}>${wcEsc(pg.name||pg.slug)}</option>`).join('')}</select>`);
-        fields += row(_t('wc_ed_style', 'Style'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('style',this.value)"><option value="">Solid</option><option value="ghost"${p.style==='ghost'?' selected':''}>Outline</option></select>`);
+        fields += row(_t('wc_ed_style', 'Style'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('style',this.value)"><option value="">${wcEsc(_t('wc_ed_filled', 'Filled'))}</option><option value="ghost"${p.style==='ghost'?' selected':''}>${wcEsc(_t('wc_ed_outline', 'Outline'))}</option></select>`);
+        // Blank = the theme's own gradient, which is what a template intends.
+        fields += row(_t('wc_ed_btncolor', 'Button colour'), `<div style="display:flex;gap:6px;align-items:center;">
+          <input type="color" style="flex:1;height:32px;border:1px solid #45464c;border-radius:8px;" value="${wcEsc(p.color || '#6366F1')}" oninput="edSetProp('color',this.value)"/>
+          <button type="button" class="bo-act" onclick="edClearProp('color')" title="${wcEsc(_t('wc_ed_usetheme', 'Use the theme colour'))}">↺</button>
+        </div>`);
+      }
+      if (e.type === 'map') {
+        fields += row(_t('wc_ed_address2', 'Address'), `<input class="text-input" style="width:100%;font-size:13px;" placeholder="${wcEsc(_t('wc_ed_addrph', '1 Market St, San Francisco'))}" value="${wcEsc(p.address || '')}" oninput="edSetProp('address',this.value)"/>`);
+        fields += row(_t('wc_ed_zoom', 'Zoom'), `<div style="display:flex;gap:8px;align-items:center;">
+          <input type="range" min="1" max="20" style="flex:1;" value="${Number(p.zoom) || 13}" oninput="edSetNum('zoom',this.value,1,20)"/>
+          <span style="font-size:12px;color:#9ca3af;width:22px;text-align:right;">${Number(p.zoom) || 13}</span>
+        </div>`);
+      }
+      if (e.type === 'social') {
+        fields += row(_t('wc_ed_socmode', 'Show as'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('display',this.value)">
+          <option value="icons"${p.display !== 'link' ? ' selected' : ''}>${wcEsc(_t('wc_ed_socicons', 'A row of icons'))}</option>
+          <option value="link"${p.display === 'link' ? ' selected' : ''}>${wcEsc(_t('wc_ed_soclink', 'Find me on…'))}</option>
+        </select>`);
       }
       if (e.type === 'form') {
         fields += row(_t('wc_ed_formmode', 'Form type'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('mode',this.value)"><option value="contact"${p.mode!=='pdf'?' selected':''}>${wcEsc(_t('wc_contact_msg','Contact form'))}</option><option value="pdf"${p.mode==='pdf'?' selected':''}>${wcEsc(_t('wc_contact_pdf','Request my resume'))}</option></select>`);
+        /* The fields themselves. The email row is fixed: the server needs a
+           valid visitor address to store a lead and to let the owner reply, so
+           a form without one collects nothing — removing it would be quietly
+           breaking your own contact page. Everything else is yours. */
+        const ff = edFormFields(e);
+        fields += row(_t('wc_ed_fields', 'Fields'), ff.map((f, i) => `<div style="display:flex;gap:5px;margin-bottom:5px;align-items:center;">
+            <input class="text-input" style="flex:1;min-width:0;font-size:12px;" value="${wcEsc(f.label)}" oninput="edSetField(${i},'label',this.value)" placeholder="${wcEsc(_t('wc_ed_flabel', 'Label'))}"/>
+            <select class="text-input" style="width:88px;font-size:12px;" onchange="edSetField(${i},'type',this.value)"${f.type === 'email' ? ' disabled' : ''}>
+              ${[['text', _t('wc_ed_ftext', 'Text')], ['email', 'Email'], ['textarea', _t('wc_ed_flong', 'Long')], ['tel', _t('wc_ed_fphone', 'Phone')]]
+                .map(([v, l]) => `<option value="${v}"${f.type === v ? ' selected' : ''}>${wcEsc(l)}</option>`).join('')}
+            </select>
+            ${f.type === 'email'
+              ? `<span style="width:26px;text-align:center;font-size:11px;color:#9ca3af;" title="${wcEsc(_t('wc_ed_fkeep', 'Every form needs one email field'))}">🔒</span>`
+              : `<button type="button" class="bo-act bo-danger" style="padding:4px 7px;" onclick="edDelField(${i})">×</button>`}
+          </div>`).join('') + `<button type="button" class="bo-act" style="width:100%;margin-top:4px;" onclick="edAddField()">${wcEsc(_t('wc_ed_faddfield', '+ Add a field'))}</button>`);
       }
       if (e.type === 'box') {
         fields += row(_t('wc_ed_bg', 'Background'), `<input type="color" style="width:100%;height:32px;border:1px solid #e5e7eb;border-radius:8px;" value="#${wcEsc((p.bg||'f8fafc').replace('#',''))}" oninput="edSetProp('bg',this.value.replace('#',''))"/>`);
@@ -8134,9 +8244,15 @@ Aaliyah Washington`
       }
       if (e.type === 'social') {
         const items = p.items || [];
+        /* A HANDLE or a full URL. Someone who types "marvinperson" into the
+           LinkedIn row means their LinkedIn; someone who pastes the whole
+           address means that. Both are the same intention, so the renderer
+           accepts either and the placeholder shows the shorter one. */
         fields += row(_t('wc_ed_soclinks', 'Links'), items.map((it, i) => `<div style="display:flex;gap:5px;margin-bottom:5px;">
-            <input class="text-input" style="width:70px;font-size:12px;" placeholder="Name" value="${wcEsc(it.network||'')}" oninput="edSetItem(${i},'network',this.value)"/>
-            <input class="text-input" style="flex:1;min-width:0;font-size:12px;" placeholder="https://…" value="${wcEsc(it.url||'')}" oninput="edSetItem(${i},'url',this.value)"/>
+            <select class="text-input" style="width:104px;font-size:12px;" onchange="edSetItem(${i},'network',this.value)">
+              ${ED_SOCIALS.map(([k, label]) => `<option value="${k}"${String(it.network || '').toLowerCase() === k ? ' selected' : ''}>${wcEsc(label)}</option>`).join('')}
+            </select>
+            <input class="text-input" style="flex:1;min-width:0;font-size:12px;" placeholder="${wcEsc(edSocialPh(it.network))}" value="${wcEsc(it.url||'')}" oninput="edSetItem(${i},'url',this.value)"/>
             <button type="button" class="bo-act bo-danger" style="padding:4px 7px;" onclick="edDelItem(${i})">×</button>
           </div>`).join('') + `<button type="button" class="bo-act" style="width:100%;margin-top:4px;" onclick="edAddItem()">${wcEsc(_t('wc_ed_socadd','+ Add link'))}</button>`);
       }
@@ -8194,6 +8310,17 @@ Aaliyah Washington`
             <button type="button" class="bo-act" onclick="edNudgeZ(-1)" title="${wcEsc(_t('wc_ed_back', 'Send back'))}">⬇</button>
           </div>
           <button type="button" class="bo-act" style="width:100%;margin-top:8px;" onclick="edDuplicateSel()">${wcEsc(_t('wc_ed_duplicate', '⧉ Duplicate'))}</button>
+        </div>
+        <div style="border-top:1px solid #3b3c42;margin-top:14px;padding-top:10px;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#6366f1;margin-bottom:6px;">${wcEsc(_t('wc_ed_section', 'This section'))}</div>
+          <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#e5e7eb;cursor:pointer;">
+            <input type="checkbox" ${_edSecAnim(hit.section) ? 'checked' : ''} onchange="edSetSectionAnim(this.checked ? 'up' : '')"/> ${wcEsc(_t('wc_ed_anim', 'Animate on scroll'))}
+          </label>
+          ${_edSecAnim(hit.section) ? `<select class="text-input" style="width:100%;font-size:12px;margin-top:7px;" onchange="edSetSectionAnim(this.value)">
+            ${[['up', _t('wc_ed_anim_up', 'Slide up')], ['fade', _t('wc_ed_anim_fade', 'Fade in')], ['scale', _t('wc_ed_anim_scale', 'Gentle zoom')]]
+              .map(([v, l]) => `<option value="${v}"${_edSecAnim(hit.section) === v ? ' selected' : ''}>${wcEsc(l)}</option>`).join('')}
+          </select>` : ''}
+          <p style="font-size:11.5px;color:#9ca3af;margin-top:6px;line-height:1.5;">${wcEsc(_t('wc_ed_anim_note', 'Off on the canvas so nothing flickers while you work — open your live site to see it.'))}</p>
         </div>
         <button type="button" class="bo-act bo-danger" style="width:100%;margin-top:12px;" onclick="edDeleteSel()">${wcEsc(_t('wc_ed_delete', 'Delete element'))}</button>`;
       if (_edGearOpen) edPositionInspector();
@@ -8265,6 +8392,117 @@ Aaliyah Washington`
           if (h2) { h2.el.props = h2.el.props || {}; h2.el.props.src = url; }
         });
       });
+    }
+
+    /* ── Scroll animation, per section ────────────────────────────────────
+       Deliberately three options and no timing controls. This is a resume
+       site: an entrance that draws attention to itself works against the
+       person whose name is on it. The canvas never animates — an element that
+       faded in on every re-render would flicker under the user's hands — so
+       the panel says where to look instead. */
+    const ED_ANIMS = { fade: 1, up: 1, scale: 1 };
+    const _edSecAnim = (sec) => (sec && ED_ANIMS[sec.anim] ? sec.anim : '');
+    function edSetSectionAnim(val) {
+      const id = edSel;
+      if (!edStore || !id) return;
+      const hit = SiteDocStore.findElement(edStore.getDoc(), id); if (!hit) return;
+      const secId = hit.section.id;
+      const next = ED_ANIMS[val] ? val : '';
+      edStore.endGesture();
+      edApply((doc) => {
+        const page = SiteDocStore.findPage(doc, edPageId); if (!page) return;
+        const sec = (page.sections || []).filter((x) => x.id === secId)[0]; if (!sec) return;
+        if (next) sec.anim = next; else delete sec.anim;
+      });
+    }
+
+    /* The platforms offered, and what to type into each. Mirrors SD_SOCIALS in
+       server.js — the server owns the icons and the URL bases; this is only the
+       list the picker shows. Keep the two in step when adding a platform. */
+    const ED_SOCIALS = [
+      ['linkedin', 'LinkedIn'], ['github', 'GitHub'], ['x', 'X / Twitter'], ['instagram', 'Instagram'],
+      ['facebook', 'Facebook'], ['youtube', 'YouTube'], ['dribbble', 'Dribbble'], ['behance', 'Behance'],
+      ['medium', 'Medium'], ['website', 'Website'], ['email', 'Email'],
+    ];
+    const ED_SOCIAL_PH = {
+      linkedin: 'your-handle', github: 'your-handle', x: 'your-handle', instagram: 'your-handle',
+      facebook: 'your-page', youtube: 'your-channel', dribbble: 'your-handle', behance: 'your-handle',
+      medium: 'your-handle', website: 'example.com', email: 'you@example.com',
+    };
+    const edSocialPh = (k) => ED_SOCIAL_PH[String(k || '').toLowerCase()] || 'your-handle';
+
+    /* ── Contact form fields ──────────────────────────────────────────────
+       Read through the same rule the renderer uses, so what the panel lists is
+       what the page will show — including the email row it inserts when the
+       document does not have one. Duplicating the defaults here instead would
+       be two lists to keep in step, and the panel would be the one that drifts. */
+    function edFormFields(el) {
+      const p = el.props || {};
+      const raw = Array.isArray(p.fields) ? p.fields : null;
+      let out = raw ? raw.slice(0, 8).map((f, i) => ({
+        key: String((f && f.key) || ('field' + (i + 1))).replace(/[^a-zA-Z0-9_]/g, '').slice(0, 30) || ('field' + (i + 1)),
+        type: (f && ['text', 'email', 'textarea', 'tel'].includes(f.type)) ? f.type : 'text',
+        label: String((f && f.label) || '').slice(0, 60),
+        required: !!(f && f.required),
+      })) : [];
+      if (!out.length) {
+        out = [{ key: 'name', type: 'text', label: _t('wc_c_name', 'Your name'), required: false },
+          { key: 'email', type: 'email', label: _t('wc_c_email', 'Your email'), required: true }];
+        if (p.mode !== 'pdf') out.push({ key: 'message', type: 'textarea', label: _t('wc_c_msg', 'Your message'), required: false });
+        return out;
+      }
+      if (!out.some((f) => f.type === 'email')) {
+        out.splice(Math.min(1, out.length), 0, { key: 'email', type: 'email', label: _t('wc_c_email', 'Your email'), required: true });
+      }
+      return out;
+    }
+    // Editing any field writes the WHOLE list back, because the panel shows the
+    // normalised list — including a row the document did not have yet.
+    function _edWriteFields(mutate) {
+      const id = edSel;
+      if (!edStore || !id) return;
+      const hit = SiteDocStore.findElement(edStore.getDoc(), id); if (!hit) return;
+      const next = edFormFields(hit.el);
+      if (mutate(next) === false) return;
+      edApply((doc) => {
+        const h = SiteDocStore.findElement(doc, id); if (!h) return;
+        h.el.props = h.el.props || {};
+        h.el.props.fields = next;
+      });
+    }
+    function edSetField(i, key, val) {
+      _edWriteFields((f) => {
+        if (!f[i]) return false;
+        if (key === 'type' && f[i].type === 'email') return false;   // the fixed row
+        f[i][key] = val;
+        if (key === 'label') {
+          // Keep the submitted key readable, so a custom field arrives in the
+          // owner's inbox labelled the way they wrote it.
+          const k = String(val).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 30);
+          if (k && !f.some((x, j) => j !== i && x.key === k)) f[i].key = k;
+        }
+      });
+    }
+    function edAddField() {
+      _edWriteFields((f) => {
+        if (f.length >= 8) { showToast(_t('wc_ed_fmax', 'Eight fields is the most a contact form should ask for.'), 3000); return false; }
+        let n = f.length + 1, key = 'field' + n;
+        while (f.some((x) => x.key === key)) key = 'field' + (++n);
+        f.push({ key, type: 'text', label: _t('wc_ed_fnew', 'New field'), required: false });
+      });
+    }
+    function edDelField(i) {
+      _edWriteFields((f) => {
+        if (!f[i] || f[i].type === 'email') return false;
+        f.splice(i, 1);
+      });
+    }
+
+    // Clear a property back to whatever the template decides.
+    function edClearProp(key) {
+      const id = edSel;
+      edStore.endGesture();
+      edApply((doc) => { const h = SiteDocStore.findElement(doc, id); if (h && h.el.props) delete h.el.props[key]; });
     }
 
     /* A number that can be BLANK. An empty box means "leave it to the template",
@@ -8635,23 +8873,56 @@ Aaliyah Washington`
       : (st === 'synced' ? ` <span class="bo-sync">${wcEsc(_t('bo_sync_ok', 'Synced with website'))}</span>` : '');
     async function loadBackOffice() {
       boSel = { resumes: new Set(), covers: new Set() };
-      let resumes = [], covers = [], videos = [], sites = [];
+      let resumes = [], covers = [], videos = [], sites = [], leads = [];
       try {
-        const [r, c, v, s] = await Promise.all([
+        const [r, c, v, s, l] = await Promise.all([
           fetch('/api/resumes', { headers: authHeaders() }),
           fetch('/api/cover-letters', { headers: authHeaders() }),
           fetch('/api/videos', { headers: authHeaders() }),
           fetch('/api/personal-sites', { headers: authHeaders() }),
+          fetch('/api/site-leads', { headers: authHeaders() }),
         ]);
         resumes = (await r.json().catch(() => ({}))).resumes || [];
         covers = (await c.json().catch(() => ({}))).coverLetters || [];
         videos = (await v.json().catch(() => ({}))).videos || [];
         sites = (await s.json().catch(() => ({}))).sites || [];
+        leads = (await l.json().catch(() => ({}))).leads || [];
       } catch (_) {}
       boRenderAssets('resumes', resumes);
       boRenderAssets('covers', covers);
       boRenderVideos(videos);
       boRenderSites(sites);
+      boRenderLeads(leads);
+    }
+
+    /* Everything someone's contact form collected, newest first. Custom fields
+       are shown under their own labels: a form that asks "What role are you
+       hiring for?" is useless if the answer never reaches the person who
+       asked. Reply is a mailto so answering is one press. */
+    function boRenderLeads(leads) {
+      const wrap = document.querySelector('#bo-leads .bo-list');
+      if (!wrap) return;
+      if (!leads.length) {
+        wrap.innerHTML = `<div class="bo-empty">${wcEsc(_t('bo_leads_empty', 'No messages yet. Add a contact form to your website and they will appear here.'))}</div>`;
+        return;
+      }
+      wrap.innerHTML = leads.map((l) => {
+        let extra = {};
+        try { extra = l.extra ? JSON.parse(l.extra) : {}; } catch (_) { extra = {}; }
+        const when = new Date(Number(l.created_at) || 0).toLocaleString();
+        const rows = Object.entries(extra).map(([k, v]) =>
+          `<div style="font-size:12.5px;color:#4b5563;margin-top:3px;"><b>${wcEsc(k.replace(/_/g, ' '))}:</b> ${wcEsc(String(v))}</div>`).join('');
+        return `<div class="bo-item" style="display:block;">
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+            <strong style="font-size:14px;">${wcEsc(l.name || _t('bo_lead_anon', 'A visitor'))}</strong>
+            <a href="mailto:${wcEsc(l.visitor_email)}" style="font-size:12.5px;color:#4338ca;">${wcEsc(l.visitor_email)}</a>
+            <span style="font-size:11.5px;color:#9ca3af;margin-left:auto;">${wcEsc(when)} · ${wcEsc(l.sub || '')}</span>
+          </div>
+          ${l.message ? `<div style="font-size:13px;color:#374151;margin-top:6px;white-space:pre-wrap;">${wcEsc(l.message)}</div>` : ''}
+          ${rows}
+          <a class="bo-act" style="display:inline-block;margin-top:8px;text-decoration:none;" href="mailto:${wcEsc(l.visitor_email)}">${wcEsc(_t('bo_lead_reply', 'Reply'))}</a>
+        </div>`;
+      }).join('');
     }
 
     function boRenderAssets(kind, items) {
