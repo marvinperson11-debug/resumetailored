@@ -448,7 +448,12 @@ const RATE_LIMIT_OFF = process.env.RT_DISABLE_RATE_LIMIT === '1';
 // the Back Office's render of the user's own sites. Both are pure HTML off one
 // row, and a Back Office with eight sites would otherwise spend a quarter of the
 // shared 30/min budget just drawing itself.
-const TPL_PREVIEW_PATH_RE = /^\/(site-templates\/[^/]+\/preview|personal-sites\/[^/]+\/render)\/?$/;
+// The template DOCUMENT belongs here too, not just its preview. Opening the
+// editor spends a chunk of the shared 30/min budget, and every "Use" tap spent
+// another — so switching template a few times returned 429, which the client
+// could only report as "Could not load that template." It is static content
+// off a module, exactly like the preview beside it.
+const TPL_PREVIEW_PATH_RE = /^\/(site-templates\/[^/]+(\/preview)?|personal-sites\/[^/]+\/render)\/?$/;
 const tplPreviewLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 180,
