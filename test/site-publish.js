@@ -621,10 +621,27 @@ const server = app.listen(0, async () => {
        looking for. Every entry point now starts at the gallery. */
     check('Personal Website opens the picker, not the canvas',
       /if \(!openSub && !openRename\) \{ wcOpenPicker\(\); return; \}/.test(appJs));
-    check('the gallery hides every editor part and the app sidebar',
+    /* The gallery hides every EDITOR part — but keeps the app sidebar, which
+       is a deliberate reversal: hiding it made the page feel like a dead end
+       rather than a page of the product. The sidebar and the shell's 240px
+       offset are paired, so keeping one means keeping the other. */
+    check('the gallery hides every editor part',
       ['cv-top','cv-rail','cv-canvasbox','cv-inspector','cv-bottom']
-        .every(c => new RegExp('body\\.wb-picker \\.' + c + '[,{ ]').test(appJs))
-      && /body\.wb-picker \.sidebar/.test(appJs));
+        .every(c => new RegExp('body\\.wb-picker \\.' + c + '[,{ ]').test(appJs)));
+    check('but keeps the app sidebar', !/body\.wb-picker \.sidebar/.test(appJs));
+    check('and therefore does not shift the shell off its offset',
+      !/body\.wb-picker \.cv-shell \{ left: 0/.test(appJs));
+
+    /* Tiles sized like cards, not banners: `1fr 1fr` across a full-width
+       gallery stretched each one to roughly 700px. */
+    check('gallery tiles are sized by content, not stretched',
+      /body\.wb-picker \.cv-tplgrid \{ grid-template-columns: repeat\(auto-fill, minmax\(210px, 240px\)\)/.test(appJs));
+    /* A white template flush in the card had no visible edge. */
+    check('template previews get a mat so white ones have an edge',
+      /\.cv-tplgrid \.wc-tpl-thumb \{ background: #1f2023;/.test(appJs));
+    /* A fixed scale is pinned to one tile size; percentages are not. */
+    check('previews fill the tile at any tile width',
+      /\.wc-tpl-shot iframe \{ width: 500%; height: 500%;[^}]*scale\(\.2\)/.test(appJs));
     check('choosing a template from the gallery builds the site from it',
       /if \(document\.body\.classList\.contains\('wb-picker'\}?\)\) \{\n *const made = await wcEnsureSite\(null, id\);/.test(appJs)
       || /const made = await wcEnsureSite\(null, id\);/.test(appJs));
