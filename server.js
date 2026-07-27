@@ -2398,7 +2398,16 @@ function _sdElement(el, ctx) {
   const T = ctx.theme;
   const align = ['left', 'center', 'right'].includes(p.align) ? p.align : 'left';
   const color = _sdColor(p.color, '');
-  const styleText = `text-align:${align};${color ? `color:${color};` : ''}`;
+  /* Typography is a WHITELIST with clamps, never an interpolated string. These
+     values reach a `style` attribute on a public page, so "700" is a weight and
+     anything else is nothing at all — there is no case where echoing whatever
+     was stored would be the right behaviour. */
+  const weight = ['300', '400', '500', '600', '700', '800', '900'].includes(String(p.weight)) ? String(p.weight) : '';
+  const lh = Number(p.lh) >= 0.8 && Number(p.lh) <= 3 ? Number(p.lh).toFixed(2) : '';
+  const ls = Number(p.ls) >= -5 && Number(p.ls) <= 20 ? Number(p.ls) : null;
+  const styleText = `text-align:${align};${color ? `color:${color};` : ''}`
+    + `${weight ? `font-weight:${weight};` : ''}${lh ? `line-height:${lh};` : ''}`
+    + `${ls !== null && ls !== 0 ? `letter-spacing:${ls}px;` : ''}${p.italic ? 'font-style:italic;' : ''}`;
   // The height the element was drawn at. Media slots honour it; text elements
   // ignore it and grow with their content.
   const drawnH = _sdPx(el && el.h, 0);
@@ -2408,7 +2417,9 @@ function _sdElement(el, ctx) {
     case 'subheading':
       return `<h2 class="sd-h2" style="${styleText}${p.size ? `font-size:${_sdPx(p.size, 24)}px;` : ''}">${_sdText(p.text, 300)}</h2>`;
     case 'paragraph':
-      return `<div class="sd-p" style="${styleText}">${_sdText(p.text, 4000).replace(/\n/g, '<br/>')}</div>`;
+      // Body text honours an explicit size too. It always could have — the
+      // property was simply never read here, so the control for it was pointless.
+      return `<div class="sd-p" style="${styleText}${p.size ? `font-size:${_sdPx(p.size, 16)}px;` : ''}">${_sdText(p.text, 4000).replace(/\n/g, '<br/>')}</div>`;
     case 'image': {
       const u = _safeUrl(p.src);
       if (!u) return _sdPlaceholder(p, _sdPx(p.radius, 12), drawnH, ctx.editable);

@@ -235,6 +235,91 @@ const server = app.listen(0, async () => {
         check(`${width}: and a drag never opens a caret`, !afterDrag.typing, JSON.stringify(afterDrag));
       }
 
+      /* ── THE GEAR ───────────────────────────────────────────────────────
+         The property controls already existed in a docked panel. The gear
+         brings the SAME panel to the element. Measured as geometry — is it on
+         screen, is it near the box, is it inside the viewport — because "the
+         panel is open" was true of the docked one for months while nobody
+         could see it. */
+      if (target) {
+        const gear = await page.evaluate((id) => {
+          const g = document.querySelector(`.ed-box[data-el="${id}"] .ed-gear`);
+          if (!g) return null;
+          const r = g.getBoundingClientRect();
+          return { w: Math.round(r.width), h: Math.round(r.height), x: r.x + r.width / 2, y: r.y + r.height / 2 };
+        }, target.id);
+        check(`${width}: the selected box carries a gear`, !!gear && gear.w >= 24 && gear.h >= 20, JSON.stringify(gear));
+        // Same trap, same measurement: the resize handle is inside the scaled
+        // wrap too, and 14px at 0.29 is four pixels of target.
+        const handle = await page.evaluate((id) => {
+          const h = document.querySelector(`.ed-box[data-el="${id}"] .ed-h-se`);
+          if (!h) return null;
+          const r = h.getBoundingClientRect();
+          return { w: Math.round(r.width), h: Math.round(r.height) };
+        }, target.id);
+        check(`${width}: and a resize handle big enough to grab`, !!handle && handle.w >= 12 && handle.h >= 12, JSON.stringify(handle));
+
+        await page.locator(`.ed-box[data-el="${target.id}"] .ed-gear`).click();
+        await page.waitForTimeout(300);
+        const panel = await page.evaluate((id) => {
+          const b = document.getElementById('wcEdInspector');
+          const r = b.getBoundingClientRect();
+          const a = document.querySelector(`.ed-box[data-el="${id}"]`).getBoundingClientRect();
+          return {
+            float: b.classList.contains('is-float'),
+            onScreen: r.width > 0 && r.height > 0 && r.left >= 0 && r.top >= 0
+              && r.right <= innerWidth + 1 && r.bottom <= innerHeight + 1,
+            gapX: Math.round(Math.min(Math.abs(r.left - a.right), Math.abs(a.left - r.right))),
+            controls: b.querySelectorAll('input,select,textarea,button').length,
+            hasSize: !!b.querySelector('input[oninput*="\'size\'"]'),
+            hasWeight: !!b.querySelector('select[onchange*="\'weight\'"]'),
+            hasLh: !!b.querySelector('input[oninput*="\'lh\'"]'),
+            hasDup: !!b.querySelector('button[onclick*="edDuplicateSel"]'),
+            hasLayer: !!b.querySelector('button[onclick*="edNudgeZ"]'),
+          };
+        }, target.id);
+        check(`${width}: the gear opens the panel as a float`, panel.float, JSON.stringify(panel));
+        check(`${width}: entirely inside the viewport`, panel.onScreen, JSON.stringify(panel));
+        if (width >= 821) check(`${width}: and anchored beside the element`, panel.gapX <= 40, JSON.stringify(panel));
+        check(`${width}: it carries the size, weight and spacing controls`, panel.hasSize && panel.hasWeight && panel.hasLh, JSON.stringify(panel));
+        check(`${width}: plus duplicate and layer order`, panel.hasDup && panel.hasLayer, JSON.stringify(panel));
+
+        // Change the colour and the size, and prove the CANVAS changes.
+        const styled = await page.evaluate(async (id) => {
+          edSelect(id);
+          edSetProp('color', '#e11d48');
+          edSetNum('size', '61', 8, 200);
+          edSetProp('weight', '800');
+          await new Promise((r) => setTimeout(r, 1200));
+          const f = document.getElementById('wcEdFrame');
+          const node = f.contentDocument.querySelector(`.sd-el[data-el="${id}"]`);
+          const t = node && (node.firstElementChild || node);
+          const cs = t && getComputedStyle(t);
+          return cs ? { color: cs.color, size: cs.fontSize, weight: cs.fontWeight } : null;
+        }, target.id);
+        check(`${width}: a colour change reaches the rendered page`, styled && styled.color === 'rgb(225, 29, 72)', JSON.stringify(styled));
+        check(`${width}: so does a size change`, styled && styled.size === '61px', JSON.stringify(styled));
+        check(`${width}: so does a weight change`, styled && styled.weight === '800', JSON.stringify(styled));
+
+        // Duplicate: a real second element, selected, not on top of the first.
+        const dup = await page.evaluate((id) => {
+          edSelect(id);
+          const n0 = document.querySelectorAll('.ed-box').length;
+          const before = SiteDocStore.findElement(edStore.getDoc(), id).el;
+          edDuplicateSel();
+          const copy = SiteDocStore.findElement(edStore.getDoc(), edSel);
+          return { n0, n1: document.querySelectorAll('.ed-box').length, newSel: edSel !== id,
+                   offsetX: copy ? copy.el.x - before.x : 0, offsetY: copy ? copy.el.y - before.y : 0,
+                   sameText: copy ? (copy.el.props || {}).text === (before.props || {}).text : false };
+        }, target.id);
+        check(`${width}: duplicate makes a second element`, dup.n1 === dup.n0 + 1, JSON.stringify(dup));
+        check(`${width}: with the same content, offset so you can see it`, dup.sameText && dup.offsetX === 20 && dup.offsetY === 20, JSON.stringify(dup));
+        check(`${width}: and the copy is what is now selected`, dup.newSel, JSON.stringify(dup));
+
+        // Close the gear so the rest of the run is not behind a panel.
+        await page.evaluate(() => { if (_edGearOpen) edToggleGear(); });
+      }
+
       // Edit through the store and prove autosave reaches the server.
       const nPosts = posts.length;
       await page.evaluate(() => {
