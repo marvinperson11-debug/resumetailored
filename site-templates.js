@@ -623,9 +623,29 @@ const SITE_TEMPLATES = [
 function templateList() {
   return SITE_TEMPLATES.map(({ id, name, category, blurb, swatch }) => ({ id, name, category, blurb, swatch }));
 }
+/* EVERY BOX IN A TEMPLATE IS ITS OWN ELEMENT.
+
+   Templates draw their showcase rows with a `gallery`, which is one element
+   holding many pictures. On the page that looks like three boxes; in the
+   document it is one, so a user could not select the middle one, could not put
+   a video in it, and could not give the first its own background. They saw
+   three boxes and the editor disagreed.
+
+   The template DATA keeps the gallery, because a row of cells is a much more
+   readable way to write one. It is split into independent elements here, on the
+   way to becoming somebody's site — so the definitions stay short and what the
+   user gets is editable box by box.
+
+   Existing sites are not touched by this. The same split is available to them
+   as an action in the editor. */
+const { splitAll } = require('./public/site-doc-store.js');
+
 function templateDoc(id) {
   const t = SITE_TEMPLATES.find((x) => x.id === id);
-  return t ? JSON.parse(JSON.stringify(t.doc)) : null;
+  if (!t) return null;
+  const doc = JSON.parse(JSON.stringify(t.doc));
+  try { splitAll(doc); } catch (_) { /* a template that cannot split still opens */ }
+  return doc;
 }
 
 module.exports = { SITE_TEMPLATES, templateList, templateDoc };
