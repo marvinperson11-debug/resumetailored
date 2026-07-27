@@ -2829,6 +2829,10 @@ function _sdEditLayer() {
       e.target.removeAttribute('contenteditable');
       e.wrap.classList.remove('sd-ed-on');
       hint('');
+      // Always announced, on every exit path — cancelled, unchanged or saved.
+      // The builder hands its pointer events over for the duration of a typing
+      // session, and it has to get them back even when nothing was typed.
+      post({ kind: 'editEnd', ok: true, el: e.wrap.dataset.el });
       // Escaped twice on purpose: this string is a JS template literal that
       // EMITS JavaScript. A bare newline escape here becomes a REAL newline in
       // the output, and a regex literal cannot contain one — a syntax error in
@@ -2837,6 +2841,21 @@ function _sdEditLayer() {
       if (!save || now === e.before.trim()) { e.target.textContent = e.before; return; }
       if (!now) { e.target.textContent = e.before; return; }   // never leave it blank
       post({ kind: 'edit', el: e.wrap.dataset.el, value: now });
+    }
+
+    /* The builder's canvas covers this iframe with a selection overlay, so a
+       click never reaches the page. It asks for editing by NAME instead —
+       which is also more reliable than forwarding a synthetic click, since it
+       does not depend on translating coordinates through the canvas scale. */
+    function beginEditById(id){
+      var wrap = document.querySelector('.sd-el[data-el="' + String(id).replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      if (!wrap || !TEXT[wrap.dataset.type]) { post({ kind: 'editEnd', ok: false }); return; }
+      clear(); showReset(wrap); beginEdit(wrap);
+      wrap.scrollIntoView({ block: 'nearest' });
+      // Confirms the caret is really here. The builder gives up its pointer
+      // events to start a session, so it needs to know a session started —
+      // otherwise a page that never initialised leaves a dead overlay.
+      post({ kind: 'editBegan', el: wrap.dataset.el });
     }
 
     var hintEl = null;
@@ -3064,6 +3083,7 @@ function _sdEditLayer() {
         return;
       }
       if (m.__rtSync === 1) { showSync(m); return; }
+      if (m.__rtEdit === 1 && m.action === 'beginEdit') { beginEditById(m.el); return; }
       // "I want to move something": put a bar on every section at once and
       // bring the first into view, so the controls end up under their eyes
       // rather than needing to be discovered by clicking around.

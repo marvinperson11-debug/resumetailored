@@ -348,7 +348,15 @@
     .ed-tag { position: absolute; top: -20px; left: -2px; background: #6366f1; color: #fff; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
     .ed-h { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #6366f1; border-radius: 3px; }
     .ed-h-se { right: -8px; bottom: -8px; cursor: nwse-resize; }
+    /* Typing is one press away on a selected text element, and nothing on
+       screen would say so. The hint sits on the box itself rather than in a
+       toolbar, because that is where the user is looking. */
+    .ed-tip { position: absolute; top: -20px; right: -2px; background: #111827; color: #e5e7eb; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px; white-space: nowrap; pointer-events: none; }
+    .ed-box.is-text { cursor: text; }
     #wcEdOverlay.is-drop { background: rgba(99,102,241,.08); outline: 2px dashed #6366f1; outline-offset: -4px; }
+    /* While typing, the overlay hands its pointer events to the page beneath so
+       the caret, selection and clicks all land on the real text. */
+    #wcEdOverlay.is-typing { pointer-events: none; }
     .ed-pal-group { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #9ca3af; margin: 10px 0 5px; }
     .ed-pal-items { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
     .ed-pal-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border: 1.5px solid #e5e7eb; border-radius: 9px; background: #fff; cursor: grab; font: inherit; }
@@ -507,8 +515,16 @@
       .cv-body { position: relative; }
       .cv-panel { position: absolute; left: 56px; top: 0; bottom: 0; width: calc(100% - 56px);
         z-index: 6; box-shadow: 8px 0 24px rgba(0,0,0,.4); }
-      .cv-inspector { position: absolute; right: 0; top: 0; bottom: 0; z-index: 7;
-        box-shadow: -8px 0 24px rgba(0,0,0,.4); }
+      /* A BOTTOM SHEET on a phone, not a right-hand rail. Pinned right at 230px
+         wide it covered 59% of a 390px viewport — and it only ever appears when
+         something is selected, so it landed exactly on top of the element the
+         user had just tapped. Measured: the centre of a selected heading was
+         underneath it, which meant a second tap could not reach the canvas and
+         typing was unreachable on a phone. Along the bottom it leaves the thing
+         being edited visible, which is the whole point of selecting it. */
+      .cv-inspector { position: absolute; left: 0; right: 0; bottom: 0; top: auto; z-index: 7;
+        width: auto; max-height: 45vh; border-radius: 16px 16px 0 0;
+        box-shadow: 0 -8px 24px rgba(0,0,0,.4); }
       /* The collapse handle stays — it was only ever in the wrong PLACE. Pinned
          mid-rail it sat on top of the "Uploads" button; moved down to the
          bottom corner, clear of the last rail item and above the zoom bar, it
@@ -2092,6 +2108,9 @@
         wc_ed_text: 'Text', wc_ed_src: 'Media', wc_ed_caption: 'Caption', wc_ed_label: 'Label',
         wc_ed_color: 'Colour', wc_ed_pos: 'Position & size', wc_ed_mhide: 'Hide on mobile',
         wc_ed_delete: 'Delete element', wc_upload2: 'Upload',
+        wc_ed_clicktotype: '✎ click to type', wc_ed_reset_done: 'Back in sync with your resume',
+        wc_ed_type_slow: 'The page is still loading — try again in a moment.',
+        wc_ed_lastsection: 'A page needs at least one section.',
         wc_step_template: '2. Pick a template',
         wc_template_help: 'Every template is a complete, multi-section site. Preview it on desktop and mobile before you choose — then make it yours.',
         sm_done: '✓ Done Editing', 
@@ -2263,6 +2282,9 @@
         wc_ed_text: '文字', wc_ed_src: '媒体', wc_ed_caption: '说明', wc_ed_label: '标签',
         wc_ed_color: '颜色', wc_ed_pos: '位置和尺寸', wc_ed_mhide: '在手机上隐藏',
         wc_ed_delete: '删除元素', wc_upload2: '上传',
+        wc_ed_clicktotype: '✎ 点击输入', wc_ed_reset_done: '已与你的简历重新同步',
+        wc_ed_type_slow: '页面仍在加载，请稍后再试。',
+        wc_ed_lastsection: '页面至少需要一个板块。',
         wc_step_template: '2. 选择模板',
         wc_template_help: '每个模板都是完整的多板块网站。选择前可在桌面和手机视图预览——然后把它变成你的。',
         sm_done: '✓ 完成修改', 
@@ -7665,6 +7687,9 @@ Aaliyah Washington`
     // The canvas renders through the SAME endpoint/renderer as the published
     // site, so what you edit is what visitors get.
     function edRenderCanvas() {
+      // Rebuilding srcdoc destroys the document the caret is sitting in. Defer
+      // to the end of the typing session rather than dropping the request.
+      if (_edTyping) { _edRenderPending = true; return; }
       clearTimeout(_edRenderTimer);
       _edRenderTimer = setTimeout(async () => {
         const frame = document.getElementById('wcEdFrame'); if (!frame || !edStore) return;
@@ -7678,6 +7703,10 @@ Aaliyah Washington`
               text: (resume && resume.content) || 'Your Name\nyou@example.com\n\nSUMMARY\nYour summary goes here.',
               name: (resume && resume.title) || 'Your Name',
               config: edStore.getDoc(), page: page && !page.isHome ? page.slug : '',
+              // Renders the page WITH the inline editor inside it, so typing
+              // happens on the real text in its real typography rather than in
+              // a floating box the parent has to keep aligned.
+              editable: true,
             }),
           });
           if (!res.ok) return;
@@ -7722,8 +7751,9 @@ Aaliyah Washington`
         (s.els || []).forEach((e) => {
           const on = edSel === e.id;
           const y = top + (Number(e.y) || 0);
-          html += `<div class="ed-box${on ? ' is-sel' : ''}" data-el="${wcEsc(e.id)}" style="left:${Number(e.x) || 0}px;top:${y}px;width:${Number(e.w) || 0}px;height:${Math.max(Number(e.h) || 0, 24)}px;">
-            ${on ? `<span class="ed-tag">${wcEsc(e.type)}</span><i class="ed-h ed-h-se"></i>` : ''}
+          const isText = !!ED_TEXT_TYPES[e.type];
+          html += `<div class="ed-box${on ? ' is-sel' : ''}${isText ? ' is-text' : ''}" data-el="${wcEsc(e.id)}" style="left:${Number(e.x) || 0}px;top:${y}px;width:${Number(e.w) || 0}px;height:${Math.max(Number(e.h) || 0, 24)}px;">
+            ${on ? `<span class="ed-tag">${wcEsc(e.type)}</span>${isText ? `<span class="ed-tip">${wcEsc(_t('wc_ed_clicktotype', '✎ click to type'))}</span>` : ''}<i class="ed-h ed-h-se"></i>` : ''}
           </div>`;
         });
         top += Number(s.h) || 0;
@@ -7752,11 +7782,116 @@ Aaliyah Washington`
 
     function edSelect(id) { edSel = id; edRenderOverlay(); edRenderInspector(); }
 
+    /* ── Typing on the canvas ─────────────────────────────────────────────
+       The canvas is an iframe rendered by the SAME renderer as the published
+       site, and that renderer can inject an inline editor into the page. So
+       typing happens on the REAL text, in its real font, size, colour and
+       alignment — not in a floating box positioned over it. A parent-side
+       overlay would have to re-derive every element's box and keep it aligned
+       through scroll, zoom, device switches and re-render; this cannot drift,
+       because it is the same text node.
+
+       Two things have to be handed over for the duration of a typing session:
+
+       1. POINTER EVENTS. The selection overlay sits on top of the iframe and
+          is how dragging and resizing work — it also means no click ever
+          reaches the page. It is switched off while typing and switched back
+          on when the page says editing ended.
+       2. THE RE-RENDER. Rebuilding `srcdoc` destroys the document the caret is
+          in. Any render requested mid-session is deferred to the end of it. */
+    let _edTyping = null, _edRenderPending = false, _edTypingWatchdog = null;
+
+    const ED_TEXT_TYPES = { heading: 1, subheading: 1, paragraph: 1 };
+    function edIsText(id) {
+      if (!edStore) return false;
+      const hit = SiteDocStore.findElement(edStore.getDoc(), id);
+      return !!(hit && ED_TEXT_TYPES[hit.el.type]);
+    }
+
+    function edBeginTyping(id) {
+      const frame = document.getElementById('wcEdFrame');
+      if (!frame || !frame.contentWindow || !edIsText(id)) return false;
+      _edTyping = id;
+      const ov = document.getElementById('wcEdOverlay');
+      if (ov) { ov.style.pointerEvents = 'none'; ov.classList.add('is-typing'); }
+      // Focus has to move INTO the iframe or the keystrokes go to the app.
+      try { frame.contentWindow.focus(); } catch (_) {}
+      try { frame.contentWindow.postMessage({ __rtEdit: 1, action: 'beginEdit', el: id }, '*'); } catch (_) {}
+      /* If the page never answers, take the pointer events back. The inline
+         editor initialises after the page's stylesheets resolve, so a slow or
+         unreachable web font delays it — and a canvas that has handed away its
+         clicks and got nothing in return is a dead editor, which is a far worse
+         failure than a keystroke that did not land. */
+      clearTimeout(_edTypingWatchdog);
+      _edTypingWatchdog = setTimeout(() => {
+        if (!_edTyping) return;
+        edEndTyping();
+        showToast(_t('wc_ed_type_slow', 'The page is still loading — try again in a moment.'), 3000);
+      }, 2500);
+      return true;
+    }
+
+    function edEndTyping() {
+      clearTimeout(_edTypingWatchdog); _edTypingWatchdog = null;
+      if (!_edTyping) return;
+      _edTyping = null;
+      const ov = document.getElementById('wcEdOverlay');
+      if (ov) { ov.style.pointerEvents = ''; ov.classList.remove('is-typing'); }
+      if (_edRenderPending) { _edRenderPending = false; edRenderCanvas(); }
+    }
+
+    /* Everything the page inside the canvas reports. It never writes to the
+       document itself — it posts what happened and this applies it through the
+       undo store, so there is exactly one writer and an inline edit is undoable
+       next to a drag, a resize or a template change. */
+    window.addEventListener('message', (ev) => {
+      const m = ev && ev.data;
+      if (!m || m.__rtEdit !== 1 || m.action || !edStore || !window.SiteFields) return;
+
+      // The caret is really in the page: stand down the watchdog and let the
+      // session run for as long as the user wants to type.
+      if (m.kind === 'editBegan') { clearTimeout(_edTypingWatchdog); _edTypingWatchdog = null; return; }
+      if (m.kind === 'editEnd') { edEndTyping(); return; }
+      if (m.kind === 'undo') { edUndo(); return; }
+      if (m.kind === 'redo') { edRedo(); return; }
+
+      if (m.kind === 'edit') {
+        // applyEdit also DETACHES the field: once you have written it yourself,
+        // a later resume change leaves it alone until you reset it.
+        edApply((d) => { SiteFields.applyEdit(d, m.el, m.value); });
+        edSelect(m.el);
+        return;
+      }
+
+      if (m.kind === 'reset') {
+        edApply((d) => { SiteFields.resetField(d, m.el, wcResumeText()); });
+        showToast(_t('wc_ed_reset_done', 'Back in sync with your resume'), 2600);
+        return;
+      }
+
+      // An image inside the canvas: select it, which opens its controls —
+      // including the upload — in the inspector.
+      if (m.kind === 'photo') { edSelect(m.el); return; }
+
+      if (m.kind === 'moveSection') {
+        edApply((d) => { SiteFields.moveSection(d, 0, m.sec, m.delta); });
+        return;
+      }
+
+      if (m.kind === 'deleteSection') {
+        let ok = true;
+        edApply((d) => { ok = SiteFields.deleteSection(d, 0, m.sec) !== false; });
+        if (!ok) showToast(_t('wc_ed_lastsection', 'A page needs at least one section.'), 3000);
+        return;
+      }
+    });
+
     // ── Drag to move / resize ─────────────────────────────────────────────────
     function edPointerDown(ev, box) {
       if (!edStore) return;
       const id = box.dataset.el;
-      if (edSel !== id) edSelect(id);
+      const wasSelected = edSel === id;
+      if (!wasSelected) edSelect(id);
       const wrap = document.getElementById('wcEdWrap');
       const k = (wrap.getBoundingClientRect().width / ED_CANVAS) || 1;
       const resize = ev.target && ev.target.classList.contains('ed-h');
@@ -7766,6 +7901,12 @@ Aaliyah Washington`
         sx: ev.clientX, sy: ev.clientY,
         ox: Number(hit.el.x) || 0, oy: Number(hit.el.y) || 0,
         ow: Number(hit.el.w) || 0, oh: Number(hit.el.h) || 0,
+        /* Pressing an already-selected text element is AMBIGUOUS: it could be
+           the start of a drag, or it could mean "let me type in this". The
+           pointer decides — move it and you are dragging, release it where you
+           pressed and you are typing. Choosing one meaning outright would cost
+           the other, and both are things people do constantly. */
+        maybeType: wasSelected && !resize && edIsText(id),
       };
       ev.preventDefault();
       try { box.setPointerCapture(ev.pointerId); } catch (_) {}
@@ -7773,11 +7914,19 @@ Aaliyah Washington`
       window.addEventListener('pointerup', edPointerUp, { once: true });
     }
     const edSnap = (v) => Math.round(v / 10) * 10; // 10px grid
+    const ED_TYPE_SLOP = 4;   // screen px of wobble allowed before it is a drag
     function edPointerMove(ev) {
       if (!_edDrag) return;
+      const d = _edDrag;
+      if (d.maybeType) {
+        // Below the slop this is a click that has not been released yet, and
+        // moving the element by two pixels under a steady finger would be a
+        // worse outcome than waiting.
+        if (Math.abs(ev.clientX - d.sx) < ED_TYPE_SLOP && Math.abs(ev.clientY - d.sy) < ED_TYPE_SLOP) return;
+        d.maybeType = false;
+      }
       const dx = (ev.clientX - _edDrag.sx) / _edDrag.k;
       const dy = (ev.clientY - _edDrag.sy) / _edDrag.k;
-      const d = _edDrag;
       edApply((doc) => {
         const hit = SiteDocStore.findElement(doc, d.id); if (!hit) return;
         if (d.resize) {
@@ -7793,7 +7942,9 @@ Aaliyah Washington`
     function edPointerUp() {
       window.removeEventListener('pointermove', edPointerMove);
       if (edStore) edStore.endGesture(); // close the undo step for this gesture
+      const d = _edDrag;
       _edDrag = null;
+      if (d && d.maybeType) edBeginTyping(d.id);
     }
 
     // ── Inspector ─────────────────────────────────────────────────────────────
