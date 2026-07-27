@@ -685,8 +685,59 @@ const server = app.listen(0, async () => {
        selecting something. */
     check('the inspector is not hidden on a phone',
       !/\.cv-inspector \{ display: none !important; \}/.test(appJs));
-    check('and floats over the canvas there',
-      /\.cv-inspector \{ position: absolute; right: 0; top: 0; bottom: 0;/.test(appJs));
+    /* And it is a BOTTOM SHEET there, not a right-hand rail. At 230px pinned
+       right it covered 59% of a 390px viewport — and it only appears once
+       something is selected, so it landed on the element just tapped. Measured
+       in the browser: the centre of a selected heading was underneath it, which
+       made the second tap (the one that starts typing) unreachable. */
+    check('and is a bottom sheet there, not a rail over the canvas',
+      /\.cv-inspector \{ position: absolute; left: 0; right: 0; bottom: 0; top: auto;/.test(appJs));
+    check('with a height that leaves the canvas visible',
+      /\.cv-inspector \{[^}]*max-height: 45vh/.test(appJs));
+
+    /* ── TYPING ON THE CANVAS ───────────────────────────────────────────
+       The canvas is rendered by the same renderer as the published site, and
+       that renderer can inject an inline editor into the page. So typing
+       happens on the REAL text in its real typography, rather than in a
+       floating box the parent has to keep aligned through scroll, zoom, device
+       switches and re-render. */
+    check('the canvas is rendered with the inline editor in it',
+      /config: edStore\.getDoc\(\)[\s\S]{0,300}?editable: true,/.test(appJs));
+    check('the page reports edits rather than writing them',
+      /SiteFields\.applyEdit\(d, m\.el, m\.value\)/.test(appJs));
+    check('and they go through the undo store like every other change',
+      /edApply\(\(d\) => \{ SiteFields\.applyEdit/.test(appJs));
+    check('the overlay hands its pointer events to the page while typing',
+      /#wcEdOverlay\.is-typing \{ pointer-events: none; \}/.test(appJs)
+      && /ov\.classList\.add\('is-typing'\)/.test(appJs));
+    /* Rebuilding srcdoc destroys the document the caret is in. */
+    check('a re-render is deferred until typing ends, not dropped',
+      /if \(_edTyping\) \{ _edRenderPending = true; return; \}/.test(appJs)
+      && /if \(_edRenderPending\) \{ _edRenderPending = false; edRenderCanvas\(\); \}/.test(appJs));
+    /* Pressing an already-selected text element is ambiguous — drag or type.
+       The pointer decides, so neither gesture is taken away. */
+    check('press-and-hold-still means type, press-and-move means drag',
+      /maybeType: wasSelected && !resize && edIsText\(id\)/.test(appJs)
+      && /if \(d && d\.maybeType\) edBeginTyping\(d\.id\)/.test(appJs));
+    check('and a small wobble does not count as a drag',
+      /ED_TYPE_SLOP/.test(appJs));
+    check('the selected text box says you can type in it',
+      /class="ed-tip"/.test(appJs) && /wc_ed_clicktotype/.test(appJs));
+    /* A canvas that has given away its clicks and got nothing back is dead —
+       worse than a keystroke that did not land. */
+    check('handing over the pointer is taken back if the page never answers',
+      /_edTypingWatchdog = setTimeout\(/.test(appJs) && /wc_ed_type_slow/.test(appJs));
+
+    const srvJs = require('fs').readFileSync(require('path').join(__dirname, '..', 'server.js'), 'utf8');
+    check('the page can be told to start editing by element name',
+      /function beginEditById\(id\)\{/.test(srvJs)
+      && /m\.__rtEdit === 1 && m\.action === 'beginEdit'/.test(srvJs));
+    check('it confirms a session started',
+      /post\(\{ kind: 'editBegan', el: wrap\.dataset\.el \}\)/.test(srvJs));
+    check('and announces the end on every exit path — cancelled, unchanged or saved',
+      /post\(\{ kind: 'editEnd', ok: true, el: e\.wrap\.dataset\.el \}\)/.test(srvJs));
+    check('a name it cannot edit is refused rather than left hanging',
+      /if \(!wrap \|\| !TEXT\[wrap\.dataset\.type\]\) \{ post\(\{ kind: 'editEnd', ok: false \}\); return; \}/.test(srvJs));
 
     check('there is no read-only state to land in', !/_smPreviewFromEditor/.test(appJs));
     check('and no button that opens one', !/id="smPreviewBtn"/.test(appJs));
