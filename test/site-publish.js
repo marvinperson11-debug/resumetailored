@@ -716,9 +716,34 @@ const server = app.listen(0, async () => {
       && /if \(_edRenderPending\) \{ _edRenderPending = false; edRenderCanvas\(\); \}/.test(appJs));
     /* Pressing an already-selected text element is ambiguous — drag or type.
        The pointer decides, so neither gesture is taken away. */
-    check('press-and-hold-still means type, press-and-move means drag',
+    check('press-and-hold-still means act, press-and-move means drag',
       /maybeType: wasSelected && !resize && edIsText\(id\)/.test(appJs)
-      && /if \(d && d\.maybeType\) edBeginTyping\(d\.id\)/.test(appJs));
+      && /if \(d\.maybeType\) \{ edBeginTyping\(d\.id\); return; \}/.test(appJs));
+    /* What "acting" means depends on what was pressed. A photo or video slot
+       has no text to type into, so the same gesture opens the file picker —
+       which is what anyone pressing an empty photo frame is trying to do. */
+    check('and on a photo or video slot it means upload, not a caret',
+      /maybeUpload: wasSelected && !resize && edMediaType\(id\)/.test(appJs)
+      && /if \(d\.maybeUpload\) \{ edSelect\(d\.id\); edPickMedia\(d\.maybeUpload\); \}/.test(appJs));
+
+    /* ── THE PANEL OPENS ON THE GEAR AND ON NOTHING ELSE ─────────────────
+       It used to appear the moment anything was selected: on a phone a wall of
+       controls slid over the canvas every time you touched your own page, and
+       on desktop it took a column away from the thing you were looking at.
+       Selecting is for choosing; the gear is for changing. */
+    check('selecting an element does not open the panel',
+      /if \(!edStore \|\| !edSel \|\| !_edGearOpen\) \{\n        box\.hidden = true;/.test(appJs));
+    check('there is one function that opens and closes it',
+      /function edSetGear\(on\)/.test(appJs) && /function edToggleGear\(\) \{\n      edSetGear\(!_edGearOpen\);/.test(appJs));
+    check('a press anywhere on the canvas closes it',
+      /if \(_edGearOpen\) edSetGear\(false\);\n      if \(!wasSelected\) edSelect\(id\);/.test(appJs));
+    check('so does a click anywhere outside it — but not on the gear',
+      /t\.closest\('#wcEdInspector'\) \|\| t\.closest\('\.ed-gear'\)/.test(appJs));
+    /* A click inside the canvas cannot reach the parent; the page reports it. */
+    check('and a click reported from inside the canvas counts as outside',
+      /if \(m\.kind === 'pageclick'\) \{ if \(_edGearOpen\) edSetGear\(false\); return; \}/.test(appJs));
+    check('the panel is rendered before it is measured',
+      /edRenderInspector\(\);\n      if \(_edGearOpen\) edPositionInspector\(\);/.test(appJs));
     check('and a small wobble does not count as a drag',
       /ED_TYPE_SLOP/.test(appJs));
     check('the selected text box says you can type in it',
@@ -745,7 +770,7 @@ const server = app.listen(0, async () => {
     check('and follows the canvas when it scrolls or resizes',
       /document\.addEventListener\('scroll', edPositionInspector, true\)/.test(appJs));
     check('selecting something else does not leave it pointing at nothing',
-      /if \(edSel !== id\) _edGearOpen = false;/.test(appJs));
+      /_edGearOpen = false;\n      edSel = id;/.test(appJs));
 
     /* OVERLAY CHROME AT A CONSTANT SIZE ON SCREEN. The overlay is inside the
        scaled wrap, so a "28px" gear was measured at 7x5 physical pixels on a

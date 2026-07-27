@@ -2137,7 +2137,6 @@
         wc_step_design: '3. Design your page',
         wc_ed_undo: 'Undo', wc_ed_redo: 'Redo', wc_ed_undone: 'Undone',
         wc_ed_hint: 'Click an element to select it. Drag to move, or drag a corner handle to resize. Ctrl/Cmd+Z undoes.',
-        wc_ed_noselect: 'Select an element on the canvas to edit it.',
         wc_ed_text: 'Text', wc_ed_src: 'Media', wc_ed_caption: 'Caption', wc_ed_label: 'Label',
         wc_ed_color: 'Colour', wc_ed_pos: 'Position & size', wc_ed_mhide: 'Hide on mobile',
         wc_ed_delete: 'Delete element', wc_upload2: 'Upload',
@@ -2334,7 +2333,6 @@
         wc_step_design: '3. 设计你的页面',
         wc_ed_undo: '撤销', wc_ed_redo: '重做', wc_ed_undone: '已撤销',
         wc_ed_hint: '点击元素以选中。拖动移动，拖动右下角手柄调整大小。Ctrl/Cmd+Z 撤销。',
-        wc_ed_noselect: '在画布上选择一个元素进行编辑。',
         wc_ed_text: '文字', wc_ed_src: '媒体', wc_ed_caption: '说明', wc_ed_label: '标签',
         wc_ed_color: '颜色', wc_ed_pos: '位置和尺寸', wc_ed_mhide: '在手机上隐藏',
         wc_ed_delete: '删除元素', wc_upload2: '上传',
@@ -7831,6 +7829,8 @@ Aaliyah Washington`
             }),
           });
           if (!res.ok) return;
+          // The document about to be replaced is the one that was listening.
+          _edCanvasReady = false;
           frame.srcdoc = await res.text();
           frame.style.height = edDocHeight() + 'px';
           edFitStage();
@@ -7912,8 +7912,12 @@ Aaliyah Washington`
     }
 
     function edSelect(id) {
-      // A panel anchored to the OLD element would be pointing at nothing.
-      if (edSel !== id) _edGearOpen = false;
+      // A panel anchored to the OLD element would be pointing at nothing, and
+      // the user asked for selection alone to be silent — so this never opens
+      // it either. `edSetGear` is not used here because the panel is already
+      // closed by the pointerdown that led to this call; assigning directly
+      // keeps a fresh selection from flashing a panel open and shut.
+      _edGearOpen = false;
       edSel = id; edRenderOverlay(); edRenderInspector();
     }
 
@@ -7929,13 +7933,35 @@ Aaliyah Washington`
     let _edGearOpen = false;
 
     function edToggleGear() {
-      _edGearOpen = !_edGearOpen;
+      edSetGear(!_edGearOpen);
+    }
+
+    /* The one function that opens or closes the panel. Everything that wants it
+       shut — a press on the canvas, a click anywhere outside it, a click
+       reported from inside the iframe, selecting something else — goes through
+       here, so "closed" cannot mean two different things depending on which
+       path got there. */
+    function edSetGear(on) {
       const box = document.getElementById('wcEdInspector');
+      _edGearOpen = !!on && !!edSel;
       if (!box) return;
       box.classList.toggle('is-float', _edGearOpen);
+      // Render BEFORE measuring: positioning an empty box reads a height of
+      // nothing and pins the panel to the top of the screen.
+      edRenderInspector();
       if (_edGearOpen) edPositionInspector();
       else { box.style.left = ''; box.style.top = ''; }
     }
+
+    /* Anywhere outside the panel closes it — including the rail, the top bar
+       and the parts of the stage the overlay does not cover. The gear is the
+       exception, or opening it would immediately close it again. */
+    document.addEventListener('pointerdown', (ev) => {
+      if (!_edGearOpen) return;
+      const t = ev.target;
+      if (t && t.closest && (t.closest('#wcEdInspector') || t.closest('.ed-gear'))) return;
+      edSetGear(false);
+    }, true);
 
     /* Beside the element if there is room, otherwise on its other side, and
        clamped into the viewport either way. Anchoring without clamping is how a
@@ -7981,12 +8007,32 @@ Aaliyah Washington`
        2. THE RE-RENDER. Rebuilding `srcdoc` destroys the document the caret is
           in. Any render requested mid-session is deferred to the end of it. */
     let _edTyping = null, _edRenderPending = false, _edTypingWatchdog = null;
+    /* THE CANVAS IS NOT ALWAYS READY. Every edit re-renders it, which replaces
+       `srcdoc` and reloads the document — and the inline editor inside only
+       starts listening once its script has run, which waits on the page's
+       stylesheets. A press during that window posted `beginEdit` into a
+       document with no listener, the message was lost, and the user's press
+       did nothing but hand the overlay's clicks away until the watchdog took
+       them back. So the request is HELD and sent when the page says it is
+       ready. */
+    let _edCanvasReady = false, _edPendingEdit = null;
 
     const ED_TEXT_TYPES = { heading: 1, subheading: 1, paragraph: 1 };
     function edIsText(id) {
       if (!edStore) return false;
       const hit = SiteDocStore.findElement(edStore.getDoc(), id);
       return !!(hit && ED_TEXT_TYPES[hit.el.type]);
+    }
+
+    /* Media slots. A photo or video box has no text to type into, so the press
+       that would open a caret on a heading opens the file picker here instead —
+       the thing anyone pressing an empty photo frame is trying to do. The gear
+       is still there for everything else about it. */
+    const ED_MEDIA_TYPES = { image: 1, imagebox: 1, video: 1, audio: 1 };
+    function edMediaType(id) {
+      if (!edStore) return '';
+      const hit = SiteDocStore.findElement(edStore.getDoc(), id);
+      return (hit && ED_MEDIA_TYPES[hit.el.type]) ? hit.el.type : '';
     }
 
     function edBeginTyping(id) {
@@ -7997,7 +8043,8 @@ Aaliyah Washington`
       if (ov) { ov.style.pointerEvents = 'none'; ov.classList.add('is-typing'); }
       // Focus has to move INTO the iframe or the keystrokes go to the app.
       try { frame.contentWindow.focus(); } catch (_) {}
-      try { frame.contentWindow.postMessage({ __rtEdit: 1, action: 'beginEdit', el: id }, '*'); } catch (_) {}
+      if (_edCanvasReady) _edPostBeginEdit(id);
+      else _edPendingEdit = id;   // sent the moment the page reports itself ready
       /* If the page never answers, take the pointer events back. The inline
          editor initialises after the page's stylesheets resolve, so a slow or
          unreachable web font delays it — and a canvas that has handed away its
@@ -8012,8 +8059,15 @@ Aaliyah Washington`
       return true;
     }
 
+    function _edPostBeginEdit(id) {
+      const frame = document.getElementById('wcEdFrame');
+      if (!frame || !frame.contentWindow) return;
+      try { frame.contentWindow.postMessage({ __rtEdit: 1, action: 'beginEdit', el: id }, '*'); } catch (_) {}
+    }
+
     function edEndTyping() {
       clearTimeout(_edTypingWatchdog); _edTypingWatchdog = null;
+      _edPendingEdit = null;
       if (!_edTyping) return;
       _edTyping = null;
       const ov = document.getElementById('wcEdOverlay');
@@ -8029,9 +8083,18 @@ Aaliyah Washington`
       const m = ev && ev.data;
       if (!m || m.__rtEdit !== 1 || m.action || !edStore || !window.SiteFields) return;
 
+      /* The page has finished loading and is listening. Anything held back
+         because it arrived too early goes now. */
+      if (m.kind === 'ready') {
+        _edCanvasReady = true;
+        if (_edPendingEdit) { const id = _edPendingEdit; _edPendingEdit = null; _edPostBeginEdit(id); }
+        return;
+      }
       // The caret is really in the page: stand down the watchdog and let the
       // session run for as long as the user wants to type.
       if (m.kind === 'editBegan') { clearTimeout(_edTypingWatchdog); _edTypingWatchdog = null; return; }
+      // A click inside the canvas cannot reach the parent — the page reports it.
+      if (m.kind === 'pageclick') { if (_edGearOpen) edSetGear(false); return; }
       if (m.kind === 'editEnd') { edEndTyping(); return; }
       if (m.kind === 'undo') { edUndo(); return; }
       if (m.kind === 'redo') { edRedo(); return; }
@@ -8072,6 +8135,10 @@ Aaliyah Washington`
       if (!edStore) return;
       const id = box.dataset.el;
       const wasSelected = edSel === id;
+      // Any press on the canvas is "outside the panel", including one on the
+      // element the panel belongs to. Done before edSelect so a fresh selection
+      // does not have to undo it.
+      if (_edGearOpen) edSetGear(false);
       if (!wasSelected) edSelect(id);
       const wrap = document.getElementById('wcEdWrap');
       const k = (wrap.getBoundingClientRect().width / ED_CANVAS) || 1;
@@ -8082,12 +8149,16 @@ Aaliyah Washington`
         sx: ev.clientX, sy: ev.clientY,
         ox: Number(hit.el.x) || 0, oy: Number(hit.el.y) || 0,
         ow: Number(hit.el.w) || 0, oh: Number(hit.el.h) || 0,
-        /* Pressing an already-selected text element is AMBIGUOUS: it could be
-           the start of a drag, or it could mean "let me type in this". The
-           pointer decides — move it and you are dragging, release it where you
-           pressed and you are typing. Choosing one meaning outright would cost
-           the other, and both are things people do constantly. */
+        /* Pressing an already-selected element is AMBIGUOUS: it could be the
+           start of a drag, or it could mean "act on this". The pointer decides
+           — move it and you are dragging, release it where you pressed and you
+           are acting. Choosing one meaning outright would cost the other, and
+           both are things people do constantly.
+
+           What "acting" means depends on what was pressed: a caret in a text
+           box, the file picker on a photo or video slot. */
         maybeType: wasSelected && !resize && edIsText(id),
+        maybeUpload: wasSelected && !resize && edMediaType(id),
       };
       ev.preventDefault();
       try { box.setPointerCapture(ev.pointerId); } catch (_) {}
@@ -8099,12 +8170,12 @@ Aaliyah Washington`
     function edPointerMove(ev) {
       if (!_edDrag) return;
       const d = _edDrag;
-      if (d.maybeType) {
+      if (d.maybeType || d.maybeUpload) {
         // Below the slop this is a click that has not been released yet, and
         // moving the element by two pixels under a steady finger would be a
         // worse outcome than waiting.
         if (Math.abs(ev.clientX - d.sx) < ED_TYPE_SLOP && Math.abs(ev.clientY - d.sy) < ED_TYPE_SLOP) return;
-        d.maybeType = false;
+        d.maybeType = false; d.maybeUpload = '';
       }
       const dx = (ev.clientX - _edDrag.sx) / _edDrag.k;
       const dy = (ev.clientY - _edDrag.sy) / _edDrag.k;
@@ -8125,20 +8196,23 @@ Aaliyah Washington`
       if (edStore) edStore.endGesture(); // close the undo step for this gesture
       const d = _edDrag;
       _edDrag = null;
-      if (d && d.maybeType) edBeginTyping(d.id);
+      if (!d) return;
+      if (d.maybeType) { edBeginTyping(d.id); return; }
+      if (d.maybeUpload) { edSelect(d.id); edPickMedia(d.maybeUpload); }
     }
 
     // ── Inspector ─────────────────────────────────────────────────────────────
     function edRenderInspector() {
       const box = document.getElementById('wcEdInspector'); if (!box) return;
-      // It was `hidden` in the markup and NOTHING ever removed the attribute,
-      // so this panel has been rendering its contents into a box no one could
-      // see. Text, colour, alignment and media upload were all already built
-      // and simply unreachable. Shown whenever something is selected, hidden
-      // again when nothing is, so it never occupies the canvas for no reason.
-      if (!edStore || !edSel) {
+      /* THE PANEL OPENS ON THE GEAR AND ON NOTHING ELSE.
+         It used to appear the moment anything was selected — which meant that
+         on a phone a wall of controls slid over the canvas every time you
+         touched your own page, and on desktop it took a column away from the
+         thing you were looking at. Selecting is for choosing; the gear is for
+         changing. `_edGearOpen` is the whole condition, so there is exactly one
+         way in and no path that can accidentally reopen it. */
+      if (!edStore || !edSel || !_edGearOpen) {
         box.hidden = true;
-        box.innerHTML = `<div style="font-size:13px;color:#9ca3af;">${wcEsc(_t('wc_ed_noselect', 'Select an element on the canvas to edit it.'))}</div>`;
         return;
       }
       box.hidden = false;
