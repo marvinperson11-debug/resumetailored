@@ -1319,14 +1319,19 @@
             <button class="cv-tbtn" onclick="edOpenPages()" data-i18n="cv_pages">Pages</button>
             <button class="cv-tbtn" onclick="edUndo()" id="wcEdUndo" disabled title="Undo (Ctrl+Z)">↶</button>
             <button class="cv-tbtn" onclick="edRedo()" id="wcEdRedo" disabled title="Redo (Ctrl+Shift+Z)">↷</button>
-            <button class="cv-tbtn" onclick="wcDoneEditing()" id="cvDoneBtn" data-i18n="sm_done">✓ Done Editing</button>
-            <span class="cv-title" id="cvDocTitle">Untitled site</span>
+            <button class="cv-tbtn" onclick="wcSaveNow()" id="cvSaveBtn" data-i18n="cv_save">💾 Save</button>
+            <!-- The page name used to sit here: a bare "Home" in the middle of
+                 the toolbar with nothing to say what it was. Removed, not
+                 hidden — which page you are on is already in the bottom bar's
+                 page count and in the Pages panel. -->
+            <span class="cv-title"></span>
             <div class="cv-top-right">
+              <button class="cv-tbtn" id="cvBackToEdit" onclick="wcSetView('edit')" style="display:none;" data-i18n="cv_back_edit">← Back to editing</button>
               <div class="cv-seg">
                 <button id="wcEdDeskBtn" class="cv-segbtn is-on" onclick="edSetDevice('desktop')" title="Desktop">🖥</button>
                 <button id="wcEdMobBtn" class="cv-segbtn" onclick="edSetDevice('mobile')" title="Mobile">📱</button>
               </div>
-              <button class="cv-tbtn" onclick="wcSetView('preview')" data-i18n="cv_preview">Preview</button>
+              <button class="cv-tbtn" id="cvPreviewBtn" onclick="wcSetView('preview')" data-i18n="cv_preview">Preview</button>
               <button class="cv-publish" onclick="wcPublish()" data-i18n="cv_publish">Publish website</button>
             </div>
           </div>
@@ -2156,6 +2161,9 @@
         cv_b_fonth: 'Heading font', cv_b_fontb: 'Body font', cv_b_fontmatch: 'Use the heading font for both',
         bo_leads: 'Messages from your website', bo_lead_reply: 'Reply', bo_lead_anon: 'A visitor',
         bo_leads_empty: 'No messages yet. Add a contact form to your website and they will appear here.',
+        cv_save: '💾 Save', cv_back_edit: '← Back to editing',
+        wc_saved: '💾 Saved', wc_save_err: 'Could not save — check your connection and try again.',
+        wc_up_photo: '📷 Photo uploaded', wc_up_video: '🎬 Video uploaded', wc_up_audio: '🎙 Audio uploaded',
         wc_ed_addinto: 'Add into this box', wc_ed_add_photo: '📷 Photo', wc_ed_add_video: '🎬 Video',
         wc_ed_add_voice: '🎙 Voice', wc_ed_add_text: '✍️ Text',
         wc_ed_gear: 'Options for this box', wc_ed_size: 'Size', wc_ed_weight: 'Weight',
@@ -2168,7 +2176,6 @@
         wc_ed_lastsection: 'A page needs at least one section.',
         wc_step_template: '2. Pick a template',
         wc_template_help: 'Every template is a complete, multi-section site. Preview it on desktop and mobile before you choose — then make it yours.',
-        sm_done: '✓ Done Editing', 
         sm_edit_saved: 'Saved', 
         bo_sync_ok: 'Synced with website', bo_sync_off: 'Out of sync with website',
         sm_addr_prompt: 'Your web address. 3–30 letters, numbers or hyphens.',
@@ -2352,6 +2359,9 @@
         cv_b_fonth: '标题字体', cv_b_fontb: '正文字体', cv_b_fontmatch: '标题与正文使用同一字体',
         bo_leads: '来自网站的消息', bo_lead_reply: '回复', bo_lead_anon: '一位访客',
         bo_leads_empty: '还没有消息。在网站上添加联系表单后，消息会显示在这里。',
+        cv_save: '💾 保存', cv_back_edit: '← 返回编辑',
+        wc_saved: '💾 已保存', wc_save_err: '保存失败——请检查网络后重试。',
+        wc_up_photo: '📷 照片已上传', wc_up_video: '🎬 视频已上传', wc_up_audio: '🎙 音频已上传',
         wc_ed_addinto: '向此区块添加', wc_ed_add_photo: '📷 照片', wc_ed_add_video: '🎬 视频',
         wc_ed_add_voice: '🎙 语音', wc_ed_add_text: '✍️ 文字',
         wc_ed_gear: '此区块的选项', wc_ed_size: '字号', wc_ed_weight: '字重',
@@ -2364,7 +2374,6 @@
         wc_ed_lastsection: '页面至少需要一个板块。',
         wc_step_template: '2. 选择模板',
         wc_template_help: '每个模板都是完整的多板块网站。选择前可在桌面和手机视图预览——然后把它变成你的。',
-        sm_done: '✓ 完成修改', 
         sm_edit_saved: '已保存', 
         bo_sync_ok: '与网站同步', bo_sync_off: '与网站不同步',
         sm_addr_prompt: '你的网址，3–30 个字母、数字或连字符。',
@@ -2912,6 +2921,21 @@
 
     function authHeaders() {
       return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() };
+    }
+
+    /* AUTH WITHOUT A CONTENT-TYPE, for file uploads.
+
+       `authHeaders()` declares `application/json`, which is right for every
+       JSON call and catastrophic for a FormData one: it overwrites the
+       `multipart/form-data; boundary=…` the browser would have set, so the
+       boundary is lost AND express.json() tries to parse the multipart body,
+       throws on the first `------WebKit`, and returns 400 before the upload
+       route is ever reached.
+
+       Every photo, video and voice-clip upload in the Website Creator failed
+       this way. From the user's side the file simply vanished. */
+    function authHeadersNoType() {
+      return { 'Authorization': 'Bearer ' + getToken() };
     }
 
     async function checkAuth() {
@@ -6820,9 +6844,29 @@ Aaliyah Washington`
       showToast(_t('sm_addr_done', 'Your website has a new address.') + ' ' + (d.url || ''), 6000);
     }
 
-    // "Done Editing" — save what is open and go back to the Back Office, which
-    // is where every site is listed. It used to drop into the full-screen view
-    // that no longer exists.
+    /* SAVE, and stay where you are.
+
+       This button used to say "Done Editing" and leave for the Back Office,
+       which made saving and leaving the same act — so there was no way to
+       write your work down without also closing the thing you were writing.
+       Save now saves. Leaving is Back to editing, Publish, or the app's own
+       navigation. */
+    async function wcSaveNow() {
+      const btn = document.getElementById('cvSaveBtn');
+      if (btn) btn.disabled = true;
+      if (edStore) wcDoc = edStore.getDoc();
+      // A real write every time, not "flush if dirty". Pressing Save and being
+      // told "Saved" because nothing had changed is fine right up until the
+      // moment something HAD changed and the autosave had failed quietly.
+      clearTimeout(_wcSaveTimer);
+      const d = await wcSaveSite();
+      if (btn) btn.disabled = false;
+      if (d) showToast(_t('wc_saved', '💾 Saved'), 2200);
+      else showToast(_t('wc_save_err', 'Could not save — check your connection and try again.'), 4000);
+      return d;
+    }
+
+    // Kept for the app's own navigation: flush, then leave for the Back Office.
     async function wcDoneEditing() {
       if (edStore) wcDoc = edStore.getDoc();
       await wcFlushSave();
@@ -6997,14 +7041,49 @@ Aaliyah Washington`
     // removed when the editor was rebuilt — so every call threw before reaching
     // the end. It happened to be the last statement in its caller, which is why
     // nothing looked broken. Now it only touches what exists.
+    // Which of the two the stage is showing. The device toggle needs to know:
+    // it used to only ever resize the CANVAS, so in preview the buttons
+    // highlighted and nothing moved.
+    let wcView = 'edit';
+
     function wcSetView(view) {
       const edit = view !== 'preview';
+      wcView = edit ? 'edit' : 'preview';
       const canvas = document.querySelector('#wcEdStage .cv-canvasbox');
       const preview = document.getElementById('wcPreview');
       if (canvas) canvas.style.display = edit ? '' : 'none';
-      if (preview) preview.style.display = edit ? 'none' : 'block';
-      if (!edit) wcLoadPreview();
+      if (preview) preview.style.display = edit ? 'none' : 'flex';
+      // Preview covers the whole stage, so the way out has to be in the bar.
+      // "Save" is not it — that keeps you where you are, on purpose.
+      const back = document.getElementById('cvBackToEdit');
+      if (back) back.style.display = edit ? 'none' : '';
+      const pv = document.getElementById('cvPreviewBtn');
+      if (pv) pv.style.display = edit ? '' : 'none';
+      if (edit) edFitStage(); else { wcLoadPreview(); wcFitPreview(); }
     }
+
+    /* The preview frame at the width of the device chosen. A phone preview that
+       fills a 1440px window is not a preview of a phone. */
+    function wcFitPreview() {
+      const f = document.getElementById('wcPreviewFrame');
+      const wrap = document.getElementById('wcPreview');
+      const stage = document.getElementById('wcEdStage');
+      if (!f || !wrap || !stage) return;
+      const mobile = (typeof edDevice !== 'undefined' && edDevice === 'mobile');
+      /* MEASURED, not `100%`. The stage lays its children out by content, so an
+         iframe at `width:100%` of an auto-width parent fell back to the iframe
+         default — 300px, NARROWER than the phone preview it was meant to be
+         wider than. A percentage is only a width if something above it has one. */
+      const avail = Math.max(280, stage.clientWidth);
+      wrap.style.width = avail + 'px';
+      wrap.style.display = wrap.style.display === 'none' ? 'none' : 'flex';
+      wrap.style.justifyContent = 'center';
+      f.style.width = (mobile ? Math.min(390, avail) : avail) + 'px';
+      f.style.flex = '0 0 auto';
+      f.style.boxShadow = mobile ? '0 0 0 1px rgba(255,255,255,.14), 0 18px 48px rgba(0,0,0,.45)' : '';
+      f.style.borderRadius = mobile ? '14px' : '';
+    }
+    window.addEventListener('resize', () => { if (wcView === 'preview') wcFitPreview(); });
 
     // WYSIWYG preview of the CURRENT (unpublished) edits via /api/personal-site/preview.
     async function wcLoadPreview() {
@@ -7525,8 +7604,8 @@ Aaliyah Washington`
       const idx = Math.max(0, pages.findIndex(p => p.id === edPageId));
       const pc = document.getElementById('cvPageCount');
       if (pc) pc.textContent = `${_t('cv_pagesword', 'Pages')} ${idx + 1} / ${pages.length}`;
-      const t = document.getElementById('cvDocTitle');
-      if (t) t.textContent = (pages[idx] && pages[idx].name) || 'Untitled site';
+      // Nothing writes a page name into the toolbar any more. The spacer stays
+      // so Save stays left and the view controls stay right.
     }
 
     // ── Element library (V4) ──────────────────────────────────────────────────
@@ -8671,7 +8750,11 @@ Aaliyah Washington`
       document.getElementById('wcEdMobBtn').classList.toggle('is-on', edDevice === 'mobile');
       const ov = document.getElementById('wcEdOverlay');
       if (ov) ov.style.display = edDevice === 'mobile' ? 'none' : 'block'; // no dragging in mobile view
+      // Whichever view is on the stage. Only the canvas was ever resized, so in
+      // preview the highlight moved and the page did not — a dead button by
+      // every measure except the one that was being taken.
       edFitStage();
+      if (wcView === 'preview') wcFitPreview();
     }
     function edDeleteSel() {
       const id = edSel;
@@ -8720,7 +8803,25 @@ Aaliyah Washington`
 
     function edPickMedia(type) {
       const accept = type === 'video' ? 'video/mp4,video/webm' : type === 'audio' ? 'audio/*' : 'image/jpeg,image/png,image/webp';
-      wcUploadMedia(accept, (url) => { edStore.endGesture(); edSetProp('src', url); });
+      /* Capture WHICH element this upload is for. An upload takes as long as it
+         takes, and `edSetProp` writes to whatever is selected when it finishes
+         — so a user who picked a file and then clicked something else while it
+         uploaded would have had their photo land on the wrong box. */
+      const id = edSel;
+      wcUploadMedia(accept, (url) => {
+        if (!edStore || !id) return;
+        edStore.endGesture();
+        edApply((doc) => {
+          const h = SiteDocStore.findElement(doc, id); if (!h) return;
+          h.el.props = h.el.props || {};
+          h.el.props.src = url;
+        });
+        // The canvas re-render is debounced, so without this there is a beat
+        // where nothing has happened as far as the user can tell.
+        showToast(type === 'video' ? _t('wc_up_video', '🎬 Video uploaded')
+          : type === 'audio' ? _t('wc_up_audio', '🎙 Audio uploaded')
+          : _t('wc_up_photo', '📷 Photo uploaded'), 2600);
+      });
     }
 
     // ── Media uploads (Phase 4) ───────────────────────────────────────────────
@@ -8745,7 +8846,7 @@ Aaliyah Washington`
         showToast(_t('wc_uploading', 'Uploading…'));
         const fd = new FormData(); fd.append('file', f);
         try {
-          const r = await fetch('/api/site-media', { method: 'POST', headers: authHeaders(), body: fd });
+          const r = await fetch('/api/site-media', { method: 'POST', headers: authHeadersNoType(), body: fd });
           const d = await r.json().catch(() => ({}));
           if (!r.ok) { showToast(d.error || _t('wc_upload_err', 'Upload failed.')); return; }
           if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }
@@ -8845,7 +8946,7 @@ Aaliyah Washington`
       const baseType = (blob.type || '').split(';')[0] || (filename.endsWith('.webm') ? 'video/webm' : '');
       const clean = baseType ? new Blob([blob], { type: baseType }) : blob;
       const fd = new FormData(); fd.append('file', clean, filename);
-      const r = await fetch('/api/site-media', { method: 'POST', headers: authHeaders(), body: fd });
+      const r = await fetch('/api/site-media', { method: 'POST', headers: authHeadersNoType(), body: fd });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'Upload failed.');
       if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }

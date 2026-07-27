@@ -826,6 +826,64 @@ const server = app.listen(0, async () => {
       && /accept: 'video\/mp4,video\/webm'/.test(appJs)
       && /accept: 'audio\/\*'/.test(appJs));
 
+    /* ── UPLOADS ────────────────────────────────────────────────────────
+       Every photo, video and voice-clip upload in the Website Creator was
+       failing with a 400 and the file appeared to vanish. `authHeaders()`
+       declares `application/json` — right for every JSON call, catastrophic
+       for a FormData one: it overwrites the multipart Content-Type the browser
+       would have set, so the boundary is lost AND express.json() tries to
+       parse the body, throws on the first `------WebKit`, and answers 400
+       before the upload route is reached. */
+    check('there is an auth header without a content type',
+      /function authHeadersNoType\(\)/.test(appJs));
+    check('and every file upload uses it',
+      !/\/api\/site-media', \{ method: 'POST', headers: authHeaders\(\)/.test(appJs)
+      && (appJs.match(/site-media', \{ method: 'POST', headers: authHeadersNoType\(\), body: fd \}/g) || []).length === 2);
+    /* An upload takes as long as it takes. Writing to whatever is selected when
+       it finishes means a photo lands on whatever the user clicked meanwhile. */
+    check('an upload writes to the element it was started from',
+      /const id = edSel;[\s\S]{0,400}?const h = SiteDocStore\.findElement\(doc, id\)/.test(appJs));
+    check('and says so when it lands', /wc_up_photo/.test(appJs) && /wc_up_video/.test(appJs));
+
+    /* ── PREVIEW ────────────────────────────────────────────────────────
+       The device toggle only ever resized the CANVAS, so in preview the
+       highlight moved and the page did not — dead by every measure except the
+       one being taken. */
+    check('the stage knows which view it is showing', /let wcView = 'edit';/.test(appJs));
+    check('and the device toggle drives the preview too',
+      /if \(wcView === 'preview'\) wcFitPreview\(\);/.test(appJs));
+    /* MEASURED, not `100%`. The stage lays its children out by content, so an
+       iframe at width:100% of an auto-width parent fell back to the iframe
+       default of 300px — narrower than the phone preview it was meant to be
+       wider than. A percentage is only a width if something above it has one. */
+    check('the preview is sized from a measured width, not a percentage',
+      /const avail = Math\.max\(280, stage\.clientWidth\);/.test(appJs)
+      && /f\.style\.width = \(mobile \? Math\.min\(390, avail\) : avail\) \+ 'px';/.test(appJs));
+    /* Preview covers the whole stage, so the way out has to be in the bar. */
+    check('preview offers a way back to editing',
+      /id="cvBackToEdit"[^>]*onclick="wcSetView\('edit'\)"/.test(appJs));
+    check('shown only while previewing',
+      /if \(back\) back\.style\.display = edit \? 'none' : '';/.test(appJs));
+
+    /* ── SAVE ───────────────────────────────────────────────────────────
+       "Done Editing" made saving and leaving the same act, so there was no way
+       to write your work down without closing what you were writing. */
+    check('the header button says Save', /id="cvSaveBtn"[^>]*data-i18n="cv_save"/.test(appJs));
+    check('and it saves rather than leaving',
+      /async function wcSaveNow\(\)/.test(appJs)
+      && !/wcSaveNow[\s\S]{0,600}?showTab\('backoffice'\)/.test(appJs));
+    /* A real write every time. Being told "Saved" because nothing had changed
+       is fine right up until something HAD changed and autosave failed quietly. */
+    check('Save always writes, and admits it when the write fails',
+      /const d = await wcSaveSite\(\);/.test(appJs) && /wc_save_err/.test(appJs));
+
+    // ── THE HEADER ──────────────────────────────────────────────────────
+    check('the page name is gone from the editor header',
+      !/cvDocTitle/.test(appJs));
+    check('removed rather than hidden — nothing writes one either',
+      !/pages\[idx\] && pages\[idx\]\.name\) \|\| 'Untitled site'/.test(appJs));
+    check('the dead Done Editing translation went with it', !/sm_done/.test(appJs));
+
     const srvJs = require('fs').readFileSync(require('path').join(__dirname, '..', 'server.js'), 'utf8');
     /* Typography reaches a `style` attribute on a PUBLIC page, so it is a
        whitelist with clamps — there is no case where echoing whatever was
