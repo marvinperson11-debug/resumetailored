@@ -367,6 +367,12 @@
        someone who has no site yet. */
     body.wb-picker .sidebar,
     body.wb-picker .sm-view { display: none !important; }
+    /* Hiding the app sidebar is not enough: `.cv-shell` is offset by 240px to
+       make room for it (`@media (min-width:981px)`), so hiding one without
+       moving the other leaves a 240px blank strip down the left and the canvas
+       never fills it. The shell has to move too — the same pairing
+       `body.cv-wide` already does. */
+    body.wb-picker .cv-shell { left: 0 !important; }
     /* The first-run picker borrows the editor's shell to host the template
        grid, and borrowing it dragged the entire editor on screen: a top bar of
        tools, a rail, a canvas and an inspector, before the user had chosen
