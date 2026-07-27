@@ -6395,6 +6395,14 @@ Aaliyah Washington`
     function showToast(msg, ms) {
       const t = document.getElementById('toast');
       t.textContent = msg;
+      // Diagnostic toasts are multi-line. textContent keeps the newlines, but
+      // the shared .toast rule does not render them — without this the whole
+      // report collapses onto one unreadable line, which is no use to someone
+      // trying to screenshot it.
+      const multi = String(msg).indexOf('\n') >= 0;
+      t.style.whiteSpace = multi ? 'pre-line' : '';
+      t.style.textAlign = multi ? 'left' : '';
+      t.style.maxWidth = multi ? 'min(92vw, 460px)' : '';
       t.classList.add('show');
       clearTimeout(t._timer);
       t._timer = setTimeout(() => t.classList.remove('show'), ms || 3000);
@@ -8447,34 +8455,100 @@ Aaliyah Washington`
     function wcUseTemplate() { if (_tplPreviewId) { wcPickTemplate(_tplPreviewId); closeTplPreview(); } }
 
     // Adopt a template: fetch its document and make it this site's content.
+    /**
+     * DIAGNOSTIC BUILD. Every step reports itself, because "Could not load that
+     * template" was the same message for six different failures: the request
+     * not sending, the request failing, a non-2xx, a missing body, and a throw
+     * in any of the four things that run AFTER the fetch succeeds. The single
+     * catch around all of it meant a crash in fillFromResume looked exactly
+     * like a network error.
+     *
+     * `stage` tracks how far it got, so the toast can say which one it was.
+     */
     async function wcPickTemplate(id) {
-      try {
-        const r = await fetch('/api/site-templates/' + encodeURIComponent(id), { headers: authHeaders() });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok || !d.doc) { showToast(_t('wc_tpl_err', 'Could not load that template.')); return; }
-        // Swap in the template with the USER'S details, never the template's
-        // invented ones. This step existed only on the server, so switching
-        // template here adopted the sample person wholesale — "Alex Morgan, VP
-        // of Operations", with a fabricated biography, published under the
-        // user's own web address.
-        if (window.SiteFields) SiteFields.fillFromResume(d.doc, smResumeText());
-        wcDoc = d.doc; wcTplId = id;
-        wcRenderTplGrid();
+      let stage = 'start';
+      let status = 'never sent';
+      let bodyText = '';
+      const url = '/api/site-templates/' + encodeURIComponent(id);
+      const fail = (err) => {
+        const msg = [
+          'Cannot load template',
+          'Stage: ' + stage,
+          'Status: ' + status,
+          'Error: ' + (err ? (err.name || 'Error') + ': ' + (err.message || String(err)) : (bodyText || 'none')),
+          'Template: ' + id,
+        ].join('\n');
+        console.error('[USE] FAILED at stage:', stage, '| status:', status);
+        if (err) { console.error('[USE] Error:', err.name, err.message); console.error('[USE] Stack:', err.stack); }
+        if (bodyText) console.error('[USE] Response body:', bodyText);
+        showToast(msg, 15000);
+      };
 
-        // Chosen from the gallery: this is how the site comes into existence.
-        // Build it server-side from that template, then open the editor on it.
-        if (document.body.classList.contains('wb-picker')) {
-          const made = await wcEnsureSite(null, id);
-          if (!made) return;
-          wcEnterEditor();
+      try {
+        console.log('[USE] Clicked template:', id);
+        console.log('[USE] Current site:', (wcSite && wcSite.subdomain) || 'none');
+        console.log('[USE] In picker:', document.body.classList.contains('wb-picker'));
+        console.log('[USE] API URL:', new URL(url, location.origin).href);
+        console.log('[USE] Method: GET');
+        console.log('[USE] Token present:', !!getToken(), '| header:', String(authHeaders().Authorization || '').slice(0, 14) + '…');
+        console.log('[USE] SiteFields loaded:', !!window.SiteFields, '| SiteDocStore:', !!window.SiteDocStore);
+
+        // ── the request ────────────────────────────────────────────────────
+        stage = 'fetch';
+        let r;
+        try {
+          r = await fetch(url, { headers: authHeaders() });
+        } catch (netErr) {
+          status = 'network';
+          console.error('[USE] Request did not complete — network layer threw.');
+          fail(netErr);
+          showToast('Request did not send — check console', 12000);
           return;
         }
-        // First run: this is how the site comes into existence. Build it from
-        // the chosen template and drop them straight into it.
-        if (document.body.classList.contains('wb-picker')) { await smPickerChose(id); return; }
+        status = r.status;
+        console.log('[USE] Response status:', r.status, r.statusText);
+        bodyText = await r.text();
+        console.log('[USE] Response body:', bodyText.slice(0, 400));
+
+        if (!r.ok) { stage = 'http-' + r.status; fail(null); return; }
+
+        stage = 'parse';
+        let d = null;
+        try { d = JSON.parse(bodyText); } catch (pe) { fail(pe); return; }
+        if (!d || !d.doc) { stage = 'no-doc-in-body'; fail(null); return; }
+        console.log('[USE] Parsed doc. pages:', (d.doc.pages || []).length);
+
+        // ── everything after this point used to share the same catch ───────
+        stage = 'fillFromResume';
+        const resumeText = smResumeText();
+        console.log('[USE] Resume text length:', (resumeText || '').length);
+        if (window.SiteFields) SiteFields.fillFromResume(d.doc, resumeText);
+
+        stage = 'assign';
+        wcDoc = d.doc; wcTplId = id;
+
+        stage = 'renderTplGrid';
+        wcRenderTplGrid();
+
+        if (document.body.classList.contains('wb-picker')) {
+          stage = 'wcEnsureSite';
+          console.log('[USE] In picker — creating site from template', id);
+          const made = await wcEnsureSite(null, id);
+          console.log('[USE] wcEnsureSite returned:', made, '| site:', (wcSite && wcSite.subdomain) || 'none');
+          if (!made) { stage = 'wcEnsureSite returned false'; fail(null); return; }
+          stage = 'enterEditor';
+          wcEnterEditor();
+          console.log('[USE] Done — editor open on', wcTplId);
+          return;
+        }
+
+        stage = 'edInit';
         edInit(d.doc);
-        showToast(_t('wc_tpl_applied', '✓ Template applied — edit it below, then publish.'), 5000);
-      } catch (_) { showToast(_t('wc_tpl_err', 'Could not load that template.')); }
+        console.log('[USE] Done — template swapped to', wcTplId);
+        showToast(_t('wc_tpl_applied', '✓ Template applied — preview it, then publish.'), 5000);
+      } catch (e) {
+        fail(e);
+      }
     }
 
     // The site document sent to publish/preview: the chosen template plus the
