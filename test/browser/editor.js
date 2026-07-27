@@ -722,6 +722,187 @@ const server = app.listen(0, async () => {
         check(`${width}: and both still carry a gear for everything else`,
           await page.evaluate(() => !!document.querySelector('.ed-box.is-sel .ed-gear')));
 
+        /* ── EIGHT HANDLES, ALL WORKING ─────────────────────────────────────
+           One corner meant an element could only ever grow down-and-right: to
+           widen something on its left you resized it and then dragged it back.
+           Each direction is dragged for real and the resulting geometry read
+           off the document. */
+        const rz = await page.evaluate(() => {
+          const id = SiteDocStore.newId('rz');
+          edApply((d) => {
+            const p = SiteDocStore.findPage(d, edPageId);
+            const s = p.sections[0];
+            const y = (Number(s.h) || 0) + 60;
+            s.els.push({ id, type: 'video', x: 300, y, w: 300, h: 200, props: { src: '/media/1' } });
+            s.h = y + 400;
+          });
+          edSelect(id);
+          return { id, handles: [...document.querySelectorAll(`.ed-box[data-el="${id}"] .ed-h`)].map((h) => h.dataset.dir) };
+        });
+        check(`${width}: every corner and side has a handle`,
+          rz.handles.length === 8 && ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].every((d) => rz.handles.includes(d)),
+          JSON.stringify(rz.handles));
+        const hSize = await page.evaluate((i) => {
+          const h = document.querySelector(`.ed-box[data-el="${i}"] .ed-h-nw`);
+          const r = h.getBoundingClientRect();
+          return { w: Math.round(r.width), h: Math.round(r.height) };
+        }, rz.id);
+        check(`${width}: and each is big enough to grab on the glass`,
+          hSize.w >= 12 && hSize.h >= 12, JSON.stringify(hSize));
+
+        /* ONE FRESH ELEMENT PER DIRECTION, and a modest drag.
+
+           Dragging the same element four times in a row is how this first went:
+           at 390px the viewport clamps a pointer pushed past its right edge, so
+           the east drag was silently truncated, every later `before` inherited a
+           size nobody intended, and the west drag reported the element getting
+           NARROWER. The behaviour was right; the test was standing on its own
+           earlier steps. Each direction now starts clean, near the middle,
+           where 30px of travel is never clamped. */
+        const dragHandle = async (dir, sdx, sdy) => {
+          const id = await page.evaluate((d) => {
+            const i = SiteDocStore.newId('rz' + d);
+            edApply((doc) => {
+              const p = SiteDocStore.findPage(doc, edPageId);
+              const s = p.sections[0];
+              const y = (Number(s.h) || 0) + 80;
+              s.els.push({ id: i, type: 'box', x: 400, y, w: 300, h: 200, props: { bg: '6366F1' } });
+              s.h = y + 340;
+            });
+            edSelect(i);
+            return i;
+          }, dir);
+          await page.waitForTimeout(800);
+          await page.evaluate((a) => {
+            const h = document.querySelector(`.ed-box[data-el="${a.i}"] .ed-h-${a.d}`);
+            if (h) h.scrollIntoView({ block: 'center' });
+          }, { i: id, d: dir });
+          await page.waitForTimeout(300);
+          const at = await page.evaluate((a) => {
+            const h = document.querySelector(`.ed-box[data-el="${a.i}"] .ed-h-${a.d}`);
+            if (!h) return null;
+            const r = h.getBoundingClientRect();
+            const x = r.left + r.width / 2, y = r.top + r.height / 2;
+            const top = document.elementFromPoint(x, y);
+            const el = SiteDocStore.findElement(edStore.getDoc(), a.i).el;
+            return { x, y, onTarget: !!(top && top.dataset && top.dataset.dir === a.d),
+              got: top && top.dataset ? top.dataset.dir : null,
+              before: { x: el.x, y: el.y, w: el.w, h: el.h } };
+          }, { i: id, d: dir });
+          if (!at) return null;
+          if (!at.onTarget) return { before: at.before, after: at.before, missed: at.got };
+          // Stay inside the window at both widths — a clamped pointer is a
+          // shorter drag than the one asked for, silently.
+          const vw = width, vh = 900, M = 12;
+          const tx = Math.max(M, Math.min(vw - M, at.x + sdx));
+          const ty = Math.max(M, Math.min(vh - M, at.y + sdy));
+          await page.mouse.move(at.x, at.y);
+          await page.mouse.down();
+          await page.mouse.move(tx, ty, { steps: 8 });
+          await page.mouse.up();
+          await page.waitForTimeout(300);
+          const after = await page.evaluate((i) => {
+            const el = SiteDocStore.findElement(edStore.getDoc(), i).el;
+            return { x: el.x, y: el.y, w: el.w, h: el.h };
+          }, id);
+          return { before: at.before, after, moved: { dx: tx - at.x, dy: ty - at.y } };
+        };
+
+        const east = await dragHandle('e', 30, 0);
+        check(`${width}: dragging the east edge widens it and holds the left`,
+          east && east.after.w > east.before.w && east.after.x === east.before.x, JSON.stringify(east));
+        const west = await dragHandle('w', -30, 0);
+        /* THE WHOLE POINT OF MORE THAN ONE HANDLE. A west drag must move the
+           origin as well as the size, or it is the east handle with a different
+           cursor and the element crawls across the page. */
+        check(`${width}: dragging the west edge widens it and moves its left edge`,
+          west && west.after.w > west.before.w && west.after.x < west.before.x, JSON.stringify(west));
+        const south = await dragHandle('s', 0, 30);
+        check(`${width}: dragging the south edge makes it taller`,
+          south && south.after.h > south.before.h && south.after.y === south.before.y, JSON.stringify(south));
+        const north = await dragHandle('n', 0, -30);
+        check(`${width}: dragging the north edge makes it taller upwards`,
+          north && north.after.h > north.before.h && north.after.y < north.before.y, JSON.stringify(north));
+
+        /* A VIDEO IS AS BIG AS ITS BOX. It used to take whatever height its
+           aspect ratio wanted and hang outside the element entirely. Measured
+           against the RENDERED page, not the document. */
+        const vidFit = await page.evaluate(async (i) => {
+          await new Promise((r) => setTimeout(r, 1300));
+          const f = document.getElementById('wcEdFrame');
+          const wrap = f.contentDocument.querySelector(`.sd-el[data-el="${i}"]`);
+          const v = wrap && wrap.querySelector('video');
+          if (!wrap || !v) return null;
+          const wr = wrap.getBoundingClientRect(), vr = v.getBoundingClientRect();
+          return { wrapH: Math.round(wr.height), vidH: Math.round(vr.height),
+            overflowsBy: Math.round(vr.bottom - wr.bottom), fitClass: wrap.className.includes('sd-el--fit'),
+            objectFit: getComputedStyle(v).objectFit };
+        }, rz.id);
+        check(`${width}: the video is contained by its box, not hanging out of it`,
+          vidFit && vidFit.overflowsBy <= 1 && vidFit.vidH <= vidFit.wrapH + 1, JSON.stringify(vidFit));
+        check(`${width}: it fills the box rather than being letterboxed`,
+          vidFit && vidFit.fitClass && vidFit.objectFit === 'cover', JSON.stringify(vidFit));
+
+        /* ── A BACKGROUND ON ANY BOX ────────────────────────────────────────
+           Not just the `box` type — a heading takes one too. */
+        const bg = await page.evaluate(async (i) => {
+          edSelect(i);
+          edSetProp('elbg', '#123456');
+          edSetNum('elbgRadius', '18', 0, 400);
+          await new Promise((r) => setTimeout(r, 1300));
+          const f = document.getElementById('wcEdFrame');
+          const wrap = f.contentDocument.querySelector(`.sd-el[data-el="${i}"]`);
+          const cs = wrap && getComputedStyle(wrap);
+          return cs ? { bg: cs.backgroundColor, radius: cs.borderTopLeftRadius } : null;
+        }, rz.id);
+        check(`${width}: a background set in the panel reaches the rendered box`,
+          bg && bg.bg === 'rgb(18, 52, 86)', JSON.stringify(bg));
+        check(`${width}: with its corner radius`, bg && bg.radius === '18px', JSON.stringify(bg));
+
+        /* ── SPLITTING A MULTI-BOX ELEMENT ──────────────────────────────────
+           Templates ship pre-split now, so this is the route for a site built
+           before that. Driven through the panel button, not the function. */
+        const split = await page.evaluate(async () => {
+          const id = SiteDocStore.newId('gal');
+          edApply((d) => {
+            const p = SiteDocStore.findPage(d, edPageId);
+            const s = p.sections[0];
+            const y = (Number(s.h) || 0) + 60;
+            s.els.push({ id, type: 'gallery', x: 80, y, w: 1040, h: 380, props: { layout: 'grid', cols: 3, gap: 20, items: [
+              { ph: { from: '8B5CF6', to: 'ec4899' }, title: 'Neon Nights' },
+              { ph: { from: 'ec4899', to: 'f59e0b' }, title: 'Supercut' },
+              { ph: { from: '6366F1', to: '8B5CF6' }, title: 'Afterglow' },
+            ] } });
+            s.h = y + 460;
+          });
+          edSelect(id);
+          edSetGear(true);
+          await new Promise((r) => setTimeout(r, 300));
+          const btn = document.querySelector('#wcEdInspector button[onclick*="edSplitSel"]');
+          const before = document.querySelectorAll('.ed-box').length;
+          if (btn) btn.click();
+          await new Promise((r) => setTimeout(r, 1400));
+          const boxes = [...document.querySelectorAll('.ed-box')].map((b) => b.dataset.el);
+          const f = document.getElementById('wcEdFrame');
+          const still = !!f.contentDocument.querySelector(`.sd-el[data-el="${id}"]`);
+          return { offered: !!btn, before, after: boxes.length, galleryGone: !boxes.includes(id), stillRendered: still, sel: edSel };
+        });
+        check(`${width}: a multi-picture element offers to split`, split.offered, JSON.stringify(split));
+        check(`${width}: splitting turns one box into three`,
+          split.after === split.before + 2 && split.galleryGone, JSON.stringify(split));
+        check(`${width}: and the split boxes are still on the page, not vanished`,
+          !split.stillRendered && split.sel, JSON.stringify(split));
+
+        // Each one is now separately selectable — the whole point.
+        const indep = await page.evaluate(() => {
+          const ids = [...document.querySelectorAll('.ed-box')].map((b) => b.dataset.el).filter((x) => /^e/.test(x));
+          const a = ids[ids.length - 3], b = ids[ids.length - 2];
+          edSelect(a); const selA = edSel;
+          edSelect(b); const selB = edSel;
+          return { a, b, selA, selB, distinct: a !== b && selA === a && selB === b };
+        });
+        check(`${width}: each split box selects on its own`, indep.distinct, JSON.stringify(indep));
+
         // Close the gear so the rest of the run is not behind a panel.
         await page.evaluate(() => { if (_edGearOpen) edToggleGear(); });
       }

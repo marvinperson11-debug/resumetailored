@@ -2350,6 +2350,39 @@ function _sdFontLink(headingKey, bodyKey) {
    Per section, off by default, and deliberately a short whitelist. This is a
    resume site: an entrance that draws attention to itself works against the
    person whose name is on it. Anything not listed here means no animation. */
+/* Types whose height is the box the user drew, not whatever their content
+   asks for. Text is deliberately absent: clipping somebody's summary because
+   the box was drawn too short would be worse than the box growing. */
+const _SD_FIT_TYPES = { image: 1, imagebox: 1, video: 1, map: 1, box: 1 };
+
+/* ── A background on ANY element ──────────────────────────────────────────
+   Not just the `box` type. "Every part of every template should be editable"
+   means the card behind a testimonial, the strip behind a heading and the
+   frame around a photo all take a colour, a gradient or an image — and each
+   one is a whitelist, because this string lands in a `style` attribute on a
+   public page. `radius` and `pad` come along because a background with square
+   corners jammed against its text is not a background anyone wants. */
+function _sdElBg(el) {
+  const p = (el && el.props) || {};
+  let out = '';
+  const col = _sdColor(p.elbg, '');
+  if (col) out += `background-color:${col};`;
+  if (typeof p.elbgGrad === 'string' && /^linear-gradient\([#0-9a-zA-Z,.%\s-]{6,160}\)$/.test(p.elbgGrad)) {
+    out += `background-image:${p.elbgGrad};`;
+  } else {
+    const img = _safeUrl(p.elbgImage);
+    if (img) out += `background-image:url('${_escHtml(img)}');background-size:cover;background-position:center;`;
+  }
+  if (out) {
+    const r = _sdPx(p.elbgRadius, 0);
+    if (r) out += `border-radius:${Math.min(400, r)}px;`;
+    const pad = _sdPx(p.elbgPad, 0);
+    if (pad) out += `padding:${Math.min(120, pad)}px;`;
+    out += 'background-repeat:no-repeat;';
+  }
+  return out;
+}
+
 const SD_ANIMS = { fade: 1, up: 1, scale: 1 };
 const _sdAnim = (a) => (typeof a === 'string' && SD_ANIMS[a] ? a : '');
 
@@ -2521,6 +2554,14 @@ function _sdMobileClass(el, rules) {
  * Adding a photo lives in 💬 Not sure? → "I want to change my photo", which
  * searches the document rather than the rendered page and needs nothing drawn.
  */
+/* A gradient stands in for a picture. Two different situations use one shape:
+
+   - An EMPTY PHOTO SLOT the owner has not filled. Invisible to everyone,
+     including the owner — that was tried the other way and reverted.
+   - A DELIBERATELY COLOURED BOX, which is what a template's showcase row is
+     made of. `phShow` marks those. Splitting a gallery into editable boxes
+     turns three coloured cells into three elements, and without this they
+     would all vanish the moment they became editable. */
 function _sdPlaceholder(p, radius, minH, editable) {
   const ph = p && p.ph;
   if (!ph) return '';
@@ -2572,9 +2613,13 @@ function _sdElement(el, ctx) {
     }
     case 'imagebox': {
       const u = _safeUrl(p.src);
+      const shown = !u && p.ph && p.phShow
+        ? `<div class="sd-ph sd-ph--cell" style="background:linear-gradient(135deg,${_sdColor(p.ph.from, '#6366F1')},${_sdColor(p.ph.to, '#8B5CF6')});${drawnH ? `min-height:${drawnH}px;` : 'min-height:160px;'}">`
+          + `${p.ph.label ? `<span>${_sdText(p.ph.label, 60)}</span>` : ''}</div>`
+        : null;
       const inner = u
         ? `<img src="${_escHtml(u)}" alt="${_sdText(p.alt, 200)}" loading="lazy"/>`
-        : _sdPlaceholder(p, 0, drawnH, ctx.editable);
+        : (shown || _sdPlaceholder(p, 0, drawnH, ctx.editable));
       // No image and nothing to stand in for it — including a placeholder that
       // suppressed itself because this is not the editor — is an empty frame.
       if (!u && (!p.ph || !inner)) return '';
@@ -2786,11 +2831,20 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
       const html = _sdElement(el, ctx);
       if (!html) return '';
       const cls = _sdMobileClass(el, mobileRules);
-      const st = `left:${_sdPct(el.x)};top:${_sdPx(el.y)}px;width:${_sdPct(el.w)};min-height:${_sdPx(el.h, 0)}px;${el.z ? `z-index:${_sdPx(el.z)};` : ''}`;
+      /* TEXT GROWS, MEDIA IS CONTAINED. Text elements take `min-height` so a
+         long paragraph is never clipped; a photo, a video or a map takes a real
+         `height`, because the box the user drew IS the size they want it and
+         "it decides its own height from the file" is how a video ended up
+         hanging outside its own element with no way to pull it back. */
+      const fit = _SD_FIT_TYPES[el.type];
+      const box = fit
+        ? `height:${_sdPx(el.h, 0)}px;`
+        : `min-height:${_sdPx(el.h, 0)}px;`;
+      const st = `left:${_sdPct(el.x)};top:${_sdPx(el.y)}px;width:${_sdPct(el.w)};${box}${el.z ? `z-index:${_sdPx(el.z)};` : ''}${_sdElBg(el)}`;
       const hooks = editable
         ? ` data-el="${_escHtml(String(el.id || ''))}" data-type="${_escHtml(String(el.type || ''))}"${el.props && el.props.field ? ` data-field="${_escHtml(String(el.props.field))}"` : ''}${el.props && el.props.detached ? ' data-detached="1"' : ''}`
         : '';
-      return `<div class="sd-el${_sdMobileHidden(el) ? ' sd-el--mhide' : ''}${cls}"${hooks} style="${st}">${html}</div>`;
+      return `<div class="sd-el${fit ? ' sd-el--fit' : ''}${_sdMobileHidden(el) ? ' sd-el--mhide' : ''}${cls}"${hooks} style="${st}">${html}</div>`;
     }).join('');
     // The section id doubles as the anchor target: a button with
     // `props.anchor: 'contact'` links to `#contact`, which only scrolls if the
@@ -2873,8 +2927,19 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     .sd-gcell:hover img{transform:scale(1.05);}
     .sd-gcell figcaption{position:absolute;left:0;right:0;bottom:0;padding:10px 12px;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.7));}
     .sd-gcell figcaption span{display:block;font-weight:400;opacity:.85;font-size:12px;}
+    /* MEDIA IS CONTAINED BY ITS BOX. A width of 100% alone lets a video take
+       whatever height its aspect ratio wants -- a portrait clip in a 300x200
+       box rendered 533px tall and hung out of the element entirely, with no
+       way to pull it back. The wrapper gives media a real height rather than a
+       minimum, and object-fit:cover fills that height without distorting the
+       picture. Resize the box and the video resizes with it.
+       (No backticks: this is inside a template literal.) */
     .sd-video,.sd-audio{width:100%;display:block;border-radius:12px;}
-    .sd-video{background:#000;}
+    .sd-video{background:#000;height:100%;object-fit:cover;}
+    .sd-audio{height:auto;}
+    .sd-el--fit{overflow:hidden;}
+    .sd-el--fit>.sd-video,.sd-el--fit>.sd-img,.sd-el--fit>.sd-ibox{height:100%;}
+    .sd-el--fit>.sd-ibox>img{height:100%;object-fit:cover;}
     .sd-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 26px;border-radius:999px;background:linear-gradient(135deg,var(--p),var(--a));color:#fff;font-weight:700;text-decoration:none;font-size:15px;}
     .sd-btn--ghost{background:none;border:2px solid currentColor;color:var(--p);}
     .sd-socs{display:flex;gap:10px;flex-wrap:wrap;}

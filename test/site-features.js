@@ -240,6 +240,120 @@ const server = app.listen(0, async () => {
 
     check('a site that chose no fonts still gets Inter',
       /--fh:'Inter'/.test(render({ type: 'heading', props: { text: 'Hi' } })));
+    /* ══ MULTI-BOX TEMPLATES ═══════════════════════════════════════════════
+       A gallery is ONE element holding many pictures. On the page that looks
+       like three boxes; in the document it was one, so a user could not select
+       the middle one, put a video in it, or give the first its own background.
+       They saw three boxes and the editor disagreed. */
+    const DS = require('../public/site-doc-store.js');
+    const { templateDoc, templateList } = require('../site-templates.js');
+
+    let tplsWithGallery = 0, tplsChecked = 0;
+    for (const t of templateList()) {
+      const doc = templateDoc(t.id);
+      if (!doc) continue;
+      tplsChecked++;
+      let multi = 0;
+      DS.eachElement(doc, (e) => { if (DS.SPLITTABLE[e.type] && ((e.props || {}).items || []).length > 1) multi++; });
+      if (multi) tplsWithGallery++;
+    }
+    check('every template ships with its boxes already independent',
+      tplsChecked > 0 && tplsWithGallery === 0, `${tplsWithGallery} of ${tplsChecked} still hold a multi-item element`);
+
+    // The split itself: geometry, content, and nothing lost.
+    const galDoc = {
+      v: 2, pages: [{ id: 'home', slug: 'home', isHome: true, sections: [{ id: 's1', h: 600, els: [
+        { id: 'keep', type: 'heading', x: 0, y: 0, w: 200, h: 40, props: { text: 'Before' } },
+        { id: 'gal', type: 'gallery', x: 80, y: 100, w: 1040, h: 380, z: 2, props: { layout: 'grid', cols: 3, gap: 20, items: [
+          { ph: { from: '8B5CF6', to: 'ec4899' }, title: 'Neon Nights', caption: 'Campaign film' },
+          { ph: { from: 'ec4899', to: 'f59e0b' }, title: 'Supercut', caption: 'Motion identity' },
+          { ph: { from: '6366F1', to: '8B5CF6' }, title: 'Afterglow', caption: 'Album art' },
+        ] } },
+        { id: 'after', type: 'heading', x: 0, y: 500, w: 200, h: 40, props: { text: 'After' } },
+      ] }] }],
+    };
+    const madeIds = DS.splitElement(galDoc, 'gal');
+    const secEls = galDoc.pages[0].sections[0].els;
+    check('splitting a gallery makes one element per picture', madeIds && madeIds.length === 3, JSON.stringify(madeIds));
+    check('and the gallery itself is gone', !secEls.some((e) => e.id === 'gal'));
+    check('the elements around it keep their order',
+      secEls[0].id === 'keep' && secEls[secEls.length - 1].id === 'after',
+      secEls.map((e) => e.id).join(','));
+
+    const boxes = madeIds.map((id) => DS.findElement(galDoc, id).el);
+    /* The arithmetic has to agree with `sd-gal--grid`, which lays cells out as
+       repeat(cols,1fr) separated by gap: 1040 across 3 columns with 20px gaps
+       is 333 each, starting at 80, 433, 786. */
+    check('laid out where the gallery drew them',
+      boxes[0].x === 80 && boxes[1].x === 80 + 333 + 20 && boxes[2].x === 80 + 2 * (333 + 20),
+      boxes.map((b) => `${b.x},${b.y} ${b.w}x${b.h}`).join(' | '));
+    check('all on one row, filling the height', boxes.every((b) => b.y === 100 && b.h === 380));
+    check('each one is a real, separately addressable element',
+      new Set(boxes.map((b) => b.id)).size === 3 && boxes.every((b) => b.type === 'imagebox'));
+    check('nothing written in the gallery is lost',
+      /Neon Nights/.test(boxes[0].props.caption) && /Campaign film/.test(boxes[0].props.caption)
+      && /Afterglow/.test(boxes[2].props.caption), JSON.stringify(boxes.map((b) => b.props.caption)));
+    check('and each keeps the colour it had', boxes[0].props.ph.from === '8B5CF6' && boxes[1].props.ph.from === 'ec4899');
+
+    /* THE ONE THAT WOULD HAVE BITTEN. An empty photo slot is invisible by
+       design. Split boxes carry a deliberate gradient, so without `phShow` a
+       template's three coloured cards would vanish the moment they became
+       editable — the split would have "worked" and deleted the page. */
+    check('a split box is marked as deliberately coloured', boxes.every((b) => b.props.phShow === true));
+    const splitEl = bodyOf(render({ type: 'imagebox', props: boxes[0].props }));
+    check('so it is still visible to a visitor after the split',
+      /sd-ph--cell/.test(splitEl) && /8B5CF6/.test(splitEl), splitEl.slice(0, 300));
+    check('while an ordinary empty photo slot stays invisible',
+      !/sd-ph/.test(bodyOf(render({ type: 'imagebox', props: { ph: { from: '6366F1', to: '8B5CF6' } } }))));
+
+    check('an element with nothing to split is refused rather than mangled',
+      DS.splitElement(galDoc, 'keep') === null && DS.splitElement(galDoc, 'nope') === null);
+
+    // ══ MEDIA FITS ITS BOX ═════════════════════════════════════════════════
+    const vidPage = render({ type: 'video', w: 300, h: 200, props: { src: '/media/9' } });
+    const vid = bodyOf(vidPage);
+    check('a video element takes the height of the box it was drawn in',
+      /<div class="sd-el sd-el--fit"[^>]*height:200px;/.test(vid), vid.slice(0, 260));
+    check('and does not merely suggest one', !/<div class="sd-el sd-el--fit"[^>]*min-height:200px/.test(vid));
+    /* A portrait clip at width:100% of a 300px box wants to be 533px tall. It
+       used to get it, and hang out of its own element with no way to pull it
+       back. */
+    // The rules live in <head>, so these read the PAGE, not the body.
+    check('the video fills that height instead of overflowing it',
+      /\.sd-video\{background:#000;height:100%;object-fit:cover;\}/.test(vidPage));
+    check('overflow is clipped, so nothing can spill past the box',
+      /\.sd-el--fit\{overflow:hidden;\}/.test(vidPage));
+    check('TEXT still grows, because clipping a summary would be worse',
+      /min-height:200px/.test(bodyOf(render({ type: 'paragraph', w: 300, h: 200, props: { text: 'Long text' } }))));
+
+    // ══ A BACKGROUND ON ANY ELEMENT ════════════════════════════════════════
+    const bgEl = bodyOf(render({ type: 'heading', props: { text: 'Hi', elbg: '#123456', elbgRadius: 18, elbgPad: 12 } }));
+    check('a heading can have a background colour', /background-color:#123456;/.test(bgEl), bgEl.slice(0, 300));
+    check('with a corner radius and padding of its own',
+      /border-radius:18px;/.test(bgEl) && /padding:12px;/.test(bgEl));
+    check('a gradient background is applied',
+      /background-image:linear-gradient\(135deg,#6366F1,#8B5CF6\);/.test(
+        bodyOf(render({ type: 'paragraph', props: { text: 'x', elbgGrad: 'linear-gradient(135deg,#6366F1,#8B5CF6)' } }))));
+    check('and an image background',
+      /background-image:url\('\/media\/4'\);background-size:cover;/.test(
+        bodyOf(render({ type: 'paragraph', props: { text: 'x', elbgImage: '/media/4' } }))));
+    /* This lands in a style attribute on a public page, so it is a whitelist. */
+    check('a gradient that is not a gradient is ignored',
+      !/background-image/.test(bodyOf(render({ type: 'paragraph', props: { text: 'x', elbgGrad: 'url(javascript:alert(1))' } }))));
+    /* Read the ELEMENT's own style attribute. A whole-page search would always
+       fail: the page legitimately contains the word "javascript" in its own
+       inline script, which says nothing about whether the injection landed. */
+    const injected = (bodyOf(render({ type: 'paragraph', props: { text: 'x', elbgGrad: 'linear-gradient(red);}body{background:url(javascript:1)' } }))
+      .match(/<div class="sd-el[^>]*>/) || [''])[0];
+    check('and one carrying a CSS injection is ignored too',
+      !/background-image/.test(injected) && !/javascript/i.test(injected), injected);
+    check('radius and padding are clamped rather than trusted',
+      /border-radius:400px;/.test(bodyOf(render({ type: 'heading', props: { text: 'x', elbg: '#fff', elbgRadius: 99999 } })))
+      && /padding:120px;/.test(bodyOf(render({ type: 'heading', props: { text: 'x', elbg: '#fff', elbgPad: 99999 } }))));
+    check('an element with no background gets no background declaration',
+      !/background-color|background-image/.test(
+        (bodyOf(render({ type: 'heading', props: { text: 'x' } })).match(/<div class="sd-el[^>]*>/) || [''])[0]));
+
   } catch (e) {
     failures++;
     console.error('FAIL  unexpected error —', e && e.stack);

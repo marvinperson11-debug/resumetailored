@@ -28,9 +28,9 @@
        browser ran new HTML against an old module and any newly-added call threw
        "is not a function". Bump v when their contract changes; a browser holding
        a stale copy then has a different URL and must refetch. -->
-  <script src="/site-doc-store.js?v=2"></script>
-  <script src="/site-vibes.js?v=2"></script>
-  <script src="/site-fields.js?v=2"></script>
+  <script src="/site-doc-store.js?v=3"></script>
+  <script src="/site-vibes.js?v=3"></script>
+  <script src="/site-fields.js?v=3"></script>
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9896489046536589" crossorigin="anonymous"></script>
   <style>
@@ -358,9 +358,21 @@
     .ed-chrome { position: absolute; left: 0; bottom: 100%; display: flex; align-items: center; gap: 4px;
       white-space: nowrap; transform-origin: bottom left; transform: scale(calc(1 / var(--edk, 1))); padding-bottom: 4px; }
     .ed-tag { background: #6366f1; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: .5px; }
+    /* EIGHT HANDLES, not one. A single corner meant an element could only ever
+       be made bigger down-and-right from where it already was — to widen
+       something on its left you had to resize it and then drag it back. Each
+       one is counter-scaled like the rest of the overlay chrome, or at phone
+       zoom they are four physical pixels of target. */
     .ed-h { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #6366f1; border-radius: 3px;
       transform-origin: center; transform: scale(calc(1 / var(--edk, 1))); }
+    .ed-h-nw { left: -8px;  top: -8px;    cursor: nwse-resize; }
+    .ed-h-n  { left: 50%;   top: -8px;    margin-left: -7px; cursor: ns-resize; }
+    .ed-h-ne { right: -8px; top: -8px;    cursor: nesw-resize; }
+    .ed-h-e  { right: -8px; top: 50%;     margin-top: -7px;  cursor: ew-resize; }
     .ed-h-se { right: -8px; bottom: -8px; cursor: nwse-resize; }
+    .ed-h-s  { left: 50%;   bottom: -8px; margin-left: -7px; cursor: ns-resize; }
+    .ed-h-sw { left: -8px;  bottom: -8px; cursor: nesw-resize; }
+    .ed-h-w  { left: -8px;  top: 50%;     margin-top: -7px;  cursor: ew-resize; }
     /* Typing is one press away on a selected text element, and nothing on
        screen would say so. The hint sits on the box itself rather than in a
        toolbar, because that is where the user is looking. */
@@ -2164,6 +2176,12 @@
         cv_save: '💾 Save', cv_back_edit: '← Back to editing',
         wc_saved: '💾 Saved', wc_save_err: 'Could not save — check your connection and try again.',
         wc_up_photo: '📷 Photo uploaded', wc_up_video: '🎬 Video uploaded', wc_up_audio: '🎙 Audio uploaded',
+        wc_ed_elbg: 'Background', wc_ed_elbgimg: 'Use an image', wc_ed_elbgnone: 'No background',
+        wc_ed_elbgnograd: 'No gradient', wc_ed_pad: 'Padding',
+        wc_ed_split: '⛶ Split into separate boxes',
+        wc_ed_split_note: 'This is one element holding several pictures. Split it and each box becomes its own — click one, style one, put a video in one.',
+        wc_ed_split_done: 'Split into {n} boxes — each one is its own now.',
+        wc_ed_split_no: 'There is nothing to split in this element.',
         wc_ed_addinto: 'Add into this box', wc_ed_add_photo: '📷 Photo', wc_ed_add_video: '🎬 Video',
         wc_ed_add_voice: '🎙 Voice', wc_ed_add_text: '✍️ Text',
         wc_ed_gear: 'Options for this box', wc_ed_size: 'Size', wc_ed_weight: 'Weight',
@@ -2362,6 +2380,12 @@
         cv_save: '💾 保存', cv_back_edit: '← 返回编辑',
         wc_saved: '💾 已保存', wc_save_err: '保存失败——请检查网络后重试。',
         wc_up_photo: '📷 照片已上传', wc_up_video: '🎬 视频已上传', wc_up_audio: '🎙 音频已上传',
+        wc_ed_elbg: '背景', wc_ed_elbgimg: '使用图片', wc_ed_elbgnone: '无背景',
+        wc_ed_elbgnograd: '无渐变', wc_ed_pad: '内边距',
+        wc_ed_split: '⛶ 拆分为独立区块',
+        wc_ed_split_note: '这是一个包含多张图片的元素。拆分后每个区块都是独立的——可单独点击、单独设置样式、放入视频。',
+        wc_ed_split_done: '已拆分为 {n} 个区块，每个都是独立的。',
+        wc_ed_split_no: '此元素没有可拆分的内容。',
         wc_ed_addinto: '向此区块添加', wc_ed_add_photo: '📷 照片', wc_ed_add_video: '🎬 视频',
         wc_ed_add_voice: '🎙 语音', wc_ed_add_text: '✍️ 文字',
         wc_ed_gear: '此区块的选项', wc_ed_size: '字号', wc_ed_weight: '字重',
@@ -7957,7 +7981,7 @@ Aaliyah Washington`
           const y = top + (Number(e.y) || 0);
           const isText = !!ED_TEXT_TYPES[e.type];
           html += `<div class="ed-box${on ? ' is-sel' : ''}${isText ? ' is-text' : ''}" data-el="${wcEsc(e.id)}" style="left:${Number(e.x) || 0}px;top:${y}px;width:${Number(e.w) || 0}px;height:${Math.max(Number(e.h) || 0, 24)}px;">
-            ${on ? `<div class="ed-chrome"><span class="ed-tag">${wcEsc(e.type)}</span>${isText ? `<span class="ed-tip">${wcEsc(_t('wc_ed_clicktotype', '✎ click to type'))}</span>` : ''}<button type="button" class="ed-gear" title="${wcEsc(_t('wc_ed_gear', 'Options for this box'))}" aria-label="${wcEsc(_t('wc_ed_gear', 'Options for this box'))}">⚙</button></div><i class="ed-h ed-h-se"></i>` : ''}
+            ${on ? `<div class="ed-chrome"><span class="ed-tag">${wcEsc(e.type)}</span>${isText ? `<span class="ed-tip">${wcEsc(_t('wc_ed_clicktotype', '✎ click to type'))}</span>` : ''}<button type="button" class="ed-gear" title="${wcEsc(_t('wc_ed_gear', 'Options for this box'))}" aria-label="${wcEsc(_t('wc_ed_gear', 'Options for this box'))}">⚙</button></div>${ED_HANDLES.map((d) => `<i class="ed-h ed-h-${d}" data-dir="${d}"></i>`).join('')}` : ''}
           </div>`;
         });
         top += Number(s.h) || 0;
@@ -8096,6 +8120,67 @@ Aaliyah Washington`
        ready. */
     let _edCanvasReady = false, _edPendingEdit = null;
 
+    /* A short list of gradients rather than a free-text CSS field. This value
+       reaches a `style` attribute on a public page, and the renderer only
+       accepts a `linear-gradient(...)` of a shape it recognises — so offering
+       anything else here would be offering something that silently does
+       nothing. Mirrors the pattern in server.js. */
+    const ED_GRADS = [
+      ['Indigo', 'linear-gradient(135deg,#6366F1,#8B5CF6)'],
+      ['Sunset', 'linear-gradient(135deg,#f43f5e,#f59e0b)'],
+      ['Ocean', 'linear-gradient(135deg,#0ea5e9,#6366F1)'],
+      ['Forest', 'linear-gradient(135deg,#059669,#0d9488)'],
+      ['Ink', 'linear-gradient(135deg,#0f172a,#334155)'],
+      ['Blush', 'linear-gradient(135deg,#ec4899,#8B5CF6)'],
+      ['Paper', 'linear-gradient(135deg,#f8fafc,#e2e8f0)'],
+    ];
+
+    // A background image is an upload like any other, onto the element itself
+    // rather than into it.
+    function edPickElBg() {
+      const id = edSel;
+      wcUploadMedia('image/jpeg,image/png,image/webp', (url) => {
+        if (!edStore || !id) return;
+        edStore.endGesture();
+        edApply((doc) => {
+          const h = SiteDocStore.findElement(doc, id); if (!h) return;
+          h.el.props = h.el.props || {};
+          h.el.props.elbgImage = url;
+          delete h.el.props.elbgGrad;      // an image and a gradient compete
+        });
+        showToast(_t('wc_up_photo', '📷 Photo uploaded'), 2600);
+      });
+    }
+    // Back to no background at all — all four properties, or a cleared colour
+    // would leave a stale gradient or image behind it.
+    function edClearBg() {
+      const id = edSel;
+      edStore.endGesture();
+      edApply((doc) => {
+        const h = SiteDocStore.findElement(doc, id); if (!h || !h.el.props) return;
+        ['elbg', 'elbgGrad', 'elbgImage', 'elbgRadius', 'elbgPad'].forEach((k) => { delete h.el.props[k]; });
+      });
+    }
+
+    /* Turn one multi-picture element into several independent ones. The
+       templates now ship pre-split, so this is for a site built before that —
+       and for anyone who put a gallery in themselves and then wanted its cells
+       to be real boxes. */
+    function edSplitSel() {
+      const id = edSel;
+      if (!edStore || !id) return;
+      let made = null;
+      edStore.endGesture();
+      edApply((doc) => { made = SiteDocStore.splitElement(doc, id); });
+      if (made && made.length) {
+        edSelect(made[0]);
+        showToast(_t('wc_ed_split_done', 'Split into {n} boxes — each one is its own now.').replace('{n}', made.length), 3400);
+      } else {
+        showToast(_t('wc_ed_split_no', 'There is nothing to split in this element.'), 3000);
+      }
+    }
+
+    const ED_HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
     const ED_TEXT_TYPES = { heading: 1, subheading: 1, paragraph: 1 };
     function edIsText(id) {
       if (!edStore) return false;
@@ -8221,10 +8306,12 @@ Aaliyah Washington`
       if (!wasSelected) edSelect(id);
       const wrap = document.getElementById('wcEdWrap');
       const k = (wrap.getBoundingClientRect().width / ED_CANVAS) || 1;
-      const resize = ev.target && ev.target.classList.contains('ed-h');
+      const handle = ev.target && ev.target.classList && ev.target.classList.contains('ed-h')
+        ? (ev.target.dataset.dir || 'se') : '';
+      const resize = !!handle;
       const hit = SiteDocStore.findElement(edStore.getDoc(), id); if (!hit) return;
       _edDrag = {
-        id, resize, k,
+        id, resize, handle, k,
         sx: ev.clientX, sy: ev.clientY,
         ox: Number(hit.el.x) || 0, oy: Number(hit.el.y) || 0,
         ow: Number(hit.el.w) || 0, oh: Number(hit.el.h) || 0,
@@ -8261,8 +8348,28 @@ Aaliyah Washington`
       edApply((doc) => {
         const hit = SiteDocStore.findElement(doc, d.id); if (!hit) return;
         if (d.resize) {
-          hit.el.w = Math.max(40, Math.min(ED_CANVAS, edSnap(d.ow + dx)));
-          hit.el.h = Math.max(24, edSnap(d.oh + dy));
+          /* A handle on the left or the top moves the element's origin as well
+             as its size — that is the whole difference between "grow to the
+             right" and "grow to the left", and without it half the handles are
+             the south-east one wearing a different cursor. */
+          const H = d.handle || 'se';
+          const west = H.indexOf('w') >= 0, east = H.indexOf('e') >= 0;
+          const north = H.charAt(0) === 'n', south = H.charAt(0) === 's';
+          let x = d.ox, y = d.oy, w = d.ow, h = d.oh;
+          if (east) w = d.ow + dx;
+          if (west) { w = d.ow - dx; x = d.ox + dx; }
+          if (south) h = d.oh + dy;
+          if (north) { h = d.oh - dy; y = d.oy + dy; }
+          w = Math.max(40, Math.min(ED_CANVAS, edSnap(w)));
+          h = Math.max(24, edSnap(h));
+          // Dragging a west or north edge past the far edge would flip the box
+          // inside out; it stops at the minimum instead.
+          if (west) x = Math.min(edSnap(x), d.ox + d.ow - 40);
+          if (north) y = Math.min(edSnap(y), d.oy + d.oh - 24);
+          hit.el.x = Math.max(0, Math.min(ED_CANVAS - w, west ? x : d.ox));
+          hit.el.y = Math.max(0, north ? y : d.oy);
+          hit.el.w = w;
+          hit.el.h = h;
         } else {
           hit.el.x = Math.max(0, Math.min(ED_CANVAS - (Number(hit.el.w) || 0), edSnap(d.ox + dx)));
           hit.el.y = Math.max(0, edSnap(d.oy + dy));
@@ -8456,7 +8563,27 @@ Aaliyah Washington`
             <button type="button" class="bo-act" onclick="edSetMobile('order','')" title="${wcEsc(_t('wc_ed_mreset', 'Auto'))}">↺</button>
           </div>
         </div>
-        <div style="border-top:1px solid #eef0f4;margin-top:14px;padding-top:10px;">
+        <div style="border-top:1px solid #3b3c42;margin-top:14px;padding-top:10px;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#6366f1;margin-bottom:6px;">${wcEsc(_t('wc_ed_elbg', 'Background'))}</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input type="color" style="flex:1;height:32px;border:1px solid #45464c;border-radius:8px;" value="${wcEsc(p.elbg || '#ffffff')}" oninput="edSetProp('elbg',this.value)"/>
+            <button type="button" class="bo-act" onclick="edPickElBg()" title="${wcEsc(_t('wc_ed_elbgimg', 'Use an image'))}">🖼</button>
+            <button type="button" class="bo-act" onclick="edClearBg()" title="${wcEsc(_t('wc_ed_elbgnone', 'No background'))}">↺</button>
+          </div>
+          <select class="text-input" style="width:100%;font-size:12px;margin-top:6px;" onchange="edSetProp('elbgGrad',this.value)">
+            <option value="">${wcEsc(_t('wc_ed_elbgnograd', 'No gradient'))}</option>
+            ${ED_GRADS.map(([label, css]) => `<option value="${wcEsc(css)}"${p.elbgGrad === css ? ' selected' : ''}>${wcEsc(label)}</option>`).join('')}
+          </select>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+            <input class="text-input" type="number" min="0" max="400" style="font-size:12px;" placeholder="${wcEsc(_t('wc_ed_radius', 'Corner radius'))}" value="${p.elbgRadius || p.elbgRadius === 0 ? Number(p.elbgRadius) : ''}" oninput="edSetNum('elbgRadius',this.value,0,400)"/>
+            <input class="text-input" type="number" min="0" max="120" style="font-size:12px;" placeholder="${wcEsc(_t('wc_ed_pad', 'Padding'))}" value="${p.elbgPad || p.elbgPad === 0 ? Number(p.elbgPad) : ''}" oninput="edSetNum('elbgPad',this.value,0,120)"/>
+          </div>
+        </div>
+        ${SiteDocStore.SPLITTABLE[e.type] && ((p.items || []).length > 1) ? `<div style="border-top:1px solid #3b3c42;margin-top:14px;padding-top:10px;">
+          <button type="button" class="bo-act" style="width:100%;" onclick="edSplitSel()">${wcEsc(_t('wc_ed_split', '⛶ Split into separate boxes'))}</button>
+          <p style="font-size:11.5px;color:#9ca3af;margin-top:6px;line-height:1.5;">${wcEsc(_t('wc_ed_split_note', 'This is one element holding several pictures. Split it and each box becomes its own — click one, style one, put a video in one.'))}</p>
+        </div>` : ''}
+        <div style="border-top:1px solid #3b3c42;margin-top:14px;padding-top:10px;">
           <div style="display:flex;align-items:center;gap:6px;">
             <span style="font-size:12px;color:#6b7280;flex:1;">${wcEsc(_t('wc_ed_layer', 'Layer'))}</span>
             <button type="button" class="bo-act" onclick="edNudgeZ(1)" title="${wcEsc(_t('wc_ed_front', 'Bring forward'))}">⬆</button>
