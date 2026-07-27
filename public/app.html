@@ -2137,6 +2137,8 @@
         wc_ed_color: 'Colour', wc_ed_pos: 'Position & size', wc_ed_mhide: 'Hide on mobile',
         wc_ed_delete: 'Delete element', wc_upload2: 'Upload',
         wc_ed_clicktotype: '✎ click to type', wc_ed_reset_done: 'Back in sync with your resume',
+        wc_ed_addinto: 'Add into this box', wc_ed_add_photo: '📷 Photo', wc_ed_add_video: '🎬 Video',
+        wc_ed_add_voice: '🎙 Voice', wc_ed_add_text: '✍️ Text',
         wc_ed_gear: 'Options for this box', wc_ed_size: 'Size', wc_ed_weight: 'Weight',
         wc_ed_auto: 'Template', wc_ed_spacing: 'Spacing', wc_ed_lh: 'Line', wc_ed_ls: 'Letter',
         wc_ed_italic: 'Italic', wc_ed_layer: 'Layer', wc_ed_front: 'Bring forward',
@@ -2317,6 +2319,8 @@
         wc_ed_color: '颜色', wc_ed_pos: '位置和尺寸', wc_ed_mhide: '在手机上隐藏',
         wc_ed_delete: '删除元素', wc_upload2: '上传',
         wc_ed_clicktotype: '✎ 点击输入', wc_ed_reset_done: '已与你的简历重新同步',
+        wc_ed_addinto: '向此区块添加', wc_ed_add_photo: '📷 照片', wc_ed_add_video: '🎬 视频',
+        wc_ed_add_voice: '🎙 语音', wc_ed_add_text: '✍️ 文字',
         wc_ed_gear: '此区块的选项', wc_ed_size: '字号', wc_ed_weight: '字重',
         wc_ed_auto: '跟随模板', wc_ed_spacing: '间距', wc_ed_lh: '行高', wc_ed_ls: '字距',
         wc_ed_italic: '斜体', wc_ed_layer: '图层', wc_ed_front: '上移一层',
@@ -8147,6 +8151,15 @@ Aaliyah Washington`
           </div>`).join('') + `<button type="button" class="bo-act" style="width:100%;" onclick="edAddItem()">${wcEsc(_t('wc_ed_cardadd','+ Add card'))}</button>`);
       }
       box.innerHTML = `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6366f1;">${wcEsc(e.type)}</div>
+        <div style="border-bottom:1px solid #3b3c42;margin:10px 0 4px;padding-bottom:10px;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;margin-bottom:6px;">${wcEsc(_t('wc_ed_addinto', 'Add into this box'))}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <button type="button" class="bo-act" onclick="edAddInto('photo')">${wcEsc(_t('wc_ed_add_photo', '📷 Photo'))}</button>
+            <button type="button" class="bo-act" onclick="edAddInto('video')">${wcEsc(_t('wc_ed_add_video', '🎬 Video'))}</button>
+            <button type="button" class="bo-act" onclick="edAddInto('voice')">${wcEsc(_t('wc_ed_add_voice', '🎙 Voice'))}</button>
+            <button type="button" class="bo-act" onclick="edAddInto('text')">${wcEsc(_t('wc_ed_add_text', '✍️ Text'))}</button>
+          </div>
+        </div>
         ${fields}
         ${row(_t('wc_ed_pos', 'Position & size'), `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
           <input class="text-input" style="font-size:12px;" type="number" value="${Number(e.x) || 0}" oninput="edSetGeom('x',this.value)" title="X"/>
@@ -8184,6 +8197,74 @@ Aaliyah Washington`
         </div>
         <button type="button" class="bo-act bo-danger" style="width:100%;margin-top:12px;" onclick="edDeleteSel()">${wcEsc(_t('wc_ed_delete', 'Delete element'))}</button>`;
       if (_edGearOpen) edPositionInspector();
+    }
+
+    /* ── Adding into a box ────────────────────────────────────────────────
+       "Anything could be added to any box: photos, videos, voiceover, text."
+
+       The document is FLAT — sections hold elements at absolute coordinates,
+       and nothing nests. So "into this box" means placed inside the selected
+       element's rectangle when it fits there, and immediately beneath it when
+       it does not. That is what someone means by it: the new thing appears
+       where they were looking, not at the top of the page or wherever the last
+       drag happened to end.
+
+       The element is placed FIRST and the file picker opens after. Cancelling
+       the upload then leaves a real element with its placeholder, which can be
+       filled in later or deleted — rather than a press that did nothing. */
+    const ED_ADD_INTO = {
+      photo: { type: 'image', w: 360, h: 260, accept: 'image/jpeg,image/png,image/webp',
+        props: { ph: { from: '6366F1', to: '8B5CF6', label: 'Image' } } },
+      video: { type: 'video', w: 560, h: 320, accept: 'video/mp4,video/webm',
+        props: { label: 'Video' } },
+      voice: { type: 'audio', w: 420, h: 80, accept: 'audio/*',
+        props: { label: 'Voiceover' } },
+      text: { type: 'paragraph', w: 500, h: 100, accept: null,
+        props: { text: 'Write something here.' } },
+    };
+
+    function edAddInto(kind) {
+      const spec = ED_ADD_INTO[kind];
+      if (!spec || !edStore || !edSel) return;
+      const hit = SiteDocStore.findElement(edStore.getDoc(), edSel);
+      if (!hit) return;
+      const host = hit.el, secId = hit.section.id;
+      const hx = Number(host.x) || 0, hy = Number(host.y) || 0;
+      const hw = Number(host.w) || 0, hh = Number(host.h) || 0;
+
+      // Inside if there is room for it, otherwise directly below. A 40px-tall
+      // heading has no inside; a 300px image box does.
+      const M = 16;
+      const fits = hw - M * 2 >= 80 && hh - M * 2 >= 40;
+      const w = Math.max(60, Math.min(spec.w, fits ? hw - M * 2 : spec.w));
+      const h = Math.max(30, Math.min(spec.h, fits ? hh - M * 2 : spec.h));
+      const x = Math.max(0, Math.min(ED_CANVAS - w, fits ? hx + M : hx));
+      const y = Math.max(0, fits ? hy + M : hy + hh + 20);
+
+      const id = SiteDocStore.newId('e');
+      edStore.endGesture();
+      edApply((doc) => {
+        const page = SiteDocStore.findPage(doc, edPageId); if (!page) return;
+        const sec = (page.sections || []).filter((s) => s.id === secId)[0]; if (!sec) return;
+        sec.els = sec.els || [];
+        // Above the box it went into, or it would be behind it.
+        const z = (Number(host.z) || 0) + 1;
+        sec.els.push({ id, type: spec.type, x, y, w, h, z, props: JSON.parse(JSON.stringify(spec.props)) });
+        const need = y + h + 40;
+        if (need > (Number(sec.h) || 0)) sec.h = need;
+      });
+      edSelect(id);
+
+      if (!spec.accept) { showToast(_t('wc_ed_added', 'Added — drag to position it.')); return; }
+      // Straight to the file picker: choosing "Photo" and then having to find
+      // an Upload button is two steps for one intention.
+      wcUploadMedia(spec.accept, (url) => {
+        edStore.endGesture();
+        edApply((doc) => {
+          const h2 = SiteDocStore.findElement(doc, id);
+          if (h2) { h2.el.props = h2.el.props || {}; h2.el.props.src = url; }
+        });
+      });
     }
 
     /* A number that can be BLANK. An empty box means "leave it to the template",
