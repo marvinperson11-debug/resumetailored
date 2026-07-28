@@ -382,6 +382,9 @@
        and it is 28px on screen, not 28px before the canvas scale eats it. */
     .ed-gear { width: 28px; height: 22px; background: #6366f1; color: #fff; border: none; border-radius: 5px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
     .ed-gear:hover { background: #4338ca; }
+    .ed-play { width: 28px; height: 22px; background: #059669; color: #fff; border: none; border-radius: 5px; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+    .ed-play:hover { background: #047857; }
+    .ed-play.is-playing { background: #b45309; }
     .ed-box.is-text { cursor: text; }
     #wcEdOverlay.is-drop { background: rgba(99,102,241,.08); outline: 2px dashed #6366f1; outline-offset: -4px; }
     /* While typing, the overlay hands its pointer events to the page beneath so
@@ -2182,6 +2185,7 @@
         wc_ed_split_note: 'This is one element holding several pictures. Split it and each box becomes its own — click one, style one, put a video in one.',
         wc_ed_split_done: 'Split into {n} boxes — each one is its own now.',
         wc_ed_split_no: 'There is nothing to split in this element.',
+        wc_ed_play: 'Play / pause', wc_ed_vidbad: 'This video will not play in this browser — MP4 is the safest format.',
         wc_ed_addinto: 'Add into this box', wc_ed_add_photo: '📷 Photo', wc_ed_add_video: '🎬 Video',
         wc_ed_add_voice: '🎙 Voice', wc_ed_add_text: '✍️ Text',
         wc_ed_gear: 'Options for this box', wc_ed_size: 'Size', wc_ed_weight: 'Weight',
@@ -2386,6 +2390,7 @@
         wc_ed_split_note: '这是一个包含多张图片的元素。拆分后每个区块都是独立的——可单独点击、单独设置样式、放入视频。',
         wc_ed_split_done: '已拆分为 {n} 个区块，每个都是独立的。',
         wc_ed_split_no: '此元素没有可拆分的内容。',
+        wc_ed_play: '播放 / 暂停', wc_ed_vidbad: '此视频在当前浏览器中无法播放——MP4 是最通用的格式。',
         wc_ed_addinto: '向此区块添加', wc_ed_add_photo: '📷 照片', wc_ed_add_video: '🎬 视频',
         wc_ed_add_voice: '🎙 语音', wc_ed_add_text: '✍️ 文字',
         wc_ed_gear: '此区块的选项', wc_ed_size: '字号', wc_ed_weight: '字重',
@@ -7981,7 +7986,7 @@ Aaliyah Washington`
           const y = top + (Number(e.y) || 0);
           const isText = !!ED_TEXT_TYPES[e.type];
           html += `<div class="ed-box${on ? ' is-sel' : ''}${isText ? ' is-text' : ''}" data-el="${wcEsc(e.id)}" style="left:${Number(e.x) || 0}px;top:${y}px;width:${Number(e.w) || 0}px;height:${Math.max(Number(e.h) || 0, 24)}px;">
-            ${on ? `<div class="ed-chrome"><span class="ed-tag">${wcEsc(e.type)}</span>${isText ? `<span class="ed-tip">${wcEsc(_t('wc_ed_clicktotype', '✎ click to type'))}</span>` : ''}<button type="button" class="ed-gear" title="${wcEsc(_t('wc_ed_gear', 'Options for this box'))}" aria-label="${wcEsc(_t('wc_ed_gear', 'Options for this box'))}">⚙</button></div>${ED_HANDLES.map((d) => `<i class="ed-h ed-h-${d}" data-dir="${d}"></i>`).join('')}` : ''}
+            ${on ? `<div class="ed-chrome"><span class="ed-tag">${wcEsc(e.type)}</span>${isText ? `<span class="ed-tip">${wcEsc(_t('wc_ed_clicktotype', '✎ click to type'))}</span>` : ''}${ED_PLAYABLE[e.type] && (e.props || {}).src ? `<button type="button" class="ed-play" title="${wcEsc(_t('wc_ed_play', 'Play / pause'))}" aria-label="${wcEsc(_t('wc_ed_play', 'Play / pause'))}">▶</button>` : ''}<button type="button" class="ed-gear" title="${wcEsc(_t('wc_ed_gear', 'Options for this box'))}" aria-label="${wcEsc(_t('wc_ed_gear', 'Options for this box'))}">⚙</button></div>${ED_HANDLES.map((d) => `<i class="ed-h ed-h-${d}" data-dir="${d}"></i>`).join('')}` : ''}
           </div>`;
         });
         top += Number(s.h) || 0;
@@ -7995,6 +8000,15 @@ Aaliyah Washington`
       ov.querySelectorAll('.ed-gear').forEach((g) => {
         g.addEventListener('pointerdown', (ev) => { ev.stopPropagation(); ev.preventDefault(); });
         g.addEventListener('click', (ev) => { ev.stopPropagation(); ev.preventDefault(); edToggleGear(); });
+      });
+      /* THE SELECTION OVERLAY COVERS THE CANVAS, so a video's own controls can
+         never be pressed while editing — the play button is visible through it
+         and the click lands on the overlay. Rather than punch a hole in the
+         overlay (which would cost dragging and resizing on exactly the elements
+         that most need it), the selected video gets its own ▶ up here. */
+      ov.querySelectorAll('.ed-play').forEach((b) => {
+        b.addEventListener('pointerdown', (ev) => { ev.stopPropagation(); ev.preventDefault(); });
+        b.addEventListener('click', (ev) => { ev.stopPropagation(); ev.preventDefault(); edTogglePlay(); });
       });
       if (!ov._dropWired) {
         ov._dropWired = true;
@@ -8180,6 +8194,17 @@ Aaliyah Washington`
       }
     }
 
+    const ED_PLAYABLE = { video: 1, audio: 1 };
+
+    // Ask the page inside the canvas to play or pause the selected clip. The
+    // parent cannot reach into a media element and press its controls, and the
+    // overlay means the user cannot either — so it is asked by name.
+    function edTogglePlay() {
+      const frame = document.getElementById('wcEdFrame');
+      if (!frame || !frame.contentWindow || !edSel) return;
+      try { frame.contentWindow.postMessage({ __rtEdit: 1, action: 'playPause', el: edSel }, '*'); } catch (_) {}
+    }
+
     const ED_HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
     const ED_TEXT_TYPES = { heading: 1, subheading: 1, paragraph: 1 };
     function edIsText(id) {
@@ -8260,6 +8285,20 @@ Aaliyah Washington`
       // A click inside the canvas cannot reach the parent — the page reports it.
       if (m.kind === 'pageclick') { if (_edGearOpen) edSetGear(false); return; }
       if (m.kind === 'editEnd') { edEndTyping(); return; }
+      // The canvas answering the ▶ control.
+      if (m.kind === 'played') {
+        const b = document.querySelector('.ed-box.is-sel .ed-play');
+        if (b) { b.classList.toggle('is-playing', !!m.playing); b.textContent = m.playing ? '❚❚' : '▶'; }
+        if (!m.ok && m.reason === 'decode') showToast(_t('wc_ed_vidbad', 'This video will not play in this browser — MP4 is the safest format.'), 7000);
+        return;
+      }
+      /* A clip the browser cannot decode leaves a frozen frame with controls
+         that do nothing. Said out loud in the editor, where it can still be
+         fixed, rather than discovered by a visitor. */
+      if (m.kind === 'mediaError') {
+        showToast(_t('wc_ed_vidbad', 'This video will not play in this browser — MP4 is the safest format.'), 7000);
+        return;
+      }
       if (m.kind === 'undo') { edUndo(); return; }
       if (m.kind === 'redo') { edRedo(); return; }
 
@@ -8929,19 +8968,22 @@ Aaliyah Washington`
     }
 
     function edPickMedia(type) {
-      const accept = type === 'video' ? 'video/mp4,video/webm' : type === 'audio' ? 'audio/*' : 'image/jpeg,image/png,image/webp';
+      const accept = type === 'video' ? 'video/mp4,video/webm,video/quicktime,.mov' : type === 'audio' ? 'audio/*' : 'image/jpeg,image/png,image/webp';
       /* Capture WHICH element this upload is for. An upload takes as long as it
          takes, and `edSetProp` writes to whatever is selected when it finishes
          — so a user who picked a file and then clicked something else while it
          uploaded would have had their photo land on the wrong box. */
       const id = edSel;
-      wcUploadMedia(accept, (url) => {
+      wcUploadMedia(accept, (url, info) => {
         if (!edStore || !id) return;
         edStore.endGesture();
         edApply((doc) => {
           const h = SiteDocStore.findElement(doc, id); if (!h) return;
           h.el.props = h.el.props || {};
           h.el.props.src = url;
+          // Exact, from the server. `<source type>` guessed from a URL with no
+          // extension is a guess; this is what the file actually is.
+          if (info && info.mime) h.el.props.srcType = info.mime;
         });
         // The canvas re-render is debounced, so without this there is a beat
         // where nothing has happened as far as the user can tell.
@@ -8977,7 +9019,11 @@ Aaliyah Washington`
           const d = await r.json().catch(() => ({}));
           if (!r.ok) { showToast(d.error || _t('wc_upload_err', 'Upload failed.')); return; }
           if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }
-          onUrl(d.url);
+          // A format that will not play everywhere uploads anyway and says so.
+          // There is no transcoder here, and pretending otherwise would be
+          // worse than telling the truth.
+          if (d.warning) showToast(d.warning, 8000);
+          onUrl(d.url, d);
         } catch (_) { showToast(_t('wc_upload_err', 'Upload failed.')); }
       };
       inp.click();

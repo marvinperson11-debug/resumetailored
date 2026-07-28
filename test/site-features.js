@@ -322,7 +322,36 @@ const server = app.listen(0, async () => {
     check('the video fills that height instead of overflowing it',
       /\.sd-video\{background:#000;height:100%;object-fit:cover;\}/.test(vidPage));
     check('overflow is clipped, so nothing can spill past the box',
-      /\.sd-el--fit\{overflow:hidden;\}/.test(vidPage));
+      /\.sd-el--fit\{overflow:hidden;display:flex;flex-direction:column;\}/.test(vidPage));
+    /* THE ONE THAT MADE THE PLAY BUTTON DEAD. A label above a video is real
+       content; with the video also asking for 100% the pair came to more than
+       the box, and overflow:hidden clipped the bottom — which is exactly where
+       the native control bar is. A column layout gives the label what it needs
+       and the media the rest, so the controls are always inside the box. */
+    check('a label above a video does not push its controls out of the box',
+      /\.sd-el--fit>\.sd-elabel\{flex:0 0 auto;\}/.test(vidPage)
+      && /\.sd-el--fit>\.sd-video[^{]*\{flex:1 1 auto;min-height:0;height:auto;\}/.test(vidPage), 
+      (vidPage.match(/\.sd-el--fit[^\n]*/g) || []).join(' | '));
+    // The browser is told what the file is rather than left to sniff it, and
+    // iOS is told to play it in the page instead of hijacking the screen.
+    check('the player stays in the page on iOS', /<video class="sd-video" controls playsinline/.test(vid));
+    check('a stored type is declared on the source',
+      /<source src="\/media\/9" type="video\/webm"\/>/.test(
+        bodyOf(render({ type: 'video', props: { src: '/media/9', srcType: 'video/webm' } }))));
+    check('a type that is not a media type is dropped rather than emitted',
+      !/type="/.test((bodyOf(render({ type: 'video', props: { src: '/media/9', srcType: 'text/html' } })).match(/<source[^>]*>/) || [''])[0]));
+    /* A /media/12 URL carries no extension, so a video uploaded before the
+       document started storing its type has nothing to read it from — except
+       the row that owns the file. Existing sites get a correct type too. */
+    db.prepare('INSERT INTO site_media (id,email,kind,path,mime,bytes,created_at) VALUES (?,?,?,?,?,?,?)')
+      .run(77, 'a@x.com', 'video', '/tmp/nope.mp4', 'video/mp4', 10, Date.now());
+    check('and one uploaded before that is looked up from its record',
+      /<source src="\/media\/77" type="video\/mp4"\/>/.test(bodyOf(render({ type: 'video', props: { src: '/media/77' } }))));
+    check('an unknown file gets no type rather than a guess',
+      !/type="/.test((bodyOf(render({ type: 'video', props: { src: '/media/4242' } })).match(/<source[^>]*>/) || [''])[0]));
+    check('a URL that does describe itself is taken at its word',
+      /type="video\/webm"/.test(bodyOf(render({ type: 'video', props: { src: '/media/5.webm' } }))));
+
     check('TEXT still grows, because clipping a summary would be worse',
       /min-height:200px/.test(bodyOf(render({ type: 'paragraph', w: 300, h: 200, props: { text: 'Long text' } }))));
 

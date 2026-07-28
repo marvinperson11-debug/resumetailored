@@ -843,6 +843,115 @@ const server = app.listen(0, async () => {
         check(`${width}: it fills the box rather than being letterboxed`,
           vidFit && vidFit.fitClass && vidFit.objectFit === 'cover', JSON.stringify(vidFit));
 
+        /* ── VIDEO PLAYS, IN BOTH PLACES ────────────────────────────────────
+           A real clip, recorded by this browser and uploaded through the app's
+           own path, then PLAYED. Nothing here is synthetic: a fake byte blob
+           would prove the plumbing and nothing about whether a video plays. */
+        const clip = await page.evaluate(async () => {
+          const c = document.createElement('canvas'); c.width = 160; c.height = 120;
+          const g = c.getContext('2d');
+          let t = 0; const iv = setInterval(() => { g.fillStyle = `hsl(${(t += 20) % 360},70%,50%)`; g.fillRect(0, 0, 160, 120); }, 50);
+          const mime = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].find((m) => window.MediaRecorder && MediaRecorder.isTypeSupported(m));
+          if (!mime) { clearInterval(iv); return { skip: true }; }
+          const rec = new MediaRecorder(c.captureStream(25), { mimeType: mime });
+          const chunks = [];
+          rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+          rec.start();
+          await new Promise((r) => setTimeout(r, 1000));
+          await new Promise((r) => { rec.onstop = r; rec.stop(); });
+          clearInterval(iv);
+          const fd = new FormData();
+          fd.append('file', new Blob(chunks, { type: 'video/webm' }), 'clip.webm');
+          const res = await fetch('/api/site-media', { method: 'POST', headers: authHeadersNoType(), body: fd });
+          const d = await res.json().catch(() => ({}));
+          return { status: res.status, url: d.url, mime: d.mime, safe: d.safe };
+        });
+        if (!clip.skip) {
+          check(`${width}: a real video uploads and comes back typed`,
+            clip.status === 200 && /^\/media\/\d+$/.test(clip.url || '') && /^video\//.test(clip.mime || ''), JSON.stringify(clip));
+
+          const vidId = await page.evaluate(async (u) => {
+            const i = SiteDocStore.newId('vp');
+            edApply((d) => {
+              const p = SiteDocStore.findPage(d, edPageId);
+              const s = p.sections[0];
+              const y = (Number(s.h) || 0) + 60;
+              // WITH A LABEL. Without one this bug is invisible: the label is
+              // what pushed the control bar out of the clipped box.
+              s.els.push({ id: i, type: 'video', x: 60, y, w: 480, h: 300, props: { src: u.url, srcType: u.mime, label: 'About me' } });
+              s.h = y + 400;
+            });
+            edSelect(i);
+            await new Promise((r) => setTimeout(r, 1800));
+            return i;
+          }, clip);
+
+          const geom = await page.evaluate((i) => {
+            const f = document.getElementById('wcEdFrame');
+            const wrap = f.contentDocument.querySelector(`.sd-el[data-el="${i}"]`);
+            const v = wrap && wrap.querySelector('video');
+            if (!v) return null;
+            const wr = wrap.getBoundingClientRect(), vr = v.getBoundingClientRect();
+            return { wrapH: Math.round(wr.height), vidH: Math.round(vr.height),
+              pastBottom: Math.round(vr.bottom - wr.bottom),
+              type: (v.querySelector('source') || {}).getAttribute ? v.querySelector('source').getAttribute('type') : null,
+              inline: v.hasAttribute('playsinline') };
+          }, vidId);
+          /* THE ONE THAT MADE THE PLAY BUTTON DEAD. The control bar sits at the
+             bottom of the video; with a label above it the video overflowed and
+             overflow:hidden cut that strip off. */
+          check(`${width}: a labelled video's controls are inside its box`,
+            geom && geom.pastBottom <= 1, JSON.stringify(geom));
+          check(`${width}: the source is typed and the player stays inline`,
+            geom && /^video\//.test(geom.type || '') && geom.inline, JSON.stringify(geom));
+
+          // The overlay covers the canvas, so the video gets its own control.
+          const playBtn = await page.evaluate((i) => {
+            const b = document.querySelector(`.ed-box[data-el="${i}"] .ed-play`);
+            return b ? { present: true, w: Math.round(b.getBoundingClientRect().width) } : { present: false };
+          }, vidId);
+          check(`${width}: a selected video carries a play control`,
+            playBtn.present && playBtn.w >= 24, JSON.stringify(playBtn));
+
+          await page.locator(`.ed-box[data-el="${vidId}"] .ed-play`).click();
+          await page.waitForTimeout(1200);
+          const playing = await page.evaluate((i) => {
+            const f = document.getElementById('wcEdFrame');
+            const v = f.contentDocument.querySelector(`.sd-el[data-el="${i}"] video`);
+            return v ? { paused: v.paused, t: v.currentTime, ready: v.readyState,
+              err: v.error ? v.error.code : null } : null;
+          }, vidId);
+          /* THE EVIDENCE IS THE PLAYHEAD, not `paused`. The recorded clip is
+             about a second long, so by the time this is read it has often
+             played to the end and paused itself — which is a video that
+             worked, reported as a video that did not. */
+          check(`${width}: pressing it actually plays the clip in the editor`,
+            playing && playing.t > 0 && playing.ready >= 2 && !playing.err, JSON.stringify(playing));
+
+          // And in preview, where the visitor's own controls are what is used.
+          await page.evaluate(() => wcSetView('preview'));
+          await page.waitForTimeout(2600);
+          const pv = await page.evaluate(async () => {
+            const f = document.getElementById('wcPreviewFrame');
+            const v = f.contentDocument && f.contentDocument.querySelector('video');
+            if (!v) return { found: false };
+            let err = null;
+            try { await v.play(); } catch (e) { err = e.name; }
+            const wrap = v.closest('.sd-el');
+            const wr = wrap.getBoundingClientRect(), vr = v.getBoundingClientRect();
+            await new Promise((r) => setTimeout(r, 350));
+            return { found: true, paused: v.paused, t: v.currentTime, ready: v.readyState, err,
+              vErr: v.error ? v.error.code : null,
+              pastBottom: Math.round(vr.bottom - wr.bottom) };
+          });
+          check(`${width}: and plays in preview, the way a visitor sees it`,
+            pv.found && pv.t > 0 && pv.ready >= 2 && !pv.vErr, JSON.stringify(pv));
+          check(`${width}: with its controls inside the box there too`,
+            pv.found && pv.pastBottom <= 1, JSON.stringify(pv));
+          await page.evaluate(() => wcSetView('edit'));
+          await page.waitForTimeout(600);
+        }
+
         /* ── A BACKGROUND ON ANY BOX ────────────────────────────────────────
            Not just the `box` type — a heading takes one too. */
         const bg = await page.evaluate(async (i) => {
@@ -943,6 +1052,18 @@ const server = app.listen(0, async () => {
       check(`${width}: choosing a photo opens a file picker`, !!chooser);
       if (chooser) {
         await chooser.setFiles(PIXEL);
+        /* Scroll it into view first. The rendered page marks images
+           `loading="lazy"`, so one far below the fold is never fetched and
+           `naturalWidth` stays 0 — which says nothing about the upload. The
+           canvas is much taller by this point in the run than it used to be. */
+        await page.waitForTimeout(900);
+        await page.evaluate((i) => {
+          const f = document.getElementById('wcEdFrame');
+          const n = f && f.contentDocument && f.contentDocument.querySelector(`.sd-el[data-el="${i}"]`);
+          if (n) n.scrollIntoView({ block: 'center' });
+          const box = document.querySelector(`.ed-box[data-el="${i}"]`);
+          if (box) box.scrollIntoView({ block: 'center' });
+        }, upTarget);
         await page.waitForFunction((i) => {
           const f = document.getElementById('wcEdFrame');
           const n = f && f.contentDocument && f.contentDocument.querySelector(`.sd-el[data-el="${i}"] img`);
