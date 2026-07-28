@@ -1054,8 +1054,16 @@ const MEDIA_MIME = {
   // text-video generator (MediaRecorder outputs webm on most browsers).
   image: ['image/jpeg', 'image/png', 'image/webp'],
   audio: ['audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/webm', 'audio/ogg'],
-  video: ['video/mp4', 'video/webm'],
+  /* QuickTime is accepted because it is what an iPhone hands over, and
+     rejecting it outright meant a user's own recording was refused with
+     "Unsupported file type" for reasons that had nothing to do with them.
+     It is NOT re-encoded — there is no transcoder here and pretending
+     otherwise would be worse — so the upload comes back flagged and the user
+     is told plainly that MP4 is the one that plays everywhere. */
+  video: ['video/mp4', 'video/webm', 'video/quicktime'],
 };
+// Formats every browser plays. Anything else uploads, and says so.
+const MEDIA_SAFE = ['video/mp4', 'video/webm', 'audio/mpeg', 'audio/mp4', 'audio/webm', 'audio/ogg', 'image/jpeg', 'image/png', 'image/webp'];
 function _mediaKind(mime) {
   const base = String(mime || '').split(';')[0].trim(); // strip ";codecs=..."
   for (const k of Object.keys(MEDIA_MIME)) if (MEDIA_MIME[k].includes(base)) return k;
@@ -1063,12 +1071,12 @@ function _mediaKind(mime) {
 }
 function _mediaExt(mime) {
   const base = String(mime || '').split(';')[0].trim();
-  return ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/aac': 'aac', 'audio/webm': 'weba', 'audio/ogg': 'ogg', 'video/mp4': 'mp4', 'video/webm': 'webm' })[base] || 'bin';
+  return ({ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a', 'audio/aac': 'aac', 'audio/webm': 'weba', 'audio/ogg': 'ogg', 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' })[base] || 'bin';
 }
 // Fallback kind + mime by file extension, for uploads whose part Content-Type is
 // unreliable (e.g. busboy downgrades a webm blob whose type carries an unquoted
 // "codecs=vp8,opus" to text/plain). Keeps browser-recorded media working.
-const _EXT_MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', weba: 'audio/webm', ogg: 'audio/ogg', oga: 'audio/ogg', mp4: 'video/mp4', webm: 'video/webm' };
+const _EXT_MIME = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', weba: 'audio/webm', ogg: 'audio/ogg', oga: 'audio/ogg', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', qt: 'video/quicktime' };
 function _mediaFromName(name) {
   const ext = String(name || '').toLowerCase().split('.').pop();
   const mime = _EXT_MIME[ext];
@@ -1136,7 +1144,16 @@ app.post('/api/site-media', mediaUploadSingle, (req, res) => {
     fs.writeFileSync(full, req.file.buffer);
     const info = db.prepare('INSERT INTO site_media (email, kind, path, mime, bytes, created_at) VALUES (?, ?, ?, ?, ?, ?)')
       .run(email.toLowerCase(), kind, full, (storeMime || '').split(';')[0].trim() || storeMime, bytes, Date.now());
-    res.json({ id: info.lastInsertRowid, url: `/media/${info.lastInsertRowid}`, kind, bytes, usage: _mediaUsage(email) });
+    const mime = (storeMime || '').split(';')[0].trim();
+    const safe = MEDIA_SAFE.includes(mime);
+    res.json({
+      id: info.lastInsertRowid, url: `/media/${info.lastInsertRowid}`, kind, bytes, mime,
+      // The client stores this on the element so `<source type>` is exact
+      // rather than guessed from a URL that carries no extension.
+      safe,
+      warning: safe ? null : 'This file is a .mov. It will upload and it plays in Safari and most browsers, but MP4 is the format that plays everywhere — export as MP4 if you can.',
+      usage: _mediaUsage(email),
+    });
   } catch (e) {
     res.status(500).json({ error: 'Could not save the file.' });
   }
@@ -1147,14 +1164,18 @@ app.delete('/api/site-media/:id', (req, res) => {
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   const row = db.prepare('SELECT path FROM site_media WHERE id = ? AND email = ?').get(req.params.id, email);
   db.prepare('DELETE FROM site_media WHERE id = ? AND email = ?').run(req.params.id, email);
+  try { _sdMimeCache.delete(Number(req.params.id)); } catch (_) {}
   if (row && row.path) { try { fs.unlink(row.path, () => {}); } catch (_) {} }
   res.json({ success: true, usage: _mediaUsage(email) });
 });
 
 // Public media serving — personal sites are public, so no auth on GET. Streams
 // the stored file by id with its content-type. Long cache (content is immutable).
+/* `/media/12` and `/media/12.mp4` are the same file. The extension is optional
+   and ignored — it exists so a URL can describe itself to anything that reads
+   URLs rather than headers, without breaking every link already saved. */
 app.get('/media/:id', (req, res) => {
-  const id = Number(req.params.id);
+  const id = Number(String(req.params.id).split('.')[0]);
   const row = Number.isFinite(id) ? db.prepare('SELECT path, mime FROM site_media WHERE id = ?').get(id) : null;
   if (!row || !row.path || !fs.existsSync(row.path)) {
     res.status(404);
@@ -2355,6 +2376,40 @@ function _sdFontLink(headingKey, bodyKey) {
    the box was drawn too short would be worse than the box growing. */
 const _SD_FIT_TYPES = { image: 1, imagebox: 1, video: 1, map: 1, box: 1 };
 
+/* What to put in `<source type>`. Whitelisted, because it is an attribute on a
+   public page — and only ever a hint, so an unknown value is dropped rather
+   than guessed at. The document stores it at upload time; a URL extension is
+   the fallback for anything saved before it did. */
+const _SD_MEDIA_TYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'audio/mpeg', 'audio/mp4', 'audio/aac', 'audio/webm', 'audio/ogg'];
+const _SD_EXT_TYPE = { mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', weba: 'audio/webm', ogg: 'audio/ogg' };
+/* A `/media/12` URL carries no extension, so for anything uploaded before the
+   document started storing the type there is nothing to read it from — except
+   the row that owns the file. One indexed lookup, memoised, so an existing
+   site's videos get a correct `type` too rather than only new ones. */
+const _sdMimeCache = new Map();
+function _sdMimeForMediaUrl(url) {
+  const m = /^\/media\/(\d+)(?:\.[a-z0-9]+)?$/i.exec(String(url || ''));
+  if (!m) return '';
+  const id = Number(m[1]);
+  if (_sdMimeCache.has(id)) return _sdMimeCache.get(id);
+  let mime = '';
+  try {
+    const row = db.prepare('SELECT mime FROM site_media WHERE id = ?').get(id);
+    mime = row && row.mime ? String(row.mime).split(';')[0].trim().toLowerCase() : '';
+  } catch (_) { mime = ''; }
+  _sdMimeCache.set(id, mime);
+  return mime;
+}
+
+function _sdMediaType(stored, url) {
+  const t = String(stored || '').split(';')[0].trim().toLowerCase();
+  if (_SD_MEDIA_TYPES.includes(t)) return t;
+  const ext = String(url || '').toLowerCase().split('?')[0].split('.').pop();
+  if (_SD_EXT_TYPE[ext]) return _SD_EXT_TYPE[ext];
+  const looked = _sdMimeForMediaUrl(url);
+  return _SD_MEDIA_TYPES.includes(looked) ? looked : '';
+}
+
 /* ── A background on ANY element ──────────────────────────────────────────
    Not just the `box` type. "Every part of every template should be editable"
    means the card behind a testimonial, the strip behind a heading and the
@@ -2652,13 +2707,21 @@ function _sdElement(el, ctx) {
       // nothing. Replaced as soon as a video is chosen in the inspector.
       if (!u) return `${lbl}<div class="sd-ph sd-ph--empty">🎬<span>${_escHtml(ctx.SI.add_video)}</span></div>`;
       const poster = _safeUrl(p.poster);
-      return `${lbl}<video class="sd-video" controls preload="metadata"${poster ? ` poster="${_escHtml(poster)}"` : ''}><source src="${_escHtml(u)}"/></video>`;
+      /* `playsinline` matters on iOS, where a video without it hijacks the
+         screen into the native full-screen player instead of playing in the
+         page. `type` saves the browser sniffing the container, and is the
+         difference between "cannot play this" and a silent frozen frame on
+         the formats it is unsure about. */
+      const ty = _sdMediaType(p.srcType, u);
+      return `${lbl}<video class="sd-video" controls playsinline preload="metadata"${poster ? ` poster="${_escHtml(poster)}"` : ''}>`
+        + `<source src="${_escHtml(u)}"${ty ? ` type="${_escHtml(ty)}"` : ''}/></video>`;
     }
     case 'audio': {
       const lbl = p.label ? `<div class="sd-elabel">${_sdText(p.label, 120)}</div>` : '';
       const u = _safeUrl(p.src);
       if (!u) return `${lbl}<div class="sd-ph sd-ph--empty">🔊<span>${_escHtml(ctx.SI.add_audio)}</span></div>`;
-      return `${lbl}<audio class="sd-audio" controls preload="none"><source src="${_escHtml(u)}"/></audio>`;
+      const aty = _sdMediaType(p.srcType, u);
+      return `${lbl}<audio class="sd-audio" controls preload="none"><source src="${_escHtml(u)}"${aty ? ` type="${_escHtml(aty)}"` : ''}/></audio>`;
     }
     case 'button': {
       const href = _sdLink(p, ctx);
@@ -2937,8 +3000,15 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     .sd-video,.sd-audio{width:100%;display:block;border-radius:12px;}
     .sd-video{background:#000;height:100%;object-fit:cover;}
     .sd-audio{height:auto;}
-    .sd-el--fit{overflow:hidden;}
-    .sd-el--fit>.sd-video,.sd-el--fit>.sd-img,.sd-el--fit>.sd-ibox{height:100%;}
+    /* A COLUMN, not a stack of things each claiming the full height. The label
+       above a video is 19px of real content; with the video also asking for
+       100% the pair came to 119% of the box, and overflow:hidden clipped the
+       bottom 27px -- which is exactly where the native control bar lives. The
+       play button was visible and the controls were not there to be pressed.
+       The label takes what it needs and the media takes the rest. */
+    .sd-el--fit{overflow:hidden;display:flex;flex-direction:column;}
+    .sd-el--fit>.sd-elabel{flex:0 0 auto;}
+    .sd-el--fit>.sd-video,.sd-el--fit>.sd-img,.sd-el--fit>.sd-ibox,.sd-el--fit>.sd-map,.sd-el--fit>.sd-ph{flex:1 1 auto;min-height:0;height:auto;}
     .sd-el--fit>.sd-ibox>img{height:100%;object-fit:cover;}
     .sd-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 26px;border-radius:999px;background:linear-gradient(135deg,var(--p),var(--a));color:#fff;font-weight:700;text-decoration:none;font-size:15px;}
     .sd-btn--ghost{background:none;border:2px solid currentColor;color:var(--p);}
@@ -3160,6 +3230,39 @@ function _sdEditLayer() {
       if (!now) { e.target.textContent = e.before; return; }   // never leave it blank
       post({ kind: 'edit', el: e.wrap.dataset.el, value: now });
     }
+
+    /* The overlay also means a video's own controls can never be pressed while
+       editing. The builder asks for playback by name, and reports back what
+       happened — a clip the browser cannot decode should say so rather than
+       sit there looking broken. */
+    function playPauseById(id){
+      var wrap = document.querySelector('.sd-el[data-el="' + String(id).replace(/[^A-Za-z0-9_-]/g, '') + '"]');
+      var v = wrap && wrap.querySelector('video, audio');
+      if (!v) { post({ kind: 'played', ok: false, reason: 'no-media' }); return; }
+      if (!v.paused) { v.pause(); post({ kind: 'played', ok: true, playing: false }); return; }
+      var done = false;
+      var fail = function (why) { if (done) return; done = true; post({ kind: 'played', ok: false, reason: why }); };
+      v.onerror = function () { fail('decode'); };
+      try {
+        var pr = v.play();
+        if (pr && pr.then) {
+          pr.then(function () { if (!done) { done = true; post({ kind: 'played', ok: true, playing: true }); } })
+            .catch(function (e) { fail((e && e.name) || 'blocked'); });
+        } else { done = true; post({ kind: 'played', ok: true, playing: true }); }
+      } catch (e) { fail('threw'); }
+    }
+
+    /* A source the browser cannot decode fires an error event on the <source>,
+       and the page is left showing a frozen frame with controls that do
+       nothing. In the editor that is worth saying out loud; a visitor gets the
+       browser's own fallback rather than a message about file formats.
+       (No backticks: this comment is inside a template literal.) */
+    addEventListener('error', function (ev) {
+      var t = ev && ev.target;
+      if (!t || (t.tagName !== 'SOURCE' && t.tagName !== 'VIDEO' && t.tagName !== 'AUDIO')) return;
+      var wrap = t.closest && t.closest('.sd-el[data-el]');
+      post({ kind: 'mediaError', el: wrap ? wrap.dataset.el : null, src: t.src || (t.currentSrc || '') });
+    }, true);
 
     /* The builder's canvas covers this iframe with a selection overlay, so a
        click never reaches the page. It asks for editing by NAME instead —
@@ -3402,6 +3505,7 @@ function _sdEditLayer() {
       }
       if (m.__rtSync === 1) { showSync(m); return; }
       if (m.__rtEdit === 1 && m.action === 'beginEdit') { beginEditById(m.el); return; }
+      if (m.__rtEdit === 1 && m.action === 'playPause') { playPauseById(m.el); return; }
       // "I want to move something": put a bar on every section at once and
       // bring the first into view, so the controls end up under their eyes
       // rather than needing to be discovered by clicking around.
