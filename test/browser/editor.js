@@ -110,6 +110,52 @@ const server = app.listen(0, async () => {
       const tiles = await page.locator('.cv-tplgrid button, .cv-tplgrid .wc-tpl-card').count();
       check(`${width}: template gallery is what you land on`, tiles > 0, 'tiles=' + tiles);
 
+      /* ── THE PICKER'S LAYOUT ────────────────────────────────────────────
+         Measured, at the width it is being measured at. On a phone this was
+         one column of twelve full-width cards — and the panel inherited the
+         editor's 56px rail offset while also being 100% wide, so the whole
+         gallery sat pushed right with 56px of itself off the screen. */
+      const pick = await page.evaluate(() => {
+        const g = document.getElementById('wcTplGrid');
+        const p = document.getElementById('cvPanel');
+        const ch = document.getElementById('wcTplCats');
+        const cards = [...g.querySelectorAll('.wc-tpl')];
+        const pr = p.getBoundingClientRect();
+        return {
+          cols: getComputedStyle(g).gridTemplateColumns.split(' ').length,
+          rows: new Set(cards.map((c) => Math.round(c.getBoundingClientRect().top))).size,
+          cardW: cards[0] ? Math.round(cards[0].getBoundingClientRect().width) : 0,
+          cardH: cards[0] ? Math.round(cards[0].getBoundingClientRect().height) : 0,
+          thumbH: cards[0] ? Math.round(cards[0].querySelector('.wc-tpl-thumb').getBoundingClientRect().height) : 0,
+          panelLeft: Math.round(pr.left), panelRight: Math.round(pr.right),
+          chipsWrap: getComputedStyle(ch).flexWrap, chipsX: getComputedStyle(ch).overflowX,
+          chipsH: Math.round(ch.getBoundingClientRect().height),
+          pageH: Math.round(p.scrollHeight),
+          docOverflowsX: document.documentElement.scrollWidth > innerWidth + 1,
+        };
+      });
+      if (width <= 560) {
+        check(`${width}: the picker shows two templates per row, not one`,
+          pick.cols === 2 && pick.rows === 6, JSON.stringify(pick));
+        check(`${width}: with smaller cards`, pick.cardW < 200 && pick.cardH < 220, JSON.stringify(pick));
+        check(`${width}: the panel fills the screen instead of hanging off it`,
+          pick.panelLeft === 0 && !pick.docOverflowsX && pick.panelRight <= width + 1, JSON.stringify(pick));
+        check(`${width}: the filter pills scroll sideways rather than stacking`,
+          pick.chipsWrap === 'nowrap' && pick.chipsX === 'auto' && pick.chipsH < 45, JSON.stringify(pick));
+        /* The complaint was the scrolling. One column of twelve measured 3479px
+           of page; anything near that is the bug still being there. */
+        check(`${width}: and the whole gallery is roughly half the scroll it was`,
+          pick.pageH < 1800, JSON.stringify(pick));
+      } else {
+        /* DESKTOP IS UNTOUCHED. Every rule added for the phone is inside a
+           max-width query and prefixed `body.wb-picker`; this is the check that
+           says so in numbers rather than in a promise. */
+        check(`${width}: desktop card geometry is unchanged`,
+          pick.cardW === 240 && pick.cardH === 257 && pick.thumbH === 150, JSON.stringify(pick));
+        check(`${width}: and its filter pills still wrap as they did`,
+          pick.chipsWrap === 'wrap', JSON.stringify(pick));
+      }
+
       // Use a template.
       const before = errs.length;
       await page.evaluate(() => {

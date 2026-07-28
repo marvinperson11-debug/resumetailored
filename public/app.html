@@ -575,6 +575,67 @@
       .cv-railtoggle { top: auto; bottom: 56px; transform: none; left: 56px;
         width: 26px; height: 46px; border-radius: 0 10px 10px 0; }
     }
+
+    /* ── THE TEMPLATE PICKER ON A PHONE ────────────────────────────────────
+       DESKTOP IS UNTOUCHED. Everything here is inside the same 820px phone
+       breakpoint the editor already uses, and every selector is prefixed with
+       `body.wb-picker`, so it applies to the gallery and to nothing else.
+
+       Measured before changing anything, at a 390px viewport:
+
+         columns 1 · rows 12 · grid 3282px tall · page 3479px
+         panel left 56px · panel width 390px  ← 56px WIDER THAN THE WINDOW
+
+       Two separate problems in that. The grid asks for `minmax(210px, 240px)`,
+       which is right on a laptop and can only ever fit ONE column on a phone —
+       twelve full-width cards and a very long scroll. And the panel inherits
+       the editor's `left:56px` (the rail's width) while the picker's own rule
+       makes it `width:100%`, so the whole gallery sat pushed 56px right with
+       56px of itself off the right-hand edge. The rail is hidden in the picker,
+       so that offset was never wanted here at all. */
+    @media (max-width: 820px) {
+      /* No rail to make room for. */
+      body.wb-picker .cv-panel { left: 0; width: 100%; padding: 12px 12px 32px; }
+
+      /* THREE across, and two on a narrow phone. Content-sized columns were
+         tried first and gave five at 768px — more choice on screen, but a
+         141px tile of a whole web page is a smudge. An explicit count is the
+         honest control here: the card stays legible and the number changes
+         once, at the width where it needs to. */
+      body.wb-picker .cv-tplgrid { grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px; max-width: none; justify-content: stretch; }
+      body.wb-picker .cv-tplgrid .wc-tpl-thumb { height: 96px; }
+      body.wb-picker .cv-tplgrid .wc-tpl { border-width: 1px; border-radius: 11px; }
+      body.wb-picker .cv-tplgrid .wc-tpl-body { padding: 8px 9px 9px; }
+      body.wb-picker .cv-tplgrid .wc-tpl-name { font-size: 12.5px; line-height: 1.25; }
+      body.wb-picker .cv-tplgrid .wc-tpl-cat { font-size: 9.5px; letter-spacing: .4px; }
+      body.wb-picker .cv-tplgrid .wc-tpl-on { font-size: 9px; padding: 1px 4px; }
+      /* Two buttons on a 170px card: equal halves, and still 30px tall, which
+         is the least a thumb can be asked to hit. */
+      body.wb-picker .cv-tplgrid .wc-tpl-body > div:last-child { gap: 5px; margin-top: 7px; }
+      body.wb-picker .cv-tplgrid .wc-tpl-body .bo-act { flex: 1 1 0; min-width: 0; text-align: center;
+        font-size: 11px; padding: 7px 4px; min-height: 30px; }
+
+      /* The filter pills scroll sideways instead of wrapping into a block that
+         is taller than the first row of templates. `nowrap` plus a scroller,
+         with the pills refusing to shrink — a squashed "Professional CV" is
+         not a filter anyone can read. Measured at 72px tall before this. */
+      body.wb-picker .cv-chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        margin: 8px 0 10px; padding-bottom: 2px; }
+      body.wb-picker .cv-chips::-webkit-scrollbar { display: none; }
+      body.wb-picker .cv-chips > * { flex: 0 0 auto; }
+
+      body.wb-picker .cv-editmine { margin-bottom: 10px; }
+      body.wb-picker .cv-search { margin-bottom: 4px; }
+    }
+    /* A 390px phone: two. Three would be 110px each, which is not a preview of
+       anything. */
+    @media (max-width: 560px) {
+      body.wb-picker .cv-tplgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      body.wb-picker .cv-tplgrid .wc-tpl-thumb { height: 104px; }
+    }
+
     .cv-bottom .cv-tbtn { background: rgba(255,255,255,.1); }
     .cv-zoom { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; }
     .cv-zoom input { width: 180px; max-width: 40vw; }

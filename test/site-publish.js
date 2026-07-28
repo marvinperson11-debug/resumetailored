@@ -884,6 +884,37 @@ const server = app.listen(0, async () => {
       !/pages\[idx\] && pages\[idx\]\.name\) \|\| 'Untitled site'/.test(appJs));
     check('the dead Done Editing translation went with it', !/sm_done/.test(appJs));
 
+    /* ── THE PICKER ON A PHONE ──────────────────────────────────────────
+       Measured at 390px before any of this: one column, twelve rows, 3282px
+       of grid — and the panel inheriting the editor's 56px rail offset while
+       also being 100% wide, so the gallery sat pushed right with 56px of
+       itself off the screen. The rail is hidden in the picker; that offset was
+       never wanted here. */
+    check('the picker gets its own phone layout',
+      /@media \(max-width: 820px\) \{\n      \/\* No rail to make room for\. \*\/\n      body\.wb-picker \.cv-panel \{ left: 0; width: 100%;/.test(appJs));
+    check('two templates per row on a phone, three above it',
+      /@media \(max-width: 560px\)[\s\S]{0,200}?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/.test(appJs)
+      && /body\.wb-picker \.cv-tplgrid \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/.test(appJs));
+    check('with smaller cards and tighter spacing',
+      /body\.wb-picker \.cv-tplgrid \.wc-tpl-thumb \{ height: 96px; \}/.test(appJs)
+      && /body\.wb-picker \.cv-tplgrid \.wc-tpl-body \{ padding: 8px 9px 9px; \}/.test(appJs));
+    /* Two buttons on a 170px card still have to be hittable. */
+    check('the card buttons stay thumb-sized',
+      /body\.wb-picker \.cv-tplgrid \.wc-tpl-body \.bo-act \{[^}]*min-height: 30px;/.test(appJs));
+    check('the filter pills scroll rather than stacking into a block',
+      /body\.wb-picker \.cv-chips \{ flex-wrap: nowrap; overflow-x: auto;/.test(appJs));
+
+    /* DESKTOP IS UNTOUCHED, and this is the check that enforces it: every rule
+       added for the phone is inside a max-width query AND scoped to the
+       picker, so nothing can reach the desktop gallery or the editor. */
+    const phoneRules = (appJs.match(/@media \(max-width: (?:820|560)px\) \{[\s\S]*?\n    \}/g) || []).join('\n');
+    const pickerRules = (phoneRules.match(/^\s*body\.wb-picker [^{]*\{/gm) || []);
+    check('every picker rule added is phone-scoped',
+      pickerRules.length >= 12, String(pickerRules.length));
+    check('and the desktop gallery rules are exactly as they were',
+      /body\.wb-picker \.cv-tplgrid \{ grid-template-columns: repeat\(auto-fill, minmax\(210px, 240px\)\);\n      justify-content: center; gap: 18px; max-width: 1120px; margin: 0 auto; \}/.test(appJs)
+      && /body\.wb-picker \.cv-tplgrid \.wc-tpl-thumb \{ height: 150px; \}/.test(appJs));
+
     const srvJs = require('fs').readFileSync(require('path').join(__dirname, '..', 'server.js'), 'utf8');
     /* Typography reaches a `style` attribute on a PUBLIC page, so it is a
        whitelist with clamps — there is no case where echoing whatever was
