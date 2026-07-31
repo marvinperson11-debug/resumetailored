@@ -124,17 +124,17 @@
     .sd-cs p{font-size:14px;color:#39414f;margin-top:10px;}
     .sd-qr{width:100%;max-width:150px;}
     .sd-foot{text-align:center;font-size:13px;color:var(--muted);padding:24px 16px;}
-    /* MOBILE: sections grow to fit, elements drop to full-width static flow in
-       DOM order (which the renderer already sorted top-to-bottom). */
+    /* MOBILE: THE LAYOUT IS KEPT AND SCALED, NOT DISMANTLED. This used to force
+       every element to position:static and width:100%, which turned a three-up
+       gallery into three slabs and a site into a coloured list. A phone is a
+       smaller window, not a different document. Elements are placed in PERCENT
+       across and pixels down, so scaling the whole page by one factor is what
+       keeps the two axes and the type in proportion with each other. */
+    .sd-vp{overflow:hidden;}
     @media(max-width:820px){
-      .sd-inner{height:auto!important;padding:30px 18px;}
-      .sd-el{position:static!important;width:100%!important;min-height:0!important;margin:0 0 18px;}
-      .sd-el:last-child{margin-bottom:0;}
+      html,body{overflow-x:hidden;}
+      .sd-page{width:1000px;transform-origin:top left;transform:scale(var(--sdk,1));}
       .sd-el--mhide{display:none!important;}
-      .sd-h1{font-size:32px;}
-      .sd-h2{font-size:20px;}
-      .sd-gal--grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
-      .sd-gal--masonry{columns:2;}
       /* NOTHING HERE OVERRIDES MEDIA HEIGHT. A height:auto!important on
          .sd-ibox/.sd-img used to live here, from before media elements had a
          height of their own -- the only rule in the sheet that made a phone
@@ -145,10 +145,45 @@
   </style>
 </head>
 <body>
+  <!-- .sd-vp clips and carries the SCALED height; .sd-page keeps the design's
+       own width and is scaled into it. A transform paints smaller and leaves
+       the layout box alone, so without the outer box the document would be
+       1/k too long and scroll into empty space below the footer. -->
+  <div class="sd-vp"><div class="sd-page">
   <section class="sd-sec" id="s1" style="background-image:linear-gradient(135deg,#030712,#1e1b4b);"><div class="sd-inner" style="height:520px;"><div class="sd-el" style="left:6.6667%;top:30px;width:75.0000%;min-height:40px;"><nav class="sd-nav"><a class="sd-navlink is-on" href="https://resumetailored.com/site/sample">Home</a></nav></div><div class="sd-el" style="left:6.6667%;top:160px;width:58.3333%;min-height:120px;"><h1 class="sd-h1" style="text-align:left;color:#ffffff;">Jordan Rivera</h1></div><div class="sd-el sd-el--fit" style="left:53.3333%;top:160px;width:40.0000%;height:260px;"><div class="sd-elabel">About Me</div><video class="sd-video" controls playsinline preload="metadata"><source src="https://example.com/v.mp4" type="video/mp4"/></video></div><div class="sd-el" style="left:6.6667%;top:300px;width:43.3333%;min-height:70px;"><div class="sd-p" style="text-align:left;color:#cbd5e1;">Product manager based in NYC.</div></div></div></section><section class="sd-sec" id="s2" style="background-color:#ffffff;"><div class="sd-inner" style="height:460px;"><div class="sd-el" style="left:6.6667%;top:40px;width:86.6667%;min-height:380px;"><div class="sd-resume"><div class="sg-resume"><div class="sg-rhead"><div class="sg-rname">Jordan Rivera</div><div class="sg-rcontact"><span>jordan@example.com</span><span class="sg-dot">·</span><span>San Francisco, CA</span><span class="sg-dot">·</span><span>linkedin.com/in/jordanrivera</span></div></div><section class="sg-sec"><h2 class="sg-h">SUMMARY</h2><p class="r-p">Senior product manager with 8 years shipping data products.</p></section><section class="sg-sec"><h2 class="sg-h">EXPERIENCE</h2><div class="r-co" style="color:#8B5CF6">Senior PM, DataCorp | 2020–Present</div><ul class="r-bul"><li>Led migration reducing infra costs 30%</li><li>Grew activation 22% via lifecycle redesign</li></ul></section><section class="sg-sec"><h2 class="sg-h">SKILLS</h2><p class="r-p">Product Strategy, SQL, Roadmapping, A/B Testing</p></section><section class="sg-sec"><h2 class="sg-h">EDUCATION</h2><p class="r-p">B.S. Computer Science, UC Berkeley</p></section></div></div></div></div></section>
   
+  </div></div>
   <script>
     var SITE_I18N={"en":{"lang_toggle":"中文","c_name":"Your name","c_email":"Your email","c_msg":"Message","c_send":"Send","c_send_pdf":"Send me the resume","c_thanks":"Thanks — your message was sent.","c_thanks_pdf":"Thanks! I'll be in touch with my resume shortly.","c_err":"Something went wrong — please try again.","contact_h":"Get in touch","request_h":"Request my resume","add_video":"Add a video","add_audio":"Add audio","add_address":"Add an address","add_links":"Add your links","find_me":"Find me on {x}","cover_dl":"Read my cover letter","voice_intro":"▶ Play my introduction"},"zh":{"lang_toggle":"EN","c_name":"你的姓名","c_email":"你的邮箱","c_msg":"留言","c_send":"发送","c_send_pdf":"把简历发给我","c_thanks":"谢谢——你的留言已发送。","c_thanks_pdf":"谢谢！我会尽快把简历发给你。","c_err":"出了点问题——请重试。","contact_h":"联系我","request_h":"索取我的简历","add_video":"添加视频","add_audio":"添加音频","add_address":"添加地址","add_links":"添加你的链接","find_me":"在 {x} 上找到我","cover_dl":"下载我的求职信","voice_intro":"▶ 播放我的自我介绍"}};
+    /* THE ONE NUMBER CSS CANNOT WORK OUT FOR ITSELF: scale() takes a unitless
+       factor, and dividing 100vw by a number is still a length. Re-measured
+       after fonts and media land, because a page measured before its webfont
+       arrives is measured at fallback metrics and comes out short. */
+    (function(){
+      var W=1000, vp=document.querySelector('.sd-vp'), pg=document.querySelector('.sd-page'), last='';
+      if(!vp||!pg) return;
+      function fit(){
+        if(window.innerWidth>820){
+          document.documentElement.style.removeProperty('--sdk');
+          if(last!==''){last='';vp.style.height='';}
+          return;
+        }
+        var k=window.innerWidth/W;
+        document.documentElement.style.setProperty('--sdk',k);
+        var h=Math.ceil(pg.scrollHeight*k)+'px';
+        /* Only when it CHANGES. The observer below watches the element whose
+           height this sets a parent of, and writing an identical value every
+           time is how that becomes a loop. */
+        if(h!==last){last=h;vp.style.height=h;}
+      }
+      fit();
+      addEventListener('resize',fit);
+      addEventListener('orientationchange',function(){setTimeout(fit,120);});
+      addEventListener('load',fit);
+      if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fit);
+      // Media arriving late changes the page's length; an observer beats guessing.
+      if(window.ResizeObserver) new ResizeObserver(fit).observe(pg);
+    })();
     function _sgLead(e,f){
       e.preventDefault();
       var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;

@@ -309,6 +309,42 @@ const server = app.listen(0, async () => {
     check('an element with nothing to split is refused rather than mangled',
       DS.splitElement(galDoc, 'keep') === null && DS.splitElement(galDoc, 'nope') === null);
 
+    // ══ THE PHONE KEEPS THE LAYOUT ════════════════════════════════════════
+    /* The mobile block used to force every element to position:static and
+       width:100%, so a three-up gallery became three full-width slabs and a
+       form beside its links became a form then its links. A phone is a smaller
+       window, not a different document. */
+    const mob = render({ type: 'paragraph', w: 300, h: 60, props: { text: 'x' } });
+    check('the phone no longer flattens every element into one column',
+      !/\.sd-el\{position:static!important/.test(mob),
+      (mob.match(/@media\(max-width:820px\)\{[^]*?\n\s*\}/) || [''])[0].slice(0, 300));
+    check('and no longer overrides the section height or the heading sizes',
+      !/\.sd-inner\{height:auto!important/.test(mob) && !/\.sd-h1\{font-size:32px;\}/.test(mob));
+    check('the gallery keeps the columns it was designed with',
+      !/\.sd-gal--grid\{grid-template-columns:repeat\(auto-fit,minmax\(140px,1fr\)\)/.test(mob)
+      && !/\.sd-gal--masonry\{columns:2;\}/.test(mob));
+    /* Instead the page is laid out at its design width and scaled down whole,
+       which is the only way the horizontal design, the vertical rhythm and the
+       type stay in proportion with one another. */
+    check('the page is laid out at a design width and scaled to the screen',
+      /\.sd-page\{width:1000px;transform-origin:top left;transform:scale\(var\(--sdk,1\)\);\}/.test(mob));
+    check('an outer box carries the scaled height so nothing trails below it',
+      /\.sd-vp\{overflow:hidden;\}/.test(mob)
+      && /<div class="sd-vp"><div class="sd-page">/.test(mob)
+      && /vp\.style\.height=h;/.test(mob));
+    check('and the scale is recomputed when the window or the content changes',
+      /addEventListener\('resize',fit\)/.test(mob) && /orientationchange/.test(mob)
+      && /new ResizeObserver\(fit\)\.observe\(pg\)/.test(mob));
+    /* Hiding an element on mobile is an explicit choice the owner made; it is
+       the one mobile override that survives. */
+    check('hide-on-mobile still hides on mobile',
+      /\.sd-el--mhide\{display:none!important;\}/.test(mob));
+    /* A page the visitor cannot zoom would make a scaled-down design
+       unreadable with no way out. */
+    check('and the page can still be pinched to read',
+      /<meta name="viewport" content="width=device-width,initial-scale=1\.0"\/>/.test(mob)
+      && !/user-scalable=no|maximum-scale/.test(mob));
+
     // ══ MEDIA FITS ITS BOX ═════════════════════════════════════════════════
     const vidPage = render({ type: 'video', w: 300, h: 200, props: { src: '/media/9' } });
     const vid = bodyOf(vidPage);
