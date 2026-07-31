@@ -748,6 +748,26 @@ const server = app.listen(0, async () => {
     check('every real toolbar button refuses to shrink — only the empty title spacer does',
       /\.cv-tbtn \{[^}]*flex-shrink: 0;/.test(appJs) && /\.cv-publish \{[^}]*flex-shrink: 0;/.test(appJs)
       && /\.cv-top-right \{[^}]*flex-shrink: 0;/.test(appJs));
+
+    /* ── PUBLISH GIVES FEEDBACK NO MATTER WHICH RAIL PANE IS OPEN ─────────
+       Reported as "the Publish button isn't working." It was: #wcPublishStatus
+       — every success, failure and validation message wcPublish() writes —
+       lives inside the "Content" rail pane, `display:none` unless that one
+       specific tab is open. Templates is the default tab and the one people
+       are actually looking at when they decide to publish, so the button ran,
+       often succeeded or failed for a real reason, and reported all of it into
+       an element nobody could see. Toasting the same message fixes that
+       without needing the right tab open. Caught alongside it: `wcPublishBtn`
+       was referenced in JS to disable the button during a publish, but no
+       element in the page ever carried that id — the lookup silently returned
+       null (guarded, so it did not throw) and the button was never actually
+       disabled, leaving a double-click able to fire two publishes at once. */
+    check('the publish button exists and is the one wcPublish() disables while publishing',
+      /<button class="cv-publish" id="wcPublishBtn" onclick="wcPublish\(\)"/.test(appJs));
+    check('every status message wcPublish() sets also reaches a toast, not just the hidden Content pane',
+      /const setStatus = \(msg, ok\) => \{[\s\S]{0,200}showToast\(msg,/.test(appJs));
+    check('the field it depends on is inside the pane that is hidden by default — which is exactly the bug',
+      /<div class="cv-pane" data-pane="content" style="display:none;">[\s\S]{0,2000}id="wcPublishStatus"/.test(appJs));
     check('the panel floats over the canvas rather than squeezing it out',
       /\.cv-panel \{ position: absolute; left: 56px;/.test(appJs));
     /* The collapse handle is KEPT and moved, not hidden. Pinned at top:50% it

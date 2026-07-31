@@ -1527,7 +1527,7 @@
                 <button id="wcEdMobBtn" class="cv-segbtn" onclick="edSetDevice('mobile')" title="Mobile">📱</button>
               </div>
               <button class="cv-tbtn" id="cvPreviewBtn" onclick="wcSetView('preview')" data-i18n="cv_preview">Preview</button>
-              <button class="cv-publish" onclick="wcPublish()" data-i18n="cv_publish">Publish website</button>
+              <button class="cv-publish" id="wcPublishBtn" onclick="wcPublish()" data-i18n="cv_publish">Publish website</button>
             </div>
           </div>
 
@@ -7465,7 +7465,18 @@ Aaliyah Washington`
       const cSel = document.getElementById('wcCoverSelect');
       const addr = (document.getElementById('wcAddress').value || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
       const statusEl = document.getElementById('wcPublishStatus');
-      const setStatus = (msg, ok) => { if (statusEl) { statusEl.textContent = msg; statusEl.style.color = ok ? '#059669' : '#dc2626'; } };
+      /* Also a toast, not just the panel note. #wcPublishStatus lives inside
+         the "Content" rail pane (`display:none` unless that specific tab is
+         open), but the Publish button sits in the always-visible top bar —
+         someone publishing from Templates/Elements/Brand/Uploads, which is
+         the common case, got real feedback (success, failure, or "pick an
+         address first") written into an element they could not see. Pressing
+         Publish looked like it did nothing, every time it did not land on the
+         one tab that shows the result. */
+      const setStatus = (msg, ok) => {
+        if (statusEl) { statusEl.textContent = msg; statusEl.style.color = ok ? '#059669' : '#dc2626'; }
+        showToast(msg, ok ? 4000 : 6000);
+      };
       const resumeId = rSel && rSel.value ? Number(rSel.value) : null;
       const resume = wcResumes.find(r => r.id === resumeId);
       if (!resume) { setStatus(_t('wc_err_no_resume', 'Pick a resume to publish first.'), false); return; }
