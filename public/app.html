@@ -2386,7 +2386,7 @@
         wc_title: 'Website Builder',
         wc_subtitle: 'Start from a designed template, then make it yours.',
         wc_view_edit: '✏️ Edit', wc_view_preview: '👁 Preview',
-        wc_layout_help: "Add blocks and drag to reorder. Set each block's width — blocks flow into rows, so two half-width blocks sit side by side. On phones everything stacks.", wc_uploading: 'Uploading…', wc_upload_err: 'Upload failed.',
+        wc_layout_help: "Add blocks and drag to reorder. Set each block's width — blocks flow into rows, so two half-width blocks sit side by side. On phones everything stacks.", wc_uploading: 'Uploading…', wc_upload_err: 'Upload failed.', wc_video_toolong: 'That video is {dur} long — the limit is {cap} per clip.',
         wc_media_usage: 'Storage', wc_media_imgaudio: 'images & audio', wc_media_video: 'video',
         wc_video_text: '✍️ Create a text video', wc_pro_video: 'Video features are Pro.',
         tv_title: 'Create a text video',
@@ -2590,7 +2590,7 @@
         tv_saved_video: '✓ 文字视频已保存到媒体库。', tv_saved_audio: '✓ 配音已保存到媒体库。',
         wc_title: '网站构建器',
         wc_subtitle: '从设计好的模板开始，然后把它变成你的。',
-        wc_view_edit: '✏️ 编辑', wc_view_preview: '👁 预览', wc_uploading: '上传中…', wc_upload_err: '上传失败。',
+        wc_view_edit: '✏️ 编辑', wc_view_preview: '👁 预览', wc_uploading: '上传中…', wc_upload_err: '上传失败。', wc_video_toolong: '这个视频时长 {dur} —— 每个视频最长 {cap}。',
         wc_media_usage: '存储', wc_media_imgaudio: '图片和音频', wc_media_video: '视频',
         wc_video_text: '✍️ 制作文字视频', wc_pro_video: '视频功能是专业版。',
         tv_title: '制作文字视频',
@@ -9375,16 +9375,19 @@ Aaliyah Washington`
     function wcRenderMediaMeter() {
       const el = document.getElementById('wcMediaMeter'); if (!el || !wcMediaUsage) return;
       const L = wcMediaUsage.limits;
-      /* The video count is INFORMATION now, not a score out of five. It read
-         "(4/5)", which is a countdown to a wall — and the wall was one the text
-         video generator could walk you into without your uploading anything.
-         What is left is storage, a real constraint, plus how many clips that
-         storage is currently holding. */
+      /* Back to a real countdown — "(n/5)" — because there is a real cap again
+         (policy: 5 clips per subscriber). The previous round made this
+         information-only because the cap it counted down to was invisible,
+         partly spent by the text-video generator on the user's behalf, and
+         unclearable. All three are still true of the reinstated cap EXCEPT the
+         third: the Uploads panel has had a real delete button since that same
+         round, so a countdown here is a countdown to something the user can
+         act on, not a wall. */
       const n = wcMediaUsage.videoCount || 0;
+      const capTxt = L.videoMaxCount ? ' (' + n + '/' + L.videoMaxCount + ' ' + (L.videoMaxCount === 1 ? _t('wc_media_clip', 'clip') : _t('wc_media_clips', 'clips')) + ')' : '';
       el.textContent = _t('wc_media_usage', 'Storage') + ': ' +
         _mb(wcMediaUsage.imageAudioBytes) + '/' + _mb(L.imageAudioPool) + ' MB ' + _t('wc_media_imgaudio', 'images & audio') + ' · ' +
-        _mb(wcMediaUsage.videoBytes) + '/' + _mb(L.videoPool) + ' MB ' + _t('wc_media_video', 'video')
-        + ' (' + n + ' ' + (n === 1 ? _t('wc_media_clip', 'clip') : _t('wc_media_clips', 'clips')) + ')';
+        _mb(wcMediaUsage.videoBytes) + '/' + _mb(L.videoPool) + ' MB ' + _t('wc_media_video', 'video') + capTxt;
     }
     /* Upload a file and hand the resulting /media/<id> URL to `onUrl`.
 
@@ -9397,8 +9400,37 @@ Aaliyah Washington`
     function wcUploadMedia(accept, onUrl) {
       const inp = document.createElement('input');
       inp.type = 'file'; inp.accept = accept;
-      inp.onchange = () => {
+      inp.onchange = async () => {
         const f = inp.files[0]; if (!f) return;
+        /* CLIENT-SIDE DURATION CHECK, BEFORE THE UPLOAD STARTS. The server is
+           still the one that decides — this is a courtesy, not the enforcement
+           — but a video can now be 100 MB, and finding out it was three
+           minutes only after that much has uploaded is a bad trade for a check
+           that costs nothing and takes under a second. Read via a real <video>
+           element's own `loadedmetadata`, which is the same signal a player
+           uses, not guessed from anything about the file. Anything that does
+           not resolve in time (an unseekable live-recorded blob, a codec the
+           browser cannot probe) is let through unblocked — the server is the
+           one place this is ever actually enforced. */
+        if (f.type && f.type.startsWith('video/')) {
+          const cap = (wcMediaUsage && wcMediaUsage.limits && wcMediaUsage.limits.videoMaxDurationSec) || 120;
+          const dur = await new Promise((resolve) => {
+            const v = document.createElement('video');
+            const url = URL.createObjectURL(f);
+            const done = (val) => { URL.revokeObjectURL(url); clearTimeout(t); resolve(val); };
+            const t = setTimeout(() => done(null), 4000);
+            v.preload = 'metadata';
+            v.onloadedmetadata = () => done(isFinite(v.duration) ? v.duration : null);
+            v.onerror = () => done(null);
+            v.src = url;
+          });
+          if (dur !== null && dur > cap) {
+            const fmt = (s) => (s < 60 ? Math.round(s) + 's' : (s / 60).toFixed(s % 60 === 0 ? 0 : 1) + ' min');
+            showToast(_t('wc_video_toolong', 'That video is {dur} long — the limit is {cap} per clip.')
+              .replace('{dur}', fmt(dur)).replace('{cap}', fmt(cap)), 6000);
+            return;
+          }
+        }
         const mb = (f.size / 1024 / 1024).toFixed(f.size > 10 * 1024 * 1024 ? 0 : 1);
         const say = (pct) => showToast(
           _t('wc_uploading', 'Uploading…') + (pct === null ? '' : ' ' + pct + '%') + ' (' + mb + ' MB)',

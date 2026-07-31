@@ -16,6 +16,19 @@ const mammoth = require('mammoth');
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType, HeightRule, ImageRun, Footer } = require('docx');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
+/* Video duration probing for site-media uploads. This is `@remotion/media-parser`
+   — a pure container-format parser (reads MP4/WebM/MOV box headers for their
+   declared duration), not the heavy render stack. It needs no browser and no
+   chrome-headless-shell, so it stays available even in an environment where
+   @remotion/renderer's video pipeline is not (the resume-video route already
+   degrades to 501 there; this must not take the whole server down with it). */
+let _parseMedia = null, _mediaParserController = null, _mediaParserNodeReader = null;
+try {
+  ({ parseMedia: _parseMedia, mediaParserController: _mediaParserController } = require('@remotion/media-parser'));
+  ({ nodeReader: _mediaParserNodeReader } = require('@remotion/media-parser/node'));
+} catch (e) {
+  console.error('STARTUP ERROR: @remotion/media-parser failed to load — the 2-minute video cap will not be enforced:', e.message);
+}
 
 const app = express();
 app.disable('x-powered-by');
@@ -1043,19 +1056,31 @@ app.get('/api/assets/summary', (req, res) => {
 // Images/audio share one quota pool; video has its own pool + a hard file count
 // cap (Option B). Files live under ${DATA_DIR}/site-media/<email-hash>/ so they
 // persist across deploys when a Railway volume is mounted at /data.
-/* NO COUNT CAP ON VIDEO. There used to be `videoMaxCount: 5`, and a showreel
-   is the exact case this product exists for — five clips is not a portfolio.
-   Worse, the cap counted every video ever stored, including the ones the text
-   video generator writes on the user's behalf, and the message it produced —
-   "Delete one first" — asked for something the Uploads panel offered no way to
-   do. A cap you cannot see, did not knowingly spend, and cannot clear is not a
-   limit, it is a dead end.
+/* VIDEO POLICY, LOCKED IN: 5 clips per subscriber, 2 minutes each, 1 GB total.
+   This reverses the immediately preceding round's "no count cap" decision — on
+   purpose, at the owner's explicit instruction, not by drift.
 
-   Storage is the only real constraint, so it is the only one enforced, and its
-   message says what is stored and where to clear it. */
+   The count is flat: every row of kind `video` counts, including the ones the
+   text-video generator writes on the user's behalf — the same objection that
+   removed the cap last round (it counted videos the user never chose to
+   upload) still applies to those, and no exemption was asked for, so none is
+   built. What IS different from last round: the Uploads panel has had a real
+   delete button since the previous change, so hitting 5 is recoverable rather
+   than a dead end, and the rejection message says so.
+
+   `videoMaxDurationSec` is new: a clip's own container metadata is read before
+   it is accepted (`_probeVideoDurationSeconds`), not inferred from file size —
+   a two-hour screen recording can be under 100 MB and a two-minute 4K clip can
+   be well over it, so size was never a proxy for length. */
 const MEDIA_LIMITS = {
   imageAudioPool: 300 * 1024 * 1024,  // 300 MB shared by images + audio
   videoPool: 1024 * 1024 * 1024,      // 1 GB per user
+  videoMaxCount: 5,
+  // Overridable so a test can prove REJECTION with a real short clip in real
+  // seconds rather than by recording a genuine two-minute-plus video. Not
+  // meant to be tuned in production via env — the number that matters is the
+  // 120 default.
+  videoMaxDurationSec: Number(process.env.MEDIA_MAX_VIDEO_SEC) > 0 ? Number(process.env.MEDIA_MAX_VIDEO_SEC) : 120,
   perFile: { image: 8 * 1024 * 1024, audio: 25 * 1024 * 1024, video: 100 * 1024 * 1024 },
 };
 const MEDIA_MAX_FILE = Math.max(...Object.values(MEDIA_LIMITS.perFile));
@@ -1145,6 +1170,69 @@ function _mediaUsage(email) {
 }
 const _mb1 = (n) => (n / 1024 / 1024).toFixed(n > 100 * 1024 * 1024 ? 0 : 1);
 
+/* Read a video's OWN declared duration from its container — the fast path
+   parses only the header boxes (moov/Segment-Info), typically single-digit
+   milliseconds even on a 100 MB file, because it never decodes a frame. If the
+   header has no duration (rare, but some streamed/live-muxed files omit it),
+   a slower full-file scan is the fallback.
+
+   FAILS OPEN. A file this cannot parse — wrong container, truncated upload,
+   a future format this parser does not know — returns `null` rather than
+   throwing into the route, and the caller treats "unknown" as "not rejected
+   for length". The alternative is worse: refusing every video whose duration
+   this particular parser cannot determine would reject real uploads for a
+   reason that has nothing to do with the two-minute policy, on nothing but
+   this parser's own gaps. Duration enforcement is real when it can be proven
+   and silent when it cannot — matching the standing house rule for MOV
+   ("accepted, not re-encoded, and told so") of never punishing a user for an
+   ambiguity that isn't theirs. */
+async function _probeVideoDurationSeconds(filePath) {
+  if (!_parseMedia || !_mediaParserNodeReader) return null;
+  /* EXPLICITLY ABORTED WHEN DONE. `parseMedia` resolving the fields promise
+     does not mean its internal reader has finished with the file — leaving it
+     running was an unhandled rejection on every single upload: the route
+     renames the temp file the instant it has its answer, and the parser's own
+     background read then hit the old path and threw ENOENT into a promise
+     nothing was awaiting. A controller, aborted in `finally`, is what tells it
+     to stop before the route moves the file out from under it. */
+  const withController = async (fields) => {
+    const controller = _mediaParserController();
+    try {
+      return await _parseMedia({ src: filePath, reader: _mediaParserNodeReader, controller, fields, acknowledgeRemotionLicense: true });
+    } finally {
+      controller.abort();
+    }
+  };
+  try {
+    const fast = await withController({ durationInSeconds: true });
+    if (typeof fast.durationInSeconds === 'number' && fast.durationInSeconds >= 0) return fast.durationInSeconds;
+    const slow = await withController({ slowDurationInSeconds: true });
+    return typeof slow.slowDurationInSeconds === 'number' ? slow.slowDurationInSeconds : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/* Fire-and-forget owner alert, at most once per subscriber per day. "If anyone
+   hits the 5-video limit, send me an email alert" did not ask for one email
+   per attempt, and a stuck client (or a frustrated user pressing upload
+   several times) would otherwise fill the owner's inbox with the same fact
+   repeated. Reuses `usage_store` — already the table for this kind of daily
+   per-key counter (see `translate`) — rather than adding a new one. */
+function _alertVideoLimitOnce(email, usage) {
+  const key = `videolimit_${String(email).toLowerCase()}_${new Date().toISOString().slice(0, 10)}`;
+  const already = db.prepare('SELECT count FROM usage_store WHERE key = ?').get(key);
+  db.prepare('INSERT INTO usage_store (key, count) VALUES (?, 1) ON CONFLICT(key) DO UPDATE SET count = count + 1').run(key);
+  if (already) return;
+  notifyOwner(
+    `[ResumeTailored] ${email} hit the 5-video limit`,
+    `<p><strong>${_escHtml(email)}</strong> just tried to upload another video after reaching the `
+    + `${MEDIA_LIMITS.videoMaxCount}-video limit on their personal site.</p>`
+    + `<p>Currently storing ${usage.videoCount} video${usage.videoCount === 1 ? '' : 's'}, `
+    + `${_mb1(usage.videoBytes)} MB of the ${_mb1(MEDIA_LIMITS.videoPool)} MB pool.</p>`,
+  );
+}
+
 app.get('/api/site-media', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
@@ -1152,7 +1240,7 @@ app.get('/api/site-media', (req, res) => {
   res.json({ items: items.map(i => ({ ...i, url: `/media/${i.id}` })), usage: _mediaUsage(email) });
 });
 
-app.post('/api/site-media', mediaUploadSingle, (req, res) => {
+app.post('/api/site-media', mediaUploadSingle, async (req, res) => {
   const email = getSessionEmail(req);
   /* THE FILE IS ALREADY ON DISK BY NOW. multer streams it before any of this
      runs, so every `return` below has to take the temp file with it — a
@@ -1179,7 +1267,29 @@ app.post('/api/site-media', mediaUploadSingle, (req, res) => {
   if (bytes > MEDIA_LIMITS.perFile[kind]) {
     return bail(400, { error: `That ${kind} is too large (max ${Math.round(MEDIA_LIMITS.perFile[kind] / 1024 / 1024)} MB).` });
   }
+  /* DURATION, BEFORE THE COUNT AND POOL CHECKS — cheap (milliseconds, reads
+     only the container header) and it is a hard rejection independent of
+     quota, so there is no reason to spend a count-cap slot deciding a video
+     was too long anyway. `null` means "could not be determined" and is not a
+     rejection; see _probeVideoDurationSeconds. */
+  if (kind === 'video') {
+    const durationSec = await _probeVideoDurationSeconds(req.file.path);
+    if (durationSec !== null && durationSec > MEDIA_LIMITS.videoMaxDurationSec) {
+      // Seconds under a minute, minutes above it — "0.0 min" for a 40-second
+      // clip would read as broken, and MEDIA_MAX_VIDEO_SEC (tests) is seconds.
+      const fmt = (s) => (s < 60 ? `${Math.round(s)}s` : `${(s / 60).toFixed(s % 60 === 0 ? 0 : 1)} min`);
+      return bail(400, { error: `That video is ${fmt(durationSec)} long — the limit is ${fmt(MEDIA_LIMITS.videoMaxDurationSec)} per clip. Trim it and try again.` });
+    }
+  }
   const usage = _mediaUsage(email);
+  /* THE COUNT CAP. Reinstated at the owner's explicit instruction — see the
+     comment on MEDIA_LIMITS above for why this is not a regression of the
+     previous round's fix. Checked before the pool check because it is the
+     one usually hit first: 5 clips well under 100 MB each rarely fills 1 GB. */
+  if (kind === 'video' && usage.videoCount >= MEDIA_LIMITS.videoMaxCount) {
+    _alertVideoLimitOnce(email, usage);
+    return bail(400, { error: `You've reached the ${MEDIA_LIMITS.videoMaxCount}-video limit for your site. Delete one in Uploads to add another.` });
+  }
   /* Only storage, and the message says what is actually stored and where to
      clear it — "storage full" with no numbers and no route out is the shape
      the video cap had, and it is what made a limit feel like a fault. */

@@ -1,18 +1,32 @@
 #!/usr/bin/env node
 /**
- * MEDIA LIMITS — what is counted, what is capped, and what the message says.
+ * MEDIA LIMITS — the video count cap, storage, and the owner alert.
  *
- * The reported symptom was "Video limit reached (max 5)" after uploading two
- * images and one video. The count was arithmetically right; what was wrong was
- * everything around it. The cap counted every video ever stored — including the
- * ones the text video generator writes on the user's behalf, which they never
- * chose to upload — the meter counted down to it as "4/5" without saying what
- * would happen at 5, and the message told them to "delete one first" when the
- * Uploads panel had no way to delete anything. The DELETE route existed and
- * nothing in the app reached it.
+ * Locked-in policy, from the account owner directly: 5 videos per subscriber,
+ * 1 GB total storage, an email when someone hits the 5-video wall. This
+ * REVERSES the immediately preceding round's "remove the count cap entirely"
+ * decision — on purpose, at the owner's explicit instruction, not by drift.
+ * See the comment on MEDIA_LIMITS in server.js for the full reasoning; this
+ * file exists to prove the reinstated cap actually behaves the way that
+ * decision assumes it does.
  *
- * So: no count cap, storage as the only real limit, a message that says what is
- * stored and where to clear it, and a delete that exists.
+ * What made the ORIGINAL cap a bad experience wasn't the number 5 — it's that
+ * hitting it was a dead end ("Delete one first" with no way to delete) and
+ * that the count included videos the user never chose to upload (the
+ * text-video generator's own output). The second point is deliberately NOT
+ * fixed here — every video-kind row counts, generated or uploaded, because no
+ * exemption was asked for. The first point WAS already fixed, in the previous
+ * round: the Uploads panel has a real delete button. So this file also proves
+ * that hitting 5 is recoverable, not just that it happens.
+ *
+ * Video CONTENT here is garbage bytes (`Buffer.alloc`), not a real container —
+ * deliberately, because none of what this file tests (the count, the pool, the
+ * alert, delete-then-reupload) depends on the file being a playable video, and
+ * the duration prober fails OPEN on anything it cannot parse (see
+ * _probeVideoDurationSeconds), so garbage bytes are treated as "duration
+ * unknown" and never blocked on length. The DURATION cap itself — which does
+ * require a real, parseable clip — is proven separately in
+ * test/media-video-duration.js against small checked-in fixtures.
  *
  * Usage: node test/media-limits.js
  */
@@ -42,7 +56,7 @@ const server = app.listen(0, async () => {
   };
   const vid = (n) => Buffer.alloc(n, 7);
 
-  // ── THE REPORT: two images, then a video. ────────────────────────────
+  // ── THE ORIGINAL REPORT: two images, then a video. ───────────────────
   await up(PNG, 'a.png', 'image/png');
   await up(PNG, 'b.png', 'image/png');
   const afterImgs = (await (await fetch(B + '/api/site-media', { headers: H })).json()).usage;
@@ -50,65 +64,90 @@ const server = app.listen(0, async () => {
   const v1 = await up(vid(1000), 'v.mp4', 'video/mp4');
   check('and a video after two images uploads', v1.status === 200, JSON.stringify(v1.body).slice(0, 160));
 
-  // ── THE CAP THAT WAS THERE: six videos in a row. ─────────────────────
-  let lastStatus = 200;
-  for (let i = 0; i < 24; i++) { const r = await up(vid(1000), 'c' + i + '.mp4', 'video/mp4'); lastStatus = r.status; }
-  const many = (await (await fetch(B + '/api/site-media', { headers: H })).json()).usage;
-  check('twenty-five videos upload without hitting a count cap', lastStatus === 200 && many.videoCount === 25,
-    'last=' + lastStatus + ' count=' + many.videoCount);
-  check('the limits no longer advertise a video count cap',
-    many.limits.videoMaxCount === undefined, JSON.stringify(many.limits));
+  // ── THE CAP: five succeed, the sixth is refused. ──────────────────────
+  const cap = (await (await fetch(B + '/api/site-media', { headers: H })).json()).usage.limits.videoMaxCount;
+  check('the policy is 5 videos per subscriber', cap === 5, String(cap));
+  for (let i = 0; i < cap - 1; i++) {
+    const r = await up(vid(1000), 'c' + i + '.mp4', 'video/mp4');
+    check(`video ${i + 2}/${cap} uploads`, r.status === 200, JSON.stringify(r.body).slice(0, 140));
+  }
+  const atCap = (await (await fetch(B + '/api/site-media', { headers: H })).json()).usage;
+  check('five videos are now stored (one from the report + four more)', atCap.videoCount === cap, String(atCap.videoCount));
   check('images are still counted apart from video',
-    many.imageAudioCount === 2 && many.videoCount === 25, JSON.stringify(many));
+    atCap.imageAudioCount === 2 && atCap.videoCount === cap, JSON.stringify(atCap));
 
-  // ── STORAGE IS THE REAL LIMIT, AND IT SAYS SO. ───────────────────────
-  const pool = many.limits.videoPool;
-  check('the video pool is big enough for a showreel', pool >= 1024 * 1024 * 1024, String(pool));
-  /* Fill the pool EXACTLY, by sharing it across the rows that exist, so that
-     removing one frees a real, known amount. Setting every row to half the pool
-     (as this did first) leaves 24 half-pools behind and no delete can ever make
-     room — a scenario that tests nothing but its own arithmetic. */
-  const nVids = many.videoCount;
-  db.prepare("UPDATE site_media SET bytes = ? WHERE kind = 'video'").run(Math.ceil(pool / nVids));
-  const full = await up(vid(1000), 'z.mp4', 'video/mp4');
-  check('a genuinely full pool is refused', full.status === 400, String(full.status));
-  check('and the refusal says what is stored and where to clear it',
-    /storage is full/i.test(full.body.error || '') && /MB of/.test(full.body.error || '')
-    && /Uploads/.test(full.body.error || '') && !/max 5|Delete one first/i.test(full.body.error || ''),
-    full.body.error);
+  // ── THE SIXTH IS REFUSED, RECOVERABLY. ────────────────────────────────
+  let logs = [];
+  const origLog = console.log;
+  console.log = (...a) => { logs.push(a.join(' ')); };
+  const sixth = await up(vid(1000), 'sixth.mp4', 'video/mp4');
+  console.log = origLog;
+  check('the 6th video is refused', sixth.status === 400, String(sixth.status));
+  check('the refusal names the cap and points at Uploads, not "delete one first" verbatim',
+    /5-video limit/i.test(sixth.body.error || '') && /Uploads/.test(sixth.body.error || ''), sixth.body.error);
+  check('and an owner alert fired for it',
+    logs.some((l) => l.includes('[EMAIL]') && l.includes('hit the 5-video limit') && l.includes('m@x.com')),
+    logs.join(' | ').slice(0, 300));
 
-  // ── AND A FILE CAN ACTUALLY BE DELETED. ──────────────────────────────
+  /* THE DEDUP. "Send me an alert" was not "send me one per attempt" — a stuck
+     client or a frustrated user pressing upload again would otherwise fill the
+     owner's inbox with the same fact repeated. At most once per user per day. */
+  logs = [];
+  console.log = (...a) => { logs.push(a.join(' ')); };
+  await up(vid(1000), 'seventh.mp4', 'video/mp4');
+  console.log = origLog;
+  check('a second hit the same day does not alert again',
+    !logs.some((l) => l.includes('hit the 5-video limit')), logs.join(' | ').slice(0, 200));
+
+  // ── DELETE MAKES ROOM, FOR REAL. ──────────────────────────────────────
   const list = (await (await fetch(B + '/api/site-media', { headers: H })).json()).items;
   const one = list.find((i) => i.kind === 'video');
   const del = await fetch(B + '/api/site-media/' + one.id, { method: 'DELETE', headers: H });
-  const after = await del.json();
-  check('deleting a file works and reports the new usage',
-    del.status === 200 && after.usage && after.usage.videoCount === nVids - 1, JSON.stringify(after.usage || {}));
+  const afterDel = await del.json();
+  check('deleting a video frees a slot', del.status === 200 && afterDel.usage.videoCount === cap - 1, JSON.stringify(afterDel.usage || {}));
   const freed = await up(vid(1000), 'ok.mp4', 'video/mp4');
-  check('and the freed space is usable again', freed.status === 200, JSON.stringify(freed.body).slice(0, 140));
+  check('and the freed slot is usable again', freed.status === 200, JSON.stringify(freed.body).slice(0, 140));
 
-  // ── A ROW WITH NO KIND MUST NOT BECOME A VIDEO. ──────────────────────
-  db.prepare("INSERT INTO site_media (email, kind, path, mime, bytes, created_at) VALUES (?,?,?,?,?,?)")
-    .run('m@x.com', '', '/tmp/none', 'image/png', 10, new Date().toISOString());
+  // ── STORAGE REMAINS A BACKSTOP BEHIND THE COUNT. ──────────────────────
+  const pool = atCap.limits.videoPool;
+  check('the pool the owner asked to keep is still 1 GB', pool === 1024 * 1024 * 1024, String(pool));
+  const nVids = (await (await fetch(B + '/api/site-media', { headers: H })).json()).usage.videoCount;
+  db.prepare("UPDATE site_media SET bytes = ? WHERE kind = 'video'").run(Math.ceil(pool / nVids));
+  // A 6th slot doesn't exist to test the pool through normally (count caps
+  // first at 5), so free one, fill the pool across the remaining four, and
+  // prove the pool itself still refuses independently of the count.
+  const list2 = (await (await fetch(B + '/api/site-media', { headers: H })).json()).items;
+  const vids2 = list2.filter((i) => i.kind === 'video');
+  await fetch(B + '/api/site-media/' + vids2[0].id, { method: 'DELETE', headers: H });
+  db.prepare("UPDATE site_media SET bytes = ? WHERE kind = 'video'").run(Math.ceil(pool / (vids2.length - 1)));
+  const poolFull = await up(vid(1000), 'poolfull.mp4', 'video/mp4');
+  check('a full pool is still refused even with room left in the count',
+    poolFull.status === 400 && /storage is full/i.test(poolFull.body.error || ''), JSON.stringify(poolFull.body));
+
+  // ── A ROW WITH NO KIND MUST NOT BECOME A VIDEO. ───────────────────────
   const before = (await (await fetch(B + '/api/site-media', { headers: H })).json()).usage;
   db.prepare("INSERT INTO site_media (email, kind, path, mime, bytes, created_at) VALUES (?,?,?,?,?,?)")
-    .run('m@x.com', '', '/tmp/none2', 'image/png', 10, new Date().toISOString());
+    .run('m@x.com', '', '/tmp/none', 'image/png', 10, new Date().toISOString());
   const odd = (await (await fetch(B + '/api/site-media', { headers: H })).json()).usage;
-  /* Compared against the count JUST BEFORE, not against a number written down
-     earlier in the run — an earlier delete had already moved it, and the check
-     was measuring my own bookkeeping rather than the server's. */
   check('a row whose kind is missing is read from its mime, not called a video',
     odd.videoCount === before.videoCount, before.videoCount + ' → ' + odd.videoCount);
 
-  /* The panel must OFFER the delete, not merely have a route for one — that
-     gap is the whole bug, and a server-side test cannot see it. */
+  // ── THE PANEL STILL OFFERS THE DELETE THAT MAKES THE CAP RECOVERABLE. ─
   const appJs = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.html'), 'utf8');
   check('the Uploads panel offers a delete on every file',
     /class="cv-updel"[^>]*onclick="cvDeleteMedia\(/.test(appJs) && /async function cvDeleteMedia\(/.test(appJs));
   check('and it calls the route that already existed',
     /fetch\('\/api\/site-media\/' \+ Number\(id\), \{ method: 'DELETE'/.test(appJs));
-  check('the meter no longer counts down to a cap',
-    !/videoMaxCount/.test(appJs), 'app.html still references videoMaxCount');
+  check('the meter counts down to the cap again — "(n/5 clips)"',
+    /L\.videoMaxCount \? ' \(' \+ n \+ '\/' \+ L\.videoMaxCount/.test(appJs));
+
+  // ── THE PRODUCTION DEFAULT, WITHOUT AN ENV OVERRIDE. ──────────────────
+  // Duration ENFORCEMENT (a real clip actually being rejected) needs a real
+  // parseable file and lives in test/media-video-duration.js; this just pins
+  // the number that ships when MEDIA_MAX_VIDEO_SEC is unset.
+  const srvJs = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  check('the shipped default video duration cap is 2 minutes (120s)',
+    /videoMaxDurationSec: Number\(process\.env\.MEDIA_MAX_VIDEO_SEC\) > 0 \? Number\(process\.env\.MEDIA_MAX_VIDEO_SEC\) : 120,/.test(srvJs));
 
   server.close();
   if (fails) { console.error('\nFAILED (' + fails + ' failure' + (fails === 1 ? '' : 's') + ')'); process.exit(1); }
