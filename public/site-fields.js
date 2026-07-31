@@ -28,6 +28,26 @@
   var FIELDS = ['name', 'subtitle', 'summary'];
 
   /**
+   * Every hero template was drawn with a FIXED gap between one element and the
+   * next — a résumé's role, in particular, has no natural length limit ("Senior
+   * Regional Director of Manufacturing Operations and Continuous Improvement
+   * Strategy" is a real job title), and the summary section can run to whole
+   * paragraphs. Handed to the templates unbounded, either one grows past the
+   * space its box was given and lands on top of whatever comes next — the
+   * button under the hero paragraph, or the paragraph under a long role/title.
+   * Cut at a word boundary, not mid-word, and only when it would otherwise be
+   * too long to say so.
+   */
+  function _truncateWords(s, max) {
+    s = String(s || '').trim();
+    if (s.length <= max) return s;
+    var cut = s.slice(0, max);
+    var lastSpace = cut.lastIndexOf(' ');
+    if (lastSpace > max * 0.4) cut = cut.slice(0, lastSpace);
+    return cut.replace(/[\s.,;:–—-]+$/, '') + '…';
+  }
+
+  /**
    * Pull the handful of personal facts a site hero needs out of resume text.
    * Everything here is a convention rather than a guarantee, so each one can
    * come back empty and callers must cope with that.
@@ -61,7 +81,7 @@
       for (var j = expAt + 1; j < Math.min(lines.length, expAt + 6); j++) {
         var l = lines[j];
         if (!l || /^[•\-*]/.test(l)) continue;
-        role = l.split(/[|,–—]/)[0].trim();
+        role = _truncateWords(l.split(/[|,–—]/)[0], 60);
         break;
       }
     }
@@ -77,7 +97,7 @@
         if (/^[A-Z][A-Z\s&]{3,}$/.test(s)) break;   // next ALL-CAPS section heading
         body.push(s.replace(/^[•\-*]\s*/, ''));
       }
-      summary = body.join(' ').slice(0, 400);
+      summary = _truncateWords(body.join(' '), 220);
     }
 
     return {
@@ -123,6 +143,18 @@
   /**
    * Tag the hero's elements with the field they represent, so everything after
    * this can work by meaning rather than by position.
+   *
+   * Two passes, deliberately. Some templates put a small decorative element —
+   * a "$ whoami" kicker, an "● Available from October" badge — ahead of the
+   * real intro paragraph in document order, and both share the `paragraph`
+   * type. A single pass tags whichever comes first, which was the badge: the
+   * full resume summary (up to 400 chars) landed in a 300×30 pill instead of
+   * the actual body copy, and the real paragraph was left with its static
+   * sample text forever. Explicit `props.field` on the template (authoring
+   * intent) is honored FIRST, in pass one, so those templates can point at the
+   * correct element; only the elements nothing has claimed are inferred by
+   * first-of-type in pass two. Templates that never set `field` explicitly
+   * behave exactly as before.
    */
   function tagFields(doc) {
     if (!doc || !doc.pages || !doc.pages[0]) return doc;
@@ -131,9 +163,12 @@
     var want = ['heading', 'subheading', 'paragraph'];
     var map = { heading: 'name', subheading: 'subtitle', paragraph: 'summary' };
     var used = {};
-    (hero.els || []).forEach(function (el) {
-      if (!el || !el.props) return;
-      if (el.props.field) { used[el.props.field] = true; return; }
+    var els = hero.els || [];
+    els.forEach(function (el) {
+      if (el && el.props && el.props.field) used[el.props.field] = true;
+    });
+    els.forEach(function (el) {
+      if (!el || !el.props || el.props.field) return;
       var f = map[el.type];
       if (f && want.indexOf(el.type) >= 0 && !used[f]) { el.props.field = f; used[f] = true; }
     });

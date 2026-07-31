@@ -322,6 +322,47 @@ const server = app.listen(0, async () => {
       check(`${width}: the canvas is not blank`, inEditor.els > 0, 'elements=' + inEditor.els);
       check(`${width}: applying a template threw nothing`, errs.length === before, errs.slice(before).join(' | '));
 
+      /* ── THE TOP BAR DOES NOT SQUEEZE OR CLIP ────────────────────────────
+         Reported from a real click-through as "the sidebar/toolbar is cut
+         off on Mac — half of it is showing, and Save/Preview/Publish are
+         partially obscured." This machine renders every toolbar label
+         comfortably at 1440px, in every width this suite tries — Chromium on
+         Linux never reproduces it. But nothing in the row had
+         `flex-shrink: 0` except the empty `.cv-title` spacer, which meant a
+         row a few pixels too wide for the viewport — which is exactly what
+         Safari/macOS's own system-font metrics can produce even at a
+         comfortable window width — had two ways to fail: the WHOLE toolbar
+         could clip past the right edge (nothing wraps, nothing scrolls), or
+         individual buttons could shrink their own text into a wrapped,
+         squeezed mess ("half the sidebar is cut off"). Reproduced here by
+         forcing the same kind of extra width a different font would add,
+         rather than waiting for a macOS box to prove it — the fix is
+         `flex-shrink: 0` on every real toolbar element plus `flex-wrap: wrap`
+         on the row itself, so the worst case is a taller, two-line toolbar
+         with everything still fully visible, never a clipped or squeezed
+         one. */
+      if (width > 820) {
+        await page.addStyleTag({ content: '.cv-top .cv-tbtn, .cv-top .cv-publish { letter-spacing: 4px !important; padding-left: 40px !important; padding-right: 40px !important; }' });
+        await page.waitForTimeout(150);
+        const squeeze = await page.evaluate(() => {
+          const btns = Array.from(document.querySelectorAll('.cv-top .cv-tbtn, .cv-top .cv-publish'))
+            .filter((b) => getComputedStyle(b).display !== 'none')
+            .map((b) => {
+              const r = b.getBoundingClientRect();
+              return { text: b.textContent.trim(), x: r.x, right: r.x + r.width, textSqueezed: b.scrollHeight > b.clientHeight + 2 };
+            });
+          return { vw: innerWidth, btns };
+        });
+        const clipped = squeeze.btns.filter((b) => b.right > squeeze.vw + 1 || b.x < -1);
+        const squeezed = squeeze.btns.filter((b) => b.textSqueezed);
+        check(`${width}: under a forced-wide toolbar, nothing clips past the viewport edge`,
+          clipped.length === 0, JSON.stringify(clipped));
+        check(`${width}: and no button's own text gets squeezed/wrapped inside it`,
+          squeezed.length === 0, JSON.stringify(squeezed));
+        await page.evaluate(() => document.querySelectorAll('style').forEach((s) => { if (/letter-spacing: 4px/.test(s.textContent)) s.remove(); }));
+        await page.waitForTimeout(150);
+      }
+
       /* ── THE CANVAS DOES NOT MOVE SIDEWAYS ──────────────────────────────
          `transform: scale()` changes what is painted and NOTHING about the
          layout box, so #wcEdWrap stayed 1200px wide however far it was scaled
