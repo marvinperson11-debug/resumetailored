@@ -857,8 +857,29 @@ const server = app.listen(0, async () => {
        default of 300px — narrower than the phone preview it was meant to be
        wider than. A percentage is only a width if something above it has one. */
     check('the preview is sized from a measured width, not a percentage',
-      /const avail = Math\.max\(280, stage\.clientWidth\);/.test(appJs)
-      && /f\.style\.width = \(mobile \? Math\.min\(390, avail\) : avail\) \+ 'px';/.test(appJs));
+      /const avail = Math\.max\(280, stage\.clientWidth\);/.test(appJs));
+    /* THE DEAD TOGGLE. This used to read
+         f.style.width = (mobile ? Math.min(390, avail) : avail) + 'px';
+       and on a phone `avail` is the stage — about 334px — so mobile gave
+       min(390,334) = 334 and desktop gave 334. The same number. Both buttons
+       rendered the page at phone width; only the highlight and the corner
+       radius moved. A preview is of a LAYOUT, so the page is laid out at the
+       device's own width and SCALED to fit the room available. */
+    check('the preview lays the page out at the DEVICE width, not the room available',
+      /const layoutW = mobile \? 390 : Math\.max\(avail, PV_DESK_MIN\);/.test(appJs)
+      && /const k = Math\.min\(1, avail \/ layoutW\);/.test(appJs));
+    check('and never at a width where the phone stylesheet would take over',
+      /const PV_DESK_MIN = 1000;/.test(appJs));
+    /* The ASSIGNMENT, not the expression — the expression still appears in the
+       comment above the fix, which is where it belongs. */
+    check('the old identical-both-ways sizing is gone',
+      !/f\.style\.width = \(mobile \?/.test(appJs));
+    /* Same lesson as the canvas: a transform paints smaller and leaves the
+       layout box alone, so the box has to carry the scaled size or the preview
+       scrolls sideways instead of shrinking. */
+    check('the preview box carries the scaled size, the frame keeps the layout',
+      /box\.style\.width = Math\.floor\(layoutW \* k\) \+ 'px';/.test(appJs)
+      && /f\.style\.transform = `scale\(\$\{k\}\)`;/.test(appJs));
     /* Preview covers the whole stage, so the way out has to be in the bar. */
     check('preview offers a way back to editing',
       /id="cvBackToEdit"[^>]*onclick="wcSetView\('edit'\)"/.test(appJs));

@@ -1518,7 +1518,13 @@
               </div>
               <div id="wcPreview" style="display:none;height:100%;">
                 <div id="wcPreviewEmpty" class="cv-note" style="padding:40px;text-align:center;"></div>
-                <iframe id="wcPreviewFrame" title="Preview" style="display:none;width:100%;height:100%;border:0;background:#fff;"></iframe>
+                <!-- The box carries the SCALED size, the frame keeps the page's
+                     own layout width and is scaled into it — the same split as
+                     the canvas. Without it a preview narrower than the page it
+                     is showing would scroll sideways instead of shrinking. -->
+                <div id="wcPreviewBox" style="display:none;position:relative;flex:0 0 auto;">
+                  <iframe id="wcPreviewFrame" title="Preview" style="position:absolute;top:0;left:0;transform-origin:top left;border:0;background:#fff;"></iframe>
+                </div>
               </div>
             </div>
 
@@ -7173,25 +7179,67 @@ Aaliyah Washington`
       if (edit) edFitStage(); else { wcLoadPreview(); wcFitPreview(); }
     }
 
-    /* The preview frame at the width of the device chosen. A phone preview that
-       fills a 1440px window is not a preview of a phone. */
+    /* The preview at the width of the device chosen. A phone preview that fills
+       a 1440px window is not a preview of a phone.
+
+       WHAT WAS WRONG WITH THE TOGGLE. The frame was sized
+       `mobile ? Math.min(390, avail) : avail`, and on a phone `avail` is the
+       stage — 334px. So mobile gave min(390,334) = 334 and desktop gave 334:
+       THE SAME NUMBER. Pressing either button moved the highlight, changed the
+       corner radius and changed nothing else, because the "desktop" preview was
+       already being rendered at phone width and the site's own phone stylesheet
+       was in force either way. Measured by clicking the real buttons: the frame
+       and the document inside it were 334px before and after, both ways.
+
+       A preview is of a LAYOUT, not of the space available to show it. So the
+       page is laid out at the device's real width and SCALED to fit whatever
+       room there is — a desktop layout on a phone is a whole desktop page shrunk
+       down, which is the thing being asked for. Where there is room for the real
+       thing (a desktop window) the scale is 1 and nothing changes. */
+    const PV_DESK_MIN = 1000; // narrower than this cannot show a desktop layout 1:1
     function wcFitPreview() {
       const f = document.getElementById('wcPreviewFrame');
+      const box = document.getElementById('wcPreviewBox');
       const wrap = document.getElementById('wcPreview');
       const stage = document.getElementById('wcEdStage');
-      if (!f || !wrap || !stage) return;
+      if (!f || !box || !wrap || !stage) return;
       const mobile = (typeof edDevice !== 'undefined' && edDevice === 'mobile');
       /* MEASURED, not `100%`. The stage lays its children out by content, so an
          iframe at `width:100%` of an auto-width parent fell back to the iframe
          default — 300px, NARROWER than the phone preview it was meant to be
          wider than. A percentage is only a width if something above it has one. */
       const avail = Math.max(280, stage.clientWidth);
+      const availH = Math.max(320, wrap.clientHeight || stage.clientHeight);
+      // The width the PAGE is laid out at, which is what decides which of the
+      // site's own media queries apply — the whole point of the toggle.
+      const layoutW = mobile ? 390 : Math.max(avail, PV_DESK_MIN);
+      const k = Math.min(1, avail / layoutW);
+      /* Scaled down, more of the page fits — so ask for proportionally more of
+         it rather than showing a short strip in the middle of an empty stage.
+         Clamped to the page's OWN height once it has one, or a short site
+         previewed at a third scale trails a screen and a half of white below
+         itself. srcdoc is same-origin, so this is readable; it is 0 before the
+         document loads, which is why it only ever shrinks the request. */
+      let layoutH = Math.round(availH / k);
+      try {
+        const real = f.contentDocument && f.contentDocument.body && f.contentDocument.body.scrollHeight;
+        if (real > 40 && real < layoutH) layoutH = Math.ceil(real);
+      } catch (_) { /* not loaded yet — the generous height is the right default */ }
       wrap.style.width = avail + 'px';
       wrap.style.display = wrap.style.display === 'none' ? 'none' : 'flex';
       wrap.style.justifyContent = 'center';
-      f.style.width = (mobile ? Math.min(390, avail) : avail) + 'px';
-      f.style.flex = '0 0 auto';
-      f.style.boxShadow = mobile ? '0 0 0 1px rgba(255,255,255,.14), 0 18px 48px rgba(0,0,0,.45)' : '';
+      wrap.style.alignItems = 'flex-start';
+      box.style.width = Math.floor(layoutW * k) + 'px';
+      box.style.height = Math.ceil(layoutH * k) + 'px';
+      f.style.width = layoutW + 'px';
+      f.style.height = layoutH + 'px';
+      f.style.transform = `scale(${k})`;
+      /* On the BOX, which is not scaled — a shadow on the frame is drawn in
+         the page's own pixels and then shrunk with it, so at a third scale the
+         phone's outline all but disappears. */
+      box.style.boxShadow = mobile ? '0 0 0 1px rgba(255,255,255,.14), 0 18px 48px rgba(0,0,0,.45)' : '';
+      box.style.borderRadius = mobile ? '14px' : '';
+      box.style.overflow = 'hidden';
       f.style.borderRadius = mobile ? '14px' : '';
     }
     window.addEventListener('resize', () => { if (wcView === 'preview') wcFitPreview(); });
@@ -7200,21 +7248,27 @@ Aaliyah Washington`
     async function wcLoadPreview() {
       const frame = document.getElementById('wcPreviewFrame');
       const empty = document.getElementById('wcPreviewEmpty');
+      /* The FRAME is absolutely positioned inside the box and always visible;
+         the BOX is what gets shown and hidden, because it is the thing that
+         carries a size. Hiding the frame instead left a sized empty rectangle
+         sitting over the message it was supposed to make room for. */
+      const box = document.getElementById('wcPreviewBox');
+      const show = (on) => { if (box) box.style.display = on ? 'block' : 'none'; };
       const rSel = document.getElementById('wcResumeSelect');
       const resume = wcResumes.find(x => String(x.id) === (rSel && rSel.value));
       if (!resume) {
-        frame.style.display = 'none';
+        show(false);
         empty.textContent = _t('wc_preview_norecipient', 'Pick a resume in step 1 to preview your site.');
         empty.style.display = 'block';
         return;
       }
       if (!wcDoc) {
-        frame.style.display = 'none';
+        show(false);
         empty.textContent = _t('wc_preview_notpl', 'Pick a template in step 2 to preview your site.');
         empty.style.display = 'block';
         return;
       }
-      empty.textContent = _t('wc_preview_loading', 'Building preview…'); empty.style.display = 'block'; frame.style.display = 'none';
+      empty.textContent = _t('wc_preview_loading', 'Building preview…'); empty.style.display = 'block'; show(false);
       const rTpl = OUT_TPLS.resume.find(t => t.id === selectedOutputTpl.resume) || OUT_TPLS.resume[0];
       try {
         const res = await fetch('/api/personal-site/preview', {
@@ -7230,10 +7284,16 @@ Aaliyah Washington`
         });
         if (!res.ok) throw new Error('preview failed');
         frame.srcdoc = await res.text();
-        frame.style.display = 'block'; empty.style.display = 'none';
+        show(true); empty.style.display = 'none';
+        /* Twice, on purpose. The first fit gives the frame a size so the page
+           inside has something to lay out against; the second runs once that
+           page exists and can be measured, which is when its real height is
+           knowable. One call could only ever do one of those two jobs. */
+        wcFitPreview();
+        frame.addEventListener('load', wcFitPreview, { once: true });
       } catch (_) {
         empty.textContent = _t('wc_preview_err', 'Could not build the preview — try again.');
-        empty.style.display = 'block'; frame.style.display = 'none';
+        empty.style.display = 'block'; show(false);
       }
     }
 
