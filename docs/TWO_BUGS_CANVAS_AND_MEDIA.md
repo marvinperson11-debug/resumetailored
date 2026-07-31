@@ -1,5 +1,7 @@
 # Two bugs: the canvas that moved, and the media that didn't show
 
+Merged and deployed — **PR #293**.
+
 **800 source assertions** and **225 browser assertions** at 1440px and 390px, 0 failures.
 
 I measured both before changing anything. One of them was exactly what you described and is fixed. The other did not reproduce, and I want to be straight with you about that rather than ship a guess and call it fixed.
@@ -8,7 +10,7 @@ I measured both before changing anything. One of them was exactly what you descr
 
 ## Bug 2 — the canvas moving left to right. Fixed.
 
-This one was real, it was on both, and here is what it measured:
+I measured it by asking the browser to actually scroll the stage as far right as it would go:
 
 ```
                           BEFORE                    AFTER
@@ -19,13 +21,13 @@ This one was real, it was on both, and here is what it measured:
                 → 443px of sideways scroll       → 0
 ```
 
-Not inferred from the numbers — I asked the browser to scroll the stage as far right as it would go and read back where it landed. 47 pixels on the laptop, **443 pixels on the phone**. That is the canvas sliding out from under you.
+Not inferred from the numbers — I scrolled it and read back where it landed. 47 pixels on the laptop, **443 pixels on the phone**. That is the canvas sliding out from under you.
 
 ### Why
 
 `transform: scale()` changes what gets **painted** and nothing at all about the **layout box**. The canvas is a 1200px-wide page scaled down to fit — at 390px that scale is 0.245, so it *draws* 294px wide. But its box stayed **1200px**, and the stage dutifully scrolled sideways to let you reach the 900-odd pixels that were never going to be there.
 
-The giveaway was in the fitting code itself. It already compensated for the transform in one direction:
+The tell was in the fitting code itself. It already compensated for the transform in one direction:
 
 ```js
 wrap.style.height = (docHeight * k) + 'px';   // height: corrected for the scale
@@ -94,7 +96,7 @@ I removed it, and made the containing box a **grid** with two rows (label, then 
 - A `1fr` track is resolved from the element's **own** height, before the media is measured at all.
 - A flex column asks a **replaced element** (an `<img>`, a `<video>`, an `<iframe>`) to grow from its intrinsic size. That is the corner of flexbox where engines have historically disagreed, and a video whose metadata hasn't arrived has **no intrinsic height to grow from**. Safari does not preload video metadata as eagerly as Chrome does.
 
-So: the box you draw is now what the media gets, on every engine, at every width, without anything having to negotiate. That's a hardening, not a confirmed fix, and I'd rather say so.
+So: the box you draw is now what the media gets, on every engine, at every width, without anything having to negotiate. **That's a hardening, not a confirmed fix**, and I'd rather say so.
 
 ### Please test — and if it's still wrong
 
@@ -104,7 +106,7 @@ I test in Chromium; your phone is almost certainly Safari, and this is exactly t
 2. **Does the published site show them on your laptop?** (Not the editor — the live `/site/...` page.) If yes it's a rendering difference; if no it's the file or the save, and those are completely different investigations.
 3. **A screenshot of the phone** — an empty box and a blank space look the same in a sentence and mean opposite things.
 
-One possibility I could not check from here: uploaded files live in `DATA_DIR` on Railway. If that isn't a mounted volume, a deploy wipes them — and your laptop would keep showing the photos anyway, because they're cached for a year, while a phone that never saw them gets nothing. That would look precisely like "desktop fine, mobile blank." Worth confirming the volume is mounted.
+One possibility I could not check from here: uploaded files live in `DATA_DIR` on Railway. If that isn't a mounted volume, a deploy wipes them — and your laptop would keep showing the photos anyway, because they're cached for a year, while a phone that never saw them gets nothing. That would look precisely like "desktop fine, mobile blank." Worth confirming the volume is mounted (Railway → Service → Settings → Volumes, mount path `/data`, paired with `DATA_DIR=/data`).
 
 ---
 
@@ -114,3 +116,5 @@ One possibility I could not check from here: uploaded files live in `DATA_DIR` o
 - `server.js` — `.sd-el--fit` is a two-row grid; the phone-only `height:auto!important` on photos is gone.
 - `test/browser/editor.js` — the sideways-scroll checks above, plus a check that an uploaded photo on the **published page at 390px** takes the height of its box and not of the file.
 - `test/site-features.js` — the source assertions follow the new rules, including one asserting the phone override is **absent**.
+- `test/golden/site-doc.html` — regenerated; the `/r/:slug` golden is byte-identical.
+- `CLAUDE.md` — two new invariants in the editor section.
