@@ -30,11 +30,13 @@ So there's one function, `_pvDeviceLocked()`, and everything that reads the devi
 
 The tests confirm the pin holds by **pressing the hidden button anyway** and asserting nothing moves.
 
-### One thing this also does, which you didn't ask for
+### It also removes the canvas toggle on a phone — confirmed as wanted
 
 The same two buttons drove the **editor canvas** device view, not just the preview. Hiding them on a phone removes that too, so the canvas is always the desktop view there.
 
-I did it deliberately rather than by accident: keeping the canvas toggle while hiding the preview toggle would mean a user could set Mobile in the editor, switch to Preview, and get the double-scaled render with no visible control explaining it. And your own reasoning applies to the canvas identically — the layout is preserved now, so the phone canvas view showed the same design at a smaller size. **If you'd rather keep the canvas toggle on phones, say so and I'll split them.**
+Keeping the canvas toggle while hiding the preview one would let someone set Mobile in the editor, switch to Preview, and meet the double-scaled render with no visible control explaining it. The same reasoning applies to the canvas anyway: the layout is preserved now, so its phone view showed the same design at a smaller size.
+
+**Decided: it stays removed.** No device toggle anywhere on mobile — not in Preview, not in the canvas. A phone always shows the desktop layout scaled to fit.
 
 ## 2. All twelve templates at phone width
 
@@ -82,6 +84,6 @@ That is the only defect the sweep turned up.
 
 Recording them because they were mine: the wrapper check sliced to the first `</div></div>` and landed inside the first element on the page, reporting "1 section of 4" for documents that were wrapped correctly; the hidden-element check matched the stylesheet's own `.sd-el--mhide` rule and called it a hidden element; and the zero-size check treated "under one pixel" as missing, which flagged that 0.39px divider as absent. The first two were pure noise. **The third one was how I found the divider**, so it earned its keep before I corrected it.
 
-## No questions
+## No open questions
 
-The only open decision is the one flagged above — whether the **editor canvas** should keep its phone toggle on a phone even though the previews no longer have one. I've removed it; say the word if you want it back.
+The one decision that was open — whether the editor canvas should keep its phone toggle — is settled above: removed, on purpose, everywhere below 820px.
