@@ -276,6 +276,58 @@
     /* ── Website Creator ── */
     .wc-vtab { flex: 1; border: none; background: transparent; color: #64748b; font-size: 13px; font-weight: 700; padding: 8px 10px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
     .wc-vtab-active { background: #fff; color: #4338ca; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    /* ── A PHONE, NOT A NARROW RECTANGLE ──────────────────────────────────
+       The mobile preview is the right WIDTH but reads as a column of the page
+       rather than as a phone. A chassis around it says which it is at a glance.
+
+       Only on a screen big enough to be pretending. On an actual phone the
+       chassis is the one in your hand, and drawing a second one would spend
+       real pixels — the scarcest thing there — on decoration. `is-on` is put
+       on by the two fit functions, which are also the only things that know
+       whether mobile is selected.
+
+       OUTSIDE the scaled frame, so the bezel is a constant thickness on the
+       glass rather than something that shrinks with the page it surrounds. */
+    .pv-chassis { flex: 0 0 auto; }
+    .pv-chassis.is-on {
+      position: relative;
+      padding: 12px 10px 16px;
+      background: linear-gradient(180deg, #2b2f39, #14171d);
+      border-radius: 44px;
+      box-shadow: 0 0 0 2px #3f4552, 0 26px 60px rgba(0,0,0,.45);
+    }
+    /* Earpiece and home indicator: the two marks that read as "phone" at any
+       size. Positioned inside the padding, so they never cover the page. */
+    .pv-chassis.is-on::before {
+      content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+      width: 64px; height: 5px; border-radius: 3px; background: #4a5160;
+    }
+    .pv-chassis.is-on::after {
+      content: ''; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+      width: 40%; max-width: 110px; height: 4px; border-radius: 2px; background: #5b6373;
+    }
+    .pv-chassis.is-on > * { border-radius: 32px; overflow: hidden; }
+
+    /* ── THE TEMPLATE MODAL'S HEADER, ON A PHONE ──────────────────────────
+       Measured at 390px: 195px of header above a 353px preview — more than
+       half the modal spent on chrome, for a screen whose whole job is showing
+       you the template. Two rows instead of three, the blurb dropped (it is on
+       the card you just came from), and everything a size down. Desktop is
+       untouched: every rule here is inside the phone query. */
+    .wc-tplhead-brk { display: none; }
+    @media (max-width: 820px) {
+      .wc-tplhead { padding: 8px 10px !important; gap: 7px !important; }
+      #wcTplBlurb { display: none; }
+      #wcTplName { font-size: 13.5px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      /* Row 1: name, then Close. Row 2: the toggle, then Use. */
+      .wc-tplhead-txt { order: 1; flex: 1 1 auto !important; min-width: 0 !important; }
+      .wc-tplhead-close { order: 2; font-size: 12.5px !important; padding: 6px 12px !important; flex: 0 0 auto; }
+      .wc-tplhead-brk { display: block; order: 3; flex: 0 0 100%; height: 0; }
+      .wc-tplhead-dev { order: 4; padding: 3px !important; gap: 3px !important; flex: 0 0 auto; }
+      .wc-tplhead-dev .wc-vtab { font-size: 12px; padding: 6px 10px; }
+      .wc-tplhead-use { order: 5; flex: 1 1 auto; font-size: 12.5px !important; padding: 7px 10px !important; }
+    }
     .wc-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 16px; padding: 22px; margin-bottom: 18px; }
     .wc-step { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 14px; }
     .wc-pal-btn { border: 1.5px solid #c7d2fe; background: #eef2ff; color: #4338ca; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 9px; cursor: pointer; }
@@ -1522,8 +1574,10 @@
                      own layout width and is scaled into it — the same split as
                      the canvas. Without it a preview narrower than the page it
                      is showing would scroll sideways instead of shrinking. -->
-                <div id="wcPreviewBox" style="display:none;position:relative;flex:0 0 auto;">
-                  <iframe id="wcPreviewFrame" title="Preview" style="position:absolute;top:0;left:0;transform-origin:top left;border:0;background:#fff;"></iframe>
+                <div id="wcPreviewChassis" class="pv-chassis" style="display:none;">
+                  <div id="wcPreviewBox" style="position:relative;">
+                    <iframe id="wcPreviewFrame" title="Preview" style="position:absolute;top:0;left:0;transform-origin:top left;border:0;background:#fff;"></iframe>
+                  </div>
                 </div>
               </div>
             </div>
@@ -6602,26 +6656,37 @@ Aaliyah Washington`
 
   <!-- ── Template preview: desktop / mobile, before picking ── -->
   <div id="wcTplModal" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.88);align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeTplPreview()">
-    <div style="background:#fff;border-radius:18px;width:100%;max-width:1060px;max-height:94vh;display:flex;flex-direction:column;overflow:hidden;">
-      <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #eef0f4;flex-wrap:wrap;">
-        <div style="flex:1;min-width:140px;">
+    <!-- A DEFINITE height, not a maximum. `flex:1` on the preview stage only
+         grows against a parent that has a height of its own; with max-height
+         the panel was content-sized and the stage settled at 353px whatever the
+         screen. That is why the header felt like it was taking everything: it
+         was 195px of a 548px panel on a phone. -->
+    <div style="background:#fff;border-radius:18px;width:100%;max-width:1060px;height:94vh;height:94dvh;max-height:94vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="wc-tplhead" style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #eef0f4;flex-wrap:wrap;">
+        <div class="wc-tplhead-txt" style="flex:1;min-width:140px;">
           <div id="wcTplName" style="font-size:16px;font-weight:800;color:#111827;"></div>
           <div id="wcTplBlurb" style="font-size:12.5px;color:#6b7280;"></div>
         </div>
-        <div style="display:flex;gap:5px;background:#f1f5f9;border-radius:10px;padding:4px;">
+        <div class="wc-tplhead-dev" style="display:flex;gap:5px;background:#f1f5f9;border-radius:10px;padding:4px;">
           <button id="wcTplDesktop" class="wc-vtab wc-vtab-active" onclick="wcTplDevice('desktop')" data-i18n="wc_tpl_desktop">🖥 Desktop</button>
           <button id="wcTplMobile" class="wc-vtab" onclick="wcTplDevice('mobile')" data-i18n="wc_tpl_mobile">📱 Mobile</button>
         </div>
-        <button class="btn btn-outline" style="font-size:13px;padding:9px 14px;" onclick="closeTplPreview()" data-i18n="wc_tpl_close">Close</button>
-        <button class="btn btn-primary" style="font-size:13px;padding:9px 16px;" onclick="wcUseTemplate()" data-i18n="wc_tpl_use">Use this template →</button>
+        <button class="btn btn-outline wc-tplhead-close" style="font-size:13px;padding:9px 14px;" onclick="closeTplPreview()" data-i18n="wc_tpl_close">Close</button>
+        <button class="btn btn-primary wc-tplhead-use" style="font-size:13px;padding:9px 16px;" onclick="wcUseTemplate()" data-i18n="wc_tpl_use">Use this template →</button>
+        <!-- A forced line break, phone only. `order` puts the title and Close on
+             row 1 and the toggle and Use on row 2 WITHOUT reordering the DOM,
+             so the desktop header keeps the order it always had. -->
+        <i class="wc-tplhead-brk"></i>
       </div>
       <!-- The box carries the SCALED size and the frame keeps the page's own
            layout width, scaled into it. A `max-width` cap cannot switch device
            on a phone: both caps sit above the room available, so neither binds
            and both views render the same page. See wcTplDevice. -->
       <div id="wcTplStage" style="flex:1;overflow:auto;background:#e9edf3;padding:16px;display:flex;justify-content:center;align-items:flex-start;">
-        <div id="wcTplBox" style="position:relative;flex:0 0 auto;border-radius:10px;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.18);overflow:hidden;">
-          <iframe id="wcTplFrame" title="Template preview" style="position:absolute;top:0;left:0;transform-origin:top left;border:0;background:#fff;"></iframe>
+        <div id="wcTplChassis" class="pv-chassis">
+          <div id="wcTplBox" style="position:relative;border-radius:10px;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.18);overflow:hidden;">
+            <iframe id="wcTplFrame" title="Template preview" style="position:absolute;top:0;left:0;transform-origin:top left;border:0;background:#fff;"></iframe>
+          </div>
         </div>
       </div>
     </div>
@@ -7203,19 +7268,32 @@ Aaliyah Washington`
        down, which is the thing being asked for. Where there is room for the real
        thing (a desktop window) the scale is 1 and nothing changes. */
     const PV_DESK_MIN = 1000; // narrower than this cannot show a desktop layout 1:1
+    /* The chassis is drawn on a screen that is not itself a phone. 820px is the
+       breakpoint the editor and the published sites already use, so "phone"
+       means one thing across the app. */
+    const PV_CHASSIS_MIN = 820;
+    const PV_CHASSIS = { x: 10, top: 12, bottom: 16 }; // must match .pv-chassis.is-on
+    const _pvChassisOn = (mobile) => !!mobile && window.innerWidth > PV_CHASSIS_MIN;
+
     function wcFitPreview() {
       const f = document.getElementById('wcPreviewFrame');
       const box = document.getElementById('wcPreviewBox');
+      const ch = document.getElementById('wcPreviewChassis');
       const wrap = document.getElementById('wcPreview');
       const stage = document.getElementById('wcEdStage');
-      if (!f || !box || !wrap || !stage) return;
+      if (!f || !box || !ch || !wrap || !stage) return;
       const mobile = (typeof edDevice !== 'undefined' && edDevice === 'mobile');
+      const chassis = _pvChassisOn(mobile);
+      ch.classList.toggle('is-on', chassis);
       /* MEASURED, not `100%`. The stage lays its children out by content, so an
          iframe at `width:100%` of an auto-width parent fell back to the iframe
          default — 300px, NARROWER than the phone preview it was meant to be
          wider than. A percentage is only a width if something above it has one. */
-      const avail = Math.max(280, stage.clientWidth);
-      const availH = Math.max(320, wrap.clientHeight || stage.clientHeight);
+      /* The bezel is part of what has to fit. Taken off BEFORE the scale is
+         worked out, or the chassis pushes the preview past the stage and the
+         thing that was meant to frame it is what makes it overflow. */
+      const avail = Math.max(280, stage.clientWidth) - (chassis ? PV_CHASSIS.x * 2 : 0);
+      const availH = Math.max(320, wrap.clientHeight || stage.clientHeight) - (chassis ? PV_CHASSIS.top + PV_CHASSIS.bottom : 0);
       // The width the PAGE is laid out at, which is what decides which of the
       // site's own media queries apply — the whole point of the toggle.
       const layoutW = mobile ? 390 : Math.max(avail, PV_DESK_MIN);
@@ -7231,7 +7309,7 @@ Aaliyah Washington`
         const real = f.contentDocument && f.contentDocument.body && f.contentDocument.body.scrollHeight;
         if (real > 40 && real < layoutH) layoutH = Math.ceil(real);
       } catch (_) { /* not loaded yet — the generous height is the right default */ }
-      wrap.style.width = avail + 'px';
+      wrap.style.width = (avail + (chassis ? PV_CHASSIS.x * 2 : 0)) + 'px';
       wrap.style.display = wrap.style.display === 'none' ? 'none' : 'flex';
       wrap.style.justifyContent = 'center';
       wrap.style.alignItems = 'flex-start';
@@ -7242,11 +7320,12 @@ Aaliyah Washington`
       f.style.transform = `scale(${k})`;
       /* On the BOX, which is not scaled — a shadow on the frame is drawn in
          the page's own pixels and then shrunk with it, so at a third scale the
-         phone's outline all but disappears. */
-      box.style.boxShadow = mobile ? '0 0 0 1px rgba(255,255,255,.14), 0 18px 48px rgba(0,0,0,.45)' : '';
-      box.style.borderRadius = mobile ? '14px' : '';
+         phone's outline all but disappears. Suppressed under a chassis, which
+         brings its own shadow and its own corners. */
+      box.style.boxShadow = (mobile && !chassis) ? '0 0 0 1px rgba(255,255,255,.14), 0 18px 48px rgba(0,0,0,.45)' : '';
+      box.style.borderRadius = chassis ? '' : (mobile ? '14px' : '');
       box.style.overflow = 'hidden';
-      f.style.borderRadius = mobile ? '14px' : '';
+      f.style.borderRadius = (mobile && !chassis) ? '14px' : '';
     }
     window.addEventListener('resize', () => { if (wcView === 'preview') wcFitPreview(); });
 
@@ -7258,7 +7337,7 @@ Aaliyah Washington`
          the BOX is what gets shown and hidden, because it is the thing that
          carries a size. Hiding the frame instead left a sized empty rectangle
          sitting over the message it was supposed to make room for. */
-      const box = document.getElementById('wcPreviewBox');
+      const box = document.getElementById('wcPreviewChassis');
       const show = (on) => { if (box) box.style.display = on ? 'block' : 'none'; };
       const rSel = document.getElementById('wcResumeSelect');
       const resume = wcResumes.find(x => String(x.id) === (rSel && rSel.value));
@@ -7446,14 +7525,20 @@ Aaliyah Washington`
     function wcTplDevice(mode) {
       const f = document.getElementById('wcTplFrame');
       const box = document.getElementById('wcTplBox');
+      const ch = document.getElementById('wcTplChassis');
       const stage = document.getElementById('wcTplStage');
-      if (!f || !box || !stage) return;
+      if (!f || !box || !ch || !stage) return;
       if (mode === 'desktop' || mode === 'mobile') _tplDevice = mode;
       const mobile = _tplDevice === 'mobile';
+      // Same chassis, same rule, same constants as the editor's preview.
+      const chassis = _pvChassisOn(mobile);
+      ch.classList.toggle('is-on', chassis);
+      box.style.boxShadow = chassis ? 'none' : '0 8px 30px rgba(0,0,0,.18)';
       // Measured from the stage, minus its padding — a percentage of an
-      // auto-width parent is not a width.
-      const avail = Math.max(240, stage.clientWidth - 32);
-      const availH = Math.max(320, stage.clientHeight - 32);
+      // auto-width parent is not a width — and minus the bezel, which has to
+      // fit inside the stage along with the page it frames.
+      const avail = Math.max(240, stage.clientWidth - 32) - (chassis ? PV_CHASSIS.x * 2 : 0);
+      const availH = Math.max(320, stage.clientHeight - 32) - (chassis ? PV_CHASSIS.top + PV_CHASSIS.bottom : 0);
       const layoutW = mobile ? 390 : Math.max(avail, TPL_DESK_MIN);
       const k = Math.min(1, avail / layoutW);
       const layoutH = Math.round(availH / k);
