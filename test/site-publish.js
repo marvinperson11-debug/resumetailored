@@ -560,6 +560,77 @@ const server = app.listen(0, async () => {
       !/Alex Morgan|Jordan Ellis|VP of Operations|15 years scaling|Toronto/.test(filled), filled.slice(0, 200));
     check('and puts the real one there instead', /Alice Nakamura/.test(filled));
 
+    /* ── HERO TEXT NO LONGER OVERFLOWS INTO WHAT COMES AFTER IT ──────────
+       Reported as "templates have text on text and buttons on text out of
+       the box" — a real user's résumé, built with `templateDoc` +
+       `fillFromResume` (the exact path `/api/personal-site/autogen` uses) and
+       measured in Chromium, showed the hero paragraph growing past its
+       allotted space and landing on the CTA button below it in 8 of the 12
+       templates, and in two of those (developer, freelance) far worse: a tiny
+       decorative "$ whoami" / "● Available from October" element — sharing
+       the `paragraph` type with the real intro paragraph and appearing FIRST
+       in document order — absorbed the full (~400 char) résumé summary
+       instead of it, because `tagFields` picked whichever paragraph came
+       first. Two independent fixes, both covered here without a browser:
+       `tagFields` honouring an explicit `props.field` before falling back to
+       first-of-type (site-fields.js), and `deriveFields` capping `role` and
+       `summary` at a word boundary instead of handing templates unbounded
+       text no fixed-height box was drawn for. The geometry side (the actual
+       pixel gaps widened in site-templates.js) can only be proven by
+       rendering and measuring real text, which lives in
+       test/browser/template-overlap.js. */
+    const devTpl = require('../site-templates.js').templateDoc('developer');
+    const longResume = 'Marvin Person Jr\nmarvin@example.com | Detroit, MI\n\nSUMMARY\n'
+      + '17+ years of manufacturing experience leading production teams, driving lean initiatives and cutting downtime across multiple plants. Skilled in Six Sigma, root-cause analysis, and cross-functional leadership.'
+      + '\n\nEXPERIENCE\nPlant Operations Manager, Ford Motor Company\n• Cut unplanned downtime 22%\n\nSKILLS\nLean Manufacturing';
+    SFmod.fillFromResume(devTpl, longResume);
+    let kickerText = null, introText = null;
+    (devTpl.pages[0].sections[0].els || []).forEach((el) => {
+      if (el.id.endsWith('-kicker')) kickerText = el.props.text;
+      if (el.id.endsWith('-p')) introText = el.props.text;
+    });
+    check('a decorative kicker ahead of the real paragraph is left alone',
+      kickerText === '$ whoami', 'kicker=' + JSON.stringify(kickerText));
+    check('the real intro paragraph gets the résumé summary instead',
+      introText && introText.startsWith('17+ years of manufacturing'), 'intro=' + JSON.stringify(introText));
+
+    const freeTpl = require('../site-templates.js').templateDoc('freelance');
+    SFmod.fillFromResume(freeTpl, longResume);
+    let badgeText = null, freeIntroText = null;
+    (freeTpl.pages[0].sections[0].els || []).forEach((el) => {
+      if (el.id.endsWith('-badge')) badgeText = el.props.text;
+      if (el.id.endsWith('-p')) freeIntroText = el.props.text;
+    });
+    check('the "Available from October" badge is left alone too',
+      badgeText === '● Available from October', 'badge=' + JSON.stringify(badgeText));
+    check('and the freelance intro paragraph gets the summary',
+      freeIntroText && freeIntroText.startsWith('17+ years of manufacturing'), 'intro=' + JSON.stringify(freeIntroText));
+
+    /* A résumé's job title has no natural length limit ("Senior Regional
+       Director of Manufacturing Operations and Continuous Improvement
+       Strategy" is a real one) — unbounded, it overflowed the subtitle
+       element into the summary paragraph below it in templates that had no
+       button anywhere near the paragraph to blame (academic, minimal,
+       showreel). Cut at a word boundary so it never mid-word-truncates a
+       shorter, ordinary title. */
+    const fullTitle = 'Senior Regional Director of Manufacturing Operations and Continuous Improvement Strategy';
+    const roleResume = 'Pat Lee\npat@example.com | Chicago, IL\n\nEXPERIENCE\n' + fullTitle + ', Ford\n• Led teams\n\nSKILLS\nOps';
+    const roleDerived = SFmod.deriveFields(roleResume).role;
+    check('an unbounded job title is capped, not handed through raw',
+      roleDerived && roleDerived.length < fullTitle.length, 'role=' + JSON.stringify(roleDerived));
+    check('cut at a word boundary — the kept text is whole words from the real phrase, not a mid-word chop',
+      roleDerived && roleDerived.endsWith('…')
+      && fullTitle.startsWith(roleDerived.slice(0, -1))
+      && fullTitle[roleDerived.length - 1] === ' ',
+      'role=' + JSON.stringify(roleDerived));
+    // And it still reaches the template's subtitle element, joined with location.
+    const roleTpl = require('../site-templates.js').templateDoc('academic');
+    SFmod.fillFromResume(roleTpl, roleResume);
+    let subtitleText = null;
+    (roleTpl.pages[0].sections[0].els || []).forEach((el) => { if (el.props.field === 'subtitle') subtitleText = el.props.text; });
+    check('and the capped role reaches the subtitle element, still paired with location',
+      subtitleText === roleDerived + ' · Chicago, IL', 'subtitle=' + JSON.stringify(subtitleText));
+
     /* ── SIMPLE MODE IS GONE ────────────────────────────────────────────
        It was a second, competing product: the finished site full screen behind
        one button, with its own guided strip, help panel, vibes picker and
@@ -663,8 +734,20 @@ const server = app.listen(0, async () => {
        edge — you could not publish at all — and a 74px rail plus a fixed 300px
        panel left the canvas sixteen pixels wide. */
     check('the builder has a phone layout', /@media \(max-width: 820px\)[\s\S]{0,900}?\.cv-publish/.test(appJs));
-    check('the top bar wraps instead of pushing Publish off the edge',
-      /\.cv-top \{ height: auto; min-height: 54px; flex-wrap: wrap;/.test(appJs));
+    /* Originally a phone-only fix (390px pushed Publish off the right edge).
+       Reproducing with real geometry showed it was not phone-specific: nothing
+       in the row has `flex-shrink: 0` except the buttons, and the empty
+       `.cv-title` spacer is the ONLY slack, so a row a few pixels too wide —
+       which macOS/Safari's own font metrics can produce even at a comfortable
+       desktop width, invisible to this Linux/Chromium suite — has nowhere to
+       go but off the edge, permanently, since a fixed 54px height with no wrap
+       neither scrolls nor reflows. The wrap-not-overflow rule now lives on the
+       BASE `.cv-top` rule, not gated behind the 820px media query. */
+    check('the top bar wraps instead of pushing Publish off the edge, on any width',
+      /\.cv-top \{ height: auto; min-height: 54px; flex-shrink: 0; flex-wrap: wrap;/.test(appJs));
+    check('every real toolbar button refuses to shrink — only the empty title spacer does',
+      /\.cv-tbtn \{[^}]*flex-shrink: 0;/.test(appJs) && /\.cv-publish \{[^}]*flex-shrink: 0;/.test(appJs)
+      && /\.cv-top-right \{[^}]*flex-shrink: 0;/.test(appJs));
     check('the panel floats over the canvas rather than squeezing it out',
       /\.cv-panel \{ position: absolute; left: 56px;/.test(appJs));
     /* The collapse handle is KEPT and moved, not hidden. Pinned at top:50% it

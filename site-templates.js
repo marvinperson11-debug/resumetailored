@@ -30,12 +30,12 @@ const EXECUTIVE = {
     id: 'home', name: 'Home', slug: 'home', isHome: true,
     seo: { title: 'Executive Profile', description: 'Senior leadership profile and track record.' },
     sections: [
-      sec('hero', 560, grad(INK_DARK), [
+      sec('hero', 660, grad(INK_DARK), [
         el('nav', 'nav', 80, 34, 800, 40),
         el('name', 'heading', 80, 168, 640, 120, { text: 'Alex Morgan', color: '#ffffff', size: 60 }),
         el('role', 'subheading', 80, 300, 560, 40, { text: 'VP of Operations · 15 years scaling teams', color: '#a5b4fc' }),
-        el('intro', 'paragraph', 80, 356, 520, 80, { text: 'I build operating systems for companies in their fastest-growing years — turning ambiguity into repeatable process.', color: '#cbd5e1' }),
-        el('cta', 'button', 80, 458, 210, 52, { text: 'Get in touch', anchor: 'contact' }),
+        el('intro', 'paragraph', 80, 376, 520, 80, { text: 'I build operating systems for companies in their fastest-growing years — turning ambiguity into repeatable process.', color: '#cbd5e1' }),
+        el('cta', 'button', 80, 558, 210, 52, { text: 'Get in touch', anchor: 'contact' }),
         el('photo', 'image', 810, 150, 310, 310, { ph: { from: '6366F1', to: '8B5CF6', shape: 'circle', label: 'Your headshot' } }),
       ]),
       sec('creds', 150, color('#ffffff'), [
@@ -122,12 +122,12 @@ const BOLD = {
     id: 'home', name: 'Home', slug: 'home', isHome: true,
     seo: { title: 'Creative Portfolio' },
     sections: [
-      sec('hero', 660, grad('linear-gradient(135deg,#050816,#3b0764,#831843)'), [
+      sec('hero', 740, grad('linear-gradient(135deg,#050816,#3b0764,#831843)'), [
         el('nav', 'nav', 80, 36, 900, 40),
         el('block', 'box', 60, 150, 520, 320, { bg: '8B5CF6', radius: 24 }, { z: 1 }),
         el('h', 'heading', 100, 190, 900, 240, { text: 'MAKE IT LOUD.', color: '#ffffff', size: 96 }, { z: 2 }),
         el('p', 'paragraph', 100, 452, 520, 80, { text: 'Art direction, motion, and identity work for brands that refuse to blend in.', color: '#e9d5ff' }, { z: 2 }),
-        el('cta', 'button', 100, 552, 230, 54, { text: 'See the work', anchor: 'work' }, { z: 2 }),
+        el('cta', 'button', 100, 632, 230, 54, { text: 'See the work', anchor: 'work' }, { z: 2 }),
       ]),
       sec('work', 500, color('#050816'), [
         el('wh', 'subheading', 80, 54, 500, 40, { text: 'Recent projects', color: '#ffffff' }),
@@ -160,11 +160,11 @@ const CONSULTANT = {
     id: 'home', name: 'Home', slug: 'home', isHome: true,
     seo: { title: 'Independent Consultant', description: 'Advisory and hands-on delivery for growing teams.' },
     sections: [
-      sec('hero', 500, grad('linear-gradient(135deg,#eef2ff,#faf5ff)'), [
+      sec('hero', 580, grad('linear-gradient(135deg,#eef2ff,#faf5ff)'), [
         el('nav', 'nav', 80, 36, 820, 40),
         el('h', 'heading', 80, 140, 640, 130, { text: 'Clarity, then momentum.', size: 52 }),
         el('p', 'paragraph', 80, 288, 540, 80, { text: 'I help founders turn a messy quarter into a plan the whole team can run — then help them run it.' }),
-        el('cta', 'button', 80, 392, 250, 52, { text: 'Book a call', anchor: 'contact' }),
+        el('cta', 'button', 80, 472, 250, 52, { text: 'Book a call', anchor: 'contact' }),
         el('img', 'imagebox', 780, 120, 340, 300, { ph: { from: '6366F1', to: '8B5CF6', label: 'Your photo' }, radius: 18 }),
       ]),
       sec('services', 400, color('#ffffff'), [
@@ -237,14 +237,14 @@ const DEVELOPER = {
     id: 'home', name: 'Home', slug: 'home', isHome: true,
     seo: { title: 'Sam Okafor — Software Engineer', description: 'Backend and platform engineering. Selected projects and stack.' },
     sections: [
-      sec('hero', 550, grad('linear-gradient(135deg,#0b1020,#0f172a 55%,#1e1b4b)'), [
+      sec('hero', 630, grad('linear-gradient(135deg,#0b1020,#0f172a 55%,#1e1b4b)'), [
         el('nav', 'nav', 80, 34, 800, 40),
         el('kicker', 'paragraph', 80, 150, 400, 30, { text: '$ whoami', color: '#22d3ee' }),
         el('h', 'heading', 80, 190, 760, 120, { text: 'Sam Okafor', color: '#ffffff', size: 58 }),
         el('role', 'subheading', 80, 318, 640, 60, { text: 'Senior Backend Engineer — distributed systems, Go & Postgres', color: '#a5b4fc' }),
-        el('p', 'paragraph', 80, 386, 560, 60, { text: 'I make services that stay up on the worst day of the quarter.', color: '#cbd5e1' }),
-        el('cta', 'button', 80, 468, 200, 50, { text: 'See projects', anchor: 'projects' }),
-        el('cta2', 'button', 300, 468, 180, 50, { text: 'GitHub', href: 'https://github.com', style: 'ghost' }),
+        el('p', 'paragraph', 80, 386, 560, 60, { text: 'I make services that stay up on the worst day of the quarter.', color: '#cbd5e1', field: 'summary' }),
+        el('cta', 'button', 80, 548, 200, 50, { text: 'See projects', anchor: 'projects' }),
+        el('cta2', 'button', 300, 548, 180, 50, { text: 'GitHub', href: 'https://github.com', style: 'ghost' }),
       ]),
       sec('stack', 190, color('#0f172a'), [
         el('h', 'subheading', 80, 42, 300, 30, { text: 'Stack', color: '#ffffff' }),
@@ -287,11 +287,11 @@ const STUDIO = {
       id: 'home', name: 'Studio', slug: 'home', isHome: true,
       seo: { title: 'Rowan Studio — Photography', description: 'Portrait and editorial photography.' },
       sections: [
-        sec('hero', 620, grad('linear-gradient(160deg,#292524,#78716c 60%,#b45309)'), [
+        sec('hero', 700, grad('linear-gradient(160deg,#292524,#78716c 60%,#b45309)'), [
           el('nav', 'nav', 80, 36, 900, 40),
           el('h', 'heading', 80, 300, 820, 130, { text: 'Rowan Studio', color: '#ffffff', size: 66 }),
           el('p', 'paragraph', 80, 448, 560, 60, { text: 'Portrait and editorial photography — Chicago and anywhere with a flight.', color: '#f5f5f4' }),
-          el('cta', 'button', 80, 528, 210, 50, { text: 'View the work', page: 'gallery' }),
+          el('cta', 'button', 80, 608, 210, 50, { text: 'View the work', page: 'gallery' }),
         ]),
         sec('feature', 520, color('#fdfcfb'), [
           el('h', 'subheading', 80, 56, 460, 34, { text: 'Recent frames' }),
@@ -349,11 +349,11 @@ const COACH = {
     id: 'home', name: 'Home', slug: 'home', isHome: true,
     seo: { title: 'Priya Raman — Career Coach', description: 'Coaching for people changing careers on purpose.' },
     sections: [
-      sec('hero', 480, grad('linear-gradient(135deg,#ecfeff,#eef2ff)'), [
+      sec('hero', 560, grad('linear-gradient(135deg,#ecfeff,#eef2ff)'), [
         el('nav', 'nav', 80, 36, 820, 40),
         el('h', 'heading', 80, 138, 620, 140, { text: 'Change careers on purpose.', size: 52 }),
         el('p', 'paragraph', 80, 296, 540, 80, { text: 'I coach mid-career professionals through the move they have been putting off — with a plan, not a pep talk.' }),
-        el('cta', 'button', 80, 400, 240, 52, { text: 'Book a free intro', anchor: 'book' }),
+        el('cta', 'button', 80, 480, 240, 52, { text: 'Book a free intro', anchor: 'book' }),
         el('img', 'imagebox', 780, 110, 340, 320, { ph: { from: '0d9488', to: '6366F1', label: 'Your photo' }, radius: 20 }),
       ]),
       sec('how', 380, color('#ffffff'), [
@@ -494,12 +494,12 @@ const FREELANCE = {
     id: 'home', name: 'Home', slug: 'home', isHome: true,
     seo: { title: 'Available for freelance work', description: 'Services, rates and how to start a project.' },
     sections: [
-      sec('hero', 460, color('#ffffff'), [
+      sec('hero', 540, color('#ffffff'), [
         el('nav', 'nav', 80, 36, 820, 40),
         el('badge', 'paragraph', 80, 122, 300, 30, { text: '● Available from October', color: '#4f46e5' }),
         el('h', 'heading', 80, 160, 700, 120, { text: 'Freelance web development', size: 48 }),
-        el('p', 'paragraph', 80, 296, 560, 60, { text: 'I build and ship small, fast websites for people who need one that works — not a six-month project.' }),
-        el('cta', 'button', 80, 376, 230, 50, { text: 'Start a project', anchor: 'brief' }),
+        el('p', 'paragraph', 80, 296, 560, 60, { text: 'I build and ship small, fast websites for people who need one that works — not a six-month project.', field: 'summary' }),
+        el('cta', 'button', 80, 456, 230, 50, { text: 'Start a project', anchor: 'brief' }),
       ]),
       sec('services', 410, color('#f9fafb'), [
         el('h', 'subheading', 80, 44, 520, 34, { text: 'What I do, and what it costs' }),
@@ -547,12 +547,12 @@ const GRADUATE = {
     id: 'home', name: 'Home', slug: 'home', isHome: true,
     seo: { title: 'Maya Chen — Graduate Portfolio', description: 'Recent graduate seeking a first role in data analysis.' },
     sections: [
-      sec('hero', 500, grad('linear-gradient(135deg,#eff6ff,#ecfeff)'), [
+      sec('hero', 600, grad('linear-gradient(135deg,#eff6ff,#ecfeff)'), [
         el('nav', 'nav', 80, 36, 820, 40),
         el('h', 'heading', 80, 140, 660, 120, { text: 'Maya Chen', size: 54 }),
         el('role', 'subheading', 80, 272, 620, 34, { text: 'BSc Statistics, 2026 · Looking for a first data role', color: '#2563eb' }),
-        el('p', 'paragraph', 80, 322, 540, 70, { text: 'Three internships, two published class projects, and a genuine enthusiasm for cleaning other people’s spreadsheets.' }),
-        el('cta', 'button', 80, 412, 210, 50, { text: 'See my projects', anchor: 'projects' }),
+        el('p', 'paragraph', 80, 342, 540, 70, { text: 'Three internships, two published class projects, and a genuine enthusiasm for cleaning other people’s spreadsheets.' }),
+        el('cta', 'button', 80, 512, 210, 50, { text: 'See my projects', anchor: 'projects' }),
         el('photo', 'image', 820, 130, 280, 280, { ph: { from: '2563eb', to: '06b6d4', shape: 'circle', label: 'Your photo' } }),
       ]),
       sec('projects', 320, color('#ffffff'), [
