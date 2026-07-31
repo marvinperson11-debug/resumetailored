@@ -7915,11 +7915,15 @@ Aaliyah Washington`
       if (isFont) cvRenderBrandPane();
     }
 
-    // Uploads pane: the media library, click an item to place it on the canvas.
+    // Uploads pane: THIS SITE's media, click an item to place it on the canvas.
+    // Scoped to wcSite.subdomain — media used to be one account-wide library, so
+    // a photo or video from a template you tried once and left stayed in the
+    // pool and counted against every site you built after it.
     async function cvRenderUploads() {
       const grid = document.getElementById('cvUploadGrid'); if (!grid) return;
+      if (!wcSite || !wcSite.subdomain) { grid.innerHTML = ''; return; }
       try {
-        const r = await fetch('/api/site-media', { headers: authHeaders() });
+        const r = await fetch('/api/site-media?subdomain=' + encodeURIComponent(wcSite.subdomain), { headers: authHeaders() });
         const d = await r.json().catch(() => ({}));
         if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }
         const items = d.items || [];
@@ -9391,7 +9395,11 @@ Aaliyah Washington`
     let wcMediaUsage = null;
     const _mb = (n) => (n / 1024 / 1024).toFixed(n > 1024 * 1024 ? 1 : 0);
     async function wcLoadMediaUsage() {
-      try { const r = await fetch('/api/site-media', { headers: authHeaders() }); if (r.ok) { wcMediaUsage = (await r.json()).usage; wcRenderMediaMeter(); } } catch (_) {}
+      if (!wcSite || !wcSite.subdomain) return;
+      try {
+        const r = await fetch('/api/site-media?subdomain=' + encodeURIComponent(wcSite.subdomain), { headers: authHeaders() });
+        if (r.ok) { wcMediaUsage = (await r.json()).usage; wcRenderMediaMeter(); }
+      } catch (_) {}
     }
     function wcRenderMediaMeter() {
       const el = document.getElementById('wcMediaMeter'); if (!el || !wcMediaUsage) return;
@@ -9423,6 +9431,7 @@ Aaliyah Washington`
       inp.type = 'file'; inp.accept = accept;
       inp.onchange = async () => {
         const f = inp.files[0]; if (!f) return;
+        if (!wcSite || !wcSite.subdomain) { showToast(_t('wc_upload_err', 'Upload failed.'), 6000); return; }
         /* CLIENT-SIDE DURATION CHECK, BEFORE THE UPLOAD STARTS. The server is
            still the one that decides — this is a courtesy, not the enforcement
            — but a video can now be 100 MB, and finding out it was three
@@ -9457,7 +9466,7 @@ Aaliyah Washington`
           _t('wc_uploading', 'Uploading…') + (pct === null ? '' : ' ' + pct + '%') + ' (' + mb + ' MB)',
           60000);
         say(0);
-        const fd = new FormData(); fd.append('file', f);
+        const fd = new FormData(); fd.append('file', f); fd.append('subdomain', wcSite.subdomain);
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/site-media');
         const h = authHeadersNoType();
@@ -9572,11 +9581,12 @@ Aaliyah Washington`
       inp.click();
     }
     async function _tvUploadMedia(blob, filename) {
+      if (!wcSite || !wcSite.subdomain) throw new Error(_t('wc_upload_err', 'Upload failed.'));
       // Re-wrap with a clean base type (strip ";codecs=…") so the multipart part's
       // Content-Type has no unquoted comma that could downgrade it server-side.
       const baseType = (blob.type || '').split(';')[0] || (filename.endsWith('.webm') ? 'video/webm' : '');
       const clean = baseType ? new Blob([blob], { type: baseType }) : blob;
-      const fd = new FormData(); fd.append('file', clean, filename);
+      const fd = new FormData(); fd.append('file', clean, filename); fd.append('subdomain', wcSite.subdomain);
       const r = await fetch('/api/site-media', { method: 'POST', headers: authHeadersNoType(), body: fd });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'Upload failed.');

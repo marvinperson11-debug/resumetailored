@@ -275,6 +275,16 @@ _ensureColumn('personal_sites', 'config', 'config TEXT');
 // were built around them; anything the owner adds lands here rather than being
 // dropped on the way to their inbox.
 _ensureColumn('site_leads', 'extra', "extra TEXT DEFAULT ''");
+// Which site a media upload belongs to. Uploads used to be one shared library
+// per account, so a photo or video from a template you tried once and moved on
+// from stayed in the pool forever, silently eating into the count/storage caps
+// of every site you built after it — reported as "I hit my video limit on my
+// first upload" by someone whose ACTUAL current site had none. Media now
+// belongs to the site it was uploaded on: deleting a site deletes its media
+// with it, and a rename carries it across rather than losing it. Existing rows
+// predate this column and stay NULL — excluded from every site-scoped query
+// below, which is exactly the fix: they stop counting against anything.
+_ensureColumn('site_media', 'site_sub', 'site_sub TEXT');
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
@@ -1056,9 +1066,17 @@ app.get('/api/assets/summary', (req, res) => {
 // Images/audio share one quota pool; video has its own pool + a hard file count
 // cap (Option B). Files live under ${DATA_DIR}/site-media/<email-hash>/ so they
 // persist across deploys when a Railway volume is mounted at /data.
-/* VIDEO POLICY, LOCKED IN: 5 clips per subscriber, 2 minutes each, 1 GB total.
+/* VIDEO POLICY, LOCKED IN: 5 clips per SITE, 2 minutes each, 1 GB total.
    This reverses the immediately preceding round's "no count cap" decision — on
    purpose, at the owner's explicit instruction, not by drift.
+
+   PER SITE, not per account — `site_media.site_sub` ties every row to the one
+   site it was uploaded on. It used to be one pool shared across every site an
+   account had ever built, so a video uploaded while trying a template months
+   ago stayed in the pool and silently spent a slot on the site being worked on
+   today — reported directly as "I hit my limit and I haven't uploaded
+   anything." Deleting a site deletes its media with it now; renaming carries
+   it across. See the `site_sub` migration comment near the top of this file.
 
    The count is flat: every row of kind `video` counts, including the ones the
    text-video generator writes on the user's behalf — the same objection that
@@ -1141,6 +1159,28 @@ const mediaUpload = multer({
 function _mediaDiscard(file) {
   if (file && file.path) { try { fs.unlink(file.path, () => {}); } catch (_) {} }
 }
+/* Delete every media file that belongs to ONE site, on disk and in the row.
+   Called wherever a site itself goes away — media that outlives its site is
+   exactly the bug this was built to stop: a file nothing points at any more,
+   still silently spending someone's quota on whatever site they build next. */
+function _deleteSiteMedia(sub) {
+  const rows = db.prepare('SELECT id, path FROM site_media WHERE site_sub = ?').all(sub);
+  for (const r of rows) {
+    if (r.path) { try { fs.unlinkSync(r.path); } catch (_) {} }
+    try { _sdMimeCache.delete(r.id); } catch (_) {}
+  }
+  db.prepare('DELETE FROM site_media WHERE site_sub = ?').run(sub);
+}
+/* Same, but for every site an account has — the legacy "delete my one site"
+   route predates multi-site and still means "delete everything". */
+function _deleteAllMediaForEmail(email) {
+  const rows = db.prepare('SELECT id, path FROM site_media WHERE email = ?').all(email.toLowerCase());
+  for (const r of rows) {
+    if (r.path) { try { fs.unlinkSync(r.path); } catch (_) {} }
+    try { _sdMimeCache.delete(r.id); } catch (_) {}
+  }
+  db.prepare('DELETE FROM site_media WHERE email = ?').run(email.toLowerCase());
+}
 function mediaUploadSingle(req, res, next) {
   mediaUpload.single('file')(req, res, (err) => {
     if (err) {
@@ -1154,8 +1194,11 @@ function mediaUploadSingle(req, res, next) {
   });
 }
 
-function _mediaUsage(email) {
-  const rows = db.prepare('SELECT kind, mime, bytes FROM site_media WHERE email = ?').all(email);
+function _mediaUsage(email, sub) {
+  // Scoped to ONE site, not the whole account — see the comment on the
+  // `site_sub` migration above. A row with no site_sub (uploaded before this
+  // column existed) matches no site and is excluded here on purpose.
+  const rows = db.prepare('SELECT kind, mime, bytes FROM site_media WHERE email = ? AND site_sub = ?').all(email, sub);
   let imageAudioBytes = 0, videoBytes = 0, videoCount = 0, imageAudioCount = 0;
   for (const r of rows) {
     /* The stored kind, and the file's OWN mime if that column is ever empty.
@@ -1219,15 +1262,16 @@ async function _probeVideoDurationSeconds(filePath) {
    several times) would otherwise fill the owner's inbox with the same fact
    repeated. Reuses `usage_store` — already the table for this kind of daily
    per-key counter (see `translate`) — rather than adding a new one. */
-function _alertVideoLimitOnce(email, usage) {
+function _alertVideoLimitOnce(email, sub, usage) {
   const key = `videolimit_${String(email).toLowerCase()}_${new Date().toISOString().slice(0, 10)}`;
   const already = db.prepare('SELECT count FROM usage_store WHERE key = ?').get(key);
   db.prepare('INSERT INTO usage_store (key, count) VALUES (?, 1) ON CONFLICT(key) DO UPDATE SET count = count + 1').run(key);
   if (already) return;
   notifyOwner(
     `[ResumeTailored] ${email} hit the 5-video limit`,
-    `<p><strong>${_escHtml(email)}</strong> just tried to upload another video after reaching the `
-    + `${MEDIA_LIMITS.videoMaxCount}-video limit on their personal site.</p>`
+    `<p><strong>${_escHtml(email)}</strong> just tried to upload another video on `
+    + `<strong>${_escHtml(sub)}</strong> after reaching the `
+    + `${MEDIA_LIMITS.videoMaxCount}-video limit on that site.</p>`
     + `<p>Currently storing ${usage.videoCount} video${usage.videoCount === 1 ? '' : 's'}, `
     + `${_mb1(usage.videoBytes)} MB of the ${_mb1(MEDIA_LIMITS.videoPool)} MB pool.</p>`,
   );
@@ -1236,8 +1280,10 @@ function _alertVideoLimitOnce(email, usage) {
 app.get('/api/site-media', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  const items = db.prepare('SELECT id, kind, mime, bytes, created_at FROM site_media WHERE email = ? ORDER BY created_at DESC').all(email);
-  res.json({ items: items.map(i => ({ ...i, url: `/media/${i.id}` })), usage: _mediaUsage(email) });
+  const sub = _validSubdomain(req.query.subdomain);
+  if (!sub) return res.status(400).json({ error: 'invalid_subdomain', message: 'Which site is this for?' });
+  const items = db.prepare('SELECT id, kind, mime, bytes, created_at FROM site_media WHERE email = ? AND site_sub = ? ORDER BY created_at DESC').all(email, sub);
+  res.json({ items: items.map(i => ({ ...i, url: `/media/${i.id}` })), usage: _mediaUsage(email, sub) });
 });
 
 app.post('/api/site-media', mediaUploadSingle, async (req, res) => {
@@ -1249,6 +1295,12 @@ app.post('/api/site-media', mediaUploadSingle, async (req, res) => {
   const bail = (code, body) => { _mediaDiscard(req.file); return res.status(code).json(body); };
   if (!email) return bail(401, { error: 'Please sign in.' });
   if (!isSubscriber(email)) return bail(402, { error: 'pro_required', message: 'Media uploads are a Pro feature.' });
+  // Every upload belongs to a specific site now — see the site_sub migration
+  // comment above. multer puts non-file multipart fields on req.body.
+  const sub = _validSubdomain(req.body && req.body.subdomain);
+  if (!sub) return bail(400, { error: 'invalid_subdomain', message: 'Which site is this for?' });
+  const site = db.prepare('SELECT email FROM personal_sites WHERE subdomain = ?').get(sub);
+  if (!site || site.email.toLowerCase() !== email.toLowerCase()) return bail(403, { error: 'not_yours' });
   if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
   // Prefer the part's Content-Type, but fall back to the filename extension when
   // it's unreliable (browser blobs with unquoted codecs downgrade to text/plain).
@@ -1281,13 +1333,15 @@ app.post('/api/site-media', mediaUploadSingle, async (req, res) => {
       return bail(400, { error: `That video is ${fmt(durationSec)} long — the limit is ${fmt(MEDIA_LIMITS.videoMaxDurationSec)} per clip. Trim it and try again.` });
     }
   }
-  const usage = _mediaUsage(email);
+  const usage = _mediaUsage(email, sub);
   /* THE COUNT CAP. Reinstated at the owner's explicit instruction — see the
      comment on MEDIA_LIMITS above for why this is not a regression of the
      previous round's fix. Checked before the pool check because it is the
-     one usually hit first: 5 clips well under 100 MB each rarely fills 1 GB. */
+     one usually hit first: 5 clips well under 100 MB each rarely fills 1 GB.
+     Per SITE, per the site_sub migration — a video on a different site of
+     yours does not spend this one's slot. */
   if (kind === 'video' && usage.videoCount >= MEDIA_LIMITS.videoMaxCount) {
-    _alertVideoLimitOnce(email, usage);
+    _alertVideoLimitOnce(email, sub, usage);
     return bail(400, { error: `You've reached the ${MEDIA_LIMITS.videoMaxCount}-video limit for your site. Delete one in Uploads to add another.` });
   }
   /* Only storage, and the message says what is actually stored and where to
@@ -1315,8 +1369,8 @@ app.post('/api/site-media', mediaUploadSingle, async (req, res) => {
       if (e && e.code === 'EXDEV') { fs.copyFileSync(req.file.path, full); _mediaDiscard(req.file); }
       else throw e;
     }
-    const info = db.prepare('INSERT INTO site_media (email, kind, path, mime, bytes, created_at) VALUES (?, ?, ?, ?, ?, ?)')
-      .run(email.toLowerCase(), kind, full, (storeMime || '').split(';')[0].trim() || storeMime, bytes, Date.now());
+    const info = db.prepare('INSERT INTO site_media (email, kind, path, mime, bytes, created_at, site_sub) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(email.toLowerCase(), kind, full, (storeMime || '').split(';')[0].trim() || storeMime, bytes, Date.now(), sub);
     const mime = (storeMime || '').split(';')[0].trim();
     const safe = MEDIA_SAFE.includes(mime);
     res.json({
@@ -1325,7 +1379,7 @@ app.post('/api/site-media', mediaUploadSingle, async (req, res) => {
       // rather than guessed from a URL that carries no extension.
       safe,
       warning: safe ? null : 'This file is a .mov. It will upload and it plays in Safari and most browsers, but MP4 is the format that plays everywhere — export as MP4 if you can.',
-      usage: _mediaUsage(email),
+      usage: _mediaUsage(email, sub),
     });
   } catch (e) {
     _mediaDiscard(req.file);
@@ -1336,11 +1390,13 @@ app.post('/api/site-media', mediaUploadSingle, async (req, res) => {
 app.delete('/api/site-media/:id', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  const row = db.prepare('SELECT path FROM site_media WHERE id = ? AND email = ?').get(req.params.id, email);
+  const row = db.prepare('SELECT path, site_sub FROM site_media WHERE id = ? AND email = ?').get(req.params.id, email);
   db.prepare('DELETE FROM site_media WHERE id = ? AND email = ?').run(req.params.id, email);
   try { _sdMimeCache.delete(Number(req.params.id)); } catch (_) {}
   if (row && row.path) { try { fs.unlink(row.path, () => {}); } catch (_) {} }
-  res.json({ success: true, usage: _mediaUsage(email) });
+  // The deleted row's own site, not "the caller's current site" — the client
+  // does not send one on a delete, and the row already carries the answer.
+  res.json({ success: true, usage: row ? _mediaUsage(email, row.site_sub) : null });
 });
 
 // Public media serving — personal sites are public, so no auth on GET. Streams
@@ -3970,6 +4026,7 @@ app.delete('/api/personal-sites/:sub', (req, res) => {
   if (!row) return res.status(404).json({ error: 'not_found' });
   if (row.email.toLowerCase() !== email.toLowerCase()) return res.status(403).json({ error: 'not_yours' });
   db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(sub);
+  _deleteSiteMedia(sub);
   res.json({ success: true });
 });
 
@@ -4058,6 +4115,10 @@ app.post('/api/personal-site', (req, res) => {
   const carriedViews = (target && target.views) || (moving && moving.views) || 0;
   if (moving) {
     db.prepare('DELETE FROM personal_sites WHERE subdomain = ?').run(moving.subdomain);
+    // The rename carries the site's media across too — a rename is not a
+    // delete-and-recreate, so the photos and videos already on the page must
+    // not vanish (or count as "new" against the new address's own quota).
+    db.prepare('UPDATE site_media SET site_sub = ? WHERE site_sub = ?').run(sub, moving.subdomain);
     // Leave a forwarding address. Anyone holding the old link — an application
     // sent last week, a message on LinkedIn — lands on the site rather than a
     // dead page.
@@ -4357,6 +4418,7 @@ app.delete('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
   db.prepare('DELETE FROM personal_sites WHERE email = ?').run(email.toLowerCase());
+  _deleteAllMediaForEmail(email);
   res.json({ success: true });
 });
 
