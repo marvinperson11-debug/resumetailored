@@ -1355,6 +1355,46 @@ const server = app.listen(0, async () => {
           up.inCanvas === up.src && up.decoded > 0, JSON.stringify(up));
         check(`${width}: with a toast saying so`, /uploaded/i.test(up.toast), JSON.stringify(up));
 
+        /* ── THE UPLOADS PANEL CAN REMOVE A FILE ────────────────────────────
+           The server said "Video limit reached — delete one first" while the
+           panel could only ever ADD. The route existed; nothing reached it. So
+           this presses the real button in the real panel and watches the file
+           leave, at both widths — the delete is 26px and always visible rather
+           than shown on hover, because this panel is used on a phone. */
+        const del = await page.evaluate(async () => {
+          cvPanel('uploads');
+          await new Promise((r) => setTimeout(r, 1400));
+          const wraps = [...document.querySelectorAll('#cvUploadGrid .cv-upwrap')];
+          const btn = wraps.length ? wraps[0].querySelector('.cv-updel') : null;
+          const b = btn ? btn.getBoundingClientRect() : null;
+          const top = b ? document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2) : null;
+          return {
+            files: wraps.length,
+            hasDelete: !!btn,
+            w: b ? Math.round(b.width) : 0, h: b ? Math.round(b.height) : 0,
+            hittable: !!(btn && top && (btn === top || btn.contains(top))),
+          };
+        });
+        check(`${width}: the Uploads panel shows the uploaded file with a delete`,
+          del.files > 0 && del.hasDelete, JSON.stringify(del));
+        check(`${width}: and the delete is big enough to press with a thumb`,
+          del.w >= 24 && del.h >= 24 && del.hittable, JSON.stringify(del));
+
+        // Press it for real, with confirm() accepted, and watch the file go.
+        page.once('dialog', (d) => d.accept());
+        const gone = await page.evaluate(async () => {
+          const before = document.querySelectorAll('#cvUploadGrid .cv-upwrap').length;
+          document.querySelector('#cvUploadGrid .cv-upwrap .cv-updel').click();
+          await new Promise((r) => setTimeout(r, 2000));
+          const r2 = await fetch('/api/site-media', { headers: authHeaders() });
+          const d2 = await r2.json().catch(() => ({}));
+          return { before, after: document.querySelectorAll('#cvUploadGrid .cv-upwrap').length,
+            onServer: (d2.items || []).length };
+        });
+        check(`${width}: pressing it removes the file, on screen and on the server`,
+          gone.after === gone.before - 1 && gone.onServer === gone.before - 1, JSON.stringify(gone));
+        await page.evaluate(() => cvClosePanel());
+
         /* ── THE SAME PHOTO, AT PHONE WIDTH ─────────────────────────────────
            A photo's height must come from the BOX it was drawn in, at every
            width. The mobile stylesheet used to force `height:auto!important`

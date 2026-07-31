@@ -1043,10 +1043,19 @@ app.get('/api/assets/summary', (req, res) => {
 // Images/audio share one quota pool; video has its own pool + a hard file count
 // cap (Option B). Files live under ${DATA_DIR}/site-media/<email-hash>/ so they
 // persist across deploys when a Railway volume is mounted at /data.
+/* NO COUNT CAP ON VIDEO. There used to be `videoMaxCount: 5`, and a showreel
+   is the exact case this product exists for — five clips is not a portfolio.
+   Worse, the cap counted every video ever stored, including the ones the text
+   video generator writes on the user's behalf, and the message it produced —
+   "Delete one first" — asked for something the Uploads panel offered no way to
+   do. A cap you cannot see, did not knowingly spend, and cannot clear is not a
+   limit, it is a dead end.
+
+   Storage is the only real constraint, so it is the only one enforced, and its
+   message says what is stored and where to clear it. */
 const MEDIA_LIMITS = {
-  imageAudioPool: 300 * 1024 * 1024, // 300 MB shared by images + audio
-  videoPool: 300 * 1024 * 1024,      // 300 MB for video
-  videoMaxCount: 5,
+  imageAudioPool: 300 * 1024 * 1024,  // 300 MB shared by images + audio
+  videoPool: 1024 * 1024 * 1024,      // 1 GB — ~20-40 web-sized clips
   perFile: { image: 8 * 1024 * 1024, audio: 25 * 1024 * 1024, video: 25 * 1024 * 1024 },
 };
 const MEDIA_MIME = {
@@ -1095,14 +1104,20 @@ function mediaUploadSingle(req, res, next) {
 }
 
 function _mediaUsage(email) {
-  const rows = db.prepare('SELECT kind, bytes FROM site_media WHERE email = ?').all(email);
-  let imageAudioBytes = 0, videoBytes = 0, videoCount = 0;
+  const rows = db.prepare('SELECT kind, mime, bytes FROM site_media WHERE email = ?').all(email);
+  let imageAudioBytes = 0, videoBytes = 0, videoCount = 0, imageAudioCount = 0;
   for (const r of rows) {
-    if (r.kind === 'video') { videoBytes += r.bytes; videoCount++; }
-    else imageAudioBytes += r.bytes;
+    /* The stored kind, and the file's OWN mime if that column is ever empty.
+       Only a real video is counted as one — anything unrecognised falls to the
+       image/audio side rather than to video, so a row that cannot be
+       identified can never inflate the number the user is judged by. */
+    const kind = r.kind === 'video' || r.kind === 'image' || r.kind === 'audio' ? r.kind : _mediaKind(r.mime);
+    if (kind === 'video') { videoBytes += (r.bytes || 0); videoCount++; }
+    else { imageAudioBytes += (r.bytes || 0); imageAudioCount++; }
   }
-  return { imageAudioBytes, videoBytes, videoCount, limits: MEDIA_LIMITS };
+  return { imageAudioBytes, videoBytes, videoCount, imageAudioCount, limits: MEDIA_LIMITS };
 }
+const _mb1 = (n) => (n / 1024 / 1024).toFixed(n > 100 * 1024 * 1024 ? 0 : 1);
 
 app.get('/api/site-media', (req, res) => {
   const email = getSessionEmail(req);
@@ -1130,11 +1145,15 @@ app.post('/api/site-media', mediaUploadSingle, (req, res) => {
     return res.status(400).json({ error: `That ${kind} is too large (max ${Math.round(MEDIA_LIMITS.perFile[kind] / 1024 / 1024)} MB).` });
   }
   const usage = _mediaUsage(email);
+  /* Only storage, and the message says what is actually stored and where to
+     clear it — "storage full" with no numbers and no route out is the shape
+     the video cap had, and it is what made a limit feel like a fault. */
   if (kind === 'video') {
-    if (usage.videoCount >= MEDIA_LIMITS.videoMaxCount) return res.status(400).json({ error: `Video limit reached (max ${MEDIA_LIMITS.videoMaxCount}). Delete one first.` });
-    if (usage.videoBytes + bytes > MEDIA_LIMITS.videoPool) return res.status(400).json({ error: 'Video storage full — delete a video to free space.' });
+    if (usage.videoBytes + bytes > MEDIA_LIMITS.videoPool) {
+      return res.status(400).json({ error: `Video storage is full — ${_mb1(usage.videoBytes)} MB of ${_mb1(MEDIA_LIMITS.videoPool)} MB used across ${usage.videoCount} video${usage.videoCount === 1 ? '' : 's'}. Remove one in Uploads to make room.` });
+    }
   } else if (usage.imageAudioBytes + bytes > MEDIA_LIMITS.imageAudioPool) {
-    return res.status(400).json({ error: 'Image/audio storage full — delete some files to free space.' });
+    return res.status(400).json({ error: `Image and audio storage is full — ${_mb1(usage.imageAudioBytes)} MB of ${_mb1(MEDIA_LIMITS.imageAudioPool)} MB used. Remove a file in Uploads to make room.` });
   }
   try {
     const dir = path.join(dataDir, 'site-media', _emailHash(email));

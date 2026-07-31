@@ -725,9 +725,22 @@
     .cv-zoom { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; }
     .cv-zoom input { width: 180px; max-width: 40vw; }
     .cv-pagecount { white-space: nowrap; }
-    .cv-upitem { height: 78px; border-radius: 8px; border: 1px solid #45464c; background-size: cover; background-position: center; cursor: pointer; background-color: #34353a; }
+    /* A TILE AND ITS OWN DELETE. The upload panel could only ever ADD, so when
+       the server said "delete one first" it was naming an action the app did
+       not have — the endpoint existed and nothing reached it. The wrapper is
+       what positions the remove button; the tile itself still fills it. */
+    .cv-upwrap { position: relative; }
+    .cv-upitem { height: 78px; width: 100%; border-radius: 8px; border: 1px solid #45464c; background-size: cover; background-position: center; cursor: pointer; background-color: #34353a; }
     .cv-upitem--file { display: flex; align-items: center; justify-content: center; font-size: 22px; color: #cbd5e1; }
     .cv-upitem:hover { border-color: #6366f1; }
+    /* 26px, and always visible rather than shown on hover — a phone has no
+       hover, and this panel is reachable there. */
+    .cv-updel { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 7px;
+      border: none; background: rgba(15,17,22,.82); color: #fca5a5; font-size: 15px; line-height: 1;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .cv-updel:hover { background: #b91c1c; color: #fff; }
+    .cv-upkind { position: absolute; left: 4px; bottom: 4px; font-size: 9.5px; font-weight: 800; letter-spacing: .4px;
+      text-transform: uppercase; color: #cbd5e1; background: rgba(15,17,22,.75); border-radius: 5px; padding: 2px 5px; pointer-events: none; }
     /* Live template thumbnails: a real render, scaled down like Canva's. */
     .wc-tpl-thumb { position: relative; overflow: hidden; background: #fff; }
     .wc-tpl-shot { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
@@ -7889,12 +7902,38 @@ Aaliyah Washington`
         const d = await r.json().catch(() => ({}));
         if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }
         const items = d.items || [];
-        grid.innerHTML = items.length ? items.map(i => i.kind === 'image'
-          ? `<button type="button" class="cv-upitem" onclick="cvPlaceMedia('${wcEsc(i.url)}','image')" style="background-image:url('${wcEsc(i.url)}');"></button>`
-          : `<button type="button" class="cv-upitem cv-upitem--file" onclick="cvPlaceMedia('${wcEsc(i.url)}','${wcEsc(i.kind)}')">${i.kind === 'video' ? '🎬' : '🔊'}</button>`
+        /* Every item carries its own remove button. A media library you can
+           only add to fills up silently, and the only message about it named
+           an action that did not exist. */
+        grid.innerHTML = items.length ? items.map(i => `<div class="cv-upwrap">`
+          + (i.kind === 'image'
+            ? `<button type="button" class="cv-upitem" onclick="cvPlaceMedia('${wcEsc(i.url)}','image')" style="background-image:url('${wcEsc(i.url)}');" title="${wcEsc(_t('cv_up_place', 'Add to the page'))}"></button>`
+            : `<button type="button" class="cv-upitem cv-upitem--file" onclick="cvPlaceMedia('${wcEsc(i.url)}','${wcEsc(i.kind)}')" title="${wcEsc(_t('cv_up_place', 'Add to the page'))}">${i.kind === 'video' ? '🎬' : '🔊'}</button>`)
+          + `<span class="cv-upkind">${wcEsc(i.kind)}${i.bytes ? ' · ' + _mb(i.bytes) + 'MB' : ''}</span>`
+          + `<button type="button" class="cv-updel" onclick="cvDeleteMedia(${Number(i.id)},event)" title="${wcEsc(_t('cv_up_delete', 'Delete this file'))}" aria-label="${wcEsc(_t('cv_up_delete', 'Delete this file'))}">🗑</button>`
+          + `</div>`
         ).join('') : `<p class="cv-note">${wcEsc(_t('cv_up_empty', 'Nothing uploaded yet.'))}</p>`;
       } catch (_) {}
     }
+    /* Remove a file from the media library. The route has always existed; until
+       now nothing in the app called it, which is why "delete one first" was
+       advice a user could not take. Deleting does NOT go through the document —
+       an element already placed keeps its src and will 404, which is honest and
+       visible, rather than silently rewriting a page the user did not ask to
+       change. The confirm says so. */
+    async function cvDeleteMedia(id, ev) {
+      if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+      if (!confirm(_t('cv_up_delconfirm', 'Delete this file from your library? Anything already placed on a page will stop loading.'))) return;
+      try {
+        const r = await fetch('/api/site-media/' + Number(id), { method: 'DELETE', headers: authHeaders() });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { showToast(d.error || _t('cv_up_delerr', 'Could not delete that file.'), 4000); return; }
+        if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }
+        cvRenderUploads();
+        showToast(_t('cv_up_deleted', '🗑 File deleted.'), 2200);
+      } catch (_) { showToast(_t('cv_up_delerr', 'Could not delete that file.'), 4000); }
+    }
+
     // Record a voice clip straight into the media library, then place it as an
     // audio element. Same MediaRecorder path as the text-video voiceover.
     let cvRec = null, cvRecChunks = [], cvRecording = false;
@@ -9336,9 +9375,16 @@ Aaliyah Washington`
     function wcRenderMediaMeter() {
       const el = document.getElementById('wcMediaMeter'); if (!el || !wcMediaUsage) return;
       const L = wcMediaUsage.limits;
+      /* The video count is INFORMATION now, not a score out of five. It read
+         "(4/5)", which is a countdown to a wall — and the wall was one the text
+         video generator could walk you into without your uploading anything.
+         What is left is storage, a real constraint, plus how many clips that
+         storage is currently holding. */
+      const n = wcMediaUsage.videoCount || 0;
       el.textContent = _t('wc_media_usage', 'Storage') + ': ' +
         _mb(wcMediaUsage.imageAudioBytes) + '/' + _mb(L.imageAudioPool) + ' MB ' + _t('wc_media_imgaudio', 'images & audio') + ' · ' +
-        _mb(wcMediaUsage.videoBytes) + '/' + _mb(L.videoPool) + ' MB ' + _t('wc_media_video', 'video') + ' (' + wcMediaUsage.videoCount + '/' + L.videoMaxCount + ')';
+        _mb(wcMediaUsage.videoBytes) + '/' + _mb(L.videoPool) + ' MB ' + _t('wc_media_video', 'video')
+        + ' (' + n + ' ' + (n === 1 ? _t('wc_media_clip', 'clip') : _t('wc_media_clips', 'clips')) + ')';
     }
     // Upload a file and hand the resulting /media/<id> URL to `onUrl`.
     function wcUploadMedia(accept, onUrl) {
