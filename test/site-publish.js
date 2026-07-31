@@ -895,6 +895,24 @@ const server = app.listen(0, async () => {
     check('the template modal is shown before it is measured',
       /getElementById\('wcTplModal'\)\.style\.display = 'flex';\s*\n\s*wcTplDevice\('desktop'\);/.test(appJs));
 
+    /* ── THE DEVICE TOGGLE IS A DESKTOP CONTROL ─────────────────────────
+       On a phone both views are the same layout at different scales, and the
+       "desktop" one is what a visitor to the published page gets — so there is
+       nothing to switch between. Hidden AND pinned, because a toggle that is
+       off screen cannot be used to undo the state it left behind, and a phone
+       stuck on "mobile" would preview a 390px page inside a 390px frame. */
+    check('the device toggle is hidden below the phone breakpoint',
+      /@media \(max-width: 820px\) \{\s*\.cv-seg--device, \.wc-tplhead-dev \{ display: none !important; \}/.test(appJs));
+    check('and the device is pinned there rather than left wherever it was',
+      /const _pvDeviceLocked = \(\) => window\.innerWidth <= PV_CHASSIS_MIN;/.test(appJs)
+      && /edDevice = \(!_pvDeviceLocked\(\) && mode === 'mobile'\) \? 'mobile' : 'desktop';/.test(appJs));
+    /* Both previews AND the canvas read the lock, or one of the three keeps
+       rendering a device whose control is gone. */
+    check('every surface that reads the device reads the lock',
+      (appJs.match(/!_pvDeviceLocked\(\) &&/g) || []).length >= 4);
+    check('and crossing the breakpoint takes the state with the buttons',
+      /if \(_pvDeviceLocked\(\) && typeof edDevice !== 'undefined' && edDevice !== 'desktop'\) edSetDevice\('desktop'\);/.test(appJs));
+
     /* ── THE PHONE CHASSIS ──────────────────────────────────────────────
        Shared by both previews, and gated on the SCREEN rather than on the
        selection: on an actual phone the chassis is the one in your hand. */

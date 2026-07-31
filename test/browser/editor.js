@@ -187,6 +187,10 @@ const server = app.listen(0, async () => {
           deskOn: document.getElementById('wcTplDesktop').classList.contains('wc-vtab-active'),
           mobOn: document.getElementById('wcTplMobile').classList.contains('wc-vtab-active'),
           headH: Math.round(document.querySelector('.wc-tplhead').getBoundingClientRect().height),
+          devShown: getComputedStyle(document.querySelector('.wc-tplhead-dev')).display,
+          devOnScreen: (() => { const g = document.querySelector('.wc-tplhead-dev'); return !!g && g.offsetWidth > 0 && g.offsetHeight > 0; })(),
+          closeOnScreen: (() => { const b = [...document.querySelectorAll('#wcTplModal button')].find((x) => /closeTplPreview/.test(x.getAttribute('onclick') || '') && !/event\.target/.test(x.getAttribute('onclick') || '')); return !!b && b.offsetWidth > 0; })(),
+          useOnScreen: (() => { const b = [...document.querySelectorAll('#wcTplModal button')].find((x) => /wcUseTemplate/.test(x.getAttribute('onclick') || '')); return !!b && b.offsetWidth > 0; })(),
           stageH: st ? Math.round(st.getBoundingClientRect().height) : -1,
           blurb: getComputedStyle(document.getElementById('wcTplBlurb')).display,
           chassis: (() => { const c = document.getElementById('wcTplChassis'); if (!c) return null;
@@ -195,19 +199,41 @@ const server = app.listen(0, async () => {
               radius: parseFloat(cs.borderRadius) || 0, w: Math.round(r.width) }; })() };
       };
       const tplDesk = await page.evaluate(tplShot);
-      await page.click('#wcTplMobile');
+      /* Clicked through the DOM rather than through the pointer, because below
+         820px this button is deliberately not on screen and a real click would
+         wait for a visibility that is never coming. What is asserted there is
+         that pressing it changes nothing. */
+      await page.evaluate(() => { const b = document.getElementById('wcTplMobile'); if (b) b.click(); });
       await page.waitForTimeout(1200);
       const tplMob = await page.evaluate(tplShot);
 
-      check(`${width}: the template preview's phone button changes what it renders`,
-        tplMob.inner === 390 && tplDesk.inner > 390 && tplMob.inner !== tplDesk.inner,
-        JSON.stringify({ tplDesk, tplMob }));
-      check(`${width}: and its desktop view really is a desktop layout`,
-        tplDesk.inner > 820, JSON.stringify(tplDesk));
+      /* ── THE TOGGLE IS A DESKTOP CONTROL ────────────────────────────────
+         On a phone both views are the same layout at different scales, and the
+         "desktop" one is what a visitor to the published page actually gets —
+         so there is nothing to switch between and the control is a row of the
+         smallest screen spent on nothing. Hidden AND pinned: a toggle you
+         cannot see cannot undo the state it left behind. */
+      if (width <= 820) {
+        check(`${width}: the device toggle is not on screen in the template preview`,
+          tplDesk.devShown === 'none' && !tplDesk.devOnScreen, JSON.stringify(tplDesk));
+        check(`${width}: and pressing it anyway changes nothing`,
+          tplMob.inner === tplDesk.inner && tplMob.inner > 820, JSON.stringify({ tplDesk, tplMob }));
+        check(`${width}: what it shows is the published layout`,
+          tplDesk.inner === 1000, JSON.stringify(tplDesk));
+      } else {
+        check(`${width}: the template preview's phone button changes what it renders`,
+          tplMob.inner === 390 && tplDesk.inner > 390 && tplMob.inner !== tplDesk.inner,
+          JSON.stringify({ tplDesk, tplMob }));
+        check(`${width}: and its desktop view really is a desktop layout`,
+          tplDesk.inner > 820, JSON.stringify(tplDesk));
+      }
+      // Whatever the width, the two things you can DO from here stay reachable.
+      check(`${width}: Close and Use this template are both on screen`,
+        tplDesk.closeOnScreen && tplDesk.useOnScreen, JSON.stringify(tplDesk));
       check(`${width}: with both fitted inside the modal, not overflowing it`,
         tplMob.boxW <= tplMob.stageW && tplDesk.boxW <= tplDesk.stageW,
         JSON.stringify({ tplDesk, tplMob }));
-      check(`${width}: and the highlight follows`, tplMob.mobOn && !tplMob.deskOn, JSON.stringify(tplMob));
+      if (width > 820) check(`${width}: and the highlight follows`, tplMob.mobOn && !tplMob.deskOn, JSON.stringify(tplMob));
 
       /* ── THE HEADER, ON A PHONE ─────────────────────────────────────────
          195px of header over a 353px preview: more than a third of the modal
@@ -234,6 +260,7 @@ const server = app.listen(0, async () => {
       const wantChassis = width > 820;
       check(`${width}: mobile view ${wantChassis ? 'draws' : 'does NOT draw'} a phone chassis`,
         !!tplMob.chassis && tplMob.chassis.on === wantChassis, JSON.stringify(tplMob.chassis));
+      // Below the breakpoint there is no mobile view to frame, which is why.
       check(`${width}: and the desktop view never does`,
         !!tplDesk.chassis && tplDesk.chassis.on === false, JSON.stringify(tplDesk.chassis));
       if (wantChassis) {
@@ -345,10 +372,21 @@ const server = app.listen(0, async () => {
          window both views are clamped to the same 294px of stage, so the box
          width cannot tell them apart there and an earlier version of this
          check failed for that reason rather than for a real one. */
-      check(`${width}: and the phone view is genuinely drawing a phone-width page`,
-        panMob.frameW === 390 && panEdit.frameW === 1200,
-        `desktop frame=${panEdit.frameW} phone frame=${panMob.frameW}`);
-      check(`${width}: with the phone canvas still inside the stage`,
+      if (width > 820) {
+        check(`${width}: and the phone view is genuinely drawing a phone-width page`,
+          panMob.frameW === 390 && panEdit.frameW === 1200,
+          `desktop frame=${panEdit.frameW} phone frame=${panMob.frameW}`);
+      } else {
+        /* Below 820px the device toggle is not on screen, and the device is
+           pinned to desktop so a hidden control cannot leave state behind.
+           edSetDevice('mobile') is therefore expected to do nothing here —
+           that IS the behaviour, and asserting the old one would be asserting
+           that a removed control still works. */
+        check(`${width}: the canvas stays on the desktop device, toggle or not`,
+          panMob.frameW === 1200 && panEdit.frameW === 1200,
+          `before=${panEdit.frameW} after=${panMob.frameW}`);
+      }
+      check(`${width}: with the canvas still inside the stage either way`,
         panMob.boxW <= panMob.cw && panMob.spillsRight <= 0, JSON.stringify(panMob));
 
       await page.evaluate(() => { edSetDevice('desktop'); if (typeof cvSetZoom === 'function') cvSetZoom(50); });
@@ -1471,6 +1509,8 @@ const server = app.listen(0, async () => {
           back: b && b.offsetWidth > 0,
           prevBtn: (document.getElementById('cvPreviewBtn') || {}).offsetWidth,
           on: document.getElementById('wcEdMobBtn').classList.contains('is-on'),
+          segShown: (() => { const g = document.getElementById('cvDeviceSeg'); return g ? getComputedStyle(g).display : '?'; })(),
+          segOnScreen: (() => { const g = document.getElementById('cvDeviceSeg'); return !!g && g.offsetWidth > 0 && g.offsetHeight > 0; })(),
           chassis: (() => { const c = document.getElementById('wcPreviewChassis'); if (!c) return null;
             const cs = getComputedStyle(c), r = c.getBoundingClientRect();
             return { on: c.classList.contains('is-on'), padX: parseFloat(cs.paddingLeft) || 0,
@@ -1478,18 +1518,30 @@ const server = app.listen(0, async () => {
         };
       };
       const pvDesk = await page.evaluate(pvShot);
-      await page.click('#wcEdMobBtn');
+      // Through the DOM: below 820px this button is deliberately not on screen.
+      await page.evaluate(() => { const b = document.getElementById('wcEdMobBtn'); if (b) b.click(); });
       await page.waitForTimeout(1600);
       const pvMob = await page.evaluate(pvShot);
 
-      check(`${width}: pressing the phone button changes what the preview renders`,
-        pvMob.inner === 390 && pvDesk.inner > 390 && pvMob.inner !== pvDesk.inner,
-        JSON.stringify({ pvDesk, pvMob }));
-      /* A desktop preview must be a DESKTOP layout — wide enough that the
-         site's own phone stylesheet (max-width:820px) is not the one in force.
-         Otherwise both buttons show a phone and only one of them admits it. */
-      check(`${width}: and the desktop preview really is a desktop layout`,
-        pvDesk.inner > 820, JSON.stringify(pvDesk));
+      if (width <= 820) {
+        check(`${width}: the device toggle is not on screen in the editor`,
+          pvDesk.segShown === 'none' && !pvDesk.segOnScreen, JSON.stringify(pvDesk));
+        check(`${width}: and pressing it anyway changes nothing`,
+          pvMob.inner === pvDesk.inner && pvMob.inner > 820, JSON.stringify({ pvDesk, pvMob }));
+        check(`${width}: what preview shows is the published layout`,
+          pvDesk.inner === 1000, JSON.stringify(pvDesk));
+      } else {
+        check(`${width}: pressing the phone button changes what the preview renders`,
+          pvMob.inner === 390 && pvDesk.inner > 390 && pvMob.inner !== pvDesk.inner,
+          JSON.stringify({ pvDesk, pvMob }));
+        /* A desktop preview must be a DESKTOP layout — wide enough that the
+           site's own phone stylesheet (max-width:820px) is not the one in
+           force. Otherwise both buttons show a phone and only one admits it. */
+        check(`${width}: and the desktop preview really is a desktop layout`,
+          pvDesk.inner > 820, JSON.stringify(pvDesk));
+        check(`${width}: and the toggle is on screen to be pressed`,
+          pvDesk.segOnScreen, JSON.stringify(pvDesk));
+      }
       // Whatever the layout width, the picture of it fits the stage.
       check(`${width}: with both views fitted to the stage, not overflowing it`,
         pvMob.boxW <= pvMob.stage && pvDesk.boxW <= pvDesk.stage,
@@ -1506,7 +1558,7 @@ const server = app.listen(0, async () => {
           pvMob.chassis.padX >= 6 && pvMob.chassis.radius >= 30 && pvMob.chassis.w <= pvMob.stage,
           JSON.stringify(pvMob));
       }
-      check(`${width}: and the highlight moves with it`, pvMob.on, JSON.stringify(pvMob));
+      if (width > 820) check(`${width}: and the highlight moves with it`, pvMob.on, JSON.stringify(pvMob));
       check(`${width}: preview offers a visible way back to editing`, pvDesk.back, JSON.stringify(pvDesk));
       check(`${width}: and hides the Preview button while previewing`, pvDesk.prevBtn === 0, JSON.stringify(pvDesk));
 

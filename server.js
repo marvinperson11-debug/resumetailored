@@ -3072,6 +3072,12 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
       html,body{overflow-x:hidden;}
       .sd-page{width:${SD_MOBILE_W}px;transform-origin:top left;transform:scale(var(--sdk,1));}
       .sd-el--mhide{display:none!important;}
+      /* HAIRLINES DO NOT SURVIVE BEING SCALED. A 1px rule at 0.39 is 0.39px --
+         it is drawn faintly or not at all depending on the device. Dividing the
+         scale back out of the one property that is a hairline keeps it a
+         hairline on the glass, which is what it was drawn to be. --sdk is a
+         plain number, so a length divided by it is a length. */
+      .sd-divider{border-top-width:calc(1px / var(--sdk,1));}
       /* NOTHING HERE OVERRIDES MEDIA HEIGHT. A height:auto!important on
          .sd-ibox/.sd-img used to live here, from before media elements had a
          height of their own -- the only rule in the sheet that made a phone
