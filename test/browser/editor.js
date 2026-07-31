@@ -185,7 +185,14 @@ const server = app.listen(0, async () => {
           boxW: box ? Math.round(box.getBoundingClientRect().width) : -1,
           stageW: st ? st.clientWidth : -1,
           deskOn: document.getElementById('wcTplDesktop').classList.contains('wc-vtab-active'),
-          mobOn: document.getElementById('wcTplMobile').classList.contains('wc-vtab-active') };
+          mobOn: document.getElementById('wcTplMobile').classList.contains('wc-vtab-active'),
+          headH: Math.round(document.querySelector('.wc-tplhead').getBoundingClientRect().height),
+          stageH: st ? Math.round(st.getBoundingClientRect().height) : -1,
+          blurb: getComputedStyle(document.getElementById('wcTplBlurb')).display,
+          chassis: (() => { const c = document.getElementById('wcTplChassis'); if (!c) return null;
+            const cs = getComputedStyle(c), r = c.getBoundingClientRect();
+            return { on: c.classList.contains('is-on'), padX: parseFloat(cs.paddingLeft) || 0,
+              radius: parseFloat(cs.borderRadius) || 0, w: Math.round(r.width) }; })() };
       };
       const tplDesk = await page.evaluate(tplShot);
       await page.click('#wcTplMobile');
@@ -201,6 +208,43 @@ const server = app.listen(0, async () => {
         tplMob.boxW <= tplMob.stageW && tplDesk.boxW <= tplDesk.stageW,
         JSON.stringify({ tplDesk, tplMob }));
       check(`${width}: and the highlight follows`, tplMob.mobOn && !tplMob.deskOn, JSON.stringify(tplMob));
+
+      /* ── THE HEADER, ON A PHONE ─────────────────────────────────────────
+         195px of header over a 353px preview: more than a third of the modal
+         spent on chrome, on the one screen whose whole job is showing you the
+         template. Measured against the PREVIEW it sits above rather than
+         against a magic number, so it keeps meaning something if the modal
+         changes size. */
+      if (width <= 820) {
+        check(`${width}: the modal header leaves most of the screen to the template`,
+          tplMob.headH < 110 && tplMob.stageH > tplMob.headH * 3,
+          JSON.stringify({ headH: tplMob.headH, stageH: tplMob.stageH }));
+        check(`${width}: the blurb is dropped — it is on the card you came from`,
+          tplMob.blurb === 'none', JSON.stringify(tplMob));
+      } else {
+        // Desktop's header is untouched; every rule is inside the phone query.
+        check(`${width}: the desktop header keeps its blurb`, tplMob.blurb !== 'none', JSON.stringify(tplMob));
+      }
+
+      /* ── THE PHONE CHASSIS ──────────────────────────────────────────────
+         A mobile preview on a desktop should read as a phone, not as a narrow
+         column of the page. On an actual phone there is nothing to pretend
+         about, so no chassis — and that is the case worth asserting, because
+         drawing one there would spend the scarcest pixels on decoration. */
+      const wantChassis = width > 820;
+      check(`${width}: mobile view ${wantChassis ? 'draws' : 'does NOT draw'} a phone chassis`,
+        !!tplMob.chassis && tplMob.chassis.on === wantChassis, JSON.stringify(tplMob.chassis));
+      check(`${width}: and the desktop view never does`,
+        !!tplDesk.chassis && tplDesk.chassis.on === false, JSON.stringify(tplDesk.chassis));
+      if (wantChassis) {
+        check(`${width}: the chassis has a real bezel and phone corners`,
+          tplMob.chassis.padX >= 6 && tplMob.chassis.radius >= 30, JSON.stringify(tplMob.chassis));
+        /* The bezel is part of what has to fit. If it were added after the
+           scale was worked out, the frame would be what makes the preview
+           overflow the modal. */
+        check(`${width}: and the framed phone still fits inside the modal`,
+          tplMob.chassis.w <= tplMob.stageW, JSON.stringify(tplMob));
+      }
 
       // Close — and the gallery has to be ON SCREEN, not merely in the document.
       await page.evaluate(() => {
@@ -1353,6 +1397,10 @@ const server = app.listen(0, async () => {
           back: b && b.offsetWidth > 0,
           prevBtn: (document.getElementById('cvPreviewBtn') || {}).offsetWidth,
           on: document.getElementById('wcEdMobBtn').classList.contains('is-on'),
+          chassis: (() => { const c = document.getElementById('wcPreviewChassis'); if (!c) return null;
+            const cs = getComputedStyle(c), r = c.getBoundingClientRect();
+            return { on: c.classList.contains('is-on'), padX: parseFloat(cs.paddingLeft) || 0,
+              radius: parseFloat(cs.borderRadius) || 0, w: Math.round(r.width) }; })(),
         };
       };
       const pvDesk = await page.evaluate(pvShot);
@@ -1372,6 +1420,18 @@ const server = app.listen(0, async () => {
       check(`${width}: with both views fitted to the stage, not overflowing it`,
         pvMob.boxW <= pvMob.stage && pvDesk.boxW <= pvDesk.stage,
         JSON.stringify({ pvDesk, pvMob }));
+
+      // The same chassis rule as the template modal, in the editor's preview.
+      const wantPvChassis = width > 820;
+      check(`${width}: the editor's mobile preview ${wantPvChassis ? 'draws' : 'does NOT draw'} a phone chassis`,
+        !!pvMob.chassis && pvMob.chassis.on === wantPvChassis, JSON.stringify(pvMob.chassis));
+      check(`${width}: and its desktop preview never does`,
+        !!pvDesk.chassis && pvDesk.chassis.on === false, JSON.stringify(pvDesk.chassis));
+      if (wantPvChassis) {
+        check(`${width}: with a real bezel, and still inside the stage`,
+          pvMob.chassis.padX >= 6 && pvMob.chassis.radius >= 30 && pvMob.chassis.w <= pvMob.stage,
+          JSON.stringify(pvMob));
+      }
       check(`${width}: and the highlight moves with it`, pvMob.on, JSON.stringify(pvMob));
       check(`${width}: preview offers a visible way back to editing`, pvDesk.back, JSON.stringify(pvDesk));
       check(`${width}: and hides the Preview button while previewing`, pvDesk.prevBtn === 0, JSON.stringify(pvDesk));

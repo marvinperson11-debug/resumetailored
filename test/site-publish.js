@@ -857,7 +857,7 @@ const server = app.listen(0, async () => {
        default of 300px — narrower than the phone preview it was meant to be
        wider than. A percentage is only a width if something above it has one. */
     check('the preview is sized from a measured width, not a percentage',
-      /const avail = Math\.max\(280, stage\.clientWidth\);/.test(appJs));
+      /const avail = Math\.max\(280, stage\.clientWidth\)/.test(appJs));
     /* THE DEAD TOGGLE. This used to read
          f.style.width = (mobile ? Math.min(390, avail) : avail) + 'px';
        and on a phone `avail` is the stage — about 334px — so mobile gave
@@ -894,6 +894,39 @@ const server = app.listen(0, async () => {
        modal measures 0, which would feed a scale of 0. */
     check('the template modal is shown before it is measured',
       /getElementById\('wcTplModal'\)\.style\.display = 'flex';\s*\n\s*wcTplDevice\('desktop'\);/.test(appJs));
+
+    /* ── THE PHONE CHASSIS ──────────────────────────────────────────────
+       Shared by both previews, and gated on the SCREEN rather than on the
+       selection: on an actual phone the chassis is the one in your hand. */
+    check('the chassis rule is one rule, shared by both previews',
+      /const _pvChassisOn = \(mobile\) => !!mobile && window\.innerWidth > PV_CHASSIS_MIN;/.test(appJs)
+      && (appJs.match(/const chassis = _pvChassisOn\(mobile\);/g) || []).length === 2);
+    check('and its padding constants match the stylesheet',
+      /const PV_CHASSIS = \{ x: 10, top: 12, bottom: 16 \};/.test(appJs)
+      && /\.pv-chassis\.is-on \{[^}]*padding: 12px 10px 16px;/.test(appJs));
+    /* The bezel is part of what has to fit: taken off BEFORE the scale is
+       computed, or the frame is what makes the preview overflow. */
+    check('the bezel is subtracted before the scale is worked out',
+      (appJs.match(/- \(chassis \? PV_CHASSIS\.x \* 2 : 0\)/g) || []).length >= 2
+      && (appJs.match(/- \(chassis \? PV_CHASSIS\.top \+ PV_CHASSIS\.bottom : 0\)/g) || []).length >= 2);
+
+    /* ── THE TEMPLATE MODAL'S HEADER ON A PHONE ─────────────────────────
+       195px of header over a 353px preview. Two rows via `order` so the DOM —
+       and therefore the desktop header — is not reordered, and every rule is
+       inside the phone query. */
+    check('the phone header is compressed inside a phone media query',
+      /@media \(max-width: 820px\) \{[\s\S]{0,900}?\.wc-tplhead \{ padding: 8px 10px !important;/.test(appJs));
+    check('the blurb is dropped there, and the title cannot wrap',
+      /#wcTplBlurb \{ display: none; \}/.test(appJs)
+      && /#wcTplName \{ font-size: 13\.5px !important; white-space: nowrap;/.test(appJs));
+    check('two rows come from `order`, not from moving the markup',
+      /\.wc-tplhead-brk \{ display: block; order: 3; flex: 0 0 100%; height: 0; \}/.test(appJs)
+      && /\.wc-tplhead-txt \{ order: 1;/.test(appJs) && /\.wc-tplhead-use \{ order: 5;/.test(appJs));
+    /* `flex:1` on the stage only grows against a parent with a height of its
+       own; with max-height the panel was content-sized and the stage settled
+       at 353px whatever the screen. */
+    check('the modal panel has a definite height so the preview can fill it',
+      /height:94vh;height:94dvh;max-height:94vh/.test(appJs));
 
     /* ── CLOSE MUST NOT LEAVE A BLANK SCREEN ────────────────────────────
        In the picker the gallery IS the page and it lives in #cvPanel. The
