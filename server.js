@@ -1055,9 +1055,10 @@ app.get('/api/assets/summary', (req, res) => {
    message says what is stored and where to clear it. */
 const MEDIA_LIMITS = {
   imageAudioPool: 300 * 1024 * 1024,  // 300 MB shared by images + audio
-  videoPool: 1024 * 1024 * 1024,      // 1 GB — ~20-40 web-sized clips
-  perFile: { image: 8 * 1024 * 1024, audio: 25 * 1024 * 1024, video: 25 * 1024 * 1024 },
+  videoPool: 1024 * 1024 * 1024,      // 1 GB per user
+  perFile: { image: 8 * 1024 * 1024, audio: 25 * 1024 * 1024, video: 100 * 1024 * 1024 },
 };
+const MEDIA_MAX_FILE = Math.max(...Object.values(MEDIA_LIMITS.perFile));
 const MEDIA_MIME = {
   // webm audio/video accepted for browser-recorded voiceovers and the in-browser
   // text-video generator (MediaRecorder outputs webm on most browsers).
@@ -1092,11 +1093,36 @@ function _mediaFromName(name) {
   return mime ? { kind: _mediaKind(mime), mime } : null;
 }
 function _emailHash(email) { return crypto.createHash('sha256').update(String(email).toLowerCase()).digest('hex').slice(0, 16); }
-const mediaUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 26 * 1024 * 1024 } });
+/* STREAMED TO DISK, NOT HELD IN MEMORY. memoryStorage buffers the entire file
+   in RAM before the route ever sees it, so a 100 MB video is 100 MB of heap per
+   concurrent upload and a handful of them is how a small container dies. Disk
+   storage writes as the bytes arrive and hands the route a path.
+
+   The temp directory lives INSIDE the media directory on purpose: the final
+   step is a rename, and rename across filesystems is EXDEV rather than a move.
+   Same volume, so it is atomic and costs nothing regardless of file size. */
+const mediaTmpDir = path.join(dataDir, 'site-media', '.tmp');
+try { fs.mkdirSync(mediaTmpDir, { recursive: true }); } catch (_) {}
+const mediaUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => { try { fs.mkdirSync(mediaTmpDir, { recursive: true }); } catch (_) {} cb(null, mediaTmpDir); },
+    filename: (req, file, cb) => cb(null, `up_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`),
+  }),
+  limits: { fileSize: MEDIA_MAX_FILE, files: 1 },
+});
+/* A file on disk that no row points at is a leak, and every rejection below —
+   wrong type, too large for its kind, quota full, or a write that throws — has
+   to sweep up after itself. One helper, called on every path out. */
+function _mediaDiscard(file) {
+  if (file && file.path) { try { fs.unlink(file.path, () => {}); } catch (_) {} }
+}
 function mediaUploadSingle(req, res, next) {
   mediaUpload.single('file')(req, res, (err) => {
     if (err) {
-      const msg = err.code === 'LIMIT_FILE_SIZE' ? 'File is too large (max 25 MB).' : (err.message || 'Upload failed.');
+      _mediaDiscard(req.file);
+      const msg = err.code === 'LIMIT_FILE_SIZE'
+        ? `File is too large (max ${Math.round(MEDIA_MAX_FILE / 1024 / 1024)} MB).`
+        : (err.message || 'Upload failed.');
       return res.status(400).json({ error: msg });
     }
     next();
@@ -1128,8 +1154,13 @@ app.get('/api/site-media', (req, res) => {
 
 app.post('/api/site-media', mediaUploadSingle, (req, res) => {
   const email = getSessionEmail(req);
-  if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Media uploads are a Pro feature.' });
+  /* THE FILE IS ALREADY ON DISK BY NOW. multer streams it before any of this
+     runs, so every `return` below has to take the temp file with it — a
+     rejected upload that leaves 100 MB behind fills the volume with files no
+     row will ever point at. `bail` is the only way out. */
+  const bail = (code, body) => { _mediaDiscard(req.file); return res.status(code).json(body); };
+  if (!email) return bail(401, { error: 'Please sign in.' });
+  if (!isSubscriber(email)) return bail(402, { error: 'pro_required', message: 'Media uploads are a Pro feature.' });
   if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
   // Prefer the part's Content-Type, but fall back to the filename extension when
   // it's unreliable (browser blobs with unquoted codecs downgrade to text/plain).
@@ -1139,10 +1170,14 @@ app.post('/api/site-media', mediaUploadSingle, (req, res) => {
     const byName = _mediaFromName(req.file.originalname);
     if (byName && byName.kind) { kind = byName.kind; storeMime = byName.mime; }
   }
-  if (!kind) return res.status(400).json({ error: 'Unsupported file type. Use JPG/PNG/WebP, MP3/M4A/WebM, or MP4/WebM.' });
+  if (!kind) return bail(400, { error: 'Unsupported file type. Use JPG/PNG/WebP, MP3/M4A/WebM, or MP4/WebM.' });
   const bytes = req.file.size;
+  /* Per KIND, after the fact. multer's own limit is the largest of the three,
+     because it cannot know which kind a part is until the headers are read —
+     so a 90 MB "image" gets written before it can be refused, and refusing it
+     here is what keeps the 8 MB image cap real. */
   if (bytes > MEDIA_LIMITS.perFile[kind]) {
-    return res.status(400).json({ error: `That ${kind} is too large (max ${Math.round(MEDIA_LIMITS.perFile[kind] / 1024 / 1024)} MB).` });
+    return bail(400, { error: `That ${kind} is too large (max ${Math.round(MEDIA_LIMITS.perFile[kind] / 1024 / 1024)} MB).` });
   }
   const usage = _mediaUsage(email);
   /* Only storage, and the message says what is actually stored and where to
@@ -1150,17 +1185,26 @@ app.post('/api/site-media', mediaUploadSingle, (req, res) => {
      the video cap had, and it is what made a limit feel like a fault. */
   if (kind === 'video') {
     if (usage.videoBytes + bytes > MEDIA_LIMITS.videoPool) {
-      return res.status(400).json({ error: `Video storage is full — ${_mb1(usage.videoBytes)} MB of ${_mb1(MEDIA_LIMITS.videoPool)} MB used across ${usage.videoCount} video${usage.videoCount === 1 ? '' : 's'}. Remove one in Uploads to make room.` });
+      return bail(400, { error: `Video storage is full — ${_mb1(usage.videoBytes)} MB of ${_mb1(MEDIA_LIMITS.videoPool)} MB used across ${usage.videoCount} video${usage.videoCount === 1 ? '' : 's'}. Remove one in Uploads to make room.` });
     }
   } else if (usage.imageAudioBytes + bytes > MEDIA_LIMITS.imageAudioPool) {
-    return res.status(400).json({ error: `Image and audio storage is full — ${_mb1(usage.imageAudioBytes)} MB of ${_mb1(MEDIA_LIMITS.imageAudioPool)} MB used. Remove a file in Uploads to make room.` });
+    return bail(400, { error: `Image and audio storage is full — ${_mb1(usage.imageAudioBytes)} MB of ${_mb1(MEDIA_LIMITS.imageAudioPool)} MB used. Remove a file in Uploads to make room.` });
   }
   try {
     const dir = path.join(dataDir, 'site-media', _emailHash(email));
     fs.mkdirSync(dir, { recursive: true });
     const fname = `${crypto.randomBytes(8).toString('hex')}.${_mediaExt(storeMime)}`;
     const full = path.join(dir, fname);
-    fs.writeFileSync(full, req.file.buffer);
+    /* A RENAME, not a copy: the bytes are already on the volume and moving them
+       within it is a directory entry, whatever the file's size. The fallback is
+       for the case the temp dir has somehow ended up on another filesystem,
+       where rename is EXDEV — copy then unlink, correct but slower. */
+    try {
+      fs.renameSync(req.file.path, full);
+    } catch (e) {
+      if (e && e.code === 'EXDEV') { fs.copyFileSync(req.file.path, full); _mediaDiscard(req.file); }
+      else throw e;
+    }
     const info = db.prepare('INSERT INTO site_media (email, kind, path, mime, bytes, created_at) VALUES (?, ?, ?, ?, ?, ?)')
       .run(email.toLowerCase(), kind, full, (storeMime || '').split(';')[0].trim() || storeMime, bytes, Date.now());
     const mime = (storeMime || '').split(';')[0].trim();
@@ -1174,6 +1218,7 @@ app.post('/api/site-media', mediaUploadSingle, (req, res) => {
       usage: _mediaUsage(email),
     });
   } catch (e) {
+    _mediaDiscard(req.file);
     res.status(500).json({ error: 'Could not save the file.' });
   }
 });

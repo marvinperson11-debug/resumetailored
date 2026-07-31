@@ -9386,25 +9386,50 @@ Aaliyah Washington`
         _mb(wcMediaUsage.videoBytes) + '/' + _mb(L.videoPool) + ' MB ' + _t('wc_media_video', 'video')
         + ' (' + n + ' ' + (n === 1 ? _t('wc_media_clip', 'clip') : _t('wc_media_clips', 'clips')) + ')';
     }
-    // Upload a file and hand the resulting /media/<id> URL to `onUrl`.
+    /* Upload a file and hand the resulting /media/<id> URL to `onUrl`.
+
+       XHR RATHER THAN FETCH, FOR ONE REASON: fetch cannot report upload
+       progress. At the old 25 MB cap "Uploading…" was over before anyone read
+       it; at 100 MB over a phone connection it is minutes of a screen that
+       looks broken, and the natural response to a broken screen is to press
+       the button again. The percentage is the difference between waiting and
+       giving up. */
     function wcUploadMedia(accept, onUrl) {
       const inp = document.createElement('input');
       inp.type = 'file'; inp.accept = accept;
-      inp.onchange = async () => {
+      inp.onchange = () => {
         const f = inp.files[0]; if (!f) return;
-        showToast(_t('wc_uploading', 'Uploading…'));
+        const mb = (f.size / 1024 / 1024).toFixed(f.size > 10 * 1024 * 1024 ? 0 : 1);
+        const say = (pct) => showToast(
+          _t('wc_uploading', 'Uploading…') + (pct === null ? '' : ' ' + pct + '%') + ' (' + mb + ' MB)',
+          60000);
+        say(0);
         const fd = new FormData(); fd.append('file', f);
-        try {
-          const r = await fetch('/api/site-media', { method: 'POST', headers: authHeadersNoType(), body: fd });
-          const d = await r.json().catch(() => ({}));
-          if (!r.ok) { showToast(d.error || _t('wc_upload_err', 'Upload failed.')); return; }
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', '/api/site-media');
+        const h = authHeadersNoType();
+        Object.keys(h).forEach((k) => xhr.setRequestHeader(k, h[k]));
+        /* `lengthComputable` is false on some proxies; a percentage invented
+           from an unknown total is worse than none, so it falls back to the
+           plain message rather than to a made-up number. */
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && e.total > 0) say(Math.min(99, Math.round((e.loaded / e.total) * 100)));
+          else say(null);
+        };
+        xhr.onload = () => {
+          let d = {};
+          try { d = JSON.parse(xhr.responseText || '{}'); } catch (_) {}
+          if (xhr.status < 200 || xhr.status >= 300) { showToast(d.error || _t('wc_upload_err', 'Upload failed.'), 6000); return; }
           if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }
           // A format that will not play everywhere uploads anyway and says so.
           // There is no transcoder here, and pretending otherwise would be
           // worse than telling the truth.
           if (d.warning) showToast(d.warning, 8000);
           onUrl(d.url, d);
-        } catch (_) { showToast(_t('wc_upload_err', 'Upload failed.')); }
+        };
+        xhr.onerror = () => showToast(_t('wc_upload_err', 'Upload failed.'), 6000);
+        xhr.ontimeout = () => showToast(_t('wc_upload_slow', 'Upload timed out — a large file needs a steady connection.'), 8000);
+        xhr.send(fd);
       };
       inp.click();
     }
