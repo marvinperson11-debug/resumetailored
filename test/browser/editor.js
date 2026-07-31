@@ -1346,11 +1346,17 @@ const server = app.listen(0, async () => {
           const d = f.contentDocument;
           const img = [...d.querySelectorAll('.sd-img')].find((n) => (n.getAttribute('src') || '').startsWith('/media/'));
           const el = img && img.closest('.sd-el');
+          /* The phone renders the whole page at a scale now, so a rect is in
+             SCREEN pixels and the box was drawn in DESIGN pixels. Dividing the
+             scale back out is what makes the two comparable; without it this
+             read 78 against a 200px box and called a correct render a failure. */
+          const pg = d.querySelector('.sd-page');
+          const k = pg ? (parseFloat((getComputedStyle(pg).transform.match(/matrix\(([-\d.]+)/) || [0, 1])[1]) || 1) : 1;
           const out = img
-            ? { drawn, vw: d.documentElement.clientWidth,
-                elH: Math.round(el.getBoundingClientRect().height),
-                imgH: Math.round(img.getBoundingClientRect().height),
-                imgW: Math.round(img.getBoundingClientRect().width),
+            ? { drawn, k: +k.toFixed(3), vw: d.documentElement.clientWidth,
+                elH: Math.round(el.getBoundingClientRect().height / k),
+                imgH: Math.round(img.getBoundingClientRect().height / k),
+                imgW: Math.round(img.getBoundingClientRect().width / k),
                 disp: getComputedStyle(el).display,
                 fromFile: getComputedStyle(img).height === 'auto' }
             : { drawn, none: true, imgs: d.querySelectorAll('.sd-img').length };
@@ -1358,7 +1364,75 @@ const server = app.listen(0, async () => {
           return out;
         }, upTarget);
         check(`${width}: the photo is on the published page at phone width`,
-          mob && !mob.err && !mob.none && mob.imgW > 300, JSON.stringify(mob));
+          mob && !mob.err && !mob.none && mob.imgW > 100, JSON.stringify(mob));
+        /* ── THE PUBLISHED PAGE KEEPS ITS LAYOUT ON A PHONE ─────────────────
+           The complaint was not about any one element: it was that a site
+           became a single column of slabs. So this counts BANDS — groups of
+           elements sharing a vertical position — and how many hold more than
+           one thing. One-per-band at every band IS the bug, whatever each
+           element measures on its own. */
+        const rows = await page.evaluate(async () => {
+          const r = await fetch('/api/personal-site/preview', {
+            method: 'POST', headers: authHeaders(),
+            body: JSON.stringify({ text: 'Test Person\nyou@example.com\n\nSUMMARY\nA summary.', name: 'Test', config: edStore.getDoc() }),
+          });
+          if (!r.ok) return { err: r.status };
+          const html = await r.text();
+          const measure = (w) => new Promise((res) => {
+            const f = document.createElement('iframe');
+            f.style.cssText = `position:fixed;left:-9999px;top:0;width:${w}px;height:900px;border:0;`;
+            document.body.appendChild(f);
+            f.srcdoc = html;
+            /* ONCE. Both `onload` and the backstop timeout used to run this,
+               and the second one read contentDocument after the frame had been
+               removed — a null-dereference that failed the page-error check for
+               reasons entirely inside the harness. */
+            let fired = false;
+            const done = () => {
+              if (fired) return; fired = true;
+              setTimeout(() => {
+                const d = f.contentDocument;
+                if (!d) { f.remove(); return res({ w, err: 'frame gone' }); }
+                const pg = d.querySelector('.sd-page');
+                /* IN DESIGN PIXELS. The phone scales the whole page, so a fixed
+                   24px band tolerance is 2.5x looser there and merges rows that
+                   are genuinely apart — an artefact of the ruler, not of the
+                   layout. Dividing the scale out measures both widths the same. */
+                const k = pg ? (parseFloat((getComputedStyle(pg).transform.match(/matrix\(([-\d.]+)/) || [0, 1])[1]) || 1) : 1;
+                const els = [...d.querySelectorAll('.sd-el')].filter((n) => {
+                  const b = n.getBoundingClientRect();
+                  return b.width > 2 && b.height > 2 && getComputedStyle(n).display !== 'none';
+                });
+                const bands = [];
+                els.forEach((n) => {
+                  const b = n.getBoundingClientRect();
+                  const mid = (b.top + b.height / 2) / k, h = b.height / k;
+                  let x = bands.find((y) => Math.abs(y.mid - mid) < Math.max(24, h * 0.4));
+                  if (!x) { x = { mid, n: 0 }; bands.push(x); }
+                  x.n++;
+                });
+                const out = { w, k: +k.toFixed(3), els: els.length, bands: bands.length,
+                  shared: bands.filter((b) => b.n > 1).length,
+                  hScroll: d.documentElement.scrollWidth > d.documentElement.clientWidth + 1,
+                  scaled: !!pg && /matrix|scale/.test(getComputedStyle(pg).transform) };
+                f.remove(); res(out);
+              }, 900);
+            };
+            f.onload = done; setTimeout(done, 4000);
+          });
+          return { phone: await measure(390), desk: await measure(1200) };
+        });
+        check(`${width}: the published page keeps side-by-side sections on a phone`,
+          rows && !rows.err && rows.phone.shared > 0 && rows.phone.shared >= rows.desk.shared,
+          JSON.stringify(rows));
+        check(`${width}: it is scaled rather than restacked, and does not scroll sideways`,
+          rows && !rows.err && rows.phone.scaled && !rows.phone.hScroll && !rows.desk.scaled,
+          JSON.stringify(rows));
+        /* Every element still on the page. Preserving the layout must not be
+           achieved by dropping what does not fit. */
+        check(`${width}: with the same elements it has on a desktop`,
+          rows && !rows.err && rows.phone.els === rows.desk.els, JSON.stringify(rows));
+
         check(`${width}: and takes the height of the box, not of the file`,
           mob && mob.drawn > 0 && Math.abs(mob.imgH - mob.drawn) <= 2 && Math.abs(mob.elH - mob.drawn) <= 2,
           JSON.stringify(mob));

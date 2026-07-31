@@ -122,7 +122,14 @@ const server = app.listen(0, async () => {
     // The document renderer must actually be in use (not the legacy fallback).
     const home = await (await fetch(`${B}/site/${SUB}`)).text();
     check('renders v2 site document (not legacy)', home.includes('sd-sec') && home.includes('sd-inner'));
-    check('mobile auto-stacking present', home.includes('@media(max-width:820px)') && home.includes('position:static!important'));
+    /* The phone KEEPS the layout and scales it. This used to assert
+       `position:static!important` — the rule that flattened every element into
+       one column, turning a three-up gallery into three slabs. What has to be
+       present now is the scaling wrapper and the factor that drives it. */
+    check('the phone scales the layout rather than stacking it',
+      home.includes('@media(max-width:820px)')
+      && home.includes('.sd-page{width:1000px;transform-origin:top left;transform:scale(var(--sdk,1));}')
+      && !home.includes('position:static!important'));
     check('elements emitted in mobile reading order', home.indexOf('Jane Rivera<') < home.indexOf('Senior Product Manager'));
     check('multi-page nav rendered', home.includes('sd-navlink') && home.includes('/site/' + SUB + '/work'));
 

@@ -2375,6 +2375,13 @@ function _sdFontLink(headingKey, bodyKey) {
    asks for. Text is deliberately absent: clipping somebody's summary because
    the box was drawn too short would be worse than the box growing. */
 const _SD_FIT_TYPES = { image: 1, imagebox: 1, video: 1, map: 1, box: 1 };
+/* The width a published page is LAID OUT at on a phone before being scaled down
+   to the screen. Not 1200 (the design canvas) and not the phone's own width:
+   at 1200 the type comes out a third of its size, and at the phone's width the
+   boxes are phone-sized while the type is not, so it spills out of them. This
+   is the same number the editor's phone-frame preview lays out at, so what is
+   published is what was previewed. */
+const SD_MOBILE_W = 1000;
 
 /* What to put in `<source type>`. Whitelisted, because it is an attribute on a
    public page — and only ever a hint, so an unknown value is dropped rather
@@ -3054,17 +3061,17 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     .sd-cs p{font-size:14px;color:#39414f;margin-top:10px;}
     .sd-qr{width:100%;max-width:150px;}
     .sd-foot{text-align:center;font-size:13px;color:var(--muted);padding:24px 16px;}
-    /* MOBILE: sections grow to fit, elements drop to full-width static flow in
-       DOM order (which the renderer already sorted top-to-bottom). */
+    /* MOBILE: THE LAYOUT IS KEPT AND SCALED, NOT DISMANTLED. This used to force
+       every element to position:static and width:100%, which turned a three-up
+       gallery into three slabs and a site into a coloured list. A phone is a
+       smaller window, not a different document. Elements are placed in PERCENT
+       across and pixels down, so scaling the whole page by one factor is what
+       keeps the two axes and the type in proportion with each other. */
+    .sd-vp{overflow:hidden;}
     @media(max-width:820px){
-      .sd-inner{height:auto!important;padding:30px 18px;}
-      .sd-el{position:static!important;width:100%!important;min-height:0!important;margin:0 0 18px;}
-      .sd-el:last-child{margin-bottom:0;}
+      html,body{overflow-x:hidden;}
+      .sd-page{width:${SD_MOBILE_W}px;transform-origin:top left;transform:scale(var(--sdk,1));}
       .sd-el--mhide{display:none!important;}
-      .sd-h1{font-size:32px;}
-      .sd-h2{font-size:20px;}
-      .sd-gal--grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
-      .sd-gal--masonry{columns:2;}
       /* NOTHING HERE OVERRIDES MEDIA HEIGHT. A height:auto!important on
          .sd-ibox/.sd-img used to live here, from before media elements had a
          height of their own -- the only rule in the sheet that made a phone
@@ -3075,10 +3082,45 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
   </style>
 </head>
 <body>
+  <!-- .sd-vp clips and carries the SCALED height; .sd-page keeps the design's
+       own width and is scaled into it. A transform paints smaller and leaves
+       the layout box alone, so without the outer box the document would be
+       1/k too long and scroll into empty space below the footer. -->
+  <div class="sd-vp"><div class="sd-page">
   ${sections}
   ${footerHtml ? `<div class="sd-foot">${footerHtml}</div>` : ''}
+  </div></div>
   <script>
     var SITE_I18N=${JSON.stringify(_SITE_I18N)};
+    /* THE ONE NUMBER CSS CANNOT WORK OUT FOR ITSELF: scale() takes a unitless
+       factor, and dividing 100vw by a number is still a length. Re-measured
+       after fonts and media land, because a page measured before its webfont
+       arrives is measured at fallback metrics and comes out short. */
+    (function(){
+      var W=${SD_MOBILE_W}, vp=document.querySelector('.sd-vp'), pg=document.querySelector('.sd-page'), last='';
+      if(!vp||!pg) return;
+      function fit(){
+        if(window.innerWidth>820){
+          document.documentElement.style.removeProperty('--sdk');
+          if(last!==''){last='';vp.style.height='';}
+          return;
+        }
+        var k=window.innerWidth/W;
+        document.documentElement.style.setProperty('--sdk',k);
+        var h=Math.ceil(pg.scrollHeight*k)+'px';
+        /* Only when it CHANGES. The observer below watches the element whose
+           height this sets a parent of, and writing an identical value every
+           time is how that becomes a loop. */
+        if(h!==last){last=h;vp.style.height=h;}
+      }
+      fit();
+      addEventListener('resize',fit);
+      addEventListener('orientationchange',function(){setTimeout(fit,120);});
+      addEventListener('load',fit);
+      if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fit);
+      // Media arriving late changes the page's length; an observer beats guessing.
+      if(window.ResizeObserver) new ResizeObserver(fit).observe(pg);
+    })();
     function _sgLead(e,f){
       e.preventDefault();
       var L=SITE_I18N[document.documentElement.lang==='zh'?'zh':'en']||SITE_I18N.en;
