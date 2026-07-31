@@ -1242,30 +1242,58 @@ const server = app.listen(0, async () => {
           JSON.stringify(mob));
       }
 
-      // PREVIEW: the device toggle drives it, and there is a way back.
+      /* ── PREVIEW: THE DEVICE TOGGLE, PRESSED ────────────────────────────
+         By CLICKING the buttons, not by calling edSetDevice — the report was
+         "tapping them does nothing", and a function that works when called
+         directly is not evidence about a button.
+
+         And measured on the LAYOUT WIDTH OF THE PAGE INSIDE, not on the frame.
+         That distinction is the whole bug: the frame used to be sized
+         `mobile ? Math.min(390, avail) : avail`, so on a phone (stage 334px)
+         both branches produced 334 and the "desktop" preview was already being
+         rendered at phone width. The highlight moved, the corner radius
+         changed, the document was identical.
+
+         The previous version of this check carved out exactly that case —
+         `const roomForPhone = pvDesk.w > 400` — and excused a dead toggle at
+         390px as correct. It is not correct, and the carve-out is why the bug
+         shipped. What matters is that the two views lay the page out at
+         different widths at EVERY width; how big the picture of it is on
+         screen is a separate question. */
       await page.evaluate(() => { edSetDevice('desktop'); wcSetView('preview'); });
-      await page.waitForTimeout(900);
-      const pvDesk = await page.evaluate(() => {
+      await page.waitForTimeout(1600);
+      const pvShot = () => {
         const f = document.getElementById('wcPreviewFrame');
+        const box = document.getElementById('wcPreviewBox');
         const b = document.getElementById('cvBackToEdit');
-        return { w: f.getBoundingClientRect().width, back: b && b.offsetWidth > 0,
-          prevBtn: (document.getElementById('cvPreviewBtn') || {}).offsetWidth };
-      });
-      await page.evaluate(() => edSetDevice('mobile'));
-      await page.waitForTimeout(500);
-      const pvMob = await page.evaluate(() => {
-        const f = document.getElementById('wcPreviewFrame');
-        return { w: f.getBoundingClientRect().width, style: f.style.width,
-          on: document.getElementById('wcEdMobBtn').classList.contains('is-on') };
-      });
-      /* The phone preview is 390px OR the stage, whichever is smaller. On a
-         390px viewport the stage is about 334px, so the two coincide — that is
-         correct, not a dead toggle, and asserting "narrower" there would have
-         been demanding a phone preview wider than the window it is in. */
-      const roomForPhone = pvDesk.w > 400;
-      check(`${width}: the device toggle drives the preview's width`,
-        pvMob.w <= 390 && pvMob.w <= pvDesk.w && (!roomForPhone || pvMob.w < pvDesk.w),
-        JSON.stringify({ pvDesk, pvMob, roomForPhone }));
+        let inner = -1;
+        try { inner = f.contentDocument.documentElement.clientWidth; } catch (_) {}
+        return {
+          inner, w: Math.round(f.getBoundingClientRect().width),
+          boxW: box ? Math.round(box.getBoundingClientRect().width) : -1,
+          stage: document.getElementById('wcEdStage').clientWidth,
+          back: b && b.offsetWidth > 0,
+          prevBtn: (document.getElementById('cvPreviewBtn') || {}).offsetWidth,
+          on: document.getElementById('wcEdMobBtn').classList.contains('is-on'),
+        };
+      };
+      const pvDesk = await page.evaluate(pvShot);
+      await page.click('#wcEdMobBtn');
+      await page.waitForTimeout(1600);
+      const pvMob = await page.evaluate(pvShot);
+
+      check(`${width}: pressing the phone button changes what the preview renders`,
+        pvMob.inner === 390 && pvDesk.inner > 390 && pvMob.inner !== pvDesk.inner,
+        JSON.stringify({ pvDesk, pvMob }));
+      /* A desktop preview must be a DESKTOP layout — wide enough that the
+         site's own phone stylesheet (max-width:820px) is not the one in force.
+         Otherwise both buttons show a phone and only one of them admits it. */
+      check(`${width}: and the desktop preview really is a desktop layout`,
+        pvDesk.inner > 820, JSON.stringify(pvDesk));
+      // Whatever the layout width, the picture of it fits the stage.
+      check(`${width}: with both views fitted to the stage, not overflowing it`,
+        pvMob.boxW <= pvMob.stage && pvDesk.boxW <= pvDesk.stage,
+        JSON.stringify({ pvDesk, pvMob }));
       check(`${width}: and the highlight moves with it`, pvMob.on, JSON.stringify(pvMob));
       check(`${width}: preview offers a visible way back to editing`, pvDesk.back, JSON.stringify(pvDesk));
       check(`${width}: and hides the Preview button while previewing`, pvDesk.prevBtn === 0, JSON.stringify(pvDesk));
