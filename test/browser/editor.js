@@ -156,6 +156,84 @@ const server = app.listen(0, async () => {
           pick.chipsWrap === 'wrap', JSON.stringify(pick));
       }
 
+      /* ── THE TEMPLATE-CARD PREVIEW ──────────────────────────────────────
+         Two bugs lived in this modal, and both were invisible to every check
+         that looked at variables instead of at the screen.
+
+         1. The device toggle. The frame was `width:100%; max-width: mobile ?
+            390 : 980`. Inside a phone-sized modal the container is about 326px
+            — BELOW both caps — so neither bound and the two views rendered the
+            identical page. Measured on the LAYOUT WIDTH OF THE PAGE INSIDE,
+            because the frame's own width is 326 either way and says nothing.
+
+         2. Close showed a blank screen. A document-level "clicking the page
+            retracts the panel" handler treated clicks inside this modal — which
+            is a sibling of the shell, not a descendant of .cv-panel — as clicks
+            on the page. So opening the preview and touching anything in it hid
+            the gallery BEHIND it, and closing revealed a shell with no panel,
+            no rail and no canvas. The DOM reported 12 tiles and an active
+            panel throughout; the screen was empty. Hence elementFromPoint. */
+      await page.locator('.wc-tpl button', { hasText: /^(Preview|预览)$/ }).first().click();
+      await page.waitForTimeout(2500);
+      const tplShot = () => {
+        const f = document.getElementById('wcTplFrame');
+        let inner = -1;
+        try { inner = f.contentDocument.documentElement.clientWidth; } catch (_) {}
+        const st = document.getElementById('wcTplStage');
+        const box = document.getElementById('wcTplBox');
+        return { inner, frameW: Math.round(f.getBoundingClientRect().width),
+          boxW: box ? Math.round(box.getBoundingClientRect().width) : -1,
+          stageW: st ? st.clientWidth : -1,
+          deskOn: document.getElementById('wcTplDesktop').classList.contains('wc-vtab-active'),
+          mobOn: document.getElementById('wcTplMobile').classList.contains('wc-vtab-active') };
+      };
+      const tplDesk = await page.evaluate(tplShot);
+      await page.click('#wcTplMobile');
+      await page.waitForTimeout(1200);
+      const tplMob = await page.evaluate(tplShot);
+
+      check(`${width}: the template preview's phone button changes what it renders`,
+        tplMob.inner === 390 && tplDesk.inner > 390 && tplMob.inner !== tplDesk.inner,
+        JSON.stringify({ tplDesk, tplMob }));
+      check(`${width}: and its desktop view really is a desktop layout`,
+        tplDesk.inner > 820, JSON.stringify(tplDesk));
+      check(`${width}: with both fitted inside the modal, not overflowing it`,
+        tplMob.boxW <= tplMob.stageW && tplDesk.boxW <= tplDesk.stageW,
+        JSON.stringify({ tplDesk, tplMob }));
+      check(`${width}: and the highlight follows`, tplMob.mobOn && !tplMob.deskOn, JSON.stringify(tplMob));
+
+      // Close — and the gallery has to be ON SCREEN, not merely in the document.
+      await page.evaluate(() => {
+        const b = [...document.querySelectorAll('#wcTplModal button')]
+          .find((x) => /closeTplPreview/.test(x.getAttribute('onclick') || '') && !/event\.target/.test(x.getAttribute('onclick') || ''));
+        if (b) b.click();
+      });
+      await page.waitForTimeout(1200);
+      const afterClose = await page.evaluate(() => {
+        const hit = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+        const card = document.querySelector('.wc-tpl');
+        const cr = card ? card.getBoundingClientRect() : null;
+        const panel = document.getElementById('cvPanel');
+        return {
+          modal: getComputedStyle(document.getElementById('wcTplModal')).display,
+          panelDisp: getComputedStyle(panel).display, panelHidden: panel.hidden,
+          panelW: Math.round(panel.getBoundingClientRect().width),
+          centreHit: hit ? (hit.id || (typeof hit.className === 'string' ? hit.className.trim().slice(0, 24) : hit.tagName)) : 'NOTHING',
+          centreInPanel: !!(hit && panel.contains(hit)),
+          cardW: cr ? Math.round(cr.width) : 0, cardH: cr ? Math.round(cr.height) : 0,
+        };
+      });
+      check(`${width}: closing the template preview goes back to the picker`,
+        afterClose.modal === 'none' && !afterClose.panelHidden && afterClose.panelDisp !== 'none' && afterClose.panelW > 0,
+        JSON.stringify(afterClose));
+      /* THE ONE THAT MATTERS. Everything above was already true while the
+         screen was blank — the panel was `hidden`, and the empty canvas stage
+         was what filled the window. This asks what is actually under the middle
+         of the screen. */
+      check(`${width}: and the gallery is what is ON SCREEN, not an empty stage`,
+        afterClose.centreInPanel && afterClose.cardW > 0 && afterClose.cardH > 0,
+        JSON.stringify(afterClose));
+
       // Use a template.
       const before = errs.length;
       await page.evaluate(() => {
