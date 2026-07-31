@@ -3000,15 +3000,16 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
     .sd-video,.sd-audio{width:100%;display:block;border-radius:12px;}
     .sd-video{background:#000;height:100%;object-fit:cover;}
     .sd-audio{height:auto;}
-    /* A COLUMN, not a stack of things each claiming the full height. The label
-       above a video is 19px of real content; with the video also asking for
-       100% the pair came to 119% of the box, and overflow:hidden clipped the
-       bottom 27px -- which is exactly where the native control bar lives. The
-       play button was visible and the controls were not there to be pressed.
-       The label takes what it needs and the media takes the rest. */
-    .sd-el--fit{overflow:hidden;display:flex;flex-direction:column;}
-    .sd-el--fit>.sd-elabel{flex:0 0 auto;}
-    .sd-el--fit>.sd-video,.sd-el--fit>.sd-img,.sd-el--fit>.sd-ibox,.sd-el--fit>.sd-map,.sd-el--fit>.sd-ph{flex:1 1 auto;min-height:0;height:auto;}
+    /* TWO ROWS: the label takes what it needs, the media takes the rest -- a
+       label plus a video both asking for 100% overflowed the box and clipped
+       the control bar. A GRID, not a flex column: a 1fr track is resolved from
+       the element's own definite height BEFORE the media is measured, so it
+       never depends on growing a replaced element off an intrinsic height a
+       video may not have yet. Row 2 is named so an unlabelled photo is sized
+       too. (No backticks: this is inside a template literal.) */
+    .sd-el--fit{overflow:hidden;display:grid;grid-template-rows:auto minmax(0,1fr);}
+    .sd-el--fit>.sd-elabel{grid-row:1;min-width:0;}
+    .sd-el--fit>.sd-video,.sd-el--fit>.sd-img,.sd-el--fit>.sd-ibox,.sd-el--fit>.sd-map,.sd-el--fit>.sd-ph,.sd-el--fit>.sd-box{grid-row:2;min-height:0;height:100%;}
     .sd-el--fit>.sd-ibox>img{height:100%;object-fit:cover;}
     .sd-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 26px;border-radius:999px;background:linear-gradient(135deg,var(--p),var(--a));color:#fff;font-weight:700;text-decoration:none;font-size:15px;}
     .sd-btn--ghost{background:none;border:2px solid currentColor;color:var(--p);}
@@ -3064,7 +3065,11 @@ function _renderSiteDoc(row, origin, opts = {}, doc = {}) {
       .sd-h2{font-size:20px;}
       .sd-gal--grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));}
       .sd-gal--masonry{columns:2;}
-      .sd-ibox,.sd-img{height:auto!important;}
+      /* NOTHING HERE OVERRIDES MEDIA HEIGHT. A height:auto!important on
+         .sd-ibox/.sd-img used to live here, from before media elements had a
+         height of their own -- the only rule in the sheet that made a phone
+         take a photo's height from the FILE while a desktop took it from the
+         BOX. The grid track governs at every width now. */
       ${mobileRules.join('')}
     }
   </style>

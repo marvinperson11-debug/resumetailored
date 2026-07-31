@@ -503,8 +503,25 @@
     .cv-updgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
     .cv-addr { display: flex; align-items: center; gap: 5px; }
     .cv-addr span { font-size: 11px; color: #9ca3af; white-space: nowrap; }
-    .cv-stage { flex: 1; min-width: 0; overflow: auto; background: #303136; display: flex; flex-direction: column; align-items: center; padding: 16px 10px 32px; }
-    .cv-canvasbox { display: flex; flex-direction: column; align-items: center; }
+    /* `safe center` so that if the canvas is ever wider than the stage (zoom
+       above 100%), the overflow goes to the RIGHT where it can be scrolled to,
+       instead of spilling equally off both sides and putting the left edge
+       somewhere no scrollbar can reach. */
+    .cv-stage { flex: 1; min-width: 0; overflow: auto; background: #303136; display: flex; flex-direction: column; align-items: center; align-items: safe center; padding: 16px 10px 32px; }
+    /* ── THE CANVAS IS SIZED, NOT ONLY SCALED ──────────────────────────────
+       `transform: scale()` changes what is PAINTED and nothing about the
+       layout box. #wcEdWrap is 1200px wide and stayed 1200px wide however far
+       it was scaled down, so this box was 1200px inside an 1126px stage and
+       the stage scrolled sideways by the difference — measured at 47px on a
+       1440px laptop and 443px on a 390px phone. That is the canvas "moving
+       left to right".
+
+       The wrap is taken OUT of flow (absolute) and this box is given the
+       SCALED size instead, so the layout box and the painted box are the same
+       rectangle and there is nothing left to scroll. `edFitStage` writes the
+       width/height; the height was already being compensated this way, the
+       width never was. */
+    .cv-canvasbox { position: relative; display: block; flex: 0 0 auto; margin: 0 auto; }
     #wcEdFrame { border: 0; display: block; background: #fff; box-shadow: 0 8px 40px rgba(0,0,0,.45); }
     #wcEdOverlay { position: absolute; inset: 0; }
     .cv-addpage { margin-top: 16px; background: #3b3c42; border: 1px dashed #5a5b62; color: #cbd5e1; font: inherit; font-size: 12.5px; font-weight: 700; padding: 10px 26px; border-radius: 9px; cursor: pointer; }
@@ -1490,7 +1507,11 @@
             <!-- Canvas stage -->
             <div class="cv-stage" id="wcEdStage">
               <div class="cv-canvasbox">
-                <div id="wcEdWrap" style="position:relative;transform-origin:top center;">
+                <!-- Absolute + top-left origin: the wrap keeps the canvas's own
+                     1200px coordinate space (the overlay is positioned in it)
+                     while contributing NO layout width of its own. Its parent
+                     carries the scaled size. See .cv-canvasbox above. -->
+                <div id="wcEdWrap" style="position:absolute;top:0;left:0;transform-origin:top left;">
                   <iframe id="wcEdFrame" title="Canvas" scrolling="no"></iframe>
                   <div id="wcEdOverlay"></div>
                 </div>
@@ -8018,18 +8039,33 @@ Aaliyah Washington`
       const frame = document.getElementById('wcEdFrame');
       const mobile = (typeof edDevice !== 'undefined' && edDevice === 'mobile');
       const canvasW = mobile ? 390 : ED_CANVAS;
-      if (wrap) wrap.style.width = canvasW + 'px';
-      if (frame) frame.style.width = canvasW + 'px';
       const avail = Math.max(240, stage.clientWidth - 40);
       const fit = Math.min(1, avail / canvasW);
       const k = fit * ((typeof cvZoomPct !== 'undefined' ? cvZoomPct : 100) / 100);
+      // In mobile view the page grows taller as elements stack, so give it room.
+      const hUn = (mobile ? edDocHeight() * 1.6 : edDocHeight());
+      /* THE WRAP KEEPS THE CANVAS'S OWN COORDINATES — 1200px wide (390 in the
+         phone view) and the document's real height — because the selection
+         overlay inside it is positioned in exactly those numbers. It is out of
+         flow, so none of that reaches the stage. */
+      wrap.style.width = canvasW + 'px';
+      wrap.style.height = hUn + 'px';
+      wrap.style.transformOrigin = 'top left';
       wrap.style.transform = `scale(${k})`;
+      if (frame) { frame.style.width = canvasW + 'px'; frame.style.height = hUn + 'px'; }
+      /* THE PARENT CARRIES THE SCALED SIZE. Without this the stage lays out
+         against 1200px it is never going to show and scrolls sideways to reach
+         the rest. Rounded DOWN so a fractional scale can never round up past
+         the stage and put the scrollbar back. */
+      const box = wrap.parentElement;
+      if (box && box.classList.contains('cv-canvasbox')) {
+        box.style.width = Math.floor(canvasW * k) + 'px';
+        box.style.height = Math.ceil(hUn * k) + 'px';
+      }
       // Published so the overlay chrome can divide it back out and stay a
       // constant size on the glass.
       const ovEl = document.getElementById('wcEdOverlay');
       if (ovEl) ovEl.style.setProperty('--edk', String(k || 1));
-      // In mobile view the page grows taller as elements stack, so give it room.
-      if (wrap) wrap.style.height = ((mobile ? edDocHeight() * 1.6 : edDocHeight()) * k) + 'px';
       if (typeof cvSyncChrome === 'function') cvSyncChrome();
     }
     window.addEventListener('resize', () => { if (edStore) edFitStage(); });

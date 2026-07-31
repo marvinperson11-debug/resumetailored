@@ -322,16 +322,35 @@ const server = app.listen(0, async () => {
     check('the video fills that height instead of overflowing it',
       /\.sd-video\{background:#000;height:100%;object-fit:cover;\}/.test(vidPage));
     check('overflow is clipped, so nothing can spill past the box',
-      /\.sd-el--fit\{overflow:hidden;display:flex;flex-direction:column;\}/.test(vidPage));
+      /\.sd-el--fit\{overflow:hidden;display:grid;grid-template-rows:auto minmax\(0,1fr\);\}/.test(vidPage));
     /* THE ONE THAT MADE THE PLAY BUTTON DEAD. A label above a video is real
        content; with the video also asking for 100% the pair came to more than
        the box, and overflow:hidden clipped the bottom — which is exactly where
-       the native control bar is. A column layout gives the label what it needs
-       and the media the rest, so the controls are always inside the box. */
+       the native control bar is. Two rows give the label what it needs and the
+       media the rest, so the controls are always inside the box.
+
+       A GRID, not a flex column: growing a replaced element (img/video/iframe)
+       from its intrinsic size is the corner of flexbox engines disagree about,
+       and a video whose metadata has not arrived has no intrinsic height at
+       all. A 1fr track is resolved from the element's own definite height
+       BEFORE the media is measured, so the drawn box is what the media gets. */
     check('a label above a video does not push its controls out of the box',
-      /\.sd-el--fit>\.sd-elabel\{flex:0 0 auto;\}/.test(vidPage)
-      && /\.sd-el--fit>\.sd-video[^{]*\{flex:1 1 auto;min-height:0;height:auto;\}/.test(vidPage), 
+      /\.sd-el--fit>\.sd-elabel\{grid-row:1;min-width:0;\}/.test(vidPage)
+      && /\.sd-el--fit>\.sd-video[^{]*\{grid-row:2;min-height:0;height:100%;\}/.test(vidPage),
       (vidPage.match(/\.sd-el--fit[^\n]*/g) || []).join(' | '));
+    /* AND ROW 2 IS NAMED, so an element with NO label still puts its media in
+       the sized track instead of the automatic one — otherwise a photo with no
+       caption would be back to taking its height from the file. */
+    check('the media track is named, so an unlabelled photo is sized too',
+      /\.sd-el--fit>[^{]*\.sd-img[^{]*\{grid-row:2;/.test(vidPage));
+    /* THE MOBILE ASYMMETRY. This rule was the only place in the stylesheet
+       where a phone sized a photo differently from a laptop: it forced
+       height:auto with !important, so on a phone the height came from the FILE
+       and on a desktop it came from the BOX. It dated from before media
+       elements had a height of their own. */
+    check('and the phone does not override that height back to the file',
+      !/\.sd-ibox,\.sd-img\{height:auto!important;\}/.test(vidPage),
+      (vidPage.match(/@media\(max-width:820px\)\{[^]*?\}\s*<\/style>/) || [''])[0].slice(0, 400));
     // The browser is told what the file is rather than left to sniff it, and
     // iOS is told to play it in the page instead of hijacking the screen.
     check('the player stays in the page on iOS', /<video class="sd-video" controls playsinline/.test(vid));

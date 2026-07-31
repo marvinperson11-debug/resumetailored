@@ -173,6 +173,69 @@ const server = app.listen(0, async () => {
       check(`${width}: the canvas is not blank`, inEditor.els > 0, 'elements=' + inEditor.els);
       check(`${width}: applying a template threw nothing`, errs.length === before, errs.slice(before).join(' | '));
 
+      /* ── THE CANVAS DOES NOT MOVE SIDEWAYS ──────────────────────────────
+         `transform: scale()` changes what is painted and NOTHING about the
+         layout box, so #wcEdWrap stayed 1200px wide however far it was scaled
+         down and the stage scrolled to reach the rest of it — measured at 47px
+         on a 1440px laptop and 443px on a 390px phone before this was fixed.
+
+         Measured by actually SCROLLING, not by comparing numbers: scrollWidth
+         and clientWidth have agreed while a sub-pixel rounding still left the
+         thing draggable, and "it can be scrolled" is the complaint. The check
+         runs again after the mobile toggle and after a zoom, because each one
+         re-fits the stage and each is its own chance to put it back. */
+      const noPan = async (when) => page.evaluate(async () => {
+        await new Promise((r) => setTimeout(r, 700));
+        const st = document.getElementById('wcEdStage');
+        const box = st.querySelector('.cv-canvasbox');
+        const before = st.scrollLeft;
+        st.scrollLeft = 9999; const moved = st.scrollLeft; st.scrollLeft = before;
+        const sr = st.getBoundingClientRect(), br = box.getBoundingClientRect();
+        return {
+          moved, sw: st.scrollWidth, cw: st.clientWidth,
+          // Gap either side of the canvas: equal means centred.
+          gapL: Math.round(br.left - sr.left), gapR: Math.round(sr.right - br.right),
+          boxW: Math.round(br.width), spillsRight: Math.round(br.right - sr.right),
+          // The page the canvas is DRAWING (1200 desktop / 390 phone), as
+          // opposed to the size it is drawn at. Both are clamped to the stage
+          // on a phone, so only this tells the two views apart there.
+          frameW: Math.round(document.getElementById('wcEdFrame').offsetWidth),
+          docPans: document.documentElement.scrollWidth > innerWidth + 1,
+        };
+      }).then((r) => ({ when, ...r }));
+
+      const panEdit = await noPan('canvas');
+      check(`${width}: the canvas cannot be dragged sideways`,
+        panEdit.moved === 0 && panEdit.sw <= panEdit.cw, JSON.stringify(panEdit));
+      check(`${width}: and sits centred in the stage`,
+        Math.abs(panEdit.gapL - panEdit.gapR) <= 1 && panEdit.spillsRight <= 0, JSON.stringify(panEdit));
+      check(`${width}: the page itself does not scroll sideways either`, !panEdit.docPans, JSON.stringify(panEdit));
+
+      await page.evaluate(() => edSetDevice('mobile'));
+      const panMob = await noPan('mobile device');
+      check(`${width}: still cannot after switching to the phone view`,
+        panMob.moved === 0 && panMob.sw <= panMob.cw, JSON.stringify(panMob));
+      check(`${width}: and is still centred there`,
+        Math.abs(panMob.gapL - panMob.gapR) <= 1, JSON.stringify(panMob));
+      /* The phone view really is drawing a phone-width page — otherwise "it
+         doesn't scroll" could be satisfied by a toggle that stopped doing
+         anything at all. Measured on the FRAME, not on the box: at a 390px
+         window both views are clamped to the same 294px of stage, so the box
+         width cannot tell them apart there and an earlier version of this
+         check failed for that reason rather than for a real one. */
+      check(`${width}: and the phone view is genuinely drawing a phone-width page`,
+        panMob.frameW === 390 && panEdit.frameW === 1200,
+        `desktop frame=${panEdit.frameW} phone frame=${panMob.frameW}`);
+      check(`${width}: with the phone canvas still inside the stage`,
+        panMob.boxW <= panMob.cw && panMob.spillsRight <= 0, JSON.stringify(panMob));
+
+      await page.evaluate(() => { edSetDevice('desktop'); if (typeof cvSetZoom === 'function') cvSetZoom(50); });
+      const panZoom = await noPan('zoom 50%');
+      check(`${width}: and not after zooming out`,
+        panZoom.moved === 0 && panZoom.boxW < panEdit.boxW, JSON.stringify(panZoom));
+      await page.evaluate(() => { if (typeof cvSetZoom === 'function') cvSetZoom(100); });
+      await page.waitForTimeout(600);
+
       /* SELECTING IS SILENT. The panel used to appear the moment anything was
          selected — a wall of controls over the canvas every time you touched
          your own page. Measured as what is ON SCREEN, because `hidden` being
@@ -1131,6 +1194,52 @@ const server = app.listen(0, async () => {
         check(`${width}: and the photo is IN the canvas, decoded`,
           up.inCanvas === up.src && up.decoded > 0, JSON.stringify(up));
         check(`${width}: with a toast saying so`, /uploaded/i.test(up.toast), JSON.stringify(up));
+
+        /* ── THE SAME PHOTO, AT PHONE WIDTH ─────────────────────────────────
+           A photo's height must come from the BOX it was drawn in, at every
+           width. The mobile stylesheet used to force `height:auto!important`
+           on it — the only rule in the sheet that made a phone size a photo
+           from the FILE instead — so a 1×1 test pixel in a 310px box was 310px
+           on a laptop and whatever its own aspect said on a phone.
+
+           Rendered through the real published-page endpoint into a 390px
+           frame, and measured against the height the element is DRAWN at
+           rather than against a constant, so this keeps meaning something if
+           the template changes. */
+        const mob = await page.evaluate(async (i) => {
+          const hit = SiteDocStore.findElement(edStore.getDoc(), i);
+          const drawn = hit ? Number(hit.el.h) || 0 : 0;
+          const r = await fetch('/api/personal-site/preview', {
+            method: 'POST', headers: authHeaders(),
+            body: JSON.stringify({ text: 'Test Person\nyou@example.com\n\nSUMMARY\nA summary.', name: 'Test', config: edStore.getDoc() }),
+          });
+          if (!r.ok) return { err: r.status };
+          const html = await r.text();
+          const f = document.createElement('iframe');
+          f.style.cssText = 'position:fixed;left:-9999px;top:0;width:390px;height:900px;border:0;';
+          document.body.appendChild(f);
+          f.srcdoc = html;
+          await new Promise((res) => { f.onload = res; setTimeout(res, 4000); });
+          await new Promise((res) => setTimeout(res, 900));
+          const d = f.contentDocument;
+          const img = [...d.querySelectorAll('.sd-img')].find((n) => (n.getAttribute('src') || '').startsWith('/media/'));
+          const el = img && img.closest('.sd-el');
+          const out = img
+            ? { drawn, vw: d.documentElement.clientWidth,
+                elH: Math.round(el.getBoundingClientRect().height),
+                imgH: Math.round(img.getBoundingClientRect().height),
+                imgW: Math.round(img.getBoundingClientRect().width),
+                disp: getComputedStyle(el).display,
+                fromFile: getComputedStyle(img).height === 'auto' }
+            : { drawn, none: true, imgs: d.querySelectorAll('.sd-img').length };
+          f.remove();
+          return out;
+        }, upTarget);
+        check(`${width}: the photo is on the published page at phone width`,
+          mob && !mob.err && !mob.none && mob.imgW > 300, JSON.stringify(mob));
+        check(`${width}: and takes the height of the box, not of the file`,
+          mob && mob.drawn > 0 && Math.abs(mob.imgH - mob.drawn) <= 2 && Math.abs(mob.elH - mob.drawn) <= 2,
+          JSON.stringify(mob));
       }
 
       // PREVIEW: the device toggle drives it, and there is a way back.
