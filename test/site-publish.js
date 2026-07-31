@@ -836,9 +836,18 @@ const server = app.listen(0, async () => {
        before the upload route is reached. */
     check('there is an auth header without a content type',
       /function authHeadersNoType\(\)/.test(appJs));
+    /* By INTENT, not by transport. This counted two `fetch(... headers:
+       authHeadersNoType(), body: fd)` calls; the main uploader is XMLHttpRequest
+       now (fetch cannot report upload progress, and 100 MB with no progress
+       looks like a hang), so counting fetches failed on a change that kept the
+       property perfectly. What matters is that NO upload sends
+       `authHeaders()` — the one that declares application/json and destroys the
+       multipart boundary — whichever way the bytes go. */
     check('and every file upload uses it',
       !/\/api\/site-media', \{ method: 'POST', headers: authHeaders\(\)/.test(appJs)
-      && (appJs.match(/site-media', \{ method: 'POST', headers: authHeadersNoType\(\), body: fd \}/g) || []).length === 2);
+      && (appJs.match(/site-media', \{ method: 'POST', headers: authHeadersNoType\(\), body: fd \}/g) || []).length >= 1
+      // The XHR path applies the same headers one at a time.
+      && /const h = authHeadersNoType\(\);\s*\n\s*Object\.keys\(h\)\.forEach\(\(k\) => xhr\.setRequestHeader\(k, h\[k\]\)\);/.test(appJs));
     /* An upload takes as long as it takes. Writing to whatever is selected when
        it finishes means a photo lands on whatever the user clicked meanwhile. */
     check('an upload writes to the element it was started from',
