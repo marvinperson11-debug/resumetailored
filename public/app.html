@@ -6615,8 +6615,14 @@ Aaliyah Washington`
         <button class="btn btn-outline" style="font-size:13px;padding:9px 14px;" onclick="closeTplPreview()" data-i18n="wc_tpl_close">Close</button>
         <button class="btn btn-primary" style="font-size:13px;padding:9px 16px;" onclick="wcUseTemplate()" data-i18n="wc_tpl_use">Use this template →</button>
       </div>
-      <div style="flex:1;overflow:auto;background:#e9edf3;padding:16px;display:flex;justify-content:center;">
-        <iframe id="wcTplFrame" title="Template preview" style="width:100%;max-width:980px;height:70vh;border:0;border-radius:10px;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.18);transition:max-width .2s ease;"></iframe>
+      <!-- The box carries the SCALED size and the frame keeps the page's own
+           layout width, scaled into it. A `max-width` cap cannot switch device
+           on a phone: both caps sit above the room available, so neither binds
+           and both views render the same page. See wcTplDevice. -->
+      <div id="wcTplStage" style="flex:1;overflow:auto;background:#e9edf3;padding:16px;display:flex;justify-content:center;align-items:flex-start;">
+        <div id="wcTplBox" style="position:relative;flex:0 0 auto;border-radius:10px;background:#fff;box-shadow:0 8px 30px rgba(0,0,0,.18);overflow:hidden;">
+          <iframe id="wcTplFrame" title="Template preview" style="position:absolute;top:0;left:0;transform-origin:top left;border:0;background:#fff;"></iframe>
+        </div>
       </div>
     </div>
   </div>
@@ -7418,17 +7424,51 @@ Aaliyah Washington`
       document.getElementById('wcTplName').textContent = t.name;
       document.getElementById('wcTplBlurb').textContent = t.category + ' — ' + t.blurb;
       document.getElementById('wcTplFrame').src = '/api/site-templates/' + encodeURIComponent(id) + '/preview?t=' + Date.now();
-      wcTplDevice('desktop');
+      /* SHOWN FIRST, THEN FITTED. The fit measures the stage, and a stage inside
+         a `display:none` modal measures 0 — which fed a scale of 0 and a preview
+         with no size at all. */
       document.getElementById('wcTplModal').style.display = 'flex';
+      wcTplDevice('desktop');
     }
     function closeTplPreview() { const m = document.getElementById('wcTplModal'); if (m) m.style.display = 'none'; }
+    /* Same shape of bug as the editor's preview, in a different modal: the frame
+       was `width:100%; max-width: mobile ? 390 : 980`, and inside a phone-sized
+       modal the container is about 326px — BELOW both caps, so neither one binds
+       and the two views render the identical 326px page. Measured: 326px on
+       Desktop, 326px on Mobile, only the highlight moving.
+
+       A preview is of a LAYOUT, not of the room to show it. The page is laid out
+       at the device's own width and scaled to fit whatever room there is; the
+       desktop view is never laid out under TPL_DESK_MIN, or the site's own phone
+       stylesheet is the one in force in both views. */
+    const TPL_DESK_MIN = 1000;
+    let _tplDevice = 'desktop';
     function wcTplDevice(mode) {
-      const f = document.getElementById('wcTplFrame'); if (!f) return;
-      const mobile = mode === 'mobile';
-      f.style.maxWidth = mobile ? '390px' : '980px';
+      const f = document.getElementById('wcTplFrame');
+      const box = document.getElementById('wcTplBox');
+      const stage = document.getElementById('wcTplStage');
+      if (!f || !box || !stage) return;
+      if (mode === 'desktop' || mode === 'mobile') _tplDevice = mode;
+      const mobile = _tplDevice === 'mobile';
+      // Measured from the stage, minus its padding — a percentage of an
+      // auto-width parent is not a width.
+      const avail = Math.max(240, stage.clientWidth - 32);
+      const availH = Math.max(320, stage.clientHeight - 32);
+      const layoutW = mobile ? 390 : Math.max(avail, TPL_DESK_MIN);
+      const k = Math.min(1, avail / layoutW);
+      const layoutH = Math.round(availH / k);
+      box.style.width = Math.floor(layoutW * k) + 'px';
+      box.style.height = Math.ceil(layoutH * k) + 'px';
+      f.style.width = layoutW + 'px';
+      f.style.height = layoutH + 'px';
+      f.style.transform = `scale(${k})`;
       document.getElementById('wcTplDesktop').classList.toggle('wc-vtab-active', !mobile);
       document.getElementById('wcTplMobile').classList.toggle('wc-vtab-active', mobile);
     }
+    window.addEventListener('resize', () => {
+      const m = document.getElementById('wcTplModal');
+      if (m && m.style.display !== 'none') wcTplDevice();
+    });
     function wcUseTemplate() { if (_tplPreviewId) { wcPickTemplate(_tplPreviewId); closeTplPreview(); } }
 
     // Adopt a template: fetch its document and make it this site's content.
@@ -7614,11 +7654,35 @@ Aaliyah Washington`
     }
     function cvClosePanel() { if (cvOpenPanel) { cvOpenPanel = null; cvSyncPanel(); } }
 
-    // Clicking the page itself retracts whatever is open.
+    /* A click inside anything floating ABOVE the editor is not a click on the
+       editor. Walks up looking for a fixed-position ancestor stacked over the
+       shell (which is z-index 200), so every modal is covered — including ones
+       added later — rather than a list of ids that the next modal falls off. */
+    function _cvInOverlay(el) {
+      for (let n = el; n && n !== document.body; n = n.parentElement) {
+        const cs = getComputedStyle(n);
+        if (cs.position === 'fixed' && (Number(cs.zIndex) || 0) > 200) return true;
+      }
+      return false;
+    }
+
+    /* Clicking the page itself retracts whatever is open.
+       THIS IS WHAT MADE "CLOSE" SHOW A BLANK PAGE. In the picker the gallery is
+       not a drawer over the editor — it IS the page, and it lives in #cvPanel.
+       The template preview modal is a sibling of the shell, so every click
+       inside it counted as "clicked the page": tapping the device toggle, or
+       Close, ran cvClosePanel() and hid the gallery behind the modal. Closing
+       then revealed a shell with its panel retracted, its rail and canvas
+       hidden by `wb-picker`, and nothing else — an empty dark screen.
+       Two exits, because there are two different reasons: the picker's panel is
+       never retractable, and no modal's clicks belong to the page under it. */
     document.addEventListener('click', (ev) => {
       if (!cvOpenPanel) return;
+      if (document.body.classList.contains('wb-picker')) return;
       const t = ev.target;
-      if (t.closest && (t.closest('.cv-panel') || t.closest('.cv-rail'))) return;
+      if (!t || !t.closest) return;
+      if (t.closest('.cv-panel') || t.closest('.cv-rail')) return;
+      if (_cvInOverlay(t)) return;
       cvClosePanel();
     });
 

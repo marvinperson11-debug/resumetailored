@@ -880,6 +880,34 @@ const server = app.listen(0, async () => {
     check('the preview box carries the scaled size, the frame keeps the layout',
       /box\.style\.width = Math\.floor\(layoutW \* k\) \+ 'px';/.test(appJs)
       && /f\.style\.transform = `scale\(\$\{k\}\)`;/.test(appJs));
+    /* ── THE TEMPLATE-CARD PREVIEW ──────────────────────────────────────
+       Same inert-cap bug as the editor's preview, in the picker's own modal:
+       `width:100%; max-width: mobile ? 390 : 980` inside a ~326px phone modal
+       leaves both caps above the room available, so neither binds and both
+       views render the same page. */
+    check('the template preview lays out at the DEVICE width, not the room available',
+      /const layoutW = mobile \? 390 : Math\.max\(avail, TPL_DESK_MIN\);/.test(appJs)
+      && /const TPL_DESK_MIN = 1000;/.test(appJs));
+    check('and the old max-width toggle is gone',
+      !/f\.style\.maxWidth = mobile \?/.test(appJs));
+    /* The modal is SHOWN before it is FITTED: a stage inside a display:none
+       modal measures 0, which would feed a scale of 0. */
+    check('the template modal is shown before it is measured',
+      /getElementById\('wcTplModal'\)\.style\.display = 'flex';\s*\n\s*wcTplDevice\('desktop'\);/.test(appJs));
+
+    /* ── CLOSE MUST NOT LEAVE A BLANK SCREEN ────────────────────────────
+       In the picker the gallery IS the page and it lives in #cvPanel. The
+       document-level "clicking the page retracts the panel" handler counted
+       clicks inside the template modal — a sibling of the shell — as clicks on
+       the page, so opening a preview and touching anything hid the gallery
+       behind it; closing revealed a shell with no panel, rail or canvas. */
+    check('the picker\'s gallery is never retracted as if it were a drawer',
+      /if \(document\.body\.classList\.contains\('wb-picker'\)\) return;/.test(appJs));
+    check('and a click inside a modal above the editor is not a click on the page',
+      /function _cvInOverlay\(el\)/.test(appJs)
+      && /cs\.position === 'fixed' && \(Number\(cs\.zIndex\) \|\| 0\) > 200/.test(appJs)
+      && /if \(_cvInOverlay\(t\)\) return;/.test(appJs));
+
     /* Preview covers the whole stage, so the way out has to be in the bar. */
     check('preview offers a way back to editing',
       /id="cvBackToEdit"[^>]*onclick="wcSetView\('edit'\)"/.test(appJs));
