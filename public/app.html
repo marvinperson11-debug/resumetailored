@@ -541,8 +541,23 @@
        rendered underneath the app's sidebar in that whole window — reported
        as "the sidebar is cut off, tucking behind the canvas." Below 901px the
        sidebar is a horizontal bar with nothing to avoid, which is why the
-       breakpoints must be the same number, not merely close. */
-    @media (min-width: 901px) { .cv-shell { left: 240px; } }
+       breakpoints must be the same number, not merely close.
+       A flat 240px only holds while `.dashboard` itself starts at the viewport's
+       left edge. `.dashboard` (style.css) is `max-width:1600px;margin:0 auto`,
+       so past 1600px wide it centers and .sidebar's real left edge moves right
+       with it — at 1920px wide, .sidebar sits at x=160..400, not x=0..240. The
+       flat 240px shell then started 160px short of the sidebar's actual right
+       edge, so the shell's own opaque background painted over the last 64-240px
+       of the sidebar — covering the FREE/PRO badges and the tail of every label,
+       which reads as "the sidebar text is cut off" on any Mac wide/external
+       display, a distinct bug from the 901-980px case above (that one is a gap
+       with nothing painted over it; this one is real content hidden under the
+       shell). `max(240px, calc((100vw - 1600px) / 2 + 240px))` reproduces
+       .dashboard's own centering math instead of assuming .sidebar starts at 0,
+       so the shell's left edge always lands exactly on .sidebar's right edge,
+       at every width — proven by live geometry in
+       test/browser/sidebar-breakpoint.js up to 2560px. */
+    @media (min-width: 901px) { .cv-shell { left: max(240px, calc((100vw - 1600px) / 2 + 240px)); } }
     /* `flex-wrap: wrap` + `height: auto` here, not just below 820px. Nothing in
        this row shrinks (see the `flex-shrink: 0` below) — the empty `.cv-title`
        is the only slack — so a row that is even a few pixels too wide for the

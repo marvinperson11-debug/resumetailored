@@ -766,7 +766,18 @@ const server = app.listen(0, async () => {
     check('the app sidebar\'s own collapse breakpoint is 900px, in style.css',
       sidebarCollapseAt === '900', 'found ' + sidebarCollapseAt);
     check('the editor shell offsets past the sidebar at the SAME breakpoint, not an unrelated one',
-      /@media \(min-width: 901px\) \{ \.cv-shell \{ left: 240px; \} \}/.test(appJs));
+      /@media \(min-width: 901px\) \{ \.cv-shell \{ left: max\(240px, calc\(\(100vw - 1600px\) \/ 2 \+ 240px\)\); \} \}/.test(appJs));
+    /* `.dashboard` (style.css) is `max-width:1600px;margin:0 auto`, so past
+       1600px wide (an external Mac display, easily) it centers and
+       `.sidebar`'s real x position moves right with it. A flat 240px shell
+       offset then painted its own background over the sidebar's tail —
+       hiding the FREE/PRO badges and truncating every label — reported as
+       "the sidebar is cut off on my Mac" on a wide/external display, distinct
+       from the narrow 901-980px case above. Reproduced with live geometry at
+       1728/1920/2560px in test/browser/sidebar-breakpoint.js; this pins the
+       formula matches .dashboard's own centering so they can't drift apart. */
+    check('the shell offset tracks .dashboard\'s own 1600px centering max-width, not a smaller/larger number',
+      /\.dashboard \{[^}]*max-width:\s*1600px/.test(styleCss));
 
     /* ── PUBLISH GIVES FEEDBACK NO MATTER WHICH RAIL PANE IS OPEN ─────────
        Reported as "the Publish button isn't working." It was: #wcPublishStatus
