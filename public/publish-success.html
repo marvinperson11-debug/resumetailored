@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your website is live — ResumeTailored AI</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #030712; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; }
+    h1, .logo { font-weight: 900; letter-spacing: -0.03em; }
+
+    .nav { background: rgba(3,7,18,0.85); border-bottom: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 0 24px; }
+    .nav-inner { max-width: 1120px; margin: 0 auto; display: flex; align-items: center; height: 64px; }
+    .logo { font-size: 18px; color: #f1f5f9; text-decoration: none; }
+    .logo .badge-ai { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 5px; vertical-align: middle; margin-left: 4px; }
+
+    .main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+    .card {
+      background: rgba(255,255,255,0.04); border-radius: 24px; padding: 56px 48px;
+      max-width: 560px; width: 100%; text-align: center;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .checkmark {
+      width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 24px;
+      background: linear-gradient(135deg,#059669,#10b981); display: flex; align-items: center; justify-content: center;
+      font-size: 34px; box-shadow: 0 0 32px rgba(16,185,129,0.4);
+    }
+    .card h1 { font-size: 30px; margin-bottom: 10px; color: #f1f5f9; }
+    .card .subtitle { font-size: 15px; color: #94a3b8; margin-bottom: 32px; line-height: 1.6; }
+
+    .url-row {
+      display: flex; gap: 8px; margin-bottom: 12px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 6px;
+    }
+    .url-input {
+      flex: 1; min-width: 0; background: transparent; border: none; color: #e2e8f0;
+      font-family: 'Inter', monospace; font-size: 14px; padding: 10px 12px; outline: none;
+    }
+    .copy-btn {
+      flex-shrink: 0; background: rgba(99,102,241,0.16); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3);
+      font-family: inherit; font-size: 13px; font-weight: 700; padding: 0 16px; border-radius: 8px; cursor: pointer;
+      transition: background .15s, color .15s;
+    }
+    .copy-btn:hover { background: rgba(99,102,241,0.28); color: #fff; }
+    .copy-btn.copied { background: rgba(16,185,129,0.2); color: #6ee7b7; border-color: rgba(16,185,129,0.35); }
+    .copy-hint { font-size: 12px; color: #64748b; margin-bottom: 32px; }
+
+    .actions { display: flex; flex-direction: column; gap: 10px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; font-family: inherit; font-size: 15px; font-weight: 700; border-radius: 10px; padding: 14px 32px; border: none; cursor: pointer; transition: all .15s; text-decoration: none; width: 100%; }
+    .btn-primary { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; box-shadow: 0 0 20px rgba(99,102,241,0.35); }
+    .btn-primary:hover { box-shadow: 0 0 32px rgba(99,102,241,0.6); transform: translateY(-1px); }
+    .btn-secondary { background: rgba(255,255,255,0.06); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.12); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+
+    .footer-note { margin-top: 24px; font-size: 13px; color: #64748b; }
+    .footer-note a { color: #818CF8; font-weight: 600; text-decoration: none; }
+    .footer-note a:hover { color: #e2e8f0; }
+
+    @media (max-width: 480px) {
+      .card { padding: 40px 24px; }
+      .card h1 { font-size: 24px; }
+      .url-row { flex-direction: column; }
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.08), transparent),
+        linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 56px 56px, 56px 56px;
+      pointer-events: none;
+    }
+    nav, .main { position: relative; z-index: 1; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="card">
+    <div class="checkmark">🌐</div>
+    <h1>Your website has been published</h1>
+    <p class="subtitle" id="subtitle">It's live at the address below — share it anywhere.</p>
+
+    <div class="url-row">
+      <input type="text" class="url-input" id="siteUrl" readonly />
+      <button type="button" class="copy-btn" id="copyBtn" onclick="copyLink()">Copy Link</button>
+    </div>
+    <p class="copy-hint" id="copyHint">&nbsp;</p>
+
+    <div class="actions">
+      <a class="btn btn-primary" id="openSiteBtn" href="#" target="_blank" rel="noopener">Open Site ↗</a>
+      <a class="btn btn-secondary" id="backBtn" href="/app.html">← Back to Editor</a>
+    </div>
+
+    <p class="footer-note">Questions? Email <a href="mailto:support@resumetailored.com">support@resumetailored.com</a></p>
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const url = params.get('url') || '';
+  const site = params.get('site') || '';
+
+  const urlInput = document.getElementById('siteUrl');
+  const openBtn = document.getElementById('openSiteBtn');
+  const backBtn = document.getElementById('backBtn');
+  const subtitle = document.getElementById('subtitle');
+
+  if (url) {
+    urlInput.value = url;
+    openBtn.href = url;
+  } else {
+    // No URL to show — do not pretend one exists. Still a usable page, not a
+    // dead end back to the editor.
+    subtitle.textContent = "It's live — open the editor to grab the link.";
+    document.querySelector('.url-row').style.display = 'none';
+    document.getElementById('copyHint').style.display = 'none';
+    openBtn.style.display = 'none';
+  }
+  // Reopens the exact site that was just published, the same way the Back
+  // Office's Edit does — see the `openWebsite` handling in app.html.
+  if (site) backBtn.href = '/app.html?openWebsite=' + encodeURIComponent(site);
+
+  function copyLink() {
+    if (!url) return;
+    const btn = document.getElementById('copyBtn');
+    const hint = document.getElementById('copyHint');
+    const done = () => {
+      btn.textContent = '✓ Copied'; btn.classList.add('copied');
+      hint.textContent = 'Link copied to your clipboard.';
+      setTimeout(() => { btn.textContent = 'Copy Link'; btn.classList.remove('copied'); }, 2200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done).catch(() => fallbackCopy(done));
+    } else {
+      fallbackCopy(done);
+    }
+  }
+  function fallbackCopy(done) {
+    urlInput.select();
+    try { document.execCommand('copy'); done(); } catch (_) {}
+  }
+</script>
+
+</body>
+</html>

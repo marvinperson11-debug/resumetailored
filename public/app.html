@@ -532,7 +532,17 @@
        editor's own toolbar and swallowing every click on Pages, Undo, Preview and
        Publish. Still far below the modals, which live in the 9500+ range. */
     .cv-shell { position: fixed; inset: 0; left: 0; display: flex; flex-direction: column; background: #18191b; z-index: 200; }
-    @media (min-width: 981px) { .cv-shell { left: 240px; } }
+    /* Matched to .sidebar's OWN collapse point (style.css, `@media (max-width:
+       900px)`), not picked independently. It used to be 981px — a number with
+       no relationship to where the app sidebar actually stops being a 240px
+       left column, so between 901 and 980px the sidebar was still a real
+       column (the app's own `.dashboard{grid-template-columns:240px 1fr}`)
+       while the shell had not yet been pushed past it, and the editor's rail
+       rendered underneath the app's sidebar in that whole window — reported
+       as "the sidebar is cut off, tucking behind the canvas." Below 901px the
+       sidebar is a horizontal bar with nothing to avoid, which is why the
+       breakpoints must be the same number, not merely close. */
+    @media (min-width: 901px) { .cv-shell { left: 240px; } }
     /* `flex-wrap: wrap` + `height: auto` here, not just below 820px. Nothing in
        this row shrinks (see the `flex-shrink: 0` below) — the empty `.cv-title`
        is the only slack — so a row that is even a few pixels too wide for the
@@ -6610,6 +6620,17 @@ Aaliyah Washington`
     handleLinkedInLoginReturn().then(wasLogin => { if (!wasLogin) handleLinkedInReturn(); });
     // Init template picker after DOM is ready (template functions are hoisted)
     setTimeout(renderTplPicker, 0);
+    // "Back to Editor" from the publish-success page: reopen the specific site
+    // that was just published, the same way the Back Office's Edit does
+    // (boEditSite). Deferred, like renderTplPicker above — `wcOpenSub` is
+    // declared with `let` further down this same script and is not
+    // initialized yet at this point in a top-to-bottom synchronous run.
+    (function () {
+      const openSub = new URLSearchParams(window.location.search).get('openWebsite');
+      if (!openSub) return;
+      history.replaceState(null, '', window.location.pathname);
+      setTimeout(() => { wcOpenSub = openSub; showTab('website'); }, 0);
+    })();
     // Apply language preference. An explicit ?lang= in the URL wins and is
     // persisted — this is how the /zh/ landing pages hand a Chinese visitor
     // into a Chinese dashboard instead of dropping them back to English.
@@ -7510,6 +7531,15 @@ Aaliyah Washington`
         try { await navigator.clipboard.writeText(data.url); } catch (_) {}
         setStatus('🌐 ' + _t('wc_live_at', 'Live at') + ' ' + data.url + ' — ' + _t('wc_link_copied', 'link copied'), true);
         wcLoadSiteExtras();
+        // The toast above is the immediate confirmation; the success page is
+        // the durable one — a page you can screenshot, leave open, or come
+        // back to, with the link right there instead of in a toast that has
+        // already faded. A short pause lets the toast actually be seen before
+        // the navigation replaces it.
+        setTimeout(() => {
+          window.location.href = '/publish-success.html?url=' + encodeURIComponent(data.url)
+            + '&site=' + encodeURIComponent(data.subdomain);
+        }, 700);
       } catch (_) {
         setStatus(_t('wc_err_publish', 'Could not publish your website.'), false);
       } finally {

@@ -127,6 +127,7 @@ Fields: `name` (first non-empty line), `location` (contact-line segment, refused
 
 `cvShell` in `app.html` — dark chrome, left rail, scaled canvas, inspector. There is no second surface: the full-screen "simple mode" view was deleted, and the tests assert the **absence of its source**, not the absence of a route.
 
+- **The shell's left offset matches the app sidebar's REAL breakpoint, not an unrelated number.** `.cv-shell` is `position:fixed`, so it does not participate in `.dashboard`'s own `grid-template-columns:240px 1fr` layout — it hardcodes `left:240px` to visually line up with where that grid's sidebar column happens to be, activated by its own media query. That query used to say `min-width:981px`, picked independently of `.sidebar`'s real collapse point (`style.css`, `@media(max-width:900px)`), so between 901 and 980px the sidebar was still a real 240px column while the shell had not yet been pushed past it — the editor's own rail rendered directly under the app's sidebar in that whole window. Reported directly as "the sidebar is cut off, tucking behind the canvas." Now both breakpoints are the same number (901px) on purpose; `test/browser/sidebar-breakpoint.js` proves it with live geometry at widths either side of both the old and the new value, not just a source-level check that the CSS says the right thing.
 - **The canvas** is an iframe rendered through `POST /api/personal-site/preview` with `editable: true`, so it is the same renderer as the published page **plus** the inline editor (`_sdEditLayer` in `server.js`). Typing therefore happens on the real text node in its real typography.
 - **Typing.** Press an already-selected text element and release without moving → the parent posts `{action:'beginEdit', el}` into the iframe. For the duration of a session the overlay gives up its pointer events (`#wcEdOverlay.is-typing`) and canvas re-renders are **deferred, not dropped** (rebuilding `srcdoc` destroys the caret). The page answers `editBegan` / `editEnd`; if it never answers, a watchdog takes the pointer events back. Moving the pointer past `ED_TYPE_SLOP` makes it a drag instead.
 - **The gear** (`.ed-gear`) floats `#wcEdInspector` beside the element on desktop (clamped into the viewport, repositioned on scroll/resize) and leaves it as a bottom sheet at ≤820px. It is the **same** panel as the docked one — do not build a second.
@@ -167,7 +168,17 @@ Both routes exist: **path-based `/site/:name`** and **host-based `name.resumetai
 
 ## Email (optional)
 
-Password reset emails and support contact messages are sent via Resend (`RESEND_API_KEY` env var). If `RESEND_API_KEY` is not set, reset links and support messages are logged to stdout instead. The app functions fully without it.
+Password reset emails and support contact messages are sent via Resend (`RESEND_API_KEY` env var). If `RESEND_API_KEY` is not set, reset links and support messages are logged to stdout instead. The app functions fully without it. Publishing a personal website (see below) sends the same way, via the same `sendEmail()` helper.
+
+## Personal website publish flow (Pro)
+
+Clicking **Publish website** in the editor toolbar (`wcPublish()` in `app.html`) does three things on success, none of which block each other:
+
+1. **A toast**, immediately — the first, fastest confirmation.
+2. **A redirect** (after a short pause so the toast is actually seen) to `public/publish-success.html?url=<live URL>&site=<subdomain>` — a durable success page (URL in a copyable field, Copy Link / Open Site / Back to Editor). "Back to Editor" round-trips through `?openWebsite=<sub>` on `app.html`, which reopens that exact site the same way the Back Office's Edit does (`wcOpenSub` + `showTab('website')`).
+3. **A confirmation email**, server-side, fire-and-forget (`_sendPublishSuccessEmail` in `server.js`) — only on a real, explicit publish (`publish === true` in the request AND the result is actually live), never on autosave (which omits `publish` to preserve whatever the site already was) and never on an explicit unpublish. Template lives at `emails/publish-success.html` — the one email in the codebase read from its own file with `{{TOKEN}}` substitution rather than inlined as a template literal (every other email here is inline); no logo image (none exists, and a relative path wouldn't load in an inbox anyway), a CSS lockup instead, same fix the password-reset email already uses.
+
+`#wcPublishStatus` (the old, sole feedback surface) still gets written to as well — it lives inside the editor's "Content" rail tab, `display:none` unless that tab is open, which is why the toast was added in the first place: the button looked broken because its only feedback went to an element nobody could see from the default (Templates) tab.
 
 ## Environment variables
 

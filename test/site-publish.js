@@ -749,6 +749,25 @@ const server = app.listen(0, async () => {
       /\.cv-tbtn \{[^}]*flex-shrink: 0;/.test(appJs) && /\.cv-publish \{[^}]*flex-shrink: 0;/.test(appJs)
       && /\.cv-top-right \{[^}]*flex-shrink: 0;/.test(appJs));
 
+    /* ── THE SHELL'S LEFT OFFSET MATCHES THE APP SIDEBAR'S REAL BREAKPOINT ──
+       .cv-shell used to add its 240px offset at 981px — a number with no
+       relationship to where `.sidebar` (style.css) actually stops being a
+       240px grid column. That collapse happens at `@media (max-width: 900px)`,
+       so between 901 and 980px the app sidebar was STILL a real 240px column
+       while the shell had not yet been pushed past it — the editor's own rail
+       rendered directly under the app's sidebar in that whole window.
+       Reproduced with live geometry (not just read from source): at 940px,
+       before this fix, the sidebar's right edge measured at x=240 while
+       cv-shell's left edge measured at x=0. Live geometry is covered in
+       test/browser/sidebar-breakpoint.js; this pins the two numbers can never
+       drift apart again without a source change. */
+    const styleCss = fs.readFileSync(path.join(__dirname, '..', 'public', 'style.css'), 'utf8');
+    const sidebarCollapseAt = (styleCss.match(/@media \(max-width: (\d+)px\)\s*\{\s*\n\s*\.nav-inner/) || [])[1];
+    check('the app sidebar\'s own collapse breakpoint is 900px, in style.css',
+      sidebarCollapseAt === '900', 'found ' + sidebarCollapseAt);
+    check('the editor shell offsets past the sidebar at the SAME breakpoint, not an unrelated one',
+      /@media \(min-width: 901px\) \{ \.cv-shell \{ left: 240px; \} \}/.test(appJs));
+
     /* ── PUBLISH GIVES FEEDBACK NO MATTER WHICH RAIL PANE IS OPEN ─────────
        Reported as "the Publish button isn't working." It was: #wcPublishStatus
        — every success, failure and validation message wcPublish() writes —

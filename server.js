@@ -105,6 +105,38 @@ function notifyOwner(subject, html) {
     .catch(err => console.error('[Alert] Owner notification failed:', err.message));
 }
 
+/* The one templated email in the codebase read from its own file rather than
+   inlined as a template literal (every other email here — password reset,
+   owner alerts — is inline). Read fresh per send: publish is a rare, human-
+   paced action, so there is no meaningful cost to re-reading a small file,
+   and it means editing emails/publish-success.html takes effect without a
+   restart. `{{TOKEN}}` substitution, not a real templating engine — the only
+   values that ever go in here are a URL this server just built itself. */
+function _publishSuccessEmailHtml(siteUrl, editorUrl) {
+  const tplPath = path.join(__dirname, 'emails', 'publish-success.html');
+  let tpl = fs.readFileSync(tplPath, 'utf8');
+  const display = siteUrl.replace(/^https?:\/\//, '');
+  tpl = tpl.replace(/\{\{SITE_URL_DISPLAY\}\}/g, _escHtml(display));
+  tpl = tpl.replace(/\{\{SITE_URL\}\}/g, siteUrl);
+  tpl = tpl.replace(/\{\{EDITOR_URL\}\}/g, editorUrl);
+  return tpl;
+}
+
+/* Fire-and-forget, same shape as notifyOwner: never blocks or throws into the
+   request path that triggered it. A failed send is logged and nothing else —
+   the site is published either way, and the in-app toast + success page
+   already told the user so; the email is a nice-to-have on top; it must
+   never be the thing that makes a successful publish look like it failed. */
+function _sendPublishSuccessEmail(email, siteUrl, origin) {
+  try {
+    const html = _publishSuccessEmailHtml(siteUrl, `${origin}/app.html`);
+    sendEmail({ to: email, subject: '🌐 Your ResumeTailored website is now live!', html })
+      .catch((err) => console.error('[Publish email] Failed:', err && err.message));
+  } catch (err) {
+    console.error('[Publish email] Failed to build:', err && err.message);
+  }
+}
+
 // ─── SQLite database ──────────────────────────────────────────────────────────
 // DATA_DIR defaults to ./data; set DATA_DIR=/data and mount a Railway Volume
 // at /data for full persistence across deploys.
@@ -4156,7 +4188,14 @@ app.post('/api/personal-site', (req, res) => {
       .run(email.toLowerCase(), sub);
   }
   const origin = `${req.protocol}://${req.get('host')}`;
-  res.json({ url: sitePublicUrl(sub, origin), subdomain: sub, published: publishedFlag === 1 });
+  const siteUrl = sitePublicUrl(sub, origin);
+  // Only a real, explicit publish — not the autosave path, which omits
+  // `publish` entirely to preserve whatever the site already was (see the
+  // comment above), and not an explicit UNpublish either. Firing on every
+  // autosave would mean an email per keystroke-adjacent save; this fires on
+  // exactly the actions that show the user a "published" success page.
+  if (publish === true && publishedFlag === 1) _sendPublishSuccessEmail(email, siteUrl, origin);
+  res.json({ url: siteUrl, subdomain: sub, published: publishedFlag === 1 });
 });
 
 // The ten Vibes. Public and unauthenticated for the same reason the template
