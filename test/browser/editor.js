@@ -1172,6 +1172,7 @@ const server = app.listen(0, async () => {
           clearInterval(iv);
           const fd = new FormData();
           fd.append('file', new Blob(chunks, { type: 'video/webm' }), 'clip.webm');
+          fd.append('subdomain', (wcSite && wcSite.subdomain) || '');
           const res = await fetch('/api/site-media', { method: 'POST', headers: authHeadersNoType(), body: fd });
           const d = await res.json().catch(() => ({}));
           return { status: res.status, url: d.url, mime: d.mime, safe: d.safe };
@@ -1427,7 +1428,7 @@ const server = app.listen(0, async () => {
           const before = document.querySelectorAll('#cvUploadGrid .cv-upwrap').length;
           document.querySelector('#cvUploadGrid .cv-upwrap .cv-updel').click();
           await new Promise((r) => setTimeout(r, 2000));
-          const r2 = await fetch('/api/site-media', { headers: authHeaders() });
+          const r2 = await fetch('/api/site-media?subdomain=' + encodeURIComponent((wcSite && wcSite.subdomain) || ''), { headers: authHeaders() });
           const d2 = await r2.json().catch(() => ({}));
           return { before, after: document.querySelectorAll('#cvUploadGrid .cv-upwrap').length,
             onServer: (d2.items || []).length };

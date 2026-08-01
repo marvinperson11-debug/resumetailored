@@ -28,6 +28,9 @@ const db = new Database(path.join(process.env.DATA_DIR, 'resumetailor.db'));
 db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('m@x.com', 'm', 'x');
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokM', 'm@x.com');
 db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run('m@x.com', 'cM');
+const _now = Date.now();
+db.prepare('INSERT INTO personal_sites (subdomain,email,text,created_at,updated_at) VALUES (?,?,?,?,?)')
+  .run('site-one', 'm@x.com', 'placeholder', _now, _now);
 // A second account with no subscription: the Pro gate is a rejection path too.
 db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('f@x.com', 'f', 'x');
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokF', 'f@x.com');
@@ -44,9 +47,11 @@ const MB = 1024 * 1024;
 
 const server = app.listen(0, async () => {
   const B = `http://127.0.0.1:${server.address().port}`;
+  const SUB = 'site-one';
   const up = async (buf, name, mime, tok) => {
     const fd = new FormData();
     fd.append('file', new Blob([buf], { type: mime }), name);
+    fd.append('subdomain', SUB);
     const r = await fetch(B + '/api/site-media', {
       method: 'POST', headers: tok === null ? {} : { Authorization: 'Bearer ' + (tok || 'tokM') }, body: fd,
     });
@@ -54,7 +59,7 @@ const server = app.listen(0, async () => {
   };
 
   try {
-    const limits = (await (await fetch(B + '/api/site-media', { headers: { Authorization: 'Bearer tokM' } })).json()).usage.limits;
+    const limits = (await (await fetch(B + '/api/site-media?subdomain=' + SUB, { headers: { Authorization: 'Bearer tokM' } })).json()).usage.limits;
     check('the per-file video cap is 100 MB', limits.perFile.video === 100 * MB, String(limits.perFile.video));
     check('and the pool is still 1 GB per user', limits.videoPool === 1024 * MB, String(limits.videoPool));
     check('images and audio keep their own, smaller caps',
@@ -95,7 +100,7 @@ const server = app.listen(0, async () => {
     check('a signed-out request is refused', noAuth.status === 401, String(noAuth.status));
 
     // Fill the video pool, then refuse — the last rejection path.
-    db.prepare("UPDATE site_media SET bytes = ? WHERE kind = 'video'").run(1024 * MB);
+    db.prepare("UPDATE site_media SET bytes = ? WHERE kind = 'video' AND site_sub = ?").run(1024 * MB, SUB);
     const full = await noLeak('pool full', () => up(Buffer.alloc(2 * MB), 'y.mp4', 'video/mp4'));
     check('a full pool is refused', full.status === 400 && /storage is full/i.test(full.body.error || ''), JSON.stringify(full.body));
 

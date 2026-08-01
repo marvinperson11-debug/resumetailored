@@ -532,7 +532,17 @@
        editor's own toolbar and swallowing every click on Pages, Undo, Preview and
        Publish. Still far below the modals, which live in the 9500+ range. */
     .cv-shell { position: fixed; inset: 0; left: 0; display: flex; flex-direction: column; background: #18191b; z-index: 200; }
-    @media (min-width: 981px) { .cv-shell { left: 240px; } }
+    /* Matched to .sidebar's OWN collapse point (style.css, `@media (max-width:
+       900px)`), not picked independently. It used to be 981px — a number with
+       no relationship to where the app sidebar actually stops being a 240px
+       left column, so between 901 and 980px the sidebar was still a real
+       column (the app's own `.dashboard{grid-template-columns:240px 1fr}`)
+       while the shell had not yet been pushed past it, and the editor's rail
+       rendered underneath the app's sidebar in that whole window — reported
+       as "the sidebar is cut off, tucking behind the canvas." Below 901px the
+       sidebar is a horizontal bar with nothing to avoid, which is why the
+       breakpoints must be the same number, not merely close. */
+    @media (min-width: 901px) { .cv-shell { left: 240px; } }
     /* `flex-wrap: wrap` + `height: auto` here, not just below 820px. Nothing in
        this row shrinks (see the `flex-shrink: 0` below) — the empty `.cv-title`
        is the only slack — so a row that is even a few pixels too wide for the
@@ -1527,7 +1537,7 @@
                 <button id="wcEdMobBtn" class="cv-segbtn" onclick="edSetDevice('mobile')" title="Mobile">📱</button>
               </div>
               <button class="cv-tbtn" id="cvPreviewBtn" onclick="wcSetView('preview')" data-i18n="cv_preview">Preview</button>
-              <button class="cv-publish" onclick="wcPublish()" data-i18n="cv_publish">Publish website</button>
+              <button class="cv-publish" id="wcPublishBtn" onclick="wcPublish()" data-i18n="cv_publish">Publish website</button>
             </div>
           </div>
 
@@ -6610,6 +6620,17 @@ Aaliyah Washington`
     handleLinkedInLoginReturn().then(wasLogin => { if (!wasLogin) handleLinkedInReturn(); });
     // Init template picker after DOM is ready (template functions are hoisted)
     setTimeout(renderTplPicker, 0);
+    // "Back to Editor" from the publish-success page: reopen the specific site
+    // that was just published, the same way the Back Office's Edit does
+    // (boEditSite). Deferred, like renderTplPicker above — `wcOpenSub` is
+    // declared with `let` further down this same script and is not
+    // initialized yet at this point in a top-to-bottom synchronous run.
+    (function () {
+      const openSub = new URLSearchParams(window.location.search).get('openWebsite');
+      if (!openSub) return;
+      history.replaceState(null, '', window.location.pathname);
+      setTimeout(() => { wcOpenSub = openSub; showTab('website'); }, 0);
+    })();
     // Apply language preference. An explicit ?lang= in the URL wins and is
     // persisted — this is how the /zh/ landing pages hand a Chinese visitor
     // into a Chinese dashboard instead of dropping them back to English.
@@ -7465,7 +7486,18 @@ Aaliyah Washington`
       const cSel = document.getElementById('wcCoverSelect');
       const addr = (document.getElementById('wcAddress').value || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
       const statusEl = document.getElementById('wcPublishStatus');
-      const setStatus = (msg, ok) => { if (statusEl) { statusEl.textContent = msg; statusEl.style.color = ok ? '#059669' : '#dc2626'; } };
+      /* Also a toast, not just the panel note. #wcPublishStatus lives inside
+         the "Content" rail pane (`display:none` unless that specific tab is
+         open), but the Publish button sits in the always-visible top bar —
+         someone publishing from Templates/Elements/Brand/Uploads, which is
+         the common case, got real feedback (success, failure, or "pick an
+         address first") written into an element they could not see. Pressing
+         Publish looked like it did nothing, every time it did not land on the
+         one tab that shows the result. */
+      const setStatus = (msg, ok) => {
+        if (statusEl) { statusEl.textContent = msg; statusEl.style.color = ok ? '#059669' : '#dc2626'; }
+        showToast(msg, ok ? 4000 : 6000);
+      };
       const resumeId = rSel && rSel.value ? Number(rSel.value) : null;
       const resume = wcResumes.find(r => r.id === resumeId);
       if (!resume) { setStatus(_t('wc_err_no_resume', 'Pick a resume to publish first.'), false); return; }
@@ -7499,6 +7531,15 @@ Aaliyah Washington`
         try { await navigator.clipboard.writeText(data.url); } catch (_) {}
         setStatus('🌐 ' + _t('wc_live_at', 'Live at') + ' ' + data.url + ' — ' + _t('wc_link_copied', 'link copied'), true);
         wcLoadSiteExtras();
+        // The toast above is the immediate confirmation; the success page is
+        // the durable one — a page you can screenshot, leave open, or come
+        // back to, with the link right there instead of in a toast that has
+        // already faded. A short pause lets the toast actually be seen before
+        // the navigation replaces it.
+        setTimeout(() => {
+          window.location.href = '/publish-success.html?url=' + encodeURIComponent(data.url)
+            + '&site=' + encodeURIComponent(data.subdomain);
+        }, 700);
       } catch (_) {
         setStatus(_t('wc_err_publish', 'Could not publish your website.'), false);
       } finally {
@@ -7915,11 +7956,15 @@ Aaliyah Washington`
       if (isFont) cvRenderBrandPane();
     }
 
-    // Uploads pane: the media library, click an item to place it on the canvas.
+    // Uploads pane: THIS SITE's media, click an item to place it on the canvas.
+    // Scoped to wcSite.subdomain — media used to be one account-wide library, so
+    // a photo or video from a template you tried once and left stayed in the
+    // pool and counted against every site you built after it.
     async function cvRenderUploads() {
       const grid = document.getElementById('cvUploadGrid'); if (!grid) return;
+      if (!wcSite || !wcSite.subdomain) { grid.innerHTML = ''; return; }
       try {
-        const r = await fetch('/api/site-media', { headers: authHeaders() });
+        const r = await fetch('/api/site-media?subdomain=' + encodeURIComponent(wcSite.subdomain), { headers: authHeaders() });
         const d = await r.json().catch(() => ({}));
         if (d.usage) { wcMediaUsage = d.usage; wcRenderMediaMeter(); }
         const items = d.items || [];
@@ -9391,7 +9436,11 @@ Aaliyah Washington`
     let wcMediaUsage = null;
     const _mb = (n) => (n / 1024 / 1024).toFixed(n > 1024 * 1024 ? 1 : 0);
     async function wcLoadMediaUsage() {
-      try { const r = await fetch('/api/site-media', { headers: authHeaders() }); if (r.ok) { wcMediaUsage = (await r.json()).usage; wcRenderMediaMeter(); } } catch (_) {}
+      if (!wcSite || !wcSite.subdomain) return;
+      try {
+        const r = await fetch('/api/site-media?subdomain=' + encodeURIComponent(wcSite.subdomain), { headers: authHeaders() });
+        if (r.ok) { wcMediaUsage = (await r.json()).usage; wcRenderMediaMeter(); }
+      } catch (_) {}
     }
     function wcRenderMediaMeter() {
       const el = document.getElementById('wcMediaMeter'); if (!el || !wcMediaUsage) return;
@@ -9423,6 +9472,7 @@ Aaliyah Washington`
       inp.type = 'file'; inp.accept = accept;
       inp.onchange = async () => {
         const f = inp.files[0]; if (!f) return;
+        if (!wcSite || !wcSite.subdomain) { showToast(_t('wc_upload_err', 'Upload failed.'), 6000); return; }
         /* CLIENT-SIDE DURATION CHECK, BEFORE THE UPLOAD STARTS. The server is
            still the one that decides — this is a courtesy, not the enforcement
            — but a video can now be 100 MB, and finding out it was three
@@ -9457,7 +9507,7 @@ Aaliyah Washington`
           _t('wc_uploading', 'Uploading…') + (pct === null ? '' : ' ' + pct + '%') + ' (' + mb + ' MB)',
           60000);
         say(0);
-        const fd = new FormData(); fd.append('file', f);
+        const fd = new FormData(); fd.append('file', f); fd.append('subdomain', wcSite.subdomain);
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/site-media');
         const h = authHeadersNoType();
@@ -9572,11 +9622,12 @@ Aaliyah Washington`
       inp.click();
     }
     async function _tvUploadMedia(blob, filename) {
+      if (!wcSite || !wcSite.subdomain) throw new Error(_t('wc_upload_err', 'Upload failed.'));
       // Re-wrap with a clean base type (strip ";codecs=…") so the multipart part's
       // Content-Type has no unquoted comma that could downgrade it server-side.
       const baseType = (blob.type || '').split(';')[0] || (filename.endsWith('.webm') ? 'video/webm' : '');
       const clean = baseType ? new Blob([blob], { type: baseType }) : blob;
-      const fd = new FormData(); fd.append('file', clean, filename);
+      const fd = new FormData(); fd.append('file', clean, filename); fd.append('subdomain', wcSite.subdomain);
       const r = await fetch('/api/site-media', { method: 'POST', headers: authHeadersNoType(), body: fd });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'Upload failed.');

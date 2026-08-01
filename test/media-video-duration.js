@@ -40,6 +40,9 @@ const db = new Database(path.join(process.env.DATA_DIR, 'resumetailor.db'));
 db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('m@x.com', 'm', 'x');
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokM', 'm@x.com');
 db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run('m@x.com', 'cM');
+const now = Date.now();
+db.prepare('INSERT INTO personal_sites (subdomain,email,text,created_at,updated_at) VALUES (?,?,?,?,?)')
+  .run('site-one', 'm@x.com', 'placeholder', now, now);
 
 const FIX = path.join(__dirname, 'fixtures');
 let fails = 0;
@@ -48,15 +51,18 @@ const check = (n, c, d) => { if (c) console.log('PASS  ' + n); else { fails++; c
 const server = app.listen(0, async () => {
   const B = `http://127.0.0.1:${server.address().port}`;
   const H = { Authorization: 'Bearer tokM' };
+  const SUB = 'site-one';
+  const usage = async () => (await (await fetch(B + '/api/site-media?subdomain=' + SUB, { headers: H })).json()).usage;
   const upFile = async (fname, mime) => {
     const buf = fs.readFileSync(path.join(FIX, fname));
     const fd = new FormData();
     fd.append('file', new Blob([buf], { type: mime }), fname);
+    fd.append('subdomain', SUB);
     const r = await fetch(B + '/api/site-media', { method: 'POST', headers: H, body: fd });
     return { status: r.status, body: await r.json().catch(() => ({})) };
   };
 
-  const usage0 = (await (await fetch(B + '/api/site-media', { headers: H })).json()).usage;
+  const usage0 = await usage();
   check('the test process picked up the shrunk cap', usage0.limits.videoMaxDurationSec === 0.5, String(usage0.limits.videoMaxDurationSec));
 
   // ── A clip clearly UNDER the cap uploads. ─────────────────────────────
@@ -79,7 +85,7 @@ const server = app.listen(0, async () => {
   check('and MP4 leaves no temp file either', tmpCount() === 0, 'left ' + tmpCount());
 
   // ── Rejected-for-length must not spend a count-cap slot. ──────────────
-  const usageAfter = (await (await fetch(B + '/api/site-media', { headers: H })).json()).usage;
+  const usageAfter = await usage();
   check('only the accepted short clip counts — the two rejections do not',
     usageAfter.videoCount === 1, 'videoCount=' + usageAfter.videoCount);
 
@@ -89,6 +95,7 @@ const server = app.listen(0, async () => {
   // directly here, once, where the duration cap is actually active.
   const fd = new FormData();
   fd.append('file', new Blob([Buffer.alloc(2048, 9)], { type: 'video/mp4' }), 'garbage.mp4');
+  fd.append('subdomain', SUB);
   const garbage = await fetch(B + '/api/site-media', { method: 'POST', headers: H, body: fd });
   check('an unparseable "video" is not rejected for length — duration unknown is not duration over',
     garbage.status === 200, String(garbage.status));
