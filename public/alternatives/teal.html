@@ -169,6 +169,8 @@
     }
     @media(max-width:480px){.hero{padding:64px 0 48px;}.section{padding:56px 0;}}
   </style>
+  <link rel="stylesheet" href="/theme.css"/>
+  <link rel="stylesheet" href="/site-fx.css"/>
 </head>
 <body>
 
@@ -420,5 +422,10 @@
 </footer>
 
 <script>document.querySelectorAll('.faq-q').forEach(q=>q.addEventListener('click',()=>q.parentElement.classList.toggle('open')));</script>
+  <script src="/vendor/gsap.min.js" defer></script>
+  <script src="/vendor/ScrollTrigger.min.js" defer></script>
+  <script src="/vendor/lenis.min.js" defer></script>
+  <script src="/site-motion.js" defer></script>
+  <script src="/mobile-native.js" defer></script>
 </body>
 </html>
