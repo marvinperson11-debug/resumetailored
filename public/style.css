@@ -1,5 +1,4 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap');
 h1, h2, h3, .logo, .panel-header h1, .plan-name, .tier-name { font-family: 'Fraunces', Georgia, serif; font-weight: 600; letter-spacing: -0.015em; }
 
 :root {
