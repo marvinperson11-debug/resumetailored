@@ -40,18 +40,19 @@
   // bottom edge so it never overlaps the hero / before-after demo on first load.
   var css = [
     '#rta-consent{position:fixed;bottom:0;left:0;right:0;z-index:99999;',
-    'background:rgba(15,20,50,0.97);border-top:1px solid rgba(99,102,241,0.3);',
-    'box-shadow:0 -2px 20px rgba(0,0,0,0.4);',
+    'background:rgba(250,247,240,0.97);border-top:1px solid #E7DFD1;',
+    'box-shadow:0 -2px 20px rgba(25,21,18,0.10);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);',
     'display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;',
     'padding:10px 20px;min-height:52px;box-sizing:border-box;',
     'font-family:system-ui,-apple-system,sans-serif;}',
-    '#rta-consent p{font-size:13px;color:#94a3b8;line-height:1.4;margin:0;flex:1 1 auto;min-width:200px;max-width:760px;}',
-    '#rta-consent a{color:#818CF8;font-weight:600;text-decoration:underline;}',
+    '#rta-consent p{font-size:13px;color:#57514A;line-height:1.4;margin:0;flex:1 1 auto;min-width:200px;max-width:760px;}',
+    '#rta-consent a{color:#1F5C3D;font-weight:600;text-decoration:underline;}',
     '#rta-consent .rta-btns{display:flex;gap:10px;flex-shrink:0;}',
     '#rta-consent button{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;}',
-    '#rta-accept{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;}',
-    '#rta-reject{background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.1)!important;}',
-    '#rta-reject:hover{background:rgba(255,255,255,0.1);color:#e2e8f0;}',
+    '#rta-accept{background:#1F5C3D;color:#fff;}',
+    '#rta-accept:hover{background:#153F2A;}',
+    '#rta-reject{background:#FFFFFF;color:#57514A;border:1px solid #D9CFBC!important;}',
+    '#rta-reject:hover{background:#F1EADD;color:#191512;}',
     '@media(max-width:560px){#rta-consent{flex-direction:column;gap:8px;padding:10px 16px;}',
     '#rta-consent p{text-align:center;}#rta-consent .rta-btns{width:100%;justify-content:center;}}'
   ].join('');
