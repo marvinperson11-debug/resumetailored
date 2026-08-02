@@ -427,17 +427,17 @@
     .feature-row.reverse { direction: rtl; }
     .feature-row.reverse > * { direction: ltr; }
     /* Boxed feature cards with a tier tag in the top-right corner */
-    .feature-row.feat-card { position: relative; border-radius: 20px; padding: 32px; overflow: hidden; }
-    .feature-row.feat-card--free { border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-sm); }
-    .feature-row.feat-card--pro  { border: 2px solid rgba(31,92,61,0.45); background: rgba(31,92,61,0.06); }
-    .feature-row.feat-card::after {
+    .feat-card { position: relative; border-radius: 20px; padding: 32px; overflow: hidden; }
+    .feat-card--free { border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-sm); }
+    .feat-card--pro  { border: 2px solid rgba(31,92,61,0.45); background: rgba(31,92,61,0.06); }
+    .feat-card::after {
       position: absolute; top: 16px; right: 20px; z-index: 2; pointer-events: none;
       font-size: 11px; font-weight: 800; padding: 4px 14px; border-radius: 20px;
       letter-spacing: 1px; text-transform: uppercase;
     }
-    .feature-row.feat-card--free::after { content: "✓ Free"; background: var(--accent-tint); color: var(--accent); }
-    .feature-row.feat-card--pro::after  { content: "✦ Pro Exclusive"; background: var(--accent); color: #fff; }
-    @media (max-width: 768px) { .feature-row.feat-card { padding: 24px 20px; } }
+    .feat-card--free::after { content: "✓ Free"; background: var(--accent-tint); color: var(--accent); }
+    .feat-card--pro::after  { content: "✦ Pro Exclusive"; background: var(--accent); color: #fff; }
+    @media (max-width: 768px) { .feat-card { padding: 24px 20px; } }
     .feature-icon { font-size: 48px; margin-bottom: 16px; }
     .feature-body h3 { font-size: 27px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 12px; color: var(--ink); }
     .feature-body p { font-size: 15px; color: var(--ink-soft); line-height: 1.75; }
@@ -907,7 +907,7 @@
 <!-- FREE TOOLS HUB PROMO BLOCK -->
 <section style="padding:64px 0;background:#F1EADD;">
   <div class="container" style="max-width:960px;margin:0 auto;padding:0 24px;">
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:48px;">
+    <div class="feat-card feat-card--free" style="display:flex;flex-wrap:wrap;align-items:center;gap:48px;">
       <div style="flex:1;min-width:280px;">
         <p data-i18n="promo_eyebrow" style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#1F5C3D;margin-bottom:12px;">100% Free · No Account Required</p>
         <h2 data-i18n="promo_title" style="font-size:clamp(26px,3.5vw,38px);font-weight:300;letter-spacing:0.01em;color:#191512;margin-bottom:16px;line-height:1.2;">Is Your Resume <span style="font-weight:400;background:#1F5C3D;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span></h2>
