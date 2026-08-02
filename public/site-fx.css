@@ -1,0 +1,80 @@
+/* ============================================================================
+   site-fx.css — visual/interaction chrome for the motion + mobile-native
+   layers (grain, custom cursor, bottom sheets, swipe-snap, drawer, thumb nav).
+   Loaded only on marketing pages, alongside site-motion.js / mobile-native.js.
+   Everything is inert until the JS adds the corresponding element/class, so it
+   is safe even if the scripts fail. All heavy motion respects reduced-motion.
+   ============================================================================ */
+
+/* ---- Grain / paper texture overlay ------------------------------------ */
+#rt-grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .5;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+}
+
+/* ---- Custom cursor (desktop) ------------------------------------------ */
+.rt-has-cursor { cursor: none; }
+.rt-has-cursor a, .rt-has-cursor button, .rt-has-cursor .btn, .rt-has-cursor input,
+.rt-has-cursor textarea, .rt-has-cursor select, .rt-has-cursor [role="button"] { cursor: none; }
+#rt-cursor, #rt-cursor-ring { position: fixed; top: 0; left: 0; z-index: 99999; pointer-events: none;
+  border-radius: 50%; will-change: transform; margin-left: -4px; margin-top: -4px; }
+#rt-cursor { width: 8px; height: 8px; background: #1F5C3D; }
+#rt-cursor-ring { width: 34px; height: 34px; margin-left: -17px; margin-top: -17px;
+  border: 1.5px solid rgba(31,92,61,0.5); transition: width .18s, height .18s, background .18s, border-color .18s; }
+.rt-cursor-hot #rt-cursor-ring { width: 52px; height: 52px; margin-left: -26px; margin-top: -26px;
+  background: rgba(31,92,61,0.08); border-color: rgba(31,92,61,0.8); }
+@media (hover: none) { #rt-cursor, #rt-cursor-ring { display: none !important; } .rt-has-cursor { cursor: auto; } }
+
+/* ---- Reveal fallback (no-GSAP path) ----------------------------------- */
+[data-reveal] { opacity: 0; transform: translateY(28px); transition: opacity .6s ease, transform .6s ease; }
+[data-reveal].visible { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { [data-reveal] { opacity: 1 !important; transform: none !important; } }
+
+/* ---- Bottom-sheet modals (mobile) ------------------------------------- */
+@media (max-width: 820px) {
+  .modal-overlay.open, .rt-sheet-overlay.open { align-items: flex-end !important; }
+  .rt-sheet {
+    width: 100% !important; max-width: 100% !important;
+    border-radius: 22px 22px 0 0 !important;
+    animation: rtSheetUp .32s cubic-bezier(.22,.61,.36,1);
+    padding-top: 26px !important;
+  }
+  @keyframes rtSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .rt-sheet-grip { position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
+    width: 40px; height: 4px; border-radius: 3px; background: var(--line-2, #D9CFBC); }
+}
+@media (prefers-reduced-motion: reduce) { .rt-sheet { animation: none !important; } }
+
+/* ---- Swipe-snap horizontal chapters ----------------------------------- */
+.rt-hsnap .hscroll-track {
+  display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 8px;
+}
+.rt-hsnap .hscroll-track::-webkit-scrollbar { display: none; }
+.rt-hsnap .hscroll-track > * { scroll-snap-align: center; flex: 0 0 86%; }
+.rt-hdots { display: flex; gap: 7px; justify-content: center; margin-top: 14px; }
+.rt-hdots span { width: 7px; height: 7px; border-radius: 50%; background: var(--line-2, #D9CFBC); transition: all .2s; }
+.rt-hdots span.on { background: var(--accent, #1F5C3D); width: 20px; border-radius: 4px; }
+.rt-swipe-hint { text-align: center; font-size: 12px; font-weight: 700; letter-spacing: .5px;
+  color: var(--accent, #1F5C3D); margin-top: 8px; transition: opacity .3s; text-transform: uppercase; }
+
+/* ---- Edge-swipe drawer ------------------------------------------------- */
+@media (max-width: 820px) {
+  [data-drawer] { transition: transform .28s cubic-bezier(.22,.61,.36,1); }
+  [data-drawer].rt-drawer-open { transform: translateX(0) !important; }
+}
+
+/* ---- Thumb-zone bottom action bar (opt-in via .rt-thumbbar) ----------- */
+.rt-thumbbar { display: none; }
+@media (max-width: 820px) {
+  .rt-thumbbar {
+    display: flex; position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 400;
+    gap: 8px; padding: 8px; border-radius: 18px;
+    background: rgba(255,255,255,0.92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    box-shadow: 0 10px 34px rgba(25,21,18,0.18); border: 1px solid var(--line, #E7DFD1);
+  }
+  .rt-thumbbar > * { flex: 1; text-align: center; padding: 12px 6px; border-radius: 12px;
+    font-size: 13px; font-weight: 700; font-family: var(--sans, 'Inter', sans-serif); }
+  .rt-thumbbar .primary { background: var(--accent, #1F5C3D); color: #fff; }
+}

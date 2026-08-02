@@ -1,0 +1,105 @@
+/* ============================================================================
+   app-theme.css — light "editorial" reskin for the in-app dashboard + editor.
+   COLOR-ONLY overrides (background / color / border-color / box-shadow / fill).
+   It never touches position, size, transform, display or any layout property,
+   so the editor canvas geometry, drag/resize handles and coordinate math are
+   provably unaffected — only the chrome's paint changes. Loaded AFTER app.html's
+   inline <style>, with !important to beat the inline !important rules.
+   ============================================================================ */
+:root{
+  --bg:#FAF7F0; --bg-alt:#F1EADD; --surface:#FFFFFF;
+  --ink:#191512; --ink-soft:#57514A; --ink-faint:#918A7E;
+  --line:#E7DFD1; --line-2:#D9CFBC;
+  --accent:#1F5C3D; --accent-2:#2E7D53; --accent-ink:#153F2A; --accent-tint:#E8F0E9;
+}
+body{ background:var(--bg) !important; color:var(--ink-soft); }
+
+/* ── Auth modal ──────────────────────────────────────────────────────── */
+.auth-overlay{ background:rgba(25,21,18,0.45) !important; }
+.auth-card{ background:var(--surface) !important; border:1px solid var(--line) !important;
+  box-shadow:0 30px 80px rgba(25,21,18,0.28) !important; }
+.auth-logo,.auth-heading{ color:var(--ink) !important; font-family:'Fraunces',Georgia,serif; }
+.auth-sub,.auth-switch{ color:var(--ink-faint) !important; }
+.auth-logo .badge-ai{ background:var(--accent) !important; color:#fff !important; -webkit-text-fill-color:#fff !important; }
+.auth-tabs{ background:var(--bg-alt) !important; border:1px solid var(--line) !important; }
+.auth-tab-btn{ color:var(--ink-soft) !important; }
+.auth-tab-btn.active{ background:var(--accent-tint) !important; color:var(--accent) !important; box-shadow:none !important; }
+.auth-field input{ background:var(--bg) !important; border:1.5px solid var(--line-2) !important; color:var(--ink) !important; }
+.auth-field input:focus{ border-color:var(--accent) !important; box-shadow:0 0 0 3px rgba(31,92,61,0.14) !important; }
+.auth-field input::placeholder{ color:var(--ink-faint) !important; }
+.auth-switch a{ color:var(--accent) !important; }
+.auth-card .btn-primary{ background:var(--accent) !important; color:#fff !important; box-shadow:0 6px 18px rgba(31,92,61,0.22) !important; }
+
+/* ── Nav ─────────────────────────────────────────────────────────────── */
+.nav{ background:rgba(250,247,240,0.85) !important; border-bottom:1px solid var(--line) !important; }
+.nav .logo{ color:var(--ink) !important; -webkit-text-fill-color:var(--ink) !important; }
+.nav .logo .badge-ai{ background:var(--accent) !important; color:#fff !important; -webkit-text-fill-color:#fff !important; }
+.nav .btn-outline{ border-color:var(--line-2) !important; color:var(--ink) !important; background:transparent !important; }
+.nav .btn-outline:hover{ background:rgba(25,21,18,0.04) !important; }
+#navUsername{ color:var(--ink-soft) !important; }
+
+/* ── Buttons / accents (purple → green) ──────────────────────────────── */
+.btn-primary,.download-btn-docx{ background:var(--accent) !important; background-image:none !important; color:#fff !important; }
+.btn-primary:hover,.download-btn-docx:hover{ background:var(--accent-ink) !important; }
+.upload-btn{ border-color:rgba(31,92,61,0.4) !important; background:var(--accent-tint) !important; color:var(--accent) !important; }
+.upload-btn:hover{ background:#dce9de !important; border-color:rgba(31,92,61,0.7) !important; }
+.download-btn-txt{ background:var(--surface) !important; border:1.5px solid var(--line-2) !important; color:var(--ink) !important; }
+.download-btn-txt:hover{ background:var(--bg-alt) !important; }
+.sample-toggle-btn,.font-btn,.rmode-btn,.page-size-btn{
+  background:var(--surface) !important; border:1.5px solid var(--line-2) !important; color:var(--ink-soft) !important; }
+.sample-toggle-btn.active,.rmode-btn.active,.page-size-btn.active{
+  background:var(--accent-tint) !important; border-color:var(--accent) !important; color:var(--accent) !important; }
+.font-btn.active{ background:var(--accent) !important; color:#fff !important; border-color:var(--accent) !important; }
+.font-btn:hover:not(.active){ border-color:var(--accent) !important; color:var(--accent) !important; }
+
+/* ── Template picker ─────────────────────────────────────────────────── */
+.tpl-pick-label,.tpl-pick-name{ color:var(--ink) !important; }
+.tpl-pick-label span{ color:var(--ink-faint) !important; }
+.tpl-pick-item{ background:var(--surface) !important; border-color:var(--line) !important; box-shadow:var(--shadow-sm,0 1px 2px rgba(25,21,18,.05)) !important; }
+.tpl-pick-item:hover:not(.locked){ border-color:var(--accent) !important; box-shadow:0 6px 18px rgba(31,92,61,0.16) !important; }
+.tpl-pick-item.selected{ border-color:var(--accent) !important; box-shadow:0 0 0 3px rgba(31,92,61,.22) !important; }
+.tpl-pick-thumb{ background:var(--bg-alt) !important; }
+.tpl-pick-badge-pro{ background:var(--accent-tint) !important; color:var(--accent) !important; }
+.tpl-pick-btn-select,.tpl-pick-btn-selected{ background:var(--accent) !important; color:#fff !important; }
+.tpl-pick-outer::after{ background:linear-gradient(to right, transparent, var(--bg)) !important; }
+
+/* ── Website-creator EDITOR SHELL (color only — geometry untouched) ───── */
+.cv-shell{ background:var(--bg) !important; color:var(--ink) !important; }
+.cv-top{ background:var(--accent) !important; color:#fff !important; }
+.cv-top .cv-tbtn,.cv-top .cv-segbtn{ color:#fff !important; }
+.cv-rail{ background:var(--bg-alt) !important; border-right:1px solid var(--line) !important; }
+.cv-stage{ background:var(--bg-alt) !important; }
+.cv-inspector{ background:var(--surface) !important; color:var(--ink) !important; border-left:1px solid var(--line) !important; }
+.cv-inspector .text-input,.cv-inspector input,.cv-inspector select,.cv-inspector textarea{
+  background:var(--bg) !important; border:1px solid var(--line-2) !important; color:var(--ink) !important; }
+.cv-bottom{ background:var(--bg-alt) !important; color:var(--ink-soft) !important; border-top:1px solid var(--line) !important; }
+.cv-panel{ background:var(--bg) !important; color:var(--ink) !important; }
+.cv-input{ background:var(--surface) !important; border-color:var(--line-2) !important; color:var(--ink) !important; }
+.cv-rbtn,.cv-tbtn,.cv-segbtn,.cv-addpage{ color:var(--ink-soft) !important; }
+.cv-rbtn:hover,.cv-tbtn:hover{ background:rgba(25,21,18,0.05) !important; color:var(--accent) !important; }
+.cv-segbtn.is-on,.cv-segbtn.active,.cv-rbtn.is-sel{ background:var(--accent-tint) !important; color:var(--accent) !important; }
+.cv-publish{ background:var(--accent) !important; color:#fff !important; }
+.cv-upitem{ background:var(--surface) !important; border-color:var(--line) !important; }
+
+/* Editor overlay chrome (gear/inspector/palette/tips) — color only */
+.ed-gear,.ed-play{ background:var(--surface) !important; color:var(--accent) !important; border-color:var(--line) !important; box-shadow:0 2px 10px rgba(25,21,18,.14) !important; }
+.ed-tag{ background:var(--accent) !important; color:#fff !important; }
+.ed-tip{ background:var(--ink) !important; color:#fff !important; }
+.ed-pal-item{ border-color:var(--line) !important; }
+
+/* Website-creator cards / palette / tabs / back office */
+.wc-pal-btn{ border-color:var(--line-2) !important; }
+.wc-vtab{ color:var(--ink-soft) !important; }
+.wc-vtab-active{ background:var(--accent-tint) !important; color:var(--accent) !important; }
+.wc-tpl-on{ border-color:var(--accent) !important; }
+.bo-act{ background:var(--surface) !important; border-color:var(--line-2) !important; color:var(--ink) !important; }
+.bo-site.is-live{ border-color:var(--accent) !important; box-shadow:0 0 0 3px rgba(31,92,61,.09) !important; }
+
+/* Resume-builder inputs */
+.rb-input,.rb-textarea,.sig-input{ background:var(--surface) !important; border-color:var(--line-2) !important; color:var(--ink) !important; }
+.rb-add-btn{ background:var(--accent-tint) !important; color:var(--accent) !important; border-color:rgba(31,92,61,0.4) !important; }
+.eb-save,.tpl-pick-btn{ background:var(--accent) !important; color:#fff !important; }
+.eb-cancel{ background:var(--surface) !important; color:var(--ink) !important; border-color:var(--line-2) !important; }
+
+/* Generic modal boxes → also become bottom sheets on mobile (see site-fx.css) */
+.modal-box,.export-warn-box{ background:var(--surface) !important; border-color:var(--line) !important; color:var(--ink) !important; }

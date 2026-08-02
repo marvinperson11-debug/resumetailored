@@ -21,6 +21,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- ?v= is not decoration. These modules are coupled to this file, and this
@@ -813,6 +814,8 @@
     body.cv-wide .cv-panel { display: none !important; }
     .cv-shell, .cv-panel { transition: left .18s ease, width .18s ease; }
   </style>
+  <link rel="stylesheet" href="/app-theme.css"/>
+  <link rel="stylesheet" href="/site-fx.css"/>
 </head>
 <body>
 
@@ -908,7 +911,7 @@
   <div class="dashboard">
 
     <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <aside class="sidebar" data-drawer>
       <div class="sidebar-section">
         <div class="sidebar-label" data-i18n="sidebar_jobsearch">Job Search</div>
         <button class="sidebar-btn active" onclick="showTab('tailor')" id="tab-tailor" data-label="Tailor" title="Resume Tailor — free &amp; unlimited">
@@ -930,7 +933,7 @@
         <button class="sidebar-btn" onclick="showTab('video')" id="tab-video" data-label="Video" title="Resume Video Maker — Pro studio video">
           <span class="sidebar-icon">🎬</span>
           <span style="flex:1;text-align:left;">Resume Video</span>
-          <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
+          <span style="background:#B4832A;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
         </button>
         <button class="sidebar-btn" onclick="shareResumeLink()" id="tab-sharelink" data-label="Link" title="Turn your tailored resume into a shareable web link">
           <span class="sidebar-icon">🔗</span>
@@ -940,12 +943,12 @@
         <button class="sidebar-btn" onclick="openWebsiteCreator()" id="tab-website" data-label="Website" title="Build & publish your live personal website (desktop only)">
           <span class="sidebar-icon">🌐</span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_website">Personal Website</span>
-          <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
+          <span style="background:#B4832A;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
         </button>
         <button class="sidebar-btn" onclick="openBackOffice()" id="tab-backoffice" data-label="Back Office" title="Manage all your resumes, cover letters, videos & website">
           <span class="sidebar-icon">🗂️</span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_backoffice">Back Office</span>
-          <span style="background:#6366F1;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
+          <span style="background:#B4832A;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
         </button>
       </div>
       <div class="sidebar-section">
@@ -10302,5 +10305,22 @@ Aaliyah Washington`
     }
 
   </script>
+  <script src="/mobile-native.js" defer></script>
+  <script>/* editor thumb-zone action bar (mobile) */
+  (function(){
+    function ready(fn){document.readyState!=="loading"?fn():document.addEventListener("DOMContentLoaded",fn);}
+    ready(function(){
+      if(!window.matchMedia||!window.matchMedia("(max-width:820px)").matches) return;
+      var bar=document.createElement("div"); bar.className="rt-thumbbar"; bar.id="rtEditorThumb"; bar.style.display="none";
+      function mk(label,cls,fn){var b=document.createElement("button"); b.textContent=label; if(cls)b.className=cls; b.addEventListener("click",function(){ if(window.rtHaptic)window.rtHaptic(14); try{fn&&fn();}catch(e){} }); return b;}
+      bar.appendChild(mk("Preview","",function(){ window.wcSetView&&window.wcSetView("preview"); }));
+      bar.appendChild(mk("Save","",function(){ window.wcSaveNow&&window.wcSaveNow(); }));
+      bar.appendChild(mk("Publish","primary",function(){ window.wcPublish&&window.wcPublish(); }));
+      document.body.appendChild(bar);
+      // show only while the website editor shell is on screen
+      function sync(){ var sh=document.querySelector(".cv-shell"); var on=sh && sh.offsetParent!==null; bar.style.display=on?"flex":"none"; }
+      sync(); setInterval(sync,900);
+    });
+  })();</script>
 </body>
 </html>
