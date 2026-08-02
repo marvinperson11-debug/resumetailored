@@ -405,6 +405,20 @@ app.use((req, res, next) => {
   if (!m) return next();
   const sub = _validSubdomain(m[1]);          // rejects reserved names (www, api, …)
   if (!sub) return next();                    // reserved host → normal handling
+  // llms.txt is checked before the seg regex below, which excludes dots (it's
+  // built for page slugs like "about", not filenames) and would otherwise
+  // fall through to next() and 404 rather than ever reaching the site lookup.
+  if (req.path === '/llms.txt') {
+    const row = db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub);
+    const origin = `${req.protocol}://${host}`;
+    if (!row) {
+      const alias = db.prepare('SELECT new_sub FROM site_aliases WHERE old_sub = ?').get(sub);
+      const live = alias ? db.prepare('SELECT subdomain FROM personal_sites WHERE subdomain = ? AND published = 1').get(alias.new_sub) : null;
+      if (live) return res.redirect(301, `${sitePublicUrl(live.subdomain, origin)}/llms.txt`);
+      res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html'));
+    }
+    return _serveLlmsTxt(row, origin, res);
+  }
   // Root, or a single-segment page slug. Anything else (assets, /api/…, files
   // with an extension) falls through to the normal handlers untouched.
   const seg = req.path === '/' ? '' : (req.path.match(/^\/([a-z0-9-]{1,60})\/?$/i) || [])[1];
@@ -3993,6 +4007,76 @@ function sitePublicUrl(sub, origin, pageSlug) {
 }
 
 /**
+ * The plain-object `siteData` that llms-txt.js's `generateLlmsTxt()` turns
+ * into a page. Kept separate from the pure builder on purpose — this is the
+ * only piece that touches the database, `row.config` parsing, and the
+ * per-field fallbacks; generateLlmsTxt() never needs to know any of that.
+ *
+ * There is no static deploy directory for a personal site to write a file
+ * into — every page is rendered fresh from the `personal_sites` row on each
+ * request (see `_renderPersonalSite`/`_serveSite` below). llms.txt follows
+ * the same pattern: generated on every request to `/site/:sub/llms.txt`
+ * rather than written to disk at publish time, so it can never go stale
+ * relative to a site that keeps autosaving.
+ */
+function _siteLlmsTxtData(row, origin) {
+  const sub = row.subdomain || '';
+  const name = String(row.name || sub || 'Personal Website').trim() || 'Personal Website';
+  let cfg = null;
+  try { cfg = row.config ? JSON.parse(row.config) : null; } catch (_) { cfg = null; }
+
+  // The same field derivation the site itself (and the Website Creator's
+  // autogen) uses, so a derived tagline reads like the person's own resume
+  // rather than a second, independently-invented summary.
+  const derived = require('./public/site-fields.js').deriveFields(row.text || '');
+  const pages = [];
+  const docPages = (cfg && Array.isArray(cfg.pages) ? cfg.pages : []).filter((p) => p && typeof p === 'object');
+  // The home page's own SEO description, if the user wrote one, IS the
+  // author's chosen one-line pitch for the site — preferred over a summary
+  // this code derived on its own.
+  const home = docPages.find((p) => p.isHome) || docPages[0] || null;
+  const tagline = (home && home.seo && home.seo.description)
+    || derived.summary
+    || `The personal website of ${name}${derived.role ? `, ${derived.role}` : ''}${derived.location ? ` (${derived.location})` : ''}.`;
+
+  if (docPages.length) {
+    for (const p of docPages) {
+      const isHome = !!p.isHome;
+      const slug = String(p.slug || '').toLowerCase();
+      pages.push({
+        title: (p.seo && p.seo.title) || p.name || (isHome ? name : slug) || name,
+        url: sitePublicUrl(sub, origin, isHome ? undefined : slug),
+        description: (p.seo && p.seo.description) || (isHome ? tagline : `A page on ${name}'s site.`),
+      });
+    }
+  } else {
+    // Legacy/simple sites with no Website Creator config are a single page.
+    pages.push({ title: name, url: sitePublicUrl(sub, origin), description: tagline });
+  }
+
+  const hasCoverLetter = !!(cfg && cfg.assets && typeof cfg.assets.coverLetterText === 'string' && cfg.assets.coverLetterText.trim().length > 20);
+  if (hasCoverLetter) {
+    // Always the /site/:sub form, even when the rest of this file's links use
+    // the host-based subdomain: /cover-letter has no host-based route of its
+    // own (see PERSONAL_SITE_HOST_RE above), so a subdomain URL here would 404.
+    pages.push({
+      title: `${name} — Cover Letter`,
+      url: `${String(origin).replace(/\/+$/, '')}/site/${sub}/cover-letter`,
+      description: `Download ${name}'s cover letter as a plain-text file.`,
+    });
+  }
+
+  return { name, tagline, pages };
+}
+
+function _serveLlmsTxt(row, origin, res) {
+  const { generateLlmsTxt } = require('./llms-txt.js');
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.send(generateLlmsTxt(_siteLlmsTxtData(row, origin)));
+}
+
+/**
  * The site a user is currently working on.
  *
  * A user may now keep several — one per template they have tried. "Current"
@@ -4531,6 +4615,25 @@ app.get('/site/:sub/cover-letter', (req, res) => {
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="${name} - Cover Letter.txt"`);
   res.send(text);
+});
+
+// Registered before the generic /site/:sub/:page catch-all, the same reason
+// /cover-letter above is: "llms.txt" would otherwise be treated as a page
+// slug, fail to match any real page, and 404.
+app.get('/site/:sub/llms.txt', (req, res) => {
+  const sub = _validSubdomain(req.params.sub);
+  const row = sub ? db.prepare('SELECT * FROM personal_sites WHERE subdomain = ? AND published = 1').get(sub) : null;
+  const origin = `${req.protocol}://${req.get('host')}`;
+  if (!row) {
+    // Not routed through _movedTarget()/sitePublicUrl()'s pageSlug argument:
+    // that strips anything outside [a-z0-9-], which would turn "llms.txt"
+    // into "llmstxt". Appended after the plain base URL instead.
+    const alias = sub ? db.prepare('SELECT new_sub FROM site_aliases WHERE old_sub = ?').get(sub) : null;
+    const live = alias ? db.prepare('SELECT subdomain FROM personal_sites WHERE subdomain = ? AND published = 1').get(alias.new_sub) : null;
+    if (live) return res.redirect(301, `${sitePublicUrl(live.subdomain, origin)}/llms.txt`);
+    res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html'));
+  }
+  _serveLlmsTxt(row, origin, res);
 });
 
 app.get('/site/:sub', (req, res) => _serveSite(req, res, ''));

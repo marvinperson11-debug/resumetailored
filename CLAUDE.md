@@ -159,6 +159,14 @@ Fields: `name` (first non-empty line), `location` (contact-line segment, refused
 
 Both routes exist: **path-based `/site/:name`** and **host-based `name.resumetailored.com`**. The host-based path is an early middleware in `server.js` (`PERSONAL_SITE_HOST_RE`, before `express.static`) that maps a `<sub>.resumetailored.com` root request to the same renderer — it's **inert until a wildcard `*.resumetailored.com` DNS record + wildcard TLS point such hosts at the app** (apex, `www`, reserved names, the Railway/Netlify hosts and localhost all fall through unchanged). Provision DNS/TLS to activate it (see `docs/RAILWAY_SETUP.md` §9).
 
+## llms.txt
+
+`public/llms.txt` is a curated Markdown index for AI crawlers (ChatGPT, Claude, Perplexity, …), following the [llms.txt convention](https://llmstxt.org/): an H1, a blockquote summary, then H2-grouped, annotated links (`- [Title](url): description`). Hand-maintained — it carries a `<!-- Last updated: YYYY-MM-DD -->` comment at the top; bump it when the page inventory or pricing changes. `robots.txt` points at it via a `Sitemap:` line.
+
+Every published personal website gets its own **auto-generated** `llms.txt` too, at `/site/:sub/llms.txt` (and the host-based `<sub>.resumetailored.com/llms.txt` equivalent). The generator is `generateLlmsTxt(siteData)` in `llms-txt.js` — a pure function (`{name, tagline, pages}` in, Markdown string out) with no database access, so it's reusable and independently testable. `_siteLlmsTxtData(row, origin)` in `server.js` is the adapter that builds `siteData` from a `personal_sites` row: the H1 is the person's name, the blockquote prefers the home page's own `seo.description` (the author's chosen pitch) and falls back to the résumé-derived summary from `deriveFields()` (`public/site-fields.js` — the same derivation the site and its autogen already use), and each page in `config.pages` becomes one linked, annotated entry. A published cover letter gets its own entry too, always via the `/site/:sub/cover-letter` form even on a subdomain host, because that route has no host-based equivalent of its own.
+
+There is **no static deploy directory** for a personal site to write a file into — every page (home, `/work`, `/contact`, …) is already rendered fresh from the database row on each request (`_renderPersonalSite`/`_serveSite`), not built once at publish time. llms.txt follows that same pattern deliberately: generated on every request rather than written to disk when `POST /api/personal-site` runs, so it can never drift out of sync with a site that keeps autosaving after the last publish. A draft (unpublished) site's llms.txt 404s exactly like the rest of the site does.
+
 ## Stripe integration
 
 - Checkout is initiated via `POST /api/subscribe` (monthly, `mode: subscription`) → returns a Stripe Checkout URL. `POST /api/subscribe-lifetime` (`mode: payment`, requires `STRIPE_LIFETIME_PRICE_ID`) handles the one-time lifetime plan.
