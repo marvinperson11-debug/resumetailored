@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="msvalidate.01" content="AC21F15D4CB63E6BB0F0683A9B21EABF" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#FAF7F0" />
   <title>ResumeTailored AI — AI Resume Tailor &amp; Cover Letter Generator</title>
   <meta name="description" content="Free AI resume builder and resume tailor. Paste your resume and any job posting — our AI rewrites it with the right keywords in 60 seconds. Pass ATS filters and land more interviews. No credit card needed." />
   <meta name="keywords" content="ai resume tailor, free resume tailor, AI resume builder, free AI resume builder, resume scanner, resume optimizer, ATS resume, cover letter generator, resume rewriter, job application AI, resume tailoring tool, free ATS resume checker, jobscan alternative, rezi alternative, tailor resume to job description, AI resume rewriter, ATS resume rewriter" />
@@ -38,7 +39,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- JSON-LD -->
   <script type="application/ld+json">
   {
@@ -156,17 +157,46 @@
   }
   </script>
   <style>
+    /* ============================================================
+       Editorial light theme — warm cream paper, deep-green accent,
+       Fraunces display serif. Deliberately distinct from the
+       dark/purple SaaS look. Layout & content unchanged.
+       ============================================================ */
+    :root {
+      --bg:        #FAF7F0;   /* warm cream paper           */
+      --bg-alt:    #F1EADD;   /* slightly deeper cream band */
+      --surface:   #FFFFFF;   /* cards                      */
+      --ink:       #191512;   /* near-black warm ink        */
+      --ink-soft:  #57514A;   /* body copy                  */
+      --ink-faint: #918A7E;   /* captions / meta            */
+      --line:      #E7DFD1;   /* hairline                   */
+      --line-2:    #D9CFBC;   /* stronger hairline          */
+      --accent:    #1F5C3D;   /* deep forest green          */
+      --accent-2:  #2E7D53;   /* lighter green              */
+      --accent-ink:#153F2A;
+      --accent-tint:#E8F0E9;
+      --warm:      #B4562E;   /* terracotta (eyebrows/warn) */
+      --warm-tint: #F5E6DC;
+      --gold:      #B4832A;
+      --danger:    #B23A2E;
+      --danger-tint:#F4E1DD;
+      --shadow-sm: 0 1px 2px rgba(25,21,18,.05), 0 4px 14px rgba(25,21,18,.05);
+      --shadow-md: 0 2px 6px rgba(25,21,18,.06), 0 18px 44px rgba(25,21,18,.09);
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; background: #030712; color: #e2e8f0; line-height: 1.6; }
-    h2, h3, .section-title, .tier-name, .plan-name { font-family: 'Inter', sans-serif; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--ink-soft); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+    h2, h3, .section-title, .tier-name, .plan-name { font-family: 'Fraunces', Georgia, serif; }
     a { color: inherit; text-decoration: none; }
+    ::selection { background: var(--accent); color: #fff; }
+    /* Editorial theme is light — retire the dark animated backdrop */
+    #neuro { display: none !important; }
 
     /* ── NAV ── */
     .nav {
       position: sticky; top: 0; z-index: 100;
-      background: rgba(3,7,18,0.85);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      background: rgba(250,247,240,0.85);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
       padding: 0 24px;
     }
     .nav-inner {
@@ -174,38 +204,39 @@
       display: flex; align-items: center; justify-content: space-between;
       height: 64px;
     }
-    .logo { font-size: 20px; font-weight: 900; color: #f1f5f9; letter-spacing: -0.03em; font-family: 'Inter', sans-serif; }
+    .logo { font-family: 'Fraunces', Georgia, serif; font-size: 23px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
     .logo .badge-ai {
-      background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff;
-      font-size: 11px; font-weight: 800;
+      font-family: 'Inter', sans-serif;
+      background: var(--accent); color: #fff;
+      font-size: 11px; font-weight: 700;
       padding: 2px 7px; border-radius: 5px;
-      vertical-align: middle; margin-left: 4px;
+      vertical-align: middle; margin-left: 4px; letter-spacing: 0.02em;
     }
-    .nav-links { display: flex; gap: 20px; align-items: center; }
-    .nav-links a { font-size: 14px; font-weight: 600; color: #94a3b8; transition: color .15s; }
-    .nav-links a:hover { color: #f1f5f9; }
+    .nav-links { display: flex; gap: 22px; align-items: center; }
+    .nav-links a { font-size: 14px; font-weight: 500; color: var(--ink-soft); transition: color .15s; }
+    .nav-links a:hover { color: var(--accent); }
     .nav-actions { display: flex; gap: 12px; align-items: center; }
 
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
-      font-family: inherit; font-size: 14px; font-weight: 700;
-      border-radius: 8px; padding: 10px 20px; border: none; cursor: pointer;
+      font-family: inherit; font-size: 14px; font-weight: 600;
+      border-radius: 9px; padding: 10px 20px; border: 1px solid transparent; cursor: pointer;
       transition: all .2s; text-decoration: none; white-space: nowrap;
       position: relative; overflow: hidden;
     }
     .btn::before {
       content: ''; position: absolute; top: 0; left: -100%;
       width: 60%; height: 100%;
-      background: linear-gradient(120deg, transparent, rgba(255,255,255,0.18), transparent);
+      background: linear-gradient(120deg, transparent, rgba(255,255,255,0.28), transparent);
       transform: skewX(-20deg); transition: left 0.5s ease;
     }
     .btn:hover::before { left: 150%; }
     .btn-primary {
-      background: linear-gradient(135deg,#6366F1,#8B5CF6);
-      color: #fff; box-shadow: 0 0 20px rgba(99,102,241,0.35);
+      background: var(--accent); color: #fff;
+      box-shadow: 0 6px 18px rgba(31,92,61,0.22);
     }
-    .btn-primary:hover { box-shadow: 0 0 32px rgba(99,102,241,0.6); transform: translateY(-1px); }
-    /* Shiny sweep on primary buttons (vanilla port of the animated --x shine) */
+    .btn-primary:hover { background: var(--accent-ink); box-shadow: 0 10px 26px rgba(31,92,61,0.32); transform: translateY(-1px); }
+    /* Shiny sweep on primary buttons */
     @property --btn-x {
       syntax: '<percentage>';
       inherits: false;
@@ -219,7 +250,7 @@
       pointer-events: none; z-index: 2;
       background: linear-gradient(-75deg,
         rgba(255,255,255,0) calc(var(--btn-x) + 18%),
-        rgba(255,255,255,0.6) calc(var(--btn-x) + 25%),
+        rgba(255,255,255,0.45) calc(var(--btn-x) + 25%),
         rgba(255,255,255,0) calc(var(--btn-x) + 32%));
       animation: btnShine 3.2s linear infinite;
     }
@@ -227,127 +258,123 @@
       0% { --btn-x: 130%; }
       55%, 100% { --btn-x: -30%; }
     }
-    /* Green shimmer for the "Free Tools" nav link (sweeps across the text) */
+    /* Gold shimmer for the "Free Tools" nav link (sweeps across the text) */
     .nav-shine {
       background: linear-gradient(-75deg,
-        #34d399 calc(var(--btn-x) + 18%),
-        #d1fae5 calc(var(--btn-x) + 25%),
-        #34d399 calc(var(--btn-x) + 32%));
+        var(--accent) calc(var(--btn-x) + 18%),
+        var(--gold) calc(var(--btn-x) + 25%),
+        var(--accent) calc(var(--btn-x) + 32%));
       -webkit-background-clip: text; background-clip: text;
       -webkit-text-fill-color: transparent; color: transparent;
       animation: btnShine 3.2s linear infinite;
     }
     .btn-outline {
-      background: rgba(99,102,241,0.1); color: #818CF8;
-      border: 1px solid rgba(99,102,241,0.4);
+      background: var(--accent-tint); color: var(--accent);
+      border: 1px solid rgba(31,92,61,0.28);
     }
-    .btn-outline:hover { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.7); }
+    .btn-outline:hover { background: #dce9de; border-color: rgba(31,92,61,0.5); }
     .btn-ghost {
-      background: rgba(255,255,255,0.05); color: #94a3b8;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: transparent; color: var(--ink);
+      border: 1px solid var(--line-2);
     }
-    .btn-ghost:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; border-color: rgba(255,255,255,0.2); }
-    .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 10px; }
+    .btn-ghost:hover { background: rgba(25,21,18,0.04); border-color: var(--ink-faint); color: var(--ink); }
+    .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 11px; }
     .btn-full { width: 100%; }
     .btn-white {
-      background: rgba(255,255,255,0.12); color: #fff;
-      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.16); color: #fff;
+      border: 1px solid rgba(255,255,255,0.35);
     }
-    .btn-white:hover { background: rgba(255,255,255,0.22); }
+    .btn-white:hover { background: rgba(255,255,255,0.28); }
 
     .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: 4px; }
-    .hamburger span { display: block; width: 22px; height: 2px; background: #94a3b8; border-radius: 2px; transition: all .2s; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--ink); border-radius: 2px; transition: all .2s; }
 
     /* Mobile overlay */
     .mobile-menu {
       display: none; position: fixed; inset: 0; z-index: 200;
-      background: rgba(3,7,18,0.97); backdrop-filter: blur(20px);
-      flex-direction: column; align-items: center; justify-content: center; gap: 32px;
+      background: rgba(250,247,240,0.98); backdrop-filter: blur(18px);
+      flex-direction: column; align-items: center; justify-content: center; gap: 30px;
     }
     .mobile-menu.open { display: flex; }
-    .mobile-menu a { font-size: 24px; font-weight: 700; color: #f1f5f9; }
-    .mobile-close { position: absolute; top: 20px; right: 24px; background: none; border: none; font-size: 28px; cursor: pointer; color: #94a3b8; }
+    .mobile-menu a { font-family: 'Fraunces', Georgia, serif; font-size: 26px; font-weight: 600; color: var(--ink); }
+    .mobile-close { position: absolute; top: 20px; right: 24px; background: none; border: none; font-size: 30px; cursor: pointer; color: var(--ink-soft); }
 
     /* ── LAYOUT ── */
     .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
-    .section { padding: 80px 0; }
-    .section-gray { background: rgba(255,255,255,0.02); }
+    .section { padding: 84px 0; }
+    .section-gray { background: var(--bg-alt); }
     .section-title {
-      text-align: center; font-size: clamp(28px, 4vw, 42px);
-      font-weight: 300; letter-spacing: 0.01em; margin-bottom: 48px; color: #f8fafc;
-      font-family: 'Inter', sans-serif;
+      text-align: center; font-size: clamp(30px, 4vw, 46px);
+      font-weight: 600; letter-spacing: -0.015em; margin-bottom: 48px; color: var(--ink);
+      line-height: 1.1;
     }
     .section-title span {
-      font-weight: 400;
-      background: linear-gradient(135deg,#6366F1,#8B5CF6);
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      font-weight: 500; font-style: italic; color: var(--accent);
+      -webkit-text-fill-color: currentColor;
     }
     .section-eyebrow {
-      text-align: center; font-size: 13px; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 2px; color: #818CF8; margin-bottom: 14px;
+      text-align: center; font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2.5px; color: var(--warm); margin-bottom: 14px;
     }
 
     /* ── HERO ── */
-    .hero { padding: 96px 0 80px; text-align: center; position: relative; overflow: hidden; }
+    .hero { padding: 100px 0 84px; text-align: center; position: relative; overflow: hidden; }
     .hero-orb {
       position: absolute; border-radius: 50%;
-      filter: blur(80px); pointer-events: none; z-index: 0;
-      animation: floatOrb 9s ease-in-out infinite;
+      filter: blur(90px); pointer-events: none; z-index: 0;
+      animation: floatOrb 11s ease-in-out infinite;
     }
     .orb-1 {
-      width: 600px; height: 600px;
-      background: radial-gradient(circle, rgba(99,102,241,0.28) 0%, transparent 70%);
-      top: -220px; left: -80px; animation-delay: 0s;
+      width: 620px; height: 620px;
+      background: radial-gradient(circle, rgba(31,92,61,0.10) 0%, transparent 70%);
+      top: -240px; left: -100px; animation-delay: 0s;
     }
     .orb-2 {
-      width: 500px; height: 500px;
-      background: radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 70%);
-      top: -120px; right: -80px; animation-delay: -4.5s;
+      width: 520px; height: 520px;
+      background: radial-gradient(circle, rgba(180,86,46,0.09) 0%, transparent 70%);
+      top: -120px; right: -100px; animation-delay: -5s;
     }
     @keyframes floatOrb {
       0%, 100% { transform: translateY(0) scale(1); }
-      50% { transform: translateY(-32px) scale(1.06); }
+      50% { transform: translateY(-28px) scale(1.05); }
     }
     .hero > .container { position: relative; z-index: 1; }
     .hero h1 {
-      font-family: 'Inter', sans-serif;
-      font-size: clamp(38px, 6.2vw, 68px); font-weight: 200;
-      letter-spacing: 0.01em; line-height: 1.12; margin-bottom: 22px; color: #f8fafc;
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: clamp(42px, 6.4vw, 76px); font-weight: 600;
+      letter-spacing: -0.02em; line-height: 1.06; margin-bottom: 24px; color: var(--ink);
     }
-    /* Keep the gradient phrase a touch heavier so it stays the focal point */
-    .hero h1 .blue { font-weight: 300; }
     .hero h1 .blue {
-      background: linear-gradient(135deg,#818CF8 0%,#A78BFA 50%,#38BDF8 100%);
-      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      font-weight: 500; font-style: italic; color: var(--accent);
+      -webkit-text-fill-color: currentColor;
     }
-    .hero-sub { font-size: 18px; color: #94a3b8; max-width: 580px; margin: 0 auto 32px; line-height: 1.7; }
-    .hero-cta { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .hero-sub { font-size: 18px; color: var(--ink-soft); max-width: 590px; margin: 0 auto 34px; line-height: 1.72; }
+    .hero-cta { display: flex; flex-direction: column; align-items: center; gap: 12px; }
     .hero-cta-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center; }
-    .hero-note { font-size: 13px; color: #64748b; }
-    /* Compact trust strip — sits between the CTA and the demo without pushing
-       the demo below the fold (small margins, single line on desktop). */
+    .hero-note { font-size: 13px; color: var(--ink-faint); }
     .hero-trust {
       display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
-      gap: 8px; margin: 16px auto 0; font-size: 13px; color: #94a3b8;
+      gap: 8px; margin: 18px auto 0; font-size: 13px; color: var(--ink-soft);
     }
-    .hero-trust-stars { color: #fbbf24; letter-spacing: 1px; }
-    .hero-trust-dot { color: #475569; }
+    .hero-trust-stars { color: var(--gold); letter-spacing: 1px; }
+    .hero-trust-dot { color: var(--line-2); }
     @media (max-width: 560px) { .hero-trust { font-size: 12px; gap: 6px; } }
 
     /* ── BEFORE/AFTER ── */
     .demo-wrap {
-      margin: 56px auto 0; max-width: 860px;
+      margin: 60px auto 0; max-width: 860px;
       display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; align-items: stretch;
       border-radius: 16px; overflow: hidden;
-      box-shadow: 0 4px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07);
+      background: var(--surface);
+      box-shadow: var(--shadow-md), 0 0 0 1px var(--line);
     }
     .demo-before {
-      background: rgba(255,255,255,0.04); padding: 28px;
+      background: var(--surface); padding: 28px;
       display: flex; flex-direction: column; gap: 12px;
     }
     .demo-after {
-      background: rgba(99,102,241,0.08); padding: 28px;
-      border: 2px solid rgba(99,102,241,0.45);
+      background: var(--accent-tint); padding: 28px;
+      border: 2px solid rgba(31,92,61,0.35);
       display: flex; flex-direction: column; gap: 12px;
     }
     .demo-badge {
@@ -355,41 +382,42 @@
       font-size: 12px; font-weight: 700; padding: 4px 10px;
       border-radius: 20px; width: fit-content;
     }
-    .demo-badge-before { background: rgba(239,68,68,0.15); color: #f87171; }
-    .demo-badge-after { background: rgba(16,185,129,0.15); color: #34d399; }
-    .demo-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 4px; }
+    .demo-badge-before { background: var(--danger-tint); color: var(--danger); }
+    .demo-badge-after { background: rgba(31,92,61,0.14); color: var(--accent); }
+    .demo-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-faint); margin-bottom: 4px; }
     .demo-bullet {
       padding: 10px 14px; border-radius: 8px;
-      font-size: 13px; line-height: 1.55; color: #94a3b8;
+      font-size: 13px; line-height: 1.55; color: var(--ink-soft);
     }
-    .demo-bullet-before { background: rgba(255,255,255,0.05); }
-    .demo-bullet-after { background: rgba(99,102,241,0.12); border-left: 3px solid #6366F1; color: #a5b4fc; font-weight: 500; }
+    .demo-bullet-before { background: #F4F1EA; }
+    .demo-bullet-after { background: rgba(31,92,61,0.10); border-left: 3px solid var(--accent); color: var(--accent-ink); font-weight: 500; }
     .demo-footer { font-size: 12px; font-weight: 700; padding: 10px 14px; border-radius: 8px; text-align: center; margin-top: auto; }
-    .demo-footer-before { background: rgba(239,68,68,0.1); color: #f87171; }
-    .demo-footer-after { background: rgba(16,185,129,0.1); color: #34d399; }
+    .demo-footer-before { background: var(--danger-tint); color: var(--danger); }
+    .demo-footer-after { background: rgba(31,92,61,0.12); color: var(--accent); }
     .demo-arrow-col {
-      background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center;
-      padding: 0 20px; border-top: 1px solid rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.07);
+      background: #F4F1EA; display: flex; align-items: center; justify-content: center;
+      padding: 0 20px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
     }
     .demo-arrow-circle {
       width: 48px; height: 48px; border-radius: 50%;
-      background: linear-gradient(135deg,#6366F1,#8B5CF6);
+      background: var(--accent);
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 20px; box-shadow: 0 0 20px rgba(99,102,241,0.45);
+      color: #fff; font-size: 20px; box-shadow: 0 6px 16px rgba(31,92,61,0.3);
     }
 
     /* ── HOW IT WORKS ── */
     .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
     .step { text-align: center; }
     .step-num {
-      width: 48px; height: 48px; border-radius: 50%;
-      background: rgba(99,102,241,0.15); border: 1px solid rgba(99,102,241,0.3);
-      color: #818CF8; font-size: 20px; font-weight: 900;
+      font-family: 'Fraunces', Georgia, serif;
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--accent-tint); border: 1px solid rgba(31,92,61,0.3);
+      color: var(--accent); font-size: 22px; font-weight: 700;
       display: flex; align-items: center; justify-content: center;
-      margin: 0 auto 16px;
+      margin: 0 auto 18px;
     }
-    .step h3 { font-size: 20px; font-weight: 300; letter-spacing: 0.01em; margin-bottom: 8px; color: #f1f5f9; }
-    .step p { font-size: 14px; color: #64748b; line-height: 1.7; }
+    .step h3 { font-size: 22px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 8px; color: var(--ink); }
+    .step p { font-size: 14px; color: var(--ink-soft); line-height: 1.7; }
 
     /* ── FEATURES ── */
     .features { display: flex; flex-direction: column; gap: 64px; }
@@ -399,37 +427,37 @@
     .feature-row.reverse { direction: rtl; }
     .feature-row.reverse > * { direction: ltr; }
     .feature-icon { font-size: 48px; margin-bottom: 16px; }
-    .feature-body h3 { font-size: 24px; font-weight: 300; letter-spacing: 0.01em; margin-bottom: 12px; color: #f1f5f9; }
-    .feature-body p { font-size: 15px; color: #94a3b8; line-height: 1.75; }
+    .feature-body h3 { font-size: 27px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 12px; color: var(--ink); }
+    .feature-body p { font-size: 15px; color: var(--ink-soft); line-height: 1.75; }
     .feature-visual {
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      background: var(--surface); border: 1px solid var(--line);
       border-radius: 16px; padding: 32px; min-height: 200px;
       display: flex; align-items: center; justify-content: center;
-      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow-sm);
     }
     .feature-visual-inner { width: 100%; }
-    .fv-bar { height: 10px; border-radius: 6px; background: rgba(255,255,255,0.08); margin-bottom: 10px; }
-    .fv-bar.blue { background: linear-gradient(90deg,#6366F1,#8B5CF6); }
-    .fv-bar.light-blue { background: rgba(99,102,241,0.3); }
+    .fv-bar { height: 10px; border-radius: 6px; background: #ECE5D8; margin-bottom: 10px; }
+    .fv-bar.blue { background: var(--accent); }
+    .fv-bar.light-blue { background: rgba(31,92,61,0.28); }
 
     /* ── TEMPLATE GALLERY ── */
     .gallery-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 32px; }
     .gallery-tab {
-      padding: 8px 24px; border-radius: 8px; font-size: 14px; font-weight: 700;
-      cursor: pointer; border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.04); color: #64748b; transition: all .15s;
+      padding: 8px 24px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--line-2);
+      background: var(--surface); color: var(--ink-soft); transition: all .15s;
     }
-    .gallery-tab.active { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.12); color: #818CF8; }
+    .gallery-tab.active { border-color: var(--accent); background: var(--accent-tint); color: var(--accent); }
     .gallery-outer { position: relative; }
     .gallery-scroll-btn {
       position: absolute; top: 50%; transform: translateY(-50%);
       width: 40px; height: 40px; border-radius: 50%;
-      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      background: var(--surface); border: 1px solid var(--line-2);
       display: flex; align-items: center; justify-content: center;
-      cursor: pointer; font-size: 18px; z-index: 2; color: #94a3b8;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.4); transition: all .15s;
+      cursor: pointer; font-size: 18px; z-index: 2; color: var(--ink-soft);
+      box-shadow: var(--shadow-sm); transition: all .15s;
     }
-    .gallery-scroll-btn:hover { border-color: rgba(99,102,241,0.5); color: #818CF8; background: rgba(99,102,241,0.12); }
+    .gallery-scroll-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-tint); }
     .gallery-scroll-btn.left { left: -20px; }
     .gallery-scroll-btn.right { right: -20px; }
     .gallery-track-wrap { overflow: hidden; }
@@ -440,18 +468,18 @@
     .gallery-track::-webkit-scrollbar { display: none; }
     .template-card {
       flex-shrink: 0; width: 180px; border-radius: 12px; overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04);
-      box-shadow: 0 2px 12px rgba(0,0,0,0.3); transition: all .2s; cursor: pointer;
+      border: 1px solid var(--line); background: var(--surface);
+      box-shadow: var(--shadow-sm); transition: all .2s; cursor: pointer;
     }
-    .template-card:hover { border-color: rgba(99,102,241,0.5); box-shadow: 0 4px 24px rgba(99,102,241,0.2); transform: translateY(-2px); }
+    .template-card:hover { border-color: var(--accent); box-shadow: 0 10px 26px rgba(31,92,61,0.14); transform: translateY(-2px); }
     .tcard-body { padding: 12px; }
-    .tcard-line { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08); margin-bottom: 6px; }
-    .tcard-line.dark { background: rgba(255,255,255,0.13); }
+    .tcard-line { height: 6px; border-radius: 4px; background: #ECE5D8; margin-bottom: 6px; }
+    .tcard-line.dark { background: #D9CFBC; }
     .tcard-line.short { width: 60%; }
-    .tcard-name { font-size: 12px; font-weight: 700; color: #cbd5e1; margin-bottom: 4px; }
+    .tcard-name { font-size: 12px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
     .tcard-free-badge {
-      font-size: 10px; font-weight: 800; color: #34d399;
-      background: rgba(16,185,129,0.15); padding: 2px 8px; border-radius: 20px;
+      font-size: 10px; font-weight: 800; color: var(--accent);
+      background: var(--accent-tint); padding: 2px 8px; border-radius: 20px;
       display: inline-block; margin-bottom: 8px;
     }
     .tcard-btn {
@@ -459,143 +487,129 @@
       font-size: 12px; font-weight: 700; text-align: center; border: none; cursor: pointer;
       transition: all .15s;
     }
-    .tcard-btn-free { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; }
+    .tcard-btn-free { background: var(--accent); color: #fff; }
     .tcard-btn-free:hover { opacity: 0.88; }
-    .tcard-btn-pro { background: rgba(255,255,255,0.06); color: #64748b; }
-    .tcard-btn-pro:hover { background: rgba(255,255,255,0.11); color: #94a3b8; }
+    .tcard-btn-pro { background: #EDE6D8; color: var(--ink-soft); }
+    .tcard-btn-pro:hover { background: #E3DACA; color: var(--ink); }
 
     /* Pro modal / Checkout modal */
     .modal-overlay {
       display: none; position: fixed; inset: 0; z-index: 300;
-      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      background: rgba(25,21,18,0.55); backdrop-filter: blur(4px);
       align-items: center; justify-content: center;
     }
     .modal-overlay.open { display: flex; }
     .modal-box {
-      background: rgba(10,12,24,0.97); border: 1px solid rgba(255,255,255,0.1);
-      backdrop-filter: blur(20px);
+      background: var(--surface); border: 1px solid var(--line);
       border-radius: 20px; padding: 40px; max-width: 440px; width: 90%;
-      box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.15);
+      box-shadow: 0 30px 80px rgba(25,21,18,0.28);
     }
-    .modal-box h3 { font-size: 22px; font-weight: 900; margin-bottom: 8px; color: #f1f5f9; }
-    .modal-box p { color: #94a3b8; font-size: 14px; margin-bottom: 20px; line-height: 1.65; }
+    .modal-box h3 { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: var(--ink); }
+    .modal-box p { color: var(--ink-soft); font-size: 14px; margin-bottom: 20px; line-height: 1.65; }
     .modal-actions { display: flex; flex-direction: column; gap: 10px; }
     .checkout-input {
       width: 100%; padding: 13px 16px;
-      border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+      border: 1px solid var(--line-2); border-radius: 10px;
       font-size: 15px; font-family: inherit; outline: none; transition: border-color .15s;
       margin-bottom: 6px; box-sizing: border-box;
-      background: rgba(255,255,255,0.06); color: #e2e8f0;
+      background: var(--bg); color: var(--ink);
     }
-    .checkout-input::placeholder { color: #64748b; }
-    .checkout-input:focus { border-color: rgba(99,102,241,0.6); background: rgba(99,102,241,0.06); }
-    .checkout-error { color: #f87171; font-size: 13px; font-weight: 600; min-height: 18px; margin-bottom: 12px; }
+    .checkout-input::placeholder { color: var(--ink-faint); }
+    .checkout-input:focus { border-color: var(--accent); background: var(--surface); }
+    .checkout-error { color: var(--danger); font-size: 13px; font-weight: 600; min-height: 18px; margin-bottom: 12px; }
     .hub-box {
       border-radius: 8px; padding: 12px; text-align: center;
       font-size: 12px; font-weight: 700; cursor: pointer; transition: filter .15s;
     }
-    .hub-box:hover { filter: brightness(1.2); }
+    .hub-box:hover { filter: brightness(1.05); }
     /* Template card preview */
     .tcard-header { height: 140px; overflow: hidden; padding: 0; position: relative; }
 
     /* ── TESTIMONIALS ── */
     .testimonials { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
     .testimonial {
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      background: var(--surface); border: 1px solid var(--line);
       border-radius: 16px; padding: 28px;
-      transition: border-color .2s, transform .2s;
+      box-shadow: var(--shadow-sm);
+      transition: border-color .2s, transform .2s, box-shadow .2s;
     }
-    .testimonial:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-3px); }
-    .stars { color: #fbbf24; font-size: 16px; margin-bottom: 14px; }
-    .testimonial p { font-size: 15px; color: #94a3b8; line-height: 1.7; margin-bottom: 16px; }
-    .testimonial-author { font-size: 13px; font-weight: 700; color: #64748b; }
+    .testimonial:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--shadow-md); }
+    .stars { color: var(--gold); font-size: 16px; margin-bottom: 14px; }
+    .testimonial p { font-family: 'Fraunces', Georgia, serif; font-size: 17px; font-style: italic; color: var(--ink); line-height: 1.6; margin-bottom: 16px; }
+    .testimonial-author { font-size: 13px; font-weight: 700; color: var(--ink-soft); }
 
     /* ── CTA BANNER ── */
     .cta-banner {
-      background: linear-gradient(135deg, #3730A3, #6D28D9);
-      padding: 72px 24px; text-align: center; color: #fff;
+      background: var(--accent);
+      padding: 76px 24px; text-align: center; color: #fff;
       position: relative; overflow: hidden;
     }
     .cta-banner::before {
       content: '';
       position: absolute; inset: 0;
-      background: radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.4) 0%, transparent 70%);
+      background: radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.14) 0%, transparent 65%);
     }
     .cta-banner .container { position: relative; z-index: 1; }
-    .cta-banner h2 { font-size: clamp(26px, 4vw, 40px); font-weight: 300; letter-spacing: 0.01em; margin-bottom: 14px; }
-    .cta-banner p { font-size: 17px; opacity: 0.85; margin-bottom: 32px; }
+    .cta-banner h2 { font-size: clamp(28px, 4vw, 44px); font-weight: 600; letter-spacing: -0.015em; margin-bottom: 14px; color: #fff; }
+    .cta-banner p { font-size: 17px; opacity: 0.9; margin-bottom: 32px; }
 
     /* ── FAQ ── */
     .faq-list { max-width: 720px; margin: 0 auto; }
-    .faq-item { border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .faq-item { border-bottom: 1px solid var(--line); }
     .faq-q {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 20px 0; cursor: pointer; font-size: 15px; font-weight: 600; color: #cbd5e1;
+      padding: 20px 0; cursor: pointer; font-size: 16px; font-weight: 600; color: var(--ink);
     }
-    .faq-q:hover { color: #818CF8; }
-    .faq-arrow { font-size: 20px; color: #64748b; transition: transform .2s; flex-shrink: 0; }
-    .faq-a { font-size: 14px; color: #94a3b8; line-height: 1.75; padding-bottom: 20px; display: none; }
+    .faq-q:hover { color: var(--accent); }
+    .faq-arrow { font-size: 20px; color: var(--ink-faint); transition: transform .2s; flex-shrink: 0; }
+    .faq-a { font-size: 14px; color: var(--ink-soft); line-height: 1.75; padding-bottom: 20px; display: none; }
 
     /* ── PRICING ── */
     .pricing-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; max-width: 1020px; margin: 0 auto; }
     .competitor-compare {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(99,102,241,0.2);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 20px; padding: 40px; max-width: 1020px; margin: 0 auto 48px;
-      box-shadow: 0 0 60px rgba(99,102,241,0.07), inset 0 1px 0 rgba(255,255,255,0.06);
+      box-shadow: var(--shadow-md);
       position: relative;
     }
-    .competitor-compare::before {
-      content: '';
-      position: absolute; inset: -1px; border-radius: 21px;
-      background: linear-gradient(135deg, rgba(99,102,241,0.3), transparent 50%, rgba(139,92,246,0.15));
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor; mask-composite: exclude;
-      padding: 1px; pointer-events: none;
-    }
-    .cc-title { font-size: 20px; font-weight: 800; color: #e2e8f0; margin-bottom: 8px; }
-    .cc-sub { font-size: 14px; color: #64748b; margin-bottom: 28px; }
+    .cc-title { font-family: 'Fraunces', Georgia, serif; font-size: 22px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+    .cc-sub { font-size: 14px; color: var(--ink-soft); margin-bottom: 28px; }
     .cc-table { width: 100%; border-collapse: collapse; }
-    .cc-table th { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px; text-align: left; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .cc-table th.ours { background: rgba(99,102,241,0.18); color: #818CF8; border-radius: 8px 8px 0 0; border-bottom: 2px solid rgba(99,102,241,0.4); }
-    .cc-table td { font-size: 14px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); color: #94a3b8; }
-    .cc-table td.ours { background: rgba(99,102,241,0.07); font-weight: 600; color: #a5b4fc; border-left: none; }
-    .cc-table td.win { color: #34d399; font-weight: 700; }
-    .cc-table td.lose { color: #f87171; }
+    .cc-table th { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 16px; text-align: left; color: var(--ink-faint); border-bottom: 1px solid var(--line); }
+    .cc-table th.ours { background: var(--accent-tint); color: var(--accent); border-radius: 8px 8px 0 0; border-bottom: 2px solid rgba(31,92,61,0.4); }
+    .cc-table td { font-size: 14px; padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--ink-soft); }
+    .cc-table td.ours { background: rgba(31,92,61,0.06); font-weight: 600; color: var(--accent-ink); border-left: none; }
+    .cc-table td.win { color: var(--accent); font-weight: 700; }
+    .cc-table td.lose { color: var(--danger); }
     .cc-table tr:last-child td { border-bottom: none; }
-    .cc-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
-    .cc-table tbody tr:hover td.ours { background: rgba(99,102,241,0.12); }
+    .cc-table tbody tr:hover td { background: #F7F3EB; }
+    .cc-table tbody tr:hover td.ours { background: rgba(31,92,61,0.1); }
 
     /* ── Mobile: stacked card layout (no horizontal scroll) ── */
     @media (max-width: 640px) {
       .competitor-compare { padding: 20px 16px; border-radius: 16px; }
-      .cc-title { font-size: 17px; }
-      /* Hide horizontal scroll wrapper */
+      .cc-title { font-size: 19px; }
       .competitor-compare [style*="overflow-x"] { overflow: visible !important; }
-      /* Collapse thead — replaced by ::before labels */
       .cc-table thead { display: none; }
       .cc-table, .cc-table tbody { display: block; }
-      /* Each row = feature block */
       .cc-table tbody tr {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
         grid-template-rows: auto auto;
         padding: 12px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.07);
+        border-bottom: 1px solid var(--line);
         gap: 0;
         position: relative;
       }
       .cc-table tbody tr:last-child { border-bottom: none; }
-      /* Feature label — full width top row */
       .cc-table tbody td:first-child {
         grid-column: 1 / -1;
         padding: 0 0 8px 0;
         font-size: 11px; font-weight: 800; text-transform: uppercase;
-        letter-spacing: 0.6px; color: #64748b; border-bottom: none;
+        letter-spacing: 0.6px; color: var(--ink-faint); border-bottom: none;
         background: none !important;
       }
-      /* The 3 competitor cells: small card per col */
       .cc-table tbody td:not(:first-child) {
         padding: 6px 4px 2px;
         font-size: 12px;
@@ -603,60 +617,59 @@
         border-bottom: none;
         border-radius: 8px;
       }
-      /* Competitor name labels above each value */
       .cc-table tbody td:nth-child(2)::before {
         content: "Jobscan";
         display: block; font-size: 9px; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.5px; color: #475569; margin-bottom: 4px;
+        letter-spacing: 0.5px; color: var(--ink-faint); margin-bottom: 4px;
       }
       .cc-table tbody td:nth-child(3)::before {
         content: "Rezi";
         display: block; font-size: 9px; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.5px; color: #475569; margin-bottom: 4px;
+        letter-spacing: 0.5px; color: var(--ink-faint); margin-bottom: 4px;
       }
       .cc-table tbody td:nth-child(4)::before {
         content: "Ours ✦";
         display: block; font-size: 9px; font-weight: 800; text-transform: uppercase;
-        letter-spacing: 0.5px; color: #818CF8; margin-bottom: 4px;
+        letter-spacing: 0.5px; color: var(--accent); margin-bottom: 4px;
       }
       .cc-table tbody td:nth-child(4).ours {
-        background: rgba(99,102,241,0.15) !important;
-        border: 1px solid rgba(99,102,241,0.3);
+        background: rgba(31,92,61,0.12) !important;
+        border: 1px solid rgba(31,92,61,0.3);
         font-weight: 700;
       }
     }
-    .lifetime-badge { display: inline-block; background: linear-gradient(135deg, #8B5CF6, #6366F1); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
+    .lifetime-badge { display: inline-block; background: var(--gold); color: #fff; font-size: 11px; font-weight: 800; padding: 2px 10px; border-radius: 20px; margin-left: 8px; vertical-align: middle; }
     .pricing-card {
-      border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 36px; position: relative;
-      background: rgba(255,255,255,0.04); backdrop-filter: blur(10px);
-      transition: border-color .2s, transform .2s;
+      border: 1px solid var(--line); border-radius: 20px; padding: 36px; position: relative;
+      background: var(--surface); box-shadow: var(--shadow-sm);
+      transition: border-color .2s, transform .2s, box-shadow .2s;
     }
-    .pricing-card:hover { transform: translateY(-3px); border-color: rgba(99,102,241,0.3); }
+    .pricing-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: var(--shadow-md); }
     .pricing-card-featured {
-      border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.07);
-      box-shadow: 0 0 40px rgba(99,102,241,0.12);
+      border-color: var(--accent); background: var(--surface);
+      box-shadow: 0 14px 40px rgba(31,92,61,0.16);
     }
     .plan-badge {
       position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
-      background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; font-size: 12px; font-weight: 800;
+      background: var(--accent); color: #fff; font-size: 12px; font-weight: 700;
       padding: 4px 16px; border-radius: 20px; white-space: nowrap;
     }
-    .plan-name { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: #e2e8f0; }
-    .plan-price { font-size: 48px; font-weight: 900; color: #f1f5f9; }
-    .plan-period { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+    .plan-name { font-size: 20px; font-weight: 600; margin-bottom: 8px; color: var(--ink); }
+    .plan-price { font-family: 'Fraunces', Georgia, serif; font-size: 50px; font-weight: 600; color: var(--ink); }
+    .plan-period { font-size: 13px; color: var(--ink-faint); margin-bottom: 28px; }
     .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
-    .plan-features li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: #94a3b8; }
-    .check-icon { color: #34d399; font-weight: 800; flex-shrink: 0; }
-    .cross-icon { color: #64748b; flex-shrink: 0; }
+    .plan-features li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--ink-soft); }
+    .check-icon { color: var(--accent); font-weight: 800; flex-shrink: 0; }
+    .cross-icon { color: var(--ink-faint); flex-shrink: 0; }
 
     /* ── FOOTER ── */
-    .footer { background: rgba(0,0,0,0.5); border-top: 1px solid rgba(255,255,255,0.07); color: #64748b; padding: 48px 24px; }
+    .footer { background: var(--bg-alt); border-top: 1px solid var(--line); color: var(--ink-soft); padding: 48px 24px; }
     .footer-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 24px; align-items: center; justify-content: space-between; }
-    .footer .logo { color: #f1f5f9; }
+    .footer .logo { color: var(--ink); }
     .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
-    .footer-links a { font-size: 14px; font-weight: 600; color: #64748b; transition: color .15s; }
-    .footer-links a:hover { color: #e2e8f0; }
-    .footer-copy { font-size: 13px; }
+    .footer-links a { font-size: 14px; font-weight: 500; color: var(--ink-soft); transition: color .15s; }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-copy { font-size: 13px; color: var(--ink-faint); }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
@@ -668,7 +681,7 @@
       .pricing-cards { grid-template-columns: 1fr; max-width: 400px; }
       .competitor-compare { padding: 28px 20px; }
       .demo-wrap { grid-template-columns: 1fr; }
-      .demo-arrow-col { padding: 16px; border: none; border-top: 1px solid rgba(255,255,255,0.07); border-bottom: 1px solid rgba(255,255,255,0.07); }
+      .demo-arrow-col { padding: 16px; border: none; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
       .gallery-scroll-btn.left { left: 0; }
       .gallery-scroll-btn.right { right: 0; }
     }
@@ -676,65 +689,65 @@
       .hero { padding: 64px 0 48px; }
       .section { padding: 56px 0; }
       .hero-sub { font-size: 15px; }
-      .hero h1 { font-size: 36px; }
+      .hero h1 { font-size: 40px; }
     }
     /* ── Resume Tiers ── */
     .tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
     .tier-card {
-      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+      background: var(--surface); border: 1px solid var(--line);
       border-radius: 16px; overflow: hidden; transition: all .22s; cursor: pointer;
-      display: flex; flex-direction: column;
+      display: flex; flex-direction: column; box-shadow: var(--shadow-sm);
     }
-    .tier-card:hover { transform: translateY(-6px); box-shadow: 0 20px 48px rgba(0,0,0,0.5); border-color: rgba(99,102,241,0.3); }
+    .tier-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); border-color: var(--accent); }
     .tier-top { padding: 24px 24px 16px; }
     .tier-level-badge {
       display: inline-block; font-size: 11px; font-weight: 800;
       text-transform: uppercase; letter-spacing: 1.5px;
       padding: 3px 10px; border-radius: 20px; margin-bottom: 10px;
     }
-    .tier-name { font-size: 22px; font-weight: 900; margin-bottom: 8px; color: #e2e8f0; }
-    .tier-desc { font-size: 14px; color: #94a3b8; line-height: 1.65; }
+    .tier-name { font-size: 24px; font-weight: 600; margin-bottom: 8px; color: var(--ink); }
+    .tier-desc { font-size: 14px; color: var(--ink-soft); line-height: 1.65; }
     .tier-preview-frame {
-      background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.07);
-      border-bottom: 1px solid rgba(255,255,255,0.07); height: 200px; overflow: hidden;
+      background: var(--bg); border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line); height: 200px; overflow: hidden;
       position: relative;
     }
     .tier-preview-frame .tier-overlay {
-      position: absolute; inset: 0; background: rgba(10,12,30,0.88);
+      position: absolute; inset: 0; background: rgba(25,21,18,0.72);
       display: flex; align-items: center; justify-content: center;
       opacity: 0; transition: opacity .2s;
     }
     .tier-card:hover .tier-overlay { opacity: 1; }
     .tier-overlay span {
-      background: rgba(99,102,241,0.9); color: #fff; font-size: 13px; font-weight: 800;
+      background: var(--accent); color: #fff; font-size: 13px; font-weight: 700;
       padding: 8px 20px; border-radius: 20px; letter-spacing: .3px;
     }
     .tier-bottom { padding: 20px 24px; flex: 1; display: flex; flex-direction: column; }
     .tier-features { list-style: none; display: flex; flex-direction: column; gap: 9px; margin-bottom: 20px; flex: 1; }
-    .tier-features li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: #94a3b8; }
+    .tier-features li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: var(--ink-soft); }
     .tier-check { font-weight: 800; flex-shrink: 0; }
-    .tier-basic-card { border-top: 4px solid #475569; }
-    .tier-pro-card { border-top: 4px solid #6366F1; box-shadow: 0 4px 20px rgba(99,102,241,0.15); }
-    .tier-exec-card { border-top: 4px solid #1e3a5f; }
+    .tier-basic-card { border-top: 4px solid var(--line-2); }
+    .tier-pro-card { border-top: 4px solid var(--accent); box-shadow: 0 6px 22px rgba(31,92,61,0.12); }
+    .tier-exec-card { border-top: 4px solid var(--ink); }
     /* Tier modal */
     .tier-modal-overlay {
-      position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.8);
+      position: fixed; inset: 0; z-index: 9999; background: rgba(25,21,18,0.6);
       backdrop-filter: blur(4px);
       display: none; align-items: center; justify-content: center; padding: 24px;
     }
     .tier-modal-overlay.open { display: flex; }
     .tier-modal-box {
-      background: rgba(10,12,24,0.98); border: 1px solid rgba(255,255,255,0.1);
+      background: var(--surface); border: 1px solid var(--line);
       border-radius: 16px; width: 100%; max-width: 700px;
-      max-height: 90vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 32px 80px rgba(25,21,18,0.3);
     }
     .tier-modal-header {
-      padding: 20px 24px; border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 20px 24px; border-bottom: 1px solid var(--line);
       display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; background: rgba(10,12,24,0.98);
-      backdrop-filter: blur(10px); z-index: 1;
+      position: sticky; top: 0; background: var(--surface);
+      z-index: 1;
     }
-    .tier-modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: #64748b; line-height: 1; }
+    .tier-modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--ink-soft); line-height: 1; }
     .tier-modal-body { padding: 28px; }
     @media (max-width: 900px) {
       .tiers-grid { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; }
@@ -746,17 +759,9 @@
 
     /* Demo wrap hover */
     .demo-wrap { transition: box-shadow 0.3s ease; }
-    .demo-wrap:hover { box-shadow: 0 4px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.4); }
+    .demo-wrap:hover { box-shadow: var(--shadow-md), 0 0 0 1px var(--accent); }
 
-    /* ── Interactive neural-vortex background (full page, fixed, behind content) ── */
-    #neuro {
-      position: fixed; inset: 0; width: 100%; height: 100%;
-      z-index: -1; pointer-events: none; display: block; opacity: 0.9;
-    }
-    /* Soften the existing static grid so the animated background reads clearly */
-    body::before { opacity: 0.5; }
-
-    /* ── Hero headline: staggered word-by-word reveal (Digital Serenity effect) ── */
+    /* ── Hero headline: staggered word-by-word reveal ── */
     @keyframes word-appear {
       0%   { opacity: 0; transform: translateY(30px) scale(0.8); filter: blur(10px); }
       50%  { opacity: 0.8; transform: translateY(10px) scale(0.95); filter: blur(2px); }
@@ -769,7 +774,7 @@
     }
     .hero h1 .word-animate:hover {
       transform: translateY(-3px);
-      text-shadow: 0 0 22px rgba(129,140,248,0.55);
+      text-shadow: 0 2px 18px rgba(31,92,61,0.28);
     }
   </style>
 </head>
@@ -819,7 +824,7 @@
   <div class="hero-orb orb-2"></div>
   <div class="container">
     <h1><span class="word-animate" style="animation-delay:0ms">Your</span> <span class="word-animate" style="animation-delay:120ms">resume,</span><br /><span class="word-animate blue" style="animation-delay:260ms">perfectly</span> <span class="word-animate blue" style="animation-delay:380ms">tailored</span><br /><span class="word-animate" style="animation-delay:520ms">to</span> <span class="word-animate" style="animation-delay:620ms">every</span> <span class="word-animate" style="animation-delay:740ms">job.</span></h1>
-    <p class="hero-sub">Paste your resume + a job posting. Our AI rewrites it with the right keywords and writes a compelling cover letter in under 30 seconds — <strong style="color:#cbd5e1;">unlimited and free</strong>, no credit card.</p>
+    <p class="hero-sub">Paste your resume + a job posting. Our AI rewrites it with the right keywords and writes a compelling cover letter in under 30 seconds — <strong style="color:#57514A;">unlimited and free</strong>, no credit card.</p>
     <div class="hero-cta">
       <div class="hero-cta-row">
         <a href="/dashboard" class="btn btn-primary btn-lg">Start Unlimited Free Tailoring →</a>
@@ -887,25 +892,25 @@
 </section>
 
 <!-- FREE TOOLS HUB PROMO BLOCK -->
-<section style="padding:64px 0;background:linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.06));">
+<section style="padding:64px 0;background:#F1EADD;">
   <div class="container" style="max-width:960px;margin:0 auto;padding:0 24px;">
     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:48px;">
       <div style="flex:1;min-width:280px;">
-        <p data-i18n="promo_eyebrow" style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#818CF8;margin-bottom:12px;">100% Free · No Account Required</p>
-        <h2 data-i18n="promo_title" style="font-size:clamp(26px,3.5vw,38px);font-weight:300;letter-spacing:0.01em;color:#f8fafc;margin-bottom:16px;line-height:1.2;">Is Your Resume <span style="font-weight:400;background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span></h2>
-        <p data-i18n="promo_desc" style="font-size:16px;color:#94a3b8;margin-bottom:28px;line-height:1.7;">Paste your resume and job description. Claude AI scores your keyword match, flags what's missing, and gives you 5 specific fixes — in seconds. No login, no credit card.</p>
+        <p data-i18n="promo_eyebrow" style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#1F5C3D;margin-bottom:12px;">100% Free · No Account Required</p>
+        <h2 data-i18n="promo_title" style="font-size:clamp(26px,3.5vw,38px);font-weight:300;letter-spacing:0.01em;color:#191512;margin-bottom:16px;line-height:1.2;">Is Your Resume <span style="font-weight:400;background:#1F5C3D;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span></h2>
+        <p data-i18n="promo_desc" style="font-size:16px;color:#57514A;margin-bottom:28px;line-height:1.7;">Paste your resume and job description. Claude AI scores your keyword match, flags what's missing, and gives you 5 specific fixes — in seconds. No login, no credit card.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:28px;">
-          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#94a3b8;"><span style="color:#6366F1;font-size:18px;">✓</span> <span data-i18n="promo_c1">ATS Match Score</span></div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#94a3b8;"><span style="color:#6366F1;font-size:18px;">✓</span> <span data-i18n="promo_c2">Missing Keywords</span></div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#94a3b8;"><span style="color:#6366F1;font-size:18px;">✓</span> <span data-i18n="promo_c3">Readability Review</span></div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#94a3b8;"><span style="color:#6366F1;font-size:18px;">✓</span> <span data-i18n="promo_c4">AI Suggestions</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#57514A;"><span style="color:#1F5C3D;font-size:18px;">✓</span> <span data-i18n="promo_c1">ATS Match Score</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#57514A;"><span style="color:#1F5C3D;font-size:18px;">✓</span> <span data-i18n="promo_c2">Missing Keywords</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#57514A;"><span style="color:#1F5C3D;font-size:18px;">✓</span> <span data-i18n="promo_c3">Readability Review</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#57514A;"><span style="color:#1F5C3D;font-size:18px;">✓</span> <span data-i18n="promo_c4">AI Suggestions</span></div>
         </div>
-        <a href="/score" class="btn-shine" data-i18n="promo_cta" style="display:inline-block;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:14px 32px;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;box-shadow:0 0 28px rgba(99,102,241,0.4);transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Check My Resume Free →</a>
+        <a href="/score" class="btn-shine" data-i18n="promo_cta" style="display:inline-block;background:#1F5C3D;color:#fff;padding:14px 32px;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;box-shadow:0 0 28px rgba(31,92,61,0.28);transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Check My Resume Free →</a>
       </div>
-      <div style="flex:1;min-width:260px;background:rgba(15,17,26,0.7);border:1px solid rgba(99,102,241,0.25);border-radius:18px;padding:28px;backdrop-filter:blur(10px);">
+      <div style="flex:1;min-width:260px;background:#FFFFFF;border:1px solid rgba(31,92,61,0.25);border-radius:18px;padding:28px;backdrop-filter:blur(10px);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-          <span data-i18n="promo_card_title" style="font-size:14px;font-weight:700;color:#f1f5f9;">ATS Match Score</span>
-          <span data-i18n="promo_card_badge" style="background:rgba(99,102,241,0.15);color:#818CF8;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;">Preview</span>
+          <span data-i18n="promo_card_title" style="font-size:14px;font-weight:700;color:#191512;">ATS Match Score</span>
+          <span data-i18n="promo_card_badge" style="background:rgba(31,92,61,0.12);color:#1F5C3D;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;">Preview</span>
         </div>
         <div style="text-align:center;margin-bottom:20px;">
           <div style="font-size:56px;font-weight:900;background:linear-gradient(135deg,#22c55e,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">82</div>
@@ -918,7 +923,7 @@
           <span style="filter:blur(4px);background:rgba(239,68,68,0.12);color:#f87171;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">machine learning</span>
           <span style="filter:blur(4px);background:rgba(239,68,68,0.12);color:#f87171;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">Tableau</span>
         </div>
-        <p data-i18n="promo_card_lock" style="font-size:12px;color:#64748b;text-align:center;">🔒 Missing keywords unlocked for Pro users</p>
+        <p data-i18n="promo_card_lock" style="font-size:12px;color:#918A7E;text-align:center;">🔒 Missing keywords unlocked for Pro users</p>
       </div>
     </div>
   </div>
@@ -943,16 +948,16 @@
               <div style="position:relative;width:82px;height:82px;flex-shrink:0;">
                 <svg viewBox="0 0 80 80" style="width:82px;height:82px;transform:rotate(-90deg);">
                   <circle cx="40" cy="40" r="34" fill="none" stroke="#e5e7eb" stroke-width="8"/>
-                  <circle cx="40" cy="40" r="34" fill="none" stroke="#2563eb" stroke-width="8"
+                  <circle cx="40" cy="40" r="34" fill="none" stroke="#1F5C3D" stroke-width="8"
                     stroke-dasharray="213.6" stroke-dashoffset="6.4" stroke-linecap="round"/>
                 </svg>
                 <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
-                  <span style="font-size:19px;font-weight:900;color:#2563eb;line-height:1;">97%</span>
+                  <span style="font-size:19px;font-weight:900;color:#1F5C3D;line-height:1;">97%</span>
                   <span style="font-size:8px;color:#6b7280;font-weight:700;letter-spacing:1px;">MATCH</span>
                 </div>
               </div>
               <div style="flex:1;">
-                <div data-i18n="feat_kw_matches" style="font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Keyword Matches</div>
+                <div data-i18n="feat_kw_matches" style="font-size:12px;font-weight:700;color:#57514A;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Keyword Matches</div>
                 <div style="display:flex;flex-wrap:wrap;gap:5px;">
                   <span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">✓ Python</span>
                   <span style="background:#dcfce7;color:#16a34a;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">✓ API Design</span>
@@ -965,7 +970,7 @@
             </div>
             <div style="background:rgba(16,185,129,0.1);border-radius:10px;padding:12px 14px;border-left:4px solid #10b981;">
               <div data-i18n="feat_ats_pass" style="font-size:11px;font-weight:800;color:#34d399;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;">✓ ATS PASS — Screener Cleared</div>
-              <div data-i18n="feat_ats_pass_desc" style="font-size:12px;color:#94a3b8;line-height:1.6;">Your resume now speaks the job posting's language. Bots approve. Humans notice.</div>
+              <div data-i18n="feat_ats_pass_desc" style="font-size:12px;color:#57514A;line-height:1.6;">Your resume now speaks the job posting's language. Bots approve. Humans notice.</div>
             </div>
           </div>
         </div>
@@ -979,17 +984,17 @@
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner">
-            <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:18px;box-shadow:0 2px 16px rgba(0,0,0,0.3);">
+            <div style="background:#F4F1EA;border:1px solid #E7DFD1;border-radius:12px;padding:18px;box-shadow:0 2px 16px rgba(25,21,18,0.08);">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                <span data-i18n="feat_cl_label" style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Cover Letter</span>
+                <span data-i18n="feat_cl_label" style="font-size:10px;font-weight:800;color:#918A7E;text-transform:uppercase;letter-spacing:1px;">Cover Letter</span>
                 <span data-i18n="feat_cl_badge" style="background:rgba(16,185,129,0.15);color:#34d399;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">AI Generated</span>
               </div>
-              <div data-i18n="feat_cl_date" style="font-size:10px;color:#64748b;margin-bottom:10px;">May 28, 2026 · Stripe, Inc.</div>
-              <div data-i18n="feat_cl_greeting" style="font-size:12px;font-weight:600;color:#cbd5e1;margin-bottom:6px;">Dear Hiring Manager,</div>
-              <div data-i18n="feat_cl_body" style="font-size:12px;color:#94a3b8;line-height:1.7;margin-bottom:8px;">
-                When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style="color:#818CF8;">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.
+              <div data-i18n="feat_cl_date" style="font-size:10px;color:#918A7E;margin-bottom:10px;">May 28, 2026 · Stripe, Inc.</div>
+              <div data-i18n="feat_cl_greeting" style="font-size:12px;font-weight:600;color:#57514A;margin-bottom:6px;">Dear Hiring Manager,</div>
+              <div data-i18n="feat_cl_body" style="font-size:12px;color:#57514A;line-height:1.7;margin-bottom:8px;">
+                When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style="color:#1F5C3D;">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.
               </div>
-              <div data-i18n="feat_cl_more" style="font-size:11px;color:#64748b;font-style:italic;">+ 3 more paragraphs connecting your experience to their exact needs...</div>
+              <div data-i18n="feat_cl_more" style="font-size:11px;color:#918A7E;font-style:italic;">+ 3 more paragraphs connecting your experience to their exact needs...</div>
             </div>
           </div>
         </div>
@@ -1004,13 +1009,13 @@
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner">
-            <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:18px;box-shadow:0 2px 16px rgba(0,0,0,0.3);">
+            <div style="background:#F4F1EA;border:1px solid #E7DFD1;border-radius:12px;padding:18px;box-shadow:0 2px 16px rgba(25,21,18,0.08);">
               <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
                 <span style="font-size:18px;">🔗</span>
                 <span data-i18n="feat_share_badge" style="font-size:10px;font-weight:800;color:#34d399;text-transform:uppercase;letter-spacing:1px;">Shareable Link</span>
               </div>
-              <div style="background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 12px;font-size:12px;color:#93c5fd;margin-bottom:10px;font-family:'SF Mono',Menlo,monospace;">resumetailored.com/r/x8k2p9</div>
-              <div data-i18n="feat_share_note" style="font-size:11px;color:#94a3b8;line-height:1.6;">Opens your resume in the browser — recruiters click and view instantly, on any device.</div>
+              <div style="background:#F1EDE4;border:1px solid #E7DFD1;border-radius:8px;padding:10px 12px;font-size:12px;color:#1F5C3D;margin-bottom:10px;font-family:'SF Mono',Menlo,monospace;">resumetailored.com/r/x8k2p9</div>
+              <div data-i18n="feat_share_note" style="font-size:11px;color:#57514A;line-height:1.6;">Opens your resume in the browser — recruiters click and view instantly, on any device.</div>
             </div>
           </div>
         </div>
@@ -1041,13 +1046,13 @@
               </div>
             </div>
             <div style="padding:16px 20px;background:rgba(15,20,40,0.8);">
-              <div data-i18n="feat_li_before" style="font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Before</div>
-              <div data-i18n="feat_li_before_quote" style="font-size:12px;color:#94a3b8;line-height:1.5;margin-bottom:14px;padding:10px;background:rgba(255,255,255,0.06);border-radius:8px;">"Product Manager at TechCo | I love creating products that users enjoy"</div>
+              <div data-i18n="feat_li_before" style="font-size:10px;font-weight:800;color:#918A7E;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Before</div>
+              <div data-i18n="feat_li_before_quote" style="font-size:12px;color:#57514A;line-height:1.5;margin-bottom:14px;padding:10px;background:#F4F1EA;border-radius:8px;">"Product Manager at TechCo | I love creating products that users enjoy"</div>
               <div data-i18n="feat_li_after" style="font-size:10px;font-weight:800;color:#0077b5;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">After — AI Optimized</div>
-              <div data-i18n="feat_li_after_quote" style="font-size:12px;color:#e2e8f0;font-weight:600;line-height:1.5;padding:10px;background:rgba(0,119,181,0.15);border-radius:8px;border-left:3px solid #0077b5;">"Senior PM | B2B SaaS • 0→1 Product Launches • Data-Driven Growth | $12M ARR Delivered"</div>
+              <div data-i18n="feat_li_after_quote" style="font-size:12px;color:#191512;font-weight:600;line-height:1.5;padding:10px;background:rgba(0,119,181,0.15);border-radius:8px;border-left:3px solid #0077b5;">"Senior PM | B2B SaaS • 0→1 Product Launches • Data-Driven Growth | $12M ARR Delivered"</div>
               <div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap;">
                 <span data-i18n="feat_li_stat1" style="background:rgba(16,185,129,0.15);color:#34d399;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">+43% profile views</span>
-                <span data-i18n="feat_li_stat2" style="background:rgba(99,102,241,0.15);color:#818CF8;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">+2.1× recruiter messages</span>
+                <span data-i18n="feat_li_stat2" style="background:rgba(31,92,61,0.12);color:#1F5C3D;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;">+2.1× recruiter messages</span>
               </div>
             </div>
           </div>
@@ -1055,35 +1060,35 @@
       </div>
 
       <!-- Resume Video Feature — Pro Exclusive -->
-      <div class="feature-row reverse" style="border:2px solid rgba(99,102,241,0.5);border-radius:20px;padding:32px;background:rgba(99,102,241,0.07);position:relative;overflow:hidden;">
-        <div style="position:absolute;top:16px;right:20px;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:4px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">✦ Pro Exclusive</div>
+      <div class="feature-row reverse" style="border:2px solid rgba(31,92,61,0.45);border-radius:20px;padding:32px;background:rgba(31,92,61,0.06);position:relative;overflow:hidden;">
+        <div style="position:absolute;top:16px;right:20px;background:#1F5C3D;color:#fff;font-size:11px;font-weight:800;padding:4px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">✦ Pro Exclusive</div>
         <div class="feature-body">
-          <div class="feature-icon" style="color:#818CF8;">🎬</div>
-          <h3 style="color:#818CF8;" data-i18n="feat_video_title">Resume Video Maker — <em>Pro Members Only</em></h3>
+          <div class="feature-icon" style="color:#1F5C3D;">🎬</div>
+          <h3 style="color:#1F5C3D;" data-i18n="feat_video_title">Resume Video Maker — <em>Pro Members Only</em></h3>
           <p data-i18n="feat_video_desc">Stand out before they even open your resume. Turn it into a short vertical video with a natural studio AI voiceover — addressed to the hiring manager by name — ready to share on LinkedIn, Shorts, and Reels.</p>
           <ul style="list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:8px;">
-            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#818CF8;font-weight:800;">✓</span> Natural studio AI voiceover — male or female</li>
-            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#818CF8;font-weight:800;">✓</span> Addressed to the hiring manager: “Hi Mr. Smith…”</li>
-            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#818CF8;font-weight:800;">✓</span> Vertical MP4 for LinkedIn, Shorts &amp; Reels</li>
-            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#818CF8;font-weight:800;">✓</span> Add your own headshot &amp; brand color</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#1F5C3D;font-weight:800;">✓</span> Natural studio AI voiceover — male or female</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#1F5C3D;font-weight:800;">✓</span> Addressed to the hiring manager: “Hi Mr. Smith…”</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#1F5C3D;font-weight:800;">✓</span> Vertical MP4 for LinkedIn, Shorts &amp; Reels</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#1F5C3D;font-weight:800;">✓</span> Add your own headshot &amp; brand color</li>
           </ul>
-          <button class="btn btn-primary" style="margin-top:20px;background:linear-gradient(135deg,#6366F1,#8B5CF6);border-color:#6366F1;" onclick="openCheckoutModal()">Unlock Resume Video — $19.99/mo →</button>
+          <button class="btn btn-primary" style="margin-top:20px;background:#1F5C3D;border-color:#1F5C3D;" onclick="openCheckoutModal()">Unlock Resume Video — $19.99/mo →</button>
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner" style="display:flex;justify-content:center;background:transparent;border:none;padding:0;">
-            <div style="width:200px;aspect-ratio:9/16;border-radius:22px;overflow:hidden;border:2px solid rgba(99,102,241,0.5);background:#030712;position:relative;display:flex;align-items:center;justify-content:center;">
-              <div style="position:absolute;top:-30px;left:-30px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(99,102,241,0.45),transparent 70%);"></div>
-              <div style="position:absolute;bottom:-25px;right:-25px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(139,92,246,0.4),transparent 70%);"></div>
+            <div style="width:200px;aspect-ratio:9/16;border-radius:22px;overflow:hidden;border:2px solid rgba(46,125,83,0.55);background:#030712;position:relative;display:flex;align-items:center;justify-content:center;">
+              <div style="position:absolute;top:-30px;left:-30px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(46,125,83,0.5),transparent 70%);"></div>
+              <div style="position:absolute;bottom:-25px;right:-25px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(180,131,42,0.4),transparent 70%);"></div>
               <div style="position:relative;text-align:center;color:#F8FAFC;padding:0 16px;">
                 <div style="font-size:13px;color:#94a3b8;">Hi</div>
                 <div style="font-size:26px;font-weight:800;margin-top:2px;">Mr. Smith</div>
-                <div style="font-size:13px;font-weight:600;color:#818CF8;margin-top:6px;">Hiring Manager</div>
+                <div style="font-size:13px;font-weight:600;color:#8FD3AC;margin-top:6px;">Hiring Manager</div>
               </div>
               <div style="position:absolute;bottom:14px;left:14px;display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.12);border-radius:20px;padding:3px 9px;">
                 <div style="width:0;height:0;border-left:8px solid #fff;border-top:5px solid transparent;border-bottom:5px solid transparent;"></div>
                 <span style="font-size:9px;font-weight:700;color:#fff;">0:18</span>
               </div>
-              <div style="position:absolute;bottom:14px;right:12px;display:flex;align-items:center;gap:5px;"><div style="width:9px;height:9px;border-radius:3px;background:#6366F1;"></div><span style="font-size:8.5px;font-weight:700;color:#94a3b8;">ResumeTailored AI</span></div>
+              <div style="position:absolute;bottom:14px;right:12px;display:flex;align-items:center;gap:5px;"><div style="width:9px;height:9px;border-radius:3px;background:#2E7D53;"></div><span style="font-size:8.5px;font-weight:700;color:#9fb3a6;">ResumeTailored AI</span></div>
             </div>
           </div>
         </div>
@@ -1098,12 +1103,12 @@
         <div class="feature-visual">
           <div class="feature-visual-inner">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-              <div class="hub-box" style="background:rgba(99,102,241,0.15);color:#818CF8;" onclick="openCheckoutModal()">💰 Salary Guide</div>
+              <div class="hub-box" style="background:rgba(31,92,61,0.12);color:#1F5C3D;" onclick="openCheckoutModal()">💰 Salary Guide</div>
               <div class="hub-box" style="background:rgba(16,185,129,0.12);color:#34d399;" onclick="openCheckoutModal()">👥 Community Forum</div>
               <div class="hub-box" style="background:rgba(251,191,36,0.12);color:#fbbf24;" onclick="openCheckoutModal()">📈 Career Check-ins</div>
-              <div class="hub-box" style="background:rgba(139,92,246,0.15);color:#a78bfa;" onclick="openCheckoutModal()">🏆 Pro Templates</div>
+              <div class="hub-box" style="background:rgba(180,86,46,0.14);color:#2E7D53;" onclick="openCheckoutModal()">🏆 Pro Templates</div>
             </div>
-            <div style="margin-top:10px;font-size:11px;color:#64748b;text-align:center;">Click any feature to unlock with Pro →</div>
+            <div style="margin-top:10px;font-size:11px;color:#918A7E;text-align:center;">Click any feature to unlock with Pro →</div>
           </div>
         </div>
       </div>
@@ -1121,7 +1126,7 @@
                 <div style="font-size:36px;font-weight:900;color:#ef4444;">45<small style="font-size:14px;">min</small></div>
                 <div style="font-size:12px;color:#6b7280;font-weight:600;" data-i18n="label_manual">Manual</div>
               </div>
-              <div style="font-size:24px;color:#9ca3af;">→</div>
+              <div style="font-size:24px;color:#57514A;">→</div>
               <div>
                 <div style="font-size:36px;font-weight:900;color:#16a34a;">30<small style="font-size:14px;">sec</small></div>
                 <div style="font-size:12px;color:#6b7280;font-weight:600;" data-i18n="label_with_ai">With AI</div>
@@ -1139,39 +1144,39 @@
 <section class="section" id="job-boards" style="padding:60px 0;">
   <div class="container">
     <h2 class="section-title" style="margin-bottom:12px;">Which job boards does ResumeTailored AI <span>support?</span></h2>
-    <p style="text-align:center;color:#94a3b8;font-size:16px;max-width:640px;margin:0 auto 36px;">Paste a job URL from any of the 40+ supported platforms and our AI extracts the full job description automatically — no copying required.</p>
-    <div style="max-width:800px;margin:0 auto;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:32px 36px;">
+    <p style="text-align:center;color:#57514A;font-size:16px;max-width:640px;margin:0 auto 36px;">Paste a job URL from any of the 40+ supported platforms and our AI extracts the full job description automatically — no copying required.</p>
+    <div style="max-width:800px;margin:0 auto;background:#F7F3EB;border:1px solid #E7DFD1;border-radius:16px;padding:32px 36px;">
       <h3 style="font-size:15px;font-weight:700;color:#818cf8;margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;">Supported Job Boards &amp; ATS Platforms</h3>
       <ul style="list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 24px;padding:0;">
-        <li style="color:#cbd5e1;font-size:14px;">✓ LinkedIn</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Indeed</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Glassdoor</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ ZipRecruiter</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Monster</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Dice</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Greenhouse</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Lever</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Workday</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ BambooHR</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Wellfound (AngelList)</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Ashby</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Built In</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ We Work Remotely</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Remote.co</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ FlexJobs</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ SimplyHired</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ CareerBuilder</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Handshake</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ iCIMS</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ SmartRecruiters</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ JazzHR</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Rippling</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Taleo (Oracle)</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ Boss直聘</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ 猎聘 (Liepin)</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ 智联招聘 (Zhaopin)</li>
-        <li style="color:#cbd5e1;font-size:14px;">✓ 前程无忧 (51job)</li>
-        <li style="color:#cbd5e1;font-size:14px;grid-column:1/-1;margin-top:4px;color:#64748b;">+ more added regularly — any URL-accessible job post works</li>
+        <li style="color:#57514A;font-size:14px;">✓ LinkedIn</li>
+        <li style="color:#57514A;font-size:14px;">✓ Indeed</li>
+        <li style="color:#57514A;font-size:14px;">✓ Glassdoor</li>
+        <li style="color:#57514A;font-size:14px;">✓ ZipRecruiter</li>
+        <li style="color:#57514A;font-size:14px;">✓ Monster</li>
+        <li style="color:#57514A;font-size:14px;">✓ Dice</li>
+        <li style="color:#57514A;font-size:14px;">✓ Greenhouse</li>
+        <li style="color:#57514A;font-size:14px;">✓ Lever</li>
+        <li style="color:#57514A;font-size:14px;">✓ Workday</li>
+        <li style="color:#57514A;font-size:14px;">✓ BambooHR</li>
+        <li style="color:#57514A;font-size:14px;">✓ Wellfound (AngelList)</li>
+        <li style="color:#57514A;font-size:14px;">✓ Ashby</li>
+        <li style="color:#57514A;font-size:14px;">✓ Built In</li>
+        <li style="color:#57514A;font-size:14px;">✓ We Work Remotely</li>
+        <li style="color:#57514A;font-size:14px;">✓ Remote.co</li>
+        <li style="color:#57514A;font-size:14px;">✓ FlexJobs</li>
+        <li style="color:#57514A;font-size:14px;">✓ SimplyHired</li>
+        <li style="color:#57514A;font-size:14px;">✓ CareerBuilder</li>
+        <li style="color:#57514A;font-size:14px;">✓ Handshake</li>
+        <li style="color:#57514A;font-size:14px;">✓ iCIMS</li>
+        <li style="color:#57514A;font-size:14px;">✓ SmartRecruiters</li>
+        <li style="color:#57514A;font-size:14px;">✓ JazzHR</li>
+        <li style="color:#57514A;font-size:14px;">✓ Rippling</li>
+        <li style="color:#57514A;font-size:14px;">✓ Taleo (Oracle)</li>
+        <li style="color:#57514A;font-size:14px;">✓ Boss直聘</li>
+        <li style="color:#57514A;font-size:14px;">✓ 猎聘 (Liepin)</li>
+        <li style="color:#57514A;font-size:14px;">✓ 智联招聘 (Zhaopin)</li>
+        <li style="color:#57514A;font-size:14px;">✓ 前程无忧 (51job)</li>
+        <li style="color:#57514A;font-size:14px;grid-column:1/-1;margin-top:4px;color:#918A7E;">+ more added regularly — any URL-accessible job post works</li>
       </ul>
     </div>
   </div>
@@ -1910,8 +1915,8 @@
       <!-- BASIC -->
       <div class="tier-card tier-basic-card" onclick="openTierModal('basic')">
         <div class="tier-top">
-          <div class="tier-level-badge" style="background:rgba(100,116,139,0.15);color:#94a3b8;">Free Tier</div>
-          <div class="tier-name" style="color:#e2e8f0;">Basic</div>
+          <div class="tier-level-badge" style="background:rgba(25,21,18,0.08);color:#57514A;">Free Tier</div>
+          <div class="tier-name" style="color:#191512;">Basic</div>
           <div class="tier-desc">Clean, traditional resumes for students and entry-level job seekers.</div>
         </div>
         <div class="tier-preview-frame">
@@ -1948,8 +1953,8 @@
       <!-- PROFESSIONAL -->
       <div class="tier-card tier-pro-card" onclick="openTierModal('professional')">
         <div class="tier-top">
-          <div class="tier-level-badge" style="background:rgba(99,102,241,0.2);color:#818CF8;">Pro — $19.99/mo</div>
-          <div class="tier-name" style="color:#818CF8;">Professional</div>
+          <div class="tier-level-badge" style="background:rgba(31,92,61,0.14);color:#1F5C3D;">Pro — $19.99/mo</div>
+          <div class="tier-name" style="color:#1F5C3D;">Professional</div>
           <div class="tier-desc">Polished, keyword-rich resumes for mid-career professionals targeting competitive roles.</div>
         </div>
         <div class="tier-preview-frame">
@@ -1991,8 +1996,8 @@
       <!-- EXECUTIVE -->
       <div class="tier-card tier-exec-card" onclick="openTierModal('executive')">
         <div class="tier-top">
-          <div class="tier-level-badge" style="background:rgba(30,58,95,0.3);color:#93c5fd;">Pro — $19.99/mo</div>
-          <div class="tier-name" style="color:#93c5fd;">Executive</div>
+          <div class="tier-level-badge" style="background:rgba(30,58,95,0.12);color:#1e3a5f;">Pro — $19.99/mo</div>
+          <div class="tier-name" style="color:#1e3a5f;">Executive</div>
           <div class="tier-desc">Authority-commanding resumes for directors, VPs, and C-suite leaders.</div>
         </div>
         <div class="tier-preview-frame">
@@ -2034,7 +2039,7 @@
 <div class="tier-modal-overlay" id="tierModal" onclick="closeTierModal(event)">
   <div class="tier-modal-box" onclick="event.stopPropagation()">
     <div class="tier-modal-header">
-      <div id="tierModalTitle" style="font-size:18px;font-weight:800;color:#e2e8f0;"></div>
+      <div id="tierModalTitle" style="font-size:18px;font-weight:800;color:#191512;"></div>
       <button class="tier-modal-close" onclick="document.getElementById('tierModal').classList.remove('open')">✕</button>
     </div>
     <div class="tier-modal-body" id="tierModalBody"></div>
@@ -2216,8 +2221,8 @@
       </div>
       <div style="margin-top:16px;font-size:13px;color:#6b7280;">
         Jobscan data: $49.95/mo for unlimited scans. Rezi cover letter quality based on published user reviews.
-        <a href="/alternatives/jobscan" style="color:#818CF8;font-weight:600;margin-left:8px;">Full Jobscan comparison →</a>
-        <a href="/alternatives/rezi" style="color:#818CF8;font-weight:600;margin-left:8px;">Full Rezi comparison →</a>
+        <a href="/alternatives/jobscan" style="color:#1F5C3D;font-weight:600;margin-left:8px;">Full Jobscan comparison →</a>
+        <a href="/alternatives/rezi" style="color:#1F5C3D;font-weight:600;margin-left:8px;">Full Rezi comparison →</a>
       </div>
     </div>
 
@@ -2246,30 +2251,30 @@
         <ul class="plan-features">
           <li><span class="check-icon">✓</span> Everything in Free, unlimited</li>
           <li><span class="check-icon">✓</span> All 104 premium templates</li>
-          <li><span class="check-icon">✓</span> <strong style="color:#8B5CF6;">Watermark-free exports</strong></li>
-          <li><span class="check-icon">✓</span> <strong style="color:#6366F1;">🎬 Resume video generator</strong></li>
-          <li><span class="check-icon">✓</span> <strong style="color:#8B5CF6;">🌐 Personal website</strong></li>
+          <li><span class="check-icon">✓</span> <strong style="color:#2E7D53;">Watermark-free exports</strong></li>
+          <li><span class="check-icon">✓</span> <strong style="color:#1F5C3D;">🎬 Resume video generator</strong></li>
+          <li><span class="check-icon">✓</span> <strong style="color:#2E7D53;">🌐 Personal website</strong></li>
           <li><span class="check-icon">✓</span> Community networking forum</li>
           <li><span class="check-icon">✓</span> Salary negotiation guide</li>
           <li><span class="check-icon">✓</span> Quarterly career check-ins</li>
         </ul>
         <button class="btn btn-primary btn-full" onclick="openCheckoutModal()">Start Pro — $19.99/mo →</button>
       </div>
-      <div class="pricing-card" style="border-color:rgba(139,92,246,0.5);">
-        <div class="plan-badge" style="background:linear-gradient(135deg,#8B5CF6,#6366F1);">⚡ Best Value</div>
+      <div class="pricing-card" style="border-color:rgba(31,92,61,0.45);">
+        <div class="plan-badge" style="background:#1F5C3D;">⚡ Best Value</div>
         <div class="plan-name">Pro <span class="lifetime-badge">LIFETIME</span></div>
-        <div class="plan-price" style="color:#a78bfa;">$129</div>
+        <div class="plan-price" style="color:#2E7D53;">$129</div>
         <div class="plan-period">one-time · never expires</div>
         <ul class="plan-features">
           <li><span class="check-icon">✓</span> Everything in Pro, forever</li>
           <li><span class="check-icon">✓</span> All 104 premium templates</li>
-          <li><span class="check-icon">✓</span> <strong style="color:#8B5CF6;">Watermark-free exports</strong></li>
-          <li><span class="check-icon">✓</span> <strong style="color:#6366F1;">🎬 Resume video + 🌐 personal website</strong></li>
+          <li><span class="check-icon">✓</span> <strong style="color:#2E7D53;">Watermark-free exports</strong></li>
+          <li><span class="check-icon">✓</span> <strong style="color:#1F5C3D;">🎬 Resume video + 🌐 personal website</strong></li>
           <li><span class="check-icon">✓</span> Career Hub access</li>
           <li><span class="check-icon">✓</span> All future features included</li>
-          <li style="font-size:12px;color:#a78bfa;font-weight:700;">Saves $99+ vs. Rezi Lifetime</li>
+          <li style="font-size:12px;color:#2E7D53;font-weight:700;">Saves $99+ vs. Rezi Lifetime</li>
         </ul>
-        <button class="btn btn-full" style="background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;border:none;" onclick="openLifetimeModal()">Get Lifetime Access — $129 →</button>
+        <button class="btn btn-full" style="background:#1F5C3D;color:#fff;border:none;" onclick="openLifetimeModal()">Get Lifetime Access — $129 →</button>
       </div>
     </div>
   </div>
@@ -2279,12 +2284,12 @@
 <div class="modal-overlay" id="lifetimeModal" onclick="closeLifetimeModal(event)">
   <div class="modal-box">
     <h3 style="margin-bottom:4px;">Pro Lifetime Access</h3>
-    <p style="font-size:13px;color:#a78bfa;font-weight:700;margin-bottom:4px;">⚡ One-time $129 · Never pay again</p>
+    <p style="font-size:13px;color:#2E7D53;font-weight:700;margin-bottom:4px;">⚡ One-time $129 · Never pay again</p>
     <p>Enter your email to get permanent Pro access — every feature, every template, all future updates. Cheaper than Rezi's $149 lifetime.</p>
     <input type="email" id="lifetimeEmail" class="checkout-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')submitLifetime()" />
     <div id="lifetimeError" class="checkout-error"></div>
     <div class="modal-actions">
-      <button id="lifetimeBtn" class="btn btn-full btn-lg" style="background:linear-gradient(135deg,#8B5CF6,#6366F1);color:#fff;border:none;" onclick="submitLifetime()">Get Lifetime Access — $129 →</button>
+      <button id="lifetimeBtn" class="btn btn-full btn-lg" style="background:#1F5C3D;color:#fff;border:none;" onclick="submitLifetime()">Get Lifetime Access — $129 →</button>
       <button class="btn btn-ghost btn-full" onclick="closeLifetimeModal()">Cancel</button>
     </div>
   </div>
@@ -2295,12 +2300,12 @@
   <div class="modal-box" style="max-width:520px;">
     <h3 style="margin-bottom:6px;">Contact Us</h3>
     <p style="font-size:14px;color:#6b7280;margin-bottom:4px;">We read every message and respond within 24 hours.</p>
-    <p style="font-size:13px;color:#64748b;margin-bottom:20px;">📧 <a href="mailto:support@resumetailored.com" style="color:#818CF8;font-weight:600;">support@resumetailored.com</a></p>
+    <p style="font-size:13px;color:#918A7E;margin-bottom:20px;">📧 <a href="mailto:support@resumetailored.com" style="color:#1F5C3D;font-weight:600;">support@resumetailored.com</a></p>
     <div style="display:flex;flex-direction:column;gap:12px;">
-      <input type="text" id="contactName" placeholder="Your name" style="width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;background:rgba(255,255,255,0.06);color:#e2e8f0;" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
-      <input type="email" id="contactEmail" placeholder="Your email" style="width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;background:rgba(255,255,255,0.06);color:#e2e8f0;" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
-      <input type="text" id="contactSubject" placeholder="Subject (optional)" style="width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;background:rgba(255,255,255,0.06);color:#e2e8f0;" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'" />
-      <textarea id="contactMessage" placeholder="How can we help you?" rows="5" style="width:100%;padding:12px 14px;border:1px solid rgba(255,255,255,0.12);border-radius:8px;font-size:14px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;background:rgba(255,255,255,0.06);color:#e2e8f0;" onfocus="this.style.borderColor='rgba(99,102,241,0.6)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'"></textarea>
+      <input type="text" id="contactName" placeholder="Your name" style="width:100%;padding:12px 14px;border:1px solid #E7DFD1;border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;background:#F4F1EA;color:#191512;" onfocus="this.style.borderColor='rgba(31,92,61,0.6)'" onblur="this.style.borderColor='#E7DFD1'" />
+      <input type="email" id="contactEmail" placeholder="Your email" style="width:100%;padding:12px 14px;border:1px solid #E7DFD1;border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;background:#F4F1EA;color:#191512;" onfocus="this.style.borderColor='rgba(31,92,61,0.6)'" onblur="this.style.borderColor='#E7DFD1'" />
+      <input type="text" id="contactSubject" placeholder="Subject (optional)" style="width:100%;padding:12px 14px;border:1px solid #E7DFD1;border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box;background:#F4F1EA;color:#191512;" onfocus="this.style.borderColor='rgba(31,92,61,0.6)'" onblur="this.style.borderColor='#E7DFD1'" />
+      <textarea id="contactMessage" placeholder="How can we help you?" rows="5" style="width:100%;padding:12px 14px;border:1px solid #E7DFD1;border-radius:8px;font-size:14px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;background:#F4F1EA;color:#191512;" onfocus="this.style.borderColor='rgba(31,92,61,0.6)'" onblur="this.style.borderColor='#E7DFD1'"></textarea>
       <div id="contactError" style="color:#f87171;font-size:13px;font-weight:600;display:none;"></div>
       <div id="contactSuccess" style="display:none;background:rgba(16,185,129,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:8px;padding:12px 16px;color:#34d399;font-size:14px;font-weight:600;text-align:center;">✓ Message sent! We'll get back to you within 24 hours.</div>
     </div>
@@ -2335,7 +2340,7 @@
       </div>
     </div>
     <!-- Payment methods + Language toggle -->
-    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;width:100%;border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:space-between;width:100%;border-top:1px solid #E7DFD1;padding-top:18px;">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <span style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;" data-i18n="footer_payments">Accepted Payments</span>
         <!-- Stripe card logos -->
@@ -2352,16 +2357,16 @@
         </span>
         <span style="font-size:10px;color:#4b5563;font-style:italic;" data-i18n="footer_pay_note">International cards &amp; Chinese payment methods</span>
       </div>
-      <button onclick="toggleLang()" id="langToggleBtnFooter" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;color:#9ca3af;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'" title="Switch language / 切换语言">中文 / EN</button>
+      <button onclick="toggleLang()" id="langToggleBtnFooter" style="background:#E7DFD1;border:1px solid #D9CFBC;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;color:#57514A;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.background='#E3DACA'" onmouseout="this.style.background='#E7DFD1'" title="Switch language / 切换语言">中文 / EN</button>
     </div>
     <span class="footer-copy" data-i18n="footer_copy">© 2026 ResumeTailored AI. All rights reserved.</span>
   </div>
 <!-- Free Tools CTA Banner -->
-<div style="background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12));border-top:1px solid rgba(99,102,241,0.3);padding:28px 24px;text-align:center;">
-  <p data-i18n="footer_cta_eyebrow" style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#818CF8;margin-bottom:8px;">Free AI Resume Tools</p>
-  <p data-i18n="footer_cta_title" style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">Get Your ATS Score &amp; Readability Review — Free</p>
-  <p data-i18n="footer_cta_desc" style="font-size:14px;color:#94a3b8;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Paste your resume and job description. Claude AI scores your match and gives you 5 specific fixes — no account needed.</p>
-  <a href="/score" class="btn-shine" data-i18n="footer_cta_btn" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 0 20px rgba(99,102,241,0.4);">Check My Resume Free →</a>
+<div style="background:#F1EADD;border-top:1px solid rgba(31,92,61,0.3);padding:28px 24px;text-align:center;">
+  <p data-i18n="footer_cta_eyebrow" style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#1F5C3D;margin-bottom:8px;">Free AI Resume Tools</p>
+  <p data-i18n="footer_cta_title" style="font-size:18px;font-weight:800;color:#191512;margin-bottom:6px;">Get Your ATS Score &amp; Readability Review — Free</p>
+  <p data-i18n="footer_cta_desc" style="font-size:14px;color:#57514A;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Paste your resume and job description. Claude AI scores your match and gives you 5 specific fixes — no account needed.</p>
+  <a href="/score" class="btn-shine" data-i18n="footer_cta_btn" style="background:#1F5C3D;color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 0 20px rgba(31,92,61,0.28);">Check My Resume Free →</a>
 </div>
 </footer>
 
@@ -2660,7 +2665,7 @@
       footer_payments: 'Accepted Payments', footer_pay_note: 'International cards & Chinese payment methods',
       footer_copy: '© 2026 ResumeTailored AI. All rights reserved.',
       promo_eyebrow: '100% Free · No Account Required',
-      promo_title: 'Is Your Resume <span style="background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span>',
+      promo_title: 'Is Your Resume <span style="background:#1F5C3D;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span>',
       promo_desc: "Paste your resume and job description. Claude AI scores your keyword match, flags what's missing, and gives you 5 specific fixes — in seconds. No login, no credit card.",
       promo_c1: 'ATS Match Score', promo_c2: 'Missing Keywords', promo_c3: 'Readability Review', promo_c4: 'AI Suggestions',
       promo_cta: 'Check My Resume Free →',
@@ -2701,7 +2706,7 @@
       footer_payments: '支持的支付方式', footer_pay_note: '国际信用卡 · 支付宝 · 微信支付',
       footer_copy: '© 2026 ResumeTailored AI. 保留所有权利。',
       promo_eyebrow: '100% 免费 · 无需账户',
-      promo_title: '你的简历<span style="background:linear-gradient(135deg,#6366F1,#8B5CF6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">通过ATS了吗？</span>',
+      promo_title: '你的简历<span style="background:#1F5C3D;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">通过ATS了吗？</span>',
       promo_desc: '粘贴您的简历和职位描述。Claude AI 分析关键词匹配度，标记缺失项，并给出5个具体改进建议——几秒内完成。无需登录，无需信用卡。',
       promo_c1: 'ATS 匹配分数', promo_c2: '缺失关键词', promo_c3: '可读性评分', promo_c4: 'AI 建议',
       promo_cta: '免费检测我的简历 →',
@@ -2712,7 +2717,7 @@
       feat_ats_pass_desc: '您的简历已能与招聘需求精准沟通。机器通过，HR关注。',
       feat_cl_label: '求职信', feat_cl_badge: 'AI 生成',
       feat_cl_date: '2026年5月28日 · Stripe, Inc.', feat_cl_greeting: '尊敬的招聘负责人，',
-      feat_cl_body: '当我看到 Stripe 高级工程师的职位时，我立刻想到了我在重建服务每日200万用户支付管道中实现的 <strong style="color:#818CF8;">42% 延迟降低</strong>——正是 Stripe 运营的规模。',
+      feat_cl_body: '当我看到 Stripe 高级工程师的职位时，我立刻想到了我在重建服务每日200万用户支付管道中实现的 <strong style="color:#1F5C3D;">42% 延迟降低</strong>——正是 Stripe 运营的规模。',
       feat_cl_more: '+ 还有3段将您的经历与职位需求紧密相连的内容...',
       feat_li_before: '优化前',
       feat_li_before_quote: '"TechCo 产品经理 | 我热爱打造用户喜爱的产品"',
@@ -3046,8 +3051,8 @@
     });
     var ccFootnoteEl = document.querySelector('.competitor-compare > div:last-child');
     if (ccFootnoteEl) {
-      var jLink = '<a href="/alternatives/jobscan" style="color:#818CF8;font-weight:600;margin-left:8px;">' + (isZh ? '完整Jobscan对比 →' : 'Full Jobscan comparison →') + '</a>';
-      var rLink = '<a href="/alternatives/rezi" style="color:#818CF8;font-weight:600;margin-left:8px;">' + (isZh ? '完整Rezi对比 →' : 'Full Rezi comparison →') + '</a>';
+      var jLink = '<a href="/alternatives/jobscan" style="color:#1F5C3D;font-weight:600;margin-left:8px;">' + (isZh ? '完整Jobscan对比 →' : 'Full Jobscan comparison →') + '</a>';
+      var rLink = '<a href="/alternatives/rezi" style="color:#1F5C3D;font-weight:600;margin-left:8px;">' + (isZh ? '完整Rezi对比 →' : 'Full Rezi comparison →') + '</a>';
       ccFootnoteEl.innerHTML = (isZh ? 'Jobscan数据：无限次扫描每月$49.95。Rezi求职信质量基于已发布的用户评价。' : 'Jobscan data: $49.95/mo for unlimited scans. Rezi cover letter quality based on published user reviews.') + jLink + rLink;
     }
 
