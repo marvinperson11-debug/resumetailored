@@ -426,6 +426,18 @@
     }
     .feature-row.reverse { direction: rtl; }
     .feature-row.reverse > * { direction: ltr; }
+    /* Boxed feature cards with a tier tag in the top-right corner */
+    .feature-row.feat-card { position: relative; border-radius: 20px; padding: 32px; overflow: hidden; }
+    .feature-row.feat-card--free { border: 1px solid var(--line); background: var(--surface); box-shadow: var(--shadow-sm); }
+    .feature-row.feat-card--pro  { border: 2px solid rgba(31,92,61,0.45); background: rgba(31,92,61,0.06); }
+    .feature-row.feat-card::after {
+      position: absolute; top: 16px; right: 20px; z-index: 2; pointer-events: none;
+      font-size: 11px; font-weight: 800; padding: 4px 14px; border-radius: 20px;
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    .feature-row.feat-card--free::after { content: "✓ Free"; background: var(--accent-tint); color: var(--accent); }
+    .feature-row.feat-card--pro::after  { content: "✦ Pro Exclusive"; background: var(--accent); color: #fff; }
+    @media (max-width: 768px) { .feature-row.feat-card { padding: 24px 20px; } }
     .feature-icon { font-size: 48px; margin-bottom: 16px; }
     .feature-body h3 { font-size: 27px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 12px; color: var(--ink); }
     .feature-body p { font-size: 15px; color: var(--ink-soft); line-height: 1.75; }
@@ -937,7 +949,7 @@
     <h2 class="section-title">Everything you need to <span>land interviews</span></h2>
     <div class="features">
 
-      <div class="feature-row">
+      <div class="feature-row feat-card feat-card--free">
         <div class="feature-body">
           <div class="feature-icon">🎯</div>
           <h3>ATS-Optimized Resume Rewrites</h3>
@@ -977,7 +989,7 @@
         </div>
       </div>
 
-      <div class="feature-row reverse">
+      <div class="feature-row reverse feat-card feat-card--free">
         <div class="feature-body">
           <div class="feature-icon">✍️</div>
           <h3>Custom Cover Letters in Seconds</h3>
@@ -1002,7 +1014,7 @@
       </div>
 
       <!-- Share as Link Feature -->
-      <div class="feature-row">
+      <div class="feature-row feat-card feat-card--free">
         <div class="feature-body">
           <div class="feature-icon">🔗</div>
           <h3 data-i18n="feat_share_title">Share Your Resume as a Link</h3>
@@ -1023,7 +1035,7 @@
       </div>
 
       <!-- LinkedIn Optimizer Feature — free -->
-      <div class="feature-row" style="border:2px solid rgba(0,119,181,0.5);border-radius:20px;padding:32px;background:rgba(0,119,181,0.07);position:relative;overflow:hidden;">
+      <div class="feature-row feat-card feat-card--free" style="border:2px solid rgba(0,119,181,0.5);background:rgba(0,119,181,0.07);">
         <div style="position:absolute;top:16px;right:20px;background:#16a34a;color:#fff;font-size:11px;font-weight:800;padding:4px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">✓ Free</div>
         <div class="feature-body">
           <div class="feature-icon" style="color:#0077b5;">🔗</div>
@@ -1137,7 +1149,7 @@
         </div>
       </div>
 
-      <div class="feature-row">
+      <div class="feature-row feat-card feat-card--pro">
         <div class="feature-body">
           <div class="feature-icon">💼</div>
           <h3>Career Hub for Pro Members</h3>
@@ -1156,7 +1168,7 @@
         </div>
       </div>
 
-      <div class="feature-row reverse">
+      <div class="feature-row reverse feat-card feat-card--free">
         <div class="feature-body">
           <div class="feature-icon">⚡</div>
           <h3>30 Seconds vs. 45 Minutes</h3>
