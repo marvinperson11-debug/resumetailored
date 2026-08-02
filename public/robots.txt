@@ -53,3 +53,4 @@ Disallow: /success
 Disallow: /cancel
 
 Sitemap: https://resumetailored.com/sitemap.xml
+Sitemap: https://resumetailored.com/llms.txt

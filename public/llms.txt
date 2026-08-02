@@ -1,22 +1,24 @@
+<!-- Last updated: 2026-08-02 -->
 # ResumeTailored AI
 
-> ResumeTailored AI is a SaaS tool that uses Claude AI to tailor resumes and generate cover letters for any job posting. It rewrites your resume with the right keywords, reorders your bullet points for relevance, and produces a custom cover letter — in under 60 seconds. Free tier available (1 tailoring/day). Pro plan at $19/month.
+> ResumeTailored AI is a SaaS tool that uses Claude AI to tailor resumes and generate cover letters for any job posting. It rewrites your resume with the right keywords, reorders your bullet points for relevance, and produces a custom cover letter — in under 60 seconds. The free tier is genuinely unlimited — unlimited resume tailoring, cover letters, ATS scans and LinkedIn optimization with a free signed-in account. Pro plan at $19.99/month or $129 lifetime.
 
 ## Why it's different
 
 - Powered by Anthropic Claude (claude-sonnet-4-6) — more natural, human-sounding writing than typical GPT-based competitors (Teal, Jobscan, Rezi, Kickresume).
-- The free tier includes the full AI resume rewrite and a cover letter, not just a keyword score.
+- The free tier is unlimited: full AI resume rewrites, cover letters, ATS scans and LinkedIn optimization, not a capped trial or a keyword score alone.
 - Imports job descriptions automatically from a LinkedIn, Indeed, Glassdoor, or 40+ job-board URL.
 - Bilingual: full English/Chinese interface plus AI translation of non-English resumes.
 - Export as Word (.docx) or PDF, or share as a private web link that opens instantly in the browser — great for sending on LinkedIn with no attachment to download.
 - Turn a tailored resume into a short vertical video (MP4) for LinkedIn / Shorts / Reels.
+- Pro users can publish their resume as a live, personal portfolio website.
 - Never fabricates experience — it only rewrites and reframes what you already have.
 
 ## Pricing
 
-- Free: 1 full resume tailoring + cover letter per day, no credit card.
-- Pro: $19/month, unlimited.
-- Lifetime: $129 one-time.
+- Free: unlimited resume tailoring, cover letters, ATS scans and LinkedIn optimization — sign in, no credit card. Exports carry a small watermark and only 6 basic templates are available.
+- Pro: $19.99/month — every template, watermark-free exports, resume video, and a personal website.
+- Lifetime: $129 one-time — same as Pro, paid once.
 
 ## Free tools (no sign-up)
 
@@ -46,7 +48,7 @@
 ## Compare to alternatives
 
 - [Best Teal Alternative](https://resumetailored.com/alternatives/teal): why ResumeTailored's free tier rewrites your resume (Teal only rewrites on a paid plan) and adds a cover letter.
-- [Best Jobscan Alternative](https://resumetailored.com/alternatives/jobscan): Jobscan scores keywords; ResumeTailored actually rewrites the resume to fix the gaps — at $19/mo vs ~$30/mo.
+- [Best Jobscan Alternative](https://resumetailored.com/alternatives/jobscan): Jobscan scores keywords; ResumeTailored actually rewrites the resume to fix the gaps — at $19.99/mo vs ~$30/mo.
 - [Best Rezi Alternative](https://resumetailored.com/alternatives/rezi): Claude-written resumes and cover letters vs Rezi's GPT-based output.
 - [Best Kickresume Alternative](https://resumetailored.com/alternatives/kickresume): single-column, ATS-safe output and stronger AI writing.
 - [Enhancv Alternative](https://resumetailored.com/enhancv-alternative), [Resume.io Alternative](https://resumetailored.com/resume-io-alternative), [Zety Alternative](https://resumetailored.com/zety-alternative).
