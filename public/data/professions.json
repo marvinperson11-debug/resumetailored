@@ -1,0 +1,152 @@
+{
+  "version": "2026-08-03",
+  "categories": [
+    {
+      "id": "healthcare",
+      "label": "Healthcare",
+      "icon": "🩺",
+      "technicalStyle": "clinical scenarios, patient-safety judgement, and standards-of-care questions",
+      "professions": [
+        { "id": "registered-nurse", "label": "Registered Nurse", "aliases": ["RN"], "seniority": true },
+        { "id": "nurse-practitioner", "label": "Nurse Practitioner", "aliases": ["NP"], "seniority": true },
+        { "id": "physical-therapist", "label": "Physical Therapist", "aliases": ["PT"], "seniority": true },
+        { "id": "medical-assistant", "label": "Medical Assistant", "aliases": ["MA"], "seniority": false },
+        { "id": "pharmacist", "label": "Pharmacist", "aliases": [], "seniority": true },
+        { "id": "dental-hygienist", "label": "Dental Hygienist", "aliases": [], "seniority": false },
+        { "id": "radiologic-technologist", "label": "Radiologic Technologist", "aliases": ["Rad Tech"], "seniority": false },
+        { "id": "home-health-aide", "label": "Home Health Aide", "aliases": ["HHA"], "seniority": false }
+      ]
+    },
+    {
+      "id": "trades",
+      "label": "Skilled Trades",
+      "icon": "🔧",
+      "technicalStyle": "hands-on troubleshooting, code compliance, tool selection, and jobsite safety",
+      "professions": [
+        { "id": "electrician", "label": "Electrician", "aliases": [], "seniority": true },
+        { "id": "plumber", "label": "Plumber", "aliases": [], "seniority": true },
+        { "id": "hvac-technician", "label": "HVAC Technician", "aliases": ["HVAC"], "seniority": true },
+        { "id": "welder", "label": "Welder", "aliases": [], "seniority": false },
+        { "id": "carpenter", "label": "Carpenter", "aliases": [], "seniority": false },
+        { "id": "automotive-technician", "label": "Automotive Technician", "aliases": ["Mechanic"], "seniority": false },
+        { "id": "cnc-machinist", "label": "CNC Machinist", "aliases": [], "seniority": false },
+        { "id": "heavy-equipment-operator", "label": "Heavy Equipment Operator", "aliases": [], "seniority": false }
+      ]
+    },
+    {
+      "id": "tech",
+      "label": "Technology",
+      "icon": "💻",
+      "technicalStyle": "system design, coding logic, debugging, and architecture trade-offs",
+      "professions": [
+        { "id": "software-engineer", "label": "Software Engineer", "aliases": ["SWE", "Developer"], "seniority": true },
+        { "id": "web-developer", "label": "Web Developer", "aliases": [], "seniority": true },
+        { "id": "devops-engineer", "label": "DevOps Engineer", "aliases": ["SRE"], "seniority": true },
+        { "id": "data-analyst", "label": "Data Analyst", "aliases": [], "seniority": true },
+        { "id": "data-scientist", "label": "Data Scientist", "aliases": [], "seniority": true },
+        { "id": "ux-designer", "label": "UX Designer", "aliases": ["UI/UX"], "seniority": true },
+        { "id": "product-manager", "label": "Product Manager", "aliases": ["PM"], "seniority": true },
+        { "id": "qa-engineer", "label": "QA Engineer", "aliases": ["Tester"], "seniority": false },
+        { "id": "it-support-specialist", "label": "IT Support Specialist", "aliases": ["Help Desk"], "seniority": false },
+        { "id": "cybersecurity-analyst", "label": "Cybersecurity Analyst", "aliases": ["Security"], "seniority": true }
+      ]
+    },
+    {
+      "id": "legal",
+      "label": "Legal",
+      "icon": "⚖️",
+      "technicalStyle": "case reasoning, procedure, compliance, and document-accuracy questions",
+      "professions": [
+        { "id": "paralegal", "label": "Paralegal", "aliases": [], "seniority": true },
+        { "id": "attorney", "label": "Attorney", "aliases": ["Lawyer"], "seniority": true },
+        { "id": "legal-assistant", "label": "Legal Assistant", "aliases": [], "seniority": false },
+        { "id": "compliance-officer", "label": "Compliance Officer", "aliases": [], "seniority": true },
+        { "id": "contract-manager", "label": "Contract Manager", "aliases": [], "seniority": true }
+      ]
+    },
+    {
+      "id": "business",
+      "label": "Business & Management",
+      "icon": "📊",
+      "technicalStyle": "prioritization, stakeholder trade-offs, process, and metrics interpretation",
+      "professions": [
+        { "id": "project-manager", "label": "Project Manager", "aliases": ["PMP"], "seniority": true },
+        { "id": "business-analyst", "label": "Business Analyst", "aliases": ["BA"], "seniority": true },
+        { "id": "operations-manager", "label": "Operations Manager", "aliases": [], "seniority": true },
+        { "id": "marketing-manager", "label": "Marketing Manager", "aliases": [], "seniority": true },
+        { "id": "human-resources-manager", "label": "Human Resources Manager", "aliases": ["HR"], "seniority": true },
+        { "id": "executive-assistant", "label": "Executive Assistant", "aliases": ["EA"], "seniority": false },
+        { "id": "management-consultant", "label": "Management Consultant", "aliases": [], "seniority": true }
+      ]
+    },
+    {
+      "id": "finance",
+      "label": "Finance & Sales",
+      "icon": "💰",
+      "technicalStyle": "quantitative reasoning, spreadsheet logic, deal mechanics, and forecasting",
+      "professions": [
+        { "id": "accountant", "label": "Accountant", "aliases": ["CPA"], "seniority": true },
+        { "id": "financial-analyst", "label": "Financial Analyst", "aliases": ["FP&A"], "seniority": true },
+        { "id": "bookkeeper", "label": "Bookkeeper", "aliases": [], "seniority": false },
+        { "id": "financial-advisor", "label": "Financial Advisor", "aliases": [], "seniority": true },
+        { "id": "sales-representative", "label": "Sales Representative", "aliases": ["Sales Rep"], "seniority": true },
+        { "id": "account-manager", "label": "Account Manager", "aliases": [], "seniority": true },
+        { "id": "sales-manager", "label": "Sales Manager", "aliases": [], "seniority": true }
+      ]
+    },
+    {
+      "id": "education",
+      "label": "Education",
+      "icon": "🎓",
+      "technicalStyle": "pedagogy, classroom management, assessment design, and student-support scenarios",
+      "professions": [
+        { "id": "teacher", "label": "Teacher", "aliases": ["K-12 Teacher"], "seniority": true },
+        { "id": "professor", "label": "Professor", "aliases": ["Lecturer"], "seniority": true },
+        { "id": "instructional-designer", "label": "Instructional Designer", "aliases": [], "seniority": true },
+        { "id": "school-counselor", "label": "School Counselor", "aliases": [], "seniority": false },
+        { "id": "teaching-assistant", "label": "Teaching Assistant", "aliases": ["TA"], "seniority": false }
+      ]
+    },
+    {
+      "id": "creative",
+      "label": "Creative & Media",
+      "icon": "🎨",
+      "technicalStyle": "craft technique, tool proficiency, portfolio critique, and brief-interpretation",
+      "professions": [
+        { "id": "graphic-designer", "label": "Graphic Designer", "aliases": [], "seniority": true },
+        { "id": "copywriter", "label": "Copywriter", "aliases": [], "seniority": true },
+        { "id": "videographer", "label": "Videographer", "aliases": ["Video Editor"], "seniority": false },
+        { "id": "journalist", "label": "Journalist", "aliases": ["Reporter"], "seniority": true },
+        { "id": "social-media-manager", "label": "Social Media Manager", "aliases": [], "seniority": true },
+        { "id": "photographer", "label": "Photographer", "aliases": [], "seniority": false }
+      ]
+    },
+    {
+      "id": "science",
+      "label": "Science & Research",
+      "icon": "🔬",
+      "technicalStyle": "experimental method, data integrity, lab safety, and analysis interpretation",
+      "professions": [
+        { "id": "lab-technician", "label": "Lab Technician", "aliases": [], "seniority": false },
+        { "id": "research-scientist", "label": "Research Scientist", "aliases": [], "seniority": true },
+        { "id": "biologist", "label": "Biologist", "aliases": [], "seniority": true },
+        { "id": "chemist", "label": "Chemist", "aliases": [], "seniority": true },
+        { "id": "environmental-scientist", "label": "Environmental Scientist", "aliases": [], "seniority": true }
+      ]
+    },
+    {
+      "id": "hospitality",
+      "label": "Hospitality & Service",
+      "icon": "🍽️",
+      "technicalStyle": "guest-service recovery, operations under pressure, food/venue safety, and upselling",
+      "professions": [
+        { "id": "chef", "label": "Chef", "aliases": ["Cook"], "seniority": true },
+        { "id": "hotel-manager", "label": "Hotel Manager", "aliases": [], "seniority": true },
+        { "id": "server", "label": "Server", "aliases": ["Waiter", "Waitress"], "seniority": false },
+        { "id": "bartender", "label": "Bartender", "aliases": [], "seniority": false },
+        { "id": "event-coordinator", "label": "Event Coordinator", "aliases": [], "seniority": true },
+        { "id": "customer-service-representative", "label": "Customer Service Representative", "aliases": ["CSR"], "seniority": false }
+      ]
+    }
+  ]
+}

@@ -16,6 +16,8 @@ const mammoth = require('mammoth');
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle, Table, TableRow, TableCell, WidthType, VerticalAlign, ShadingType, HeightRule, ImageRun, Footer } = require('docx');
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
+const CH = require('./career-hub.js');           // Career Hub pure core (taxonomy, prompts, validators, scoring)
+const { renderBadgePage } = require('./badge-page.js');
 /* Video duration probing for site-media uploads. This is `@remotion/media-parser`
    — a pure container-format parser (reads MP4/WebM/MOV box headers for their
    declared duration), not the heavy render stack. It needs no browser and no
@@ -284,6 +286,109 @@ db.exec(`
     updated_at   INTEGER NOT NULL,
     views        INTEGER DEFAULT 0
   );
+
+  /* ─── Career Hub ─────────────────────────────────────────────────────────
+     Cross-user CONTENT caches (quiz/interview/gap/scenario/job) are keyed by a
+     content hash + PROMPT_VERSION, so an identical request is generated once
+     for the whole user base and then bills nothing. Per-user tables track
+     attempts, badges, practice progress, saved jobs and reports. */
+  CREATE TABLE IF NOT EXISTS quiz_cache (
+    cache_key     TEXT PRIMARY KEY,
+    profession_id TEXT NOT NULL,
+    seniority     TEXT,
+    topic         TEXT,
+    payload       TEXT NOT NULL,
+    created_at    INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS skill_attempts (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    email         TEXT NOT NULL,
+    profession_id TEXT NOT NULL,
+    topic         TEXT,
+    score         INTEGER NOT NULL DEFAULT 0,
+    band          TEXT,
+    taken_at      INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_skill_attempts_email ON skill_attempts(email, profession_id);
+  CREATE TABLE IF NOT EXISTS badges (
+    slug          TEXT PRIMARY KEY,
+    email         TEXT NOT NULL,
+    profession_id TEXT NOT NULL,
+    topic         TEXT,
+    band          TEXT NOT NULL,
+    score         INTEGER NOT NULL,
+    created_at    INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_badges_email ON badges(email);
+  CREATE TABLE IF NOT EXISTS interview_cache (
+    cache_key     TEXT PRIMARY KEY,
+    profession_id TEXT NOT NULL,
+    seniority     TEXT,
+    kind          TEXT NOT NULL,
+    payload       TEXT NOT NULL,
+    created_at    INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS interview_progress (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    email         TEXT NOT NULL,
+    profession_id TEXT NOT NULL,
+    question_hash TEXT NOT NULL,
+    confidence    INTEGER NOT NULL DEFAULT 3,
+    practiced_at  INTEGER NOT NULL,
+    UNIQUE(email, question_hash)
+  );
+  CREATE INDEX IF NOT EXISTS idx_interview_progress_email ON interview_progress(email, profession_id);
+  CREATE TABLE IF NOT EXISTS gap_cache (
+    cache_key   TEXT PRIMARY KEY,
+    payload     TEXT NOT NULL,
+    created_at  INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS gap_reports (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    email       TEXT NOT NULL,
+    resume_id   INTEGER,
+    job_id      TEXT,
+    match_score INTEGER,
+    payload     TEXT NOT NULL,
+    created_at  INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_gap_reports_email ON gap_reports(email);
+  CREATE TABLE IF NOT EXISTS job_cache (
+    cache_key  TEXT PRIMARY KEY,
+    payload    TEXT NOT NULL,
+    fetched_at INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS saved_jobs (
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    email    TEXT NOT NULL,
+    job_id   TEXT NOT NULL,
+    title    TEXT,
+    company  TEXT,
+    location TEXT,
+    url      TEXT,
+    snapshot TEXT,
+    saved_at INTEGER NOT NULL,
+    UNIQUE(email, job_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_saved_jobs_email ON saved_jobs(email);
+  CREATE TABLE IF NOT EXISTS scenario_cache (
+    cache_key     TEXT PRIMARY KEY,
+    profession_id TEXT NOT NULL,
+    scenario_type TEXT NOT NULL,
+    payload       TEXT NOT NULL,
+    created_at    INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS scenario_progress (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    email         TEXT NOT NULL,
+    profession_id TEXT NOT NULL,
+    scenario_type TEXT NOT NULL,
+    completed     INTEGER NOT NULL DEFAULT 0,
+    perfect       INTEGER NOT NULL DEFAULT 0,
+    completed_at  INTEGER NOT NULL,
+    UNIQUE(email, profession_id, scenario_type)
+  );
+  CREATE INDEX IF NOT EXISTS idx_scenario_progress_email ON scenario_progress(email);
 `);
 
 // Lightweight column migrations for tables that predate a new column. SQLite has
@@ -317,6 +422,14 @@ _ensureColumn('site_leads', 'extra', "extra TEXT DEFAULT ''");
 // predate this column and stay NULL — excluded from every site-scoped query
 // below, which is exactly the fix: they stop counting against anything.
 _ensureColumn('site_media', 'site_sub', 'site_sub TEXT');
+
+// Career Hub: the user's chosen target profession lives on their existing
+// check-in row (the per-user career-state record) rather than a new profile
+// table. It is the single source of truth every Career Hub tool reads.
+_ensureColumn('check_ins', 'profession_id', "profession_id TEXT DEFAULT ''");
+_ensureColumn('check_ins', 'profession_cat', "profession_cat TEXT DEFAULT ''");
+_ensureColumn('check_ins', 'seniority', "seniority TEXT DEFAULT ''");
+_ensureColumn('check_ins', 'profession_set_at', 'profession_set_at INTEGER');
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
@@ -6036,6 +6149,461 @@ function broadcastEmailHtml(username) {
 </body>
 </html>`;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ─── Career Hub ──────────────────────────────────────────────────────────────
+// Profession-first career platform: one saved profession drives the Skills Lab,
+// Interview Prep, Job Finder, Gap Analyzer, Dashboard and Scenario Lab. Pure
+// logic (taxonomy, prompts, validators, scoring) lives in career-hub.js (CH).
+// ═══════════════════════════════════════════════════════════════════════════
+
+// The user's target profession, resolved from their check-in row. Single
+// source of truth every tool reads.
+function getUserProfession(email) {
+  if (!email) return null;
+  const row = db.prepare('SELECT profession_id, seniority FROM check_ins WHERE email = ?').get(email.toLowerCase());
+  if (!row || !row.profession_id) return null;
+  return CH.resolveProfession(row.profession_id, row.seniority);
+}
+function careerEmail(req, res) {
+  const email = getSessionEmail(req);
+  if (!email) { res.status(401).json({ error: 'login_required', message: 'Please sign in to use the Career Hub.' }); return null; }
+  return email;
+}
+function requireProfession(res, email) {
+  const prof = getUserProfession(email);
+  if (!prof) { res.status(400).json({ error: 'no_profession', message: 'Set your target profession first.' }); return null; }
+  return prof;
+}
+
+// ── Free-tier quotas (Pro = unlimited). Reuses the existing usage_store. ─────
+function _isoWeekStamp(d) {
+  const dt = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
+  return `${dt.getUTCFullYear()}W${week}`;
+}
+function _quotaKey(userKey, type, period) {
+  const now = new Date();
+  if (period === 'week') return `${userKey}_${type}_${_isoWeekStamp(now)}`;
+  if (period === 'total') return `${userKey}_${type}_total`;
+  return `${userKey}_${type}_${now.toISOString().slice(0, 10)}`;
+}
+function _quotaUsed(userKey, type, period) {
+  const row = db.prepare('SELECT count FROM usage_store WHERE key = ?').get(_quotaKey(userKey, type, period));
+  return row ? row.count : 0;
+}
+function _quotaConsume(userKey, type, period) {
+  db.prepare('INSERT INTO usage_store (key, count) VALUES (?, 1) ON CONFLICT(key) DO UPDATE SET count = count + 1')
+    .run(_quotaKey(userKey, type, period));
+}
+
+// Generate JSON from Claude with a one-shot retry if the first output does not
+// validate. Throws { code:'llm_json_invalid' } if both attempts fail.
+async function callClaudeJSON({ model, system, user, max_tokens, validate }) {
+  let lastErr = 'unknown';
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const content = attempt === 0 ? user
+      : user + '\n\nYour previous response was not valid JSON. Return ONLY the JSON object described above — no markdown, no commentary.';
+    const msg = await anthropic.messages.create({ model, max_tokens, system, messages: [{ role: 'user', content }] });
+    const obj = CH.extractJson(msg.content[0] && msg.content[0].text);
+    const v = validate(obj);
+    if (v.ok) return v.value;
+    lastErr = v.error || 'invalid';
+  }
+  const e = new Error('llm_json_invalid: ' + lastErr); e.code = 'llm_json_invalid'; throw e;
+}
+
+const careerGenLimiter = rateLimit({ windowMs: 60 * 1000, max: 15, message: { error: 'rate_limited', message: 'Slow down a moment and try again.' } });
+const jobSearchLimiter = rateLimit({ windowMs: 60 * 1000, max: 15, message: { error: 'rate_limited', message: 'Too many searches — wait a minute.' } });
+const answerScoreLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, message: { error: 'rate_limited', message: 'Too many requests — wait a minute.' } });
+
+// ─── Phase 0: Profession selector ───────────────────────────────────────────
+app.get('/api/profession', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const prof = getUserProfession(email);
+  res.json(prof || {});
+});
+app.post('/api/profession', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const { professionId, seniority } = req.body || {};
+  const data = CH.loadProfessions();
+  if (!CH.validateProfessionId(professionId, data)) return res.status(400).json({ error: 'invalid_profession' });
+  const sen = CH.validateSeniority(seniority) ? (seniority || '') : '';
+  const prof = CH.resolveProfession(professionId, sen, data);
+  const e = email.toLowerCase();
+  const existing = db.prepare('SELECT email FROM check_ins WHERE email = ?').get(e);
+  if (existing) {
+    db.prepare('UPDATE check_ins SET profession_id = ?, profession_cat = ?, seniority = ?, profession_set_at = ? WHERE email = ?')
+      .run(prof.id, prof.category, sen, Date.now(), e);
+  } else {
+    db.prepare('INSERT INTO check_ins (email, last_check_in, goals, current_role, target_role, next_prompt, profession_id, profession_cat, seniority, profession_set_at) VALUES (?,?,?,?,?,?,?,?,?,?)')
+      .run(e, null, '', '', '', '', prof.id, prof.category, sen, Date.now());
+  }
+  res.json(prof);
+});
+
+// ─── Phase 1: Skills Lab ────────────────────────────────────────────────────
+app.post('/api/skills-lab/quiz', careerGenLimiter, async (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const prof = requireProfession(res, email); if (!prof) return;
+  const pro = isSubscriber(email);
+  const topic = (req.body && req.body.topic ? String(req.body.topic) : '').slice(0, 80);
+  const userKey = getUsageKey(req);
+  // Free tier: 1 quiz + 1 retake per day.
+  const freeCap = CH.LIMITS.quiz.free + CH.LIMITS.retake.free;
+  if (!pro && _quotaUsed(userKey, 'quiz', 'day') >= freeCap) {
+    return res.status(402).json({ error: 'quota', message: 'Free plan is 1 quiz + 1 retake per day. Upgrade to Pro for unlimited quizzes and all topics.' });
+  }
+  try {
+    const key = CH.quizCacheKey(prof.id, prof.seniority, topic);
+    let payload;
+    const cached = db.prepare('SELECT payload FROM quiz_cache WHERE cache_key = ?').get(key);
+    if (cached) {
+      payload = JSON.parse(cached.payload);
+    } else {
+      const p = CH.buildQuizPrompt(prof, topic);
+      payload = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 2600, validate: CH.validateQuiz });
+      db.prepare('INSERT OR REPLACE INTO quiz_cache (cache_key, profession_id, seniority, topic, payload, created_at) VALUES (?,?,?,?,?,?)')
+        .run(key, prof.id, prof.seniority, topic, JSON.stringify(payload), Date.now());
+    }
+    if (!pro) _quotaConsume(userKey, 'quiz', 'day');
+    const seed = Date.now() + '-' + Math.random();
+    res.json({ quizKey: key, topic: topic || 'general', seed, quiz: CH.quizForDelivery(payload, seed) });
+  } catch (err) {
+    console.error('skills-lab/quiz error:', err.message);
+    res.status(503).json({ error: 'quiz_unavailable', message: 'Could not build a quiz right now — please try again.' });
+  }
+});
+
+app.post('/api/skills-lab/submit', async (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const prof = requireProfession(res, email); if (!prof) return;
+  const pro = isSubscriber(email);
+  const { quizKey, topic, answers, orders } = req.body || {};
+  const cached = quizKey && db.prepare('SELECT payload, topic FROM quiz_cache WHERE cache_key = ?').get(quizKey);
+  if (!cached) return res.status(400).json({ error: 'bad_quiz', message: 'Quiz expired — please retake.' });
+  const payload = JSON.parse(cached.payload);
+  const scored = CH.scoreQuiz(payload, { answers, orders });
+  const finalBand = CH.cappedBand(scored.score, pro);
+  const topicVal = (topic || cached.topic || '').slice(0, 80);
+  db.prepare('INSERT INTO skill_attempts (email, profession_id, topic, score, band, taken_at) VALUES (?,?,?,?,?,?)')
+    .run(email.toLowerCase(), prof.id, topicVal, scored.score, finalBand || '', Date.now());
+  let badge = null;
+  if (finalBand) {
+    const slug = CH.badgeSlug();
+    db.prepare('INSERT INTO badges (slug, email, profession_id, topic, band, score, created_at) VALUES (?,?,?,?,?,?,?)')
+      .run(slug, email.toLowerCase(), prof.id, topicVal, finalBand, scored.score, Date.now());
+    badge = { slug, band: finalBand, url: `/badge/${slug}` };
+  }
+  const goldLocked = !pro && CH.band(scored.score) === 'gold';
+  res.json({ score: scored.score, correct: scored.correct, total: scored.total, band: finalBand, results: scored.results, badge, goldLocked });
+});
+
+app.get('/api/skills-lab/attempts', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const rows = db.prepare('SELECT profession_id, topic, score, band, taken_at FROM skill_attempts WHERE email = ? ORDER BY taken_at DESC LIMIT 100').all(email.toLowerCase());
+  res.json({ attempts: rows });
+});
+
+// Public shareable badge page (OG-tagged, branded).
+app.get('/badge/:slug', (req, res) => {
+  const row = db.prepare('SELECT * FROM badges WHERE slug = ?').get(req.params.slug);
+  if (!row) return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+  const user = db.prepare('SELECT username FROM users WHERE email = ?').get(row.email);
+  const prof = CH.resolveProfession(row.profession_id) || { label: 'Professional' };
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(renderBadgePage({
+    slug: row.slug, name: user && user.username, professionLabel: prof.label,
+    topic: row.topic, band: row.band, score: row.score, created_at: row.created_at
+  }, origin));
+});
+
+// ─── Phase 2: Interview Prep ────────────────────────────────────────────────
+app.post('/api/interview/questions', careerGenLimiter, async (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const prof = requireProfession(res, email); if (!prof) return;
+  const pro = isSubscriber(email);
+  let kind = (req.body && req.body.kind) === 'technical' ? 'technical' : 'behavioral';
+  if (kind === 'technical' && !pro) return res.status(402).json({ error: 'pro_only', message: 'Technical interview questions are a Pro feature. Behavioral questions are free.' });
+  try {
+    const key = CH.interviewCacheKey(prof.id, prof.seniority, kind);
+    let payload;
+    const cached = db.prepare('SELECT payload FROM interview_cache WHERE cache_key = ?').get(key);
+    if (cached) {
+      payload = JSON.parse(cached.payload);
+    } else {
+      const p = CH.buildInterviewPrompt(prof, kind);
+      payload = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 2800, validate: CH.validateInterview });
+      db.prepare('INSERT OR REPLACE INTO interview_cache (cache_key, profession_id, seniority, kind, payload, created_at) VALUES (?,?,?,?,?,?)')
+        .run(key, prof.id, prof.seniority, kind, JSON.stringify(payload), Date.now());
+    }
+    // Attach a stable per-question hash so the client can post confidence back.
+    const questions = payload.questions.map(q => ({ ...q, hash: CH.sha256(prof.id + '|' + q.prompt).slice(0, 16) }));
+    res.json({ kind, questions });
+  } catch (err) {
+    console.error('interview/questions error:', err.message);
+    res.status(503).json({ error: 'unavailable', message: 'Could not load questions — please try again.' });
+  }
+});
+
+app.post('/api/interview/progress', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const prof = requireProfession(res, email); if (!prof) return;
+  const { questionHash, confidence } = req.body || {};
+  if (!questionHash) return res.status(400).json({ error: 'bad_request' });
+  const c = Math.max(1, Math.min(5, parseInt(confidence, 10) || 3));
+  db.prepare('INSERT INTO interview_progress (email, profession_id, question_hash, confidence, practiced_at) VALUES (?,?,?,?,?) ON CONFLICT(email, question_hash) DO UPDATE SET confidence = excluded.confidence, practiced_at = excluded.practiced_at')
+    .run(email.toLowerCase(), prof.id, String(questionHash).slice(0, 32), c, Date.now());
+  res.json({ success: true });
+});
+
+// Pro: "Score my answer" — per-answer feedback (Sonnet).
+app.post('/api/interview/score', answerScoreLimiter, async (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_only', message: '"Score my answer" is a Pro feature.' });
+  const prof = requireProfession(res, email); if (!prof) return;
+  const { question, answer } = req.body || {};
+  if (!question || !answer) return res.status(400).json({ error: 'bad_request' });
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6', max_tokens: 700,
+      system: 'You are an interview coach. Give concise, specific, encouraging feedback on a candidate\'s answer. Output ONLY valid JSON: {"rating":<1-5>,"strengths":["..."],"improvements":["..."],"revised":"a tighter example answer"}.',
+      messages: [{ role: 'user', content: `Role: ${prof.displayLabel}\nQUESTION: ${String(question).slice(0, 600)}\nCANDIDATE ANSWER: ${String(answer).slice(0, 1500)}` }]
+    });
+    const obj = CH.extractJson(msg.content[0] && msg.content[0].text) || { rating: 3, strengths: [], improvements: [], revised: '' };
+    res.json(obj);
+  } catch (err) {
+    console.error('interview/score error:', err.message);
+    res.status(503).json({ error: 'unavailable' });
+  }
+});
+
+// ─── Phase 3: Skills Gap Analyzer ───────────────────────────────────────────
+app.post('/api/skills-gap', careerGenLimiter, async (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const pro = isSubscriber(email);
+  const userKey = getUsageKey(req);
+  if (!pro && _quotaUsed(userKey, 'gap', 'week') >= CH.LIMITS.gap.free) {
+    return res.status(402).json({ error: 'quota', message: 'Free plan includes 1 gap analysis per week. Upgrade to Pro for unlimited.' });
+  }
+  let { resume, resumeId, jobText, savedJobId } = req.body || {};
+  const e = email.toLowerCase();
+  if (!resume && resumeId) {
+    const r = db.prepare('SELECT content FROM saved_resumes WHERE id = ? AND email = ?').get(resumeId, e);
+    if (r) resume = r.content;
+  }
+  if (!jobText && savedJobId) {
+    const j = db.prepare('SELECT snapshot FROM saved_jobs WHERE job_id = ? AND email = ?').get(savedJobId, e);
+    if (j && j.snapshot) { try { const s = JSON.parse(j.snapshot); jobText = [s.title, s.company, s.descriptionSnippet].filter(Boolean).join('\n'); } catch (_) {} }
+  }
+  if (!resume || !jobText) return res.status(400).json({ error: 'bad_request', message: 'A resume and a job description are both required.' });
+  try {
+    const key = CH.gapCacheKey(resume, jobText);
+    let payload;
+    const cached = db.prepare('SELECT payload FROM gap_cache WHERE cache_key = ?').get(key);
+    if (cached) {
+      payload = JSON.parse(cached.payload);
+    } else {
+      const p = CH.buildGapPrompt(resume, jobText);
+      payload = await callClaudeJSON({ model: 'claude-sonnet-4-6', system: p.system, user: p.user, max_tokens: 1600, validate: CH.validateGap });
+      db.prepare('INSERT OR REPLACE INTO gap_cache (cache_key, payload, created_at) VALUES (?,?,?)').run(key, JSON.stringify(payload), Date.now());
+    }
+    db.prepare('INSERT INTO gap_reports (email, resume_id, job_id, match_score, payload, created_at) VALUES (?,?,?,?,?,?)')
+      .run(e, resumeId || null, savedJobId || null, payload.matchScore, JSON.stringify(payload), Date.now());
+    if (!pro) _quotaConsume(userKey, 'gap', 'week');
+    res.json(payload);
+  } catch (err) {
+    console.error('skills-gap error:', err.message);
+    res.status(503).json({ error: 'unavailable', message: 'Could not analyze right now — please try again.' });
+  }
+});
+
+app.get('/api/skills-gap/reports', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const rows = db.prepare('SELECT id, resume_id, job_id, match_score, payload, created_at FROM gap_reports WHERE email = ? ORDER BY created_at DESC LIMIT 20').all(email.toLowerCase());
+  res.json({ reports: rows.map(r => ({ id: r.id, matchScore: r.match_score, createdAt: r.created_at, report: JSON.parse(r.payload) })) });
+});
+
+// ─── Phase 4: Job Finder (JSearch proxy) ────────────────────────────────────
+async function jsearchFetch(params) {
+  const key = process.env.RAPIDAPI_KEY;
+  if (!key) { const e = new Error('jobs_unconfigured'); e.code = 'jobs_unconfigured'; throw e; }
+  const qs = new URLSearchParams({ query: params.query, page: String(params.page || 1), num_pages: '1' });
+  if (params.datePosted) qs.set('date_posted', params.datePosted);
+  if (params.remote === 'remote') qs.set('remote_jobs_only', 'true');
+  if (params.jobType) qs.set('employment_types', params.jobType);
+  const r = await fetch(`https://jsearch.p.rapidapi.com/search?${qs.toString()}`, {
+    headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' }
+  });
+  if (!r.ok) { const e = new Error('jsearch_' + r.status); e.code = 'jsearch_error'; throw e; }
+  return r.json();
+}
+const JOB_CACHE_TTL = 6 * 60 * 60 * 1000; // 6h
+app.get('/api/jobs/search', jobSearchLimiter, async (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const pro = isSubscriber(email);
+  const userKey = getUsageKey(req);
+  if (!pro && _quotaUsed(userKey, 'jobsearch', 'day') >= CH.LIMITS.jobsearch.free) {
+    return res.status(402).json({ error: 'quota', message: `Free plan is ${CH.LIMITS.jobsearch.free} job searches per day. Upgrade to Pro for unlimited.` });
+  }
+  const prof = getUserProfession(email);
+  let query = CH.buildJobQuery(req.query.query, prof);
+  const location = (req.query.location || '').toString().slice(0, 80);
+  if (location) query = `${query} in ${location}`;
+  const params = { query, location, page: parseInt(req.query.page, 10) || 1, remote: req.query.remote || '', datePosted: req.query.datePosted || '', jobType: req.query.jobType || '' };
+  try {
+    const key = CH.jobCacheKey(params);
+    let jobs;
+    const cached = db.prepare('SELECT payload, fetched_at FROM job_cache WHERE cache_key = ?').get(key);
+    if (cached && (Date.now() - cached.fetched_at) < JOB_CACHE_TTL) {
+      jobs = JSON.parse(cached.payload);
+    } else {
+      const raw = await jsearchFetch(params);
+      jobs = CH.normalizeJobs(raw);
+      db.prepare('INSERT OR REPLACE INTO job_cache (cache_key, payload, fetched_at) VALUES (?,?,?)').run(key, JSON.stringify(jobs), Date.now());
+    }
+    if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
+    res.json({ jobs, query, profession: prof ? prof.label : null });
+  } catch (err) {
+    if (err.code === 'jobs_unconfigured') return res.status(503).json({ error: 'jobs_unconfigured', message: 'Job search is not configured on this server.' });
+    console.error('jobs/search error:', err.message);
+    res.status(502).json({ error: 'jobs_error', message: 'Job search is temporarily unavailable — please try again.' });
+  }
+});
+app.post('/api/jobs/save', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const pro = isSubscriber(email);
+  const e = email.toLowerCase();
+  const job = (req.body && req.body.job) || {};
+  if (!job.id || !job.title) return res.status(400).json({ error: 'bad_request' });
+  const count = db.prepare('SELECT COUNT(*) c FROM saved_jobs WHERE email = ?').get(e).c;
+  const already = db.prepare('SELECT 1 FROM saved_jobs WHERE email = ? AND job_id = ?').get(e, job.id);
+  if (!already && !pro && count >= CH.LIMITS.savedJobs.free) {
+    return res.status(402).json({ error: 'quota', message: `Free plan saves up to ${CH.LIMITS.savedJobs.free} jobs. Upgrade to Pro for unlimited.` });
+  }
+  db.prepare('INSERT INTO saved_jobs (email, job_id, title, company, location, url, snapshot, saved_at) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(email, job_id) DO NOTHING')
+    .run(e, job.id, job.title || '', job.company || '', job.location || '', job.url || '', JSON.stringify(job), Date.now());
+  res.json({ success: true });
+});
+app.get('/api/jobs/saved', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const rows = db.prepare('SELECT id, job_id, title, company, location, url, saved_at FROM saved_jobs WHERE email = ? ORDER BY saved_at DESC').all(email.toLowerCase());
+  res.json({ jobs: rows });
+});
+app.delete('/api/jobs/saved/:id', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  db.prepare('DELETE FROM saved_jobs WHERE id = ? AND email = ?').run(parseInt(req.params.id, 10), email.toLowerCase());
+  res.json({ success: true });
+});
+
+// ─── Phase 6: Scenario Lab (branching troubleshooting simulations) ──────────
+app.post('/api/scenario-lab/scenario', careerGenLimiter, async (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const prof = requireProfession(res, email); if (!prof) return;
+  const pro = isSubscriber(email);
+  const userKey = getUsageKey(req);
+  const scenarioType = CH.SCENARIO_TYPES[req.body && req.body.scenarioType] ? req.body.scenarioType : 'customer-service';
+  if (!pro && _quotaUsed(userKey, 'scenario', 'week') >= CH.LIMITS.scenario.free) {
+    return res.status(402).json({ error: 'quota', message: 'Free plan includes 1 scenario per week. Upgrade to Pro for unlimited.' });
+  }
+  try {
+    const key = CH.scenarioCacheKey(prof.id, scenarioType);
+    let payload;
+    const cached = db.prepare('SELECT payload FROM scenario_cache WHERE cache_key = ?').get(key);
+    if (cached) {
+      payload = JSON.parse(cached.payload);
+    } else {
+      const p = CH.buildScenarioPrompt(prof, scenarioType);
+      payload = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 2400, validate: CH.validateScenario });
+      db.prepare('INSERT OR REPLACE INTO scenario_cache (cache_key, profession_id, scenario_type, payload, created_at) VALUES (?,?,?,?,?)')
+        .run(key, prof.id, scenarioType, JSON.stringify(payload), Date.now());
+    }
+    if (!pro) _quotaConsume(userKey, 'scenario', 'week');
+    res.json({ scenarioType, scenario: payload });
+  } catch (err) {
+    console.error('scenario-lab error:', err.message);
+    res.status(503).json({ error: 'unavailable', message: 'Could not build a scenario — please try again.' });
+  }
+});
+app.post('/api/scenario-lab/complete', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const prof = requireProfession(res, email); if (!prof) return;
+  const { scenarioType, perfect } = req.body || {};
+  const st = CH.SCENARIO_TYPES[scenarioType] ? scenarioType : 'customer-service';
+  db.prepare('INSERT INTO scenario_progress (email, profession_id, scenario_type, completed, perfect, completed_at) VALUES (?,?,?,1,?,?) ON CONFLICT(email, profession_id, scenario_type) DO UPDATE SET completed = 1, perfect = MAX(perfect, excluded.perfect), completed_at = excluded.completed_at')
+    .run(email.toLowerCase(), prof.id, st, perfect ? 1 : 0, Date.now());
+  res.json({ success: true });
+});
+
+// ─── Phase 5: Career Dashboard ──────────────────────────────────────────────
+app.get('/api/career/dashboard', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const prof = getUserProfession(email);
+  const resumeCount = db.prepare('SELECT COUNT(*) c FROM saved_resumes WHERE email = ?').get(e).c;
+  const lastResume = db.prepare('SELECT created_at FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(e);
+  // Best band per topic (gold > silver > bronze).
+  const attempts = db.prepare('SELECT topic, score, band FROM skill_attempts WHERE email = ?').all(e);
+  const bandRank = { gold: 3, silver: 2, bronze: 1, '': 0 };
+  const bestBands = {};
+  for (const a of attempts) {
+    const t = a.topic || 'general';
+    if (!bestBands[t] || (bandRank[a.band] || 0) > (bandRank[bestBands[t].band] || 0)) bestBands[t] = { band: a.band, score: a.score };
+  }
+  const ip = db.prepare('SELECT COUNT(*) c, AVG(confidence) avg FROM interview_progress WHERE email = ?').get(e);
+  const savedJobs = db.prepare('SELECT COUNT(*) c FROM saved_jobs WHERE email = ?').get(e).c;
+  const latestGapRow = db.prepare('SELECT payload FROM gap_reports WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(e);
+  const latestGap = latestGapRow ? JSON.parse(latestGapRow.payload) : null;
+  const scenariosDone = db.prepare('SELECT COUNT(*) c FROM scenario_progress WHERE email = ? AND completed = 1').get(e).c;
+  const nextSteps = CH.computeNextSteps({
+    hasProfession: !!prof, professionLabel: prof ? prof.label : null,
+    resumeCount, tookQuiz: attempts.length > 0, bestBands,
+    interviewPracticed: ip.c, interviewTotal: 8,
+    savedJobs, latestGap, scenariosDone
+  });
+  res.json({
+    profession: prof,
+    resume: { count: resumeCount, lastAt: lastResume ? lastResume.created_at : null },
+    skills: { bestBands, attempts: attempts.length },
+    interview: { practiced: ip.c, avgConfidence: ip.avg ? Math.round(ip.avg * 10) / 10 : 0 },
+    jobs: { saved: savedJobs },
+    gap: latestGap ? { matchScore: latestGap.matchScore, topGaps: (latestGap.gaps || []).slice(0, 3) } : null,
+    scenarios: { done: scenariosDone },
+    nextSteps,
+    isSubscriber: isSubscriber(email)
+  });
+});
+
+// Pro: AI coach summary (Haiku), cached once per user per day.
+app.get('/api/career/coach', async (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_only', message: 'The AI coach summary is a Pro feature.' });
+  const e = email.toLowerCase();
+  const cacheKey = `coach:${e}:${new Date().toISOString().slice(0, 10)}`;
+  const cached = db.prepare('SELECT payload FROM gap_cache WHERE cache_key = ?').get(cacheKey);
+  if (cached) return res.json(JSON.parse(cached.payload));
+  const prof = getUserProfession(email);
+  const resumeCount = db.prepare('SELECT COUNT(*) c FROM saved_resumes WHERE email = ?').get(e).c;
+  const attempts = db.prepare('SELECT COUNT(*) c FROM skill_attempts WHERE email = ?').get(e).c;
+  const savedJobs = db.prepare('SELECT COUNT(*) c FROM saved_jobs WHERE email = ?').get(e).c;
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5', max_tokens: 200,
+      system: 'You are an encouraging career coach. In 2 short sentences, give the user one motivational nudge and one concrete next action. Plain text, no preamble.',
+      messages: [{ role: 'user', content: `Target role: ${prof ? prof.displayLabel : 'unset'}. Resumes: ${resumeCount}. Skills tests taken: ${attempts}. Saved jobs: ${savedJobs}.` }]
+    });
+    const payload = { summary: (msg.content[0] && msg.content[0].text || '').trim() };
+    db.prepare('INSERT OR REPLACE INTO gap_cache (cache_key, payload, created_at) VALUES (?,?,?)').run(cacheKey, JSON.stringify(payload), Date.now());
+    res.json(payload);
+  } catch (err) {
+    console.error('career/coach error:', err.message);
+    res.status(503).json({ error: 'unavailable' });
+  }
+});
 
 // Branded 404 for anything that fell through every route above (replaces
 // Express's default "Cannot GET /…" page). API paths keep a JSON error.
