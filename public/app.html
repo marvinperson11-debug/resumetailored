@@ -8689,6 +8689,23 @@ Aaliyah Washington`
       if (ov) { ov.style.pointerEvents = 'none'; ov.classList.add('is-typing'); }
       // Focus has to move INTO the iframe or the keystrokes go to the app.
       try { frame.contentWindow.focus(); } catch (_) {}
+      /* Raise the mobile keyboard. iOS (and some Android) only open the
+         on-screen keyboard when an editable element is focused SYNCHRONOUSLY
+         inside the tap gesture — and the beginEdit round-trip through
+         postMessage lands in a later task, too late to count as the gesture.
+         The canvas is a same-origin srcdoc, so we put a caret in the real node
+         right here, in the same synchronous turn as the pointerup. The
+         postMessage path still runs and adopts this exact node for the full
+         session (all-content selection, key handlers, undo). Best-effort: any
+         failure just falls through to the async path that already worked on
+         desktop. */
+      try {
+        const fdoc = frame.contentWindow.document;
+        const safe = String(id).replace(/[^A-Za-z0-9_-]/g, '');
+        const node = fdoc.querySelector('.sd-el[data-el="' + safe + '"]');
+        const target = node && (node.firstElementChild || node);
+        if (target) { target.setAttribute('contenteditable', 'plaintext-only'); target.focus({ preventScroll: true }); }
+      } catch (_) {}
       if (_edCanvasReady) _edPostBeginEdit(id);
       else _edPendingEdit = id;   // sent the moment the page reports itself ready
       /* If the page never answers, take the pointer events back. The inline
@@ -8818,8 +8835,17 @@ Aaliyah Washington`
            both are things people do constantly.
 
            What "acting" means depends on what was pressed: a caret in a text
-           box, the file picker on a photo or video slot. */
-        maybeType: wasSelected && !resize && edIsText(id),
+           box, the file picker on a photo or video slot.
+
+           ON TOUCH this collapses to a single tap for text: a phone user
+           expects the keyboard the instant they press a box, not "tap to
+           select, tap again to type". So a touch press on a text box arms
+           typing even on the FIRST press — release without moving and the
+           caret (and keyboard) come up; drag past the slop and it is a move
+           instead (edPointerMove clears it), and a gear/handle press never
+           reaches here. Mouse keeps the deliberate two-step so a click can
+           still just select before a drag or a resize. */
+        maybeType: (wasSelected || ev.pointerType === 'touch') && !resize && edIsText(id),
         maybeUpload: wasSelected && !resize && edMediaType(id),
       };
       ev.preventDefault();
