@@ -848,10 +848,20 @@ const server = app.listen(0, async () => {
       /if \(_edTyping\) \{ _edRenderPending = true; return; \}/.test(appJs)
       && /if \(_edRenderPending\) \{ _edRenderPending = false; edRenderCanvas\(\); \}/.test(appJs));
     /* Pressing an already-selected text element is ambiguous — drag or type.
-       The pointer decides, so neither gesture is taken away. */
-    check('press-and-hold-still means act, press-and-move means drag',
-      /maybeType: wasSelected && !resize && edIsText\(id\)/.test(appJs)
+       The pointer decides, so neither gesture is taken away. On TOUCH the
+       first press on a text box already arms typing (a phone user expects the
+       keyboard on the first tap, not a two-step select-then-type); mouse keeps
+       the deliberate two-step. Press-and-move still cancels either way. */
+    check('press-and-hold-still means act, press-and-move means drag (touch types on the first tap)',
+      /maybeType: \(wasSelected \|\| ev\.pointerType === 'touch'\) && !resize && edIsText\(id\)/.test(appJs)
       && /if \(d\.maybeType\) \{ edBeginTyping\(d\.id\); return; \}/.test(appJs));
+    /* The mobile keyboard only opens when an editable node is focused
+       synchronously inside the tap gesture — the beginEdit postMessage lands a
+       task too late — so edBeginTyping puts a caret in the same-origin srcdoc
+       node right there in the gesture, then the postMessage adopts it. */
+    check('the mobile keyboard is raised by focusing the node in-gesture',
+      /const fdoc = frame\.contentWindow\.document;/.test(appJs)
+      && /target\.focus\(\{ preventScroll: true \}\)/.test(appJs));
     /* What "acting" means depends on what was pressed. A photo or video slot
        has no text to type into, so the same gesture opens the file picker —
        which is what anyone pressing an empty photo frame is trying to do. */
