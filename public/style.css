@@ -611,7 +611,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   /* ── Bottom navigation bar ── */
   .sidebar {
     position: fixed; bottom: 0; left: 0; right: 0; top: auto;
-    z-index: 90; height: calc(56px + env(safe-area-inset-bottom));
+    z-index: 90; height: calc(62px + env(safe-area-inset-bottom));
     flex-direction: row; flex-wrap: nowrap;
     overflow-x: auto; overflow-y: hidden;
     padding: 0 0 env(safe-area-inset-bottom); gap: 0;
@@ -625,19 +625,28 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
 
   .sidebar-btn {
     flex: none; flex-shrink: 0;
-    min-width: 64px; height: 56px;
-    padding: 7px 12px 5px;
+    min-width: 64px; height: 62px;
+    padding: 8px 12px;
     flex-direction: column; align-items: center; justify-content: center;
     font-size: 0; gap: 0;
     border-radius: 0; border: none; border-top: 2px solid transparent;
     background: rgba(250,247,240,0.97); color: #57514A;
-    white-space: nowrap;
+    white-space: nowrap; overflow: hidden;
   }
+  /* Only the icon and the ::after label belong in the bottom bar. Hide EVERY
+     other child — the tab-label <span> AND the green "FREE"/"PRO" badges (both
+     the Career Hub .ch-pill and the original tabs' inline-styled badges). Those
+     badges carry their own font-size, so the button's font-size:0 never hid
+     them; stacked under the icon they pushed the icon up past the bar's top
+     edge (overflow-y:hidden clipped it). With them gone the icon+label stack
+     fits and centers cleanly. */
+  .sidebar-btn > * { display: none !important; }
+  .sidebar-btn > .sidebar-icon { display: flex !important; align-items: center; justify-content: center; }
   .sidebar-btn:hover { background: #F1EADD; color: #191512; border-top-color: transparent; }
   .sidebar-btn.active { color: var(--blue); border-top-color: var(--blue); background: #FFFFFF; }
   .sidebar-btn::after {
     content: attr(data-label); font-size: 9px; font-weight: 700;
-    color: inherit; margin-top: 3px; line-height: 1;
+    color: inherit; margin-top: 4px; line-height: 1; display: block;
   }
   .sidebar-icon { font-size: 20px; line-height: 1; }
   .nav-pro-full { display: none; }
@@ -655,10 +664,10 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
      thumb bar there (nothing to save/publish yet). Inside the actual editor
      (not .wb-picker) the shell stays full-screen as before. */
   body.wb-picker .sidebar { z-index: 250 !important; display: flex !important; }
-  body.wb-picker .cv-panel { padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
+  body.wb-picker .cv-panel { padding-bottom: calc(84px + env(safe-area-inset-bottom)) !important; }
   body.wb-picker .rt-thumbbar { display: none !important; }
 
-  .dash-main { padding: 18px 14px calc(72px + env(safe-area-inset-bottom)); }
+  .dash-main { padding: 18px 14px calc(84px + env(safe-area-inset-bottom)); }
   .panel-header { margin-bottom: 18px; }
   .panel-header h1 { font-size: 20px; }
   .panel-header p { font-size: 14px; }
