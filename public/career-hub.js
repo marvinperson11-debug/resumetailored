@@ -288,8 +288,13 @@
       profile = res.data; profileLoaded = true;
       toast(t('ch_prof_set', 'Target profession set:') + ' ' + profDisplay(res.data));
       vibrate(20);
+      // Capture the re-render callback BEFORE closePicker() — closePicker nulls
+      // pickerOnSet, so reading it afterwards always got null and the dashboard
+      // (and every tool) never refreshed after a profession change until a
+      // manual page reload. Capture first, then close, then fire.
+      var cb = pickerOnSet;
       closePicker();
-      var cb = pickerOnSet; pickerOnSet = null; if (cb) cb();
+      if (cb) cb();
     } else { el('chPickerSave').disabled = false; toast(res.data.message || t('ch_could_not_save', 'Could not save.')); }
   }
 

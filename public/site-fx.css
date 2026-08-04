@@ -30,6 +30,12 @@
 [data-reveal] { opacity: 0; transform: translateY(28px); transition: opacity .6s ease, transform .6s ease; }
 [data-reveal].visible { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { [data-reveal] { opacity: 1 !important; transform: none !important; } }
+/* On mobile the scroll-reveal trigger often never fires (short viewport, or the
+   observer misses fast native scrolls), leaving whole sections — FAQ headings,
+   job-board lists, labels — stuck near-invisible ("ghosted") on cream. Show
+   reveal content unconditionally on phones; the fade-in is a desktop nicety,
+   not a reason for a mobile user to read faded text. */
+@media (max-width: 820px) { [data-reveal] { opacity: 1 !important; transform: none !important; } }
 
 /* ---- Bottom-sheet modals (mobile) ------------------------------------- */
 @media (max-width: 820px) {

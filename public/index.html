@@ -437,7 +437,16 @@
     }
     .feat-card--free::after { content: "✓ Free"; background: var(--accent-tint); color: var(--accent); }
     .feat-card--pro::after  { content: "✦ Pro Exclusive"; background: var(--accent); color: #fff; }
-    @media (max-width: 768px) { .feat-card { padding: 24px 20px; } }
+    @media (max-width: 768px) {
+      .feat-card { padding: 24px 20px; }
+      /* The "✓ Free" / "✦ Pro Exclusive" corner pill is absolutely positioned;
+         on a phone the wide uppercase eyebrow ("100% Free · No Account Required")
+         ran under it and lost its last letters. Pull the pill fully into the
+         corner and reserve right-space on the eyebrow so it wraps clear of it —
+         a badge must never cover text. */
+      .feat-card::after { top: 12px; right: 12px; }
+      .feat-card > div:first-child > p:first-child { padding-right: 96px; }
+    }
     .feature-icon { font-size: 48px; margin-bottom: 16px; }
     .feature-body h3 { font-size: 27px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 12px; color: var(--ink); }
     .feature-body p { font-size: 15px; color: var(--ink-soft); line-height: 1.75; }
@@ -787,6 +796,17 @@
     .hero h1 .word-animate:hover {
       transform: translateY(-3px);
       text-shadow: 0 2px 18px rgba(31,92,61,0.28);
+    }
+    /* ── Mobile legibility & containment (≤820px only; desktop unchanged) ── */
+    @media (max-width: 820px) {
+      /* Darken muted body/caption text so it clears WCAG AA on the cream bg. */
+      :root { --ink-soft: #2d2d2d; --ink-faint: #4a4a4a; }
+      [style*="#57514A"], [style*="#918A7E"], [style*="#9ca3af"] { color: #2d2d2d !important; }
+      /* No sideways scroll; long unbreakable strings (URLs) wrap in their card. */
+      html, body { overflow-x: hidden !important; }
+      .feat-card, .feature-row, .feature-body, .container, .card { overflow-wrap: anywhere; word-break: break-word; }
+      /* White cards get a light edge so they don't float on the cream. */
+      .feat-card, .card { border: 1px solid rgba(0,0,0,0.08); }
     }
   </style>
   <link rel="stylesheet" href="/site-fx.css"/>
