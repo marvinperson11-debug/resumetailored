@@ -26,6 +26,10 @@ const db = new Database(path.join(dataDir, 'resumetailor.db'));
 // Default seniority to warm; the app keys quizzes by seniority so we pick the
 // most common one rather than every level (keeps credits bounded).
 const SENIORITY = process.env.WARM_SENIORITY || 'mid';
+// Languages to warm. Content is cached per language, so warming 'zh' too means
+// the first Chinese user of a popular role doesn't wait either — at ~2x the
+// credits. Default English-only; set WARM_LANGS=en,zh to warm both.
+const LANGS = (process.env.WARM_LANGS || 'en').split(',').map(s => s.trim()).filter(Boolean);
 
 async function gen({ system, user, max_tokens, validate }) {
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -40,48 +44,50 @@ async function gen({ system, user, max_tokens, validate }) {
 (async () => {
   if (!process.env.ANTHROPIC_API_KEY) { console.error('ANTHROPIC_API_KEY not set'); process.exit(1); }
   let made = 0, skipped = 0, failed = 0;
-  for (const pid of CH.TOP_PROFESSIONS) {
+  for (const lang of LANGS) {
+   for (const pid of CH.TOP_PROFESSIONS) {
     const prof = CH.resolveProfession(pid, SENIORITY);
     if (!prof) continue;
 
     // Quiz (general topic)
-    const qKey = CH.quizCacheKey(prof.id, prof.seniority, '');
+    const qKey = CH.quizCacheKey(prof.id, prof.seniority, '', lang);
     if (db.prepare('SELECT 1 FROM quiz_cache WHERE cache_key = ?').get(qKey)) { skipped++; }
     else {
       try {
-        const p = CH.buildQuizPrompt(prof, '');
+        const p = CH.buildQuizPrompt(prof, '', lang);
         const payload = await gen({ system: p.system, user: p.user, max_tokens: 2600, validate: CH.validateQuiz });
         db.prepare('INSERT OR REPLACE INTO quiz_cache (cache_key,profession_id,seniority,topic,payload,created_at) VALUES (?,?,?,?,?,?)')
           .run(qKey, prof.id, prof.seniority, '', JSON.stringify(payload), Date.now());
-        made++; console.log(`  quiz     ✓ ${prof.displayLabel}`);
-      } catch (e) { failed++; console.error(`  quiz     ✗ ${prof.displayLabel}: ${e.message}`); }
+        made++; console.log(`  [${lang}] quiz     ✓ ${prof.displayLabel}`);
+      } catch (e) { failed++; console.error(`  [${lang}] quiz     ✗ ${prof.displayLabel}: ${e.message}`); }
     }
 
     // Interview (behavioral + technical)
     for (const kind of ['behavioral', 'technical']) {
-      const iKey = CH.interviewCacheKey(prof.id, prof.seniority, kind);
+      const iKey = CH.interviewCacheKey(prof.id, prof.seniority, kind, lang);
       if (db.prepare('SELECT 1 FROM interview_cache WHERE cache_key = ?').get(iKey)) { skipped++; continue; }
       try {
-        const p = CH.buildInterviewPrompt(prof, kind);
+        const p = CH.buildInterviewPrompt(prof, kind, lang);
         const payload = await gen({ system: p.system, user: p.user, max_tokens: 2800, validate: CH.validateInterview });
         db.prepare('INSERT OR REPLACE INTO interview_cache (cache_key,profession_id,seniority,kind,payload,created_at) VALUES (?,?,?,?,?,?)')
           .run(iKey, prof.id, prof.seniority, kind, JSON.stringify(payload), Date.now());
-        made++; console.log(`  iv/${kind.slice(0, 4)}  ✓ ${prof.displayLabel}`);
-      } catch (e) { failed++; console.error(`  iv/${kind} ✗ ${prof.displayLabel}: ${e.message}`); }
+        made++; console.log(`  [${lang}] iv/${kind.slice(0, 4)}  ✓ ${prof.displayLabel}`);
+      } catch (e) { failed++; console.error(`  [${lang}] iv/${kind} ✗ ${prof.displayLabel}: ${e.message}`); }
     }
 
     // Scenarios (all types)
     for (const stype of Object.keys(CH.SCENARIO_TYPES)) {
-      const sKey = CH.scenarioCacheKey(prof.id, stype);
+      const sKey = CH.scenarioCacheKey(prof.id, stype, lang);
       if (db.prepare('SELECT 1 FROM scenario_cache WHERE cache_key = ?').get(sKey)) { skipped++; continue; }
       try {
-        const p = CH.buildScenarioPrompt(prof, stype);
+        const p = CH.buildScenarioPrompt(prof, stype, lang);
         const payload = await gen({ system: p.system, user: p.user, max_tokens: 2400, validate: CH.validateScenario });
         db.prepare('INSERT OR REPLACE INTO scenario_cache (cache_key,profession_id,scenario_type,payload,created_at) VALUES (?,?,?,?,?)')
           .run(sKey, prof.id, stype, JSON.stringify(payload), Date.now());
-        made++; console.log(`  scen     ✓ ${prof.displayLabel} / ${stype}`);
-      } catch (e) { failed++; console.error(`  scen     ✗ ${prof.displayLabel}/${stype}: ${e.message}`); }
+        made++; console.log(`  [${lang}] scen     ✓ ${prof.displayLabel} / ${stype}`);
+      } catch (e) { failed++; console.error(`  [${lang}] scen     ✗ ${prof.displayLabel}/${stype}: ${e.message}`); }
     }
+   }
   }
   console.log(`\n[warm] generated ${made}, skipped ${skipped} (already cached), failed ${failed}`);
   process.exit(failed && !made ? 1 : 0);

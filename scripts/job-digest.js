@@ -46,7 +46,7 @@ async function sendEmail(to, subject, html) {
 }
 
 (async () => {
-  const rows = db.prepare("SELECT email, profession_id, seniority FROM check_ins WHERE job_alerts = 1 AND profession_id != ''").all();
+  const rows = db.prepare("SELECT email, profession_id, seniority, lang FROM check_ins WHERE job_alerts = 1 AND profession_id != ''").all();
   console.log(`[job-digest] ${rows.length} subscriber(s)`);
   let sent = 0, skipped = 0;
   // Cache JSearch per profession so many subscribers to the same role cost one call.
@@ -54,11 +54,13 @@ async function sendEmail(to, subject, html) {
   for (const row of rows) {
     const prof = CH.resolveProfession(row.profession_id, row.seniority);
     if (!prof) { skipped++; continue; }
+    const lang = row.lang === 'zh' ? 'zh' : 'en';
     try {
       let jobs = cache[prof.id];
       if (!jobs) { jobs = CH.normalizeJobs(await jsearch(prof.label)); cache[prof.id] = jobs; }
       if (!jobs.length) { skipped++; continue; }
-      const { subject, html } = CH.buildJobDigestEmail(prof.label, jobs, ORIGIN);
+      const profLabel = lang === 'zh' ? prof.labelZh : prof.label;
+      const { subject, html } = CH.buildJobDigestEmail(profLabel, jobs, ORIGIN, lang);
       if (await sendEmail(row.email, subject, html)) sent++;
     } catch (e) {
       console.error(`[job-digest] ${row.email}: ${e.message}`);

@@ -432,6 +432,9 @@ _ensureColumn('check_ins', 'seniority', "seniority TEXT DEFAULT ''");
 _ensureColumn('check_ins', 'profession_set_at', 'profession_set_at INTEGER');
 // Career Hub Job Finder: daily "new jobs for your profession" digest opt-in.
 _ensureColumn('check_ins', 'job_alerts', 'job_alerts INTEGER DEFAULT 0');
+// Preferred UI language, so server-side emails (the job digest) match what the
+// user reads in the app.
+_ensureColumn('check_ins', 'lang', "lang TEXT DEFAULT 'en'");
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
@@ -6172,6 +6175,11 @@ function careerEmail(req, res) {
   if (!email) { res.status(401).json({ error: 'login_required', message: 'Please sign in to use the Career Hub.' }); return null; }
   return email;
 }
+// The UI language for this request (drives in-language AI generation + caching).
+function _reqLang(req) {
+  const l = (req.query && req.query.lang) || (req.body && req.body.lang) || 'en';
+  return l === 'zh' ? 'zh' : 'en';
+}
 function requireProfession(res, email) {
   const prof = getUserProfession(email);
   if (!prof) { res.status(400).json({ error: 'no_profession', message: 'Set your target profession first.' }); return null; }
@@ -6234,15 +6242,16 @@ app.post('/api/profession', (req, res) => {
   const data = CH.loadProfessions();
   if (!CH.validateProfessionId(professionId, data)) return res.status(400).json({ error: 'invalid_profession' });
   const sen = CH.validateSeniority(seniority) ? (seniority || '') : '';
+  const lang = _reqLang(req);
   const prof = CH.resolveProfession(professionId, sen, data);
   const e = email.toLowerCase();
   const existing = db.prepare('SELECT email FROM check_ins WHERE email = ?').get(e);
   if (existing) {
-    db.prepare('UPDATE check_ins SET profession_id = ?, profession_cat = ?, seniority = ?, profession_set_at = ? WHERE email = ?')
-      .run(prof.id, prof.category, sen, Date.now(), e);
+    db.prepare('UPDATE check_ins SET profession_id = ?, profession_cat = ?, seniority = ?, profession_set_at = ?, lang = ? WHERE email = ?')
+      .run(prof.id, prof.category, sen, Date.now(), lang, e);
   } else {
-    db.prepare('INSERT INTO check_ins (email, last_check_in, goals, current_role, target_role, next_prompt, profession_id, profession_cat, seniority, profession_set_at) VALUES (?,?,?,?,?,?,?,?,?,?)')
-      .run(e, null, '', '', '', '', prof.id, prof.category, sen, Date.now());
+    db.prepare('INSERT INTO check_ins (email, last_check_in, goals, current_role, target_role, next_prompt, profession_id, profession_cat, seniority, profession_set_at, lang) VALUES (?,?,?,?,?,?,?,?,?,?,?)')
+      .run(e, null, '', '', '', '', prof.id, prof.category, sen, Date.now(), lang);
   }
   res.json(prof);
 });
@@ -6253,6 +6262,7 @@ app.post('/api/skills-lab/quiz', careerGenLimiter, async (req, res) => {
   const prof = requireProfession(res, email); if (!prof) return;
   const pro = isSubscriber(email);
   const topic = (req.body && req.body.topic ? String(req.body.topic) : '').slice(0, 80);
+  const lang = _reqLang(req);
   const userKey = getUsageKey(req);
   // Free tier: 1 quiz + 1 retake per day.
   const freeCap = CH.LIMITS.quiz.free + CH.LIMITS.retake.free;
@@ -6260,13 +6270,13 @@ app.post('/api/skills-lab/quiz', careerGenLimiter, async (req, res) => {
     return res.status(402).json({ error: 'quota', message: 'Free plan is 1 quiz + 1 retake per day. Upgrade to Pro for unlimited quizzes and all topics.' });
   }
   try {
-    const key = CH.quizCacheKey(prof.id, prof.seniority, topic);
+    const key = CH.quizCacheKey(prof.id, prof.seniority, topic, lang);
     let payload;
     const cached = db.prepare('SELECT payload FROM quiz_cache WHERE cache_key = ?').get(key);
     if (cached) {
       payload = JSON.parse(cached.payload);
     } else {
-      const p = CH.buildQuizPrompt(prof, topic);
+      const p = CH.buildQuizPrompt(prof, topic, lang);
       payload = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 2600, validate: CH.validateQuiz });
       db.prepare('INSERT OR REPLACE INTO quiz_cache (cache_key, profession_id, seniority, topic, payload, created_at) VALUES (?,?,?,?,?,?)')
         .run(key, prof.id, prof.seniority, topic, JSON.stringify(payload), Date.now());
@@ -6317,11 +6327,12 @@ app.get('/badge/:slug', (req, res) => {
   const user = db.prepare('SELECT username FROM users WHERE email = ?').get(row.email);
   const prof = CH.resolveProfession(row.profession_id) || { label: 'Professional' };
   const origin = `${req.protocol}://${req.get('host')}`;
+  const lang = req.query.lang === 'zh' ? 'zh' : 'en';
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(renderBadgePage({
-    slug: row.slug, name: user && user.username, professionLabel: prof.label,
+    slug: row.slug, name: user && user.username, professionLabel: lang === 'zh' ? prof.labelZh : prof.label,
     topic: row.topic, band: row.band, score: row.score, created_at: row.created_at
-  }, origin));
+  }, origin, lang));
 });
 
 // ─── Phase 2: Interview Prep ────────────────────────────────────────────────
@@ -6331,14 +6342,15 @@ app.post('/api/interview/questions', careerGenLimiter, async (req, res) => {
   const pro = isSubscriber(email);
   let kind = (req.body && req.body.kind) === 'technical' ? 'technical' : 'behavioral';
   if (kind === 'technical' && !pro) return res.status(402).json({ error: 'pro_only', message: 'Technical interview questions are a Pro feature. Behavioral questions are free.' });
+  const lang = _reqLang(req);
   try {
-    const key = CH.interviewCacheKey(prof.id, prof.seniority, kind);
+    const key = CH.interviewCacheKey(prof.id, prof.seniority, kind, lang);
     let payload;
     const cached = db.prepare('SELECT payload FROM interview_cache WHERE cache_key = ?').get(key);
     if (cached) {
       payload = JSON.parse(cached.payload);
     } else {
-      const p = CH.buildInterviewPrompt(prof, kind);
+      const p = CH.buildInterviewPrompt(prof, kind, lang);
       payload = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 2800, validate: CH.validateInterview });
       db.prepare('INSERT OR REPLACE INTO interview_cache (cache_key, profession_id, seniority, kind, payload, created_at) VALUES (?,?,?,?,?,?)')
         .run(key, prof.id, prof.seniority, kind, JSON.stringify(payload), Date.now());
@@ -6378,7 +6390,7 @@ app.post('/api/interview/score', answerScoreLimiter, async (req, res) => {
   try {
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6', max_tokens: 700,
-      system: 'You are an interview coach. Give concise, specific, encouraging feedback on a candidate\'s answer. Output ONLY valid JSON: {"rating":<1-5>,"strengths":["..."],"improvements":["..."],"revised":"a tighter example answer"}.',
+      system: 'You are an interview coach. Give concise, specific, encouraging feedback on a candidate\'s answer. Output ONLY valid JSON: {"rating":<1-5>,"strengths":["..."],"improvements":["..."],"revised":"a tighter example answer"}.' + CH.langInstruction(_reqLang(req)),
       messages: [{ role: 'user', content: `Role: ${prof.displayLabel}\nQUESTION: ${String(question).slice(0, 600)}\nCANDIDATE ANSWER: ${String(answer).slice(0, 1500)}` }]
     });
     const obj = CH.extractJson(msg.content[0] && msg.content[0].text) || { rating: 3, strengths: [], improvements: [], revised: '' };
@@ -6409,14 +6421,15 @@ app.post('/api/skills-gap', careerGenLimiter, async (req, res) => {
     if (j && j.snapshot) { try { const s = JSON.parse(j.snapshot); jobText = [s.title, s.company, s.descriptionSnippet].filter(Boolean).join('\n'); } catch (_) {} }
   }
   if (!resume || !jobText) return res.status(400).json({ error: 'bad_request', message: 'A resume and a job description are both required.' });
+  const lang = _reqLang(req);
   try {
-    const key = CH.gapCacheKey(resume, jobText);
+    const key = CH.gapCacheKey(resume, jobText, lang);
     let payload;
     const cached = db.prepare('SELECT payload FROM gap_cache WHERE cache_key = ?').get(key);
     if (cached) {
       payload = JSON.parse(cached.payload);
     } else {
-      const p = CH.buildGapPrompt(resume, jobText);
+      const p = CH.buildGapPrompt(resume, jobText, lang);
       payload = await callClaudeJSON({ model: 'claude-sonnet-4-6', system: p.system, user: p.user, max_tokens: 1600, validate: CH.validateGap });
       db.prepare('INSERT OR REPLACE INTO gap_cache (cache_key, payload, created_at) VALUES (?,?,?)').run(key, JSON.stringify(payload), Date.now());
     }
@@ -6517,9 +6530,10 @@ app.post('/api/jobs/alerts', (req, res) => {
   const email = careerEmail(req, res); if (!email) return;
   const e = email.toLowerCase();
   const on = (req.body && req.body.enabled) ? 1 : 0;
+  const lang = _reqLang(req);
   const exists = db.prepare('SELECT email FROM check_ins WHERE email = ?').get(e);
-  if (exists) db.prepare('UPDATE check_ins SET job_alerts = ? WHERE email = ?').run(on, e);
-  else db.prepare('INSERT INTO check_ins (email, job_alerts) VALUES (?, ?)').run(e, on);
+  if (exists) db.prepare('UPDATE check_ins SET job_alerts = ?, lang = ? WHERE email = ?').run(on, lang, e);
+  else db.prepare('INSERT INTO check_ins (email, job_alerts, lang) VALUES (?, ?, ?)').run(e, on, lang);
   res.json({ enabled: !!on });
 });
 
@@ -6530,17 +6544,18 @@ app.post('/api/scenario-lab/scenario', careerGenLimiter, async (req, res) => {
   const pro = isSubscriber(email);
   const userKey = getUsageKey(req);
   const scenarioType = CH.SCENARIO_TYPES[req.body && req.body.scenarioType] ? req.body.scenarioType : 'customer-service';
+  const lang = _reqLang(req);
   if (!pro && _quotaUsed(userKey, 'scenario', 'week') >= CH.LIMITS.scenario.free) {
     return res.status(402).json({ error: 'quota', message: 'Free plan includes 1 scenario per week. Upgrade to Pro for unlimited.' });
   }
   try {
-    const key = CH.scenarioCacheKey(prof.id, scenarioType);
+    const key = CH.scenarioCacheKey(prof.id, scenarioType, lang);
     let payload;
     const cached = db.prepare('SELECT payload FROM scenario_cache WHERE cache_key = ?').get(key);
     if (cached) {
       payload = JSON.parse(cached.payload);
     } else {
-      const p = CH.buildScenarioPrompt(prof, scenarioType);
+      const p = CH.buildScenarioPrompt(prof, scenarioType, lang);
       payload = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 2400, validate: CH.validateScenario });
       db.prepare('INSERT OR REPLACE INTO scenario_cache (cache_key, profession_id, scenario_type, payload, created_at) VALUES (?,?,?,?,?)')
         .run(key, prof.id, scenarioType, JSON.stringify(payload), Date.now());
@@ -6616,7 +6631,7 @@ app.get('/api/career/coach', async (req, res) => {
   try {
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5', max_tokens: 200,
-      system: 'You are an encouraging career coach. In 2 short sentences, give the user one motivational nudge and one concrete next action. Plain text, no preamble.',
+      system: 'You are an encouraging career coach. In 2 short sentences, give the user one motivational nudge and one concrete next action. Plain text, no preamble.' + CH.langInstruction(_reqLang(req)),
       messages: [{ role: 'user', content: `Target role: ${prof ? prof.displayLabel : 'unset'}. Resumes: ${resumeCount}. Skills tests taken: ${attempts}. Saved jobs: ${savedJobs}.` }]
     });
     const payload = { summary: (msg.content[0] && msg.content[0].text || '').trim() };

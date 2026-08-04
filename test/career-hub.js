@@ -148,6 +148,29 @@ check('TOP_PROFESSIONS lists 20 real slugs', CH.TOP_PROFESSIONS.length === 20 &&
 // ── answerScore limit surface ────────────────────────────────────────────────
 check('answerScore is Pro-only and capped 5/day', CH.LIMITS.answerScore.free === 0 && CH.LIMITS.answerScore.pro === 5 && CH.LIMITS.answerScore.period === 'day');
 
+// ── language: in-language generation + localized labels ──────────────────────
+check('cache keys are namespaced by language', CH.quizCacheKey('a', 's', 'x', 'zh') !== CH.quizCacheKey('a', 's', 'x', 'en'));
+check('default lang is en', CH.quizCacheKey('a', 's', 'x') === CH.quizCacheKey('a', 's', 'x', 'en'));
+check('interview/gap/scenario keys vary by language',
+  CH.interviewCacheKey('a', 's', 'behavioral', 'zh') !== CH.interviewCacheKey('a', 's', 'behavioral', 'en') &&
+  CH.gapCacheKey('r', 'j', 'zh') !== CH.gapCacheKey('r', 'j', 'en') &&
+  CH.scenarioCacheKey('a', 'customer-service', 'zh') !== CH.scenarioCacheKey('a', 'customer-service', 'en'));
+check('langInstruction adds a Chinese directive only for zh',
+  /Chinese/.test(CH.buildQuizPrompt(rn, '', 'zh').user) && !/Chinese/.test(CH.buildQuizPrompt(rn, '', 'en').user));
+check('langInstruction covers interview, gap and scenario prompts',
+  /Chinese/.test(CH.buildInterviewPrompt(rn, 'behavioral', 'zh').user) &&
+  /Chinese/.test(CH.buildGapPrompt('r', 'j', 'zh').user) &&
+  /Chinese/.test(CH.buildScenarioPrompt(rn, 'customer-service', 'zh').user));
+check('resolveProfession carries a Chinese label', rn.labelZh === '注册护士', rn.labelZh);
+check('Chinese display label prefixes seniority in Chinese', rn.displayLabelZh === '高级注册护士', rn.displayLabelZh);
+check('category has a Chinese label', rn.categoryLabelZh === '医疗保健', rn.categoryLabelZh);
+check('every profession has a Chinese label', Object.keys(CH.PROFESSION_ZH).length >= 60 && Object.values(CH.flattenProfessions(data)).every(p => p.labelZh && p.labelZh !== p.label));
+check('digest email localizes to Chinese',
+  CH.buildJobDigestEmail('注册护士', [{ title: 'RN', company: 'X' }], '', 'zh').subject === '今天有 1 个新的注册护士职位');
+check('digest Chinese body uses Chinese chrome', /查看全部职位/.test(CH.buildJobDigestEmail('注册护士', [{ title: 'RN', company: 'X' }], '', 'zh').html));
+const badgeZh = renderBadgePage({ slug: 's', name: '张伟', professionLabel: '注册护士', band: 'gold', score: 96 }, '', 'zh');
+check('badge page renders Chinese band + labels', /金牌/.test(badgeZh) && /测评得分/.test(badgeZh) && /lang="zh-CN"/.test(badgeZh));
+
 // ── LIMITS surface ───────────────────────────────────────────────────────────
 check('LIMITS covers all metered features', ['quiz', 'retake', 'jobsearch', 'savedJobs', 'gap', 'scenario'].every(k => CH.LIMITS[k]));
 check('gap + scenario are weekly', CH.LIMITS.gap.period === 'week' && CH.LIMITS.scenario.period === 'week');

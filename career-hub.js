@@ -24,6 +24,45 @@ const SENIORITY_LEVELS = ['', 'entry-level', 'mid', 'senior', 'lead'];
 const SENIORITY_LABELS = {
   '': '', 'entry-level': 'Entry Level', 'mid': 'Mid Level', 'senior': 'Senior', 'lead': 'Lead'
 };
+const SENIORITY_LABELS_ZH = {
+  '': '', 'entry-level': '初级', 'mid': '中级', 'senior': '高级', 'lead': '资深'
+};
+// Simplified-Chinese names for every category and profession, so the picker,
+// headers, dashboard and digest read in Chinese too (nothing a user sees is
+// hardcoded English). Missing ids fall back to the English label.
+const CATEGORY_ZH = {
+  healthcare: '医疗保健', trades: '技术工种', tech: '科技', legal: '法律',
+  business: '商业与管理', finance: '金融与销售', education: '教育',
+  creative: '创意与媒体', science: '科学与研究', hospitality: '酒店与服务'
+};
+const PROFESSION_ZH = {
+  'registered-nurse': '注册护士', 'nurse-practitioner': '执业护士', 'physical-therapist': '物理治疗师',
+  'medical-assistant': '医疗助理', 'pharmacist': '药剂师', 'dental-hygienist': '口腔卫生师',
+  'radiologic-technologist': '放射技师', 'home-health-aide': '家庭健康助理',
+  'electrician': '电工', 'plumber': '管道工', 'hvac-technician': '暖通空调技师', 'welder': '焊工',
+  'carpenter': '木工', 'automotive-technician': '汽车技师', 'cnc-machinist': '数控机械师',
+  'heavy-equipment-operator': '重型设备操作员',
+  'software-engineer': '软件工程师', 'web-developer': '网页开发工程师', 'devops-engineer': 'DevOps 工程师',
+  'data-analyst': '数据分析师', 'data-scientist': '数据科学家', 'ux-designer': '用户体验设计师',
+  'product-manager': '产品经理', 'qa-engineer': '测试工程师', 'it-support-specialist': 'IT 支持专员',
+  'cybersecurity-analyst': '网络安全分析师',
+  'paralegal': '律师助理', 'attorney': '律师', 'legal-assistant': '法律助理',
+  'compliance-officer': '合规专员', 'contract-manager': '合同经理',
+  'project-manager': '项目经理', 'business-analyst': '业务分析师', 'operations-manager': '运营经理',
+  'marketing-manager': '市场经理', 'human-resources-manager': '人力资源经理',
+  'executive-assistant': '行政助理', 'management-consultant': '管理顾问',
+  'accountant': '会计', 'financial-analyst': '财务分析师', 'bookkeeper': '记账员',
+  'financial-advisor': '财务顾问', 'sales-representative': '销售代表', 'account-manager': '客户经理',
+  'sales-manager': '销售经理',
+  'teacher': '教师', 'professor': '教授', 'instructional-designer': '教学设计师',
+  'school-counselor': '学校辅导员', 'teaching-assistant': '助教',
+  'graphic-designer': '平面设计师', 'copywriter': '文案', 'videographer': '摄像师',
+  'journalist': '记者', 'social-media-manager': '社交媒体经理', 'photographer': '摄影师',
+  'lab-technician': '实验室技术员', 'research-scientist': '研究科学家', 'biologist': '生物学家',
+  'chemist': '化学家', 'environmental-scientist': '环境科学家',
+  'chef': '厨师', 'hotel-manager': '酒店经理', 'server': '服务员', 'bartender': '调酒师',
+  'event-coordinator': '活动策划', 'customer-service-representative': '客服代表'
+};
 
 // ── Free-tier limits (Pro = unlimited unless noted). Enforced in server.js
 //    against the existing usage_store; the numbers live here so tests and the
@@ -45,17 +84,30 @@ const LIMITS = {
 function sha256(str) {
   return crypto.createHash('sha256').update(String(str)).digest('hex');
 }
-function quizCacheKey(professionId, seniority, topic) {
-  return sha256([professionId, seniority || '', topic || 'general', PROMPT_VERSION].join('|'));
+// Content caches are namespaced by language, so the Chinese version of a quiz
+// is generated and cached independently of the English one (and both are shared
+// across the whole user base). `lang` defaults to 'en'.
+function normLang(lang) { return lang === 'zh' ? 'zh' : 'en'; }
+function quizCacheKey(professionId, seniority, topic, lang) {
+  return sha256([professionId, seniority || '', topic || 'general', normLang(lang), PROMPT_VERSION].join('|'));
 }
-function interviewCacheKey(professionId, seniority, kind) {
-  return sha256([professionId, seniority || '', kind, PROMPT_VERSION].join('|'));
+function interviewCacheKey(professionId, seniority, kind, lang) {
+  return sha256([professionId, seniority || '', kind, normLang(lang), PROMPT_VERSION].join('|'));
 }
-function gapCacheKey(resumeText, jobText) {
-  return sha256([sha256(normalizeForHash(resumeText)), sha256(normalizeForHash(jobText)), PROMPT_VERSION].join('|'));
+function gapCacheKey(resumeText, jobText, lang) {
+  return sha256([sha256(normalizeForHash(resumeText)), sha256(normalizeForHash(jobText)), normLang(lang), PROMPT_VERSION].join('|'));
 }
-function scenarioCacheKey(professionId, scenarioType) {
-  return sha256([professionId, scenarioType, PROMPT_VERSION].join('|'));
+function scenarioCacheKey(professionId, scenarioType, lang) {
+  return sha256([professionId, scenarioType, normLang(lang), PROMPT_VERSION].join('|'));
+}
+// Appended to every generation prompt when the user is in Chinese mode, so the
+// model returns all user-facing text (titles, questions, options, explanations,
+// everything) in Simplified Chinese. The JSON KEYS stay English so the
+// validators are unchanged.
+function langInstruction(lang) {
+  return normLang(lang) === 'zh'
+    ? '\n\nIMPORTANT: Write ALL user-facing text values (titles, questions, options, explanations, prompts, consequences, everything a person reads) in Simplified Chinese (简体中文). Keep the JSON field names in English exactly as shown.'
+    : '';
 }
 function jobCacheKey(params) {
   const p = params || {};
@@ -93,8 +145,10 @@ function flattenProfessions(data) {
       out[pr.id] = {
         id: pr.id,
         label: pr.label,
+        labelZh: pr.labelZh || PROFESSION_ZH[pr.id] || pr.label,
         categoryId: cat.id,
         categoryLabel: cat.label,
+        categoryLabelZh: cat.labelZh || CATEGORY_ZH[cat.id] || cat.label,
         seniority: !!pr.seniority,
         technicalStyle: cat.technicalStyle || 'role-specific technical questions',
         aliases: pr.aliases || []
@@ -118,14 +172,21 @@ function resolveProfession(id, seniority, data) {
   const sen = validateSeniority(seniority) ? (seniority || '') : '';
   const kw = deriveKeywords(base);
   const label = sen && base.seniority ? `${SENIORITY_LABELS[sen]} ${base.label}` : base.label;
+  const labelZh = base.labelZh || PROFESSION_ZH[base.id] || base.label;
+  // Chinese display label puts the seniority prefix in Chinese too (护士 → 高级护士).
+  const displayLabelZh = sen && base.seniority ? `${SENIORITY_LABELS_ZH[sen]}${labelZh}` : labelZh;
   return {
     id: base.id,
     label: base.label,
+    labelZh,
     displayLabel: label,
+    displayLabelZh,
     category: base.categoryId,
     categoryLabel: base.categoryLabel,
+    categoryLabelZh: CATEGORY_ZH[base.categoryId] || base.categoryLabel,
     seniority: sen,
     seniorityLabel: SENIORITY_LABELS[sen] || '',
+    seniorityLabelZh: SENIORITY_LABELS_ZH[sen] || '',
     technicalStyle: base.technicalStyle,
     keywords: kw,
     // Deep-links that reuse the existing SEO role pages when the slug matches.
@@ -143,7 +204,7 @@ function deriveKeywords(base) {
 
 // ── LLM prompt builders. Each returns { system, user } strings. ─────────────
 const QUIZ_QUESTION_COUNT = 10;
-function buildQuizPrompt(prof, topic) {
+function buildQuizPrompt(prof, topic, lang) {
   const t = topic && String(topic).trim() ? String(topic).trim() : 'core professional competence';
   const senLine = prof.seniority ? `  Seniority:  ${prof.seniorityLabel}\n` : '';
   return {
@@ -164,11 +225,11 @@ Return JSON:
   "questions": [
     { "id": 1, "difficulty": "easy|medium|hard", "prompt": "...", "options": ["A","B","C","D"], "answerIndex": 0, "explanation": "..." }
   ]
-}`
+}` + langInstruction(lang)
   };
 }
 
-function buildInterviewPrompt(prof, kind) {
+function buildInterviewPrompt(prof, kind, lang) {
   const count = 8;
   const isTech = kind === 'technical';
   const focus = isTech
@@ -183,11 +244,11 @@ For each question provide:
   - "modelAnswer": a concise 3-4 sentence example answer tailored to this role
   - "watchFor": one common mistake candidates make on this question
 Return JSON:
-{ "questions": [ { "id": 1, "kind": "${kind}", "prompt": "...", "framework": "...", "modelAnswer": "...", "watchFor": "..." } ] }`
+{ "questions": [ { "id": 1, "kind": "${kind}", "prompt": "...", "framework": "...", "modelAnswer": "...", "watchFor": "..." } ] }` + langInstruction(lang)
   };
 }
 
-function buildGapPrompt(resumeText, jobText) {
+function buildGapPrompt(resumeText, jobText, lang) {
   return {
     system: 'You are a career coach and ATS expert. Compare a candidate\'s resume to a target job. Output ONLY valid JSON. Be specific and actionable — name exact skills, tools, and keywords from the job description.',
     user: `RESUME:
@@ -203,7 +264,7 @@ Return JSON:
   "gaps": [ { "requirement": "...", "severity": "critical|important|nice-to-have", "evidence": "...", "action": "..." } ],
   "quickWins": ["resume-wording changes that close a gap immediately"],
   "studyPlan": [ { "skill": "...", "how": "specific resource type or path", "estWeeks": 2 } ]
-}`
+}` + langInstruction(lang)
   };
 }
 
@@ -214,7 +275,7 @@ const SCENARIO_TYPES = {
   'team-conflict': 'Team Conflict',
   'safety-compliance': 'Safety/Compliance'
 };
-function buildScenarioPrompt(prof, scenarioType) {
+function buildScenarioPrompt(prof, scenarioType, lang) {
   const label = SCENARIO_TYPES[scenarioType] || 'Workplace Problem';
   return {
     system: 'You design interactive, branching workplace troubleshooting simulations for professional training. Output ONLY valid JSON. No markdown, no preamble.',
@@ -232,7 +293,7 @@ Return JSON:
     { "id": 1, "prompt": "what do you do?", "options": [ { "text": "...", "consequence": "..." } ], "correctIndex": 0 }
   ],
   "outcome": "a one-paragraph summary of the correct resolution path"
-}`
+}` + langInstruction(lang)
   };
 }
 
@@ -464,27 +525,39 @@ const TOP_PROFESSIONS = [
 
 // Build the daily "N new <Profession> jobs" digest. Pure: (profLabel, jobs[],
 // origin) → { subject, html }. Kept simple — title, company, location, link.
-function buildJobDigestEmail(professionLabel, jobs, origin) {
+function buildJobDigestEmail(professionLabel, jobs, origin, lang) {
   const list = (jobs || []).slice(0, 5);
   const n = list.length;
-  const subject = `${n} new ${professionLabel} job${n === 1 ? '' : 's'} posted today`;
+  const zh = normLang(lang) === 'zh';
   const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const base = origin || 'https://resumetailored.com';
+  const subject = zh
+    ? `今天有 ${n} 个新的${professionLabel}职位`
+    : `${n} new ${professionLabel} job${n === 1 ? '' : 's'} posted today`;
+  const T = zh ? {
+    header: 'ResumeTailored · 职位提醒', intro: `来自你的求职助手的最新${professionLabel}职位。`,
+    cta: '查看全部职位 →', remote: '远程',
+    foot: '你收到此邮件是因为你在职业中心开启了职位提醒。可随时在求职助手中关闭。'
+  } : {
+    header: 'ResumeTailored · Job Alerts', intro: `Fresh ${professionLabel} openings from your Job Finder.`,
+    cta: 'See all jobs →', remote: 'Remote',
+    foot: "You're getting this because you turned on job alerts in the Career Hub. Turn them off anytime in the Job Finder."
+  };
   const rows = list.map(j => `
     <tr><td style="padding:14px 0;border-bottom:1px solid #eee;">
       <a href="${esc(j.url || base + '/app')}" style="font-size:16px;font-weight:700;color:#1F5C3D;text-decoration:none;">${esc(j.title)}</a>
-      <div style="font-size:14px;color:#6B7280;margin-top:2px;">${esc(j.company)}${j.location ? ' · ' + esc(j.location) : ''}${j.remote ? ' · Remote' : ''}</div>
+      <div style="font-size:14px;color:#6B7280;margin-top:2px;">${esc(j.company)}${j.location ? ' · ' + esc(j.location) : ''}${j.remote ? ' · ' + T.remote : ''}</div>
     </td></tr>`).join('');
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/></head>
 <body style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#FAF7F0;margin:0;padding:32px 16px;">
   <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;">
-    <div style="background:#1F5C3D;padding:22px 28px;"><span style="color:#fff;font-size:18px;font-weight:800;">ResumeTailored · Job Alerts</span></div>
+    <div style="background:#1F5C3D;padding:22px 28px;"><span style="color:#fff;font-size:18px;font-weight:800;">${T.header}</span></div>
     <div style="padding:24px 28px;">
       <h1 style="font-size:20px;margin:0 0 6px;color:#191512;">${esc(subject)}</h1>
-      <p style="font-size:14px;color:#6B7280;margin:0 0 8px;">Fresh ${esc(professionLabel)} openings from your Job Finder.</p>
+      <p style="font-size:14px;color:#6B7280;margin:0 0 8px;">${esc(T.intro)}</p>
       <table style="width:100%;border-collapse:collapse;">${rows}</table>
-      <a href="${esc(base)}/app" style="display:inline-block;margin-top:20px;background:#1F5C3D;color:#fff;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:10px;">See all jobs →</a>
-      <p style="font-size:12px;color:#9CA3AF;margin-top:22px;">You're getting this because you turned on job alerts in the Career Hub. Turn them off anytime in the Job Finder.</p>
+      <a href="${esc(base)}/app" style="display:inline-block;margin-top:20px;background:#1F5C3D;color:#fff;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:10px;">${T.cta}</a>
+      <p style="font-size:12px;color:#9CA3AF;margin-top:22px;">${esc(T.foot)}</p>
     </div>
   </div>
 </body></html>`;
@@ -493,6 +566,7 @@ function buildJobDigestEmail(professionLabel, jobs, origin) {
 
 module.exports = {
   PROMPT_VERSION, SENIORITY_LEVELS, SENIORITY_LABELS, LIMITS, SCENARIO_TYPES, QUIZ_QUESTION_COUNT, TOP_PROFESSIONS,
+  CATEGORY_ZH, PROFESSION_ZH, normLang, langInstruction,
   buildJobDigestEmail,
   sha256, quizCacheKey, interviewCacheKey, gapCacheKey, scenarioCacheKey, jobCacheKey, badgeSlug,
   loadProfessions, flattenProfessions, validateProfessionId, validateSeniority, resolveProfession, deriveKeywords,
