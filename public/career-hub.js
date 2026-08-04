@@ -148,9 +148,13 @@
         b.setAttribute('data-label', tool.label);
         b.onclick = function () { showTab(tool.id); };
         // data-i18n so the site's own translate button swaps the label to zh.
+        // No inline flex/gap here: the base .sidebar-btn already lays this out,
+        // and inline styles fought the mobile bottom-bar rules (column layout,
+        // gap:0) — which, together with the FREE pill's own font-size surviving
+        // the bar's font-size:0, made these buttons taller than the 56px bar and
+        // clipped their tops. The pill is hidden on mobile in CSS instead.
         b.innerHTML = '<span class="sidebar-icon">' + tool.icon + '</span> <span style="flex:1;text-align:left;" data-i18n="' + tool.i18n + '">' + tool.label + '</span>' +
           '<span class="ch-pill ch-pill-free" style="margin-left:auto;">FREE</span>';
-        b.style.display = 'flex'; b.style.alignItems = 'center'; b.style.gap = '6px';
         careerLabel.parentNode.insertBefore(b, anchor);
       });
     }

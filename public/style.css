@@ -575,6 +575,10 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   .sidebar-btn { width: auto; flex-shrink: 0; padding: 8px 14px; font-size: 13px; white-space: nowrap; border-radius: 8px; min-height: 40px; }
   .sidebar-icon { font-size: 15px; }
   .sidebar-pro-box { display: none; }
+  /* The Career Hub buttons carry a FREE pill; in the compact mobile nav it only
+     crowds the row (and on the bottom bar it overflowed the button height and
+     clipped the icon). The FREE status is clear enough elsewhere. */
+  .sidebar-btn .ch-pill { display: none !important; }
 
   .dash-main { padding: 24px 20px 60px; }
   .panel-header h1 { font-size: 22px; }
@@ -638,6 +642,21 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   .sidebar-icon { font-size: 20px; line-height: 1; }
   .nav-pro-full { display: none; }
   .sidebar-pro-box { display: none; }
+  /* With ~20 tools the bar scrolls horizontally; give it clear snap points so
+     every tab lands fully in view and none is left half-cut at an edge. */
+  .sidebar { scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+  .sidebar-btn { scroll-snap-align: center; }
+
+  /* Bug 2 — Website Creator template page (body.wb-picker): the full-screen
+     editor shell (.cv-shell, z-index 200) sits over the fixed bottom nav
+     (z-index 90), hiding it. On the TEMPLATE-SELECTION page keep the nav above
+     the shell so users can leave without the browser Back button; pad the
+     gallery so its last row clears the bar, and drop the editor's Save/Publish
+     thumb bar there (nothing to save/publish yet). Inside the actual editor
+     (not .wb-picker) the shell stays full-screen as before. */
+  body.wb-picker .sidebar { z-index: 250 !important; display: flex !important; }
+  body.wb-picker .cv-panel { padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
+  body.wb-picker .rt-thumbbar { display: none !important; }
 
   .dash-main { padding: 18px 14px calc(72px + env(safe-area-inset-bottom)); }
   .panel-header { margin-bottom: 18px; }

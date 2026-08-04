@@ -922,7 +922,7 @@
         </button>
         <!-- LinkedIn Optimizer — free, unlimited -->
         <button class="sidebar-btn sidebar-btn-linkedin" onclick="showTab('linkedin')" id="tab-linkedin" data-label="LinkedIn" title="LinkedIn Profile Optimizer — free">
-          <span class="sidebar-icon">🔗</span>
+          <span class="sidebar-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="#0A66C2" style="display:block;"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.63-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.14 2.07 2.07 0 0 1 0 4.14zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.8 0 0 .78 0 1.75v20.5C0 23.22.8 24 1.77 24h20.45C23.2 24 24 23.22 24 22.25V1.75C24 .78 23.2 0 22.22 0z"/></svg></span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_linkedin">LinkedIn Optimizer</span>
           <span style="background:#16a34a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">FREE</span>
         </button>
@@ -10067,7 +10067,17 @@ Aaliyah Washington`
     function refreshShareLink() { return _createShareLink(); }
     async function _createShareLink() {
       let text = getOutputText();
-      if (!text) { showToast('Nothing to share yet — tailor a resume first.'); return; }
+      if (!text) {
+        // Fall back to the most recent SAVED resume. The old check only looked at
+        // the current Tailor output, so a user who HAS saved resumes but hasn't
+        // tailored this session was wrongly told they have none. Use their latest
+        // saved resume instead of blocking.
+        try {
+          const rr = await fetch('/api/resumes', { headers: authHeaders() });
+          if (rr.ok) { const rd = await rr.json(); if (rd.resumes && rd.resumes.length) text = (rd.resumes[0].content || '').trim(); }
+        } catch (_) {}
+      }
+      if (!text) { showToast('Nothing to share yet — tailor or save a resume first.'); return; }
       if (sigName && text.endsWith(sigName)) text = text.slice(0, text.length - sigName.length).trimEnd();
       // In 'both' mode share the resume half only.
       if (selectedMode === 'both') text = (text.split(/\n\n-{3,}\n\n/)[0] || text).trim();
