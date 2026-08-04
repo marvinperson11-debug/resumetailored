@@ -7,9 +7,9 @@
 'use strict';
 
 const BAND_META = {
-  gold:   { label: 'Gold',   emoji: '🥇', color: '#B4832A', bg: '#FBF3E0' },
-  silver: { label: 'Silver', emoji: '🥈', color: '#6B7280', bg: '#F1F2F4' },
-  bronze: { label: 'Bronze', emoji: '🥉', color: '#8A5A2B', bg: '#F6ECE2' }
+  gold:   { label: 'Gold',   labelZh: '金牌', emoji: '🥇', color: '#B4832A', bg: '#FBF3E0' },
+  silver: { label: 'Silver', labelZh: '银牌', emoji: '🥈', color: '#6B7280', bg: '#F1F2F4' },
+  bronze: { label: 'Bronze', labelZh: '铜牌', emoji: '🥉', color: '#8A5A2B', bg: '#F6ECE2' }
 };
 
 function esc(s) {
@@ -18,24 +18,37 @@ function esc(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-// badge: { name, professionLabel, topic, band, score, created_at }
-function renderBadgePage(badge, origin) {
+// badge: { name, professionLabel, topic, band, score, created_at }; lang 'en'|'zh'
+function renderBadgePage(badge, origin, lang) {
   const b = badge || {};
+  const zh = lang === 'zh';
   const meta = BAND_META[b.band] || BAND_META.bronze;
-  const name = b.name && String(b.name).trim() ? String(b.name).trim() : 'A ResumeTailored user';
-  const prof = b.professionLabel || 'Professional';
+  const bandLabel = zh ? meta.labelZh : meta.label;
+  const name = b.name && String(b.name).trim() ? String(b.name).trim() : (zh ? '一位 ResumeTailored 用户' : 'A ResumeTailored user');
+  const prof = b.professionLabel || (zh ? '专业人士' : 'Professional');
   const topic = b.topic && String(b.topic).trim() ? String(b.topic).trim() : '';
-  const title = `${name} — ${meta.label} in ${prof}${topic ? ' · ' + topic : ''}`;
-  const desc = `${esc(name)} earned a ${meta.label} skills badge (${b.score || 0}%) in ${esc(prof)}${topic ? ' — ' + esc(topic) : ''} on ResumeTailored.`;
+  const L = zh ? {
+    badge: '徽章', score: '测评得分', earned: '获得于', cta: '免费测试你的技能 →',
+    foot0: '由', foot1: '认证 · AI 驱动的职业工具', assessment: '技能测评'
+  } : {
+    badge: 'Badge', score: 'Assessment Score', earned: 'Earned', cta: 'Test your own skills free →',
+    foot0: 'Verified by', foot1: '· AI-powered career tools', assessment: 'Skills Assessment'
+  };
+  const title = `${name} — ${bandLabel} in ${prof}${topic ? ' · ' + topic : ''}`;
+  const desc = `${esc(name)} earned a ${bandLabel} skills badge (${b.score || 0}%) in ${esc(prof)}${topic ? ' — ' + esc(topic) : ''} on ResumeTailored.`;
   const url = `${origin || ''}/badge/${esc(b.slug || '')}`;
-  const date = b.created_at ? new Date(b.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+  const date = b.created_at ? new Date(b.created_at).toLocaleDateString(zh ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${zh ? 'zh-CN' : 'en'}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(title)} · ResumeTailored</title>
+<!-- Badges are social share assets (LinkedIn/Twitter unfurls), not SEO landing
+     pages — keep them out of the index so they never rank ahead of the real
+     site. The OG/Twitter tags below still drive rich unfurls when shared. -->
+<meta name="robots" content="noindex" />
 <meta name="description" content="${desc}" />
 <meta property="og:type" content="website" />
 <meta property="og:title" content="${esc(title)}" />
@@ -74,18 +87,18 @@ function renderBadgePage(badge, origin) {
   <div class="card">
     <div class="ribbon">
       <div class="medal">${meta.emoji}</div>
-      <div class="band">${meta.label} Badge</div>
+      <div class="band">${bandLabel} ${L.badge}</div>
     </div>
     <div class="body">
       <p class="name">${esc(name)}</p>
       <p class="prof">${esc(prof)}</p>
-      ${topic ? `<p class="topic">${esc(topic)}</p>` : '<p class="topic">Skills Assessment</p>'}
+      ${topic ? `<p class="topic">${esc(topic)}</p>` : `<p class="topic">${L.assessment}</p>`}
       <p class="score">${b.score || 0}%</p>
-      <p class="scorelbl">Assessment Score</p>
-      ${date ? `<p class="date">Earned ${esc(date)}</p>` : ''}
+      <p class="scorelbl">${L.score}</p>
+      ${date ? `<p class="date">${L.earned} ${esc(date)}</p>` : ''}
     </div>
-    <a class="cta" href="/app">Test your own skills free →</a>
-    <div class="foot">Verified by <a href="/">ResumeTailored</a> · AI-powered career tools</div>
+    <a class="cta" href="/app">${L.cta}</a>
+    <div class="foot">${L.foot0} <a href="/">ResumeTailored</a> ${L.foot1}</div>
   </div>
 </body>
 </html>`;

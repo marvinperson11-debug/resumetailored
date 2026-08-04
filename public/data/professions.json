@@ -4,148 +4,158 @@
     {
       "id": "healthcare",
       "label": "Healthcare",
+      "labelZh": "医疗保健",
       "icon": "🩺",
       "technicalStyle": "clinical scenarios, patient-safety judgement, and standards-of-care questions",
       "professions": [
-        { "id": "registered-nurse", "label": "Registered Nurse", "aliases": ["RN"], "seniority": true },
-        { "id": "nurse-practitioner", "label": "Nurse Practitioner", "aliases": ["NP"], "seniority": true },
-        { "id": "physical-therapist", "label": "Physical Therapist", "aliases": ["PT"], "seniority": true },
-        { "id": "medical-assistant", "label": "Medical Assistant", "aliases": ["MA"], "seniority": false },
-        { "id": "pharmacist", "label": "Pharmacist", "aliases": [], "seniority": true },
-        { "id": "dental-hygienist", "label": "Dental Hygienist", "aliases": [], "seniority": false },
-        { "id": "radiologic-technologist", "label": "Radiologic Technologist", "aliases": ["Rad Tech"], "seniority": false },
-        { "id": "home-health-aide", "label": "Home Health Aide", "aliases": ["HHA"], "seniority": false }
+        { "id": "registered-nurse", "label": "Registered Nurse", "labelZh": "注册护士", "aliases": ["RN"], "seniority": true },
+        { "id": "nurse-practitioner", "label": "Nurse Practitioner", "labelZh": "执业护士", "aliases": ["NP"], "seniority": true },
+        { "id": "physical-therapist", "label": "Physical Therapist", "labelZh": "物理治疗师", "aliases": ["PT"], "seniority": true },
+        { "id": "medical-assistant", "label": "Medical Assistant", "labelZh": "医疗助理", "aliases": ["MA"], "seniority": false },
+        { "id": "pharmacist", "label": "Pharmacist", "labelZh": "药剂师", "aliases": [], "seniority": true },
+        { "id": "dental-hygienist", "label": "Dental Hygienist", "labelZh": "口腔卫生师", "aliases": [], "seniority": false },
+        { "id": "radiologic-technologist", "label": "Radiologic Technologist", "labelZh": "放射技师", "aliases": ["Rad Tech"], "seniority": false },
+        { "id": "home-health-aide", "label": "Home Health Aide", "labelZh": "家庭健康助理", "aliases": ["HHA"], "seniority": false }
       ]
     },
     {
       "id": "trades",
       "label": "Skilled Trades",
+      "labelZh": "技术工种",
       "icon": "🔧",
       "technicalStyle": "hands-on troubleshooting, code compliance, tool selection, and jobsite safety",
       "professions": [
-        { "id": "electrician", "label": "Electrician", "aliases": [], "seniority": true },
-        { "id": "plumber", "label": "Plumber", "aliases": [], "seniority": true },
-        { "id": "hvac-technician", "label": "HVAC Technician", "aliases": ["HVAC"], "seniority": true },
-        { "id": "welder", "label": "Welder", "aliases": [], "seniority": false },
-        { "id": "carpenter", "label": "Carpenter", "aliases": [], "seniority": false },
-        { "id": "automotive-technician", "label": "Automotive Technician", "aliases": ["Mechanic"], "seniority": false },
-        { "id": "cnc-machinist", "label": "CNC Machinist", "aliases": [], "seniority": false },
-        { "id": "heavy-equipment-operator", "label": "Heavy Equipment Operator", "aliases": [], "seniority": false }
+        { "id": "electrician", "label": "Electrician", "labelZh": "电工", "aliases": [], "seniority": true },
+        { "id": "plumber", "label": "Plumber", "labelZh": "管道工", "aliases": [], "seniority": true },
+        { "id": "hvac-technician", "label": "HVAC Technician", "labelZh": "暖通空调技师", "aliases": ["HVAC"], "seniority": true },
+        { "id": "welder", "label": "Welder", "labelZh": "焊工", "aliases": [], "seniority": false },
+        { "id": "carpenter", "label": "Carpenter", "labelZh": "木工", "aliases": [], "seniority": false },
+        { "id": "automotive-technician", "label": "Automotive Technician", "labelZh": "汽车技师", "aliases": ["Mechanic"], "seniority": false },
+        { "id": "cnc-machinist", "label": "CNC Machinist", "labelZh": "数控机械师", "aliases": [], "seniority": false },
+        { "id": "heavy-equipment-operator", "label": "Heavy Equipment Operator", "labelZh": "重型设备操作员", "aliases": [], "seniority": false }
       ]
     },
     {
       "id": "tech",
       "label": "Technology",
+      "labelZh": "科技",
       "icon": "💻",
       "technicalStyle": "system design, coding logic, debugging, and architecture trade-offs",
       "professions": [
-        { "id": "software-engineer", "label": "Software Engineer", "aliases": ["SWE", "Developer"], "seniority": true },
-        { "id": "web-developer", "label": "Web Developer", "aliases": [], "seniority": true },
-        { "id": "devops-engineer", "label": "DevOps Engineer", "aliases": ["SRE"], "seniority": true },
-        { "id": "data-analyst", "label": "Data Analyst", "aliases": [], "seniority": true },
-        { "id": "data-scientist", "label": "Data Scientist", "aliases": [], "seniority": true },
-        { "id": "ux-designer", "label": "UX Designer", "aliases": ["UI/UX"], "seniority": true },
-        { "id": "product-manager", "label": "Product Manager", "aliases": ["PM"], "seniority": true },
-        { "id": "qa-engineer", "label": "QA Engineer", "aliases": ["Tester"], "seniority": false },
-        { "id": "it-support-specialist", "label": "IT Support Specialist", "aliases": ["Help Desk"], "seniority": false },
-        { "id": "cybersecurity-analyst", "label": "Cybersecurity Analyst", "aliases": ["Security"], "seniority": true }
+        { "id": "software-engineer", "label": "Software Engineer", "labelZh": "软件工程师", "aliases": ["SWE", "Developer"], "seniority": true },
+        { "id": "web-developer", "label": "Web Developer", "labelZh": "网页开发工程师", "aliases": [], "seniority": true },
+        { "id": "devops-engineer", "label": "DevOps Engineer", "labelZh": "DevOps 工程师", "aliases": ["SRE"], "seniority": true },
+        { "id": "data-analyst", "label": "Data Analyst", "labelZh": "数据分析师", "aliases": [], "seniority": true },
+        { "id": "data-scientist", "label": "Data Scientist", "labelZh": "数据科学家", "aliases": [], "seniority": true },
+        { "id": "ux-designer", "label": "UX Designer", "labelZh": "用户体验设计师", "aliases": ["UI/UX"], "seniority": true },
+        { "id": "product-manager", "label": "Product Manager", "labelZh": "产品经理", "aliases": ["PM"], "seniority": true },
+        { "id": "qa-engineer", "label": "QA Engineer", "labelZh": "测试工程师", "aliases": ["Tester"], "seniority": false },
+        { "id": "it-support-specialist", "label": "IT Support Specialist", "labelZh": "IT 支持专员", "aliases": ["Help Desk"], "seniority": false },
+        { "id": "cybersecurity-analyst", "label": "Cybersecurity Analyst", "labelZh": "网络安全分析师", "aliases": ["Security"], "seniority": true }
       ]
     },
     {
       "id": "legal",
       "label": "Legal",
+      "labelZh": "法律",
       "icon": "⚖️",
       "technicalStyle": "case reasoning, procedure, compliance, and document-accuracy questions",
       "professions": [
-        { "id": "paralegal", "label": "Paralegal", "aliases": [], "seniority": true },
-        { "id": "attorney", "label": "Attorney", "aliases": ["Lawyer"], "seniority": true },
-        { "id": "legal-assistant", "label": "Legal Assistant", "aliases": [], "seniority": false },
-        { "id": "compliance-officer", "label": "Compliance Officer", "aliases": [], "seniority": true },
-        { "id": "contract-manager", "label": "Contract Manager", "aliases": [], "seniority": true }
+        { "id": "paralegal", "label": "Paralegal", "labelZh": "律师助理", "aliases": [], "seniority": true },
+        { "id": "attorney", "label": "Attorney", "labelZh": "律师", "aliases": ["Lawyer"], "seniority": true },
+        { "id": "legal-assistant", "label": "Legal Assistant", "labelZh": "法律助理", "aliases": [], "seniority": false },
+        { "id": "compliance-officer", "label": "Compliance Officer", "labelZh": "合规专员", "aliases": [], "seniority": true },
+        { "id": "contract-manager", "label": "Contract Manager", "labelZh": "合同经理", "aliases": [], "seniority": true }
       ]
     },
     {
       "id": "business",
       "label": "Business & Management",
+      "labelZh": "商业与管理",
       "icon": "📊",
       "technicalStyle": "prioritization, stakeholder trade-offs, process, and metrics interpretation",
       "professions": [
-        { "id": "project-manager", "label": "Project Manager", "aliases": ["PMP"], "seniority": true },
-        { "id": "business-analyst", "label": "Business Analyst", "aliases": ["BA"], "seniority": true },
-        { "id": "operations-manager", "label": "Operations Manager", "aliases": [], "seniority": true },
-        { "id": "marketing-manager", "label": "Marketing Manager", "aliases": [], "seniority": true },
-        { "id": "human-resources-manager", "label": "Human Resources Manager", "aliases": ["HR"], "seniority": true },
-        { "id": "executive-assistant", "label": "Executive Assistant", "aliases": ["EA"], "seniority": false },
-        { "id": "management-consultant", "label": "Management Consultant", "aliases": [], "seniority": true }
+        { "id": "project-manager", "label": "Project Manager", "labelZh": "项目经理", "aliases": ["PMP"], "seniority": true },
+        { "id": "business-analyst", "label": "Business Analyst", "labelZh": "业务分析师", "aliases": ["BA"], "seniority": true },
+        { "id": "operations-manager", "label": "Operations Manager", "labelZh": "运营经理", "aliases": [], "seniority": true },
+        { "id": "marketing-manager", "label": "Marketing Manager", "labelZh": "市场经理", "aliases": [], "seniority": true },
+        { "id": "human-resources-manager", "label": "Human Resources Manager", "labelZh": "人力资源经理", "aliases": ["HR"], "seniority": true },
+        { "id": "executive-assistant", "label": "Executive Assistant", "labelZh": "行政助理", "aliases": ["EA"], "seniority": false },
+        { "id": "management-consultant", "label": "Management Consultant", "labelZh": "管理顾问", "aliases": [], "seniority": true }
       ]
     },
     {
       "id": "finance",
       "label": "Finance & Sales",
+      "labelZh": "金融与销售",
       "icon": "💰",
       "technicalStyle": "quantitative reasoning, spreadsheet logic, deal mechanics, and forecasting",
       "professions": [
-        { "id": "accountant", "label": "Accountant", "aliases": ["CPA"], "seniority": true },
-        { "id": "financial-analyst", "label": "Financial Analyst", "aliases": ["FP&A"], "seniority": true },
-        { "id": "bookkeeper", "label": "Bookkeeper", "aliases": [], "seniority": false },
-        { "id": "financial-advisor", "label": "Financial Advisor", "aliases": [], "seniority": true },
-        { "id": "sales-representative", "label": "Sales Representative", "aliases": ["Sales Rep"], "seniority": true },
-        { "id": "account-manager", "label": "Account Manager", "aliases": [], "seniority": true },
-        { "id": "sales-manager", "label": "Sales Manager", "aliases": [], "seniority": true }
+        { "id": "accountant", "label": "Accountant", "labelZh": "会计", "aliases": ["CPA"], "seniority": true },
+        { "id": "financial-analyst", "label": "Financial Analyst", "labelZh": "财务分析师", "aliases": ["FP&A"], "seniority": true },
+        { "id": "bookkeeper", "label": "Bookkeeper", "labelZh": "记账员", "aliases": [], "seniority": false },
+        { "id": "financial-advisor", "label": "Financial Advisor", "labelZh": "财务顾问", "aliases": [], "seniority": true },
+        { "id": "sales-representative", "label": "Sales Representative", "labelZh": "销售代表", "aliases": ["Sales Rep"], "seniority": true },
+        { "id": "account-manager", "label": "Account Manager", "labelZh": "客户经理", "aliases": [], "seniority": true },
+        { "id": "sales-manager", "label": "Sales Manager", "labelZh": "销售经理", "aliases": [], "seniority": true }
       ]
     },
     {
       "id": "education",
       "label": "Education",
+      "labelZh": "教育",
       "icon": "🎓",
       "technicalStyle": "pedagogy, classroom management, assessment design, and student-support scenarios",
       "professions": [
-        { "id": "teacher", "label": "Teacher", "aliases": ["K-12 Teacher"], "seniority": true },
-        { "id": "professor", "label": "Professor", "aliases": ["Lecturer"], "seniority": true },
-        { "id": "instructional-designer", "label": "Instructional Designer", "aliases": [], "seniority": true },
-        { "id": "school-counselor", "label": "School Counselor", "aliases": [], "seniority": false },
-        { "id": "teaching-assistant", "label": "Teaching Assistant", "aliases": ["TA"], "seniority": false }
+        { "id": "teacher", "label": "Teacher", "labelZh": "教师", "aliases": ["K-12 Teacher"], "seniority": true },
+        { "id": "professor", "label": "Professor", "labelZh": "教授", "aliases": ["Lecturer"], "seniority": true },
+        { "id": "instructional-designer", "label": "Instructional Designer", "labelZh": "教学设计师", "aliases": [], "seniority": true },
+        { "id": "school-counselor", "label": "School Counselor", "labelZh": "学校辅导员", "aliases": [], "seniority": false },
+        { "id": "teaching-assistant", "label": "Teaching Assistant", "labelZh": "助教", "aliases": ["TA"], "seniority": false }
       ]
     },
     {
       "id": "creative",
       "label": "Creative & Media",
+      "labelZh": "创意与媒体",
       "icon": "🎨",
       "technicalStyle": "craft technique, tool proficiency, portfolio critique, and brief-interpretation",
       "professions": [
-        { "id": "graphic-designer", "label": "Graphic Designer", "aliases": [], "seniority": true },
-        { "id": "copywriter", "label": "Copywriter", "aliases": [], "seniority": true },
-        { "id": "videographer", "label": "Videographer", "aliases": ["Video Editor"], "seniority": false },
-        { "id": "journalist", "label": "Journalist", "aliases": ["Reporter"], "seniority": true },
-        { "id": "social-media-manager", "label": "Social Media Manager", "aliases": [], "seniority": true },
-        { "id": "photographer", "label": "Photographer", "aliases": [], "seniority": false }
+        { "id": "graphic-designer", "label": "Graphic Designer", "labelZh": "平面设计师", "aliases": [], "seniority": true },
+        { "id": "copywriter", "label": "Copywriter", "labelZh": "文案", "aliases": [], "seniority": true },
+        { "id": "videographer", "label": "Videographer", "labelZh": "摄像师", "aliases": ["Video Editor"], "seniority": false },
+        { "id": "journalist", "label": "Journalist", "labelZh": "记者", "aliases": ["Reporter"], "seniority": true },
+        { "id": "social-media-manager", "label": "Social Media Manager", "labelZh": "社交媒体经理", "aliases": [], "seniority": true },
+        { "id": "photographer", "label": "Photographer", "labelZh": "摄影师", "aliases": [], "seniority": false }
       ]
     },
     {
       "id": "science",
       "label": "Science & Research",
+      "labelZh": "科学与研究",
       "icon": "🔬",
       "technicalStyle": "experimental method, data integrity, lab safety, and analysis interpretation",
       "professions": [
-        { "id": "lab-technician", "label": "Lab Technician", "aliases": [], "seniority": false },
-        { "id": "research-scientist", "label": "Research Scientist", "aliases": [], "seniority": true },
-        { "id": "biologist", "label": "Biologist", "aliases": [], "seniority": true },
-        { "id": "chemist", "label": "Chemist", "aliases": [], "seniority": true },
-        { "id": "environmental-scientist", "label": "Environmental Scientist", "aliases": [], "seniority": true }
+        { "id": "lab-technician", "label": "Lab Technician", "labelZh": "实验室技术员", "aliases": [], "seniority": false },
+        { "id": "research-scientist", "label": "Research Scientist", "labelZh": "研究科学家", "aliases": [], "seniority": true },
+        { "id": "biologist", "label": "Biologist", "labelZh": "生物学家", "aliases": [], "seniority": true },
+        { "id": "chemist", "label": "Chemist", "labelZh": "化学家", "aliases": [], "seniority": true },
+        { "id": "environmental-scientist", "label": "Environmental Scientist", "labelZh": "环境科学家", "aliases": [], "seniority": true }
       ]
     },
     {
       "id": "hospitality",
       "label": "Hospitality & Service",
+      "labelZh": "酒店与服务",
       "icon": "🍽️",
       "technicalStyle": "guest-service recovery, operations under pressure, food/venue safety, and upselling",
       "professions": [
-        { "id": "chef", "label": "Chef", "aliases": ["Cook"], "seniority": true },
-        { "id": "hotel-manager", "label": "Hotel Manager", "aliases": [], "seniority": true },
-        { "id": "server", "label": "Server", "aliases": ["Waiter", "Waitress"], "seniority": false },
-        { "id": "bartender", "label": "Bartender", "aliases": [], "seniority": false },
-        { "id": "event-coordinator", "label": "Event Coordinator", "aliases": [], "seniority": true },
-        { "id": "customer-service-representative", "label": "Customer Service Representative", "aliases": ["CSR"], "seniority": false }
+        { "id": "chef", "label": "Chef", "labelZh": "厨师", "aliases": ["Cook"], "seniority": true },
+        { "id": "hotel-manager", "label": "Hotel Manager", "labelZh": "酒店经理", "aliases": [], "seniority": true },
+        { "id": "server", "label": "Server", "labelZh": "服务员", "aliases": ["Waiter", "Waitress"], "seniority": false },
+        { "id": "bartender", "label": "Bartender", "labelZh": "调酒师", "aliases": [], "seniority": false },
+        { "id": "event-coordinator", "label": "Event Coordinator", "labelZh": "活动策划", "aliases": [], "seniority": true },
+        { "id": "customer-service-representative", "label": "Customer Service Representative", "labelZh": "客服代表", "aliases": ["CSR"], "seniority": false }
       ]
     }
   ]

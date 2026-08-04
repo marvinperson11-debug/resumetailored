@@ -110,6 +110,21 @@ const server = app.listen(0, async () => {
     const attempts = await req('GET', '/api/skills-lab/attempts', 'tokFree');
     check('attempts are recorded', attempts.json.attempts.length >= 1);
 
+    // Language: a Chinese request is served from a separately-keyed zh cache.
+    const quizZh = { title: '注册护士测试', questions: Array.from({ length: 10 }, (_, i) => ({ id: i + 1, difficulty: 'easy', prompt: '题目' + i, options: ['甲', '乙', '丙', '丁'], answerIndex: 0, explanation: '因为' + i })) };
+    db.prepare('INSERT OR REPLACE INTO quiz_cache (cache_key,profession_id,seniority,topic,payload,created_at) VALUES (?,?,?,?,?,?)')
+      .run(CH.quizCacheKey(prof.id, prof.seniority, '', 'zh'), prof.id, prof.seniority, '', JSON.stringify(quizZh), Date.now());
+    const qzh = await req('POST', '/api/skills-lab/quiz', 'tokPro', { topic: '', lang: 'zh' });
+    check('quiz is served in the requested language', qzh.status === 200 && qzh.json.quiz.title === '注册护士测试' && /题目/.test(qzh.json.quiz.questions[0].prompt), qzh.body);
+    const badgeZhPage = await req('GET', sub.json.badge.url + '?lang=zh', null);
+    check('badge page renders in Chinese with ?lang=zh', badgeZhPage.status === 200 && /金牌/.test(badgeZhPage.body));
+    // Profession POST persists the language for server-side emails.
+    await req('POST', '/api/profession', 'tokPro', { professionId: 'registered-nurse', seniority: 'senior', lang: 'zh' });
+    const langRow = db.prepare("SELECT lang FROM check_ins WHERE email = 'pro@x.com'").get();
+    check('profession POST stores the UI language', langRow && langRow.lang === 'zh', JSON.stringify(langRow));
+    // reset pro back to en so later dashboard assertions read English state
+    await req('POST', '/api/profession', 'tokPro', { professionId: 'registered-nurse', seniority: 'senior', lang: 'en' });
+
     // ── Phase 2: Interview (seed cache) ───────────────────────────────────────
     const ivPayload = { questions: Array.from({ length: 8 }, (_, i) => ({ id: i + 1, kind: 'behavioral', prompt: 'IQ' + i, framework: 'STAR', modelAnswer: 'ans', watchFor: 'x' })) };
     const ivKey = CH.interviewCacheKey(prof.id, prof.seniority, 'behavioral');
@@ -122,6 +137,18 @@ const server = app.listen(0, async () => {
     const prog = await req('POST', '/api/interview/progress', 'tokFree', { questionHash: iv.json.questions[0].hash, confidence: 4 });
     check('interview progress saves', prog.json.success === true);
     check('score-my-answer is Pro-only', (await req('POST', '/api/interview/score', 'tokFree', { question: 'q', answer: 'a' })).status === 402);
+    // Pro daily cap on score-my-answer: pre-spend the day's quota, then it 402s
+    // BEFORE any Sonnet call (so this test never hits the LLM).
+    const askKey = `user:pro@x.com_answerscore_${new Date().toISOString().slice(0, 10)}`;
+    db.prepare('INSERT OR REPLACE INTO usage_store (key, count) VALUES (?, ?)').run(askKey, CH.LIMITS.answerScore.pro);
+    const capped = await req('POST', '/api/interview/score', 'tokPro', { question: 'q', answer: 'a' });
+    check('score-my-answer is capped 5/day for Pro', capped.status === 402 && capped.json.error === 'quota', capped.body);
+
+    // Job alerts opt-in toggle.
+    check('job alerts default off', (await req('GET', '/api/jobs/alerts', 'tokFree')).json.enabled === false);
+    check('job alerts can be turned on', (await req('POST', '/api/jobs/alerts', 'tokFree', { enabled: true })).json.enabled === true);
+    check('job alerts persist', (await req('GET', '/api/jobs/alerts', 'tokFree')).json.enabled === true);
+    check('job alerts can be turned off', (await req('POST', '/api/jobs/alerts', 'tokFree', { enabled: false })).json.enabled === false);
 
     // ── Phase 3: Skills Gap (seed gap_cache) ──────────────────────────────────
     const resumeTxt = 'Jane Nurse\nSUMMARY\nRN with 5 years ICU experience.\nSKILLS\nBLS, IV';
