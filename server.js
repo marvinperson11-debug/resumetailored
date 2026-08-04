@@ -6653,6 +6653,10 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
   app.listen(PORT, () => console.log(`ResumeTailored running on http://localhost:${PORT}`));
+  // Career Hub daily jobs (warm cache + job-alert digest). In-process because
+  // both need this service's SQLite volume, which a separate cron service
+  // cannot reach — see career-cron.js. Off unless CAREER_CRON=on.
+  try { require('./career-cron.js').startCareerCron(); } catch (e) { console.error('[career-cron] init failed:', e.message); }
 }
 
 // Exported for offline rendering/tests (e.g. DOCX alignment verification).
