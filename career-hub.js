@@ -34,7 +34,11 @@ const LIMITS = {
   jobsearch: { free: 5, period: 'day'  },
   savedJobs: { free: 5, period: 'total' },
   gap:       { free: 1, period: 'week' },
-  scenario:  { free: 1, period: 'week' }
+  scenario:  { free: 1, period: 'week' },
+  // "Score my answer" is Pro-only (free: 0) and additionally capped per day —
+  // it's the priciest per-call feature (Sonnet, uncacheable) and the strongest
+  // Pro upsell, so it stays generous but bounded.
+  answerScore: { free: 0, pro: 5, period: 'day' }
 };
 
 // ── hashing / cache keys ────────────────────────────────────────────────────
@@ -447,8 +451,49 @@ function computeNextSteps(state) {
   return steps.slice(0, 5);
 }
 
+// ── Job-alert digest email (pure builder) ───────────────────────────────────
+// The top professions to pre-warm caches for and (by convention) the roles most
+// likely to have alert subscribers. Ordered by expected traffic.
+const TOP_PROFESSIONS = [
+  'registered-nurse', 'software-engineer', 'electrician', 'project-manager',
+  'accountant', 'sales-representative', 'medical-assistant', 'data-analyst',
+  'marketing-manager', 'customer-service-representative', 'financial-analyst',
+  'teacher', 'hvac-technician', 'graphic-designer', 'business-analyst',
+  'plumber', 'web-developer', 'product-manager', 'account-manager', 'bookkeeper'
+];
+
+// Build the daily "N new <Profession> jobs" digest. Pure: (profLabel, jobs[],
+// origin) → { subject, html }. Kept simple — title, company, location, link.
+function buildJobDigestEmail(professionLabel, jobs, origin) {
+  const list = (jobs || []).slice(0, 5);
+  const n = list.length;
+  const subject = `${n} new ${professionLabel} job${n === 1 ? '' : 's'} posted today`;
+  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const base = origin || 'https://resumetailored.com';
+  const rows = list.map(j => `
+    <tr><td style="padding:14px 0;border-bottom:1px solid #eee;">
+      <a href="${esc(j.url || base + '/app')}" style="font-size:16px;font-weight:700;color:#1F5C3D;text-decoration:none;">${esc(j.title)}</a>
+      <div style="font-size:14px;color:#6B7280;margin-top:2px;">${esc(j.company)}${j.location ? ' · ' + esc(j.location) : ''}${j.remote ? ' · Remote' : ''}</div>
+    </td></tr>`).join('');
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/></head>
+<body style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#FAF7F0;margin:0;padding:32px 16px;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;">
+    <div style="background:#1F5C3D;padding:22px 28px;"><span style="color:#fff;font-size:18px;font-weight:800;">ResumeTailored · Job Alerts</span></div>
+    <div style="padding:24px 28px;">
+      <h1 style="font-size:20px;margin:0 0 6px;color:#191512;">${esc(subject)}</h1>
+      <p style="font-size:14px;color:#6B7280;margin:0 0 8px;">Fresh ${esc(professionLabel)} openings from your Job Finder.</p>
+      <table style="width:100%;border-collapse:collapse;">${rows}</table>
+      <a href="${esc(base)}/app" style="display:inline-block;margin-top:20px;background:#1F5C3D;color:#fff;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:10px;">See all jobs →</a>
+      <p style="font-size:12px;color:#9CA3AF;margin-top:22px;">You're getting this because you turned on job alerts in the Career Hub. Turn them off anytime in the Job Finder.</p>
+    </div>
+  </div>
+</body></html>`;
+  return { subject, html };
+}
+
 module.exports = {
-  PROMPT_VERSION, SENIORITY_LEVELS, SENIORITY_LABELS, LIMITS, SCENARIO_TYPES, QUIZ_QUESTION_COUNT,
+  PROMPT_VERSION, SENIORITY_LEVELS, SENIORITY_LABELS, LIMITS, SCENARIO_TYPES, QUIZ_QUESTION_COUNT, TOP_PROFESSIONS,
+  buildJobDigestEmail,
   sha256, quizCacheKey, interviewCacheKey, gapCacheKey, scenarioCacheKey, jobCacheKey, badgeSlug,
   loadProfessions, flattenProfessions, validateProfessionId, validateSeniority, resolveProfession, deriveKeywords,
   buildQuizPrompt, buildInterviewPrompt, buildGapPrompt, buildScenarioPrompt,

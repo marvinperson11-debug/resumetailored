@@ -122,6 +122,18 @@ const server = app.listen(0, async () => {
     const prog = await req('POST', '/api/interview/progress', 'tokFree', { questionHash: iv.json.questions[0].hash, confidence: 4 });
     check('interview progress saves', prog.json.success === true);
     check('score-my-answer is Pro-only', (await req('POST', '/api/interview/score', 'tokFree', { question: 'q', answer: 'a' })).status === 402);
+    // Pro daily cap on score-my-answer: pre-spend the day's quota, then it 402s
+    // BEFORE any Sonnet call (so this test never hits the LLM).
+    const askKey = `user:pro@x.com_answerscore_${new Date().toISOString().slice(0, 10)}`;
+    db.prepare('INSERT OR REPLACE INTO usage_store (key, count) VALUES (?, ?)').run(askKey, CH.LIMITS.answerScore.pro);
+    const capped = await req('POST', '/api/interview/score', 'tokPro', { question: 'q', answer: 'a' });
+    check('score-my-answer is capped 5/day for Pro', capped.status === 402 && capped.json.error === 'quota', capped.body);
+
+    // Job alerts opt-in toggle.
+    check('job alerts default off', (await req('GET', '/api/jobs/alerts', 'tokFree')).json.enabled === false);
+    check('job alerts can be turned on', (await req('POST', '/api/jobs/alerts', 'tokFree', { enabled: true })).json.enabled === true);
+    check('job alerts persist', (await req('GET', '/api/jobs/alerts', 'tokFree')).json.enabled === true);
+    check('job alerts can be turned off', (await req('POST', '/api/jobs/alerts', 'tokFree', { enabled: false })).json.enabled === false);
 
     // ── Phase 3: Skills Gap (seed gap_cache) ──────────────────────────────────
     const resumeTxt = 'Jane Nurse\nSUMMARY\nRN with 5 years ICU experience.\nSKILLS\nBLS, IV';

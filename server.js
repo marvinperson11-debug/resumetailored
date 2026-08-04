@@ -430,6 +430,8 @@ _ensureColumn('check_ins', 'profession_id', "profession_id TEXT DEFAULT ''");
 _ensureColumn('check_ins', 'profession_cat', "profession_cat TEXT DEFAULT ''");
 _ensureColumn('check_ins', 'seniority', "seniority TEXT DEFAULT ''");
 _ensureColumn('check_ins', 'profession_set_at', 'profession_set_at INTEGER');
+// Career Hub Job Finder: daily "new jobs for your profession" digest opt-in.
+_ensureColumn('check_ins', 'job_alerts', 'job_alerts INTEGER DEFAULT 0');
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
@@ -6364,10 +6366,15 @@ app.post('/api/interview/progress', (req, res) => {
 // Pro: "Score my answer" — per-answer feedback (Sonnet).
 app.post('/api/interview/score', answerScoreLimiter, async (req, res) => {
   const email = careerEmail(req, res); if (!email) return;
-  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_only', message: '"Score my answer" is a Pro feature.' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_only', message: 'Upgrade to Pro to get AI feedback on your answers.' });
   const prof = requireProfession(res, email); if (!prof) return;
   const { question, answer } = req.body || {};
   if (!question || !answer) return res.status(400).json({ error: 'bad_request' });
+  // Pro, but additionally capped per day — the priciest per-call feature.
+  const userKey = getUsageKey(req);
+  if (_quotaUsed(userKey, 'answerscore', 'day') >= CH.LIMITS.answerScore.pro) {
+    return res.status(402).json({ error: 'quota', message: `You've used all ${CH.LIMITS.answerScore.pro} answer scorings for today — back tomorrow.` });
+  }
   try {
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6', max_tokens: 700,
@@ -6375,6 +6382,7 @@ app.post('/api/interview/score', answerScoreLimiter, async (req, res) => {
       messages: [{ role: 'user', content: `Role: ${prof.displayLabel}\nQUESTION: ${String(question).slice(0, 600)}\nCANDIDATE ANSWER: ${String(answer).slice(0, 1500)}` }]
     });
     const obj = CH.extractJson(msg.content[0] && msg.content[0].text) || { rating: 3, strengths: [], improvements: [], revised: '' };
+    _quotaConsume(userKey, 'answerscore', 'day');
     res.json(obj);
   } catch (err) {
     console.error('interview/score error:', err.message);
@@ -6498,6 +6506,21 @@ app.delete('/api/jobs/saved/:id', (req, res) => {
   const email = careerEmail(req, res); if (!email) return;
   db.prepare('DELETE FROM saved_jobs WHERE id = ? AND email = ?').run(parseInt(req.params.id, 10), email.toLowerCase());
   res.json({ success: true });
+});
+// Daily job-alert digest opt-in (stored on the check-in row).
+app.get('/api/jobs/alerts', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const row = db.prepare('SELECT job_alerts FROM check_ins WHERE email = ?').get(email.toLowerCase());
+  res.json({ enabled: !!(row && row.job_alerts) });
+});
+app.post('/api/jobs/alerts', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const on = (req.body && req.body.enabled) ? 1 : 0;
+  const exists = db.prepare('SELECT email FROM check_ins WHERE email = ?').get(e);
+  if (exists) db.prepare('UPDATE check_ins SET job_alerts = ? WHERE email = ?').run(on, e);
+  else db.prepare('INSERT INTO check_ins (email, job_alerts) VALUES (?, ?)').run(e, on);
+  res.json({ enabled: !!on });
 });
 
 // ─── Phase 6: Scenario Lab (branching troubleshooting simulations) ──────────

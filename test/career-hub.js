@@ -131,6 +131,22 @@ check('badge page shows the band medal', badge.includes('🥇'));
 check('badge page has the canonical og:url', badge.includes('https://resumetailored.com/badge/abc123'));
 check('badge page escapes HTML in the name', renderBadgePage({ slug: 's', name: '<script>x</script>', band: 'bronze', score: 60 }, '').indexOf('<script>x') === -1);
 check('badge page respects reduced motion', /prefers-reduced-motion/.test(badge));
+check('badge page is noindex (share asset, not an SEO page)', /<meta name="robots" content="noindex"/.test(badge));
+
+// ── job-alert digest email (pure builder) ────────────────────────────────────
+const dig = renderBadgePage ? CH.buildJobDigestEmail('Registered Nurse', [
+  { title: 'ICU Nurse', company: 'Mercy', location: 'Chicago, IL', remote: false, url: 'http://a' },
+  { title: 'ER Nurse', company: 'General', location: 'Remote', remote: true, url: 'http://b' }
+], 'https://resumetailored.com') : null;
+check('digest subject counts + names the profession', dig.subject === '2 new Registered Nurse jobs posted today', dig.subject);
+check('digest singular when one job', CH.buildJobDigestEmail('Chef', [{ title: 'Line Cook', company: 'X' }], '').subject === '1 new Chef job posted today');
+check('digest lists the job titles', /ICU Nurse/.test(dig.html) && /ER Nurse/.test(dig.html));
+check('digest has a link back to the app', /\/app/.test(dig.html));
+check('digest escapes HTML in a title', CH.buildJobDigestEmail('X', [{ title: '<b>hi</b>', company: 'C' }], '').html.indexOf('<b>hi</b>') === -1);
+check('TOP_PROFESSIONS lists 20 real slugs', CH.TOP_PROFESSIONS.length === 20 && CH.TOP_PROFESSIONS.every(id => CH.validateProfessionId(id)));
+
+// ── answerScore limit surface ────────────────────────────────────────────────
+check('answerScore is Pro-only and capped 5/day', CH.LIMITS.answerScore.free === 0 && CH.LIMITS.answerScore.pro === 5 && CH.LIMITS.answerScore.period === 'day');
 
 // ── LIMITS surface ───────────────────────────────────────────────────────────
 check('LIMITS covers all metered features', ['quiz', 'retake', 'jobsearch', 'savedJobs', 'gap', 'scenario'].every(k => CH.LIMITS[k]));

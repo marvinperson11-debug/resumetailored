@@ -28,6 +28,13 @@
   function toast(m, ms) { if (typeof showToast === 'function') return showToast(m, ms); }
   function goPro() { if (typeof startPro === 'function') startPro(); }
   function vibrate(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+  // i18n: route user-facing strings through the app's translator when present,
+  // falling back to the English literal. Missing keys degrade to the fallback,
+  // so a Chinese pass is purely additive (add ch_* keys to APP_I18N.zh) with no
+  // rewrite here. See CAREER_HUB_PLAN follow-ups.
+  function t(k, fb) { try { return (typeof _t === 'function') ? _t(k, fb) : fb; } catch (e) { return fb; } }
+  // Analytics: fire a GA event through the site's existing gtag if present.
+  function ga(event, params) { try { if (typeof gtag === 'function') gtag('event', event, params || {}); } catch (e) {} }
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -266,6 +273,7 @@
   }
   async function startQuiz() {
     var topic = (el('chQuizTopic') && el('chQuizTopic').value || '').trim();
+    ga('quiz_start', { profession: profile && profile.id, topic: topic || 'general' });
     var btn = el('chQuizStart'); if (btn) { btn.disabled = true; }
     el('chQuizArea').innerHTML = spin();
     var res = await api('/api/skills-lab/quiz', { method: 'POST', headers: authH(), body: JSON.stringify({ topic: topic }) });
@@ -296,6 +304,7 @@
       body: JSON.stringify({ quizKey: quizState.key, topic: quizState.topic, answers: quizState.answers, orders: quizState.orders }) });
     if (!res.ok) { if (!handleGate(res)) toast('Could not score your quiz.'); return; }
     var d = res.data; vibrate(d.band ? [30, 40, 30] : 20);
+    ga('quiz_complete', { profession: profile && profile.id, score: d.score, band: d.band || 'none' });
     var bandTxt = d.band ? '<span class="ch-pill ch-pill-' + d.band + '">' + (d.band === 'gold' ? '🥇 Gold' : d.band === 'silver' ? '🥈 Silver' : '🥉 Bronze') + '</span>' : '<span class="ch-note">No badge — aim for 60%+</span>';
     // mark options
     quizState.quiz.questions.forEach(function (qq, qi) {
@@ -306,7 +315,7 @@
       var ex = document.createElement('div'); ex.className = 'ch-explain'; ex.textContent = '✔ ' + r.explanation; qEl.appendChild(ex);
     });
     var head = '<div class="ch-card" style="margin:18px 0;"><div class="ch-stat">' + d.score + '%</div><div class="ch-stat-lbl">' + d.correct + ' / ' + d.total + ' correct · ' + bandTxt + '</div>';
-    if (d.badge) head += '<div style="margin-top:10px;"><a class="ch-btn ch-btn-sm" href="' + d.badge.url + '" target="_blank" rel="noopener">View & share badge →</a></div>';
+    if (d.badge) head += '<div style="margin-top:10px;"><a class="ch-btn ch-btn-sm" href="' + d.badge.url + '" target="_blank" rel="noopener" onclick="CareerHub.badgeShared()">' + t('ch_view_badge', 'View & share badge') + ' →</a></div>';
     if (d.goldLocked) head += '<div class="ch-upsell" style="margin-top:10px;">You scored Gold! Upgrade to Pro to unlock the Gold badge. <button class="ch-btn ch-btn-sm" onclick="CareerHub.pro()">Upgrade</button></div>';
     head += '<div style="margin-top:10px;"><button class="ch-btn ch-btn-ghost ch-btn-sm" onclick="CareerHub.startQuiz()">Retake</button></div></div>';
     var area = el('chQuizArea'); area.insertAdjacentHTML('afterbegin', head);
@@ -326,6 +335,7 @@
       '<div id="chIvArea"></div>';
   }
   async function loadIv(kind) {
+    ga('interview_practice_start', { profession: profile && profile.id, kind: kind });
     el('chIvArea').innerHTML = spin();
     var res = await api('/api/interview/questions', { method: 'POST', headers: authH(), body: JSON.stringify({ kind: kind }) });
     if (!res.ok) { if (!handleGate(res)) el('chIvArea').innerHTML = '<div class="ch-empty">' + esc(res.data.message || 'Could not load.') + '</div>'; return; }
@@ -337,8 +347,10 @@
     var html = '<div class="ch-iv-card" id="chIvCard">' +
       '<div class="ch-note">Question ' + (ivState.idx + 1) + ' of ' + ivState.questions.length + '</div>' +
       '<div class="ch-iv-q">' + esc(q.prompt) + '</div>' +
-      (isPro() ? '<div class="ch-field"><textarea class="ch-textarea" id="chIvAnswer" placeholder="Draft your answer (optional) — then Score it or Reveal the model answer"></textarea>' +
-        '<button class="ch-btn ch-btn-sm" onclick="CareerHub.scoreAnswer()">✨ Score my answer</button> <span id="chIvScore"></span></div>' : '') +
+      (isPro()
+        ? '<div class="ch-field"><textarea class="ch-textarea" id="chIvAnswer" placeholder="Draft your answer (optional) — then Score it or Reveal the model answer"></textarea>' +
+          '<button class="ch-btn ch-btn-sm" onclick="CareerHub.scoreAnswer()">✨ ' + t('ch_score_answer', 'Score my answer') + '</button> <span id="chIvScore"></span></div>'
+        : '<div class="ch-upsell">🔒 ' + t('ch_score_locked', 'Upgrade to Pro to get AI feedback on your answers.') + ' <button class="ch-btn ch-btn-sm" onclick="CareerHub.pro()">' + t('ch_upgrade', 'Upgrade') + '</button></div>') +
       '<button class="ch-btn ch-btn-ghost" id="chIvRevealBtn" onclick="CareerHub.reveal()">Reveal framework & model answer</button>' +
       '<div id="chIvReveal"></div>' +
       '<div class="ch-iv-nav"><button class="ch-btn ch-btn-ghost ch-btn-sm" onclick="CareerHub.ivNav(-1)" ' + (ivState.idx === 0 ? 'disabled' : '') + '>← Prev</button>' +
@@ -417,6 +429,7 @@
     var resumeText = el('chGapResumeText').value.trim();
     if (!jobText) { toast('Paste a job description.'); return; }
     if (!resumeId && !resumeText) { toast('Select or paste a resume.'); return; }
+    ga('gap_analysis_run', { profession: profile && profile.id });
     var btn = el('chGapBtn'); btn.disabled = true; el('chGapArea').innerHTML = spin();
     var body = { jobText: jobText };
     if (resumeId) body.resumeId = parseInt(resumeId, 10); else body.resume = resumeText;
@@ -457,14 +470,25 @@
       '<button class="ch-btn" id="chJobBtn" style="margin-top:12px;" onclick="CareerHub.searchJobs()">Search jobs →</button>' +
       (isPro() ? '' : '<div class="ch-note" style="margin-top:8px;">Free: 5 searches/day · save up to 5 jobs. <a style="color:var(--ch-forest);cursor:pointer;" onclick="CareerHub.pro()">Unlimited with Pro →</a></div>') +
       '</div>' +
+      '<div class="ch-row" style="margin-top:10px;"><label style="font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="chJobAlerts" onchange="CareerHub.toggleAlerts(this.checked)"> ' + t('ch_job_alerts', 'Email me a daily digest of new ' + esc(profile ? profile.label : '') + ' jobs') + '</label></div>' +
       '<div class="ch-jobfinder-layout" style="margin-top:16px;"><div id="chJobResults"></div>' +
-      '<aside class="ch-crosssell"><h3 style="margin-top:0;">Before you apply</h3>' +
+      '<aside class="ch-crosssell"><h3 style="margin-top:0;">' + t('ch_before_apply', 'Before you apply') + '</h3>' +
       '<a onclick="CareerHub.go(\'skillslab\')">🧪 Take the ' + esc(profile ? profile.label : '') + ' Skills Test</a>' +
       '<a onclick="CareerHub.go(\'gap\')">📊 Analyze a job vs. your resume</a>' +
       '<a onclick="CareerHub.go(\'tailor\')">✦ Tailor your resume</a>' +
       '<div id="chSavedJobs" style="margin-top:12px;"></div></aside></div>' +
       '<div class="ch-sticky-bar"><button class="ch-btn" onclick="CareerHub.searchJobs()">Search</button><button class="ch-btn ch-btn-ghost" onclick="CareerHub.go(\'gap\')">Analyze</button></div>';
     loadSavedJobs();
+    loadAlerts();
+  }
+  async function loadAlerts() {
+    var box = el('chJobAlerts'); if (!box) return;
+    var res = await api('/api/jobs/alerts');
+    if (res.ok) box.checked = !!res.data.enabled;
+  }
+  async function toggleAlerts(on) {
+    var res = await api('/api/jobs/alerts', { method: 'POST', headers: authH(), body: JSON.stringify({ enabled: !!on }) });
+    if (res.ok) toast(on ? t('ch_alerts_on', 'Daily job alerts on.') : t('ch_alerts_off', 'Job alerts off.'));
   }
   async function searchJobs() {
     var qs = new URLSearchParams();
@@ -496,7 +520,8 @@
   async function saveJob(job) {
     var res = await api('/api/jobs/save', { method: 'POST', headers: authH(), body: JSON.stringify({ job: job }) });
     if (!res.ok) { handleGate(res); return; }
-    toast('Job saved.'); vibrate(15); loadSavedJobs();
+    ga('job_save', { profession: profile && profile.id });
+    toast(t('ch_job_saved', 'Job saved.')); vibrate(15); loadSavedJobs();
   }
   function analyzeJob(job) {
     window._chGapPrefill = [job.title, job.company, job.descriptionSnippet].filter(Boolean).join('\n');
@@ -582,8 +607,9 @@
     startQuiz: startQuiz, pickAnswer: pickAnswer, submitQuiz: submitQuiz,
     loadIv: loadIv, reveal: reveal, setConf: setConf, ivNav: ivNav, scoreAnswer: scoreAnswer,
     gapResumeSel: gapResumeSel, runGap: runGap,
-    searchJobs: searchJobs, saveJob: saveJob, analyzeJob: analyzeJob, unsaveJob: unsaveJob,
-    startScenario: startScenario, scPick: scPick, scNext: scNext, renderScStep: renderScStep
+    searchJobs: searchJobs, saveJob: saveJob, analyzeJob: analyzeJob, unsaveJob: unsaveJob, toggleAlerts: toggleAlerts,
+    startScenario: startScenario, scPick: scPick, scNext: scNext, renderScStep: renderScStep,
+    badgeShared: function () { ga('badge_share', { profession: profile && profile.id }); }
   };
 
   // ── boot ─────────────────────────────────────────────────────────────────────

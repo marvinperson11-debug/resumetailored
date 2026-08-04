@@ -36,6 +36,10 @@ function renderBadgePage(badge, origin) {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${esc(title)} · ResumeTailored</title>
+<!-- Badges are social share assets (LinkedIn/Twitter unfurls), not SEO landing
+     pages — keep them out of the index so they never rank ahead of the real
+     site. The OG/Twitter tags below still drive rich unfurls when shared. -->
+<meta name="robots" content="noindex" />
 <meta name="description" content="${desc}" />
 <meta property="og:type" content="website" />
 <meta property="og:title" content="${esc(title)}" />
