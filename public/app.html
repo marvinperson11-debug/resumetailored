@@ -3407,6 +3407,21 @@
     }
 
     // ── Tab switching ──────────────────────────────────────────────────────────
+    // In-app history. The dashboard is a single page whose "pages" are tabs;
+    // without pushing history entries per tab, the browser Back button had
+    // nothing in-app to pop and always left for the landing page. We push a
+    // state per tab switch (state only, URL unchanged so nothing else breaks)
+    // and a popstate handler restores the tab — suppressing the push so the
+    // restore doesn't itself add an entry. The first switch REPLACES the
+    // page-load entry so a single Back after one switch lands correctly.
+    let _rtNavReady = false, _rtNavSuppress = false;
+    function _rtNav(name) {
+      try {
+        if (_rtNavSuppress) return;
+        if (!_rtNavReady) { history.replaceState({ rtTab: name }, ''); _rtNavReady = true; }
+        else if (!history.state || history.state.rtTab !== name) { history.pushState({ rtTab: name }, ''); }
+      } catch (e) {}
+    }
     function showTab(name) {
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       // Every sidebar button, not just those matching a selector that has
@@ -3425,7 +3440,14 @@
       document.body.classList.toggle('wb-immersive', name === 'website');
       if (name === 'website') loadWebsiteCreator();
       if (name === 'backoffice') loadBackOffice();
+      _rtNav(name);
     }
+    window.addEventListener('popstate', function (e) {
+      var name = e.state && e.state.rtTab;
+      if (!name || !document.getElementById('panel-' + name)) return; // let the browser leave the app
+      _rtNavSuppress = true;
+      try { showTab(name); } finally { _rtNavSuppress = false; }
+    });
 
     // ── Mode buttons ───────────────────────────────────────────────────────────
     document.querySelectorAll('.mode-btn').forEach(btn => {

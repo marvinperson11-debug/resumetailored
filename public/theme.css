@@ -126,3 +126,21 @@ hr, section { border-color: var(--line) !important; }
   * { animation-duration: .001ms !important; animation-iteration-count: 1 !important;
       transition-duration: .001ms !important; scroll-behavior: auto !important; }
 }
+
+/* ── Mobile legibility & containment (≤820px only; desktop unchanged) ──────
+   On the cream (#FAF7F0) background several shared pages read too faintly on
+   phones and some cards run their text off the right edge. Scope every fix to
+   the mobile viewport so the desktop editorial look is untouched. */
+@media (max-width: 820px) {
+  /* Darken the muted text tokens so body/label/FAQ text clears WCAG AA on cream.
+     --ink stays #191512; these two were the low-contrast culprits. */
+  :root { --ink-soft: #2d2d2d; --ink-faint: #4a4a4a; }
+  /* Anything explicitly set to the common light grays becomes readable too. */
+  [style*="#9ca3af"], [style*="#94a3b8"], [style*="#a1a1aa"] { color: #4a4a4a !important; }
+  /* Never let a page scroll sideways, and force long unbreakable strings
+     (e.g. yourname.resumetailored.com) to wrap instead of overflowing a card. */
+  html, body { overflow-x: hidden !important; }
+  .feat-card, .card, .cards .card, .feature-row, .feature-body, .container { overflow-wrap: anywhere; word-break: break-word; }
+  /* Give white cards a light edge so they don't float on the cream. */
+  .card, .cards .card { border: 1px solid rgba(0,0,0,0.08) !important; }
+}
