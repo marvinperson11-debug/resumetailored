@@ -147,6 +147,23 @@
       .nav-inner { height: auto; min-height: 64px; flex-wrap: wrap; row-gap: 8px; padding: 10px 0; }
       .nav .btn-primary { font-size: 13px; padding: 9px 16px; }
       .nav .logo { font-size: 16px; }
+
+      /* This page was authored dark-theme (body background #030712, text
+         #e2e8f0/#94a3b8/#64748b) and never migrated — theme.css's shared
+         mobile rule only reaches h1-h4/.faq-q/title-classes and INLINE
+         style="" colors, not colors set by this page's OWN class rules in
+         its <style> block, so every card/paragraph/table cell/footer link
+         below stayed near-invisible on the forced cream mobile background.
+         Same root cause as the Round 3 pages, just not swept into that pass
+         because this page's problem is almost entirely body text, not
+         headings (those already go dark via theme.css's h1-h4/.section-title
+         rule — this is everything theme.css structurally can't reach). */
+      .btn-ghost, .hero p, .step-big-body p, .why-card p,
+      .compare-table th, .compare-table td,
+      .price-them, .testimonial p, .testimonial-author,
+      .about-cta p, .footer, .footer-links a { color: #2d2d2d !important; }
+      .compare-table td:first-child { color: #1a1a1a !important; }
+      .footer-links a:hover { color: #1F5C3D !important; }
     }
 
     /* Fixed circuit grid background */
@@ -351,6 +368,7 @@
     <span class="logo">ResumeTailored <span class="badge-ai">AI</span></span>
     <div class="footer-links">
       <a href="/how-it-works">How It Works</a>
+      <a href="/employer">For Employers</a>
       <a href="/cancel.html">Cancel Anytime</a>
       <a href="/dashboard">Dashboard</a>
       <a href="mailto:support@resumetailored.com">Contact</a>
