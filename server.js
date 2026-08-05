@@ -564,10 +564,10 @@ db.exec(`
 `);
 // Employer profile extras (logo, description, notification prefs) added after
 // the base table shipped — see _ensureColumn (idempotent).
-_ensureColumn('employer_profiles', 'logo_url', "TEXT DEFAULT ''");
-_ensureColumn('employer_profiles', 'description', "TEXT DEFAULT ''");
-_ensureColumn('employer_profiles', 'notify_applications', 'INTEGER DEFAULT 1');
-_ensureColumn('employer_profiles', 'notify_messages', 'INTEGER DEFAULT 1');
+_ensureColumn('employer_profiles', 'logo_url', "logo_url TEXT DEFAULT ''");
+_ensureColumn('employer_profiles', 'description', "description TEXT DEFAULT ''");
+_ensureColumn('employer_profiles', 'notify_applications', 'notify_applications INTEGER DEFAULT 1');
+_ensureColumn('employer_profiles', 'notify_messages', 'notify_messages INTEGER DEFAULT 1');
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
