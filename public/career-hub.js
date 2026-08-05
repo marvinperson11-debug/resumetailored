@@ -348,7 +348,61 @@
       '<div class="ch-card"><h3>' + t('ch_d_next', 'Recommended next steps') + '</h3><ol style="margin:8px 0 0;padding-left:20px;">' + (steps || '<li class="ch-note">' + t('ch_d_caught', "You're all caught up! 🎉") + '</li>') + '</ol>' +
       (d.isSubscriber ? '<div id="chCoach" style="margin-top:14px;"><button class="ch-btn ch-btn-ghost ch-btn-sm" onclick="CareerHub.coach()">✨ ' + t('ch_d_coach', 'AI coach summary') + '</button></div>'
         : '<div class="ch-upsell" style="margin-top:14px;">' + t('ch_d_upsell', 'Unlock the AI coach summary, Gold badges, technical interview prep and unlimited analyses with Pro.') + '<br><button class="ch-btn ch-btn-sm" onclick="CareerHub.pro()">' + t('ch_upgrade_price', 'Upgrade — $19.99/mo') + '</button></div>') +
-      '</div>';
+      '</div>' +
+      '<div class="ch-card" style="margin-top:16px;" id="chCandidateCard">' + spin() + '</div>';
+    renderCandidateSection();
+  }
+
+  // ── Employer marketplace opt-in: "let employers find me" + contact requests ──
+  var candState = null;
+  async function renderCandidateSection() {
+    var box = el('chCandidateCard'); if (!box) return;
+    var res = await api('/api/candidate/profile');
+    if (!res.ok) { box.innerHTML = ''; return; }
+    candState = res.data;
+    var reqRes = await api('/api/candidate/contact-requests');
+    var pending = reqRes.ok ? (reqRes.data.requests || []).filter(function (r) { return r.status === 'pending'; }) : [];
+    box.innerHTML =
+      '<h3>' + t('ch_cand_title', 'Let employers find you') + '</h3>' +
+      '<p class="ch-note">' + t('ch_cand_blurb', 'Opt in to appear in employer candidate search on the ResumeTailored Employer Portal. Off by default — nothing is shared unless you turn this on.') + '</p>' +
+      '<label style="display:block;margin:10px 0 6px;font-weight:700;font-size:14px;"><input type="checkbox" id="candSearchable"' + (candState.searchable ? ' checked' : '') + '/> ' + t('ch_cand_searchable', 'Let employers find me') + '</label>' +
+      '<label style="display:block;margin-bottom:10px;font-weight:700;font-size:14px;"><input type="checkbox" id="candOpenToWork"' + (candState.openToWork ? ' checked' : '') + '/> ' + t('ch_cand_otw', 'Show an "Open to Work" badge') + '</label>' +
+      '<div class="ep-2col ch-grid cols-2" style="margin-bottom:10px;">' +
+      '<div class="ch-field"><label class="ch-label">' + t('ch_cand_remote', 'Remote preference') + '</label><select class="ch-select" id="candRemote">' +
+        ['any', 'remote', 'hybrid', 'onsite'].map(function (v) { return '<option value="' + v + '"' + (candState.remotePref === v ? ' selected' : '') + '>' + v.charAt(0).toUpperCase() + v.slice(1) + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="ch-field"><label class="ch-label">' + t('ch_cand_loc', 'Location') + '</label><input class="ch-input" id="candLocation" value="' + esc(candState.location) + '"/></div>' +
+      '</div>' +
+      '<label style="display:block;margin-bottom:10px;font-weight:700;font-size:14px;"><input type="checkbox" id="candGig"' + (candState.gigAvailable ? ' checked' : '') + ' onchange="CareerHub.toggleGigFields(this.checked)"/> ' + t('ch_cand_gig', 'Available for temp/gig work') + '</label>' +
+      '<div class="ch-grid cols-2" id="candGigFields" style="margin-bottom:10px;display:' + (candState.gigAvailable ? 'grid' : 'none') + ';">' +
+      '<div class="ch-field"><label class="ch-label">' + t('ch_cand_rate', 'Hourly rate ($)') + '</label><input class="ch-input" id="candRate" type="number" min="0" value="' + (candState.hourlyRate == null ? '' : candState.hourlyRate) + '"/></div>' +
+      '<div class="ch-field"><label class="ch-label">' + t('ch_cand_sched', 'Availability') + '</label><input class="ch-input" id="candSched" value="' + esc(candState.gigSchedule) + '" placeholder="e.g. weekends"/></div>' +
+      '</div>' +
+      '<button class="ch-btn ch-btn-sm" onclick="CareerHub.saveCandidateProfile()">' + t('ch_cand_save', 'Save') + '</button>' +
+      (pending.length ? '<div style="margin-top:18px;"><h4 style="margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--ch-forest);">' + t('ch_cand_requests', 'Employers want to connect') + '</h4>' +
+        pending.map(function (r) {
+          return '<div class="ch-job"><div class="ch-job-title">' + esc(r.companyName) + '</div>' +
+            (r.message ? '<div class="ch-job-meta">"' + esc(r.message) + '"</div>' : '') +
+            '<div class="ch-row"><button class="ch-btn ch-btn-sm" onclick="CareerHub.answerContact(' + r.id + ',\'approved\')">' + t('ch_cand_approve', 'Approve') + '</button>' +
+            '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="CareerHub.answerContact(' + r.id + ',\'declined\')">' + t('ch_cand_decline', 'Decline') + '</button></div></div>';
+        }).join('') + '</div>' : '');
+  }
+  function toggleGigFields(on) { var f = el('candGigFields'); if (f) f.style.display = on ? 'grid' : 'none'; }
+  async function saveCandidateProfile() {
+    var body = {
+      searchable: el('candSearchable').checked, openToWork: el('candOpenToWork').checked,
+      remotePref: el('candRemote').value, location: el('candLocation').value,
+      gigAvailable: el('candGig').checked, hourlyRate: el('candRate') ? el('candRate').value : '',
+      gigSchedule: el('candSched') ? el('candSched').value : ''
+    };
+    var res = await api('/api/candidate/profile', { method: 'POST', headers: authH(), body: JSON.stringify(body) });
+    if (!res.ok) { toast(res.data.message || t('ch_cand_save_fail', 'Could not save.')); return; }
+    toast(t('ch_cand_saved', 'Saved.'));
+  }
+  async function answerContact(id, status) {
+    var res = await api('/api/candidate/contact-requests/' + id, { method: 'POST', headers: authH(), body: JSON.stringify({ status: status }) });
+    if (!res.ok) { toast(t('ch_cand_answer_fail', 'Could not respond.')); return; }
+    renderCandidateSection();
   }
   async function coach() {
     var c = el('chCoach'); if (c) c.innerHTML = spin();
@@ -709,7 +763,8 @@
     gapResumeSel: gapResumeSel, runGap: runGap,
     searchJobs: searchJobs, saveJob: saveJob, analyzeJob: analyzeJob, unsaveJob: unsaveJob, toggleAlerts: toggleAlerts,
     startScenario: startScenario, scPick: scPick, scNext: scNext, renderScStep: renderScStep,
-    badgeShared: function () { ga('badge_share', { profession: profile && profile.id }); }
+    badgeShared: function () { ga('badge_share', { profession: profile && profile.id }); },
+    toggleGigFields: toggleGigFields, saveCandidateProfile: saveCandidateProfile, answerContact: answerContact
   };
 
   // ── boot ─────────────────────────────────────────────────────────────────────

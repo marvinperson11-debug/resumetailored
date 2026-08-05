@@ -32,6 +32,11 @@ db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').ru
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokBoss', 'boss@acme.com');
 db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('rival@other.com', 'Rival', 'x');
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokRival', 'rival@other.com');
+db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('startup@x.com', 'Startup Boss', 'x');
+db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokStartup', 'startup@x.com');
+db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('jane@candidate.com', 'Jane Candidate', 'x');
+db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokJane', 'jane@candidate.com');
+db.prepare('INSERT INTO check_ins (email, profession_id, seniority) VALUES (?,?,?)').run('jane@candidate.com', 'registered-nurse', '');
 
 function req(method, urlPath, token, body) {
   return new Promise((resolve, reject) => {
@@ -139,6 +144,89 @@ const server = app.listen(0, async () => {
     // ── checkout fallback when unconfigured ──────────────────────────────────
     const checkout = await req('POST', '/api/employer/subscribe', 'tokRival');
     check('checkout fails gracefully with no STRIPE_EMPLOYER_PRICE_ID configured', checkout.status === 503 && checkout.json.error === 'not_configured');
+
+    // ═══════════════════ Phase B: candidates, ATS, applications ═══════════════
+
+    // ── candidate opt-in profile ─────────────────────────────────────────────
+    const cpDefault = await req('GET', '/api/candidate/profile', 'tokJane');
+    check('candidate profile defaults to not searchable', cpDefault.status === 200 && cpDefault.json.searchable === false, cpDefault.body);
+    const cpBad = await req('POST', '/api/candidate/profile', 'tokJane', { remotePref: 'moon-base' });
+    check('rejects an invalid candidate profile', cpBad.status === 400);
+    const cpSave = await req('POST', '/api/candidate/profile', 'tokJane', { searchable: true, openToWork: true, remotePref: 'remote', location: 'Chicago, IL' });
+    check('saves the candidate profile', cpSave.status === 200);
+    const cpAfter = await req('GET', '/api/candidate/profile', 'tokJane');
+    check('candidate profile persists', cpAfter.json.searchable === true && cpAfter.json.location === 'Chicago, IL');
+
+    // ── a second, non-Pro employer posts a job and gets applicants ──────────
+    await req('POST', '/api/employer/profile', 'tokStartup', { companyName: 'Startup Inc' });
+    const startupJob = await req('POST', '/api/employer/jobs', 'tokStartup', goodJob);
+    check('a fresh employer can post a job', startupJob.status === 200, startupJob.body);
+    const startupJobId = startupJob.json.id;
+
+    // ── applying ──────────────────────────────────────────────────────────────
+    const applyMissing = await req('POST', '/api/employer/jobs/999999/apply', 'tokJane');
+    check('applying to a nonexistent job 404s', applyMissing.status === 404);
+    const apply1 = await req('POST', '/api/employer/jobs/' + startupJobId + '/apply', 'tokJane');
+    check('candidate applies to a job', apply1.status === 200 && Number.isInteger(apply1.json.applicationId), apply1.body);
+    const apply2 = await req('POST', '/api/employer/jobs/' + startupJobId + '/apply', 'tokJane');
+    check('re-applying is idempotent, not a duplicate row', apply2.status === 200 && apply2.json.alreadyApplied === true);
+
+    // ── applicant list is view-only on the free plan ─────────────────────────
+    const appsList = await req('GET', '/api/employer/jobs/' + startupJobId + '/applications', 'tokStartup');
+    check('free employer can see who applied', appsList.status === 200 && appsList.json.applications.length === 1 && appsList.json.pro === false, appsList.body);
+    const jobCount = await req('GET', '/api/employer/jobs', 'tokStartup');
+    check('applicant count reflects the real application', jobCount.json.jobs.find(j => j.id === startupJobId).applicantCount === 1);
+    const appId = appsList.json.applications[0].id;
+    const putFree = await req('PUT', '/api/employer/applications/' + appId, 'tokStartup', { status: 'reviewed' });
+    check('free employer cannot move the ATS pipeline (no ATS on free)', putFree.status === 402 && putFree.json.error === 'pro_required', putFree.body);
+
+    // ── upgrade the startup to Pro Employer, then drive the ATS pipeline ─────
+    db.prepare('INSERT INTO employer_subscribers (email, customer_id) VALUES (?,?)').run('startup@x.com', 'cus_startup_1');
+    const putBadStatus = await req('PUT', '/api/employer/applications/' + appId, 'tokStartup', { status: 'ghosted' });
+    check('rejects an invalid application status', putBadStatus.status === 400);
+    const putBadRating = await req('PUT', '/api/employer/applications/' + appId, 'tokStartup', { rating: 9 });
+    check('rejects an out-of-range rating', putBadRating.status === 400);
+    const putReviewed = await req('PUT', '/api/employer/applications/' + appId, 'tokStartup', { status: 'reviewed', rating: 4, notes: 'Strong ICU background' });
+    check('Pro employer moves an application through the ATS', putReviewed.status === 200, putReviewed.body);
+    const appsAfter = await req('GET', '/api/employer/jobs/' + startupJobId + '/applications', 'tokStartup');
+    const updatedApp = appsAfter.json.applications.find(a => a.id === appId);
+    check('status/rating/notes persisted', updatedApp.status === 'reviewed' && updatedApp.rating === 4 && updatedApp.notes === 'Strong ICU background');
+    const putReject = await req('PUT', '/api/employer/applications/' + appId, 'tokStartup', { status: 'rejected' });
+    check('one-click reject succeeds (fires the polite email, best-effort)', putReject.status === 200);
+    const rivalPutApp = await req('PUT', '/api/employer/applications/' + appId, 'tokRival', { status: 'hired' });
+    check("a different employer cannot touch someone else's application", rivalPutApp.status === 404);
+
+    // ── candidate search (opt-in only, filtered by profession) ──────────────
+    const searchNoProfile = await req('GET', '/api/employer/candidates', 'tokRival');
+    check('candidate search requires an employer profile', searchNoProfile.status === 400 && searchNoProfile.json.error === 'no_employer_profile');
+    const search1 = await req('GET', '/api/employer/candidates?professionId=registered-nurse', 'tokStartup');
+    check('candidate search finds the opted-in candidate by profession', search1.status === 200 && search1.json.candidates.some(c => c.email === 'jane@candidate.com'), search1.body);
+    const search2 = await req('GET', '/api/employer/candidates?professionId=software-engineer', 'tokStartup');
+    check('candidate search excludes a non-matching profession', !search2.json.candidates.some(c => c.email === 'jane@candidate.com'));
+    check('search results never include a candidate who has not opted in', search1.json.candidates.every(c => c.email !== 'rival@other.com'));
+
+    // ── full candidate profile is Pro-only ───────────────────────────────────
+    await req('POST', '/api/employer/profile', 'tokRival', { companyName: 'Rival Co' });
+    const profileFree = await req('GET', '/api/employer/candidates/jane@candidate.com/profile', 'tokRival');
+    check('full candidate profile is Pro-gated', profileFree.status === 402 && profileFree.json.error === 'pro_required');
+    const profilePro = await req('GET', '/api/employer/candidates/jane@candidate.com/profile', 'tokStartup');
+    check('Pro employer can view the full candidate profile', profilePro.status === 200 && profilePro.json.email === 'jane@candidate.com', profilePro.body);
+    check('full candidate profile carries badges + location', Array.isArray(profilePro.json.badges) && profilePro.json.location === 'Chicago, IL');
+
+    // ── contact-request flow ─────────────────────────────────────────────────
+    const contactMissing = await req('POST', '/api/employer/candidates/nobody@x.com/contact', 'tokStartup', { message: 'hi' });
+    check('contacting a non-opted-in candidate 404s', contactMissing.status === 404);
+    const contactOk = await req('POST', '/api/employer/candidates/jane@candidate.com/contact', 'tokStartup', { message: "Let's talk about the RN role." });
+    check('employer sends a contact request', contactOk.status === 200, contactOk.body);
+    const janeRequests = await req('GET', '/api/candidate/contact-requests', 'tokJane');
+    check('candidate sees the pending contact request with the company name', janeRequests.status === 200 && janeRequests.json.requests.some(r => r.companyName === 'Startup Inc' && r.status === 'pending'), janeRequests.body);
+    const reqId = janeRequests.json.requests.find(r => r.companyName === 'Startup Inc').id;
+    const badApprove = await req('POST', '/api/candidate/contact-requests/' + reqId, 'tokJane', { status: 'whatever' });
+    check('rejects an invalid contact-request status', badApprove.status === 400);
+    const approve = await req('POST', '/api/candidate/contact-requests/' + reqId, 'tokJane', { status: 'approved' });
+    check('candidate approves the contact request', approve.status === 200 && approve.json.status === 'approved');
+    const rivalCannotApprove = await req('POST', '/api/candidate/contact-requests/' + reqId, 'tokStartup', { status: 'approved' });
+    check("an employer cannot approve on the candidate's behalf", rivalCannotApprove.status === 404);
 
   } catch (err) {
     failures++;

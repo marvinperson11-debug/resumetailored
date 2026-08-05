@@ -48,6 +48,14 @@
   @media(max-width:520px){.ep-2col{grid-template-columns:1fr;}}
   .ep-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;z-index:3000;display:none;}
   .ep-quota{font-size:13px;color:var(--ch-muted);margin-bottom:14px;}
+  .ep-app-row{border:1px solid var(--ch-line);border-radius:12px;padding:14px;margin-bottom:10px;}
+  .ep-app-row .hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .ep-app-row .who{font-weight:800;}
+  .ep-stars{display:flex;gap:3px;}
+  .ep-stars span{cursor:pointer;font-size:16px;color:var(--ch-line);}
+  .ep-stars span.on{color:var(--ch-gold);}
+  .ep-candcard{background:#fff;border:1px solid var(--ch-line);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .ep-otw{display:inline-block;background:rgba(22,163,74,.12);color:#16a34a;font-size:11px;font-weight:800;border-radius:999px;padding:2px 8px;margin-left:6px;}
 </style>
 </head>
 <body>
@@ -106,10 +114,56 @@
 
     <p class="ep-quota" id="epQuota"></p>
 
-    <div id="epJobsList"></div>
-    <div class="ch-empty" id="epJobsEmpty" style="display:none;">No jobs posted yet — click "+ Post a Job" to get started.</div>
+    <div class="ep-tabs" style="max-width:280px;margin-bottom:16px;">
+      <div class="ep-tab on" id="epTabJobs" onclick="epSetMainTab('jobs')">Jobs</div>
+      <div class="ep-tab" id="epTabCandidates" onclick="epSetMainTab('candidates')">Candidates</div>
+    </div>
+
+    <div id="epJobsPanel">
+      <div id="epJobsList"></div>
+      <div class="ch-empty" id="epJobsEmpty" style="display:none;">No jobs posted yet — click "+ Post a Job" to get started.</div>
+    </div>
+
+    <div id="epCandidatesPanel" style="display:none;">
+      <div class="ch-card" style="margin-bottom:16px;">
+        <div class="ep-2col">
+          <div class="ch-field"><label class="ch-label">Profession</label><select class="ch-select" id="epcProf"><option value="">Any profession</option></select></div>
+          <div class="ch-field"><label class="ch-label">Location contains</label><input class="ch-input" id="epcLoc" placeholder="e.g. Chicago"/></div>
+        </div>
+        <div class="ep-2col">
+          <div class="ch-field"><label class="ch-label">Remote preference</label><select class="ch-select" id="epcRemote"><option value="">Any</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">Onsite</option></select></div>
+          <div class="ch-field" style="display:flex;align-items:flex-end;"><label style="font-size:14px;"><input type="checkbox" id="epcGigOnly"/> Available for temp/gig only</label></div>
+        </div>
+        <button class="ch-btn ch-btn-sm" onclick="epSearchCandidates()">Search</button>
+      </div>
+      <p class="ep-quota" id="epcResultNote"></p>
+      <div id="epCandidatesList"></div>
+      <div class="ch-empty" id="epCandidatesEmpty" style="display:none;">No candidates match yet — opted-in candidates will show up here as they join.</div>
+    </div>
   </div>
 
+</div>
+
+<div class="ep-modal-overlay" id="epAppsOverlay">
+  <div class="ep-modal">
+    <h2>Applicants — <span id="epAppsJobTitle"></span></h2>
+    <p class="ep-quota" id="epAppsUpsell" style="display:none;">Free plan shows who applied. Upgrade to Pro Employer to move applicants through New → Reviewed → Interview → Hired, rate them, leave notes, and one-click reject.</p>
+    <div id="epAppsList"></div>
+    <div class="ch-empty" id="epAppsEmpty" style="display:none;">No applicants yet.</div>
+    <div class="ch-row" style="margin-top:14px;"><button class="ch-btn ch-btn-ghost" onclick="epCloseAppsModal()">Close</button></div>
+  </div>
+</div>
+
+<div class="ep-modal-overlay" id="epCandProfileOverlay">
+  <div class="ep-modal" style="max-width:460px;">
+    <h2 id="epCandProfileName"></h2>
+    <div id="epCandProfileBody"></div>
+    <div class="ch-field" style="margin-top:14px;"><label class="ch-label">Message (optional)</label><textarea class="ch-textarea" id="epContactMsg" style="min-height:70px;" placeholder="Say hello and mention the role..."></textarea></div>
+    <div class="ch-row">
+      <button class="ch-btn" id="epContactBtn" onclick="epSendContact()">Request Contact</button>
+      <button class="ch-btn ch-btn-ghost" onclick="epCloseCandProfile()">Close</button>
+    </div>
+  </div>
 </div>
 
 <div class="ep-modal-overlay" id="epPostOverlay">
@@ -289,6 +343,7 @@ function epRenderJobs(jobs){
       + '<div class="jt">'+epEsc(j.title)+' <span class="ep-status '+j.status+'">'+j.status+'</span></div>'
       + '<div class="jm">'+epEsc(meta)+' · '+j.applicantCount+' applicant'+(j.applicantCount===1?'':'s')+'</div>'
       + '<div class="jbtns">'
+      + '<button class="ch-btn ch-btn-sm" onclick="epOpenApps('+j.id+',\''+epEsc(j.title).replace(/'/g,"\\'")+'\')">View Applicants ('+j.applicantCount+')</button>'
       + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epEditPost('+j.id+')">Edit</button>'
       + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epToggleStatus('+j.id+',\''+(j.status==='active'?'closed':'active')+'\')">'+(j.status==='active'?'Close':'Reopen')+'</button>'
       + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epDeletePost('+j.id+')">Delete</button>'
@@ -377,6 +432,164 @@ async function epDeletePost(id){
     if(!r.ok) return epToast('Could not delete job.');
     epToast('Job deleted.');
     epBoot();
+  }catch(e){ epToast('Network error — please try again.'); }
+}
+
+// ── Jobs / Candidates tab switcher ───────────────────────────────────────────
+function epSetMainTab(which){
+  document.getElementById('epTabJobs').classList.toggle('on', which==='jobs');
+  document.getElementById('epTabCandidates').classList.toggle('on', which==='candidates');
+  document.getElementById('epJobsPanel').style.display = which==='jobs' ? 'block' : 'none';
+  document.getElementById('epCandidatesPanel').style.display = which==='candidates' ? 'block' : 'none';
+  if(which==='candidates' && !window._epProfLoaded) epLoadProfessionOptions();
+}
+async function epLoadProfessionOptions(){
+  window._epProfLoaded = true;
+  try{
+    var r=await fetch('/data/professions.json');
+    var d=await r.json();
+    var sel=document.getElementById('epcProf');
+    (d.categories||[]).forEach(function(cat){
+      var grp=document.createElement('optgroup'); grp.label=cat.label;
+      (cat.professions||[]).forEach(function(p){
+        var o=document.createElement('option'); o.value=p.id; o.textContent=p.label; grp.appendChild(o);
+      });
+      sel.appendChild(grp);
+    });
+  }catch(e){ /* profession filter is optional — search still works without it */ }
+}
+
+// ── Applicants (ATS) ─────────────────────────────────────────────────────────
+var epCurrentJobId = null;
+function epOpenApps(jobId, jobTitle){
+  epCurrentJobId = jobId;
+  document.getElementById('epAppsJobTitle').textContent = jobTitle;
+  document.getElementById('epAppsOverlay').classList.add('open');
+  epLoadApps();
+}
+function epCloseAppsModal(){ document.getElementById('epAppsOverlay').classList.remove('open'); epCurrentJobId=null; }
+async function epLoadApps(){
+  try{
+    var r=await fetch('/api/employer/jobs/'+epCurrentJobId+'/applications',{headers:epAuthHeaders()});
+    var d=await r.json();
+    if(!r.ok) return epToast('Could not load applicants.');
+    document.getElementById('epAppsUpsell').style.display = d.pro ? 'none' : 'block';
+    epRenderApps(d.applications||[], d.pro);
+  }catch(e){ epToast('Network error — please try again.'); }
+}
+var EP_STAGES = ['new','reviewed','interview','hired','rejected'];
+function epRenderApps(apps, pro){
+  var list=document.getElementById('epAppsList');
+  var empty=document.getElementById('epAppsEmpty');
+  if(!apps.length){ list.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  list.innerHTML = apps.map(function(a){
+    var stars='';
+    for(var i=1;i<=5;i++) stars += '<span class="'+(a.rating>=i?'on':'')+'" onclick="epRateApp('+a.id+','+i+','+pro+')">★</span>';
+    var stageOpts = EP_STAGES.map(function(s){ return '<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>'; }).join('');
+    return '<div class="ep-app-row">'
+      + '<div class="hd"><span class="who">'+epEsc(a.candidateEmail)+'</span><span class="ep-status active">'+a.status+'</span></div>'
+      + (pro
+        ? '<div class="ep-2col">'
+          + '<div class="ch-field"><label class="ch-label">Stage</label><select class="ch-select" onchange="epMoveApp('+a.id+',this.value)">'+stageOpts+'</select></div>'
+          + '<div class="ch-field"><label class="ch-label">Rating</label><div class="ep-stars">'+stars+'</div></div>'
+          + '</div>'
+          + '<div class="ch-field"><label class="ch-label">Notes</label><textarea class="ch-textarea" style="min-height:60px;" id="epNotes'+a.id+'" onblur="epSaveNotes('+a.id+')">'+epEsc(a.notes)+'</textarea></div>'
+          + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epMoveApp('+a.id+',\'rejected\')">One-click Reject</button>'
+        : '<p class="ep-quota" style="margin:0;">Applied '+new Date(a.createdAt).toLocaleDateString()+'.</p>')
+      + '</div>';
+  }).join('');
+}
+async function epMoveApp(id, status){
+  try{
+    var r=await fetch('/api/employer/applications/'+id,{method:'PUT',headers:epAuthHeaders(),body:JSON.stringify({status:status})});
+    var d=await r.json();
+    if(!r.ok) return epToast(d.message||'Could not update applicant.');
+    epToast(status==='rejected' ? 'Candidate notified.' : 'Updated.');
+    epLoadApps();
+    epLoadJobs();
+  }catch(e){ epToast('Network error — please try again.'); }
+}
+async function epRateApp(id, rating, pro){
+  if(!pro) return;
+  try{
+    var r=await fetch('/api/employer/applications/'+id,{method:'PUT',headers:epAuthHeaders(),body:JSON.stringify({rating:rating})});
+    if(!r.ok) return epToast('Could not save rating.');
+    epLoadApps();
+  }catch(e){ epToast('Network error — please try again.'); }
+}
+async function epSaveNotes(id){
+  var val = document.getElementById('epNotes'+id).value;
+  try{ await fetch('/api/employer/applications/'+id,{method:'PUT',headers:epAuthHeaders(),body:JSON.stringify({notes:val})}); }
+  catch(e){ epToast('Could not save notes.'); }
+}
+
+// ── Candidate search ─────────────────────────────────────────────────────────
+async function epSearchCandidates(){
+  var qs = new URLSearchParams();
+  var prof = document.getElementById('epcProf').value; if(prof) qs.set('professionId', prof);
+  var loc = document.getElementById('epcLoc').value.trim(); if(loc) qs.set('location', loc);
+  var remote = document.getElementById('epcRemote').value; if(remote) qs.set('remotePref', remote);
+  if(document.getElementById('epcGigOnly').checked) qs.set('gigOnly', '1');
+  try{
+    var r=await fetch('/api/employer/candidates?'+qs.toString(),{headers:epAuthHeaders()});
+    var d=await r.json();
+    if(!r.ok) return epToast(d.message||'Search failed.');
+    epRenderCandidates(d.candidates||[], d.pro, d.total);
+  }catch(e){ epToast('Network error — please try again.'); }
+}
+function epRenderCandidates(cands, pro, total){
+  var list=document.getElementById('epCandidatesList');
+  var empty=document.getElementById('epCandidatesEmpty');
+  var note=document.getElementById('epcResultNote');
+  note.textContent = pro ? (cands.length+' candidate'+(cands.length===1?'':'s')) : ('Showing '+cands.length+' of '+total+' matches — upgrade to Pro Employer for full candidate search.');
+  if(!cands.length){ list.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  window._epCands = cands;
+  list.innerHTML = cands.map(function(c){
+    var bandIcon = c.bestBand==='gold'?'🥇':c.bestBand==='silver'?'🥈':c.bestBand==='bronze'?'🥉':'';
+    return '<div class="ep-candcard">'
+      + '<div><div class="who" style="font-weight:800;">'+epEsc(c.username)+(c.openToWork?'<span class="ep-otw">Open to Work</span>':'')+'</div>'
+      + '<div class="jm" style="font-size:13px;color:var(--ch-muted);">'+[c.professionLabel, bandIcon, c.location, c.remotePref].filter(Boolean).join(' · ')+'</div></div>'
+      + '<button class="ch-btn ch-btn-sm" onclick="epOpenCandProfile(\''+epEsc(c.email).replace(/'/g,"\\'")+'\')">View Profile</button>'
+      + '</div>';
+  }).join('');
+}
+var epCurrentCandEmail = null;
+async function epOpenCandProfile(email){
+  epCurrentCandEmail = email;
+  document.getElementById('epCandProfileName').textContent = email;
+  document.getElementById('epCandProfileBody').innerHTML = '<div class="ch-spinner"></div>';
+  document.getElementById('epContactMsg').value = '';
+  document.getElementById('epCandProfileOverlay').classList.add('open');
+  try{
+    var r=await fetch('/api/employer/candidates/'+encodeURIComponent(email)+'/profile',{headers:epAuthHeaders()});
+    var d=await r.json();
+    if(r.status===402){
+      document.getElementById('epCandProfileBody').innerHTML = '<div class="ch-upsell">Full candidate profiles (badges, scores, resume site, video intro) are a Pro Employer feature.<br><button class="ch-btn ch-btn-sm" onclick="epUpgrade()">Upgrade — $29/mo</button></div>';
+      return;
+    }
+    if(!r.ok){ document.getElementById('epCandProfileBody').innerHTML = '<p class="ep-quota">Could not load this profile.</p>'; return; }
+    document.getElementById('epCandProfileName').textContent = d.username;
+    var badges = (d.badges||[]).map(function(b){ return '<span class="ch-pill ch-pill-'+b.band+'" style="margin:2px;">'+epEsc(b.topic||'General')+' — '+b.band+' ('+b.score+'%)</span>'; }).join('') || '<span class="ep-quota">No skills badges yet.</span>';
+    document.getElementById('epCandProfileBody').innerHTML =
+      '<p class="ep-quota">'+epEsc(d.professionLabel||'')+(d.location?' · '+epEsc(d.location):'')+(d.remotePref?' · '+epEsc(d.remotePref):'')+'</p>'
+      + '<div style="margin:10px 0;">'+badges+'</div>'
+      + (d.siteUrl ? '<p><a href="'+d.siteUrl+'" target="_blank" style="color:var(--ch-forest);font-weight:700;">View resume website →</a></p>' : '')
+      + (d.hasVideoIntro ? '<p class="ep-quota">🎬 Has a video intro.</p>' : '')
+      + (d.gigAvailable ? '<p class="ep-quota">Available for temp/gig work'+(d.hourlyRate?' at $'+d.hourlyRate+'/hr':'')+(d.gigSchedule?' — '+epEsc(d.gigSchedule):'')+'.</p>' : '');
+  }catch(e){ document.getElementById('epCandProfileBody').innerHTML = '<p class="ep-quota">Network error — please try again.</p>'; }
+}
+function epCloseCandProfile(){ document.getElementById('epCandProfileOverlay').classList.remove('open'); epCurrentCandEmail=null; }
+async function epSendContact(){
+  if(!epCurrentCandEmail) return;
+  var message = document.getElementById('epContactMsg').value.trim();
+  try{
+    var r=await fetch('/api/employer/candidates/'+encodeURIComponent(epCurrentCandEmail)+'/contact',{method:'POST',headers:epAuthHeaders(),body:JSON.stringify({message:message})});
+    var d=await r.json();
+    if(!r.ok) return epToast(d.message||'Could not send the request.');
+    epToast('Contact request sent.');
+    epCloseCandProfile();
   }catch(e){ epToast('Network error — please try again.'); }
 }
 

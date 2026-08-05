@@ -68,6 +68,21 @@ const many = Array.from({ length: 15 }, (_, i) => ({ email: 'u' + i, openToWorkP
 check('free employer search is capped at 10', EH.rankCandidates(many, { employerIsPro: false }).length === 10);
 check('Pro employer search is not capped', EH.rankCandidates(many, { employerIsPro: true }).length === 15);
 
+// ── candidate profile (opt-in visibility) ───────────────────────────────────
+const cp1 = EH.validateCandidateProfile({ searchable: true, openToWork: true, remotePref: 'remote', location: 'Chicago, IL' });
+check('accepts a well-formed candidate profile', cp1.valid);
+check('visibility defaults reflect exactly what was sent', cp1.clean.searchable === true && cp1.clean.openToWork === true);
+check('remotePref defaults to "any" when unset', EH.validateCandidateProfile({}).clean.remotePref === 'any');
+check('booleans default to false (visibility is opt-in, never implied)', EH.validateCandidateProfile({}).clean.searchable === false && EH.validateCandidateProfile({}).clean.openToWork === false);
+check('rejects an invalid remote preference', !EH.validateCandidateProfile({ remotePref: 'moon-base' }).valid);
+check('rejects a negative hourly rate', !EH.validateCandidateProfile({ hourlyRate: '-10' }).valid);
+const cpGig = EH.validateCandidateProfile({ gigAvailable: true, gigSchedule: 'weekends', hourlyRate: '40' });
+check('gig fields carry through when gigAvailable', cpGig.clean.gigSchedule === 'weekends' && cpGig.clean.hourlyRate === 40);
+check('gig schedule is dropped when not gig-available', EH.validateCandidateProfile({ gigAvailable: false, gigSchedule: 'weekends' }).clean.gigSchedule === '');
+
+check('validateContactRequestStatus accepts pending/approved/declined', ['pending', 'approved', 'declined'].every(EH.validateContactRequestStatus));
+check('validateContactRequestStatus rejects an unknown status', !EH.validateContactRequestStatus('ghosted'));
+
 if (failures) { console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`); process.exit(1); }
 console.log('\nALL PASS (0 failures)');
 process.exit(0);

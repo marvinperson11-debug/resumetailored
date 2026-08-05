@@ -480,6 +480,7 @@ db.exec(`
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     job_id       INTEGER NOT NULL,
     candidate_email TEXT NOT NULL,
+    resume_id    INTEGER,
     status       TEXT NOT NULL DEFAULT 'new',
     rating       INTEGER,
     notes        TEXT DEFAULT '',
@@ -490,6 +491,30 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_job_applications_job ON job_applications(job_id);
   CREATE INDEX IF NOT EXISTS idx_job_applications_candidate ON job_applications(candidate_email);
+  CREATE TABLE IF NOT EXISTS candidate_profiles (
+    email          TEXT PRIMARY KEY,
+    searchable     INTEGER NOT NULL DEFAULT 0,
+    open_to_work   INTEGER NOT NULL DEFAULT 0,
+    remote_pref    TEXT DEFAULT '',
+    location       TEXT DEFAULT '',
+    gig_available  INTEGER NOT NULL DEFAULT 0,
+    hourly_rate    INTEGER,
+    gig_schedule   TEXT DEFAULT '',
+    max_travel_mi  INTEGER,
+    updated_at     INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_candidate_profiles_searchable ON candidate_profiles(searchable);
+  CREATE TABLE IF NOT EXISTS employer_contact_requests (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    employer_email  TEXT NOT NULL,
+    candidate_email TEXT NOT NULL,
+    message         TEXT DEFAULT '',
+    status          TEXT NOT NULL DEFAULT 'pending',
+    created_at      INTEGER NOT NULL,
+    updated_at      INTEGER NOT NULL,
+    UNIQUE(employer_email, candidate_email)
+  );
+  CREATE INDEX IF NOT EXISTS idx_contact_requests_candidate ON employer_contact_requests(candidate_email);
 `);
 
 // Seed default forum posts on first run
@@ -6858,6 +6883,234 @@ app.post('/api/employer/subscribe', async (req, res) => {
     console.error('Stripe employer error:', err);
     res.status(500).json({ error: 'Could not create checkout session.' });
   }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Employer Portal — Phase B: candidate database (opt-in), ATS pipeline and
+// applications. Candidate visibility is strictly opt-in (`searchable`,
+// defaults off) — nothing here surfaces a job seeker who hasn't flipped it on.
+// Free employers get view-only applicant lists + a capped candidate search
+// (EH.rankCandidates caps at 10); moving applications through the pipeline
+// (status/rating/notes, the reject email) is Pro Employer ("no ATS" on free
+// per the pricing table).
+// ═══════════════════════════════════════════════════════════════════════════
+const bandRank = { gold: 3, silver: 2, bronze: 1, '': 0 };
+function _candidateBestBand(email) {
+  const rows = db.prepare('SELECT band, score FROM badges WHERE email = ?').all(email);
+  let best = { band: '', score: 0 };
+  for (const r of rows) if ((bandRank[r.band] || 0) > (bandRank[best.band] || 0)) best = r;
+  return best;
+}
+
+// ── Candidate side: opt-in visibility + applying ────────────────────────────
+app.get('/api/candidate/profile', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const row = db.prepare('SELECT * FROM candidate_profiles WHERE email = ?').get(email.toLowerCase());
+  res.json({
+    searchable: !!(row && row.searchable), openToWork: !!(row && row.open_to_work),
+    remotePref: (row && row.remote_pref) || 'any', location: (row && row.location) || '',
+    gigAvailable: !!(row && row.gig_available), hourlyRate: row ? row.hourly_rate : null,
+    gigSchedule: (row && row.gig_schedule) || '', maxTravelMi: row ? row.max_travel_mi : null
+  });
+});
+app.post('/api/candidate/profile', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const v = EH.validateCandidateProfile(req.body);
+  if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
+  const e = email.toLowerCase();
+  const c = v.clean;
+  db.prepare(`
+    INSERT INTO candidate_profiles (email, searchable, open_to_work, remote_pref, location, gig_available, hourly_rate, gig_schedule, max_travel_mi, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?)
+    ON CONFLICT(email) DO UPDATE SET searchable=excluded.searchable, open_to_work=excluded.open_to_work, remote_pref=excluded.remote_pref,
+      location=excluded.location, gig_available=excluded.gig_available, hourly_rate=excluded.hourly_rate, gig_schedule=excluded.gig_schedule,
+      max_travel_mi=excluded.max_travel_mi, updated_at=excluded.updated_at
+  `).run(e, c.searchable ? 1 : 0, c.openToWork ? 1 : 0, c.remotePref, c.location, c.gigAvailable ? 1 : 0, c.hourlyRate, c.gigSchedule, c.maxTravelMi, Date.now());
+  res.json({ success: true });
+});
+
+app.post('/api/employer/jobs/:id/apply', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const id = parseInt(req.params.id, 10);
+  const job = db.prepare("SELECT id FROM job_postings WHERE id = ? AND status = 'active'").get(id);
+  if (!job) return res.status(404).json({ error: 'not_found', message: 'This job is no longer accepting applications.' });
+  const e = email.toLowerCase();
+  const resumeId = Number.isInteger(req.body && req.body.resumeId) ? req.body.resumeId : null;
+  const now = Date.now();
+  const already = db.prepare('SELECT id FROM job_applications WHERE job_id = ? AND candidate_email = ?').get(id, e);
+  if (already) return res.json({ success: true, applicationId: already.id, alreadyApplied: true });
+  const info = db.prepare('INSERT INTO job_applications (job_id, candidate_email, resume_id, status, created_at, updated_at) VALUES (?,?,?,\'new\',?,?)')
+    .run(id, e, resumeId, now, now);
+  res.json({ success: true, applicationId: info.lastInsertRowid });
+});
+
+app.get('/api/candidate/contact-requests', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const rows = db.prepare(`
+    SELECT cr.id, cr.employer_email, cr.message, cr.status, cr.created_at, ep.company_name
+    FROM employer_contact_requests cr LEFT JOIN employer_profiles ep ON ep.email = cr.employer_email
+    WHERE cr.candidate_email = ? ORDER BY cr.created_at DESC
+  `).all(email.toLowerCase());
+  res.json({ requests: rows.map(r => ({ id: r.id, companyName: r.company_name || r.employer_email, message: r.message, status: r.status, createdAt: r.created_at })) });
+});
+app.post('/api/candidate/contact-requests/:id', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const status = String((req.body && req.body.status) || '').toLowerCase();
+  if (!['approved', 'declined'].includes(status)) return res.status(400).json({ error: 'bad_request' });
+  const id = parseInt(req.params.id, 10);
+  const row = db.prepare('SELECT * FROM employer_contact_requests WHERE id = ? AND candidate_email = ?').get(id, email.toLowerCase());
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  db.prepare('UPDATE employer_contact_requests SET status = ?, updated_at = ? WHERE id = ?').run(status, Date.now(), id);
+  if (status === 'approved') {
+    sendEmail({
+      to: row.employer_email,
+      subject: `${email} approved your contact request`,
+      html: `<p><strong>${email}</strong> approved your request to connect on ResumeTailored. You can reach them at this email address.</p>`
+    }).catch(err => console.error('[employer] contact-approve email failed:', err.message));
+  }
+  res.json({ success: true, status });
+});
+
+// ── Employer side: candidate search + ATS ───────────────────────────────────
+app.get('/api/employer/candidates', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const employerProfile = db.prepare('SELECT email FROM employer_profiles WHERE email = ?').get(e);
+  if (!employerProfile) return res.status(400).json({ error: 'no_employer_profile', message: 'Set up your company profile first.' });
+  const pro = isEmployerSubscriber(email);
+  const professionId = (req.query.professionId || '').toString().slice(0, 60);
+  const location = (req.query.location || '').toString().toLowerCase().slice(0, 80);
+  const remotePref = (req.query.remotePref || '').toString().toLowerCase();
+  const gigOnly = req.query.gigOnly === '1' || req.query.gigOnly === 'true';
+
+  let rows = db.prepare(`
+    SELECT cp.email, cp.remote_pref, cp.location, cp.gig_available, cp.hourly_rate, cp.open_to_work, cp.updated_at,
+           ci.profession_id, ci.seniority, u.username
+    FROM candidate_profiles cp
+    LEFT JOIN check_ins ci ON ci.email = cp.email
+    LEFT JOIN users u ON u.email = cp.email
+    WHERE cp.searchable = 1
+  `).all();
+
+  if (professionId) rows = rows.filter(r => r.profession_id === professionId);
+  if (location) rows = rows.filter(r => (r.location || '').toLowerCase().includes(location));
+  if (remotePref) rows = rows.filter(r => r.remote_pref === remotePref || r.remote_pref === 'any');
+  if (gigOnly) rows = rows.filter(r => !!r.gig_available);
+
+  const candidates = rows.map(r => {
+    const best = _candidateBestBand(r.email);
+    const prof = r.profession_id ? CH.resolveProfession(r.profession_id, r.seniority) : null;
+    return {
+      email: r.email, username: r.username || 'ResumeTailored user',
+      professionLabel: prof ? prof.displayLabel : null,
+      bestBand: best.band || null, bestScore: best.score || 0,
+      location: r.location, remotePref: r.remote_pref, gigAvailable: !!r.gig_available, hourlyRate: r.hourly_rate,
+      openToWork: !!r.open_to_work, openToWorkPro: !!r.open_to_work && isSubscriber(r.email),
+      updatedAt: r.updated_at
+    };
+  });
+  const ranked = EH.rankCandidates(candidates, { employerIsPro: pro });
+  res.json({ candidates: ranked, total: candidates.length, pro });
+});
+
+app.get('/api/employer/candidates/:email/profile', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  if (!isEmployerSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Full candidate profiles are a Pro Employer feature.' });
+  const candEmail = String(req.params.email || '').toLowerCase();
+  const cp = db.prepare('SELECT * FROM candidate_profiles WHERE email = ? AND searchable = 1').get(candEmail);
+  if (!cp) return res.status(404).json({ error: 'not_found' });
+  const user = db.prepare('SELECT username FROM users WHERE email = ?').get(candEmail);
+  const ci = db.prepare('SELECT profession_id, seniority FROM check_ins WHERE email = ?').get(candEmail);
+  const prof = ci && ci.profession_id ? CH.resolveProfession(ci.profession_id, ci.seniority) : null;
+  const badges = db.prepare('SELECT topic, band, score, created_at FROM badges WHERE email = ? ORDER BY created_at DESC').all(candEmail);
+  const site = db.prepare("SELECT subdomain FROM personal_sites WHERE email = ? AND published = 1 LIMIT 1").get(candEmail);
+  const video = db.prepare("SELECT id FROM saved_videos WHERE email = ? ORDER BY created_at DESC LIMIT 1").get(candEmail);
+  res.json({
+    email: candEmail, username: user ? user.username : 'ResumeTailored user',
+    professionLabel: prof ? prof.displayLabel : null,
+    badges: badges.map(b => ({ topic: b.topic, band: b.band, score: b.score })),
+    location: cp.location, remotePref: cp.remote_pref, gigAvailable: !!cp.gig_available, hourlyRate: cp.hourly_rate, gigSchedule: cp.gig_schedule,
+    openToWork: !!cp.open_to_work,
+    siteUrl: site ? `/site/${site.subdomain}` : null,
+    hasVideoIntro: !!video
+  });
+});
+
+app.post('/api/employer/candidates/:email/contact', employerLimiter, (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const employerProfile = db.prepare('SELECT company_name FROM employer_profiles WHERE email = ?').get(e);
+  if (!employerProfile) return res.status(400).json({ error: 'no_employer_profile' });
+  const candEmail = String(req.params.email || '').toLowerCase();
+  const cp = db.prepare('SELECT email FROM candidate_profiles WHERE email = ? AND searchable = 1').get(candEmail);
+  if (!cp) return res.status(404).json({ error: 'not_found' });
+  const message = String((req.body && req.body.message) || '').trim().slice(0, 1000);
+  const now = Date.now();
+  db.prepare(`
+    INSERT INTO employer_contact_requests (employer_email, candidate_email, message, status, created_at, updated_at) VALUES (?,?,?,'pending',?,?)
+    ON CONFLICT(employer_email, candidate_email) DO UPDATE SET message = excluded.message, status = 'pending', updated_at = excluded.updated_at
+  `).run(e, candEmail, message, now, now);
+  sendEmail({
+    to: candEmail,
+    subject: `${employerProfile.company_name} wants to connect on ResumeTailored`,
+    html: `<p><strong>${employerProfile.company_name}</strong> would like to reach out to you.</p>${message ? `<p>"${message}"</p>` : ''}<p>Approve or decline from your Career Hub dashboard.</p>`
+  }).catch(err => console.error('[employer] contact-request email failed:', err.message));
+  res.json({ success: true });
+});
+
+function _applicationOut(r) {
+  return { id: r.id, jobId: r.job_id, candidateEmail: r.candidate_email, resumeId: r.resume_id, status: r.status, rating: r.rating, notes: r.notes, interviewNote: r.interview_note, createdAt: r.created_at, updatedAt: r.updated_at };
+}
+app.get('/api/employer/jobs/:id/applications', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const jobId = parseInt(req.params.id, 10);
+  const job = db.prepare('SELECT id FROM job_postings WHERE id = ? AND employer_email = ?').get(jobId, e);
+  if (!job) return res.status(404).json({ error: 'not_found' });
+  const rows = db.prepare('SELECT * FROM job_applications WHERE job_id = ? ORDER BY created_at DESC').all(jobId);
+  res.json({ applications: rows.map(_applicationOut), pro: isEmployerSubscriber(email) });
+});
+
+app.put('/api/employer/applications/:id', employerLimiter, (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const id = parseInt(req.params.id, 10);
+  // Ownership is checked before the Pro gate, so an employer who doesn't own
+  // this application gets a plain 404 — never a 402 that would leak "this
+  // application exists, you just need to upgrade" to someone with no claim to it.
+  const app_ = db.prepare(`
+    SELECT a.*, j.title AS job_title, j.employer_email FROM job_applications a
+    JOIN job_postings j ON j.id = a.job_id WHERE a.id = ? AND j.employer_email = ?
+  `).get(id, e);
+  if (!app_) return res.status(404).json({ error: 'not_found' });
+  if (!isEmployerSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'The ATS pipeline (status, rating, notes) is a Pro Employer feature.' });
+
+  const body = req.body || {};
+  const sets = []; const vals = [];
+  if (body.status !== undefined) {
+    if (!EH.validateApplicationStatus(body.status)) return res.status(400).json({ error: 'bad_request', message: 'Invalid application status.' });
+    sets.push('status = ?'); vals.push(String(body.status).toLowerCase());
+  }
+  if (body.rating !== undefined && body.rating !== null) {
+    if (!EH.validateRating(body.rating)) return res.status(400).json({ error: 'bad_request', message: 'Rating must be 1-5.' });
+    sets.push('rating = ?'); vals.push(Number(body.rating));
+  }
+  if (body.notes !== undefined) { sets.push('notes = ?'); vals.push(String(body.notes).slice(0, 4000)); }
+  if (body.interviewNote !== undefined) { sets.push('interview_note = ?'); vals.push(String(body.interviewNote).slice(0, 1000)); }
+  if (!sets.length) return res.status(400).json({ error: 'bad_request', message: 'Nothing to update.' });
+  sets.push('updated_at = ?'); vals.push(Date.now());
+  vals.push(id);
+  db.prepare(`UPDATE job_applications SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+
+  // One-click "Reject" sends a polite email — fire once, on the transition into rejected.
+  if (body.status && String(body.status).toLowerCase() === 'rejected' && app_.status !== 'rejected') {
+    const employerProfile = db.prepare('SELECT company_name FROM employer_profiles WHERE email = ?').get(e);
+    const candidate = db.prepare('SELECT username FROM users WHERE email = ?').get(app_.candidate_email);
+    const rej = EH.buildRejectionEmail({ candidateName: candidate ? candidate.username : '', jobTitle: app_.job_title, companyName: employerProfile ? employerProfile.company_name : '' });
+    sendEmail({ to: app_.candidate_email, subject: rej.subject, html: rej.html })
+      .catch(err => console.error('[employer] rejection email failed:', err.message));
+  }
+  res.json({ success: true });
 });
 
 // Branded 404 for anything that fell through every route above (replaces

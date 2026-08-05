@@ -65,6 +65,35 @@ function validateRating(rating) {
   return Number.isInteger(n) && n >= 1 && n <= 5;
 }
 
+const REMOTE_PREFS = ['remote', 'hybrid', 'onsite', 'any'];
+const CONTACT_REQUEST_STATUSES = ['pending', 'approved', 'declined'];
+
+// Candidate-side "let employers find me" profile. Everything optional except
+// the two booleans, which default off — visibility is opt-in, never implied.
+function validateCandidateProfile(body) {
+  const b = body || {};
+  const errors = [];
+  const searchable = !!b.searchable;
+  const openToWork = !!b.openToWork;
+  const remotePref = normStr(b.remotePref).toLowerCase() || 'any';
+  const location = normStr(b.location, 140);
+  const gigAvailable = !!b.gigAvailable;
+  const hourlyRate = b.hourlyRate === '' || b.hourlyRate == null ? null : Number(b.hourlyRate);
+  const gigSchedule = gigAvailable ? normStr(b.gigSchedule, 200) : '';
+  const maxTravelMi = b.maxTravelMi === '' || b.maxTravelMi == null ? null : Number(b.maxTravelMi);
+
+  if (!REMOTE_PREFS.includes(remotePref)) errors.push('Remote preference must be remote, hybrid, onsite, or any.');
+  if (hourlyRate != null && (!Number.isFinite(hourlyRate) || hourlyRate < 0)) errors.push('Hourly rate must be a positive number.');
+  if (maxTravelMi != null && (!Number.isFinite(maxTravelMi) || maxTravelMi < 0)) errors.push('Max travel distance must be a positive number.');
+
+  if (errors.length) return { valid: false, errors, clean: null };
+  return { valid: true, errors: [], clean: { searchable, openToWork, remotePref, location, gigAvailable, hourlyRate, gigSchedule, maxTravelMi } };
+}
+
+function validateContactRequestStatus(status) {
+  return CONTACT_REQUEST_STATUSES.includes(String(status || '').toLowerCase());
+}
+
 // Simple polite rejection email body — plain, brand-only, no external logos.
 function buildRejectionEmail({ candidateName, jobTitle, companyName }) {
   const name = normStr(candidateName) || 'there';
@@ -97,7 +126,8 @@ function rankCandidates(candidates, { employerIsPro }) {
 }
 
 module.exports = {
-  WORK_MODES, JOB_TYPES, APPLICATION_STATUSES, EMPLOYER_LIMITS,
+  WORK_MODES, JOB_TYPES, APPLICATION_STATUSES, EMPLOYER_LIMITS, REMOTE_PREFS, CONTACT_REQUEST_STATUSES,
   validateJobPosting, validateApplicationStatus, validateRating,
+  validateCandidateProfile, validateContactRequestStatus,
   buildRejectionEmail, rankCandidates
 };
