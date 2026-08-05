@@ -42,5 +42,16 @@ All of Part 2 (Phases A–E) and Part 4 landed in PR #324, on top of the already
 - **Phase E (AI job matching) is intentionally NOT a fresh LLM call per job per subscriber per day** — that's unbounded cost (every job × every Pro subscriber × every day, with no budget conversation). Instead, `CH.computeJobMatchScore` blends signal Claude already generated: the user's most recent Skills Gap Analyzer result (70%, when they've run one against a real job) and their best Skills Lab badge score (30%, fallback). It's a real, non-fabricated number — returns `null` (banner omitted) when there's no signal at all — but it's a **profile-strength indicator**, not a fresh "you're 87% qualified for this specific posting" computation per job. Gated Pro-only per Part 4. If you want true per-job AI scoring, that needs an explicit call on LLM budget (cost scales with subscriber count × jobs shown) — happy to scope it as a follow-up once you've seen real Pro-subscriber volume.
 - **"One-click Apply with ResumeTailored Profile"** (Phase E bullet) was already delivered in Phase B/C — `POST /api/employer/jobs/:id/apply`, surfaced as the "Apply" button on Featured (employer) listings in "Jobs for You."
 
+## Final status: rebased on the Job Finder hotfix, ready to merge (2026-08-05)
+
+PR #324 (this branch) has been merged with the latest `main`, which now includes the separate Job Finder zero-results fix (PR #325, merged earlier). One real conflict — both branches added exports to `career-hub.js` near the same line — resolved by keeping both additions (`isValidJsearchResponse` from the hotfix, `parseRssItems` from Phase C). No logic was dropped on either side; `jsearchFetch`, the `/api/jobs/search` route, and `public/career-hub.js`'s `searchJobs()` all merged cleanly with both the hotfix's response-validation/stale-fallback and this build's Job Feed Aggregator sitting side by side. Full suite (23 files) green after the merge; server boots clean; smoke-tested `/employer`, `/api/health`, and the auth gate locally.
+
+**Two things worth your attention before this earns its full value in production — neither blocks the merge, both are genuine open questions only you can answer:**
+
+1. **`STRIPE_EMPLOYER_PRICE_ID` is still unset.** Pro Employer checkout (`/api/employer/subscribe`) will 503 with a friendly "not yet available" message until you create that $29/mo subscription Price in the Stripe dashboard and set the env var in Railway. Everything else (free tier, job posting, candidate search, ATS view, Job Feed) works without it.
+2. **The Job Feed Aggregator's live sources are optional and currently unset**: `RAPIDAPI_KEY` (JSearch — you may already have this from the Job Finder fix, worth confirming it's the same key), `JOB_FEED_RSS_URLS` (company career-page feeds, if you have any partner companies to seed), `RESEND_API_KEY` (contact-request/rejection emails — falls back to console logging without it, per the existing pattern everywhere else in the app). None of these being unset breaks anything; the Job Feed just stays limited to Employer Portal postings until they're set.
+
+Merging now per your go-ahead.
+
 ---
 *Questions or course-corrections — reply here or just tell me and I'll adjust.*
