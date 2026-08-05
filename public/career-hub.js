@@ -136,9 +136,15 @@
   // ── one-time DOM injection ───────────────────────────────────────────────────
   function inject() {
     // Sidebar buttons — prepend into the existing "Career Hub" section.
-    var careerLabel = Array.prototype.find.call(
-      document.querySelectorAll('.sidebar-label'),
-      function (n) { return /career hub/i.test(n.textContent); });
+    // Anchored on the label's data-i18n key, NOT its text content: app.html's
+    // own language sweep can run before this does (a page loaded with a
+    // persisted rt_lang=zh already shows "职业中心" by the time inject() runs),
+    // and matching against the English word "career hub" silently failed to
+    // find the anchor in that case — not just leaving the buttons untranslated,
+    // but skipping their injection entirely, so the whole Career Hub sidebar
+    // section (and every tool behind it) was simply missing on a cold Chinese
+    // load. The data-i18n attribute value never changes when the text does.
+    var careerLabel = document.querySelector('.sidebar-label[data-i18n="sidebar_careerhub"]');
     if (careerLabel && !el('tab-career')) {
       var anchor = careerLabel.nextSibling;
       TOOLS.forEach(function (tool) {
@@ -208,6 +214,18 @@
         if (active) { var id = active.id.replace('panel-', ''); if (TOOL_IDS.indexOf(id) !== -1) renderTool(id); }
       };
       window._chLangWrapped = true;
+    }
+    // The sidebar buttons + picker overlay just built above carry data-i18n
+    // attributes, but they're created here — after app.html's own one-time
+    // "apply the persisted language" sweep already ran once at boot (that
+    // sweep can't see DOM this script hasn't injected yet). A user who loads
+    // any page already in Chinese (persisted rt_lang, or a /zh/ landing page)
+    // never gets a second sweep unless they manually hit the toggle, so these
+    // stayed literal English forever. Sweep them here too, right after they
+    // exist, using whatever language is currently active.
+    if (typeof window.applyLangApp === 'function') {
+      var curLang = lang();
+      if (curLang !== 'en') window.applyLangApp(curLang);
     }
   }
 

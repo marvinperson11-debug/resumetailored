@@ -2788,12 +2788,13 @@
       // 6. Auth placeholders
       var authPh = { authEmail: isZh ? '邮箱地址' : 'Email address', authUsername: isZh ? '选择用户名' : 'Choose a username', authPassword: isZh ? '密码（最少6个字符）' : 'Password (min. 6 characters)', authConfirmPw: isZh ? '确认密码' : 'Confirm password', loginEmail: isZh ? '邮箱地址' : 'Email address', loginPassword: isZh ? '密码' : 'Password', forgotEmail: isZh ? '邮箱地址' : 'Email address' };
       Object.keys(authPh).forEach(function(id) { var el = document.getElementById(id); if (el) el.placeholder = authPh[id]; });
-      // 7. Template picker label (has child span)
+      // 7. Template picker label (has child span) — the hint span's OWN text
+      // used to be carried over verbatim from whatever it currently said,
+      // never translated, which is exactly why "↔ scroll to see all" stayed
+      // English forever regardless of language.
       var tplPickLabel = document.querySelector('.tpl-pick-label');
       if (tplPickLabel) {
-        var tplHint = document.getElementById('tplCountHint');
-        var hintTxt = tplHint ? tplHint.textContent : '↔ scroll to see all';
-        tplPickLabel.innerHTML = (isZh ? '选择你的模板 ' : 'Choose Your Template ') + '<span id="tplCountHint">' + hintTxt + '</span>';
+        tplPickLabel.innerHTML = (isZh ? '选择你的模板 ' : 'Choose Your Template ') + '<span id="tplCountHint">' + (isZh ? '↔ 滑动查看全部' : '↔ scroll to see all') + '</span>';
       }
       // 8. Tailor button (respects current mode)
       var tailorBtnEl = document.getElementById('tailorBtn');
@@ -3102,6 +3103,14 @@
       });
 
       localStorage.setItem('rt_lang', lang);
+
+      // The template cards themselves (badge/button text) are built fresh by
+      // renderTplPicker() reading rt_lang directly from localStorage — it must
+      // run AFTER the setItem above (not where this used to sit, up near the
+      // top of this function) or it reads the language being switched FROM,
+      // one step behind every toggle. Re-run it so a picker already on screen
+      // updates immediately, not just on the next mode switch or page load.
+      if (document.getElementById('tplPickRow') && typeof renderTplPicker === 'function') renderTplPicker();
     }
 
     function toggleLang() {
@@ -4645,25 +4654,32 @@
       const list = _freeFirst(OUT_TPLS[cat]);
       const activeTplId = selectedOutputTpl[cat];
       const row = document.getElementById('tplPickRow');
+      // Unlike _tplAtsBadge/_tplAtsNote below (already language-aware), this
+      // card's own badge/button text was hardcoded English with no zh branch
+      // at all — the template NAME translates (OUT_TPLS carries its own zh
+      // name) which made it look like the card was translated, but nothing
+      // else on it ever was.
+      const zh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
       row.innerHTML = list.map(tpl => {
         const locked = !tpl.free && !isSubscriberFlag;
         const selected = tpl.id === activeTplId;
         const previewHtml = makeStaticPreview(tpl);
         const btnClass = selected ? 'tpl-pick-btn-selected' : locked ? 'tpl-pick-btn-locked' : 'tpl-pick-btn-select';
-        const btnText = selected ? '✓ Selected' : locked ? '🔒 Pro Only' : 'Use Template →';
+        const btnText = selected ? (zh ? '✓ 已选择' : '✓ Selected') : locked ? (zh ? '🔒 仅限专业版' : '🔒 Pro Only') : (zh ? '使用此模板 →' : 'Use Template →');
+        const upgradeToast = zh ? '升级到专业版以解锁所有模板！' : 'Upgrade to Pro to unlock all templates!';
         const btnClick = locked
-          ? `event.stopPropagation();showToast('Upgrade to Pro to unlock all templates!')`
+          ? `event.stopPropagation();showToast('${upgradeToast}')`
           : selected ? `event.stopPropagation()`
           : `event.stopPropagation();chooseTpl('${tpl.id}','${cat}')`;
         return `<div class="tpl-pick-item${selected?' selected':''}${locked?' locked':''}"
-          onclick="${locked ? `showToast('Upgrade to Pro to unlock all templates!')` : `chooseTpl('${tpl.id}','${cat}')`}">
+          onclick="${locked ? `showToast('${upgradeToast}')` : `chooseTpl('${tpl.id}','${cat}')`}">
           <div class="tpl-pick-thumb">
             ${previewHtml}
             ${locked ? '<div class="tpl-pick-lock">🔒</div>' : ''}
           </div>
           <div class="tpl-pick-body">
             <div class="tpl-pick-name">${tpl.name}</div>
-            <div class="tpl-pick-badge ${tpl.free ? 'tpl-pick-badge-free' : 'tpl-pick-badge-pro'}">${tpl.free ? 'FREE' : 'PRO'}</div>${_tplAtsBadge(tpl)}
+            <div class="tpl-pick-badge ${tpl.free ? 'tpl-pick-badge-free' : 'tpl-pick-badge-pro'}">${tpl.free ? (zh ? '免费' : 'FREE') : (zh ? '专业版' : 'PRO')}</div>${_tplAtsBadge(tpl)}
             ${_tplAtsNote(tpl)}<button class="tpl-pick-btn ${btnClass}" onclick="${btnClick}">${btnText}</button>
           </div>
         </div>`;
