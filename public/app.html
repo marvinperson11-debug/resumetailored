@@ -240,30 +240,6 @@
       background: rgba(255,255,255,0.3) !important;
     }
 
-    /* ── LinkedIn Optimizer shortcut banner ── */
-    .linkedin-shortcut-banner {
-      background: rgba(0,119,181,0.08);
-      border: 1.5px solid rgba(0,119,181,0.25);
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      cursor: pointer;
-      transition: all .15s;
-    }
-    .linkedin-shortcut-banner:hover {
-      border-color: rgba(0,119,181,0.55);
-      box-shadow: 0 4px 16px rgba(0,119,181,0.15);
-      transform: translateY(-1px);
-    }
-    .linkedin-shortcut-banner .li-icon {
-      width: 40px; height: 40px; background: #0077b5; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
-    }
-
     /* ── A4 size toggle ── */
     .page-size-toggle { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
     .page-size-btn { padding: 5px 12px; font-size: 11px; font-weight: 700; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(255,255,255,0.05); color: #94a3b8; cursor: pointer; font-family: inherit; transition: all .15s; text-transform: uppercase; letter-spacing: .5px; }
@@ -851,7 +827,7 @@
             <span style="flex:1;height:1px;background:rgba(255,255,255,0.12);"></span>OR<span style="flex:1;height:1px;background:rgba(255,255,255,0.12);"></span>
           </div>
           <button class="btn btn-full" id="linkedinLoginBtn" onclick="startLinkedInLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#0a66c2;color:#fff;border:none;font-weight:700;">
-            <span style="font-weight:900;font-size:15px;">in</span> <span data-i18n="li_login_btn">Continue with LinkedIn</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="display:block;flex-shrink:0;"><path fill="#fff" d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.76-2.05 4.02 0 4.76 2.65 4.76 6.1V21h-4v-5.5c0-1.31-.02-3-1.83-3-1.83 0-2.11 1.43-2.11 2.9V21H9z"/></svg> <span data-i18n="li_login_btn">Continue with LinkedIn</span>
           </button>
           <p style="font-size:11px;color:#9ca3af;text-align:center;margin-top:8px;line-height:1.5;">New here? LinkedIn creates your free account automatically.</p>
         </div>
@@ -994,16 +970,6 @@
         <div class="panel-header">
           <h1 data-i18n="tailor_title">Tailor Your Resume</h1>
           <p data-i18n="tailor_sub">Paste your resume and the job posting. We'll match your experience to what they're looking for.</p>
-        </div>
-
-        <!-- LinkedIn Optimizer Shortcut Banner -->
-        <div class="linkedin-shortcut-banner" onclick="showTab('linkedin')" id="linkedinShortcutBanner" title="Open LinkedIn Optimizer">
-          <div class="li-icon">🔗</div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:800;color:#0077b5;margin-bottom:2px;" data-i18n="li_banner_title">LinkedIn Profile Optimizer <span style="background:#16a34a;color:#fff;font-size:9px;padding:2px 6px;border-radius:10px;margin-left:4px;font-weight:800;">FREE</span></div>
-            <div style="font-size:12px;color:#4b5563;" data-i18n="li_banner_desc">Get an AI-optimized headline, About section &amp; experience bullets. Click here to open →</div>
-          </div>
-          <svg width="18" height="18" fill="none" stroke="#0077b5" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0;opacity:.7;"><path d="M9 18l6-6-6-6"/></svg>
         </div>
 
         <div class="mobile-upgrade-banner" id="mobileUpgradeBanner" style="display:none;">
@@ -1196,7 +1162,7 @@
 
 
         <button class="btn btn-primary btn-full btn-lg" id="tailorBtn" onclick="tailor()" data-i18n="tailor_btn">
-          Tailor My Resume →
+          Get Tailored →
         </button>
 
         <div class="output-wrap" id="outputWrap" style="display:none;">
@@ -1239,7 +1205,7 @@
       <div class="tab-content" id="panel-linkedin">
         <div class="panel-header" style="border-bottom:3px solid #0077b5;">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-            <div style="width:44px;height:44px;background:#0077b5;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🔗</div>
+            <div style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="44" height="44" aria-label="LinkedIn" role="img"><rect width="24" height="24" rx="5" fill="#0A66C2"/><path fill="#fff" d="M6.94 8.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM5.2 9.75h3.48V20H5.2zM10.4 9.75h3.34v1.4h.05c.47-.85 1.6-1.75 3.3-1.75 3.53 0 4.18 2.24 4.18 5.15V20h-3.48v-4.7c0-1.12-.02-2.56-1.56-2.56-1.56 0-1.8 1.22-1.8 2.48V20H10.4z"/></svg></div>
             <div>
               <h1 style="color:#0077b5;" data-i18n="li_title">LinkedIn Profile Optimizer</h1>
               <span style="background:#16a34a;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;" data-i18n="li_free_badge">✓ FREE &amp; UNLIMITED</span>
@@ -2508,7 +2474,7 @@
         output_title: 'Tailored Result',
         pagesize_label: 'Page:',
         btn_edit: 'Edit', btn_copy: 'Copy',
-        tailor_btn: 'Tailor My Resume →', tailor_btn_cover: 'Tailor My Cover Letter →',
+        tailor_btn: 'Get Tailored →', tailor_btn_cover: 'Get Tailored →',
         li_optimize_btn: 'Optimize My LinkedIn Profile →',
         li_import_btn: 'Import from LinkedIn',
         li_upload_btn: 'Import PDF from LinkedIn',
@@ -2800,7 +2766,7 @@
       var tailorBtnEl = document.getElementById('tailorBtn');
       if (tailorBtnEl) {
         var isCoverMode = document.querySelector('.mode-btn.active[data-mode="cover_letter"]') !== null;
-        tailorBtnEl.textContent = isCoverMode ? (APP_I18N[lang].tailor_btn_cover || 'Tailor My Cover Letter →') : (APP_I18N[lang].tailor_btn || 'Tailor My Resume →');
+        tailorBtnEl.textContent = isCoverMode ? (APP_I18N[lang].tailor_btn_cover || 'Get Tailored →') : (APP_I18N[lang].tailor_btn || 'Get Tailored →');
       }
       // 9. Edit bar
       var editBarEl = document.getElementById('editBar');
@@ -3471,7 +3437,7 @@
           ? 'Paste your cover letter draft here (optional), OR click Upload File to import a file. Leave blank to generate from scratch.'
           : 'Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file.';
         var _li = APP_I18N[localStorage.getItem('rt_lang') || 'en'] || APP_I18N.en;
-        document.getElementById('tailorBtn').textContent = isCover ? (_li.tailor_btn_cover || 'Tailor My Cover Letter →') : (_li.tailor_btn || 'Tailor My Resume →');
+        document.getElementById('tailorBtn').textContent = isCover ? (_li.tailor_btn_cover || 'Get Tailored →') : (_li.tailor_btn || 'Get Tailored →');
         document.getElementById('rmodeBuild').textContent = isCover ? '✏️ Input Info' : '✏️ Fill Out Form';
         // Cover letter always shows the input form; resume restores whatever mode was active
         setResumeMode(isCover ? 'build' : resumeInputMode);
@@ -3804,7 +3770,7 @@
       } catch (err) {
         showToast(err.message);
       } finally {
-        btn.innerHTML = 'Tailor My Resume →';
+        btn.innerHTML = 'Get Tailored →';
         btn.disabled = false;
       }
     }
@@ -6737,7 +6703,7 @@ Aaliyah Washington`
   <div id="linkedinHowToModal" style="display:none;position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)closeLinkedInHowTo()">
     <div style="background:#fff;border-radius:20px;padding:26px 24px;max-width:480px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.35);max-height:88vh;overflow-y:auto;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <div style="display:flex;align-items:center;gap:10px;"><span style="background:#0a66c2;color:#fff;font-weight:900;border-radius:5px;padding:2px 7px;font-size:15px;">in</span><h2 style="font-size:18px;font-weight:800;color:#111827;" data-i18n="li_howto_title">Save your LinkedIn profile as a PDF</h2></div>
+        <div style="display:flex;align-items:center;gap:10px;"><svg viewBox="0 0 24 24" width="26" height="26" aria-label="LinkedIn" role="img" style="flex-shrink:0;"><rect width="24" height="24" rx="5" fill="#0A66C2"/><path fill="#fff" d="M6.94 8.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM5.2 9.75h3.48V20H5.2zM10.4 9.75h3.34v1.4h.05c.47-.85 1.6-1.75 3.3-1.75 3.53 0 4.18 2.24 4.18 5.15V20h-3.48v-4.7c0-1.12-.02-2.56-1.56-2.56-1.56 0-1.8 1.22-1.8 2.48V20H10.4z"/></svg><h2 style="font-size:18px;font-weight:800;color:#111827;" data-i18n="li_howto_title">Save your LinkedIn profile as a PDF</h2></div>
         <button onclick="closeLinkedInHowTo()" style="background:none;border:none;font-size:22px;line-height:1;color:#9ca3af;cursor:pointer;">×</button>
       </div>
       <p style="font-size:13px;color:#6b7280;margin-bottom:16px;" data-i18n="li_howto_intro">LinkedIn doesn't offer a direct link to it, so here's exactly where the button is hiding:</p>
