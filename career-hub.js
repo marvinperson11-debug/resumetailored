@@ -460,6 +460,20 @@ function buildJobQuery(explicitQuery, prof) {
   if (q) return q;
   return prof ? prof.label : 'jobs';
 }
+// RapidAPI-hosted APIs (JSearch included) don't always signal a quota-
+// exceeded or provider-side error with a non-2xx status — many return HTTP
+// 200 with an error-shaped body (no `data` array, or `status: "error"`).
+// Without this check, jsearchFetch's `!r.ok` guard never fires, normalizeJobs
+// silently reads a missing `data` as `[]`, and that fake "zero jobs" result
+// gets cached for 6h and served to every user searching anything — which is
+// exactly what "Job Finder returns nothing for any search" looks like from
+// the outside. A genuinely successful call with zero real matches also has
+// `data: []`, so this only rejects responses that AREN'T a real success.
+function isValidJsearchResponse(apiResponse) {
+  if (!apiResponse || typeof apiResponse !== 'object') return false;
+  if (apiResponse.status && String(apiResponse.status).toLowerCase() === 'error') return false;
+  return Array.isArray(apiResponse.data);
+}
 function normalizeJobs(apiResponse) {
   const data = (apiResponse && apiResponse.data) || [];
   return data.map(j => ({
@@ -573,5 +587,5 @@ module.exports = {
   buildQuizPrompt, buildInterviewPrompt, buildGapPrompt, buildScenarioPrompt,
   validateQuiz, validateInterview, validateGap, validateScenario, extractJson,
   seededPermutation, quizForDelivery, scoreQuiz, band, cappedBand,
-  buildJobQuery, normalizeJobs, computeNextSteps
+  buildJobQuery, normalizeJobs, isValidJsearchResponse, computeNextSteps
 };

@@ -5051,7 +5051,8 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     anthropic: !!process.env.ANTHROPIC_API_KEY,
     stripe: !!process.env.STRIPE_SECRET_KEY,
-    stripePrice: !!process.env.STRIPE_PRICE_ID
+    stripePrice: !!process.env.STRIPE_PRICE_ID,
+    rapidapi: !!process.env.RAPIDAPI_KEY
   });
 });
 
@@ -6460,8 +6461,20 @@ async function jsearchFetch(params) {
   const r = await fetch(`https://jsearch.p.rapidapi.com/search?${qs.toString()}`, {
     headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' }
   });
-  if (!r.ok) { const e = new Error('jsearch_' + r.status); e.code = 'jsearch_error'; throw e; }
-  return r.json();
+  // RapidAPI-hosted APIs don't always signal quota-exceeded / provider errors
+  // with a non-2xx status — many (JSearch included) return HTTP 200 with an
+  // error-shaped body. If we trusted r.ok alone, a quota-exceeded response
+  // reads as a legitimate "zero jobs" result, which then gets cached for 6h
+  // and silently served to every user searching anything — see
+  // isValidJsearchResponse's comment for the full story.
+  if (!r.ok) { const e = new Error('jsearch_http_' + r.status); e.code = 'jsearch_error'; throw e; }
+  const json = await r.json();
+  if (!CH.isValidJsearchResponse(json)) {
+    const e = new Error('jsearch_bad_response: ' + JSON.stringify(json).slice(0, 300));
+    e.code = 'jsearch_error';
+    throw e;
+  }
+  return json;
 }
 const JOB_CACHE_TTL = 6 * 60 * 60 * 1000; // 6h
 app.get('/api/jobs/search', jobSearchLimiter, async (req, res) => {
@@ -6476,8 +6489,8 @@ app.get('/api/jobs/search', jobSearchLimiter, async (req, res) => {
   const location = (req.query.location || '').toString().slice(0, 80);
   if (location) query = `${query} in ${location}`;
   const params = { query, location, page: parseInt(req.query.page, 10) || 1, remote: req.query.remote || '', datePosted: req.query.datePosted || '', jobType: req.query.jobType || '' };
+  const key = CH.jobCacheKey(params);
   try {
-    const key = CH.jobCacheKey(params);
     let jobs;
     const cached = db.prepare('SELECT payload, fetched_at FROM job_cache WHERE cache_key = ?').get(key);
     if (cached && (Date.now() - cached.fetched_at) < JOB_CACHE_TTL) {
@@ -6492,7 +6505,17 @@ app.get('/api/jobs/search', jobSearchLimiter, async (req, res) => {
   } catch (err) {
     if (err.code === 'jobs_unconfigured') return res.status(503).json({ error: 'jobs_unconfigured', message: 'Job search is not configured on this server.' });
     console.error('jobs/search error:', err.message);
-    res.status(502).json({ error: 'jobs_error', message: 'Job search is temporarily unavailable — please try again.' });
+    // Fallback: JSearch failing (rate-limited, quota exceeded, or a bad
+    // response) shouldn't mean the page looks broken. If ANY previous result
+    // exists for this exact query — even past the normal 6h TTL — serve it
+    // stale rather than an empty page; it's better than nothing and doesn't
+    // cost another API call.
+    const stale = db.prepare('SELECT payload, fetched_at FROM job_cache WHERE cache_key = ?').get(key);
+    if (stale) {
+      if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
+      return res.json({ jobs: JSON.parse(stale.payload), query, profession: prof ? prof.label : null, stale: true, staleAt: stale.fetched_at });
+    }
+    res.status(502).json({ error: 'jobs_error', message: 'No jobs found. Try a broader search or check back later.' });
   }
 });
 app.post('/api/jobs/save', (req, res) => {
