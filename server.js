@@ -1182,6 +1182,95 @@ app.get('/api/auth/linkedin/session', (req, res) => {
   res.json(entry.session); // { token, email, username }
 });
 
+// ── Google Sign-In (OpenID Connect) ─────────────────────────────────────────
+// Same shape as the LinkedIn login flow above: optional (gated by
+// GOOGLE_CLIENT_ID/SECRET), CSRF-guarded round-trip, one-time session handoff.
+// New Google emails get a free password-less account (set a password later via
+// "forgot password"); an existing email is simply signed in. Reuses
+// _linkedInUpsertSession (provider-agnostic account+session upsert).
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const googleConfigured = () => !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+function googleRedirectUri(req) {
+  return process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+}
+const _googleStates = new Map(); // state -> { exp }
+function _googleSweep() { const now = Date.now(); for (const [k, v] of _googleStates) if (v.exp < now) _googleStates.delete(k); }
+
+app.get('/api/auth/google/status', (req, res) => res.json({ enabled: googleConfigured() }));
+
+app.get('/api/auth/google', (req, res) => {
+  if (!googleConfigured()) return res.redirect('/dashboard?google_error=not_configured');
+  _googleSweep();
+  const state = crypto.randomBytes(16).toString('hex');
+  _googleStates.set(state, { exp: Date.now() + 10 * 60 * 1000 });
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: googleRedirectUri(req),
+    scope: 'openid email profile',
+    state,
+    access_type: 'online',
+    prompt: 'select_account'
+  });
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+});
+
+app.get('/api/auth/google/callback', async (req, res) => {
+  const backTo = (msg) => res.redirect(`/dashboard?google_error=${encodeURIComponent(msg)}`);
+  try {
+    if (!googleConfigured()) return backTo('not_configured');
+    const { code, state, error } = req.query;
+    if (error) return backTo(String(error).slice(0, 120));
+    _googleSweep();
+    const stateEntry = state && _googleStates.get(String(state));
+    if (!code || !stateEntry) return backTo('invalid_state');
+    _googleStates.delete(String(state));
+
+    const tokRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: String(code),
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: googleRedirectUri(req)
+      })
+    });
+    if (!tokRes.ok) return backTo('token_exchange_failed');
+    const tok = await tokRes.json();
+    if (!tok.access_token) return backTo('no_token');
+
+    const uiRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${tok.access_token}` }
+    });
+    if (!uiRes.ok) return backTo('profile_fetch_failed');
+    const ui = await uiRes.json();
+    if (!ui.email) return backTo('no_email');
+    if (ui.email_verified === false) return backTo('email_unverified');
+
+    const fullName = ui.name || [ui.given_name, ui.family_name].filter(Boolean).join(' ') || '';
+    const sess = _linkedInUpsertSession(ui.email, fullName);
+    const handoff = crypto.randomBytes(16).toString('hex');
+    _liDrafts.set(handoff, { session: sess, exp: Date.now() + 5 * 60 * 1000 });
+    res.redirect(`/dashboard?google_login=${handoff}`);
+  } catch (err) {
+    console.error('[google] callback failed:', err && err.message ? err.message : err);
+    backTo('unexpected_error');
+  }
+});
+
+// The SPA exchanges the handoff token for a session, once. (Shares _liDrafts.)
+app.get('/api/auth/google/session', (req, res) => {
+  _liSweep();
+  const t = String(req.query.token || '');
+  const entry = t && _liDrafts.get(t);
+  if (!entry || !entry.session) return res.status(404).json({ error: 'expired' });
+  _liDrafts.delete(t);
+  res.json(entry.session); // { token, email, username }
+});
+
 // ── Saved resumes (per signed-in user, so they're available on every device) ──
 function emailFromToken(req) {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
