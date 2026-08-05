@@ -18,6 +18,7 @@ const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 const CH = require('./career-hub.js');           // Career Hub pure core (taxonomy, prompts, validators, scoring)
 const EH = require('./employer-hub.js');         // Employer Portal pure core (validation, limits, ranking)
+const JP = require('./job-providers.js');        // Multi-source live job search (Adzuna, JSearch, free fallbacks)
 const { renderBadgePage } = require('./badge-page.js');
 /* Video duration probing for site-media uploads. This is `@remotion/media-parser`
    — a pure container-format parser (reads MP4/WebM/MOV box headers for their
@@ -6680,7 +6681,7 @@ async function jsearchFetch(params) {
   }
   return json;
 }
-const JOB_CACHE_TTL = 6 * 60 * 60 * 1000; // 6h
+const JOB_CACHE_TTL = 60 * 60 * 1000; // 1h — shorter than before so a search reflects fresh listings sooner
 app.get('/api/jobs/search', jobSearchLimiter, async (req, res) => {
   const email = careerEmail(req, res); if (!email) return;
   const pro = isSubscriber(email);
@@ -6689,37 +6690,68 @@ app.get('/api/jobs/search', jobSearchLimiter, async (req, res) => {
     return res.status(402).json({ error: 'quota', message: `Free plan is ${CH.LIMITS.jobsearch.free} job searches per day. Upgrade to Pro for unlimited.` });
   }
   const prof = getUserProfession(email);
-  let query = CH.buildJobQuery(req.query.query, prof);
+  // Keyword-only search is fully supported: buildJobQuery falls back to the
+  // saved profession label (or "jobs"), and an EMPTY location deliberately
+  // means NATIONWIDE — no location is ever forced into the query.
+  const query = CH.buildJobQuery(req.query.query, prof);
   const location = (req.query.location || '').toString().slice(0, 80);
-  if (location) query = `${query} in ${location}`;
-  const params = { query, location, page: parseInt(req.query.page, 10) || 1, remote: req.query.remote || '', datePosted: req.query.datePosted || '', jobType: req.query.jobType || '' };
+  const params = {
+    query, location,
+    page: parseInt(req.query.page, 10) || 1,
+    remote: req.query.remote || '', datePosted: req.query.datePosted || '', jobType: req.query.jobType || ''
+  };
   const key = CH.jobCacheKey(params);
   try {
-    let jobs;
     const cached = db.prepare('SELECT payload, fetched_at FROM job_cache WHERE cache_key = ?').get(key);
     if (cached && (Date.now() - cached.fetched_at) < JOB_CACHE_TTL) {
-      jobs = JSON.parse(cached.payload);
-    } else {
-      const raw = await jsearchFetch(params);
-      jobs = CH.normalizeJobs(raw);
-      db.prepare('INSERT OR REPLACE INTO job_cache (cache_key, payload, fetched_at) VALUES (?,?,?)').run(key, JSON.stringify(jobs), Date.now());
+      if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
+      const c = JSON.parse(cached.payload);
+      return res.json({ jobs: c.jobs || c, query, profession: prof ? prof.label : null, sources: c.sources, cached: true });
+    }
+    // Fan out across every configured provider. A single provider failing
+    // (e.g. JSearch 403) no longer empties the whole result.
+    const { jobs, sources, anyKeyedConfigured } = await JP.searchJobs(params);
+    if (jobs.length) {
+      db.prepare('INSERT OR REPLACE INTO job_cache (cache_key, payload, fetched_at) VALUES (?,?,?)')
+        .run(key, JSON.stringify({ jobs, sources }), Date.now());
+      if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
+      // Surface a note when only the zero-key remote fallbacks answered, so
+      // the result set isn't silently missing on-site/US listings.
+      const onlyFallbacks = !sources.some(s => s.ok && s.keyed && s.count > 0);
+      return res.json({ jobs, query, profession: prof ? prof.label : null, sources, onlyFallbacks });
+    }
+    // Zero jobs. Distinguish "providers errored" from "genuinely no matches"
+    // so we never fail silently.
+    const keyedFailed = sources.filter(s => s.keyed && !s.ok);
+    if (keyedFailed.length) {
+      console.error('jobs/search: keyed provider(s) failed:', keyedFailed.map(s => `${s.name}:${s.error}`).join(', '));
+      // Serve any stale cache for this exact query rather than a dead page.
+      const stale = db.prepare('SELECT payload, fetched_at FROM job_cache WHERE cache_key = ?').get(key);
+      if (stale) {
+        if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
+        const c = JSON.parse(stale.payload);
+        return res.json({ jobs: c.jobs || c, query, profession: prof ? prof.label : null, stale: true, staleAt: stale.fetched_at });
+      }
+      return res.status(502).json({
+        error: 'jobs_error',
+        message: 'The job data source is temporarily unavailable. Please try again shortly.',
+        sources: keyedFailed.map(s => ({ name: s.name, error: s.error }))
+      });
+    }
+    if (!anyKeyedConfigured && !sources.some(s => s.ok && s.count > 0)) {
+      return res.status(503).json({ error: 'jobs_unconfigured', message: 'Live job search is not fully configured yet. Add an Adzuna API key for nationwide US results.' });
     }
     if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
-    res.json({ jobs, query, profession: prof ? prof.label : null });
+    return res.json({ jobs: [], query, profession: prof ? prof.label : null, sources });
   } catch (err) {
-    if (err.code === 'jobs_unconfigured') return res.status(503).json({ error: 'jobs_unconfigured', message: 'Job search is not configured on this server.' });
     console.error('jobs/search error:', err.message);
-    // Fallback: JSearch failing (rate-limited, quota exceeded, or a bad
-    // response) shouldn't mean the page looks broken. If ANY previous result
-    // exists for this exact query — even past the normal 6h TTL — serve it
-    // stale rather than an empty page; it's better than nothing and doesn't
-    // cost another API call.
     const stale = db.prepare('SELECT payload, fetched_at FROM job_cache WHERE cache_key = ?').get(key);
     if (stale) {
       if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
-      return res.json({ jobs: JSON.parse(stale.payload), query, profession: prof ? prof.label : null, stale: true, staleAt: stale.fetched_at });
+      const c = JSON.parse(stale.payload);
+      return res.json({ jobs: c.jobs || c, query, profession: prof ? prof.label : null, stale: true, staleAt: stale.fetched_at });
     }
-    res.status(502).json({ error: 'jobs_error', message: 'No jobs found. Try a broader search or check back later.' });
+    res.status(502).json({ error: 'jobs_error', message: 'Search is temporarily unavailable — please try again shortly.' });
   }
 });
 app.post('/api/jobs/save', (req, res) => {
