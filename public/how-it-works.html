@@ -137,6 +137,16 @@
     @media (max-width: 768px) {
       .step-big { flex-direction: column; gap: 16px; }
       .testimonials { grid-template-columns: 1fr; }
+      /* Nav CTA overlap: .nav-inner was a fixed-height (64px), no-wrap flex
+         row. The logo plus the full "Tailor My Resume Free →" button don't
+         fit narrow phones, so the button text wrapped to two lines, grew
+         taller than the fixed row, and spilled out of the sticky nav on
+         top of the hero heading beneath it. Letting the row grow to fit
+         its content (instead of clipping at 64px) removes the overlap;
+         shrinking the button a bit keeps it on one line on most phones. */
+      .nav-inner { height: auto; min-height: 64px; flex-wrap: wrap; row-gap: 8px; padding: 10px 0; }
+      .nav .btn-primary { font-size: 13px; padding: 9px 16px; }
+      .nav .logo { font-size: 16px; }
     }
 
     /* Fixed circuit grid background */
