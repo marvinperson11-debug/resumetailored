@@ -691,12 +691,83 @@ for (const [flat, slug] of Object.entries(ALTERNATIVE_REDIRECTS)) {
   app.get(`/${flat}-alternative`, (req, res) => res.redirect(301, `/alternatives/${slug}`));
 }
 
+// ── Cache-busting for CSS/JS referenced by HTML pages ────────────────────────
+// The no-cache headers above are necessary but NOT sufficient: Cloudflare
+// (the CDN in front of Railway) silently overrides Cache-Control for
+// recognized static extensions (.css/.js) with its own fixed Browser Cache
+// TTL, REGARDLESS of what origin sends — confirmed live: origin sends
+// `no-cache`, the response a browser actually receives says
+// `max-age=14400` (4h). That's the real reason three rounds of CSS/JS
+// fixes shipped correctly and still didn't reach real browsers for hours —
+// no origin header can fix that, because the intermediary is proven to
+// ignore it. HTML itself is unaffected (Cloudflare passes `no-cache`
+// through for text/html, confirmed live too), so the fix is to version the
+// asset REFERENCES inside the HTML: a content change becomes a brand-new
+// URL, which is a guaranteed cache miss everywhere (browser, Cloudflare,
+// any future CDN) — no intermediary's cache-control handling has to be
+// trusted at all.
+const ASSET_VERSION = (process.env.RAILWAY_GIT_COMMIT_SHA || String(Date.now())).slice(0, 10);
+const ASSET_REWRITES = [
+  ['href="/theme.css"', `href="/theme.css?v=${ASSET_VERSION}"`],
+  ['href="/career-hub.css"', `href="/career-hub.css?v=${ASSET_VERSION}"`],
+  ['href="/app-theme.css"', `href="/app-theme.css?v=${ASSET_VERSION}"`],
+  ['href="style.css"', `href="style.css?v=${ASSET_VERSION}"`],
+  ['src="/career-hub.js"', `src="/career-hub.js?v=${ASSET_VERSION}"`],
+];
+function _versionAssetRefs(html) {
+  for (const [from, to] of ASSET_REWRITES) html = html.split(from).join(to);
+  return html;
+}
+// Reads an HTML file, versions its asset references, and sends it — the one
+// path every HTML response (explicit routes below AND the static fallback)
+// goes through, so nothing can serve app.html/score.html/etc. un-versioned.
+function _sendVersionedHtml(res, filePath) {
+  fs.readFile(filePath, 'utf8', (err, html) => {
+    if (err) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.send(_versionAssetRefs(html));
+  });
+}
+// Mirrors express.static's own `extensions:['html']` + `index.html`
+// resolution just enough to find which on-disk file a clean URL maps to,
+// without ever matching a non-.html file (a bare `/theme.css` must stay a
+// CSS response, not fall through to here).
+function _resolveHtmlFile(reqPath) {
+  const clean = reqPath.split('?')[0];
+  if (clean.includes('..')) return null;
+  const publicDir = path.join(__dirname, 'public');
+  if (clean.endsWith('.html')) {
+    const p = path.join(publicDir, clean);
+    try { if (fs.statSync(p).isFile()) return p; } catch (e) {}
+    return null;
+  }
+  const base = path.join(publicDir, clean);
+  const withExt = base + '.html';
+  try { if (fs.statSync(withExt).isFile()) return withExt; } catch (e) {}
+  const indexFile = path.join(base, 'index.html');
+  try { if (fs.statSync(indexFile).isFile()) return indexFile; } catch (e) {}
+  return null;
+}
+// Placed exactly where express.static's own HTML serving used to sit — every
+// route above still wins (registration order), everything that resolves to
+// an .html file is versioned and sent from here, and express.static below
+// goes back to serving only non-HTML static files (it no longer tries the
+// `.html` extension fallback itself, so it can never race this handler).
+app.get(/.*/, (req, res, next) => {
+  if (req.method !== 'GET') return next();
+  const file = _resolveHtmlFile(req.path);
+  if (!file) return next();
+  _sendVersionedHtml(res, file);
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
-  extensions: ['html'],
   setHeaders: (res, filePath) => {
     if (filePath.endsWith('.html')) {
+      // Dead branch in practice — every .html resolution is now handled by
+      // _resolveHtmlFile above before express.static ever sees the request.
+      // Left as a safety net, not the primary path.
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      // HTML must stay fresh so content/SEO fixes ship instantly.
       res.setHeader('Cache-Control', 'no-cache');
     } else if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css; charset=utf-8');
@@ -728,17 +799,21 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
-// Clean URL aliases — /dashboard, /login, /signup all serve app.html
+// Clean URL aliases — /dashboard, /login, /signup all serve app.html. These
+// are VIRTUAL routes (no same-named file on disk), so the _resolveHtmlFile
+// catch-all above never matches them — they need _sendVersionedHtml called
+// explicitly, same as it is everywhere else, or app.html (and the
+// career-hub.js/style.css it references) would go right back to being
+// unversioned on exactly the pages this bug was reported on.
 const appHtml = path.join(__dirname, 'public', 'app.html');
-const _htmlUtf8 = { headers: { 'Content-Type': 'text/html; charset=utf-8' } };
-app.get('/dashboard',    (req, res) => res.sendFile(appHtml, _htmlUtf8));
-app.get('/login',        (req, res) => res.sendFile(appHtml, _htmlUtf8));
-app.get('/signup',       (req, res) => res.sendFile(appHtml, _htmlUtf8));
+app.get('/dashboard',    (req, res) => _sendVersionedHtml(res, appHtml));
+app.get('/login',        (req, res) => _sendVersionedHtml(res, appHtml));
+app.get('/signup',       (req, res) => _sendVersionedHtml(res, appHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 // Live in-browser video preview (Remotion Player — plays client-side, no render)
-app.get('/preview',      (req, res) => res.sendFile(path.join(__dirname, 'public', 'preview.html'), _htmlUtf8));
+app.get('/preview',      (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'preview.html')));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
-app.get('/blog',         (req, res) => res.sendFile(blogIndexHtml, _htmlUtf8));
+app.get('/blog',         (req, res) => _sendVersionedHtml(res, blogIndexHtml));
 
 // Raw body needed for Stripe webhook verification
 app.use('/webhook', express.raw({ type: 'application/json' }));
