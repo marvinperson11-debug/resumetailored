@@ -113,6 +113,17 @@ check('normalizeJobs truncates the description snippet', norm[0].descriptionSnip
 check('buildJobQuery falls back to the profession label', CH.buildJobQuery('', rn) === 'Registered Nurse');
 check('buildJobQuery honours an explicit query', CH.buildJobQuery('nurse manager', rn) === 'nurse manager');
 
+// ── isValidJsearchResponse: distinguishes a real empty result from an
+//    error-shaped 200 (quota exceeded, bad key, etc. — see the comment on
+//    jsearchFetch in server.js for why this matters: without it, an error
+//    silently caches as "zero jobs" and every search looks broken) ─────────
+check('a real success with results is valid', CH.isValidJsearchResponse({ status: 'OK', data: [{ job_title: 'RN' }] }));
+check('a real success with zero results is still valid — that is a genuine empty result', CH.isValidJsearchResponse({ status: 'OK', data: [] }));
+check('a RapidAPI error-shaped 200 (status: error) is invalid', !CH.isValidJsearchResponse({ status: 'error', message: 'quota exceeded' }));
+check('a response with no data array at all is invalid', !CH.isValidJsearchResponse({ status: 'OK' }));
+check('a response where data is not an array is invalid', !CH.isValidJsearchResponse({ status: 'OK', data: 'nope' }));
+check('null/undefined/non-object input is invalid, never throws', !CH.isValidJsearchResponse(null) && !CH.isValidJsearchResponse(undefined) && !CH.isValidJsearchResponse('x'));
+
 // ── dashboard next steps ─────────────────────────────────────────────────────
 check('no profession → prompt to set one', CH.computeNextSteps({ hasProfession: false })[0].id === 'set-profession');
 const partial = CH.computeNextSteps({ hasProfession: true, professionLabel: 'RN', resumeCount: 0, tookQuiz: false, interviewPracticed: 0, interviewTotal: 8, savedJobs: 0, scenariosDone: 0, latestGap: null });
