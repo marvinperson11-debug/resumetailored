@@ -308,6 +308,11 @@
       .criteria-grid { grid-template-columns: 1fr; }
       .stats-2col { grid-template-columns: 1fr; }
       .pricing-row { grid-template-columns: 1fr; max-width: 380px; }
+      /* Class-based leftover + gradient-clipped stat number: near-invisible
+         on the cream mobile background. Desktop is untouched — scoped to
+         this mobile-only query. */
+      .stat-callout .big-num { background: none; -webkit-text-fill-color: #1a1a1a; color: #1a1a1a; }
+      .stat-callout .big-label { color: #2d2d2d; }
     }
     @media (max-width: 480px) {
       .hero { padding: 64px 0 48px; }

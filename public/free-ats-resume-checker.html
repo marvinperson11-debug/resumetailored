@@ -263,6 +263,9 @@
       .steps-row { grid-template-columns: 1fr; }
       .score-guide { grid-template-columns: 1fr; }
       .ats-stat-row { flex-direction: column; }
+      /* Class-based leftovers: near-white on the cream mobile background.
+         Desktop is untouched — scoped to this mobile-only query. */
+      .ats-big-label, .score-label { color: #2d2d2d; }
     }
     @media (max-width: 480px) {
       .hero { padding: 64px 0 48px; }

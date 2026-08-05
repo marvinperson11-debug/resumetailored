@@ -264,12 +264,20 @@
       .ats-results-grid{grid-template-columns:1fr;}
       .score-card{display:flex;align-items:center;gap:20px;text-align:left;}
       .score-circle-wrap{flex-shrink:0;width:100px;height:100px;}
-      .score-pct{font-size:26px;}
+      .score-pct{font-size:26px;color:#1a1a1a;}
       .readability-grid{grid-template-columns:1fr;}
       .nav-links{display:none;}
       .nav-hamburger{display:flex;}
       .cta-strip{flex-direction:column;}
       .upgrade-wall{padding:32px 20px;}
+      /* Class-based dark-theme leftovers: these read near-white on the cream
+         mobile background (theme.css can only catch inline styles, not
+         classes defined in this page's own <style> block). Desktop is
+         untouched — these live inside this same mobile-only query. */
+      .input-label{color:#2d2d2d;}
+      .tab-btn{color:#57534e;}
+      .tab-btn.active{color:#1F5C3D;}
+      .metric-value{color:#1a1a1a;}
     }
     .nav-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;background:none;border:none;cursor:pointer;padding:6px;border-radius:7px;}
     .nav-hamburger span{display:block;width:22px;height:2px;background:#94a3b8;border-radius:2px;transition:all .25s;}

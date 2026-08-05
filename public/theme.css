@@ -143,4 +143,32 @@ hr, section { border-color: var(--line) !important; }
   .feat-card, .card, .cards .card, .feature-row, .feature-body, .container { overflow-wrap: anywhere; word-break: break-word; }
   /* Give white cards a light edge so they don't float on the cream. */
   .card, .cards .card { border: 1px solid rgba(0,0,0,0.08) !important; }
+
+  /* ── Headings must never be faint on mobile ──────────────────────────────
+     The biggest offender: headings drawn as GRADIENT-CLIPPED text
+     (-webkit-text-fill-color: transparent over a light gradient) render
+     near-white on cream. Blog titles, step headings, the Optimization Hub
+     title, FAQ questions and card headings were all nearly invisible. On
+     mobile, force every heading (and its coloured word-spans) to a solid dark
+     ink and kill the gradient fill, so readability always wins. app.html does
+     not load this file, so its dark editor/auth surfaces are unaffected. */
+  h1, h2, h3, h4,
+  h1 span, h2 span, h3 span, h4 span,
+  .faq-q, .feature-body h3, .feat-card h2, .feat-card h3,
+  [class*="title"], [class*="heading"], [class*="headline"] {
+    -webkit-text-fill-color: #1a1a1a !important;
+    color: #1a1a1a !important;
+    background: none !important;
+    background-image: none !important;
+    -webkit-background-clip: border-box !important;
+    background-clip: border-box !important;
+    opacity: 1 !important;
+  }
+  /* Light-tint chips/cards (e.g. the lavender "ATS Match Rate" pill) had light
+     text on a light fill — make their text dark too. */
+  [style*="#818CF8"], [style*="#a5b4fc"], [style*="#c4b5fd"], [style*="#c7d2fe"] { color: #2d2d2d !important; }
+  /* Legacy dark-theme slate/near-white text colors left inline on some tool
+     pages (labels like "YOUR RESUME", "JOB DESCRIPTION") — invisible on cream. */
+  [style*="#e2e8f0"], [style*="#f1f5f9"], [style*="#cbd5e1"], [style*="#e5e7eb"],
+  [style*="#d1d5db"], [style*="#f8fafc"], [style*="#94a3b8"] { color: #2d2d2d !important; }
 }
