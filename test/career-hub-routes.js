@@ -164,9 +164,15 @@ const server = app.listen(0, async () => {
     check('free gap analysis is 1/week', gap2.status === 402, gap2.body);
     check('missing inputs → 400', (await req('POST', '/api/skills-gap', 'tokPro', { resume: 'x' })).status === 400);
 
-    // ── Phase 4: Job Finder (save/list/delete + quota; search needs RAPIDAPI) ──
+    // ── Phase 4: Job Finder (save/list/delete + quota) ──
+    // Search now fans out across multiple providers (see job-providers.js). With
+    // NO keyed provider AND the zero-key fallbacks disabled, it reports
+    // unconfigured. We disable fallbacks here so the test stays hermetic (no
+    // live network call) and still exercises the unconfigured path.
+    process.env.JOB_FALLBACKS_OFF = '1';
     const searchNoKey = await req('GET', '/api/jobs/search', 'tokPro');
-    check('search reports unconfigured without RAPIDAPI_KEY', searchNoKey.status === 503 && searchNoKey.json.error === 'jobs_unconfigured', searchNoKey.body);
+    delete process.env.JOB_FALLBACKS_OFF;
+    check('search reports unconfigured without any provider configured', searchNoKey.status === 503 && searchNoKey.json.error === 'jobs_unconfigured', searchNoKey.body);
     for (let i = 1; i <= 5; i++) await req('POST', '/api/jobs/save', 'tokFree', { job: { id: 'j' + i, title: 'RN ' + i, company: 'Co' } });
     const save6 = await req('POST', '/api/jobs/save', 'tokFree', { job: { id: 'j6', title: 'RN 6', company: 'Co' } });
     check('free save cap is 5 jobs', save6.status === 402, save6.body);
