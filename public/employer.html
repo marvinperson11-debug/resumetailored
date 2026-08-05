@@ -3,643 +3,696 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Employer Portal — Post Jobs &amp; Find Candidates | ResumeTailored</title>
-<meta name="description" content="Post jobs and reach candidates on ResumeTailored — free to start, 3 active posts included. Upgrade to Pro Employer for unlimited posts, full candidate search and a built-in ATS."/>
+<title>Employer Portal — Post Jobs, Track Candidates &amp; Hire | ResumeTailored</title>
+<meta name="description" content="A recruiter dashboard to post jobs, manage applicants through a hiring pipeline, schedule interviews, message candidates and see analytics — free to start on ResumeTailored."/>
 <meta name="robots" content="noindex"/>
 <link rel="canonical" href="https://resumetailored.com/employer"/>
 <link rel="icon" href="/favicon.png" type="image/png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/career-hub.css"/>
 <style>
+  /* Deliberately a DIFFERENT world from the job-seeker dashboard: dark navy/
+     slate chrome, sky-blue accent, recruiter language. No job-seeker tabs. */
+  :root{
+    --nv-bg:#0b1220; --nv-panel:#141d2e; --nv-panel2:#1b2740; --nv-line:#2b3a54;
+    --nv-ink:#e8eef7; --nv-muted:#93a4be; --nv-accent:#38bdf8; --nv-accent2:#6366f1;
+    --nv-green:#22c55e; --nv-amber:#f59e0b; --nv-red:#f87171;
+  }
   *{box-sizing:border-box;}
-  body{margin:0;font-family:'Inter',sans-serif;background:var(--ch-cream);color:var(--ch-ink);line-height:1.5;min-height:100vh;}
-  a{color:inherit;}
-  .ep-nav{display:flex;align-items:center;gap:16px;padding:16px 24px;background:#fff;border-bottom:1px solid var(--ch-line);}
-  .ep-nav .ep-logo{font-weight:900;font-size:18px;color:var(--ch-forest);text-decoration:none;}
-  .ep-nav .ep-tag{font-size:12px;font-weight:800;color:#fff;background:var(--ch-forest);border-radius:999px;padding:3px 10px;}
-  .ep-nav .ep-spacer{flex:1;}
-  .ep-nav a.ep-link{font-size:13px;font-weight:700;color:var(--ch-muted);text-decoration:none;}
-  .ep-wrap{max-width:920px;margin:0 auto;padding:28px 20px 80px;}
-  .ep-h1{font-size:26px;font-weight:900;margin:0 0 6px;}
-  .ep-sub{color:var(--ch-muted);font-size:14px;margin:0 0 22px;}
-  .ep-authcard{max-width:380px;margin:60px auto;background:#fff;border:1px solid var(--ch-line);border-radius:16px;padding:28px;}
-  .ep-tabs{display:flex;gap:6px;margin-bottom:16px;}
-  .ep-tab{flex:1;text-align:center;padding:9px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;color:var(--ch-muted);}
-  .ep-tab.on{background:var(--ch-forest);color:#fff;}
-  .ep-err{color:#dc2626;font-size:13px;margin-top:8px;display:none;}
-  .ep-dash-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(135deg,var(--ch-forest-dk),var(--ch-forest));color:#fff;border-radius:16px;padding:20px 22px;margin-bottom:22px;}
-  .ep-dash-head .co{font-size:19px;font-weight:800;}
-  .ep-dash-head .meta{font-size:13px;opacity:.85;}
-  .ep-dash-head .spacer{flex:1;}
-  .ep-jobcard{background:#fff;border:1px solid var(--ch-line);border-radius:14px;padding:18px;margin-bottom:12px;}
-  .ep-jobcard .jt{font-weight:800;font-size:16px;}
-  .ep-jobcard .jm{font-size:13px;color:var(--ch-muted);margin:4px 0 10px;}
-  .ep-jobcard .jbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
-  .ep-status{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;border-radius:999px;padding:3px 9px;}
-  .ep-status.active{background:rgba(22,163,74,.12);color:#16a34a;}
-  .ep-status.closed{background:rgba(0,0,0,.06);color:var(--ch-muted);}
-  .ep-modal-overlay{position:fixed;inset:0;background:rgba(25,21,18,.45);z-index:2000;display:none;align-items:center;justify-content:center;padding:16px;}
-  .ep-modal-overlay.open{display:flex;}
-  .ep-modal{background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:24px;}
-  .ep-modal h2{margin:0 0 16px;font-size:19px;}
-  .ep-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  @media(max-width:520px){.ep-2col{grid-template-columns:1fr;}}
-  .ep-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;z-index:3000;display:none;}
-  .ep-quota{font-size:13px;color:var(--ch-muted);margin-bottom:14px;}
-  .ep-app-row{border:1px solid var(--ch-line);border-radius:12px;padding:14px;margin-bottom:10px;}
-  .ep-app-row .hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
-  .ep-app-row .who{font-weight:800;}
-  .ep-stars{display:flex;gap:3px;}
-  .ep-stars span{cursor:pointer;font-size:16px;color:var(--ch-line);}
-  .ep-stars span.on{color:var(--ch-gold);}
-  .ep-candcard{background:#fff;border:1px solid var(--ch-line);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
-  .ep-otw{display:inline-block;background:rgba(22,163,74,.12);color:#16a34a;font-size:11px;font-weight:800;border-radius:999px;padding:2px 8px;margin-left:6px;}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--nv-bg);color:var(--nv-ink);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;}
+  a{color:inherit;text-decoration:none;}
+  input,select,textarea{font-family:inherit;}
+  .nv-input,.nv-select,.nv-textarea{width:100%;background:#0e1728;border:1px solid var(--nv-line);border-radius:9px;padding:10px 12px;color:var(--nv-ink);font-size:14px;outline:none;transition:border-color .15s;}
+  .nv-input:focus,.nv-select:focus,.nv-textarea:focus{border-color:var(--nv-accent);}
+  .nv-textarea{min-height:96px;resize:vertical;}
+  label.nv-label{display:block;font-size:12px;font-weight:700;color:var(--nv-muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+  .nv-field{margin-bottom:14px;}
+  .nv-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;background:linear-gradient(135deg,var(--nv-accent),var(--nv-accent2));color:#04121f;border:none;border-radius:9px;padding:10px 16px;font-weight:800;font-size:14px;cursor:pointer;transition:transform .12s,box-shadow .12s;}
+  .nv-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(56,189,248,.25);}
+  .nv-btn-ghost{background:transparent;color:var(--nv-ink);border:1px solid var(--nv-line);}
+  .nv-btn-ghost:hover{border-color:var(--nv-accent);box-shadow:none;}
+  .nv-btn-sm{padding:6px 11px;font-size:12px;border-radius:7px;}
+  .nv-btn-danger{background:transparent;border:1px solid rgba(248,113,113,.4);color:var(--nv-red);}
+  .nv-card{background:var(--nv-panel);border:1px solid var(--nv-line);border-radius:14px;padding:18px;}
+  .nv-pill{display:inline-block;font-size:11px;font-weight:800;border-radius:999px;padding:3px 10px;text-transform:uppercase;letter-spacing:.4px;}
+  .nv-pill-pro{background:linear-gradient(135deg,#f59e0b,#f97316);color:#1a1206;}
+  .nv-pill-active{background:rgba(34,197,94,.15);color:#4ade80;}
+  .nv-pill-closed{background:rgba(148,163,184,.15);color:var(--nv-muted);}
+  .nv-status{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;border-radius:999px;padding:3px 8px;}
+  .nv-status.new{background:rgba(56,189,248,.15);color:var(--nv-accent);}
+  .nv-status.reviewed{background:rgba(99,102,241,.18);color:#a5b4fc;}
+  .nv-status.interview{background:rgba(245,158,11,.16);color:#fbbf24;}
+  .nv-status.hired{background:rgba(34,197,94,.16);color:#4ade80;}
+  .nv-status.rejected{background:rgba(248,113,113,.14);color:var(--nv-red);}
+  .nv-status.scheduled,.nv-status.confirmed{background:rgba(56,189,248,.15);color:var(--nv-accent);}
+  .nv-status.completed{background:rgba(34,197,94,.16);color:#4ade80;}
+  .nv-status.cancelled{background:rgba(148,163,184,.15);color:var(--nv-muted);}
+
+  /* ── Shell ── */
+  .nv-shell{display:none;min-height:100vh;}
+  .nv-sidebar{position:fixed;top:0;left:0;bottom:0;width:238px;background:#0a101c;border-right:1px solid var(--nv-line);display:flex;flex-direction:column;padding:18px 14px;z-index:40;}
+  .nv-brand{display:flex;align-items:center;gap:9px;padding:4px 8px 16px;}
+  .nv-brand .logo{font-weight:900;font-size:16px;color:#fff;}
+  .nv-brand .tag{font-size:9px;font-weight:900;background:linear-gradient(135deg,var(--nv-accent),var(--nv-accent2));color:#04121f;border-radius:5px;padding:2px 6px;letter-spacing:.5px;}
+  .nv-nav{display:flex;flex-direction:column;gap:3px;flex:1;overflow-y:auto;}
+  .nv-navbtn{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;color:var(--nv-muted);font-weight:700;font-size:14px;cursor:pointer;border:none;background:none;text-align:left;width:100%;transition:background .12s,color .12s;}
+  .nv-navbtn .ic{width:18px;text-align:center;font-size:15px;flex-shrink:0;}
+  .nv-navbtn:hover{background:var(--nv-panel);color:var(--nv-ink);}
+  .nv-navbtn.on{background:linear-gradient(135deg,rgba(56,189,248,.16),rgba(99,102,241,.16));color:#fff;box-shadow:inset 0 0 0 1px var(--nv-line);}
+  .nv-navbtn .badge{margin-left:auto;font-size:9px;font-weight:900;background:var(--nv-red);color:#fff;border-radius:999px;padding:1px 6px;}
+  .nv-seeker-link{margin-top:8px;padding-top:12px;border-top:1px solid var(--nv-line);}
+  .nv-main{margin-left:238px;padding:0;min-height:100vh;}
+  .nv-topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;background:linear-gradient(90deg,#0e1728,#141d2e);border-bottom:1px solid var(--nv-line);padding:14px 26px;}
+  .nv-topbar .co{font-size:16px;font-weight:800;}
+  .nv-topbar .sp{flex:1;}
+  .nv-content{padding:24px 26px 80px;max-width:1180px;}
+  .nv-h{font-size:22px;font-weight:900;margin:0 0 4px;}
+  .nv-sub{color:var(--nv-muted);font-size:13px;margin:0 0 20px;}
+
+  /* ── Dashboard stat cards ── */
+  .nv-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+  .nv-stat{background:var(--nv-panel);border:1px solid var(--nv-line);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden;}
+  .nv-stat .n{font-size:30px;font-weight:900;line-height:1;}
+  .nv-stat .l{font-size:12px;color:var(--nv-muted);margin-top:6px;font-weight:600;}
+  .nv-stat .ic{position:absolute;top:14px;right:16px;font-size:20px;opacity:.6;}
+  .nv-two{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;}
+  .nv-activity{list-style:none;margin:0;padding:0;}
+  .nv-activity li{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--nv-line);font-size:13px;}
+  .nv-activity li:last-child{border-bottom:none;}
+  .nv-activity .dot{width:8px;height:8px;border-radius:50%;background:var(--nv-accent);margin-top:6px;flex-shrink:0;}
+  .nv-activity .t{color:var(--nv-muted);font-size:11px;white-space:nowrap;}
+  .nv-quick{display:flex;flex-direction:column;gap:10px;}
+  .nv-quick button{justify-content:flex-start;}
+
+  /* ── Tables ── */
+  .nv-tablewrap{overflow-x:auto;border:1px solid var(--nv-line);border-radius:14px;}
+  table.nv-table{width:100%;border-collapse:collapse;min-width:640px;}
+  .nv-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--nv-muted);font-weight:800;padding:12px 16px;background:#0e1728;border-bottom:1px solid var(--nv-line);}
+  .nv-table td{padding:14px 16px;border-bottom:1px solid var(--nv-line);font-size:13px;vertical-align:middle;}
+  .nv-table tr:last-child td{border-bottom:none;}
+  .nv-table tr:hover td{background:rgba(56,189,248,.04);}
+  .nv-linkbtn{color:var(--nv-accent);cursor:pointer;font-weight:700;}
+
+  /* ── Funnel / analytics ── */
+  .nv-funnel{display:flex;flex-direction:column;gap:10px;}
+  .nv-funnel .row{display:flex;align-items:center;gap:12px;}
+  .nv-funnel .lab{width:96px;font-size:13px;color:var(--nv-muted);font-weight:700;}
+  .nv-funnel .bar{flex:1;height:26px;background:#0e1728;border-radius:7px;overflow:hidden;position:relative;border:1px solid var(--nv-line);}
+  .nv-funnel .fill{height:100%;background:linear-gradient(90deg,var(--nv-accent),var(--nv-accent2));display:flex;align-items:center;padding-left:10px;font-size:12px;font-weight:800;color:#04121f;min-width:28px;}
+
+  /* ── Messages ── */
+  .nv-msg-layout{display:grid;grid-template-columns:260px 1fr;gap:0;border:1px solid var(--nv-line);border-radius:14px;overflow:hidden;min-height:440px;}
+  .nv-threads{border-right:1px solid var(--nv-line);background:#0e1728;overflow-y:auto;max-height:560px;}
+  .nv-thread{padding:13px 15px;border-bottom:1px solid var(--nv-line);cursor:pointer;}
+  .nv-thread:hover,.nv-thread.on{background:var(--nv-panel2);}
+  .nv-thread .who{font-weight:800;font-size:13px;}
+  .nv-thread .pre{font-size:12px;color:var(--nv-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .nv-convo{display:flex;flex-direction:column;max-height:560px;}
+  .nv-convo-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:9px;}
+  .nv-bubble{max-width:74%;padding:9px 13px;border-radius:13px;font-size:13px;line-height:1.45;}
+  .nv-bubble.me{align-self:flex-end;background:linear-gradient(135deg,var(--nv-accent),var(--nv-accent2));color:#04121f;font-weight:600;}
+  .nv-bubble.them{align-self:flex-start;background:var(--nv-panel2);border:1px solid var(--nv-line);}
+  .nv-composer{display:flex;gap:8px;padding:12px;border-top:1px solid var(--nv-line);}
+
+  /* ── Modals ── */
+  .nv-overlay{position:fixed;inset:0;background:rgba(3,7,18,.7);z-index:2000;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px);}
+  .nv-overlay.open{display:flex;}
+  .nv-modal{background:var(--nv-panel);border:1px solid var(--nv-line);border-radius:16px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:24px;}
+  .nv-modal h2{margin:0 0 16px;font-size:19px;}
+  .nv-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .nv-err{color:var(--nv-red);font-size:13px;margin-top:8px;display:none;}
+  .nv-empty{text-align:center;color:var(--nv-muted);padding:36px 16px;font-size:14px;}
+  .nv-toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#04121f;border:1px solid var(--nv-accent);color:#fff;padding:11px 20px;border-radius:11px;font-size:13px;font-weight:700;z-index:3000;display:none;}
+  .nv-stars span{cursor:pointer;font-size:16px;color:var(--nv-line);}
+  .nv-stars span.on{color:var(--nv-amber);}
+
+  /* ── Auth / setup (pre-portal) ── */
+  .nv-authwrap{max-width:400px;margin:8vh auto;padding:0 16px;}
+  .nv-authcard{background:var(--nv-panel);border:1px solid var(--nv-line);border-radius:18px;padding:30px;}
+  .nv-authhead{text-align:center;margin-bottom:20px;}
+  .nv-authhead .logo{font-weight:900;font-size:20px;}
+  .nv-authhead .tag{display:inline-block;margin-top:8px;font-size:10px;font-weight:900;background:linear-gradient(135deg,var(--nv-accent),var(--nv-accent2));color:#04121f;border-radius:6px;padding:3px 9px;letter-spacing:.6px;}
+  .nv-authhead h1{font-size:20px;margin:14px 0 4px;}
+  .nv-authhead p{color:var(--nv-muted);font-size:13px;margin:0;}
+  .nv-tabs{display:flex;gap:6px;margin-bottom:16px;background:#0e1728;padding:4px;border-radius:10px;}
+  .nv-tab{flex:1;text-align:center;padding:9px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;color:var(--nv-muted);}
+  .nv-tab.on{background:var(--nv-panel2);color:#fff;box-shadow:inset 0 0 0 1px var(--nv-line);}
+
+  @media(max-width:900px){
+    .nv-sidebar{transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 0 100vmax rgba(0,0,0,.5);}
+    .nv-sidebar.open{transform:translateX(0);}
+    .nv-main{margin-left:0;}
+    .nv-hamburger{display:inline-flex!important;}
+    .nv-stats{grid-template-columns:repeat(2,1fr);}
+    .nv-two{grid-template-columns:1fr;}
+    .nv-msg-layout{grid-template-columns:1fr;}
+    .nv-threads{max-height:200px;border-right:none;border-bottom:1px solid var(--nv-line);}
+  }
+  .nv-hamburger{display:none;background:none;border:1px solid var(--nv-line);color:var(--nv-ink);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;}
+  @media(max-width:520px){.nv-stats{grid-template-columns:1fr;}.nv-2col{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
 
-<nav class="ep-nav">
-  <a class="ep-logo" href="/">ResumeTailored</a>
-  <span class="ep-tag">Employer Portal</span>
-  <div class="ep-spacer"></div>
-  <a class="ep-link" href="/dashboard">Job Seeker Dashboard</a>
-  <a class="ep-link" href="#" id="epLogout" style="display:none;">Log out</a>
-</nav>
-
-<div class="ep-wrap">
-
-  <div id="epAuthGate" class="ep-authcard" style="display:none;">
-    <div class="ep-tabs">
-      <div class="ep-tab on" id="epTabLogin" onclick="epSetAuthTab('login')">Log In</div>
-      <div class="ep-tab" id="epTabSignup" onclick="epSetAuthTab('signup')">Sign Up</div>
+<!-- ══ AUTH GATE ══ -->
+<div id="nvAuth" class="nv-authwrap" style="display:none;">
+  <div class="nv-authcard">
+    <div class="nv-authhead">
+      <div class="logo">ResumeTailored</div>
+      <span class="tag">EMPLOYER PORTAL</span>
+      <h1 id="nvAuthTitle">Recruiter sign in</h1>
+      <p id="nvAuthSub">Post jobs, track candidates and hire — one login.</p>
     </div>
-    <div id="epAuthLogin">
-      <div class="ch-field"><label class="ch-label">Email</label><input class="ch-input" id="epLoginEmail" type="email" autocomplete="email"/></div>
-      <div class="ch-field"><label class="ch-label">Password</label><input class="ch-input" id="epLoginPw" type="password" autocomplete="current-password"/></div>
-      <button class="ch-btn" style="width:100%;" onclick="epDoLogin()">Log In</button>
+    <div class="nv-tabs">
+      <div class="nv-tab on" id="nvTabLogin" onclick="nvSetAuthTab('login')">Sign In</div>
+      <div class="nv-tab" id="nvTabSignup" onclick="nvSetAuthTab('signup')">Create Account</div>
     </div>
-    <div id="epAuthSignup" style="display:none;">
-      <div class="ch-field"><label class="ch-label">Username</label><input class="ch-input" id="epSignupUser" type="text"/></div>
-      <div class="ch-field"><label class="ch-label">Email</label><input class="ch-input" id="epSignupEmail" type="email" autocomplete="email"/></div>
-      <div class="ch-field"><label class="ch-label">Password</label><input class="ch-input" id="epSignupPw" type="password" autocomplete="new-password"/></div>
-      <button class="ch-btn" style="width:100%;" onclick="epDoSignup()">Create Account</button>
+    <div id="nvLoginForm">
+      <div class="nv-field"><label class="nv-label">Email</label><input class="nv-input" id="nvLoginEmail" type="email" autocomplete="email"/></div>
+      <div class="nv-field"><label class="nv-label">Password</label><input class="nv-input" id="nvLoginPw" type="password" autocomplete="current-password"/></div>
+      <button class="nv-btn" style="width:100%;" onclick="nvLogin()">Sign In →</button>
     </div>
-    <p class="ep-err" id="epAuthErr"></p>
-  </div>
-
-  <div id="epSetup" style="display:none;">
-    <h1 class="ep-h1">Set up your company</h1>
-    <p class="ep-sub">This turns on Hire Mode for your account — same login, no separate employer signup.</p>
-    <div class="ch-card">
-      <div class="ch-field"><label class="ch-label">Company name</label><input class="ch-input" id="epCoName" placeholder="Acme Inc."/></div>
-      <div class="ch-field"><label class="ch-label">Website (optional)</label><input class="ch-input" id="epCoSite" placeholder="https://acme.com"/></div>
-      <button class="ch-btn" onclick="epSaveProfile()">Start Hiring</button>
-      <p class="ep-err" id="epSetupErr"></p>
+    <div id="nvSignupForm" style="display:none;">
+      <div class="nv-field"><label class="nv-label">Your name</label><input class="nv-input" id="nvSuUser" type="text" autocomplete="name"/></div>
+      <div class="nv-field"><label class="nv-label">Work email</label><input class="nv-input" id="nvSuEmail" type="email" autocomplete="email"/></div>
+      <div class="nv-field"><label class="nv-label">Password</label><input class="nv-input" id="nvSuPw" type="password" autocomplete="new-password"/></div>
+      <button class="nv-btn" style="width:100%;" onclick="nvSignup()">Create Account →</button>
     </div>
-  </div>
-
-  <div id="epDash" style="display:none;">
-    <div class="ep-dash-head">
-      <div>
-        <div class="co" id="epCoNameOut"></div>
-        <div class="meta" id="epCoMetaOut"></div>
-      </div>
-      <div class="spacer"></div>
-      <span class="ch-pill ch-pill-pro" id="epProPill" style="display:none;">PRO EMPLOYER</span>
-      <button class="ch-btn ch-btn-sm" id="epUpgradeBtn" onclick="epUpgrade()" style="display:none;">Upgrade — $29/mo</button>
-      <button class="ch-btn" onclick="epOpenPostModal()">+ Post a Job</button>
-    </div>
-
-    <p class="ep-quota" id="epQuota"></p>
-
-    <div class="ep-tabs" style="max-width:280px;margin-bottom:16px;">
-      <div class="ep-tab on" id="epTabJobs" onclick="epSetMainTab('jobs')">Jobs</div>
-      <div class="ep-tab" id="epTabCandidates" onclick="epSetMainTab('candidates')">Candidates</div>
-    </div>
-
-    <div id="epJobsPanel">
-      <div id="epJobsList"></div>
-      <div class="ch-empty" id="epJobsEmpty" style="display:none;">No jobs posted yet — click "+ Post a Job" to get started.</div>
-    </div>
-
-    <div id="epCandidatesPanel" style="display:none;">
-      <div class="ch-card" style="margin-bottom:16px;">
-        <div class="ep-2col">
-          <div class="ch-field"><label class="ch-label">Profession</label><select class="ch-select" id="epcProf"><option value="">Any profession</option></select></div>
-          <div class="ch-field"><label class="ch-label">Location contains</label><input class="ch-input" id="epcLoc" placeholder="e.g. Chicago"/></div>
-        </div>
-        <div class="ep-2col">
-          <div class="ch-field"><label class="ch-label">Remote preference</label><select class="ch-select" id="epcRemote"><option value="">Any</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">Onsite</option></select></div>
-          <div class="ch-field" style="display:flex;align-items:flex-end;"><label style="font-size:14px;"><input type="checkbox" id="epcGigOnly"/> Available for temp/gig only</label></div>
-        </div>
-        <button class="ch-btn ch-btn-sm" onclick="epSearchCandidates()">Search</button>
-      </div>
-      <p class="ep-quota" id="epcResultNote"></p>
-      <div id="epCandidatesList"></div>
-      <div class="ch-empty" id="epCandidatesEmpty" style="display:none;">No candidates match yet — opted-in candidates will show up here as they join.</div>
-    </div>
-  </div>
-
-</div>
-
-<div class="ep-modal-overlay" id="epAppsOverlay">
-  <div class="ep-modal">
-    <h2>Applicants — <span id="epAppsJobTitle"></span></h2>
-    <p class="ep-quota" id="epAppsUpsell" style="display:none;">Free plan shows who applied. Upgrade to Pro Employer to move applicants through New → Reviewed → Interview → Hired, rate them, leave notes, and one-click reject.</p>
-    <div id="epAppsList"></div>
-    <div class="ch-empty" id="epAppsEmpty" style="display:none;">No applicants yet.</div>
-    <div class="ch-row" style="margin-top:14px;"><button class="ch-btn ch-btn-ghost" onclick="epCloseAppsModal()">Close</button></div>
+    <p class="nv-err" id="nvAuthErr"></p>
+    <p style="text-align:center;margin-top:18px;font-size:12px;color:var(--nv-muted);">Looking for work instead? <a href="/dashboard" style="color:var(--nv-accent);font-weight:700;">Job Seeker Dashboard →</a></p>
   </div>
 </div>
 
-<div class="ep-modal-overlay" id="epCandProfileOverlay">
-  <div class="ep-modal" style="max-width:460px;">
-    <h2 id="epCandProfileName"></h2>
-    <div id="epCandProfileBody"></div>
-    <div class="ch-field" style="margin-top:14px;"><label class="ch-label">Message (optional)</label><textarea class="ch-textarea" id="epContactMsg" style="min-height:70px;" placeholder="Say hello and mention the role..."></textarea></div>
-    <div class="ch-row">
-      <button class="ch-btn" id="epContactBtn" onclick="epSendContact()">Request Contact</button>
-      <button class="ch-btn ch-btn-ghost" onclick="epCloseCandProfile()">Close</button>
+<!-- ══ COMPANY SETUP ══ -->
+<div id="nvSetup" class="nv-authwrap" style="display:none;">
+  <div class="nv-authcard">
+    <div class="nv-authhead">
+      <span class="tag">EMPLOYER PORTAL</span>
+      <h1>Set up your company</h1>
+      <p>This turns on your recruiter dashboard — same login, no separate signup.</p>
     </div>
+    <div class="nv-field"><label class="nv-label">Company name</label><input class="nv-input" id="nvCoName" placeholder="Acme Inc."/></div>
+    <div class="nv-field"><label class="nv-label">Website (optional)</label><input class="nv-input" id="nvCoSite" placeholder="https://acme.com"/></div>
+    <button class="nv-btn" style="width:100%;" onclick="nvSaveProfile()">Start Hiring →</button>
+    <p class="nv-err" id="nvSetupErr"></p>
   </div>
 </div>
 
-<div class="ep-modal-overlay" id="epMatchesOverlay">
-  <div class="ep-modal">
-    <h2>⚡ Matches for this gig</h2>
-    <p class="ep-quota">Ranked by profession, location and rate fit — only shows workers who opted into temp/gig work.</p>
-    <div id="epMatchesList"></div>
-    <div class="ch-empty" id="epMatchesEmpty" style="display:none;">No matches yet — check back as more workers opt in.</div>
-    <div class="ch-row" style="margin-top:14px;"><button class="ch-btn ch-btn-ghost" onclick="epCloseMatches()">Close</button></div>
+<!-- ══ PORTAL SHELL ══ -->
+<div id="nvShell" class="nv-shell">
+  <aside class="nv-sidebar" id="nvSidebar">
+    <div class="nv-brand"><span class="logo">ResumeTailored</span><span class="tag">HIRE</span></div>
+    <nav class="nv-nav">
+      <button class="nv-navbtn on" data-view="dashboard" onclick="nvGo('dashboard')"><span class="ic">📊</span> Dashboard</button>
+      <button class="nv-navbtn" data-view="jobs" onclick="nvGo('jobs')"><span class="ic">💼</span> Jobs</button>
+      <button class="nv-navbtn" data-view="candidates" onclick="nvGo('candidates')"><span class="ic">👥</span> Candidates</button>
+      <button class="nv-navbtn" data-view="interviews" onclick="nvGo('interviews')"><span class="ic">📅</span> Interviews</button>
+      <button class="nv-navbtn" data-view="analytics" onclick="nvGo('analytics')"><span class="ic">📈</span> Analytics</button>
+      <button class="nv-navbtn" data-view="messages" onclick="nvGo('messages')"><span class="ic">💬</span> Messages <span class="badge" id="nvMsgBadge" style="display:none;">0</span></button>
+      <button class="nv-navbtn" data-view="settings" onclick="nvGo('settings')"><span class="ic">⚙️</span> Settings</button>
+      <div class="nv-seeker-link">
+        <a class="nv-navbtn" href="/dashboard"><span class="ic">↩︎</span> Job Seeker Dashboard</a>
+      </div>
+    </nav>
+  </aside>
+
+  <div class="nv-main">
+    <div class="nv-topbar">
+      <button class="nv-hamburger" onclick="document.getElementById('nvSidebar').classList.toggle('open')">☰</button>
+      <span class="co" id="nvCoOut"></span>
+      <span class="nv-pill nv-pill-pro" id="nvProPill" style="display:none;">PRO EMPLOYER</span>
+      <div class="sp"></div>
+      <button class="nv-btn nv-btn-ghost nv-btn-sm" id="nvUpgradeBtn" onclick="nvUpgrade()" style="display:none;">Upgrade — $29/mo</button>
+      <button class="nv-btn nv-btn-sm" onclick="nvOpenPost()">+ Post a Job</button>
+      <a class="nv-linkbtn" style="font-size:12px;" id="nvLogout" onclick="nvDoLogout()">Log out</a>
+    </div>
+    <div class="nv-content" id="nvContent"></div>
   </div>
 </div>
 
-<div class="ep-modal-overlay" id="epPostOverlay">
-  <div class="ep-modal">
-    <h2 id="epPostModalTitle">Post a Job</h2>
-    <input type="hidden" id="epEditId"/>
-    <div class="ch-field"><label class="ch-label">Job title</label><input class="ch-input" id="epfTitle" maxlength="140"/></div>
-    <div class="ch-field"><label class="ch-label">Description</label><textarea class="ch-textarea" id="epfDesc" maxlength="8000"></textarea></div>
-    <div class="ch-field"><label class="ch-label">Requirements</label><textarea class="ch-textarea" id="epfReq" maxlength="4000" style="min-height:80px;"></textarea></div>
-    <div class="ch-field"><label class="ch-label">Location</label><input class="ch-input" id="epfLoc" placeholder="City, State or Remote"/></div>
-    <div class="ep-2col">
-      <div class="ch-field">
-        <label class="ch-label">Work mode</label>
-        <select class="ch-select" id="epfMode"><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">Onsite</option></select>
-      </div>
-      <div class="ch-field">
-        <label class="ch-label">Job type</label>
-        <select class="ch-select" id="epfType" onchange="epToggleGigFields()">
-          <option value="full-time">Full-time</option><option value="part-time">Part-time</option>
-          <option value="contract">Contract</option><option value="temp">Temp / Gig</option>
-        </select>
-      </div>
+<!-- ══ POST JOB MODAL ══ -->
+<div class="nv-overlay" id="nvPostOverlay">
+  <div class="nv-modal">
+    <h2 id="nvPostTitle">Post a Job</h2>
+    <input type="hidden" id="nvEditId"/>
+    <div class="nv-field"><label class="nv-label">Job title</label><input class="nv-input" id="pfTitle" maxlength="140"/></div>
+    <div class="nv-field"><label class="nv-label">Description</label><textarea class="nv-textarea" id="pfDesc" maxlength="8000"></textarea></div>
+    <div class="nv-field"><label class="nv-label">Requirements</label><textarea class="nv-textarea" id="pfReq" maxlength="4000" style="min-height:70px;"></textarea></div>
+    <div class="nv-field"><label class="nv-label">Location</label><input class="nv-input" id="pfLoc" placeholder="City, State or Remote"/></div>
+    <div class="nv-2col">
+      <div class="nv-field"><label class="nv-label">Work mode</label><select class="nv-select" id="pfMode"><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">Onsite</option></select></div>
+      <div class="nv-field"><label class="nv-label">Job type</label><select class="nv-select" id="pfType" onchange="nvToggleGig()"><option value="full-time">Full-time</option><option value="part-time">Part-time</option><option value="contract">Contract</option><option value="temp">Temp / Gig</option></select></div>
     </div>
-    <div class="ep-2col">
-      <div class="ch-field"><label class="ch-label">Salary min (optional)</label><input class="ch-input" id="epfSalMin" type="number" min="0"/></div>
-      <div class="ch-field"><label class="ch-label">Salary max (optional)</label><input class="ch-input" id="epfSalMax" type="number" min="0"/></div>
+    <div class="nv-2col">
+      <div class="nv-field"><label class="nv-label">Salary min</label><input class="nv-input" id="pfSalMin" type="number" min="0"/></div>
+      <div class="nv-field"><label class="nv-label">Salary max</label><input class="nv-input" id="pfSalMax" type="number" min="0"/></div>
     </div>
-    <div id="epGigFields" style="display:none;">
-      <div class="ep-2col">
-        <div class="ch-field"><label class="ch-label">Hourly rate</label><input class="ch-input" id="epfGigRate" type="number" min="0"/></div>
-        <div class="ch-field"><label class="ch-label">Schedule</label><input class="ch-input" id="epfGigSched" placeholder="e.g. Sat 9am–5pm, one day"/></div>
+    <div id="nvGigFields" style="display:none;">
+      <div class="nv-2col">
+        <div class="nv-field"><label class="nv-label">Hourly rate</label><input class="nv-input" id="pfGigRate" type="number" min="0"/></div>
+        <div class="nv-field"><label class="nv-label">Schedule</label><input class="nv-input" id="pfGigSched" placeholder="e.g. Sat 9am–5pm"/></div>
       </div>
-      <div class="ch-field">
-        <label class="ch-label">Need Staff Fast — timeframe</label>
-        <select class="ch-select" id="epfGigType">
-          <option value="same-day">Same-day</option><option value="short-term" selected>Short-term</option>
-          <option value="event-based">Event-based</option><option value="seasonal">Seasonal</option>
-        </select>
-      </div>
+      <div class="nv-field"><label class="nv-label">Need staff fast — timeframe</label><select class="nv-select" id="pfGigType"><option value="same-day">Same-day</option><option value="short-term" selected>Short-term</option><option value="event-based">Event-based</option><option value="seasonal">Seasonal</option></select></div>
     </div>
-    <p class="ep-err" id="epPostErr"></p>
-    <div class="ch-row" style="margin-top:8px;">
-      <button class="ch-btn" onclick="epSubmitPost()">Save</button>
-      <button class="ch-btn ch-btn-ghost" onclick="epClosePostModal()">Cancel</button>
+    <p class="nv-err" id="nvPostErr"></p>
+    <div style="display:flex;gap:8px;margin-top:6px;"><button class="nv-btn" onclick="nvSubmitPost()">Save</button><button class="nv-btn nv-btn-ghost" onclick="nvClose('nvPostOverlay')">Cancel</button></div>
+  </div>
+</div>
+
+<!-- ══ APPLICANTS MODAL ══ -->
+<div class="nv-overlay" id="nvAppsOverlay">
+  <div class="nv-modal" style="max-width:640px;">
+    <h2>Applicants — <span id="nvAppsJob"></span></h2>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="nvAppsFilters"></div>
+    <p class="nv-sub" id="nvAppsUpsell" style="display:none;">Free plan shows who applied. Upgrade to Pro Employer to move applicants New → Reviewed → Interview → Hired, rate them, leave notes, and message or reject in one click.</p>
+    <div id="nvAppsList"></div>
+    <div class="nv-empty" id="nvAppsEmpty" style="display:none;">No applicants yet.</div>
+    <div style="margin-top:14px;"><button class="nv-btn nv-btn-ghost" onclick="nvClose('nvAppsOverlay')">Close</button></div>
+  </div>
+</div>
+
+<!-- ══ CANDIDATE PROFILE MODAL ══ -->
+<div class="nv-overlay" id="nvCandOverlay">
+  <div class="nv-modal" style="max-width:480px;">
+    <h2 id="nvCandName"></h2>
+    <div id="nvCandBody"></div>
+    <div class="nv-field" style="margin-top:14px;"><label class="nv-label">Message</label><textarea class="nv-textarea" id="nvCandMsg" style="min-height:64px;" placeholder="Say hello and mention the role..."></textarea></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="nv-btn" onclick="nvSendCandMsg()">Send Message</button>
+      <button class="nv-btn nv-btn-ghost" onclick="nvOpenInterviewFor()">Schedule Interview</button>
+      <button class="nv-btn nv-btn-ghost" onclick="nvClose('nvCandOverlay')">Close</button>
     </div>
   </div>
 </div>
 
-<div class="ep-toast" id="epToast"></div>
+<!-- ══ SCHEDULE INTERVIEW MODAL ══ -->
+<div class="nv-overlay" id="nvIvOverlay">
+  <div class="nv-modal" style="max-width:480px;">
+    <h2>Schedule Interview</h2>
+    <div class="nv-field"><label class="nv-label">Candidate email</label><input class="nv-input" id="ivCand" type="email"/></div>
+    <div class="nv-field"><label class="nv-label">For job (optional)</label><select class="nv-select" id="ivJob"><option value="">— none —</option></select></div>
+    <div class="nv-2col">
+      <div class="nv-field"><label class="nv-label">Date &amp; time</label><input class="nv-input" id="ivWhen" type="datetime-local"/></div>
+      <div class="nv-field"><label class="nv-label">Format</label><select class="nv-select" id="ivMode"><option value="video">Video</option><option value="phone">Phone</option><option value="onsite">Onsite</option></select></div>
+    </div>
+    <div class="nv-field"><label class="nv-label">Location / video link</label><input class="nv-input" id="ivLink" placeholder="https://meet… or office address"/></div>
+    <div class="nv-field"><label class="nv-label">Notes (optional)</label><textarea class="nv-textarea" id="ivNotes" style="min-height:60px;"></textarea></div>
+    <p class="nv-err" id="nvIvErr"></p>
+    <div style="display:flex;gap:8px;"><button class="nv-btn" onclick="nvSubmitInterview()">Send Invite</button><button class="nv-btn nv-btn-ghost" onclick="nvClose('nvIvOverlay')">Cancel</button></div>
+  </div>
+</div>
+
+<div class="nv-toast" id="nvToast"></div>
 
 <script>
-function epToken(){ return localStorage.getItem('rt_token') || ''; }
-function epAuthHeaders(){ return { 'Content-Type':'application/json', 'Authorization':'Bearer '+epToken() }; }
-function epToast(msg){ var t=document.getElementById('epToast'); t.textContent=msg; t.style.display='block'; setTimeout(function(){t.style.display='none';}, 2600); }
+// ── infra ────────────────────────────────────────────────────────────────────
+function tok(){ return localStorage.getItem('rt_token') || ''; }
+function AH(){ return { 'Content-Type':'application/json', 'Authorization':'Bearer '+tok() }; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function toast(m){ var t=document.getElementById('nvToast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(function(){t.style.display='none';},2800); }
+function el(id){ return document.getElementById(id); }
+function ago(ts){ if(!ts) return ''; var s=(Date.now()-ts)/1000; if(s<60)return'just now'; if(s<3600)return Math.floor(s/60)+'m'; if(s<86400)return Math.floor(s/3600)+'h'; return Math.floor(s/86400)+'d'; }
+async function api(url,opts){ try{ var r=await fetch(url,opts||{headers:AH()}); var d=await r.json().catch(function(){return{};}); return {ok:r.ok,status:r.status,data:d}; }catch(e){ return {ok:false,status:0,data:{message:'Network error'}}; } }
+var epStatus=null, JOBS=[], SETTINGS=null;
 
-function epSetAuthTab(which){
-  document.getElementById('epTabLogin').classList.toggle('on', which==='login');
-  document.getElementById('epTabSignup').classList.toggle('on', which==='signup');
-  document.getElementById('epAuthLogin').style.display = which==='login' ? 'block' : 'none';
-  document.getElementById('epAuthSignup').style.display = which==='signup' ? 'block' : 'none';
-  document.getElementById('epAuthErr').style.display='none';
+// ── auth ─────────────────────────────────────────────────────────────────────
+function nvSetAuthTab(w){ el('nvTabLogin').classList.toggle('on',w==='login'); el('nvTabSignup').classList.toggle('on',w==='signup'); el('nvLoginForm').style.display=w==='login'?'block':'none'; el('nvSignupForm').style.display=w==='signup'?'block':'none'; el('nvAuthErr').style.display='none'; el('nvAuthTitle').textContent=w==='login'?'Recruiter sign in':'Create your recruiter account'; }
+function authErr(m){ var e=el('nvAuthErr'); e.textContent=m; e.style.display='block'; }
+async function nvLogin(){
+  var email=el('nvLoginEmail').value.trim(), password=el('nvLoginPw').value;
+  if(!email||!password) return authErr('Email and password are required.');
+  var r=await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:password})});
+  if(!r.ok) return authErr(r.data.error||'Login failed.');
+  saveSession(r.data); boot();
 }
-function epShowAuthErr(msg){ var e=document.getElementById('epAuthErr'); e.textContent=msg; e.style.display='block'; }
-
-async function epDoLogin(){
-  var email=document.getElementById('epLoginEmail').value.trim();
-  var password=document.getElementById('epLoginPw').value;
-  if(!email||!password) return epShowAuthErr('Email and password are required.');
-  try{
-    var r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:password})});
-    var d=await r.json();
-    if(!r.ok) return epShowAuthErr(d.error||'Login failed.');
-    localStorage.setItem('rt_token', d.token);
-    localStorage.setItem('rt_email', d.email);
-    localStorage.setItem('rt_username', d.username);
-    epBoot();
-  }catch(e){ epShowAuthErr('Network error — please try again.'); }
+async function nvSignup(){
+  var username=el('nvSuUser').value.trim(), email=el('nvSuEmail').value.trim(), password=el('nvSuPw').value;
+  if(!username||!email||!password) return authErr('All fields are required.');
+  if(password.length<6) return authErr('Password must be at least 6 characters.');
+  var r=await api('/api/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,username:username,password:password})});
+  if(!r.ok) return authErr(r.data.error||'Signup failed.');
+  saveSession(r.data); boot();
 }
-async function epDoSignup(){
-  var username=document.getElementById('epSignupUser').value.trim();
-  var email=document.getElementById('epSignupEmail').value.trim();
-  var password=document.getElementById('epSignupPw').value;
-  if(!username||!email||!password) return epShowAuthErr('All fields are required.');
-  try{
-    var r=await fetch('/api/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,username:username,password:password})});
-    var d=await r.json();
-    if(!r.ok) return epShowAuthErr(d.error||'Signup failed.');
-    localStorage.setItem('rt_token', d.token);
-    localStorage.setItem('rt_email', d.email);
-    localStorage.setItem('rt_username', d.username);
-    epBoot();
-  }catch(e){ epShowAuthErr('Network error — please try again.'); }
-}
-document.getElementById('epLogout').addEventListener('click', async function(ev){
-  ev.preventDefault();
-  try{ await fetch('/api/auth/logout',{method:'POST',headers:epAuthHeaders()}); }catch(e){}
-  localStorage.removeItem('rt_token'); localStorage.removeItem('rt_email'); localStorage.removeItem('rt_username');
-  epBoot();
-});
+function saveSession(d){ localStorage.setItem('rt_token',d.token); localStorage.setItem('rt_email',d.email); localStorage.setItem('rt_username',d.username); }
+async function nvDoLogout(){ try{ await fetch('/api/auth/logout',{method:'POST',headers:AH()}); }catch(e){} localStorage.removeItem('rt_token'); boot(); }
 
-var epStatus = null;
-
-async function epBoot(){
-  document.getElementById('epAuthGate').style.display='none';
-  document.getElementById('epSetup').style.display='none';
-  document.getElementById('epDash').style.display='none';
-  document.getElementById('epLogout').style.display='none';
-  if(!epToken()){
-    document.getElementById('epAuthGate').style.display='block';
-    return;
-  }
-  document.getElementById('epLogout').style.display='inline';
-  try{
-    var r=await fetch('/api/employer/status',{headers:epAuthHeaders()});
-    if(r.status===401){
-      localStorage.removeItem('rt_token');
-      return epBoot();
-    }
-    epStatus = await r.json();
-  }catch(e){ return epToast('Could not load employer status.'); }
-  if(!epStatus.isEmployer){
-    document.getElementById('epSetup').style.display='block';
-    return;
-  }
-  document.getElementById('epDash').style.display='block';
-  epRenderDashHead();
-  epLoadJobs();
-}
-
-async function epSaveProfile(){
-  var companyName=document.getElementById('epCoName').value.trim();
-  var website=document.getElementById('epCoSite').value.trim();
-  var err=document.getElementById('epSetupErr'); err.style.display='none';
+async function nvSaveProfile(){
+  var companyName=el('nvCoName').value.trim(), website=el('nvCoSite').value.trim();
+  var err=el('nvSetupErr'); err.style.display='none';
   if(companyName.length<2){ err.textContent='Company name is required.'; err.style.display='block'; return; }
-  try{
-    var r=await fetch('/api/employer/profile',{method:'POST',headers:epAuthHeaders(),body:JSON.stringify({companyName:companyName,website:website})});
-    var d=await r.json();
-    if(!r.ok){ err.textContent=d.message||'Could not save.'; err.style.display='block'; return; }
-    epBoot();
-  }catch(e){ err.textContent='Network error — please try again.'; err.style.display='block'; }
+  var r=await api('/api/employer/profile',{method:'POST',headers:AH(),body:JSON.stringify({companyName:companyName,website:website})});
+  if(!r.ok){ err.textContent=r.data.message||'Could not save.'; err.style.display='block'; return; }
+  boot();
 }
 
-function epRenderDashHead(){
-  document.getElementById('epCoNameOut').textContent = epStatus.companyName;
-  document.getElementById('epCoMetaOut').textContent = epStatus.pro ? 'Pro Employer — unlimited posts' : (epStatus.activeJobs + ' of ' + epStatus.freeActiveJobLimit + ' free active posts used');
-  document.getElementById('epProPill').style.display = epStatus.pro ? 'inline-block' : 'none';
-  document.getElementById('epUpgradeBtn').style.display = epStatus.pro ? 'none' : 'inline-block';
-  var q=document.getElementById('epQuota');
-  q.textContent = epStatus.pro ? '' : 'Free plan: up to '+epStatus.freeActiveJobLimit+' active job posts, no ATS or candidate search yet. Upgrade to Pro Employer for unlimited posts, full candidate search, an ATS pipeline, and priority listing in the Job Feed.';
+function show(which){ ['nvAuth','nvSetup','nvShell'].forEach(function(id){ el(id).style.display='none'; }); el(which).style.display=which==='nvShell'?'block':'block'; }
+
+async function boot(){
+  if(!tok()){ show('nvAuth'); return; }
+  var r=await api('/api/employer/status');
+  if(r.status===401){ localStorage.removeItem('rt_token'); return boot(); }
+  epStatus=r.data;
+  if(!epStatus.isEmployer){ show('nvSetup'); return; }
+  show('nvShell');
+  el('nvCoOut').textContent=epStatus.companyName;
+  el('nvProPill').style.display=epStatus.pro?'inline-block':'none';
+  el('nvUpgradeBtn').style.display=epStatus.pro?'none':'inline-flex';
+  await loadJobs();
+  nvGo('dashboard');
+  refreshMsgBadge();
+}
+async function nvUpgrade(){
+  var r=await api('/api/employer/subscribe',{method:'POST',headers:AH()});
+  if(!r.ok) return toast(r.data.message||'Pro Employer checkout is not available yet.');
+  window.location.href=r.data.url;
 }
 
-async function epUpgrade(){
-  try{
-    var r=await fetch('/api/employer/subscribe',{method:'POST',headers:epAuthHeaders()});
-    var d=await r.json();
-    if(!r.ok) return epToast(d.message || 'Pro Employer checkout is not available yet.');
-    window.location.href = d.url;
-  }catch(e){ epToast('Network error — please try again.'); }
+// ── navigation ───────────────────────────────────────────────────────────────
+function nvGo(view){
+  document.querySelectorAll('.nv-navbtn[data-view]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-view')===view); });
+  el('nvSidebar').classList.remove('open');
+  var c=el('nvContent');
+  if(view==='dashboard') return renderDashboard(c);
+  if(view==='jobs') return renderJobs(c);
+  if(view==='candidates') return renderCandidates(c);
+  if(view==='interviews') return renderInterviews(c);
+  if(view==='analytics') return renderAnalytics(c);
+  if(view==='messages') return renderMessages(c);
+  if(view==='settings') return renderSettings(c);
 }
 
-async function epLoadJobs(){
-  try{
-    var r=await fetch('/api/employer/jobs',{headers:epAuthHeaders()});
-    var d=await r.json();
-    epRenderJobs(d.jobs||[]);
-  }catch(e){ epToast('Could not load your jobs.'); }
+// ── DASHBOARD ────────────────────────────────────────────────────────────────
+async function renderDashboard(c){
+  c.innerHTML='<h1 class="nv-h">Dashboard</h1><p class="nv-sub">Your hiring at a glance.</p><div id="dashBody">Loading…</div>';
+  var r=await api('/api/employer/overview');
+  if(!r.ok){ el('dashBody').innerHTML='<div class="nv-empty">Could not load your dashboard.</div>'; return; }
+  var s=r.data.stats;
+  var cards=[
+    {n:s.activeJobs,l:'Active Job Postings',ic:'💼'},
+    {n:s.applicationsThisWeek,l:'Applications This Week',ic:'📥'},
+    {n:s.candidatesInPipeline,l:'Candidates in Pipeline',ic:'👥'},
+    {n:s.interviewsScheduled,l:'Interviews Scheduled',ic:'📅'}
+  ];
+  var activity=(r.data.activity||[]).map(function(a){
+    return '<li><span class="dot"></span><div style="flex:1;">'+esc(a.text)+(a.status?' <span class="nv-status '+esc(a.status)+'">'+esc(a.status)+'</span>':'')+'</div><span class="t">'+ago(a.at)+'</span></li>';
+  }).join('') || '<li style="color:var(--nv-muted);">No activity yet — post a job to start receiving applications.</li>';
+  el('dashBody').innerHTML=
+    '<div class="nv-stats">'+cards.map(function(x){return '<div class="nv-stat"><span class="ic">'+x.ic+'</span><div class="n">'+x.n+'</div><div class="l">'+x.l+'</div></div>';}).join('')+'</div>'+
+    '<div class="nv-two">'+
+      '<div class="nv-card"><h3 style="margin:0 0 10px;font-size:15px;">Recent Activity</h3><ul class="nv-activity">'+activity+'</ul></div>'+
+      '<div class="nv-card"><h3 style="margin:0 0 12px;font-size:15px;">Quick Actions</h3><div class="nv-quick">'+
+        '<button class="nv-btn" onclick="nvOpenPost()">💼 Post a New Job</button>'+
+        '<button class="nv-btn nv-btn-ghost" onclick="nvGo(\'candidates\')">🔍 Search Candidate Database</button>'+
+        '<button class="nv-btn nv-btn-ghost" onclick="nvOpenInterviewFor()">📅 Schedule Interview</button>'+
+        '<button class="nv-btn nv-btn-ghost" onclick="nvGo(\'analytics\')">📈 View Analytics</button>'+
+      '</div></div>'+
+    '</div>';
 }
 
-function epEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-function epSalaryStr(min,max){
-  if(min==null && max==null) return '';
-  if(min!=null && max!=null) return '$'+min.toLocaleString()+' – $'+max.toLocaleString();
-  return '$'+(min!=null?min:max).toLocaleString()+'+';
-}
-
-function epRenderJobs(jobs){
-  var list=document.getElementById('epJobsList');
-  var empty=document.getElementById('epJobsEmpty');
-  if(!jobs.length){ list.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  list.innerHTML = jobs.map(function(j){
-    var meta = [j.location, j.workMode, j.jobType, epSalaryStr(j.salaryMin,j.salaryMax)].filter(Boolean).join(' · ');
-    if(j.isGig) meta += (meta?' · ':'') + '⚡ ' + (j.gigType||'short-term').replace('-',' ') + (j.gigRate?' · $'+j.gigRate+'/hr':'');
-    return '<div class="ep-jobcard">'
-      + '<div class="jt">'+epEsc(j.title)+' <span class="ep-status '+j.status+'">'+j.status+'</span></div>'
-      + '<div class="jm">'+epEsc(meta)+' · '+j.applicantCount+' applicant'+(j.applicantCount===1?'':'s')+'</div>'
-      + '<div class="jbtns">'
-      + '<button class="ch-btn ch-btn-sm" onclick="epOpenApps('+j.id+',\''+epEsc(j.title).replace(/'/g,"\\'")+'\')">View Applicants ('+j.applicantCount+')</button>'
-      + (j.isGig ? '<button class="ch-btn ch-btn-sm" onclick="epFindMatches('+j.id+')">⚡ Find Matches</button>' : '')
-      + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epEditPost('+j.id+')">Edit</button>'
-      + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epToggleStatus('+j.id+',\''+(j.status==='active'?'closed':'active')+'\')">'+(j.status==='active'?'Close':'Reopen')+'</button>'
-      + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epDeletePost('+j.id+')">Delete</button>'
-      + '</div></div>';
+// ── JOBS ─────────────────────────────────────────────────────────────────────
+async function loadJobs(){ var r=await api('/api/employer/jobs'); JOBS=(r.ok&&r.data.jobs)||[]; return JOBS; }
+function salaryStr(min,max){ if(min==null&&max==null)return''; if(min!=null&&max!=null)return'$'+min.toLocaleString()+'–$'+max.toLocaleString(); return'$'+(min!=null?min:max).toLocaleString()+'+'; }
+async function renderJobs(c){
+  await loadJobs();
+  var rows=JOBS.map(function(j){
+    var d=new Date(j.createdAt).toLocaleDateString();
+    return '<tr>'+
+      '<td><div style="font-weight:800;">'+esc(j.title)+'</div><div style="color:var(--nv-muted);font-size:12px;">'+esc([j.workMode,j.jobType,salaryStr(j.salaryMin,j.salaryMax)].filter(Boolean).join(' · '))+(j.isGig?' · ⚡ gig':'')+'</div></td>'+
+      '<td>'+esc(j.location||'—')+'</td>'+
+      '<td>'+d+'</td>'+
+      '<td><span class="nv-linkbtn" onclick="nvOpenApps('+j.id+')">'+j.applicantCount+' →</span></td>'+
+      '<td><span class="nv-pill '+(j.status==='active'?'nv-pill-active':'nv-pill-closed')+'">'+j.status+'</span></td>'+
+      '<td style="white-space:nowrap;">'+
+        '<span class="nv-linkbtn" onclick="nvEditPost('+j.id+')">Edit</span> · '+
+        '<span class="nv-linkbtn" onclick="nvToggleStatus('+j.id+',\''+(j.status==='active'?'closed':'active')+'\')">'+(j.status==='active'?'Close':'Reopen')+'</span> · '+
+        '<span class="nv-linkbtn" style="color:var(--nv-red);" onclick="nvDeletePost('+j.id+')">Delete</span>'+
+      '</td></tr>';
   }).join('');
-  window._epJobs = jobs;
+  c.innerHTML='<div style="display:flex;align-items:center;gap:12px;"><div><h1 class="nv-h">Jobs</h1><p class="nv-sub">'+(epStatus.pro?'Unlimited active postings.':(epStatus.activeJobs+' of '+epStatus.freeActiveJobLimit+' free active posts used.'))+'</p></div><div style="flex:1;"></div><button class="nv-btn" onclick="nvOpenPost()">+ Post a Job</button></div>'+
+    (JOBS.length?'<div class="nv-tablewrap"><table class="nv-table"><thead><tr><th>Job Title</th><th>Location</th><th>Posted</th><th>Applications</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
+      :'<div class="nv-empty">No jobs yet — click <strong>Post a Job</strong> to get started.</div>');
 }
+function nvToggleGig(){ el('nvGigFields').style.display=el('pfType').value==='temp'?'block':'none'; }
+function nvOpenPost(){
+  if(!epStatus.pro && epStatus.activeJobs>=epStatus.freeActiveJobLimit){ toast('Free plan limit reached ('+epStatus.freeActiveJobLimit+' active). Upgrade for unlimited.'); return; }
+  el('nvPostTitle').textContent='Post a Job'; el('nvEditId').value='';
+  ['pfTitle','pfDesc','pfReq','pfLoc','pfSalMin','pfSalMax','pfGigRate','pfGigSched'].forEach(function(id){el(id).value='';});
+  el('pfMode').value='remote'; el('pfType').value='full-time'; el('pfGigType').value='short-term'; nvToggleGig();
+  el('nvPostErr').style.display='none'; el('nvPostOverlay').classList.add('open');
+}
+function nvEditPost(id){
+  var j=JOBS.find(function(x){return x.id===id;}); if(!j) return;
+  el('nvPostTitle').textContent='Edit Job'; el('nvEditId').value=id;
+  el('pfTitle').value=j.title; el('pfDesc').value=j.description; el('pfReq').value=j.requirements; el('pfLoc').value=j.location;
+  el('pfMode').value=j.workMode; el('pfType').value=j.jobType; el('pfSalMin').value=j.salaryMin==null?'':j.salaryMin; el('pfSalMax').value=j.salaryMax==null?'':j.salaryMax;
+  el('pfGigRate').value=j.gigRate==null?'':j.gigRate; el('pfGigSched').value=j.gigSchedule||''; el('pfGigType').value=j.gigType||'short-term';
+  nvToggleGig(); el('nvPostErr').style.display='none'; el('nvPostOverlay').classList.add('open');
+}
+async function nvSubmitPost(){
+  var id=el('nvEditId').value;
+  var body={ title:el('pfTitle').value, description:el('pfDesc').value, requirements:el('pfReq').value, location:el('pfLoc').value,
+    workMode:el('pfMode').value, jobType:el('pfType').value, salaryMin:el('pfSalMin').value, salaryMax:el('pfSalMax').value,
+    gigRate:el('pfGigRate').value, gigSchedule:el('pfGigSched').value, gigType:el('pfGigType').value };
+  var err=el('nvPostErr'); err.style.display='none';
+  var r=await api(id?('/api/employer/jobs/'+id):'/api/employer/jobs',{method:id?'PUT':'POST',headers:AH(),body:JSON.stringify(body)});
+  if(!r.ok){ err.textContent=r.data.message||'Could not save job.'; err.style.display='block'; return; }
+  nvClose('nvPostOverlay'); toast(id?'Job updated.':'Job posted.'); await refreshStatus(); nvGo('jobs');
+}
+async function nvToggleStatus(id,status){ var r=await api('/api/employer/jobs/'+id,{method:'PUT',headers:AH(),body:JSON.stringify({status:status})}); if(!r.ok)return toast('Could not update job.'); await refreshStatus(); nvGo('jobs'); }
+async function nvDeletePost(id){ if(!confirm('Delete this job posting? This cannot be undone.'))return; var r=await api('/api/employer/jobs/'+id,{method:'DELETE',headers:AH()}); if(!r.ok)return toast('Could not delete.'); toast('Job deleted.'); await refreshStatus(); nvGo('jobs'); }
+async function refreshStatus(){ var r=await api('/api/employer/status'); if(r.ok)epStatus=r.data; }
 
-function epToggleGigFields(){
-  document.getElementById('epGigFields').style.display = document.getElementById('epfType').value==='temp' ? 'block' : 'none';
+// ── APPLICANTS ───────────────────────────────────────────────────────────────
+var _appsJobId=null, _appsFilter='';
+async function nvOpenApps(jobId){
+  _appsJobId=jobId; _appsFilter='';
+  var j=JOBS.find(function(x){return x.id===jobId;});
+  el('nvAppsJob').textContent=j?j.title:'';
+  el('nvAppsUpsell').style.display=epStatus.pro?'none':'block';
+  el('nvAppsOverlay').classList.add('open');
+  var st=['','new','reviewed','interview','hired','rejected'];
+  el('nvAppsFilters').innerHTML=st.map(function(s){return '<button class="nv-btn nv-btn-ghost nv-btn-sm" onclick="_appsFilter=\''+s+'\';loadApps()">'+(s||'All')+'</button>';}).join('');
+  loadApps();
 }
-
-function epOpenPostModal(){
-  if(!epStatus.pro && epStatus.activeJobs >= epStatus.freeActiveJobLimit){
-    epToast('Free plan limit reached ('+epStatus.freeActiveJobLimit+' active posts). Upgrade to Pro Employer for unlimited.');
-    return;
-  }
-  document.getElementById('epPostModalTitle').textContent='Post a Job';
-  document.getElementById('epEditId').value='';
-  ['epfTitle','epfDesc','epfReq','epfLoc','epfGigRate','epfGigSched','epfSalMin','epfSalMax'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('epfMode').value='remote';
-  document.getElementById('epfType').value='full-time';
-  document.getElementById('epfGigType').value='short-term';
-  epToggleGigFields();
-  document.getElementById('epPostErr').style.display='none';
-  document.getElementById('epPostOverlay').classList.add('open');
-}
-function epEditPost(id){
-  var j = (window._epJobs||[]).find(function(x){ return x.id===id; });
-  if(!j) return;
-  document.getElementById('epPostModalTitle').textContent='Edit Job';
-  document.getElementById('epEditId').value=id;
-  document.getElementById('epfTitle').value=j.title;
-  document.getElementById('epfDesc').value=j.description;
-  document.getElementById('epfReq').value=j.requirements;
-  document.getElementById('epfLoc').value=j.location;
-  document.getElementById('epfMode').value=j.workMode;
-  document.getElementById('epfType').value=j.jobType;
-  document.getElementById('epfSalMin').value=j.salaryMin==null?'':j.salaryMin;
-  document.getElementById('epfSalMax').value=j.salaryMax==null?'':j.salaryMax;
-  document.getElementById('epfGigRate').value=j.gigRate==null?'':j.gigRate;
-  document.getElementById('epfGigSched').value=j.gigSchedule||'';
-  document.getElementById('epfGigType').value=j.gigType||'short-term';
-  epToggleGigFields();
-  document.getElementById('epPostErr').style.display='none';
-  document.getElementById('epPostOverlay').classList.add('open');
-}
-function epClosePostModal(){ document.getElementById('epPostOverlay').classList.remove('open'); }
-
-async function epSubmitPost(){
-  var id = document.getElementById('epEditId').value;
-  var body = {
-    title: document.getElementById('epfTitle').value,
-    description: document.getElementById('epfDesc').value,
-    requirements: document.getElementById('epfReq').value,
-    location: document.getElementById('epfLoc').value,
-    workMode: document.getElementById('epfMode').value,
-    jobType: document.getElementById('epfType').value,
-    salaryMin: document.getElementById('epfSalMin').value,
-    salaryMax: document.getElementById('epfSalMax').value,
-    gigRate: document.getElementById('epfGigRate').value,
-    gigSchedule: document.getElementById('epfGigSched').value,
-    gigType: document.getElementById('epfGigType').value
-  };
-  var err=document.getElementById('epPostErr'); err.style.display='none';
-  try{
-    var url = id ? ('/api/employer/jobs/'+id) : '/api/employer/jobs';
-    var method = id ? 'PUT' : 'POST';
-    var r=await fetch(url,{method:method,headers:epAuthHeaders(),body:JSON.stringify(body)});
-    var d=await r.json();
-    if(!r.ok){ err.textContent=d.message||'Could not save job.'; err.style.display='block'; return; }
-    epClosePostModal();
-    epToast(id?'Job updated.':'Job posted.');
-    epBoot();
-  }catch(e){ err.textContent='Network error — please try again.'; err.style.display='block'; }
-}
-
-async function epToggleStatus(id, status){
-  try{
-    var r=await fetch('/api/employer/jobs/'+id,{method:'PUT',headers:epAuthHeaders(),body:JSON.stringify({status:status})});
-    if(!r.ok) return epToast('Could not update job.');
-    epBoot();
-  }catch(e){ epToast('Network error — please try again.'); }
-}
-async function epDeletePost(id){
-  if(!confirm('Delete this job posting? This cannot be undone.')) return;
-  try{
-    var r=await fetch('/api/employer/jobs/'+id,{method:'DELETE',headers:epAuthHeaders()});
-    if(!r.ok) return epToast('Could not delete job.');
-    epToast('Job deleted.');
-    epBoot();
-  }catch(e){ epToast('Network error — please try again.'); }
-}
-
-// ── Jobs / Candidates tab switcher ───────────────────────────────────────────
-function epSetMainTab(which){
-  document.getElementById('epTabJobs').classList.toggle('on', which==='jobs');
-  document.getElementById('epTabCandidates').classList.toggle('on', which==='candidates');
-  document.getElementById('epJobsPanel').style.display = which==='jobs' ? 'block' : 'none';
-  document.getElementById('epCandidatesPanel').style.display = which==='candidates' ? 'block' : 'none';
-  if(which==='candidates' && !window._epProfLoaded) epLoadProfessionOptions();
-}
-async function epLoadProfessionOptions(){
-  window._epProfLoaded = true;
-  try{
-    var r=await fetch('/data/professions.json');
-    var d=await r.json();
-    var sel=document.getElementById('epcProf');
-    (d.categories||[]).forEach(function(cat){
-      var grp=document.createElement('optgroup'); grp.label=cat.label;
-      (cat.professions||[]).forEach(function(p){
-        var o=document.createElement('option'); o.value=p.id; o.textContent=p.label; grp.appendChild(o);
-      });
-      sel.appendChild(grp);
-    });
-  }catch(e){ /* profession filter is optional — search still works without it */ }
-}
-
-// ── Applicants (ATS) ─────────────────────────────────────────────────────────
-var epCurrentJobId = null;
-function epOpenApps(jobId, jobTitle){
-  epCurrentJobId = jobId;
-  document.getElementById('epAppsJobTitle').textContent = jobTitle;
-  document.getElementById('epAppsOverlay').classList.add('open');
-  epLoadApps();
-}
-function epCloseAppsModal(){ document.getElementById('epAppsOverlay').classList.remove('open'); epCurrentJobId=null; }
-async function epLoadApps(){
-  try{
-    var r=await fetch('/api/employer/jobs/'+epCurrentJobId+'/applications',{headers:epAuthHeaders()});
-    var d=await r.json();
-    if(!r.ok) return epToast('Could not load applicants.');
-    document.getElementById('epAppsUpsell').style.display = d.pro ? 'none' : 'block';
-    epRenderApps(d.applications||[], d.pro);
-  }catch(e){ epToast('Network error — please try again.'); }
-}
-var EP_STAGES = ['new','reviewed','interview','hired','rejected'];
-function epRenderApps(apps, pro){
-  var list=document.getElementById('epAppsList');
-  var empty=document.getElementById('epAppsEmpty');
-  if(!apps.length){ list.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  list.innerHTML = apps.map(function(a){
-    var stars='';
-    for(var i=1;i<=5;i++) stars += '<span class="'+(a.rating>=i?'on':'')+'" onclick="epRateApp('+a.id+','+i+','+pro+')">★</span>';
-    var stageOpts = EP_STAGES.map(function(s){ return '<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>'; }).join('');
-    return '<div class="ep-app-row">'
-      + '<div class="hd"><span class="who">'+epEsc(a.candidateEmail)+'</span><span class="ep-status active">'+a.status+'</span></div>'
-      + (pro
-        ? '<div class="ep-2col">'
-          + '<div class="ch-field"><label class="ch-label">Stage</label><select class="ch-select" onchange="epMoveApp('+a.id+',this.value)">'+stageOpts+'</select></div>'
-          + '<div class="ch-field"><label class="ch-label">Rating</label><div class="ep-stars">'+stars+'</div></div>'
-          + '</div>'
-          + '<div class="ch-field"><label class="ch-label">Notes</label><textarea class="ch-textarea" style="min-height:60px;" id="epNotes'+a.id+'" onblur="epSaveNotes('+a.id+')">'+epEsc(a.notes)+'</textarea></div>'
-          + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epMoveApp('+a.id+',\'rejected\')">One-click Reject</button>'
-        : '<p class="ep-quota" style="margin:0;">Applied '+new Date(a.createdAt).toLocaleDateString()+'.</p>')
-      + '</div>';
+async function loadApps(){
+  var r=await api('/api/employer/jobs/'+_appsJobId+'/applications');
+  var apps=(r.ok&&r.data.applications)||[];
+  if(_appsFilter) apps=apps.filter(function(a){return a.status===_appsFilter;});
+  var list=el('nvAppsList'), empty=el('nvAppsEmpty');
+  if(!apps.length){ list.innerHTML=''; empty.style.display='block'; return; } empty.style.display='none';
+  list.innerHTML=apps.map(function(a){
+    var stSel=['new','reviewed','interview','hired','rejected'].map(function(s){return '<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s+'</option>';}).join('');
+    return '<div class="nv-card" style="margin-bottom:10px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'+
+        '<div style="font-weight:800;">'+esc(a.candidateEmail)+' <span class="nv-status '+esc(a.status)+'">'+esc(a.status)+'</span></div>'+
+        (epStatus.pro?'<select class="nv-select" style="width:auto;" onchange="nvSetAppStatus('+a.id+',this.value)">'+stSel+'</select>':'')+
+      '</div>'+
+      (epStatus.pro?'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">'+
+        '<button class="nv-btn nv-btn-sm nv-btn-ghost" onclick="nvMsgCandidate(\''+esc(a.candidateEmail)+'\')">Message</button>'+
+        '<button class="nv-btn nv-btn-sm nv-btn-ghost" onclick="nvOpenInterviewFor(\''+esc(a.candidateEmail)+'\','+_appsJobId+')">Interview</button>'+
+        '<button class="nv-btn nv-btn-sm nv-btn-danger" onclick="nvSetAppStatus('+a.id+',\'rejected\')">Reject</button>'+
+      '</div>':'')+
+    '</div>';
   }).join('');
 }
-async function epMoveApp(id, status){
-  try{
-    var r=await fetch('/api/employer/applications/'+id,{method:'PUT',headers:epAuthHeaders(),body:JSON.stringify({status:status})});
-    var d=await r.json();
-    if(!r.ok) return epToast(d.message||'Could not update applicant.');
-    epToast(status==='rejected' ? 'Candidate notified.' : 'Updated.');
-    epLoadApps();
-    epLoadJobs();
-  }catch(e){ epToast('Network error — please try again.'); }
-}
-async function epRateApp(id, rating, pro){
-  if(!pro) return;
-  try{
-    var r=await fetch('/api/employer/applications/'+id,{method:'PUT',headers:epAuthHeaders(),body:JSON.stringify({rating:rating})});
-    if(!r.ok) return epToast('Could not save rating.');
-    epLoadApps();
-  }catch(e){ epToast('Network error — please try again.'); }
-}
-async function epSaveNotes(id){
-  var val = document.getElementById('epNotes'+id).value;
-  try{ await fetch('/api/employer/applications/'+id,{method:'PUT',headers:epAuthHeaders(),body:JSON.stringify({notes:val})}); }
-  catch(e){ epToast('Could not save notes.'); }
+async function nvSetAppStatus(id,status){
+  var r=await api('/api/employer/applications/'+id,{method:'PUT',headers:AH(),body:JSON.stringify({status:status})});
+  if(!r.ok){ if(r.status===402)return toast(r.data.message||'Pro Employer feature.'); return toast('Could not update.'); }
+  toast('Moved to '+status+'.'); loadApps();
 }
 
-// ── Candidate search ─────────────────────────────────────────────────────────
-async function epSearchCandidates(){
-  var qs = new URLSearchParams();
-  var prof = document.getElementById('epcProf').value; if(prof) qs.set('professionId', prof);
-  var loc = document.getElementById('epcLoc').value.trim(); if(loc) qs.set('location', loc);
-  var remote = document.getElementById('epcRemote').value; if(remote) qs.set('remotePref', remote);
-  if(document.getElementById('epcGigOnly').checked) qs.set('gigOnly', '1');
-  try{
-    var r=await fetch('/api/employer/candidates?'+qs.toString(),{headers:epAuthHeaders()});
-    var d=await r.json();
-    if(!r.ok) return epToast(d.message||'Search failed.');
-    epRenderCandidates(d.candidates||[], d.pro, d.total);
-  }catch(e){ epToast('Network error — please try again.'); }
+// ── CANDIDATES ───────────────────────────────────────────────────────────────
+var _profLoaded=false;
+async function renderCandidates(c){
+  c.innerHTML='<h1 class="nv-h">Candidates</h1><p class="nv-sub">Search opted-in candidates by profession, location and availability.</p>'+
+    '<div class="nv-card" style="margin-bottom:16px;"><div class="nv-2col">'+
+      '<div class="nv-field"><label class="nv-label">Profession</label><select class="nv-select" id="cSelProf"><option value="">Any profession</option></select></div>'+
+      '<div class="nv-field"><label class="nv-label">Location contains</label><input class="nv-input" id="cLoc" placeholder="e.g. Chicago"/></div>'+
+    '</div><div class="nv-2col">'+
+      '<div class="nv-field"><label class="nv-label">Remote preference</label><select class="nv-select" id="cRemote"><option value="">Any</option><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">Onsite</option></select></div>'+
+      '<div class="nv-field" style="display:flex;align-items:flex-end;"><label style="font-size:13px;color:var(--nv-muted);"><input type="checkbox" id="cGig"/> Available for temp/gig only</label></div>'+
+    '</div><button class="nv-btn" onclick="searchCandidates()">Search Candidates</button></div>'+
+    '<p class="nv-sub" id="cNote"></p><div id="cList"></div><div class="nv-empty" id="cEmpty" style="display:none;">No candidates match yet — opted-in candidates appear here as they join.</div>';
+  if(!_profLoaded){ _profLoaded=true; try{ var d=await (await fetch('/data/professions.json')).json(); var sel=el('cSelProf'); (d.categories||[]).forEach(function(cat){ var g=document.createElement('optgroup'); g.label=cat.label; (cat.professions||[]).forEach(function(p){ var o=document.createElement('option'); o.value=p.id; o.textContent=p.label; g.appendChild(o); }); sel.appendChild(g); }); }catch(e){} }
 }
-function epRenderCandidates(cands, pro, total){
-  var list=document.getElementById('epCandidatesList');
-  var empty=document.getElementById('epCandidatesEmpty');
-  var note=document.getElementById('epcResultNote');
-  note.textContent = pro ? (cands.length+' candidate'+(cands.length===1?'':'s')) : ('Showing '+cands.length+' of '+total+' matches — upgrade to Pro Employer for full candidate search.');
-  if(!cands.length){ list.innerHTML=''; empty.style.display='block'; return; }
-  empty.style.display='none';
-  window._epCands = cands;
-  list.innerHTML = cands.map(function(c){
-    var bandIcon = c.bestBand==='gold'?'🥇':c.bestBand==='silver'?'🥈':c.bestBand==='bronze'?'🥉':'';
-    return '<div class="ep-candcard">'
-      + '<div><div class="who" style="font-weight:800;">'+epEsc(c.username)+(c.openToWork?'<span class="ep-otw">Open to Work</span>':'')+'</div>'
-      + '<div class="jm" style="font-size:13px;color:var(--ch-muted);">'+[c.professionLabel, bandIcon, c.location, c.remotePref].filter(Boolean).join(' · ')+'</div></div>'
-      + '<button class="ch-btn ch-btn-sm" onclick="epOpenCandProfile(\''+epEsc(c.email).replace(/'/g,"\\'")+'\')">View Profile</button>'
-      + '</div>';
+async function searchCandidates(){
+  var qs=new URLSearchParams();
+  if(el('cSelProf').value)qs.set('professionId',el('cSelProf').value);
+  if(el('cLoc').value.trim())qs.set('location',el('cLoc').value.trim());
+  if(el('cRemote').value)qs.set('remotePref',el('cRemote').value);
+  if(el('cGig').checked)qs.set('gigOnly','1');
+  var r=await api('/api/employer/candidates?'+qs.toString());
+  var cands=(r.ok&&r.data.candidates)||[]; var list=el('cList'), empty=el('cEmpty');
+  el('cNote').textContent=r.ok?(cands.length+' candidate'+(cands.length===1?'':'s')+(r.data.pro?'':' (free preview — upgrade for full search)')):'';
+  if(!cands.length){ list.innerHTML=''; empty.style.display='block'; return; } empty.style.display='none';
+  list.innerHTML=cands.map(function(x){
+    return '<div class="nv-card" style="margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">'+
+      '<div><div style="font-weight:800;">'+esc(x.username)+(x.openToWork?' <span class="nv-status hired">open to work</span>':'')+'</div>'+
+      '<div style="color:var(--nv-muted);font-size:13px;">'+esc([x.professionLabel,x.location,x.remotePref].filter(Boolean).join(' · '))+(x.bestBand?' · '+esc(x.bestBand)+' badge':'')+'</div></div>'+
+      '<button class="nv-btn nv-btn-sm" onclick="nvOpenCand(\''+esc(x.email)+'\')">View</button></div>';
   }).join('');
 }
-var epCurrentCandEmail = null;
-async function epOpenCandProfile(email){
-  epCurrentCandEmail = email;
-  document.getElementById('epCandProfileName').textContent = email;
-  document.getElementById('epCandProfileBody').innerHTML = '<div class="ch-spinner"></div>';
-  document.getElementById('epContactMsg').value = '';
-  document.getElementById('epCandProfileOverlay').classList.add('open');
-  try{
-    var r=await fetch('/api/employer/candidates/'+encodeURIComponent(email)+'/profile',{headers:epAuthHeaders()});
-    var d=await r.json();
-    if(r.status===402){
-      document.getElementById('epCandProfileBody').innerHTML = '<div class="ch-upsell">Full candidate profiles (badges, scores, resume site, video intro) are a Pro Employer feature.<br><button class="ch-btn ch-btn-sm" onclick="epUpgrade()">Upgrade — $29/mo</button></div>';
-      return;
-    }
-    if(!r.ok){ document.getElementById('epCandProfileBody').innerHTML = '<p class="ep-quota">Could not load this profile.</p>'; return; }
-    document.getElementById('epCandProfileName').textContent = d.username;
-    var badges = (d.badges||[]).map(function(b){ return '<span class="ch-pill ch-pill-'+b.band+'" style="margin:2px;">'+epEsc(b.topic||'General')+' — '+b.band+' ('+b.score+'%)</span>'; }).join('') || '<span class="ep-quota">No skills badges yet.</span>';
-    document.getElementById('epCandProfileBody').innerHTML =
-      '<p class="ep-quota">'+epEsc(d.professionLabel||'')+(d.location?' · '+epEsc(d.location):'')+(d.remotePref?' · '+epEsc(d.remotePref):'')+'</p>'
-      + '<div style="margin:10px 0;">'+badges+'</div>'
-      + (d.siteUrl ? '<p><a href="'+d.siteUrl+'" target="_blank" style="color:var(--ch-forest);font-weight:700;">View resume website →</a></p>' : '')
-      + (d.hasVideoIntro ? '<p class="ep-quota">🎬 Has a video intro.</p>' : '')
-      + (d.gigAvailable ? '<p class="ep-quota">Available for temp/gig work'+(d.hourlyRate?' at $'+d.hourlyRate+'/hr':'')+(d.gigSchedule?' — '+epEsc(d.gigSchedule):'')+'.</p>' : '');
-  }catch(e){ document.getElementById('epCandProfileBody').innerHTML = '<p class="ep-quota">Network error — please try again.</p>'; }
+var _candEmail=null;
+async function nvOpenCand(email){
+  _candEmail=email;
+  var r=await api('/api/employer/candidates/'+encodeURIComponent(email)+'/profile');
+  if(!r.ok){ if(r.status===402){ toast(r.data.message||'Full profiles are a Pro Employer feature.'); return; } return toast('Could not load profile.'); }
+  var p=r.data;
+  el('nvCandName').textContent=p.username;
+  el('nvCandBody').innerHTML='<div style="color:var(--nv-muted);font-size:13px;line-height:1.8;">'+
+    (p.professionLabel?'<div><strong>Role:</strong> '+esc(p.professionLabel)+'</div>':'')+
+    (p.location?'<div><strong>Location:</strong> '+esc(p.location)+'</div>':'')+
+    '<div><strong>Remote:</strong> '+esc(p.remotePref||'any')+'</div>'+
+    (p.hourlyRate?'<div><strong>Rate:</strong> $'+p.hourlyRate+'/hr</div>':'')+
+    (p.badges&&p.badges.length?'<div><strong>Badges:</strong> '+p.badges.map(function(b){return esc(b.topic)+' ('+esc(b.band)+')';}).join(', ')+'</div>':'')+
+    (p.siteUrl?'<div><a class="nv-linkbtn" href="'+esc(p.siteUrl)+'" target="_blank">View personal site →</a></div>':'')+
+    (p.hasVideoIntro?'<div>🎬 Has a video intro</div>':'')+
+    '<div style="margin-top:8px;font-size:12px;">Contact: '+esc(email)+'</div></div>';
+  el('nvCandMsg').value=''; el('nvCandOverlay').classList.add('open');
 }
-function epCloseCandProfile(){ document.getElementById('epCandProfileOverlay').classList.remove('open'); epCurrentCandEmail=null; }
-async function epSendContact(){
-  if(!epCurrentCandEmail) return;
-  var message = document.getElementById('epContactMsg').value.trim();
+async function nvSendCandMsg(){
+  var body=el('nvCandMsg').value.trim(); if(!body)return toast('Write a message first.');
+  var r=await api('/api/employer/messages/'+encodeURIComponent(_candEmail),{method:'POST',headers:AH(),body:JSON.stringify({body:body})});
+  if(!r.ok)return toast(r.data.message||'Could not send.');
+  toast('Message sent.'); nvClose('nvCandOverlay');
+}
+function nvMsgCandidate(email){ _candEmail=email; el('nvCandName').textContent=email; el('nvCandBody').innerHTML='<div style="color:var(--nv-muted);font-size:13px;">Send a message to '+esc(email)+'. They\'ll get it by email and in their dashboard.</div>'; el('nvCandMsg').value=''; el('nvCandOverlay').classList.add('open'); }
+
+// ── INTERVIEWS ───────────────────────────────────────────────────────────────
+async function renderInterviews(c){
+  c.innerHTML='<div style="display:flex;align-items:center;gap:12px;"><div><h1 class="nv-h">Interviews</h1><p class="nv-sub">Scheduled and past interviews.</p></div><div style="flex:1;"></div><button class="nv-btn" onclick="nvOpenInterviewFor()">+ Schedule</button></div><div id="ivBody">Loading…</div>';
+  var r=await api('/api/employer/interviews');
+  var ivs=(r.ok&&r.data.interviews)||[];
+  if(!ivs.length){ el('ivBody').innerHTML='<div class="nv-empty">No interviews scheduled yet.</div>'; return; }
+  el('ivBody').innerHTML='<div class="nv-tablewrap"><table class="nv-table"><thead><tr><th>Candidate</th><th>Job</th><th>When</th><th>Format</th><th>Status</th><th></th></tr></thead><tbody>'+
+    ivs.map(function(i){
+      var when=new Date(i.scheduledAt).toLocaleString();
+      return '<tr><td>'+esc(i.candidateEmail)+'</td><td>'+esc(i.jobTitle||'—')+'</td><td>'+esc(when)+'</td><td>'+esc(i.mode)+(i.locationOrLink?' · <a class="nv-linkbtn" href="'+esc(i.locationOrLink)+'" target="_blank">link</a>':'')+'</td>'+
+        '<td><span class="nv-status '+esc(i.status)+'">'+esc(i.status)+'</span></td>'+
+        '<td style="white-space:nowrap;">'+
+          (i.status!=='completed'?'<span class="nv-linkbtn" onclick="nvSetIvStatus('+i.id+',\'completed\')">Complete</span> · ':'')+
+          (i.status!=='cancelled'?'<span class="nv-linkbtn" onclick="nvSetIvStatus('+i.id+',\'cancelled\')">Cancel</span> · ':'')+
+          '<span class="nv-linkbtn" style="color:var(--nv-red);" onclick="nvDelIv('+i.id+')">Delete</span>'+
+        '</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+function nvOpenInterviewFor(email,jobId){
+  if(!epStatus){ return; }
+  el('ivCand').value=email||''; el('ivWhen').value=''; el('ivMode').value='video'; el('ivLink').value=''; el('ivNotes').value=''; el('nvIvErr').style.display='none';
+  var sel=el('ivJob'); sel.innerHTML='<option value="">— none —</option>'+JOBS.map(function(j){return '<option value="'+j.id+'"'+(jobId===j.id?' selected':'')+'>'+esc(j.title)+'</option>';}).join('');
+  el('nvCandOverlay').classList.remove('open');
+  el('nvIvOverlay').classList.add('open');
+}
+async function nvSubmitInterview(){
+  var when=el('ivWhen').value; var err=el('nvIvErr'); err.style.display='none';
+  if(!el('ivCand').value.trim()){ err.textContent='Candidate email is required.'; err.style.display='block'; return; }
+  if(!when){ err.textContent='Pick a date and time.'; err.style.display='block'; return; }
+  var body={ candidateEmail:el('ivCand').value.trim(), jobId:el('ivJob').value||null, scheduledAt:new Date(when).getTime(), mode:el('ivMode').value, locationOrLink:el('ivLink').value.trim(), notes:el('ivNotes').value.trim() };
+  var r=await api('/api/employer/interviews',{method:'POST',headers:AH(),body:JSON.stringify(body)});
+  if(!r.ok){ err.textContent=r.data.message||'Could not schedule.'; err.style.display='block'; return; }
+  nvClose('nvIvOverlay'); toast('Interview invite sent.'); nvGo('interviews');
+}
+async function nvSetIvStatus(id,status){ var r=await api('/api/employer/interviews/'+id,{method:'PUT',headers:AH(),body:JSON.stringify({status:status})}); if(!r.ok)return toast('Could not update.'); nvGo('interviews'); }
+async function nvDelIv(id){ if(!confirm('Delete this interview?'))return; await api('/api/employer/interviews/'+id,{method:'DELETE',headers:AH()}); nvGo('interviews'); }
+
+// ── ANALYTICS ────────────────────────────────────────────────────────────────
+async function renderAnalytics(c){
+  c.innerHTML='<div style="display:flex;align-items:center;gap:12px;"><div><h1 class="nv-h">Analytics</h1><p class="nv-sub">Hiring pipeline, time-to-hire and where applicants come from.</p></div><div style="flex:1;"></div><button class="nv-btn nv-btn-ghost" onclick="nvExportCsv()">⬇ Export CSV</button></div><div id="anBody">Loading…</div>';
+  var r=await api('/api/employer/analytics');
+  if(!r.ok){ el('anBody').innerHTML='<div class="nv-empty">Could not load analytics.</div>'; return; }
+  var d=r.data; var max=Math.max(1,d.funnel[0].count);
+  var funnel=d.funnel.map(function(f){ var pct=Math.round(f.count/max*100); return '<div class="row"><div class="lab">'+esc(f.stage)+'</div><div class="bar"><div class="fill" style="width:'+Math.max(pct,6)+'%;">'+f.count+'</div></div></div>'; }).join('');
+  var sources=(d.sources||[]).map(function(s){ var pct=Math.round(s.count/max*100); return '<div class="row"><div class="lab" style="width:auto;flex:1;">'+esc(s.label)+'</div><div style="width:120px;"><div class="bar"><div class="fill" style="width:'+Math.max(pct,10)+'%;">'+s.count+'</div></div></div></div>'; }).join('') || '<div style="color:var(--nv-muted);font-size:13px;">No applications yet.</div>';
+  el('anBody').innerHTML=
+    '<div class="nv-two"><div class="nv-card"><h3 style="margin:0 0 14px;font-size:15px;">Hiring Pipeline</h3><div class="nv-funnel">'+funnel+'</div></div>'+
+    '<div class="nv-card"><h3 style="margin:0 0 6px;font-size:15px;">Time to Hire</h3>'+
+      '<div style="font-size:34px;font-weight:900;">'+(d.timeToHire!=null?d.timeToHire:'—')+'<span style="font-size:14px;color:var(--nv-muted);font-weight:600;"> days avg</span></div>'+
+      '<p class="nv-sub" style="margin-top:10px;">'+(d.timeToHire!=null?'Average from application to hire across your closed hires.':'Make your first hire to see this metric.')+'</p>'+
+      '<div style="margin-top:14px;display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--nv-muted);">'+
+        '<div><strong style="color:var(--nv-ink);font-size:18px;">'+(d.counts.hired||0)+'</strong><br/>Hired</div>'+
+        '<div><strong style="color:var(--nv-ink);font-size:18px;">'+(d.counts.interview||0)+'</strong><br/>Interviewing</div>'+
+        '<div><strong style="color:var(--nv-ink);font-size:18px;">'+(d.total||0)+'</strong><br/>Total</div>'+
+      '</div></div></div>'+
+    '<div class="nv-card" style="margin-top:18px;"><h3 style="margin:0 0 14px;font-size:15px;">Applications by Source (posting)</h3><div class="nv-funnel">'+sources+'</div></div>';
+}
+async function nvExportCsv(){
+  if(!epStatus.pro) return toast('CSV export is a Pro Employer feature.');
   try{
-    var r=await fetch('/api/employer/candidates/'+encodeURIComponent(epCurrentCandEmail)+'/contact',{method:'POST',headers:epAuthHeaders(),body:JSON.stringify({message:message})});
-    var d=await r.json();
-    if(!r.ok) return epToast(d.message||'Could not send the request.');
-    epToast('Contact request sent.');
-    epCloseCandProfile();
-  }catch(e){ epToast('Network error — please try again.'); }
+    var r=await fetch('/api/employer/candidates/export.csv',{headers:AH()});
+    if(!r.ok){ var d=await r.json().catch(function(){return{};}); return toast(d.message||'Export failed.'); }
+    var blob=await r.blob(); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='candidates.csv'; a.click(); URL.revokeObjectURL(a.href);
+  }catch(e){ toast('Export failed.'); }
 }
 
-// ── Temp/gig matching ────────────────────────────────────────────────────────
-async function epFindMatches(jobId){
-  document.getElementById('epMatchesOverlay').classList.add('open');
-  document.getElementById('epMatchesList').innerHTML = '<div class="ch-spinner"></div>';
-  document.getElementById('epMatchesEmpty').style.display = 'none';
-  try{
-    var r=await fetch('/api/employer/jobs/'+jobId+'/matches',{headers:epAuthHeaders()});
-    var d=await r.json();
-    if(r.status===402){
-      document.getElementById('epMatchesList').innerHTML = '<div class="ch-upsell">Candidate matching is a Pro Employer feature.<br><button class="ch-btn ch-btn-sm" onclick="epUpgrade()">Upgrade — $29/mo</button></div>';
-      return;
-    }
-    if(!r.ok){ document.getElementById('epMatchesList').innerHTML=''; epToast(d.message||'Could not load matches.'); return; }
-    var matches = d.matches||[];
-    if(!matches.length){ document.getElementById('epMatchesList').innerHTML=''; document.getElementById('epMatchesEmpty').style.display='block'; return; }
-    document.getElementById('epMatchesList').innerHTML = matches.map(function(c){
-      return '<div class="ep-candcard"><div><div class="who" style="font-weight:800;">'+epEsc(c.username)+(c.openToWork?'<span class="ep-otw">Open to Work</span>':'')+'</div>'
-        + '<div class="jm" style="font-size:13px;color:var(--ch-muted);">'+[c.location, c.remotePref, c.hourlyRate?('$'+c.hourlyRate+'/hr'):''].filter(Boolean).join(' · ')+'</div></div>'
-        + '<button class="ch-btn ch-btn-sm" onclick="epCloseMatches();epOpenCandProfile(\''+epEsc(c.email).replace(/'/g,"\\'")+'\')">View Profile</button></div>';
-    }).join('');
-  }catch(e){ epToast('Network error — please try again.'); }
+// ── MESSAGES ─────────────────────────────────────────────────────────────────
+var _msgCand=null;
+async function renderMessages(c){
+  c.innerHTML='<h1 class="nv-h">Messages</h1><p class="nv-sub">Conversations with candidates.</p><div class="nv-msg-layout"><div class="nv-threads" id="msgThreads">Loading…</div><div class="nv-convo"><div class="nv-convo-body" id="msgBody"><div class="nv-empty">Select a conversation.</div></div><div class="nv-composer"><input class="nv-input" id="msgInput" placeholder="Type a message…" onkeydown="if(event.key===\'Enter\')nvSendMsg()"/><button class="nv-btn" onclick="nvSendMsg()">Send</button></div></div></div>';
+  var r=await api('/api/employer/messages');
+  var threads=(r.ok&&r.data.threads)||[];
+  var tw=el('msgThreads');
+  if(!threads.length){ tw.innerHTML='<div class="nv-empty" style="padding:20px 12px;">No conversations yet. Message a candidate from their profile or an applicant card.</div>'; return; }
+  tw.innerHTML=threads.map(function(t){ return '<div class="nv-thread" onclick="openThread(\''+esc(t.candidateEmail)+'\',this)"><div class="who">'+esc(t.candidateEmail)+(t.unread?' <span class="badge" style="background:var(--nv-red);color:#fff;border-radius:999px;font-size:9px;padding:1px 6px;">'+t.unread+'</span>':'')+'</div><div class="pre">'+esc(t.lastBody||'')+'</div></div>'; }).join('');
 }
-function epCloseMatches(){ document.getElementById('epMatchesOverlay').classList.remove('open'); }
+async function openThread(email,node){
+  _msgCand=email;
+  document.querySelectorAll('.nv-thread').forEach(function(n){n.classList.remove('on');}); if(node)node.classList.add('on');
+  var r=await api('/api/employer/messages/'+encodeURIComponent(email));
+  var msgs=(r.ok&&r.data.messages)||[];
+  el('msgBody').innerHTML=msgs.length?msgs.map(function(m){return '<div class="nv-bubble '+(m.sender==='employer'?'me':'them')+'">'+esc(m.body)+'</div>';}).join(''):'<div class="nv-empty">No messages yet — say hello.</div>';
+  var b=el('msgBody'); b.scrollTop=b.scrollHeight;
+  refreshMsgBadge();
+}
+async function nvSendMsg(){
+  if(!_msgCand)return toast('Select a conversation first.');
+  var input=el('msgInput'); var body=input.value.trim(); if(!body)return;
+  input.value='';
+  var r=await api('/api/employer/messages/'+encodeURIComponent(_msgCand),{method:'POST',headers:AH(),body:JSON.stringify({body:body})});
+  if(!r.ok)return toast('Could not send.');
+  openThread(_msgCand);
+}
+async function nvMsgCandidateOpen(email){ nvGo('messages'); setTimeout(function(){ openThread(email); },200); }
+async function refreshMsgBadge(){
+  var r=await api('/api/employer/messages'); if(!r.ok)return;
+  var unread=(r.data.threads||[]).reduce(function(s,t){return s+(t.unread||0);},0);
+  var b=el('nvMsgBadge'); if(b){ b.style.display=unread?'inline-block':'none'; b.textContent=unread; }
+}
 
-epBoot();
+// ── SETTINGS ─────────────────────────────────────────────────────────────────
+async function renderSettings(c){
+  var r=await api('/api/employer/settings'); SETTINGS=r.ok?r.data:{};
+  c.innerHTML='<h1 class="nv-h">Settings</h1><p class="nv-sub">Company profile, notifications and billing.</p>'+
+    '<div class="nv-card" style="max-width:600px;margin-bottom:16px;"><h3 style="margin:0 0 14px;font-size:15px;">Company Profile</h3>'+
+      '<div class="nv-field"><label class="nv-label">Company name</label><input class="nv-input" id="stName" value="'+esc(SETTINGS.companyName||'')+'"/></div>'+
+      '<div class="nv-field"><label class="nv-label">Website</label><input class="nv-input" id="stSite" value="'+esc(SETTINGS.website||'')+'"/></div>'+
+      '<div class="nv-field"><label class="nv-label">Logo URL</label><input class="nv-input" id="stLogo" value="'+esc(SETTINGS.logoUrl||'')+'" placeholder="https://…/logo.png"/></div>'+
+      '<div class="nv-field"><label class="nv-label">Company description</label><textarea class="nv-textarea" id="stDesc">'+esc(SETTINGS.description||'')+'</textarea></div>'+
+      '<h3 style="margin:16px 0 10px;font-size:15px;">Notifications</h3>'+
+      '<label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:8px;"><input type="checkbox" id="stNotifyApps" '+(SETTINGS.notifyApplications!==false?'checked':'')+'/> Email me on new applications</label>'+
+      '<label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:14px;"><input type="checkbox" id="stNotifyMsgs" '+(SETTINGS.notifyMessages!==false?'checked':'')+'/> Email me on new messages</label>'+
+      '<button class="nv-btn" onclick="nvSaveSettings()">Save changes</button></div>'+
+    '<div class="nv-card" style="max-width:600px;margin-bottom:16px;"><h3 style="margin:0 0 8px;font-size:15px;">Billing</h3>'+
+      (SETTINGS.pro
+        ? '<p class="nv-sub" style="margin:0;">You\'re on <strong style="color:var(--nv-amber);">Pro Employer</strong> — unlimited postings, full candidate search, ATS pipeline, interviews, analytics and CSV export.</p>'
+        : '<p class="nv-sub" style="margin:0 0 12px;">Free plan: up to '+((epStatus&&epStatus.freeActiveJobLimit)||3)+' active postings. Upgrade for unlimited postings, full candidate search, the ATS pipeline and CSV export.</p><button class="nv-btn" onclick="nvUpgrade()">Upgrade — $29/mo</button>')+
+    '</div>'+
+    '<div class="nv-card" style="max-width:600px;"><h3 style="margin:0 0 8px;font-size:15px;">Team members</h3><p class="nv-sub" style="margin:0;">Multi-user sub-accounts are coming soon. Today the account owner manages everything above.</p></div>';
+}
+async function nvSaveSettings(){
+  var body={ companyName:el('stName').value.trim(), website:el('stSite').value.trim(), logoUrl:el('stLogo').value.trim(), description:el('stDesc').value.trim(), notifyApplications:el('stNotifyApps').checked, notifyMessages:el('stNotifyMsgs').checked };
+  var r=await api('/api/employer/settings',{method:'POST',headers:AH(),body:JSON.stringify(body)});
+  if(!r.ok)return toast(r.data.message||'Could not save.');
+  toast('Settings saved.'); el('nvCoOut').textContent=body.companyName; epStatus.companyName=body.companyName;
+}
+
+// ── util ─────────────────────────────────────────────────────────────────────
+function nvClose(id){ el(id).classList.remove('open'); }
+document.querySelectorAll('.nv-overlay').forEach(function(o){ o.addEventListener('click',function(e){ if(e.target===o)o.classList.remove('open'); }); });
+// redirect Message actions used inside applicant/candidate flows into the tab
+window.nvMsgCandidate=function(email){ nvMsgCandidateOpen(email); };
+
+boot();
 </script>
 </body>
 </html>
