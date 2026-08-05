@@ -700,18 +700,27 @@ app.use(express.static(path.join(__dirname, 'public'), {
       res.setHeader('Cache-Control', 'no-cache');
     } else if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css; charset=utf-8');
-      res.setHeader('Cache-Control', 'public, max-age=86400');
+      // Every CSS file here is COUPLED to some no-cache HTML page the exact
+      // same way the comment below describes for JS: the HTML (and any class
+      // names / markup it depends on) updates instantly on deploy, but a
+      // 24h public cache meant a returning browser kept rendering new markup
+      // against a day-old stylesheet — which is exactly why three separate
+      // rounds of mobile contrast / tab-bar CSS fixes shipped to production
+      // and visibly changed nothing for anyone whose browser had already
+      // cached theme.css. no-cache still revalidates via ETag (a cheap 304
+      // when the file hasn't changed); it is not "no store".
+      res.setHeader('Cache-Control', 'no-cache');
     } else if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-      // The shared site-* modules are COUPLED to app.html, which is served
-      // no-cache. Caching them for a day while the HTML stays fresh means a
-      // returning browser runs new HTML against a day-old module — and any
-      // call added across that boundary throws "x is not a function" for up to
-      // 24 hours. That is exactly how `SiteFields.fillFromResume is not a
-      // function` reached a user while every clean-cache test passed.
-      // no-cache still revalidates (304 when unchanged); it is not "no store".
-      const coupled = /[\\/]site-(fields|vibes|doc-store)\.js$/.test(filePath);
-      res.setHeader('Cache-Control', coupled ? 'no-cache' : 'public, max-age=86400');
+      // Was previously "coupled modules only" (site-fields/vibes/doc-store);
+      // the SiteFields incident that motivated that carve-out is a special
+      // case of a general problem — EVERY .js file here is loaded by a
+      // no-cache HTML page and can be called differently the moment that
+      // page's markup/behavior changes. A day-long public cache on any of
+      // them (career-hub.js included) risks the same "x is not a function"
+      // /  silently-stale-behavior failure mode, just with a different
+      // module. no-cache still revalidates (304 when unchanged).
+      res.setHeader('Cache-Control', 'no-cache');
     } else if (/\.(png|jpe?g|svg|webp|ico|gif|woff2?)$/i.test(filePath)) {
       // Images/fonts change rarely and are the heaviest assets.
       res.setHeader('Cache-Control', 'public, max-age=2592000');
@@ -755,18 +764,25 @@ const RATE_LIMIT_OFF = process.env.RT_DISABLE_RATE_LIMIT === '1';
 // could only report as "Could not load that template." It is static content
 // off a module, exactly like the preview beside it.
 const TPL_PREVIEW_PATH_RE = /^\/(site-templates\/[^/]+(\/preview)?|personal-sites\/[^/]+\/render)\/?$/;
+// Every rate-limit body below carries BOTH `error` (a stable code) and
+// `message` (the human text) — frontend code consistently reads
+// `res.data.message || <generic fallback>`, so a body with only `error`
+// silently degrades to that generic fallback instead of the real reason.
+// That's how a rate-limited Job Finder search showed a bare "Search failed."
+// instead of "you're doing this too fast" — this global limiter's message
+// had no `message` field at all.
 const tplPreviewLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 180,
   skip: () => RATE_LIMIT_OFF,
-  message: { error: 'Too many requests, please slow down.' },
+  message: { error: 'rate_limited', message: 'Too many requests, please slow down.' },
 });
 
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 30,
   skip: (req) => RATE_LIMIT_OFF || TPL_PREVIEW_PATH_RE.test(req.path),
-  message: { error: 'Too many requests, please slow down.' }
+  message: { error: 'rate_limited', message: 'Too many requests, please slow down.' }
 });
 app.use('/api/', apiLimiter);
 
@@ -1692,7 +1708,7 @@ app.post('/api/case-studies', (req, res) => {
 });
 
 // ── Lead capture (public, persist-first) ─────────────────────────────────────
-const leadLimiter = rateLimit({ windowMs: 60 * 1000, max: 6, message: { error: 'Too many submissions — please wait a minute.' } });
+const leadLimiter = rateLimit({ windowMs: 60 * 1000, max: 6, message: { error: 'rate_limited', message: 'Too many submissions — please wait a minute.' } });
 app.post('/api/site-lead', leadLimiter, async (req, res) => {
   const { sub, name, email: visitorEmail, message, mode, website } = req.body || {};
   // Honeypot: bots fill the hidden "website" field; humans never see it.
@@ -4109,7 +4125,7 @@ function _sdEditLayer() {
   </script>`;
 }
 
-const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'Too many share links — please wait a minute.' } });
+const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'rate_limited', message: 'Too many share links — please wait a minute.' } });
 app.post('/api/share', shareLimiter, (req, res) => {
   try {
     const { text, name, colors, photoUrl, hideContact, serif, expiresDays, layout } = req.body || {};
@@ -5112,7 +5128,7 @@ function isFreeTemplateMeta(meta) {
 }
 
 // ─── API: Free Tool — ATS Keyword Extractor ──────────────────────────────────
-const keywordExtractorLimiter = rateLimit({ windowMs: 60 * 1000, max: 8, message: { error: 'Too many requests — please wait a minute and try again.' } });
+const keywordExtractorLimiter = rateLimit({ windowMs: 60 * 1000, max: 8, message: { error: 'rate_limited', message: 'Too many requests — please wait a minute and try again.' } });
 
 app.post('/api/tools/extract-keywords', keywordExtractorLimiter, async (req, res) => {
   const { jobDescription } = req.body;
@@ -6833,7 +6849,7 @@ function isEmployerSubscriber(email) {
 function activeJobCount(email) {
   return db.prepare("SELECT COUNT(*) c FROM job_postings WHERE employer_email = ? AND status = 'active'").get(email.toLowerCase()).c;
 }
-const employerLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, skip: () => RATE_LIMIT_OFF, message: { error: 'Too many requests — please wait a minute.' } });
+const employerLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, skip: () => RATE_LIMIT_OFF, message: { error: 'rate_limited', message: 'Too many requests — please wait a minute.' } });
 
 // Is this account set up as an employer yet (has a company profile)?
 app.get('/api/employer/status', (req, res) => {
