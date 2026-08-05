@@ -10,6 +10,10 @@
 const WORK_MODES = ['remote', 'hybrid', 'onsite'];
 const JOB_TYPES = ['full-time', 'part-time', 'contract', 'temp'];
 const APPLICATION_STATUSES = ['new', 'reviewed', 'interview', 'hired', 'rejected'];
+// "Need Staff Fast" categories for a temp/gig posting — same-day is the
+// urgent case a staffing layer exists for; the rest are just how long the
+// engagement runs.
+const GIG_TYPES = ['same-day', 'short-term', 'event-based', 'seasonal'];
 
 // Free employer plan: 3 ACTIVE (non-closed) job posts. Pro Employer ($29/mo)
 // is unlimited plus full candidate search + ATS + priority listing.
@@ -38,6 +42,7 @@ function validateJobPosting(body) {
   const isGig = jobType === 'temp' || !!b.isGig;
   const gigRate = isGig && b.gigRate !== '' && b.gigRate != null ? Number(b.gigRate) : null;
   const gigSchedule = isGig ? normStr(b.gigSchedule, 200) : '';
+  const gigType = isGig ? (normStr(b.gigType).toLowerCase() || 'short-term') : '';
 
   if (title.length < 3) errors.push('Job title is required.');
   if (description.length < 20) errors.push('A fuller job description is required (at least 20 characters).');
@@ -47,12 +52,13 @@ function validateJobPosting(body) {
   if (salaryMax != null && (!Number.isFinite(salaryMax) || salaryMax < 0)) errors.push('Maximum salary must be a positive number.');
   if (salaryMin != null && salaryMax != null && salaryMin > salaryMax) errors.push('Minimum salary cannot exceed maximum salary.');
   if (gigRate != null && (!Number.isFinite(gigRate) || gigRate < 0)) errors.push('Gig hourly rate must be a positive number.');
+  if (isGig && !GIG_TYPES.includes(gigType)) errors.push('Gig type must be same-day, short-term, event-based, or seasonal.');
 
   if (errors.length) return { valid: false, errors, clean: null };
   return {
     valid: true,
     errors: [],
-    clean: { title, description, requirements, location, workMode, jobType, salaryMin, salaryMax, isGig, gigRate, gigSchedule }
+    clean: { title, description, requirements, location, workMode, jobType, salaryMin, salaryMax, isGig, gigRate, gigSchedule, gigType }
   };
 }
 
@@ -125,9 +131,30 @@ function rankCandidates(candidates, { employerIsPro }) {
   return list.slice(0, 10); // free employer search preview cap
 }
 
+// Simple profession + location + rate match for a "Need Staff Fast" gig
+// posting — no geocoding, just a substring location match and a rate
+// ceiling, which is enough for "who's available and roughly affordable"
+// without pretending to be a real logistics/dispatch system. Only
+// gigAvailable candidates are considered; everything else about ranking
+// (Open-to-Work-Pro priority, free-plan cap) still goes through
+// rankCandidates afterward.
+function matchGigCandidates(candidates, job) {
+  const j = job || {};
+  const list = (candidates || []).filter(c => c.gigAvailable);
+  const scored = list.map(c => {
+    let score = 0;
+    if (j.professionId && c.professionId && c.professionId === j.professionId) score += 3;
+    if (j.location && c.location && c.location.toLowerCase().includes(String(j.location).toLowerCase())) score += 2;
+    if (j.gigRate != null && c.hourlyRate != null) score += c.hourlyRate <= j.gigRate ? 2 : -1;
+    return Object.assign({}, c, { matchScore: score });
+  });
+  scored.sort((a, b) => b.matchScore - a.matchScore || (b.updatedAt || 0) - (a.updatedAt || 0));
+  return scored;
+}
+
 module.exports = {
-  WORK_MODES, JOB_TYPES, APPLICATION_STATUSES, EMPLOYER_LIMITS, REMOTE_PREFS, CONTACT_REQUEST_STATUSES,
+  WORK_MODES, JOB_TYPES, APPLICATION_STATUSES, EMPLOYER_LIMITS, REMOTE_PREFS, CONTACT_REQUEST_STATUSES, GIG_TYPES,
   validateJobPosting, validateApplicationStatus, validateRating,
   validateCandidateProfile, validateContactRequestStatus,
-  buildRejectionEmail, rankCandidates
+  buildRejectionEmail, rankCandidates, matchGigCandidates
 };

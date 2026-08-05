@@ -256,6 +256,40 @@ const server = app.listen(0, async () => {
     const feedAfterDelete = await req('GET', '/api/job-feed', 'tokJane');
     check('deleting a job removes it from the feed', !feedAfterDelete.json.jobs.some(j => j.jobPostingId === startupJobId));
 
+    // ═══════════════════ Phase D: temp/gig staffing ═══════════════════════
+
+    const gigJobPost = await req('POST', '/api/employer/jobs', 'tokStartup', Object.assign({}, goodJob, { title: 'Event Staff', jobType: 'temp', gigRate: '20', gigType: 'event-based', location: 'Chicago, IL' }));
+    check('posts a "Need Staff Fast" gig job with a gigType', gigJobPost.status === 200, gigJobPost.body);
+    const gigJobId = gigJobPost.json.id;
+    const regularJobPost = await req('POST', '/api/employer/jobs', 'tokStartup', Object.assign({}, goodJob, { title: 'Staff Nurse' }));
+    const regularJobId = regularJobPost.json.id;
+
+    const matchesNotGig = await req('GET', '/api/employer/jobs/' + regularJobId + '/matches', 'tokStartup');
+    check('matching a non-gig posting is rejected', matchesNotGig.status === 400 && matchesNotGig.json.error === 'not_a_gig');
+
+    // rival (has an employer profile, never upgraded to Pro) posts its own gig
+    // job to prove the 402 case with ownership satisfied — the ownership check
+    // runs before the Pro gate, so testing 402 requires the caller to actually
+    // own the posting (a non-owner gets 404 regardless of plan, per the same
+    // fix applied to the ATS update route).
+    const rivalGigPost = await req('POST', '/api/employer/jobs', 'tokRival', Object.assign({}, goodJob, { title: 'Rival Gig', jobType: 'temp', gigRate: '20' }));
+    const matchesFree = await req('GET', '/api/employer/jobs/' + rivalGigPost.json.id + '/matches', 'tokRival');
+    check('gig matching is Pro-gated', matchesFree.status === 402 && matchesFree.json.error === 'pro_required', matchesFree.body);
+
+    // A gig-available, opted-in candidate near the job's location and within rate.
+    db.prepare("INSERT INTO users (email,username,password_hash) VALUES (?,?,?)").run('gigger@candidate.com', 'Gig Gigson', 'x');
+    db.prepare(`
+      INSERT INTO candidate_profiles (email, searchable, open_to_work, remote_pref, location, gig_available, hourly_rate, gig_schedule, updated_at)
+      VALUES ('gigger@candidate.com', 1, 0, 'any', 'Chicago, IL', 1, 15, 'weekends', ?)
+    `).run(Date.now());
+    // jane opted in earlier but never turned on gig availability — should NOT show up in matches.
+    const matchesPro = await req('GET', '/api/employer/jobs/' + gigJobId + '/matches', 'tokStartup');
+    check('Pro employer gets gig matches for the posting', matchesPro.status === 200 && matchesPro.json.matches.some(m => m.email === 'gigger@candidate.com'), matchesPro.body);
+    check('a candidate who opted in but never turned on gig availability is excluded', !matchesPro.json.matches.some(m => m.email === 'jane@candidate.com'));
+
+    const rivalMatchesOwn = await req('GET', '/api/employer/jobs/' + gigJobId + '/matches', 'tokRival');
+    check("a different employer cannot match against someone else's gig posting", rivalMatchesOwn.status === 404);
+
   } catch (err) {
     failures++;
     console.error('FATAL', err);

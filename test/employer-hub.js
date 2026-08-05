@@ -83,6 +83,30 @@ check('gig schedule is dropped when not gig-available', EH.validateCandidateProf
 check('validateContactRequestStatus accepts pending/approved/declined', ['pending', 'approved', 'declined'].every(EH.validateContactRequestStatus));
 check('validateContactRequestStatus rejects an unknown status', !EH.validateContactRequestStatus('ghosted'));
 
+// ── temp/gig postings: gigType ──────────────────────────────────────────────
+const gigWithType = EH.validateJobPosting(Object.assign({}, good, { jobType: 'temp', gigRate: '30', gigType: 'same-day' }));
+check('accepts a gig posting with an explicit gigType', gigWithType.valid && gigWithType.clean.gigType === 'same-day');
+check('gigType defaults to short-term when unset on a gig posting', EH.validateJobPosting(Object.assign({}, good, { jobType: 'temp' })).clean.gigType === 'short-term');
+check('rejects an unknown gigType', !EH.validateJobPosting(Object.assign({}, good, { jobType: 'temp', gigType: 'whenever' })).valid);
+check('a non-gig posting carries no gigType', EH.validateJobPosting(good).clean.gigType === '');
+check('GIG_TYPES covers same-day/short-term/event-based/seasonal', ['same-day', 'short-term', 'event-based', 'seasonal'].every(t => EH.GIG_TYPES.includes(t)));
+
+// ── gig candidate matching ──────────────────────────────────────────────────
+const gigCands = [
+  { email: 'perfect@x.com', gigAvailable: true, professionId: 'server', location: 'Chicago, IL', hourlyRate: 20, updatedAt: 1 },
+  { email: 'wrongprof@x.com', gigAvailable: true, professionId: 'chef', location: 'Chicago, IL', hourlyRate: 20, updatedAt: 1 },
+  { email: 'toopricey@x.com', gigAvailable: true, professionId: 'server', location: 'Chicago, IL', hourlyRate: 100, updatedAt: 1 },
+  { email: 'notavailable@x.com', gigAvailable: false, professionId: 'server', location: 'Chicago, IL', hourlyRate: 20, updatedAt: 1 },
+  { email: 'noratelisted@x.com', gigAvailable: true, professionId: 'server', location: 'Chicago, IL', hourlyRate: null, updatedAt: 1 },
+];
+const gigJob = { professionId: 'server', location: 'Chicago', gigRate: 25 };
+const matched = EH.matchGigCandidates(gigCands, gigJob);
+check('matchGigCandidates excludes candidates not available for gig work', !matched.some(c => c.email === 'notavailable@x.com'));
+check('the best profession+location+rate match ranks first', matched[0].email === 'perfect@x.com', matched.map(c => c.email).join(','));
+check('an over-budget candidate scores below an on-budget one', matched.findIndex(c => c.email === 'toopricey@x.com') > matched.findIndex(c => c.email === 'perfect@x.com'));
+check('a candidate with no listed rate is still included (rate match is a bonus, not a requirement)', matched.some(c => c.email === 'noratelisted@x.com'));
+check('matchGigCandidates never throws on an empty job or candidate list', EH.matchGigCandidates([], {}).length === 0 && EH.matchGigCandidates(gigCands, {}).length === 4);
+
 if (failures) { console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`); process.exit(1); }
 console.log('\nALL PASS (0 failures)');
 process.exit(0);

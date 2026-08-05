@@ -470,6 +470,7 @@ db.exec(`
     is_gig         INTEGER NOT NULL DEFAULT 0,
     gig_rate       INTEGER,
     gig_schedule   TEXT DEFAULT '',
+    gig_type       TEXT DEFAULT '',
     status         TEXT NOT NULL DEFAULT 'active',
     created_at     INTEGER NOT NULL,
     updated_at     INTEGER NOT NULL
@@ -6853,7 +6854,7 @@ function _jobPostingOut(r) {
   return {
     id: r.id, title: r.title, description: r.description, requirements: r.requirements,
     salaryMin: r.salary_min, salaryMax: r.salary_max, location: r.location,
-    workMode: r.work_mode, jobType: r.job_type, isGig: !!r.is_gig, gigRate: r.gig_rate, gigSchedule: r.gig_schedule,
+    workMode: r.work_mode, jobType: r.job_type, isGig: !!r.is_gig, gigRate: r.gig_rate, gigSchedule: r.gig_schedule, gigType: r.gig_type,
     status: r.status, createdAt: r.created_at, updatedAt: r.updated_at, applicantCount: r.applicant_count || 0
   };
 }
@@ -6898,10 +6899,10 @@ app.post('/api/employer/jobs', employerLimiter, (req, res) => {
   if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
   const now = Date.now();
   const info = db.prepare(`
-    INSERT INTO job_postings (employer_email, title, description, requirements, salary_min, salary_max, location, work_mode, job_type, is_gig, gig_rate, gig_schedule, status, created_at, updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?, ?)
+    INSERT INTO job_postings (employer_email, title, description, requirements, salary_min, salary_max, location, work_mode, job_type, is_gig, gig_rate, gig_schedule, gig_type, status, created_at, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?, ?)
   `).run(e, v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
-    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, now, now);
+    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, v.clean.gigType, now, now);
   const newJob = db.prepare('SELECT * FROM job_postings WHERE id = ?').get(info.lastInsertRowid);
   _syncEmployerJobToFeed(newJob);
   res.json({ success: true, id: info.lastInsertRowid });
@@ -6924,10 +6925,10 @@ app.put('/api/employer/jobs/:id', employerLimiter, (req, res) => {
   const v = EH.validateJobPosting(req.body);
   if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
   db.prepare(`
-    UPDATE job_postings SET title=?, description=?, requirements=?, salary_min=?, salary_max=?, location=?, work_mode=?, job_type=?, is_gig=?, gig_rate=?, gig_schedule=?, updated_at=?
+    UPDATE job_postings SET title=?, description=?, requirements=?, salary_min=?, salary_max=?, location=?, work_mode=?, job_type=?, is_gig=?, gig_rate=?, gig_schedule=?, gig_type=?, updated_at=?
     WHERE id = ?
   `).run(v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
-    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, Date.now(), id);
+    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, v.clean.gigType, Date.now(), id);
   _syncEmployerJobToFeed(db.prepare('SELECT * FROM job_postings WHERE id = ?').get(id));
   res.json({ success: true });
 });
@@ -7192,6 +7193,40 @@ app.put('/api/employer/applications/:id', employerLimiter, (req, res) => {
       .catch(err => console.error('[employer] rejection email failed:', err.message));
   }
   res.json({ success: true });
+});
+
+// ── Temp/gig staffing: "Need Staff Fast" matching ────────────────────────────
+// A gig posting (job_type='temp', gig_rate/gig_schedule/gig_type set) is just
+// a job_postings row with is_gig=1 — no separate posting flow, per the brief's
+// own framing ("employers post 'Need Staff Fast' jobs"). What's new here is
+// the match: who's opted into gig work, roughly nearby, and roughly
+// affordable. Pro-gated like full candidate search — matching a specific
+// posting against the whole candidate pool is a step up from browsing.
+app.get('/api/employer/jobs/:id/matches', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const id = parseInt(req.params.id, 10);
+  const job = db.prepare('SELECT * FROM job_postings WHERE id = ? AND employer_email = ?').get(id, e);
+  if (!job) return res.status(404).json({ error: 'not_found' });
+  if (!job.is_gig) return res.status(400).json({ error: 'not_a_gig', message: 'Matching applies to temp/gig postings.' });
+  if (!isEmployerSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Candidate matching is a Pro Employer feature.' });
+
+  const rows = db.prepare(`
+    SELECT cp.email, cp.remote_pref, cp.location, cp.gig_available, cp.hourly_rate, cp.open_to_work, cp.updated_at,
+           ci.profession_id, u.username
+    FROM candidate_profiles cp
+    LEFT JOIN check_ins ci ON ci.email = cp.email
+    LEFT JOIN users u ON u.email = cp.email
+    WHERE cp.searchable = 1 AND cp.gig_available = 1
+  `).all();
+  const candidates = rows.map(r => ({
+    email: r.email, username: r.username || 'ResumeTailored user', professionId: r.profession_id,
+    location: r.location, remotePref: r.remote_pref, gigAvailable: !!r.gig_available, hourlyRate: r.hourly_rate,
+    openToWork: !!r.open_to_work, openToWorkPro: !!r.open_to_work && isSubscriber(r.email), updatedAt: r.updated_at
+  }));
+  const matched = EH.matchGigCandidates(candidates, { professionId: _guessProfessionId(job.title), location: job.location, gigRate: job.gig_rate });
+  const ranked = EH.rankCandidates(matched, { employerIsPro: true }); // already Pro-gated above; no cap here
+  res.json({ matches: ranked.map(c => ({ email: c.email, username: c.username, location: c.location, remotePref: c.remotePref, hourlyRate: c.hourlyRate, openToWork: c.openToWork, matchScore: c.matchScore })) });
 });
 
 // Branded 404 for anything that fell through every route above (replaces

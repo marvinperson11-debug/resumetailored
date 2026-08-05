@@ -166,6 +166,16 @@
   </div>
 </div>
 
+<div class="ep-modal-overlay" id="epMatchesOverlay">
+  <div class="ep-modal">
+    <h2>⚡ Matches for this gig</h2>
+    <p class="ep-quota">Ranked by profession, location and rate fit — only shows workers who opted into temp/gig work.</p>
+    <div id="epMatchesList"></div>
+    <div class="ch-empty" id="epMatchesEmpty" style="display:none;">No matches yet — check back as more workers opt in.</div>
+    <div class="ch-row" style="margin-top:14px;"><button class="ch-btn ch-btn-ghost" onclick="epCloseMatches()">Close</button></div>
+  </div>
+</div>
+
 <div class="ep-modal-overlay" id="epPostOverlay">
   <div class="ep-modal">
     <h2 id="epPostModalTitle">Post a Job</h2>
@@ -195,6 +205,13 @@
       <div class="ep-2col">
         <div class="ch-field"><label class="ch-label">Hourly rate</label><input class="ch-input" id="epfGigRate" type="number" min="0"/></div>
         <div class="ch-field"><label class="ch-label">Schedule</label><input class="ch-input" id="epfGigSched" placeholder="e.g. Sat 9am–5pm, one day"/></div>
+      </div>
+      <div class="ch-field">
+        <label class="ch-label">Need Staff Fast — timeframe</label>
+        <select class="ch-select" id="epfGigType">
+          <option value="same-day">Same-day</option><option value="short-term" selected>Short-term</option>
+          <option value="event-based">Event-based</option><option value="seasonal">Seasonal</option>
+        </select>
       </div>
     </div>
     <p class="ep-err" id="epPostErr"></p>
@@ -339,11 +356,13 @@ function epRenderJobs(jobs){
   empty.style.display='none';
   list.innerHTML = jobs.map(function(j){
     var meta = [j.location, j.workMode, j.jobType, epSalaryStr(j.salaryMin,j.salaryMax)].filter(Boolean).join(' · ');
+    if(j.isGig) meta += (meta?' · ':'') + '⚡ ' + (j.gigType||'short-term').replace('-',' ') + (j.gigRate?' · $'+j.gigRate+'/hr':'');
     return '<div class="ep-jobcard">'
       + '<div class="jt">'+epEsc(j.title)+' <span class="ep-status '+j.status+'">'+j.status+'</span></div>'
       + '<div class="jm">'+epEsc(meta)+' · '+j.applicantCount+' applicant'+(j.applicantCount===1?'':'s')+'</div>'
       + '<div class="jbtns">'
       + '<button class="ch-btn ch-btn-sm" onclick="epOpenApps('+j.id+',\''+epEsc(j.title).replace(/'/g,"\\'")+'\')">View Applicants ('+j.applicantCount+')</button>'
+      + (j.isGig ? '<button class="ch-btn ch-btn-sm" onclick="epFindMatches('+j.id+')">⚡ Find Matches</button>' : '')
       + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epEditPost('+j.id+')">Edit</button>'
       + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epToggleStatus('+j.id+',\''+(j.status==='active'?'closed':'active')+'\')">'+(j.status==='active'?'Close':'Reopen')+'</button>'
       + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epDeletePost('+j.id+')">Delete</button>'
@@ -366,6 +385,7 @@ function epOpenPostModal(){
   ['epfTitle','epfDesc','epfReq','epfLoc','epfGigRate','epfGigSched','epfSalMin','epfSalMax'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('epfMode').value='remote';
   document.getElementById('epfType').value='full-time';
+  document.getElementById('epfGigType').value='short-term';
   epToggleGigFields();
   document.getElementById('epPostErr').style.display='none';
   document.getElementById('epPostOverlay').classList.add('open');
@@ -385,6 +405,7 @@ function epEditPost(id){
   document.getElementById('epfSalMax').value=j.salaryMax==null?'':j.salaryMax;
   document.getElementById('epfGigRate').value=j.gigRate==null?'':j.gigRate;
   document.getElementById('epfGigSched').value=j.gigSchedule||'';
+  document.getElementById('epfGigType').value=j.gigType||'short-term';
   epToggleGigFields();
   document.getElementById('epPostErr').style.display='none';
   document.getElementById('epPostOverlay').classList.add('open');
@@ -403,7 +424,8 @@ async function epSubmitPost(){
     salaryMin: document.getElementById('epfSalMin').value,
     salaryMax: document.getElementById('epfSalMax').value,
     gigRate: document.getElementById('epfGigRate').value,
-    gigSchedule: document.getElementById('epfGigSched').value
+    gigSchedule: document.getElementById('epfGigSched').value,
+    gigType: document.getElementById('epfGigType').value
   };
   var err=document.getElementById('epPostErr'); err.style.display='none';
   try{
@@ -592,6 +614,30 @@ async function epSendContact(){
     epCloseCandProfile();
   }catch(e){ epToast('Network error — please try again.'); }
 }
+
+// ── Temp/gig matching ────────────────────────────────────────────────────────
+async function epFindMatches(jobId){
+  document.getElementById('epMatchesOverlay').classList.add('open');
+  document.getElementById('epMatchesList').innerHTML = '<div class="ch-spinner"></div>';
+  document.getElementById('epMatchesEmpty').style.display = 'none';
+  try{
+    var r=await fetch('/api/employer/jobs/'+jobId+'/matches',{headers:epAuthHeaders()});
+    var d=await r.json();
+    if(r.status===402){
+      document.getElementById('epMatchesList').innerHTML = '<div class="ch-upsell">Candidate matching is a Pro Employer feature.<br><button class="ch-btn ch-btn-sm" onclick="epUpgrade()">Upgrade — $29/mo</button></div>';
+      return;
+    }
+    if(!r.ok){ document.getElementById('epMatchesList').innerHTML=''; epToast(d.message||'Could not load matches.'); return; }
+    var matches = d.matches||[];
+    if(!matches.length){ document.getElementById('epMatchesList').innerHTML=''; document.getElementById('epMatchesEmpty').style.display='block'; return; }
+    document.getElementById('epMatchesList').innerHTML = matches.map(function(c){
+      return '<div class="ep-candcard"><div><div class="who" style="font-weight:800;">'+epEsc(c.username)+(c.openToWork?'<span class="ep-otw">Open to Work</span>':'')+'</div>'
+        + '<div class="jm" style="font-size:13px;color:var(--ch-muted);">'+[c.location, c.remotePref, c.hourlyRate?('$'+c.hourlyRate+'/hr'):''].filter(Boolean).join(' · ')+'</div></div>'
+        + '<button class="ch-btn ch-btn-sm" onclick="epCloseMatches();epOpenCandProfile(\''+epEsc(c.email).replace(/'/g,"\\'")+'\')">View Profile</button></div>';
+    }).join('');
+  }catch(e){ epToast('Network error — please try again.'); }
+}
+function epCloseMatches(){ document.getElementById('epMatchesOverlay').classList.remove('open'); }
 
 epBoot();
 </script>
