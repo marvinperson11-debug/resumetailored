@@ -33,5 +33,14 @@ Each phase = its own PR against this branch's successor (or stacked), pushed as 
 - Candidate "assessment scores" the prompt wants searchable — reading this as the existing Skills Lab badge tier (Gold/Silver/Bronze) + quiz score already stored in `badges`/`skill_attempts`, not a new assessment type.
 - "Open to Work" badge visibility tiering (Part 4: "limited exposure" on free) — will define as free = visible in search but ranked after Pro-visible candidates, Pro = full visibility, unless you'd rather it work differently.
 
+## Status: all six phases shipped (2026-08-05)
+
+All of Part 2 (Phases A–E) and Part 4 landed in PR #324, on top of the already-merged Part 1 (#323). Notes on the scoping calls made along the way:
+
+- **Part 4's three quota changes were already correct before this build started** — `CH.LIMITS.jobsearch` (5/day free), `savedJobs` (5 total free), `gap` (1/week free) already matched the spec exactly. No code change needed there.
+- **"Open to Work" badge visibility (Part 4)**: implemented as — a Pro job seeker's badge shows to every employer; a free job seeker's badge only shows to Pro employers (`openToWork: !!open_to_work && (candidateIsPro || employerIsPro)` in `GET /api/employer/candidates`). The candidate is still findable in search either way — only the badge rendering is gated, never the listing itself. Deliberately **not** wired into the public personal-site renderer (`_shareResumeHtml`/`_renderPersonalSite`) — those are large, heavily-tested rendering paths (`test/site-*.js`, `test/preview-parity.js`) and a cosmetic badge wasn't worth the regression risk for a secondary bullet in the brief. Worth a follow-up if you want the badge on the public site too.
+- **Phase E (AI job matching) is intentionally NOT a fresh LLM call per job per subscriber per day** — that's unbounded cost (every job × every Pro subscriber × every day, with no budget conversation). Instead, `CH.computeJobMatchScore` blends signal Claude already generated: the user's most recent Skills Gap Analyzer result (70%, when they've run one against a real job) and their best Skills Lab badge score (30%, fallback). It's a real, non-fabricated number — returns `null` (banner omitted) when there's no signal at all — but it's a **profile-strength indicator**, not a fresh "you're 87% qualified for this specific posting" computation per job. Gated Pro-only per Part 4. If you want true per-job AI scoring, that needs an explicit call on LLM budget (cost scales with subscriber count × jobs shown) — happy to scope it as a follow-up once you've seen real Pro-subscriber volume.
+- **"One-click Apply with ResumeTailored Profile"** (Phase E bullet) was already delivered in Phase B/C — `POST /api/employer/jobs/:id/apply`, surfaced as the "Apply" button on Featured (employer) listings in "Jobs for You."
+
 ---
-*Questions or course-corrections — reply here or just tell me and I'll adjust before the next phase.*
+*Questions or course-corrections — reply here or just tell me and I'll adjust.*

@@ -191,6 +191,21 @@ check('parseRssItems handles a missing pubDate', rssItems[1].pubDate === null);
 check('parseRssItems drops an item with no title or link', CH.parseRssItems('<item><title>No link here</title></item>').length === 0);
 check('parseRssItems never throws on garbage input', CH.parseRssItems('<not><even','rss</not>').length === 0 && CH.parseRssItems('').length === 0 && CH.parseRssItems(null).length === 0);
 
+// ── AI job matching (Pro-only digest): deterministic, zero-API-cost score ──
+check('computeJobMatchScore blends gap (70%) + badge (30%) when both exist', CH.computeJobMatchScore({ latestGapScore: 80, bestBandScore: 60 }) === 74);
+check('computeJobMatchScore falls back to the gap score alone', CH.computeJobMatchScore({ latestGapScore: 80 }) === 80);
+check('computeJobMatchScore falls back to the badge score alone', CH.computeJobMatchScore({ bestBandScore: 60 }) === 60);
+check('computeJobMatchScore returns null with no signal at all — never fabricates a number', CH.computeJobMatchScore({}) === null && CH.computeJobMatchScore() === null);
+check('computeJobMatchScore ignores non-numeric input rather than throwing', CH.computeJobMatchScore({ latestGapScore: 'high', bestBandScore: 60 }) === 60);
+
+const digestNoMatch = CH.buildJobDigestEmail('Nurse', [{ title: 'RN', company: 'X' }], '', 'en');
+check('digest omits the match banner for a free user (no matchInfo passed)', digestNoMatch.html.indexOf('qualified') === -1);
+const digestWithMatch = CH.buildJobDigestEmail('Nurse', [{ title: 'RN', company: 'X' }], '', 'en', { score: 87, topGap: 'ACLS certification' });
+check('digest shows the match score for a Pro user', /87/.test(digestWithMatch.html) && /qualified/.test(digestWithMatch.html));
+check('digest shows the top gap when present', /ACLS certification/.test(digestWithMatch.html));
+const digestWithMatchZh = CH.buildJobDigestEmail('注册护士', [{ title: 'RN', company: 'X' }], '', 'zh', { score: 87 });
+check('digest match banner is localized in Chinese', /匹配度/.test(digestWithMatchZh.html));
+
 if (failures) { console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`); process.exit(1); }
 console.log('\nALL PASS (0 failures)');
 process.exit(0);

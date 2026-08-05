@@ -213,6 +213,17 @@ const server = app.listen(0, async () => {
     check('Pro employer can view the full candidate profile', profilePro.status === 200 && profilePro.json.email === 'jane@candidate.com', profilePro.body);
     check('full candidate profile carries badges + location', Array.isArray(profilePro.json.badges) && profilePro.json.location === 'Chicago, IL');
 
+    // ── "Open to Work" badge visibility (Part 4): full for Pro job seekers,
+    //    limited (Pro-employer-only) for free ones — the candidate is still
+    //    findable either way, only the badge itself is gated ──────────────────
+    const searchFreeEmployer = await req('GET', '/api/employer/candidates?professionId=registered-nurse', 'tokRival'); // rival: free employer, has a profile
+    const janeToFree = searchFreeEmployer.json.candidates.find(c => c.email === 'jane@candidate.com');
+    check('a free job seeker\'s Open to Work badge is hidden from a free employer', janeToFree && janeToFree.openToWork === false, JSON.stringify(janeToFree));
+    const searchProEmployer = await req('GET', '/api/employer/candidates?professionId=registered-nurse', 'tokStartup'); // startup: Pro employer
+    const janeToPro = searchProEmployer.json.candidates.find(c => c.email === 'jane@candidate.com');
+    check("a free job seeker's Open to Work badge is still shown to a Pro employer", janeToPro && janeToPro.openToWork === true, JSON.stringify(janeToPro));
+    check('the candidate is findable in search either way — only the badge is gated', !!janeToFree);
+
     // ── contact-request flow ─────────────────────────────────────────────────
     const contactMissing = await req('POST', '/api/employer/candidates/nobody@x.com/contact', 'tokStartup', { message: 'hi' });
     check('contacting a non-opted-in candidate 404s', contactMissing.status === 404);

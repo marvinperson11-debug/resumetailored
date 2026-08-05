@@ -7082,12 +7082,18 @@ app.get('/api/employer/candidates', (req, res) => {
   const candidates = rows.map(r => {
     const best = _candidateBestBand(r.email);
     const prof = r.profession_id ? CH.resolveProfession(r.profession_id, r.seniority) : null;
+    const openToWorkPro = !!r.open_to_work && isSubscriber(r.email);
     return {
       email: r.email, username: r.username || 'ResumeTailored user',
       professionLabel: prof ? prof.displayLabel : null,
       bestBand: best.band || null, bestScore: best.score || 0,
       location: r.location, remotePref: r.remote_pref, gigAvailable: !!r.gig_available, hourlyRate: r.hourly_rate,
-      openToWork: !!r.open_to_work, openToWorkPro: !!r.open_to_work && isSubscriber(r.email),
+      // "Open to Work" badge visibility: a Pro job seeker's badge is visible to
+      // every employer (openToWorkPro=true covers that case); a free job
+      // seeker's badge only shows to Pro employers — limited exposure, not
+      // hidden entirely. The candidate is still findable in search either way;
+      // only the badge itself is gated.
+      openToWork: !!r.open_to_work && (openToWorkPro || pro), openToWorkPro,
       updatedAt: r.updated_at
     };
   });
