@@ -2847,23 +2847,58 @@
     ['.feature-body > p', 0, '75% of resumes are rejected by Applicant Tracking Systems before a human ever reads them. Our AI knows exactly how ATS parsers work and rewrites your bullet points using the job\'s exact keywords — so you get past the bots and into interviews.', '75%的简历在人工审阅前就被ATS系统拒绝。我们的AI深知ATS工作方式，用职位的精确关键词重写你的要点——帮你突破机器筛选，进入面试。'],
     ['.feature-body h3', 1, 'Custom Cover Letters in Seconds', '秒速生成个性化求职信'],
     ['.feature-body > p', 1, 'Every cover letter is unique to the company and role. No generic filler. No "I am writing to express my interest." Just a compelling 3–4 paragraph letter that opens with a hook about the company and connects your achievements to their needs.', '每封求职信都针对公司和职位量身定制。没有通用套话。只有引人入胜的3-4段信，以公司亮点开篇，将你的成就与对方需求紧密连接。'],
-    ['.features .feature-row:nth-child(3) .feature-body ul li', 0, '<span style="color:#0077b5;font-weight:800;">✓</span> AI-optimized headline (max 220 chars)', '<span style="color:#0077b5;font-weight:800;">✓</span> AI优化标题（最多220字符）'],
-    ['.features .feature-row:nth-child(3) .feature-body ul li', 1, '<span style="color:#0077b5;font-weight:800;">✓</span> Rewritten About section with search keywords', '<span style="color:#0077b5;font-weight:800;">✓</span> 包含搜索关键词的重写个人简介'],
-    ['.features .feature-row:nth-child(3) .feature-body ul li', 2, '<span style="color:#0077b5;font-weight:800;">✓</span> Achievement-focused experience bullets', '<span style="color:#0077b5;font-weight:800;">✓</span> 以成就为重点的工作经历要点'],
-    ['.features .feature-row:nth-child(3) .feature-body ul li', 3, '<span style="color:#0077b5;font-weight:800;">✓</span> Tailored for MNC, startup &amp; global markets', '<span style="color:#0077b5;font-weight:800;">✓</span> 针对跨国企业、初创公司和全球市场优化'],
-    ['.features .feature-row:nth-child(3) .feature-body .btn-primary', null, 'Optimize My LinkedIn — Free →', '优化我的 LinkedIn — 免费 →'],
-    ['.feature-body h3', 3, 'Career Hub for Pro Members', '职业发展中心（专业版）'],
-    ['.feature-body > p', 3, 'Unlock the full Career Hub: word-for-word salary negotiation scripts, market rate research, a professional community forum, and quarterly career check-ins. A complete career platform, not just a resume tool.', '解锁完整职业发展中心：逐字薪资谈判脚本、市场薪酬调研、专业社区论坛和季度职业回顾。这是完整的职业平台，不只是简历工具。'],
+    // The four rows below (nth-child 3/4) used to be nth-child(3)=LinkedIn and
+    // nth-child(4)=Career Hub, back when there were only 5 .feature-row cards.
+    // "Share as Link" was inserted before LinkedIn (pushing it to 4), then the
+    // Resume Video + Personal Website cards were inserted between LinkedIn and
+    // Career Hub (pushing Career Hub from 4 to 7) — the selectors here were
+    // never updated, so toggling to Chinese overwrote the LinkedIn card's
+    // (already-correct, data-i18n-driven) heading with the Career Hub Chinese
+    // text, and overwrote the Resume Video heading with "30 Seconds vs. 45
+    // Minutes" — real content corruption, not just a missing translation.
+    ['.features .feature-row:nth-child(4) .feature-body ul li', 0, '<span style="color:#0077b5;font-weight:800;">✓</span> AI-optimized headline (max 220 chars)', '<span style="color:#0077b5;font-weight:800;">✓</span> AI优化标题（最多220字符）'],
+    ['.features .feature-row:nth-child(4) .feature-body ul li', 1, '<span style="color:#0077b5;font-weight:800;">✓</span> Rewritten About section with search keywords', '<span style="color:#0077b5;font-weight:800;">✓</span> 包含搜索关键词的重写个人简介'],
+    ['.features .feature-row:nth-child(4) .feature-body ul li', 2, '<span style="color:#0077b5;font-weight:800;">✓</span> Achievement-focused experience bullets', '<span style="color:#0077b5;font-weight:800;">✓</span> 以成就为重点的工作经历要点'],
+    ['.features .feature-row:nth-child(4) .feature-body ul li', 3, '<span style="color:#0077b5;font-weight:800;">✓</span> Tailored for MNC, startup &amp; global markets', '<span style="color:#0077b5;font-weight:800;">✓</span> 针对跨国企业、初创公司和全球市场优化'],
+    ['.features .feature-row:nth-child(4) .feature-body .btn-primary', null, 'Optimize My LinkedIn — Free →', '优化我的 LinkedIn — 免费 →'],
+    // Resume Video card — bullet list + CTA button had no translation at all.
+    ['.features .feature-row:nth-child(5) .feature-body ul li', 0, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Natural studio AI voiceover — male or female', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 自然的录音棚级 AI 配音——男声或女声可选'],
+    ['.features .feature-row:nth-child(5) .feature-body ul li', 1, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Addressed to the hiring manager: “Hi Mr. Smith…”', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 直接称呼招聘经理姓名：“您好，Smith 先生……”'],
+    ['.features .feature-row:nth-child(5) .feature-body ul li', 2, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Vertical MP4 for LinkedIn, Shorts &amp; Reels', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 竖版 MP4，适用于 LinkedIn、Shorts 和 Reels'],
+    ['.features .feature-row:nth-child(5) .feature-body ul li', 3, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Add your own headshot &amp; brand color', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 添加你的头像与品牌色'],
+    ['.features .feature-row:nth-child(5) .feature-body .btn-primary', null, 'Unlock Resume Video — $19.99/mo →', '解锁简历视频 — ¥19.99/月 →'],
+    // Personal Website card — same gap.
+    ['.features .feature-row:nth-child(6) .feature-body ul li', 0, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Your own live address — <em>yourname.resumetailored.com</em>', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 专属网址 — <em>yourname.resumetailored.com</em>'],
+    ['.features .feature-row:nth-child(6) .feature-body ul li', 1, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Built from your resume — publish in one click', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 基于你的简历自动生成——一键发布'],
+    ['.features .feature-row:nth-child(6) .feature-body ul li', 2, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Watermark-free &amp; indexable by Google', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 无水印，可被 Google 收录'],
+    ['.features .feature-row:nth-child(6) .feature-body ul li', 3, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Editable design, mobile-optimized, 100+ templates', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 可编辑设计，移动端优化，100+模板可选'],
+    ['.features .feature-row:nth-child(6) .feature-body .btn-primary', null, 'Unlock Personal Website — $19.99/mo →', '解锁个人网站 — ¥19.99/月 →'],
+    ['.feature-body h3', 6, 'Career Hub for Pro Members', '职业发展中心（专业版）'],
+    ['.feature-body > p', 6, 'Unlock the full Career Hub: word-for-word salary negotiation scripts, market rate research, a professional community forum, and quarterly career check-ins. A complete career platform, not just a resume tool.', '解锁完整职业发展中心：逐字薪资谈判脚本、市场薪酬调研、专业社区论坛和季度职业回顾。这是完整的职业平台，不只是简历工具。'],
     ['.hub-box', 0, '💰 Salary Guide', '💰 薪资指南'],
     ['.hub-box', 1, '👥 Community Forum', '👥 社区论坛'],
     ['.hub-box', 2, '📈 Career Check-ins', '📈 职业回顾'],
     ['.hub-box', 3, '🏆 Pro Templates', '🏆 专业模板'],
-    ['.features .feature-row:nth-child(4) .feature-visual-inner > div:last-child', null, 'Click any feature to unlock with Pro →', '点击任意功能升级专业版 →'],
-    ['.feature-body h3', 4, '30 Seconds vs. 45 Minutes', '30秒 vs. 45分钟'],
-    ['.feature-body > p', 4, 'The average job seeker spends 45 minutes tailoring each application manually. At 20 applications a week, that\'s 15 hours of copy-editing. ResumeTailored AI does it in 30 seconds — apply to more jobs, faster, with higher-quality applications.', '普通求职者手动修改每份申请平均需45分钟。每周投递20份就是15小时的编辑工作。ResumeTailored AI只需30秒——用更高质量的申请，更快地投递更多职位。'],
+    ['.features .feature-row:nth-child(7) .feature-visual-inner > div:last-child', null, 'Click any feature to unlock with Pro →', '点击任意功能升级专业版 →'],
+    ['.feature-body h3', 7, '30 Seconds vs. 45 Minutes', '30秒 vs. 45分钟'],
+    ['.feature-body > p', 7, 'The average job seeker spends 45 minutes tailoring each application manually. At 20 applications a week, that\'s 15 hours of copy-editing. ResumeTailored AI does it in 30 seconds — apply to more jobs, faster, with higher-quality applications.', '普通求职者手动修改每份申请平均需45分钟。每周投递20份就是15小时的编辑工作。ResumeTailored AI只需30秒——用更高质量的申请，更快地投递更多职位。'],
+    // ── Job Boards ──────────────────────────────────────────────────────────
+    // This section's <h2 class="section-title"> was added to the page after the
+    // TRANS list below was written, and every ['.section-title', N, ...] entry
+    // is a positional index into document.querySelectorAll('.section-title') —
+    // so leaving this section out doesn't just skip translating IT, it shifts
+    // every .section-title index from here down by one, and each of those
+    // entries silently painted the WRONG section's heading text after a
+    // language toggle (e.g. the Career Levels heading getting the Templates
+    // gallery's Chinese text). All of the following indices were bumped by 1
+    // to account for this section's heading now sitting at index 2.
+    ['.section-title', 2, 'Which job boards does ResumeTailored AI <span>support?</span>', 'ResumeTailored AI <span>支持哪些招聘网站？</span>'],
+    ['#job-boards .container > p', null, 'Paste a job URL from any of the 40+ supported platforms and our AI extracts the full job description automatically — no copying required.', '粘贴任意40多个支持平台中的职位链接，AI会自动提取完整职位描述——无需手动复制。'],
+    ['#job-boards h3', null, 'Supported Job Boards &amp; ATS Platforms', '支持的招聘网站与ATS平台'],
+    ['#job-boards li:last-child', null, '+ more added regularly — any URL-accessible job post works', '+ 持续新增支持平台 — 任何可通过链接访问的职位都可使用'],
     // ── Template Gallery ────────────────────────────────────────────────────
     ['.section-eyebrow', 2, '100+ Templates', '100+简历模板'],
-    ['.section-title', 2, 'Professional templates for <span>every style</span>', '覆盖<span>所有风格</span>的专业模板'],
+    ['.section-title', 3, 'Professional templates for <span>every style</span>', '覆盖<span>所有风格</span>的专业模板'],
     ['.gallery-tab', 0, 'Resume Templates', '简历模板'],
     ['.gallery-tab', 1, 'Cover Letter Templates', '求职信模板'],
     // ── Pro Modal ───────────────────────────────────────────────────────────
@@ -2876,7 +2911,7 @@
     ['#checkoutBtn', null, 'Start Pro — $19.99/mo →', '开始专业版 — ¥19.99/月 →'],
     // ── Career Levels ───────────────────────────────────────────────────────
     ['.section-eyebrow', 3, 'Career Levels', '职业级别'],
-    ['.section-title', 3, 'Every career stage, <span>perfectly tailored</span>', '每个职业阶段，<span>精准定制</span>'],
+    ['.section-title', 4, 'Every career stage, <span>perfectly tailored</span>', '每个职业阶段，<span>精准定制</span>'],
     ['#tiers .container > p', null, 'From your first job to the C-suite — our AI adapts to your level and targets the exact role you want.', '从第一份工作到高管——AI根据你的级别自适应，精准定位你想要的职位。'],
     ['.tier-basic-card .tier-level-badge', null, 'Free Tier', '免费版'],
     ['.tier-basic-card .tier-name', null, 'Basic', '基础版'],
@@ -2908,7 +2943,7 @@
     ['.tier-exec-card .tier-bottom .btn', null, 'Go Executive — $19.99/mo →', '升级高管版 — ¥19.99/月 →'],
     // ── Testimonials ────────────────────────────────────────────────────────
     ['.section-eyebrow', 4, 'Real Results', '真实成果'],
-    ['.section-title', 4, 'What job seekers are <span>saying</span>', '求职者都在<span>说什么</span>'],
+    ['.section-title', 5, 'What job seekers are <span>saying</span>', '求职者都在<span>说什么</span>'],
     ['.testimonial p', 0, '"I was applying to 20+ jobs and getting no responses. After using ResumeTailored I got 3 interviews in the first week. The difference was immediately obvious."', '"我投递了20多份工作却没有任何回音。使用ResumeTailored后，第一周就获得了3次面试机会。效果立竿见影。"'],
     ['.testimonial p', 1, '"The cover letters it writes are actually good. Way better than anything I could write after a long day of job searching. I just paste and submit."', '"它生成的求职信真的很出色。比我在漫长求职一天后能写出的好多了。我只需粘贴然后提交。"'],
     ['.testimonial p', 2, '"I used to spend 45 minutes tailoring each application. Now it takes 2 minutes. Absolute game changer — I apply to 3× more jobs with better applications."', '"我以前每份申请要花45分钟修改。现在只需2分钟。彻底改变了游戏规则——我用更好的申请投递了3倍多的职位。"'],
@@ -2921,7 +2956,7 @@
     ['.cta-banner .btn-white', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
     // ── FAQ ─────────────────────────────────────────────────────────────────
     ['.section-eyebrow', 5, 'Common Questions', '常见问题'],
-    ['.section-title', 5, 'Frequently asked <span>questions</span>', '常见<span>问题解答</span>'],
+    ['.section-title', 6, 'Frequently asked <span>questions</span>', '常见<span>问题解答</span>'],
     ['.faq-q span:first-child', 0, 'Is it really free to start?', '真的可以免费开始吗？'],
     ['.faq-a', 0, 'Yes — the free tier gives you unlimited AI resume tailoring with no credit card required. You can sign up and get your first tailored resume in under 2 minutes.', '是的——免费版每天为你提供1次AI简历定制，无需信用卡。注册后2分钟内即可获得第一份定制简历。'],
     ['.faq-q span:first-child', 1, 'Will it fabricate experience I don\'t have?', '它会编造我没有的经历吗？'],
@@ -2936,7 +2971,7 @@
     ['.faq-a', 5, 'Your tailored resume is available to copy as plain text (perfect for pasting into ATS forms) or download as a formatted .docx Word document. Both are included in free and Pro plans.', '你的定制简历可以复制为纯文本（非常适合粘贴到ATS表格）或下载为格式化的.docx Word文档。两种格式均包含在免费版和专业版中。'],
     // ── Pricing ─────────────────────────────────────────────────────────────
     ['.section-eyebrow', 6, 'Pricing', '定价'],
-    ['.section-title', 6, 'Simple, <span>transparent</span> pricing', '简单<span>透明</span>的定价'],
+    ['.section-title', 7, 'Simple, <span>transparent</span> pricing', '简单<span>透明</span>的定价'],
     ['.cc-title', null, 'How we compare to Jobscan &amp; Rezi', '我们与Jobscan和Rezi的对比'],
     ['.cc-sub', null, 'Same result. No $49.95/month. No weak cover letters.', '同样的结果，不需要$49.95/月，没有质量差的求职信。'],
     ['.cc-table thead th', 0, 'Feature', '功能'],

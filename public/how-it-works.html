@@ -164,6 +164,13 @@
       .about-cta p, .footer, .footer-links a { color: #2d2d2d !important; }
       .compare-table td:first-child { color: #1a1a1a !important; }
       .footer-links a:hover { color: #1F5C3D !important; }
+      /* .footer's rgba(0,0,0,0.5) background was tuned to sit on this page's
+         original dark body (#030712) — a translucent black darkening an
+         already-dark page reads as a subtle tint. On the cream mobile body
+         theme.css forces everywhere, that same rule paints a muddy gray box
+         over the footer instead, which is what actually made it hard to read
+         (darkening the text above wasn't enough on its own). */
+      .footer { background: transparent !important; border-top: 1px solid rgba(0,0,0,0.08) !important; }
     }
 
     /* Fixed circuit grid background */
