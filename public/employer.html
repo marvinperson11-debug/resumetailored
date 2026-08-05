@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Employer Portal — Post Jobs &amp; Find Candidates | ResumeTailored</title>
+<meta name="description" content="Post jobs and reach candidates on ResumeTailored — free to start, 3 active posts included. Upgrade to Pro Employer for unlimited posts, full candidate search and a built-in ATS."/>
+<meta name="robots" content="noindex"/>
+<link rel="canonical" href="https://resumetailored.com/employer"/>
+<link rel="icon" href="/favicon.png" type="image/png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/career-hub.css"/>
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',sans-serif;background:var(--ch-cream);color:var(--ch-ink);line-height:1.5;min-height:100vh;}
+  a{color:inherit;}
+  .ep-nav{display:flex;align-items:center;gap:16px;padding:16px 24px;background:#fff;border-bottom:1px solid var(--ch-line);}
+  .ep-nav .ep-logo{font-weight:900;font-size:18px;color:var(--ch-forest);text-decoration:none;}
+  .ep-nav .ep-tag{font-size:12px;font-weight:800;color:#fff;background:var(--ch-forest);border-radius:999px;padding:3px 10px;}
+  .ep-nav .ep-spacer{flex:1;}
+  .ep-nav a.ep-link{font-size:13px;font-weight:700;color:var(--ch-muted);text-decoration:none;}
+  .ep-wrap{max-width:920px;margin:0 auto;padding:28px 20px 80px;}
+  .ep-h1{font-size:26px;font-weight:900;margin:0 0 6px;}
+  .ep-sub{color:var(--ch-muted);font-size:14px;margin:0 0 22px;}
+  .ep-authcard{max-width:380px;margin:60px auto;background:#fff;border:1px solid var(--ch-line);border-radius:16px;padding:28px;}
+  .ep-tabs{display:flex;gap:6px;margin-bottom:16px;}
+  .ep-tab{flex:1;text-align:center;padding:9px;border-radius:8px;font-weight:800;font-size:13px;cursor:pointer;color:var(--ch-muted);}
+  .ep-tab.on{background:var(--ch-forest);color:#fff;}
+  .ep-err{color:#dc2626;font-size:13px;margin-top:8px;display:none;}
+  .ep-dash-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(135deg,var(--ch-forest-dk),var(--ch-forest));color:#fff;border-radius:16px;padding:20px 22px;margin-bottom:22px;}
+  .ep-dash-head .co{font-size:19px;font-weight:800;}
+  .ep-dash-head .meta{font-size:13px;opacity:.85;}
+  .ep-dash-head .spacer{flex:1;}
+  .ep-jobcard{background:#fff;border:1px solid var(--ch-line);border-radius:14px;padding:18px;margin-bottom:12px;}
+  .ep-jobcard .jt{font-weight:800;font-size:16px;}
+  .ep-jobcard .jm{font-size:13px;color:var(--ch-muted);margin:4px 0 10px;}
+  .ep-jobcard .jbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .ep-status{display:inline-block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;border-radius:999px;padding:3px 9px;}
+  .ep-status.active{background:rgba(22,163,74,.12);color:#16a34a;}
+  .ep-status.closed{background:rgba(0,0,0,.06);color:var(--ch-muted);}
+  .ep-modal-overlay{position:fixed;inset:0;background:rgba(25,21,18,.45);z-index:2000;display:none;align-items:center;justify-content:center;padding:16px;}
+  .ep-modal-overlay.open{display:flex;}
+  .ep-modal{background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:24px;}
+  .ep-modal h2{margin:0 0 16px;font-size:19px;}
+  .ep-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:520px){.ep-2col{grid-template-columns:1fr;}}
+  .ep-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;z-index:3000;display:none;}
+  .ep-quota{font-size:13px;color:var(--ch-muted);margin-bottom:14px;}
+</style>
+</head>
+<body>
+
+<nav class="ep-nav">
+  <a class="ep-logo" href="/">ResumeTailored</a>
+  <span class="ep-tag">Employer Portal</span>
+  <div class="ep-spacer"></div>
+  <a class="ep-link" href="/dashboard">Job Seeker Dashboard</a>
+  <a class="ep-link" href="#" id="epLogout" style="display:none;">Log out</a>
+</nav>
+
+<div class="ep-wrap">
+
+  <div id="epAuthGate" class="ep-authcard" style="display:none;">
+    <div class="ep-tabs">
+      <div class="ep-tab on" id="epTabLogin" onclick="epSetAuthTab('login')">Log In</div>
+      <div class="ep-tab" id="epTabSignup" onclick="epSetAuthTab('signup')">Sign Up</div>
+    </div>
+    <div id="epAuthLogin">
+      <div class="ch-field"><label class="ch-label">Email</label><input class="ch-input" id="epLoginEmail" type="email" autocomplete="email"/></div>
+      <div class="ch-field"><label class="ch-label">Password</label><input class="ch-input" id="epLoginPw" type="password" autocomplete="current-password"/></div>
+      <button class="ch-btn" style="width:100%;" onclick="epDoLogin()">Log In</button>
+    </div>
+    <div id="epAuthSignup" style="display:none;">
+      <div class="ch-field"><label class="ch-label">Username</label><input class="ch-input" id="epSignupUser" type="text"/></div>
+      <div class="ch-field"><label class="ch-label">Email</label><input class="ch-input" id="epSignupEmail" type="email" autocomplete="email"/></div>
+      <div class="ch-field"><label class="ch-label">Password</label><input class="ch-input" id="epSignupPw" type="password" autocomplete="new-password"/></div>
+      <button class="ch-btn" style="width:100%;" onclick="epDoSignup()">Create Account</button>
+    </div>
+    <p class="ep-err" id="epAuthErr"></p>
+  </div>
+
+  <div id="epSetup" style="display:none;">
+    <h1 class="ep-h1">Set up your company</h1>
+    <p class="ep-sub">This turns on Hire Mode for your account — same login, no separate employer signup.</p>
+    <div class="ch-card">
+      <div class="ch-field"><label class="ch-label">Company name</label><input class="ch-input" id="epCoName" placeholder="Acme Inc."/></div>
+      <div class="ch-field"><label class="ch-label">Website (optional)</label><input class="ch-input" id="epCoSite" placeholder="https://acme.com"/></div>
+      <button class="ch-btn" onclick="epSaveProfile()">Start Hiring</button>
+      <p class="ep-err" id="epSetupErr"></p>
+    </div>
+  </div>
+
+  <div id="epDash" style="display:none;">
+    <div class="ep-dash-head">
+      <div>
+        <div class="co" id="epCoNameOut"></div>
+        <div class="meta" id="epCoMetaOut"></div>
+      </div>
+      <div class="spacer"></div>
+      <span class="ch-pill ch-pill-pro" id="epProPill" style="display:none;">PRO EMPLOYER</span>
+      <button class="ch-btn ch-btn-sm" id="epUpgradeBtn" onclick="epUpgrade()" style="display:none;">Upgrade — $29/mo</button>
+      <button class="ch-btn" onclick="epOpenPostModal()">+ Post a Job</button>
+    </div>
+
+    <p class="ep-quota" id="epQuota"></p>
+
+    <div id="epJobsList"></div>
+    <div class="ch-empty" id="epJobsEmpty" style="display:none;">No jobs posted yet — click "+ Post a Job" to get started.</div>
+  </div>
+
+</div>
+
+<div class="ep-modal-overlay" id="epPostOverlay">
+  <div class="ep-modal">
+    <h2 id="epPostModalTitle">Post a Job</h2>
+    <input type="hidden" id="epEditId"/>
+    <div class="ch-field"><label class="ch-label">Job title</label><input class="ch-input" id="epfTitle" maxlength="140"/></div>
+    <div class="ch-field"><label class="ch-label">Description</label><textarea class="ch-textarea" id="epfDesc" maxlength="8000"></textarea></div>
+    <div class="ch-field"><label class="ch-label">Requirements</label><textarea class="ch-textarea" id="epfReq" maxlength="4000" style="min-height:80px;"></textarea></div>
+    <div class="ch-field"><label class="ch-label">Location</label><input class="ch-input" id="epfLoc" placeholder="City, State or Remote"/></div>
+    <div class="ep-2col">
+      <div class="ch-field">
+        <label class="ch-label">Work mode</label>
+        <select class="ch-select" id="epfMode"><option value="remote">Remote</option><option value="hybrid">Hybrid</option><option value="onsite">Onsite</option></select>
+      </div>
+      <div class="ch-field">
+        <label class="ch-label">Job type</label>
+        <select class="ch-select" id="epfType" onchange="epToggleGigFields()">
+          <option value="full-time">Full-time</option><option value="part-time">Part-time</option>
+          <option value="contract">Contract</option><option value="temp">Temp / Gig</option>
+        </select>
+      </div>
+    </div>
+    <div class="ep-2col">
+      <div class="ch-field"><label class="ch-label">Salary min (optional)</label><input class="ch-input" id="epfSalMin" type="number" min="0"/></div>
+      <div class="ch-field"><label class="ch-label">Salary max (optional)</label><input class="ch-input" id="epfSalMax" type="number" min="0"/></div>
+    </div>
+    <div id="epGigFields" style="display:none;">
+      <div class="ep-2col">
+        <div class="ch-field"><label class="ch-label">Hourly rate</label><input class="ch-input" id="epfGigRate" type="number" min="0"/></div>
+        <div class="ch-field"><label class="ch-label">Schedule</label><input class="ch-input" id="epfGigSched" placeholder="e.g. Sat 9am–5pm, one day"/></div>
+      </div>
+    </div>
+    <p class="ep-err" id="epPostErr"></p>
+    <div class="ch-row" style="margin-top:8px;">
+      <button class="ch-btn" onclick="epSubmitPost()">Save</button>
+      <button class="ch-btn ch-btn-ghost" onclick="epClosePostModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="ep-toast" id="epToast"></div>
+
+<script>
+function epToken(){ return localStorage.getItem('rt_token') || ''; }
+function epAuthHeaders(){ return { 'Content-Type':'application/json', 'Authorization':'Bearer '+epToken() }; }
+function epToast(msg){ var t=document.getElementById('epToast'); t.textContent=msg; t.style.display='block'; setTimeout(function(){t.style.display='none';}, 2600); }
+
+function epSetAuthTab(which){
+  document.getElementById('epTabLogin').classList.toggle('on', which==='login');
+  document.getElementById('epTabSignup').classList.toggle('on', which==='signup');
+  document.getElementById('epAuthLogin').style.display = which==='login' ? 'block' : 'none';
+  document.getElementById('epAuthSignup').style.display = which==='signup' ? 'block' : 'none';
+  document.getElementById('epAuthErr').style.display='none';
+}
+function epShowAuthErr(msg){ var e=document.getElementById('epAuthErr'); e.textContent=msg; e.style.display='block'; }
+
+async function epDoLogin(){
+  var email=document.getElementById('epLoginEmail').value.trim();
+  var password=document.getElementById('epLoginPw').value;
+  if(!email||!password) return epShowAuthErr('Email and password are required.');
+  try{
+    var r=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:password})});
+    var d=await r.json();
+    if(!r.ok) return epShowAuthErr(d.error||'Login failed.');
+    localStorage.setItem('rt_token', d.token);
+    localStorage.setItem('rt_email', d.email);
+    localStorage.setItem('rt_username', d.username);
+    epBoot();
+  }catch(e){ epShowAuthErr('Network error — please try again.'); }
+}
+async function epDoSignup(){
+  var username=document.getElementById('epSignupUser').value.trim();
+  var email=document.getElementById('epSignupEmail').value.trim();
+  var password=document.getElementById('epSignupPw').value;
+  if(!username||!email||!password) return epShowAuthErr('All fields are required.');
+  try{
+    var r=await fetch('/api/auth/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,username:username,password:password})});
+    var d=await r.json();
+    if(!r.ok) return epShowAuthErr(d.error||'Signup failed.');
+    localStorage.setItem('rt_token', d.token);
+    localStorage.setItem('rt_email', d.email);
+    localStorage.setItem('rt_username', d.username);
+    epBoot();
+  }catch(e){ epShowAuthErr('Network error — please try again.'); }
+}
+document.getElementById('epLogout').addEventListener('click', async function(ev){
+  ev.preventDefault();
+  try{ await fetch('/api/auth/logout',{method:'POST',headers:epAuthHeaders()}); }catch(e){}
+  localStorage.removeItem('rt_token'); localStorage.removeItem('rt_email'); localStorage.removeItem('rt_username');
+  epBoot();
+});
+
+var epStatus = null;
+
+async function epBoot(){
+  document.getElementById('epAuthGate').style.display='none';
+  document.getElementById('epSetup').style.display='none';
+  document.getElementById('epDash').style.display='none';
+  document.getElementById('epLogout').style.display='none';
+  if(!epToken()){
+    document.getElementById('epAuthGate').style.display='block';
+    return;
+  }
+  document.getElementById('epLogout').style.display='inline';
+  try{
+    var r=await fetch('/api/employer/status',{headers:epAuthHeaders()});
+    if(r.status===401){
+      localStorage.removeItem('rt_token');
+      return epBoot();
+    }
+    epStatus = await r.json();
+  }catch(e){ return epToast('Could not load employer status.'); }
+  if(!epStatus.isEmployer){
+    document.getElementById('epSetup').style.display='block';
+    return;
+  }
+  document.getElementById('epDash').style.display='block';
+  epRenderDashHead();
+  epLoadJobs();
+}
+
+async function epSaveProfile(){
+  var companyName=document.getElementById('epCoName').value.trim();
+  var website=document.getElementById('epCoSite').value.trim();
+  var err=document.getElementById('epSetupErr'); err.style.display='none';
+  if(companyName.length<2){ err.textContent='Company name is required.'; err.style.display='block'; return; }
+  try{
+    var r=await fetch('/api/employer/profile',{method:'POST',headers:epAuthHeaders(),body:JSON.stringify({companyName:companyName,website:website})});
+    var d=await r.json();
+    if(!r.ok){ err.textContent=d.message||'Could not save.'; err.style.display='block'; return; }
+    epBoot();
+  }catch(e){ err.textContent='Network error — please try again.'; err.style.display='block'; }
+}
+
+function epRenderDashHead(){
+  document.getElementById('epCoNameOut').textContent = epStatus.companyName;
+  document.getElementById('epCoMetaOut').textContent = epStatus.pro ? 'Pro Employer — unlimited posts' : (epStatus.activeJobs + ' of ' + epStatus.freeActiveJobLimit + ' free active posts used');
+  document.getElementById('epProPill').style.display = epStatus.pro ? 'inline-block' : 'none';
+  document.getElementById('epUpgradeBtn').style.display = epStatus.pro ? 'none' : 'inline-block';
+  var q=document.getElementById('epQuota');
+  q.textContent = epStatus.pro ? '' : 'Free plan: up to '+epStatus.freeActiveJobLimit+' active job posts, no ATS or candidate search yet. Upgrade to Pro Employer for unlimited posts, full candidate search, an ATS pipeline, and priority listing in the Job Feed.';
+}
+
+async function epUpgrade(){
+  try{
+    var r=await fetch('/api/employer/subscribe',{method:'POST',headers:epAuthHeaders()});
+    var d=await r.json();
+    if(!r.ok) return epToast(d.message || 'Pro Employer checkout is not available yet.');
+    window.location.href = d.url;
+  }catch(e){ epToast('Network error — please try again.'); }
+}
+
+async function epLoadJobs(){
+  try{
+    var r=await fetch('/api/employer/jobs',{headers:epAuthHeaders()});
+    var d=await r.json();
+    epRenderJobs(d.jobs||[]);
+  }catch(e){ epToast('Could not load your jobs.'); }
+}
+
+function epEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function epSalaryStr(min,max){
+  if(min==null && max==null) return '';
+  if(min!=null && max!=null) return '$'+min.toLocaleString()+' – $'+max.toLocaleString();
+  return '$'+(min!=null?min:max).toLocaleString()+'+';
+}
+
+function epRenderJobs(jobs){
+  var list=document.getElementById('epJobsList');
+  var empty=document.getElementById('epJobsEmpty');
+  if(!jobs.length){ list.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  list.innerHTML = jobs.map(function(j){
+    var meta = [j.location, j.workMode, j.jobType, epSalaryStr(j.salaryMin,j.salaryMax)].filter(Boolean).join(' · ');
+    return '<div class="ep-jobcard">'
+      + '<div class="jt">'+epEsc(j.title)+' <span class="ep-status '+j.status+'">'+j.status+'</span></div>'
+      + '<div class="jm">'+epEsc(meta)+' · '+j.applicantCount+' applicant'+(j.applicantCount===1?'':'s')+'</div>'
+      + '<div class="jbtns">'
+      + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epEditPost('+j.id+')">Edit</button>'
+      + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epToggleStatus('+j.id+',\''+(j.status==='active'?'closed':'active')+'\')">'+(j.status==='active'?'Close':'Reopen')+'</button>'
+      + '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick="epDeletePost('+j.id+')">Delete</button>'
+      + '</div></div>';
+  }).join('');
+  window._epJobs = jobs;
+}
+
+function epToggleGigFields(){
+  document.getElementById('epGigFields').style.display = document.getElementById('epfType').value==='temp' ? 'block' : 'none';
+}
+
+function epOpenPostModal(){
+  if(!epStatus.pro && epStatus.activeJobs >= epStatus.freeActiveJobLimit){
+    epToast('Free plan limit reached ('+epStatus.freeActiveJobLimit+' active posts). Upgrade to Pro Employer for unlimited.');
+    return;
+  }
+  document.getElementById('epPostModalTitle').textContent='Post a Job';
+  document.getElementById('epEditId').value='';
+  ['epfTitle','epfDesc','epfReq','epfLoc','epfGigRate','epfGigSched','epfSalMin','epfSalMax'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('epfMode').value='remote';
+  document.getElementById('epfType').value='full-time';
+  epToggleGigFields();
+  document.getElementById('epPostErr').style.display='none';
+  document.getElementById('epPostOverlay').classList.add('open');
+}
+function epEditPost(id){
+  var j = (window._epJobs||[]).find(function(x){ return x.id===id; });
+  if(!j) return;
+  document.getElementById('epPostModalTitle').textContent='Edit Job';
+  document.getElementById('epEditId').value=id;
+  document.getElementById('epfTitle').value=j.title;
+  document.getElementById('epfDesc').value=j.description;
+  document.getElementById('epfReq').value=j.requirements;
+  document.getElementById('epfLoc').value=j.location;
+  document.getElementById('epfMode').value=j.workMode;
+  document.getElementById('epfType').value=j.jobType;
+  document.getElementById('epfSalMin').value=j.salaryMin==null?'':j.salaryMin;
+  document.getElementById('epfSalMax').value=j.salaryMax==null?'':j.salaryMax;
+  document.getElementById('epfGigRate').value=j.gigRate==null?'':j.gigRate;
+  document.getElementById('epfGigSched').value=j.gigSchedule||'';
+  epToggleGigFields();
+  document.getElementById('epPostErr').style.display='none';
+  document.getElementById('epPostOverlay').classList.add('open');
+}
+function epClosePostModal(){ document.getElementById('epPostOverlay').classList.remove('open'); }
+
+async function epSubmitPost(){
+  var id = document.getElementById('epEditId').value;
+  var body = {
+    title: document.getElementById('epfTitle').value,
+    description: document.getElementById('epfDesc').value,
+    requirements: document.getElementById('epfReq').value,
+    location: document.getElementById('epfLoc').value,
+    workMode: document.getElementById('epfMode').value,
+    jobType: document.getElementById('epfType').value,
+    salaryMin: document.getElementById('epfSalMin').value,
+    salaryMax: document.getElementById('epfSalMax').value,
+    gigRate: document.getElementById('epfGigRate').value,
+    gigSchedule: document.getElementById('epfGigSched').value
+  };
+  var err=document.getElementById('epPostErr'); err.style.display='none';
+  try{
+    var url = id ? ('/api/employer/jobs/'+id) : '/api/employer/jobs';
+    var method = id ? 'PUT' : 'POST';
+    var r=await fetch(url,{method:method,headers:epAuthHeaders(),body:JSON.stringify(body)});
+    var d=await r.json();
+    if(!r.ok){ err.textContent=d.message||'Could not save job.'; err.style.display='block'; return; }
+    epClosePostModal();
+    epToast(id?'Job updated.':'Job posted.');
+    epBoot();
+  }catch(e){ err.textContent='Network error — please try again.'; err.style.display='block'; }
+}
+
+async function epToggleStatus(id, status){
+  try{
+    var r=await fetch('/api/employer/jobs/'+id,{method:'PUT',headers:epAuthHeaders(),body:JSON.stringify({status:status})});
+    if(!r.ok) return epToast('Could not update job.');
+    epBoot();
+  }catch(e){ epToast('Network error — please try again.'); }
+}
+async function epDeletePost(id){
+  if(!confirm('Delete this job posting? This cannot be undone.')) return;
+  try{
+    var r=await fetch('/api/employer/jobs/'+id,{method:'DELETE',headers:epAuthHeaders()});
+    if(!r.ok) return epToast('Could not delete job.');
+    epToast('Job deleted.');
+    epBoot();
+  }catch(e){ epToast('Network error — please try again.'); }
+}
+
+epBoot();
+</script>
+</body>
+</html>

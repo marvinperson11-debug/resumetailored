@@ -17,6 +17,7 @@ const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Borde
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 const CH = require('./career-hub.js');           // Career Hub pure core (taxonomy, prompts, validators, scoring)
+const EH = require('./employer-hub.js');         // Employer Portal pure core (validation, limits, ranking)
 const { renderBadgePage } = require('./badge-page.js');
 /* Video duration probing for site-media uploads. This is `@remotion/media-parser`
    — a pure container-format parser (reads MP4/WebM/MOV box headers for their
@@ -435,6 +436,61 @@ _ensureColumn('check_ins', 'job_alerts', 'job_alerts INTEGER DEFAULT 0');
 // Preferred UI language, so server-side emails (the job digest) match what the
 // user reads in the app.
 _ensureColumn('check_ins', 'lang', "lang TEXT DEFAULT 'en'");
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Employer Portal: turns a signed-in account into a job poster via a "Hire
+// Mode" toggle rather than a second login system (reuses the existing
+// users/sessions auth exactly like every other feature). Pure validation/
+// limits logic lives in employer-hub.js (EH); these tables + the /api/employer
+// routes are the SQLite + Stripe wiring, mirroring the Career Hub's own
+// pure-core/server-wiring split.
+// ═══════════════════════════════════════════════════════════════════════════
+db.exec(`
+  CREATE TABLE IF NOT EXISTS employer_profiles (
+    email        TEXT PRIMARY KEY,
+    company_name TEXT NOT NULL,
+    website      TEXT DEFAULT '',
+    created_at   INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS employer_subscribers (
+    email       TEXT PRIMARY KEY,
+    customer_id TEXT
+  );
+  CREATE TABLE IF NOT EXISTS job_postings (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    employer_email TEXT NOT NULL,
+    title          TEXT NOT NULL,
+    description    TEXT NOT NULL DEFAULT '',
+    requirements   TEXT NOT NULL DEFAULT '',
+    salary_min     INTEGER,
+    salary_max     INTEGER,
+    location       TEXT NOT NULL DEFAULT '',
+    work_mode      TEXT NOT NULL,
+    job_type       TEXT NOT NULL,
+    is_gig         INTEGER NOT NULL DEFAULT 0,
+    gig_rate       INTEGER,
+    gig_schedule   TEXT DEFAULT '',
+    status         TEXT NOT NULL DEFAULT 'active',
+    created_at     INTEGER NOT NULL,
+    updated_at     INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_job_postings_employer ON job_postings(employer_email);
+  CREATE INDEX IF NOT EXISTS idx_job_postings_status ON job_postings(status);
+  CREATE TABLE IF NOT EXISTS job_applications (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id       INTEGER NOT NULL,
+    candidate_email TEXT NOT NULL,
+    status       TEXT NOT NULL DEFAULT 'new',
+    rating       INTEGER,
+    notes        TEXT DEFAULT '',
+    interview_note TEXT DEFAULT '',
+    created_at   INTEGER NOT NULL,
+    updated_at   INTEGER NOT NULL,
+    UNIQUE(job_id, candidate_email)
+  );
+  CREATE INDEX IF NOT EXISTS idx_job_applications_job ON job_applications(job_id);
+  CREATE INDEX IF NOT EXISTS idx_job_applications_candidate ON job_applications(candidate_email);
+`);
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
@@ -5876,7 +5932,13 @@ app.post('/webhook', (req, res) => {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const email = (session.metadata?.email || session.customer_email || '').toLowerCase();
-    if (email) {
+    const isEmployer = session.metadata?.plan === 'employer';
+    if (email && isEmployer) {
+      db.prepare('INSERT OR REPLACE INTO employer_subscribers (email, customer_id) VALUES (?, ?)').run(email, session.customer);
+      console.log(`New Pro Employer subscriber: ${email}`);
+      notifyOwner(`[ResumeTailored] 💼 New Pro Employer subscriber: ${email}`,
+        `<p>💼 <strong>${email}</strong> just subscribed — <strong>Pro Employer ($29/mo)</strong>.</p>`);
+    } else if (email) {
       const isLifetime = session.metadata?.plan === 'lifetime' || session.mode === 'payment';
       // Lifetime subscribers get a sentinel customer_id so deletion webhooks never remove them
       const customerId = isLifetime ? `lifetime_${email}` : session.customer;
@@ -5890,12 +5952,18 @@ app.post('/webhook', (req, res) => {
 
   if (event.type === 'customer.subscription.deleted') {
     const customerId = event.data.object.customer;
-    // Look up the email before deleting so we can name them in the alert
+    // Look up the email before deleting so we can name them in the alert. Check
+    // both subscriber tables — a canceled subscription's customer_id could
+    // belong to either the job-seeker or the employer plan.
     const row = db.prepare('SELECT email FROM subscribers WHERE customer_id = ?').get(customerId);
+    const employerRow = db.prepare('SELECT email FROM employer_subscribers WHERE customer_id = ?').get(customerId);
     db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(customerId);
+    db.prepare('DELETE FROM employer_subscribers WHERE customer_id = ?').run(customerId);
     console.log(`Removed subscriber with customer_id: ${customerId}`);
-    notifyOwner(`[ResumeTailored] Subscription canceled: ${row?.email || customerId}`,
-      `<p>👋 <strong>${row?.email || `customer ${customerId}`}</strong>'s subscription was canceled.</p>`);
+    const who = row?.email || employerRow?.email || customerId;
+    const label = employerRow ? ' (Pro Employer)' : '';
+    notifyOwner(`[ResumeTailored] Subscription canceled: ${who}${label}`,
+      `<p>👋 <strong>${who}</strong>'s subscription${label} was canceled.</p>`);
   }
 
   res.json({ received: true });
@@ -6640,6 +6708,155 @@ app.get('/api/career/coach', async (req, res) => {
   } catch (err) {
     console.error('career/coach error:', err.message);
     res.status(503).json({ error: 'unavailable' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Employer Portal — Phase A: foundation. Any signed-in account can flip on
+// "Hire Mode" by saving an employer profile; no separate login. Free tier is
+// EH.EMPLOYER_LIMITS.freeActiveJobs (3) active posts with no ATS/search; Pro
+// Employer ($29/mo, separate `employer_subscribers` table so it can never be
+// confused with the $19.99 job-seeker plan) is unlimited + priority listing.
+// Candidate search, ATS kanban and applications land in Phase B.
+// ═══════════════════════════════════════════════════════════════════════════
+function employerAuthEmail(req, res) {
+  const email = getSessionEmail(req);
+  if (!email) { res.status(401).json({ error: 'login_required', message: 'Please sign in first.' }); return null; }
+  return email;
+}
+function isEmployerSubscriber(email) {
+  if (!email) return false;
+  const e = email.toLowerCase();
+  const ownerEmail = (process.env.OWNER_EMAIL || 'support@resumetailored.com').toLowerCase();
+  if (e === ownerEmail) return true;
+  if (COMP_EMAILS.includes(e)) return true;
+  return !!db.prepare('SELECT 1 FROM employer_subscribers WHERE email = ?').get(e);
+}
+function activeJobCount(email) {
+  return db.prepare("SELECT COUNT(*) c FROM job_postings WHERE employer_email = ? AND status = 'active'").get(email.toLowerCase()).c;
+}
+const employerLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, skip: () => RATE_LIMIT_OFF, message: { error: 'Too many requests — please wait a minute.' } });
+
+// Is this account set up as an employer yet (has a company profile)?
+app.get('/api/employer/status', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const profile = db.prepare('SELECT company_name, website, created_at FROM employer_profiles WHERE email = ?').get(e);
+  res.json({
+    isEmployer: !!profile,
+    companyName: profile ? profile.company_name : null,
+    website: profile ? profile.website : null,
+    pro: isEmployerSubscriber(email),
+    activeJobs: profile ? activeJobCount(email) : 0,
+    freeActiveJobLimit: EH.EMPLOYER_LIMITS.freeActiveJobs
+  });
+});
+
+// Create/update the employer profile — this IS "turning on Hire Mode."
+app.post('/api/employer/profile', employerLimiter, (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const companyName = String((req.body && req.body.companyName) || '').trim().slice(0, 120);
+  const website = String((req.body && req.body.website) || '').trim().slice(0, 200);
+  if (companyName.length < 2) return res.status(400).json({ error: 'bad_request', message: 'Company name is required.' });
+  const exists = db.prepare('SELECT email FROM employer_profiles WHERE email = ?').get(e);
+  if (exists) db.prepare('UPDATE employer_profiles SET company_name = ?, website = ? WHERE email = ?').run(companyName, website, e);
+  else db.prepare('INSERT INTO employer_profiles (email, company_name, website, created_at) VALUES (?,?,?,?)').run(e, companyName, website, Date.now());
+  res.json({ success: true, companyName, website });
+});
+
+app.get('/api/employer/jobs', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const rows = db.prepare(`
+    SELECT p.*, (SELECT COUNT(*) FROM job_applications a WHERE a.job_id = p.id) AS applicant_count
+    FROM job_postings p WHERE p.employer_email = ? ORDER BY p.created_at DESC
+  `).all(e);
+  res.json({ jobs: rows.map(_jobPostingOut), pro: isEmployerSubscriber(email) });
+});
+
+function _jobPostingOut(r) {
+  return {
+    id: r.id, title: r.title, description: r.description, requirements: r.requirements,
+    salaryMin: r.salary_min, salaryMax: r.salary_max, location: r.location,
+    workMode: r.work_mode, jobType: r.job_type, isGig: !!r.is_gig, gigRate: r.gig_rate, gigSchedule: r.gig_schedule,
+    status: r.status, createdAt: r.created_at, updatedAt: r.updated_at, applicantCount: r.applicant_count || 0
+  };
+}
+
+app.post('/api/employer/jobs', employerLimiter, (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const profile = db.prepare('SELECT email FROM employer_profiles WHERE email = ?').get(e);
+  if (!profile) return res.status(400).json({ error: 'no_employer_profile', message: 'Set up your company profile before posting a job.' });
+  const pro = isEmployerSubscriber(email);
+  if (!pro && activeJobCount(email) >= EH.EMPLOYER_LIMITS.freeActiveJobs) {
+    return res.status(402).json({ error: 'quota', message: `Free plan allows ${EH.EMPLOYER_LIMITS.freeActiveJobs} active job posts. Upgrade to Pro Employer for unlimited.` });
+  }
+  const v = EH.validateJobPosting(req.body);
+  if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
+  const now = Date.now();
+  const info = db.prepare(`
+    INSERT INTO job_postings (employer_email, title, description, requirements, salary_min, salary_max, location, work_mode, job_type, is_gig, gig_rate, gig_schedule, status, created_at, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?, ?)
+  `).run(e, v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
+    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, now, now);
+  res.json({ success: true, id: info.lastInsertRowid });
+});
+
+app.put('/api/employer/jobs/:id', employerLimiter, (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const id = parseInt(req.params.id, 10);
+  const job = db.prepare('SELECT * FROM job_postings WHERE id = ? AND employer_email = ?').get(id, e);
+  if (!job) return res.status(404).json({ error: 'not_found' });
+  // Status-only update (close/reopen) doesn't need full field re-validation.
+  if (req.body && req.body.status && Object.keys(req.body).length === 1) {
+    const status = String(req.body.status);
+    if (!['active', 'closed'].includes(status)) return res.status(400).json({ error: 'bad_request' });
+    db.prepare('UPDATE job_postings SET status = ?, updated_at = ? WHERE id = ?').run(status, Date.now(), id);
+    return res.json({ success: true, status });
+  }
+  const v = EH.validateJobPosting(req.body);
+  if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
+  db.prepare(`
+    UPDATE job_postings SET title=?, description=?, requirements=?, salary_min=?, salary_max=?, location=?, work_mode=?, job_type=?, is_gig=?, gig_rate=?, gig_schedule=?, updated_at=?
+    WHERE id = ?
+  `).run(v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
+    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, Date.now(), id);
+  res.json({ success: true });
+});
+
+app.delete('/api/employer/jobs/:id', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const id = parseInt(req.params.id, 10);
+  const job = db.prepare('SELECT id FROM job_postings WHERE id = ? AND employer_email = ?').get(id, e);
+  if (!job) return res.status(404).json({ error: 'not_found' });
+  db.prepare('DELETE FROM job_applications WHERE job_id = ?').run(id);
+  db.prepare('DELETE FROM job_postings WHERE id = ?').run(id);
+  res.json({ success: true });
+});
+
+// ─── API: Pro Employer Stripe checkout ($29/mo) ─────────────────────────────
+app.post('/api/employer/subscribe', async (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const priceId = process.env.STRIPE_EMPLOYER_PRICE_ID;
+  if (!priceId) return res.status(503).json({ error: 'not_configured', message: 'Pro Employer plan is not yet available.' });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer_email: email,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=employer`,
+      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/employer`,
+      metadata: { email, plan: 'employer' }
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Stripe employer error:', err);
+    res.status(500).json({ error: 'Could not create checkout session.' });
   }
 });
 
