@@ -477,6 +477,43 @@ function normalizeJobs(apiResponse) {
   })).filter(j => j.title);
 }
 
+// ── Job Feed Aggregator ──────────────────────────────────────────────────────
+// Minimal RSS 2.0 <item> extractor — deliberately not a full XML parser (no
+// new dependency for what's usually a handful of <title>/<link>/<pubDate>/
+// <description> tags per item). Company career-page feeds are the one
+// aggregator source with no partner-API gate (Indeed and ZipRecruiter both
+// require business approval, not a signup-and-go key — see
+// EMPLOYER_PORTAL_PLAN.md), so this is the one that can actually run today.
+// Malformed input yields [], never a throw — a bad feed should drop out of
+// the aggregator silently, not take the refresh job down with it.
+function _rssText(itemXml, tag) {
+  const m = itemXml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i'));
+  if (!m) return '';
+  let t = m[1].trim();
+  const cdata = t.match(/^<!\[CDATA\[([\s\S]*)\]\]>$/);
+  if (cdata) t = cdata[1];
+  return t.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+}
+function parseRssItems(xml) {
+  if (typeof xml !== 'string' || !xml.trim()) return [];
+  const items = [];
+  const itemRe = /<item[^>]*>([\s\S]*?)<\/item>/gi;
+  let m;
+  while ((m = itemRe.exec(xml)) !== null) {
+    const block = m[1];
+    const title = _rssText(block, 'title');
+    const link = _rssText(block, 'link');
+    if (!title || !link) continue;
+    items.push({
+      title, link,
+      description: _rssText(block, 'description'),
+      pubDate: _rssText(block, 'pubDate') || null,
+      guid: _rssText(block, 'guid') || link
+    });
+  }
+  return items;
+}
+
 // ── dashboard rule-based next steps (pure) ──────────────────────────────────
 // state: { hasProfession, professionLabel, resumeCount, tookQuiz, bestBands{},
 //          interviewPracticed, interviewTotal, savedJobs, latestGap, scenariosDone }
@@ -573,5 +610,5 @@ module.exports = {
   buildQuizPrompt, buildInterviewPrompt, buildGapPrompt, buildScenarioPrompt,
   validateQuiz, validateInterview, validateGap, validateScenario, extractJson,
   seededPermutation, quizForDelivery, scoreQuiz, band, cappedBand,
-  buildJobQuery, normalizeJobs, computeNextSteps
+  buildJobQuery, normalizeJobs, parseRssItems, computeNextSteps
 };

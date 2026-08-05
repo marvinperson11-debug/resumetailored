@@ -228,6 +228,34 @@ const server = app.listen(0, async () => {
     const rivalCannotApprove = await req('POST', '/api/candidate/contact-requests/' + reqId, 'tokStartup', { status: 'approved' });
     check("an employer cannot approve on the candidate's behalf", rivalCannotApprove.status === 404);
 
+    // ═══════════════════ Phase C: Job Feed Aggregator ═══════════════════════
+
+    check('job feed requires auth', (await req('GET', '/api/job-feed')).status === 401);
+
+    // startupJob ("Registered Nurse", still active) syncs into job_feed on
+    // post, with priority (Employer Portal jobs get priority placement) and a
+    // best-effort profession guess from the title.
+    const feed1 = await req('GET', '/api/job-feed', 'tokJane'); // jane's saved profession is registered-nurse
+    check('Jobs for You surfaces the matching employer posting', feed1.status === 200 && feed1.json.jobs.some(j => j.jobPostingId === startupJobId), feed1.body);
+    const featuredJob = feed1.json.jobs.find(j => j.jobPostingId === startupJobId);
+    check('employer jobs in the feed carry priority + a null external url (in-platform apply)', featuredJob.priority === 1 && featuredJob.url === null);
+
+    const feedOtherProf = await req('GET', '/api/job-feed?professionId=software-engineer', 'tokJane');
+    check('job feed is filtered by profession — a non-matching profession excludes it', !feedOtherProf.json.jobs.some(j => j.jobPostingId === startupJobId));
+
+    // Closing a posting pulls it out of the feed immediately, not just on the next refresh.
+    await req('PUT', '/api/employer/jobs/' + startupJobId, 'tokStartup', { status: 'closed' });
+    const feedAfterClose = await req('GET', '/api/job-feed', 'tokJane');
+    check('closing a job removes it from the feed', !feedAfterClose.json.jobs.some(j => j.jobPostingId === startupJobId), feedAfterClose.body);
+    await req('PUT', '/api/employer/jobs/' + startupJobId, 'tokStartup', { status: 'active' });
+    const feedAfterReopen = await req('GET', '/api/job-feed', 'tokJane');
+    check('reopening a job puts it back in the feed', feedAfterReopen.json.jobs.some(j => j.jobPostingId === startupJobId));
+
+    // Deleting a posting removes it from the feed too.
+    await req('DELETE', '/api/employer/jobs/' + startupJobId, 'tokStartup');
+    const feedAfterDelete = await req('GET', '/api/job-feed', 'tokJane');
+    check('deleting a job removes it from the feed', !feedAfterDelete.json.jobs.some(j => j.jobPostingId === startupJobId));
+
   } catch (err) {
     failures++;
     console.error('FATAL', err);

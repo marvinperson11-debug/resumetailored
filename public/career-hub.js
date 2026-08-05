@@ -615,6 +615,8 @@
   function renderJobFinder() {
     var box = el('ch-jobfinder');
     box.innerHTML = (profile ? profHeader() : '') +
+      '<div class="ch-card" id="chFeedCard" style="margin-bottom:16px;"><h3>' + t('ch_feed_title', 'Jobs for You') + '</h3>' +
+      '<div id="chFeedResults">' + spin() + '</div></div>' +
       '<div class="ch-card"><h3>' + t('ch_jf_title', 'Job Finder') + '</h3>' +
       '<div class="ch-grid cols-2"><div class="ch-field"><label class="ch-label">' + t('ch_search', 'Search') + '</label><input class="ch-input" id="chJobQuery" placeholder="' + esc(profile ? profName(profile) : t('ch_job_title', 'Job title')) + '" /></div>' +
       '<div class="ch-field"><label class="ch-label">' + t('ch_location', 'Location') + '</label><input class="ch-input" id="chJobLoc" placeholder="' + t('ch_location_ph', 'City, state or Remote') + '" /></div></div>' +
@@ -634,6 +636,35 @@
       '<div class="ch-sticky-bar"><button class="ch-btn" onclick="CareerHub.searchJobs()">' + t('ch_search', 'Search') + '</button><button class="ch-btn ch-btn-ghost" onclick="CareerHub.go(\'gap\')">' + t('ch_analyze', 'Analyze') + '</button></div>';
     loadSavedJobs();
     loadAlerts();
+    loadJobFeed();
+  }
+  async function loadJobFeed() {
+    var box = el('chFeedResults'); if (!box) return;
+    var res = await api('/api/job-feed');
+    if (!res.ok) { box.innerHTML = ''; el('chFeedCard').style.display = 'none'; return; }
+    var jobs = res.data.jobs || [];
+    if (!jobs.length) {
+      box.innerHTML = '<div class="ch-note">' + (profile ? t('ch_feed_empty', 'Nothing tailored to your profession yet — check back soon, or search below.') : t('ch_feed_noprof', 'Set your target profession to see jobs picked for you.')) + '</div>';
+      return;
+    }
+    box.innerHTML = jobs.slice(0, 8).map(function (j) {
+      var applyBtn = j.jobPostingId
+        ? '<button class="ch-btn ch-btn-sm" onclick="CareerHub.applyFeedJob(' + j.jobPostingId + ', this)">' + t('ch_apply', 'Apply') + '</button>'
+        : (j.url ? '<a class="ch-btn ch-btn-sm" href="' + esc(j.url) + '" target="_blank" rel="noopener">' + t('ch_apply', 'Apply') + '</a>' : '');
+      return '<div class="ch-job">' + (j.jobPostingId ? '<span class="ch-pill ch-pill-pro" style="float:right;">' + t('ch_featured', 'Featured') + '</span>' : '') +
+        '<div class="ch-job-title">' + esc(j.title) + '</div>' +
+        '<div class="ch-job-meta">' + esc(j.company) + (j.location ? ' · ' + esc(j.location) : '') + (j.remote ? ' · 🏠 ' + t('ch_remote', 'Remote') : '') + '</div>' +
+        (j.descriptionSnippet ? '<div class="ch-note">' + esc(j.descriptionSnippet) + '…</div>' : '') +
+        '<div class="ch-row" style="margin-top:10px;">' + applyBtn + '</div></div>';
+    }).join('');
+  }
+  async function applyFeedJob(jobPostingId, btn) {
+    if (btn) btn.disabled = true;
+    var res = await api('/api/employer/jobs/' + jobPostingId + '/apply', { method: 'POST', headers: authH() });
+    if (!res.ok) { if (btn) btn.disabled = false; toast(res.data.message || t('ch_apply_fail', 'Could not apply — please try again.')); return; }
+    ga('job_save', { profession: profile && profile.id, applied: true });
+    if (btn) { btn.textContent = res.data.alreadyApplied ? t('ch_already_applied', 'Already applied') : t('ch_applied', 'Applied ✓'); }
+    toast(t('ch_applied_toast', 'Application sent!'));
   }
   async function loadAlerts() {
     var box = el('chJobAlerts'); if (!box) return;
@@ -761,7 +792,7 @@
     startQuiz: startQuiz, pickAnswer: pickAnswer, submitQuiz: submitQuiz,
     loadIv: loadIv, reveal: reveal, setConf: setConf, ivNav: ivNav, scoreAnswer: scoreAnswer,
     gapResumeSel: gapResumeSel, runGap: runGap,
-    searchJobs: searchJobs, saveJob: saveJob, analyzeJob: analyzeJob, unsaveJob: unsaveJob, toggleAlerts: toggleAlerts,
+    searchJobs: searchJobs, saveJob: saveJob, analyzeJob: analyzeJob, unsaveJob: unsaveJob, toggleAlerts: toggleAlerts, applyFeedJob: applyFeedJob,
     startScenario: startScenario, scPick: scPick, scNext: scNext, renderScStep: renderScStep,
     badgeShared: function () { ga('badge_share', { profession: profile && profile.id }); },
     toggleGigFields: toggleGigFields, saveCandidateProfile: saveCandidateProfile, answerContact: answerContact

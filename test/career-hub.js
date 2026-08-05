@@ -176,6 +176,21 @@ check('LIMITS covers all metered features', ['quiz', 'retake', 'jobsearch', 'sav
 check('gap + scenario are weekly', CH.LIMITS.gap.period === 'week' && CH.LIMITS.scenario.period === 'week');
 check('jobsearch is 5/day', CH.LIMITS.jobsearch.free === 5 && CH.LIMITS.jobsearch.period === 'day');
 
+// ── Job Feed Aggregator: RSS parsing ────────────────────────────────────────
+const sampleRss = `<?xml version="1.0"?><rss><channel><title>Acme Careers</title>
+  <item><title>Registered Nurse &amp; Charge Nurse</title><link>https://acme.com/jobs/1</link><description><![CDATA[<p>ICU role</p>]]></description><pubDate>Mon, 03 Aug 2026 09:00:00 GMT</pubDate><guid>acme-1</guid></item>
+  <item><title>Software Engineer</title><link>https://acme.com/jobs/2</link><description>Backend role</description></item>
+</channel></rss>`;
+const rssItems = CH.parseRssItems(sampleRss);
+check('parseRssItems extracts every item', rssItems.length === 2, String(rssItems.length));
+check('parseRssItems decodes HTML entities in the title', rssItems[0].title === 'Registered Nurse & Charge Nurse', rssItems[0].title);
+check('parseRssItems unwraps CDATA in the description', rssItems[0].description === '<p>ICU role</p>', rssItems[0].description);
+check('parseRssItems carries the link + guid', rssItems[0].link === 'https://acme.com/jobs/1' && rssItems[0].guid === 'acme-1');
+check('parseRssItems falls back to the link as guid when none given', rssItems[1].guid === 'https://acme.com/jobs/2');
+check('parseRssItems handles a missing pubDate', rssItems[1].pubDate === null);
+check('parseRssItems drops an item with no title or link', CH.parseRssItems('<item><title>No link here</title></item>').length === 0);
+check('parseRssItems never throws on garbage input', CH.parseRssItems('<not><even','rss</not>').length === 0 && CH.parseRssItems('').length === 0 && CH.parseRssItems(null).length === 0);
+
 if (failures) { console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`); process.exit(1); }
 console.log('\nALL PASS (0 failures)');
 process.exit(0);

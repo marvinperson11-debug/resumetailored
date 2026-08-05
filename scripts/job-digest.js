@@ -45,6 +45,22 @@ async function sendEmail(to, subject, html) {
   return r.ok;
 }
 
+// Employer Portal jobs for a profession, freshest first — kept in sync into
+// job_feed on every job posting write (see server.js), so this is a plain
+// read with no extra API cost. Normalized to the same shape as
+// CH.normalizeJobs output so they slot into the same email template and sort
+// first, matching the Job Feed Aggregator's "employer jobs get priority
+// placement" rule.
+function employerJobsFor(professionId) {
+  if (!professionId) return [];
+  const rows = db.prepare("SELECT * FROM job_feed WHERE source = 'employer' AND profession_id = ? ORDER BY posted_at DESC LIMIT 5").all(professionId);
+  return rows.map(r => ({
+    id: `employer:${r.id}`, title: r.title, company: r.company, location: r.location,
+    remote: !!r.remote, employmentType: r.job_type, postedAt: r.posted_at, url: '', applyUrl: '',
+    descriptionSnippet: r.description || ''
+  }));
+}
+
 (async () => {
   const rows = db.prepare("SELECT email, profession_id, seniority, lang FROM check_ins WHERE job_alerts = 1 AND profession_id != ''").all();
   console.log(`[job-digest] ${rows.length} subscriber(s)`);
@@ -56,8 +72,12 @@ async function sendEmail(to, subject, html) {
     if (!prof) { skipped++; continue; }
     const lang = row.lang === 'zh' ? 'zh' : 'en';
     try {
-      let jobs = cache[prof.id];
-      if (!jobs) { jobs = CH.normalizeJobs(await jsearch(prof.label)); cache[prof.id] = jobs; }
+      let jsJobs = cache[prof.id];
+      if (jsJobs === undefined) {
+        try { jsJobs = CH.normalizeJobs(await jsearch(prof.label)); } catch (e) { jsJobs = []; }
+        cache[prof.id] = jsJobs;
+      }
+      const jobs = employerJobsFor(prof.id).concat(jsJobs).slice(0, 5);
       if (!jobs.length) { skipped++; continue; }
       const profLabel = lang === 'zh' ? prof.labelZh : prof.label;
       const { subject, html } = CH.buildJobDigestEmail(profLabel, jobs, ORIGIN, lang);

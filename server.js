@@ -515,6 +515,25 @@ db.exec(`
     UNIQUE(employer_email, candidate_email)
   );
   CREATE INDEX IF NOT EXISTS idx_contact_requests_candidate ON employer_contact_requests(candidate_email);
+  CREATE TABLE IF NOT EXISTS job_feed (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    source        TEXT NOT NULL,
+    external_id   TEXT NOT NULL,
+    title         TEXT NOT NULL,
+    company       TEXT DEFAULT '',
+    location      TEXT DEFAULT '',
+    url           TEXT NOT NULL,
+    description   TEXT DEFAULT '',
+    remote        INTEGER DEFAULT 0,
+    job_type      TEXT DEFAULT '',
+    profession_id TEXT DEFAULT '',
+    priority      INTEGER NOT NULL DEFAULT 0,
+    posted_at     INTEGER,
+    fetched_at    INTEGER NOT NULL,
+    UNIQUE(source, external_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_job_feed_profession ON job_feed(profession_id);
+  CREATE INDEX IF NOT EXISTS idx_job_feed_priority ON job_feed(priority DESC, posted_at DESC);
 `);
 
 // Seed default forum posts on first run
@@ -6603,6 +6622,36 @@ app.post('/api/jobs/save', (req, res) => {
     .run(e, job.id, job.title || '', job.company || '', job.location || '', job.url || '', JSON.stringify(job), Date.now());
   res.json({ success: true });
 });
+
+// ─── Job Feed Aggregator: "Jobs for You" ─────────────────────────────────────
+// Reads the pre-aggregated job_feed table (refreshed every 6h by
+// scripts/refresh-job-feed.js — see career-cron.js), so unlike /api/jobs/search
+// this costs nothing per view and isn't quota-gated: the API budget was
+// already spent once during the periodic refresh, independent of how many
+// people look at the result. Employer Portal jobs (priority=1) sort first.
+function _feedRowOut(r) {
+  return {
+    id: `${r.source}:${r.id}`, source: r.source, title: r.title, company: r.company, location: r.location,
+    remote: !!r.remote, employmentType: r.job_type, postedAt: r.posted_at,
+    url: r.source === 'employer' ? null : r.url,
+    jobPostingId: r.source === 'employer' ? Number(r.external_id) : null,
+    descriptionSnippet: (r.description || '').slice(0, 320), priority: r.priority
+  };
+}
+app.get('/api/job-feed', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const prof = getUserProfession(email);
+  const professionId = (req.query.professionId || (prof && prof.id) || '').toString().slice(0, 60);
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = 20;
+  const rows = professionId
+    ? db.prepare('SELECT * FROM job_feed WHERE profession_id = ? ORDER BY priority DESC, posted_at DESC, fetched_at DESC LIMIT ? OFFSET ?')
+        .all(professionId, limit, (page - 1) * limit)
+    : db.prepare('SELECT * FROM job_feed ORDER BY priority DESC, posted_at DESC, fetched_at DESC LIMIT ? OFFSET ?')
+        .all(limit, (page - 1) * limit);
+  res.json({ jobs: rows.map(_feedRowOut), profession: prof ? prof.label : null, page });
+});
+
 app.get('/api/jobs/saved', (req, res) => {
   const email = careerEmail(req, res); if (!email) return;
   const rows = db.prepare('SELECT id, job_id, title, company, location, url, saved_at FROM saved_jobs WHERE email = ? ORDER BY saved_at DESC').all(email.toLowerCase());
@@ -6809,6 +6858,33 @@ function _jobPostingOut(r) {
   };
 }
 
+// Employer Portal jobs get priority placement in the aggregated Job Feed —
+// synced immediately on write rather than waiting for the next 6h refresh, so
+// a job seeker can find a job the moment it's posted. profession_id is a
+// best-effort tag (title/keyword match against the taxonomy) purely so a
+// posting can show up in someone's "Jobs for You"; an unmatched title still
+// posts fine, it just won't be profession-filtered.
+function _guessProfessionId(title) {
+  const t = (title || '').toLowerCase();
+  const all = Object.values(CH.flattenProfessions(CH.loadProfessions()));
+  const hit = all.find(p => t.includes(p.label.toLowerCase()) || (p.aliases || []).some(a => t.includes(a.toLowerCase())));
+  return hit ? hit.id : '';
+}
+function _syncEmployerJobToFeed(job) {
+  if (job.status !== 'active') return _removeEmployerJobFromFeed(job.id);
+  const employerProfile = db.prepare('SELECT company_name FROM employer_profiles WHERE email = ?').get(job.employer_email);
+  db.prepare(`
+    INSERT INTO job_feed (source, external_id, title, company, location, url, description, remote, job_type, profession_id, priority, posted_at, fetched_at)
+    VALUES ('employer', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+    ON CONFLICT(source, external_id) DO UPDATE SET title=excluded.title, company=excluded.company, location=excluded.location,
+      description=excluded.description, remote=excluded.remote, job_type=excluded.job_type, profession_id=excluded.profession_id, fetched_at=excluded.fetched_at
+  `).run(String(job.id), job.title, employerProfile ? employerProfile.company_name : '', job.location,
+    `#job-${job.id}`, job.description, job.work_mode === 'remote' ? 1 : 0, job.job_type, _guessProfessionId(job.title), job.created_at, Date.now());
+}
+function _removeEmployerJobFromFeed(jobId) {
+  db.prepare("DELETE FROM job_feed WHERE source = 'employer' AND external_id = ?").run(String(jobId));
+}
+
 app.post('/api/employer/jobs', employerLimiter, (req, res) => {
   const email = employerAuthEmail(req, res); if (!email) return;
   const e = email.toLowerCase();
@@ -6826,6 +6902,8 @@ app.post('/api/employer/jobs', employerLimiter, (req, res) => {
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?, ?)
   `).run(e, v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
     v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, now, now);
+  const newJob = db.prepare('SELECT * FROM job_postings WHERE id = ?').get(info.lastInsertRowid);
+  _syncEmployerJobToFeed(newJob);
   res.json({ success: true, id: info.lastInsertRowid });
 });
 
@@ -6840,6 +6918,7 @@ app.put('/api/employer/jobs/:id', employerLimiter, (req, res) => {
     const status = String(req.body.status);
     if (!['active', 'closed'].includes(status)) return res.status(400).json({ error: 'bad_request' });
     db.prepare('UPDATE job_postings SET status = ?, updated_at = ? WHERE id = ?').run(status, Date.now(), id);
+    _syncEmployerJobToFeed(db.prepare('SELECT * FROM job_postings WHERE id = ?').get(id));
     return res.json({ success: true, status });
   }
   const v = EH.validateJobPosting(req.body);
@@ -6849,6 +6928,7 @@ app.put('/api/employer/jobs/:id', employerLimiter, (req, res) => {
     WHERE id = ?
   `).run(v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
     v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, Date.now(), id);
+  _syncEmployerJobToFeed(db.prepare('SELECT * FROM job_postings WHERE id = ?').get(id));
   res.json({ success: true });
 });
 
@@ -6860,6 +6940,7 @@ app.delete('/api/employer/jobs/:id', (req, res) => {
   if (!job) return res.status(404).json({ error: 'not_found' });
   db.prepare('DELETE FROM job_applications WHERE job_id = ?').run(id);
   db.prepare('DELETE FROM job_postings WHERE id = ?').run(id);
+  _removeEmployerJobFromFeed(id);
   res.json({ success: true });
 });
 
