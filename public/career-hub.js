@@ -710,7 +710,8 @@
     var jobs = res.data.jobs || [];
     if (!jobs.length) { el('chJobResults').innerHTML = '<div class="ch-empty">' + t('ch_no_jobs', 'No jobs found — try a broader search.') + '</div>'; return; }
     var staleNote = res.data.stale ? '<div class="ch-note" style="margin-bottom:10px;">' + t('ch_jf_stale', 'Live search is briefly unavailable — showing recent results.') + '</div>' : '';
-    el('chJobResults').innerHTML = staleNote + jobs.map(function (j) {
+    var fbNote = res.data.onlyFallbacks ? '<div class="ch-note" style="margin-bottom:10px;">' + t('ch_jf_fallback', 'Showing remote-friendly listings. For full nationwide and on-site results, an admin can add an Adzuna API key.') + '</div>' : '';
+    el('chJobResults').innerHTML = staleNote + fbNote + jobs.map(function (j) {
       return '<div class="ch-job"><div class="ch-job-title">' + esc(j.title) + '</div>' +
         '<div class="ch-job-meta">' + esc(j.company) + (j.location ? ' · ' + esc(j.location) : '') + (j.remote ? ' · 🏠 ' + t('ch_remote', 'Remote') : '') + '</div>' +
         '<div class="ch-note">' + esc(j.descriptionSnippet || '') + '…</div>' +

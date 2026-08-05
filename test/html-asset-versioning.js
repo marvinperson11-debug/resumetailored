@@ -69,8 +69,16 @@ const server = app.listen(0, async () => {
     const blog = await req('GET', '/blog');
     check('/blog (explicit sendFile-replacement route) versions theme.css', /href="\/theme\.css\?v=[^"]+"/.test(blog.body));
 
+    // The Employer Portal page is self-contained (inline styles, no shared local
+    // stylesheet/script), so there is nothing to version — which sidesteps the
+    // stale-cache problem entirely. Assert it serves and has no UNVERSIONED
+    // local .css/.js reference (guards against a future asset being added
+    // without a version stamp).
     const employer = await req('GET', '/employer');
-    check('/employer (extensionless fallback route) versions career-hub.css', /href="\/career-hub\.css\?v=[^"]+"/.test(employer.body));
+    check('/employer serves', employer.status === 200);
+    // A local asset ref with no ?v= query would be unversioned (cache-stale risk).
+    const empUnversioned = /(?:href|src)="\/[^"?]+\.(?:css|js)"/.test(employer.body);
+    check('/employer has no unversioned local .css/.js reference', !empUnversioned);
 
     // ── the version is the SAME across pages in one boot (one ASSET_VERSION) ──
     const v1 = (score.body.match(/theme\.css\?v=([^"]+)"/) || [])[1];

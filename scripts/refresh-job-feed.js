@@ -32,6 +32,7 @@ require('dotenv').config();
 const path = require('path');
 const Database = require('better-sqlite3');
 const CH = require('../career-hub.js');
+const JP = require('../job-providers.js');
 
 const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const db = new Database(path.join(dataDir, 'resumetailor.db'));
@@ -47,35 +48,34 @@ function upsertFeedRow(row) {
     row.remote ? 1 : 0, row.jobType || '', row.professionId || '', row.postedAt || null, Date.now());
 }
 
-// ── JSearch: only for professions someone has actually saved ────────────────
-async function jsearchFetch(query) {
-  const key = process.env.RAPIDAPI_KEY;
-  if (!key) throw new Error('RAPIDAPI_KEY not set');
-  const qs = new URLSearchParams({ query, page: '1', num_pages: '1' });
-  const r = await fetch(`https://jsearch.p.rapidapi.com/search?${qs}`, {
-    headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' }
-  });
-  if (!r.ok) throw new Error('jsearch_' + r.status);
-  return r.json();
-}
-async function refreshJSearch() {
-  if (!process.env.RAPIDAPI_KEY) { console.log('[refresh-job-feed] JSearch: RAPIDAPI_KEY not set, skipping'); return; }
+// ── Live providers (Adzuna + JSearch + free fallbacks) ──────────────────────
+// Refreshed only for professions someone has actually saved, so the API bill
+// (for keyed providers) stays demand-driven. Uses the same multi-provider
+// fan-out as the live Job Finder, so the feed keeps working even when one
+// provider (e.g. JSearch) is 403'ing.
+async function refreshLiveProviders() {
   const profIds = db.prepare("SELECT DISTINCT profession_id FROM check_ins WHERE profession_id != ''").all().map(r => r.profession_id).slice(0, 30);
-  let added = 0;
-  for (const id of profIds) {
+  // If nobody has saved a profession yet, warm a few popular ones so the feed
+  // isn't empty for the very first user.
+  const ids = profIds.length ? profIds : (CH.TOP_PROFESSIONS || []).slice(0, 8);
+  let added = 0, ok = 0;
+  for (const id of ids) {
     const prof = CH.resolveProfession(id, '');
     if (!prof) continue;
     try {
-      const jobs = CH.normalizeJobs(await jsearchFetch(prof.label));
+      const { jobs, sources } = await JP.searchJobs({ query: prof.label, location: '', page: 1 });
       for (const j of jobs) {
-        upsertFeedRow({ source: 'jsearch', externalId: j.id, title: j.title, company: j.company, location: j.location,
+        upsertFeedRow({ source: j.source || 'live', externalId: j.id, title: j.title, company: j.company, location: j.location,
           url: j.url, description: j.descriptionSnippet, remote: j.remote, jobType: j.employmentType, professionId: prof.id,
           postedAt: j.postedAt ? Date.parse(j.postedAt) || null : null });
         added++;
       }
-    } catch (e) { console.error(`[refresh-job-feed] JSearch (${prof.label}): ${e.message}`); }
+      if (jobs.length) ok++;
+      const failed = sources.filter(s => !s.ok);
+      if (failed.length) console.error(`[refresh-job-feed] ${prof.label}: provider issue(s) — ${failed.map(s => s.name + ':' + s.error).join(', ')}`);
+    } catch (e) { console.error(`[refresh-job-feed] live (${prof.label}): ${e.message}`); }
   }
-  console.log(`[refresh-job-feed] JSearch: ${added} listing(s) across ${profIds.length} profession(s)`);
+  console.log(`[refresh-job-feed] live providers: ${added} listing(s) across ${ok}/${ids.length} profession(s)`);
 }
 
 // ── Company career-page RSS: the one source with no partner-approval gate ───
@@ -123,7 +123,7 @@ function pruneStale() {
 }
 
 (async () => {
-  await refreshJSearch();
+  await refreshLiveProviders();
   await refreshRss();
   await refreshIndeed();
   await refreshZipRecruiter();

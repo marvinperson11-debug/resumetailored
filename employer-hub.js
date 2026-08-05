@@ -152,9 +152,72 @@ function matchGigCandidates(candidates, job) {
   return scored;
 }
 
+// ── Interview scheduling (pure validation) ──────────────────────────────────
+const INTERVIEW_MODES = ['video', 'phone', 'onsite'];
+const INTERVIEW_STATUSES = ['scheduled', 'confirmed', 'completed', 'cancelled'];
+function validateInterview(body) {
+  const b = body || {};
+  const errors = [];
+  const candidateEmail = normStr(b.candidateEmail, 160).toLowerCase();
+  const jobId = b.jobId == null || b.jobId === '' ? null : parseInt(b.jobId, 10);
+  const scheduledAt = b.scheduledAt == null ? null : Number(b.scheduledAt);
+  const mode = normStr(b.mode).toLowerCase();
+  const locationOrLink = normStr(b.locationOrLink, 400);
+  const notes = normStr(b.notes, 2000);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidateEmail)) errors.push('A valid candidate email is required.');
+  if (!scheduledAt || !isFinite(scheduledAt)) errors.push('A scheduled date/time is required.');
+  if (!INTERVIEW_MODES.includes(mode)) errors.push('Interview mode must be video, phone or onsite.');
+  return { valid: errors.length === 0, errors, clean: { candidateEmail, jobId: Number.isInteger(jobId) ? jobId : null, scheduledAt, mode, locationOrLink, notes } };
+}
+
+// ── Analytics (pure) ────────────────────────────────────────────────────────
+// Hiring funnel counts from a flat list of application rows { status }.
+function buildFunnel(applications) {
+  const counts = { new: 0, reviewed: 0, interview: 0, hired: 0, rejected: 0 };
+  for (const a of (applications || [])) {
+    const s = String(a.status || 'new').toLowerCase();
+    if (counts[s] != null) counts[s]++;
+  }
+  const total = (applications || []).length;
+  // The pipeline funnel is cumulative-forward: someone "hired" also passed
+  // through reviewed + interview. Present both raw and funnel views.
+  const funnel = [
+    { stage: 'Applied', count: total },
+    { stage: 'Reviewed', count: counts.reviewed + counts.interview + counts.hired },
+    { stage: 'Interviewed', count: counts.interview + counts.hired },
+    { stage: 'Hired', count: counts.hired }
+  ];
+  return { counts, total, funnel };
+}
+// Average days from application created_at to the hire (updated_at when status
+// became hired). rows: { status, createdAt, updatedAt }. Returns null when no
+// hires yet (never fabricates a number).
+function computeTimeToHire(applications) {
+  const hires = (applications || []).filter(a => String(a.status).toLowerCase() === 'hired' && a.createdAt && a.updatedAt && a.updatedAt >= a.createdAt);
+  if (!hires.length) return null;
+  const days = hires.map(a => (a.updatedAt - a.createdAt) / (1000 * 60 * 60 * 24));
+  return Math.round((days.reduce((s, d) => s + d, 0) / days.length) * 10) / 10;
+}
+// CSV export. rows: array of plain objects; cols: [{key,label}]. Quotes and
+// escapes every value so a comma/newline/quote in candidate data can't break
+// the file or inject a formula.
+function toCsv(rows, cols) {
+  const esc = (v) => {
+    let s = v == null ? '' : String(v);
+    if (/^[=+\-@]/.test(s)) s = "'" + s; // neutralize spreadsheet formula injection
+    if (/[",\n\r]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  };
+  const header = cols.map(c => esc(c.label)).join(',');
+  const body = (rows || []).map(r => cols.map(c => esc(r[c.key])).join(',')).join('\r\n');
+  return header + '\r\n' + body + '\r\n';
+}
+
 module.exports = {
   WORK_MODES, JOB_TYPES, APPLICATION_STATUSES, EMPLOYER_LIMITS, REMOTE_PREFS, CONTACT_REQUEST_STATUSES, GIG_TYPES,
+  INTERVIEW_MODES, INTERVIEW_STATUSES,
   validateJobPosting, validateApplicationStatus, validateRating,
-  validateCandidateProfile, validateContactRequestStatus,
-  buildRejectionEmail, rankCandidates, matchGigCandidates
+  validateCandidateProfile, validateContactRequestStatus, validateInterview,
+  buildRejectionEmail, rankCandidates, matchGigCandidates,
+  buildFunnel, computeTimeToHire, toCsv
 };

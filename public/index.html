@@ -825,6 +825,7 @@
       <a href="/score" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
       <a href="/resume-examples">Resume Examples</a>
       <a href="/blog" data-i18n="nav_blog">Blog</a>
+      <a href="/employer" style="color:#0f172a;font-weight:700;">For Employers</a>
       <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
     </div>
     <div class="nav-actions">
@@ -843,6 +844,7 @@
   <button class="mobile-close" onclick="document.querySelector('.mobile-menu').classList.remove('open')">&times;</button>
   <a href="/how-it-works" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_how">How It Works</a>
   <a href="/blog" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_blog">Blog</a>
+  <a href="/employer" onclick="document.querySelector('.mobile-menu').classList.remove('open')">For Employers</a>
   <a href="/score" onclick="document.querySelector('.mobile-menu').classList.remove('open')" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
   <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_features">Features</a>
   <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_templates">Templates</a>
@@ -1058,7 +1060,7 @@
       <div class="feature-row feat-card feat-card--free" style="border:2px solid rgba(0,119,181,0.5);background:rgba(0,119,181,0.07);">
         <div style="position:absolute;top:16px;right:20px;background:#16a34a;color:#fff;font-size:11px;font-weight:800;padding:4px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">✓ Free</div>
         <div class="feature-body">
-          <div class="feature-icon" style="color:#0077b5;">🔗</div>
+          <div class="feature-icon" style="color:#0077b5;"><svg viewBox="0 0 24 24" width="42" height="42" aria-label="LinkedIn" role="img" style="vertical-align:middle;"><rect width="24" height="24" rx="5" fill="#0A66C2"/><path fill="#fff" d="M6.94 8.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM5.2 9.75h3.48V20H5.2zM10.4 9.75h3.34v1.4h.05c.47-.85 1.6-1.75 3.3-1.75 3.53 0 4.18 2.24 4.18 5.15V20h-3.48v-4.7c0-1.12-.02-2.56-1.56-2.56-1.56 0-1.8 1.22-1.8 2.48V20H10.4z"/></svg></div>
           <h3 style="color:#0077b5;" data-i18n="feat_li_title">LinkedIn Profile Optimizer — <em>Free &amp; Unlimited</em></h3>
           <p data-i18n="feat_li_desc">Recruiters spend 6 seconds on your resume and 30 seconds on your LinkedIn profile. Our AI rewrites your headline, About section, and experience bullets to rank higher in LinkedIn search and get more recruiter messages — optimized for your specific target role and industry.</p>
           <ul style="list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:8px;">
@@ -1206,6 +1208,38 @@
                 <div style="font-size:36px;font-weight:900;color:#16a34a;">30<small style="font-size:14px;">sec</small></div>
                 <div style="font-size:12px;color:#6b7280;font-weight:600;" data-i18n="label_with_ai">With AI</div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Employer / Recruiter Portal — key platform feature -->
+      <div class="feature-row" style="border:2px solid #334155;border-radius:20px;padding:32px;background:linear-gradient(135deg,rgba(15,23,42,0.06),rgba(56,189,248,0.06));position:relative;overflow:hidden;">
+        <div style="position:absolute;top:16px;right:20px;background:#0f172a;color:#38bdf8;font-size:11px;font-weight:800;padding:4px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">For Employers</div>
+        <div class="feature-body">
+          <div class="feature-icon" style="color:#0f172a;">🏢</div>
+          <h3 style="color:#0f172a;">Employer Portal — Post Jobs &amp; Hire</h3>
+          <p>Not job hunting — hiring? The <strong>Employer Portal</strong> is a full recruiter dashboard: post jobs, track applicants through a New → Reviewed → Interview → Hired pipeline, search opted-in candidates, schedule interviews, message applicants, and see analytics like your hiring funnel and time-to-hire. Built-in applicant tracking (ATS) for small teams — free to start.</p>
+          <ul style="list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:8px;">
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#0ea5e9;font-weight:800;">✓</span> Post jobs &amp; manage all applicants in one place</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#0ea5e9;font-weight:800;">✓</span> Candidate database search + starred shortlists</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#0ea5e9;font-weight:800;">✓</span> Interview scheduling &amp; in-app messaging</li>
+            <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#0ea5e9;font-weight:800;">✓</span> Hiring funnel analytics + CSV export</li>
+          </ul>
+          <a class="btn btn-primary" style="margin-top:20px;background:#0f172a;border-color:#0f172a;display:inline-block;" href="/employer">Open the Employer Portal →</a>
+          <a href="/blog/employer-portal-for-recruiters" style="margin-left:14px;font-size:14px;color:#0ea5e9;font-weight:700;">Learn more →</a>
+        </div>
+        <div class="feature-visual">
+          <div class="feature-visual-inner" style="border:2px solid #334155;border-radius:14px;overflow:hidden;padding:0;background:#0b1220;">
+            <div style="background:linear-gradient(90deg,#0e1728,#141d2e);padding:14px 18px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #2b3a54;">
+              <span style="color:#fff;font-weight:900;font-size:13px;">Acme Co</span>
+              <span style="font-size:9px;font-weight:900;background:linear-gradient(135deg,#f59e0b,#f97316);color:#1a1206;border-radius:5px;padding:2px 7px;">PRO EMPLOYER</span>
+            </div>
+            <div style="padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div style="background:#141d2e;border:1px solid #2b3a54;border-radius:10px;padding:12px;"><div style="font-size:24px;font-weight:900;color:#38bdf8;">12</div><div style="font-size:11px;color:#93a4be;">Active Postings</div></div>
+              <div style="background:#141d2e;border:1px solid #2b3a54;border-radius:10px;padding:12px;"><div style="font-size:24px;font-weight:900;color:#38bdf8;">48</div><div style="font-size:11px;color:#93a4be;">Applications</div></div>
+              <div style="background:#141d2e;border:1px solid #2b3a54;border-radius:10px;padding:12px;"><div style="font-size:24px;font-weight:900;color:#38bdf8;">7</div><div style="font-size:11px;color:#93a4be;">In Pipeline</div></div>
+              <div style="background:#141d2e;border:1px solid #2b3a54;border-radius:10px;padding:12px;"><div style="font-size:24px;font-weight:900;color:#38bdf8;">3</div><div style="font-size:11px;color:#93a4be;">Interviews</div></div>
             </div>
           </div>
         </div>
@@ -2228,6 +2262,68 @@
   </div>
 </section>
 
+<!-- NEW FEATURES — promotional cards -->
+<section class="section" id="whats-new" style="padding:60px 0;">
+  <div class="container">
+    <div class="section-eyebrow" style="color:#8b5cf6;">✨ What's New</div>
+    <h2 class="section-title">New ways to <span>stand out</span> &amp; get hired</h2>
+    <p style="text-align:center;color:#57514A;font-size:16px;max-width:640px;margin:0 auto 36px;">Fresh tools added to ResumeTailored — most are free, the rest bundle into one $19.99/mo Pro plan (no add-ons).</p>
+    <div class="promo-grid">
+      <div class="promo-card promo-emp">
+        <div class="promo-badge" style="background:#0f172a;color:#38bdf8;">NEW · FOR EMPLOYERS</div>
+        <div class="promo-ic">🏢</div>
+        <h3>Employer Portal</h3>
+        <p>Post jobs, track applicants through a hiring pipeline, schedule interviews and see analytics — a built-in ATS for small teams.</p>
+        <div class="promo-price"><span class="promo-free">Free to start</span> <span class="promo-sub">· Pro Employer $29/mo</span></div>
+        <a class="promo-cta" href="/employer" style="background:#0f172a;">Open Employer Portal →</a>
+      </div>
+      <div class="promo-card promo-pro">
+        <div class="promo-badge">NEW · PRO</div>
+        <div class="promo-ic">🎬</div>
+        <h3>Resume Video Maker</h3>
+        <p>Turn your resume into a narrated vertical video for LinkedIn, Shorts &amp; Reels — studio AI voiceover, your headshot &amp; brand color.</p>
+        <div class="promo-price"><span class="promo-amt">$19.99</span><span class="promo-per">/mo Pro</span></div>
+        <a class="promo-cta" href="/tools/resume-video">Try the video maker →</a>
+      </div>
+      <div class="promo-card promo-pro">
+        <div class="promo-badge">NEW · PRO</div>
+        <div class="promo-ic">🌐</div>
+        <h3>Personal Website Builder</h3>
+        <p>Publish your resume as a live, mobile-friendly personal website with a clean address — no code, watermark-free.</p>
+        <div class="promo-price"><span class="promo-amt">$19.99</span><span class="promo-per">/mo Pro</span></div>
+        <a class="promo-cta" href="/blog/resume-website-builder">See how it works →</a>
+      </div>
+      <div class="promo-card promo-freecard">
+        <div class="promo-badge" style="background:#16a34a;color:#fff;">NEW · FREE</div>
+        <div class="promo-ic">🧭</div>
+        <h3>Career Hub</h3>
+        <p>Skills tests, interview practice, gap analysis, a job finder and a personal dashboard — all driven by your target profession.</p>
+        <div class="promo-price"><span class="promo-free">Free</span> <span class="promo-sub">· Gold badges &amp; AI coach with Pro</span></div>
+        <a class="promo-cta" href="/dashboard" style="background:#16a34a;">Explore the Career Hub →</a>
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+  .promo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px;max-width:1080px;margin:0 auto;}
+  .promo-card{position:relative;background:#fff;border:1.5px solid #E7DFD1;border-radius:18px;padding:26px 22px 24px;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s;overflow:hidden;}
+  .promo-card:hover{transform:translateY(-4px);box-shadow:0 18px 44px rgba(0,0,0,.10);}
+  .promo-emp{border-color:#334155;background:linear-gradient(180deg,#fff,rgba(56,189,248,0.05));}
+  .promo-pro{border-color:rgba(139,92,246,0.4);background:linear-gradient(180deg,#fff,rgba(139,92,246,0.05));}
+  .promo-freecard{border-color:rgba(22,163,74,0.4);background:linear-gradient(180deg,#fff,rgba(22,163,74,0.05));}
+  .promo-badge{align-self:flex-start;font-size:10px;font-weight:900;letter-spacing:.6px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border-radius:999px;padding:4px 11px;margin-bottom:14px;text-transform:uppercase;}
+  .promo-ic{font-size:32px;margin-bottom:8px;}
+  .promo-card h3{font-size:18px;font-weight:800;margin:0 0 8px;color:#191512;}
+  .promo-card p{font-size:13.5px;color:#57514A;line-height:1.55;margin:0 0 16px;flex:1;}
+  .promo-price{margin-bottom:16px;}
+  .promo-amt{font-size:22px;font-weight:900;color:#191512;}
+  .promo-per{font-size:13px;color:#6b7280;font-weight:600;}
+  .promo-free{font-size:16px;font-weight:900;color:#16a34a;}
+  .promo-sub{font-size:12px;color:#6b7280;font-weight:600;}
+  .promo-cta{display:inline-block;text-align:center;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;font-weight:800;font-size:14px;padding:11px 16px;border-radius:10px;text-decoration:none;transition:opacity .15s;}
+  .promo-cta:hover{opacity:.9;}
+</style>
+
 <!-- PRICING -->
 <section class="section" id="pricing">
   <div class="container">
@@ -2993,7 +3089,7 @@
     ['.pricing-card-featured .plan-features li', 1, '<span class="check-icon">✓</span> Cover letter generation', '<span class="check-icon">✓</span> 求职信生成'],
     ['.pricing-card-featured .plan-features li', 2, '<span class="check-icon">✓</span> Resume + cover letter together', '<span class="check-icon">✓</span> 简历+求职信同时生成'],
     ['.pricing-card-featured .plan-features li', 3, '<span class="check-icon">✓</span> All 104 premium templates', '<span class="check-icon">✓</span> 全部104个高级模板'],
-    ['.pricing-card-featured .plan-features li', 4, '<span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn Profile Optimizer</strong>', '<span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn个人资料优化</strong>'],
+    ['.pricing-card-featured .plan-features li', 4, '<span class="check-icon">✓</span> <strong style="color:#0077b5;"><svg viewBox="0 0 24 24" width="14" height="14" aria-label="LinkedIn" style="vertical-align:-2px;display:inline-block;"><rect width="24" height="24" rx="5" fill="#0A66C2"/><path fill="#fff" d="M6.94 8.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM5.2 9.75h3.48V20H5.2zM10.4 9.75h3.34v1.4h.05c.47-.85 1.6-1.75 3.3-1.75 3.53 0 4.18 2.24 4.18 5.15V20h-3.48v-4.7c0-1.12-.02-2.56-1.56-2.56-1.56 0-1.8 1.22-1.8 2.48V20H10.4z"/></svg> LinkedIn Profile Optimizer</strong>', '<span class="check-icon">✓</span> <strong style="color:#0077b5;"><svg viewBox="0 0 24 24" width="14" height="14" aria-label="LinkedIn" style="vertical-align:-2px;display:inline-block;"><rect width="24" height="24" rx="5" fill="#0A66C2"/><path fill="#fff" d="M6.94 8.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM5.2 9.75h3.48V20H5.2zM10.4 9.75h3.34v1.4h.05c.47-.85 1.6-1.75 3.3-1.75 3.53 0 4.18 2.24 4.18 5.15V20h-3.48v-4.7c0-1.12-.02-2.56-1.56-2.56-1.56 0-1.8 1.22-1.8 2.48V20H10.4z"/></svg> LinkedIn个人资料优化</strong>'],
     ['.pricing-card-featured .plan-features li', 5, '<span class="check-icon">✓</span> Community networking forum', '<span class="check-icon">✓</span> 职业社区论坛'],
     ['.pricing-card-featured .plan-features li', 6, '<span class="check-icon">✓</span> Salary negotiation guide', '<span class="check-icon">✓</span> 薪资谈判指南'],
     ['.pricing-card-featured .plan-features li', 7, '<span class="check-icon">✓</span> Quarterly career check-ins', '<span class="check-icon">✓</span> 季度职业回顾'],
@@ -3004,7 +3100,7 @@
     ['.pricing-cards .pricing-card:last-child .plan-features li', 0, '<span class="check-icon">✓</span> Everything in Pro, forever', '<span class="check-icon">✓</span> 专业版所有功能，永久有效'],
     ['.pricing-cards .pricing-card:last-child .plan-features li', 1, '<span class="check-icon">✓</span> Unlimited resume tailorings', '<span class="check-icon">✓</span> 无限次简历定制'],
     ['.pricing-cards .pricing-card:last-child .plan-features li', 2, '<span class="check-icon">✓</span> Cover letter generation', '<span class="check-icon">✓</span> 求职信生成'],
-    ['.pricing-cards .pricing-card:last-child .plan-features li', 3, '<span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn Profile Optimizer</strong>', '<span class="check-icon">✓</span> <strong style="color:#0077b5;">🔗 LinkedIn个人资料优化</strong>'],
+    ['.pricing-cards .pricing-card:last-child .plan-features li', 3, '<span class="check-icon">✓</span> <strong style="color:#0077b5;"><svg viewBox="0 0 24 24" width="14" height="14" aria-label="LinkedIn" style="vertical-align:-2px;display:inline-block;"><rect width="24" height="24" rx="5" fill="#0A66C2"/><path fill="#fff" d="M6.94 8.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM5.2 9.75h3.48V20H5.2zM10.4 9.75h3.34v1.4h.05c.47-.85 1.6-1.75 3.3-1.75 3.53 0 4.18 2.24 4.18 5.15V20h-3.48v-4.7c0-1.12-.02-2.56-1.56-2.56-1.56 0-1.8 1.22-1.8 2.48V20H10.4z"/></svg> LinkedIn Profile Optimizer</strong>', '<span class="check-icon">✓</span> <strong style="color:#0077b5;"><svg viewBox="0 0 24 24" width="14" height="14" aria-label="LinkedIn" style="vertical-align:-2px;display:inline-block;"><rect width="24" height="24" rx="5" fill="#0A66C2"/><path fill="#fff" d="M6.94 8.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM5.2 9.75h3.48V20H5.2zM10.4 9.75h3.34v1.4h.05c.47-.85 1.6-1.75 3.3-1.75 3.53 0 4.18 2.24 4.18 5.15V20h-3.48v-4.7c0-1.12-.02-2.56-1.56-2.56-1.56 0-1.8 1.22-1.8 2.48V20H10.4z"/></svg> LinkedIn个人资料优化</strong>'],
     ['.pricing-cards .pricing-card:last-child .plan-features li', 4, '<span class="check-icon">✓</span> All 104 premium templates', '<span class="check-icon">✓</span> 全部104个高级模板'],
     ['.pricing-cards .pricing-card:last-child .plan-features li', 5, '<span class="check-icon">✓</span> Career Hub access', '<span class="check-icon">✓</span> 职业发展中心访问'],
     ['.pricing-cards .pricing-card:last-child .plan-features li', 6, '<span class="check-icon">✓</span> All future features included', '<span class="check-icon">✓</span> 包含所有未来功能'],

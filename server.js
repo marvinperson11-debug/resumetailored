@@ -18,6 +18,7 @@ const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 const CH = require('./career-hub.js');           // Career Hub pure core (taxonomy, prompts, validators, scoring)
 const EH = require('./employer-hub.js');         // Employer Portal pure core (validation, limits, ranking)
+const JP = require('./job-providers.js');        // Multi-source live job search (Adzuna, JSearch, free fallbacks)
 const { renderBadgePage } = require('./badge-page.js');
 /* Video duration probing for site-media uploads. This is `@remotion/media-parser`
    — a pure container-format parser (reads MP4/WebM/MOV box headers for their
@@ -535,7 +536,38 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_job_feed_profession ON job_feed(profession_id);
   CREATE INDEX IF NOT EXISTS idx_job_feed_priority ON job_feed(priority DESC, posted_at DESC);
+  CREATE TABLE IF NOT EXISTS interviews (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    employer_email  TEXT NOT NULL,
+    candidate_email TEXT NOT NULL,
+    job_id          INTEGER,
+    application_id  INTEGER,
+    scheduled_at    INTEGER NOT NULL,
+    mode            TEXT NOT NULL DEFAULT 'video',
+    location_or_link TEXT DEFAULT '',
+    status          TEXT NOT NULL DEFAULT 'scheduled',
+    notes           TEXT DEFAULT '',
+    created_at      INTEGER NOT NULL,
+    updated_at      INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_interviews_employer ON interviews(employer_email);
+  CREATE TABLE IF NOT EXISTS employer_messages (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    employer_email  TEXT NOT NULL,
+    candidate_email TEXT NOT NULL,
+    sender          TEXT NOT NULL,
+    body            TEXT NOT NULL,
+    read_at         INTEGER,
+    created_at      INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_employer_messages_thread ON employer_messages(employer_email, candidate_email);
 `);
+// Employer profile extras (logo, description, notification prefs) added after
+// the base table shipped — see _ensureColumn (idempotent).
+_ensureColumn('employer_profiles', 'logo_url', "logo_url TEXT DEFAULT ''");
+_ensureColumn('employer_profiles', 'description', "description TEXT DEFAULT ''");
+_ensureColumn('employer_profiles', 'notify_applications', 'notify_applications INTEGER DEFAULT 1');
+_ensureColumn('employer_profiles', 'notify_messages', 'notify_messages INTEGER DEFAULT 1');
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
@@ -1173,6 +1205,95 @@ app.get('/api/auth/linkedin/draft', (req, res) => {
 
 // Step 3b (login) — the SPA exchanges the handoff token for a session, once.
 app.get('/api/auth/linkedin/session', (req, res) => {
+  _liSweep();
+  const t = String(req.query.token || '');
+  const entry = t && _liDrafts.get(t);
+  if (!entry || !entry.session) return res.status(404).json({ error: 'expired' });
+  _liDrafts.delete(t);
+  res.json(entry.session); // { token, email, username }
+});
+
+// ── Google Sign-In (OpenID Connect) ─────────────────────────────────────────
+// Same shape as the LinkedIn login flow above: optional (gated by
+// GOOGLE_CLIENT_ID/SECRET), CSRF-guarded round-trip, one-time session handoff.
+// New Google emails get a free password-less account (set a password later via
+// "forgot password"); an existing email is simply signed in. Reuses
+// _linkedInUpsertSession (provider-agnostic account+session upsert).
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const googleConfigured = () => !!(GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET);
+function googleRedirectUri(req) {
+  return process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
+}
+const _googleStates = new Map(); // state -> { exp }
+function _googleSweep() { const now = Date.now(); for (const [k, v] of _googleStates) if (v.exp < now) _googleStates.delete(k); }
+
+app.get('/api/auth/google/status', (req, res) => res.json({ enabled: googleConfigured() }));
+
+app.get('/api/auth/google', (req, res) => {
+  if (!googleConfigured()) return res.redirect('/dashboard?google_error=not_configured');
+  _googleSweep();
+  const state = crypto.randomBytes(16).toString('hex');
+  _googleStates.set(state, { exp: Date.now() + 10 * 60 * 1000 });
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: googleRedirectUri(req),
+    scope: 'openid email profile',
+    state,
+    access_type: 'online',
+    prompt: 'select_account'
+  });
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+});
+
+app.get('/api/auth/google/callback', async (req, res) => {
+  const backTo = (msg) => res.redirect(`/dashboard?google_error=${encodeURIComponent(msg)}`);
+  try {
+    if (!googleConfigured()) return backTo('not_configured');
+    const { code, state, error } = req.query;
+    if (error) return backTo(String(error).slice(0, 120));
+    _googleSweep();
+    const stateEntry = state && _googleStates.get(String(state));
+    if (!code || !stateEntry) return backTo('invalid_state');
+    _googleStates.delete(String(state));
+
+    const tokRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: String(code),
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: googleRedirectUri(req)
+      })
+    });
+    if (!tokRes.ok) return backTo('token_exchange_failed');
+    const tok = await tokRes.json();
+    if (!tok.access_token) return backTo('no_token');
+
+    const uiRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${tok.access_token}` }
+    });
+    if (!uiRes.ok) return backTo('profile_fetch_failed');
+    const ui = await uiRes.json();
+    if (!ui.email) return backTo('no_email');
+    if (ui.email_verified === false) return backTo('email_unverified');
+
+    const fullName = ui.name || [ui.given_name, ui.family_name].filter(Boolean).join(' ') || '';
+    const sess = _linkedInUpsertSession(ui.email, fullName);
+    const handoff = crypto.randomBytes(16).toString('hex');
+    _liDrafts.set(handoff, { session: sess, exp: Date.now() + 5 * 60 * 1000 });
+    res.redirect(`/dashboard?google_login=${handoff}`);
+  } catch (err) {
+    console.error('[google] callback failed:', err && err.message ? err.message : err);
+    backTo('unexpected_error');
+  }
+});
+
+// The SPA exchanges the handoff token for a session, once. (Shares _liDrafts.)
+app.get('/api/auth/google/session', (req, res) => {
   _liSweep();
   const t = String(req.query.token || '');
   const entry = t && _liDrafts.get(t);
@@ -6680,7 +6801,7 @@ async function jsearchFetch(params) {
   }
   return json;
 }
-const JOB_CACHE_TTL = 6 * 60 * 60 * 1000; // 6h
+const JOB_CACHE_TTL = 60 * 60 * 1000; // 1h — shorter than before so a search reflects fresh listings sooner
 app.get('/api/jobs/search', jobSearchLimiter, async (req, res) => {
   const email = careerEmail(req, res); if (!email) return;
   const pro = isSubscriber(email);
@@ -6689,37 +6810,68 @@ app.get('/api/jobs/search', jobSearchLimiter, async (req, res) => {
     return res.status(402).json({ error: 'quota', message: `Free plan is ${CH.LIMITS.jobsearch.free} job searches per day. Upgrade to Pro for unlimited.` });
   }
   const prof = getUserProfession(email);
-  let query = CH.buildJobQuery(req.query.query, prof);
+  // Keyword-only search is fully supported: buildJobQuery falls back to the
+  // saved profession label (or "jobs"), and an EMPTY location deliberately
+  // means NATIONWIDE — no location is ever forced into the query.
+  const query = CH.buildJobQuery(req.query.query, prof);
   const location = (req.query.location || '').toString().slice(0, 80);
-  if (location) query = `${query} in ${location}`;
-  const params = { query, location, page: parseInt(req.query.page, 10) || 1, remote: req.query.remote || '', datePosted: req.query.datePosted || '', jobType: req.query.jobType || '' };
+  const params = {
+    query, location,
+    page: parseInt(req.query.page, 10) || 1,
+    remote: req.query.remote || '', datePosted: req.query.datePosted || '', jobType: req.query.jobType || ''
+  };
   const key = CH.jobCacheKey(params);
   try {
-    let jobs;
     const cached = db.prepare('SELECT payload, fetched_at FROM job_cache WHERE cache_key = ?').get(key);
     if (cached && (Date.now() - cached.fetched_at) < JOB_CACHE_TTL) {
-      jobs = JSON.parse(cached.payload);
-    } else {
-      const raw = await jsearchFetch(params);
-      jobs = CH.normalizeJobs(raw);
-      db.prepare('INSERT OR REPLACE INTO job_cache (cache_key, payload, fetched_at) VALUES (?,?,?)').run(key, JSON.stringify(jobs), Date.now());
+      if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
+      const c = JSON.parse(cached.payload);
+      return res.json({ jobs: c.jobs || c, query, profession: prof ? prof.label : null, sources: c.sources, cached: true });
+    }
+    // Fan out across every configured provider. A single provider failing
+    // (e.g. JSearch 403) no longer empties the whole result.
+    const { jobs, sources, anyKeyedConfigured } = await JP.searchJobs(params);
+    if (jobs.length) {
+      db.prepare('INSERT OR REPLACE INTO job_cache (cache_key, payload, fetched_at) VALUES (?,?,?)')
+        .run(key, JSON.stringify({ jobs, sources }), Date.now());
+      if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
+      // Surface a note when only the zero-key remote fallbacks answered, so
+      // the result set isn't silently missing on-site/US listings.
+      const onlyFallbacks = !sources.some(s => s.ok && s.keyed && s.count > 0);
+      return res.json({ jobs, query, profession: prof ? prof.label : null, sources, onlyFallbacks });
+    }
+    // Zero jobs. Distinguish "providers errored" from "genuinely no matches"
+    // so we never fail silently.
+    const keyedFailed = sources.filter(s => s.keyed && !s.ok);
+    if (keyedFailed.length) {
+      console.error('jobs/search: keyed provider(s) failed:', keyedFailed.map(s => `${s.name}:${s.error}`).join(', '));
+      // Serve any stale cache for this exact query rather than a dead page.
+      const stale = db.prepare('SELECT payload, fetched_at FROM job_cache WHERE cache_key = ?').get(key);
+      if (stale) {
+        if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
+        const c = JSON.parse(stale.payload);
+        return res.json({ jobs: c.jobs || c, query, profession: prof ? prof.label : null, stale: true, staleAt: stale.fetched_at });
+      }
+      return res.status(502).json({
+        error: 'jobs_error',
+        message: 'The job data source is temporarily unavailable. Please try again shortly.',
+        sources: keyedFailed.map(s => ({ name: s.name, error: s.error }))
+      });
+    }
+    if (!anyKeyedConfigured && !sources.some(s => s.ok && s.count > 0)) {
+      return res.status(503).json({ error: 'jobs_unconfigured', message: 'Live job search is not fully configured yet. Add an Adzuna API key for nationwide US results.' });
     }
     if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
-    res.json({ jobs, query, profession: prof ? prof.label : null });
+    return res.json({ jobs: [], query, profession: prof ? prof.label : null, sources });
   } catch (err) {
-    if (err.code === 'jobs_unconfigured') return res.status(503).json({ error: 'jobs_unconfigured', message: 'Job search is not configured on this server.' });
     console.error('jobs/search error:', err.message);
-    // Fallback: JSearch failing (rate-limited, quota exceeded, or a bad
-    // response) shouldn't mean the page looks broken. If ANY previous result
-    // exists for this exact query — even past the normal 6h TTL — serve it
-    // stale rather than an empty page; it's better than nothing and doesn't
-    // cost another API call.
     const stale = db.prepare('SELECT payload, fetched_at FROM job_cache WHERE cache_key = ?').get(key);
     if (stale) {
       if (!pro) _quotaConsume(userKey, 'jobsearch', 'day');
-      return res.json({ jobs: JSON.parse(stale.payload), query, profession: prof ? prof.label : null, stale: true, staleAt: stale.fetched_at });
+      const c = JSON.parse(stale.payload);
+      return res.json({ jobs: c.jobs || c, query, profession: prof ? prof.label : null, stale: true, staleAt: stale.fetched_at });
     }
-    res.status(502).json({ error: 'jobs_error', message: 'No jobs found. Try a broader search or check back later.' });
+    res.status(502).json({ error: 'jobs_error', message: 'Search is temporarily unavailable — please try again shortly.' });
   }
 });
 app.post('/api/jobs/save', (req, res) => {
@@ -7347,6 +7499,199 @@ app.get('/api/employer/jobs/:id/matches', (req, res) => {
   const matched = EH.matchGigCandidates(candidates, { professionId: _guessProfessionId(job.title), location: job.location, gigRate: job.gig_rate });
   const ranked = EH.rankCandidates(matched, { employerIsPro: true }); // already Pro-gated above; no cap here
   res.json({ matches: ranked.map(c => ({ email: c.email, username: c.username, location: c.location, remotePref: c.remotePref, hourlyRate: c.hourlyRate, openToWork: c.openToWork, matchScore: c.matchScore })) });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Employer Portal — Phase C: recruiter dashboard. Overview stats, recent
+// activity, interview scheduling, in-app messaging, analytics (funnel +
+// time-to-hire), CSV export and company settings. All reuse the existing
+// job_postings / job_applications data; interviews + messages get their own
+// tables. Everything here requires a set-up employer profile.
+// ═══════════════════════════════════════════════════════════════════════════
+function _requireEmployerProfile(req, res) {
+  const email = employerAuthEmail(req, res); if (!email) return null;
+  const e = email.toLowerCase();
+  const profile = db.prepare('SELECT * FROM employer_profiles WHERE email = ?').get(e);
+  if (!profile) { res.status(400).json({ error: 'no_employer_profile', message: 'Set up your company profile first.' }); return null; }
+  return { email: e, profile };
+}
+// All applications across this employer's postings, newest first, with the
+// posting title and candidate username joined in for display/export.
+function _employerApplications(e) {
+  return db.prepare(`
+    SELECT a.*, j.title AS job_title, j.location AS job_location, u.username AS candidate_name
+    FROM job_applications a
+    JOIN job_postings j ON j.id = a.job_id
+    LEFT JOIN users u ON u.email = a.candidate_email
+    WHERE j.employer_email = ? ORDER BY a.created_at DESC
+  `).all(e);
+}
+
+app.get('/api/employer/overview', (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  const { email: e } = ctx;
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const apps = _employerApplications(e);
+  const activeJobs = db.prepare("SELECT COUNT(*) c FROM job_postings WHERE employer_email = ? AND status = 'active'").get(e).c;
+  const totalJobs = db.prepare('SELECT COUNT(*) c FROM job_postings WHERE employer_email = ?').get(e).c;
+  const applicationsThisWeek = apps.filter(a => a.created_at >= weekAgo).length;
+  const candidatesInPipeline = apps.filter(a => !['hired', 'rejected'].includes(String(a.status).toLowerCase())).length;
+  const interviewsScheduled = db.prepare("SELECT COUNT(*) c FROM interviews WHERE employer_email = ? AND status IN ('scheduled','confirmed') AND scheduled_at >= ?").get(e, Date.now()).c;
+  // Recent activity: latest applications, interviews and messages, merged.
+  const recentApps = apps.slice(0, 8).map(a => ({ type: 'application', at: a.created_at, text: `${a.candidate_name || a.candidate_email} applied to ${a.job_title}`, status: a.status }));
+  const recentIv = db.prepare('SELECT * FROM interviews WHERE employer_email = ? ORDER BY created_at DESC LIMIT 5').all(e)
+    .map(i => ({ type: 'interview', at: i.created_at, text: `Interview ${i.status} with ${i.candidate_email}`, status: i.status }));
+  const recentMsg = db.prepare("SELECT * FROM employer_messages WHERE employer_email = ? AND sender = 'candidate' ORDER BY created_at DESC LIMIT 5").all(e)
+    .map(m => ({ type: 'message', at: m.created_at, text: `New message from ${m.candidate_email}` }));
+  const activity = [...recentApps, ...recentIv, ...recentMsg].sort((a, b) => b.at - a.at).slice(0, 10);
+  res.json({
+    companyName: ctx.profile.company_name, pro: isEmployerSubscriber(ctx.email),
+    stats: { activeJobs, totalJobs, applicationsThisWeek, candidatesInPipeline, interviewsScheduled },
+    activity
+  });
+});
+
+// ── Interviews ───────────────────────────────────────────────────────────────
+function _interviewOut(r) {
+  return { id: r.id, candidateEmail: r.candidate_email, jobId: r.job_id, applicationId: r.application_id, scheduledAt: r.scheduled_at, mode: r.mode, locationOrLink: r.location_or_link, status: r.status, notes: r.notes, createdAt: r.created_at };
+}
+app.get('/api/employer/interviews', (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  const rows = db.prepare(`
+    SELECT iv.*, j.title AS job_title FROM interviews iv
+    LEFT JOIN job_postings j ON j.id = iv.job_id
+    WHERE iv.employer_email = ? ORDER BY iv.scheduled_at ASC
+  `).all(ctx.email);
+  res.json({ interviews: rows.map(r => Object.assign(_interviewOut(r), { jobTitle: r.job_title || null })) });
+});
+app.post('/api/employer/interviews', employerLimiter, (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  const v = EH.validateInterview(req.body);
+  if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
+  const c = v.clean; const now = Date.now();
+  const appRow = c.jobId ? db.prepare('SELECT id FROM job_applications WHERE job_id = ? AND candidate_email = ?').get(c.jobId, c.candidateEmail) : null;
+  const info = db.prepare(`INSERT INTO interviews (employer_email, candidate_email, job_id, application_id, scheduled_at, mode, location_or_link, status, notes, created_at, updated_at)
+    VALUES (?,?,?,?,?,?,?, 'scheduled', ?, ?, ?)`).run(ctx.email, c.candidateEmail, c.jobId, appRow ? appRow.id : null, c.scheduledAt, c.mode, c.locationOrLink, c.notes, now, now);
+  // Move the linked application into the "interview" stage automatically.
+  if (appRow) db.prepare("UPDATE job_applications SET status = 'interview', updated_at = ? WHERE id = ?").run(now, appRow.id);
+  // Notify the candidate (fire-and-forget) with an ICS-friendly summary.
+  const when = new Date(c.scheduledAt).toUTCString();
+  sendEmail({ to: c.candidateEmail, subject: `Interview invitation — ${ctx.profile.company_name}`,
+    html: `<p><strong>${ctx.profile.company_name}</strong> has invited you to an interview.</p><p><strong>When:</strong> ${when}<br/><strong>Format:</strong> ${c.mode}${c.locationOrLink ? `<br/><strong>Where/Link:</strong> ${c.locationOrLink}` : ''}</p>${c.notes ? `<p>${c.notes}</p>` : ''}` })
+    .catch(err => console.error('[employer] interview email failed:', err.message));
+  res.json({ success: true, id: info.lastInsertRowid });
+});
+app.put('/api/employer/interviews/:id', employerLimiter, (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  const id = parseInt(req.params.id, 10);
+  const iv = db.prepare('SELECT * FROM interviews WHERE id = ? AND employer_email = ?').get(id, ctx.email);
+  if (!iv) return res.status(404).json({ error: 'not_found' });
+  const body = req.body || {}; const sets = []; const vals = [];
+  if (body.status !== undefined) {
+    if (!EH.INTERVIEW_STATUSES.includes(String(body.status).toLowerCase())) return res.status(400).json({ error: 'bad_request' });
+    sets.push('status = ?'); vals.push(String(body.status).toLowerCase());
+  }
+  if (body.scheduledAt !== undefined && isFinite(Number(body.scheduledAt))) { sets.push('scheduled_at = ?'); vals.push(Number(body.scheduledAt)); }
+  if (body.notes !== undefined) { sets.push('notes = ?'); vals.push(String(body.notes).slice(0, 2000)); }
+  if (!sets.length) return res.status(400).json({ error: 'bad_request', message: 'Nothing to update.' });
+  sets.push('updated_at = ?'); vals.push(Date.now()); vals.push(id);
+  db.prepare(`UPDATE interviews SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+  res.json({ success: true });
+});
+app.delete('/api/employer/interviews/:id', (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  db.prepare('DELETE FROM interviews WHERE id = ? AND employer_email = ?').run(parseInt(req.params.id, 10), ctx.email);
+  res.json({ success: true });
+});
+
+// ── Messaging (employer ↔ candidate) ─────────────────────────────────────────
+app.get('/api/employer/messages', (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  // Thread list: one row per candidate, latest message + unread count.
+  const rows = db.prepare(`
+    SELECT candidate_email,
+           MAX(created_at) AS last_at,
+           (SELECT body FROM employer_messages m2 WHERE m2.employer_email = m.employer_email AND m2.candidate_email = m.candidate_email ORDER BY created_at DESC LIMIT 1) AS last_body,
+           SUM(CASE WHEN sender = 'candidate' AND read_at IS NULL THEN 1 ELSE 0 END) AS unread
+    FROM employer_messages m WHERE employer_email = ? GROUP BY candidate_email ORDER BY last_at DESC
+  `).all(ctx.email);
+  res.json({ threads: rows.map(r => ({ candidateEmail: r.candidate_email, lastBody: r.last_body, lastAt: r.last_at, unread: r.unread })) });
+});
+app.get('/api/employer/messages/:candEmail', (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  const cand = String(req.params.candEmail || '').toLowerCase();
+  const msgs = db.prepare('SELECT * FROM employer_messages WHERE employer_email = ? AND candidate_email = ? ORDER BY created_at ASC').all(ctx.email, cand);
+  db.prepare("UPDATE employer_messages SET read_at = ? WHERE employer_email = ? AND candidate_email = ? AND sender = 'candidate' AND read_at IS NULL").run(Date.now(), ctx.email, cand);
+  res.json({ messages: msgs.map(m => ({ id: m.id, sender: m.sender, body: m.body, createdAt: m.created_at })) });
+});
+app.post('/api/employer/messages/:candEmail', employerLimiter, (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  const cand = String(req.params.candEmail || '').toLowerCase();
+  const body = String((req.body && req.body.body) || '').trim().slice(0, 4000);
+  if (!body) return res.status(400).json({ error: 'bad_request', message: 'Message cannot be empty.' });
+  db.prepare("INSERT INTO employer_messages (employer_email, candidate_email, sender, body, created_at) VALUES (?,?,'employer',?,?)").run(ctx.email, cand, body, Date.now());
+  sendEmail({ to: cand, subject: `New message from ${ctx.profile.company_name} on ResumeTailored`,
+    html: `<p><strong>${ctx.profile.company_name}</strong> sent you a message:</p><blockquote>${body.replace(/</g, '&lt;')}</blockquote><p>Reply from your ResumeTailored dashboard.</p>` })
+    .catch(err => console.error('[employer] message email failed:', err.message));
+  res.json({ success: true });
+});
+
+// ── Analytics ────────────────────────────────────────────────────────────────
+app.get('/api/employer/analytics', (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  const apps = _employerApplications(ctx.email).map(a => ({ status: a.status, createdAt: a.created_at, updatedAt: a.updated_at, job_title: a.job_title }));
+  const { counts, funnel, total } = EH.buildFunnel(apps);
+  const timeToHire = EH.computeTimeToHire(apps);
+  // "Source" tracking: we don't collect a referrer per application, so break
+  // volume down by the posting it came through — the honest, real signal we
+  // have. Employer Portal jobs vs. anything applied via the aggregated feed.
+  const bySource = {};
+  for (const a of apps) { const k = a.job_title || 'Unknown'; bySource[k] = (bySource[k] || 0) + 1; }
+  const sources = Object.entries(bySource).map(([label, count]) => ({ label, count })).sort((x, y) => y.count - x.count).slice(0, 8);
+  res.json({ counts, funnel, total, timeToHire, sources });
+});
+
+// CSV export of every applicant across all postings.
+app.get('/api/employer/candidates/export.csv', (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  if (!isEmployerSubscriber(ctx.email)) return res.status(402).json({ error: 'pro_required', message: 'CSV export is a Pro Employer feature.' });
+  const apps = _employerApplications(ctx.email);
+  const rows = apps.map(a => ({
+    name: a.candidate_name || '', email: a.candidate_email, job: a.job_title, location: a.job_location || '',
+    status: a.status, rating: a.rating == null ? '' : a.rating,
+    applied: new Date(a.created_at).toISOString().slice(0, 10),
+    notes: a.notes || ''
+  }));
+  const csv = EH.toCsv(rows, [
+    { key: 'name', label: 'Candidate' }, { key: 'email', label: 'Email' }, { key: 'job', label: 'Job' },
+    { key: 'location', label: 'Location' }, { key: 'status', label: 'Status' }, { key: 'rating', label: 'Rating' },
+    { key: 'applied', label: 'Applied' }, { key: 'notes', label: 'Notes' }
+  ]);
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="candidates.csv"');
+  res.send(csv);
+});
+
+// ── Settings (company profile + notification prefs) ──────────────────────────
+app.get('/api/employer/settings', (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  const p = ctx.profile;
+  res.json({
+    companyName: p.company_name, website: p.website || '', logoUrl: p.logo_url || '', description: p.description || '',
+    notifyApplications: p.notify_applications == null ? true : !!p.notify_applications,
+    notifyMessages: p.notify_messages == null ? true : !!p.notify_messages,
+    pro: isEmployerSubscriber(ctx.email)
+  });
+});
+app.post('/api/employer/settings', employerLimiter, (req, res) => {
+  const ctx = _requireEmployerProfile(req, res); if (!ctx) return;
+  const b = req.body || {};
+  const companyName = String(b.companyName || ctx.profile.company_name || '').trim().slice(0, 120);
+  if (companyName.length < 2) return res.status(400).json({ error: 'bad_request', message: 'Company name is required.' });
+  db.prepare('UPDATE employer_profiles SET company_name = ?, website = ?, logo_url = ?, description = ?, notify_applications = ?, notify_messages = ? WHERE email = ?')
+    .run(companyName, String(b.website || '').trim().slice(0, 200), String(b.logoUrl || '').trim().slice(0, 500), String(b.description || '').trim().slice(0, 2000),
+      b.notifyApplications === false ? 0 : 1, b.notifyMessages === false ? 0 : 1, ctx.email);
+  res.json({ success: true });
 });
 
 // Branded 404 for anything that fell through every route above (replaces
