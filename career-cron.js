@@ -51,6 +51,15 @@ function scheduleDaily(hourUTC, minuteUTC, file) {
   return wait;
 }
 
+// Runs once shortly after boot (so a fresh deploy doesn't wait a full
+// interval for its first data), then every intervalMs after that.
+function scheduleEvery(intervalMs, file, initialDelayMs) {
+  const tick = () => { runScript(file); setTimeout(tick, intervalMs); };
+  const wait = initialDelayMs == null ? intervalMs : initialDelayMs;
+  setTimeout(tick, wait);
+  return wait;
+}
+
 function startCareerCron(log) {
   const say = log || console.log;
   if ((process.env.CAREER_CRON || 'off') !== 'on') { say('[career-cron] disabled (set CAREER_CRON=on to enable)'); return false; }
@@ -58,11 +67,14 @@ function startCareerCron(log) {
   const digestH = clampHour(process.env.CAREER_DIGEST_HOUR_UTC, 13);
   scheduleDaily(warmH, 0, 'warm-career-cache.js');
   scheduleDaily(digestH, 0, 'job-digest.js');
-  say(`[career-cron] enabled — warm @ ${pad(warmH)}:00 UTC (npm run career:warm), digest @ ${pad(digestH)}:00 UTC (npm run career:job-digest)`);
+  const feedIntervalH = clampInterval(process.env.JOB_FEED_REFRESH_HOURS, 6);
+  scheduleEvery(feedIntervalH * 60 * 60 * 1000, 'refresh-job-feed.js', 2 * 60 * 1000);
+  say(`[career-cron] enabled — warm @ ${pad(warmH)}:00 UTC (npm run career:warm), digest @ ${pad(digestH)}:00 UTC (npm run career:job-digest), job feed every ${feedIntervalH}h (npm run career:job-feed)`);
   return true;
 }
 
 function clampHour(v, dflt) { const n = parseInt(v, 10); return Number.isInteger(n) && n >= 0 && n <= 23 ? n : dflt; }
+function clampInterval(v, dflt) { const n = parseInt(v, 10); return Number.isInteger(n) && n >= 1 && n <= 24 ? n : dflt; }
 function pad(n) { return String(n).padStart(2, '0'); }
 
-module.exports = { startCareerCron, msUntil, scheduleDaily };
+module.exports = { startCareerCron, msUntil, scheduleDaily, scheduleEvery };

@@ -23,6 +23,35 @@ const ORIGIN = process.env.PUBLIC_ORIGIN || 'https://resumetailored.com';
 const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const db = new Database(path.join(dataDir, 'resumetailor.db'));
 
+// Mirrors server.js's isSubscriber() locally — this script doesn't require
+// server.js (it boots the whole app), so the comp/owner-email rule is
+// duplicated here rather than shared.
+const COMP_EMAILS = (process.env.COMP_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+function isPro(email) {
+  const e = email.toLowerCase();
+  if (e === (process.env.OWNER_EMAIL || 'support@resumetailored.com').toLowerCase()) return true;
+  if (COMP_EMAILS.includes(e)) return true;
+  return !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(e);
+}
+// AI job matching digest is Pro-only (Part 4) — built entirely from data the
+// user already generated (no fresh LLM call per subscriber per day, see
+// CH.computeJobMatchScore).
+function matchInfoFor(email) {
+  const gapRow = db.prepare('SELECT match_score, payload FROM gap_reports WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
+  const bandRank = { gold: 3, silver: 2, bronze: 1 };
+  const badgeRows = db.prepare('SELECT band, score FROM badges WHERE email = ?').all(email);
+  let bestBand = null;
+  for (const r of badgeRows) if (!bestBand || (bandRank[r.band] || 0) > (bandRank[bestBand.band] || 0)) bestBand = r;
+  const score = CH.computeJobMatchScore({
+    latestGapScore: gapRow ? gapRow.match_score : null,
+    bestBandScore: bestBand ? bestBand.score : null
+  });
+  if (score == null) return null;
+  let topGap = null;
+  if (gapRow) { try { const payload = JSON.parse(gapRow.payload); topGap = (payload.gaps && payload.gaps[0] && payload.gaps[0].requirement) || null; } catch (e) {} }
+  return { score, topGap };
+}
+
 async function jsearch(query) {
   const key = process.env.RAPIDAPI_KEY;
   if (!key) throw new Error('RAPIDAPI_KEY not set');
@@ -45,6 +74,22 @@ async function sendEmail(to, subject, html) {
   return r.ok;
 }
 
+// Employer Portal jobs for a profession, freshest first — kept in sync into
+// job_feed on every job posting write (see server.js), so this is a plain
+// read with no extra API cost. Normalized to the same shape as
+// CH.normalizeJobs output so they slot into the same email template and sort
+// first, matching the Job Feed Aggregator's "employer jobs get priority
+// placement" rule.
+function employerJobsFor(professionId) {
+  if (!professionId) return [];
+  const rows = db.prepare("SELECT * FROM job_feed WHERE source = 'employer' AND profession_id = ? ORDER BY posted_at DESC LIMIT 5").all(professionId);
+  return rows.map(r => ({
+    id: `employer:${r.id}`, title: r.title, company: r.company, location: r.location,
+    remote: !!r.remote, employmentType: r.job_type, postedAt: r.posted_at, url: '', applyUrl: '',
+    descriptionSnippet: r.description || ''
+  }));
+}
+
 (async () => {
   const rows = db.prepare("SELECT email, profession_id, seniority, lang FROM check_ins WHERE job_alerts = 1 AND profession_id != ''").all();
   console.log(`[job-digest] ${rows.length} subscriber(s)`);
@@ -56,11 +101,16 @@ async function sendEmail(to, subject, html) {
     if (!prof) { skipped++; continue; }
     const lang = row.lang === 'zh' ? 'zh' : 'en';
     try {
-      let jobs = cache[prof.id];
-      if (!jobs) { jobs = CH.normalizeJobs(await jsearch(prof.label)); cache[prof.id] = jobs; }
+      let jsJobs = cache[prof.id];
+      if (jsJobs === undefined) {
+        try { jsJobs = CH.normalizeJobs(await jsearch(prof.label)); } catch (e) { jsJobs = []; }
+        cache[prof.id] = jsJobs;
+      }
+      const jobs = employerJobsFor(prof.id).concat(jsJobs).slice(0, 5);
       if (!jobs.length) { skipped++; continue; }
       const profLabel = lang === 'zh' ? prof.labelZh : prof.label;
-      const { subject, html } = CH.buildJobDigestEmail(profLabel, jobs, ORIGIN, lang);
+      const matchInfo = isPro(row.email) ? matchInfoFor(row.email) : null;
+      const { subject, html } = CH.buildJobDigestEmail(profLabel, jobs, ORIGIN, lang, matchInfo);
       if (await sendEmail(row.email, subject, html)) sent++;
     } catch (e) {
       console.error(`[job-digest] ${row.email}: ${e.message}`);

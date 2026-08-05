@@ -491,6 +491,43 @@ function normalizeJobs(apiResponse) {
   })).filter(j => j.title);
 }
 
+// ── Job Feed Aggregator ──────────────────────────────────────────────────────
+// Minimal RSS 2.0 <item> extractor — deliberately not a full XML parser (no
+// new dependency for what's usually a handful of <title>/<link>/<pubDate>/
+// <description> tags per item). Company career-page feeds are the one
+// aggregator source with no partner-API gate (Indeed and ZipRecruiter both
+// require business approval, not a signup-and-go key — see
+// EMPLOYER_PORTAL_PLAN.md), so this is the one that can actually run today.
+// Malformed input yields [], never a throw — a bad feed should drop out of
+// the aggregator silently, not take the refresh job down with it.
+function _rssText(itemXml, tag) {
+  const m = itemXml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i'));
+  if (!m) return '';
+  let t = m[1].trim();
+  const cdata = t.match(/^<!\[CDATA\[([\s\S]*)\]\]>$/);
+  if (cdata) t = cdata[1];
+  return t.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+}
+function parseRssItems(xml) {
+  if (typeof xml !== 'string' || !xml.trim()) return [];
+  const items = [];
+  const itemRe = /<item[^>]*>([\s\S]*?)<\/item>/gi;
+  let m;
+  while ((m = itemRe.exec(xml)) !== null) {
+    const block = m[1];
+    const title = _rssText(block, 'title');
+    const link = _rssText(block, 'link');
+    if (!title || !link) continue;
+    items.push({
+      title, link,
+      description: _rssText(block, 'description'),
+      pubDate: _rssText(block, 'pubDate') || null,
+      guid: _rssText(block, 'guid') || link
+    });
+  }
+  return items;
+}
+
 // ── dashboard rule-based next steps (pure) ──────────────────────────────────
 // state: { hasProfession, professionLabel, resumeCount, tookQuiz, bestBands{},
 //          interviewPracticed, interviewTotal, savedJobs, latestGap, scenariosDone }
@@ -537,9 +574,30 @@ const TOP_PROFESSIONS = [
   'plumber', 'web-developer', 'product-manager', 'account-manager', 'bookkeeper'
 ];
 
+// Job Match score: a deterministic, zero-API-cost qualification signal for
+// the Pro-only "AI job matching" digest line. Deliberately NOT a fresh
+// per-job LLM call (unbounded cost — every job × every Pro subscriber × every
+// day) — it blends signal the user already generated and Claude already
+// scored: their most recent Skills Gap Analyzer result (resume vs. a real
+// job description, 70% weight — the closer, more specific signal) and their
+// best Skills Lab badge score (30% weight — a general profession-competence
+// floor when no gap report exists yet). Returns null when there's truly no
+// signal to blend (never fabricates a number).
+function computeJobMatchScore({ latestGapScore, bestBandScore } = {}) {
+  const g = typeof latestGapScore === 'number' && isFinite(latestGapScore) ? latestGapScore : null;
+  const b = typeof bestBandScore === 'number' && isFinite(bestBandScore) ? bestBandScore : null;
+  if (g == null && b == null) return null;
+  if (g != null && b != null) return Math.round(g * 0.7 + b * 0.3);
+  return Math.round(g != null ? g : b);
+}
+
 // Build the daily "N new <Profession> jobs" digest. Pure: (profLabel, jobs[],
-// origin) → { subject, html }. Kept simple — title, company, location, link.
-function buildJobDigestEmail(professionLabel, jobs, origin, lang) {
+// origin, lang, matchInfo?) → { subject, html }. matchInfo — Pro-only —
+// adds a "you're roughly N% qualified, top gap: X" banner using
+// computeJobMatchScore's output; omitted entirely for free users so the
+// email doesn't claim a number nobody paid to see. Kept simple otherwise —
+// title, company, location, link.
+function buildJobDigestEmail(professionLabel, jobs, origin, lang, matchInfo) {
   const list = (jobs || []).slice(0, 5);
   const n = list.length;
   const zh = normLang(lang) === 'zh';
@@ -551,12 +609,22 @@ function buildJobDigestEmail(professionLabel, jobs, origin, lang) {
   const T = zh ? {
     header: 'ResumeTailored · 职位提醒', intro: `来自你的求职助手的最新${professionLabel}职位。`,
     cta: '查看全部职位 →', remote: '远程',
-    foot: '你收到此邮件是因为你在职业中心开启了职位提醒。可随时在求职助手中关闭。'
+    foot: '你收到此邮件是因为你在职业中心开启了职位提醒。可随时在求职助手中关闭。',
+    matchPrefix: '根据你最近的技能测试与差距分析，你目前大约达到', matchSuffix: '的匹配度。',
+    gapPrefix: '主要差距：'
   } : {
     header: 'ResumeTailored · Job Alerts', intro: `Fresh ${professionLabel} openings from your Job Finder.`,
     cta: 'See all jobs →', remote: 'Remote',
-    foot: "You're getting this because you turned on job alerts in the Career Hub. Turn them off anytime in the Job Finder."
+    foot: "You're getting this because you turned on job alerts in the Career Hub. Turn them off anytime in the Job Finder.",
+    matchPrefix: "Based on your recent skills tests and gap analysis, you're roughly", matchSuffix: '% qualified for these openings.',
+    gapPrefix: 'Top gap to close: '
   };
+  const matchBanner = (matchInfo && typeof matchInfo.score === 'number')
+    ? `<div style="background:#FBF3E0;border:1px solid #B4832A;border-radius:10px;padding:12px 16px;margin:0 0 16px;font-size:14px;color:#6b4a12;">
+        ${zh ? esc(T.matchPrefix) + ' ' + matchInfo.score + '%' + esc(T.matchSuffix) : esc(T.matchPrefix) + ' ' + matchInfo.score + esc(T.matchSuffix)}
+        ${matchInfo.topGap ? `<br/><strong>${esc(T.gapPrefix)}</strong>${esc(matchInfo.topGap)}` : ''}
+      </div>`
+    : '';
   const rows = list.map(j => `
     <tr><td style="padding:14px 0;border-bottom:1px solid #eee;">
       <a href="${esc(j.url || base + '/app')}" style="font-size:16px;font-weight:700;color:#1F5C3D;text-decoration:none;">${esc(j.title)}</a>
@@ -569,6 +637,7 @@ function buildJobDigestEmail(professionLabel, jobs, origin, lang) {
     <div style="padding:24px 28px;">
       <h1 style="font-size:20px;margin:0 0 6px;color:#191512;">${esc(subject)}</h1>
       <p style="font-size:14px;color:#6B7280;margin:0 0 8px;">${esc(T.intro)}</p>
+      ${matchBanner}
       <table style="width:100%;border-collapse:collapse;">${rows}</table>
       <a href="${esc(base)}/app" style="display:inline-block;margin-top:20px;background:#1F5C3D;color:#fff;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:10px;">${T.cta}</a>
       <p style="font-size:12px;color:#9CA3AF;margin-top:22px;">${esc(T.foot)}</p>
@@ -581,11 +650,11 @@ function buildJobDigestEmail(professionLabel, jobs, origin, lang) {
 module.exports = {
   PROMPT_VERSION, SENIORITY_LEVELS, SENIORITY_LABELS, LIMITS, SCENARIO_TYPES, QUIZ_QUESTION_COUNT, TOP_PROFESSIONS,
   CATEGORY_ZH, PROFESSION_ZH, normLang, langInstruction,
-  buildJobDigestEmail,
+  buildJobDigestEmail, computeJobMatchScore,
   sha256, quizCacheKey, interviewCacheKey, gapCacheKey, scenarioCacheKey, jobCacheKey, badgeSlug,
   loadProfessions, flattenProfessions, validateProfessionId, validateSeniority, resolveProfession, deriveKeywords,
   buildQuizPrompt, buildInterviewPrompt, buildGapPrompt, buildScenarioPrompt,
   validateQuiz, validateInterview, validateGap, validateScenario, extractJson,
   seededPermutation, quizForDelivery, scoreQuiz, band, cappedBand,
-  buildJobQuery, normalizeJobs, isValidJsearchResponse, computeNextSteps
+  buildJobQuery, normalizeJobs, isValidJsearchResponse, parseRssItems, computeNextSteps
 };

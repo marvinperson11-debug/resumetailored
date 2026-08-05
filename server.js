@@ -17,6 +17,7 @@ const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Borde
 const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 const CH = require('./career-hub.js');           // Career Hub pure core (taxonomy, prompts, validators, scoring)
+const EH = require('./employer-hub.js');         // Employer Portal pure core (validation, limits, ranking)
 const { renderBadgePage } = require('./badge-page.js');
 /* Video duration probing for site-media uploads. This is `@remotion/media-parser`
    — a pure container-format parser (reads MP4/WebM/MOV box headers for their
@@ -435,6 +436,106 @@ _ensureColumn('check_ins', 'job_alerts', 'job_alerts INTEGER DEFAULT 0');
 // Preferred UI language, so server-side emails (the job digest) match what the
 // user reads in the app.
 _ensureColumn('check_ins', 'lang', "lang TEXT DEFAULT 'en'");
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Employer Portal: turns a signed-in account into a job poster via a "Hire
+// Mode" toggle rather than a second login system (reuses the existing
+// users/sessions auth exactly like every other feature). Pure validation/
+// limits logic lives in employer-hub.js (EH); these tables + the /api/employer
+// routes are the SQLite + Stripe wiring, mirroring the Career Hub's own
+// pure-core/server-wiring split.
+// ═══════════════════════════════════════════════════════════════════════════
+db.exec(`
+  CREATE TABLE IF NOT EXISTS employer_profiles (
+    email        TEXT PRIMARY KEY,
+    company_name TEXT NOT NULL,
+    website      TEXT DEFAULT '',
+    created_at   INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS employer_subscribers (
+    email       TEXT PRIMARY KEY,
+    customer_id TEXT
+  );
+  CREATE TABLE IF NOT EXISTS job_postings (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    employer_email TEXT NOT NULL,
+    title          TEXT NOT NULL,
+    description    TEXT NOT NULL DEFAULT '',
+    requirements   TEXT NOT NULL DEFAULT '',
+    salary_min     INTEGER,
+    salary_max     INTEGER,
+    location       TEXT NOT NULL DEFAULT '',
+    work_mode      TEXT NOT NULL,
+    job_type       TEXT NOT NULL,
+    is_gig         INTEGER NOT NULL DEFAULT 0,
+    gig_rate       INTEGER,
+    gig_schedule   TEXT DEFAULT '',
+    gig_type       TEXT DEFAULT '',
+    status         TEXT NOT NULL DEFAULT 'active',
+    created_at     INTEGER NOT NULL,
+    updated_at     INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_job_postings_employer ON job_postings(employer_email);
+  CREATE INDEX IF NOT EXISTS idx_job_postings_status ON job_postings(status);
+  CREATE TABLE IF NOT EXISTS job_applications (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id       INTEGER NOT NULL,
+    candidate_email TEXT NOT NULL,
+    resume_id    INTEGER,
+    status       TEXT NOT NULL DEFAULT 'new',
+    rating       INTEGER,
+    notes        TEXT DEFAULT '',
+    interview_note TEXT DEFAULT '',
+    created_at   INTEGER NOT NULL,
+    updated_at   INTEGER NOT NULL,
+    UNIQUE(job_id, candidate_email)
+  );
+  CREATE INDEX IF NOT EXISTS idx_job_applications_job ON job_applications(job_id);
+  CREATE INDEX IF NOT EXISTS idx_job_applications_candidate ON job_applications(candidate_email);
+  CREATE TABLE IF NOT EXISTS candidate_profiles (
+    email          TEXT PRIMARY KEY,
+    searchable     INTEGER NOT NULL DEFAULT 0,
+    open_to_work   INTEGER NOT NULL DEFAULT 0,
+    remote_pref    TEXT DEFAULT '',
+    location       TEXT DEFAULT '',
+    gig_available  INTEGER NOT NULL DEFAULT 0,
+    hourly_rate    INTEGER,
+    gig_schedule   TEXT DEFAULT '',
+    max_travel_mi  INTEGER,
+    updated_at     INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_candidate_profiles_searchable ON candidate_profiles(searchable);
+  CREATE TABLE IF NOT EXISTS employer_contact_requests (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    employer_email  TEXT NOT NULL,
+    candidate_email TEXT NOT NULL,
+    message         TEXT DEFAULT '',
+    status          TEXT NOT NULL DEFAULT 'pending',
+    created_at      INTEGER NOT NULL,
+    updated_at      INTEGER NOT NULL,
+    UNIQUE(employer_email, candidate_email)
+  );
+  CREATE INDEX IF NOT EXISTS idx_contact_requests_candidate ON employer_contact_requests(candidate_email);
+  CREATE TABLE IF NOT EXISTS job_feed (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    source        TEXT NOT NULL,
+    external_id   TEXT NOT NULL,
+    title         TEXT NOT NULL,
+    company       TEXT DEFAULT '',
+    location      TEXT DEFAULT '',
+    url           TEXT NOT NULL,
+    description   TEXT DEFAULT '',
+    remote        INTEGER DEFAULT 0,
+    job_type      TEXT DEFAULT '',
+    profession_id TEXT DEFAULT '',
+    priority      INTEGER NOT NULL DEFAULT 0,
+    posted_at     INTEGER,
+    fetched_at    INTEGER NOT NULL,
+    UNIQUE(source, external_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_job_feed_profession ON job_feed(profession_id);
+  CREATE INDEX IF NOT EXISTS idx_job_feed_priority ON job_feed(priority DESC, posted_at DESC);
+`);
 
 // Seed default forum posts on first run
 if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
@@ -5877,7 +5978,13 @@ app.post('/webhook', (req, res) => {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const email = (session.metadata?.email || session.customer_email || '').toLowerCase();
-    if (email) {
+    const isEmployer = session.metadata?.plan === 'employer';
+    if (email && isEmployer) {
+      db.prepare('INSERT OR REPLACE INTO employer_subscribers (email, customer_id) VALUES (?, ?)').run(email, session.customer);
+      console.log(`New Pro Employer subscriber: ${email}`);
+      notifyOwner(`[ResumeTailored] 💼 New Pro Employer subscriber: ${email}`,
+        `<p>💼 <strong>${email}</strong> just subscribed — <strong>Pro Employer ($29/mo)</strong>.</p>`);
+    } else if (email) {
       const isLifetime = session.metadata?.plan === 'lifetime' || session.mode === 'payment';
       // Lifetime subscribers get a sentinel customer_id so deletion webhooks never remove them
       const customerId = isLifetime ? `lifetime_${email}` : session.customer;
@@ -5891,12 +5998,18 @@ app.post('/webhook', (req, res) => {
 
   if (event.type === 'customer.subscription.deleted') {
     const customerId = event.data.object.customer;
-    // Look up the email before deleting so we can name them in the alert
+    // Look up the email before deleting so we can name them in the alert. Check
+    // both subscriber tables — a canceled subscription's customer_id could
+    // belong to either the job-seeker or the employer plan.
     const row = db.prepare('SELECT email FROM subscribers WHERE customer_id = ?').get(customerId);
+    const employerRow = db.prepare('SELECT email FROM employer_subscribers WHERE customer_id = ?').get(customerId);
     db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(customerId);
+    db.prepare('DELETE FROM employer_subscribers WHERE customer_id = ?').run(customerId);
     console.log(`Removed subscriber with customer_id: ${customerId}`);
-    notifyOwner(`[ResumeTailored] Subscription canceled: ${row?.email || customerId}`,
-      `<p>👋 <strong>${row?.email || `customer ${customerId}`}</strong>'s subscription was canceled.</p>`);
+    const who = row?.email || employerRow?.email || customerId;
+    const label = employerRow ? ' (Pro Employer)' : '';
+    notifyOwner(`[ResumeTailored] Subscription canceled: ${who}${label}`,
+      `<p>👋 <strong>${who}</strong>'s subscription${label} was canceled.</p>`);
   }
 
   res.json({ received: true });
@@ -6533,6 +6646,36 @@ app.post('/api/jobs/save', (req, res) => {
     .run(e, job.id, job.title || '', job.company || '', job.location || '', job.url || '', JSON.stringify(job), Date.now());
   res.json({ success: true });
 });
+
+// ─── Job Feed Aggregator: "Jobs for You" ─────────────────────────────────────
+// Reads the pre-aggregated job_feed table (refreshed every 6h by
+// scripts/refresh-job-feed.js — see career-cron.js), so unlike /api/jobs/search
+// this costs nothing per view and isn't quota-gated: the API budget was
+// already spent once during the periodic refresh, independent of how many
+// people look at the result. Employer Portal jobs (priority=1) sort first.
+function _feedRowOut(r) {
+  return {
+    id: `${r.source}:${r.id}`, source: r.source, title: r.title, company: r.company, location: r.location,
+    remote: !!r.remote, employmentType: r.job_type, postedAt: r.posted_at,
+    url: r.source === 'employer' ? null : r.url,
+    jobPostingId: r.source === 'employer' ? Number(r.external_id) : null,
+    descriptionSnippet: (r.description || '').slice(0, 320), priority: r.priority
+  };
+}
+app.get('/api/job-feed', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const prof = getUserProfession(email);
+  const professionId = (req.query.professionId || (prof && prof.id) || '').toString().slice(0, 60);
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = 20;
+  const rows = professionId
+    ? db.prepare('SELECT * FROM job_feed WHERE profession_id = ? ORDER BY priority DESC, posted_at DESC, fetched_at DESC LIMIT ? OFFSET ?')
+        .all(professionId, limit, (page - 1) * limit)
+    : db.prepare('SELECT * FROM job_feed ORDER BY priority DESC, posted_at DESC, fetched_at DESC LIMIT ? OFFSET ?')
+        .all(limit, (page - 1) * limit);
+  res.json({ jobs: rows.map(_feedRowOut), profession: prof ? prof.label : null, page });
+});
+
 app.get('/api/jobs/saved', (req, res) => {
   const email = careerEmail(req, res); if (!email) return;
   const rows = db.prepare('SELECT id, job_id, title, company, location, url, saved_at FROM saved_jobs WHERE email = ? ORDER BY saved_at DESC').all(email.toLowerCase());
@@ -6664,6 +6807,455 @@ app.get('/api/career/coach', async (req, res) => {
     console.error('career/coach error:', err.message);
     res.status(503).json({ error: 'unavailable' });
   }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Employer Portal — Phase A: foundation. Any signed-in account can flip on
+// "Hire Mode" by saving an employer profile; no separate login. Free tier is
+// EH.EMPLOYER_LIMITS.freeActiveJobs (3) active posts with no ATS/search; Pro
+// Employer ($29/mo, separate `employer_subscribers` table so it can never be
+// confused with the $19.99 job-seeker plan) is unlimited + priority listing.
+// Candidate search, ATS kanban and applications land in Phase B.
+// ═══════════════════════════════════════════════════════════════════════════
+function employerAuthEmail(req, res) {
+  const email = getSessionEmail(req);
+  if (!email) { res.status(401).json({ error: 'login_required', message: 'Please sign in first.' }); return null; }
+  return email;
+}
+function isEmployerSubscriber(email) {
+  if (!email) return false;
+  const e = email.toLowerCase();
+  const ownerEmail = (process.env.OWNER_EMAIL || 'support@resumetailored.com').toLowerCase();
+  if (e === ownerEmail) return true;
+  if (COMP_EMAILS.includes(e)) return true;
+  return !!db.prepare('SELECT 1 FROM employer_subscribers WHERE email = ?').get(e);
+}
+function activeJobCount(email) {
+  return db.prepare("SELECT COUNT(*) c FROM job_postings WHERE employer_email = ? AND status = 'active'").get(email.toLowerCase()).c;
+}
+const employerLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, skip: () => RATE_LIMIT_OFF, message: { error: 'Too many requests — please wait a minute.' } });
+
+// Is this account set up as an employer yet (has a company profile)?
+app.get('/api/employer/status', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const profile = db.prepare('SELECT company_name, website, created_at FROM employer_profiles WHERE email = ?').get(e);
+  res.json({
+    isEmployer: !!profile,
+    companyName: profile ? profile.company_name : null,
+    website: profile ? profile.website : null,
+    pro: isEmployerSubscriber(email),
+    activeJobs: profile ? activeJobCount(email) : 0,
+    freeActiveJobLimit: EH.EMPLOYER_LIMITS.freeActiveJobs
+  });
+});
+
+// Create/update the employer profile — this IS "turning on Hire Mode."
+app.post('/api/employer/profile', employerLimiter, (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const companyName = String((req.body && req.body.companyName) || '').trim().slice(0, 120);
+  const website = String((req.body && req.body.website) || '').trim().slice(0, 200);
+  if (companyName.length < 2) return res.status(400).json({ error: 'bad_request', message: 'Company name is required.' });
+  const exists = db.prepare('SELECT email FROM employer_profiles WHERE email = ?').get(e);
+  if (exists) db.prepare('UPDATE employer_profiles SET company_name = ?, website = ? WHERE email = ?').run(companyName, website, e);
+  else db.prepare('INSERT INTO employer_profiles (email, company_name, website, created_at) VALUES (?,?,?,?)').run(e, companyName, website, Date.now());
+  res.json({ success: true, companyName, website });
+});
+
+app.get('/api/employer/jobs', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const rows = db.prepare(`
+    SELECT p.*, (SELECT COUNT(*) FROM job_applications a WHERE a.job_id = p.id) AS applicant_count
+    FROM job_postings p WHERE p.employer_email = ? ORDER BY p.created_at DESC
+  `).all(e);
+  res.json({ jobs: rows.map(_jobPostingOut), pro: isEmployerSubscriber(email) });
+});
+
+function _jobPostingOut(r) {
+  return {
+    id: r.id, title: r.title, description: r.description, requirements: r.requirements,
+    salaryMin: r.salary_min, salaryMax: r.salary_max, location: r.location,
+    workMode: r.work_mode, jobType: r.job_type, isGig: !!r.is_gig, gigRate: r.gig_rate, gigSchedule: r.gig_schedule, gigType: r.gig_type,
+    status: r.status, createdAt: r.created_at, updatedAt: r.updated_at, applicantCount: r.applicant_count || 0
+  };
+}
+
+// Employer Portal jobs get priority placement in the aggregated Job Feed —
+// synced immediately on write rather than waiting for the next 6h refresh, so
+// a job seeker can find a job the moment it's posted. profession_id is a
+// best-effort tag (title/keyword match against the taxonomy) purely so a
+// posting can show up in someone's "Jobs for You"; an unmatched title still
+// posts fine, it just won't be profession-filtered.
+function _guessProfessionId(title) {
+  const t = (title || '').toLowerCase();
+  const all = Object.values(CH.flattenProfessions(CH.loadProfessions()));
+  const hit = all.find(p => t.includes(p.label.toLowerCase()) || (p.aliases || []).some(a => t.includes(a.toLowerCase())));
+  return hit ? hit.id : '';
+}
+function _syncEmployerJobToFeed(job) {
+  if (job.status !== 'active') return _removeEmployerJobFromFeed(job.id);
+  const employerProfile = db.prepare('SELECT company_name FROM employer_profiles WHERE email = ?').get(job.employer_email);
+  db.prepare(`
+    INSERT INTO job_feed (source, external_id, title, company, location, url, description, remote, job_type, profession_id, priority, posted_at, fetched_at)
+    VALUES ('employer', ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+    ON CONFLICT(source, external_id) DO UPDATE SET title=excluded.title, company=excluded.company, location=excluded.location,
+      description=excluded.description, remote=excluded.remote, job_type=excluded.job_type, profession_id=excluded.profession_id, fetched_at=excluded.fetched_at
+  `).run(String(job.id), job.title, employerProfile ? employerProfile.company_name : '', job.location,
+    `#job-${job.id}`, job.description, job.work_mode === 'remote' ? 1 : 0, job.job_type, _guessProfessionId(job.title), job.created_at, Date.now());
+}
+function _removeEmployerJobFromFeed(jobId) {
+  db.prepare("DELETE FROM job_feed WHERE source = 'employer' AND external_id = ?").run(String(jobId));
+}
+
+app.post('/api/employer/jobs', employerLimiter, (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const profile = db.prepare('SELECT email FROM employer_profiles WHERE email = ?').get(e);
+  if (!profile) return res.status(400).json({ error: 'no_employer_profile', message: 'Set up your company profile before posting a job.' });
+  const pro = isEmployerSubscriber(email);
+  if (!pro && activeJobCount(email) >= EH.EMPLOYER_LIMITS.freeActiveJobs) {
+    return res.status(402).json({ error: 'quota', message: `Free plan allows ${EH.EMPLOYER_LIMITS.freeActiveJobs} active job posts. Upgrade to Pro Employer for unlimited.` });
+  }
+  const v = EH.validateJobPosting(req.body);
+  if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
+  const now = Date.now();
+  const info = db.prepare(`
+    INSERT INTO job_postings (employer_email, title, description, requirements, salary_min, salary_max, location, work_mode, job_type, is_gig, gig_rate, gig_schedule, gig_type, status, created_at, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?, ?)
+  `).run(e, v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
+    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, v.clean.gigType, now, now);
+  const newJob = db.prepare('SELECT * FROM job_postings WHERE id = ?').get(info.lastInsertRowid);
+  _syncEmployerJobToFeed(newJob);
+  res.json({ success: true, id: info.lastInsertRowid });
+});
+
+app.put('/api/employer/jobs/:id', employerLimiter, (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const id = parseInt(req.params.id, 10);
+  const job = db.prepare('SELECT * FROM job_postings WHERE id = ? AND employer_email = ?').get(id, e);
+  if (!job) return res.status(404).json({ error: 'not_found' });
+  // Status-only update (close/reopen) doesn't need full field re-validation.
+  if (req.body && req.body.status && Object.keys(req.body).length === 1) {
+    const status = String(req.body.status);
+    if (!['active', 'closed'].includes(status)) return res.status(400).json({ error: 'bad_request' });
+    db.prepare('UPDATE job_postings SET status = ?, updated_at = ? WHERE id = ?').run(status, Date.now(), id);
+    _syncEmployerJobToFeed(db.prepare('SELECT * FROM job_postings WHERE id = ?').get(id));
+    return res.json({ success: true, status });
+  }
+  const v = EH.validateJobPosting(req.body);
+  if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
+  db.prepare(`
+    UPDATE job_postings SET title=?, description=?, requirements=?, salary_min=?, salary_max=?, location=?, work_mode=?, job_type=?, is_gig=?, gig_rate=?, gig_schedule=?, gig_type=?, updated_at=?
+    WHERE id = ?
+  `).run(v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
+    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, v.clean.gigType, Date.now(), id);
+  _syncEmployerJobToFeed(db.prepare('SELECT * FROM job_postings WHERE id = ?').get(id));
+  res.json({ success: true });
+});
+
+app.delete('/api/employer/jobs/:id', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const id = parseInt(req.params.id, 10);
+  const job = db.prepare('SELECT id FROM job_postings WHERE id = ? AND employer_email = ?').get(id, e);
+  if (!job) return res.status(404).json({ error: 'not_found' });
+  db.prepare('DELETE FROM job_applications WHERE job_id = ?').run(id);
+  db.prepare('DELETE FROM job_postings WHERE id = ?').run(id);
+  _removeEmployerJobFromFeed(id);
+  res.json({ success: true });
+});
+
+// ─── API: Pro Employer Stripe checkout ($29/mo) ─────────────────────────────
+app.post('/api/employer/subscribe', async (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const priceId = process.env.STRIPE_EMPLOYER_PRICE_ID;
+  if (!priceId) return res.status(503).json({ error: 'not_configured', message: 'Pro Employer plan is not yet available.' });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer_email: email,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=employer`,
+      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/employer`,
+      metadata: { email, plan: 'employer' }
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Stripe employer error:', err);
+    res.status(500).json({ error: 'Could not create checkout session.' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Employer Portal — Phase B: candidate database (opt-in), ATS pipeline and
+// applications. Candidate visibility is strictly opt-in (`searchable`,
+// defaults off) — nothing here surfaces a job seeker who hasn't flipped it on.
+// Free employers get view-only applicant lists + a capped candidate search
+// (EH.rankCandidates caps at 10); moving applications through the pipeline
+// (status/rating/notes, the reject email) is Pro Employer ("no ATS" on free
+// per the pricing table).
+// ═══════════════════════════════════════════════════════════════════════════
+const bandRank = { gold: 3, silver: 2, bronze: 1, '': 0 };
+function _candidateBestBand(email) {
+  const rows = db.prepare('SELECT band, score FROM badges WHERE email = ?').all(email);
+  let best = { band: '', score: 0 };
+  for (const r of rows) if ((bandRank[r.band] || 0) > (bandRank[best.band] || 0)) best = r;
+  return best;
+}
+
+// ── Candidate side: opt-in visibility + applying ────────────────────────────
+app.get('/api/candidate/profile', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const row = db.prepare('SELECT * FROM candidate_profiles WHERE email = ?').get(email.toLowerCase());
+  res.json({
+    searchable: !!(row && row.searchable), openToWork: !!(row && row.open_to_work),
+    remotePref: (row && row.remote_pref) || 'any', location: (row && row.location) || '',
+    gigAvailable: !!(row && row.gig_available), hourlyRate: row ? row.hourly_rate : null,
+    gigSchedule: (row && row.gig_schedule) || '', maxTravelMi: row ? row.max_travel_mi : null
+  });
+});
+app.post('/api/candidate/profile', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const v = EH.validateCandidateProfile(req.body);
+  if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
+  const e = email.toLowerCase();
+  const c = v.clean;
+  db.prepare(`
+    INSERT INTO candidate_profiles (email, searchable, open_to_work, remote_pref, location, gig_available, hourly_rate, gig_schedule, max_travel_mi, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?)
+    ON CONFLICT(email) DO UPDATE SET searchable=excluded.searchable, open_to_work=excluded.open_to_work, remote_pref=excluded.remote_pref,
+      location=excluded.location, gig_available=excluded.gig_available, hourly_rate=excluded.hourly_rate, gig_schedule=excluded.gig_schedule,
+      max_travel_mi=excluded.max_travel_mi, updated_at=excluded.updated_at
+  `).run(e, c.searchable ? 1 : 0, c.openToWork ? 1 : 0, c.remotePref, c.location, c.gigAvailable ? 1 : 0, c.hourlyRate, c.gigSchedule, c.maxTravelMi, Date.now());
+  res.json({ success: true });
+});
+
+app.post('/api/employer/jobs/:id/apply', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const id = parseInt(req.params.id, 10);
+  const job = db.prepare("SELECT id FROM job_postings WHERE id = ? AND status = 'active'").get(id);
+  if (!job) return res.status(404).json({ error: 'not_found', message: 'This job is no longer accepting applications.' });
+  const e = email.toLowerCase();
+  const resumeId = Number.isInteger(req.body && req.body.resumeId) ? req.body.resumeId : null;
+  const now = Date.now();
+  const already = db.prepare('SELECT id FROM job_applications WHERE job_id = ? AND candidate_email = ?').get(id, e);
+  if (already) return res.json({ success: true, applicationId: already.id, alreadyApplied: true });
+  const info = db.prepare('INSERT INTO job_applications (job_id, candidate_email, resume_id, status, created_at, updated_at) VALUES (?,?,?,\'new\',?,?)')
+    .run(id, e, resumeId, now, now);
+  res.json({ success: true, applicationId: info.lastInsertRowid });
+});
+
+app.get('/api/candidate/contact-requests', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const rows = db.prepare(`
+    SELECT cr.id, cr.employer_email, cr.message, cr.status, cr.created_at, ep.company_name
+    FROM employer_contact_requests cr LEFT JOIN employer_profiles ep ON ep.email = cr.employer_email
+    WHERE cr.candidate_email = ? ORDER BY cr.created_at DESC
+  `).all(email.toLowerCase());
+  res.json({ requests: rows.map(r => ({ id: r.id, companyName: r.company_name || r.employer_email, message: r.message, status: r.status, createdAt: r.created_at })) });
+});
+app.post('/api/candidate/contact-requests/:id', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const status = String((req.body && req.body.status) || '').toLowerCase();
+  if (!['approved', 'declined'].includes(status)) return res.status(400).json({ error: 'bad_request' });
+  const id = parseInt(req.params.id, 10);
+  const row = db.prepare('SELECT * FROM employer_contact_requests WHERE id = ? AND candidate_email = ?').get(id, email.toLowerCase());
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  db.prepare('UPDATE employer_contact_requests SET status = ?, updated_at = ? WHERE id = ?').run(status, Date.now(), id);
+  if (status === 'approved') {
+    sendEmail({
+      to: row.employer_email,
+      subject: `${email} approved your contact request`,
+      html: `<p><strong>${email}</strong> approved your request to connect on ResumeTailored. You can reach them at this email address.</p>`
+    }).catch(err => console.error('[employer] contact-approve email failed:', err.message));
+  }
+  res.json({ success: true, status });
+});
+
+// ── Employer side: candidate search + ATS ───────────────────────────────────
+app.get('/api/employer/candidates', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const employerProfile = db.prepare('SELECT email FROM employer_profiles WHERE email = ?').get(e);
+  if (!employerProfile) return res.status(400).json({ error: 'no_employer_profile', message: 'Set up your company profile first.' });
+  const pro = isEmployerSubscriber(email);
+  const professionId = (req.query.professionId || '').toString().slice(0, 60);
+  const location = (req.query.location || '').toString().toLowerCase().slice(0, 80);
+  const remotePref = (req.query.remotePref || '').toString().toLowerCase();
+  const gigOnly = req.query.gigOnly === '1' || req.query.gigOnly === 'true';
+
+  let rows = db.prepare(`
+    SELECT cp.email, cp.remote_pref, cp.location, cp.gig_available, cp.hourly_rate, cp.open_to_work, cp.updated_at,
+           ci.profession_id, ci.seniority, u.username
+    FROM candidate_profiles cp
+    LEFT JOIN check_ins ci ON ci.email = cp.email
+    LEFT JOIN users u ON u.email = cp.email
+    WHERE cp.searchable = 1
+  `).all();
+
+  if (professionId) rows = rows.filter(r => r.profession_id === professionId);
+  if (location) rows = rows.filter(r => (r.location || '').toLowerCase().includes(location));
+  if (remotePref) rows = rows.filter(r => r.remote_pref === remotePref || r.remote_pref === 'any');
+  if (gigOnly) rows = rows.filter(r => !!r.gig_available);
+
+  const candidates = rows.map(r => {
+    const best = _candidateBestBand(r.email);
+    const prof = r.profession_id ? CH.resolveProfession(r.profession_id, r.seniority) : null;
+    const openToWorkPro = !!r.open_to_work && isSubscriber(r.email);
+    return {
+      email: r.email, username: r.username || 'ResumeTailored user',
+      professionLabel: prof ? prof.displayLabel : null,
+      bestBand: best.band || null, bestScore: best.score || 0,
+      location: r.location, remotePref: r.remote_pref, gigAvailable: !!r.gig_available, hourlyRate: r.hourly_rate,
+      // "Open to Work" badge visibility: a Pro job seeker's badge is visible to
+      // every employer (openToWorkPro=true covers that case); a free job
+      // seeker's badge only shows to Pro employers — limited exposure, not
+      // hidden entirely. The candidate is still findable in search either way;
+      // only the badge itself is gated.
+      openToWork: !!r.open_to_work && (openToWorkPro || pro), openToWorkPro,
+      updatedAt: r.updated_at
+    };
+  });
+  const ranked = EH.rankCandidates(candidates, { employerIsPro: pro });
+  res.json({ candidates: ranked, total: candidates.length, pro });
+});
+
+app.get('/api/employer/candidates/:email/profile', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  if (!isEmployerSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Full candidate profiles are a Pro Employer feature.' });
+  const candEmail = String(req.params.email || '').toLowerCase();
+  const cp = db.prepare('SELECT * FROM candidate_profiles WHERE email = ? AND searchable = 1').get(candEmail);
+  if (!cp) return res.status(404).json({ error: 'not_found' });
+  const user = db.prepare('SELECT username FROM users WHERE email = ?').get(candEmail);
+  const ci = db.prepare('SELECT profession_id, seniority FROM check_ins WHERE email = ?').get(candEmail);
+  const prof = ci && ci.profession_id ? CH.resolveProfession(ci.profession_id, ci.seniority) : null;
+  const badges = db.prepare('SELECT topic, band, score, created_at FROM badges WHERE email = ? ORDER BY created_at DESC').all(candEmail);
+  const site = db.prepare("SELECT subdomain FROM personal_sites WHERE email = ? AND published = 1 LIMIT 1").get(candEmail);
+  const video = db.prepare("SELECT id FROM saved_videos WHERE email = ? ORDER BY created_at DESC LIMIT 1").get(candEmail);
+  res.json({
+    email: candEmail, username: user ? user.username : 'ResumeTailored user',
+    professionLabel: prof ? prof.displayLabel : null,
+    badges: badges.map(b => ({ topic: b.topic, band: b.band, score: b.score })),
+    location: cp.location, remotePref: cp.remote_pref, gigAvailable: !!cp.gig_available, hourlyRate: cp.hourly_rate, gigSchedule: cp.gig_schedule,
+    openToWork: !!cp.open_to_work,
+    siteUrl: site ? `/site/${site.subdomain}` : null,
+    hasVideoIntro: !!video
+  });
+});
+
+app.post('/api/employer/candidates/:email/contact', employerLimiter, (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const employerProfile = db.prepare('SELECT company_name FROM employer_profiles WHERE email = ?').get(e);
+  if (!employerProfile) return res.status(400).json({ error: 'no_employer_profile' });
+  const candEmail = String(req.params.email || '').toLowerCase();
+  const cp = db.prepare('SELECT email FROM candidate_profiles WHERE email = ? AND searchable = 1').get(candEmail);
+  if (!cp) return res.status(404).json({ error: 'not_found' });
+  const message = String((req.body && req.body.message) || '').trim().slice(0, 1000);
+  const now = Date.now();
+  db.prepare(`
+    INSERT INTO employer_contact_requests (employer_email, candidate_email, message, status, created_at, updated_at) VALUES (?,?,?,'pending',?,?)
+    ON CONFLICT(employer_email, candidate_email) DO UPDATE SET message = excluded.message, status = 'pending', updated_at = excluded.updated_at
+  `).run(e, candEmail, message, now, now);
+  sendEmail({
+    to: candEmail,
+    subject: `${employerProfile.company_name} wants to connect on ResumeTailored`,
+    html: `<p><strong>${employerProfile.company_name}</strong> would like to reach out to you.</p>${message ? `<p>"${message}"</p>` : ''}<p>Approve or decline from your Career Hub dashboard.</p>`
+  }).catch(err => console.error('[employer] contact-request email failed:', err.message));
+  res.json({ success: true });
+});
+
+function _applicationOut(r) {
+  return { id: r.id, jobId: r.job_id, candidateEmail: r.candidate_email, resumeId: r.resume_id, status: r.status, rating: r.rating, notes: r.notes, interviewNote: r.interview_note, createdAt: r.created_at, updatedAt: r.updated_at };
+}
+app.get('/api/employer/jobs/:id/applications', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const jobId = parseInt(req.params.id, 10);
+  const job = db.prepare('SELECT id FROM job_postings WHERE id = ? AND employer_email = ?').get(jobId, e);
+  if (!job) return res.status(404).json({ error: 'not_found' });
+  const rows = db.prepare('SELECT * FROM job_applications WHERE job_id = ? ORDER BY created_at DESC').all(jobId);
+  res.json({ applications: rows.map(_applicationOut), pro: isEmployerSubscriber(email) });
+});
+
+app.put('/api/employer/applications/:id', employerLimiter, (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const id = parseInt(req.params.id, 10);
+  // Ownership is checked before the Pro gate, so an employer who doesn't own
+  // this application gets a plain 404 — never a 402 that would leak "this
+  // application exists, you just need to upgrade" to someone with no claim to it.
+  const app_ = db.prepare(`
+    SELECT a.*, j.title AS job_title, j.employer_email FROM job_applications a
+    JOIN job_postings j ON j.id = a.job_id WHERE a.id = ? AND j.employer_email = ?
+  `).get(id, e);
+  if (!app_) return res.status(404).json({ error: 'not_found' });
+  if (!isEmployerSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'The ATS pipeline (status, rating, notes) is a Pro Employer feature.' });
+
+  const body = req.body || {};
+  const sets = []; const vals = [];
+  if (body.status !== undefined) {
+    if (!EH.validateApplicationStatus(body.status)) return res.status(400).json({ error: 'bad_request', message: 'Invalid application status.' });
+    sets.push('status = ?'); vals.push(String(body.status).toLowerCase());
+  }
+  if (body.rating !== undefined && body.rating !== null) {
+    if (!EH.validateRating(body.rating)) return res.status(400).json({ error: 'bad_request', message: 'Rating must be 1-5.' });
+    sets.push('rating = ?'); vals.push(Number(body.rating));
+  }
+  if (body.notes !== undefined) { sets.push('notes = ?'); vals.push(String(body.notes).slice(0, 4000)); }
+  if (body.interviewNote !== undefined) { sets.push('interview_note = ?'); vals.push(String(body.interviewNote).slice(0, 1000)); }
+  if (!sets.length) return res.status(400).json({ error: 'bad_request', message: 'Nothing to update.' });
+  sets.push('updated_at = ?'); vals.push(Date.now());
+  vals.push(id);
+  db.prepare(`UPDATE job_applications SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+
+  // One-click "Reject" sends a polite email — fire once, on the transition into rejected.
+  if (body.status && String(body.status).toLowerCase() === 'rejected' && app_.status !== 'rejected') {
+    const employerProfile = db.prepare('SELECT company_name FROM employer_profiles WHERE email = ?').get(e);
+    const candidate = db.prepare('SELECT username FROM users WHERE email = ?').get(app_.candidate_email);
+    const rej = EH.buildRejectionEmail({ candidateName: candidate ? candidate.username : '', jobTitle: app_.job_title, companyName: employerProfile ? employerProfile.company_name : '' });
+    sendEmail({ to: app_.candidate_email, subject: rej.subject, html: rej.html })
+      .catch(err => console.error('[employer] rejection email failed:', err.message));
+  }
+  res.json({ success: true });
+});
+
+// ── Temp/gig staffing: "Need Staff Fast" matching ────────────────────────────
+// A gig posting (job_type='temp', gig_rate/gig_schedule/gig_type set) is just
+// a job_postings row with is_gig=1 — no separate posting flow, per the brief's
+// own framing ("employers post 'Need Staff Fast' jobs"). What's new here is
+// the match: who's opted into gig work, roughly nearby, and roughly
+// affordable. Pro-gated like full candidate search — matching a specific
+// posting against the whole candidate pool is a step up from browsing.
+app.get('/api/employer/jobs/:id/matches', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const id = parseInt(req.params.id, 10);
+  const job = db.prepare('SELECT * FROM job_postings WHERE id = ? AND employer_email = ?').get(id, e);
+  if (!job) return res.status(404).json({ error: 'not_found' });
+  if (!job.is_gig) return res.status(400).json({ error: 'not_a_gig', message: 'Matching applies to temp/gig postings.' });
+  if (!isEmployerSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Candidate matching is a Pro Employer feature.' });
+
+  const rows = db.prepare(`
+    SELECT cp.email, cp.remote_pref, cp.location, cp.gig_available, cp.hourly_rate, cp.open_to_work, cp.updated_at,
+           ci.profession_id, u.username
+    FROM candidate_profiles cp
+    LEFT JOIN check_ins ci ON ci.email = cp.email
+    LEFT JOIN users u ON u.email = cp.email
+    WHERE cp.searchable = 1 AND cp.gig_available = 1
+  `).all();
+  const candidates = rows.map(r => ({
+    email: r.email, username: r.username || 'ResumeTailored user', professionId: r.profession_id,
+    location: r.location, remotePref: r.remote_pref, gigAvailable: !!r.gig_available, hourlyRate: r.hourly_rate,
+    openToWork: !!r.open_to_work, openToWorkPro: !!r.open_to_work && isSubscriber(r.email), updatedAt: r.updated_at
+  }));
+  const matched = EH.matchGigCandidates(candidates, { professionId: _guessProfessionId(job.title), location: job.location, gigRate: job.gig_rate });
+  const ranked = EH.rankCandidates(matched, { employerIsPro: true }); // already Pro-gated above; no cap here
+  res.json({ matches: ranked.map(c => ({ email: c.email, username: c.username, location: c.location, remotePref: c.remotePref, hourlyRate: c.hourlyRate, openToWork: c.openToWork, matchScore: c.matchScore })) });
 });
 
 // Branded 404 for anything that fell through every route above (replaces

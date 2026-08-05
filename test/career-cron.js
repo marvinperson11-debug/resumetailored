@@ -39,8 +39,12 @@ const logs2 = [];
 const started = cron.startCareerCron((m) => logs2.push(m));
 check('scheduler is ON when CAREER_CRON=on', started === true);
 check('on state names both jobs', logs2.some((m) => /warm/.test(m) && /digest/.test(m)));
+check('on state also names the job feed refresh', logs2.some((m) => /job feed/.test(m)));
 // Clean up the timers scheduleDaily created so the test process can exit.
 delete process.env.CAREER_CRON;
+
+// scheduleEvery: runs once after the initial delay, then every intervalMs.
+check('scheduleEvery is exported', typeof cron.scheduleEvery === 'function');
 
 if (failures) { console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`); process.exit(1); }
 console.log('\nALL PASS (0 failures)');
