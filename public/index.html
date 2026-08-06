@@ -200,8 +200,8 @@
       padding: 0 24px;
     }
     .nav-inner {
-      max-width: 1120px; margin: 0 auto;
-      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1280px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: flex-start;
       height: 64px;
     }
     .logo { font-family: 'Fraunces', Georgia, serif; font-size: 23px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
@@ -212,7 +212,8 @@
       padding: 2px 7px; border-radius: 5px;
       vertical-align: middle; margin-left: 4px; letter-spacing: 0.02em;
     }
-    .nav-links { display: flex; gap: 20px; align-items: center; margin-right: auto; margin-left: 40px; }
+    .nav-links { display: flex; gap: 18px; align-items: center; margin-left: 32px; }
+    .nav-actions { margin-left: auto; }
     .nav-links a { font-size: 14px; font-weight: 500; color: var(--ink-soft); transition: color .15s; }
     .nav-links a:hover { color: var(--accent); }
     .nav-actions { display: flex; gap: 12px; align-items: center; }
@@ -693,6 +694,13 @@
     .footer-copy { font-size: 13px; color: var(--ink-faint); }
 
     /* ── RESPONSIVE ── */
+    /* The full inline nav (6 links + Log In + the CTA) needs room; below ~1180px
+       it crowds "Pricing" against "Log In" and eventually overflows, so collapse
+       to the hamburger menu (which already contains every link + Log In + CTA). */
+    @media (max-width: 1180px) {
+      .nav-links, .nav-actions { display: none; }
+      .hamburger { display: flex; }
+    }
     @media (max-width: 768px) {
       .nav-links, .nav-actions { display: none; }
       .hamburger { display: flex; }
