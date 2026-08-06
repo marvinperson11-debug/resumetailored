@@ -1,0 +1,67 @@
+/* ============================================================================
+   tool-theme-fix.css — light-theme readability overrides for the interactive
+   "tool" pages (score / ai-resume-tailor / ai-cover-letter-generator /
+   tailor-resume-to-job-description).
+
+   Those pages were authored with a DARK palette (light text like #e2e8f0 /
+   #94a3b8 on translucent-white surfaces over a #030712 background). The site
+   now ships a shared LIGHT theme (theme.css) that forces a cream background —
+   which left that light text nearly invisible. theme.css already restyles the
+   shared vocabulary (.nav, .btn-primary, .faq-q, .section-title, p, h1–h3…);
+   this file covers the tool-widget + results classes theme.css doesn't know
+   about, remapping them onto the light palette so every word is readable while
+   keeping the site's current colors. Loaded AFTER theme.css so it wins.
+   ============================================================================ */
+
+/* Hero / intro copy */
+.hero h1 { color: var(--ink) !important; }
+.hero h1 span {
+  background: linear-gradient(135deg, #6366F1, #8B5CF6, #0284c7) !important;
+  -webkit-background-clip: text !important; background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+.hero-sub { color: var(--ink-soft) !important; }
+.hero-eyebrow { color: var(--accent) !important; }
+.hero-note { color: var(--ink-faint) !important; }
+.hero-note strong { color: var(--accent) !important; }
+
+/* Status bar + tabs */
+.status-bar { background: var(--surface) !important; border-color: var(--line) !important; color: var(--ink-soft) !important; }
+.tab-switch { background: var(--bg-alt) !important; border-color: var(--line) !important; }
+.tab-btn { color: var(--ink-soft) !important; }
+.tab-btn.active { background: linear-gradient(135deg, rgba(99,102,241,0.16), rgba(139,92,246,0.12)) !important; color: #5b3fd1 !important; box-shadow: none !important; }
+.tab-btn:hover:not(.active) { color: var(--ink) !important; }
+
+/* Inputs */
+.input-label { color: var(--ink) !important; }
+.resume-ta, .single-ta, .url-input,
+textarea.resume-ta, textarea.single-ta {
+  background: var(--surface) !important; border-color: var(--line-2) !important; color: var(--ink) !important;
+}
+.resume-ta::placeholder, .single-ta::placeholder, .url-input::placeholder { color: var(--ink-faint) !important; }
+.job-mode-toggle { background: var(--bg-alt) !important; }
+.jmt-btn { color: var(--ink-soft) !important; }
+.url-status { color: var(--ink-soft) !important; }
+.url-boards, .shortcut-hint, .chips-empty { color: var(--ink-faint) !important; }
+
+/* Result cards / surfaces */
+.score-card, .keywords-card, .suggestions-card, .metric-card, .verdict-row {
+  background: var(--surface) !important; border-color: var(--line) !important;
+}
+.score-title, .metric-label { color: var(--ink-faint) !important; }
+.score-pct, .metric-value, .verdict-row-text h4, .cta-strip-text h3, .upgrade-wall h3 { color: var(--ink) !important; }
+.score-pct-sign { color: var(--ink-faint) !important; }
+.score-track { stroke: var(--line-2) !important; }
+.kw-count { background: var(--bg-alt) !important; color: var(--ink-soft) !important; }
+.suggestion-item { color: var(--ink-soft) !important; border-bottom-color: var(--line) !important; }
+.cta-strip-text p, .verdict-row-text p, .upgrade-wall p, .upgrade-perk, .lock-text { color: var(--ink-soft) !important; }
+.upgrade-perk { background: var(--bg-alt) !important; border-color: var(--line) !important; }
+.missing-lock-overlay { background: rgba(250,247,240,0.78) !important; }
+
+/* Footer (these pages ship their own dark inline footer) */
+.tool-footer, body > footer { background: var(--bg-alt) !important; border-top-color: var(--line) !important; }
+body > footer p { color: var(--ink-faint) !important; }
+body > footer a { color: var(--accent) !important; }
+
+/* Soften the dark circuit-grid overlay so it doesn't tint the cream page */
+body::before { opacity: .45 !important; }
