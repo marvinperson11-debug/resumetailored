@@ -810,8 +810,14 @@
       /* Darken muted body/caption text so it clears WCAG AA on the cream bg. */
       :root { --ink-soft: #2d2d2d; --ink-faint: #4a4a4a; }
       [style*="#57514A"], [style*="#918A7E"], [style*="#9ca3af"] { color: #2d2d2d !important; }
-      /* No sideways scroll; long unbreakable strings (URLs) wrap in their card. */
-      html, body { overflow-x: hidden !important; }
+      /* No sideways scroll; long unbreakable strings (URLs) wrap in their card.
+         `clip`, not `hidden` — `overflow-x:hidden` makes the UA compute
+         overflow-y as `auto` per spec, turning body into its own scroll
+         container; on mobile Safari that breaks position:sticky on the nav
+         (it scrolls away with the page instead of staying pinned), reported
+         directly as "no hamburger" once scrolled past the hero. `clip` blocks
+         horizontal overflow without that side effect. */
+      html, body { overflow-x: clip !important; }
       .feat-card, .feature-row, .feature-body, .container, .card { overflow-wrap: anywhere; word-break: break-word; }
       /* White cards get a light edge so they don't float on the cream. */
       .feat-card, .card { border: 1px solid rgba(0,0,0,0.08); }

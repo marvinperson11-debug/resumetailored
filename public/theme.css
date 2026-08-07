@@ -170,8 +170,14 @@ footer a:not([style*="background:#1F5C3D"]) { color: var(--accent) !important; }
   /* Anything explicitly set to the common light grays becomes readable too. */
   [style*="#9ca3af"], [style*="#94a3b8"], [style*="#a1a1aa"] { color: #4a4a4a !important; }
   /* Never let a page scroll sideways, and force long unbreakable strings
-     (e.g. yourname.resumetailored.com) to wrap instead of overflowing a card. */
-  html, body { overflow-x: hidden !important; }
+     (e.g. yourname.resumetailored.com) to wrap instead of overflowing a card.
+     `clip`, not `hidden` — `overflow-x:hidden` makes the UA compute
+     overflow-y as `auto` per spec, turning body into its own scroll
+     container; on mobile Safari that breaks position:sticky on #snav (it
+     scrolls away with the page instead of staying pinned), reported directly
+     as "no hamburger" once scrolled past the hero on any page this file
+     covers. `clip` blocks horizontal overflow without that side effect. */
+  html, body { overflow-x: clip !important; }
   .feat-card, .card, .cards .card, .feature-row, .feature-body, .container { overflow-wrap: anywhere; word-break: break-word; }
   /* Give white cards a light edge so they don't float on the cream. */
   .card, .cards .card { border: 1px solid rgba(0,0,0,0.08) !important; }
