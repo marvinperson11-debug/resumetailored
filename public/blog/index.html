@@ -37,46 +37,46 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Syne:wght@700;800;900&display=swap" rel="stylesheet"/>
   <style>
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:'Inter',Arial,sans-serif;background:#030712;color:#e2e8f0;}
+    body{font-family:'Inter',Arial,sans-serif;background:#FAF7F0;color:#57514A;}
     h2,h3{font-family:'Inter',sans-serif;letter-spacing:-0.02em;}h1,.logo{font-family:'Inter',sans-serif;font-weight:900;letter-spacing:-0.03em;}
     a{color:inherit;text-decoration:none;}
     .nav{background:rgba(3,7,18,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.08);position:sticky;top:0;z-index:100;}
     .nav-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;}
-    .logo{font-size:20px;font-weight:900;color:#f1f5f9;}
-    .logo .badge-ai{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;}
+    .logo{font-size:20px;font-weight:900;color:#191512;}
+    .logo .badge-ai{background:#1F5C3D;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;}
     .nav-links{display:flex;gap:28px;align-items:center;}
-    .nav-links a{font-size:14px;font-weight:600;color:#94a3b8;transition:color .15s;}
-    .nav-links a:hover{color:#f1f5f9;}
-    .btn-primary{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;box-shadow:0 0 20px rgba(99,102,241,0.35);padding:9px 20px;border-radius:8px;font-weight:700;font-size:14px;transition:opacity .15s;}
+    .nav-links a{font-size:14px;font-weight:600;color:#57514A;transition:color .15s;}
+    .nav-links a:hover{color:#1F5C3D;}
+    .btn-primary{background:#1F5C3D;color:#fff;box-shadow:0 6px 18px rgba(31,92,61,0.25);padding:9px 20px;border-radius:8px;font-weight:700;font-size:14px;transition:opacity .15s;}
     .btn-primary:hover{opacity:0.9;}
 
-    .hero{background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));border-bottom:1px solid rgba(255,255,255,0.08);padding:64px 24px;text-align:center;}
-    .hero h1{font-size:42px;font-weight:900;color:#f1f5f9;letter-spacing:-1.5px;margin-bottom:12px;}
-    .hero p{font-size:18px;color:#64748b;max-width:560px;margin:0 auto;}
+    .hero{background:linear-gradient(135deg,rgba(31,92,61,0.10),rgba(46,125,83,0.06));border-bottom:1px solid #E7DFD1;padding:64px 24px;text-align:center;}
+    .hero h1{font-size:42px;font-weight:900;color:#191512;letter-spacing:-1.5px;margin-bottom:12px;font-family:'Fraunces',Georgia,serif;}
+    .hero p{font-size:18px;color:#57514A;max-width:560px;margin:0 auto;}
 
     .blog-grid{max-width:1100px;margin:0 auto;padding:56px 24px;}
-    .section-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#818CF8;margin-bottom:32px;}
+    .section-label{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#1F5C3D;margin-bottom:32px;}
     .posts{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;}
-    .post-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;transition:transform .18s,box-shadow .18s,border-color .18s;}
-    .post-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.4);}
+    .post-card{background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;overflow:hidden;transition:transform .18s,box-shadow .18s,border-color .18s;}
+    .post-card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(31,92,61,0.14);border-color:rgba(31,92,61,0.4);}
     .post-card-top{height:8px;}
     .post-card-body{padding:24px;}
-    .post-tag{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#818CF8;margin-bottom:10px;}
-    .post-title{font-size:18px;font-weight:800;color:#e2e8f0;line-height:1.4;margin-bottom:10px;}
-    .post-excerpt{font-size:14px;color:#64748b;line-height:1.7;margin-bottom:16px;}
-    .post-meta{font-size:12px;color:#475569;display:flex;align-items:center;gap:8px;}
-    .post-read{font-size:13px;font-weight:700;color:#818CF8;margin-top:14px;display:inline-block;}
+    .post-tag{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#1F5C3D;margin-bottom:10px;}
+    .post-title{font-size:18px;font-weight:800;color:#191512;line-height:1.4;margin-bottom:10px;}
+    .post-excerpt{font-size:14px;color:#57514A;line-height:1.7;margin-bottom:16px;}
+    .post-meta{font-size:12px;color:#918A7E;display:flex;align-items:center;gap:8px;}
+    .post-read{font-size:13px;font-weight:700;color:#1F5C3D;margin-top:14px;display:inline-block;}
     .post-read:hover{text-decoration:underline;}
 
-    .cta-banner{background:linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.1));border-top:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.08);padding:56px 24px;text-align:center;margin-top:40px;}
-    .cta-banner h2{font-size:32px;font-weight:900;color:#f1f5f9;margin-bottom:12px;letter-spacing:-0.5px;}
-    .cta-banner p{font-size:16px;color:#94a3b8;margin-bottom:28px;}
-    .btn-cta{background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:14px 36px;border-radius:10px;font-weight:800;font-size:16px;display:inline-block;box-shadow:0 0 20px rgba(99,102,241,0.4);transition:opacity .15s;}
+    .cta-banner{background:linear-gradient(135deg,rgba(31,92,61,0.12),rgba(46,125,83,0.08));border-top:1px solid #E7DFD1;border-bottom:1px solid #E7DFD1;padding:56px 24px;text-align:center;margin-top:40px;}
+    .cta-banner h2{font-size:32px;font-weight:900;color:#191512;margin-bottom:12px;letter-spacing:-0.5px;font-family:'Fraunces',Georgia,serif;}
+    .cta-banner p{font-size:16px;color:#57514A;margin-bottom:28px;}
+    .btn-cta{background:#1F5C3D;color:#fff;padding:14px 36px;border-radius:10px;font-weight:800;font-size:16px;display:inline-block;box-shadow:0 6px 18px rgba(31,92,61,0.3);transition:opacity .15s;}
     .btn-cta:hover{opacity:0.9;}
 
-    footer{background:rgba(255,255,255,0.03);border-top:1px solid rgba(255,255,255,0.08);color:#475569;padding:40px 24px;text-align:center;}
+    footer{background:#F1EADD;border-top:1px solid #E7DFD1;color:#918A7E;padding:40px 24px;text-align:center;}
     footer p{font-size:13px;margin-bottom:8px;}
-    footer a{color:#818CF8;font-weight:600;}
+    footer a{color:#1F5C3D;font-weight:600;}
 
     @media(max-width:768px){
       .posts{grid-template-columns:1fr;}
@@ -109,7 +109,7 @@
     <div class="nav-links">
       <a href="/">Home</a>
       <a href="/how-it-works">How It Works</a>
-      <a href="/blog" style="color:#818CF8;">Blog</a>
+      <a href="/blog" style="color:#1F5C3D;">Blog</a>
       <a href="/#pricing">Pricing</a>
       <a href="/signup" class="btn-primary">Tailor My Resume Free →</a>
     </div>
@@ -125,73 +125,73 @@
   <div class="section-label">Latest Articles</div>
   <div class="posts">
     <a href="/blog/employer-portal-for-recruiters" class="post-card">
-      <div class="post-card-top" style="background:#38bdf8;"></div>
+      <div class="post-card-top" style="background:#2E7D53;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#38bdf8;">For Employers</div>
+        <div class="post-tag" style="color:#1F5C3D;">For Employers</div>
         <div class="post-title">How Recruiters Can Streamline Hiring with the Employer Portal</div>
         <div class="post-excerpt">A recruiter dashboard and lightweight ATS for small business: post jobs, track applicants through a hiring pipeline, schedule interviews and see analytics — free to start.</div>
         <div class="post-meta"><span>August 2026</span><span>·</span><span>8 min read</span></div>
-        <span class="post-read" style="color:#38bdf8;">Read article →</span>
+        <span class="post-read" style="color:#1F5C3D;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/resume-website-builder" class="post-card">
-      <div class="post-card-top" style="background:#16a34a;"></div>
+      <div class="post-card-top" style="background:#2E7D53;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#4ade80;">Product</div>
+        <div class="post-tag" style="color:#2E7D53;">Product</div>
         <div class="post-title">Build a Professional Resume Website in Minutes with ResumeTailored AI</div>
         <div class="post-excerpt">Turn your resume into a live, mobile-friendly personal website with a clean, shareable link — no code, free to start. Here's how the resume website builder works and why it helps.</div>
         <div class="post-meta"><span>August 2026</span><span>·</span><span>7 min read</span></div>
-        <span class="post-read" style="color:#4ade80;">Read article →</span>
+        <span class="post-read" style="color:#2E7D53;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/unlimited-free-resume-tailoring-2026" class="post-card">
-      <div class="post-card-top" style="background:#16a34a;"></div>
+      <div class="post-card-top" style="background:#2E7D53;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#4ade80;">Product Update</div>
+        <div class="post-tag" style="color:#2E7D53;">Product Update</div>
         <div class="post-title">Unlimited Free Resume Tailoring is Here (2026 Update)</div>
         <div class="post-excerpt">AI resume tailoring and cover letters are now unlimited and free — no daily cap, no credit card. Here's exactly what changed, what's free, and what stays Pro.</div>
         <div class="post-meta"><span>July 2026</span><span>·</span><span>5 min read</span></div>
-        <span class="post-read" style="color:#4ade80;">Read article →</span>
+        <span class="post-read" style="color:#2E7D53;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/mastering-resume-tailoring-boost-interview-chances" class="post-card">
-      <div class="post-card-top" style="background:#059669;"></div>
+      <div class="post-card-top" style="background:#2E7D53;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#34d399;">Resume Strategy</div>
+        <div class="post-tag" style="color:#2E7D53;">Resume Strategy</div>
         <div class="post-title">Mastering Resume Tailoring: How to Boost Your Interview Chances in 2026</div>
         <div class="post-excerpt">Tailoring is the highest-leverage change you can make in your job search. Here's the exact 5-step method to tailor your resume to any job description — decode, mirror, reorder, quantify, and match your cover letter.</div>
         <div class="post-meta"><span>July 2026</span><span>·</span><span>10 min read</span></div>
-        <span class="post-read" style="color:#34d399;">Read article →</span>
+        <span class="post-read" style="color:#2E7D53;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/resumetailored-vs-canva" class="post-card">
-      <div class="post-card-top" style="background:#8b5cf6;"></div>
+      <div class="post-card-top" style="background:#B4832A;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#a78bfa;">Tool Comparison</div>
+        <div class="post-tag" style="color:#2E7D53;">Tool Comparison</div>
         <div class="post-title">ResumeTailored vs Canva (2026): Which One Actually Gets You Hired?</div>
         <div class="post-excerpt">Canva makes gorgeous designs — but a flattened graphic that an ATS can't read never reaches a recruiter. The honest resume builder versus Canva breakdown: ATS compatibility, AI tailoring, cover letters, and price.</div>
         <div class="post-meta"><span>July 2026</span><span>·</span><span>9 min read</span></div>
-        <span class="post-read" style="color:#a78bfa;">Read article →</span>
+        <span class="post-read" style="color:#2E7D53;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/best-ai-resume-builders-2026" class="post-card">
-      <div class="post-card-top" style="background:#6366F1;"></div>
+      <div class="post-card-top" style="background:#B4832A;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#818cf8;">Tool Comparison</div>
+        <div class="post-tag" style="color:#B4832A;">Tool Comparison</div>
         <div class="post-title">The Best AI Resume Builders in 2026 (Honest Comparison)</div>
         <div class="post-excerpt">Teal, Jobscan, Rezi, Kickresume, Enhancv and ResumeTailored — what each does best, what it costs, and who it's for. No fabricated benchmarks.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>8 min read</span></div>
-        <span class="post-read" style="color:#818cf8;">Read article →</span>
+        <span class="post-read" style="color:#B4832A;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/how-to-beat-ats-filters" class="post-card">
-      <div class="post-card-top" style="background:#2563eb;"></div>
+      <div class="post-card-top" style="background:#1F5C3D;"></div>
       <div class="post-card-body">
         <div class="post-tag">ATS & Keywords</div>
         <div class="post-title">How to Beat ATS Filters and Get Your Resume Seen in 2026</div>
@@ -202,189 +202,189 @@
     </a>
 
     <a href="/blog/resume-tips-2026" class="post-card">
-      <div class="post-card-top" style="background:#8b5cf6;"></div>
+      <div class="post-card-top" style="background:#B4832A;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#a78bfa;">Resume Writing</div>
+        <div class="post-tag" style="color:#2E7D53;">Resume Writing</div>
         <div class="post-title">10 Resume Tips That Will Get You More Interviews in 2026</div>
         <div class="post-excerpt">The job market has changed. These are the resume strategies that are actually working right now — backed by what recruiters say they look for.</div>
         <div class="post-meta"><span>May 2026</span><span>·</span><span>7 min read</span></div>
-        <span class="post-read" style="color:#a78bfa;">Read article →</span>
+        <span class="post-read" style="color:#2E7D53;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/how-to-tailor-your-resume" class="post-card">
-      <div class="post-card-top" style="background:#059669;"></div>
+      <div class="post-card-top" style="background:#2E7D53;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#34d399;">Job Search</div>
+        <div class="post-tag" style="color:#2E7D53;">Job Search</div>
         <div class="post-title">How to Tailor Your Resume to Any Job Posting (Step-by-Step)</div>
         <div class="post-excerpt">Sending the same resume to every job is the #1 mistake job seekers make. Learn the exact process to tailor your resume in minutes.</div>
         <div class="post-meta"><span>May 2026</span><span>·</span><span>5 min read</span></div>
-        <span class="post-read" style="color:#34d399;">Read article →</span>
+        <span class="post-read" style="color:#2E7D53;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/cover-letter-tips" class="post-card">
-      <div class="post-card-top" style="background:#f59e0b;"></div>
+      <div class="post-card-top" style="background:#B4832A;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#fbbf24;">Cover Letters</div>
+        <div class="post-tag" style="color:#B4832A;">Cover Letters</div>
         <div class="post-title">How to Write a Cover Letter That Actually Gets Read</div>
         <div class="post-excerpt">Most cover letters are ignored. Here's how to write one that makes recruiters stop scrolling — and what to never include.</div>
         <div class="post-meta"><span>May 2026</span><span>·</span><span>5 min read</span></div>
-        <span class="post-read" style="color:#fbbf24;">Read article →</span>
+        <span class="post-read" style="color:#B4832A;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/salary-negotiation" class="post-card">
-      <div class="post-card-top" style="background:#dc2626;"></div>
+      <div class="post-card-top" style="background:#B4562E;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#f87171;">Salary & Negotiation</div>
+        <div class="post-tag" style="color:#B4562E;">Salary & Negotiation</div>
         <div class="post-title">How to Negotiate Your Salary and Get Paid What You're Worth</div>
         <div class="post-excerpt">Most people leave $5,000–$20,000 on the table by not negotiating. Here's a proven script and strategy to get the salary you deserve.</div>
         <div class="post-meta"><span>May 2026</span><span>·</span><span>6 min read</span></div>
-        <span class="post-read" style="color:#f87171;">Read article →</span>
+        <span class="post-read" style="color:#B4562E;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/jobscan-vs-resumetailored" class="post-card">
-      <div class="post-card-top" style="background:#0369a1;"></div>
+      <div class="post-card-top" style="background:#1F5C3D;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#38bdf8;">Tool Comparison</div>
+        <div class="post-tag" style="color:#1F5C3D;">Tool Comparison</div>
         <div class="post-title">Jobscan vs ResumeTailored AI (2026): One Scores It, One Rewrites It</div>
         <div class="post-excerpt">Jobscan tells you which keywords are missing. We actually rewrite your resume with them — plus a cover letter — for 60% less per month.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>7 min read</span></div>
-        <span class="post-read" style="color:#38bdf8;">Read article →</span>
+        <span class="post-read" style="color:#1F5C3D;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/free-ats-resume-scanners-compared" class="post-card">
-      <div class="post-card-top" style="background:#16a34a;"></div>
+      <div class="post-card-top" style="background:#2E7D53;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#4ade80;">Tool Roundup</div>
+        <div class="post-tag" style="color:#2E7D53;">Tool Roundup</div>
         <div class="post-title">Free ATS Resume Scanners Compared (2026): Jobscan, Teal, and ResumeTailored</div>
         <div class="post-excerpt">We tested every major free ATS scanner. Here's which ones actually help you pass filters — and which just show you a score.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>6 min read</span></div>
-        <span class="post-read" style="color:#4ade80;">Read article →</span>
+        <span class="post-read" style="color:#2E7D53;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/ai-resume-rewriter-vs-builder" class="post-card">
-      <div class="post-card-top" style="background:#7c3aed;"></div>
+      <div class="post-card-top" style="background:#2E7D53;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#a78bfa;">Career Tips</div>
+        <div class="post-tag" style="color:#2E7D53;">Career Tips</div>
         <div class="post-title">AI Resume Rewriter vs. AI Resume Builder: What's the Difference in 2026?</div>
         <div class="post-excerpt">Resume builders help you create a resume from scratch. Rewriters take what you have and optimize it for a specific job. Here's which one you actually need.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>5 min read</span></div>
-        <span class="post-read" style="color:#a78bfa;">Read article →</span>
+        <span class="post-read" style="color:#2E7D53;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/why-rezi-cover-letters-fall-short" class="post-card">
-      <div class="post-card-top" style="background:#d97706;"></div>
+      <div class="post-card-top" style="background:#B4562E;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#fbbf24;">Tool Comparison</div>
+        <div class="post-tag" style="color:#B4832A;">Tool Comparison</div>
         <div class="post-title">Why Rezi's Cover Letters Fall Short (And What to Use Instead in 2026)</div>
         <div class="post-excerpt">Rezi users consistently report AI-generated cover letters that need heavy editing to be usable. Here's why — and the better alternative.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>5 min read</span></div>
-        <span class="post-read" style="color:#fbbf24;">Read article →</span>
+        <span class="post-read" style="color:#B4832A;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/tailor-resume-to-job-description" class="post-card">
-      <div class="post-card-top" style="background:#4f46e5;"></div>
+      <div class="post-card-top" style="background:#1F5C3D;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#818CF8;">ATS & Job Search</div>
+        <div class="post-tag" style="color:#1F5C3D;">ATS & Job Search</div>
         <div class="post-title">How to Tailor Your Resume to a Job Description in 2026 (AI-Powered, ATS-Optimized)</div>
         <div class="post-excerpt">ATS rejects 88% of qualified candidates. Here's the exact step-by-step AI method to tailor your resume to any job description — and beat the filters — in under 5 minutes.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>14 min read</span></div>
-        <span class="post-read" style="color:#818CF8;">Read article →</span>
+        <span class="post-read" style="color:#1F5C3D;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/how-to-write-a-cover-letter" class="post-card">
-      <div class="post-card-top" style="background:#0891b2;"></div>
+      <div class="post-card-top" style="background:#1F5C3D;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#22d3ee;">Cover Letters</div>
+        <div class="post-tag" style="color:#1F5C3D;">Cover Letters</div>
         <div class="post-title">How to Write a Cover Letter That Gets You the Interview in 2026</div>
         <div class="post-excerpt">Most cover letters are ignored because they're generic. Here's the exact formula — with examples — that makes recruiters stop and call you back.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>8 min read</span></div>
-        <span class="post-read" style="color:#22d3ee;">Read article →</span>
+        <span class="post-read" style="color:#1F5C3D;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/resume-keywords" class="post-card">
-      <div class="post-card-top" style="background:#7c3aed;"></div>
+      <div class="post-card-top" style="background:#2E7D53;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#c4b5fd;">Keywords & ATS</div>
+        <div class="post-tag" style="color:#B4832A;">Keywords & ATS</div>
         <div class="post-title">Resume Keywords: How to Find and Use the Right Ones for Every Job</div>
         <div class="post-excerpt">The right keywords are the difference between getting filtered out and getting the interview. Here's how to find them — and how to work them in naturally.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>7 min read</span></div>
-        <span class="post-read" style="color:#c4b5fd;">Read article →</span>
+        <span class="post-read" style="color:#B4832A;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/linkedin-profile-tips" class="post-card">
-      <div class="post-card-top" style="background:#0369a1;"></div>
+      <div class="post-card-top" style="background:#1F5C3D;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#38bdf8;">LinkedIn</div>
+        <div class="post-tag" style="color:#1F5C3D;">LinkedIn</div>
         <div class="post-title">LinkedIn Profile Optimization: 10 Tips to Get Found by Recruiters in 2026</div>
         <div class="post-excerpt">Recruiters search LinkedIn 200M+ times a day. These 10 profile changes will put you in front of them — without sending a single cold application.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>8 min read</span></div>
-        <span class="post-read" style="color:#38bdf8;">Read article →</span>
+        <span class="post-read" style="color:#1F5C3D;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/how-to-tailor-resume-with-ai" class="post-card">
-      <div class="post-card-top" style="background:#059669;"></div>
+      <div class="post-card-top" style="background:#2E7D53;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#34d399;">Resume Strategy</div>
+        <div class="post-tag" style="color:#2E7D53;">Resume Strategy</div>
         <div class="post-title">How to Tailor Your Resume with AI: The Complete 2026 Workflow</div>
         <div class="post-excerpt">Manual tailoring takes 45 minutes per application. The AI-powered method takes under 90 seconds and produces better keyword coverage. Here's the exact workflow.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>9 min read</span></div>
-        <span class="post-read" style="color:#34d399;">Read article →</span>
+        <span class="post-read" style="color:#2E7D53;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/why-claude-writes-better-resumes" class="post-card">
-      <div class="post-card-top" style="background:#6366f1;"></div>
+      <div class="post-card-top" style="background:#B4832A;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#818CF8;">AI Technology</div>
+        <div class="post-tag" style="color:#1F5C3D;">AI Technology</div>
         <div class="post-title">Why Claude AI Writes Better Resumes Than ChatGPT (We Tested Both)</div>
         <div class="post-excerpt">We submitted identical resumes to Claude and GPT-4 and compared the outputs across 6 criteria. The difference in specificity and impact was striking.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>8 min read</span></div>
-        <span class="post-read" style="color:#818CF8;">Read article →</span>
+        <span class="post-read" style="color:#1F5C3D;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/best-resume-tools-international-job-seekers" class="post-card">
-      <div class="post-card-top" style="background:#0891b2;"></div>
+      <div class="post-card-top" style="background:#1F5C3D;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#22d3ee;">International Job Search</div>
+        <div class="post-tag" style="color:#1F5C3D;">International Job Search</div>
         <div class="post-title">Best AI Resume Tools for International Job Seekers (Bilingual, Visa-Ready)</div>
         <div class="post-excerpt">Applying across borders? Most resume tools are built for the US market only. Here are the tools that actually handle multilingual content, visa status, and global formats.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>10 min read</span></div>
-        <span class="post-read" style="color:#22d3ee;">Read article →</span>
+        <span class="post-read" style="color:#1F5C3D;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/teal-vs-resumetailored" class="post-card">
-      <div class="post-card-top" style="background:#6366f1;"></div>
+      <div class="post-card-top" style="background:#B4832A;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#818CF8;">Tool Comparison</div>
+        <div class="post-tag" style="color:#1F5C3D;">Tool Comparison</div>
         <div class="post-title">Teal vs ResumeTailored AI (2026): One Organizes Your Search, One Wins It</div>
         <div class="post-excerpt">Teal is the best job tracker on the market. ResumeTailored AI rewrites your resume for each role with Claude. Honest comparison of features, pricing, and which belongs in your stack.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>7 min read</span></div>
-        <span class="post-read" style="color:#818CF8;">Read article →</span>
+        <span class="post-read" style="color:#1F5C3D;">Read article →</span>
       </div>
     </a>
 
     <a href="/blog/rezi-vs-resumetailored" class="post-card">
-      <div class="post-card-top" style="background:#d97706;"></div>
+      <div class="post-card-top" style="background:#B4562E;"></div>
       <div class="post-card-body">
-        <div class="post-tag" style="color:#fbbf24;">Tool Comparison</div>
+        <div class="post-tag" style="color:#B4832A;">Tool Comparison</div>
         <div class="post-title">Rezi vs ResumeTailored AI (2026): GPT vs Claude, Which Writes Better Resumes?</div>
         <div class="post-excerpt">Rezi uses GPT-4 at $29/mo ($149 LTD). We use Claude at $19.99/mo ($129 LTD). Side-by-side bullet comparison, cover letter quality, and which lifetime deal is actually worth it.</div>
         <div class="post-meta"><span>June 2026</span><span>·</span><span>7 min read</span></div>
-        <span class="post-read" style="color:#fbbf24;">Read article →</span>
+        <span class="post-read" style="color:#B4832A;">Read article →</span>
       </div>
     </a>
 
@@ -401,11 +401,11 @@
   <p>© 2026 ResumeTailored AI · <a href="/">resumetailored.com</a></p>
   <p style="margin-top:6px;"><a href="/blog">Blog</a> · <a href="/how-it-works">How It Works</a> · <a href="mailto:support@resumetailored.com">support@resumetailored.com</a></p>
 <!-- Free Tools CTA Banner -->
-<div style="background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.12));border-top:1px solid rgba(99,102,241,0.3);padding:28px 24px;text-align:center;">
-  <p style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#818CF8;margin-bottom:8px;">Free AI Resume Tools</p>
-  <p style="font-size:18px;font-weight:800;color:#f1f5f9;margin-bottom:6px;">Get Your ATS Score &amp; Readability Review — Free</p>
-  <p style="font-size:14px;color:#94a3b8;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Paste your resume and job description. Claude AI scores your match and gives you 5 specific fixes — no account needed.</p>
-  <a href="/score" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 0 20px rgba(99,102,241,0.4);">Check My Resume Free &rarr;</a>
+<div style="background:linear-gradient(135deg,rgba(31,92,61,0.14),rgba(46,125,83,0.10));border-top:1px solid rgba(31,92,61,0.25);padding:28px 24px;text-align:center;">
+  <p style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#1F5C3D;margin-bottom:8px;">Free AI Resume Tools</p>
+  <p style="font-size:18px;font-weight:800;color:#191512;margin-bottom:6px;">Get Your ATS Score &amp; Readability Review — Free</p>
+  <p style="font-size:14px;color:#57514A;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Paste your resume and job description. Claude AI scores your match and gives you 5 specific fixes — no account needed.</p>
+  <a href="/score" style="background:#1F5C3D;color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 6px 18px rgba(31,92,61,0.3);">Check My Resume Free &rarr;</a>
 </div>
 </footer>
 

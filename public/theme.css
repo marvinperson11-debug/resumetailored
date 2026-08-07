@@ -99,10 +99,34 @@ hr, section { border-color: var(--line) !important; }
 .article-tag, .related-card-tag {
   background: var(--accent-tint) !important; color: var(--accent) !important;
 }
-.article-meta { color: var(--ink-faint) !important; }
-.article-body { color: var(--ink-soft); }
-.article-body h2, .article-body h3 { color: var(--ink); }
-.article-body a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.article-meta { color: var(--ink-soft) !important; }
+/* !important below: several blog post templates set their own
+   `.article-body p{color:...}` etc. in an inline <style> block. That page-own
+   rule is MORE SPECIFIC than a bare `p{}`/`.article-body{}` rule here (two
+   selectors vs one), so it silently wins even though this file loads after —
+   load order only breaks ties on EQUAL specificity. Without !important here,
+   dozens of older posts keep their original dark-theme gray/near-white body
+   text on the now-light page. */
+.article-body, .article-body p, .article-body li, .article-body em,
+.article-body blockquote, .article-body td { color: var(--ink-soft) !important; }
+.article-body h2, .article-body h3, .article-body th { color: var(--ink) !important; }
+.article-body strong, .article-body b { color: var(--ink) !important; }
+.article-body a { color: var(--accent) !important; text-decoration: underline; text-underline-offset: 2px; }
+.highlight-box p { color: var(--accent-ink) !important; }
+.related-posts-label { color: var(--accent) !important; }
+/* Comparison-table semantic colors: same #34d399/#f87171 dark-mode pair used
+   throughout the tool pages, too light on a white/cream table cell. */
+.comparison-table .win, .win { color: var(--accent) !important; }
+.comparison-table .lose, .lose { color: var(--danger) !important; }
+/* Plain <footer> links (Privacy/Terms/Home) on ~22 blog post templates, e.g.
+   `footer a{color:#818CF8}` — scoped by tag so it can't outrank the SEO
+   pages' own `.ft-links a` (a class selector, which is already more specific
+   and unaffected by this). Excludes the "Check My Resume Free"-style CTA
+   button that several of these same pages ALSO place inside <footer> — that
+   button already sets its own white text on a solid green background; this
+   rule would otherwise force the same green onto the text, painting it
+   invisible on its own button. */
+footer a:not([style*="background:#1F5C3D"]) { color: var(--accent) !important; }
 .highlight-box {
   background: var(--accent-tint) !important; border: 1px solid rgba(31,92,61,0.22) !important;
   border-left: 3px solid var(--accent) !important; color: var(--accent-ink) !important;
@@ -111,6 +135,14 @@ hr, section { border-color: var(--line) !important; }
   background: var(--surface) !important; border: 1px solid var(--line) !important;
   box-shadow: var(--shadow-sm);
 }
+/* Article CTA buttons ("Stop editing. Start submitting." etc.) were authored
+   with the old indigo/purple SaaS gradient inline — every blog post shares
+   this exact markup, so one shared rule here fixes them all at once. */
+.cta-inline a {
+  background: var(--accent) !important; color: #fff !important;
+  box-shadow: 0 6px 18px rgba(31,92,61,0.3) !important;
+}
+.cta-inline a:hover { background: var(--accent-ink) !important; }
 .back-link { color: var(--ink-soft) !important; }
 .back-link:hover { color: var(--accent) !important; }
 .stat-box, .related-card {
