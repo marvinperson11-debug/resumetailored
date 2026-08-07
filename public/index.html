@@ -837,6 +837,7 @@
     <div class="nav-links">
       <a href="/how-it-works" data-i18n="nav_how">How It Works</a>
       <a href="/score" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
+      <a href="/#pro-tools" style="color:#1F5C3D;font-weight:700;" data-i18n="nav_pro_tools">Pro Tools</a>
       <a href="/resume-examples">Resume Examples</a>
       <a href="/blog" data-i18n="nav_blog">Blog</a>
       <a href="/employer" style="color:#0f172a;font-weight:700;white-space:nowrap;">For Employers</a>
@@ -860,7 +861,7 @@
   <a href="/blog" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_blog">Blog</a>
   <a href="/employer" onclick="document.querySelector('.mobile-menu').classList.remove('open')">For Employers</a>
   <a href="/score" onclick="document.querySelector('.mobile-menu').classList.remove('open')" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
-  <a href="#features" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_features">Features</a>
+  <a href="#pro-tools" onclick="document.querySelector('.mobile-menu').classList.remove('open')" style="color:#1F5C3D;" data-i18n="nav_pro_tools">Pro Tools</a>
   <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_templates">Templates</a>
   <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_pricing">Pricing</a>
   <a href="/dashboard" class="btn btn-ghost btn-lg" style="border-color:#1F5C3D;color:#1F5C3D;" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_login">Log In</a>
@@ -981,8 +982,9 @@
 <!-- FEATURES -->
 <section class="section" id="features">
   <div class="container">
-    <div class="section-eyebrow">Why It Works</div>
-    <h2 class="section-title">Everything you need to <span>land interviews</span></h2>
+    <div id="free-tools" style="position:relative;top:-84px;"></div>
+    <div class="section-eyebrow">Free Tools</div>
+    <h2 class="section-title">Everything free, <span>unlimited</span></h2>
     <div class="features">
 
       <div class="feature-row feat-card feat-card--free">
@@ -1108,6 +1110,36 @@
         </div>
       </div>
 
+      <div class="feature-row reverse feat-card feat-card--free">
+        <div class="feature-body">
+          <div class="feature-icon">⚡</div>
+          <h3>30 Seconds vs. 45 Minutes</h3>
+          <p>The average job seeker spends 45 minutes tailoring each application manually. At 20 applications a week, that's 15 hours of copy-editing. ResumeTailored AI does it in 30 seconds — apply to more jobs, faster, with higher-quality applications.</p>
+        </div>
+        <div class="feature-visual">
+          <div class="feature-visual-inner" style="text-align:center;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:24px;">
+              <div>
+                <div style="font-size:36px;font-weight:900;color:#ef4444;">45<small style="font-size:14px;">min</small></div>
+                <div style="font-size:12px;color:#6b7280;font-weight:600;" data-i18n="label_manual">Manual</div>
+              </div>
+              <div style="font-size:24px;color:#57514A;">→</div>
+              <div>
+                <div style="font-size:36px;font-weight:900;color:#16a34a;">30<small style="font-size:14px;">sec</small></div>
+                <div style="font-size:12px;color:#6b7280;font-weight:600;" data-i18n="label_with_ai">With AI</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div id="pro-tools" style="position:relative;top:-84px;"></div>
+    <div class="section-eyebrow" style="margin-top:8px;">Pro Tools</div>
+    <h2 class="section-title">Unlock everything with <span>Pro</span></h2>
+    <div class="features">
+
       <!-- Resume Video Feature — Pro Exclusive -->
       <div class="feature-row reverse" style="border:2px solid rgba(31,92,61,0.45);border-radius:20px;padding:32px;background:rgba(31,92,61,0.06);position:relative;overflow:hidden;">
         <div style="position:absolute;top:16px;right:20px;background:#1F5C3D;color:#fff;font-size:11px;font-weight:800;padding:4px 14px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;">✦ Pro Exclusive</div>
@@ -1200,29 +1232,6 @@
               <div class="hub-box" style="background:rgba(180,86,46,0.14);color:#2E7D53;" onclick="openCheckoutModal()">🏆 Pro Templates</div>
             </div>
             <div style="margin-top:10px;font-size:11px;color:#918A7E;text-align:center;">Click any feature to unlock with Pro →</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="feature-row reverse feat-card feat-card--free">
-        <div class="feature-body">
-          <div class="feature-icon">⚡</div>
-          <h3>30 Seconds vs. 45 Minutes</h3>
-          <p>The average job seeker spends 45 minutes tailoring each application manually. At 20 applications a week, that's 15 hours of copy-editing. ResumeTailored AI does it in 30 seconds — apply to more jobs, faster, with higher-quality applications.</p>
-        </div>
-        <div class="feature-visual">
-          <div class="feature-visual-inner" style="text-align:center;">
-            <div style="display:flex;align-items:center;justify-content:center;gap:24px;">
-              <div>
-                <div style="font-size:36px;font-weight:900;color:#ef4444;">45<small style="font-size:14px;">min</small></div>
-                <div style="font-size:12px;color:#6b7280;font-weight:600;" data-i18n="label_manual">Manual</div>
-              </div>
-              <div style="font-size:24px;color:#57514A;">→</div>
-              <div>
-                <div style="font-size:36px;font-weight:900;color:#16a34a;">30<small style="font-size:14px;">sec</small></div>
-                <div style="font-size:12px;color:#6b7280;font-weight:600;" data-i18n="label_with_ai">With AI</div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -2837,7 +2846,7 @@
   // ── Bilingual i18n (English / Simplified Chinese) ──────────────────────────
   const I18N = {
     en: {
-      nav_how: 'How It Works', nav_blog: 'Blog', nav_free_tools: 'Free Tools', nav_features: 'Features',
+      nav_how: 'How It Works', nav_blog: 'Blog', nav_free_tools: 'Free Tools', nav_pro_tools: 'Pro Tools',
       nav_templates: 'Templates', nav_tiers: 'Career Levels', nav_pricing: 'Pricing',
       nav_login: 'Log In', nav_cta: 'Tailor My Resume Free →',
       mobile_cta: 'Tailor My Resume Free →',
@@ -2880,7 +2889,7 @@
       footer_cta_btn: 'Check My Resume Free →',
     },
     zh: {
-      nav_how: '工作原理', nav_blog: '博客', nav_free_tools: '免费工具', nav_features: '功能特性',
+      nav_how: '工作原理', nav_blog: '博客', nav_free_tools: '免费工具', nav_pro_tools: '专业工具',
       nav_templates: '简历模板', nav_tiers: '职业级别', nav_pricing: '定价',
       nav_login: '登录', nav_cta: '免费定制我的简历 →',
       mobile_cta: '免费定制我的简历 →',
