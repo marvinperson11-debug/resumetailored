@@ -141,8 +141,14 @@
   .nv-tab.on{background:#ffffff;color:var(--nv-ink);box-shadow:0 1px 3px rgba(15,23,42,.08);}
 
   @media(max-width:900px){
-    .nv-sidebar{transform:translateX(-100%);transition:transform .2s;box-shadow:0 0 0 100vmax rgba(0,0,0,.5);}
-    .nv-sidebar.open{transform:translateX(0);}
+    /* The backdrop dimmer was unconditional on .nv-sidebar itself, not scoped
+       to .open — a huge box-shadow spread doesn't get clipped by the
+       element's own off-screen translateX, so the whole dashboard rendered
+       permanently dimmed even with the drawer closed. Reported as "why is
+       the employer portal so dark, in shade" (not a color choice, a stuck
+       overlay). Move it to .open only, where it belongs. */
+    .nv-sidebar{transform:translateX(-100%);transition:transform .2s;}
+    .nv-sidebar.open{transform:translateX(0);box-shadow:0 0 0 100vmax rgba(0,0,0,.5);}
     .nv-main{margin-left:0;}
     .nv-hamburger{display:inline-flex!important;}
     /* Topbar: compact + wrap so the company name, Pro badge and buttons never
