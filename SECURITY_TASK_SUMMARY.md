@@ -219,6 +219,38 @@ compliance-relevant additions this round.
 
 ---
 
+## Findings from the self security-review (before merge, not by you)
+
+Since you don't review code yourself, this PR went through an automated
+security-review pass (identification → independent false-positive filtering
+per finding → only findings scoring ≥8/10 confidence survive) before being
+opened. Two real gaps were found and fixed, both in `DELETE /api/user/me`'s
+completeness — not injection/auth-bypass bugs, but the deletion endpoint not
+actually deleting everything its own "all associated data" claim promised:
+
+1. **Shared resume links (`shared_resumes`, the `/r/:slug` pages) survived
+   account deletion.** That table predates any account link — creating a
+   share never required signing in — so it had no owner column at all, and
+   couldn't be included in the original export/deletion table lists. A
+   deleted account's shared résumé (name, full text, optional photo) would
+   have stayed live at its URL forever. Fixed: added a nullable
+   `owner_email` column (populated from the session when one exists;
+   anonymous shares still have nowhere to attribute to, an accepted,
+   separate limitation), wired into both the export and the deletion
+   transaction.
+2. **Deleted employers' job postings kept appearing in Job Finder search
+   results.** Every posting is mirrored into a separate `job_feed` table
+   (what the public search actually reads); the single-job-delete and
+   close-job paths both already clean up that mirror
+   (`_removeEmployerJobFromFeed`), but the new bulk account-deletion path
+   didn't call it before deleting `job_postings` — leaving the mirrored
+   copy orphaned and still served. Fixed: the deletion transaction now
+   purges each posting's `job_feed` mirror first.
+
+Both are covered by new assertions in `test/security-routes.js` (seeded
+`shared_resumes`/`job_postings`/`job_feed` rows, verified gone after
+deletion) so a regression here fails CI, not just a future review pass.
+
 ## CI
 
 `.github/workflows/tests.yml` — the first CI this repo has had. Runs every
@@ -227,10 +259,14 @@ that workflow passing.
 
 ## Verification performed before merge
 
-- All 30 pre-existing test files: **zero regressions**, all still pass.
-- Both new test files (60 assertions combined): all pass.
+- All 30 pre-existing test files: **zero regressions**, all still pass
+  (confirmed across repeated full-suite runs, both before and after the
+  self-review fixes above).
+- Both new test files (66 assertions combined): all pass.
 - Live headless-browser check across 6 representative pages: zero CSP
   console violations.
 - Manual server boot + curl check that every new header, CORS behavior,
   and the login lockout actually work end to end, not just in the test
   harness.
+- An automated security-review pass (see above) on the complete diff, with
+  independent false-positive filtering on every candidate finding.

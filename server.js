@@ -453,6 +453,13 @@ function _ensureColumn(table, column, ddl) {
 // Remember which template family a shared resume was created with, so /r/:slug can
 // render it in the layout the user actually chose (sidebar, two-column, etc.).
 _ensureColumn('shared_resumes', 'layout', 'layout TEXT');
+// Nullable: POST /api/share never required auth, so an anonymous share stays
+// NULL here (an accepted, separate limitation — there's no account to tie it
+// to). When the request WAS authenticated, this is what lets account
+// export/deletion find and remove the link along with everything else —
+// without it, deleting an account left "all associated data" not actually
+// true for anyone who'd shared a resume first. See DELETE /api/user/me.
+_ensureColumn('shared_resumes', 'owner_email', 'owner_email TEXT');
 // Website Creator (Pro) config blob: theme, section order/placement, selected
 // asset ids, media refs, feature toggles. NULL on sites that predate the creator
 // — _renderPersonalSite() treats NULL as a legacy default (renders exactly like
@@ -1249,6 +1256,10 @@ function _collectUserData(email) {
   out.account = db.prepare('SELECT email, username FROM users WHERE email = ?').get(email);
   out.subscription = db.prepare('SELECT email, customer_id FROM subscribers WHERE email = ?').get(email) || null;
   out.employerSubscription = db.prepare('SELECT email, customer_id FROM employer_subscribers WHERE email = ?').get(email) || null;
+  // owner_email, not email — shared_resumes predates any account link (share
+  // links never required auth) so it can't join EXPORT_TABLES_BY_EMAIL's
+  // assumption of a plain `email` column.
+  out.sharedResumes = db.prepare('SELECT * FROM shared_resumes WHERE owner_email = ?').all(email);
   for (const table of EXPORT_TABLES_BY_EMAIL) {
     try { out[table] = db.prepare(`SELECT * FROM ${table} WHERE email = ?`).all(email); }
     catch (e) { out[table] = []; }
@@ -1317,6 +1328,20 @@ app.delete('/api/user/me', async (req, res) => {
   }
 
   const tx = db.transaction(() => {
+    // job_postings' own rows are deleted generically below via
+    // SHARED_EMPLOYER_TABLES, but each posting is ALSO mirrored into job_feed
+    // (the table that actually powers the public Job Finder listing) by
+    // _syncEmployerJobToFeed — deleting only job_postings left that mirror
+    // behind, still fully live and served, permanently orphaned from any
+    // employer once the account was gone. Every other job-removal path
+    // (DELETE /api/employer/jobs/:id, closing a job) already cleans this up
+    // via _removeEmployerJobFromFeed; account deletion is just one more path
+    // that needs the same cleanup, done first so there's still a row to read.
+    for (const jobId of db.prepare('SELECT id FROM job_postings WHERE employer_email = ?').all(key)) {
+      _removeEmployerJobFromFeed(jobId.id);
+    }
+    // owner_email, not email — see the _collectUserData comment above.
+    db.prepare('DELETE FROM shared_resumes WHERE owner_email = ?').run(key);
     for (const table of EXPORT_TABLES_BY_EMAIL) db.prepare(`DELETE FROM ${table} WHERE email = ?`).run(key);
     for (const table of SHARED_EMPLOYER_TABLES) db.prepare(`DELETE FROM ${table} WHERE employer_email = ?`).run(key);
     for (const table of SHARED_CANDIDATE_TABLES) db.prepare(`DELETE FROM ${table} WHERE candidate_email = ?`).run(key);
@@ -4638,8 +4663,13 @@ app.post('/api/share', shareLimiter, (req, res) => {
     // back to the linear layout at render time.
     const _layout = _SHARE_LAYOUTS.has(layout) ? layout : null;
     const slug = _shareSlug();
-    db.prepare(`INSERT INTO shared_resumes (slug, name, text, accent, primary_hex, serif, photo, hide_contact, created_at, expires_at, views, layout)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)`).run(
+    // No auth is required to create a share link, but when the request DOES
+    // carry a valid session (the normal case — this is called from the
+    // signed-in dashboard), recording who made it is what lets account
+    // export/deletion find it later. Anonymous shares stay NULL here.
+    const ownerEmail = getSessionEmail(req);
+    db.prepare(`INSERT INTO shared_resumes (slug, name, text, accent, primary_hex, serif, photo, hide_contact, created_at, expires_at, views, layout, owner_email)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`).run(
       slug,
       (name || '').toString().slice(0, 80),
       text,
@@ -4650,7 +4680,8 @@ app.post('/api/share', shareLimiter, (req, res) => {
       hideContact ? 1 : 0,
       Date.now(),
       expiresAt,
-      _layout
+      _layout,
+      ownerEmail ? ownerEmail.toLowerCase() : null
     );
     const origin = `${req.protocol}://${req.get('host')}`;
     res.json({ url: `${origin}/r/${slug}`, slug, expiresAt });

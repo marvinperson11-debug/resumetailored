@@ -34,6 +34,17 @@ db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokExists', '
 db.prepare('INSERT INTO saved_resumes (email,title,content,created_at) VALUES (?,?,?,?)')
   .run('exists@x.com', 'My Resume', 'Some resume text', Date.now());
 db.prepare('INSERT INTO check_ins (email,goals) VALUES (?,?)').run('exists@x.com', 'Get hired');
+// A resume the account shared via /r/:slug, and an employer job posting +
+// its job_feed mirror — both regression-test the two completeness gaps a
+// security-review pass found in the first draft of account deletion.
+db.prepare('INSERT INTO shared_resumes (slug,name,text,created_at,owner_email) VALUES (?,?,?,?,?)')
+  .run('test-share-slug', 'Existing User', 'Shared resume text', Date.now(), 'exists@x.com');
+db.prepare('INSERT INTO employer_profiles (email,company_name,created_at) VALUES (?,?,?)')
+  .run('exists@x.com', 'Acme Test Co', Date.now());
+db.prepare(`INSERT INTO job_postings (id,employer_email,title,location,work_mode,job_type,status,created_at,updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?)`).run(9001, 'exists@x.com', 'Test Job', 'Remote', 'remote', 'full_time', 'active', Date.now(), Date.now());
+db.prepare(`INSERT INTO job_feed (source,external_id,title,company,location,url,posted_at,fetched_at)
+            VALUES ('employer',?,?,?,?,?,?,?)`).run('9001', 'Test Job', 'Acme Test Co', 'Remote', '#job-9001', Date.now(), Date.now());
 
 function req(method, urlPath, opts) {
   opts = opts || {};
@@ -118,6 +129,7 @@ const server = app.listen(0, async () => {
     check('export returns the account\'s own data', exportRes.status === 200 && exportRes.json.email === 'exists@x.com', exportRes.body);
     check('export includes saved_resumes', Array.isArray(exportRes.json.saved_resumes) && exportRes.json.saved_resumes.length === 1);
     check('export includes check_ins', Array.isArray(exportRes.json.check_ins) && exportRes.json.check_ins.length === 1);
+    check('export includes the account\'s shared /r/:slug resumes', Array.isArray(exportRes.json.sharedResumes) && exportRes.json.sharedResumes.length === 1 && exportRes.json.sharedResumes[0].slug === 'test-share-slug', exportRes.body);
     check('export never includes the password hash', JSON.stringify(exportRes.json).indexOf('password_hash') === -1 || !exportRes.json.account.password_hash);
 
     // ── Account deletion ──────────────────────────────────────────────────────
@@ -133,6 +145,9 @@ const server = app.listen(0, async () => {
     check('saved_resumes rows are gone', db.prepare('SELECT COUNT(*) c FROM saved_resumes WHERE email=?').get('exists@x.com').c === 0);
     check('check_ins row is gone', !db.prepare('SELECT 1 FROM check_ins WHERE email=?').get('exists@x.com'));
     check('session is revoked', !db.prepare('SELECT 1 FROM sessions WHERE token=?').get('tokExists'));
+    check('shared /r/:slug resume is gone (a security-review finding: this used to survive deletion)', !db.prepare('SELECT 1 FROM shared_resumes WHERE slug=?').get('test-share-slug'));
+    check('job_postings row is gone', !db.prepare('SELECT 1 FROM job_postings WHERE id=?').get(9001));
+    check('its job_feed mirror is gone too (a security-review finding: this used to survive deletion, orphaned but still served)', !db.prepare("SELECT 1 FROM job_feed WHERE source='employer' AND external_id=?").get('9001'));
     const useOldToken = await req('GET', '/api/auth/me', { token: 'tokExists' });
     check('the old bearer token no longer authenticates anything', useOldToken.status === 401);
     check('account deletion was audit-logged (survives the account it describes)', !!db.prepare("SELECT 1 FROM audit_log WHERE action='user.account_deleted' AND actor_email='exists@x.com'").get());
