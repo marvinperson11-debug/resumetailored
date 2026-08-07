@@ -189,6 +189,29 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/theme.css"/>
   <link rel="stylesheet" href="/site-fx.css"/>
+  <style>
+    /* Global light-theme readability fix. This page was authored dark; theme.css
+       forces a cream background but can't reach the colors set by this page's own
+       class rules, so headings/eyebrows/cards stayed near-invisible on desktop
+       (the earlier fix only ran at <=768px). Applies everywhere now. */
+    .hero h1, .section-title, .step-big-body h3, .why-card h3, .about-cta h2,
+    .compare-table td:first-child { color: #191512 !important; }
+    .hero p, .step-big-body p, .why-card p, .about-cta p, .testimonial p,
+    .compare-table td, .compare-table th, .price-them, .testimonial-author,
+    .btn-ghost, .footer p, .footer-links a { color: #57514A !important; }
+    .section-eyebrow, .step-big-num, .step-big-tag, .compare-table th.us,
+    .price-us { color: #4f36c9 !important; }
+    .hero h1 span, .section-title span, .about-cta h2 span {
+      background: linear-gradient(135deg,#5b46e0,#7c3aed,#0284c7) !important;
+      -webkit-background-clip: text !important; background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+    }
+    .why-card, .testimonial { background: #ffffff !important; border-color: #E7DFD1 !important; }
+    .step-big { border-bottom-color: #E7DFD1 !important; }
+    .compare-table td { border-bottom-color: #E7DFD1 !important; }
+    .footer { background: transparent !important; border-top: 1px solid rgba(0,0,0,0.08) !important; }
+    .footer-links a:hover { color: #1F5C3D !important; }
+  </style>
 </head>
 <body>
 
