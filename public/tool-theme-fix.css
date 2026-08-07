@@ -29,8 +29,23 @@
 .status-bar { background: var(--surface) !important; border-color: var(--line) !important; color: var(--ink-soft) !important; }
 .tab-switch { background: var(--bg-alt) !important; border-color: var(--line) !important; }
 .tab-btn { color: var(--ink-soft) !important; }
-.tab-btn.active { background: linear-gradient(135deg, rgba(99,102,241,0.16), rgba(139,92,246,0.12)) !important; color: #5b3fd1 !important; box-shadow: none !important; }
+.tab-btn.active { background: var(--accent-tint) !important; color: var(--accent) !important; box-shadow: none !important; }
 .tab-btn:hover:not(.active) { color: var(--ink) !important; }
+.hero-badge { color: var(--accent) !important; }
+.diff-item h4 { color: var(--ink) !important; }
+.diff-item p { color: var(--ink-soft) !important; }
+
+/* Semantic "success/free/matched" green and "missing/error" red were authored
+   as bright dark-mode colors (#34d399 / #f87171) — legible on near-black, too
+   light against the white cards these now sit on. Darken to the accent green
+   / the site's danger red, keeping their soft tinted backgrounds as-is. */
+.hero-eyebrow, .hero-note strong, .status-bar .free-pill, .verdict-strong,
+.kw-section-title.found, .chip-found, .mv-good, .upgrade-perk strong {
+  color: var(--accent) !important;
+}
+.score-bar { stroke: var(--accent) !important; }
+.error-msg, .verdict-weak, .kw-section-title.missing, .chip-missing,
+.mv-bad, .status-bar .used-pill { color: var(--danger) !important; }
 
 /* Inputs */
 .input-label { color: var(--ink) !important; }
@@ -58,10 +73,83 @@ textarea.resume-ta, textarea.single-ta {
 .upgrade-perk { background: var(--bg-alt) !important; border-color: var(--line) !important; }
 .missing-lock-overlay { background: rgba(250,247,240,0.78) !important; }
 
-/* Footer (these pages ship their own dark inline footer) */
+/* Footer (these pages ship their own dark inline footer). Scoped to
+   .footer-links a (the small Privacy/Terms/Home links) rather than every
+   anchor in the footer — a couple of these pages put their "Check My Resume
+   Free" CTA button inside the same <footer>, and a blanket footer-a rule
+   fought that button's own white text with !important, painting it
+   forest-green-on-forest-green (invisible). */
 .tool-footer, body > footer { background: var(--bg-alt) !important; border-top-color: var(--line) !important; }
-body > footer p { color: var(--ink-faint) !important; }
-body > footer a { color: var(--accent) !important; }
+body > footer p { color: var(--ink-soft) !important; }
+body > footer .footer-links a { color: var(--accent) !important; }
+.footer-links a:hover { color: var(--accent-ink) !important; }
+/* score.html's own plain `footer a { color: #818CF8 }` (no .footer-links
+   wrapper there) — same fix, different selector shape. Excludes the CTA
+   button that lives in the same <footer> via its own inline background
+   (a plain :not(.footer-links a) descendant negation isn't reliably
+   supported the way it reads, so match on the button's known style instead). */
+body > footer a:not([style*="background:#1F5C3D"]) { color: var(--accent) !important; }
+
+/* Inline-styled strong tags set at runtime by the i18n strings (no class to
+   hook, so scoped by container instead). */
+.status-bar strong { color: var(--accent) !important; }
 
 /* Soften the dark circuit-grid overlay so it doesn't tint the cream page */
 body::before { opacity: .45 !important; }
+
+/* One active-tab exception: tool-theme-fix's generic .jmt-btn rule (ink-soft
+   text) would otherwise win over the page's own .jmt-btn.active{color:#fff}
+   (no !important there) since !important always beats non-important — leaving
+   dark text on a solid accent-colored button. */
+.jmt-btn.active { color: #fff !important; }
+
+/* ── Brand-color unification (ai-resume-tailor / ai-cover-letter-generator /
+   tailor-resume-to-job-description): these were authored with an indigo/violet
+   SaaS palette left over from an earlier design; remap every accent to the
+   site's forest-green identity and every dark-glass surface to the light
+   surface/line tokens, on top of the dark-text fixes above. ── */
+
+/* Hero sections had a literal dark/violet background (not just body-level, so
+   theme.css's forced cream body never reached them) — let the cream page (and
+   its toned-down grid pattern) show through instead. */
+.hero, .section-blue { background: var(--bg) !important; }
+.hero h1, .hero-note strong, .footer-logo, .stat-number, .big-label, .big-num,
+.plan-name, .plan-price, .example-greeting, .vs-badge, .demo-arrow-circle,
+.section-title, .section-title span, .blue, .stat-num { color: var(--ink) !important; }
+.hero h1 .accent, .accent, .blue, .big-num, .stat-num, .section-title span {
+  background: linear-gradient(135deg,#5b46e0,#7c3aed,#0284c7) !important;
+  -webkit-background-clip: text !important; background-clip: text !important;
+  -webkit-text-fill-color: transparent !important; color: transparent !important;
+}
+.hero-sub, .section-sub, .stat-label, .big-sub, .example-meta, .example-more,
+.example-para, .plan-period, .demo-label, .demo-bullet-bad, .faq-arrow,
+.testimonial-author, .mobile-close { color: var(--ink-soft) !important; }
+.section-eyebrow { color: var(--accent) !important; }
+.feature-card h4, .step-card h3 { color: var(--ink) !important; }
+.feature-card p, .step-card p { color: var(--ink-soft) !important; }
+
+/* Cards: translucent-white-on-dark surfaces → real light cards */
+.feature-card, .step-card, .example-box, .diff-item, .pricing-card,
+.testimonial, .side-card, .demo-before, .demo-arrow-col {
+  background: var(--surface) !important; border-color: var(--line) !important;
+}
+.demo-after { background: var(--accent-tint) !important; border-color: var(--accent) !important; }
+.demo-bullet-bad { background: var(--bg-alt) !important; }
+.demo-bullet-good { background: var(--accent-tint) !important; border-left-color: var(--accent) !important; color: var(--accent-ink) !important; }
+.vs-badge { background: var(--bg-alt) !important; border-color: var(--line) !important; }
+
+/* Accent chips/badges/numbers: indigo → forest green */
+.step-num, .example-badge { background: var(--accent-tint) !important; color: var(--accent) !important; }
+.plan-badge, .demo-arrow-circle { background: var(--accent) !important; color: #fff !important; }
+.highlight-box { background: var(--accent-tint) !important; border-color: rgba(31,92,61,0.25) !important; }
+.highlight-box p { color: var(--accent-ink) !important; }
+.upload-btn, .suggestions-eyebrow, .price-us { color: var(--accent) !important; }
+.upload-btn { border-color: rgba(31,92,61,0.4) !important; background: var(--accent-tint) !important; }
+.suggestion-num { background: var(--accent-tint) !important; border-color: rgba(31,92,61,0.35) !important; color: var(--accent) !important; }
+
+/* Buttons: indigo/violet gradients → the site's forest-green gradient */
+.btn-analyze, .btn-fix, .btn-upgrade, .btn-unlock-sm, .upgrade-wall .btn-upgrade {
+  background: linear-gradient(135deg,var(--accent),var(--accent-2)) !important;
+  box-shadow: 0 6px 18px rgba(31,92,61,0.3) !important;
+}
+.jmt-btn.active, .btn-fetch { background: var(--accent) !important; }
