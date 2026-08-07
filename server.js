@@ -19,7 +19,38 @@ const nodemailer = require('nodemailer');
 const CH = require('./career-hub.js');           // Career Hub pure core (taxonomy, prompts, validators, scoring)
 const EH = require('./employer-hub.js');         // Employer Portal pure core (validation, limits, ranking)
 const JP = require('./job-providers.js');        // Multi-source live job search (Adzuna, JSearch, free fallbacks)
+const SC = require('./security.js');             // Security pure core (password policy, HIBP, lockout, CSP, log scrubbing)
 const { renderBadgePage } = require('./badge-page.js');
+// Sentry is fully optional: no SENTRY_DSN, no @sentry/node installed, or the
+// require throwing all degrade to a no-op the same way the Remotion imports
+// above do — the server must boot with or without it.
+let Sentry = null;
+if (process.env.SENTRY_DSN) {
+  try {
+    Sentry = require('@sentry/node');
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'production',
+      tracesSampleRate: 0,
+      // Belt-and-suspenders on top of the scrubForLog() calls at each throw
+      // site: strip anything secret-shaped out of the event body/extra data
+      // one more time right before it leaves the process.
+      beforeSend(event) {
+        if (event.request) {
+          delete event.request.cookies;
+          if (event.request.headers) delete event.request.headers.authorization;
+          if (event.request.data) event.request.data = SC.scrubForLog(event.request.data);
+        }
+        if (event.extra) event.extra = SC.scrubForLog(event.extra);
+        return event;
+      },
+    });
+    console.log('[Sentry] initialized');
+  } catch (e) {
+    console.error('STARTUP ERROR: @sentry/node failed to load — error reporting disabled:', e.message);
+    Sentry = null;
+  }
+}
 /* Video duration probing for site-media uploads. This is `@remotion/media-parser`
    — a pure container-format parser (reads MP4/WebM/MOV box headers for their
    declared duration), not the heavy render stack. It needs no browser and no
@@ -390,6 +421,24 @@ db.exec(`
     completed_at  INTEGER NOT NULL,
     UNIQUE(email, profession_id, scenario_type)
   );
+  -- Every employer-portal action that touches another person's data (viewed a
+  -- candidate, sent a message, downloaded a CSV, posted/edited a job), plus
+  -- the two owner-only /api/admin/* routes. actor_email is who did it;
+  -- target_type/target_id identify what it was done to (a candidate's email,
+  -- a job posting id, ...) so a row is independently meaningful without a
+  -- join. meta is a small JSON blob for anything action-specific.
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    actor_email  TEXT NOT NULL,
+    action       TEXT NOT NULL,
+    target_type  TEXT,
+    target_id    TEXT,
+    meta         TEXT,
+    ip           TEXT,
+    created_at   INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_audit_log_actor ON audit_log(actor_email, created_at DESC);
+  CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action, created_at DESC);
   CREATE INDEX IF NOT EXISTS idx_scenario_progress_email ON scenario_progress(email);
 `);
 
@@ -583,7 +632,7 @@ if (db.prepare('SELECT COUNT(*) as c FROM forum_posts').get().c === 0) {
 // still VERIFY those so nobody is locked out, and transparently re-hash them to
 // bcrypt on their next successful login (lazy migration; no forced reset).
 const bcrypt = require('bcryptjs');
-const BCRYPT_ROUNDS = 10;
+const BCRYPT_ROUNDS = 12;
 
 function legacyHashPw(pw) {
   return crypto.createHash('sha256').update('rta_salt_2026_' + pw).digest('hex');
@@ -607,7 +656,52 @@ function verifyPassword(pw, stored) {
 }
 
 app.set('trust proxy', 1); // Required on Railway — reads real client IP from X-Forwarded-For
-app.use(cors());
+
+// ─── HTTPS redirect ───────────────────────────────────────────────────────────
+// Railway terminates TLS in front of the app and forwards `x-forwarded-proto`.
+// A LOCAL request (curl http://localhost, the test suite, health checks) never
+// sets that header at all, so checking for the literal value 'http' — not just
+// "is it missing" — means this never fires outside of a real HTTP request
+// arriving at the edge.
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] === 'http') {
+    return res.redirect(301, `https://${req.headers.host}${req.originalUrl}`);
+  }
+  next();
+});
+
+// ─── CORS ───────────────────────────────────────────────────────────────────
+// Was a bare `cors()` — reflects any Origin, no whitelist. Locked to the
+// production hosts + any *.resumetailored.com subdomain (personal sites and
+// the employer subdomain routing already live on that pattern — see
+// PERSONAL_SITE_HOST_RE below) + localhost for local dev. A request with no
+// Origin header (server-to-server, curl, same-origin navigation) is allowed
+// through unchanged, same as before — CORS only ever gated cross-origin
+// browser fetches to begin with.
+const isAllowedOrigin = SC.buildCorsOriginChecker();
+app.use(cors({
+  origin(origin, callback) {
+    if (isAllowedOrigin(origin)) return callback(null, true);
+    callback(new Error('Not allowed by CORS'));
+  },
+}));
+
+// ─── Security headers (every response) ───────────────────────────────────────
+// X-Frame-Options is SAMEORIGIN, not DENY: the Website Creator's own editor
+// canvas iframes `/api/personal-site/preview` on this same origin (see
+// CLAUDE.md — "the canvas is an iframe... POST /api/personal-site/preview")
+// and DENY blocks ALL framing, same-origin included, which would have taken
+// the whole editor down. SAMEORIGIN still blocks the thing this header
+// exists for — a third-party site framing this one for clickjacking.
+const CSP_HEADER = SC.buildCSP();
+app.use((req, res, next) => {
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', CSP_HEADER);
+  next();
+});
 
 // Force UTF-8 charset on text/html responses.
 // Intercepts res.setHeader() — the moment Content-Type is assigned — so the
@@ -895,21 +989,89 @@ const apiLimiter = rateLimit({
 });
 app.use('/api/', apiLimiter);
 
+// ─── Brute-force lockout: login, signup, password reset ─────────────────────
+// The global apiLimiter above (30 req/min) already covers volume, but a
+// credential-stuffing attempt against /api/auth/login stays well under 30/min
+// and would sail right through it. This tracks FAILED attempts specifically
+// (a mistyped password shouldn't count the same as a stuffing attempt would),
+// keyed by IP: 5 failures in 15 minutes trips a 1-hour lockout — longer than
+// the counting window, which a single rateLimit() config can't express.
+const authLockout = SC.createLockoutTracker({ windowMs: 15 * 60 * 1000, maxAttempts: 5, lockoutMs: 60 * 60 * 1000 });
+function authLockoutGuard(req, res, next) {
+  if (RATE_LIMIT_OFF) return next();
+  const { locked, retryAfterSec } = authLockout.check(req.ip);
+  if (locked) {
+    res.setHeader('Retry-After', String(retryAfterSec));
+    return res.status(429).json({ error: 'locked_out', message: 'Too many failed attempts. Please try again later.' });
+  }
+  next();
+}
+// A wide, generous limiter on TOP of the lockout above — belt and suspenders
+// against a burst of requests that never even reach the point of failing
+// (e.g. hammering the route with malformed bodies to skip lockout counting).
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  skip: () => RATE_LIMIT_OFF,
+  standardHeaders: true,
+  message: { error: 'rate_limited', message: 'Too many requests. Please wait and try again.' },
+});
+// One-time global counter for the ">100 failed logins in 10 minutes" alert —
+// site-wide, not per-IP (a distributed credential-stuffing run spreads across
+// many IPs, each individually under its own lockout threshold). Resets the
+// window on each fire so the owner gets one email per incident, not one per
+// failed login once the threshold is crossed.
+let _failedLoginWindow = { count: 0, windowStart: Date.now(), alerted: false };
+function _recordFailedLoginForAlert() {
+  const now = Date.now();
+  if (now - _failedLoginWindow.windowStart > 10 * 60 * 1000) {
+    _failedLoginWindow = { count: 0, windowStart: now, alerted: false };
+  }
+  _failedLoginWindow.count += 1;
+  if (_failedLoginWindow.count > 100 && !_failedLoginWindow.alerted) {
+    _failedLoginWindow.alerted = true;
+    notifyOwner('[ResumeTailored] ⚠️ Security alert: >100 failed logins in 10 minutes',
+      `<p>${_failedLoginWindow.count} failed login attempts were recorded in the last 10 minutes — possible credential stuffing.</p>`);
+  }
+}
+
+// ─── Audit log ────────────────────────────────────────────────────────────────
+// One row per employer action that touches another person's data, plus the
+// two owner-only admin routes. Never throws into the caller — logging a
+// candidate view is not worth failing the request that's already succeeded.
+function writeAuditLog(req, actorEmail, action, { targetType, targetId, meta } = {}) {
+  try {
+    db.prepare('INSERT INTO audit_log (actor_email, action, target_type, target_id, meta, ip, created_at) VALUES (?,?,?,?,?,?,?)')
+      .run(actorEmail, action, targetType || null, targetId != null ? String(targetId) : null,
+        meta ? JSON.stringify(SC.scrubForLog(meta)) : null, (req && req.ip) || null, Date.now());
+  } catch (e) {
+    console.error('[audit] write failed:', e.message);
+  }
+}
+
 // ─── Auth endpoints ───────────────────────────────────────────────────────────
-app.post('/api/auth/signup', async (req, res) => {
+app.post('/api/auth/signup', authRateLimiter, authLockoutGuard, async (req, res) => {
   const { email, username, password } = req.body;
-  if (!email || !username || !password) {
+  if (!email || !username || !password || typeof email !== 'string' || typeof username !== 'string' || typeof password !== 'string') {
     return res.status(400).json({ error: 'Email, username, and password are required.' });
   }
-  if (password.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  const policy = SC.validatePasswordPolicy(password);
+  if (!policy.ok) {
+    return res.status(400).json({ error: policy.reason });
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
     return res.status(400).json({ error: 'Please enter a valid email address.' });
   }
   const key = email.toLowerCase().trim();
   if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(key)) {
+    authLockout.recordFailure(req.ip);
     return res.status(409).json({ error: 'An account with this email already exists. Please log in.' });
+  }
+  // Have I Been Pwned check — fails open, never blocks signup on a network
+  // hiccup, only on a confirmed match against a real breach corpus.
+  const pwned = await SC.checkPwnedPassword(password);
+  if (pwned.checked && pwned.pwned) {
+    return res.status(400).json({ error: `This password has appeared in ${pwned.count.toLocaleString()} known data breaches. Please choose a different one.` });
   }
   const cleanUsername = username.trim().slice(0, 30);
   db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)').run(key, cleanUsername, hashPassword(password));
@@ -1015,16 +1177,19 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', authRateLimiter, authLockoutGuard, (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) {
+  if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
     return res.status(400).json({ error: 'Email and password are required.' });
   }
   const key = email.toLowerCase().trim();
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(key);
   if (!user || !verifyPassword(password, user.password_hash)) {
+    authLockout.recordFailure(req.ip);
+    _recordFailedLoginForAlert();
     return res.status(401).json({ error: 'Invalid email or password.' });
   }
+  authLockout.clear(req.ip);
   // Lazy migration: re-hash legacy SHA-256 accounts to bcrypt on successful login.
   if (isLegacyHash(user.password_hash)) {
     try {
@@ -1055,6 +1220,121 @@ app.post('/api/auth/logout', (req, res) => {
   const token = (req.headers.authorization || '').replace('Bearer ', '');
   if (token) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
   res.json({ success: true });
+});
+
+// ─── Data export & account deletion ──────────────────────────────────────────
+// Every table that stores rows under a signed-in user's own email — kept as
+// one explicit list (rather than introspecting the schema) so a reviewer can
+// see exactly what's covered in one place, and so a new table added later
+// doesn't silently start/stop being included without someone noticing the
+// diff. `job-seeker` tables key on `email`; the Employer Portal reuses the
+// same login as a "Hire Mode" toggle (see the comment above the
+// employer_profiles table), so an account can have rows on BOTH sides.
+const EXPORT_TABLES_BY_EMAIL = [
+  'check_ins', 'saved_resumes', 'saved_cover_letters', 'saved_videos', 'site_media',
+  'site_leads', 'site_aliases', 'personal_sites', 'skill_attempts', 'badges',
+  'interview_progress', 'gap_reports', 'saved_jobs', 'scenario_progress',
+  'employer_profiles', 'candidate_profiles',
+];
+// Shared two-party tables: a row belongs to this account if it appears on
+// EITHER side. Exported as two labeled groups (asEmployer / asCandidate) so
+// it's clear which role the row was under; a full deletion removes it either
+// way, on the same reasoning that a user asking to "wipe all my data" means
+// their side of a thread too, not just rows they conceptually authored.
+const SHARED_EMPLOYER_TABLES = ['job_postings', 'interviews', 'employer_messages', 'employer_contact_requests'];
+const SHARED_CANDIDATE_TABLES = ['job_applications', 'interviews', 'employer_messages', 'employer_contact_requests'];
+
+function _collectUserData(email) {
+  const out = { email, exportedAt: new Date().toISOString() };
+  out.account = db.prepare('SELECT email, username FROM users WHERE email = ?').get(email);
+  out.subscription = db.prepare('SELECT email, customer_id FROM subscribers WHERE email = ?').get(email) || null;
+  out.employerSubscription = db.prepare('SELECT email, customer_id FROM employer_subscribers WHERE email = ?').get(email) || null;
+  for (const table of EXPORT_TABLES_BY_EMAIL) {
+    try { out[table] = db.prepare(`SELECT * FROM ${table} WHERE email = ?`).all(email); }
+    catch (e) { out[table] = []; }
+  }
+  out.asEmployer = {};
+  for (const table of SHARED_EMPLOYER_TABLES) {
+    try { out.asEmployer[table] = db.prepare(`SELECT * FROM ${table} WHERE employer_email = ?`).all(email); }
+    catch (e) { out.asEmployer[table] = []; }
+  }
+  out.asCandidate = {};
+  for (const table of SHARED_CANDIDATE_TABLES) {
+    try { out.asCandidate[table] = db.prepare(`SELECT * FROM ${table} WHERE candidate_email = ?`).all(email); }
+    catch (e) { out.asCandidate[table] = []; }
+  }
+  return out;
+}
+
+app.get('/api/user/me/export', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const data = _collectUserData(email.toLowerCase());
+  writeAuditLog(req, email, 'user.data_exported');
+  res.setHeader('Content-Disposition', `attachment; filename="resumetailored-data-${email.toLowerCase()}.json"`);
+  res.json(data);
+});
+
+// Deletes every row above, unlinks on-disk files (site media, saved videos),
+// best-effort cancels any live Stripe subscription so deleting the account
+// also stops billing it (no self-service "cancel subscription" exists
+// elsewhere in the app today — leaving the Stripe side untouched here would
+// mean an account with no login and no data, still being charged monthly),
+// and revokes every session/reset token. Requires the caller to re-send
+// their password ({ password }) — a stolen bearer token alone is not enough
+// to permanently destroy an account, the one operation on this list with no
+// undo.
+app.delete('/api/user/me', async (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please sign in.' });
+  const key = email.toLowerCase();
+  const { password } = req.body || {};
+  const user = db.prepare('SELECT password_hash FROM users WHERE email = ?').get(key);
+  if (!user) return res.status(404).json({ error: 'Account not found.' });
+  if (!password || typeof password !== 'string' || !verifyPassword(password, user.password_hash)) {
+    return res.status(401).json({ error: 'Please re-enter your password to confirm account deletion.' });
+  }
+
+  const stripeWarnings = [];
+  for (const sub of [
+    db.prepare('SELECT customer_id FROM subscribers WHERE email = ?').get(key),
+    db.prepare('SELECT customer_id FROM employer_subscribers WHERE email = ?').get(key),
+  ]) {
+    if (!sub || !sub.customer_id || sub.customer_id.startsWith('lifetime_')) continue; // lifetime buyers have no recurring sub to cancel
+    if (!process.env.STRIPE_SECRET_KEY) { stripeWarnings.push('Stripe not configured — could not verify/cancel any subscription.'); continue; }
+    try {
+      const subs = await stripe.subscriptions.list({ customer: sub.customer_id, status: 'active', limit: 10 });
+      for (const s of subs.data) await stripe.subscriptions.cancel(s.id);
+    } catch (e) {
+      console.error('[account-delete] Stripe cancel failed for', key, ':', e.message);
+      stripeWarnings.push('Could not confirm Stripe subscription cancellation — please verify manually.');
+    }
+  }
+
+  try { _deleteAllMediaForEmail(key); } catch (e) { console.error('[account-delete] media cleanup failed:', e.message); }
+  for (const v of db.prepare('SELECT path FROM saved_videos WHERE email = ?').all(key)) {
+    if (v.path) { try { fs.unlinkSync(v.path); } catch (e) { /* already gone */ } }
+  }
+
+  const tx = db.transaction(() => {
+    for (const table of EXPORT_TABLES_BY_EMAIL) db.prepare(`DELETE FROM ${table} WHERE email = ?`).run(key);
+    for (const table of SHARED_EMPLOYER_TABLES) db.prepare(`DELETE FROM ${table} WHERE employer_email = ?`).run(key);
+    for (const table of SHARED_CANDIDATE_TABLES) db.prepare(`DELETE FROM ${table} WHERE candidate_email = ?`).run(key);
+    db.prepare('DELETE FROM subscribers WHERE email = ?').run(key);
+    db.prepare('DELETE FROM employer_subscribers WHERE email = ?').run(key);
+    db.prepare('DELETE FROM sessions WHERE email = ?').run(key);
+    db.prepare('DELETE FROM reset_tokens WHERE email = ?').run(key);
+    db.prepare('DELETE FROM users WHERE email = ?').run(key);
+  });
+  tx();
+
+  // audit_log is deliberately NOT wiped here — a security/audit trail
+  // surviving the account it describes is standard practice (fraud
+  // investigation, abuse history) and there's no FK tying it to `users`, so
+  // an orphaned actor_email causes no structural issue.
+  writeAuditLog(req, key, 'user.account_deleted', { meta: { stripeWarnings } });
+  notifyOwner(`[ResumeTailored] Account deleted: ${SC.escapeHtml(key)}`, `<p>${SC.escapeHtml(key)} deleted their account and all associated data.</p>${stripeWarnings.length ? `<p style="color:#b91c1c;">${stripeWarnings.map(SC.escapeHtml).join('<br>')}</p>` : ''}`);
+  res.json({ success: true, warnings: stripeWarnings });
 });
 
 // ─── LinkedIn OAuth import (free onboarding feature) ──────────────────────────
@@ -1634,9 +1914,15 @@ const mediaUpload = multer({
 });
 /* A file on disk that no row points at is a leak, and every rejection below —
    wrong type, too large for its kind, quota full, or a write that throws — has
-   to sweep up after itself. One helper, called on every path out. */
+   to sweep up after itself. One helper, called on every path out.
+   Synchronous unlink, matching _deleteSiteMedia/_deleteAllMediaForEmail below
+   — the async fire-and-forget fs.unlink(path, () => {}) this replaced doesn't
+   complete before the rejection response is sent, which is a real leak
+   window (a client retrying fast enough, or anything measuring "is the temp
+   dir clean yet" right after the response — including test/media-upload-
+   disk.js — can observe the file still there). */
 function _mediaDiscard(file) {
-  if (file && file.path) { try { fs.unlink(file.path, () => {}); } catch (_) {} }
+  if (file && file.path) { try { fs.unlinkSync(file.path); } catch (_) {} }
 }
 /* Delete every media file that belongs to ONE site, on disk and in the row.
    Called wherever a site itself goes away — media that outlives its site is
@@ -1997,9 +2283,9 @@ app.get('/api/site-analytics', (req, res) => {
   res.json({ views: site.views || 0, topReferrers: top });
 });
 
-app.post('/api/auth/forgot-password', async (req, res) => {
+app.post('/api/auth/forgot-password', authRateLimiter, async (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email is required.' });
+  if (!email || typeof email !== 'string') return res.status(400).json({ error: 'Email is required.' });
   const key = email.toLowerCase().trim();
 
   if (!db.prepare('SELECT 1 FROM users WHERE email = ?').get(key)) {
@@ -2119,10 +2405,13 @@ app.get('/api/auth/verify-reset-token', (req, res) => {
   res.json({ valid: true });
 });
 
-app.post('/api/auth/reset-password', (req, res) => {
+app.post('/api/auth/reset-password', authRateLimiter, async (req, res) => {
   const { token, password } = req.body;
-  if (!token || !password) return res.status(400).json({ error: 'Token and new password are required.' });
-  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+  if (!token || !password || typeof token !== 'string' || typeof password !== 'string') {
+    return res.status(400).json({ error: 'Token and new password are required.' });
+  }
+  const policy = SC.validatePasswordPolicy(password);
+  if (!policy.ok) return res.status(400).json({ error: policy.reason });
 
   const record = db.prepare('SELECT email, expires_at FROM reset_tokens WHERE token = ?').get(token);
   if (!record) return res.status(400).json({ error: 'This reset link is invalid or has already been used.' });
@@ -2135,9 +2424,15 @@ app.post('/api/auth/reset-password', (req, res) => {
     return res.status(400).json({ error: 'Account not found.' });
   }
 
+  const pwned = await SC.checkPwnedPassword(password);
+  if (pwned.checked && pwned.pwned) {
+    return res.status(400).json({ error: `This password has appeared in ${pwned.count.toLocaleString()} known data breaches. Please choose a different one.` });
+  }
+
   db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(hashPassword(password), record.email);
   db.prepare('DELETE FROM reset_tokens WHERE token = ?').run(token);
   db.prepare('DELETE FROM sessions WHERE email = ?').run(record.email);
+  authLockout.clear(req.ip);
 
   res.json({ success: true });
 });
@@ -5611,11 +5906,17 @@ app.post('/api/tailor', tailorLimiter, async (req, res) => {
   if (!['resume', 'cover_letter', 'both'].includes(mode)) {
     return res.status(400).json({ error: 'Invalid mode.' });
   }
-  if (!jobPosting) {
+  if (!jobPosting || typeof jobPosting !== 'string') {
     return res.status(400).json({ error: 'Job posting is required.' });
   }
-  if (mode !== 'cover_letter' && !resume) {
+  if (mode !== 'cover_letter' && (!resume || typeof resume !== 'string')) {
     return res.status(400).json({ error: 'Resume is required.' });
+  }
+  // Real resumes/job postings top out around a few thousand words; a cap here
+  // isn't a UX limit, it's a floor under the per-request Anthropic API cost —
+  // without one, a single request can be made arbitrarily expensive.
+  if (jobPosting.length > 50000 || (resume && resume.length > 50000)) {
+    return res.status(400).json({ error: 'Text is too long. Please paste the resume/job posting text only.' });
   }
 
   // Tailoring requires a signed-in account. The free tier is now unlimited, so
@@ -6306,10 +6607,17 @@ function getCheckInPrompt() {
 }
 
 // ─── API: Contact / Help form ─────────────────────────────────────────────────
-app.post('/api/contact', async (req, res) => {
+const contactLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, skip: () => RATE_LIMIT_OFF, standardHeaders: true, message: { error: 'rate_limited', message: 'Too many messages sent. Please try again later.' } });
+app.post('/api/contact', contactLimiter, async (req, res) => {
   const { name, email, subject, message } = req.body;
-  if (!name || !email || !message) {
+  if (!name || !email || !message || typeof name !== 'string' || typeof email !== 'string' || typeof message !== 'string') {
     return res.status(400).json({ error: 'Name, email, and message are required.' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Please enter a valid email address.' });
+  }
+  if (name.length > 100 || message.length > 5000 || (subject && String(subject).length > 200)) {
+    return res.status(400).json({ error: 'One of the fields is too long.' });
   }
 
   const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
@@ -6317,14 +6625,14 @@ app.post('/api/contact', async (req, res) => {
   try {
     await sendEmail({
       to: ownerEmail,
-      subject: `[ResumeTailored Support] ${subject || 'New message from ' + name}`,
+      subject: `[ResumeTailored Support] ${(subject || 'New message from ' + name).replace(/[\r\n]/g, ' ')}`,
       replyTo: email,
       html: `
             <h2>New Support Message</h2>
-            <p><strong>From:</strong> ${name} (${email})</p>
-            <p><strong>Subject:</strong> ${subject || 'No subject'}</p>
+            <p><strong>From:</strong> ${SC.escapeHtml(name)} (${SC.escapeHtml(email)})</p>
+            <p><strong>Subject:</strong> ${SC.escapeHtml(subject || 'No subject')}</p>
             <hr />
-            <p>${message.replace(/\n/g, '<br>')}</p>
+            <p>${SC.escapeHtml(message).replace(/\n/g, '<br>')}</p>
             <hr />
             <p style="color:#888;font-size:12px;">Sent from ResumeTailored AI Help form</p>
           `
@@ -6336,16 +6644,30 @@ app.post('/api/contact', async (req, res) => {
   res.json({ success: true });
 });
 
+// A submitted-secret's length varies per request, so the guard itself must
+// never short-circuit on that length before reaching the timing-safe compare
+// (an early `if (secret.length !== adminSecret.length) return 403` would leak
+// the correct length exactly the way a naive === would leak a prefix match).
+const adminLockout = SC.createLockoutTracker({ windowMs: 15 * 60 * 1000, maxAttempts: 5, lockoutMs: 60 * 60 * 1000 });
+function requireAdminSecret(req, res, next) {
+  const adminSecret = process.env.ADMIN_SECRET;
+  const submitted = req.method === 'GET' ? req.query.secret : req.body.secret;
+  if (!RATE_LIMIT_OFF) {
+    const { locked, retryAfterSec } = adminLockout.check(req.ip);
+    if (locked) { res.setHeader('Retry-After', String(retryAfterSec)); return res.status(429).json({ error: 'locked_out' }); }
+  }
+  if (!adminSecret || typeof submitted !== 'string' || !SC.timingSafeEqualStr(submitted, adminSecret)) {
+    if (!RATE_LIMIT_OFF) adminLockout.recordFailure(req.ip);
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
 // ─── API: Admin broadcast email ───────────────────────────────────────────────
 // POST /api/admin/broadcast  { secret: "ADMIN_SECRET value" }
 // Returns { sent, failed, total, errors[] }
-app.post('/api/admin/broadcast', async (req, res) => {
-  const { secret } = req.body;
-  const adminSecret = process.env.ADMIN_SECRET;
-  if (!adminSecret || secret !== adminSecret) {
-    return res.status(403).json({ error: 'Unauthorized' });
-  }
-
+app.post('/api/admin/broadcast', authRateLimiter, requireAdminSecret, async (req, res) => {
+  writeAuditLog(req, 'admin', 'admin.broadcast');
   const allUsers = db.prepare('SELECT email, username FROM users').all();
   if (allUsers.length === 0) {
     return res.json({ sent: 0, failed: 0, total: 0, message: 'No users in database' });
@@ -6376,11 +6698,8 @@ app.post('/api/admin/broadcast', async (req, res) => {
 });
 
 // GET /api/admin/users-list?secret=ADMIN_SECRET — quick email export
-app.get('/api/admin/users-list', (req, res) => {
-  const adminSecret = process.env.ADMIN_SECRET;
-  if (!adminSecret || req.query.secret !== adminSecret) {
-    return res.status(403).json({ error: 'Unauthorized' });
-  }
+app.get('/api/admin/users-list', requireAdminSecret, (req, res) => {
+  writeAuditLog(req, 'admin', 'admin.users_list_export');
   const rows = db.prepare('SELECT email, username FROM users ORDER BY email').all();
   res.json({ total: rows.length, users: rows });
 });
@@ -7173,6 +7492,7 @@ app.post('/api/employer/jobs', employerLimiter, (req, res) => {
     v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, v.clean.gigType, now, now);
   const newJob = db.prepare('SELECT * FROM job_postings WHERE id = ?').get(info.lastInsertRowid);
   _syncEmployerJobToFeed(newJob);
+  writeAuditLog(req, email, 'employer.job_posted', { targetType: 'job', targetId: info.lastInsertRowid, meta: { title: v.clean.title } });
   res.json({ success: true, id: info.lastInsertRowid });
 });
 
@@ -7198,6 +7518,7 @@ app.put('/api/employer/jobs/:id', employerLimiter, (req, res) => {
   `).run(v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
     v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, v.clean.gigType, Date.now(), id);
   _syncEmployerJobToFeed(db.prepare('SELECT * FROM job_postings WHERE id = ?').get(id));
+  writeAuditLog(req, email, 'employer.job_edited', { targetType: 'job', targetId: id });
   res.json({ success: true });
 });
 
@@ -7322,7 +7643,15 @@ app.post('/api/candidate/contact-requests/:id', (req, res) => {
 });
 
 // ── Employer side: candidate search + ATS ───────────────────────────────────
-app.get('/api/employer/candidates', (req, res) => {
+// Tighter than the general 30/min apiLimiter (which is already shared across
+// every /api/* route) — bulk-scraping the whole candidate database looks
+// like sustained above-normal request volume specifically on THESE two
+// routes, where a recruiter's real usage (search, then open a handful of
+// profiles) stays well under either cap.
+const candidateListLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, skip: () => RATE_LIMIT_OFF, standardHeaders: true, message: { error: 'rate_limited', message: 'Too many requests — please slow down.' } });
+const candidateProfileLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, skip: () => RATE_LIMIT_OFF, standardHeaders: true, message: { error: 'rate_limited', message: 'Too many requests — please slow down.' } });
+
+app.get('/api/employer/candidates', candidateListLimiter, (req, res) => {
   const email = employerAuthEmail(req, res); if (!email) return;
   const e = email.toLowerCase();
   const employerProfile = db.prepare('SELECT email FROM employer_profiles WHERE email = ?').get(e);
@@ -7369,12 +7698,13 @@ app.get('/api/employer/candidates', (req, res) => {
   res.json({ candidates: ranked, total: candidates.length, pro });
 });
 
-app.get('/api/employer/candidates/:email/profile', (req, res) => {
+app.get('/api/employer/candidates/:email/profile', candidateProfileLimiter, (req, res) => {
   const email = employerAuthEmail(req, res); if (!email) return;
   if (!isEmployerSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Full candidate profiles are a Pro Employer feature.' });
   const candEmail = String(req.params.email || '').toLowerCase();
   const cp = db.prepare('SELECT * FROM candidate_profiles WHERE email = ? AND searchable = 1').get(candEmail);
   if (!cp) return res.status(404).json({ error: 'not_found' });
+  writeAuditLog(req, email, 'employer.candidate_viewed', { targetType: 'candidate', targetId: candEmail });
   const user = db.prepare('SELECT username FROM users WHERE email = ?').get(candEmail);
   const ci = db.prepare('SELECT profession_id, seniority FROM check_ins WHERE email = ?').get(candEmail);
   const prof = ci && ci.profession_id ? CH.resolveProfession(ci.profession_id, ci.seniority) : null;
@@ -7408,9 +7738,10 @@ app.post('/api/employer/candidates/:email/contact', employerLimiter, (req, res) 
   `).run(e, candEmail, message, now, now);
   sendEmail({
     to: candEmail,
-    subject: `${employerProfile.company_name} wants to connect on ResumeTailored`,
-    html: `<p><strong>${employerProfile.company_name}</strong> would like to reach out to you.</p>${message ? `<p>"${message}"</p>` : ''}<p>Approve or decline from your Career Hub dashboard.</p>`
+    subject: `${SC.escapeHtml(employerProfile.company_name)} wants to connect on ResumeTailored`,
+    html: `<p><strong>${SC.escapeHtml(employerProfile.company_name)}</strong> would like to reach out to you.</p>${message ? `<p>"${SC.escapeHtml(message)}"</p>` : ''}<p>Approve or decline from your Career Hub dashboard.</p>`
   }).catch(err => console.error('[employer] contact-request email failed:', err.message));
+  writeAuditLog(req, email, 'employer.candidate_contacted', { targetType: 'candidate', targetId: candEmail });
   res.json({ success: true });
 });
 
@@ -7633,8 +7964,9 @@ app.post('/api/employer/messages/:candEmail', employerLimiter, (req, res) => {
   if (!body) return res.status(400).json({ error: 'bad_request', message: 'Message cannot be empty.' });
   db.prepare("INSERT INTO employer_messages (employer_email, candidate_email, sender, body, created_at) VALUES (?,?,'employer',?,?)").run(ctx.email, cand, body, Date.now());
   sendEmail({ to: cand, subject: `New message from ${ctx.profile.company_name} on ResumeTailored`,
-    html: `<p><strong>${ctx.profile.company_name}</strong> sent you a message:</p><blockquote>${body.replace(/</g, '&lt;')}</blockquote><p>Reply from your ResumeTailored dashboard.</p>` })
+    html: `<p><strong>${SC.escapeHtml(ctx.profile.company_name)}</strong> sent you a message:</p><blockquote>${SC.escapeHtml(body)}</blockquote><p>Reply from your ResumeTailored dashboard.</p>` })
     .catch(err => console.error('[employer] message email failed:', err.message));
+  writeAuditLog(req, ctx.email, 'employer.message_sent', { targetType: 'candidate', targetId: cand });
   res.json({ success: true });
 });
 
@@ -7671,6 +8003,7 @@ app.get('/api/employer/candidates/export.csv', (req, res) => {
   ]);
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="candidates.csv"');
+  writeAuditLog(req, ctx.email, 'employer.csv_downloaded', { meta: { rowCount: rows.length } });
   res.send(csv);
 });
 
@@ -7701,6 +8034,19 @@ app.post('/api/employer/settings', employerLimiter, (req, res) => {
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found.' });
   res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+});
+
+// Catch-all Express error handler — must be registered LAST (4-arg signature
+// is how Express recognizes an error handler). Reports to Sentry when
+// configured (a no-op otherwise), scrubbed the same way beforeSend already
+// scrubs everything else, and never leaks a stack trace to the client.
+app.use((err, req, res, next) => {
+  if (Sentry) { try { Sentry.captureException(err); } catch (e) { /* never let reporting itself crash the response */ } }
+  console.error('[unhandled]', req.method, req.path, '—', err && err.message);
+  if (res.headersSent) return next(err);
+  const status = err && err.status ? err.status : 500;
+  if (req.path.startsWith('/api/')) return res.status(status).json({ error: 'server_error', message: 'Something went wrong. Please try again.' });
+  res.status(status).sendFile(path.join(__dirname, 'public', '404.html'));
 });
 
 const PORT = process.env.PORT || 3000;
