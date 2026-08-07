@@ -160,9 +160,53 @@
   }
   .nv-hamburger{display:none;background:none;border:1px solid var(--nv-line);color:var(--nv-ink);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:16px;}
   @media(max-width:520px){.nv-stats{grid-template-columns:1fr;}.nv-2col{grid-template-columns:1fr;}}
+
+  /* ── Public top bar (sign-in / setup screens only) ──────────────────────────
+     A recruiter landing on /employer logged out (e.g. tapping "For Employers"
+     on mobile) hit a bare login card with a single text link and no way back
+     to the rest of the site. This bar gives it the same logo-links-hamburger
+     pattern every other logged-out page uses, so it's never a dead end. Hidden
+     the moment the portal shell shows (see show() in the script below) — the
+     internal dashboard keeps its own sidebar nav, untouched. */
+  #nvPubNav{position:sticky;top:0;z-index:900;background:rgba(250,247,240,.9);border-bottom:1px solid var(--nv-line);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);}
+  #nvPubNav .in{max-width:1120px;margin:0 auto;display:flex;align-items:center;height:60px;padding:0 20px;}
+  #nvPubNav .logo{font-weight:900;font-size:18px;color:var(--nv-ink);text-decoration:none;white-space:nowrap;}
+  #nvPubNav .links{display:flex;gap:18px;align-items:center;margin-left:28px;}
+  #nvPubNav .links a{font-size:14px;font-weight:600;color:var(--nv-muted);text-decoration:none;white-space:nowrap;}
+  #nvPubNav .links a:hover{color:var(--nv-accent);}
+  #nvPubNav .ham{display:none;margin-left:auto;background:none;border:1px solid var(--nv-line);border-radius:8px;color:var(--nv-ink);font-size:16px;line-height:1;padding:7px 11px;cursor:pointer;}
+  @media(max-width:760px){#nvPubNav .links{display:none;}#nvPubNav .ham{display:inline-flex;}}
+  #nvPubMenu{position:fixed;inset:0;z-index:1001;background:var(--nv-bg);display:none;flex-direction:column;padding:80px 28px 28px;gap:6px;}
+  #nvPubMenu.open{display:flex;}
+  #nvPubMenu a{font-size:22px;font-weight:700;color:var(--nv-ink);text-decoration:none;padding:10px 0;border-bottom:1px solid var(--nv-line);}
+  #nvPubMenu .close{position:absolute;top:20px;right:24px;background:none;border:none;font-size:30px;color:var(--nv-muted);cursor:pointer;line-height:1;}
 </style>
 </head>
 <body>
+
+<!-- ══ PUBLIC NAV (sign-in / setup screens only; hidden once the portal shell shows) ══ -->
+<nav id="nvPubNav">
+  <div class="in">
+    <a href="/" class="logo">ResumeTailored</a>
+    <div class="links">
+      <a href="/how-it-works">How It Works</a>
+      <a href="/score">Free Tools</a>
+      <a href="/blog">Blog</a>
+      <a href="/#pricing">Pricing</a>
+      <a href="/dashboard">Job Seeker Dashboard</a>
+    </div>
+    <button class="ham" aria-label="Open menu" onclick="document.getElementById('nvPubMenu').classList.add('open')">&#9776;</button>
+  </div>
+</nav>
+<div id="nvPubMenu">
+  <button class="close" aria-label="Close menu" onclick="document.getElementById('nvPubMenu').classList.remove('open')">&times;</button>
+  <a href="/">Home</a>
+  <a href="/how-it-works">How It Works</a>
+  <a href="/score">Free Tools</a>
+  <a href="/blog">Blog</a>
+  <a href="/#pricing">Pricing</a>
+  <a href="/dashboard">Job Seeker Dashboard</a>
+</div>
 
 <!-- ══ AUTH GATE ══ -->
 <div id="nvAuth" class="nv-authwrap" style="display:none;">
@@ -355,7 +399,7 @@ async function nvSaveProfile(){
   boot();
 }
 
-function show(which){ ['nvAuth','nvSetup','nvShell'].forEach(function(id){ el(id).style.display='none'; }); el(which).style.display=which==='nvShell'?'block':'block'; }
+function show(which){ ['nvAuth','nvSetup','nvShell'].forEach(function(id){ el(id).style.display='none'; }); el(which).style.display=which==='nvShell'?'block':'block'; el('nvPubNav').style.display=which==='nvShell'?'none':'block'; }
 
 async function boot(){
   if(!tok()){ show('nvAuth'); return; }
