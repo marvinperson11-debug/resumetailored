@@ -16,7 +16,7 @@
 /* Hero / intro copy */
 .hero h1 { color: var(--ink) !important; }
 .hero h1 span {
-  background: linear-gradient(135deg, #6366F1, #8B5CF6, #0284c7) !important;
+  background: linear-gradient(135deg, #1F5C3D, #2E7D53, #1f5c3d) !important;
   -webkit-background-clip: text !important; background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
@@ -83,7 +83,7 @@ textarea.resume-ta, textarea.single-ta {
 body > footer p { color: var(--ink-soft) !important; }
 body > footer .footer-links a { color: var(--accent) !important; }
 .footer-links a:hover { color: var(--accent-ink) !important; }
-/* score.html's own plain `footer a { color: #818CF8 }` (no .footer-links
+/* score.html's own plain `footer a { color: #1F5C3D }` (no .footer-links
    wrapper there) — same fix, different selector shape. Excludes the CTA
    button that lives in the same <footer> via its own inline background
    (a plain :not(.footer-links a) descendant negation isn't reliably
@@ -117,7 +117,7 @@ body::before { opacity: .45 !important; }
 .plan-name, .plan-price, .example-greeting, .vs-badge, .demo-arrow-circle,
 .section-title, .section-title span, .blue, .stat-num { color: var(--ink) !important; }
 .hero h1 .accent, .accent, .blue, .big-num, .stat-num, .section-title span {
-  background: linear-gradient(135deg,#5b46e0,#7c3aed,#0284c7) !important;
+  background: linear-gradient(135deg,#1f5c3d,#2e7d53,#1f5c3d) !important;
   -webkit-background-clip: text !important; background-clip: text !important;
   -webkit-text-fill-color: transparent !important; color: transparent !important;
 }
