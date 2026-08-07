@@ -741,6 +741,7 @@ for (const [flat, slug] of Object.entries(ALTERNATIVE_REDIRECTS)) {
 const ASSET_VERSION = (process.env.RAILWAY_GIT_COMMIT_SHA || String(Date.now())).slice(0, 10);
 const ASSET_REWRITES = [
   ['href="/theme.css"', `href="/theme.css?v=${ASSET_VERSION}"`],
+  ['href="/tool-theme-fix.css"', `href="/tool-theme-fix.css?v=${ASSET_VERSION}"`],
   ['href="/career-hub.css"', `href="/career-hub.css?v=${ASSET_VERSION}"`],
   ['href="/app-theme.css"', `href="/app-theme.css?v=${ASSET_VERSION}"`],
   ['href="style.css"', `href="style.css?v=${ASSET_VERSION}"`],
