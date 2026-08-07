@@ -746,6 +746,7 @@ const ASSET_REWRITES = [
   ['href="/app-theme.css"', `href="/app-theme.css?v=${ASSET_VERSION}"`],
   ['href="style.css"', `href="style.css?v=${ASSET_VERSION}"`],
   ['src="/career-hub.js"', `src="/career-hub.js?v=${ASSET_VERSION}"`],
+  ['src="/site-nav.js"', `src="/site-nav.js?v=${ASSET_VERSION}"`],
 ];
 function _versionAssetRefs(html) {
   for (const [from, to] of ASSET_REWRITES) html = html.split(from).join(to);
