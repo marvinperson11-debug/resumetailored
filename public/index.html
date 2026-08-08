@@ -3604,10 +3604,40 @@
     }
   });
 </script>
-  <script src="/vendor/gsap.min.js" defer></script>
-  <script src="/vendor/ScrollTrigger.min.js" defer></script>
-  <script src="/vendor/lenis.min.js" defer></script>
-  <script src="/site-motion.js" defer></script>
+  <!-- Scroll-animation stack (GSAP + ScrollTrigger + Lenis + site-motion) is
+       loaded on the FIRST user interaction (or after 4s) so it never runs during
+       the initial render — it's the last main-thread cost on the homepage. This
+       is pure progressive enhancement: the page is fully visible and usable
+       without it (no element is CSS-hidden waiting on JS; the hero animates via
+       CSS keyframes; scroll reveals just begin once the user scrolls). Loaded in
+       dependency order — gsap → ScrollTrigger → lenis → site-motion. -->
+  <script>
+  (function () {
+    var loaded = false;
+    var events = ['scroll', 'pointerdown', 'keydown', 'touchstart', 'mousemove', 'wheel'];
+    function inject(src) {
+      return new Promise(function (resolve) {
+        var s = document.createElement('script');
+        s.src = src; s.async = false;            // preserve execution order
+        s.onload = resolve; s.onerror = resolve; // never let one failure stall the chain
+        document.body.appendChild(s);
+      });
+    }
+    function load() {
+      if (loaded) return; loaded = true;
+      events.forEach(function (e) { window.removeEventListener(e, load); });
+      inject('/vendor/gsap.min.js')
+        .then(function () { return inject('/vendor/ScrollTrigger.min.js'); })
+        .then(function () { return inject('/vendor/lenis.min.js'); })
+        .then(function () { return inject('/site-motion.js'); });
+    }
+    events.forEach(function (e) { window.addEventListener(e, load, { passive: true }); });
+    setTimeout(load, 4000);
+  })();
+  </script>
+  <!-- Touch interaction layer (haptics, swipe, bottom-sheets) — no libraries.
+       Kept deferred (not interaction-gated) so its handlers are ready for the
+       user's very first touch. -->
   <script src="/mobile-native.js" defer></script>
 </body>
 </html>

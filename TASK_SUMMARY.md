@@ -1,44 +1,35 @@
-# TASK_SUMMARY — Homepage Accessibility → 100 (+ status of the other categories)
+# TASK_SUMMARY — Defer the homepage scroll-animation stack (final Performance lever)
 
 Date: 2026-08-08. Branch: `claude/markdown-file-response-y8qolt`.
 
-Targets the PageSpeed gaps on the mobile homepage after the AdSense removal moved Performance 43 → 82. Since I can't run field PSI from this environment (undeployed branch; PSI API key quota-exhausted; sandboxed Chrome can't reach external URLs), I ran **Lighthouse — the same engine PSI uses — locally against the booted server**. Lighthouse's **Accessibility, Best Practices, and SEO** audits are computed from the rendered DOM, so they're reliable locally; only the Performance *absolute score* is network-noisy here.
+The last remaining main-thread cost on the mobile homepage was the scroll-animation stack (GSAP + ScrollTrigger + Lenis + `site-motion.js`). With every other Lighthouse opportunity already clean, this PR moves that stack **off the initial render** — the approved final step toward 100 Performance.
 
-## Before / after (Lighthouse mobile, homepage `/`)
+## Change
 
-| Category | Before (your PSI) | After |
-|---|---|---|
-| Accessibility | 93 | **100** ✅ verified locally |
-| Best Practices | 92 | **100** locally — see note |
-| SEO | 100 | **100** ✅ |
-| Performance | 82 | see note — **not shipped to 100 blind** |
+`public/index.html` — the four animation scripts no longer load as eager `<script defer>` tags. They're injected on the **first user interaction** (`scroll`/`pointerdown`/`keydown`/`touchstart`/`mousemove`/`wheel`) or after a **4s fallback**, in dependency order (gsap → ScrollTrigger → lenis → site-motion). `mobile-native.js` (the touch layer: haptics, swipe, bottom-sheets — no libraries) stays deferred so its handlers are ready for the user's first touch.
 
-## Accessibility 93 → 100 (this PR)
+## Why this is safe (no content hidden, LCP unaffected)
 
-Lighthouse flagged exactly two audits; both fixed on `index.html` and `zh/index.html`:
+I checked this carefully before shipping — the site's own comment calls `site-motion.js` "progressive enhancement," and the DOM backs that up:
+- **No element on the homepage is CSS-hidden waiting on JS.** The markup uses neither `class="reveal"` nor `[data-reveal]` (the only selectors with `opacity:0` in CSS), and on mobile those are `opacity:1 !important` anyway. `.section`/`.card` reveals are only hidden by `gsap` *at runtime*, so if the libs load late the content is simply visible.
+- **The hero headline (LCP) is not part of this stack** — its words are injected by inline JS and animated by a pure CSS `@keyframes` (`word-appear`), independent of GSAP.
+- **Nothing else references `gsap`/`ScrollTrigger`/`Lenis`** outside the stack (grep-verified), so nothing breaks by loading them later.
+- ScrollTrigger reveals for elements already in view when the stack initializes resolve to their end (visible) state — no flash.
 
-1. **`color-contrast`** — three elements in the footer "Accepted Payments" row failed AA (4.5:1):
-   - label text `#6b7280` on the cream footer (`#f1eadd`) → 4.04 → changed to **`#57514A`** (6.55).
-   - Alipay badge, white on `#1677ff` → 4.10 → **`#0b5ed7`** (5.84).
-   - WeChat badge, white on `#09bb07` → 2.58 → **`#1b7a1a`** (5.46).
-2. **`landmark-one-main`** — the page had no `<main>`. Wrapped the content between the nav and the footer in a single `<main id="main-content">`.
+**Tradeoff (as approved):** entrance/scroll animations and desktop smooth-scroll (Lenis; already disabled on touch) begin on the first interaction instead of at load. The page is fully visible and usable before then.
 
-Re-ran Lighthouse: **Accessibility 100, 0 remaining failures.** `test/homepage-a11y.js` locks it in (one `<main>`, and the WCAG contrast formula applied to the payment row).
+## Verified
 
-## Best Practices 92 → (expected 100)
+- Re-ran Lighthouse locally: **Accessibility still 100**; no eager animation `<script>` in the served HTML; loader present, dependency-ordered, with the 4s fallback. (Performance's *absolute* local score stays noisy in this sandbox — the real number is the post-deploy field/PSI run.)
+- `test/homepage-motion-defer.js` (new) guards it: no eager stack tags, interaction+timeout binding, dependency order, `mobile-native.js` still deferred. Full suite: **35 files green.**
 
-Lighthouse scores Best Practices **100 locally**, and the deterministic BP checks are clean in source: **no mixed content** (no `http://` resources), **no `target="_blank"` without `rel="noopener"`**. The live 92 was almost certainly **AdSense** (third-party cookies / console warnings), which the previous PR removed. It should read 100 on production once this deploys — confirm with a live run.
+## Full-goal status (mobile homepage)
 
-## Performance 82 → not shipped blind (needs your call)
+| Category | Status |
+|---|---|
+| Accessibility | **100** ✅ (contrast + `<main>` — prior PR) |
+| SEO | **100** ✅ |
+| Best Practices | **100 expected** (clean locally; live 92 was AdSense, now removed) |
+| Performance | AdSense removed (43→82), fonts self-hosted, GA + cookie-consent + now the animation stack all off the critical path — **confirm the field number with a post-deploy PSI run** |
 
-I did **not** push a Performance change in this PR, because the remaining lever is a **UX tradeoff I won't make unilaterally**. Lighthouse's performance opportunities are otherwise clean — `unused-javascript` ✓, `unused-css-rules` ✓, `unminified-*` ✓, `bootup-time` 0.3 s ✓, no render-blocking flagged. The one remaining main-thread cost is the **scroll-animation stack**: `vendor/gsap.min.js`, `vendor/ScrollTrigger.min.js`, `vendor/lenis.min.js`, `site-motion.js`. They're already `defer`red, but they still execute on load to power the entrance/scroll animations and Lenis smooth-scroll.
-
-**Option to reach ~100:** delay that animation stack until first interaction (same pattern as GA), so it's off the initial main thread. **Tradeoff:** entrance animations and smooth-scroll wouldn't initialize until the user first scrolls/touches — a visible change to the site's polish on first paint. Reversible. **Tell me to proceed and I'll ship it**; otherwise 82 (likely higher post-deploy once fonts + AdSense removal are fully reflected in the field) is a strong result without touching the design.
-
-## Scope note
-
-These fixes are on the two homepages (the page you measured). The footer + missing-`<main>` pattern is shared, so other page types likely show the same two audits; a **site-wide accessibility pass** (apply `<main>` + the contrast fix across the ~355 static pages, ideally via the server-side rewrite mechanism already used for fonts) is a clean follow-up if you want every page at 100 — say the word.
-
-## Tests
-
-`test/homepage-a11y.js` (new) guards the landmark + contrast fixes. Full suite: **34 files green.**
+**Measure on production** (`pagespeed.web.dev`, `https://resumetailored.com/`, Mobile) after this deploys — I can't run field PSI from CI. Send me the numbers and I'll record the final before/after here.
