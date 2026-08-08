@@ -10,7 +10,8 @@
     "remotion:render": "remotion render remotion/index.ts ResumeVideo out/resume-video.mp4",
     "career:warm": "node scripts/warm-career-cache.js",
     "career:job-digest": "node scripts/job-digest.js",
-    "career:job-feed": "node scripts/refresh-job-feed.js"
+    "career:job-feed": "node scripts/refresh-job-feed.js",
+    "career:weekly-report": "node scripts/weekly-report.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",

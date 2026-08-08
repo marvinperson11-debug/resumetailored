@@ -19,6 +19,7 @@ const nodemailer = require('nodemailer');
 const CH = require('./career-hub.js');           // Career Hub pure core (taxonomy, prompts, validators, scoring)
 const EH = require('./employer-hub.js');         // Employer Portal pure core (validation, limits, ranking)
 const JP = require('./job-providers.js');        // Multi-source live job search (Adzuna, JSearch, free fallbacks)
+const TOOLS = require('./tools-core.js');         // 7 job-search tools pure core (offer scoring, prompts, validators, limits)
 const SC = require('./security.js');             // Security pure core (password policy, HIBP, lockout, CSP, log scrubbing)
 const { renderBadgePage } = require('./badge-page.js');
 // Sentry is fully optional: no SENTRY_DSN, no @sentry/node installed, or the
@@ -648,6 +649,43 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
 `);
 
+// ── The 7 new job-search tools (Free Tools + Pro Tools hubs) ─────────────────
+// tool_usage       — one row per gated action, counted against a UTC day/month
+//                    window (see toolUsageCount). This is the sign-in-gated
+//                    quota ledger for JD Decoder / Follow-Up / Mock Interview /
+//                    Salary Negotiation. Offer Comparison is free + anonymous
+//                    and is never written here.
+// resume_versions  — the Resume A/B Tracker's saved versions (free = 2 rows).
+// weekly_report_subscriptions — Pro-only Monday digest opt-in (career-cron.js
+//                    sends it via scripts/weekly-report.js).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tool_usage (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email TEXT NOT NULL,
+    tool_name  TEXT NOT NULL,
+    used_at    DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_tool_usage_lookup ON tool_usage(user_email, tool_name, used_at);
+
+  CREATE TABLE IF NOT EXISTS resume_versions (
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email        TEXT NOT NULL,
+    version_name      TEXT NOT NULL,
+    resume_text       TEXT,
+    template_used     TEXT,
+    jobs_applied_with INTEGER DEFAULT 0,
+    responses_received INTEGER DEFAULT 0,
+    created_at        DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+  CREATE INDEX IF NOT EXISTS idx_resume_versions_user ON resume_versions(user_email);
+
+  CREATE TABLE IF NOT EXISTS weekly_report_subscriptions (
+    user_email   TEXT PRIMARY KEY,
+    is_enabled   INTEGER DEFAULT 1,
+    last_sent_at DATETIME
+  );
+`);
+
 // Employer profile extras (logo, description, notification prefs) added after
 // the base table shipped — see _ensureColumn (idempotent).
 _ensureColumn('employer_profiles', 'logo_url', "logo_url TEXT DEFAULT ''");
@@ -880,6 +918,8 @@ const ASSET_REWRITES = [
   ['src="/site-nav.js"', `src="/site-nav.js?v=${ASSET_VERSION}"`],
   ['src="/login-redirect.js"', `src="/login-redirect.js?v=${ASSET_VERSION}"`],
   ['src="/job-tracker.js"', `src="/job-tracker.js?v=${ASSET_VERSION}"`],
+  ['href="/tools-hub.css"', `href="/tools-hub.css?v=${ASSET_VERSION}"`],
+  ['src="/tools-hub.js"', `src="/tools-hub.js?v=${ASSET_VERSION}"`],
 ];
 function _versionAssetRefs(html) {
   for (const [from, to] of ASSET_REWRITES) html = html.split(from).join(to);
@@ -8290,6 +8330,223 @@ app.post('/api/employer/settings', employerLimiter, (req, res) => {
     .run(companyName, String(b.website || '').trim().slice(0, 200), String(b.logoUrl || '').trim().slice(0, 500), String(b.description || '').trim().slice(0, 2000),
       b.notifyApplications === false ? 0 : 1, b.notifyMessages === false ? 0 : 1, ctx.email);
   res.json({ success: true });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// The 7 job-search tools — API routes (server-side gating)
+// ══════════════════════════════════════════════════════════════════════════
+// Offer Comparison is free + anonymous. The other four generative tools require
+// a signed-in account (getSessionEmail → 401) and are metered against the
+// tool_usage ledger; Pro (isSubscriber) lifts every cap. Resume A/B Tracker
+// counts rows in resume_versions (free = 2). Weekly Report is Pro-only.
+const toolsLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  skip: () => RATE_LIMIT_OFF,
+  message: { error: 'rate_limited', message: 'Too many requests — please wait a minute and try again.' },
+});
+
+// Count a user's gated actions inside the current UTC day/month window.
+function toolUsageCount(email, tool, period) {
+  const boundary = period === 'month' ? 'start of month' : 'start of day';
+  const row = db.prepare(
+    "SELECT COUNT(*) AS c FROM tool_usage WHERE user_email = ? AND tool_name = ? AND used_at >= datetime('now', ?)"
+  ).get(email.toLowerCase(), tool, boundary);
+  return row ? row.c : 0;
+}
+function toolUsageRecord(email, tool) {
+  db.prepare('INSERT INTO tool_usage (user_email, tool_name) VALUES (?, ?)').run(email.toLowerCase(), tool);
+}
+// Auth + quota gate. Returns { email, pro } or writes a 401/402 and returns null.
+// Pass limitDef (a TOOLS.LIMITS entry) to meter free users; omit it for a tool
+// that only needs sign-in.
+function toolGate(req, res, limitDef) {
+  const email = getSessionEmail(req);
+  if (!email) { res.status(401).json({ error: 'auth_required', message: 'Please sign in to use this tool.' }); return null; }
+  const pro = isSubscriber(email);
+  if (!pro && limitDef) {
+    const used = toolUsageCount(email, limitDef.tool, limitDef.period);
+    if (used >= limitDef.free) {
+      res.status(402).json({
+        error: 'quota', tool: limitDef.tool, limit: limitDef.free, period: limitDef.period,
+        message: `You've used your free ${limitDef.free} for this ${limitDef.period === 'month' ? 'month' : 'day'}. Upgrade to Pro for unlimited access.`,
+      });
+      return null;
+    }
+  }
+  return { email, pro };
+}
+function toolLLMError(res, err) {
+  console.error('[tools] LLM error:', err && err.status, (err && (err.code || err.message)) || err);
+  if (err && err.code === 'llm_json_invalid') return res.status(502).json({ error: 'ai_format', message: 'The AI returned an unexpected format. Please try again.' });
+  let msg = 'AI processing failed. Please try again.';
+  if (err && err.status === 429) msg = 'AI is busy right now — wait a moment and try again.';
+  else if (err && err.status >= 500) msg = 'AI service is temporarily busy. Try again shortly.';
+  return res.status(502).json({ error: 'ai_error', message: msg });
+}
+
+// ── 1. Offer Comparison — free, anonymous, deterministic (no LLM) ────────────
+app.post('/api/tools/offer-comparison', toolsLimiter, (req, res) => {
+  try {
+    const offers = (req.body && req.body.offers) || [];
+    const result = TOOLS.scoreOffers(offers);
+    res.json(result);
+  } catch (err) {
+    if (err && err.code === 'need_two_offers') return res.status(400).json({ error: 'need_two_offers', message: 'Add at least two offers to compare.' });
+    console.error('[tools] offer-comparison error:', err && err.message);
+    res.status(500).json({ error: 'server_error', message: 'Could not compare those offers.' });
+  }
+});
+
+// ── 2. Job Description Decoder — 3/day free (sign-in required) ────────────────
+app.post('/api/tools/job-description-decode', toolsLimiter, async (req, res) => {
+  const gate = toolGate(req, res, TOOLS.LIMITS.jobDecode); if (!gate) return;
+  const jd = (req.body && req.body.jobText ? String(req.body.jobText) : '').trim();
+  if (jd.length < 40) return res.status(400).json({ error: 'too_short', message: 'Paste a full job posting to decode (at least a few sentences).' });
+  const lang = _reqLang(req);
+  try {
+    const p = TOOLS.buildJobDecodePrompt(jd, lang);
+    const value = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1400, validate: TOOLS.validateJobDecode });
+    if (!gate.pro) toolUsageRecord(gate.email, TOOLS.LIMITS.jobDecode.tool);
+    const used = gate.pro ? 0 : toolUsageCount(gate.email, TOOLS.LIMITS.jobDecode.tool, 'day');
+    res.json({ result: value, usage: { pro: gate.pro, used, limit: TOOLS.LIMITS.jobDecode.free } });
+  } catch (err) { toolLLMError(res, err); }
+});
+
+// ── 3. Ghosted Follow-Up Generator — 5/month free (sign-in required) ─────────
+app.post('/api/tools/follow-up-generate', toolsLimiter, async (req, res) => {
+  const gate = toolGate(req, res, TOOLS.LIMITS.followUp); if (!gate) return;
+  const b = req.body || {};
+  if (!String(b.company || '').trim() || !String(b.role || '').trim()) {
+    return res.status(400).json({ error: 'missing_fields', message: 'Company and role are required.' });
+  }
+  const lang = _reqLang(req);
+  try {
+    const p = TOOLS.buildFollowUpPrompt(b, lang);
+    const msg = await anthropic.messages.create({ model: 'claude-haiku-4-5', max_tokens: 700, system: p.system, messages: [{ role: 'user', content: p.user }] });
+    const email = (msg.content[0] && msg.content[0].text) || '';
+    if (!gate.pro) toolUsageRecord(gate.email, TOOLS.LIMITS.followUp.tool);
+    const used = gate.pro ? 0 : toolUsageCount(gate.email, TOOLS.LIMITS.followUp.tool, 'month');
+    res.json({ result: email, usage: { pro: gate.pro, used, limit: TOOLS.LIMITS.followUp.free } });
+  } catch (err) { toolLLMError(res, err); }
+});
+
+// ── 4. AI Mock Interview — 1/month free (questions), Sonnet feedback ─────────
+// action:'questions' generates 5 questions and consumes the monthly quota;
+// action:'feedback' scores submitted answers (Sonnet) and does not re-charge —
+// it's the second half of the same practice session.
+app.post('/api/tools/mock-interview', toolsLimiter, async (req, res) => {
+  const b = req.body || {};
+  const action = b.action === 'feedback' ? 'feedback' : 'questions';
+  const lang = _reqLang(req);
+  if (action === 'questions') {
+    const gate = toolGate(req, res, TOOLS.LIMITS.mockInterview); if (!gate) return;
+    if (!String(b.role || '').trim()) return res.status(400).json({ error: 'missing_role', message: 'Enter the role you want to practice for.' });
+    try {
+      const p = TOOLS.buildMockQuestionsPrompt(b, lang);
+      const value = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1200, validate: TOOLS.validateMockQuestions });
+      if (!gate.pro) toolUsageRecord(gate.email, TOOLS.LIMITS.mockInterview.tool);
+      const used = gate.pro ? 0 : toolUsageCount(gate.email, TOOLS.LIMITS.mockInterview.tool, 'month');
+      res.json({ result: value, usage: { pro: gate.pro, used, limit: TOOLS.LIMITS.mockInterview.free } });
+    } catch (err) { toolLLMError(res, err); }
+  } else {
+    // Feedback needs only sign-in (the quota was spent generating the questions).
+    const gate = toolGate(req, res, null); if (!gate) return;
+    if (!Array.isArray(b.answers) || !b.answers.length) return res.status(400).json({ error: 'no_answers', message: 'Answer at least one question first.' });
+    try {
+      const p = TOOLS.buildMockFeedbackPrompt(b, lang);
+      const value = await callClaudeJSON({ model: 'claude-sonnet-4-6', system: p.system, user: p.user, max_tokens: 1600, validate: TOOLS.validateMockFeedback });
+      res.json({ result: value });
+    } catch (err) { toolLLMError(res, err); }
+  }
+});
+
+// ── 5. Salary Negotiation Script — 1/month free trial → Pro (Sonnet) ─────────
+async function salaryMarketHint(role, location) {
+  if (!process.env.RAPIDAPI_KEY) return null;
+  try {
+    const json = await jsearchFetch({ query: `${role} ${location}`.trim(), page: 1 });
+    const data = Array.isArray(json && json.data) ? json.data : [];
+    const lows = [], highs = [];
+    for (const j of data) {
+      if (j.job_min_salary) lows.push(Number(j.job_min_salary));
+      if (j.job_max_salary) highs.push(Number(j.job_max_salary));
+    }
+    if (!lows.length && !highs.length) return null;
+    const avg = a => (a.length ? Math.round(a.reduce((s, x) => s + x, 0) / a.length) : null);
+    return `Live listings for "${role}" suggest roughly $${avg(lows) || '?'}–$${avg(highs) || '?'} base across ${data.length} recent postings.`;
+  } catch (e) { return null; }
+}
+app.post('/api/tools/salary-negotiation', toolsLimiter, async (req, res) => {
+  const gate = toolGate(req, res, TOOLS.LIMITS.salaryNegotiation); if (!gate) return;
+  const b = req.body || {};
+  if (!String(b.role || '').trim()) return res.status(400).json({ error: 'missing_role', message: 'Enter the role you\'re negotiating for.' });
+  const lang = _reqLang(req);
+  try {
+    const hint = await salaryMarketHint(String(b.role || ''), String(b.location || ''));
+    const p = TOOLS.buildSalaryPrompt(b, hint, lang);
+    const value = await callClaudeJSON({ model: 'claude-sonnet-4-6', system: p.system, user: p.user, max_tokens: 1600, validate: TOOLS.validateSalary });
+    if (!gate.pro) toolUsageRecord(gate.email, TOOLS.LIMITS.salaryNegotiation.tool);
+    const used = gate.pro ? 0 : toolUsageCount(gate.email, TOOLS.LIMITS.salaryNegotiation.tool, 'month');
+    res.json({ result: value, liveData: !!hint, usage: { pro: gate.pro, used, limit: TOOLS.LIMITS.salaryNegotiation.free } });
+  } catch (err) { toolLLMError(res, err); }
+});
+
+// ── 6. Resume A/B Test Tracker — save/list/update (free = 2 versions) ─────────
+app.get('/api/tools/resume-versions', toolsLimiter, (req, res) => {
+  const gate = toolGate(req, res, null); if (!gate) return;
+  const rows = db.prepare('SELECT id, version_name, template_used, jobs_applied_with, responses_received, created_at FROM resume_versions WHERE user_email = ? ORDER BY created_at DESC')
+    .all(gate.email.toLowerCase());
+  const summary = TOOLS.summarizeVersions(rows);
+  res.json({ pro: gate.pro, limit: TOOLS.LIMITS.resumeVersions.free, versions: summary.versions, leaderId: summary.leaderId });
+});
+app.post('/api/tools/resume-version', toolsLimiter, (req, res) => {
+  const gate = toolGate(req, res, null); if (!gate) return;
+  const b = req.body || {};
+  const name = String(b.versionName || '').trim().slice(0, 120);
+  if (!name) return res.status(400).json({ error: 'missing_name', message: 'Give this version a name.' });
+  const email = gate.email.toLowerCase();
+  const count = db.prepare('SELECT COUNT(*) AS c FROM resume_versions WHERE user_email = ?').get(email).c;
+  if (!gate.pro && count >= TOOLS.LIMITS.resumeVersions.free) {
+    return res.status(402).json({ error: 'quota', message: `Free plan saves ${TOOLS.LIMITS.resumeVersions.free} resume versions. Upgrade to Pro to track unlimited versions.` });
+  }
+  const info = db.prepare('INSERT INTO resume_versions (user_email, version_name, resume_text, template_used, jobs_applied_with, responses_received) VALUES (?,?,?,?,?,?)')
+    .run(email, name, String(b.resumeText || '').slice(0, 40000), String(b.templateUsed || '').slice(0, 80),
+      Math.max(0, parseInt(b.jobsAppliedWith, 10) || 0), Math.max(0, parseInt(b.responsesReceived, 10) || 0));
+  res.json({ ok: true, id: info.lastInsertRowid });
+});
+// Update stats (applications sent / responses) or delete a version.
+app.patch('/api/tools/resume-version/:id', toolsLimiter, (req, res) => {
+  const gate = toolGate(req, res, null); if (!gate) return;
+  const id = parseInt(req.params.id, 10);
+  const row = db.prepare('SELECT id FROM resume_versions WHERE id = ? AND user_email = ?').get(id, gate.email.toLowerCase());
+  if (!row) return res.status(404).json({ error: 'not_found', message: 'Version not found.' });
+  const b = req.body || {};
+  db.prepare('UPDATE resume_versions SET jobs_applied_with = ?, responses_received = ? WHERE id = ?')
+    .run(Math.max(0, parseInt(b.jobsAppliedWith, 10) || 0), Math.max(0, parseInt(b.responsesReceived, 10) || 0), id);
+  res.json({ ok: true });
+});
+app.delete('/api/tools/resume-version/:id', toolsLimiter, (req, res) => {
+  const gate = toolGate(req, res, null); if (!gate) return;
+  const id = parseInt(req.params.id, 10);
+  const info = db.prepare('DELETE FROM resume_versions WHERE id = ? AND user_email = ?').run(id, gate.email.toLowerCase());
+  if (!info.changes) return res.status(404).json({ error: 'not_found', message: 'Version not found.' });
+  res.json({ ok: true });
+});
+
+// ── 7. Weekly Job Search Report — Pro-only opt-in ────────────────────────────
+app.get('/api/tools/weekly-report', toolsLimiter, (req, res) => {
+  const gate = toolGate(req, res, null); if (!gate) return;
+  const row = db.prepare('SELECT is_enabled, last_sent_at FROM weekly_report_subscriptions WHERE user_email = ?').get(gate.email.toLowerCase());
+  res.json({ pro: gate.pro, enabled: !!(row && row.is_enabled), lastSentAt: (row && row.last_sent_at) || null });
+});
+app.post('/api/tools/weekly-report/toggle', toolsLimiter, (req, res) => {
+  const gate = toolGate(req, res, null); if (!gate) return;
+  if (!gate.pro) return res.status(402).json({ error: 'pro_only', message: 'The Weekly Job Search Report is a Pro feature. Upgrade to $19.99/mo to switch it on.' });
+  const enabled = (req.body && req.body.enabled) ? 1 : 0;
+  db.prepare(`INSERT INTO weekly_report_subscriptions (user_email, is_enabled) VALUES (?, ?)
+    ON CONFLICT(user_email) DO UPDATE SET is_enabled = excluded.is_enabled`).run(gate.email.toLowerCase(), enabled);
+  res.json({ ok: true, enabled: !!enabled });
 });
 
 // Branded 404 for anything that fell through every route above (replaces

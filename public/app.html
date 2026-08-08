@@ -958,6 +958,20 @@
       <div style="text-align:center;margin-top:20px;"><button class="btn btn-primary" onclick="startPro()">Go Pro — $19.99/mo →</button></div>
     </div>
   </div>
+
+  <!-- New Tools modal — lists all 7 job-search tools with free/Pro status -->
+  <div class="auth-overlay" id="newToolsOverlay" style="display:none;" onclick="if(event.target===this)this.style.display='none';">
+    <div style="position:relative;background:#FAF7F0;border:1px solid #E7DFD1;border-radius:20px;max-width:720px;width:100%;max-height:88vh;overflow-y:auto;padding:26px;box-shadow:0 24px 64px rgba(25,21,18,0.28);">
+      <button onclick="document.getElementById('newToolsOverlay').style.display='none';" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#918A7E;font-size:24px;cursor:pointer;line-height:1;">&times;</button>
+      <div style="text-align:center;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:900;letter-spacing:1px;color:#1F5C3D;text-transform:uppercase;">🧰 New Tools</div>
+        <h2 style="font-size:22px;font-weight:900;margin:6px 0 4px;color:#191512;">7 new tools to win your job search</h2>
+        <p id="newToolsProNote" style="font-size:13px;color:#57514A;margin:0;"></p>
+      </div>
+      <div id="newToolsList" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:16px;"></div>
+    </div>
+  </div>
+
   <style>
     #whatsNewOverlay .wn-card{background:#ffffff;border:1px solid #E7DFD1;border-radius:14px;padding:16px;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(25,21,18,.05);}
     #whatsNewOverlay .wn-badge{align-self:flex-start;font-size:9px;font-weight:900;letter-spacing:.5px;background:linear-gradient(135deg,#2E7D53,#1F5C3D);color:#fff;border-radius:999px;padding:3px 9px;margin-bottom:10px;text-transform:uppercase;}
@@ -1034,6 +1048,11 @@
           <span class="sidebar-icon">🗂️</span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_backoffice">Back Office</span>
           <span style="background:#B4832A;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
+        </button>
+        <button class="sidebar-btn" onclick="openNewToolsModal()" id="tab-newtools" data-label="New Tools" title="7 new job-search tools">
+          <span class="sidebar-icon">🧰</span>
+          <span style="flex:1;text-align:left;" data-i18n="sidebar_newtools">New Tools</span>
+          <span style="background:#1F5C3D;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">NEW</span>
         </button>
       </div>
       <div class="sidebar-section">
@@ -1296,6 +1315,11 @@
           <div class="download-row" id="downloadRow">
             <!-- Buttons rendered by renderDownloadButtons() after output is ready -->
           </div>
+          <a href="/tools/resume-ab-tracker" id="abTrackerBanner" style="display:none;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(31,92,61,0.08),rgba(46,125,83,0.05));border:1px solid rgba(31,92,61,0.25);border-radius:12px;padding:14px 18px;margin-top:16px;text-decoration:none;">
+            <span style="font-size:22px;">🧪</span>
+            <span style="flex:1;font-size:14px;color:#191512;">Compare this tailored version with your original using the <strong>Resume A/B Tracker</strong> — see which one gets responses.</span>
+            <span style="font-size:13px;font-weight:800;color:#1F5C3D;white-space:nowrap;">Track it →</span>
+          </a>
         </div>
 
         <div class="upsell" id="upsell" style="display:none;">
@@ -2403,7 +2427,7 @@
         nav_go_pro: 'Go Pro — $19.99/mo', nav_logout: 'Log Out',
         sidebar_jobsearch: 'Job Search', sidebar_tailor: 'Resume Tailor', sidebar_linkedin: 'LinkedIn Optimizer',
         sidebar_jobtracker: 'Job Tracker',
-        sidebar_sharelink: 'Resume Link', sidebar_website: 'Personal Website', sidebar_backoffice: 'Back Office',
+        sidebar_sharelink: 'Resume Link', sidebar_website: 'Personal Website', sidebar_backoffice: 'Back Office', sidebar_newtools: 'New Tools',
         bo_title: 'Back Office', bo_subtitle: 'Manage everything in one place — your saved resumes, cover letters, videos and personal website.',
         bo_resumes: 'Resumes', bo_covers: 'Cover letters', bo_videos: 'Resume videos', bo_website: 'Personal website',
         bo_empty: 'Nothing here yet.', bo_novideos: 'No saved videos yet — make one in the Resume Video tab.', bo_nosite: 'No website yet — build one in the Website Creator.',
@@ -2610,7 +2634,7 @@
         nav_go_pro: '升级专业版 — ¥19.99/月', nav_logout: '退出登录',
         sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
         sidebar_jobtracker: '求职跟踪',
-        sidebar_sharelink: '简历链接', sidebar_website: '个人网站', sidebar_backoffice: '后台管理',
+        sidebar_sharelink: '简历链接', sidebar_website: '个人网站', sidebar_backoffice: '后台管理', sidebar_newtools: '新工具',
         bo_title: '后台管理', bo_subtitle: '一站式管理——你保存的简历、求职信、视频和个人网站。',
         bo_resumes: '简历', bo_covers: '求职信', bo_videos: '简历视频', bo_website: '个人网站',
         bo_empty: '暂无内容。', bo_novideos: '暂无保存的视频——在简历视频标签页制作一个。', bo_nosite: '暂无网站——在网站创建器中制作一个。',
@@ -3342,6 +3366,34 @@
       document.getElementById('whatsNewOverlay').style.display = 'flex';
     }
 
+    // The 7 new job-search tools, listed with their free/Pro status. Pro members
+    // see "Included in your Pro plan" instead of a limit.
+    var NEW_TOOLS = [
+      { icon:'⚖️', name:'Offer Comparison Calculator', desc:'Compare job offers side by side.', url:'/tools/offer-comparison', free:'Free' },
+      { icon:'🔎', name:'Job Description Decoder', desc:'Spot red flags & realistic salary ranges.', url:'/tools/job-description-decoder', free:'3 / day free' },
+      { icon:'✉️', name:'Follow-Up Email Generator', desc:'Perfect follow-up when you\'re ghosted.', url:'/tools/follow-up-generator', free:'5 / month free' },
+      { icon:'🎤', name:'AI Mock Interview', desc:'Practice & get instant scored feedback.', url:'/tools/mock-interview', free:'1 / month free' },
+      { icon:'💬', name:'Salary Negotiation Script', desc:'Counter-offer script with market data.', url:'/tools/salary-negotiation', free:'1 / month free, then Pro', pro:true },
+      { icon:'🧪', name:'Resume A/B Test Tracker', desc:'Track which resume gets responses.', url:'/tools/resume-ab-tracker', free:'2 versions free', pro:true },
+      { icon:'📅', name:'Weekly Job Search Report', desc:'Monday email with stats & action items.', url:'/tools/weekly-report', free:'Pro', pro:true },
+    ];
+    function openNewToolsModal() {
+      var pro = isSubscriberFlag;
+      document.getElementById('newToolsProNote').textContent = pro
+        ? '✓ All included in your Pro plan.'
+        : 'Most are free — the rest bundle into one $19.99/mo Pro plan.';
+      document.getElementById('newToolsList').innerHTML = NEW_TOOLS.map(function (t) {
+        var status = pro ? '✓ Included in your Pro plan' : t.free;
+        var color = pro ? '#1F5C3D' : (t.pro ? '#B4832A' : '#16a34a');
+        return '<a href="' + t.url + '" style="display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #E7DFD1;border-radius:12px;padding:14px;text-decoration:none;transition:border-color .15s;" onmouseover="this.style.borderColor=\'rgba(31,92,61,0.5)\'" onmouseout="this.style.borderColor=\'#E7DFD1\'">'
+          + '<span style="font-size:24px;flex-shrink:0;">' + t.icon + '</span>'
+          + '<span style="flex:1;"><span style="display:block;font-size:15px;font-weight:800;color:#191512;">' + t.name + '</span>'
+          + '<span style="display:block;font-size:12.5px;color:#57514A;margin:2px 0 6px;">' + t.desc + '</span>'
+          + '<span style="font-size:11px;font-weight:800;color:' + color + ';">' + status + '</span></span></a>';
+      }).join('');
+      document.getElementById('newToolsOverlay').style.display = 'flex';
+    }
+
     function hideAuthModal() {
       document.getElementById('authOverlay').style.display = 'none';
       isLoggedIn = true;
@@ -3895,6 +3947,9 @@
         document.getElementById('outputBox').removeAttribute('contenteditable');
         document.getElementById('outputWrap').style.display = 'block';
         renderDownloadButtons();
+        // Nudge toward A/B testing this version (resume mode only).
+        var abBanner = document.getElementById('abTrackerBanner');
+        if (abBanner) abBanner.style.display = (selectedMode !== 'cover_letter') ? 'flex' : 'none';
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
         setTimeout(() => openPreview(), 800);
 

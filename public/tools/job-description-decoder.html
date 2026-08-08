@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Job Description Decoder — Spot Red Flags & Hidden Requirements | ResumeTailored AI</title>
+<meta name="description" content="Paste any job posting and get an honest read: red flags, unstated must-have requirements, and a realistic salary range. 3 free decodes a day."/>
+<link rel="canonical" href="https://resumetailored.com/tools/job-description-decoder"/>
+<meta property="og:title" content="Job Description Decoder"/>
+<meta property="og:description" content="Spot red flags, hidden requirements, and realistic salary ranges in any job posting."/>
+<meta property="og:url" content="https://resumetailored.com/tools/job-description-decoder"/>
+<link rel="icon" href="/favicon.png" type="image/png"/>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/tools-hub.css"/>
+</head>
+<body>
+<nav class="th-nav"><div class="th-nav-inner">
+  <a href="/" class="th-logo">ResumeTailored <span class="b">AI</span></a>
+  <div class="th-nav-links"><a href="/score" data-i18n="nav_free">Free Tools</a><a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a><a href="/dashboard" data-i18n="nav_cta">Open App →</a></div>
+  <button class="th-lang" id="thLangBtn" onclick="toggleLang()">中文</button>
+</div></nav>
+
+<main class="th-wrap">
+  <a href="/score" class="th-back" data-i18n="back">← Back to Free Tools</a>
+  <p class="th-eyebrow" data-i18n="eyebrow">★ Free · 3 decodes a day</p>
+  <h1 class="th-title" data-i18n="title">Job Description Decoder</h1>
+  <p class="th-sub" data-i18n="sub">Paste any job posting — spot red flags, hidden requirements, and realistic salary ranges before you apply.</p>
+
+  <div class="th-card">
+    <label class="th-label" data-i18n="label">Job posting</label>
+    <textarea class="th-textarea" id="jd" data-i18n-ph="ph" placeholder="Paste the full job description here…"></textarea>
+    <button class="th-btn th-btn--full" id="go" onclick="decode()" data-i18n="go">Decode this posting →</button>
+    <div class="th-error" id="err"></div>
+  </div>
+
+  <div class="th-loading" id="loading"><div class="th-spinner"></div><p data-i18n="loading">Reading between the lines…</p></div>
+
+  <div class="th-result" id="result">
+    <div class="th-result-card">
+      <h3 style="font-size:16px;margin-bottom:8px;" data-i18n="r_summary">What this role really is</h3>
+      <p id="r-summary" style="color:var(--muted);font-size:15px;"></p>
+      <p id="r-seniority" style="margin-top:10px;"></p>
+    </div>
+    <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:10px;color:var(--danger);" data-i18n="r_red">⚑ Red flags</h3><ul class="th-flaglist bad" id="r-red"></ul></div>
+    <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:10px;color:var(--forest);" data-i18n="r_green">✓ Green flags</h3><ul class="th-flaglist good" id="r-green"></ul></div>
+    <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:10px;" data-i18n="r_hidden">○ Hidden requirements</h3><ul class="th-flaglist hidden" id="r-hidden"></ul></div>
+    <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:8px;" data-i18n="r_salary">Realistic salary range</h3><p id="r-salary" style="font-size:20px;font-weight:800;color:var(--forest);"></p><p id="r-salary-note" style="color:var(--faint);font-size:13px;margin-top:4px;"></p></div>
+    <p class="th-usage" id="usage"></p>
+  </div>
+
+  <div class="th-promo">
+    <h3 data-i18n="promo_h">Want unlimited decodes?</h3>
+    <p data-i18n="promo_p">Upgrade to Pro for unlimited access to all tools — no daily caps.</p>
+    <button class="th-btn" onclick="thStartPro()">Upgrade — $19.99/mo</button>
+  </div>
+</main>
+
+<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box">
+  <div class="badge">✦</div><h3 data-i18n="up_h">You've used your free decodes</h3>
+  <p id="thUpgradeMsg">You've used your free 3 for today. Upgrade to Pro for unlimited access.</p>
+  <button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.99/mo</button>
+  <button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe tomorrow</button>
+</div></div>
+
+<footer class="th-foot"><a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a><p style="margin-top:10px;">© ResumeTailored AI</p></footer>
+
+<script src="/tools-hub.js"></script>
+<script>
+window.TH_I18N = {
+  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools',
+    eyebrow:'★ Free · 3 decodes a day', title:'Job Description Decoder',
+    sub:'Paste any job posting — spot red flags, hidden requirements, and realistic salary ranges before you apply.',
+    label:'Job posting', ph:'Paste the full job description here…', go:'Decode this posting →', loading:'Reading between the lines…',
+    r_summary:'What this role really is', r_red:'⚑ Red flags', r_green:'✓ Green flags', r_hidden:'○ Hidden requirements', r_salary:'Realistic salary range',
+    promo_h:'Want unlimited decodes?', promo_p:'Upgrade to Pro for unlimited access to all tools — no daily caps.', up_h:"You've used your free decodes", up_x:'Maybe tomorrow', copied:'Copied ✓' },
+  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回免费工具',
+    eyebrow:'★ 免费 · 每天 3 次', title:'职位描述解码器',
+    sub:'粘贴任何招聘启事 — 在投递前发现危险信号、隐藏要求和真实薪资范围。',
+    label:'职位描述', ph:'在此粘贴完整的职位描述…', go:'解码这份职位 →', loading:'正在读懂字里行间…',
+    r_summary:'这个职位的真实情况', r_red:'⚑ 危险信号', r_green:'✓ 积极信号', r_hidden:'○ 隐藏要求', r_salary:'真实薪资范围',
+    promo_h:'想要无限次解码？', promo_p:'升级专业版，无限使用所有工具 — 没有每日上限。', up_h:'今天的免费次数已用完', up_x:'明天再说', copied:'已复制 ✓' }
+};
+function li(items){ return (items||[]).map(function(x){return '<li>'+x+'</li>';}).join('') || '<li style="color:var(--faint)">—</li>'; }
+async function decode(){
+  var jd=document.getElementById('jd').value.trim(); var err=document.getElementById('err'); err.classList.remove('show');
+  if(jd.length<40){ err.textContent=thT('short','Paste a fuller job posting (a few sentences).'); err.classList.add('show'); return; }
+  var btn=document.getElementById('go'); btn.disabled=true;
+  document.getElementById('result').classList.remove('show'); document.getElementById('loading').classList.add('show');
+  var res=await thApi('POST','/api/tools/job-description-decode',{jobText:jd});
+  document.getElementById('loading').classList.remove('show'); btn.disabled=false;
+  if(thHandleGate(res)) return;
+  if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Something went wrong.'; err.classList.add('show'); return; }
+  var d=res.data.result, zh=(localStorage.getItem('rt_lang')==='zh');
+  document.getElementById('r-summary').textContent=d.summary;
+  document.getElementById('r-seniority').innerHTML='<span class="th-badge" style="margin:0;">'+(zh?'级别: ':'Seniority: ')+d.seniority+'</span>';
+  document.getElementById('r-red').innerHTML=li(d.redFlags);
+  document.getElementById('r-green').innerHTML=li(d.greenFlags);
+  document.getElementById('r-hidden').innerHTML=li(d.hiddenRequirements);
+  var sr=d.salaryRange||{}; var range=(sr.low||sr.high)?('$'+(sr.low||'?').toLocaleString()+' – $'+(sr.high||'?').toLocaleString()+' '+(sr.currency||'')):(zh?'未提供':'Not stated');
+  document.getElementById('r-salary').textContent=range;
+  document.getElementById('r-salary-note').textContent=sr.note||'';
+  var u=res.data.usage||{}; document.getElementById('usage').textContent = u.pro ? (zh?'专业版 · 无限次':'Pro · unlimited') : (zh?('今天已用 '+u.used+'/'+u.limit):('Used '+u.used+' of '+u.limit+' free today'));
+  document.getElementById('result').classList.add('show');
+}
+</script>
+</body>
+</html>

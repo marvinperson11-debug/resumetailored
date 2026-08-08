@@ -256,11 +256,20 @@
     var days = applied ? daysBetween(applied.getTime(), Date.now()) : 0;
     var c = STATUS_COLOR[a.status] || STATUS_COLOR['Applied'];
     var overdue = a.followUpDate && a.followUpDate <= todayISO() && a.status !== 'Rejected' && a.status !== 'Withdrawn';
+    // Stale-application nudge: once an "Applied" card sits 7+ days, offer a
+    // one-click jump to the Follow-Up Email Generator, prefilled from the card.
+    var followBtn = '';
+    if (a.status === 'Applied' && days >= 7) {
+      var fq = 'company=' + encodeURIComponent(a.company || '') + '&role=' + encodeURIComponent(a.jobTitle || '') + '&days=' + days;
+      followBtn = '<a href="/tools/follow-up-generator?' + fq + '" onclick="event.stopPropagation();" ' +
+        'style="display:block;margin-top:9px;text-align:center;background:#1F5C3D;color:#fff;font-size:12px;font-weight:800;padding:7px;border-radius:8px;text-decoration:none;">✉️ Generate Follow-Up</a>';
+    }
     return '<div class="jt-card" draggable="true" data-id="' + a.id + '">' +
       '<div class="co">' + esc(a.company) + '</div>' +
       '<div class="ro">' + esc(a.jobTitle) + (a.location ? ' · ' + esc(a.location) : '') + '</div>' +
       '<div class="me"><span class="jt-badge" style="background:' + c.bg + ';color:' + c.fg + ';">' + esc(a.status) + '</span>' +
       '<span>' + (days === 0 ? 'today' : days + 'd ago') + (overdue ? ' · <span class="jt-due">follow up</span>' : '') + '</span></div>' +
+      followBtn +
       '</div>';
   };
 

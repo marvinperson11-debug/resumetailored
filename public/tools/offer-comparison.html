@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Offer Comparison Calculator — Compare Job Offers Side by Side | ResumeTailored AI</title>
+<meta name="description" content="Free tool: compare multiple job offers side by side — salary, bonus, equity, benefits, commute, PTO and remote — and get a clear score for each. No account needed."/>
+<link rel="canonical" href="https://resumetailored.com/tools/offer-comparison"/>
+<meta property="og:title" content="Offer Comparison Calculator — Free"/>
+<meta property="og:description" content="Compare job offers side by side and see which one really wins."/>
+<meta property="og:url" content="https://resumetailored.com/tools/offer-comparison"/>
+<meta property="og:type" content="website"/>
+<link rel="icon" href="/favicon.png" type="image/png"/>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/tools-hub.css"/>
+</head>
+<body>
+<nav class="th-nav"><div class="th-nav-inner">
+  <a href="/" class="th-logo">ResumeTailored <span class="b">AI</span></a>
+  <div class="th-nav-links">
+    <a href="/score" data-i18n="nav_free">Free Tools</a>
+    <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a>
+    <a href="/dashboard" data-i18n="nav_cta">Open App →</a>
+  </div>
+  <button class="th-lang" id="thLangBtn" onclick="toggleLang()">中文</button>
+</div></nav>
+
+<main class="th-wrap">
+  <a href="/score" class="th-back" data-i18n="back">← Back to Free Tools</a>
+  <p class="th-eyebrow" data-i18n="eyebrow">★ Free · No account needed</p>
+  <h1 class="th-title" data-i18n="title">Offer Comparison Calculator</h1>
+  <p class="th-sub" data-i18n="sub">Compare multiple job offers side by side — salary, benefits, equity, commute — and see which one really wins.</p>
+
+  <div class="th-card">
+    <div id="offers"></div>
+    <button class="th-btn th-btn--ghost th-btn--sm" onclick="addOffer()" data-i18n="add">+ Add another offer</button>
+    <button class="th-btn th-btn--full" onclick="compare()" data-i18n="compare">Compare offers →</button>
+    <div class="th-error" id="err"></div>
+  </div>
+
+  <div class="th-result" id="result">
+    <h2 style="font-size:20px;margin-bottom:6px;" data-i18n="results">Results</h2>
+    <p class="th-usage" id="winner"></p>
+    <div id="cards"></div>
+  </div>
+
+  <div class="th-promo">
+    <h3 data-i18n="promo_h">Landed the offer? Now negotiate it.</h3>
+    <p data-i18n="promo_p">Get a custom counter-offer script backed by market data with the Salary Negotiation tool.</p>
+    <a class="th-btn" href="/tools/salary-negotiation" data-i18n="promo_btn">Salary Negotiation Script →</a>
+  </div>
+</main>
+
+<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box">
+  <div class="badge">✦</div><h3 data-i18n="up_h">Upgrade to Pro</h3>
+  <p id="thUpgradeMsg" data-i18n="up_p">Unlock unlimited access to every tool.</p>
+  <button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.99/mo</button>
+  <button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button>
+</div></div>
+
+<footer class="th-foot">
+  <a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a>
+  <p style="margin-top:10px;">© ResumeTailored AI</p>
+</footer>
+
+<script src="/tools-hub.js"></script>
+<script>
+window.TH_I18N = {
+  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools',
+    eyebrow:'★ Free · No account needed', title:'Offer Comparison Calculator',
+    sub:'Compare multiple job offers side by side — salary, benefits, equity, commute — and see which one really wins.',
+    add:'+ Add another offer', compare:'Compare offers →', results:'Results',
+    promo_h:'Landed the offer? Now negotiate it.', promo_p:'Get a custom counter-offer script backed by market data with the Salary Negotiation tool.',
+    promo_btn:'Salary Negotiation Script →', up_h:'Upgrade to Pro', up_p:'Unlock unlimited access to every tool.', up_x:'Maybe later', copied:'Copied ✓' },
+  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回免费工具',
+    eyebrow:'★ 免费 · 无需注册', title:'Offer 对比计算器',
+    sub:'并排比较多个工作 Offer — 薪资、福利、股权、通勤 — 看看哪个真正胜出。',
+    add:'+ 添加一个 Offer', compare:'比较 Offer →', results:'结果',
+    promo_h:'拿到 Offer 了？现在去谈薪。', promo_p:'用薪资谈判工具获取基于市场数据的定制还价脚本。',
+    promo_btn:'薪资谈判脚本 →', up_h:'升级到专业版', up_p:'解锁所有工具的无限使用。', up_x:'以后再说', copied:'已复制 ✓' }
+};
+var LABELS = { label:'Offer name', baseSalary:'Base salary ($)', bonus:'Annual bonus ($)', equityPerYear:'Equity / yr ($)', benefitsValue:'Benefits value ($)', commuteMinutes:'Commute (min)', ptoDays:'PTO (days)' };
+var LABELS_ZH = { label:'Offer 名称', baseSalary:'基本年薪 ($)', bonus:'年度奖金 ($)', equityPerYear:'年股权 ($)', benefitsValue:'福利价值 ($)', commuteMinutes:'通勤 (分钟)', ptoDays:'带薪假 (天)' };
+var offerCount = 0;
+function offerBlock(i){
+  var zh = (localStorage.getItem('rt_lang')==='zh'); var L = zh?LABELS_ZH:LABELS;
+  var h = '<div class="th-card" style="margin-top:14px;padding:18px;border-style:dashed;" data-offer>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">'
+    + '<strong style="font-size:14px;">'+(zh?'Offer ':'Offer ')+(i+1)+'</strong>'
+    + '<button class="th-btn th-btn--ghost th-btn--sm" onclick="this.closest(\'[data-offer]\').remove()">✕</button></div>'
+    + '<label class="th-label">'+L.label+'</label><input class="th-input" data-f="label" value="Offer '+(i+1)+'"/>'
+    + '<div class="th-row"><div><label class="th-label">'+L.baseSalary+'</label><input class="th-input" type="number" data-f="baseSalary" placeholder="120000"/></div>'
+    + '<div><label class="th-label">'+L.bonus+'</label><input class="th-input" type="number" data-f="bonus" placeholder="10000"/></div></div>'
+    + '<div class="th-row"><div><label class="th-label">'+L.equityPerYear+'</label><input class="th-input" type="number" data-f="equityPerYear" placeholder="15000"/></div>'
+    + '<div><label class="th-label">'+L.benefitsValue+'</label><input class="th-input" type="number" data-f="benefitsValue" placeholder="8000"/></div></div>'
+    + '<div class="th-row"><div><label class="th-label">'+L.commuteMinutes+'</label><input class="th-input" type="number" data-f="commuteMinutes" placeholder="30"/></div>'
+    + '<div><label class="th-label">'+L.ptoDays+'</label><input class="th-input" type="number" data-f="ptoDays" placeholder="15"/></div></div>'
+    + '<label class="th-check" style="margin-top:12px;"><input type="checkbox" data-f="remote"/> '+(zh?'远程办公':'Remote work')+'</label></div>';
+  return h;
+}
+function addOffer(){ var d=document.createElement('div'); d.innerHTML=offerBlock(offerCount++); document.getElementById('offers').appendChild(d.firstChild); }
+function readOffers(){
+  return Array.prototype.map.call(document.querySelectorAll('[data-offer]'), function(el){
+    var o={}; el.querySelectorAll('[data-f]').forEach(function(inp){ var f=inp.getAttribute('data-f'); o[f]= inp.type==='checkbox'?inp.checked:(inp.type==='number'?parseFloat(inp.value||0):inp.value); }); return o; });
+}
+async function compare(){
+  var err=document.getElementById('err'); err.classList.remove('show');
+  var offers=readOffers();
+  var res=await thApi('POST','/api/tools/offer-comparison',{offers:offers});
+  if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Could not compare those offers.'; err.classList.add('show'); return; }
+  var zh=(localStorage.getItem('rt_lang')==='zh');
+  document.getElementById('winner').innerHTML = '🏆 <strong>'+res.data.bestLabel+'</strong> '+(zh?'得分最高 ':'scores highest ')+'('+res.data.bestScore+'/100)';
+  var cards=res.data.rows.slice().sort(function(a,b){return b.score-a.score;}).map(function(r){
+    var win=r.label===res.data.bestLabel;
+    return '<div class="th-result-card" style="'+(win?'border-color:var(--forest);border-width:2px;':'')+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;">'
+      +'<strong style="font-size:17px;">'+(win?'🏆 ':'')+r.label+'</strong>'
+      +'<span class="th-badge" style="margin:0;">'+r.score+'/100</span></div>'
+      +'<p style="color:var(--muted);font-size:14px;margin-top:8px;">'+(zh?'总薪酬':'Total comp')+': <strong>$'+Math.round(r.totalComp).toLocaleString()+'</strong> · '
+      +(zh?'通勤':'Commute')+' '+r.commuteMinutes+'m · PTO '+r.ptoDays+'d · '+(r.remote?(zh?'远程':'Remote'):(zh?'现场':'On-site'))+'</p></div>';
+  }).join('');
+  document.getElementById('cards').innerHTML=cards;
+  document.getElementById('result').classList.add('show');
+}
+addOffer(); addOffer();
+</script>
+</body>
+</html>

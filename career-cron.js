@@ -51,6 +51,23 @@ function scheduleDaily(hourUTC, minuteUTC, file) {
   return wait;
 }
 
+// ms from now until the next weekly occurrence of dayOfWeek (0=Sun..6=Sat) at HH:MM UTC.
+function msUntilWeekly(dayOfWeekUTC, hourUTC, minuteUTC, now) {
+  const d = now || new Date();
+  const next = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), hourUTC, minuteUTC, 0, 0));
+  let delta = (dayOfWeekUTC - next.getUTCDay() + 7) % 7;
+  next.setUTCDate(next.getUTCDate() + delta);
+  if (next.getTime() <= d.getTime()) next.setUTCDate(next.getUTCDate() + 7);
+  return next.getTime() - d.getTime();
+}
+
+function scheduleWeekly(dayOfWeekUTC, hourUTC, minuteUTC, file) {
+  const tick = () => { runScript(file); setTimeout(tick, 7 * 24 * 60 * 60 * 1000); };
+  const wait = msUntilWeekly(dayOfWeekUTC, hourUTC, minuteUTC);
+  setTimeout(tick, wait);
+  return wait;
+}
+
 // Runs once shortly after boot (so a fresh deploy doesn't wait a full
 // interval for its first data), then every intervalMs after that.
 function scheduleEvery(intervalMs, file, initialDelayMs) {
@@ -69,7 +86,10 @@ function startCareerCron(log) {
   scheduleDaily(digestH, 0, 'job-digest.js');
   const feedIntervalH = clampInterval(process.env.JOB_FEED_REFRESH_HOURS, 6);
   scheduleEvery(feedIntervalH * 60 * 60 * 1000, 'refresh-job-feed.js', 2 * 60 * 1000);
-  say(`[career-cron] enabled — warm @ ${pad(warmH)}:00 UTC (npm run career:warm), digest @ ${pad(digestH)}:00 UTC (npm run career:job-digest), job feed every ${feedIntervalH}h (npm run career:job-feed)`);
+  // Weekly Job Search Report — Pro-only Monday digest (day 1 UTC).
+  const weeklyH = clampHour(process.env.WEEKLY_REPORT_HOUR_UTC, 13);
+  scheduleWeekly(1, weeklyH, 0, 'weekly-report.js');
+  say(`[career-cron] enabled — warm @ ${pad(warmH)}:00 UTC (npm run career:warm), digest @ ${pad(digestH)}:00 UTC (npm run career:job-digest), job feed every ${feedIntervalH}h (npm run career:job-feed), weekly report Mon @ ${pad(weeklyH)}:00 UTC (npm run career:weekly-report)`);
   return true;
 }
 
@@ -77,4 +97,4 @@ function clampHour(v, dflt) { const n = parseInt(v, 10); return Number.isInteger
 function clampInterval(v, dflt) { const n = parseInt(v, 10); return Number.isInteger(n) && n >= 1 && n <= 24 ? n : dflt; }
 function pad(n) { return String(n).padStart(2, '0'); }
 
-module.exports = { startCareerCron, msUntil, scheduleDaily, scheduleEvery };
+module.exports = { startCareerCron, msUntil, msUntilWeekly, scheduleDaily, scheduleWeekly, scheduleEvery };

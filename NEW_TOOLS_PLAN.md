@@ -1,3 +1,7 @@
+> **✅ RESOLVED & BUILT (2026-08-08).** All six questions were answered: build all 7 now; Haiku for JD Decoder / Follow-Up / Mock questions, Sonnet for Salary + Mock feedback; sign-in required for gated tools (Offer Comparison anonymous); Weekly Report on the existing `career-cron.js`; AI-estimated ranges with a disclaimer (+ live JSearch when `RAPIDAPI_KEY` set); and explicit authorization to auto-merge to `main` on green. The full implementation is in this PR — see **`TASK_SUMMARY.md`** for what shipped. The questions below are the original checkpoint, kept for the record.
+
+---
+
 # 7 New Tools — Implementation Plan & Open Questions
 
 _Response to `7_tools_prompt.md`. I've read the spec and mapped it against the current codebase before starting the build. Below is what I found, the plan I'd execute, and a handful of decisions I need you to confirm before I write ~2,000 lines across `server.js`, seven new pages, and the hub/dashboard/tracker integrations._
