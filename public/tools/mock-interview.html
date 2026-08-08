@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI Mock Interview — Practice & Get Instant Feedback | ResumeTailored AI</title>
+<meta name="description" content="Practice with an AI interviewer tailored to your role and level, then get instant, scored feedback on every answer. 1 free mock interview a month."/>
+<link rel="canonical" href="https://resumetailored.com/tools/mock-interview"/>
+<meta property="og:title" content="AI Mock Interview"/>
+<meta property="og:description" content="Practice with an AI interviewer and get instant feedback on your answers."/>
+<meta property="og:url" content="https://resumetailored.com/tools/mock-interview"/>
+<link rel="icon" href="/favicon.png" type="image/png"/>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/tools-hub.css"/>
+</head>
+<body>
+<nav class="th-nav"><div class="th-nav-inner">
+  <a href="/" class="th-logo">ResumeTailored <span class="b">AI</span></a>
+  <div class="th-nav-links"><a href="/score" data-i18n="nav_free">Free Tools</a><a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a><a href="/dashboard" data-i18n="nav_cta">Open App →</a></div>
+  <button class="th-lang" id="thLangBtn" onclick="toggleLang()">中文</button>
+</div></nav>
+
+<main class="th-wrap">
+  <a href="/score" class="th-back" data-i18n="back">← Back to Free Tools</a>
+  <p class="th-eyebrow" data-i18n="eyebrow">★ Free · 1 mock interview a month</p>
+  <h1 class="th-title" data-i18n="title">AI Mock Interview</h1>
+  <p class="th-sub" data-i18n="sub">Practice with an AI interviewer and get instant feedback on your answers.</p>
+
+  <div class="th-card" id="setup">
+    <div class="th-row">
+      <div><label class="th-label" data-i18n="l_role">Role</label><input class="th-input" id="role" placeholder="Software Engineer"/></div>
+      <div><label class="th-label" data-i18n="l_exp">Experience level</label><select class="th-input" id="exp">
+        <option value="entry" data-i18n="e_entry">Entry-level</option>
+        <option value="mid" selected data-i18n="e_mid">Mid-level</option>
+        <option value="senior" data-i18n="e_senior">Senior</option>
+        <option value="lead" data-i18n="e_lead">Lead</option>
+      </select></div>
+    </div>
+    <button class="th-btn th-btn--full" id="startBtn" onclick="start()" data-i18n="start">Start mock interview →</button>
+    <div class="th-error" id="err"></div>
+  </div>
+
+  <div class="th-loading" id="loading"><div class="th-spinner"></div><p id="loadingTxt" data-i18n="loading">Preparing your interview…</p></div>
+
+  <div id="interview" style="display:none;margin-top:24px;"></div>
+  <div style="text-align:center;"><button class="th-btn th-btn--full" id="submitBtn" style="display:none;" onclick="submit()" data-i18n="submit">Get my feedback →</button></div>
+
+  <div class="th-result" id="result">
+    <div class="th-result-card" style="text-align:center;">
+      <div class="th-stat" style="display:inline-block;min-width:140px;"><div class="n" id="overall">—</div><div class="l" data-i18n="overall">Overall score</div></div>
+      <p id="summary" style="color:var(--muted);font-size:15px;margin-top:14px;"></p>
+    </div>
+    <div id="feedback"></div>
+  </div>
+
+  <div class="th-promo"><h3 data-i18n="promo_h">Want unlimited practice?</h3><p data-i18n="promo_p">Upgrade to Pro for unlimited mock interviews and every other tool.</p><button class="th-btn" onclick="thStartPro()">Upgrade — $19.99/mo</button></div>
+</main>
+
+<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">You've used your free interview</h3><p id="thUpgradeMsg">You've used your free mock interview this month. Upgrade to Pro for unlimited access.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.99/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
+
+<footer class="th-foot"><a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a><p style="margin-top:10px;">© ResumeTailored AI</p></footer>
+
+<script src="/tools-hub.js"></script>
+<script>
+window.TH_I18N = {
+  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools',
+    eyebrow:'★ Free · 1 mock interview a month', title:'AI Mock Interview', sub:'Practice with an AI interviewer and get instant feedback on your answers.',
+    l_role:'Role', l_exp:'Experience level', e_entry:'Entry-level', e_mid:'Mid-level', e_senior:'Senior', e_lead:'Lead',
+    start:'Start mock interview →', loading:'Preparing your interview…', grading:'Scoring your answers…', submit:'Get my feedback →', overall:'Overall score',
+    promo_h:'Want unlimited practice?', promo_p:'Upgrade to Pro for unlimited mock interviews and every other tool.', up_h:"You've used your free interview", up_x:'Maybe later', answer_ph:'Type your answer…', copied:'Copied ✓' },
+  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回免费工具',
+    eyebrow:'★ 免费 · 每月 1 次模拟面试', title:'AI 模拟面试', sub:'与 AI 面试官练习，并即时获得答案反馈。',
+    l_role:'职位', l_exp:'经验水平', e_entry:'入门级', e_mid:'中级', e_senior:'高级', e_lead:'负责人',
+    start:'开始模拟面试 →', loading:'正在准备您的面试…', grading:'正在评分…', submit:'获取我的反馈 →', overall:'总分',
+    promo_h:'想要无限练习？', promo_p:'升级专业版，无限模拟面试和所有其他工具。', up_h:'本月免费面试已用完', up_x:'以后再说', answer_ph:'输入你的答案…', copied:'已复制 ✓' }
+};
+var QUESTIONS=[];
+async function start(){
+  var role=document.getElementById('role').value.trim(); var exp=document.getElementById('exp').value;
+  var err=document.getElementById('err'); err.classList.remove('show');
+  if(!role){ err.textContent=thT('reqrole','Enter the role you want to practice for.'); err.classList.add('show'); return; }
+  var btn=document.getElementById('startBtn'); btn.disabled=true;
+  document.getElementById('loadingTxt').textContent=thT('loading','Preparing your interview…');
+  document.getElementById('loading').classList.add('show');
+  var res=await thApi('POST','/api/tools/mock-interview',{action:'questions',role:role,experience:exp});
+  document.getElementById('loading').classList.remove('show'); btn.disabled=false;
+  if(thHandleGate(res)) return;
+  if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Something went wrong.'; err.classList.add('show'); return; }
+  QUESTIONS=res.data.result.questions;
+  var html=QUESTIONS.map(function(q,i){
+    return '<div class="th-result-card"><div style="display:flex;gap:8px;align-items:baseline;"><span class="th-badge" style="margin:0;">'+(i+1)+'</span><strong style="font-size:15px;">'+q.question+'</strong></div>'
+      +'<textarea class="th-textarea" data-q="'+i+'" style="min-height:110px;margin-top:12px;" placeholder="'+thT('answer_ph','Type your answer…')+'"></textarea></div>';
+  }).join('');
+  var iv=document.getElementById('interview'); iv.innerHTML=html; iv.style.display='block';
+  document.getElementById('setup').style.display='none';
+  document.getElementById('submitBtn').style.display='inline-flex';
+}
+async function submit(){
+  var answers=QUESTIONS.map(function(q,i){ var ta=document.querySelector('[data-q="'+i+'"]'); return {question:q.question, answer:ta?ta.value.trim():''}; });
+  if(!answers.some(function(a){return a.answer;})){ alert(thT('noans','Answer at least one question first.')); return; }
+  var btn=document.getElementById('submitBtn'); btn.disabled=true;
+  document.getElementById('loadingTxt').textContent=thT('grading','Scoring your answers…');
+  document.getElementById('loading').classList.add('show');
+  var res=await thApi('POST','/api/tools/mock-interview',{action:'feedback', role:document.getElementById('role').value.trim(), answers:answers});
+  document.getElementById('loading').classList.remove('show'); btn.disabled=false;
+  if(thHandleGate(res)) return;
+  if(res.status!==200){ alert((res.data&&res.data.message)||'Something went wrong.'); return; }
+  var d=res.data.result, zh=(localStorage.getItem('rt_lang')==='zh');
+  document.getElementById('overall').textContent=d.overallScore;
+  document.getElementById('summary').textContent=d.summary;
+  document.getElementById('feedback').innerHTML=d.items.map(function(it,i){
+    var q=QUESTIONS[i]?QUESTIONS[i].question:('Q'+it.id);
+    return '<div class="th-result-card"><div style="display:flex;justify-content:space-between;align-items:baseline;"><strong style="font-size:14px;max-width:75%;">'+q+'</strong><span class="th-badge" style="margin:0;">'+it.score+'/100</span></div>'
+      +'<p style="font-size:14px;margin-top:10px;"><strong style="color:var(--forest);">'+(zh?'优点：':'Strength: ')+'</strong>'+(it.strengths||'—')+'</p>'
+      +'<p style="font-size:14px;margin-top:6px;"><strong style="color:var(--danger);">'+(zh?'改进：':'Improve: ')+'</strong>'+(it.improvements||'—')+'</p></div>';
+  }).join('');
+  document.getElementById('submitBtn').style.display='none';
+  document.getElementById('result').classList.add('show');
+  document.getElementById('result').scrollIntoView({behavior:'smooth'});
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Resume A/B Test Tracker — See Which Resume Gets Responses | ResumeTailored AI</title>
+<meta name="description" content="Save multiple resume versions and track which one actually gets responses. Two versions free, unlimited with Pro."/>
+<link rel="canonical" href="https://resumetailored.com/tools/resume-ab-tracker"/>
+<meta property="og:title" content="Resume A/B Test Tracker"/>
+<meta property="og:description" content="Save resume versions and track which one gets responses."/>
+<meta property="og:url" content="https://resumetailored.com/tools/resume-ab-tracker"/>
+<link rel="icon" href="/favicon.png" type="image/png"/>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/tools-hub.css"/>
+</head>
+<body>
+<nav class="th-nav"><div class="th-nav-inner">
+  <a href="/" class="th-logo">ResumeTailored <span class="b">AI</span></a>
+  <div class="th-nav-links"><a href="/score" data-i18n="nav_free">Free Tools</a><a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a><a href="/dashboard" data-i18n="nav_cta">Open App →</a></div>
+  <button class="th-lang" id="thLangBtn" onclick="toggleLang()">中文</button>
+</div></nav>
+
+<main class="th-wrap">
+  <a href="/pro-tools" class="th-back" data-i18n="back">← Back to Pro Tools</a>
+  <span class="th-badge th-badge--pro" data-i18n="pro_badge">2 Versions Free</span>
+  <h1 class="th-title" data-i18n="title">Resume A/B Test Tracker</h1>
+  <p class="th-sub" data-i18n="sub">Save multiple resume versions and track which one gets responses.</p>
+
+  <div class="th-card">
+    <label class="th-label" data-i18n="l_name">Version name</label>
+    <input class="th-input" id="vname" placeholder="e.g. Punchy summary + metrics"/>
+    <div class="th-row">
+      <div><label class="th-label" data-i18n="l_tpl">Template used (optional)</label><input class="th-input" id="vtpl" placeholder="Classic / Executive…"/></div>
+      <div><label class="th-label" data-i18n="l_applied">Applications sent</label><input class="th-input" type="number" id="vapplied" value="0"/></div>
+    </div>
+    <label class="th-label" data-i18n="l_resume">Resume text (optional)</label>
+    <textarea class="th-textarea" id="vtext" style="min-height:120px;" data-i18n-ph="resume_ph" placeholder="Paste this version of your resume…"></textarea>
+    <button class="th-btn th-btn--full" id="save" onclick="saveVersion()" data-i18n="save">Save version</button>
+    <div class="th-error" id="err"></div>
+  </div>
+
+  <div class="th-result show" id="listWrap" style="margin-top:28px;">
+    <h2 style="font-size:20px;margin-bottom:6px;" data-i18n="your_versions">Your versions</h2>
+    <p class="th-usage" id="leaderNote"></p>
+    <div id="list"></div>
+  </div>
+
+  <div class="th-promo"><h3 data-i18n="promo_h">Track unlimited versions with Pro.</h3><p data-i18n="promo_p">Free saves two versions. Upgrade to Pro to A/B test as many resumes as you want.</p><button class="th-btn" onclick="thStartPro()">Upgrade — $19.99/mo</button></div>
+</main>
+
+<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">You've saved your free versions</h3><p id="thUpgradeMsg">Free plan saves 2 resume versions. Upgrade to Pro to track unlimited versions.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.99/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
+
+<footer class="th-foot"><a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a><p style="margin-top:10px;">© ResumeTailored AI</p></footer>
+
+<script src="/tools-hub.js"></script>
+<script>
+window.TH_I18N = {
+  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Pro Tools', pro_badge:'2 Versions Free',
+    title:'Resume A/B Test Tracker', sub:'Save multiple resume versions and track which one gets responses.',
+    l_name:'Version name', l_tpl:'Template used (optional)', l_applied:'Applications sent', l_resume:'Resume text (optional)', resume_ph:'Paste this version of your resume…',
+    save:'Save version', your_versions:'Your versions', promo_h:'Track unlimited versions with Pro.', promo_p:'Free saves two versions. Upgrade to Pro to A/B test as many resumes as you want.', up_h:"You've saved your free versions", up_x:'Maybe later', copied:'Copied ✓' },
+  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回专业工具', pro_badge:'免费 2 个版本',
+    title:'简历 A/B 测试追踪', sub:'保存多个简历版本，追踪哪一个更能获得回复。',
+    l_name:'版本名称', l_tpl:'使用的模板（可选）', l_applied:'已投递数量', l_resume:'简历文本（可选）', resume_ph:'粘贴这个版本的简历…',
+    save:'保存版本', your_versions:'你的版本', promo_h:'专业版追踪无限版本。', promo_p:'免费保存两个版本。升级专业版，A/B 测试任意数量的简历。', up_h:'免费版本已保存满', up_x:'以后再说', copied:'已复制 ✓' }
+};
+var PRO=false, LIMIT=2, LEADER=null;
+async function load(){
+  var res=await thApi('GET','/api/tools/resume-versions');
+  if(thHandleGate(res)) return;
+  if(res.status!==200) return;
+  PRO=res.data.pro; LIMIT=res.data.limit; LEADER=res.data.leaderId;
+  render(res.data.versions);
+}
+function render(versions){
+  var zh=(localStorage.getItem('rt_lang')==='zh');
+  if(!versions.length){ document.getElementById('list').innerHTML='<p style="color:var(--faint);font-size:14px;">'+(zh?'还没有保存的版本。':'No versions saved yet.')+'</p>'; document.getElementById('leaderNote').textContent=''; return; }
+  var leader=versions.filter(function(v){return v.id===LEADER;})[0];
+  document.getElementById('leaderNote').innerHTML = leader ? ('🏆 <strong>'+leader.version_name+'</strong> '+(zh?'目前领先，回复率 ':'is leading with a ')+leader.responseRate+'%'+(zh?'':' response rate')) : (zh?'记录投递和回复以查看哪个版本获胜。':'Log applications and responses to see which version wins.');
+  document.getElementById('list').innerHTML=versions.map(function(v){
+    var win=v.id===LEADER;
+    var rate=v.responseRate==null?'—':(v.responseRate+'%');
+    return '<div class="th-result-card" style="'+(win?'border-color:var(--forest);border-width:2px;':'')+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><strong style="font-size:16px;">'+(win?'🏆 ':'')+v.version_name+'</strong>'
+      +'<button class="th-btn th-btn--ghost th-btn--sm" onclick="delV('+v.id+')">✕</button></div>'
+      +(v.template_used?'<p style="color:var(--faint);font-size:13px;margin-top:2px;">'+v.template_used+'</p>':'')
+      +'<div class="th-row" style="margin-top:12px;">'
+      +'<div><label class="th-label">'+(zh?'已投递':'Applications')+'</label><input class="th-input" type="number" id="a'+v.id+'" value="'+v.jobs_applied_with+'"/></div>'
+      +'<div><label class="th-label">'+(zh?'已回复':'Responses')+'</label><input class="th-input" type="number" id="r'+v.id+'" value="'+v.responses_received+'"/></div></div>'
+      +'<div class="th-actions"><span class="th-badge" style="margin:0;">'+(zh?'回复率 ':'Response rate ')+rate+'</span>'
+      +'<button class="th-btn th-btn--sm" onclick="updV('+v.id+')">'+(zh?'更新':'Update stats')+'</button></div></div>';
+  }).join('');
+}
+async function saveVersion(){
+  var err=document.getElementById('err'); err.classList.remove('show');
+  var name=document.getElementById('vname').value.trim();
+  if(!name){ err.textContent=thT('reqname','Give this version a name.'); err.classList.add('show'); return; }
+  var body={ versionName:name, templateUsed:document.getElementById('vtpl').value.trim(), resumeText:document.getElementById('vtext').value, jobsAppliedWith:parseInt(document.getElementById('vapplied').value,10)||0 };
+  var res=await thApi('POST','/api/tools/resume-version',body);
+  if(thHandleGate(res)) return;
+  if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Could not save.'; err.classList.add('show'); return; }
+  document.getElementById('vname').value=''; document.getElementById('vtpl').value=''; document.getElementById('vtext').value=''; document.getElementById('vapplied').value='0';
+  load();
+}
+async function updV(id){
+  var res=await thApi('PATCH','/api/tools/resume-version/'+id,{ jobsAppliedWith:parseInt(document.getElementById('a'+id).value,10)||0, responsesReceived:parseInt(document.getElementById('r'+id).value,10)||0 });
+  if(thHandleGate(res)) return; load();
+}
+async function delV(id){ var res=await thApi('DELETE','/api/tools/resume-version/'+id); if(thHandleGate(res)) return; load(); }
+if(thRequireLogin()) load();
+</script>
+</body>
+</html>

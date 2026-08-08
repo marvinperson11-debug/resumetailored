@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Follow-Up Email Generator — No Response After Applying? | ResumeTailored AI</title>
+<meta name="description" content="No reply after applying? Generate the perfect follow-up email in seconds — the right tone, one clear ask, and a reason to respond. 5 free a month."/>
+<link rel="canonical" href="https://resumetailored.com/tools/follow-up-generator"/>
+<meta property="og:title" content="Follow-Up Email Generator"/>
+<meta property="og:description" content="Generate the perfect follow-up email when you've been ghosted after applying."/>
+<meta property="og:url" content="https://resumetailored.com/tools/follow-up-generator"/>
+<link rel="icon" href="/favicon.png" type="image/png"/>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/tools-hub.css"/>
+</head>
+<body>
+<nav class="th-nav"><div class="th-nav-inner">
+  <a href="/" class="th-logo">ResumeTailored <span class="b">AI</span></a>
+  <div class="th-nav-links"><a href="/score" data-i18n="nav_free">Free Tools</a><a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a><a href="/dashboard" data-i18n="nav_cta">Open App →</a></div>
+  <button class="th-lang" id="thLangBtn" onclick="toggleLang()">中文</button>
+</div></nav>
+
+<main class="th-wrap">
+  <a href="/score" class="th-back" data-i18n="back">← Back to Free Tools</a>
+  <p class="th-eyebrow" data-i18n="eyebrow">★ Free · 5 a month</p>
+  <h1 class="th-title" data-i18n="title">Follow-Up Email Generator</h1>
+  <p class="th-sub" data-i18n="sub">No response after applying? Generate the perfect follow-up email — the right tone, one clear ask, and a reason to reply.</p>
+
+  <div class="th-card">
+    <div class="th-row">
+      <div><label class="th-label" data-i18n="l_company">Company</label><input class="th-input" id="company" placeholder="Acme Inc."/></div>
+      <div><label class="th-label" data-i18n="l_role">Role</label><input class="th-input" id="role" placeholder="Product Designer"/></div>
+    </div>
+    <div class="th-row">
+      <div><label class="th-label" data-i18n="l_days">Days since applying</label><input class="th-input" type="number" id="days" value="7"/></div>
+      <div><label class="th-label" data-i18n="l_tone">Tone</label><select class="th-input" id="tone">
+        <option value="professional" data-i18n="t_prof">Professional</option>
+        <option value="warm" data-i18n="t_warm">Warm</option>
+        <option value="direct" data-i18n="t_direct">Direct</option>
+      </select></div>
+    </div>
+    <div><label class="th-label" data-i18n="l_contact">Recipient name (optional)</label><input class="th-input" id="contact" placeholder="Jordan Lee"/></div>
+    <div><label class="th-label" data-i18n="l_extra">Anything to add? (optional)</label><input class="th-input" id="extra" placeholder="I met a teammate at a conference last month…"/></div>
+    <button class="th-btn th-btn--full" id="go" onclick="gen()" data-i18n="go">Write my follow-up →</button>
+    <div class="th-error" id="err"></div>
+  </div>
+
+  <div class="th-loading" id="loading"><div class="th-spinner"></div><p data-i18n="loading">Drafting your email…</p></div>
+
+  <div class="th-result" id="result">
+    <div class="th-result-card">
+      <div class="th-mono" id="email"></div>
+      <div class="th-actions">
+        <button class="th-btn th-btn--sm" id="copyBtn" onclick="thCopy(document.getElementById('email').textContent, this)" data-i18n="copy">Copy to clipboard</button>
+        <button class="th-btn th-btn--ghost th-btn--sm" onclick="thDownload(document.getElementById('email').textContent,'follow-up.txt')" data-i18n="dl">Download</button>
+      </div>
+    </div>
+    <p class="th-usage" id="usage"></p>
+  </div>
+
+  <div class="th-promo"><h3 data-i18n="promo_h">Want more? Upgrade to Pro.</h3><p data-i18n="promo_p">Upgrade to Pro for unlimited access to all tools.</p><button class="th-btn" onclick="thStartPro()">Upgrade — $19.99/mo</button></div>
+</main>
+
+<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">You've used your free emails</h3><p id="thUpgradeMsg">You've used your free 5 this month. Upgrade to Pro for unlimited access.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.99/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
+
+<footer class="th-foot"><a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a><p style="margin-top:10px;">© ResumeTailored AI</p></footer>
+
+<script src="/tools-hub.js"></script>
+<script>
+window.TH_I18N = {
+  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools',
+    eyebrow:'★ Free · 5 a month', title:'Follow-Up Email Generator',
+    sub:'No response after applying? Generate the perfect follow-up email — the right tone, one clear ask, and a reason to reply.',
+    l_company:'Company', l_role:'Role', l_days:'Days since applying', l_tone:'Tone', t_prof:'Professional', t_warm:'Warm', t_direct:'Direct',
+    l_contact:'Recipient name (optional)', l_extra:'Anything to add? (optional)', go:'Write my follow-up →', loading:'Drafting your email…',
+    copy:'Copy to clipboard', dl:'Download', promo_h:'Want more? Upgrade to Pro.', promo_p:'Upgrade to Pro for unlimited access to all tools.', up_h:"You've used your free emails", up_x:'Maybe later', copied:'Copied ✓' },
+  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回免费工具',
+    eyebrow:'★ 免费 · 每月 5 次', title:'跟进邮件生成器',
+    sub:'投递后没有回音？生成完美的跟进邮件 — 恰当的语气、一个明确的请求和回复的理由。',
+    l_company:'公司', l_role:'职位', l_days:'投递后天数', l_tone:'语气', t_prof:'专业', t_warm:'亲切', t_direct:'直接',
+    l_contact:'收件人姓名（可选）', l_extra:'补充信息（可选）', go:'写我的跟进邮件 →', loading:'正在起草邮件…',
+    copy:'复制到剪贴板', dl:'下载', promo_h:'想要更多？升级专业版。', promo_p:'升级专业版，无限使用所有工具。', up_h:'本月免费次数已用完', up_x:'以后再说', copied:'已复制 ✓' }
+};
+// Prefill from ?company=&role=&days= (used by the Job Tracker follow-up button).
+(function(){ var q=new URLSearchParams(location.search);
+  if(q.get('company')) document.getElementById('company').value=q.get('company');
+  if(q.get('role')) document.getElementById('role').value=q.get('role');
+  if(q.get('days')) document.getElementById('days').value=parseInt(q.get('days'),10)||7;
+})();
+async function gen(){
+  var b={ company:val('company'), role:val('role'), daysSince:parseInt(val('days'),10)||7, tone:val('tone'), contactName:val('contact'), extra:val('extra') };
+  var err=document.getElementById('err'); err.classList.remove('show');
+  if(!b.company||!b.role){ err.textContent=thT('req','Company and role are required.'); err.classList.add('show'); return; }
+  var btn=document.getElementById('go'); btn.disabled=true;
+  document.getElementById('result').classList.remove('show'); document.getElementById('loading').classList.add('show');
+  var res=await thApi('POST','/api/tools/follow-up-generate',b);
+  document.getElementById('loading').classList.remove('show'); btn.disabled=false;
+  if(thHandleGate(res)) return;
+  if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Something went wrong.'; err.classList.add('show'); return; }
+  document.getElementById('email').textContent=res.data.result;
+  var u=res.data.usage||{}, zh=(localStorage.getItem('rt_lang')==='zh');
+  document.getElementById('usage').textContent = u.pro ? (zh?'专业版 · 无限次':'Pro · unlimited') : (zh?('本月已用 '+u.used+'/'+u.limit):('Used '+u.used+' of '+u.limit+' free this month'));
+  document.getElementById('result').classList.add('show');
+}
+function val(id){ return document.getElementById(id).value.trim(); }
+</script>
+</body>
+</html>

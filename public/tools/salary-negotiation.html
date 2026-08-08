@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Salary Negotiation Script Generator — Counter Any Offer | ResumeTailored AI</title>
+<meta name="description" content="Get a custom counter-offer script backed by market data — talking points, a defensible number, and a ready-to-send message. 1 free use a month, then Pro."/>
+<link rel="canonical" href="https://resumetailored.com/tools/salary-negotiation"/>
+<meta property="og:title" content="Salary Negotiation Script Generator"/>
+<meta property="og:description" content="Get a custom counter-offer script with real market data."/>
+<meta property="og:url" content="https://resumetailored.com/tools/salary-negotiation"/>
+<link rel="icon" href="/favicon.png" type="image/png"/>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/tools-hub.css"/>
+</head>
+<body>
+<nav class="th-nav"><div class="th-nav-inner">
+  <a href="/" class="th-logo">ResumeTailored <span class="b">AI</span></a>
+  <div class="th-nav-links"><a href="/score" data-i18n="nav_free">Free Tools</a><a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a><a href="/dashboard" data-i18n="nav_cta">Open App →</a></div>
+  <button class="th-lang" id="thLangBtn" onclick="toggleLang()">中文</button>
+</div></nav>
+
+<main class="th-wrap">
+  <a href="/pro-tools" class="th-back" data-i18n="back">← Back to Pro Tools</a>
+  <span class="th-badge th-badge--pro" data-i18n="pro_badge">1 Free Use / Month</span>
+  <h1 class="th-title" data-i18n="title">Salary Negotiation Script</h1>
+  <p class="th-sub" data-i18n="sub">Get a custom counter-offer script with real market data — talking points, a defensible number, and a ready-to-send message.</p>
+
+  <div class="th-card">
+    <div class="th-row">
+      <div><label class="th-label" data-i18n="l_role">Role</label><input class="th-input" id="role" placeholder="Senior Product Manager"/></div>
+      <div><label class="th-label" data-i18n="l_location">Location</label><input class="th-input" id="location" placeholder="San Francisco, CA"/></div>
+    </div>
+    <div class="th-row">
+      <div><label class="th-label" data-i18n="l_offer">Current offer base ($)</label><input class="th-input" type="number" id="offerBase" placeholder="150000"/></div>
+      <div><label class="th-label" data-i18n="l_target">Your target base ($)</label><input class="th-input" type="number" id="targetBase" placeholder="170000"/></div>
+    </div>
+    <div><label class="th-label" data-i18n="l_leverage">Competing offer / leverage (optional)</label><input class="th-input" id="competing" placeholder="Another offer at $165k, or a strong internal referral"/></div>
+    <button class="th-btn th-btn--full" id="go" onclick="gen()" data-i18n="go">Generate my script →</button>
+    <div class="th-error" id="err"></div>
+  </div>
+
+  <div class="th-loading" id="loading"><div class="th-spinner"></div><p data-i18n="loading">Building your negotiation plan…</p></div>
+
+  <div class="th-result" id="result">
+    <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:8px;" data-i18n="r_market">Market range</h3><p id="r-market" style="font-size:20px;font-weight:800;color:var(--forest);"></p><p id="r-market-note" style="color:var(--faint);font-size:13px;margin-top:4px;"></p></div>
+    <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:8px;" data-i18n="r_counter">Your counter-offer</h3><p id="r-counter" style="font-size:22px;font-weight:900;color:var(--ink);"></p><p id="r-counter-note" style="color:var(--muted);font-size:14px;margin-top:4px;"></p></div>
+    <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:10px;" data-i18n="r_points">Talking points</h3><ul class="th-flaglist good" id="r-points"></ul></div>
+    <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:10px;" data-i18n="r_script">Ready-to-send script</h3><div class="th-mono" id="r-script"></div>
+      <div class="th-actions"><button class="th-btn th-btn--sm" onclick="thCopy(document.getElementById('r-script').textContent,this)" data-i18n="copy">Copy script</button>
+      <button class="th-btn th-btn--ghost th-btn--sm" onclick="thDownload(document.getElementById('r-script').textContent,'negotiation-script.txt')" data-i18n="dl">Download</button></div></div>
+    <p class="th-usage" id="usage"></p>
+  </div>
+
+  <div class="th-promo"><h3 data-i18n="promo_h">Negotiate as often as you need.</h3><p data-i18n="promo_p">Your first script each month is free. Upgrade to Pro for unlimited negotiation scripts and every other tool.</p><button class="th-btn" onclick="thStartPro()">Upgrade — $19.99/mo</button></div>
+</main>
+
+<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">You've used your free script</h3><p id="thUpgradeMsg">You've used your free script this month. Upgrade to Pro for unlimited access.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.99/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
+
+<footer class="th-foot"><a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a><p style="margin-top:10px;">© ResumeTailored AI</p></footer>
+
+<script src="/tools-hub.js"></script>
+<script>
+window.TH_I18N = {
+  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Pro Tools', pro_badge:'1 Free Use / Month',
+    title:'Salary Negotiation Script', sub:'Get a custom counter-offer script with real market data — talking points, a defensible number, and a ready-to-send message.',
+    l_role:'Role', l_location:'Location', l_offer:'Current offer base ($)', l_target:'Your target base ($)', l_leverage:'Competing offer / leverage (optional)',
+    go:'Generate my script →', loading:'Building your negotiation plan…', r_market:'Market range', r_counter:'Your counter-offer', r_points:'Talking points', r_script:'Ready-to-send script',
+    copy:'Copy script', dl:'Download', promo_h:'Negotiate as often as you need.', promo_p:'Your first script each month is free. Upgrade to Pro for unlimited negotiation scripts and every other tool.', up_h:"You've used your free script", up_x:'Maybe later', copied:'Copied ✓' },
+  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回专业工具', pro_badge:'每月 1 次免费',
+    title:'薪资谈判脚本', sub:'获取基于真实市场数据的定制还价脚本 — 谈判要点、可辩护的数字和可直接发送的信息。',
+    l_role:'职位', l_location:'地点', l_offer:'当前 Offer 基本薪资 ($)', l_target:'你的目标基本薪资 ($)', l_leverage:'竞争 Offer / 筹码（可选）',
+    go:'生成我的脚本 →', loading:'正在制定谈判方案…', r_market:'市场范围', r_counter:'你的还价', r_points:'谈判要点', r_script:'可直接发送的脚本',
+    copy:'复制脚本', dl:'下载', promo_h:'想谈几次就谈几次。', promo_p:'每月第一次脚本免费。升级专业版，无限谈判脚本和所有其他工具。', up_h:'本月免费脚本已用完', up_x:'以后再说', copied:'已复制 ✓' }
+};
+function li(items){ return (items||[]).map(function(x){return '<li>'+x+'</li>';}).join('') || '<li style="color:var(--faint)">—</li>'; }
+function fmt(n){ return n==null?'?':('$'+Number(n).toLocaleString()); }
+async function gen(){
+  var b={ role:val('role'), location:val('location'), offerBase:parseFloat(val('offerBase'))||0, targetBase:parseFloat(val('targetBase'))||0, competingOffer:val('competing') };
+  var err=document.getElementById('err'); err.classList.remove('show');
+  if(!b.role){ err.textContent=thT('reqrole',"Enter the role you're negotiating for."); err.classList.add('show'); return; }
+  var btn=document.getElementById('go'); btn.disabled=true;
+  document.getElementById('result').classList.remove('show'); document.getElementById('loading').classList.add('show');
+  var res=await thApi('POST','/api/tools/salary-negotiation',b);
+  document.getElementById('loading').classList.remove('show'); btn.disabled=false;
+  if(thHandleGate(res)) return;
+  if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Something went wrong.'; err.classList.add('show'); return; }
+  var d=res.data.result, zh=(localStorage.getItem('rt_lang')==='zh');
+  var mr=d.marketRange||{}; document.getElementById('r-market').textContent=fmt(mr.low)+' – '+fmt(mr.high)+' '+(mr.currency||'');
+  document.getElementById('r-market-note').textContent=mr.note||'';
+  var co=d.counterOffer||{}; document.getElementById('r-counter').textContent=fmt(co.base);
+  document.getElementById('r-counter-note').textContent=co.note||'';
+  document.getElementById('r-points').innerHTML=li(d.talkingPoints);
+  document.getElementById('r-script').textContent=d.script;
+  var u=res.data.usage||{}; document.getElementById('usage').textContent = u.pro ? (zh?'专业版 · 无限次':'Pro · unlimited') : (zh?('本月已用 '+u.used+'/'+u.limit+' · 数据为估算'):('Used '+u.used+' of '+u.limit+' free this month'));
+  document.getElementById('result').classList.add('show');
+}
+function val(id){ return document.getElementById(id).value.trim(); }
+</script>
+</body>
+</html>
