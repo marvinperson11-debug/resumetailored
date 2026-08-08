@@ -1,244 +1,143 @@
-# Task Summary — Job Finder fix, Employer Portal, Login, Blog & more
+# Site Audit & Cleanup — Task Summary
 
-This is the single deliverable document for all the work in this PR. Everything
-was implemented, tested locally, and committed to
-`claude/job-finder-employer-portal-c2qtf5`.
-
----
-
-## 0. URGENT — Job Finder was broken (ROOT CAUSE FOUND & FIXED)
-
-### Root cause
-The Job Finder depended on a **single** provider — JSearch via RapidAPI. In
-production that key returns **HTTP 403 Forbidden**, confirmed directly in the
-Railway logs:
-
-```
-[refresh-job-feed] JSearch (HVAC Technician): jsearch_403
-```
-
-`RAPIDAPI_KEY` **is** set in Railway, but the key is **not subscribed to the
-JSearch API** on RapidAPI (JSearch requires an active subscription even on its
-free tier, or it 403s). Because the whole feature had one data source, that 403
-meant *every* search returned nothing — and it failed **silently** (a 403 got
-turned into a generic empty result). Your "HVAC Technician, no location" test
-hit exactly this.
-
-Empty location handling was actually already correct — a keyword-only search
-does default to nationwide. The problem was 100% the dead single provider +
-silent failure.
-
-### The fix — resilient multi-provider search (`job-providers.js`)
-Job search now **fans out across every configured provider and merges the
-results**. One provider failing (403, quota, network) is logged and skipped —
-it can never empty the page again.
-
-Providers, in priority order:
-1. **Adzuna** — *env-gated* (`ADZUNA_APP_ID` + `ADZUNA_APP_KEY`). Free signup,
-   full **US** coverage across **all sectors including skilled trades** (HVAC,
-   electricians, CDL, etc.). This is the recommended primary source for
-   nationwide, on-site US search.
-2. **JSearch** — *env-gated* (`RAPIDAPI_KEY`). Kept for continuity; skipped
-   automatically when it 403s.
-3. **USAJOBS** — *env-gated* (US federal jobs).
-4. **Remotive, The Muse, Jobicy, Arbeitnow** — **zero-key** fallbacks that
-   always work, so the feature is *never* empty.
-
-Behavior:
-- **Keyword-only search = nationwide** (an empty location never forces a filter).
-- Results are **de-duplicated** across providers.
-- Errors are **surfaced, not swallowed**: the API returns a `sources` array and
-  distinct status codes — `502` (a keyed provider is down), `503` (nothing
-  configured), or a genuine empty result with `onlyFallbacks` noted in the UI.
-- `scripts/refresh-job-feed.js` ("Jobs for You" feed) uses the same fan-out.
-
-**Verified locally:** with **zero API keys configured**, a live search returned
-**60 real jobs** from the free providers — proving the pipeline works
-end-to-end. Unit tests in `test/job-providers.js` (all pass) cover the
-normalizers, dedupe, the 403-doesn't-empty-results case, and nationwide search.
-
-### ⚠️ ONE ACTION NEEDED FROM YOU for full HVAC/trades coverage
-The zero-key fallbacks are **remote/tech-focused**, so a nationwide *HVAC*
-search needs a US-wide source with trades. Two options (either works):
-
-- **Recommended — add a free Adzuna key (2 minutes):**
-  1. Sign up at <https://developer.adzuna.com> (free).
-  2. In Railway → your service → Variables, add:
-     `ADZUNA_APP_ID=<your id>` and `ADZUNA_APP_KEY=<your key>`
-     (optionally `ADZUNA_COUNTRY=us`).
-  3. Redeploy. HVAC-nationwide and every on-site US search now return full
-     results.
-- **Or fix the existing RapidAPI key:** log into RapidAPI and **subscribe to
-  the JSearch API** (free tier is fine) with the account that owns
-  `RAPIDAPI_KEY`. The 403 will clear and JSearch will start returning results.
-
-I could not do either myself — both require signing into your third-party
-accounts. Everything on the code side is wired and ready; it's purely an
-env-var/subscription step. All the new env vars are documented in `.env.example`.
+Date: 2026-08-08. Branch: `claude/free-tools-page-redesign-6h2rab`.
+All changes are frontend (`public/`), committed in logical phases. No server-side
+logic changed.
 
 ---
 
-## 1. Removed the LinkedIn Optimizer card from the Resume Tailor tab
-The blue "LinkedIn Profile Optimizer" shortcut card inside the Resume Tailor
-section is removed (HTML + its CSS), on desktop and mobile. The LinkedIn
-Optimizer itself still exists as its own sidebar tab — only the in-tab card was
-removed, as requested.
+## 1. Old purple → brand green ✅ done
 
-## 2. Real LinkedIn logos everywhere
-Replaced every emoji / text-badge "LinkedIn" mark with the **official LinkedIn
-"in" brand logo** (inline SVG): the "Continue with LinkedIn" auth button, the
-Optimizer panel header, the "Save as PDF" how-to modal, the landing-page
-feature icon, and the pricing-card bullets. (The generic 🔗 used for
-"Share as Link"/"URL" is not a LinkedIn logo and was left alone.)
+**Found:** the pre-rebrand accent — indigo `#6366F1` / violet `#8B5CF6` and its
+whole Tailwind ramp (`#818cf8`, `#a5b4fc`, `#c7d2fe`, `#4338ca`, `#7c3aed`,
+`#4f46e5`, `#6d28d9`, …) plus `rgba(99,102,241,…)` and indigo tints — in **~4,300
+places across 337 files**. On most SEO pages `theme.css` masked it to green with
+`!important`, but it leaked wherever that override didn't reach — most visibly the
+`app.html` editor (which loads `app-theme.css`, only a curated subset).
 
-## 3. Resume Tailor button text → "Get Tailored"
-The main tailor button now reads **"Get Tailored →"** in all states (default,
-cover-letter mode, post-submit) and the i18n default was updated.
+**Fixed:** replaced the legacy palette at the source with the brand green system
+(`#1F5C3D` / `#2E7D53` / `#153F2A` + tints) in all HTML/CSS/JS, so nothing relies
+on override CSS anymore. Covers badges, buttons, nav, links, borders, gradients,
+focus/hover states, editor chrome, blog and SEO pages — desktop and mobile.
 
-## 4. New-features pricing shown as promotional/advertising cards
-- **Landing page:** a new **"✨ What's New"** section with marketing-style promo
-  cards (badges + pricing) for the **Employer Portal**, **Resume Video**,
-  **Personal Website**, and **Career Hub**, each with a CTA.
-- **Dashboard:** a **"✨ What's New"** sidebar button opens a matching promo
-  modal, so the new-feature pricing is also accessible from inside the app.
+**Deliberately preserved (not brand-chrome leakage — flag if you disagree):**
+- `site-vibes.js` — the personal-website "vibe" themes (Calm/Bright/Dark/Colorful…)
+  are an intentional multi-color palette users pick from.
+- `OUT_TPLS` "Modern Violet / Bold Violet" resume templates and the
+  `.tpl-modern` / `.tpl-elegant` template accents in `style.css` — these are
+  template identities, not the old brand color.
+- Website-builder default/placeholder swatches in `app.html`.
 
-## 5. Login page — Sign In / Create Account + Google + Employer Portal
-- The auth modal now has a clear **Sign In / Create Account** tab toggle
-  (email + password signup was restored — it had no UI before).
-- **Google Sign-In (OAuth / OpenID Connect)** added, mirroring the existing
-  LinkedIn flow: "Continue with Google" / "Sign up with Google" buttons on both
-  tabs. Gated by `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`; the button is
-  hidden until those are set (graceful, like LinkedIn). See `.env.example` for
-  the 3 vars and the redirect URI to register in Google Cloud Console.
-- A **separate Employer Portal** call-to-action is in the auth modal (distinct
-  from the job-seeker login) linking to `/employer`.
-- **Your Employer Portal access:** your email (`marvinperson11@gmail.com`) is
-  already in `COMP_EMAILS` and is treated as a **Pro Employer** — so signing in
-  with your existing credentials and opening `/employer` gives you full access
-  (you'll set a company name once to turn on Hire Mode — a single field).
-
-## 6. Employer Portal — distinct recruiter dashboard + landing showcase
-Rebuilt `public/employer.html` as a **visually distinct navy/slate recruiter
-dashboard** with its own sidebar — **no job-seeker tabs** except a single
-"Job Seeker Dashboard" link. Navigation:
-**Dashboard | Jobs | Candidates | Interviews | Analytics | Messages | Settings |
-Job Seeker Dashboard.**
-
-- **Dashboard:** stat cards (Active Postings, Applications This Week, Candidates
-  in Pipeline, Interviews Scheduled), Recent Activity feed, Quick Actions.
-- **Jobs:** table (Title / Location / Posted / Applications / Status), post &
-  edit modal (title, description, requirements, location, salary range, job
-  type, deadline/gig fields), applicant view with the **New → Reviewed →
-  Interview → Hired → Rejected** pipeline, one-click reject email.
-- **Candidates:** searchable/filterable list (profession, location, remote
-  preference, gig availability), candidate profile modal, message & schedule.
-- **Interviews:** schedule (video/phone/onsite) — sends the candidate an invite
-  email — plus complete/cancel/delete.
-- **Analytics:** hiring funnel chart, average time-to-hire, applications-by-
-  source, and **CSV export** (with spreadsheet formula-injection guard).
-- **Messages:** threaded candidate conversations with an unread badge.
-- **Settings:** company profile (logo, description, website), notification
-  preferences, billing/upgrade.
-- **Landing page:** the Employer Portal is showcased as a **key feature** (icon,
-  description, mock dashboard visual, "Open the Employer Portal →" CTA) plus a
-  **"For Employers"** nav link (desktop + mobile).
-
-Backend: new `interviews` and `employer_messages` tables; `employer_profiles`
-gained logo/description/notification columns; new routes for overview,
-interviews, messaging, analytics, settings, and CSV export. Pure, unit-tested
-helpers (`buildFunnel`, `computeTimeToHire`, `toCsv`, `validateInterview`).
-Existing employer tests all pass; new endpoints verified with a live end-to-end
-smoke test (post job → applicants → interview → message → analytics → settings
-→ CSV).
-
-## 7. Two SEO-optimized blog posts
-Both live, indexable, with OG tags, `BlogPosting` schema, meta description
-**under 160 chars**, semantic H1/H2/H3, and 2–4 internal links each (to each
-other, the landing page, pricing, dashboard, and existing posts). `.md` sources
-and blog-index cards added.
-
-- **`/blog/employer-portal-for-recruiters`** — "How Recruiters Can Streamline
-  Hiring with ResumeTailored AI's Employer Portal." Targets *employer portal,
-  recruiter dashboard, hiring platform, applicant tracking system, ATS for small
-  business, candidate management software, job posting platform.*
-- **`/blog/resume-website-builder`** — "Build a Professional Resume Website in
-  Minutes with ResumeTailored AI." Targets *resume website builder, personal
-  website creator, portfolio website tool, online resume, professional website
-  for job seekers, free website builder for resumes.*
+**Intentionally skipped (brand art — recolor on request):** `public/ads/*.svg`,
+`public/flyers/*.html`, `public/blog/og/*.html` (share-image templates), and
+third-party `public/vendor/*`.
 
 ---
 
-## 8. Google Search Console — URLs to submit
+## 2. LinkedIn card → wrong destination ✅ fixed
 
-**Fastest path:** submit the sitemap once — it already lists **324 URLs** and
-now includes the two new posts. In GSC → *Sitemaps*, submit:
+**Found:** the LinkedIn Optimizer is a tab *inside* the dashboard
+(`showTab('linkedin')`) with no standalone URL, and `app.html` had no way to
+deep-link a tab — so every "Optimize My LinkedIn" entry point
+(`window.location='/dashboard'`) landed on the default **Tailor / Resume Creator**
+tab. That's the bug you reported.
 
-```
-https://resumetailored.com/sitemap.xml
-```
-
-### Brand-new URLs from this PR — request indexing directly (GSC → URL Inspection → "Request indexing")
-```
-https://resumetailored.com/blog/employer-portal-for-recruiters
-https://resumetailored.com/blog/resume-website-builder
-```
-
-### About the Employer Portal page
-`/employer` is intentionally **`noindex`** — it's a functional
-recruiter app/login surface, not a content page (same reasoning as the login
-page you asked to exclude). **Do not submit `/employer` to GSC.** Its
-*indexable* SEO landing page is the blog post above
-(`/blog/employer-portal-for-recruiters`) plus the "For Employers" feature block
-on the homepage, which are the URLs that should rank.
-
-### Orphan check — result: none
-I cross-checked every blog post on disk against the sitemap: **all 25 blog posts
-are in the sitemap** (no orphans). All 70 role `*-resume` / `*-cover-letter`
-pages, seniority variants, hub pages, alternatives pages, and free tools are
-already in the sitemap too.
-
-### Key existing URLs worth confirming are submitted (high-value, easy to miss)
-```
-https://resumetailored.com/                         (homepage)
-https://resumetailored.com/blog/                     (blog index)
-https://resumetailored.com/resume-examples           (head-term hub)
-https://resumetailored.com/cover-letter-examples     (head-term hub)
-https://resumetailored.com/how-it-works
-https://resumetailored.com/score                     (free ATS tool)
-https://resumetailored.com/tools/ats-keyword-extractor
-https://resumetailored.com/tools/resume-video
-https://resumetailored.com/alternatives/teal
-https://resumetailored.com/alternatives/jobscan
-https://resumetailored.com/alternatives/rezi
-```
-For the complete, authoritative list (all 324 URLs — every role page, seniority
-variant, alternative, and blog post), rely on `sitemap.xml`; submitting it
-covers everything above without pasting hundreds of links.
-
-**Excluded on purpose (do not submit):** the login/app dashboard (`/dashboard`),
-the Employer Portal (`/employer`) — both functional/`noindex` — and any
-share-link (`/r/:slug`) or badge pages (also `noindex`).
+**Fixed:** added a `?tab=` deep-link handler to the app boot (allow-listed tabs,
+preserves `?lang=`). Repointed every LinkedIn entry point — homepage button,
+`zh/index.html`, and the Free Tools card — at `/dashboard?tab=linkedin`. Also
+enables `?tab=video` / `?tab=website` used by the new Pro hub.
 
 ---
 
-## 9. Testing done
-- `node test/job-providers.js` — **ALL PASS** (new).
-- `node test/career-hub.js`, `test/employer-hub.js`,
-  `test/employer-portal-routes.js` — **ALL PASS** (unchanged behavior).
-- Live server smoke tests: server boots clean (0 migration errors); Job Finder
-  returns 60 live jobs with no keys; Employer Portal post-job → applicants →
-  interview → message → analytics → settings-save → CSV export all verified;
-  Google-status endpoint returns `{enabled:false}` until configured; blog posts,
-  sitemap, dashboard, and landing all serve `200`.
+## 3. Free Tools page = cards only ✅ done
 
-## Open questions / notes for you
-1. **Job Finder full coverage** needs the Adzuna key (or a re-subscribed
-   RapidAPI/JSearch key) — the only manual step, detailed in §0. Without it the
-   feature still works but returns mostly remote roles.
-2. **Google Sign-In** is code-complete but dormant until you add
-   `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (see `.env.example`).
-3. The **Pro Employer** plan uses `STRIPE_EMPLOYER_PRICE_ID` (already set in
-   Railway) at $29/mo; the upgrade button is wired to it.
-4. Candidate-side *replies* to employer messages send/receive via email today;
-   a dedicated job-seeker messaging inbox UI can be a fast follow if you want
-   in-app two-way threads on the candidate side.
+**Found:** `/score` opened the ATS Match and Readability tools inline.
+
+**Fixed:** `/score` is now a **cards-only hub**. It leads with the tool cards;
+each links to that tool's own page:
+- ATS Score Checker → `/ats-score-checker`
+- Readability Review → `/resume-analyzer`
+- Keyword Extractor → `/tools/ats-keyword-extractor`
+- Resume Tailor / Cover Letter / Share-as-Link → `/dashboard`
+- LinkedIn Optimizer → `/dashboard?tab=linkedin`
+- Resume / Cover-letter Examples → `/resume-examples`, `/cover-letter-examples`
+
+Removed the inline tool UI and its now-dead JS; kept the FAQ/AEO content (moved
+below the cards) and reworded the hero + title/meta for a tools hub. EN + ZH copy
+updated together.
+
+> **SEO note (your call):** `/score` previously ranked as an ATS tool page with
+> `WebApplication`/`FAQPage` schema. As a hub it now overlaps `/ats-score-checker`
+> for the same keyword. I kept the page's canonical + schema and its FAQ content
+> to preserve ranking signals, but if you'd rather **not** repurpose `/score`, the
+> alternative is to leave `/score` as the tool and stand up a separate
+> `/free-tools` hub. Say the word and I'll switch.
+
+---
+
+## 4. Paid Tools page = cards only ✅ done (new page)
+
+There was no "Paid Tools" page — only a marketing section on the homepage. Created
+**`/pro-tools`** (`public/pro-tools.html`): a bilingual cards-only hub mirroring
+the Free Tools layout, with cards for Resume Video Maker, Personal Website Builder,
+Career Hub, Premium Templates, and the Employer Portal — each linking straight to
+its tool (`/dashboard?tab=video`, `/dashboard?tab=website`, `/dashboard`,
+`/employer`). Nav ("Pro Tools") now points to `/pro-tools` (in `site-nav.js` and
+the homepage nav); the homepage `#pro-tools` marketing section stays. Added to
+`sitemap.xml`.
+
+---
+
+## 5. Chinese translations — ⚠️ partially done
+
+- ✅ **Free Tools hub (`/score`)** and **Pro Tools hub (`/pro-tools`)** are fully
+  bilingual (every string has an EN + Simplified-Chinese `data-i18n` entry).
+- ⚠️ **Still English-only (documented backlog, needs your input):**
+  - Homepage Free/Pro **feature cards** (`index.html` translates via a
+    selector-map that doesn't cover these newer cards).
+  - App **"What's New" promo panel** and a few app buttons (e.g. the tailor
+    "Fetch") are hardcoded, not routed through `APP_I18N`/`_t()`.
+  - **Employer Portal** (`/employer`) is English-only.
+  - SEO pages have **no on-page language toggle** — `site-nav.js` replaces each
+    page's nav (and its toggle), so Chinese only shows if `rt_lang` was set
+    earlier on the homepage. This is likely why you saw English on a tool page.
+
+  **Decision needed (Q3):** should Chinese be served **in-place** (add
+  `data-i18n` + a dictionary to each English page — one page to maintain) or via
+  the **separate `/zh/` pages** (then the in-place toggle should redirect there)?
+  The answer determines where the remaining translations go; I held off on a
+  large partial pass that could ship mixed-language pages.
+
+---
+
+## 6. Full walkthrough
+
+**Verified statically (in-repo):**
+- ✅ All hub-card and nav targets resolve to real files/routes — no 404s
+  (`/ats-score-checker`, `/resume-analyzer`, `/tools/ats-keyword-extractor`,
+  `/resume-examples`, `/cover-letter-examples`, `/employer`, `/pro-tools`,
+  `/score`, `/how-it-works`, `/blog`, `/dashboard`).
+- ✅ No old purple anywhere in code except the deliberately-preserved design
+  palette + skipped brand art.
+- ✅ `/score` and `/pro-tools` markup is tag-balanced; no references to removed
+  elements/functions; sitemap updated.
+- ✅ LinkedIn and Pro-tool cards deep-link correctly.
+
+**Could NOT verify at runtime here** (no `node_modules` / secrets in this
+environment — needs a live deploy):
+- Auth (Google/LinkedIn OAuth), Stripe checkout, Job Finder (needs `RAPIDAPI_KEY`),
+  Employer Portal end-to-end flows, resume-video render. These depend on live
+  keys/services; I verified their **links/wiring** statically only. Recommend a
+  pass on the Netlify deploy preview / staging.
+
+---
+
+## Needs your input
+1. **Q3 (Chinese strategy)** — in-place vs `/zh` — blocks finishing item 5.
+2. **`/score` SEO** — keep it repurposed as the Free Tools hub, or spin up a
+   separate `/free-tools` page and restore `/score` as the tool? (item 3)
+3. **Brand art** — recolor the `flyers/`, `ads/`, and `blog/og/` purple too, or
+   leave those images as-is?
+4. **Resume-template palettes** — I preserved the "Violet" templates and
+   `.tpl-modern/.tpl-elegant` accents; confirm you want those kept (vs. forced
+   green "no exceptions").
