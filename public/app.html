@@ -1007,6 +1007,11 @@
           <span style="flex:1;text-align:left;" data-i18n="sidebar_ats">ATS Scanner</span>
           <span style="background:#16a34a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">FREE</span>
         </button>
+        <button class="sidebar-btn" onclick="showTab('jobtracker')" id="tab-jobtracker" data-label="Tracker" title="Job Application Tracker — track every application">
+          <span class="sidebar-icon">📋</span>
+          <span style="flex:1;text-align:left;" data-i18n="sidebar_jobtracker">Job Tracker</span>
+          <span style="background:#16a34a;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">FREE</span>
+        </button>
         <button class="sidebar-btn" onclick="showTab('video')" id="tab-video" data-label="Video" title="Resume Video Maker — Pro studio video">
           <span class="sidebar-icon">🎬</span>
           <span style="flex:1;text-align:left;">Resume Video</span>
@@ -1591,6 +1596,11 @@
           <p>ATS scans are free and unlimited. Upgrade to Pro for premium templates, the resume video, a personal website & watermark-free exports — $19.99/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
+      </div>
+
+      <!-- ═══ TAB: JOB APPLICATION TRACKER ═══ -->
+      <div class="tab-content" id="panel-jobtracker">
+        <div id="jtDashRoot"></div>
       </div>
 
       <!-- ═══ TAB: PERSONAL WEBSITE (Website Creator, Pro) ═══ -->
@@ -2389,6 +2399,7 @@
       en: {
         nav_go_pro: 'Go Pro — $19.99/mo', nav_logout: 'Log Out',
         sidebar_jobsearch: 'Job Search', sidebar_tailor: 'Resume Tailor', sidebar_linkedin: 'LinkedIn Optimizer',
+        sidebar_jobtracker: 'Job Tracker',
         sidebar_sharelink: 'Resume Link', sidebar_website: 'Personal Website', sidebar_backoffice: 'Back Office',
         bo_title: 'Back Office', bo_subtitle: 'Manage everything in one place — your saved resumes, cover letters, videos and personal website.',
         bo_resumes: 'Resumes', bo_covers: 'Cover letters', bo_videos: 'Resume videos', bo_website: 'Personal website',
@@ -2595,6 +2606,7 @@
       zh: {
         nav_go_pro: '升级专业版 — ¥19.99/月', nav_logout: '退出登录',
         sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
+        sidebar_jobtracker: '求职跟踪',
         sidebar_sharelink: '简历链接', sidebar_website: '个人网站', sidebar_backoffice: '后台管理',
         bo_title: '后台管理', bo_subtitle: '一站式管理——你保存的简历、求职信、视频和个人网站。',
         bo_resumes: '简历', bo_covers: '求职信', bo_videos: '简历视频', bo_website: '个人网站',
@@ -3527,6 +3539,7 @@
       if (name === 'samples') initSamples();
       if (name === 'linkedin') updateLinkedInFreeStatus();
       if (name === 'video') updateVideoGate();
+      if (name === 'jobtracker') initJobTracker();
       // The Website Creator takes over the screen: its own slim bar replaces
       // the app header, which otherwise sits on top of the editor toolbar and
       // eats every click on Pages, Undo, Preview and Publish.
@@ -6505,6 +6518,28 @@ Aaliyah Washington`
       }
     }
 
+    // ── Job Application Tracker (dashboard tab) ──────────────────────────────────
+    // The tracker UI lives in the shared /job-tracker.js module, mounted once into
+    // the panel the first time the tab is opened. Pro users get unlimited apps +
+    // export + auto-fill; the module reads those gates from the API. Auto-fill can
+    // pull the job URL the user is tailoring against (getTailorJob).
+    let _jtMounted = false;
+    function initJobTracker() {
+      if (_jtMounted) return;
+      if (!window.JobTracker) { setTimeout(initJobTracker, 120); return; }
+      _jtMounted = true;
+      window.JobTracker.mount({
+        container: 'jtDashRoot',
+        toast: function (m) { try { showToast(m); } catch (e) {} },
+        onUpgrade: function () { startPro(); },
+        getTailorJob: function () {
+          var el = document.getElementById('tailorJobUrlInput');
+          var url = el && el.value ? el.value.trim() : '';
+          return url ? { url: url } : null;
+        }
+      });
+    }
+
     async function doModalSubscribe() {
       const email = document.getElementById('subscribeEmail').value.trim();
       const errEl = document.getElementById('subscribeError');
@@ -6825,7 +6860,7 @@ Aaliyah Washington`
     (function () {
       const tab = new URLSearchParams(window.location.search).get('tab');
       if (!tab) return;
-      const ALLOWED = ['tailor', 'linkedin', 'ats', 'video', 'website', 'backoffice', 'forum', 'salary', 'checkin', 'help', 'about', 'samples'];
+      const ALLOWED = ['tailor', 'linkedin', 'ats', 'jobtracker', 'video', 'website', 'backoffice', 'forum', 'salary', 'checkin', 'help', 'about', 'samples'];
       if (!ALLOWED.includes(tab)) return;
       // Preserve any other params (e.g. ?lang=zh) while dropping ?tab.
       const params = new URLSearchParams(window.location.search);
@@ -10542,6 +10577,7 @@ Aaliyah Washington`
       sync(); setInterval(sync,900);
     });
   })();</script>
+  <script src="/job-tracker.js" defer></script>
   <script src="/career-hub.js"></script>
 </body>
 </html>

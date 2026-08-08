@@ -1,88 +1,71 @@
-# Chinese i18n + universal language toggle — Task Summary
+# Job Application Tracker — Task Summary
 
 Date: 2026-08-08. Branch: `claude/free-tools-page-redesign-6h2rab`.
-Follows the merged audit PR #355 (color cleanup, LinkedIn deep-link, Free/Pro
-hubs). This PR delivers your answers to **Q3 (both Chinese paths)** and
-**Q5 (language toggle on every page)**. Q1/Q2 already shipped in #355.
+Built in one PR: a Job Application Tracker that exists as a standalone free tool
+(`/job-tracker`) and as a native Pro dashboard tab, sharing one backend.
 
 ---
 
-## Q5 — universal language toggle ✅
+## What shipped
 
-**`site-nav.js` now carries a 中文/EN toggle.** Because that script injects the
-canonical nav on **every** marketing / SEO / blog / tool page, the toggle now
-appears site-wide from one change. Clicking it:
-- persists `rt_lang` (global preference — carries across pages),
-- translates the injected nav (links, Log In, CTA) via a built-in EN/中文 dict,
-- calls the page's own `window.applyLang(lang)` when it has one (e.g. `/score`,
-  `/pro-tools`) so the page **body** switches too. The button uses
-  `id="langToggleBtn"`, which those pages' own translators also target, so
-  everything stays in sync.
+### Backend (`server.js`)
+- **`applications` table** — created at startup with indexes on `user_email` and
+  `status`. **Note:** the spec's `user_id INTEGER → users(id)` doesn't fit this
+  app (the `users` table is email-keyed, no integer id), so rows are scoped by
+  `user_email TEXT`, resolved from the bearer token via `getSessionEmail`. Same
+  behavior, correct for this schema.
+- **Routes** (all bearer-auth, `401` without a token):
+  - `GET /api/applications` — list for the user; returns `isPro`, `limit`, `count`, `atLimit`, `statuses`.
+  - `POST /api/applications` — create; **free users blocked at 20** (`403 free_limit`).
+  - `PUT /api/applications/:id` — update (own rows only; `404` otherwise).
+  - `DELETE /api/applications/:id` — delete (own rows only).
+  - `GET /api/applications/stats` — aggregated stats; `advanced` block **Pro-only**.
+  - `GET /api/applications/export` — CSV; **Pro-only** (`403` for free).
+  - `GET /api/applications/autofill/jobs` — saved Job-Finder jobs; **Pro-only**.
+- Every gate is server-enforced, not just UI.
 
-**Pages with their own nav** (not `site-nav.js`) each have the toggle too:
-- `index.html` — already had a full toggle (kept, and extended below).
-- `app.html` (dashboard) — already had a toggle.
-- `employer.html` — **added** a toggle: it translates the portal's public nav
-  and persists the shared preference. (Deep translation of the portal's app UI
-  is a tracked follow-up — see below.)
+### Shared UI (`public/job-tracker.js`)
+One module, mounted by both placements via `JobTracker.mount({ container, toast, onUpgrade, getTailorJob })`:
+- **Kanban board** (default) with drag-and-drop between the 7 status columns
+  (Applied → Phone Screen → Interview → Offer → Rejected → Withdrawn → Ghosted).
+- **List view** toggle — sortable by company, date, status.
+- **Add/Edit modal** with every field; date defaults to today; delete + notes + follow-up.
+- **Follow-ups Due** section (overdue = red), **Stats widget** (this-month, response
+  rate, interviews, offers, avg days to response) + **8-week bar chart**.
+- **Free vs Pro** mirrored from the API: 20-app banner + upgrade CTA; CSV export
+  and auto-fill show a 🔒 lock and open the upgrade flow for free users.
+- Empty state, cream/green design, horizontally-scrolling kanban on mobile,
+  logged-out state prompting sign-in.
 
----
+### Placements
+- **Standalone `/job-tracker`** (`public/job-tracker.html`) — free tool, its own
+  toast, upgrade → `/#pricing`.
+- **Pro dashboard tab** (`app.html`) — sidebar button + `panel-jobtracker`,
+  `initJobTracker()` mounts the module once with the app's `showToast` / `startPro`,
+  and `getTailorJob` (auto-fill from the Tailor job URL). Reachable via
+  `/dashboard?tab=jobtracker`.
+- **Links**: `/score` Free Tools card, main site nav (`site-nav.js`, bilingual),
+  app sidebar, and `sitemap.xml`.
 
-## Q3 — both Chinese paths ✅ (with one honest caveat)
-
-**In-place homepage toggle** — the homepage already translated most content via
-its `data-i18n` + `TRANS` engine. I closed the two remaining untranslated
-feature cards — **ATS Match Score Scanner** and **Employer Portal** (heading,
-description, bullets, CTA) — using **`data-i18n`** (position-independent), on
-purpose: the `TRANS` map is index-based and its own comments document past
-content-corruption from index drift, so I avoided it. Toggling EN↔中文 on the
-homepage now leaves nothing English in those cards.
-
-**`/zh/index.html`** — added the **Pro Tools** nav link (desktop + mobile) and
-the `nav_pro_tools` dictionary entry so its nav matches the current site.
-
-> **Caveat you should know:** `/zh/index.html` is an **older, simpler** copy of
-> the homepage — it predates several sections the English page has since gained
-> (Employer card, Resume Video, Personal Website, Career Hub, the ATS-scanner
-> card). Bringing it to full visual parity is a sizeable content rebuild.
-> **Good news:** it's now arguably redundant — the in-place toggle on the
-> English homepage translates *everything*, so a Chinese visitor gets the full,
-> current homepage in Chinese from `/`. My recommendation is to either (a)
-> **redirect `/zh/` → `/` and set `rt_lang=zh`**, or (b) schedule a rebuild of
-> `/zh/index.html` from the current homepage. Tell me which and I'll do it.
-
----
-
-## The long-tail reality (unchanged from my earlier note)
-
-The **277 generated SEO role pages** (`*-resume` / `*-cover-letter`) and **most
-blog posts** have **no Chinese dictionary** — only `/zh/index.html` and a couple
-of `/zh/blog` pages exist. With this PR the **toggle is present on them, the
-shared nav switches to Chinese, and the preference is stored**, but their
-**body copy stays English** because the Chinese text doesn't exist yet.
-Translating hundreds of unique templated pages is a separate job best done by
-**generating `/zh/` variants from the role dataset + AI translation** (needs the
-Anthropic key at build). I did not fabricate those translations. Say the word
-and I'll scope that generator as its own PR.
-
-**Fully bilingual now:** homepage, `/score`, `/pro-tools`, the app dashboard,
-the Employer Portal nav, and the shared nav on every page.
-**Nav-only + preference:** the SEO role pages and long-tail blog.
+### Tests (`test/applications.js`)
+Boots the real app against a temp SQLite DB and drives every route: auth 401s,
+CRUD, validation, the **20-app cap 403**, per-user isolation, stats (basic vs
+Pro `advanced`), CSV export Pro-gating, and auto-fill Pro-gating. **34 assertions,
+all pass locally**, and the full existing suite (29 test files) still passes.
 
 ---
 
-## Verification
-- ✅ `site-nav.js` parses; toggle wired on desktop + mobile; `id="langToggleBtn"`
-  shared with tool-page translators.
-- ✅ Homepage: 15 new `data-i18n` hooks on the two cards; matching EN + 中文 dict
-  entries (2× each key).
-- ✅ `employer.html` toggle script parses; nav links carry `data-emi` hooks.
-- ✅ `/zh/index.html` nav + dict updated.
-- ⚠️ **Could not run the app** (no `node_modules`/secrets here) — changes are
-  static HTML/JS verified by inspection + `node -c`. Recommend a click-through on
-  the Netlify deploy preview (toggle on `/score`, `/pro-tools`, a role page, the
-  homepage cards, and the employer nav).
+## Auto-fill sources (as implemented)
+- **Job Finder** → server reads the existing `saved_jobs` table (Pro).
+- **Resume Tailor** → the Tailor flow doesn't persist "the job I tailored for," so
+  in the dashboard this falls back to prefilling the **job URL** from the Tailor
+  tab (Pro). If you want full company/title auto-fill from Tailor everywhere,
+  persisting each tailored job is a small follow-up (noted in `JOB_TRACKER_NOTES.md`).
 
-## Still needs your input
-1. `/zh/index.html`: redirect to `/` (recommended) **or** rebuild to full parity?
-2. Translate the SEO/blog long tail (generate `/zh/` variants)? — separate PR.
+## Verification notes
+- Backend + routes: **verified locally** (`node test/applications.js` → ALL PASS;
+  full suite green).
+- Frontend JS isn't covered by the node test suite (it drives routes, not a
+  browser), so the module was written defensively and syntax-checked (`node -c`),
+  but not click-tested in a browser here. Recommend a quick pass on the Netlify
+  deploy preview (add/drag/edit/export on `/job-tracker` and the dashboard tab).
