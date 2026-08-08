@@ -32,6 +32,9 @@
   <script src="/site-doc-store.js?v=3"></script>
   <script src="/site-vibes.js?v=3"></script>
   <script src="/site-fields.js?v=3"></script>
+  <!-- Loaded early so the OAuth-return handlers (top-level in the boot script)
+       can consume the post-login redirect stashed by the /login page. -->
+  <script src="/login-redirect.js"></script>
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9896489046536589" crossorigin="anonymous"></script>
   <style>
@@ -6709,6 +6712,18 @@ Aaliyah Washington`
     }
     // On return from a LinkedIn *login*, exchange the one-time handoff for a
     // session and drop the user into the dashboard (mirrors doLogin success).
+    // After an OAuth round-trip that began on the /login page, send the user back
+    // to where they started. The login page stashed a sanitized same-origin path
+    // in rt_post_login before leaving. Returns true if it navigated away.
+    function _consumePostLogin() {
+      let r = null;
+      try { r = localStorage.getItem('rt_post_login'); localStorage.removeItem('rt_post_login'); } catch (e) {}
+      if (!r) return false;
+      const safe = (window.LoginRedirect && window.LoginRedirect.sanitizeRedirect(r)) || null;
+      if (!safe || safe.indexOf('/dashboard') === 0) return false;
+      window.location.replace(safe);
+      return true;
+    }
     async function handleLinkedInLoginReturn() {
       const q = new URLSearchParams(window.location.search);
       const handoff = q.get('linkedin_login');
@@ -6722,6 +6737,7 @@ Aaliyah Washington`
         localStorage.setItem('rt_token', data.token);
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
+        if (_consumePostLogin()) return true;
         hideAuthModal();
         showToast('Signed in with LinkedIn. Welcome!');
       } catch (_) { showToast('Could not complete LinkedIn sign-in.'); }
@@ -6749,6 +6765,7 @@ Aaliyah Washington`
         localStorage.setItem('rt_token', data.token);
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
+        if (_consumePostLogin()) return true;
         hideAuthModal();
         showToast('Signed in with Google. Welcome!');
       } catch (_) { showToast('Could not complete Google sign-in.'); }

@@ -878,6 +878,8 @@ const ASSET_REWRITES = [
   ['href="style.css"', `href="style.css?v=${ASSET_VERSION}"`],
   ['src="/career-hub.js"', `src="/career-hub.js?v=${ASSET_VERSION}"`],
   ['src="/site-nav.js"', `src="/site-nav.js?v=${ASSET_VERSION}"`],
+  ['src="/login-redirect.js"', `src="/login-redirect.js?v=${ASSET_VERSION}"`],
+  ['src="/job-tracker.js"', `src="/job-tracker.js?v=${ASSET_VERSION}"`],
 ];
 function _versionAssetRefs(html) {
   for (const [from, to] of ASSET_REWRITES) html = html.split(from).join(to);
@@ -971,9 +973,12 @@ app.use(express.static(path.join(__dirname, 'public'), {
 // career-hub.js/style.css it references) would go right back to being
 // unversioned on exactly the pages this bug was reported on.
 const appHtml = path.join(__dirname, 'public', 'app.html');
+const loginHtml = path.join(__dirname, 'public', 'login.html');
 app.get('/dashboard',    (req, res) => _sendVersionedHtml(res, appHtml));
-app.get('/login',        (req, res) => _sendVersionedHtml(res, appHtml));
-app.get('/signup',       (req, res) => _sendVersionedHtml(res, appHtml));
+// /login and /signup serve the dedicated login page (not the app). It reads
+// ?redirect= and sends the user back where they came from after signing in.
+app.get('/login',        (req, res) => _sendVersionedHtml(res, loginHtml));
+app.get('/signup',       (req, res) => _sendVersionedHtml(res, loginHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 // Live in-browser video preview (Remotion Player — plays client-side, no render)
 app.get('/preview',      (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'preview.html')));

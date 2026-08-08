@@ -135,10 +135,12 @@
   };
 
   JT.prototype.renderLoggedOut = function () {
+    var here = (location.pathname || '/') + (location.search || '');
+    var loginHref = '/login?redirect=' + encodeURIComponent(here.indexOf('/login') === 0 ? '/job-tracker' : here);
     this.root.innerHTML = '<div class="jt-wrap"><div class="jt-empty"><div class="e">🔑</div>' +
       '<h3>Log in to track your applications</h3>' +
       '<p>The Job Tracker saves your applications to your free account.</p>' +
-      '<a class="jt-btn jt-btn--primary" href="/dashboard">Log in / Sign up →</a></div></div>';
+      '<a class="jt-btn jt-btn--primary" href="' + loginHref + '">Log in / Sign up →</a></div></div>';
   };
 
   JT.prototype.load = async function () {
