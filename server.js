@@ -618,6 +618,36 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_employer_messages_thread ON employer_messages(employer_email, candidate_email);
 `);
+
+// ─── Job Application Tracker ──────────────────────────────────────────────────
+// The candidate-side personal tracker (distinct from the employer-side
+// `job_applications` table above, which tracks applicants to an employer's
+// postings). Scoped by `user_email` because this app's `users` table is
+// email-keyed (no integer id), and every route resolves a bearer token to an
+// email via getSessionEmail.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS applications (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_email      TEXT NOT NULL,
+    company         TEXT NOT NULL,
+    job_title       TEXT NOT NULL,
+    location        TEXT,
+    application_url TEXT,
+    date_applied    TEXT NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'Applied',
+    salary_range    TEXT,
+    notes           TEXT,
+    contact_name    TEXT,
+    contact_email   TEXT,
+    follow_up_date  TEXT,
+    source          TEXT DEFAULT 'manual',
+    created_at      INTEGER NOT NULL,
+    updated_at      INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_applications_user ON applications(user_email);
+  CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
+`);
+
 // Employer profile extras (logo, description, notification prefs) added after
 // the base table shipped — see _ensureColumn (idempotent).
 _ensureColumn('employer_profiles', 'logo_url', "logo_url TEXT DEFAULT ''");
@@ -5922,6 +5952,203 @@ ${jobPosting.slice(0, 4000)}`
     console.error('ATS scan error:', e.message);
     res.status(500).json({ error: 'Analysis failed. Please try again.' });
   }
+});
+
+// ─── API: Job Application Tracker ─────────────────────────────────────────────
+// Backs both the standalone free tool (/job-tracker) and the Pro dashboard tab.
+// Free accounts can track up to APP_FREE_LIMIT applications and cannot export or
+// auto-fill; Pro is unlimited with export + auto-fill + advanced analytics. Every
+// gate is enforced here, not just in the UI.
+const APP_STATUSES = ['Applied', 'Phone Screen', 'Interview', 'Offer', 'Rejected', 'Withdrawn', 'Ghosted'];
+const APP_FREE_LIMIT = 20;
+// "Responded" = the employer moved the application past the initial submit.
+const APP_RESPONDED = ['Phone Screen', 'Interview', 'Offer', 'Rejected'];
+
+function _appTodayISO() { return new Date().toISOString().slice(0, 10); }
+function _appValidStatus(s) { return APP_STATUSES.includes(s); }
+function _appRow(r) {
+  return {
+    id: r.id, company: r.company, jobTitle: r.job_title, location: r.location || '',
+    applicationUrl: r.application_url || '', dateApplied: r.date_applied, status: r.status,
+    salaryRange: r.salary_range || '', notes: r.notes || '', contactName: r.contact_name || '',
+    contactEmail: r.contact_email || '', followUpDate: r.follow_up_date || '', source: r.source || 'manual',
+    createdAt: r.created_at, updatedAt: r.updated_at,
+  };
+}
+// Read a field that the client may send in camelCase or snake_case.
+function _appField(b, camel, snake) {
+  const v = b[camel] !== undefined ? b[camel] : b[snake];
+  return v === undefined ? undefined : (v === null ? '' : String(v)).trim();
+}
+
+app.get('/api/applications', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please log in to use the Job Tracker.' });
+  const pro = isSubscriber(email);
+  const rows = db.prepare('SELECT * FROM applications WHERE user_email = ? ORDER BY date_applied DESC, id DESC').all(email);
+  res.json({
+    applications: rows.map(_appRow),
+    isPro: pro,
+    limit: pro ? null : APP_FREE_LIMIT,
+    count: rows.length,
+    atLimit: !pro && rows.length >= APP_FREE_LIMIT,
+    statuses: APP_STATUSES,
+  });
+});
+
+// Aggregated stats. Basic stats for everyone; `advanced` only for Pro.
+app.get('/api/applications/stats', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please log in.' });
+  const pro = isSubscriber(email);
+  const rows = db.prepare('SELECT * FROM applications WHERE user_email = ?').all(email);
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const total = rows.length;
+  const totalThisMonth = rows.filter(r => new Date(r.date_applied) >= monthStart).length;
+  const responded = rows.filter(r => APP_RESPONDED.includes(r.status)).length;
+  const interviews = rows.filter(r => r.status === 'Interview').length;
+  const offers = rows.filter(r => r.status === 'Offer').length;
+  // Avg days to first response — we don't store the response date, so approximate
+  // from updated_at (when the status last moved) minus date_applied, for rows
+  // that reached a responded status.
+  const respRows = rows.filter(r => APP_RESPONDED.includes(r.status));
+  let avgDaysToResponse = null;
+  if (respRows.length) {
+    const sum = respRows.reduce((a, r) => {
+      const applied = new Date(r.date_applied + 'T00:00:00').getTime();
+      const d = Math.max(0, Math.round((r.updated_at - applied) / 86400000));
+      return a + d;
+    }, 0);
+    avgDaysToResponse = Math.round(sum / respRows.length);
+  }
+  const weekly = [];
+  for (let i = 7; i >= 0; i--) {
+    const end = new Date(now); end.setHours(23, 59, 59, 999); end.setDate(now.getDate() - i * 7);
+    const start = new Date(end); start.setDate(end.getDate() - 7);
+    const count = rows.filter(r => { const d = new Date(r.date_applied + 'T12:00:00'); return d > start && d <= end; }).length;
+    weekly.push({ label: end.toISOString().slice(5, 10), count });
+  }
+  const stats = {
+    total, totalThisMonth,
+    responseRate: total ? Math.round((responded / total) * 100) : 0,
+    interviews, offers, avgDaysToResponse, weekly, isPro: pro,
+  };
+  if (pro) {
+    const byStatus = {}; APP_STATUSES.forEach(s => { byStatus[s] = rows.filter(r => r.status === s).length; });
+    const bySource = {}; rows.forEach(r => { const k = r.source || 'manual'; bySource[k] = (bySource[k] || 0) + 1; });
+    stats.advanced = { byStatus, bySource, offerRate: total ? Math.round((offers / total) * 100) : 0 };
+  }
+  res.json(stats);
+});
+
+// CSV export — Pro only.
+app.get('/api/applications/export', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please log in.' });
+  if (!isSubscriber(email)) return res.status(403).json({ error: 'pro_only', message: 'CSV export is a Pro feature.' });
+  const rows = db.prepare('SELECT * FROM applications WHERE user_email = ? ORDER BY date_applied DESC, id DESC').all(email);
+  const cols = ['company', 'job_title', 'location', 'application_url', 'date_applied', 'status', 'salary_range', 'notes', 'contact_name', 'contact_email', 'follow_up_date', 'source'];
+  const header = ['Company', 'Job Title', 'Location', 'Application URL', 'Date Applied', 'Status', 'Salary Range', 'Notes', 'Contact Name', 'Contact Email', 'Follow Up Date', 'Source'];
+  const esc = (v) => { const s = v == null ? '' : String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const csv = [header.join(',')].concat(rows.map(r => cols.map(c => esc(r[c])).join(','))).join('\r\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="job-applications.csv"');
+  res.send('﻿' + csv);
+});
+
+// Auto-fill candidates from the Job Finder's saved jobs — Pro only.
+app.get('/api/applications/autofill/jobs', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please log in.' });
+  if (!isSubscriber(email)) return res.status(403).json({ error: 'pro_only', message: 'Auto-fill is a Pro feature.' });
+  let rows = [];
+  try {
+    rows = db.prepare('SELECT job_id,title,company,location,url FROM saved_jobs WHERE email = ? ORDER BY saved_at DESC LIMIT 50').all(email);
+  } catch (e) { rows = []; }
+  res.json({ jobs: rows.map(r => ({ jobId: r.job_id, title: r.title || '', company: r.company || '', location: r.location || '', url: r.url || '' })) });
+});
+
+app.post('/api/applications', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please log in to use the Job Tracker.' });
+  const pro = isSubscriber(email);
+  const count = db.prepare('SELECT COUNT(*) AS n FROM applications WHERE user_email = ?').get(email).n;
+  if (!pro && count >= APP_FREE_LIMIT) {
+    return res.status(403).json({ error: 'free_limit', message: 'Track unlimited applications with Pro.', limit: APP_FREE_LIMIT });
+  }
+  const b = req.body || {};
+  const company = _appField(b, 'company', 'company') || '';
+  const jobTitle = _appField(b, 'jobTitle', 'job_title') || '';
+  if (!company || !jobTitle) return res.status(400).json({ error: 'Company name and job title are required.' });
+  const status = _appValidStatus(b.status) ? b.status : 'Applied';
+  const dateApplied = _appField(b, 'dateApplied', 'date_applied') || _appTodayISO();
+  const source = ['manual', 'job_finder', 'resume_tailor'].includes(b.source) ? b.source : 'manual';
+  const now = Date.now();
+  const emptyToNull = (v) => (v === undefined || v === '') ? null : v;
+  const info = db.prepare(`INSERT INTO applications
+    (user_email,company,job_title,location,application_url,date_applied,status,salary_range,notes,contact_name,contact_email,follow_up_date,source,created_at,updated_at)
+    VALUES (@user_email,@company,@job_title,@location,@application_url,@date_applied,@status,@salary_range,@notes,@contact_name,@contact_email,@follow_up_date,@source,@created_at,@updated_at)`)
+    .run({
+      user_email: email, company, job_title: jobTitle,
+      location: emptyToNull(_appField(b, 'location', 'location')),
+      application_url: emptyToNull(_appField(b, 'applicationUrl', 'application_url')),
+      date_applied: dateApplied, status,
+      salary_range: emptyToNull(_appField(b, 'salaryRange', 'salary_range')),
+      notes: emptyToNull(_appField(b, 'notes', 'notes')),
+      contact_name: emptyToNull(_appField(b, 'contactName', 'contact_name')),
+      contact_email: emptyToNull(_appField(b, 'contactEmail', 'contact_email')),
+      follow_up_date: emptyToNull(_appField(b, 'followUpDate', 'follow_up_date')),
+      source, created_at: now, updated_at: now,
+    });
+  const row = db.prepare('SELECT * FROM applications WHERE id = ?').get(info.lastInsertRowid);
+  res.json({ application: _appRow(row) });
+});
+
+app.put('/api/applications/:id', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please log in.' });
+  const id = parseInt(req.params.id, 10);
+  const existing = db.prepare('SELECT * FROM applications WHERE id = ? AND user_email = ?').get(id, email);
+  if (!existing) return res.status(404).json({ error: 'Application not found.' });
+  const b = req.body || {};
+  // Merge: a field is updated only when the client sent it; blanks clear
+  // optional fields but never blank a required one.
+  const pick = (camel, snake, cur, required) => {
+    const v = _appField(b, camel, snake);
+    if (v === undefined) return cur;
+    if (required) return v || cur;
+    return v === '' ? null : v;
+  };
+  const merged = {
+    company: pick('company', 'company', existing.company, true),
+    job_title: pick('jobTitle', 'job_title', existing.job_title, true),
+    location: pick('location', 'location', existing.location, false),
+    application_url: pick('applicationUrl', 'application_url', existing.application_url, false),
+    date_applied: pick('dateApplied', 'date_applied', existing.date_applied, true),
+    status: (b.status !== undefined && _appValidStatus(b.status)) ? b.status : existing.status,
+    salary_range: pick('salaryRange', 'salary_range', existing.salary_range, false),
+    notes: pick('notes', 'notes', existing.notes, false),
+    contact_name: pick('contactName', 'contact_name', existing.contact_name, false),
+    contact_email: pick('contactEmail', 'contact_email', existing.contact_email, false),
+    follow_up_date: pick('followUpDate', 'follow_up_date', existing.follow_up_date, false),
+  };
+  db.prepare(`UPDATE applications SET company=@company, job_title=@job_title, location=@location,
+    application_url=@application_url, date_applied=@date_applied, status=@status, salary_range=@salary_range,
+    notes=@notes, contact_name=@contact_name, contact_email=@contact_email, follow_up_date=@follow_up_date,
+    updated_at=@updated_at WHERE id=@id AND user_email=@user_email`)
+    .run({ ...merged, updated_at: Date.now(), id, user_email: email });
+  const row = db.prepare('SELECT * FROM applications WHERE id = ?').get(id);
+  res.json({ application: _appRow(row) });
+});
+
+app.delete('/api/applications/:id', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'Please log in.' });
+  const id = parseInt(req.params.id, 10);
+  const info = db.prepare('DELETE FROM applications WHERE id = ? AND user_email = ?').run(id, email);
+  if (!info.changes) return res.status(404).json({ error: 'Application not found.' });
+  res.json({ ok: true });
 });
 
 // ─── API: Tailor resume ───────────────────────────────────────────────────────

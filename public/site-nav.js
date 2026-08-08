@@ -23,6 +23,7 @@
   var LINKS = [
     ['How It Works', '/how-it-works', '功能介绍'],
     ['Free Tools', '/score', '免费工具'],
+    ['Job Tracker', '/job-tracker', '求职跟踪'],
     ['Pro Tools', '/pro-tools', '专业版工具'],
     ['Resume Examples', '/resume-examples', '简历范例'],
     ['Blog', '/blog', '博客'],

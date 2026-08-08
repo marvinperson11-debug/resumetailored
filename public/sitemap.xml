@@ -300,6 +300,13 @@
   </url>
 
   <url>
+    <loc>https://resumetailored.com/job-tracker</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
+  </url>
+
+  <url>
     <loc>https://resumetailored.com/ats-score-checker</loc>
     <lastmod>2026-06-08</lastmod>
     <changefreq>monthly</changefreq>

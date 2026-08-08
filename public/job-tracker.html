@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Free Job Application Tracker — Kanban Board &amp; Reminders | ResumeTailored AI</title>
+  <meta name="description" content="Free job application tracker. Organize every application on a kanban board, track status from Applied to Offer, set follow-up reminders, and see your response rate. Free for up to 20 applications."/>
+  <meta name="keywords" content="job application tracker, job search tracker, application kanban board, track job applications free"/>
+  <link rel="canonical" href="https://resumetailored.com/job-tracker"/>
+  <link rel="alternate" hreflang="en" href="https://resumetailored.com/job-tracker"/>
+  <link rel="alternate" hreflang="zh-CN" href="https://resumetailored.com/job-tracker?lang=zh"/>
+  <link rel="alternate" hreflang="x-default" href="https://resumetailored.com/job-tracker"/>
+  <meta property="og:title" content="Free Job Application Tracker — Kanban Board &amp; Reminders"/>
+  <meta property="og:description" content="Track every job application on a kanban board with follow-up reminders and response-rate stats. Free, no credit card."/>
+  <meta property="og:url" content="https://resumetailored.com/job-tracker"/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:image" content="https://resumetailored.com/og-image.png"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <link rel="icon" href="/favicon.png" type="image/png"/>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;background:#FAF7F0;color:#57514A;line-height:1.6;-webkit-font-smoothing:antialiased;}
+    h1,h2,h3{font-family:'Fraunces',Georgia,serif;color:#191512;letter-spacing:-0.015em;}
+    a{color:inherit;text-decoration:none;}
+    nav,main,footer{position:relative;z-index:1;}
+    .nav{background:rgba(250,247,240,0.85);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid #E7DFD1;position:sticky;top:0;z-index:100;}
+    .nav-inner{max-width:1200px;margin:0 auto;padding:0 24px;height:64px;display:flex;align-items:center;justify-content:space-between;}
+    .logo{font-size:20px;font-weight:900;color:#191512;letter-spacing:-0.03em;font-family:'Fraunces',serif;}
+    .logo .badge-ai{background:#1F5C3D;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;font-family:'Inter',sans-serif;}
+    .nav-links{display:flex;gap:24px;align-items:center;}
+    .nav-links a{font-size:14px;font-weight:600;color:#57514A;}
+    .nav-links a:hover{color:#1F5C3D;}
+    .btn-nav{background:#1F5C3D;color:#fff !important;padding:9px 18px;border-radius:8px;font-weight:700;font-size:13px;}
+    .hero{max-width:1200px;margin:0 auto;padding:34px 24px 6px;}
+    .hero .eyebrow{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#1F5C3D;margin-bottom:8px;}
+    .hero h1{font-size:clamp(26px,4vw,40px);font-weight:700;color:#191512;line-height:1.1;}
+    .hero p{font-size:16px;color:#57514A;max-width:640px;margin-top:8px;}
+    main{max-width:1200px;margin:0 auto;padding:20px 24px 64px;}
+    footer{background:#F1EADD;border-top:1px solid #E7DFD1;padding:28px 24px;text-align:center;margin-top:40px;}
+    footer p{font-size:13px;color:#918A7E;}
+    footer a{color:#1F5C3D;font-weight:600;}
+    /* Toast */
+    #toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#191512;color:#fff;font-size:14px;font-weight:600;padding:12px 20px;border-radius:10px;box-shadow:0 10px 30px rgba(25,21,18,.3);opacity:0;pointer-events:none;transition:all .25s;z-index:13000;max-width:90vw;text-align:center;}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  </style>
+  <link rel="stylesheet" href="/theme.css"/>
+  <link rel="stylesheet" href="/site-fx.css"/>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
+    <div class="nav-links">
+      <a href="/how-it-works">How It Works</a>
+      <a href="/score">Free Tools</a>
+      <a href="/pro-tools">Pro Tools</a>
+      <a href="/blog">Blog</a>
+      <a href="/dashboard" class="btn-nav">Tailor My Resume Free →</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <p class="eyebrow">★ Free Tool · Track up to 20 applications</p>
+  <h1>Job Application Tracker</h1>
+  <p>Keep every application in one place — a kanban board from Applied to Offer, follow-up reminders, and your real response rate. Free with your ResumeTailored account.</p>
+</section>
+
+<main>
+  <div id="jtRoot"></div>
+</main>
+
+<footer>
+  <p>&copy; 2026 ResumeTailored AI &nbsp;&middot;&nbsp; <a href="/">resumetailored.com</a></p>
+  <p style="margin-top:6px;"><a href="/score">Free Tools</a> &nbsp;&middot;&nbsp; <a href="/pro-tools">Pro Tools</a> &nbsp;&middot;&nbsp; <a href="/blog">Blog</a> &nbsp;&middot;&nbsp; <a href="mailto:support@resumetailored.com">support@resumetailored.com</a></p>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+  function showToast(msg, ms) {
+    var t = document.getElementById('toast'); if (!t) return;
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function () { t.classList.remove('show'); }, ms || 2600);
+  }
+</script>
+<script src="/job-tracker.js" defer></script>
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    JobTracker.mount({
+      container: 'jtRoot',
+      toast: showToast,
+      onUpgrade: function () { window.location = '/#pricing'; }
+    });
+  });
+</script>
+<script src="/site-nav.js" defer></script>
+</body>
+</html>
