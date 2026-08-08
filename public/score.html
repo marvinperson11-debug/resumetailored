@@ -118,9 +118,7 @@
 
     /* STATUS BADGE */
     .status-bar{max-width:700px;margin:18px auto 0;padding:10px 18px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:13px;font-weight:600;color:#64748b;text-align:center;}
-    .status-bar .pro-pill{background:linear-gradient(135deg,#1F5C3D,#2E7D53);color:#fff;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;margin-left:6px;}
     .status-bar .free-pill{background:rgba(52,211,153,0.12);color:#34d399;border:1px solid rgba(52,211,153,0.3);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;margin-left:6px;}
-    .status-bar .used-pill{background:rgba(248,113,113,0.12);color:#f87171;border:1px solid rgba(248,113,113,0.3);padding:2px 10px;border-radius:20px;font-size:11px;font-weight:800;margin-left:6px;}
 
     /* TAB SWITCHER */
     .tab-wrap{max-width:700px;margin:32px auto 0;padding:0 24px;}
@@ -208,30 +206,12 @@
     .chip-missing{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);color:#f87171;}
     .chips-empty{font-size:13px;color:#475569;font-style:italic;}
 
-    /* MISSING KEYWORDS LOCK */
-    .missing-kw-wrap{position:relative;}
-    .missing-blur{filter:blur(5px);pointer-events:none;user-select:none;}
-    .missing-lock-overlay{position:absolute;inset:-8px;background:rgba(3,7,18,0.75);backdrop-filter:blur(2px);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:10;}
-    .lock-icon{font-size:22px;}
-    .lock-text{font-size:13px;font-weight:700;color:#94a3b8;text-align:center;}
-    .btn-unlock-sm{background:linear-gradient(135deg,#1F5C3D,#2E7D53);color:#fff;padding:7px 18px;border-radius:8px;font-size:12px;font-weight:800;display:inline-block;margin-top:4px;}
-
     /* SUGGESTIONS */
     .suggestions-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:24px;margin-bottom:24px;}
     .suggestions-eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#1F5C3D;margin-bottom:16px;}
     .suggestion-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:14px;color:#cbd5e1;line-height:1.65;}
     .suggestion-item:last-child{border-bottom:none;padding-bottom:0;}
     .suggestion-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:rgba(31,92,61,0.2);border:1px solid rgba(31,92,61,0.4);color:#1F5C3D;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px;}
-
-    /* UPGRADE WALL */
-    .upgrade-wall{display:none;background:linear-gradient(135deg,rgba(31,92,61,0.12),rgba(46,125,83,0.08));border:1px solid rgba(31,92,61,0.3);border-radius:20px;padding:48px 32px;text-align:center;margin-bottom:24px;}
-    .upgrade-wall h3{font-size:24px;font-weight:900;color:#f1f5f9;margin-bottom:10px;letter-spacing:-0.02em;}
-    .upgrade-wall p{font-size:15px;color:#94a3b8;max-width:520px;margin:0 auto 24px;line-height:1.7;}
-    .upgrade-wall .btn-upgrade{background:linear-gradient(135deg,#1F5C3D,#2E7D53);color:#fff;padding:14px 36px;border-radius:10px;font-weight:800;font-size:16px;display:inline-block;box-shadow:0 0 24px rgba(31,92,61,0.45);}
-    .upgrade-wall .btn-upgrade:hover{opacity:.9;}
-    .upgrade-wall .upgrade-perks{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:28px;}
-    .upgrade-perk{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:600;color:#94a3b8;}
-    .upgrade-perk strong{color:#1f5c3d;}
 
     /* CTA STRIP */
     .cta-strip{background:linear-gradient(135deg,rgba(31,92,61,0.12),rgba(46,125,83,0.08));border:1px solid rgba(31,92,61,0.25);border-radius:16px;padding:24px 28px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
@@ -269,7 +249,6 @@
       .nav-links{display:none;}
       .nav-hamburger{display:flex;}
       .cta-strip{flex-direction:column;}
-      .upgrade-wall{padding:32px 20px;}
       /* Class-based dark-theme leftovers: these read near-white on the cream
          mobile background (theme.css can only catch inline styles, not
          classes defined in this page's own <style> block). Desktop is
@@ -392,20 +371,6 @@
     <!-- RESULTS -->
     <div class="results-section" id="atsResults">
 
-      <!-- UPGRADE WALL (shown when 402) -->
-      <div class="upgrade-wall" id="upgradeWall">
-        <div style="font-size:44px;margin-bottom:16px;">🔒</div>
-        <h3 data-i18n="upgrade_h">You've hit your daily limit!</h3>
-        <p data-i18n="upgrade_p">Your premium AI-tailored analysis is ready, but it's locked. Upgrade to ResumeTailored Pro to unlock unlimited smart ATS scans, reveal your exact missing keywords, and let our AI builder rewrite your entire resume instantly.</p>
-        <div class="upgrade-perks">
-          <div class="upgrade-perk"><strong>∞</strong> <span data-i18n="perk1">Unlimited ATS scans</span></div>
-          <div class="upgrade-perk"><strong>🔓</strong> <span data-i18n="perk2">All missing keywords revealed</span></div>
-          <div class="upgrade-perk"><strong>⚡</strong> <span data-i18n="perk3">AI resume rewriter</span></div>
-          <div class="upgrade-perk"><strong>🕒</strong> <span data-i18n="perk4">No daily limits — ever</span></div>
-        </div>
-        <a href="/#pricing" class="btn-upgrade" data-i18n="upgrade_btn">Upgrade to Pro — $19.99/mo →</a>
-      </div>
-
       <!-- SCORE + KEYWORDS -->
       <div class="ats-results-grid" id="atsResultsGrid">
 
@@ -435,12 +400,6 @@
             <div class="kw-section-title missing"><span data-i18n="missing_kw">✕ Missing Keywords</span> <span class="kw-count" id="missingCount">0</span></div>
             <div class="missing-kw-wrap">
               <div class="chips-wrap" id="missingChips"></div>
-              <!-- Lock overlay — shown for free users -->
-              <div class="missing-lock-overlay" id="missingLockOverlay" style="display:none;">
-                <span class="lock-icon">&#128274;</span>
-                <span class="lock-text" data-i18n-html="lock_text">Missing keywords locked<br/>for free users</span>
-                <a href="/#pricing" class="btn-unlock-sm" data-i18n="unlock_btn">Unlock with Pro →</a>
-              </div>
             </div>
           </div>
         </div>
@@ -568,25 +527,121 @@
 
 </section>
 
-<!-- MORE FREE TOOLS -->
-<section style="max-width:1000px;margin:0 auto;padding:8px 24px 56px;position:relative;z-index:1;">
+<!-- ALL FREE TOOLS — card catalog -->
+<section class="ft-catalog" style="max-width:1100px;margin:0 auto;padding:8px 24px 64px;position:relative;z-index:1;">
   <p style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#1F5C3D;text-align:center;margin-bottom:8px;" data-i18n="tools_eyebrow">★ All Free Tools</p>
-  <h2 style="font-size:clamp(22px,4vw,30px);font-weight:900;color:#191512;text-align:center;letter-spacing:-0.02em;margin-bottom:28px;" data-i18n="tools_title">Explore every free tool</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;">
+  <h2 style="font-size:clamp(22px,4vw,32px);font-weight:900;color:#191512;text-align:center;letter-spacing:-0.02em;margin-bottom:10px;" data-i18n="tools_title">Every free tool, in one place</h2>
+  <p style="font-size:15px;color:#57514A;text-align:center;max-width:560px;margin:0 auto 32px;" data-i18n="tools_sub">Unlimited and free forever — no credit card, no daily cap. Pick a tool and get started.</p>
+
+  <div class="ft-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
 
     <!-- ATS Score Checker (this page) -->
-    <div style="background:#ffffff;border:1px solid rgba(31,92,61,0.3);border-radius:16px;padding:24px;">
-      <div style="font-size:30px;margin-bottom:12px;">🎯</div>
+    <div class="ft-card ft-card--here" style="background:#ffffff;border:2px solid rgba(31,92,61,0.4);border-radius:16px;padding:24px;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:30px;">🎯</div>
+        <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
+      </div>
       <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_score_h">ATS Score Checker</h3>
-      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;" data-i18n="tool_score_p">Score your resume against any job description and get 5 AI rewrite suggestions.</p>
+      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_score_p">Score your resume against any job description and get instant AI rewrite suggestions.</p>
       <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_youre_here">● You're here</span>
     </div>
 
+    <!-- Readability Review (tab 2 on this page) -->
+    <a href="#" onclick="switchTab('readability');window.scrollTo({top:0,behavior:'smooth'});return false;" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:30px;">📝</div>
+        <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_read_h">Readability Review</h3>
+      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_read_p">Instantly check word count, bullet balance, and weak phrases as you type.</p>
+      <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_open">Open tool →</span>
+    </a>
+
     <!-- ATS Keyword Extractor -->
-    <a href="/tools/ats-keyword-extractor" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:block;transition:all .2s;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
-      <div style="font-size:30px;margin-bottom:12px;">🔍</div>
+    <a href="/tools/ats-keyword-extractor" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:30px;">🔍</div>
+        <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
+      </div>
       <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_kw_h">ATS Keyword Extractor</h3>
-      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;" data-i18n="tool_kw_p">Paste any job description — get the top 15 ATS keywords your resume needs.</p>
+      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_kw_p">Paste any job description — get the top 15 ATS keywords your resume needs.</p>
+      <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_open">Open tool →</span>
+    </a>
+
+    <!-- AI Resume Tailor -->
+    <a href="/dashboard" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:30px;">✨</div>
+        <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_tailor_h">AI Resume Tailor</h3>
+      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_tailor_p">Rewrite your whole resume for any job in 30 seconds — with the right keywords woven in.</p>
+      <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_open">Open tool →</span>
+    </a>
+
+    <!-- AI Cover Letter Generator -->
+    <a href="/dashboard" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:30px;">✍️</div>
+        <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_cover_h">AI Cover Letter Generator</h3>
+      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_cover_p">A tailored, company-specific cover letter in seconds — no generic filler.</p>
+      <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_open">Open tool →</span>
+    </a>
+
+    <!-- LinkedIn Profile Optimizer -->
+    <a href="/dashboard" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:30px;">💼</div>
+        <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_li_h">LinkedIn Profile Optimizer</h3>
+      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_li_p">AI-rewrite your headline, About section, and experience to rank in recruiter search.</p>
+      <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_open">Open tool →</span>
+    </a>
+
+    <!-- Resume Video Maker -->
+    <a href="/tools/resume-video" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:30px;">🎬</div>
+        <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_video_h">Resume Video Maker</h3>
+      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_video_p">Turn your resume into a short vertical video right in your browser — with voiceover.</p>
+      <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_open">Open tool →</span>
+    </a>
+
+    <!-- Share Resume as a Link -->
+    <a href="/dashboard" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:30px;">🔗</div>
+        <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_share_h">Share Resume as a Link</h3>
+      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_share_p">Turn any tailored resume into a private web link that opens instantly — no attachment.</p>
+      <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_open">Open tool →</span>
+    </a>
+
+    <!-- Resume Examples -->
+    <a href="/resume-examples" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:30px;">📄</div>
+        <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_examples_h">Resume Examples</h3>
+      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_examples_p">Browse 70+ role-specific resume examples across every industry and level.</p>
+      <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_open">Open tool →</span>
+    </a>
+
+    <!-- Cover Letter Examples -->
+    <a href="/cover-letter-examples" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:30px;">📑</div>
+        <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
+      </div>
+      <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_cl_examples_h">Cover Letter Examples</h3>
+      <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_cl_examples_p">70+ role-specific cover letter examples with sample openings you can adapt.</p>
       <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_open">Open tool →</span>
     </a>
 
@@ -621,15 +676,8 @@
       resume_ph:'Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…',
       job_ph:'Paste the full job posting here — include requirements, responsibilities, and qualifications…',
       analyze_btn:'Analyze ATS Match →', shortcut:'or press Ctrl+Enter',
-      upgrade_h:"You've hit your daily limit!",
-      upgrade_p:"Your premium AI-tailored analysis is ready, but it's locked. Upgrade to ResumeTailored Pro to unlock unlimited smart ATS scans, reveal your exact missing keywords, and let our AI builder rewrite your entire resume instantly.",
-      perk1:'Unlimited ATS scans', perk2:'All missing keywords revealed',
-      perk3:'AI resume rewriter', perk4:'No daily limits — ever',
-      upgrade_btn:'Upgrade to Pro — $19.99/mo →',
       score_title:'ATS Match Score',
       matched_kw:'✓ Matched Keywords', missing_kw:'✕ Missing Keywords',
-      lock_text:'Missing keywords locked<br/>for free users',
-      unlock_btn:'Unlock with Pro →',
       ai_suggestions:'💡 AI Rewrite Suggestions',
       cta_ats_h:'Fix missing keywords automatically →',
       cta_ats_p:'Let our AI rewrite your full resume with all the right keywords woven in naturally — plus a matching cover letter, in 30 seconds.',
@@ -647,14 +695,22 @@
       footer_desc:'Our AI rewrites your entire resume with the right keywords woven in naturally — plus a matching cover letter.',
       footer_btn:'Tailor My Resume Free →',
       footer_free_tools:'Free Tools', footer_blog:'Blog', footer_how:'How It Works',
-      tools_eyebrow:'★ All Free Tools', tools_title:'Explore every free tool',
-      tool_score_h:'ATS Score Checker', tool_score_p:'Score your resume against any job description and get 5 AI rewrite suggestions.',
+      tools_eyebrow:'★ All Free Tools', tools_title:'Every free tool, in one place',
+      tools_sub:'Unlimited and free forever — no credit card, no daily cap. Pick a tool and get started.',
+      tool_free_badge:'Free',
+      tool_score_h:'ATS Score Checker', tool_score_p:'Score your resume against any job description and get instant AI rewrite suggestions.',
       tool_youre_here:"● You're here",
+      tool_read_h:'Readability Review', tool_read_p:'Instantly check word count, bullet balance, and weak phrases as you type.',
       tool_kw_h:'ATS Keyword Extractor', tool_kw_p:'Paste any job description — get the top 15 ATS keywords your resume needs.',
+      tool_tailor_h:'AI Resume Tailor', tool_tailor_p:'Rewrite your whole resume for any job in 30 seconds — with the right keywords woven in.',
+      tool_cover_h:'AI Cover Letter Generator', tool_cover_p:'A tailored, company-specific cover letter in seconds — no generic filler.',
+      tool_li_h:'LinkedIn Profile Optimizer', tool_li_p:'AI-rewrite your headline, About section, and experience to rank in recruiter search.',
+      tool_video_h:'Resume Video Maker', tool_video_p:'Turn your resume into a short vertical video right in your browser — with voiceover.',
+      tool_share_h:'Share Resume as a Link', tool_share_p:'Turn any tailored resume into a private web link that opens instantly — no attachment.',
+      tool_examples_h:'Resume Examples', tool_examples_p:'Browse 70+ role-specific resume examples across every industry and level.',
+      tool_cl_examples_h:'Cover Letter Examples', tool_cl_examples_p:'70+ role-specific cover letter examples with sample openings you can adapt.',
       tool_open:'Open tool →',
-      status_pro:'✓ Pro member — unlimited ATS scans active',
-      status_free:'Free tier — <strong style="color:#34d399;">unlimited free ATS scans</strong> available today',
-      status_limit:'Daily limit reached — upgrade for unlimited scans',
+      status_free:'<strong style="color:#34d399;">Unlimited free ATS scans</strong> — no account, no daily cap',
       v_too_short:'Too Short', v_a_bit_short:'A Bit Short', v_ideal:'Ideal',
       v_a_bit_long:'A Bit Long', v_too_long:'Too Long',
       v_too_few:'Too Few', v_could_add:'Could Add More', v_ideal_range:'Ideal Range',
@@ -691,15 +747,8 @@
       resume_ph:'在此粘贴完整简历文本，或点击"上传文件"导入 .txt、.pdf 或 .docx…',
       job_ph:'在此粘贴完整职位描述——包含要求、职责和资质…',
       analyze_btn:'分析ATS匹配 →', shortcut:'或按 Ctrl+Enter',
-      upgrade_h:'你今天的免费次数已用完！',
-      upgrade_p:'你的高级AI分析结果已就绪，但需要解锁。升级至ResumeTailored Pro，享受无限次ATS扫描、查看所有缺失关键词，并让AI即时重写你的完整简历。',
-      perk1:'无限次ATS扫描', perk2:'显示所有缺失关键词',
-      perk3:'AI简历重写', perk4:'永不设每日限制',
-      upgrade_btn:'升级至Pro版 — ¥19.99/月 →',
       score_title:'ATS匹配得分',
       matched_kw:'✓ 已匹配关键词', missing_kw:'✕ 缺失关键词',
-      lock_text:'缺失关键词对免费用户<br/>不可见',
-      unlock_btn:'升级Pro解锁 →',
       ai_suggestions:'💡 AI重写建议',
       cta_ats_h:'自动补充缺失关键词 →',
       cta_ats_p:'让AI用正确关键词自然地重写你的完整简历——还附带匹配的求职信，30秒完成。',
@@ -717,14 +766,22 @@
       footer_desc:'AI用正确关键词自然地重写你的完整简历——还附带匹配的求职信。',
       footer_btn:'免费定制我的简历 →',
       footer_free_tools:'免费工具', footer_blog:'博客', footer_how:'功能介绍',
-      tools_eyebrow:'★ 全部免费工具', tools_title:'探索每一个免费工具',
-      tool_score_h:'ATS 匹配评分', tool_score_p:'用任意职位描述为简历评分，并获得5条AI重写建议。',
+      tools_eyebrow:'★ 全部免费工具', tools_title:'所有免费工具，一站汇集',
+      tools_sub:'永久免费、无限使用——无需信用卡，无每日限制。选择一个工具即刻开始。',
+      tool_free_badge:'免费',
+      tool_score_h:'ATS 匹配评分', tool_score_p:'用任意职位描述为简历评分，并即时获得AI重写建议。',
       tool_youre_here:'● 当前页面',
+      tool_read_h:'可读性评审', tool_read_p:'输入即时检测字数、条目平衡和弱势表达。',
       tool_kw_h:'ATS 关键词提取', tool_kw_p:'粘贴任意职位描述——获取简历所需的前15个ATS关键词。',
+      tool_tailor_h:'AI 简历定制', tool_tailor_p:'30秒为任意职位重写整份简历——自然融入正确关键词。',
+      tool_cover_h:'AI 求职信生成', tool_cover_p:'几秒生成针对公司量身定制的求职信——绝无套话。',
+      tool_li_h:'领英资料优化', tool_li_p:'AI重写你的标题、简介和经历，在招聘者搜索中脱颖而出。',
+      tool_video_h:'简历视频制作', tool_video_p:'在浏览器中直接把简历变成竖版短视频——附带配音。',
+      tool_share_h:'简历分享链接', tool_share_p:'把定制简历变成即开即看的私密网页链接——无需附件。',
+      tool_examples_h:'简历范例', tool_examples_p:'浏览70多个覆盖各行业和级别的职位专属简历范例。',
+      tool_cl_examples_h:'求职信范例', tool_cl_examples_p:'70多个职位专属求职信范例，含可套用的开头段落。',
       tool_open:'打开工具 →',
-      status_pro:'✓ Pro会员 — 无限次ATS扫描已激活',
-      status_free:'免费版 — <strong style="color:#34d399;">无限次免费ATS扫描</strong>，随时可用',
-      status_limit:'今日限制已达 — 升级获取无限次扫描',
+      status_free:'<strong style="color:#34d399;">无限次免费ATS扫描</strong> — 无需注册，无每日限制',
       v_too_short:'太短', v_a_bit_short:'稍短', v_ideal:'理想',
       v_a_bit_long:'稍长', v_too_long:'太长',
       v_too_few:'太少', v_could_add:'可以增加', v_ideal_range:'理想范围',
@@ -777,35 +834,18 @@
     applyLang(next);
   }
 
-  // ── State ──────────────────────────────────────────────────────────────────
-  let isSubscriber = false;
-  let freeAtsLeft = 1;
-
-  // ── On load: check status ──────────────────────────────────────────────────
-  (async function init() {
+  // ── On load ────────────────────────────────────────────────────────────────
+  // Every tool here is free and unlimited, so there's no access level to check —
+  // the status bar just confirms it.
+  (function init() {
     applyLang(currentLang);
-    try {
-      const token = localStorage.getItem('rt_token') || '';
-      const email = localStorage.getItem('rt_email') || '';
-      const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-      const res = await fetch('/api/status?email=' + encodeURIComponent(email), { headers });
-      const data = await res.json();
-      isSubscriber = data.isSubscriber;
-      freeAtsLeft  = data.freeAtsLeft !== undefined ? data.freeAtsLeft : 1;
-      updateStatusBar();
-    } catch(e) { updateStatusBar(); }
+    updateStatusBar();
   })();
 
   function updateStatusBar() {
     const bar = document.getElementById('statusBar');
     const t = I18N[currentLang];
-    if (isSubscriber) {
-      bar.innerHTML = t.status_pro + ' <span class="pro-pill">✦ PRO</span>';
-    } else if (freeAtsLeft > 0) {
-      bar.innerHTML = t.status_free + ' <span class="free-pill">FREE</span>';
-    } else {
-      bar.innerHTML = t.status_limit + ' <span class="used-pill">LIMIT HIT</span>';
-    }
+    bar.innerHTML = t.status_free + ' <span class="free-pill">FREE</span>';
   }
 
   // ── Tab switching ──────────────────────────────────────────────────────────
@@ -991,7 +1031,6 @@
 
     errEl.classList.remove('visible');
     resEl.classList.remove('visible');
-    document.getElementById('upgradeWall').style.display = 'none';
     document.getElementById('atsResultsGrid').style.display = '';
     document.getElementById('suggestionsCard').style.display = 'none';
 
@@ -1008,16 +1047,6 @@
 
       const res = await fetch('/api/ats-scan', { method: 'POST', headers, body: JSON.stringify({ resume, jobPosting: job }) });
 
-      if (res.status === 402) {
-        freeAtsLeft = 0;
-        updateStatusBar();
-        document.getElementById('atsResultsGrid').style.display = 'none';
-        document.getElementById('upgradeWall').style.display = 'block';
-        resEl.classList.add('visible');
-        setTimeout(() => resEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
-        return;
-      }
-
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         errEl.textContent = d.error || 'Analysis failed. Please try again.';
@@ -1027,9 +1056,6 @@
 
       const data = await res.json();
       const { score, verdict, matched, missing, suggestions } = data;
-
-      // Update state
-      if (!isSubscriber) { freeAtsLeft = 0; updateStatusBar(); }
 
       // Animate score
       animateScore(score);
@@ -1050,17 +1076,9 @@
       document.getElementById('foundCount').textContent = (matched || []).length;
       renderChips('foundChips', matched, 'chip-found');
 
-      // Missing keywords — blurred for free users
+      // Missing keywords — always visible, free and unlimited
       document.getElementById('missingCount').textContent = (missing || []).length;
-      if (isSubscriber) {
-        renderChips('missingChips', missing, 'chip-missing');
-        document.getElementById('missingLockOverlay').style.display = 'none';
-        document.getElementById('missingChips').classList.remove('missing-blur');
-      } else {
-        renderChips('missingChips', missing, 'chip-missing');
-        document.getElementById('missingChips').classList.add('missing-blur');
-        document.getElementById('missingLockOverlay').style.display = 'flex';
-      }
+      renderChips('missingChips', missing, 'chip-missing');
 
       // AI suggestions
       if (suggestions && suggestions.length) {
