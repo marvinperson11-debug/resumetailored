@@ -29,11 +29,28 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <!-- Cookie Consent + Google Consent Mode v2 (must load before GA) -->
   <script src="/cookie-consent.js"></script>
-  <!-- Google Analytics -->
-  <script async="" src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
-  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-JWC76X5X68');</script>
-  <!-- Google AdSense -->
-  <script async="" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9896489046536589" crossorigin="anonymous"></script>
+  <!-- Google Analytics — loaded lazily on first interaction (or after 3s) so it
+       never blocks the initial render. window.gtag still queues events immediately;
+       they flush once GA loads. AdSense removed from the homepage entirely. -->
+  <script>
+  (function () {
+    var ID = 'G-JWC76X5X68', loaded = false;
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    gtag('js', new Date());
+    gtag('config', ID);
+    var events = ['scroll', 'pointerdown', 'keydown', 'touchstart', 'mousemove'];
+    function load() {
+      if (loaded) return; loaded = true;
+      events.forEach(function (e) { window.removeEventListener(e, load, { passive: true }); });
+      var s = document.createElement('script'); s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id=' + ID;
+      document.head.appendChild(s);
+    }
+    events.forEach(function (e) { window.addEventListener(e, load, { passive: true }); });
+    setTimeout(load, 3000);
+  })();
+  </script>
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
