@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Log in / Sign up — ResumeTailored AI</title>
+  <meta name="description" content="Log in or create your free ResumeTailored account to tailor resumes, generate cover letters, and track your job applications."/>
+  <meta name="robots" content="noindex,follow"/>
+  <link rel="canonical" href="https://resumetailored.com/login"/>
+  <link rel="icon" href="/favicon.png" type="image/png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;background:#FAF7F0;color:#57514A;min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;}
+    a{color:inherit;text-decoration:none;}
+    h1,h2{font-family:'Fraunces',Georgia,serif;color:#191512;letter-spacing:-0.015em;}
+    .top{padding:22px 24px;}
+    .logo{font-size:20px;font-weight:900;color:#191512;font-family:'Fraunces',serif;letter-spacing:-0.03em;}
+    .logo .badge-ai{background:#1F5C3D;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;font-family:'Inter',sans-serif;}
+    .wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:12px 20px 48px;}
+    .card{background:#fff;border:1px solid #E7DFD1;border-radius:20px;padding:32px 30px;width:100%;max-width:420px;box-shadow:0 18px 44px rgba(25,21,18,.09);}
+    .card h1{font-size:26px;font-weight:700;text-align:center;margin-bottom:4px;}
+    .sub{font-size:14px;color:#918A7E;text-align:center;margin-bottom:22px;}
+    .tabs{display:flex;background:#F1EADD;border:1px solid #E7DFD1;border-radius:11px;padding:4px;margin-bottom:20px;}
+    .tabs button{flex:1;border:none;background:transparent;font-size:14px;font-weight:700;color:#57514A;padding:9px;border-radius:8px;cursor:pointer;font-family:inherit;}
+    .tabs button.on{background:#fff;color:#1F5C3D;box-shadow:0 1px 3px rgba(25,21,18,.1);}
+    .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+    .field label{font-size:12.5px;font-weight:700;color:#57514A;}
+    .field input{border:1px solid #D9CFBC;border-radius:10px;padding:11px 13px;font-size:15px;font-family:inherit;color:#191512;background:#fff;outline:none;}
+    .field input:focus{border-color:#1F5C3D;box-shadow:0 0 0 3px rgba(31,92,61,.12);}
+    .btn{width:100%;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;}
+    .btn-primary{background:#1F5C3D;color:#fff;}
+    .btn-primary:hover{background:#153F2A;}
+    .btn-primary:disabled{opacity:.6;cursor:not-allowed;}
+    .oauth{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+    .btn-oauth{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;border:1px solid #D9CFBC;background:#fff;color:#191512;}
+    .btn-oauth:hover{border-color:#1F5C3D;}
+    .btn-li{background:#0a66c2;color:#fff;border-color:#0a66c2;}
+    .divider{display:flex;align-items:center;gap:12px;color:#918A7E;font-size:12px;margin:6px 0 16px;}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:#E7DFD1;}
+    .err{display:none;background:#FBE7E3;border:1px solid #F0C4BC;color:#B23A2E;font-size:13px;font-weight:600;padding:10px 12px;border-radius:9px;margin-bottom:14px;}
+    .err.show{display:block;}
+    .foot{font-size:12.5px;color:#918A7E;text-align:center;margin-top:16px;}
+    .foot a{color:#1F5C3D;font-weight:700;}
+    .forgot{font-size:12.5px;color:#1F5C3D;font-weight:700;text-align:right;display:block;margin:-6px 0 14px;cursor:pointer;}
+  </style>
+  <link rel="stylesheet" href="/theme.css"/>
+</head>
+<body>
+  <div class="top"><a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a></div>
+  <div class="wrap">
+    <div class="card">
+      <h1 id="ttl">Welcome back</h1>
+      <p class="sub" id="sub">Log in to continue to ResumeTailored.</p>
+
+      <div class="tabs">
+        <button id="tabLogin" class="on" onclick="setMode('login')">Log In</button>
+        <button id="tabSignup" onclick="setMode('signup')">Sign Up</button>
+      </div>
+
+      <div class="err" id="err"></div>
+
+      <div class="oauth" id="oauth">
+        <button class="btn-oauth" id="googleBtn" style="display:none;" onclick="oauth('google')">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          <span id="googleTxt">Continue with Google</span>
+        </button>
+        <button class="btn-oauth btn-li" id="linkedinBtn" style="display:none;" onclick="oauth('linkedin')">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M6.94 8.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM5.2 9.75h3.48V20H5.2zM10.4 9.75h3.34v1.4h.05c.47-.85 1.6-1.75 3.3-1.75 3.53 0 4.18 2.24 4.18 5.15V20h-3.48v-4.7c0-1.12-.02-2.56-1.56-2.56-1.56 0-1.8 1.22-1.8 2.48V20H10.4z"/></svg>
+          <span id="linkedinTxt">Continue with LinkedIn</span>
+        </button>
+      </div>
+      <div class="divider" id="divider" style="display:none;">or</div>
+
+      <form id="form" onsubmit="return submitForm(event)">
+        <div class="field" id="usernameField" style="display:none;">
+          <label for="username">Name</label>
+          <input type="text" id="username" autocomplete="name" placeholder="Your name"/>
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" autocomplete="email" placeholder="you@email.com" required/>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required/>
+        </div>
+        <span class="forgot" id="forgot" onclick="forgot()">Forgot password?</span>
+        <button type="submit" class="btn btn-primary" id="submitBtn">Log In</button>
+      </form>
+
+      <p class="foot" id="switch">New to ResumeTailored? <a onclick="setMode('signup')" style="cursor:pointer;">Create a free account</a></p>
+    </div>
+  </div>
+
+  <script src="/login-redirect.js"></script>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var TARGET = LoginRedirect.resolveTarget(params.get('redirect'), document.referrer, location.origin, '/dashboard');
+    var mode = (location.pathname === '/signup' || params.get('mode') === 'signup') ? 'signup' : 'login';
+
+    function showErr(m) { var e = document.getElementById('err'); e.textContent = m; e.classList.add('show'); }
+    function clearErr() { document.getElementById('err').classList.remove('show'); }
+
+    function setMode(m) {
+      mode = m;
+      var login = m === 'login';
+      document.getElementById('tabLogin').classList.toggle('on', login);
+      document.getElementById('tabSignup').classList.toggle('on', !login);
+      document.getElementById('ttl').textContent = login ? 'Welcome back' : 'Create your free account';
+      document.getElementById('sub').textContent = login ? 'Log in to continue to ResumeTailored.' : 'Free forever — tailor resumes, cover letters & track applications.';
+      document.getElementById('usernameField').style.display = login ? 'none' : 'flex';
+      document.getElementById('submitBtn').textContent = login ? 'Log In' : 'Create Account';
+      document.getElementById('forgot').style.display = login ? 'block' : 'none';
+      document.getElementById('password').setAttribute('autocomplete', login ? 'current-password' : 'new-password');
+      document.getElementById('switch').innerHTML = login
+        ? 'New to ResumeTailored? <a onclick="setMode(\'signup\')" style="cursor:pointer;">Create a free account</a>'
+        : 'Already have an account? <a onclick="setMode(\'login\')" style="cursor:pointer;">Log in</a>';
+      clearErr();
+    }
+
+    function goTarget() { window.location.replace(TARGET); }
+
+    async function submitForm(e) {
+      e.preventDefault(); clearErr();
+      var email = document.getElementById('email').value.trim();
+      var password = document.getElementById('password').value;
+      var btn = document.getElementById('submitBtn');
+      if (!email || !password) { showErr('Email and password are required.'); return false; }
+      var body = { email: email, password: password };
+      var url = '/api/auth/login';
+      if (mode === 'signup') {
+        var username = document.getElementById('username').value.trim();
+        if (!username) { showErr('Please enter your name.'); return false; }
+        body.username = username; url = '/api/auth/signup';
+      }
+      btn.disabled = true; btn.textContent = mode === 'signup' ? 'Creating…' : 'Logging in…';
+      try {
+        var res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok) { showErr(data.error || 'Something went wrong. Please try again.'); btn.disabled = false; btn.textContent = mode === 'signup' ? 'Create Account' : 'Log In'; return false; }
+        localStorage.setItem('rt_token', data.token);
+        localStorage.setItem('rt_email', data.email);
+        localStorage.setItem('rt_username', data.username || '');
+        goTarget();
+      } catch (err) {
+        showErr('Could not reach the server. Check your connection and try again.');
+        btn.disabled = false; btn.textContent = mode === 'signup' ? 'Create Account' : 'Log In';
+      }
+      return false;
+    }
+
+    // OAuth: persist the target across the round-trip; app.html consumes it after
+    // exchanging the handoff on /dashboard.
+    function oauth(provider) {
+      try { localStorage.setItem('rt_post_login', TARGET); } catch (e) {}
+      window.location.href = provider === 'google' ? '/api/auth/google' : '/api/auth/linkedin?mode=login';
+    }
+
+    async function forgot() {
+      var email = document.getElementById('email').value.trim();
+      if (!email) { showErr('Enter your email above first, then click "Forgot password?"'); return; }
+      clearErr();
+      try {
+        await fetch('/api/auth/forgot-password', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email }) });
+      } catch (e) {}
+      showErr('If an account exists for ' + email + ', a reset link is on its way.');
+      document.getElementById('err').style.background = '#E8F0E9';
+      document.getElementById('err').style.borderColor = '#1F5C3D';
+      document.getElementById('err').style.color = '#153F2A';
+    }
+
+    // Show OAuth buttons only when the server has them configured.
+    function probe(url, btnId) {
+      fetch(url).then(function (r) { return r.json(); }).then(function (d) {
+        if (d && d.enabled) {
+          document.getElementById(btnId).style.display = 'flex';
+          document.getElementById('divider').style.display = 'flex';
+        }
+      }).catch(function () {});
+    }
+
+    // If already logged in, skip the form and go straight to the target.
+    (function init() {
+      setMode(mode);
+      probe('/api/auth/google/status', 'googleBtn');
+      probe('/api/auth/linkedin/status', 'linkedinBtn');
+      var tok = localStorage.getItem('rt_token');
+      if (tok) {
+        fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + tok } })
+          .then(function (r) { if (r.ok) goTarget(); })
+          .catch(function () {});
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -60,11 +60,12 @@ const server = app.listen(0, async () => {
     check('/dashboard versions career-hub.js', /src="\/career-hub\.js\?v=[^"]+"/.test(dashboard.body));
     check('/dashboard versions career-hub.css', /href="\/career-hub\.css\?v=[^"]+"/.test(dashboard.body));
     check('/dashboard versions app-theme.css', /href="\/app-theme\.css\?v=[^"]+"/.test(dashboard.body));
-    // /login and /signup are the same virtual route as /dashboard — must not have been missed.
+    // /login and /signup now serve the dedicated login page (not the app), still
+    // through the versioning path — its assets must be versioned too.
     const login = await req('GET', '/login');
-    check('/login (same virtual route as /dashboard) is versioned too', /src="\/career-hub\.js\?v=[^"]+"/.test(login.body));
+    check('/login serves the login page, versioned', /Log in \/ Sign up/.test(login.body) && /src="\/login-redirect\.js\?v=[^"]+"/.test(login.body) && /href="\/theme\.css\?v=[^"]+"/.test(login.body), login.body.slice(0, 100));
     const signup = await req('GET', '/signup');
-    check('/signup (same virtual route as /dashboard) is versioned too', /src="\/career-hub\.js\?v=[^"]+"/.test(signup.body));
+    check('/signup serves the login page, versioned', /Log in \/ Sign up/.test(signup.body) && /src="\/login-redirect\.js\?v=[^"]+"/.test(signup.body));
 
     const blog = await req('GET', '/blog');
     check('/blog (explicit sendFile-replacement route) versions theme.css', /href="\/theme\.css\?v=[^"]+"/.test(blog.body));

@@ -42,6 +42,11 @@
 
   function run() {
     var path = (location.pathname || '/').replace(/\/+$/, '') || '/';
+    // "Log In" sends the user to the dedicated login page and back to where they
+    // are now after signing in.
+    var here = (location.pathname || '/') + (location.search || '');
+    var loginHref = '/login?redirect=' + encodeURIComponent(
+      (here.indexOf('/login') === 0 || here.indexOf('/signup') === 0) ? '/dashboard' : here);
     function isActive(href) {
       if (href.charAt(0) === '/' && href.indexOf('#') === -1 && href !== '/') {
         return path === href || path.indexOf(href + '/') === 0 || path.indexOf(href) === 0;
@@ -95,7 +100,7 @@
         '<div class="snav-links">' + linksHtml + '</div>' +
         '<div class="snav-act">' +
           '<button type="button" class="snav-lang" id="langToggleBtn" title="Switch language / 切换语言">中文</button>' +
-          '<a href="/dashboard" class="snav-btn snav-ghost" data-snav-login>Log In</a>' +
+          '<a href="' + loginHref + '" class="snav-btn snav-ghost" data-snav-login>Log In</a>' +
           '<a href="/dashboard" class="snav-btn snav-primary" data-snav-cta>Tailor My Resume Free →</a>' +
         '</div>' +
         '<div class="snav-hamwrap">' +
@@ -115,7 +120,7 @@
     menu.innerHTML =
       '<button class="snav-mclose" aria-label="Close menu">&times;</button>' +
       LINKS.map(function (l, i) { return '<a href="' + l[1] + '" data-snav-mi="' + i + '">' + l[0] + '</a>'; }).join('') +
-      '<a href="/dashboard" data-snav-login>Log In</a>' +
+      '<a href="' + loginHref + '" data-snav-login>Log In</a>' +
       '<a href="/dashboard" class="snav-mcta" data-snav-cta>Tailor My Resume Free →</a>';
     document.body.appendChild(menu);
 
