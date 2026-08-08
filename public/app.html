@@ -6825,7 +6825,7 @@ Aaliyah Washington`
     (function () {
       const tab = new URLSearchParams(window.location.search).get('tab');
       if (!tab) return;
-      const ALLOWED = ['tailor', 'linkedin', 'ats', 'video', 'forum', 'salary', 'checkin', 'help', 'about', 'samples'];
+      const ALLOWED = ['tailor', 'linkedin', 'ats', 'video', 'website', 'backoffice', 'forum', 'salary', 'checkin', 'help', 'about', 'samples'];
       if (!ALLOWED.includes(tab)) return;
       // Preserve any other params (e.g. ?lang=zh) while dropping ?tab.
       const params = new URLSearchParams(window.location.search);
