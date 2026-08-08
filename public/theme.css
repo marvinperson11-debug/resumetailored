@@ -119,7 +119,7 @@ hr, section { border-color: var(--line) !important; }
 .comparison-table .win, .win { color: var(--accent) !important; }
 .comparison-table .lose, .lose { color: var(--danger) !important; }
 /* Plain <footer> links (Privacy/Terms/Home) on ~22 blog post templates, e.g.
-   `footer a{color:#818CF8}` — scoped by tag so it can't outrank the SEO
+   `footer a{color:#2E7D53}` — scoped by tag so it can't outrank the SEO
    pages' own `.ft-links a` (a class selector, which is already more specific
    and unaffected by this). Excludes the "Check My Resume Free"-style CTA
    button that several of these same pages ALSO place inside <footer> — that
@@ -204,7 +204,7 @@ footer a:not([style*="background:#1F5C3D"]) { color: var(--accent) !important; }
   }
   /* Light-tint chips/cards (e.g. the lavender "ATS Match Rate" pill) had light
      text on a light fill — make their text dark too. */
-  [style*="#818CF8"], [style*="#a5b4fc"], [style*="#c4b5fd"], [style*="#c7d2fe"] { color: #2d2d2d !important; }
+  [style*="#2E7D53"], [style*="#8FD3AC"], [style*="#8FD3AC"], [style*="#C9E3D4"] { color: #2d2d2d !important; }
   /* Legacy dark-theme slate/near-white text colors left inline on some tool
      pages (labels like "YOUR RESUME", "JOB DESCRIPTION") — invisible on cream. */
   [style*="#e2e8f0"], [style*="#f1f5f9"], [style*="#cbd5e1"], [style*="#e5e7eb"],

@@ -729,7 +729,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   transition: transform .18s, box-shadow .18s;
   border: 1.5px solid var(--border); background: #FFFFFF;
 }
-.tpl-card:hover:not(.locked) { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: rgba(99,102,241,0.4); }
+.tpl-card:hover:not(.locked) { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: rgba(31,92,61,0.4); }
 .tpl-card.locked { opacity: 0.75; cursor: pointer; }
 .tpl-card.locked:hover { transform: translateY(-4px); box-shadow: 0 6px 18px rgba(251,191,36,0.3); border-color: #fbbf24; }
 .tpl-preview-wrap {
@@ -841,7 +841,7 @@ textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px
   :root { --text-muted: #2d2d2d; }
   label, .tpl-picker-label, .checkin-prompt-label { color: #2d2d2d !important; }
   /* Common light grays / light-indigo chip text set inline → readable. */
-  [style*="#9ca3af"], [style*="#94a3b8"], [style*="#a1a1aa"], [style*="#818CF8"], [style*="#6366F1"] { color: #2d2d2d !important; }
+  [style*="#9ca3af"], [style*="#94a3b8"], [style*="#a1a1aa"], [style*="#2E7D53"], [style*="#1F5C3D"] { color: #2d2d2d !important; }
   /* Give form fields a clearly visible edge + white fill so users see where to tap. */
   textarea, input[type="text"], input[type="email"], input[type="password"], input[type="url"],
   select, .forum-textarea, .forum-input {

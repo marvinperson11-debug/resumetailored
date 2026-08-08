@@ -78,19 +78,19 @@
     /* ── Nav (dark glassmorphism) ── */
     .nav { background: rgba(3,7,18,0.85) !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; }
     .nav .logo { background: none; -webkit-background-clip: unset; -webkit-text-fill-color: #f1f5f9; background-clip: unset; color: #f1f5f9; font-size: 18px; }
-    .nav .logo .badge-ai { background: linear-gradient(135deg,#6366F1,#8B5CF6) !important; color: #fff !important; -webkit-text-fill-color: #fff !important; padding: 2px 7px; border-radius: 5px; font-size: 11px; }
-    .nav .btn-outline { border-color: rgba(99,102,241,0.5) !important; color: #818CF8 !important; background: rgba(99,102,241,0.1) !important; box-shadow: none !important; }
-    .nav .btn-outline:hover { background: rgba(99,102,241,0.2) !important; transform: none !important; }
+    .nav .logo .badge-ai { background: linear-gradient(135deg,#1F5C3D,#2E7D53) !important; color: #fff !important; -webkit-text-fill-color: #fff !important; padding: 2px 7px; border-radius: 5px; font-size: 11px; }
+    .nav .btn-outline { border-color: rgba(31,92,61,0.5) !important; color: #2E7D53 !important; background: rgba(31,92,61,0.1) !important; box-shadow: none !important; }
+    .nav .btn-outline:hover { background: rgba(31,92,61,0.2) !important; transform: none !important; }
     #navUsername { color: #94a3b8 !important; }
     /* ── Upload / Download ── */
     .upload-btn {
       display: inline-flex; align-items: center; gap: 7px;
       padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
-      border: 1.5px dashed rgba(99,102,241,0.4); background: rgba(99,102,241,0.08);
-      color: #818CF8; cursor: pointer; font-family: inherit; transition: all .2s;
+      border: 1.5px dashed rgba(31,92,61,0.4); background: rgba(31,92,61,0.08);
+      color: #2E7D53; cursor: pointer; font-family: inherit; transition: all .2s;
       white-space: nowrap;
     }
-    .upload-btn:hover { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.7); }
+    .upload-btn:hover { background: rgba(31,92,61,0.15); border-color: rgba(31,92,61,0.7); }
     .upload-btn .spinner { width:14px;height:14px;border-width:2px; }
     .field-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
     .field-header label { margin-bottom:0; }
@@ -106,7 +106,7 @@
     }
     .download-btn-txt:hover { background: rgba(255,255,255,0.1); }
     .download-btn-docx {
-      background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff;
+      background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff;
     }
     .download-btn-docx:hover { opacity: 0.9; }
     .download-btn-pdf {
@@ -126,14 +126,14 @@
       font-weight: 700; cursor: pointer; transition: all .15s; font-family: inherit;
     }
     .sample-toggle-btn.active {
-      background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.5); color: #818CF8;
+      background: rgba(31,92,61,0.2); border-color: rgba(31,92,61,0.5); color: #2E7D53;
     }
     /* ── Font picker ── */
     .font-pick-row { display:flex; align-items:center; gap:7px; margin-bottom:14px; flex-wrap:wrap; }
     .font-pick-label { font-size:11.5px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.6px; margin-right:2px; }
     .font-btn { padding:5px 12px; font-size:12px; font-weight:600; border:1.5px solid rgba(255,255,255,0.1); border-radius:6px; background:rgba(255,255,255,0.05); color:#94a3b8; cursor:pointer; transition:all .15s; font-family:inherit; }
-    .font-btn.active { background:#1e1b4b; color:#fff; border-color:#1e1b4b; }
-    .font-btn:hover:not(.active) { border-color:#6366f1; color:#4338ca; }
+    .font-btn.active { background:#0E2A1C; color:#fff; border-color:#0E2A1C; }
+    .font-btn:hover:not(.active) { border-color:#1F5C3D; color:#153F2A; }
     /* ── Output Template Picker ── */
     .tpl-pick-section { margin: 14px 0 16px; }
     .tpl-pick-label { font-size: 11.5px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .6px; display: flex; justify-content: space-between; align-items: center; }
@@ -149,8 +149,8 @@
       border: 2px solid rgba(255,255,255,0.1); overflow: hidden; background: rgba(255,255,255,0.04);
       box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all .2s;
     }
-    .tpl-pick-item:hover:not(.locked) { border-color: rgba(99,102,241,0.5); box-shadow: 0 4px 16px rgba(99,102,241,0.2); transform: translateY(-2px); }
-    .tpl-pick-item.selected { border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
+    .tpl-pick-item:hover:not(.locked) { border-color: rgba(31,92,61,0.5); box-shadow: 0 4px 16px rgba(31,92,61,0.2); transform: translateY(-2px); }
+    .tpl-pick-item.selected { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,.25); }
     .tpl-pick-item.locked { cursor: default; }
     .tpl-pick-thumb { height: 140px; overflow: hidden; position: relative; background: rgba(255,255,255,0.03); }
     .tpl-pick-thumb-inner { transform-origin: top left; position: absolute; top: 0; left: 0; pointer-events: none; }
@@ -158,7 +158,7 @@
     .tpl-pick-name { font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
     .tpl-pick-badge { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
     .tpl-pick-badge-free { background: rgba(16,185,129,0.15); color: #34d399; }
-    .tpl-pick-badge-pro { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+    .tpl-pick-badge-pro { background: rgba(31,92,61,0.2); color: #8FD3AC; }
     .tpl-ats-badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; display: inline-block; margin: 0 0 8px 4px; background: rgba(16,185,129,0.12); color: #6ee7b7; letter-spacing: .3px; }
     .tpl-human-note { font-size: 9.5px; color: #94a3b8; margin: -4px 0 8px; line-height: 1.4; }
     .export-warn-box { background: #12121f; border: 1px solid rgba(251,191,36,0.35); border-radius: 14px; max-width: 440px; padding: 26px 28px; margin: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.5); }
@@ -170,17 +170,17 @@
     .export-fmt-banner { position: sticky; top: 0; z-index: 5; display: flex; gap: 10px; align-items: flex-start; background: rgba(251,191,36,0.09); border: 1px solid rgba(251,191,36,0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 12.5px; color: #fcd34d; line-height: 1.55; text-align: left; width: 100%; box-sizing: border-box; }
     .export-fmt-banner a { color: #fbbf24; font-weight: 700; }
     .tpl-pick-btn { display: block; width: 100%; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 700; text-align: center; border: none; cursor: pointer; transition: background .15s; font-family: inherit; box-sizing: border-box; }
-    .tpl-pick-btn-select { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; }
+    .tpl-pick-btn-select { background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff; }
     .tpl-pick-btn-select:hover { opacity: 0.9; }
     .tpl-pick-btn-selected { background: rgba(16,185,129,0.15); color: #34d399; cursor: default; }
     .tpl-pick-btn-locked { background: rgba(255,255,255,0.06); color: #64748b; }
     .tpl-pick-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.35); font-size: 24px; }
     /* ── Edit mode ── */
-    .edit-bar { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25); border-radius: 9px; margin-bottom: 10px; font-size: 13px; color: #818CF8; font-weight: 600; flex-wrap: wrap; }
+    .edit-bar { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: rgba(31,92,61,0.1); border: 1px solid rgba(31,92,61,0.25); border-radius: 9px; margin-bottom: 10px; font-size: 13px; color: #2E7D53; font-weight: 600; flex-wrap: wrap; }
     .edit-bar .eb-btn { padding: 5px 14px; border-radius: 7px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
-    .edit-bar .eb-save { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; }
+    .edit-bar .eb-save { background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff; }
     .edit-bar .eb-cancel { background: rgba(255,255,255,0.08); color: #94a3b8; }
-    #outputBox[contenteditable="true"] { outline: 2px dashed rgba(99,102,241,0.6); outline-offset: 2px; cursor: text; border-radius: 8px; }
+    #outputBox[contenteditable="true"] { outline: 2px dashed rgba(31,92,61,0.6); outline-offset: 2px; cursor: text; border-radius: 8px; }
 
     /* ── Resume build form ── */
     .resume-mode-toggle { display: flex; gap: 6px; }
@@ -192,10 +192,10 @@
     .rb-optional { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; }
     .rb-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px; }
     .rb-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: rgba(255,255,255,0.06); font-family: inherit; transition: border-color 0.15s; box-sizing: border-box; }
-    .rb-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .rb-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
     .rb-textarea { width: 100%; min-height: 90px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: rgba(255,255,255,0.06); font-family: inherit; resize: vertical; transition: border-color 0.15s; box-sizing: border-box; }
     .rb-textarea-sm { min-height: 56px; }
-    .rb-textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .rb-textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
     .rb-entry { background: rgba(255,255,255,0.04); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
     .rb-entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .rb-entry-label { font-size: 13px; font-weight: 700; color: var(--text); }
@@ -209,14 +209,14 @@
       .field-header { flex-wrap: wrap; gap: 8px; }
     }
     /* ── Signature ── */
-    .sig-section { margin-bottom: 16px; background: var(--blue-light); border: 1.5px solid rgba(99,102,241,0.25); border-radius: 10px; padding: 16px; }
+    .sig-section { margin-bottom: 16px; background: var(--blue-light); border: 1.5px solid rgba(31,92,61,0.25); border-radius: 10px; padding: 16px; }
     .sig-label { font-size: 13px; font-weight: 700; color: var(--text); display: block; margin-bottom: 8px; }
     .sig-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); background: rgba(255,255,255,0.06); box-sizing: border-box; transition: border-color 0.15s; }
-    .sig-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+    .sig-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
     .sig-fonts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
     .sig-font-btn { padding: 6px 13px; border: 1.5px solid var(--border); border-radius: 7px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted); font-family: inherit; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
     .sig-font-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
-    .sig-font-btn:hover:not(.active) { border-color: rgba(99,102,241,0.4); }
+    .sig-font-btn:hover:not(.active) { border-color: rgba(31,92,61,0.4); }
     .sig-preview { margin-top: 10px; padding: 14px 20px; background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px; }
 
     /* ── LinkedIn sidebar button highlight ── */
@@ -244,7 +244,7 @@
     /* ── A4 size toggle ── */
     .page-size-toggle { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
     .page-size-btn { padding: 5px 12px; font-size: 11px; font-weight: 700; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(255,255,255,0.05); color: #94a3b8; cursor: pointer; font-family: inherit; transition: all .15s; text-transform: uppercase; letter-spacing: .5px; }
-    .page-size-btn.active { background: linear-gradient(135deg,#6366F1,#8B5CF6); color: #fff; border-color: transparent; }
+    .page-size-btn.active { background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff; border-color: transparent; }
 
     /* ── Chinese job board note ── */
     .job-platform-note { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -253,7 +253,7 @@
 
     /* ── Website Creator ── */
     .wc-vtab { flex: 1; border: none; background: transparent; color: #64748b; font-size: 13px; font-weight: 700; padding: 8px 10px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
-    .wc-vtab-active { background: #fff; color: #4338ca; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .wc-vtab-active { background: #fff; color: #153F2A; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
     /* ── A PHONE, NOT A NARROW RECTANGLE ──────────────────────────────────
        The mobile preview is the right WIDTH but reads as a column of the page
@@ -324,13 +324,13 @@
     }
     .wc-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 16px; padding: 22px; margin-bottom: 18px; }
     .wc-step { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 14px; }
-    .wc-pal-btn { border: 1.5px solid #c7d2fe; background: #eef2ff; color: #4338ca; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 9px; cursor: pointer; }
-    .wc-pal-btn:hover { background: #e0e7ff; }
+    .wc-pal-btn { border: 1.5px solid #C9E3D4; background: #E8F0E9; color: #153F2A; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 9px; cursor: pointer; }
+    .wc-pal-btn:hover { background: #E8F0E9; }
     .wc-blk { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: #fafafa; }
-    .wc-blk.wc-drag-over { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
+    .wc-blk.wc-drag-over { border-color: #1F5C3D; box-shadow: 0 0 0 2px rgba(31,92,61,0.2); }
     .wc-blk-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
     .wc-blk-handle { cursor: grab; color: #9ca3af; font-size: 15px; user-select: none; }
-    .wc-blk-type { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #6366f1; flex: 1; }
+    .wc-blk-type { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #1F5C3D; flex: 1; }
     .wc-blk-del { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; line-height: 1; }
     .wc-blk-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .wc-blk input.text-input, .wc-blk textarea.text-input, .wc-blk select.text-input { font-size: 13px; }
@@ -366,7 +366,7 @@
     .bo-thumb-badge.is-draft { background: #fff; color: #6b7280; border: 1px solid #e5e7eb; box-shadow: none; }
     .bo-site-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
     .bo-site-tpl { font-size: 13px; font-weight: 800; color: #111827; }
-    .bo-site-addr { font-size: 12px; color: #4338ca; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bo-site-addr { font-size: 12px; color: #153F2A; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bo-site-addr:hover { text-decoration: underline; }
     .bo-site-meta { font-size: 11px; color: #9ca3af; }
     .bo-site-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
@@ -376,21 +376,21 @@
     .bo-sync { font-size: 10px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
       padding: 2px 7px; border-radius: 999px; background: #ecfdf5; color: #047857; white-space: nowrap; vertical-align: 1px; }
     .bo-sync.is-off { background: #fff7ed; color: #b45309; }
-    .wc-pal-btn.is-on { background: #4338ca; color: #fff; border-color: #4338ca; }
+    .wc-pal-btn.is-on { background: #153F2A; color: #fff; border-color: #153F2A; }
     .wc-tpl { border: 2px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff; transition: border-color .15s, box-shadow .15s; }
-    .wc-tpl:hover { border-color: #c7d2fe; box-shadow: 0 6px 18px rgba(99,102,241,.14); }
-    .wc-tpl.is-on { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.16); }
+    .wc-tpl:hover { border-color: #C9E3D4; box-shadow: 0 6px 18px rgba(31,92,61,.14); }
+    .wc-tpl.is-on { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,.16); }
     .wc-tpl-thumb { display: block; width: 100%; height: 118px; border: none; cursor: pointer; position: relative; }
     .wc-tpl-eye { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; opacity: 0; transition: opacity .15s; background: rgba(0,0,0,.35); }
     .wc-tpl-thumb:hover .wc-tpl-eye { opacity: 1; }
     .wc-tpl-body { padding: 12px 13px 13px; }
     .wc-tpl-name { font-size: 14px; font-weight: 800; color: #111827; }
-    .wc-tpl-on { font-size: 10px; font-weight: 800; color: #4338ca; background: #eef2ff; padding: 2px 6px; border-radius: 8px; }
-    .wc-tpl-cat { font-size: 11px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+    .wc-tpl-on { font-size: 10px; font-weight: 800; color: #153F2A; background: #E8F0E9; padding: 2px 6px; border-radius: 8px; }
+    .wc-tpl-cat { font-size: 11px; font-weight: 700; color: #1F5C3D; text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
     .wc-tpl-blurb { font-size: 12.5px; color: #6b7280; margin-top: 6px; line-height: 1.45; }
-    .ed-box { position: absolute; border: 1px dashed rgba(99,102,241,.45); cursor: move; }
-    .ed-box:hover { border-color: #6366f1; background: rgba(99,102,241,.06); }
-    .ed-box.is-sel { border: 2px solid #6366f1; background: rgba(99,102,241,.08); }
+    .ed-box { position: absolute; border: 1px dashed rgba(31,92,61,.45); cursor: move; }
+    .ed-box:hover { border-color: #1F5C3D; background: rgba(31,92,61,.06); }
+    .ed-box.is-sel { border: 2px solid #1F5C3D; background: rgba(31,92,61,.08); }
     /* ── Overlay chrome, at a constant SIZE ON SCREEN ──────────────────────
        The overlay lives inside #wcEdWrap, which is scaled to fit the stage. At
        390px the 1200px canvas is drawn at about 0.29, so a "28px" gear was
@@ -403,13 +403,13 @@
        the hint and the gear all want the same corner. */
     .ed-chrome { position: absolute; left: 0; bottom: 100%; display: flex; align-items: center; gap: 4px;
       white-space: nowrap; transform-origin: bottom left; transform: scale(calc(1 / var(--edk, 1))); padding-bottom: 4px; }
-    .ed-tag { background: #6366f1; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: .5px; }
+    .ed-tag { background: #1F5C3D; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: .5px; }
     /* EIGHT HANDLES, not one. A single corner meant an element could only ever
        be made bigger down-and-right from where it already was — to widen
        something on its left you had to resize it and then drag it back. Each
        one is counter-scaled like the rest of the overlay chrome, or at phone
        zoom they are four physical pixels of target. */
-    .ed-h { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #6366f1; border-radius: 3px;
+    .ed-h { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #1F5C3D; border-radius: 3px;
       transform-origin: center; transform: scale(calc(1 / var(--edk, 1))); }
     .ed-h-nw { left: -8px;  top: -8px;    cursor: nwse-resize; }
     .ed-h-n  { left: 50%;   top: -8px;    margin-left: -7px; cursor: ns-resize; }
@@ -426,26 +426,26 @@
     /* Everything about this box, a press away, ON the box. Sized for a finger:
        28px is the smallest this can be and still be hit reliably on a phone —
        and it is 28px on screen, not 28px before the canvas scale eats it. */
-    .ed-gear { width: 28px; height: 22px; background: #6366f1; color: #fff; border: none; border-radius: 5px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
-    .ed-gear:hover { background: #4338ca; }
+    .ed-gear { width: 28px; height: 22px; background: #1F5C3D; color: #fff; border: none; border-radius: 5px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
+    .ed-gear:hover { background: #153F2A; }
     .ed-play { width: 28px; height: 22px; background: #059669; color: #fff; border: none; border-radius: 5px; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
     .ed-play:hover { background: #047857; }
     .ed-play.is-playing { background: #b45309; }
     .ed-box.is-text { cursor: text; }
-    #wcEdOverlay.is-drop { background: rgba(99,102,241,.08); outline: 2px dashed #6366f1; outline-offset: -4px; }
+    #wcEdOverlay.is-drop { background: rgba(31,92,61,.08); outline: 2px dashed #1F5C3D; outline-offset: -4px; }
     /* While typing, the overlay hands its pointer events to the page beneath so
        the caret, selection and clicks all land on the real text. */
     #wcEdOverlay.is-typing { pointer-events: none; }
     .ed-pal-group { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #9ca3af; margin: 10px 0 5px; }
     .ed-pal-items { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
     .ed-pal-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border: 1.5px solid #e5e7eb; border-radius: 9px; background: #fff; cursor: grab; font: inherit; }
-    .ed-pal-item:hover { border-color: #6366f1; background: #eef2ff; }
+    .ed-pal-item:hover { border-color: #1F5C3D; background: #E8F0E9; }
     .ed-pal-item:active { cursor: grabbing; }
     .ed-pal-ico { font-size: 15px; line-height: 1; }
     .ed-pal-lbl { font-size: 10px; font-weight: 700; color: #4b5563; text-align: center; line-height: 1.2; }
     .wc-pg { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 10px; background: #fff; }
-    .wc-pg.is-on { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
-    .wc-pg-home { font-size: 10px; font-weight: 800; color: #4338ca; background: #eef2ff; padding: 4px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: .5px; }
+    .wc-pg.is-on { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,.12); }
+    .wc-pg-home { font-size: 10px; font-weight: 800; color: #153F2A; background: #E8F0E9; padding: 4px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: .5px; }
     .bo-act:disabled { opacity: .4; cursor: not-allowed; }
 
     /* While the Website Creator is open it owns the screen. The app header is
@@ -549,7 +549,7 @@
        fix below — is the same one-line safety net applied everywhere, not just
        under 820px: the common case (everything fits) looks identical, because
        `flex-wrap: wrap` only wraps when it has to. */
-    .cv-top { height: auto; min-height: 54px; flex-shrink: 0; flex-wrap: wrap; background: linear-gradient(90deg,#4338ca,#6366F1); display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: #fff; }
+    .cv-top { height: auto; min-height: 54px; flex-shrink: 0; flex-wrap: wrap; background: linear-gradient(90deg,#153F2A,#1F5C3D); display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: #fff; }
     .cv-logo { font-weight: 900; font-size: 14px; letter-spacing: -.02em; margin-right: 6px; flex-shrink: 0; }
     /* The ONLY thing in this row allowed to shrink — an empty spacer, so
        shrinking it costs nothing. Everything real keeps `flex-shrink: 0`
@@ -562,17 +562,17 @@
     .cv-tbtn { background: rgba(255,255,255,.14); border: none; color: #fff; font: inherit; font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
     .cv-tbtn:hover { background: rgba(255,255,255,.24); }
     .cv-tbtn:disabled { opacity: .4; cursor: not-allowed; }
-    .cv-publish { background: #fff; color: #4338ca; border: none; font: inherit; font-size: 13px; font-weight: 800; padding: 8px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .cv-publish { background: #fff; color: #153F2A; border: none; font: inherit; font-size: 13px; font-weight: 800; padding: 8px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
     .cv-seg { display: flex; gap: 3px; background: rgba(255,255,255,.14); border-radius: 8px; padding: 3px; flex-shrink: 0; }
     .cv-segbtn { background: none; border: none; color: #fff; font-size: 13px; padding: 4px 9px; border-radius: 6px; cursor: pointer; }
-    .cv-segbtn.is-on { background: #fff; color: #4338ca; }
+    .cv-segbtn.is-on { background: #fff; color: #153F2A; }
     .cv-body { flex: 1; display: flex; min-height: 0; }
     .cv-rail { width: 74px; flex-shrink: 0; background: #1f2023; display: flex; flex-direction: column; padding: 8px 0; overflow-y: auto; }
     .cv-rbtn { background: none; border: none; color: #9ca3af; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 11px 4px; cursor: pointer; border-radius: 9px; margin: 0 6px 2px; }
     .cv-rbtn span { font-size: 18px; line-height: 1; }
     .cv-rbtn em { font-style: normal; font-size: 10px; font-weight: 600; }
     .cv-rbtn:hover { background: rgba(255,255,255,.07); color: #e5e7eb; }
-    .cv-rbtn.is-on { background: rgba(99,102,241,.22); color: #fff; }
+    .cv-rbtn.is-on { background: rgba(31,92,61,.22); color: #fff; }
     .cv-panel { width: 300px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 12px; }
     /* The inspector is NOT hidden on a phone. A `display: none !important` used
        to live here, and it flatly contradicted the ≤820px rules below, which go
@@ -626,7 +626,7 @@
     .cv-inspector .bo-act { background: #34353a; border-color: #45464c; color: #e5e7eb; }
     .cv-editmine { display: none; width: 100%; align-items: center; justify-content: center; gap: 8px;
       font: inherit; font-size: 14px; font-weight: 800; color: #fff; cursor: pointer;
-      background: linear-gradient(90deg,#4338ca,#6366F1); border: none; border-radius: 12px;
+      background: linear-gradient(90deg,#153F2A,#1F5C3D); border: none; border-radius: 12px;
       padding: 13px 16px; margin-bottom: 12px; }
     body.wb-picker .cv-editmine:not([hidden]) { display: flex; }
     .cv-bottom { height: 44px; flex-shrink: 0; background: #1f2023; display: flex; align-items: center; gap: 14px; padding: 0 14px; color: #9ca3af; font-size: 12px; }
@@ -756,7 +756,7 @@
     .cv-upwrap { position: relative; }
     .cv-upitem { height: 78px; width: 100%; border-radius: 8px; border: 1px solid #45464c; background-size: cover; background-position: center; cursor: pointer; background-color: #34353a; }
     .cv-upitem--file { display: flex; align-items: center; justify-content: center; font-size: 22px; color: #cbd5e1; }
-    .cv-upitem:hover { border-color: #6366f1; }
+    .cv-upitem:hover { border-color: #1F5C3D; }
     /* 26px, and always visible rather than shown on hover — a phone has no
        hover, and this panel is reachable there. */
     .cv-updel { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 7px;
@@ -914,7 +914,7 @@
     <div style="position:relative;background:#FAF7F0;border:1px solid #E7DFD1;border-radius:20px;max-width:760px;width:100%;max-height:88vh;overflow-y:auto;padding:26px;box-shadow:0 24px 64px rgba(25,21,18,0.28);">
       <button onclick="document.getElementById('whatsNewOverlay').style.display='none';" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#918A7E;font-size:24px;cursor:pointer;line-height:1;">&times;</button>
       <div style="text-align:center;margin-bottom:20px;">
-        <div style="font-size:11px;font-weight:900;letter-spacing:1px;color:#7c3aed;text-transform:uppercase;">✨ What's New</div>
+        <div style="font-size:11px;font-weight:900;letter-spacing:1px;color:#1F5C3D;text-transform:uppercase;">✨ What's New</div>
         <h2 style="font-size:22px;font-weight:900;margin:6px 0 4px;color:#191512;">New ways to stand out &amp; get hired</h2>
         <p style="font-size:13px;color:#57514A;margin:0;">Most are free — the rest bundle into one $19.99/mo Pro plan.</p>
       </div>
@@ -957,11 +957,11 @@
   </div>
   <style>
     #whatsNewOverlay .wn-card{background:#ffffff;border:1px solid #E7DFD1;border-radius:14px;padding:16px;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(25,21,18,.05);}
-    #whatsNewOverlay .wn-badge{align-self:flex-start;font-size:9px;font-weight:900;letter-spacing:.5px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border-radius:999px;padding:3px 9px;margin-bottom:10px;text-transform:uppercase;}
+    #whatsNewOverlay .wn-badge{align-self:flex-start;font-size:9px;font-weight:900;letter-spacing:.5px;background:linear-gradient(135deg,#2E7D53,#1F5C3D);color:#fff;border-radius:999px;padding:3px 9px;margin-bottom:10px;text-transform:uppercase;}
     #whatsNewOverlay .wn-card h3{font-size:16px;font-weight:800;margin:6px 0 6px;color:#191512;}
     #whatsNewOverlay .wn-card p{font-size:12.5px;color:#57514A;line-height:1.5;margin:0 0 12px;flex:1;}
     #whatsNewOverlay .wn-price{font-size:12px;color:#6b7280;margin-bottom:12px;}
-    #whatsNewOverlay .wn-cta{display:inline-block;text-align:center;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;font-weight:800;font-size:13px;padding:9px 14px;border-radius:9px;cursor:pointer;text-decoration:none;}
+    #whatsNewOverlay .wn-cta{display:inline-block;text-align:center;background:linear-gradient(135deg,#2E7D53,#1F5C3D);color:#fff;font-weight:800;font-size:13px;padding:9px 14px;border-radius:9px;cursor:pointer;text-decoration:none;}
   </style>
 
   <!-- NAV -->
@@ -984,10 +984,10 @@
 
     <!-- SIDEBAR -->
     <aside class="sidebar" data-drawer>
-      <button class="sidebar-btn" onclick="openWhatsNew()" id="tab-whatsnew" data-label="New" title="What's new on ResumeTailored" style="background:linear-gradient(135deg,rgba(139,92,246,0.16),rgba(99,102,241,0.16));border:1px solid rgba(139,92,246,0.35);margin-bottom:10px;">
+      <button class="sidebar-btn" onclick="openWhatsNew()" id="tab-whatsnew" data-label="New" title="What's new on ResumeTailored" style="background:linear-gradient(135deg,rgba(46,125,83,0.16),rgba(31,92,61,0.16));border:1px solid rgba(46,125,83,0.35);margin-bottom:10px;">
         <span class="sidebar-icon">✨</span>
         <span style="flex:1;text-align:left;font-weight:800;">What's New</span>
-        <span style="background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;">NEW</span>
+        <span style="background:linear-gradient(135deg,#2E7D53,#1F5C3D);color:#fff;font-size:9px;font-weight:900;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;">NEW</span>
       </button>
       <div class="sidebar-section">
         <div class="sidebar-label" data-i18n="sidebar_jobsearch">Job Search</div>
@@ -1092,7 +1092,7 @@
             <div class="tpl-pick-row" id="tplPickRow"></div>
           </div>
           <div id="resumePhotoRow" style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <img id="resumePhotoPreview" alt="" style="display:none;width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid #6366F1;" />
+            <img id="resumePhotoPreview" alt="" style="display:none;width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid #1F5C3D;" />
             <button type="button" class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="document.getElementById('resumePhotoInput').click()">📷 Add your photo</button>
             <button type="button" class="btn btn-outline" id="resumePhotoClear" style="display:none;font-size:12px;padding:6px 12px;" onclick="clearResumePhoto()">Remove</button>
             <input type="file" id="resumePhotoInput" accept="image/*" style="display:none;" onchange="handleResumePhoto(this)" />
@@ -1235,7 +1235,7 @@
             </div>
             <div style="display:flex;gap:8px;margin-bottom:6px;">
               <input type="url" id="tailorJobUrlInput" style="flex:1;background:rgba(255,255,255,0.06);border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;color:var(--text);" placeholder="Or paste a job URL (LinkedIn, Indeed, Glassdoor…)" spellcheck="false" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')fetchTailorJobUrl()" />
-              <button onclick="fetchTailorJobUrl()" id="tailorFetchBtn" style="padding:9px 14px;border-radius:8px;border:none;background:#6366F1;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Fetch →</button>
+              <button onclick="fetchTailorJobUrl()" id="tailorFetchBtn" style="padding:9px 14px;border-radius:8px;border:none;background:#1F5C3D;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Fetch →</button>
             </div>
             <div id="tailorUrlStatus" style="font-size:12px;color:#6b7280;margin-bottom:6px;min-height:16px;"></div>
             <textarea id="job" spellcheck="false" autocorrect="off" autocapitalize="off" placeholder="Paste the full job description here...&#10;&#10;Works with: LinkedIn, Indeed, Glassdoor, Boss直聘 (Boss Zhipin), 猎聘 (Liepin), 智联招聘 (Zhaopin), and any job posting in any language." data-i18n-placeholder="job_placeholder"></textarea>
@@ -1390,7 +1390,7 @@
             <div style="width:44px;height:44px;background:#e11d48;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎬</div>
             <div>
               <h1 style="color:#e11d48;">Resume Video Maker</h1>
-              <span id="videoBadge" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ PRO FEATURE</span>
+              <span id="videoBadge" style="background:linear-gradient(135deg,#1F5C3D,#2E7D53);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ PRO FEATURE</span>
             </div>
           </div>
           <p>Turn any resume into a short, shareable vertical video with a studio AI voiceover — perfect for LinkedIn, Shorts, and Reels. Pick a male or female voice, address it to the hiring manager, and download a polished MP4. A Pro feature.</p>
@@ -1439,7 +1439,7 @@
           </div>
 
           <div class="input-group" style="margin-top:16px;">
-            <label class="input-label" for="videoVoiceSpeed">Voice speed <span id="videoVoiceSpeedLabel" style="color:#6366F1;font-weight:600;font-size:12px;">Relaxed</span></label>
+            <label class="input-label" for="videoVoiceSpeed">Voice speed <span id="videoVoiceSpeedLabel" style="color:#1F5C3D;font-weight:600;font-size:12px;">Relaxed</span></label>
             <input type="range" id="videoVoiceSpeed" min="0.7" max="1.2" step="0.05" value="0.9" style="width:100%;max-width:320px;display:block;" oninput="updateVoiceSpeedLabel(this.value)">
             <div style="display:flex;justify-content:space-between;max-width:320px;font-size:11px;color:#9ca3af;margin-top:2px;">
               <span>Slower</span><span>Normal</span><span>Faster</span>
@@ -1488,18 +1488,18 @@
 
       <!-- ═══ TAB: ATS SCANNER ═══ -->
       <div class="tab-content" id="panel-ats">
-        <div class="panel-header" style="border-bottom:3px solid #6366F1;">
+        <div class="panel-header" style="border-bottom:3px solid #1F5C3D;">
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-            <div style="width:44px;height:44px;background:linear-gradient(135deg,#6366F1,#8B5CF6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎯</div>
+            <div style="width:44px;height:44px;background:linear-gradient(135deg,#1F5C3D,#2E7D53);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎯</div>
             <div>
-              <h1 style="color:#6366F1;">ATS Match Scanner</h1>
+              <h1 style="color:#1F5C3D;">ATS Match Scanner</h1>
               <span style="background:#16a34a;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;" data-i18n="ats_free_badge">✓ FREE &amp; UNLIMITED</span>
             </div>
           </div>
           <p>Paste your resume and a job posting — get an ATS keyword match score, see exactly which keywords are missing, and receive 5 specific AI rewrite suggestions to close the gap.</p>
         </div>
 
-        <div id="atsProStatus" style="display:none;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#6366F1;font-weight:600;"></div>
+        <div id="atsProStatus" style="display:none;background:rgba(31,92,61,0.06);border:1px solid rgba(31,92,61,0.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#1F5C3D;font-weight:600;"></div>
 
         <div class="input-section">
           <!-- Two-column inputs -->
@@ -1519,7 +1519,7 @@
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                 <label class="input-label" style="margin:0;">📋 Job Description</label>
                 <div style="display:flex;gap:3px;background:rgba(0,0,0,0.06);border-radius:7px;padding:2px;">
-                  <button id="atsJmtPaste" onclick="setAtsJobMode('paste')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#6366F1;color:#fff;font-family:inherit;">Paste</button>
+                  <button id="atsJmtPaste" onclick="setAtsJobMode('paste')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#1F5C3D;color:#fff;font-family:inherit;">Paste</button>
                   <button id="atsJmtUrl" onclick="setAtsJobMode('url')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:#6b7280;font-family:inherit;">🔗 URL</button>
                 </div>
               </div>
@@ -1527,7 +1527,7 @@
               <div id="atsUrlPane" style="display:none;">
                 <div style="display:flex;gap:8px;margin-top:6px;">
                   <input type="url" id="atsUrlInput" style="flex:1;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;" placeholder="https://www.linkedin.com/jobs/view/…" spellcheck="false" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')fetchAtsJobUrl()" />
-                  <button onclick="fetchAtsJobUrl()" id="atsFetchBtn" style="padding:9px 14px;border-radius:8px;border:none;background:#6366F1;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Fetch →</button>
+                  <button onclick="fetchAtsJobUrl()" id="atsFetchBtn" style="padding:9px 14px;border-radius:8px;border:none;background:#1F5C3D;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Fetch →</button>
                 </div>
                 <div id="atsUrlStatus" style="font-size:12px;color:#6b7280;margin-top:5px;min-height:16px;"></div>
                 <div style="font-size:11px;color:#9ca3af;margin-top:3px;">LinkedIn · Indeed · Glassdoor · Lever · Greenhouse · Workday · and more</div>
@@ -1536,7 +1536,7 @@
 
           </div>
 
-          <button class="btn btn-primary" id="atsScanBtn" onclick="runDashboardATS()" style="margin-top:16px;width:100%;padding:14px;background:linear-gradient(135deg,#6366F1,#8B5CF6);border:none;">
+          <button class="btn btn-primary" id="atsScanBtn" onclick="runDashboardATS()" style="margin-top:16px;width:100%;padding:14px;background:linear-gradient(135deg,#1F5C3D,#2E7D53);border:none;">
             Analyze ATS Match →
           </button>
         </div>
@@ -1547,13 +1547,13 @@
           <!-- Score card -->
           <div style="display:flex;align-items:center;gap:24px;margin-bottom:24px;flex-wrap:wrap;">
             <div style="text-align:center;">
-              <div id="atsDashScoreNum" style="font-size:52px;font-weight:900;line-height:1;color:#6366F1;">—</div>
+              <div id="atsDashScoreNum" style="font-size:52px;font-weight:900;line-height:1;color:#1F5C3D;">—</div>
               <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;">ATS Score</div>
             </div>
             <div>
               <div id="atsDashVerdict" style="font-size:18px;font-weight:800;color:#111827;margin-bottom:4px;"></div>
               <div id="atsDashBar" style="width:220px;height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden;">
-                <div id="atsDashBarFill" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#6366F1,#34d399);transition:width .5s;"></div>
+                <div id="atsDashBarFill" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#1F5C3D,#34d399);transition:width .5s;"></div>
               </div>
             </div>
           </div>
@@ -1572,12 +1572,12 @@
 
           <!-- AI Suggestions -->
           <div>
-            <div style="font-size:13px;font-weight:800;color:#6366F1;margin-bottom:10px;">💡 AI Rewrite Suggestions</div>
+            <div style="font-size:13px;font-weight:800;color:#1F5C3D;margin-bottom:10px;">💡 AI Rewrite Suggestions</div>
             <div id="atsDashSuggestions" style="display:flex;flex-direction:column;gap:10px;"></div>
           </div>
 
           <!-- CTA: use Tailor tab to fix -->
-          <div style="margin-top:24px;background:linear-gradient(135deg,rgba(99,102,241,0.06),rgba(139,92,246,0.06));border:1px solid rgba(99,102,241,0.2);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div style="margin-top:24px;background:linear-gradient(135deg,rgba(31,92,61,0.06),rgba(46,125,83,0.06));border:1px solid rgba(31,92,61,0.2);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
             <div>
               <div style="font-size:14px;font-weight:800;color:#111827;margin-bottom:3px;">Fix missing keywords automatically →</div>
               <div style="font-size:13px;color:#6b7280;">Use the Tailor tab to let AI rewrite your resume with all the right keywords in 30 seconds.</div>
@@ -4139,11 +4139,11 @@
         ta.style.display = 'none';
         urlPane.style.display = 'block';
         btnP.style.background = 'transparent'; btnP.style.color = '#6b7280';
-        btnU.style.background = '#6366F1';     btnU.style.color = '#fff';
+        btnU.style.background = '#1F5C3D';     btnU.style.color = '#fff';
       } else {
         ta.style.display = '';
         urlPane.style.display = 'none';
-        btnP.style.background = '#6366F1'; btnP.style.color = '#fff';
+        btnP.style.background = '#1F5C3D'; btnP.style.color = '#fff';
         btnU.style.background = 'transparent'; btnU.style.color = '#6b7280';
       }
     }
@@ -4305,7 +4305,7 @@
       (d.suggestions || []).forEach((s, i) => {
         const div = document.createElement('div');
         div.style.cssText = 'background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:12px 14px;font-size:13px;color:#374151;line-height:1.6;';
-        div.innerHTML = `<span style="font-weight:700;color:#6366F1;margin-right:6px;">${i + 1}.</span>${s}`;
+        div.innerHTML = `<span style="font-weight:700;color:#1F5C3D;margin-right:6px;">${i + 1}.</span>${s}`;
         sugEl.appendChild(div);
       });
     }
@@ -4450,7 +4450,7 @@
         // Executive — sans-serif, left-border accent
         { id:'r5',  name:'Executive',          free:true,  serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#004d40',a:'#00897b',l:'#e0f2f1'} },
         { id:'r6',  name:'Executive Amber',    free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#3e2723',a:'#f59e0b',l:'#fffbeb'} },
-        { id:'r7',  name:'Executive Indigo',   free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#1a0050',a:'#7c3aed',l:'#ede9fe'} },
+        { id:'r7',  name:'Executive Indigo',   free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#1a0050',a:'#1F5C3D',l:'#ede9fe'} },
         { id:'r8',  name:'Executive Slate',    free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#1c2333',a:'#607d8b',l:'#eceff1'} },
         { id:'r25', name:'Executive Steel',    free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#263238',a:'#546e7a',l:'#eceff1'} },
         { id:'r26', name:'Executive Navy',     free:false, serif:false, style:'left-bar',  layout:'rExecutive',c:{p:'#0d1b2a',a:'#4fc3f7',l:'#e0f7fa'} },
@@ -4472,7 +4472,7 @@
         { id:'r16', name:'Sidebar Crimson',    free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#7f1d1d',a:'#f87171',l:'#fef2f2'} },
         { id:'r33', name:'Sidebar Teal',       free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#064e3b',a:'#34d399',l:'#ecfdf5'} },
         { id:'r34', name:'Sidebar Amber',      free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#78350f',a:'#fbbf24',l:'#fffbeb'} },
-        { id:'r35', name:'Sidebar Indigo',     free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#1e1b4b',a:'#818cf8',l:'#eef2ff'} },
+        { id:'r35', name:'Sidebar Indigo',     free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#0E2A1C',a:'#2E7D53',l:'#E8F0E9'} },
         { id:'r36', name:'Sidebar Charcoal',   free:false, serif:false, style:'underline', layout:'rSidebar',  c:{p:'#1f2937',a:'#6b7280',l:'#f9fafb'} },
         // Minimal — ultra-clean, generous whitespace
         { id:'r17', name:'Minimal',            free:true,  serif:true,  style:'minimal',   layout:'rMinimal',  c:{p:'#b71c1c',a:'#ef9a9a',l:'#fff8f8'} },
@@ -4531,14 +4531,14 @@
         { id:'c31', name:'Boxed Sage',         free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#14532d',a:'#4ade80',l:'#f0fdf4'} },
         { id:'c32', name:'Boxed Amber',        free:false, serif:true,  style:'underline', layout:'cBoxed',  c:{p:'#78350f',a:'#d97706',l:'#fffbeb'} },
         // Split — two-column header
-        { id:'c13', name:'Split',              free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#312e81',a:'#818cf8',l:'#eef2ff'} },
+        { id:'c13', name:'Split',              free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#153F2A',a:'#2E7D53',l:'#E8F0E9'} },
         { id:'c14', name:'Split Forest',       free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#052e16',a:'#16a34a',l:'#dcfce7'} },
         { id:'c15', name:'Split Amber',        free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#78350f',a:'#fbbf24',l:'#fffbeb'} },
         { id:'c16', name:'Split Charcoal',     free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#1c1917',a:'#78716c',l:'#fafaf9'} },
         { id:'c33', name:'Split Ocean',        free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'} },
         { id:'c34', name:'Split Crimson',      free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#7f1d1d',a:'#ef4444',l:'#fef2f2'} },
         { id:'c35', name:'Split Sage',         free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#14532d',a:'#65a30d',l:'#ecfccb'} },
-        { id:'c36', name:'Split Plum',         free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#3b0764',a:'#a855f7',l:'#faf5ff'} },
+        { id:'c36', name:'Split Plum',         free:false, serif:false, style:'icon-bar',  layout:'cSplit',  c:{p:'#3b0764',a:'#2E7D53',l:'#faf5ff'} },
         // Clean — ultra-minimal
         { id:'c17', name:'Clean',              free:true,  serif:false, style:'minimal',   layout:'cClean',  c:{p:'#1e293b',a:'#64748b',l:'#f8fafc'} },
         { id:'c18', name:'Clean Ocean',        free:false, serif:false, style:'minimal',   layout:'cClean',  c:{p:'#0c4a6e',a:'#0284c7',l:'#e0f2fe'} },
@@ -5324,7 +5324,7 @@
       {p:'#0c4a6e',a:'#38bdf8',l:'#e0f2fe'},
       {p:'#7c2d12',a:'#fb923c',l:'#fff7ed'},
       {p:'#134e4a',a:'#2dd4bf',l:'#f0fdfa'},
-      {p:'#312e81',a:'#818cf8',l:'#eef2ff'},
+      {p:'#153F2A',a:'#2E7D53',l:'#E8F0E9'},
       {p:'#1e293b',a:'#64748b',l:'#f8fafc'},
     ];
     const _RP = {
@@ -6833,7 +6833,7 @@ Aaliyah Washington`
   <div id="previewModal" onclick="if(event.target===this)closePreview()" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,0.88);overflow:hidden;padding:16px;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:16px;width:100%;max-width:1000px;overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,0.5);display:flex;flex-direction:column;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);">
       <!-- Header — always visible -->
-      <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#1e1b4b;color:#fff;">
+      <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#0E2A1C;color:#fff;">
         <div>
           <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;opacity:0.55;margin-bottom:3px;">Document Preview</div>
           <div id="previewTitle" style="font-size:16px;font-weight:700;"></div>
@@ -6997,9 +6997,9 @@ Aaliyah Washington`
         🔒 The link is private and unlisted — only people you send it to can open it, and it won't appear in Google. It's a snapshot: re-tailoring later won't change this link.
       </div>
       <div id="wcUpgradeNudge" style="display:none;background:#faf5ff;border:1px solid #e9d5ff;border-radius:10px;padding:12px 14px;margin-bottom:16px;position:relative;">
-        <button onclick="dismissShareNudge()" aria-label="Dismiss" style="position:absolute;top:6px;right:8px;background:none;border:none;color:#a78bfa;font-size:16px;cursor:pointer;line-height:1;">×</button>
-        <div style="font-size:12.5px;color:#6b21a8;line-height:1.5;padding-right:14px;" data-i18n="wc_nudge_text">💡 Want recipients to download your resume directly? Upgrade to Pro to publish a Personal Website with a built-in download button.</div>
-        <a href="javascript:void(0)" onclick="closeShareModal();startPro();" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;color:#7c3aed;text-decoration:none;" data-i18n="wc_nudge_cta">See Pro →</a>
+        <button onclick="dismissShareNudge()" aria-label="Dismiss" style="position:absolute;top:6px;right:8px;background:none;border:none;color:#5FB088;font-size:16px;cursor:pointer;line-height:1;">×</button>
+        <div style="font-size:12.5px;color:#1F5C3D;line-height:1.5;padding-right:14px;" data-i18n="wc_nudge_text">💡 Want recipients to download your resume directly? Upgrade to Pro to publish a Personal Website with a built-in download button.</div>
+        <a href="javascript:void(0)" onclick="closeShareModal();startPro();" style="display:inline-block;margin-top:8px;font-size:12.5px;font-weight:700;color:#1F5C3D;text-decoration:none;" data-i18n="wc_nudge_cta">See Pro →</a>
       </div>
       <div style="display:flex;gap:10px;">
         <button onclick="openShareLink()" class="btn btn-outline" style="flex:1;font-size:13px;padding:10px;">Open link ↗</button>
@@ -7096,17 +7096,17 @@ Aaliyah Washington`
       // it does not publish. The label says so, because a button called
       // "Publish" that does not publish is worse than the bug it replaced.
       const siteBtn = (isSubscriberFlag && selectedMode !== 'cover_letter')
-        ? `<button class="download-btn" onclick="startPersonalSite()" style="background:linear-gradient(135deg,#8b5cf6,#6366f1);">🌐 Make a Website</button>` : '';
+        ? `<button class="download-btn" onclick="startPersonalSite()" style="background:linear-gradient(135deg,#2E7D53,#1F5C3D);">🌐 Make a Website</button>` : '';
       if (isSubscriberFlag) {
-        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
+        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#1F5C3D);">🎬 Resume Video</button>` : '';
         row.innerHTML = `${fmtBanner}
           <button class="download-btn download-btn-pdf" onclick="downloadPdf()">Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="downloadDocx()">Download Word</button>
           <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>${shareBtn}${siteBtn}${videoBtn}`;
       } else if (!isLoggedIn) {
-        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
+        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#1F5C3D);">🎬 Resume Video</button>` : '';
         row.innerHTML = `${fmtBanner}
-          <button class="download-btn download-btn-pdf" onclick="showDownloadGate(downloadPdf)" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);">⬇ Download PDF</button>
+          <button class="download-btn download-btn-pdf" onclick="showDownloadGate(downloadPdf)" style="background:linear-gradient(135deg,#1F5C3D,#2E7D53);">⬇ Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="showDownloadGate(downloadDocx)">⬇ Download Word</button>
           <button class="download-btn download-btn-txt" onclick="showDownloadGate(downloadTxt)">⬇ Download Text</button>${shareBtn ? `<button class="download-btn" onclick="showDownloadGate(shareResumeLink)" style="background:linear-gradient(135deg,#10b981,#0ea5e9);">🔗 Share as Link</button>` : ''}${videoBtn}
           <div style="width:100%;font-size:11px;color:#64748b;margin-top:6px;">Free account required to download — takes 5 seconds</div>`;
@@ -7114,12 +7114,12 @@ Aaliyah Washington`
         // Logged-in free user: downloads are free and unlimited (exports carry a
         // small watermark; Pro removes it). No ad-gate — the watermark is the
         // free-tier differentiator now. Video/website remain Pro upsells.
-        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#6366F1);">🎬 Resume Video</button>` : '';
+        const videoBtn = showVideo ? `<button class="download-btn" onclick="downloadVideo()" style="background:linear-gradient(135deg,#22D3EE,#1F5C3D);">🎬 Resume Video</button>` : '';
         row.innerHTML = `${fmtBanner}
           <button class="download-btn download-btn-pdf" onclick="downloadPdf()">Download PDF</button>
           <button class="download-btn download-btn-docx" onclick="downloadDocx()">Download Word</button>
           <button class="download-btn download-btn-txt" onclick="downloadTxt()">Download Text</button>${shareBtn}${videoBtn}
-          <div style="width:100%;font-size:11px;color:#64748b;margin-top:6px;">Free exports include a small watermark — <a href="#" onclick="startPro();return false;" style="color:#818cf8;">go Pro</a> for clean, watermark-free downloads.</div>`;
+          <div style="width:100%;font-size:11px;color:#64748b;margin-top:6px;">Free exports include a small watermark — <a href="#" onclick="startPro();return false;" style="color:#2E7D53;">go Pro</a> for clean, watermark-free downloads.</div>`;
       }
     }
 
@@ -7775,7 +7775,7 @@ Aaliyah Washington`
             <div class="wc-tpl-cat">${wcEsc(t.category)}</div>
             <div style="display:flex;gap:6px;margin-top:10px;">
               <button type="button" class="bo-act" onclick="openTplPreview('${wcEsc(t.id)}')">${wcEsc(_t('wc_tpl_previewbtn', 'Preview'))}</button>
-              <button type="button" class="bo-act" style="border-color:#c7d2fe;color:#4338ca;" onclick="wcPickTemplate('${wcEsc(t.id)}')">${wcEsc(_t('wc_tpl_pick', 'Use'))}</button>
+              <button type="button" class="bo-act" style="border-color:#C9E3D4;color:#153F2A;" onclick="wcPickTemplate('${wcEsc(t.id)}')">${wcEsc(_t('wc_tpl_pick', 'Use'))}</button>
             </div>
           </div>
         </div>`;
@@ -8764,12 +8764,12 @@ Aaliyah Washington`
        anything else here would be offering something that silently does
        nothing. Mirrors the pattern in server.js. */
     const ED_GRADS = [
-      ['Indigo', 'linear-gradient(135deg,#6366F1,#8B5CF6)'],
+      ['Indigo', 'linear-gradient(135deg,#1F5C3D,#2E7D53)'],
       ['Sunset', 'linear-gradient(135deg,#f43f5e,#f59e0b)'],
-      ['Ocean', 'linear-gradient(135deg,#0ea5e9,#6366F1)'],
+      ['Ocean', 'linear-gradient(135deg,#0ea5e9,#1F5C3D)'],
       ['Forest', 'linear-gradient(135deg,#059669,#0d9488)'],
       ['Ink', 'linear-gradient(135deg,#0f172a,#334155)'],
-      ['Blush', 'linear-gradient(135deg,#ec4899,#8B5CF6)'],
+      ['Blush', 'linear-gradient(135deg,#ec4899,#2E7D53)'],
       ['Paper', 'linear-gradient(135deg,#f8fafc,#e2e8f0)'],
     ];
 
@@ -9139,7 +9139,7 @@ Aaliyah Washington`
         fields += row(_t('wc_ed_style', 'Style'), `<select class="text-input" style="width:100%;font-size:13px;" onchange="edSetProp('style',this.value)"><option value="">${wcEsc(_t('wc_ed_filled', 'Filled'))}</option><option value="ghost"${p.style==='ghost'?' selected':''}>${wcEsc(_t('wc_ed_outline', 'Outline'))}</option></select>`);
         // Blank = the theme's own gradient, which is what a template intends.
         fields += row(_t('wc_ed_btncolor', 'Button colour'), `<div style="display:flex;gap:6px;align-items:center;">
-          <input type="color" style="flex:1;height:32px;border:1px solid #45464c;border-radius:8px;" value="${wcEsc(p.color || '#6366F1')}" oninput="edSetProp('color',this.value)"/>
+          <input type="color" style="flex:1;height:32px;border:1px solid #45464c;border-radius:8px;" value="${wcEsc(p.color || '#1F5C3D')}" oninput="edSetProp('color',this.value)"/>
           <button type="button" class="bo-act" onclick="edClearProp('color')" title="${wcEsc(_t('wc_ed_usetheme', 'Use the theme colour'))}">↺</button>
         </div>`);
       }
@@ -9215,7 +9215,7 @@ Aaliyah Washington`
             </div>
           </div>`).join('') + `<button type="button" class="bo-act" style="width:100%;" onclick="edAddItem()">${wcEsc(_t('wc_ed_cardadd','+ Add card'))}</button>`);
       }
-      box.innerHTML = `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#6366f1;">${wcEsc(e.type)}</div>
+      box.innerHTML = `<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#1F5C3D;">${wcEsc(e.type)}</div>
         <div style="border-bottom:1px solid #3b3c42;margin:10px 0 4px;padding-bottom:10px;">
           <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#9ca3af;margin-bottom:6px;">${wcEsc(_t('wc_ed_addinto', 'Add into this box'))}</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
@@ -9233,7 +9233,7 @@ Aaliyah Washington`
           <input class="text-input" style="font-size:12px;" type="number" value="${Number(e.h) || 0}" oninput="edSetGeom('h',this.value)" title="H"/>
         </div>`)}
         <div style="border-top:1px solid #eef0f4;margin-top:14px;padding-top:10px;">
-          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#6366f1;margin-bottom:6px;">📱 ${wcEsc(_t('wc_ed_mobile', 'Mobile'))}</div>
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1F5C3D;margin-bottom:6px;">📱 ${wcEsc(_t('wc_ed_mobile', 'Mobile'))}</div>
           <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#374151;cursor:pointer;">
             <input type="checkbox" ${_edMHidden(e) ? 'checked' : ''} onchange="edSetHidden(this.checked)"/> ${wcEsc(_t('wc_ed_mhide', 'Hide on mobile'))}
           </label>
@@ -9253,7 +9253,7 @@ Aaliyah Washington`
           </div>
         </div>
         <div style="border-top:1px solid #3b3c42;margin-top:14px;padding-top:10px;">
-          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#6366f1;margin-bottom:6px;">${wcEsc(_t('wc_ed_elbg', 'Background'))}</div>
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1F5C3D;margin-bottom:6px;">${wcEsc(_t('wc_ed_elbg', 'Background'))}</div>
           <div style="display:flex;gap:6px;align-items:center;">
             <input type="color" style="flex:1;height:32px;border:1px solid #45464c;border-radius:8px;" value="${wcEsc(p.elbg || '#ffffff')}" oninput="edSetProp('elbg',this.value)"/>
             <button type="button" class="bo-act" onclick="edPickElBg()" title="${wcEsc(_t('wc_ed_elbgimg', 'Use an image'))}">🖼</button>
@@ -9281,7 +9281,7 @@ Aaliyah Washington`
           <button type="button" class="bo-act" style="width:100%;margin-top:8px;" onclick="edDuplicateSel()">${wcEsc(_t('wc_ed_duplicate', '⧉ Duplicate'))}</button>
         </div>
         <div style="border-top:1px solid #3b3c42;margin-top:14px;padding-top:10px;">
-          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#6366f1;margin-bottom:6px;">${wcEsc(_t('wc_ed_section', 'This section'))}</div>
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1F5C3D;margin-bottom:6px;">${wcEsc(_t('wc_ed_section', 'This section'))}</div>
           <label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#e5e7eb;cursor:pointer;">
             <input type="checkbox" ${_edSecAnim(hit.section) ? 'checked' : ''} onchange="edSetSectionAnim(this.checked ? 'up' : '')"/> ${wcEsc(_t('wc_ed_anim', 'Animate on scroll'))}
           </label>
@@ -9984,7 +9984,7 @@ Aaliyah Washington`
         return `<div class="bo-item" style="display:block;">
           <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
             <strong style="font-size:14px;">${wcEsc(l.name || _t('bo_lead_anon', 'A visitor'))}</strong>
-            <a href="mailto:${wcEsc(l.visitor_email)}" style="font-size:12.5px;color:#4338ca;">${wcEsc(l.visitor_email)}</a>
+            <a href="mailto:${wcEsc(l.visitor_email)}" style="font-size:12.5px;color:#153F2A;">${wcEsc(l.visitor_email)}</a>
             <span style="font-size:11.5px;color:#9ca3af;margin-left:auto;">${wcEsc(when)} · ${wcEsc(l.sub || '')}</span>
           </div>
           ${l.message ? `<div style="font-size:13px;color:#374151;margin-top:6px;white-space:pre-wrap;">${wcEsc(l.message)}</div>` : ''}
