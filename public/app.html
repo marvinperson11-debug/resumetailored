@@ -6817,6 +6817,22 @@ Aaliyah Washington`
       history.replaceState(null, '', window.location.pathname);
       setTimeout(() => { wcOpenSub = openSub; showTab('website'); }, 0);
     })();
+    // Deep-link straight to a specific tool tab, e.g. /dashboard?tab=linkedin.
+    // The Free Tools cards and the homepage "Optimize My LinkedIn" button link
+    // here; without this every such link fell through to the default Tailor
+    // (Resume Creator) tab — which is why the LinkedIn card appeared to open
+    // the resume builder instead of the LinkedIn Optimizer.
+    (function () {
+      const tab = new URLSearchParams(window.location.search).get('tab');
+      if (!tab) return;
+      const ALLOWED = ['tailor', 'linkedin', 'ats', 'video', 'forum', 'salary', 'checkin', 'help', 'about', 'samples'];
+      if (!ALLOWED.includes(tab)) return;
+      // Preserve any other params (e.g. ?lang=zh) while dropping ?tab.
+      const params = new URLSearchParams(window.location.search);
+      params.delete('tab');
+      history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : ''));
+      setTimeout(() => { try { showTab(tab); } catch (_) {} }, 0);
+    })();
     // Apply language preference. An explicit ?lang= in the URL wins and is
     // persisted — this is how the /zh/ landing pages hand a Chinese visitor
     // into a Chinese dashboard instead of dropping them back to English.
