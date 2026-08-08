@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Free AI Resume Score Checker — ATS Match &amp; Readability | ResumeTailored AI</title>
-  <meta name="description" content="Free AI-powered resume score checker. Get your ATS match rate, readability review, missing keywords, and 5 specific AI rewrite suggestions — no account needed."/>
+  <title>Free AI Resume Tools — ATS Score Checker, Readability &amp; Keyword Extractor | ResumeTailored AI</title>
+  <meta name="description" content="Every free AI resume tool in one place — ATS score checker, readability review, keyword extractor, resume tailoring and cover letters. Unlimited and free, no account needed."/>
   <meta name="keywords" content="free ats resume checker, resume score checker, ats match rate, resume readability, free resume scanner, ai resume checker"/>
   <link rel="canonical" href="https://resumetailored.com/score"/>
   <!-- hreflang: English + Chinese bilingual site -->
   <link rel="alternate" hreflang="en" href="https://resumetailored.com/score"/>
   <link rel="alternate" hreflang="zh-CN" href="https://resumetailored.com/score?lang=zh"/>
   <link rel="alternate" hreflang="x-default" href="https://resumetailored.com/score"/>
-  <meta property="og:title" content="Free AI Resume Score Checker — ATS + Readability"/>
-  <meta property="og:description" content="Paste your resume and job description. Claude AI scores your ATS match and gives 5 specific fixes — free, no account needed."/>
+  <meta property="og:title" content="Free AI Resume Tools — ATS Score, Readability, Keyword Extractor &amp; More"/>
+  <meta property="og:description" content="Every free AI resume tool in one place — ATS scoring, readability, keyword extraction, resume tailoring and cover letters. Unlimited and free, no account needed."/>
   <meta property="og:url" content="https://resumetailored.com/score"/>
   <meta property="og:type" content="website"/>
   <meta property="og:image" content="https://resumetailored.com/og-image.png"/>
@@ -268,7 +268,7 @@
     .mobile-nav a{display:block;padding:12px 0;font-size:15px;font-weight:600;color:#94a3b8;text-decoration:none;border-bottom:1px solid rgba(255,255,255,0.05);}
     .mobile-nav a:last-child{border-bottom:none;}
     .mobile-nav a:hover{color:#f1f5f9;}
-    .mobile-nav .btn-nav-mobile{margin-top:10px;display:block;text-align:center;background:linear-gradient(135deg,#2e7d53,#4f46e5);color:#fff !important;border-radius:10px;padding:13px;font-weight:700;border-bottom:none !important;}
+    .mobile-nav .btn-nav-mobile{margin-top:10px;display:block;text-align:center;background:linear-gradient(135deg,#2e7d53,#1F5C3D);color:#fff !important;border-radius:10px;padding:13px;font-weight:700;border-bottom:none !important;}
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/theme.css"/>
@@ -309,223 +309,13 @@
 <!-- HERO -->
 <section class="hero">
   <p class="hero-eyebrow" data-i18n="hero_eyebrow">★ Free · No Account Required · Powered by Claude AI</p>
-  <h1 data-i18n-html="hero_title">Resume <span>Optimization Hub</span></h1>
-  <p class="hero-sub" data-i18n="hero_sub">ATS Match Rate + Readability Review in one place. Paste your resume and get real AI analysis — free, instant, no sign-up.</p>
-  <p class="hero-note" data-i18n-html="hero_note"><strong>Free tier:</strong> unlimited ATS scans · Readability review is always unlimited</p>
-  <div class="status-bar" id="statusBar">Checking your access level…</div>
+  <h1 data-i18n-html="hero_title">Free <span>AI Resume Tools</span></h1>
+  <p class="hero-sub" data-i18n="hero_sub">Every free AI tool for your job search in one place — ATS scoring, readability, keyword extraction, resume tailoring and more. Pick a tool below to get started.</p>
+  <p class="hero-note" data-i18n-html="hero_note"><strong>All free, all unlimited</strong> — no credit card, no daily cap</p>
+  <div class="status-bar" id="statusBar">Loading…</div>
 </section>
 
-<!-- TAB SWITCHER -->
-<div class="tab-wrap">
-  <div class="tab-switch">
-    <button class="tab-btn active" id="tabBtnAts" onclick="switchTab('ats')" data-i18n="tab_ats">● ATS Match Rate</button>
-    <button class="tab-btn" id="tabBtnRead" onclick="switchTab('readability')" data-i18n="tab_read">📝 Readability Review</button>
-  </div>
-</div>
 
-<!-- TOOL SECTION -->
-<main class="tool-section">
-
-  <!-- ── TAB 1: ATS MATCH RATE ── -->
-  <div class="tab-pane active" id="tab-ats">
-
-    <!-- INPUTS -->
-    <div class="inputs-grid">
-      <div class="input-card">
-        <div class="input-label">
-          <span data-i18n="label_resume">📄 Your Resume</span>
-          <button class="upload-btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()" data-i18n="upload_btn">⬆ Upload File</button>
-          <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleUpload(this)"/>
-        </div>
-        <textarea id="resumeInput" class="resume-ta" placeholder="Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…" data-i18n-placeholder="resume_ph" spellcheck="false"></textarea>
-      </div>
-      <div class="input-card">
-        <div class="input-label">
-          <span data-i18n="label_job">📋 Job Description</span>
-          <div class="job-mode-toggle">
-            <button class="jmt-btn active" id="jmtPaste" onclick="setJobMode('paste')" data-i18n="jmt_paste">Paste Text</button>
-            <button class="jmt-btn" id="jmtUrl" onclick="setJobMode('url')" data-i18n="jmt_url">🔗 Job URL</button>
-          </div>
-        </div>
-        <!-- Paste mode -->
-        <textarea id="jobInput" class="resume-ta" placeholder="Paste the full job posting here — include requirements, responsibilities, and qualifications…" data-i18n-placeholder="job_ph" spellcheck="false"></textarea>
-        <!-- URL mode -->
-        <div id="jobUrlPane" style="display:none;">
-          <div class="url-row">
-            <input type="url" id="jobUrlInput" class="url-input" placeholder="https://www.linkedin.com/jobs/view/…" spellcheck="false" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')fetchJobUrl()" />
-            <button class="btn-fetch" id="fetchBtn" onclick="fetchJobUrl()" data-i18n="jmt_fetch">Fetch →</button>
-          </div>
-          <div class="url-status" id="urlStatus"></div>
-          <div class="url-boards" data-i18n-html="jmt_boards">Supported: LinkedIn · Indeed · Glassdoor · ZipRecruiter · Monster · Dice · Lever · Greenhouse · Workday · BambooHR · Wellfound · Ashby · Built In · We Work Remotely · Boss直聘 · 猎聘 · 智联招聘 · and more</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="error-msg" id="atsError"></div>
-
-    <div class="action-row">
-      <button class="btn-analyze" id="atsBtn" onclick="runATS()" data-i18n="analyze_btn">Analyze ATS Match →</button>
-      <span class="shortcut-hint" data-i18n="shortcut">or press Ctrl+Enter</span>
-    </div>
-
-    <!-- RESULTS -->
-    <div class="results-section" id="atsResults">
-
-      <!-- SCORE + KEYWORDS -->
-      <div class="ats-results-grid" id="atsResultsGrid">
-
-        <!-- SCORE CARD -->
-        <div class="score-card">
-          <div class="score-title" data-i18n="score_title">ATS Match Score</div>
-          <div class="score-circle-wrap">
-            <svg class="score-svg" width="140" height="140" viewBox="0 0 100 100">
-              <circle class="score-track" cx="50" cy="50" r="45"/>
-              <circle class="score-bar" id="scoreBar" cx="50" cy="50" r="45"/>
-            </svg>
-            <div class="score-number">
-              <span class="score-pct" id="scoreDisplay">0</span>
-              <span class="score-pct-sign">%</span>
-            </div>
-          </div>
-          <div class="verdict-badge" id="verdictBadge"></div>
-        </div>
-
-        <!-- KEYWORDS -->
-        <div class="keywords-card">
-          <div>
-            <div class="kw-section-title found"><span data-i18n="matched_kw">✓ Matched Keywords</span> <span class="kw-count" id="foundCount">0</span></div>
-            <div class="chips-wrap" id="foundChips"></div>
-          </div>
-          <div>
-            <div class="kw-section-title missing"><span data-i18n="missing_kw">✕ Missing Keywords</span> <span class="kw-count" id="missingCount">0</span></div>
-            <div class="missing-kw-wrap">
-              <div class="chips-wrap" id="missingChips"></div>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- end ats-results-grid -->
-
-      <!-- AI SUGGESTIONS -->
-      <div class="suggestions-card" id="suggestionsCard" style="display:none;">
-        <div class="suggestions-eyebrow" data-i18n="ai_suggestions">💡 AI Rewrite Suggestions</div>
-        <div id="suggestionsList"></div>
-      </div>
-
-      <!-- CTA -->
-      <div class="cta-strip">
-        <div class="cta-strip-text">
-          <h3 data-i18n="cta_ats_h">Fix missing keywords automatically →</h3>
-          <p data-i18n="cta_ats_p">Let our AI rewrite your full resume with all the right keywords woven in naturally — plus a matching cover letter, in 30 seconds.</p>
-        </div>
-        <a href="/dashboard" class="btn-fix" data-i18n="cta_ats_btn">Tailor My Resume Free →</a>
-      </div>
-
-    </div><!-- end atsResults -->
-  </div><!-- end tab-ats -->
-
-  <!-- ── TAB 2: READABILITY REVIEW ── -->
-  <div class="tab-pane" id="tab-readability">
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div class="input-label" data-i18n="read_label" style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#e2e8f0;">📄 Your Resume</div>
-      <button class="upload-btn" id="readUploadBtn" onclick="document.getElementById('readFileInput').click()" data-i18n="upload_btn">⬆ Upload File</button>
-      <input type="file" id="readFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleReadUpload(this)"/>
-    </div>
-    <div class="single-input-wrap">
-      <textarea id="readInput" class="single-ta" placeholder="Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…" data-i18n-placeholder="read_ph" spellcheck="false" oninput="runReadability()"></textarea>
-    </div>
-
-
-    <div class="results-section" id="readResults">
-
-      <!-- OVERALL VERDICT -->
-      <div class="verdict-row" id="readVerdictRow">
-        <div class="verdict-row-icon" id="readVerdictIcon">&#128196;</div>
-        <div class="verdict-row-text">
-          <h4 id="readVerdictTitle" data-i18n="read_verdict_init_title">Paste your resume above</h4>
-          <p id="readVerdictDesc" data-i18n="read_verdict_init_desc">Analysis runs instantly as you type.</p>
-        </div>
-      </div>
-
-      <!-- METRICS GRID -->
-      <div class="readability-grid">
-        <div class="metric-card">
-          <div class="metric-label" data-i18n="metric_words">Word Count</div>
-          <div class="metric-value" id="wordCount">—</div>
-          <div class="metric-verdict" id="wordVerdict"></div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label" data-i18n="metric_bullets">Bullet Points</div>
-          <div class="metric-value" id="bulletCount">—</div>
-          <div class="metric-verdict" id="bulletVerdict"></div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-label" data-i18n="metric_weak">Weak Phrases</div>
-          <div class="metric-value" id="weakCount">—</div>
-          <div class="metric-verdict" id="weakVerdict"></div>
-        </div>
-      </div>
-
-      <!-- WEAK PHRASES LIST -->
-      <div class="suggestions-card" id="weakPhrasesCard" style="display:none;">
-        <div class="suggestions-eyebrow" data-i18n="weak_eyebrow">&#9888; Weak Phrases &amp; Passive Voice Detected</div>
-        <div id="weakPhrasesList"></div>
-      </div>
-
-      <!-- CTA -->
-      <div class="cta-strip">
-        <div class="cta-strip-text">
-          <h3 data-i18n="cta_read_h">Fix weak language automatically &rarr;</h3>
-          <p data-i18n="cta_read_p">Paste a job description and our AI rewrites every bullet with strong action verbs and the right keywords — in 30 seconds.</p>
-        </div>
-        <a href="/dashboard" class="btn-fix" data-i18n="cta_read_btn">Tailor My Resume Free →</a>
-      </div>
-
-    </div><!-- end readResults -->
-  </div><!-- end tab-readability -->
-
-</main>
-
-<!-- AEO CONTENT BLOCK — chunkable Q&A for AI search crawlers -->
-<section style="max-width:760px;margin:0 auto;padding:56px 24px 40px;position:relative;z-index:1;">
-
-  <h2 style="font-size:22px;font-weight:800;color:#191512;margin-bottom:10px;letter-spacing:-0.3px;">How does the free ATS resume score checker work?</h2>
-  <p style="font-size:15px;color:#57514A;line-height:1.8;margin-bottom:32px;">Paste your resume (or upload a PDF or DOCX file) and paste a job description — or enter a job board URL. The AI calculates a keyword match score from 0 to 100%, identifies which required keywords are missing, reviews your resume's readability, and returns 5 specific AI-written rewrite suggestions. No account required.</p>
-
-  <h2 style="font-size:22px;font-weight:800;color:#191512;margin-bottom:10px;letter-spacing:-0.3px;">Which job boards can I import job descriptions from?</h2>
-  <p style="font-size:15px;color:#57514A;line-height:1.8;margin-bottom:12px;">Paste a job URL from any of the following platforms and the AI extracts the full job description automatically:</p>
-  <ul style="list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 20px;padding:0;margin-bottom:32px;">
-    <li style="color:#57514A;font-size:14px;">✓ LinkedIn</li>
-    <li style="color:#57514A;font-size:14px;">✓ Indeed</li>
-    <li style="color:#57514A;font-size:14px;">✓ Glassdoor</li>
-    <li style="color:#57514A;font-size:14px;">✓ ZipRecruiter</li>
-    <li style="color:#57514A;font-size:14px;">✓ Monster</li>
-    <li style="color:#57514A;font-size:14px;">✓ Dice</li>
-    <li style="color:#57514A;font-size:14px;">✓ Greenhouse</li>
-    <li style="color:#57514A;font-size:14px;">✓ Lever</li>
-    <li style="color:#57514A;font-size:14px;">✓ Workday</li>
-    <li style="color:#57514A;font-size:14px;">✓ BambooHR</li>
-    <li style="color:#57514A;font-size:14px;">✓ Wellfound</li>
-    <li style="color:#57514A;font-size:14px;">✓ Ashby</li>
-    <li style="color:#57514A;font-size:14px;">✓ Built In</li>
-    <li style="color:#57514A;font-size:14px;">✓ We Work Remotely</li>
-    <li style="color:#57514A;font-size:14px;">✓ Taleo (Oracle)</li>
-    <li style="color:#57514A;font-size:14px;">✓ iCIMS</li>
-    <li style="color:#57514A;font-size:14px;">✓ SmartRecruiters</li>
-    <li style="color:#57514A;font-size:14px;">✓ Boss直聘</li>
-    <li style="color:#57514A;font-size:14px;">✓ 猎聘 (Liepin)</li>
-    <li style="color:#57514A;font-size:14px;">✓ 智联招聘 (Zhaopin)</li>
-    <li style="color:#918A7E;font-size:13px;grid-column:1/-1;">+ 20 more job boards supported</li>
-  </ul>
-
-  <h2 style="font-size:22px;font-weight:800;color:#191512;margin-bottom:10px;letter-spacing:-0.3px;">What file formats does the resume checker accept?</h2>
-  <p style="font-size:15px;color:#57514A;line-height:1.8;margin-bottom:32px;">Upload your resume as a <strong style="color:#191512;">PDF (.pdf)</strong> or <strong style="color:#191512;">Word document (.docx)</strong>, or paste the text directly. All three input methods produce the same quality ATS keyword analysis.</p>
-
-  <h2 style="font-size:22px;font-weight:800;color:#191512;margin-bottom:10px;letter-spacing:-0.3px;">Does this tool support Chinese resumes?</h2>
-  <p style="font-size:15px;color:#57514A;line-height:1.8;">Yes. The AI translation feature converts your resume from Chinese (or any language) into professional English before running the ATS analysis — so non-native English speakers get accurate results. The interface is also available in Simplified Chinese.</p>
-
-</section>
 
 <!-- ALL FREE TOOLS — card catalog -->
 <section class="ft-catalog" style="max-width:1100px;margin:0 auto;padding:8px 24px 64px;position:relative;z-index:1;">
@@ -535,19 +325,19 @@
 
   <div class="ft-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;">
 
-    <!-- ATS Score Checker (this page) -->
-    <div class="ft-card ft-card--here" style="background:#ffffff;border:2px solid rgba(31,92,61,0.4);border-radius:16px;padding:24px;display:flex;flex-direction:column;">
+    <!-- ATS Score Checker -->
+    <a href="/ats-score-checker" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div style="font-size:30px;">🎯</div>
         <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
       </div>
       <h3 style="font-size:17px;font-weight:800;color:#191512;margin-bottom:6px;" data-i18n="tool_score_h">ATS Score Checker</h3>
       <p style="font-size:13.5px;color:#57514A;line-height:1.6;margin-bottom:14px;flex:1;" data-i18n="tool_score_p">Score your resume against any job description and get instant AI rewrite suggestions.</p>
-      <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_youre_here">● You're here</span>
-    </div>
+      <span style="font-size:13px;font-weight:700;color:#1F5C3D;" data-i18n="tool_open">Open tool →</span>
+    </a>
 
-    <!-- Readability Review (tab 2 on this page) -->
-    <a href="#" onclick="switchTab('readability');window.scrollTo({top:0,behavior:'smooth'});return false;" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+    <!-- Readability Review -->
+    <a href="/resume-analyzer" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div style="font-size:30px;">📝</div>
         <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
@@ -591,7 +381,7 @@
     </a>
 
     <!-- LinkedIn Profile Optimizer -->
-    <a href="/dashboard" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
+    <a href="/dashboard?tab=linkedin" class="ft-card" style="background:#ffffff;border:1px solid #E7DFD1;border-radius:16px;padding:24px;display:flex;flex-direction:column;transition:all .2s;text-decoration:none;" onmouseover="this.style.borderColor='rgba(31,92,61,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#E7DFD1';this.style.transform='none';">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div style="font-size:30px;">💼</div>
         <span style="background:rgba(52,211,153,0.14);color:#1F5C3D;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px;" data-i18n="tool_free_badge">Free</span>
@@ -636,6 +426,45 @@
 
   </div>
 </section>
+<!-- AEO CONTENT BLOCK — chunkable Q&A for AI search crawlers -->
+<section style="max-width:760px;margin:0 auto;padding:56px 24px 40px;position:relative;z-index:1;">
+
+  <h2 style="font-size:22px;font-weight:800;color:#191512;margin-bottom:10px;letter-spacing:-0.3px;">How does the free ATS resume score checker work?</h2>
+  <p style="font-size:15px;color:#57514A;line-height:1.8;margin-bottom:32px;">Paste your resume (or upload a PDF or DOCX file) and paste a job description — or enter a job board URL. The AI calculates a keyword match score from 0 to 100%, identifies which required keywords are missing, reviews your resume's readability, and returns 5 specific AI-written rewrite suggestions. No account required.</p>
+
+  <h2 style="font-size:22px;font-weight:800;color:#191512;margin-bottom:10px;letter-spacing:-0.3px;">Which job boards can I import job descriptions from?</h2>
+  <p style="font-size:15px;color:#57514A;line-height:1.8;margin-bottom:12px;">Paste a job URL from any of the following platforms and the AI extracts the full job description automatically:</p>
+  <ul style="list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px 20px;padding:0;margin-bottom:32px;">
+    <li style="color:#57514A;font-size:14px;">✓ LinkedIn</li>
+    <li style="color:#57514A;font-size:14px;">✓ Indeed</li>
+    <li style="color:#57514A;font-size:14px;">✓ Glassdoor</li>
+    <li style="color:#57514A;font-size:14px;">✓ ZipRecruiter</li>
+    <li style="color:#57514A;font-size:14px;">✓ Monster</li>
+    <li style="color:#57514A;font-size:14px;">✓ Dice</li>
+    <li style="color:#57514A;font-size:14px;">✓ Greenhouse</li>
+    <li style="color:#57514A;font-size:14px;">✓ Lever</li>
+    <li style="color:#57514A;font-size:14px;">✓ Workday</li>
+    <li style="color:#57514A;font-size:14px;">✓ BambooHR</li>
+    <li style="color:#57514A;font-size:14px;">✓ Wellfound</li>
+    <li style="color:#57514A;font-size:14px;">✓ Ashby</li>
+    <li style="color:#57514A;font-size:14px;">✓ Built In</li>
+    <li style="color:#57514A;font-size:14px;">✓ We Work Remotely</li>
+    <li style="color:#57514A;font-size:14px;">✓ Taleo (Oracle)</li>
+    <li style="color:#57514A;font-size:14px;">✓ iCIMS</li>
+    <li style="color:#57514A;font-size:14px;">✓ SmartRecruiters</li>
+    <li style="color:#57514A;font-size:14px;">✓ Boss直聘</li>
+    <li style="color:#57514A;font-size:14px;">✓ 猎聘 (Liepin)</li>
+    <li style="color:#57514A;font-size:14px;">✓ 智联招聘 (Zhaopin)</li>
+    <li style="color:#918A7E;font-size:13px;grid-column:1/-1;">+ 20 more job boards supported</li>
+  </ul>
+
+  <h2 style="font-size:22px;font-weight:800;color:#191512;margin-bottom:10px;letter-spacing:-0.3px;">What file formats does the resume checker accept?</h2>
+  <p style="font-size:15px;color:#57514A;line-height:1.8;margin-bottom:32px;">Upload your resume as a <strong style="color:#191512;">PDF (.pdf)</strong> or <strong style="color:#191512;">Word document (.docx)</strong>, or paste the text directly. All three input methods produce the same quality ATS keyword analysis.</p>
+
+  <h2 style="font-size:22px;font-weight:800;color:#191512;margin-bottom:10px;letter-spacing:-0.3px;">Does this tool support Chinese resumes?</h2>
+  <p style="font-size:15px;color:#57514A;line-height:1.8;">Yes. The AI translation feature converts your resume from Chinese (or any language) into professional English before running the ATS analysis — so non-native English speakers get accurate results. The interface is also available in Simplified Chinese.</p>
+
+</section>
 
 <!-- FOOTER -->
 <!-- Free Tools CTA Banner -->
@@ -657,9 +486,9 @@
       nav_home:'Home', nav_how:'How It Works', nav_free_tools:'Free Tools',
       nav_blog:'Blog', nav_pricing:'Pricing', nav_cta:'Tailor My Resume Free →',
       hero_eyebrow:'★ Free · No Account Required · Powered by Claude AI',
-      hero_title:'Resume <span>Optimization Hub</span>',
-      hero_sub:'ATS Match Rate + Readability Review in one place. Paste your resume and get real AI analysis — free, instant, no sign-up.',
-      hero_note:'<strong>Free tier:</strong> unlimited ATS scans · Readability review is always unlimited',
+      hero_title:'Free <span>AI Resume Tools</span>',
+      hero_sub:'Every free AI tool for your job search in one place — ATS scoring, readability, keyword extraction, resume tailoring and more. Pick a tool below to get started.',
+      hero_note:'<strong>All free, all unlimited</strong> — no credit card, no daily cap',
       tab_ats:'● ATS Match Rate', tab_read:'📝 Readability Review',
       label_resume:'📄 Your Resume', upload_btn:'⬆ Upload File', label_job:'📋 Job Description',
       resume_ph:'Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx…',
@@ -727,9 +556,9 @@
       nav_home:'首页', nav_how:'功能介绍', nav_free_tools:'免费工具',
       nav_blog:'博客', nav_pricing:'定价', nav_cta:'免费定制我的简历 →',
       hero_eyebrow:'★ 免费 · 无需注册 · 由 Claude AI 驱动',
-      hero_title:'简历 <span>优化中心</span>',
-      hero_sub:'ATS匹配率 + 可读性评审，一站搞定。粘贴简历即可获得真实AI分析——免费、即时、无需注册。',
-      hero_note:'<strong>免费版：</strong>无限次ATS扫描 · 可读性评审无限制',
+      hero_title:'免费 <span>AI 简历工具</span>',
+      hero_sub:'求职所需的免费AI工具，一站汇集——ATS评分、可读性评审、关键词提取、简历定制等。选择下方任一工具即可开始。',
+      hero_note:'<strong>全部免费、无限使用</strong> — 无需信用卡，无每日限制',
       tab_ats:'● ATS 匹配率', tab_read:'📝 可读性评审',
       label_resume:'📄 你的简历', upload_btn:'⬆ 上传文件', label_job:'📋 职位描述',
       resume_ph:'在此粘贴完整简历文本，或点击"上传文件"导入 .txt、.pdf 或 .docx…',
@@ -835,367 +664,6 @@
     bar.innerHTML = t.status_free + ' <span class="free-pill">FREE</span>';
   }
 
-  // ── Tab switching ──────────────────────────────────────────────────────────
-  function switchTab(tab) {
-    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-' + tab).classList.add('active');
-    document.getElementById('tabBtn' + (tab === 'ats' ? 'Ats' : 'Read')).classList.add('active');
-  }
-
-  // ── Job URL mode ──────────────────────────────────────────────────────────
-  const ALLOWED_JOB_DOMAINS = [
-    'linkedin.com','indeed.com','glassdoor.com','ziprecruiter.com','monster.com',
-    'careerbuilder.com','dice.com','theladders.com','simplyhired.com','snagajob.com',
-    'flexjobs.com','themuse.com','hired.com','wellfound.com','angel.co',
-    'builtin.com','remote.co','weworkremotely.com','remoteok.com','remoteok.io',
-    'lever.co','greenhouse.io','ashbyhq.com','bamboohr.com','myworkdayjobs.com',
-    'workday.com','icims.com','smartrecruiters.com','jobvite.com','taleo.net',
-    'breezy.hr','workable.com','recruitee.com','pinpoint.com','teamtailor.com',
-    'handshake.com','wayup.com','internships.com','chegg.com','recruiter.com',
-    'zippia.com','jora.com','jobrapido.com','otta.com','cord.co',
-    'techinasia.com','careers.google.com','jobs.apple.com','microsoft.com',
-    'amazon.jobs','meta.com','netflix.jobs',
-    // Chinese platforms
-    'zhipin.com','liepin.com','zhaopin.com','lagou.com','51job.com','maimai.cn',
-  ];
-
-  function isAllowedJobUrl(raw) {
-    try {
-      const u = new URL(raw);
-      if (u.protocol !== 'https:') return false;
-      const host = u.hostname.replace(/^www\./, '');
-      return ALLOWED_JOB_DOMAINS.some(d => host === d || host.endsWith('.' + d));
-    } catch { return false; }
-  }
-
-  function setJobMode(mode) {
-    const pasteTA  = document.getElementById('jobInput');
-    const urlPane  = document.getElementById('jobUrlPane');
-    const btnPaste = document.getElementById('jmtPaste');
-    const btnUrl   = document.getElementById('jmtUrl');
-    if (mode === 'url') {
-      pasteTA.style.display  = 'none';
-      urlPane.style.display  = 'block';
-      btnPaste.classList.remove('active');
-      btnUrl.classList.add('active');
-    } else {
-      pasteTA.style.display  = '';
-      urlPane.style.display  = 'none';
-      btnPaste.classList.add('active');
-      btnUrl.classList.remove('active');
-    }
-  }
-
-  async function fetchJobUrl() {
-    const t = I18N[currentLang];
-    let raw = document.getElementById('jobUrlInput').value.trim();
-    const status = document.getElementById('urlStatus');
-    const btn = document.getElementById('fetchBtn');
-
-    if (!raw) return;
-    // Auto-extract URL if the user pasted "Job Title https://..." (common from job apps)
-    const httpsIdx = raw.indexOf('https://');
-    if (httpsIdx > 0) {
-      raw = raw.slice(httpsIdx).split(/\s/)[0];
-      document.getElementById('jobUrlInput').value = raw;
-    }
-    if (!raw.startsWith('https://')) { status.textContent = t.jmt_err_invalid; return; }
-    if (!isAllowedJobUrl(raw)) { status.textContent = t.jmt_err_domain; return; }
-
-    btn.disabled = true;
-    status.textContent = t.jmt_fetching;
-
-    try {
-      const res = await fetch('/api/fetch-job-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: raw })
-      });
-      const data = await res.json();
-      if (!res.ok) { status.textContent = '✗ ' + (data.error || 'Failed to fetch.'); return; }
-      document.getElementById('jobInput').value = data.text;
-      setJobMode('paste');
-      status.textContent = t.jmt_ok;
-      // Clear status after 3s
-      setTimeout(() => { status.textContent = ''; }, 3000);
-    } catch (e) {
-      status.textContent = '✗ Network error — please try again.';
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
-  // ── File upload ────────────────────────────────────────────────────────────
-  async function handleUpload(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const btn = document.getElementById('uploadBtn');
-    const t = I18N[currentLang];
-    btn.textContent = t.upload_loading;
-    btn.classList.add('loading');
-    btn.disabled = true;
-    const ext = file.name.split('.').pop().toLowerCase();
-    try {
-      if (ext === 'txt') {
-        document.getElementById('resumeInput').value = await file.text();
-      } else {
-        const fd = new FormData();
-        fd.append('file', file);
-        const res = await fetch('/api/extract-text', { method: 'POST', body: fd });
-        const d = await res.json();
-        if (d.text) document.getElementById('resumeInput').value = d.text;
-        else alert('Could not extract text. Try saving as .txt and uploading again.');
-      }
-    } catch(e) { alert('Upload failed. Please paste your resume text manually.'); }
-    finally { btn.textContent = t.upload_btn; btn.classList.remove('loading'); btn.disabled = false; input.value = ''; }
-  }
-
-  async function handleReadUpload(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const btn = document.getElementById('readUploadBtn');
-    const t = I18N[currentLang];
-    btn.textContent = t.upload_loading;
-    btn.classList.add('loading');
-    btn.disabled = true;
-    const ext = file.name.split('.').pop().toLowerCase();
-    try {
-      if (ext === 'txt') {
-        document.getElementById('readInput').value = await file.text();
-      } else {
-        const fd = new FormData();
-        fd.append('file', file);
-        const res = await fetch('/api/extract-text', { method: 'POST', body: fd });
-        const d = await res.json();
-        if (d.text) document.getElementById('readInput').value = d.text;
-        else alert('Could not extract text. Try saving as .txt and uploading again.');
-      }
-      runReadability();
-    } catch(e) { alert('Upload failed. Please paste your resume text manually.'); }
-    finally { btn.textContent = t.upload_btn; btn.classList.remove('loading'); btn.disabled = false; input.value = ''; }
-  }
-
-  // ── Animate score circle ───────────────────────────────────────────────────
-  function animateScore(score) {
-    const bar = document.getElementById('scoreBar');
-    const display = document.getElementById('scoreDisplay');
-    const color = score >= 75 ? '#34d399' : score >= 50 ? '#fbbf24' : '#f87171';
-    bar.style.stroke = color;
-    bar.style.strokeDashoffset = 283;
-    bar.getBoundingClientRect();
-    bar.style.transition = 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1), stroke .4s';
-    bar.style.strokeDashoffset = 283 * (1 - score / 100);
-    display.textContent = '0';
-    display.style.color = color;
-    const t0 = performance.now();
-    (function step(now) {
-      const p = Math.min((now - t0) / 1000, 1);
-      const e = 1 - Math.pow(1 - p, 3);
-      display.textContent = Math.round(e * score);
-      if (p < 1) requestAnimationFrame(step);
-      else display.textContent = score;
-    })(t0);
-  }
-
-  // ── Render chips ───────────────────────────────────────────────────────────
-  function renderChips(id, kws, cls) {
-    const c = document.getElementById(id);
-    const t = I18N[currentLang];
-    c.innerHTML = '';
-    if (!kws || !kws.length) { c.innerHTML = `<span class="chips-empty">${cls === 'chip-found' ? t.v_no_matched : t.v_no_missing}</span>`; return; }
-    kws.forEach(k => { const s = document.createElement('span'); s.className = 'chip ' + cls; s.textContent = k; c.appendChild(s); });
-  }
-
-  // ── ATS scan ───────────────────────────────────────────────────────────────
-  async function runATS() {
-    const resume = document.getElementById('resumeInput').value.trim();
-    const job    = document.getElementById('jobInput').value.trim();
-    const errEl  = document.getElementById('atsError');
-    const resEl  = document.getElementById('atsResults');
-    const btn    = document.getElementById('atsBtn');
-    const t      = I18N[currentLang];
-
-    errEl.classList.remove('visible');
-    resEl.classList.remove('visible');
-    document.getElementById('atsResultsGrid').style.display = '';
-    document.getElementById('suggestionsCard').style.display = 'none';
-
-    if (!resume) { errEl.textContent = t.err_no_resume; errEl.classList.add('visible'); return; }
-    if (!job)    { errEl.textContent = t.err_no_job; errEl.classList.add('visible'); return; }
-
-    btn.textContent = t.btn_analyzing;
-    btn.disabled = true;
-
-    try {
-      const token = localStorage.getItem('rt_token') || '';
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = 'Bearer ' + token;
-
-      const res = await fetch('/api/ats-scan', { method: 'POST', headers, body: JSON.stringify({ resume, jobPosting: job }) });
-
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        errEl.textContent = d.error || 'Analysis failed. Please try again.';
-        errEl.classList.add('visible');
-        return;
-      }
-
-      const data = await res.json();
-      const { score, verdict, matched, missing, suggestions } = data;
-
-      // Animate score
-      animateScore(score);
-
-      // Verdict
-      const vMap = {
-        'Strong Match': [t.v_strong_match, 'verdict-strong'],
-        'Good Match':   [t.v_good_match,   'verdict-strong'],
-        'Fair Match':   [t.v_fair_match,   'verdict-fair'],
-        'Weak Match':   [t.v_weak_match,   'verdict-weak'],
-      };
-      const [vText, vCls] = vMap[verdict] || [t.v_weak_match, 'verdict-weak'];
-      const badge = document.getElementById('verdictBadge');
-      badge.textContent = vText;
-      badge.className = 'verdict-badge ' + vCls;
-
-      // Matched keywords — always visible
-      document.getElementById('foundCount').textContent = (matched || []).length;
-      renderChips('foundChips', matched, 'chip-found');
-
-      // Missing keywords — always visible, free and unlimited
-      document.getElementById('missingCount').textContent = (missing || []).length;
-      renderChips('missingChips', missing, 'chip-missing');
-
-      // AI suggestions
-      if (suggestions && suggestions.length) {
-        document.getElementById('suggestionsList').innerHTML = suggestions.map((s, i) =>
-          `<div class="suggestion-item"><span class="suggestion-num">${i+1}</span><span>${s}</span></div>`
-        ).join('');
-        document.getElementById('suggestionsCard').style.display = 'block';
-      }
-
-      resEl.classList.add('visible');
-      setTimeout(() => resEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
-
-    } catch(e) {
-      errEl.textContent = 'Could not reach the server. Check your connection and try again.';
-      errEl.classList.add('visible');
-    } finally {
-      btn.textContent = t.btn_analyze;
-      btn.disabled = false;
-    }
-  }
-
-  // ── Readability (client-side, instant) ────────────────────────────────────
-  const WEAK_PATTERNS = [
-    /\bresponsible for\b/gi, /\bhelped (to )?\b/gi, /\bassisted (with )?\b/gi,
-    /\bworked on\b/gi, /\binvolved in\b/gi, /\bcontributed to\b/gi,
-    /\bsupported\b/gi, /\bwas responsible\b/gi, /\bwere responsible\b/gi,
-    /\bwas managed\b/gi, /\bwere managed\b/gi, /\bis being\b/gi,
-    /\bwas (a|the) (key|main|primary)\b/gi, /\bteam player\b/gi,
-    /\bhard[- ]worker\b/gi, /\bdetail[- ]oriented\b/gi,
-    /\bpassionate about\b/gi, /\bexcellent communication\b/gi,
-  ];
-
-  function runReadability() {
-    const text = document.getElementById('readInput').value;
-    const resEl = document.getElementById('readResults');
-    const t = I18N[currentLang];
-    if (!text.trim()) { resEl.classList.remove('visible'); return; }
-    resEl.classList.add('visible');
-
-    // Word count
-    const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
-    document.getElementById('wordCount').textContent = words;
-    let wCls, wText;
-    if (words < 200) { wCls = 'mv-bad'; wText = t.v_too_short; }
-    else if (words < 400) { wCls = 'mv-warn'; wText = t.v_a_bit_short; }
-    else if (words <= 800) { wCls = 'mv-good'; wText = t.v_ideal; }
-    else if (words <= 1100) { wCls = 'mv-warn'; wText = t.v_a_bit_long; }
-    else { wCls = 'mv-bad'; wText = t.v_too_long; }
-    const wv = document.getElementById('wordVerdict');
-    wv.textContent = wText; wv.className = 'metric-verdict ' + wCls;
-
-    // Bullet points
-    const bullets = (text.match(/^[\s]*[•\-\*•‣◦⁃]/gm) || []).length;
-    document.getElementById('bulletCount').textContent = bullets;
-    let bCls, bText;
-    if (bullets < 5) { bCls = 'mv-bad'; bText = t.v_too_few; }
-    else if (bullets <= 15) { bCls = 'mv-warn'; bText = t.v_could_add; }
-    else if (bullets <= 35) { bCls = 'mv-good'; bText = t.v_ideal_range; }
-    else { bCls = 'mv-warn'; bText = t.v_consider_trim; }
-    const bv = document.getElementById('bulletVerdict');
-    bv.textContent = bText; bv.className = 'metric-verdict ' + bCls;
-
-    // Weak phrases
-    const found = [];
-    WEAK_PATTERNS.forEach(rx => {
-      let m;
-      const src = text;
-      const r = new RegExp(rx.source, rx.flags.replace('g','') + 'g');
-      while ((m = r.exec(src)) !== null) found.push(m[0].trim());
-    });
-    const uniq = [...new Set(found.map(s => s.toLowerCase()))];
-    document.getElementById('weakCount').textContent = uniq.length;
-    let kCls, kText;
-    if (uniq.length === 0) { kCls = 'mv-good'; kText = t.v_none_found; }
-    else if (uniq.length <= 2) { kCls = 'mv-warn'; kText = t.v_a_few; }
-    else { kCls = 'mv-bad'; kText = t.v_too_many; }
-    const kv = document.getElementById('weakVerdict');
-    kv.textContent = kText; kv.className = 'metric-verdict ' + kCls;
-
-    if (uniq.length > 0) {
-      const zh = currentLang === 'zh';
-      const foundLabel   = zh ? '发现' : 'Found';
-      const replaceLabel = zh ? '替换为有力动词' : 'replace with a strong action verb';
-      const actionVerbs  = zh ? '主导、构建、推动、增长、交付' : 'Led, Built, Drove, Grew, Delivered';
-      document.getElementById('weakPhrasesList').innerHTML = uniq.slice(0, 10).map(p =>
-        `<div class="suggestion-item"><span class="suggestion-num">!</span><span>${foundLabel}: "<strong>${p}</strong>" — ${replaceLabel} (${actionVerbs})</span></div>`
-      ).join('');
-      document.getElementById('weakPhrasesCard').style.display = 'block';
-    } else {
-      document.getElementById('weakPhrasesCard').style.display = 'none';
-    }
-
-    // Overall verdict
-    const zh = currentLang === 'zh';
-    let icon, title, desc;
-    if (words < 200) {
-      icon = '📋'; title = t.v_short_title;
-      desc = zh
-        ? `${words}字数低于理想范围。理想简历为400–800词。`
-        : `${words} words is below the ideal range. Aim for 400–800 words for a strong, scannable resume.`;
-    } else if (words > 1100 && uniq.length > 3) {
-      icon = '⚠️'; title = t.v_needs_work_title;
-      desc = zh
-        ? `${words}字数，检测到${uniq.length}个弱势短语。精简长度并用有力动词替换被动语言。`
-        : `${words} words and ${uniq.length} weak phrases detected. Trim length and replace passive language with strong action verbs.`;
-    } else if (uniq.length > 3) {
-      icon = '⚠️'; title = t.v_weak_lang_title;
-      desc = zh
-        ? `检测到${uniq.length}个弱势短语或被动表达。用自信、量化的有力动词替换。`
-        : `${uniq.length} weak phrases or passive constructions found. Replace with confident, metric-driven action verbs.`;
-    } else if (words >= 400 && words <= 800 && bullets >= 10 && uniq.length <= 1) {
-      icon = '✅'; title = t.v_strong_title;
-      desc = zh
-        ? `长度合适（${words}词），${bullets}个条目，弱势表达极少。考虑增加更多量化成就。`
-        : `Good length (${words} words), ${bullets} bullet points, and minimal weak language. Consider adding more quantified achievements.`;
-    } else {
-      icon = '🔍'; title = t.v_decent_title;
-      desc = zh
-        ? `${words}词，${bullets}个条目，${uniq.length}个弱势短语。针对性修改可显著提升ATS表现。`
-        : `${words} words, ${bullets} bullets, ${uniq.length} weak phrases. A few targeted fixes could significantly improve your ATS performance.`;
-    }
-    document.getElementById('readVerdictIcon').textContent = icon;
-    document.getElementById('readVerdictTitle').textContent = title;
-    document.getElementById('readVerdictDesc').textContent = desc;
-  }
-
-  // ── Keyboard shortcut ──────────────────────────────────────────────────────
-  document.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runATS();
-  });
 
   function toggleMobileNav() {
     const nav = document.getElementById('mobileNav');

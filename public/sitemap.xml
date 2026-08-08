@@ -287,9 +287,16 @@
 
   <url>
     <loc>https://resumetailored.com/score</loc>
-    <lastmod>2026-06-09</lastmod>
+    <lastmod>2026-08-08</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.95</priority>
+  </url>
+
+  <url>
+    <loc>https://resumetailored.com/pro-tools</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
   </url>
 
   <url>

@@ -13,7 +13,7 @@
   var LINKS = [
     ['How It Works', '/how-it-works'],
     ['Free Tools', '/score'],
-    ['Pro Tools', '/#pro-tools'],
+    ['Pro Tools', '/pro-tools'],
     ['Resume Examples', '/resume-examples'],
     ['Blog', '/blog'],
     ['For Employers', '/employer'],

@@ -837,7 +837,7 @@
     <div class="nav-links">
       <a href="/how-it-works" data-i18n="nav_how">How It Works</a>
       <a href="/score" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
-      <a href="/#pro-tools" style="color:#1F5C3D;font-weight:700;" data-i18n="nav_pro_tools">Pro Tools</a>
+      <a href="/pro-tools" style="color:#1F5C3D;font-weight:700;" data-i18n="nav_pro_tools">Pro Tools</a>
       <a href="/resume-examples">Resume Examples</a>
       <a href="/blog" data-i18n="nav_blog">Blog</a>
       <a href="/employer" style="color:#0f172a;font-weight:700;white-space:nowrap;">For Employers</a>
@@ -861,7 +861,7 @@
   <a href="/blog" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_blog">Blog</a>
   <a href="/employer" onclick="document.querySelector('.mobile-menu').classList.remove('open')">For Employers</a>
   <a href="/score" onclick="document.querySelector('.mobile-menu').classList.remove('open')" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
-  <a href="#pro-tools" onclick="document.querySelector('.mobile-menu').classList.remove('open')" style="color:#1F5C3D;" data-i18n="nav_pro_tools">Pro Tools</a>
+  <a href="/pro-tools" onclick="document.querySelector('.mobile-menu').classList.remove('open')" style="color:#1F5C3D;" data-i18n="nav_pro_tools">Pro Tools</a>
   <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_templates">Templates</a>
   <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_pricing">Pricing</a>
   <a href="/dashboard" class="btn btn-ghost btn-lg" style="border-color:#1F5C3D;color:#1F5C3D;" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_login">Log In</a>
@@ -1115,7 +1115,7 @@
             <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#0077b5;font-weight:800;">✓</span> Achievement-focused experience bullets</li>
             <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#0077b5;font-weight:800;">✓</span> Tailored for MNC, startup &amp; global markets</li>
           </ul>
-          <button class="btn btn-primary" style="margin-top:20px;background:#0077b5;border-color:#0077b5;" onclick="window.location='/dashboard'">Optimize My LinkedIn — Free →</button>
+          <button class="btn btn-primary" style="margin-top:20px;background:#0077b5;border-color:#0077b5;" onclick="window.location='/dashboard?tab=linkedin'">Optimize My LinkedIn — Free →</button>
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner" style="border:2px solid #0077b5;border-radius:14px;overflow:hidden;padding:0;">
@@ -1462,10 +1462,10 @@
               <div style="filter:blur(2px);pointer-events:none;background:#fff;padding:0;height:140px;overflow:hidden;font-family:'Inter',sans-serif;">
                 <div style="background:linear-gradient(135deg,#4f1d96,#1d4ed8);padding:10px;">
                   <div style="font-size:9px;font-weight:800;color:#fff;">RYAN TORRES</div>
-                  <div style="font-size:5.5px;color:#c4b5fd;margin-top:2px;">Creative Director · Brand Strategy</div>
+                  <div style="font-size:5.5px;color:#8FD3AC;margin-top:2px;">Creative Director · Brand Strategy</div>
                 </div>
                 <div style="padding:7px 10px;">
-                  <div style="font-size:6px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Selected Work</div>
+                  <div style="font-size:6px;font-weight:700;color:#1F5C3D;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Selected Work</div>
                   <div style="font-size:6px;color:#374151;margin-bottom:1px;">Creative Lead · Nike Digital</div>
                   <div style="font-size:5.5px;color:#6b7280;">Launched 3 global campaigns, 200M+ reach</div>
                 </div>
@@ -2264,7 +2264,7 @@
           <span>How does the ATS scanner work?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — mirroring how real ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#818cf8;">resumetailored.com/score</a> — no account needed.</div>
+        <div class="faq-a">The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — mirroring how real ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> — no account needed.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
@@ -2322,7 +2322,7 @@
 <!-- NEW FEATURES — promotional cards -->
 <section class="section" id="whats-new" style="padding:60px 0;">
   <div class="container">
-    <div class="section-eyebrow" style="color:#8b5cf6;">✨ What's New</div>
+    <div class="section-eyebrow" style="color:#2E7D53;">✨ What's New</div>
     <h2 class="section-title">New ways to <span>stand out</span> &amp; get hired</h2>
     <p style="text-align:center;color:#57514A;font-size:16px;max-width:640px;margin:0 auto 36px;">Fresh tools added to ResumeTailored — most are free, the rest bundle into one $19.99/mo Pro plan (no add-ons).</p>
     <div class="promo-grid">
@@ -2366,9 +2366,9 @@
   .promo-card{position:relative;background:#fff;border:1.5px solid #E7DFD1;border-radius:18px;padding:26px 22px 24px;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s;overflow:hidden;}
   .promo-card:hover{transform:translateY(-4px);box-shadow:0 18px 44px rgba(0,0,0,.10);}
   .promo-emp{border-color:#334155;background:linear-gradient(180deg,#fff,rgba(56,189,248,0.05));}
-  .promo-pro{border-color:rgba(139,92,246,0.4);background:linear-gradient(180deg,#fff,rgba(139,92,246,0.05));}
+  .promo-pro{border-color:rgba(46,125,83,0.4);background:linear-gradient(180deg,#fff,rgba(46,125,83,0.05));}
   .promo-freecard{border-color:rgba(22,163,74,0.4);background:linear-gradient(180deg,#fff,rgba(22,163,74,0.05));}
-  .promo-badge{align-self:flex-start;font-size:10px;font-weight:900;letter-spacing:.6px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;border-radius:999px;padding:4px 11px;margin-bottom:14px;text-transform:uppercase;}
+  .promo-badge{align-self:flex-start;font-size:10px;font-weight:900;letter-spacing:.6px;background:linear-gradient(135deg,#2E7D53,#1F5C3D);color:#fff;border-radius:999px;padding:4px 11px;margin-bottom:14px;text-transform:uppercase;}
   .promo-ic{font-size:32px;margin-bottom:8px;}
   .promo-card h3{font-size:18px;font-weight:800;margin:0 0 8px;color:#191512;}
   .promo-card p{font-size:13.5px;color:#57514A;line-height:1.55;margin:0 0 16px;flex:1;}
@@ -2377,7 +2377,7 @@
   .promo-per{font-size:13px;color:#6b7280;font-weight:600;}
   .promo-free{font-size:16px;font-weight:900;color:#16a34a;}
   .promo-sub{font-size:12px;color:#6b7280;font-weight:600;}
-  .promo-cta{display:inline-block;text-align:center;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;font-weight:800;font-size:14px;padding:11px 16px;border-radius:10px;text-decoration:none;transition:opacity .15s;}
+  .promo-cta{display:inline-block;text-align:center;background:linear-gradient(135deg,#2E7D53,#1F5C3D);color:#fff;font-weight:800;font-size:14px;padding:11px 16px;border-radius:10px;text-decoration:none;transition:opacity .15s;}
   .promo-cta:hover{opacity:.9;}
 </style>
 
@@ -2572,7 +2572,7 @@
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <span style="font-size:11px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:1px;" data-i18n="footer_payments">Accepted Payments</span>
         <!-- Stripe card logos -->
-        <span style="background:#fff;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:700;color:#635bff;">STRIPE</span>
+        <span style="background:#fff;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:700;color:#1F5C3D;">STRIPE</span>
         <!-- Alipay logo -->
         <span style="background:#1677ff;border-radius:5px;padding:3px 10px;font-size:11px;font-weight:800;color:#fff;letter-spacing:.3px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="#fff" style="vertical-align:middle;margin-right:3px;"><path d="M21.2 15.9c-.3-.1-3.5-1.1-7-2.2 1.4-2.8 2.5-6.1 2.5-9.7H8.2V2.5H4.7v1.5H1.2v3.2h3.5v7.5C4.7 17.3 7.2 20 10 20c2 0 3.9-.9 5.2-2.3 1.3.5 4 1.5 5.3 2.1.5.2 1 .2 1.4 0 .5-.3.8-.9.7-1.5-.1-.3-.2-.4-.4-.4z"/></svg>
@@ -2906,7 +2906,7 @@
       feat_ats_pass_desc: "Your resume now speaks the job posting's language. Bots approve. Humans notice.",
       feat_cl_label: 'Cover Letter', feat_cl_badge: 'AI Generated',
       feat_cl_date: 'May 28, 2026 · Stripe, Inc.', feat_cl_greeting: 'Dear Hiring Manager,',
-      feat_cl_body: "When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style=\"color:#818CF8;\">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.",
+      feat_cl_body: "When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style=\"color:#2E7D53;\">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.",
       feat_cl_more: '+ 3 more paragraphs connecting your experience to their exact needs...',
       feat_li_before: 'Before',
       feat_li_before_quote: '"Product Manager at TechCo | I love creating products that users enjoy"',
