@@ -20,10 +20,11 @@
 (function () {
   'use strict';
   // [English label, href, 中文 label]
+  // Job Tracker is intentionally NOT a top-level tab — it lives inside the Free
+  // Tools hub (/score) so the nav stays compact. Keep it out of this list.
   var LINKS = [
     ['How It Works', '/how-it-works', '功能介绍'],
     ['Free Tools', '/score', '免费工具'],
-    ['Job Tracker', '/job-tracker', '求职跟踪'],
     ['Pro Tools', '/pro-tools', '专业版工具'],
     ['Resume Examples', '/resume-examples', '简历范例'],
     ['Blog', '/blog', '博客'],
@@ -31,8 +32,9 @@
     ['Pricing', '/#pricing', '定价']
   ];
   var UI = {
-    login:   { en: 'Log In', zh: '登录' },
-    cta:     { en: 'Tailor My Resume Free →', zh: '免费定制我的简历 →' }
+    login:     { en: 'Log In', zh: '登录' },
+    dashboard: { en: 'Dashboard', zh: '控制台' },
+    cta:       { en: 'Tailor My Resume Free →', zh: '免费定制我的简历 →' }
   };
 
   function getLang() {
@@ -139,7 +141,12 @@
         var l = LINKS[+a.getAttribute('data-snav-mi')]; if (l) a.textContent = zh ? l[2] : l[0];
       });
       [nav, menu].forEach(function (root) {
-        var lg = root.querySelector('[data-snav-login]'); if (lg) lg.textContent = zh ? UI.login.zh : UI.login.en;
+        var lg = root.querySelector('[data-snav-login]');
+        // A signed-in visitor's login slot shows "Dashboard" — don't let a
+        // language toggle overwrite it back to "Log In".
+        if (lg) lg.textContent = lg.getAttribute('data-snav-authed')
+          ? (zh ? UI.dashboard.zh : UI.dashboard.en)
+          : (zh ? UI.login.zh : UI.login.en);
         var ct = root.querySelector('[data-snav-cta]'); if (ct) ct.textContent = zh ? UI.cta.zh : UI.cta.en;
       });
       var t1 = document.getElementById('langToggleBtn');
@@ -166,6 +173,40 @@
 
     // Reflect the stored preference on load (the page's own boot handles its body).
     setNavLang(getLang());
+
+    // ── Auth-aware login slot ────────────────────────────────────────────────
+    // The nav always shipped a "Log In" button. A visitor who was already
+    // signed in and clicked it got bounced straight back by /login (which skips
+    // the form for an active session) — the page appeared to "flash and do
+    // nothing". Reflect the real state instead: a validated session turns the
+    // slot into "Dashboard" (→ /dashboard), so a signed-in user never lands on
+    // that confusing round-trip.
+    function setAuthed(on) {
+      var zh = getLang() === 'zh';
+      [nav, menu].forEach(function (root) {
+        var lg = root.querySelector('[data-snav-login]'); if (!lg) return;
+        if (on) {
+          lg.setAttribute('data-snav-authed', '1');
+          lg.setAttribute('href', '/dashboard');
+          lg.textContent = zh ? UI.dashboard.zh : UI.dashboard.en;
+        } else {
+          lg.removeAttribute('data-snav-authed');
+          lg.setAttribute('href', loginHref);
+          lg.textContent = zh ? UI.login.zh : UI.login.en;
+        }
+      });
+    }
+    var token = null;
+    try { token = localStorage.getItem('rt_token'); } catch (e) {}
+    if (token) {
+      // Optimistic: a returning signed-in user is the common case, so show
+      // "Dashboard" right away (no flash of "Log In"), then confirm — and only
+      // revert if the stored token is stale/invalid.
+      setAuthed(true);
+      fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + token } })
+        .then(function (r) { if (!r.ok) setAuthed(false); })
+        .catch(function () {});
+    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);

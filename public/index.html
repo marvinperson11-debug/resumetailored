@@ -3699,5 +3699,27 @@
        Kept deferred (not interaction-gated) so its handlers are ready for the
        user's very first touch. -->
   <script src="/mobile-native.js" defer></script>
+  <!-- Auth-aware nav: a signed-in visitor sees "Dashboard", not "Log In".
+       Without this a logged-in user clicking "Log In" was bounced straight back
+       by /login (which skips the form for an active session). Only flips after
+       the stored token validates, so logged-out visitors keep the login link. -->
+  <script>
+  (function () {
+    var tok; try { tok = localStorage.getItem('rt_token'); } catch (e) { return; }
+    if (!tok) return;
+    fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + tok } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d) return;
+        var zh = false; try { zh = localStorage.getItem('rt_lang') === 'zh'; } catch (e) {}
+        document.querySelectorAll('a[data-i18n="nav_login"]').forEach(function (a) {
+          a.removeAttribute('data-i18n'); // stop applyLang() resetting it to "Log In"
+          a.setAttribute('href', '/dashboard');
+          a.textContent = zh ? '控制台' : 'Dashboard';
+        });
+      })
+      .catch(function () {});
+  })();
+  </script>
 </body>
 </html>

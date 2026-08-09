@@ -20,31 +20,11 @@
     document.body.appendChild(g);
   }
 
-  /* ---- 2. Custom cursor (desktop, non-touch only) ---------------------- */
-  function customCursor() {
-    if (isTouch || reduce) return;
-    var dot = document.createElement('div'); dot.id = 'rt-cursor';
-    var ring = document.createElement('div'); ring.id = 'rt-cursor-ring';
-    document.body.appendChild(dot); document.body.appendChild(ring);
-    var rx = 0, ry = 0, x = 0, y = 0;
-    window.addEventListener('mousemove', function (e) {
-      x = e.clientX; y = e.clientY;
-      dot.style.transform = 'translate(' + x + 'px,' + y + 'px)';
-    }, { passive: true });
-    (function loop() {
-      rx += (x - rx) * 0.18; ry += (y - ry) * 0.18;
-      ring.style.transform = 'translate(' + rx + 'px,' + ry + 'px)';
-      requestAnimationFrame(loop);
-    })();
-    var hot = 'a,button,.btn,[role="button"],input,textarea,select,summary,.template-card,.pricing-card,.tier-card';
-    document.addEventListener('mouseover', function (e) {
-      if (e.target.closest && e.target.closest(hot)) document.body.classList.add('rt-cursor-hot');
-    });
-    document.addEventListener('mouseout', function (e) {
-      if (e.target.closest && e.target.closest(hot)) document.body.classList.remove('rt-cursor-hot');
-    });
-    document.body.classList.add('rt-has-cursor');
-  }
+  /* ---- 2. (removed) Custom desktop cursor ------------------------------
+     The little green dot + trailing ring that replaced the native pointer was
+     removed by request — it read as a distraction, not a delight. The native
+     cursor is used everywhere now. (CSS for #rt-cursor was removed from
+     site-fx.css too.) ---------------------------------------------------- */
 
   /* ---- 3. Lenis smooth scroll + ScrollTrigger reveals/parallax --------- */
   function motion() {
@@ -95,7 +75,7 @@
     els.forEach(function (e) { io.observe(e); });
   }
 
-  function init() { addGrain(); customCursor(); motion(); }
+  function init() { addGrain(); motion(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
