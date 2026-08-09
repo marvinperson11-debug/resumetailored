@@ -55,8 +55,18 @@
       }
       return false;
     }
+    // Per-link emphasis mirrors the homepage's inline nav EXACTLY so the bar
+    // reads identically on every route: Free Tools shimmers, Pro Tools is
+    // green-bold, For Employers is dark-bold. Keyed by href.
+    var EMPH = {
+      '/score':     ' snav-shine',   // Free Tools — gold shimmer
+      '/pro-tools': ' snav-pro',     // Pro Tools  — green bold
+      '/employer':  ' snav-emp'      // For Employers — dark bold
+    };
     var linksHtml = LINKS.map(function (l, i) {
-      return '<a href="' + l[1] + '" data-snav-i="' + i + '"' + (isActive(l[1]) ? ' class="snav-active"' : '') + '>' + l[0] + '</a>';
+      var cls = (isActive(l[1]) ? 'snav-active' : '') + (EMPH[l[1]] || '');
+      cls = cls.trim();
+      return '<a href="' + l[1] + '" data-snav-i="' + i + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + l[0] + '</a>';
     }).join('');
 
     // ── Styles (self-contained; !important beats each page's own nav CSS,
@@ -84,8 +94,22 @@
       '#snav .snav-links{display:flex;gap:18px;align-items:center;margin-left:32px;}' +
       '#snav .snav-links a{font-size:14px;font-weight:500;color:#57514A!important;text-decoration:none;transition:color .15s;white-space:nowrap;}' +
       '#snav .snav-links a:hover,#snav .snav-links a.snav-active{color:#1F5C3D!important;}' +
+      // Per-link emphasis matching the homepage's inline nav.
+      '#snav .snav-links a.snav-pro{color:#1F5C3D!important;font-weight:700;}' +
+      '#snav .snav-links a.snav-emp{color:#0f172a!important;font-weight:700;}' +
+      // "Free Tools" gold shimmer — self-contained copy of the homepage .nav-shine.
+      '@property --snav-x{syntax:\'<percentage>\';inherits:false;initial-value:100%;}' +
+      '#snav .snav-links a.snav-shine{font-weight:600;' +
+        'background:linear-gradient(-75deg,#1F5C3D calc(var(--snav-x) + 18%),#B4832A calc(var(--snav-x) + 25%),#1F5C3D calc(var(--snav-x) + 32%));' +
+        '-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent!important;' +
+        'animation:snavShine 3.2s linear infinite;}' +
+      '@keyframes snavShine{0%{--snav-x:130%;}55%,100%{--snav-x:-30%;}}' +
+      '@media(prefers-reduced-motion:reduce){#snav .snav-links a.snav-shine{animation:none;}}' +
       '#snav .snav-act{display:flex;gap:12px;align-items:center;margin-left:auto;}' +
-      '#snav .snav-lang{background:#F1EADD;color:#57514A!important;border:1px solid #D9CFBC;border-radius:8px;font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer;font-family:inherit;white-space:nowrap;}' +
+      // 中文 toggle is a ghost/outline button (transparent, light border) exactly
+      // like the homepage's — NOT a filled beige chip, which read as a different
+      // nav when navigating between the homepage and an injected-nav page.
+      '#snav .snav-lang{background:transparent;color:#191512!important;border:1px solid #e5e7eb;border-radius:9px;font-size:13px;font-weight:600;padding:7px 13px;cursor:pointer;font-family:inherit;white-space:nowrap;}' +
       '#snav .snav-lang:hover{border-color:#1F5C3D;color:#1F5C3D!important;}' +
       '#snav .snav-btn{font-size:14px;font-weight:600;padding:10px 20px;border-radius:9px;text-decoration:none;white-space:nowrap;cursor:pointer;border:1px solid transparent;}' +
       '#snav .snav-ghost{background:transparent;color:#191512!important;border-color:#D9CFBC;}' +
