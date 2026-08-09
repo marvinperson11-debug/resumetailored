@@ -686,6 +686,11 @@ db.exec(`
   );
 `);
 
+// Resume A/B Tracker: free users can tag each version to the job posting they
+// used it for (part of the free basic utility). Added after the base table, so
+// this migration must run AFTER the CREATE TABLE above (the table must exist).
+_ensureColumn('resume_versions', 'job_tag', "job_tag TEXT DEFAULT ''");
+
 // Employer profile extras (logo, description, notification prefs) added after
 // the base table shipped — see _ensureColumn (idempotent).
 _ensureColumn('employer_profiles', 'logo_url', "logo_url TEXT DEFAULT ''");
@@ -8513,8 +8518,13 @@ app.post('/api/tools/mock-interview', toolsLimiter, async (req, res) => {
   }
 });
 
-// ── 5. Salary Negotiation Script — 1/month free trial → Pro (Sonnet) ─────────
-async function salaryMarketHint(role, location) {
+// ── 5. Salary Negotiation Script — FREE + unlimited; Pro adds intelligence ────
+// FREE (no account required): a custom counter-offer script + talking points in
+// a professional tone. PRO: live market data (a real median for the role/city),
+// three email templates, and a risk meter. Market data + templates are gated by
+// TOOLS.PRO_FLAGS.marketData / .emailTemplates — the free response omits them.
+// Returns { low, high, median, count } from live listings, or null.
+async function salaryMarketData(role, location) {
   if (!process.env.RAPIDAPI_KEY) return null;
   try {
     const json = await jsearchFetch({ query: `${role} ${location}`.trim(), page: 1 });
@@ -8526,31 +8536,61 @@ async function salaryMarketHint(role, location) {
     }
     if (!lows.length && !highs.length) return null;
     const avg = a => (a.length ? Math.round(a.reduce((s, x) => s + x, 0) / a.length) : null);
-    return `Live listings for "${role}" suggest roughly $${avg(lows) || '?'}–$${avg(highs) || '?'} base across ${data.length} recent postings.`;
+    const low = avg(lows), high = avg(highs);
+    const both = [low, high].filter(v => v != null);
+    const median = both.length ? Math.round(both.reduce((s, x) => s + x, 0) / both.length) : null;
+    return { low, high, median, count: data.length,
+      hint: `Live listings for "${role}" suggest roughly $${low || '?'}–$${high || '?'} base across ${data.length} recent postings.` };
   } catch (e) { return null; }
 }
 app.post('/api/tools/salary-negotiation', toolsLimiter, async (req, res) => {
-  const gate = toolGate(req, res, TOOLS.LIMITS.salaryNegotiation); if (!gate) return;
+  // FREE + unlimited: no sign-in required. A session (if present) only decides
+  // whether the caller is Pro and therefore gets the market data + templates.
+  const email = getSessionEmail(req);
+  const pro = email ? isSubscriber(email) : false;
   const b = req.body || {};
   if (!String(b.role || '').trim()) return res.status(400).json({ error: 'missing_role', message: 'Enter the role you\'re negotiating for.' });
   const lang = _reqLang(req);
   try {
-    const hint = await salaryMarketHint(String(b.role || ''), String(b.location || ''));
-    const p = TOOLS.buildSalaryPrompt(b, hint, lang);
+    const market = pro ? await salaryMarketData(String(b.role || ''), String(b.location || '')) : null;
+    const p = TOOLS.buildSalaryPrompt(b, market && market.hint, lang, pro);
     const value = await callClaudeJSON({ model: 'claude-sonnet-4-6', system: p.system, user: p.user, max_tokens: 1600, validate: TOOLS.validateSalary });
-    if (!gate.pro) toolUsageRecord(gate.email, TOOLS.LIMITS.salaryNegotiation.tool);
-    const used = gate.pro ? 0 : toolUsageCount(gate.email, TOOLS.LIMITS.salaryNegotiation.tool, 'month');
-    res.json({ result: value, liveData: !!hint, usage: { pro: gate.pro, used, limit: TOOLS.LIMITS.salaryNegotiation.free } });
+    if (pro) {
+      // Prefer real listing numbers over the model's estimate when we have them.
+      if (market && (market.low != null || market.high != null)) {
+        value.marketRange = {
+          low: market.low, high: market.high, currency: 'USD',
+          note: `Live median ≈ $${market.median} across ${market.count} recent ${String(b.role || 'role')} listings.`,
+        };
+      }
+      const mr = value.marketRange || {};
+      value.riskMeter = TOOLS.computeRiskMeter(value.counterOffer && value.counterOffer.base, mr.low, mr.high);
+    } else {
+      // Free: strip anything Pro. The script + talking points are the free value.
+      delete value.marketRange; delete value.emailTemplates; delete value.riskMeter;
+    }
+    res.json({ result: value, pro, liveData: !!(market && market.count), proFeatures: [TOOLS.PRO_FLAGS.marketData, TOOLS.PRO_FLAGS.emailTemplates] });
   } catch (err) { toolLLMError(res, err); }
 });
 
-// ── 6. Resume A/B Test Tracker — save/list/update (free = 2 versions) ─────────
+// ── 6. Resume A/B Test Tracker — FREE saves 3 versions + basic side-by-side ───
+// FREE: save up to 3 versions, name them, tag each to a job posting, and see
+// the raw counts you log side by side. PRO: response-rate analytics per version
+// + the current leader (TOOLS.PRO_FLAGS.responseAnalytics), AI diagnosis
+// (.aiDiagnosis) and unlimited versions.
 app.get('/api/tools/resume-versions', toolsLimiter, (req, res) => {
   const gate = toolGate(req, res, null); if (!gate) return;
-  const rows = db.prepare('SELECT id, version_name, template_used, jobs_applied_with, responses_received, created_at FROM resume_versions WHERE user_email = ? ORDER BY created_at DESC')
+  const rows = db.prepare('SELECT id, version_name, template_used, job_tag, jobs_applied_with, responses_received, created_at FROM resume_versions WHERE user_email = ? ORDER BY created_at DESC')
     .all(gate.email.toLowerCase());
-  const summary = TOOLS.summarizeVersions(rows);
-  res.json({ pro: gate.pro, limit: TOOLS.LIMITS.resumeVersions.free, versions: summary.versions, leaderId: summary.leaderId });
+  let summary = TOOLS.summarizeVersions(rows);
+  // Response-rate analytics + leader are Pro. Free sees the basic side-by-side
+  // (its own raw counts), not the computed rate/winner.
+  if (!gate.pro) summary = TOOLS.stripAnalytics(summary);
+  res.json({
+    pro: gate.pro, analytics: gate.pro, limit: TOOLS.LIMITS.resumeVersions.free,
+    versions: summary.versions, leaderId: summary.leaderId,
+    proFeatures: [TOOLS.PRO_FLAGS.responseAnalytics, TOOLS.PRO_FLAGS.aiDiagnosis],
+  });
 });
 app.post('/api/tools/resume-version', toolsLimiter, (req, res) => {
   const gate = toolGate(req, res, null); if (!gate) return;
@@ -8560,12 +8600,32 @@ app.post('/api/tools/resume-version', toolsLimiter, (req, res) => {
   const email = gate.email.toLowerCase();
   const count = db.prepare('SELECT COUNT(*) AS c FROM resume_versions WHERE user_email = ?').get(email).c;
   if (!gate.pro && count >= TOOLS.LIMITS.resumeVersions.free) {
-    return res.status(402).json({ error: 'quota', message: `Free plan saves ${TOOLS.LIMITS.resumeVersions.free} resume versions. Upgrade to Pro to track unlimited versions.` });
+    return res.status(402).json({ error: 'quota', feature: TOOLS.PRO_FLAGS.responseAnalytics,
+      message: `Free saves ${TOOLS.LIMITS.resumeVersions.free} versions. Upgrade to Pro to see which version gets responses — response-rate analytics, AI keyword diagnosis and unlimited versions.` });
   }
-  const info = db.prepare('INSERT INTO resume_versions (user_email, version_name, resume_text, template_used, jobs_applied_with, responses_received) VALUES (?,?,?,?,?,?)')
-    .run(email, name, String(b.resumeText || '').slice(0, 40000), String(b.templateUsed || '').slice(0, 80),
+  const info = db.prepare('INSERT INTO resume_versions (user_email, version_name, resume_text, template_used, job_tag, jobs_applied_with, responses_received) VALUES (?,?,?,?,?,?,?)')
+    .run(email, name, String(b.resumeText || '').slice(0, 40000), String(b.templateUsed || '').slice(0, 80), String(b.jobTag || '').slice(0, 120),
       Math.max(0, parseInt(b.jobsAppliedWith, 10) || 0), Math.max(0, parseInt(b.responsesReceived, 10) || 0));
   res.json({ ok: true, id: info.lastInsertRowid });
+});
+// AI Diagnosis (Pro) — compare a saved version against a job description and
+// surface the keyword gap. "Version A is missing 4 keywords from the JD."
+app.post('/api/tools/resume-version/:id/diagnose', toolsLimiter, async (req, res) => {
+  const gate = toolGate(req, res, null); if (!gate) return;
+  if (!gate.pro) return res.status(402).json({ error: 'pro_only', feature: TOOLS.PRO_FLAGS.aiDiagnosis,
+    message: 'AI diagnosis is a Pro feature — it reads your version against the job description and tells you exactly which keywords it is missing. Upgrade to $19.99/mo.' });
+  const id = parseInt(req.params.id, 10);
+  const row = db.prepare('SELECT resume_text FROM resume_versions WHERE id = ? AND user_email = ?').get(id, gate.email.toLowerCase());
+  if (!row) return res.status(404).json({ error: 'not_found', message: 'Version not found.' });
+  const jobText = String((req.body && req.body.jobText) || '').trim();
+  if (jobText.length < 40) return res.status(400).json({ error: 'too_short', message: 'Paste the job description you want to test this version against.' });
+  if (!String(row.resume_text || '').trim()) return res.status(400).json({ error: 'no_resume', message: 'This version has no resume text saved — add it, then diagnose.' });
+  const lang = _reqLang(req);
+  try {
+    const p = TOOLS.buildDiagnosisPrompt(row.resume_text, jobText, lang);
+    const value = await callClaudeJSON({ model: 'claude-sonnet-4-6', system: p.system, user: p.user, max_tokens: 1200, validate: TOOLS.validateDiagnosis });
+    res.json({ result: value });
+  } catch (err) { toolLLMError(res, err); }
 });
 // Update stats (applications sent / responses) or delete a version.
 app.patch('/api/tools/resume-version/:id', toolsLimiter, (req, res) => {

@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Resume A/B Test Tracker — See Which Resume Gets Responses | ResumeTailored AI</title>
-<meta name="description" content="Save multiple resume versions and track which one actually gets responses. Two versions free, unlimited with Pro."/>
+<title>Resume A/B Test Tracker — Save & Compare Resume Versions Free | ResumeTailored AI</title>
+<meta name="description" content="Save up to 3 resume versions free, tag them to job postings, and compare side by side. Pro adds response-rate analytics and AI keyword diagnosis."/>
 <link rel="canonical" href="https://resumetailored.com/tools/resume-ab-tracker"/>
 <meta property="og:title" content="Resume A/B Test Tracker"/>
-<meta property="og:description" content="Save resume versions and track which one gets responses."/>
+<meta property="og:description" content="Save 3 resume versions free and compare them. Pro tracks which one gets responses."/>
 <meta property="og:url" content="https://resumetailored.com/tools/resume-ab-tracker"/>
 <link rel="icon" href="/favicon.png" type="image/png"/>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
@@ -24,19 +24,23 @@
 </div></nav>
 
 <main class="th-wrap">
-  <a href="/pro-tools" class="th-back" data-i18n="back">← Back to Pro Tools</a>
-  <span class="th-badge th-badge--pro" data-i18n="pro_badge">2 Versions Free</span>
+  <a href="/score" class="th-back" data-i18n="back">← Back to Free Tools</a>
+  <span class="th-badge" data-i18n="free_badge">3 Versions Free</span>
   <h1 class="th-title" data-i18n="title">Resume A/B Test Tracker</h1>
-  <p class="th-sub" data-i18n="sub">Save multiple resume versions and track which one gets responses.</p>
+  <p class="th-sub" data-i18n="sub">Save up to 3 resume versions free, tag each to a job posting, and compare them side by side.</p>
 
   <div class="th-card">
     <label class="th-label" data-i18n="l_name">Version name</label>
     <input class="th-input" id="vname" placeholder="e.g. Punchy summary + metrics"/>
     <div class="th-row">
       <div><label class="th-label" data-i18n="l_tpl">Template used (optional)</label><input class="th-input" id="vtpl" placeholder="Classic / Executive…"/></div>
-      <div><label class="th-label" data-i18n="l_applied">Applications sent</label><input class="th-input" type="number" id="vapplied" value="0"/></div>
+      <div><label class="th-label" data-i18n="l_tag">Tag to a job posting (optional)</label><input class="th-input" id="vtag" placeholder="e.g. Stripe — PM"/></div>
     </div>
-    <label class="th-label" data-i18n="l_resume">Resume text (optional)</label>
+    <div class="th-row">
+      <div><label class="th-label" data-i18n="l_applied">Applications sent</label><input class="th-input" type="number" id="vapplied" value="0"/></div>
+      <div><label class="th-label" data-i18n="l_resp">Responses received</label><input class="th-input" type="number" id="vresp" value="0"/></div>
+    </div>
+    <label class="th-label" data-i18n="l_resume">Resume text (optional — needed for AI diagnosis)</label>
     <textarea class="th-textarea" id="vtext" style="min-height:120px;" data-i18n-ph="resume_ph" placeholder="Paste this version of your resume…"></textarea>
     <button class="th-btn th-btn--full" id="save" onclick="saveVersion()" data-i18n="save">Save version</button>
     <div class="th-error" id="err"></div>
@@ -48,61 +52,94 @@
     <div id="list"></div>
   </div>
 
-  <div class="th-promo"><h3 data-i18n="promo_h">Track unlimited versions with Pro.</h3><p data-i18n="promo_p">Free saves two versions. Upgrade to Pro to A/B test as many resumes as you want.</p><button class="th-btn" onclick="thStartPro()">Upgrade — $19.99/mo</button></div>
+  <!-- FREE users: pitch the Pro intelligence (not "unlimited"). -->
+  <div class="th-result-card" id="proTeaser" style="display:none;border-style:dashed;margin-top:20px;">
+    <h3 style="font-size:16px;margin-bottom:8px;">✦ <span data-i18n="teaser_h">See which version actually gets responses</span></h3>
+    <ul class="th-flaglist good" style="margin-bottom:14px;">
+      <li data-i18n="teaser_1">Response-rate analytics per version, with the current winner</li>
+      <li data-i18n="teaser_2">AI diagnosis: “Version A is missing 4 keywords from the job description”</li>
+      <li data-i18n="teaser_3">Auto-merge the winning elements — and unlimited versions</li>
+    </ul>
+    <button class="th-btn" onclick="thStartPro()" data-i18n="teaser_cta">Track which version gets responses →</button>
+  </div>
+
+  <div class="th-promo"><h3 data-i18n="promo_h">Stop guessing which resume works.</h3><p data-i18n="promo_p">Saving and comparing versions is free. Pro shows the response rate for each one, names the winner, and uses AI to tell you exactly which keywords a version is missing.</p><button class="th-btn" onclick="thStartPro()" data-i18n="promo_cta">Get AI optimization tips — $19.99/mo</button></div>
 </main>
 
-<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">You've saved your free versions</h3><p id="thUpgradeMsg">Free plan saves 2 resume versions. Upgrade to Pro to track unlimited versions.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.99/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
+<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">Find your winning resume</h3><p id="thUpgradeMsg" data-i18n="up_msg">Pro turns your saved versions into a scoreboard — response rate per version, the current winner, and AI that names the exact keywords each one is missing.</p><button class="th-btn th-btn--full" onclick="thStartPro()" data-i18n="up_btn">Get AI optimization tips — $19.99/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
 
 <footer class="th-foot"><a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a><p style="margin-top:10px;">© ResumeTailored AI</p></footer>
 
 <script src="/tools-hub.js"></script>
 <script>
 window.TH_I18N = {
-  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Pro Tools', pro_badge:'2 Versions Free',
-    title:'Resume A/B Test Tracker', sub:'Save multiple resume versions and track which one gets responses.',
-    l_name:'Version name', l_tpl:'Template used (optional)', l_applied:'Applications sent', l_resume:'Resume text (optional)', resume_ph:'Paste this version of your resume…',
-    save:'Save version', your_versions:'Your versions', promo_h:'Track unlimited versions with Pro.', promo_p:'Free saves two versions. Upgrade to Pro to A/B test as many resumes as you want.', up_h:"You've saved your free versions", up_x:'Maybe later', copied:'Copied ✓' },
-  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回专业工具', pro_badge:'免费 2 个版本',
-    title:'简历 A/B 测试追踪', sub:'保存多个简历版本，追踪哪一个更能获得回复。',
-    l_name:'版本名称', l_tpl:'使用的模板（可选）', l_applied:'已投递数量', l_resume:'简历文本（可选）', resume_ph:'粘贴这个版本的简历…',
-    save:'保存版本', your_versions:'你的版本', promo_h:'专业版追踪无限版本。', promo_p:'免费保存两个版本。升级专业版，A/B 测试任意数量的简历。', up_h:'免费版本已保存满', up_x:'以后再说', copied:'已复制 ✓' }
+  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools', free_badge:'3 Versions Free',
+    title:'Resume A/B Test Tracker', sub:'Save up to 3 resume versions free, tag each to a job posting, and compare them side by side.',
+    l_name:'Version name', l_tpl:'Template used (optional)', l_tag:'Tag to a job posting (optional)', l_applied:'Applications sent', l_resp:'Responses received', l_resume:'Resume text (optional — needed for AI diagnosis)', resume_ph:'Paste this version of your resume…',
+    save:'Save version', your_versions:'Your versions',
+    teaser_h:'See which version actually gets responses', teaser_1:'Response-rate analytics per version, with the current winner', teaser_2:'AI diagnosis: “Version A is missing 4 keywords from the job description”', teaser_3:'Auto-merge the winning elements — and unlimited versions', teaser_cta:'Track which version gets responses →',
+    promo_h:'Stop guessing which resume works.', promo_p:'Saving and comparing versions is free. Pro shows the response rate for each one, names the winner, and uses AI to tell you exactly which keywords a version is missing.', promo_cta:'Get AI optimization tips — $19.99/mo',
+    up_h:'Find your winning resume', up_msg:'Pro turns your saved versions into a scoreboard — response rate per version, the current winner, and AI that names the exact keywords each one is missing.', up_btn:'Get AI optimization tips — $19.99/mo', up_x:'Maybe later', copied:'Copied ✓',
+    apps:'Applications', resp:'Responses', rate:'Response rate', update:'Update stats', diagnose:'AI diagnosis', diag_run:'Diagnose vs this JD', diag_ph:'Paste the job description to test this version against…', missing:'Missing keywords', present:'Already covered', tips:'Suggested edits', match:'Match', locked:'🔒 Response rate is a Pro feature' },
+  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回免费工具', free_badge:'免费 3 个版本',
+    title:'简历 A/B 测试追踪', sub:'免费保存最多 3 个简历版本，为每个版本标记职位，并并排比较。',
+    l_name:'版本名称', l_tpl:'使用的模板（可选）', l_tag:'标记职位（可选）', l_applied:'已投递数量', l_resp:'已收到回复', l_resume:'简历文本（可选——AI 诊断需要）', resume_ph:'粘贴这个版本的简历…',
+    save:'保存版本', your_versions:'你的版本',
+    teaser_h:'查看哪个版本真正获得回复', teaser_1:'每个版本的回复率分析，附当前获胜者', teaser_2:'AI 诊断：“版本 A 缺少职位描述中的 4 个关键词”', teaser_3:'自动合并获胜要素——以及无限版本', teaser_cta:'追踪哪个版本获得回复 →',
+    promo_h:'别再猜哪份简历有效。', promo_p:'保存和比较版本是免费的。专业版显示每个版本的回复率，指出获胜者，并用 AI 告诉你某个版本究竟缺少哪些关键词。', promo_cta:'获取 AI 优化建议 — ¥19.99/月',
+    up_h:'找到你的获胜简历', up_msg:'专业版将你保存的版本变成记分板——每个版本的回复率、当前获胜者，以及指出每个版本究竟缺少哪些关键词的 AI。', up_btn:'获取 AI 优化建议 — ¥19.99/月', up_x:'以后再说', copied:'已复制 ✓',
+    apps:'已投递', resp:'回复', rate:'回复率', update:'更新数据', diagnose:'AI 诊断', diag_run:'针对此职位诊断', diag_ph:'粘贴要测试该版本的职位描述…', missing:'缺少的关键词', present:'已覆盖', tips:'建议修改', match:'匹配度', locked:'🔒 回复率是专业版功能' }
 };
-var PRO=false, LIMIT=2, LEADER=null;
+var PRO=false, ANALYTICS=false, LIMIT=3, LEADER=null;
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 async function load(){
   var res=await thApi('GET','/api/tools/resume-versions');
   if(thHandleGate(res)) return;
   if(res.status!==200) return;
-  PRO=res.data.pro; LIMIT=res.data.limit; LEADER=res.data.leaderId;
+  PRO=res.data.pro; ANALYTICS=!!res.data.analytics; LIMIT=res.data.limit; LEADER=res.data.leaderId;
   render(res.data.versions);
+  document.getElementById('proTeaser').style.display = PRO ? 'none' : 'block';
 }
 function render(versions){
   var zh=(localStorage.getItem('rt_lang')==='zh');
-  if(!versions.length){ document.getElementById('list').innerHTML='<p style="color:var(--faint);font-size:14px;">'+(zh?'还没有保存的版本。':'No versions saved yet.')+'</p>'; document.getElementById('leaderNote').textContent=''; return; }
-  var leader=versions.filter(function(v){return v.id===LEADER;})[0];
-  document.getElementById('leaderNote').innerHTML = leader ? ('🏆 <strong>'+leader.version_name+'</strong> '+(zh?'目前领先，回复率 ':'is leading with a ')+leader.responseRate+'%'+(zh?'':' response rate')) : (zh?'记录投递和回复以查看哪个版本获胜。':'Log applications and responses to see which version wins.');
+  var note=document.getElementById('leaderNote');
+  if(!versions.length){ document.getElementById('list').innerHTML='<p style="color:var(--faint);font-size:14px;">'+(zh?'还没有保存的版本。':'No versions saved yet.')+'</p>'; note.textContent=''; return; }
+  if(ANALYTICS){
+    var leader=versions.filter(function(v){return v.id===LEADER;})[0];
+    note.innerHTML = leader ? ('🏆 <strong>'+esc(leader.version_name)+'</strong> '+(zh?'目前领先，回复率 ':'is leading with a ')+leader.responseRate+'%'+(zh?'':' response rate')) : (zh?'记录投递和回复以查看哪个版本获胜。':'Log applications and responses to see which version wins.');
+  } else {
+    note.innerHTML = '<span style="color:var(--faint);">'+thT('locked','🔒 Response rate is a Pro feature')+'</span>';
+  }
   document.getElementById('list').innerHTML=versions.map(function(v){
-    var win=v.id===LEADER;
+    var win=ANALYTICS && v.id===LEADER;
     var rate=v.responseRate==null?'—':(v.responseRate+'%');
+    var rateRow = ANALYTICS
+      ? '<span class="th-badge" style="margin:0;">'+thT('rate','Response rate')+' '+rate+'</span>'
+      : '';
+    var diagBtn = PRO ? '<button class="th-btn th-btn--ghost th-btn--sm" onclick="toggleDiag('+v.id+')">'+thT('diagnose','AI diagnosis')+'</button>' : '';
     return '<div class="th-result-card" style="'+(win?'border-color:var(--forest);border-width:2px;':'')+'">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><strong style="font-size:16px;">'+(win?'🏆 ':'')+v.version_name+'</strong>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;"><strong style="font-size:16px;">'+(win?'🏆 ':'')+esc(v.version_name)+'</strong>'
       +'<button class="th-btn th-btn--ghost th-btn--sm" onclick="delV('+v.id+')">✕</button></div>'
-      +(v.template_used?'<p style="color:var(--faint);font-size:13px;margin-top:2px;">'+v.template_used+'</p>':'')
+      +((v.template_used||v.job_tag)?'<p style="color:var(--faint);font-size:13px;margin-top:2px;">'+[v.template_used,v.job_tag].filter(Boolean).map(esc).join(' · ')+'</p>':'')
       +'<div class="th-row" style="margin-top:12px;">'
-      +'<div><label class="th-label">'+(zh?'已投递':'Applications')+'</label><input class="th-input" type="number" id="a'+v.id+'" value="'+v.jobs_applied_with+'"/></div>'
-      +'<div><label class="th-label">'+(zh?'已回复':'Responses')+'</label><input class="th-input" type="number" id="r'+v.id+'" value="'+v.responses_received+'"/></div></div>'
-      +'<div class="th-actions"><span class="th-badge" style="margin:0;">'+(zh?'回复率 ':'Response rate ')+rate+'</span>'
-      +'<button class="th-btn th-btn--sm" onclick="updV('+v.id+')">'+(zh?'更新':'Update stats')+'</button></div></div>';
+      +'<div><label class="th-label">'+thT('apps','Applications')+'</label><input class="th-input" type="number" id="a'+v.id+'" value="'+v.jobs_applied_with+'"/></div>'
+      +'<div><label class="th-label">'+thT('resp','Responses')+'</label><input class="th-input" type="number" id="r'+v.id+'" value="'+v.responses_received+'"/></div></div>'
+      +'<div class="th-actions">'+rateRow
+      +'<button class="th-btn th-btn--sm" onclick="updV('+v.id+')">'+thT('update','Update stats')+'</button>'+diagBtn+'</div>'
+      +'<div id="diag'+v.id+'" style="display:none;margin-top:12px;"><textarea class="th-textarea" id="diagjd'+v.id+'" style="min-height:90px;" placeholder="'+thT('diag_ph','Paste the job description to test this version against…')+'"></textarea>'
+      +'<button class="th-btn th-btn--sm" style="margin-top:8px;" onclick="runDiag('+v.id+')">'+thT('diag_run','Diagnose vs this JD')+'</button><div id="diagout'+v.id+'"></div></div>'
+      +'</div>';
   }).join('');
 }
 async function saveVersion(){
   var err=document.getElementById('err'); err.classList.remove('show');
   var name=document.getElementById('vname').value.trim();
   if(!name){ err.textContent=thT('reqname','Give this version a name.'); err.classList.add('show'); return; }
-  var body={ versionName:name, templateUsed:document.getElementById('vtpl').value.trim(), resumeText:document.getElementById('vtext').value, jobsAppliedWith:parseInt(document.getElementById('vapplied').value,10)||0 };
+  var body={ versionName:name, templateUsed:document.getElementById('vtpl').value.trim(), jobTag:document.getElementById('vtag').value.trim(), resumeText:document.getElementById('vtext').value, jobsAppliedWith:parseInt(document.getElementById('vapplied').value,10)||0, responsesReceived:parseInt(document.getElementById('vresp').value,10)||0 };
   var res=await thApi('POST','/api/tools/resume-version',body);
   if(thHandleGate(res)) return;
   if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Could not save.'; err.classList.add('show'); return; }
-  document.getElementById('vname').value=''; document.getElementById('vtpl').value=''; document.getElementById('vtext').value=''; document.getElementById('vapplied').value='0';
+  document.getElementById('vname').value=''; document.getElementById('vtpl').value=''; document.getElementById('vtag').value=''; document.getElementById('vtext').value=''; document.getElementById('vapplied').value='0'; document.getElementById('vresp').value='0';
   load();
 }
 async function updV(id){
@@ -110,6 +147,23 @@ async function updV(id){
   if(thHandleGate(res)) return; load();
 }
 async function delV(id){ var res=await thApi('DELETE','/api/tools/resume-version/'+id); if(thHandleGate(res)) return; load(); }
+function toggleDiag(id){ var el=document.getElementById('diag'+id); el.style.display = el.style.display==='none' ? 'block' : 'none'; }
+async function runDiag(id){
+  var jd=document.getElementById('diagjd'+id).value.trim();
+  var out=document.getElementById('diagout'+id);
+  out.innerHTML='<p style="color:var(--forest);font-size:13px;margin-top:10px;">…</p>';
+  var res=await thApi('POST','/api/tools/resume-version/'+id+'/diagnose',{ jobText:jd });
+  if(thHandleGate(res)) return;
+  if(res.status!==200){ out.innerHTML='<p style="color:#b91c1c;font-size:13px;margin-top:10px;">'+esc((res.data&&res.data.message)||'Could not diagnose.')+'</p>'; return; }
+  var d=res.data.result||{};
+  function chips(arr){ return (arr||[]).map(function(x){return '<span class="th-chip">'+esc(x)+'</span>';}).join('') || '—'; }
+  out.innerHTML='<div style="margin-top:12px;">'
+    +'<p style="font-weight:800;">'+thT('match','Match')+': '+d.matchScore+'%</p>'
+    +'<p class="th-label" style="margin-top:8px;">'+thT('missing','Missing keywords')+'</p><div>'+chips(d.missingKeywords)+'</div>'
+    +'<p class="th-label" style="margin-top:8px;">'+thT('present','Already covered')+'</p><div>'+chips(d.presentKeywords)+'</div>'
+    +'<p class="th-label" style="margin-top:8px;">'+thT('tips','Suggested edits')+'</p><ul class="th-flaglist good">'+(d.suggestions||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'
+    +'</div>';
+}
 if(thRequireLogin()) load();
 </script>
 </body>

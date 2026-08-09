@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Salary Negotiation Script Generator — Counter Any Offer | ResumeTailored AI</title>
-<meta name="description" content="Get a custom counter-offer script backed by market data — talking points, a defensible number, and a ready-to-send message. 1 free use a month, then Pro."/>
+<title>Free Salary Negotiation Script Generator — Counter Any Offer | ResumeTailored AI</title>
+<meta name="description" content="Generate a custom counter-offer script for free — talking points, a defensible number, and a ready-to-send message. No account, no limits. Pro adds live market data and email templates."/>
 <link rel="canonical" href="https://resumetailored.com/tools/salary-negotiation"/>
-<meta property="og:title" content="Salary Negotiation Script Generator"/>
-<meta property="og:description" content="Get a custom counter-offer script with real market data."/>
+<meta property="og:title" content="Free Salary Negotiation Script Generator"/>
+<meta property="og:description" content="Custom counter-offer scripts, free and unlimited. Pro adds live market data."/>
 <meta property="og:url" content="https://resumetailored.com/tools/salary-negotiation"/>
 <link rel="icon" href="/favicon.png" type="image/png"/>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
@@ -24,10 +24,10 @@
 </div></nav>
 
 <main class="th-wrap">
-  <a href="/pro-tools" class="th-back" data-i18n="back">← Back to Pro Tools</a>
-  <span class="th-badge th-badge--pro" data-i18n="pro_badge">1 Free Use / Month</span>
+  <a href="/score" class="th-back" data-i18n="back">← Back to Free Tools</a>
+  <span class="th-badge" data-i18n="free_badge">FREE · No limits</span>
   <h1 class="th-title" data-i18n="title">Salary Negotiation Script</h1>
-  <p class="th-sub" data-i18n="sub">Get a custom counter-offer script with real market data — talking points, a defensible number, and a ready-to-send message.</p>
+  <p class="th-sub" data-i18n="sub">Get a custom counter-offer script — talking points, a defensible number, and a ready-to-send message. Free and unlimited, no account needed.</p>
 
   <div class="th-card">
     <div class="th-row">
@@ -35,10 +35,13 @@
       <div><label class="th-label" data-i18n="l_location">Location</label><input class="th-input" id="location" placeholder="San Francisco, CA"/></div>
     </div>
     <div class="th-row">
+      <div><label class="th-label" data-i18n="l_current">Current salary ($, optional)</label><input class="th-input" type="number" id="currentBase" placeholder="140000"/></div>
       <div><label class="th-label" data-i18n="l_offer">Current offer base ($)</label><input class="th-input" type="number" id="offerBase" placeholder="150000"/></div>
-      <div><label class="th-label" data-i18n="l_target">Your target base ($)</label><input class="th-input" type="number" id="targetBase" placeholder="170000"/></div>
     </div>
-    <div><label class="th-label" data-i18n="l_leverage">Competing offer / leverage (optional)</label><input class="th-input" id="competing" placeholder="Another offer at $165k, or a strong internal referral"/></div>
+    <div class="th-row">
+      <div><label class="th-label" data-i18n="l_target">Your target base ($)</label><input class="th-input" type="number" id="targetBase" placeholder="170000"/></div>
+      <div><label class="th-label" data-i18n="l_leverage">Competing offer / leverage (optional)</label><input class="th-input" id="competing" placeholder="Another offer at $165k"/></div>
+    </div>
     <button class="th-btn th-btn--full" id="go" onclick="gen()" data-i18n="go">Generate my script →</button>
     <div class="th-error" id="err"></div>
   </div>
@@ -46,40 +49,65 @@
   <div class="th-loading" id="loading"><div class="th-spinner"></div><p data-i18n="loading">Building your negotiation plan…</p></div>
 
   <div class="th-result" id="result">
-    <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:8px;" data-i18n="r_market">Market range</h3><p id="r-market" style="font-size:20px;font-weight:800;color:var(--forest);"></p><p id="r-market-note" style="color:var(--faint);font-size:13px;margin-top:4px;"></p></div>
     <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:8px;" data-i18n="r_counter">Your counter-offer</h3><p id="r-counter" style="font-size:22px;font-weight:900;color:var(--ink);"></p><p id="r-counter-note" style="color:var(--muted);font-size:14px;margin-top:4px;"></p></div>
     <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:10px;" data-i18n="r_points">Talking points</h3><ul class="th-flaglist good" id="r-points"></ul></div>
     <div class="th-result-card"><h3 style="font-size:16px;margin-bottom:10px;" data-i18n="r_script">Ready-to-send script</h3><div class="th-mono" id="r-script"></div>
       <div class="th-actions"><button class="th-btn th-btn--sm" onclick="thCopy(document.getElementById('r-script').textContent,this)" data-i18n="copy">Copy script</button>
       <button class="th-btn th-btn--ghost th-btn--sm" onclick="thDownload(document.getElementById('r-script').textContent,'negotiation-script.txt')" data-i18n="dl">Download</button></div></div>
-    <p class="th-usage" id="usage"></p>
+
+    <!-- PRO intelligence — rendered only when the response carries it. -->
+    <div id="r-pro" style="display:none;">
+      <div class="th-result-card" id="r-market-card" style="border-color:var(--forest);border-width:2px;"><h3 style="font-size:16px;margin-bottom:8px;">✦ <span data-i18n="r_market">Market data for your role</span></h3><p id="r-market" style="font-size:20px;font-weight:800;color:var(--forest);"></p><p id="r-market-note" style="color:var(--faint);font-size:13px;margin-top:4px;"></p>
+        <div id="r-risk" style="margin-top:14px;display:none;"><span class="th-badge" id="r-risk-badge" style="margin:0 0 6px;"></span><p id="r-risk-note" style="color:var(--muted);font-size:14px;"></p></div></div>
+      <div class="th-result-card" id="r-emails-card"><h3 style="font-size:16px;margin-bottom:10px;">✦ <span data-i18n="r_emails">Email templates</span></h3><div id="r-emails"></div></div>
+    </div>
+
+    <!-- FREE users: pitch the Pro intelligence (not "unlimited"). -->
+    <div class="th-result-card" id="r-upsell" style="display:none;border-style:dashed;">
+      <h3 style="font-size:16px;margin-bottom:8px;">✦ <span data-i18n="up_title">Unlock the data behind the ask</span></h3>
+      <ul class="th-flaglist good" style="margin-bottom:14px;">
+        <li data-i18n="up_1">Live market data: the real median for your role in your city</li>
+        <li data-i18n="up_2">3 email templates: initial counter, follow-up, and final push</li>
+        <li data-i18n="up_3">Risk meter: “This ask is 15% above market — moderate risk”</li>
+      </ul>
+      <button class="th-btn" onclick="thStartPro()" data-i18n="up_cta">See market data for your role →</button>
+    </div>
   </div>
 
-  <div class="th-promo"><h3 data-i18n="promo_h">Negotiate as often as you need.</h3><p data-i18n="promo_p">Your first script each month is free. Upgrade to Pro for unlimited negotiation scripts and every other tool.</p><button class="th-btn" onclick="thStartPro()">Upgrade — $19.99/mo</button></div>
+  <div class="th-promo"><h3 data-i18n="promo_h">Negotiate with the data on your side.</h3><p data-i18n="promo_p">The script is free and unlimited. Pro shows the live market median for your role, gives you three email templates, and rates how aggressive your ask is.</p><button class="th-btn" onclick="thStartPro()" data-i18n="promo_cta">Get market data + email templates — $19.99/mo</button></div>
 </main>
 
-<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">You've used your free script</h3><p id="thUpgradeMsg">You've used your free script this month. Upgrade to Pro for unlimited access.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.99/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
+<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">Get the market data behind your number</h3><p id="thUpgradeMsg" data-i18n="up_msg">Pro adds the live market median for your role, three email templates, and a risk meter — so your counter is backed by data, not a guess.</p><button class="th-btn th-btn--full" onclick="thStartPro()" data-i18n="up_btn">See market data for your role — $19.99/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
 
 <footer class="th-foot"><a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a><p style="margin-top:10px;">© ResumeTailored AI</p></footer>
 
 <script src="/tools-hub.js"></script>
 <script>
 window.TH_I18N = {
-  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Pro Tools', pro_badge:'1 Free Use / Month',
-    title:'Salary Negotiation Script', sub:'Get a custom counter-offer script with real market data — talking points, a defensible number, and a ready-to-send message.',
-    l_role:'Role', l_location:'Location', l_offer:'Current offer base ($)', l_target:'Your target base ($)', l_leverage:'Competing offer / leverage (optional)',
-    go:'Generate my script →', loading:'Building your negotiation plan…', r_market:'Market range', r_counter:'Your counter-offer', r_points:'Talking points', r_script:'Ready-to-send script',
-    copy:'Copy script', dl:'Download', promo_h:'Negotiate as often as you need.', promo_p:'Your first script each month is free. Upgrade to Pro for unlimited negotiation scripts and every other tool.', up_h:"You've used your free script", up_x:'Maybe later', copied:'Copied ✓' },
-  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回专业工具', pro_badge:'每月 1 次免费',
-    title:'薪资谈判脚本', sub:'获取基于真实市场数据的定制还价脚本 — 谈判要点、可辩护的数字和可直接发送的信息。',
-    l_role:'职位', l_location:'地点', l_offer:'当前 Offer 基本薪资 ($)', l_target:'你的目标基本薪资 ($)', l_leverage:'竞争 Offer / 筹码（可选）',
-    go:'生成我的脚本 →', loading:'正在制定谈判方案…', r_market:'市场范围', r_counter:'你的还价', r_points:'谈判要点', r_script:'可直接发送的脚本',
-    copy:'复制脚本', dl:'下载', promo_h:'想谈几次就谈几次。', promo_p:'每月第一次脚本免费。升级专业版，无限谈判脚本和所有其他工具。', up_h:'本月免费脚本已用完', up_x:'以后再说', copied:'已复制 ✓' }
+  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools', free_badge:'FREE · No limits',
+    title:'Salary Negotiation Script', sub:'Get a custom counter-offer script — talking points, a defensible number, and a ready-to-send message. Free and unlimited, no account needed.',
+    l_role:'Role', l_location:'Location', l_current:'Current salary ($, optional)', l_offer:'Current offer base ($)', l_target:'Your target base ($)', l_leverage:'Competing offer / leverage (optional)',
+    go:'Generate my script →', loading:'Building your negotiation plan…', r_counter:'Your counter-offer', r_points:'Talking points', r_script:'Ready-to-send script',
+    r_market:'Market data for your role', r_emails:'Email templates',
+    up_title:'Unlock the data behind the ask', up_1:'Live market data: the real median for your role in your city', up_2:'3 email templates: initial counter, follow-up, and final push', up_3:'Risk meter: “This ask is 15% above market — moderate risk”', up_cta:'See market data for your role →',
+    copy:'Copy script', dl:'Download', promo_h:'Negotiate with the data on your side.', promo_p:'The script is free and unlimited. Pro shows the live market median for your role, gives you three email templates, and rates how aggressive your ask is.', promo_cta:'Get market data + email templates — $19.99/mo',
+    up_h:'Get the market data behind your number', up_msg:'Pro adds the live market median for your role, three email templates, and a risk meter — so your counter is backed by data, not a guess.', up_btn:'See market data for your role — $19.99/mo', up_x:'Maybe later', copied:'Copied ✓',
+    e_initial:'Initial counter', e_follow:'Follow-up', e_final:'Final push', copy_email:'Copy' },
+  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回免费工具', free_badge:'免费 · 无限制',
+    title:'薪资谈判脚本', sub:'获取定制还价脚本 — 谈判要点、可辩护的数字和可直接发送的信息。免费且无限制，无需账户。',
+    l_role:'职位', l_location:'地点', l_current:'当前薪资 ($，可选)', l_offer:'当前 Offer 基本薪资 ($)', l_target:'你的目标基本薪资 ($)', l_leverage:'竞争 Offer / 筹码（可选）',
+    go:'生成我的脚本 →', loading:'正在制定谈判方案…', r_counter:'你的还价', r_points:'谈判要点', r_script:'可直接发送的脚本',
+    r_market:'你所在职位的市场数据', r_emails:'邮件模板',
+    up_title:'解锁数字背后的数据', up_1:'实时市场数据：你所在城市该职位的真实中位数', up_2:'3 个邮件模板：首次还价、跟进和最后一击', up_3:'风险仪表：“此要求高于市场 15% — 中等风险”', up_cta:'查看你职位的市场数据 →',
+    copy:'复制脚本', dl:'下载', promo_h:'用数据支撑你的谈判。', promo_p:'脚本免费且无限制。专业版显示你所在职位的实时市场中位数，提供三个邮件模板，并评估你的要求有多激进。', promo_cta:'获取市场数据 + 邮件模板 — ¥19.99/月',
+    up_h:'获取你数字背后的市场数据', up_msg:'专业版增加你所在职位的实时市场中位数、三个邮件模板和风险仪表——让你的还价有数据支撑，而不是猜测。', up_btn:'查看你职位的市场数据 — ¥19.99/月', up_x:'以后再说', copied:'已复制 ✓',
+    e_initial:'首次还价', e_follow:'跟进', e_final:'最后一击', copy_email:'复制' }
 };
 function li(items){ return (items||[]).map(function(x){return '<li>'+x+'</li>';}).join('') || '<li style="color:var(--faint)">—</li>'; }
 function fmt(n){ return n==null?'?':('$'+Number(n).toLocaleString()); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 async function gen(){
-  var b={ role:val('role'), location:val('location'), offerBase:parseFloat(val('offerBase'))||0, targetBase:parseFloat(val('targetBase'))||0, competingOffer:val('competing') };
+  var b={ role:val('role'), location:val('location'), currentBase:parseFloat(val('currentBase'))||0, offerBase:parseFloat(val('offerBase'))||0, targetBase:parseFloat(val('targetBase'))||0, competingOffer:val('competing') };
   var err=document.getElementById('err'); err.classList.remove('show');
   if(!b.role){ err.textContent=thT('reqrole',"Enter the role you're negotiating for."); err.classList.add('show'); return; }
   var btn=document.getElementById('go'); btn.disabled=true;
@@ -88,14 +116,34 @@ async function gen(){
   document.getElementById('loading').classList.remove('show'); btn.disabled=false;
   if(thHandleGate(res)) return;
   if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Something went wrong.'; err.classList.add('show'); return; }
-  var d=res.data.result, zh=(localStorage.getItem('rt_lang')==='zh');
-  var mr=d.marketRange||{}; document.getElementById('r-market').textContent=fmt(mr.low)+' – '+fmt(mr.high)+' '+(mr.currency||'');
-  document.getElementById('r-market-note').textContent=mr.note||'';
+  var d=res.data.result;
   var co=d.counterOffer||{}; document.getElementById('r-counter').textContent=fmt(co.base);
   document.getElementById('r-counter-note').textContent=co.note||'';
   document.getElementById('r-points').innerHTML=li(d.talkingPoints);
   document.getElementById('r-script').textContent=d.script;
-  var u=res.data.usage||{}; document.getElementById('usage').textContent = u.pro ? (zh?'专业版 · 无限次':'Pro · unlimited') : (zh?('本月已用 '+u.used+'/'+u.limit+' · 数据为估算'):('Used '+u.used+' of '+u.limit+' free this month'));
+
+  var pro=!!res.data.pro;
+  document.getElementById('r-pro').style.display = pro ? 'block' : 'none';
+  document.getElementById('r-upsell').style.display = pro ? 'none' : 'block';
+  if(pro){
+    var mr=d.marketRange||{};
+    document.getElementById('r-market').textContent=fmt(mr.low)+' – '+fmt(mr.high)+' '+(mr.currency||'');
+    document.getElementById('r-market-note').textContent=mr.note||'';
+    var risk=d.riskMeter, rw=document.getElementById('r-risk');
+    if(risk){ rw.style.display='block';
+      var colors={low:'#15803d',moderate:'#b45309',high:'#b91c1c'};
+      var rb=document.getElementById('r-risk-badge');
+      rb.textContent=(risk.level||'').toUpperCase()+' RISK'; rb.style.color=colors[risk.level]||'var(--forest)'; rb.style.borderColor=colors[risk.level]||'var(--forest)';
+      document.getElementById('r-risk-note').textContent=risk.note||'';
+    } else { rw.style.display='none'; }
+    var et=d.emailTemplates||{}, box=document.getElementById('r-emails');
+    var rows=[['e_initial',et.initialCounter],['e_follow',et.followUp],['e_final',et.finalPush]].filter(function(x){return x[1];});
+    box.innerHTML = rows.map(function(x){
+      return '<div style="margin-bottom:14px;"><div style="font-weight:800;font-size:14px;margin-bottom:4px;">'+thT(x[0],x[0])+'</div><div class="th-mono">'+esc(x[1])+'</div>'
+        +'<button class="th-btn th-btn--ghost th-btn--sm" style="margin-top:6px;" onclick="thCopy(this.previousElementSibling.textContent,this)">'+thT('copy_email','Copy')+'</button></div>';
+    }).join('') || '<p style="color:var(--faint);font-size:14px;">—</p>';
+    document.getElementById('r-emails-card').style.display = rows.length ? 'block' : 'none';
+  }
   document.getElementById('result').classList.add('show');
 }
 function val(id){ return document.getElementById(id).value.trim(); }
