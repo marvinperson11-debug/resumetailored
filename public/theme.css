@@ -34,7 +34,22 @@
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────── */
+/* Paint the cream on the ROOT element, not just <body>. During a full
+   page-to-page navigation the browser briefly shows the base canvas before the
+   new document's <body> paints; if only <body> is cream the base defaults to
+   white and you get a "dead white flash" between tabs. Cream on <html> makes
+   that intermediate frame cream instead. */
+html { background: var(--bg); }
 body { background: var(--bg) !important; color: var(--ink-soft); -webkit-font-smoothing: antialiased; }
+
+/* Cross-document (MPA) View Transitions: cross-fade between our static pages
+   instead of a hard reload flash. This lives in theme.css — a render-blocking
+   <head> stylesheet present on both ends of every navigation — rather than
+   being injected late by site-nav.js's deferred script, because the opt-in has
+   to be parsed BEFORE the incoming page's first paint for the transition to
+   run. Chromium animates it; other browsers ignore it. Off under reduced-motion. */
+@view-transition { navigation: auto; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
 h1, h2, h3, .logo, .ft-brand, .article-hero h1 {
   font-family: var(--serif); color: var(--ink); letter-spacing: -0.015em; font-weight: 600;
 }
