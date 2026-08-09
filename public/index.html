@@ -174,6 +174,12 @@
   }
   </script>
   <style>
+    /* Cross-document (MPA) view transitions: navigating between our static
+       pages cross-fades instead of hard white-flashing on each full load.
+       Supported browsers (Chromium) animate it; others ignore the rule and
+       navigate as before. Disabled under reduced-motion. */
+    @view-transition { navigation: auto; }
+    @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
     /* ============================================================
        Editorial light theme — warm cream paper, deep-green accent,
        Fraunces display serif. Deliberately distinct from the
@@ -234,6 +240,9 @@
     .nav-links a { font-size: 14px; font-weight: 500; color: var(--ink-soft); transition: color .15s; }
     .nav-links a:hover { color: var(--accent); }
     .nav-actions { display: flex; gap: 12px; align-items: center; }
+    /* Mobile-only group (中文 + hamburger). Hidden on desktop; the desktop 中文
+       lives inside .nav-actions instead so its position matches every route. */
+    .nav-mobile-actions { display: none; align-items: center; gap: 10px; margin-left: auto; }
 
     .btn {
       display: inline-flex; align-items: center; justify-content: center;
@@ -336,7 +345,9 @@
     }
 
     /* ── HERO ── */
-    .hero { padding: 100px 0 84px; text-align: center; position: relative; overflow: hidden; }
+    /* Top padding kept tight so the headline + primary CTA clear the fold on a
+       1366×768 laptop (and, with room to spare, 1920×1080) without scrolling. */
+    .hero { padding: 48px 0 72px; text-align: center; position: relative; overflow: hidden; }
     .hero-orb {
       position: absolute; border-radius: 50%;
       filter: blur(90px); pointer-events: none; z-index: 0;
@@ -359,14 +370,14 @@
     .hero > .container { position: relative; z-index: 1; }
     .hero h1 {
       font-family: 'Fraunces', Georgia, serif;
-      font-size: clamp(42px, 6.4vw, 76px); font-weight: 600;
-      letter-spacing: -0.02em; line-height: 1.06; margin-bottom: 24px; color: var(--ink);
+      font-size: clamp(40px, 5.4vw, 62px); font-weight: 600;
+      letter-spacing: -0.02em; line-height: 1.05; margin-bottom: 18px; color: var(--ink);
     }
     .hero h1 .blue {
       font-weight: 500; font-style: italic; color: var(--accent);
       -webkit-text-fill-color: currentColor;
     }
-    .hero-sub { font-size: 18px; color: var(--ink-soft); max-width: 590px; margin: 0 auto 34px; line-height: 1.72; }
+    .hero-sub { font-size: 18px; color: var(--ink-soft); max-width: 590px; margin: 0 auto 22px; line-height: 1.6; }
     .hero-cta { display: flex; flex-direction: column; align-items: center; gap: 12px; }
     .hero-cta-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; align-items: center; }
     .hero-note { font-size: 13px; color: var(--ink-faint); }
@@ -716,6 +727,7 @@
        to the hamburger menu (which already contains every link + Log In + CTA). */
     @media (max-width: 1180px) {
       .nav-links, .nav-actions { display: none; }
+      .nav-mobile-actions { display: flex; }
       .hamburger { display: flex; }
     }
     @media (max-width: 768px) {
@@ -906,14 +918,20 @@
       <a href="/employer" style="color:#0f172a;font-weight:700;white-space:nowrap;">For Employers</a>
       <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
     </div>
+    <!-- Canonical action group: [中文] [Log In] [CTA] — same order and position
+         as the injected nav (site-nav.js) on every other route, so the language
+         toggle never jumps between pages. -->
     <div class="nav-actions">
+      <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">中文</button>
       <a href="/login?redirect=/" class="btn btn-ghost" data-i18n="nav_login">Log In</a>
       <a href="/dashboard" class="btn btn-primary" data-i18n="nav_cta">Tailor My Resume Free →</a>
     </div>
-    <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">中文</button>
-    <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.add('open')" aria-label="Open menu">
-      <span></span><span></span><span></span>
-    </button>
+    <div class="nav-mobile-actions">
+      <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtnMobile">中文</button>
+      <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.add('open')" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
   </div>
 </nav>
 
