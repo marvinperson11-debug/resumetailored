@@ -56,7 +56,11 @@ const server = app.listen(0, async () => {
     for (const p of ['/', '/score', '/pro-tools', '/tools/offer-comparison']) {
       const r = await req(p);
       check(`${p} 200`, r.status === 200);
-      check(`${p} links self-hosted /fonts.css`, /href="\/fonts\.css\?v=[^"]+"/.test(r.body), p);
+      // fonts.css is inlined into <head> (render-blocking-free) — assert the
+      // self-hosted @font-face is present pointing at local /fonts/*.woff2, and
+      // that it is NOT loaded as a render-blocking external stylesheet.
+      check(`${p} inlines self-hosted @font-face (not render-blocking)`, /@font-face[\s\S]{0,400}url\(\/fonts\/inter-normal-latin\.woff2\)/.test(r.body), p);
+      check(`${p} does not render-block on an external /fonts.css`, !/<link[^>]*rel="stylesheet"[^>]*\/fonts\.css/.test(r.body), p);
       check(`${p} preloads the Inter Latin face`, /rel="preload"[^>]*\/fonts\/inter-normal-latin\.woff2[^>]*crossorigin/.test(r.body));
       // The preload href MUST match the @font-face src byte-for-byte, or the
       // browser downloads it, never matches it, and warns "preloaded but not
@@ -69,7 +73,7 @@ const server = app.listen(0, async () => {
     // Dashboard keeps the signature fonts (they are not self-hosted).
     const d = await req('/dashboard');
     check('/dashboard keeps signature fonts on the CDN', /fonts\.googleapis\.com\/css2\?family=Dancing\+Script/.test(d.body));
-    check('/dashboard still self-hosts its Inter/Syne', /href="\/fonts\.css\?v=/.test(d.body));
+    check('/dashboard still self-hosts its Inter/Syne (inlined @font-face)', /@font-face[\s\S]{0,400}url\(\/fonts\/inter-normal-latin\.woff2\)/.test(d.body));
     check('/dashboard leaves the runtime ${sigFont} link intact', d.body.includes('${encodeURIComponent(sigFont)}'));
 
     // Assets serve.

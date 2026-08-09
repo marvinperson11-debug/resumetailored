@@ -55,6 +55,23 @@ for (const f of ['index.html', 'zh/index.html']) {
   }
 }
 
+// index.html desktop color-contrast fixes (these elements render on desktop and
+// were the exact Lighthouse-desktop failures at score 96):
+{
+  const html = read('index.html');
+  // The shared caption/meta colour (--ink-faint) drives .hero-note/.demo-label/
+  // .footer-copy. It must clear AA on the lightest backgrounds it sits on.
+  const vm = html.match(/--ink-faint:\s*(#[0-9a-fA-F]{6})/);
+  check('index.html --ink-faint defined', !!vm, vm ? vm[1] : 'not found');
+  if (vm) {
+    for (const bg of ['#ffffff', '#faf7f0', '#e8f0e9', '#f1eadd']) {
+      check(`--ink-faint ≥ 4.5:1 on ${bg}`, ratio(vm[1], bg) >= 4.5, `${vm[1]} => ${ratio(vm[1], bg).toFixed(2)}`);
+    }
+  }
+  // The bright green text (#22c55e, 2.27:1 on white) must be gone.
+  check('index.html has no low-contrast color:#22c55e text', !/color:#22c55e/i.test(html));
+}
+
 if (failures) { console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`); process.exit(1); }
 console.log('\nALL PASS (0 failures)');
 process.exit(0);

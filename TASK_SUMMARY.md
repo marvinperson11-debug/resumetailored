@@ -1,44 +1,39 @@
-# TASK_SUMMARY — Fix the two exact console errors (BP 92→100, Perf font-preload waste)
+# TASK_SUMMARY — Desktop A11y 96→100 + mobile Perf render-blocking/LCP fixes
 
-Date: 2026-08-09. Branch: `claude/markdown-file-response-y8qolt`.
+Date: 2026-08-09. Branch: `claude/markdown-file-response-y8qolt`. Traced first, then fixed.
 
-You captured the exact live errors from DevTools; both are fixed here with their root causes confirmed locally.
+## GAP 2 — Desktop Accessibility 96 → 100 ✅ (verified)
 
-## Fix 1 — Best Practices: unblock the Cloudflare Insights beacon (CSP)
+Lighthouse desktop flagged **`color-contrast`** on 5 elements (they render on desktop; mobile force-darkens inline faint text via a `@media` rule, which is why mobile was already 100):
 
-**Error:** `Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/…' violates … script-src …` — the browser blocks it and logs a console error → fails `errors-in-console` + `inspector-issues`.
+| Element | Was | Now |
+|---|---|---|
+| `.hero-note`, `.demo-label` ×2, `.footer-copy` | `--ink-faint: #918A7E` (2.86–3.42:1) | **`--ink-faint: #6B6459`** (4.6–5.9:1 on every light bg) |
+| `.feat-card` "Strong Match" + skill pills | `color:#22c55e` (2.27:1 on white) | **`#15803d`** (5.0:1) |
 
-**Root cause:** the Cloudflare **Web Analytics beacon is injected at the edge by Cloudflare itself** — it is *not* in our HTML (grep-verified: zero references in `public/`). Our app-set CSP (`security.js`) didn't allow it, so Cloudflare's own injected script was CSP-blocked on every page.
+One CSS-variable change fixes all four taupe failures; the green is darkened in place. Re-ran Lighthouse: **desktop AND mobile Accessibility = 100, zero failing audits.**
 
-**Fix (`security.js` `buildCSP`):**
-- `script-src` += `https://static.cloudflareinsights.com` (the beacon script)
-- `connect-src` += `https://cloudflareinsights.com` (the beacon POSTs RUM data there — allowing the script but not its beacon would just move the error)
+## GAP 1 — Mobile Performance 96 → (render-blocking eliminated, LCP single-paint)
 
-(Alternative you could take instead: turn off Web Analytics in the Cloudflare dashboard. I allow-listed it since it's a first-party CF feature and presumably wanted.)
+Traced a local mobile run (96, matching your PSI). The scored gaps were **LCP** and **FCP**, gated by **render-blocking CSS (~490 ms)**. Fixes, biggest-first:
 
-## Fix 2 — Performance: font preload/URL mismatch (the "preloaded but not used" warnings)
+1. **Eliminated render-blocking CSS** (the ~1,710 ms flag): the homepage loaded two blocking stylesheets — `site-fx.css` (319 ms) and `fonts.css` (169 ms).
+   - `site-fx.css` is pure progressive enhancement (grain, cursor, reveal fallback, mobile sheets) → now loads async via `media="print" onload` (+ `<noscript>`). Nothing above the fold needs it.
+   - `fonts.css` (1.7 KB of `@font-face`) is now **inlined into `<head>`** (`server.js`) — no request, no render block, and because the two above-the-fold faces are preloaded, first paint uses the real webfont (no FOUT, no swap-CLS).
+   - **Result: render-blocking → 0, FCP 2.0 s → 1.4 s, CLS stays 0.**
+2. **Fixed the LCP element re-paint.** The LCP element is `<p class="hero-sub">`. The inline i18n `applyLang()` ran on load and **unconditionally rewrote `innerHTML`** — and the hero-sub's HTML text differed from the English i18n string, so it genuinely re-painted *after* the script ran, pushing LCP past FCP. Fix: made the server-rendered hero-sub match the English string (no visible change — the JS already showed that text) **and** added a skip-if-identical guard to `applyLang` so the English pass is a no-op (less main-thread work too). A real throttled trace now shows the LCP element painting **once at ~0.5 s** (was re-painting).
+3. **Sped up the hero entrance animation** (was staggered up to 740 ms + 0.8 s fade) → single quick fade, plus a `prefers-reduced-motion` guard.
 
-**Error:** 4× `The resource …/fonts/inter-normal-latin.woff2 was preloaded using link preload but not used within a few seconds…` (Inter + Fraunces).
-
-**Root cause (confirmed on the served HTML):** the preload href carried a cache-busting query — `/fonts/inter-normal-latin.woff2?v=<build>` — but `fonts.css`'s `@font-face src` references the **un-versioned** URL `/fonts/inter-normal-latin.woff2`. The browser treats those as **different resources**: it fetched the `?v=` preload, never matched it to the font, warned, and then **downloaded the woff2 a second time** for the actual `@font-face`. So the preload was pure waste (and double bytes).
-
-**Fix (`server.js` `_SELF_FONT_LINK`):** dropped the `?v=` from the two font preload hrefs so they match `fonts.css` byte-for-byte. The woff2 are content-stable and already `max-age=2592000` (30d), so they don't need busting. Now: one download, preload actually used, no warning.
-- `as="font"` + `type="font/woff2"` + `crossorigin` were already correct and match the CORS `@font-face` fetch.
-- Above-the-fold usage confirmed: the hero heading uses Fraunces, body/nav use Inter — both preloads are used.
-
-## Also verified: all fonts are truly self-hosted
-
-You saw a gstatic `@font-face` in the Elements tab. On the **current served homepage** there is **zero** `gstatic`/`googleapis` reference — the `_selfHostFonts` rewrite strips the Google Fonts link + preconnects at serve time, and `fonts.css` references only local `/fonts/*.woff2` (grep-verified). That gstatic view was a pre-#364 deploy or a cached page. (The only place Google Fonts still legitimately loads is `app.html`'s signature-font picker — Dancing Script/Great Vibes/Satisfy/Caveat — which is behind login and intentionally kept on the CDN.)
+### Honest note on the local number
+After these, **local-Lighthouse mobile Perf = 97** and its *simulated* LCP stays 2.4 s **even though the real (throttled-Chrome) LCP is ~0.5 s** — Lighthouse's Lantern LCP estimate on localhost is pessimistic and doesn't respond to these DOM fixes. Every item PSI flagged is addressed (render-blocking removed, unused-JS was GA/beacon-only, long tasks reduced, non-composited hero animation sped up). Per your "stop when no more easy wins," the remaining lab-sim LCP gap needs the **field/PSI run on the deployed site** to confirm — the render-blocking elimination + single-paint LCP are real wins that the lab sim under-credits on localhost.
 
 ## Tests
 
-- `test/security.js` — updated: CSP must now include `static.cloudflareinsights.com` + `cloudflareinsights.com` (and still must NOT include the pruned AdSense hosts).
-- `test/font-selfhost.js` — added a guard: the font preload href must carry **no** `?v=` (must match the `fonts.css` src), so this mismatch can't regress.
-- Full suite: **37 files green.**
+- `test/homepage-a11y.js` — added: `--ink-faint` must clear 4.5:1 on white/cream/green/tan; no `color:#22c55e`.
+- `test/font-selfhost.js` — updated for the inline `@font-face` (asserts self-hosted `@font-face` present and **no** render-blocking external `/fonts.css`).
+- Full suite: **37 files green.** Desktop + mobile Accessibility re-verified 100; CLS 0.
 
-## Expected
+## Expected after deploy
 
-- **Best Practices → 100** (the blocked CF beacon was the console error).
-- **Performance back to 88+** (removes 4 preload warnings + a duplicate woff2 download; content-visibility gains from #364 remain).
-
-CI expected green — merge → deploy → re-run PSI Mobile and send Performance + Best Practices; I'll record the final before/after here.
+- **Desktop Accessibility → 100** (verified locally, deterministic).
+- **Mobile Performance → up from 96** — re-run PSI Mobile to confirm; if LCP is still the holdout, its field value should be far better than the localhost lab sim.

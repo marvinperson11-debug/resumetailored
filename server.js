@@ -952,9 +952,18 @@ const _GF_PRECONNECT_RE = /<link\b[^>]*href="https:\/\/fonts\.(?:googleapis|gsta
 // seconds" (plus a wasted double download). fonts.css references the woff2
 // WITHOUT a version query, so the preloads must not carry one either. The woff2
 // are content-stable and already long-cached (30d), so they don't need busting.
+// fonts.css is only ~1.7 KB of @font-face rules, and it was render-blocking as an
+// external stylesheet (~170 ms on mobile). Inline it into the <head> instead: the
+// @font-face rules parse instantly with no extra request and no render block, and
+// because the two above-the-fold faces are preloaded just above, first paint uses
+// the real webfont (no FOUT / no font-swap CLS). Read once at startup.
+const _FONTS_CSS = (() => {
+  try { return fs.readFileSync(path.join(__dirname, 'public', 'fonts.css'), 'utf8'); }
+  catch (e) { return ''; }
+})();
 const _SELF_FONT_LINK = `<link rel="preload" href="/fonts/inter-normal-latin.woff2" as="font" type="font/woff2" crossorigin>`
   + `<link rel="preload" href="/fonts/fraunces-normal-latin.woff2" as="font" type="font/woff2" crossorigin>`
-  + `<link rel="stylesheet" href="/fonts.css?v=${ASSET_VERSION}">`;
+  + (_FONTS_CSS ? `<style>${_FONTS_CSS}</style>` : `<link rel="stylesheet" href="/fonts.css?v=${ASSET_VERSION}">`);
 function _selfHostFonts(html) {
   if (process.env.RT_LEGACY_FONTS === '1') return html; // measurement escape hatch (A/B the font change)
   let replaced = false;
