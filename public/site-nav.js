@@ -70,19 +70,24 @@
       // same-origin MPA transition requires. Off under reduced-motion.
       '@view-transition{navigation:auto;}' +
       '@media(prefers-reduced-motion:reduce){@view-transition{navigation:none;}}' +
-      '#snav{position:sticky;top:0;z-index:1000;background:rgba(250,247,240,.9)!important;' +
+      // Geometry mirrors the homepage's inline nav EXACTLY so the bar never
+      // shifts when navigating between the homepage and an injected-nav page:
+      // the 24px side padding lives on the full-width #snav (outside the 1280
+      // box) — NOT inside .snav-in — so the inner content spans the full 1280px
+      // just like the homepage's .nav (padding on .nav) + .nav-inner (max 1280).
+      '#snav{position:sticky;top:0;z-index:1000;background:rgba(250,247,240,.85)!important;padding:0 24px;' +
         'border-bottom:1px solid #E7DFD1!important;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);font-family:\'Inter\',-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;}' +
       '#snav *{box-sizing:border-box;}' +
-      '#snav .snav-in{max-width:1280px;margin:0 auto;display:flex;align-items:center;height:64px;padding:0 24px;}' +
-      '#snav .snav-logo{font-family:\'Fraunces\',Georgia,serif;font-size:22px;font-weight:800;color:#191512!important;text-decoration:none;letter-spacing:-.02em;white-space:nowrap;}' +
-      '#snav .snav-logo b{font-family:\'Inter\',sans-serif;background:#1F5C3D;color:#fff;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;}' +
+      '#snav .snav-in{max-width:1280px;margin:0 auto;display:flex;align-items:center;height:64px;}' +
+      '#snav .snav-logo{font-family:\'Fraunces\',Georgia,serif;font-size:23px;font-weight:700;color:#191512!important;text-decoration:none;letter-spacing:-.02em;white-space:nowrap;}' +
+      '#snav .snav-logo b{font-family:\'Inter\',sans-serif;background:#1F5C3D;color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;vertical-align:middle;margin-left:4px;}' +
       '#snav .snav-links{display:flex;gap:18px;align-items:center;margin-left:32px;}' +
       '#snav .snav-links a{font-size:14px;font-weight:500;color:#57514A!important;text-decoration:none;transition:color .15s;white-space:nowrap;}' +
       '#snav .snav-links a:hover,#snav .snav-links a.snav-active{color:#1F5C3D!important;}' +
       '#snav .snav-act{display:flex;gap:12px;align-items:center;margin-left:auto;}' +
       '#snav .snav-lang{background:#F1EADD;color:#57514A!important;border:1px solid #D9CFBC;border-radius:8px;font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer;font-family:inherit;white-space:nowrap;}' +
       '#snav .snav-lang:hover{border-color:#1F5C3D;color:#1F5C3D!important;}' +
-      '#snav .snav-btn{font-size:14px;font-weight:700;padding:9px 16px;border-radius:9px;text-decoration:none;white-space:nowrap;cursor:pointer;border:1px solid transparent;}' +
+      '#snav .snav-btn{font-size:14px;font-weight:600;padding:10px 20px;border-radius:9px;text-decoration:none;white-space:nowrap;cursor:pointer;border:1px solid transparent;}' +
       '#snav .snav-ghost{background:transparent;color:#191512!important;border-color:#D9CFBC;}' +
       '#snav .snav-ghost:hover{border-color:#1F5C3D;}' +
       '#snav .snav-primary{background:#1F5C3D;color:#fff!important;box-shadow:0 6px 18px rgba(31,92,61,.22);}' +
