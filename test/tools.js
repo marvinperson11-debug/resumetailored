@@ -53,22 +53,43 @@ const check = (name, cond, detail) => {
   check('validateMockFeedback clamps score to 100', mf.ok && mf.value.items[0].score === 100, JSON.stringify(mf.value));
   check('validateMockFeedback derives overall when missing', mf.value.overallScore === 100);
   check('validateSalary needs a script', !TOOLS.validateSalary({ marketRange: {}, counterOffer: {} }).ok);
-  check('validateSalary ok', TOOLS.validateSalary({ marketRange: { low: 1, high: 2, note: 'n' }, counterOffer: { base: 3, note: 'n' }, talkingPoints: ['a'], script: 'do it' }).ok);
+  check('validateSalary ok (free shape: no market/templates)', TOOLS.validateSalary({ counterOffer: { base: 3, note: 'n' }, talkingPoints: ['a'], script: 'do it' }).ok);
+  // Pro shape: email templates are validated + carried when present.
+  const salPro = TOOLS.validateSalary({ counterOffer: { base: 3 }, talkingPoints: ['a'], script: 'do it', marketRange: { low: 1, high: 2, note: 'n' }, emailTemplates: { initialCounter: 'hi', followUp: 'still there?', finalPush: 'final' } });
+  check('validateSalary carries emailTemplates when present', salPro.ok && salPro.value.emailTemplates.followUp === 'still there?', JSON.stringify(salPro.value.emailTemplates || null));
+  check('validateSalary omits emailTemplates when absent (free)', !('emailTemplates' in TOOLS.validateSalary({ counterOffer: {}, talkingPoints: [], script: 'x' }).value));
+
+  // Risk meter — deterministic, versus the market median.
+  check('computeRiskMeter: 15% above median => moderate', (() => { const r = TOOLS.computeRiskMeter(115, 90, 110); return r && r.percent === 15 && r.level === 'moderate'; })());
+  check('computeRiskMeter: at/below median => low', (() => { const r = TOOLS.computeRiskMeter(100, 90, 110); return r && r.level === 'low'; })());
+  check('computeRiskMeter: 30% above => high', (() => { const r = TOOLS.computeRiskMeter(130, 90, 110); return r && r.level === 'high'; })());
+  check('computeRiskMeter: null without a band', TOOLS.computeRiskMeter(150, null, null) === null);
+
+  // AI diagnosis validator.
+  const diag = TOOLS.validateDiagnosis({ matchScore: 250, missingKeywords: ['Kubernetes', ''], presentKeywords: ['SQL'], suggestions: ['Add a metrics bullet'] });
+  check('validateDiagnosis clamps score + cleans arrays', diag.ok && diag.value.matchScore === 100 && diag.value.missingKeywords.length === 1, JSON.stringify(diag.value));
 
   // Prompt builders don't throw and echo the language.
   check('buildJobDecodePrompt returns system+user', !!TOOLS.buildJobDecodePrompt('x'.repeat(50), 'en').user);
   check('buildFollowUpPrompt clamps daysSince to >=1', TOOLS.buildFollowUpPrompt({ company: 'A', role: 'B', daysSince: -3 }, 'en').user.includes('Days since applying: 1'));
-  check('buildSalaryPrompt notes estimate when no market hint', TOOLS.buildSalaryPrompt({ role: 'PM' }, null, 'en').user.includes('estimate'));
-  check('buildSalaryPrompt injects a live market hint when given', TOOLS.buildSalaryPrompt({ role: 'PM' }, 'listings say $150k', 'en').user.includes('listings say $150k'));
+  check('buildSalaryPrompt (pro) notes estimate when no market hint', TOOLS.buildSalaryPrompt({ role: 'PM' }, null, 'en', true).user.includes('estimate'));
+  check('buildSalaryPrompt (pro) injects a live market hint when given', TOOLS.buildSalaryPrompt({ role: 'PM' }, 'listings say $150k', 'en', true).user.includes('listings say $150k'));
+  check('buildSalaryPrompt (pro) asks for email templates', TOOLS.buildSalaryPrompt({ role: 'PM' }, null, 'en', true).user.includes('emailTemplates'));
+  check('buildSalaryPrompt (free) omits market data + templates', (() => { const u = TOOLS.buildSalaryPrompt({ role: 'PM' }, null, 'en', false).user; return !u.includes('emailTemplates') && !u.includes('marketRange'); })());
+  check('buildDiagnosisPrompt returns system+user', !!TOOLS.buildDiagnosisPrompt('resume', 'jd', 'en').user);
 
   // Version summary — leader is best response rate with >=1 application.
   const vs = TOOLS.summarizeVersions([
-    { id: 1, version_name: 'v1', jobs_applied_with: 10, responses_received: 2 }, // 20%
+    { id: 1, version_name: 'v1', job_tag: 'Stripe — PM', jobs_applied_with: 10, responses_received: 2 }, // 20%
     { id: 2, version_name: 'v2', jobs_applied_with: 8, responses_received: 4 },  // 50%
     { id: 3, version_name: 'v3', jobs_applied_with: 0, responses_received: 0 },  // no signal
   ]);
   check('summarizeVersions computes response rate', vs.versions[0].responseRate === 20 && vs.versions[2].responseRate === null);
+  check('summarizeVersions carries the job_tag', vs.versions[0].job_tag === 'Stripe — PM', vs.versions[0].job_tag);
   check('summarizeVersions picks the leader', vs.leaderId === 2, String(vs.leaderId));
+  // stripAnalytics (free) removes the computed rate + leader, keeps raw counts.
+  const stripped = TOOLS.stripAnalytics(vs);
+  check('stripAnalytics nulls responseRate + leaderId, keeps counts', stripped.leaderId === null && stripped.versions[0].responseRate === null && stripped.versions[0].jobs_applied_with === 10);
 
   // Weekly report email builder.
   const wr = TOOLS.buildWeeklyReportEmail({ name: 'Sam', stats: { applied: 7, responses: 2, interviews: 1, staleFollowUps: [{ company: 'Acme', role: 'Dev', days: 9 }] } });
@@ -128,8 +149,11 @@ const server = app.listen(0, async () => {
     check('follow-up: missing fields => 400', (await req('POST', '/api/tools/follow-up-generate', 'tokFree', { company: '' })).status === 400);
     check('mock interview: missing role => 400', (await req('POST', '/api/tools/mock-interview', 'tokFree', { action: 'questions', role: '' })).status === 400);
     check('mock feedback: no answers => 400', (await req('POST', '/api/tools/mock-interview', 'tokFree', { action: 'feedback', answers: [] })).status === 400);
-    check('salary: no auth => 401', (await req('POST', '/api/tools/salary-negotiation', null, { role: 'PM' })).status === 401);
-    check('salary: missing role => 400', (await req('POST', '/api/tools/salary-negotiation', 'tokFree', { role: '' })).status === 400);
+    // Salary is FREE + unlimited + no account required — so no 401. Only the
+    // missing-role validation (which runs before any LLM call) is exercised
+    // here, for both an anonymous and a signed-in caller.
+    check('salary: anonymous is allowed (missing role => 400, not 401)', (await req('POST', '/api/tools/salary-negotiation', null, { role: '' })).status === 400);
+    check('salary: signed-in missing role => 400', (await req('POST', '/api/tools/salary-negotiation', 'tokFree', { role: '' })).status === 400);
 
     // ── Quota gate: pre-seed tool_usage rows to hit the day/month cap ────────
     for (let i = 0; i < TOOLS.LIMITS.jobDecode.free; i++) db.prepare('INSERT INTO tool_usage (user_email,tool_name) VALUES (?,?)').run('free@x.com', TOOLS.LIMITS.jobDecode.tool);
@@ -142,18 +166,39 @@ const server = app.listen(0, async () => {
     for (let i = 0; i < 10; i++) db.prepare('INSERT INTO tool_usage (user_email,tool_name) VALUES (?,?)').run('pro@x.com', TOOLS.LIMITS.jobDecode.tool);
     check('jd decode: Pro passes the gate (400 for short input, not 402)', (await req('POST', '/api/tools/job-description-decode', 'tokPro', { jobText: 'short' })).status === 400);
 
-    // ── Resume A/B Tracker: CRUD + free 2-version cap ───────────────────────
+    // ── Resume A/B Tracker: CRUD + free 3-version cap + analytics gating ─────
     r = await req('GET', '/api/tools/resume-versions', 'tokFree');
     check('versions: list starts empty', r.status === 200 && r.json.versions.length === 0);
     check('versions: unauth 401', (await req('GET', '/api/tools/resume-versions')).status === 401);
-    await req('POST', '/api/tools/resume-version', 'tokFree', { versionName: 'v1', jobsAppliedWith: 10, responsesReceived: 2 });
+    await req('POST', '/api/tools/resume-version', 'tokFree', { versionName: 'v1', jobTag: 'Stripe — PM', jobsAppliedWith: 10, responsesReceived: 2 });
     await req('POST', '/api/tools/resume-version', 'tokFree', { versionName: 'v2', jobsAppliedWith: 8, responsesReceived: 4 });
-    r = await req('POST', '/api/tools/resume-version', 'tokFree', { versionName: 'v3' });
-    check('versions: 3rd on free => 402', r.status === 402);
+    await req('POST', '/api/tools/resume-version', 'tokFree', { versionName: 'v3', jobsAppliedWith: 5, responsesReceived: 1 });
+    r = await req('POST', '/api/tools/resume-version', 'tokFree', { versionName: 'v4' });
+    check('versions: 4th on free => 402 (free cap is 3)', r.status === 402);
     check('versions: name required => 400', (await req('POST', '/api/tools/resume-version', 'tokFree', { versionName: '' })).status === 400);
-    check('versions: Pro can save beyond 2', (await req('POST', '/api/tools/resume-version', 'tokPro', { versionName: 'p1' })).status === 200);
+    check('versions: Pro can save beyond the free cap', (await req('POST', '/api/tools/resume-version', 'tokPro', { versionName: 'p1', resumeText: 'led a team', jobsAppliedWith: 10, responsesReceived: 2 })).status === 200);
+    await req('POST', '/api/tools/resume-version', 'tokPro', { versionName: 'p2', jobsAppliedWith: 8, responsesReceived: 5 });
+
+    // Free user: response-rate analytics + leader are stripped (Pro feature);
+    // the raw counts and the job tag remain (the free basic side-by-side).
     r = await req('GET', '/api/tools/resume-versions', 'tokFree');
-    check('versions: leader is the higher response rate (v2 @ 50%)', r.json.leaderId === r.json.versions.find(v => v.version_name === 'v2').id, JSON.stringify(r.json));
+    check('versions: free response is analytics:false', r.json.analytics === false && r.json.pro === false, r.body);
+    check('versions: free has no leader + no responseRate', r.json.leaderId === null && r.json.versions.every(v => v.responseRate === null), JSON.stringify(r.json.versions));
+    check('versions: free keeps raw counts + job_tag', r.json.versions.some(v => v.job_tag === 'Stripe — PM' && v.jobs_applied_with === 10));
+    check('versions: free cap surfaced as 3', r.json.limit === 3, String(r.json.limit));
+
+    // Pro user: analytics on, leader is the higher response rate (p2 @ ~62%).
+    r = await req('GET', '/api/tools/resume-versions', 'tokPro');
+    check('versions: pro response is analytics:true', r.json.analytics === true && r.json.pro === true);
+    check('versions: pro leader is the higher response rate (p2)', r.json.leaderId === r.json.versions.find(v => v.version_name === 'p2').id, JSON.stringify(r.json));
+
+    // AI diagnosis is Pro-only; gates run before any LLM call.
+    const proVid = r.json.versions.find(v => v.version_name === 'p1').id;
+    check('diagnose: free => 402 pro_only', (await req('POST', '/api/tools/resume-version/' + proVid + '/diagnose', 'tokFree', { jobText: 'x'.repeat(60) })).status === 402);
+    check('diagnose: pro unknown version => 404', (await req('POST', '/api/tools/resume-version/999999/diagnose', 'tokPro', { jobText: 'x'.repeat(60) })).status === 404);
+    check('diagnose: pro too-short JD => 400', (await req('POST', '/api/tools/resume-version/' + proVid + '/diagnose', 'tokPro', { jobText: 'short' })).status === 400);
+
+    r = await req('GET', '/api/tools/resume-versions', 'tokFree');
     const vid = r.json.versions[0].id;
     check('versions: patch stats 200', (await req('PATCH', '/api/tools/resume-version/' + vid, 'tokFree', { jobsAppliedWith: 20, responsesReceived: 9 })).status === 200);
     check('versions: patch someone else\'s id => 404', (await req('PATCH', '/api/tools/resume-version/999999', 'tokFree', {})).status === 404);

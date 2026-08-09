@@ -19,12 +19,29 @@ const PROMPT_VERSION = 1;
 //   'day'   → resets at 00:00 UTC
 //   'month' → resets on the 1st (UTC)
 // resumeVersions is a hard row cap, not a time window.
+//
+// Tier philosophy: FREE = the full basic utility a competitor gives away; PRO =
+// intelligence and outcomes (live data, analytics, optimization). So the Salary
+// Negotiation Script is FREE and unlimited (no `free`/`period` key ⇒ the route
+// never meters it) — Pro adds live market data, email templates and a risk
+// meter, not "more uses". The A/B Tracker saves 3 versions free — Pro adds
+// response-rate analytics, AI diagnosis and unlimited versions.
 const LIMITS = {
   jobDecode:         { free: 3, period: 'day',   tool: 'job_decode' },
   followUp:          { free: 5, period: 'month', tool: 'follow_up' },
   mockInterview:     { free: 1, period: 'month', tool: 'mock_interview' },
-  salaryNegotiation: { free: 1, period: 'month', tool: 'salary_negotiation' },
-  resumeVersions:    { free: 2 },
+  salaryNegotiation: { tool: 'salary_negotiation' }, // FREE + unlimited (no cap)
+  resumeVersions:    { free: 3 },
+};
+
+// Pro-only capability flags, referenced by the routes and surfaced to the client
+// so the UI can pitch the exact intelligence behind each paywall (never just
+// "unlimited"). FREE gets full basic utility; these are the upsell.
+const PRO_FLAGS = {
+  marketData:        'market_data',        // Salary: live median for role + city
+  emailTemplates:    'email_templates',    // Salary: initial / follow-up / final push
+  responseAnalytics: 'response_analytics', // A/B: response-rate per version + leader
+  aiDiagnosis:       'ai_diagnosis',       // A/B: "missing 4 keywords from the JD"
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -231,55 +248,103 @@ function validateMockFeedback(obj) {
   return { ok: true, value: { items, overallScore, summary: str(obj.summary, 600) } };
 }
 
-// ── 5. Salary Negotiation Script (1/month free → Pro) — JSON via Claude ──────
+// ── 5. Salary Negotiation Script — FREE + unlimited; Pro adds intelligence ────
+// FREE tier: a custom counter-offer script + talking points in a professional,
+// generic tone — the full basic utility, no account, no cap.
+// PRO tier (`pro=true`): additionally asks for three ready-to-send email
+// templates (initial counter / follow-up / final push). Live market data and
+// the risk meter are attached server-side (buildSalaryMarket / computeRiskMeter)
+// — the model is never asked to invent a data source.
 // `marketHint` is an optional string the server injects from live JSearch data
-// when RAPIDAPI_KEY is configured; otherwise the model estimates and says so.
-function buildSalaryPrompt(input, marketHint, lang) {
+// for Pro; otherwise the model estimates the range and says so.
+function buildSalaryPrompt(input, marketHint, lang, pro) {
   const zh = lang === 'zh';
   const role = str(input && input.role, 120) || 'the role';
   const location = str(input && input.location, 120) || 'unspecified location';
+  const current = num(input && input.currentBase);
   const offer = num(input && input.offerBase);
   const target = num(input && input.targetBase);
   const competing = str(input && input.competingOffer, 200);
-  const system = 'You are a compensation negotiation coach. You produce a calm, specific counter-offer script grounded in market data, '
+  const system = 'You are a compensation negotiation coach. You produce a calm, specific counter-offer script grounded in market reality, '
     + 'and you are explicit that any range you estimate is an estimate, not a guarantee. Never invent a data source. '
     + (zh ? 'Write all human-readable strings in Simplified Chinese.' : 'Write in English.')
     + ' Return ONLY a JSON object, no markdown.';
+  const proKeys = pro ? `,
+  "marketRange": { "low": number, "high": number, "currency": "USD", "note": "one sentence; say whether this is live data or an estimate" },
+  "emailTemplates": {
+    "initialCounter": "a ready-to-send email opening the negotiation with the counter number",
+    "followUp": "a short, warm nudge if there is no reply after a few days",
+    "finalPush": "a decisive but graceful final ask that signals readiness to accept"
+  }` : '';
   const user = `Create a salary negotiation plan.
 - Role: ${role}
 - Location: ${location}
+- Current salary: ${current ? '$' + current : '(not given)'}
 - Current offer base: ${offer ? '$' + offer : '(not given)'}
 - Target base: ${target ? '$' + target : '(not given)'}
 - Competing offer / leverage: ${competing || '(none)'}
-${marketHint ? '- Live market signal (from job listings): ' + str(marketHint, 500) : '- No live market data available; estimate a realistic band and mark it clearly as an estimate.'}
+${pro ? (marketHint ? '- Live market signal (from job listings): ' + str(marketHint, 500) : '- No live market data available; estimate a realistic band and mark it clearly as an estimate.') : '- Keep the tone professional and broadly applicable; do not cite specific market figures.'}
 
 Return JSON:
 {
-  "marketRange": { "low": number, "high": number, "currency": "USD", "note": "one sentence; say whether this is live data or an estimate" },
   "counterOffer": { "base": number, "note": "why this number is defensible" },
   "talkingPoints": ["3–5 crisp, evidence-based points"],
-  "script": "a ready-to-send 120–180 word message the candidate can adapt"
+  "script": "a ready-to-send 120–180 word message the candidate can adapt"${proKeys}
 }`;
   return { system, user };
 }
 
+// Validate the model output. `marketRange` and `emailTemplates` are optional
+// (Pro-only); the route strips them for free users regardless.
 function validateSalary(obj) {
   if (!obj || typeof obj !== 'object') return { ok: false, error: 'not_object' };
-  const mr = obj.marketRange && typeof obj.marketRange === 'object' ? obj.marketRange : {};
   const co = obj.counterOffer && typeof obj.counterOffer === 'object' ? obj.counterOffer : {};
   const value = {
-    marketRange: {
-      low: mr.low == null ? null : num(mr.low),
-      high: mr.high == null ? null : num(mr.high),
-      currency: str(mr.currency, 8) || 'USD',
-      note: str(mr.note, 300),
-    },
     counterOffer: { base: co.base == null ? null : num(co.base), note: str(co.note, 300) },
     talkingPoints: Array.isArray(obj.talkingPoints) ? obj.talkingPoints.map(x => str(x, 300)).filter(Boolean).slice(0, 5) : [],
     script: str(obj.script, 1600),
   };
+  if (obj.marketRange && typeof obj.marketRange === 'object') {
+    const mr = obj.marketRange;
+    value.marketRange = {
+      low: mr.low == null ? null : num(mr.low),
+      high: mr.high == null ? null : num(mr.high),
+      currency: str(mr.currency, 8) || 'USD',
+      note: str(mr.note, 300),
+    };
+  }
+  if (obj.emailTemplates && typeof obj.emailTemplates === 'object') {
+    const et = obj.emailTemplates;
+    value.emailTemplates = {
+      initialCounter: str(et.initialCounter, 1600),
+      followUp: str(et.followUp, 1600),
+      finalPush: str(et.finalPush, 1600),
+    };
+  }
   if (!value.script) return { ok: false, error: 'missing_script' };
   return { ok: true, value };
+}
+
+// Deterministic risk meter (Pro). Given the counter-offer base and a market
+// band, express how aggressive the ask is versus the market median. Pure and
+// testable — the intelligence is in the comparison, not an LLM guess.
+// Returns null when there is no market band to compare against.
+function computeRiskMeter(counterBase, low, high) {
+  const base = num(counterBase);
+  const lo = low == null ? null : num(low);
+  const hi = high == null ? null : num(high);
+  let median = null;
+  if (lo != null && hi != null) median = (lo + hi) / 2;
+  else if (lo != null) median = lo;
+  else if (hi != null) median = hi;
+  if (!base || !median) return null;
+  const percent = Math.round(((base - median) / median) * 100);
+  let level, note;
+  if (percent <= 0) { level = 'low'; note = `Your ask is at or below the market median — low risk, and you likely have room to ask for more.`; }
+  else if (percent <= 10) { level = 'low'; note = `This ask is ${percent}% above the market median — low risk.`; }
+  else if (percent <= 20) { level = 'moderate'; note = `This ask is ${percent}% above the market median — moderate risk. Anchor it to your leverage.`; }
+  else { level = 'high'; note = `This ask is ${percent}% above the market median — a strong ask; be ready to justify it with concrete leverage.`; }
+  return { level, percent, median: Math.round(median), note };
 }
 
 // ── 6. Resume A/B Tracker — response-rate helper (pure) ──────────────────────
@@ -293,6 +358,7 @@ function summarizeVersions(rows) {
       id: r && r.id,
       version_name: str(r && r.version_name, 120),
       template_used: str(r && r.template_used, 80),
+      job_tag: str(r && r.job_tag, 120),
       jobs_applied_with: applied,
       responses_received: responses,
       responseRate: applied > 0 ? Math.round((responses / applied) * 100) : null,
@@ -309,6 +375,59 @@ function summarizeVersions(rows) {
     }
   }
   return { versions, leaderId: leader ? leader.id : null };
+}
+
+// Response-rate analytics are a Pro capability. For free users the route calls
+// this to strip the computed rate + leader, leaving the raw counts they logged
+// (the basic side-by-side). Pure so the gating is testable without a DB.
+function stripAnalytics(summary) {
+  return {
+    versions: (summary.versions || []).map(v => {
+      const { responseRate, ...rest } = v;
+      return Object.assign(rest, { responseRate: null });
+    }),
+    leaderId: null,
+  };
+}
+
+// AI Diagnosis (Pro): compare one saved resume version against a target job
+// description and surface the keyword gap — "Version A is missing 4 keywords".
+function buildDiagnosisPrompt(resumeText, jobText, lang) {
+  const zh = lang === 'zh';
+  const system = 'You are an ATS keyword analyst. You compare a resume against a specific job description and report, precisely, which '
+    + 'important keywords and skills from the posting are missing from the resume, which are present, and the concrete edits that would close the gap. '
+    + 'Only surface terms that genuinely appear in the job description. '
+    + (zh ? 'Write all human-readable strings in Simplified Chinese.' : 'Write in English.')
+    + ' Return ONLY a JSON object, no markdown.';
+  const user = `Compare this resume version against the job description.
+
+Return JSON:
+{
+  "matchScore": 0-100,
+  "missingKeywords": ["important terms in the JD that are absent from the resume; [] if none"],
+  "presentKeywords": ["important JD terms the resume already covers"],
+  "suggestions": ["2–5 specific, rewritable edits to close the gap"]
+}
+Keep each array to at most 8 concise items.
+
+JOB DESCRIPTION:
+${str(jobText, 8000)}
+
+RESUME VERSION:
+${str(resumeText, 12000)}`;
+  return { system, user };
+}
+
+function validateDiagnosis(obj) {
+  if (!obj || typeof obj !== 'object') return { ok: false, error: 'not_object' };
+  const arr = k => Array.isArray(obj[k]) ? obj[k].map(x => str(x, 200)).filter(Boolean).slice(0, 8) : [];
+  const value = {
+    matchScore: clampScore(num(obj.matchScore)),
+    missingKeywords: arr('missingKeywords'),
+    presentKeywords: arr('presentKeywords'),
+    suggestions: arr('suggestions'),
+  };
+  return { ok: true, value };
 }
 
 // ── 7. Weekly Job Search Report — pure email builder ─────────────────────────
@@ -357,6 +476,7 @@ function buildWeeklyReportEmail(input) {
 module.exports = {
   PROMPT_VERSION,
   LIMITS,
+  PRO_FLAGS,
   OFFER_WEIGHTS,
   scoreOffers,
   normalizeOffer,
@@ -364,7 +484,8 @@ module.exports = {
   buildFollowUpPrompt, FOLLOWUP_TONES,
   buildMockQuestionsPrompt, validateMockQuestions,
   buildMockFeedbackPrompt, validateMockFeedback,
-  buildSalaryPrompt, validateSalary,
-  summarizeVersions,
+  buildSalaryPrompt, validateSalary, computeRiskMeter,
+  summarizeVersions, stripAnalytics,
+  buildDiagnosisPrompt, validateDiagnosis,
   buildWeeklyReportEmail,
 };
