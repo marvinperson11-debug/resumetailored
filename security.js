@@ -144,21 +144,25 @@ function buildCorsOriginChecker(extraOrigins) {
 // every <script>/<link> src across public/ and checking with the browser
 // console under a local server), NOT copied from a generic template — the
 // original ask listed api.openai.com, but this app calls Anthropic; it also
-// didn't account for Google Analytics/AdSense (already live on the landing
-// and dashboard pages), the ElevenLabs browser-direct voice API used by
-// /preview, the esm.sh-hosted React/Remotion modules that same page loads
-// via an import map, or jsPDF from cdnjs. Any of those missing would have
-// silently broken ad revenue, analytics, or a real feature — not "hardened"
-// anything.
+// accounts for Google Analytics, the ElevenLabs browser-direct voice API used
+// by /preview, the esm.sh-hosted React/Remotion modules that same page loads
+// via an import map, jsPDF from cdnjs, and the Google Fonts still used by the
+// app.html signature-font picker (body/heading fonts are self-hosted).
+//
+// AdSense was removed from the whole product (homepage + dashboard), so the
+// pagead2/*.googlesyndication.com/*.doubleclick.net/*.google.com allowances it
+// needed are pruned — zero pages reference them (grep-verified). Google
+// Analytics keeps only its own hosts (googletagmanager / *.google-analytics.com
+// / analytics.google.com); it does not need the ad domains for basic gtag.
 function buildCSP() {
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://cdnjs.cloudflare.com https://esm.sh",
+    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdnjs.cloudflare.com https://esm.sh",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: https:",
     "font-src 'self' https://fonts.gstatic.com data:",
-    "connect-src 'self' https://api.anthropic.com https://api.stripe.com https://api.elevenlabs.io https://esm.sh https://*.google-analytics.com https://analytics.google.com https://*.googlesyndication.com https://*.g.doubleclick.net",
-    "frame-src 'self' https://*.doubleclick.net https://*.googlesyndication.com https://td.doubleclick.net",
+    "connect-src 'self' https://api.anthropic.com https://api.stripe.com https://api.elevenlabs.io https://esm.sh https://*.google-analytics.com https://analytics.google.com",
+    "frame-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
   ].join('; ');

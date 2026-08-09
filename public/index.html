@@ -799,6 +799,36 @@
       .tiers-grid { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; }
     }
 
+    /* ── Offscreen containment (performance) ──
+       The homepage's remaining cost is Style & Layout over a large DOM, not JS
+       or render-blocking. content-visibility:auto lets the browser skip style/
+       layout/paint for each below-the-fold <section> until it's scrolled near,
+       cutting the initial main-thread work. NOT applied to .hero (the LCP /
+       above-the-fold element). `contain-intrinsic-size: auto <fallback>` makes
+       Chrome remember each section's real rendered height, so the reserved
+       space matches actual content and CLS stays 0 (the fallback is only the
+       first-paint guess for sections never yet rendered). Content stays in the
+       DOM and the accessibility tree — this is not display:none, so a11y and
+       SEO are unaffected. */
+    main > section:not(.hero) { content-visibility: auto; }
+    /* Per-section reserved height (measured at the 412px mobile viewport PSI
+       emulates). `auto` lets Chrome swap in each section's real rendered height
+       after first paint; these fallbacks match actual heights so the very first
+       render reserves the right space and CLS stays ~0. nth-of-type(1) is the
+       hero and is intentionally left untouched. */
+    main > section:nth-of-type(2)  { contain-intrinsic-size: auto 760px; }
+    main > section:nth-of-type(3)  { contain-intrinsic-size: auto 1015px; }
+    main > section:nth-of-type(4)  { contain-intrinsic-size: auto 9840px; }
+    main > section:nth-of-type(5)  { contain-intrinsic-size: auto 1460px; }
+    main > section:nth-of-type(6)  { contain-intrinsic-size: auto 610px; }
+    main > section:nth-of-type(7)  { contain-intrinsic-size: auto 2255px; }
+    main > section:nth-of-type(8)  { contain-intrinsic-size: auto 1065px; }
+    main > section:nth-of-type(9)  { contain-intrinsic-size: auto 455px; }
+    main > section:nth-of-type(10) { contain-intrinsic-size: auto 975px; }
+    main > section:nth-of-type(11) { contain-intrinsic-size: auto 1855px; }
+    main > section:nth-of-type(12) { contain-intrinsic-size: auto 1865px; }
+    main > section:nth-of-type(13) { contain-intrinsic-size: auto 3020px; }
+
     /* ── Scroll Reveal ── */
     .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
     .reveal.visible { opacity: 1; transform: none; }
@@ -3454,6 +3484,13 @@
   (function () {
     var canvas = document.getElementById('neuro');
     if (!canvas) return;
+    // The dark WebGL backdrop is retired — #neuro is `display:none !important`
+    // in every theme (see the CSS above). Bail before touching WebGL: compiling
+    // shaders for a permanently-hidden canvas is wasted main-thread work, and on
+    // some GPUs — including the software renderer PageSpeed's mobile run uses —
+    // a shader compile/link failure logs `console.error`, which fails the
+    // "Browser errors were logged to the console" Best Practices audit.
+    try { if (getComputedStyle(canvas).display === 'none') return; } catch (e) { return; }
     var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (!gl) { canvas.style.display = 'none'; return; }
 
@@ -3629,7 +3666,8 @@
       inject('/vendor/gsap.min.js')
         .then(function () { return inject('/vendor/ScrollTrigger.min.js'); })
         .then(function () { return inject('/vendor/lenis.min.js'); })
-        .then(function () { return inject('/site-motion.js'); });
+        .then(function () { return inject('/site-motion.js'); })
+        .catch(function () { /* progressive enhancement — never surface a loader error to the console */ });
     }
     events.forEach(function (e) { window.addEventListener(e, load, { passive: true }); });
     setTimeout(load, 4000);
