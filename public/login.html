@@ -93,6 +93,14 @@
       </form>
 
       <p class="foot" id="switch">New to ResumeTailored? <a onclick="setMode('signup')" style="cursor:pointer;">Create a free account</a></p>
+
+      <!-- Shown instead of the form when a valid session already exists, so the
+           page renders a clear choice rather than silently bouncing back. -->
+      <div id="already" style="display:none;">
+        <p class="sub" id="alreadyMsg" style="margin-bottom:20px;"></p>
+        <button type="button" class="btn btn-primary" id="continueBtn" style="margin-bottom:10px;">Continue</button>
+        <button type="button" class="btn" id="logoutBtn" style="background:#F1EADD;color:#57514A;">Use a different account</button>
+      </div>
     </div>
   </div>
 
@@ -183,7 +191,34 @@
       }).catch(function () {});
     }
 
-    // If already logged in, skip the form and go straight to the target.
+    // When a valid session already exists, show a clear "already signed in"
+    // panel — NOT a silent redirect. The old code called goTarget() the instant
+    // /api/auth/me came back ok, so a signed-in user who reached /login (e.g.
+    // via a nav that still said "Log In") saw the page flash and bounce back to
+    // where they came from, as if the login page never opened. Now the page
+    // stays put and offers Continue / Use a different account.
+    function showAlready(email) {
+      document.getElementById('ttl').textContent = "You're already signed in";
+      document.getElementById('sub').style.display = 'none';
+      document.querySelector('.tabs').style.display = 'none';
+      document.getElementById('oauth').style.display = 'none';
+      document.getElementById('divider').style.display = 'none';
+      document.getElementById('form').style.display = 'none';
+      document.getElementById('switch').style.display = 'none';
+      document.getElementById('alreadyMsg').textContent = email
+        ? ('Signed in as ' + email + '.') : 'You are signed in.';
+      document.getElementById('already').style.display = 'block';
+    }
+    document.getElementById('continueBtn').addEventListener('click', goTarget);
+    document.getElementById('logoutBtn').addEventListener('click', function () {
+      try {
+        localStorage.removeItem('rt_token');
+        localStorage.removeItem('rt_email');
+        localStorage.removeItem('rt_username');
+      } catch (e) {}
+      location.reload();
+    });
+
     (function init() {
       setMode(mode);
       probe('/api/auth/google/status', 'googleBtn');
@@ -191,7 +226,8 @@
       var tok = localStorage.getItem('rt_token');
       if (tok) {
         fetch('/api/auth/me', { headers: { Authorization: 'Bearer ' + tok } })
-          .then(function (r) { if (r.ok) goTarget(); })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) { if (d) showAlready(d.email || localStorage.getItem('rt_email')); })
           .catch(function () {});
       }
     })();

@@ -1,6 +1,6 @@
 /* ============================================================================
    site-fx.css — visual/interaction chrome for the motion + mobile-native
-   layers (grain, custom cursor, bottom sheets, swipe-snap, drawer, thumb nav).
+   layers (grain, bottom sheets, swipe-snap, drawer, thumb nav).
    Loaded only on marketing pages, alongside site-motion.js / mobile-native.js.
    Everything is inert until the JS adds the corresponding element/class, so it
    is safe even if the scripts fail. All heavy motion respects reduced-motion.
@@ -13,18 +13,9 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
 }
 
-/* ---- Custom cursor (desktop) ------------------------------------------ */
-.rt-has-cursor { cursor: none; }
-.rt-has-cursor a, .rt-has-cursor button, .rt-has-cursor .btn, .rt-has-cursor input,
-.rt-has-cursor textarea, .rt-has-cursor select, .rt-has-cursor [role="button"] { cursor: none; }
-#rt-cursor, #rt-cursor-ring { position: fixed; top: 0; left: 0; z-index: 99999; pointer-events: none;
-  border-radius: 50%; will-change: transform; margin-left: -4px; margin-top: -4px; }
-#rt-cursor { width: 8px; height: 8px; background: #1F5C3D; }
-#rt-cursor-ring { width: 34px; height: 34px; margin-left: -17px; margin-top: -17px;
-  border: 1.5px solid rgba(31,92,61,0.5); transition: width .18s, height .18s, background .18s, border-color .18s; }
-.rt-cursor-hot #rt-cursor-ring { width: 52px; height: 52px; margin-left: -26px; margin-top: -26px;
-  background: rgba(31,92,61,0.08); border-color: rgba(31,92,61,0.8); }
-@media (hover: none) { #rt-cursor, #rt-cursor-ring { display: none !important; } .rt-has-cursor { cursor: auto; } }
+/* ---- Custom cursor: removed by request. The native pointer is used
+   everywhere; the JS that built the dot + ring was removed from
+   site-motion.js. ------------------------------------------------------- */
 
 /* ---- Reveal fallback (no-GSAP path) ----------------------------------- */
 [data-reveal] { opacity: 0; transform: translateY(28px); transition: opacity .6s ease, transform .6s ease; }
