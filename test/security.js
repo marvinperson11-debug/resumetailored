@@ -173,6 +173,7 @@ await ok('locks default-src to self and covers every real external dependency', 
     'www.googletagmanager.com',                                 // Google Analytics (still on every page)
     'cdnjs.cloudflare.com',                                     // jsPDF
     'esm.sh',                                                   // /preview's React/Remotion import map
+    'static.cloudflareinsights.com', 'cloudflareinsights.com', // Cloudflare Web Analytics beacon (edge-injected)
   ]) {
     assert.ok(csp.includes(host), `CSP missing ${host}`);
   }

@@ -58,6 +58,10 @@ const server = app.listen(0, async () => {
       check(`${p} 200`, r.status === 200);
       check(`${p} links self-hosted /fonts.css`, /href="\/fonts\.css\?v=[^"]+"/.test(r.body), p);
       check(`${p} preloads the Inter Latin face`, /rel="preload"[^>]*\/fonts\/inter-normal-latin\.woff2[^>]*crossorigin/.test(r.body));
+      // The preload href MUST match the @font-face src byte-for-byte, or the
+      // browser downloads it, never matches it, and warns "preloaded but not
+      // used". fonts.css has NO version query, so the preload must not either.
+      check(`${p} font preload href carries no ?v= (matches fonts.css src)`, !/\/fonts\/(inter|fraunces)-normal-latin\.woff2\?/.test(r.body), p);
       check(`${p} no longer requests body fonts from Google`, !/fonts\.googleapis\.com\/css2/.test(r.body), p);
       check(`${p} drops the gstatic preconnect`, !/fonts\.gstatic\.com/.test(r.body));
     }

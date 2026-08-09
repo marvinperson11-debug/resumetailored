@@ -1,56 +1,44 @@
-# TASK_SUMMARY — Homepage Style-&-Layout containment + CSP cleanup (Perf 83→90+, BP 92→100 attempt)
+# TASK_SUMMARY — Fix the two exact console errors (BP 92→100, Perf font-preload waste)
 
 Date: 2026-08-09. Branch: `claude/markdown-file-response-y8qolt`.
 
-Two targets, both diagnosed with real traces before coding (see `PERF_BP_DIAGNOSTIC.md`).
+You captured the exact live errors from DevTools; both are fixed here with their root causes confirmed locally.
 
-## UPDATE — Best Practices root cause found (the retired WebGL backdrop)
+## Fix 1 — Best Practices: unblock the Cloudflare Insights beacon (CSP)
 
-The CSP cleanup alone did **not** move BP off 92 (you confirmed: still `errors-in-console` + `inspector-issues`). I reproduced the console layer locally via CDP (`Audits` domain + console/pageerror capture) — clean in the sandbox — then found why it only shows on the **live mobile** run:
+**Error:** `Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/…' violates … script-src …` — the browser blocks it and logs a console error → fails `errors-in-console` + `inspector-issues`.
 
-- The homepage has a retired dark WebGL backdrop, `<canvas id="neuro">`, hard-hidden by `#neuro { display:none !important }` in every theme. **But its script still ran** — creating a WebGL context and compiling shaders for a permanently-invisible canvas. It even contains `console.error('Neuro shader error…')` / `console.error('Neuro program link error…')`.
-- On PageSpeed's **mobile** run (a software GPU / SwiftShader), a shader compile/link failure fires that `console.error` → **fails `errors-in-console`**, and the stray WebGL context is the kind of thing the Issues panel flags → `inspector-issues`. It never reproduced locally because headless `--disable-gpu` returns a null context, so the old code bailed before compiling.
+**Root cause:** the Cloudflare **Web Analytics beacon is injected at the edge by Cloudflare itself** — it is *not* in our HTML (grep-verified: zero references in `public/`). Our app-set CSP (`security.js`) didn't allow it, so Cloudflare's own injected script was CSP-blocked on every page.
 
-**Fix (`index.html`):** the `#neuro` script now bails immediately when the canvas computes to `display:none` — *before* it touches WebGL. No context, no shader compile, no `console.error`. Bonus: it stops running a WebGL animation loop for an invisible canvas (a little less main-thread "Other" work). Verified with GPU **enabled** in puppeteer: `#neuro` computes to `display:none`, the guard bails, **0 console errors**.
+**Fix (`security.js` `buildCSP`):**
+- `script-src` += `https://static.cloudflareinsights.com` (the beacon script)
+- `connect-src` += `https://cloudflareinsights.com` (the beacon POSTs RUM data there — allowing the script but not its beacon would just move the error)
 
-Also hardened per your priority list: the deferred animation loader now has a `.catch()` (no unhandled-rejection surface); and the source was swept clean for the other culprits — no `eval`/`new Function`, no inline-handler CSP issues (`'unsafe-inline'` covers them), no deprecated `unload`/`beforeunload`, no sync XHR, no `document.write`.
+(Alternative you could take instead: turn off Web Analytics in the Cloudflare dashboard. I allow-listed it since it's a first-party CF feature and presumably wanted.)
 
-**Expected:** this should clear both BP audits (→ 100) *if* the console error was the WebGL shader (by far the most likely, given it's the only `console.error` on the page and is mobile-GPU-specific). **If BP is still 92 after deploy**, the remaining suspect is GA4's own cookie/Signals Issues-panel warning (inherent to running GA on HTTPS) — at that point the exact text from DevTools → Issues would let me target it, or removing GA from the homepage would guarantee 100 at the cost of homepage analytics. `test/homepage-console-clean.js` guards the WebGL bail + loader `.catch()`. Full suite: **37 green.**
+## Fix 2 — Performance: font preload/URL mismatch (the "preloaded but not used" warnings)
 
----
+**Error:** 4× `The resource …/fonts/inter-normal-latin.woff2 was preloaded using link preload but not used within a few seconds…` (Inter + Fraunces).
 
-_Original two targets (unchanged, still in this PR):_
+**Root cause (confirmed on the served HTML):** the preload href carried a cache-busting query — `/fonts/inter-normal-latin.woff2?v=<build>` — but `fonts.css`'s `@font-face src` references the **un-versioned** URL `/fonts/inter-normal-latin.woff2`. The browser treats those as **different resources**: it fetched the `?v=` preload, never matched it to the font, warned, and then **downloaded the woff2 a second time** for the actual `@font-face`. So the preload was pure waste (and double bytes).
 
-## Diagnostic recap (what the trace actually showed)
+**Fix (`server.js` `_SELF_FONT_LINK`):** dropped the `?v=` from the two font preload hrefs so they match `fonts.css` byte-for-byte. The woff2 are content-stable and already `max-age=2592000` (30d), so they don't need busting. Now: one download, preload actually used, no warning.
+- `as="font"` + `type="font/woff2"` + `crossorigin` were already correct and match the CORS `@font-face` fetch.
+- Above-the-fold usage confirmed: the hero heading uses Fraunces, body/nav use Inter — both preloads are used.
 
-The homepage is **Style-&-Layout-bound, not render-blocking-bound**. Local mobile trace main-thread breakdown: **Style & Layout 2,290 ms**, Script Evaluation only 55 ms, render-blocking **none**. Inline CSS is just ~35 KB (not "270 KB"). So the planned "extract inline CSS to external" would not have helped (and risked FCP) — pivoted, with your approval, to CSS containment.
+## Also verified: all fonts are truly self-hosted
 
-## Target 1 — Performance: `content-visibility` on below-the-fold sections
-
-`public/index.html`: added `content-visibility: auto` to the **12 below-the-fold `<section>`s** (all direct children of `<main>`, **excluding `.hero`** — the LCP/above-the-fold element). The browser now skips style/layout/paint for each offscreen section until it's scrolled near.
-
-- **Measured effect (local mobile trace): Style & Layout 2,290 ms → ~558 ms** (~75% less). Local Performance rose from ~86 to ~89–91 (absolute score is sandbox-noisy; the category delta is the real signal).
-- **CLS kept at 0 (verified):** each section gets a per-section `contain-intrinsic-size: auto <Npx>`, where the fallbacks are the sections' **real heights measured at 412 px — exactly PSI's mobile viewport** (via puppeteer-core). The `auto` keyword makes Chrome remember each section's true rendered height after first paint. **A/B check in the same sandbox: baseline (no containment) CLS = 0.068, with containment = 0.068 — identical**, i.e. the change is CLS-neutral (the 0.068 is a local-sandbox artifact; your live PSI reads 0, and this change does not move it).
-- **Safety constraints all held:** `test/homepage-motion-defer.js` still passes (no script change); hero LCP still CSS-animated (containment excludes `.hero`); nothing is CSS-hidden waiting on JS (`content-visibility` is not `display:none` — content stays in the DOM + a11y tree; reveals are an inline IntersectionObserver, unaffected); Accessibility re-verified **100**; SEO unaffected (content indexable).
-
-## Target 2 — Best Practices: CSP cleanup (best-effort; may need one more round)
-
-`security.js`: pruned the **dead AdSense/DoubleClick allowances** from the CSP — `pagead2.googlesyndication.com`, `*.googlesyndication.com`, `*.doubleclick.net`, `*.google.com` (script-src), the `*.googlesyndication.com`/`*.g.doubleclick.net` (connect-src), and the whole `frame-src` ad list (now just `'self'`). Grep-verified: **zero pages reference any of these** (AdSense was removed earlier), so this is safe and shrinks the header. Google Analytics keeps only its own hosts (`googletagmanager` / `*.google-analytics.com` / `analytics.google.com`).
-
-**Honest status — this may not fully fix BP 92:** I could not read the live report from this environment (PSI API quota-exhausted; sandboxed Chrome can't reach the live URL). By audit weights, **92 ≈ 24/26**, pointing at `errors-in-console` + `inspector-issues` — a live **console error**. Dead allow-list entries don't themselves cause console errors (nothing requests them), so this cleanup is hygiene that *may* remove a stray CSP-blocked request but is **not guaranteed** to be the −8. **If PSI still shows 92 after deploy, please open DevTools → Console + Lighthouse → Best Practices (`errors-in-console` / `inspector-issues`) and paste the exact error** — then I'll ship a targeted fix. (One residual watch-item: if GA4 Google Signals is enabled at the property level it may ping `*.g.doubleclick.net`; with that now removed from the CSP a blocked ping would log a console error. If you see one, that's the fix — re-add just that endpoint.)
-
-## Expected score lift
-
-- **Performance:** 83 → **90+** likely (Style & Layout, the dominant cost, cut ~75%). Not guaranteed to hit exactly 100 — the page still has a large DOM (~1,772 nodes) and a fixed WebGL background; if it lands 88–92, the next lever is trimming DOM/decorative work.
-- **Best Practices:** 92 → **100 if the −8 was ad-domain-related**; otherwise unchanged pending the live console output above.
-- **Accessibility 100 / SEO 100:** unchanged.
+You saw a gstatic `@font-face` in the Elements tab. On the **current served homepage** there is **zero** `gstatic`/`googleapis` reference — the `_selfHostFonts` rewrite strips the Google Fonts link + preconnects at serve time, and `fonts.css` references only local `/fonts/*.woff2` (grep-verified). That gstatic view was a pre-#364 deploy or a cached page. (The only place Google Fonts still legitimately loads is `app.html`'s signature-font picker — Dancing Script/Great Vibes/Satisfy/Caveat — which is behind login and intentionally kept on the CDN.)
 
 ## Tests
 
-- `test/homepage-content-visibility.js` (new) — containment rule present, hero excluded, 12 `contain-intrinsic-size:auto` sizes, no `display:none` hiding.
-- `test/security.js` — updated: CSP must keep GA/Anthropic/Stripe/ElevenLabs/fonts/cdnjs/esm.sh and must **no longer** contain the AdSense/DoubleClick hosts.
-- Full suite: **36 files green.**
+- `test/security.js` — updated: CSP must now include `static.cloudflareinsights.com` + `cloudflareinsights.com` (and still must NOT include the pruned AdSense hosts).
+- `test/font-selfhost.js` — added a guard: the font preload href must carry **no** `?v=` (must match the `fonts.css` src), so this mismatch can't regress.
+- Full suite: **37 files green.**
 
-## Ready for review
+## Expected
 
-Branch pushed; CI expected green. Per your plan you'll merge → deploy → run PSI Mobile 3× → send the median, and I'll record the final before/after here.
+- **Best Practices → 100** (the blocked CF beacon was the console error).
+- **Performance back to 88+** (removes 4 preload warnings + a duplicate woff2 download; content-visibility gains from #364 remain).
+
+CI expected green — merge → deploy → re-run PSI Mobile and send Performance + Best Practices; I'll record the final before/after here.

@@ -157,11 +157,16 @@ function buildCorsOriginChecker(extraOrigins) {
 function buildCSP() {
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdnjs.cloudflare.com https://esm.sh",
+    // static.cloudflareinsights.com serves the Web Analytics beacon that
+    // Cloudflare INJECTS into every page at the edge (it is not in our HTML).
+    // Without it in script-src the injected <script> is CSP-blocked and logs a
+    // console error — which fails the "no browser errors" Best Practices audit.
+    // The beacon then POSTs RUM data to cloudflareinsights.com, hence connect-src.
+    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://cdnjs.cloudflare.com https://esm.sh https://static.cloudflareinsights.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: https:",
     "font-src 'self' https://fonts.gstatic.com data:",
-    "connect-src 'self' https://api.anthropic.com https://api.stripe.com https://api.elevenlabs.io https://esm.sh https://*.google-analytics.com https://analytics.google.com",
+    "connect-src 'self' https://api.anthropic.com https://api.stripe.com https://api.elevenlabs.io https://esm.sh https://*.google-analytics.com https://analytics.google.com https://cloudflareinsights.com",
     "frame-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
