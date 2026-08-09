@@ -185,7 +185,7 @@
       --surface:   #FFFFFF;   /* cards                      */
       --ink:       #191512;   /* near-black warm ink        */
       --ink-soft:  #57514A;   /* body copy                  */
-      --ink-faint: #918A7E;   /* captions / meta            */
+      --ink-faint: #6B6459;   /* captions / meta (WCAG-AA ≥4.5:1 on every light bg) */
       --line:      #E7DFD1;   /* hairline                   */
       --line-2:    #D9CFBC;   /* stronger hairline          */
       --accent:    #1F5C3D;   /* deep forest green          */
@@ -848,6 +848,16 @@
       animation: word-appear 0.8s ease-out forwards;
       transition: transform 0.3s ease, text-shadow 0.3s ease;
     }
+    /* LCP: the hero headline is the largest contentful paint. The per-word
+       stagger (animation-delay up to 740ms via inline styles) + 0.8s fade meant
+       the text wasn't fully painted until ~1.5s, holding LCP well past FCP.
+       Drop the stagger and shorten the fade so the whole headline paints at
+       once, right after first paint — the entrance still reads as a quick fade.
+       prefers-reduced-motion users get it instantly. */
+    .hero h1 .word-animate { animation-delay: 0s !important; animation-duration: .45s; }
+    @media (prefers-reduced-motion: reduce) {
+      .hero h1 .word-animate { animation: none !important; opacity: 1 !important; }
+    }
     .hero h1 .word-animate:hover {
       transform: translateY(-3px);
       text-shadow: 0 2px 18px rgba(31,92,61,0.28);
@@ -870,7 +880,13 @@
       .feat-card, .card { border: 1px solid rgba(0,0,0,0.08); }
     }
   </style>
-  <link rel="stylesheet" href="/site-fx.css"/>
+  <!-- site-fx.css is pure progressive enhancement (grain, custom cursor, reveal
+       fallback, mobile bottom-sheets) — nothing above the fold needs it, so load
+       it off the critical path (was ~320ms of render-blocking on mobile). The
+       media="print" swap makes the browser fetch it without blocking first paint,
+       then applies it on load; <noscript> keeps it working without JS. -->
+  <link rel="stylesheet" href="/site-fx.css" media="print" onload="this.media='all'"/>
+  <noscript><link rel="stylesheet" href="/site-fx.css"/></noscript>
 </head>
 <body>
 
@@ -922,7 +938,7 @@
   <div class="hero-orb orb-2"></div>
   <div class="container">
     <h1><span class="word-animate" style="animation-delay:0ms">Your</span> <span class="word-animate" style="animation-delay:120ms">resume,</span><br /><span class="word-animate blue" style="animation-delay:260ms">perfectly</span> <span class="word-animate blue" style="animation-delay:380ms">tailored</span><br /><span class="word-animate" style="animation-delay:520ms">to</span> <span class="word-animate" style="animation-delay:620ms">every</span> <span class="word-animate" style="animation-delay:740ms">job.</span></h1>
-    <p class="hero-sub">Paste your resume + a job posting. Our AI rewrites it with the right keywords and writes a compelling cover letter in under 30 seconds — <strong style="color:#57514A;">unlimited and free</strong>, no credit card.</p>
+    <p class="hero-sub">Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.</p>
     <div class="hero-cta">
       <div class="hero-cta-row">
         <a href="/dashboard" class="btn btn-primary btn-lg">Start Unlimited Free Tailoring →</a>
@@ -1012,12 +1028,12 @@
         </div>
         <div style="text-align:center;margin-bottom:20px;">
           <div style="font-size:56px;font-weight:900;background:linear-gradient(135deg,#22c55e,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">82</div>
-          <div data-i18n="promo_card_match" style="font-size:13px;color:#22c55e;font-weight:700;">Strong Match</div>
+          <div data-i18n="promo_card_match" style="font-size:13px;color:#15803d;font-weight:700;">Strong Match</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-          <span style="background:rgba(34,197,94,0.12);color:#22c55e;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">Python</span>
-          <span style="background:rgba(34,197,94,0.12);color:#22c55e;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">data analysis</span>
-          <span style="background:rgba(34,197,94,0.12);color:#22c55e;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">SQL</span>
+          <span style="background:rgba(34,197,94,0.12);color:#15803d;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">Python</span>
+          <span style="background:rgba(34,197,94,0.12);color:#15803d;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">data analysis</span>
+          <span style="background:rgba(34,197,94,0.12);color:#15803d;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">SQL</span>
           <span style="filter:blur(4px);background:rgba(239,68,68,0.12);color:#f87171;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">machine learning</span>
           <span style="filter:blur(4px);background:rgba(239,68,68,0.12);color:#f87171;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">Tableau</span>
         </div>
@@ -3301,17 +3317,23 @@
   function applyLang(lang) {
     var isZh = lang === 'zh';
 
-    // 1. data-i18n elements
+    // 1. data-i18n elements. Skip the write when the content is already correct
+    // (true for the server-rendered English default) — setting innerHTML always
+    // re-parses + re-paints, and re-painting the LCP element after this script
+    // runs pushed LCP well past FCP. The guard makes the English pass a no-op.
     document.querySelectorAll('[data-i18n]').forEach(function(el) {
       var key = el.getAttribute('data-i18n');
-      if (I18N[lang] && I18N[lang][key] !== undefined) el.innerHTML = I18N[lang][key];
+      var v = I18N[lang] && I18N[lang][key];
+      if (v !== undefined && el.innerHTML !== v) el.innerHTML = v;
     });
 
-    // 2. TRANS selector-based translations
+    // 2. TRANS selector-based translations (same skip-if-identical guard — the
+    // hero-sub is the LCP element, so avoiding its redundant re-paint matters).
     TRANS.forEach(function(t) {
       var all = document.querySelectorAll(t[0]);
       var el = t[1] !== null && t[1] !== undefined ? all[t[1]] : all[0];
-      if (el) el.innerHTML = isZh ? t[3] : t[2];
+      var v = isZh ? t[3] : t[2];
+      if (el && el.innerHTML !== v) el.innerHTML = v;
     });
 
     // 3. Bulk: repeat elements with identical text
