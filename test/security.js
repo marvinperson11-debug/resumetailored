@@ -169,14 +169,19 @@ await ok('locks default-src to self and covers every real external dependency', 
   // present, or that page breaks the moment this header goes live.
   for (const host of [
     'api.anthropic.com', 'api.stripe.com', 'api.elevenlabs.io', // server-called / browser-direct APIs
-    'fonts.googleapis.com', 'fonts.gstatic.com',                // Google Fonts (every SEO page)
-    'www.googletagmanager.com', 'pagead2.googlesyndication.com',// Analytics + AdSense (index.html, app.html)
-    'cdnjs.cloudflare.com',                                      // jsPDF
-    'esm.sh',                                                    // /preview's React/Remotion import map
+    'fonts.googleapis.com', 'fonts.gstatic.com',                // Google Fonts (app.html signature-font picker)
+    'www.googletagmanager.com',                                 // Google Analytics (still on every page)
+    'cdnjs.cloudflare.com',                                     // jsPDF
+    'esm.sh',                                                   // /preview's React/Remotion import map
   ]) {
     assert.ok(csp.includes(host), `CSP missing ${host}`);
   }
   assert.ok(!csp.includes('api.openai.com'), 'this app calls Anthropic, not OpenAI — should not appear');
+  // AdSense was removed from the whole product, so its ad-network allowances are
+  // pruned from the CSP — no page references them (guards against them creeping back).
+  for (const dead of ['pagead2.googlesyndication.com', 'googlesyndication.com', 'doubleclick.net']) {
+    assert.ok(!csp.includes(dead), `CSP should no longer allow ${dead} (AdSense removed)`);
+  }
 });
 
 console.log('escapeHtml');
