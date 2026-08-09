@@ -946,8 +946,14 @@ function _versionAssetRefs(html) {
 const _FONT_KEEP_ON_CDN = /Dancing\+Script|Great\+Vibes|Satisfy|Caveat|\$\{/;
 const _GF_LINK_RE = /<link\b[^>]*href="https:\/\/fonts\.googleapis\.com\/css2\?[^"]*"[^>]*>/g;
 const _GF_PRECONNECT_RE = /<link\b[^>]*href="https:\/\/fonts\.(?:googleapis|gstatic)\.com"[^>]*>\s*/g;
-const _SELF_FONT_LINK = `<link rel="preload" href="/fonts/inter-normal-latin.woff2?v=${ASSET_VERSION}" as="font" type="font/woff2" crossorigin>`
-  + `<link rel="preload" href="/fonts/fraunces-normal-latin.woff2?v=${ASSET_VERSION}" as="font" type="font/woff2" crossorigin>`
+// The preload hrefs MUST match the @font-face src URLs in fonts.css byte-for-byte
+// or the browser treats them as different resources — it downloads the preload,
+// never matches it to the font, and logs "preloaded but not used within a few
+// seconds" (plus a wasted double download). fonts.css references the woff2
+// WITHOUT a version query, so the preloads must not carry one either. The woff2
+// are content-stable and already long-cached (30d), so they don't need busting.
+const _SELF_FONT_LINK = `<link rel="preload" href="/fonts/inter-normal-latin.woff2" as="font" type="font/woff2" crossorigin>`
+  + `<link rel="preload" href="/fonts/fraunces-normal-latin.woff2" as="font" type="font/woff2" crossorigin>`
   + `<link rel="stylesheet" href="/fonts.css?v=${ASSET_VERSION}">`;
 function _selfHostFonts(html) {
   if (process.env.RT_LEGACY_FONTS === '1') return html; // measurement escape hatch (A/B the font change)
