@@ -4,6 +4,23 @@ Date: 2026-08-09. Branch: `claude/markdown-file-response-y8qolt`.
 
 Two targets, both diagnosed with real traces before coding (see `PERF_BP_DIAGNOSTIC.md`).
 
+## UPDATE — Best Practices root cause found (the retired WebGL backdrop)
+
+The CSP cleanup alone did **not** move BP off 92 (you confirmed: still `errors-in-console` + `inspector-issues`). I reproduced the console layer locally via CDP (`Audits` domain + console/pageerror capture) — clean in the sandbox — then found why it only shows on the **live mobile** run:
+
+- The homepage has a retired dark WebGL backdrop, `<canvas id="neuro">`, hard-hidden by `#neuro { display:none !important }` in every theme. **But its script still ran** — creating a WebGL context and compiling shaders for a permanently-invisible canvas. It even contains `console.error('Neuro shader error…')` / `console.error('Neuro program link error…')`.
+- On PageSpeed's **mobile** run (a software GPU / SwiftShader), a shader compile/link failure fires that `console.error` → **fails `errors-in-console`**, and the stray WebGL context is the kind of thing the Issues panel flags → `inspector-issues`. It never reproduced locally because headless `--disable-gpu` returns a null context, so the old code bailed before compiling.
+
+**Fix (`index.html`):** the `#neuro` script now bails immediately when the canvas computes to `display:none` — *before* it touches WebGL. No context, no shader compile, no `console.error`. Bonus: it stops running a WebGL animation loop for an invisible canvas (a little less main-thread "Other" work). Verified with GPU **enabled** in puppeteer: `#neuro` computes to `display:none`, the guard bails, **0 console errors**.
+
+Also hardened per your priority list: the deferred animation loader now has a `.catch()` (no unhandled-rejection surface); and the source was swept clean for the other culprits — no `eval`/`new Function`, no inline-handler CSP issues (`'unsafe-inline'` covers them), no deprecated `unload`/`beforeunload`, no sync XHR, no `document.write`.
+
+**Expected:** this should clear both BP audits (→ 100) *if* the console error was the WebGL shader (by far the most likely, given it's the only `console.error` on the page and is mobile-GPU-specific). **If BP is still 92 after deploy**, the remaining suspect is GA4's own cookie/Signals Issues-panel warning (inherent to running GA on HTTPS) — at that point the exact text from DevTools → Issues would let me target it, or removing GA from the homepage would guarantee 100 at the cost of homepage analytics. `test/homepage-console-clean.js` guards the WebGL bail + loader `.catch()`. Full suite: **37 green.**
+
+---
+
+_Original two targets (unchanged, still in this PR):_
+
 ## Diagnostic recap (what the trace actually showed)
 
 The homepage is **Style-&-Layout-bound, not render-blocking-bound**. Local mobile trace main-thread breakdown: **Style & Layout 2,290 ms**, Script Evaluation only 55 ms, render-blocking **none**. Inline CSS is just ~35 KB (not "270 KB"). So the planned "extract inline CSS to external" would not have helped (and risked FCP) — pivoted, with your approval, to CSS containment.

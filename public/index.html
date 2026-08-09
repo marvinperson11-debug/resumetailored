@@ -3484,6 +3484,13 @@
   (function () {
     var canvas = document.getElementById('neuro');
     if (!canvas) return;
+    // The dark WebGL backdrop is retired — #neuro is `display:none !important`
+    // in every theme (see the CSS above). Bail before touching WebGL: compiling
+    // shaders for a permanently-hidden canvas is wasted main-thread work, and on
+    // some GPUs — including the software renderer PageSpeed's mobile run uses —
+    // a shader compile/link failure logs `console.error`, which fails the
+    // "Browser errors were logged to the console" Best Practices audit.
+    try { if (getComputedStyle(canvas).display === 'none') return; } catch (e) { return; }
     var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (!gl) { canvas.style.display = 'none'; return; }
 
@@ -3659,7 +3666,8 @@
       inject('/vendor/gsap.min.js')
         .then(function () { return inject('/vendor/ScrollTrigger.min.js'); })
         .then(function () { return inject('/vendor/lenis.min.js'); })
-        .then(function () { return inject('/site-motion.js'); });
+        .then(function () { return inject('/site-motion.js'); })
+        .catch(function () { /* progressive enhancement — never surface a loader error to the console */ });
     }
     events.forEach(function (e) { window.addEventListener(e, load, { passive: true }); });
     setTimeout(load, 4000);
