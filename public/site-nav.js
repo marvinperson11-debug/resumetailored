@@ -62,6 +62,14 @@
     // ── Styles (self-contained; !important beats each page's own nav CSS,
     //    including the dark tool-page navs) ──────────────────────────────────
     var css = '' +
+      // Cross-document (MPA) view transitions: cross-fade between our static
+      // pages instead of a hard white flash on every full navigation. Chromium
+      // animates it; other browsers ignore it. This nav is injected on every
+      // marketing/SEO/blog/tool page, so the rule is present on both ends of a
+      // navigation (and the homepage carries it inline), which is what a
+      // same-origin MPA transition requires. Off under reduced-motion.
+      '@view-transition{navigation:auto;}' +
+      '@media(prefers-reduced-motion:reduce){@view-transition{navigation:none;}}' +
       '#snav{position:sticky;top:0;z-index:1000;background:rgba(250,247,240,.9)!important;' +
         'border-bottom:1px solid #E7DFD1!important;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);font-family:\'Inter\',-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;}' +
       '#snav *{box-sizing:border-box;}' +
