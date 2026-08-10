@@ -88,8 +88,9 @@ const SAMPLE_ROW = {
 };
 
 const cases = {
-  // Create-a-Link. This one is a hard guarantee: it must never change.
-  'link.html': () => _shareResumeHtml(SAMPLE_ROW, ORIGIN),
+  // Create-a-Link (/r/:slug) — rendered exactly as the route serves it
+  // (indexable, so shared resumes can be found by search + AI crawlers).
+  'link.html': () => _shareResumeHtml(SAMPLE_ROW, ORIGIN, { indexable: true }),
   // A Website Builder v2 site document.
   'site-doc.html': () => _renderPersonalSite(
     { ...SAMPLE_ROW, config: GRID_CONFIG }, ORIGIN,

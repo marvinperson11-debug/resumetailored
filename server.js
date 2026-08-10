@@ -3192,7 +3192,7 @@ function _shareChips(lines, cls) {
 }
 
 // Renders a stored resume to a standalone HTML page. Used by two features:
-//  • Share links (/r/:slug) — noindex, carries a "Made with ResumeTailored"
+//  • Share links (/r/:slug) — indexable, carries a "Made with ResumeTailored"
 //    footer, canonical URL /r/<slug>.
 //  • Personal websites (/site/:name) — a Pro feature: indexable, watermark-free
 //    (no footer), canonical URL from opts.canonicalUrl.
@@ -4839,10 +4839,10 @@ app.get('/r/:slug', (req, res) => {
   }
   try { db.prepare('UPDATE shared_resumes SET views = views + 1 WHERE slug = ?').run(slug); } catch (_) {}
   const origin = `${req.protocol}://${req.get('host')}`;
-  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  res.setHeader('X-Robots-Tag', 'index, follow');
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache');
-  res.send(_shareResumeHtml(row, origin));
+  res.send(_shareResumeHtml(row, origin, { indexable: true }));
 });
 
 // ─── Personal portfolio website (Pro feature) ─────────────────────────────────
