@@ -1,0 +1,61 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="_brand.css">
+<style>
+  .stage{width:1200px;height:627px;display:flex;color:#fff;
+    background:
+      radial-gradient(90% 120% at 12% 18%, #2E7D53 0%, rgba(46,125,83,0) 55%),
+      radial-gradient(80% 120% at 92% 92%, #153F2A 0%, rgba(21,63,42,0) 60%),
+      linear-gradient(135deg,#1F5C3D 0%, #17492F 55%, #123A26 100%);}
+  .mesh{position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(40% 55% at 80% 10%, rgba(180,86,46,.30), transparent 60%),
+      radial-gradient(50% 60% at 20% 95%, rgba(46,125,83,.35), transparent 60%);}
+  .noise{position:absolute;inset:0;opacity:.5;pointer-events:none;
+    background:radial-gradient(circle at 50% 50%, rgba(255,255,255,.06), transparent 60%)}
+  .left{flex:1;padding:64px 0 64px 68px;display:flex;flex-direction:column;position:relative;z-index:2}
+  .brand .mark{width:48px;height:48px;font-size:22px;background:rgba(255,255,255,.14);
+    box-shadow:none;border:1px solid rgba(255,255,255,.22)}
+  .brand .name{font-size:24px;color:#fff}
+  .brand .name b{color:#fff}.brand .name .ai{color:#F0C9B4}
+  h1{font-family:var(--serif);font-weight:600;font-size:66px;line-height:1.0;letter-spacing:-.03em;margin-top:38px}
+  h1 .hl.terra{color:#F0C9B4}
+  p{font-size:24px;line-height:1.45;color:rgba(255,255,255,.82);font-weight:500;margin-top:22px;max-width:520px}
+  .row{display:flex;align-items:center;gap:20px;margin-top:auto}
+  .cta{padding:19px 30px;font-size:23px;background:#fff;color:var(--forest)}
+  .cta .arrow{width:30px;height:30px;background:rgba(31,92,61,.14)}
+  .cta .arrow svg{width:16px;height:16px;stroke:var(--forest);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .note{font-weight:700;font-size:19px;color:rgba(255,255,255,.7)}
+  /* product peek */
+  .right{width:430px;position:relative;z-index:2;display:grid;place-items:center}
+  .card{width:330px;background:var(--paper);color:var(--ink);border-radius:20px;padding:30px 30px 26px;
+    box-shadow:0 40px 80px rgba(0,0,0,.35);transform:rotate(3deg)}
+  .card .nm{font-family:var(--serif);font-weight:700;font-size:26px}
+  .card .tl{color:var(--terra);font-weight:700;font-size:15px;margin:3px 0 16px;letter-spacing:.02em}
+  .ln{height:9px;border-radius:5px;background:var(--cream-alt);margin:9px 0}
+  .ln.g{background:rgba(46,125,83,.24)}
+  .ln.w70{width:70%}.ln.w90{width:90%}.ln.w50{width:50%}
+  .tag{position:absolute;top:70px;right:36px;background:var(--forest);color:#fff;font-weight:800;font-size:15px;
+    padding:10px 16px;border-radius:12px;transform:rotate(3deg);box-shadow:0 14px 30px rgba(0,0,0,.3);display:flex;gap:9px;align-items:center}
+  .tag svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+</style></head>
+<body><div class="stage">
+  <div class="mesh"></div><div class="noise"></div>
+  <div class="left">
+    <div class="brand"><div class="mark">R</div><div class="name"><b>Resume</b>Tailored <span class="ai">AI</span></div></div>
+    <h1>One résumé,<br>tailored to <span class="hl terra">every job.</span></h1>
+    <p>Paste a job link. Claude rewrites your résumé and cover letter to match — free and unlimited.</p>
+    <div class="row">
+      <span class="cta">Try it free<span class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+      <span class="note">No credit card</span>
+    </div>
+  </div>
+  <div class="right">
+    <div class="card">
+      <div class="nm">Alex Rivera</div>
+      <div class="tl">SENIOR PRODUCT MANAGER</div>
+      <div class="ln g w90"></div><div class="ln w70"></div>
+      <div class="ln g w50"></div><div class="ln w90"></div><div class="ln w70"></div>
+    </div>
+    <div class="tag"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Matched 94%</div>
+  </div>
+</div></body></html>
