@@ -173,3 +173,39 @@ I diagnosed the cause and wrote the exact fix, but **I cannot perform the Cloudf
 2. **I do it via API** — if you create a **Cloudflare API token scoped to the `resumetailored.com` zone** (Zone → Bot Management / AI Crawl settings edit permission) and share it with me, I'll disable the managed robots.txt / AI-bot block via the API and re-verify the live output. (Prefer a short-lived, zone-scoped token you can revoke afterward.)
 
 Which do you want? Nothing in the codebase needs to change to resolve this — our `robots.txt` is already correct.
+
+---
+
+## Update — 2026-08-10 (follow-up: `/r/` indexing + live re-verify)
+
+### robots.txt is STILL serving Cloudflare's `Disallow: /` block ⚠️
+
+After you reported disabling the Cloudflare-managed robots.txt, I re-fetched the live file (cache-busted, `https://resumetailored.com/robots.txt?cb=<ts>`) and the injected block is **still present** — `# BEGIN Cloudflare Managed content` and nine `Disallow: /` lines for `GPTBot`, `ClaudeBot`, `CCBot`, `Google-Extended`, `Applebot-Extended`, `Amazonbot`, `Bytespider`, `meta-externalagent`, `CloudflareBrowserRenderingCrawler`. **The crawler block is not yet lifted on the live edge.** Likely one of:
+
+1. **Cloudflare edge cache** — Cloudflare caches `/robots.txt`. Purge it: Dashboard → **Caching → Configuration → Purge Cache → Custom Purge** → enter `https://resumetailored.com/robots.txt` (or Purge Everything). Then re-check.
+2. **Only half the feature was turned off** — the live block contains *both* a `Content-Signal:` policy line *and* the `Disallow: /` rules. If you disabled only "Content Signals" (or only the block-list) the other half persists. In **AI Crawl Control**, make sure **"Manage robots.txt" / "Add managed robots.txt" is fully OFF** (not just the content-signal sub-option).
+3. **Applied at the wrong scope** — confirm the toggle was changed on the **`resumetailored.com` zone** (not a different zone / account-level template that doesn't apply here).
+
+Re-run to confirm success (expect `0`):
+```bash
+curl -s "https://resumetailored.com/robots.txt?cb=$(date +%s)" | grep -c "BEGIN Cloudflare Managed content"
+```
+Tell me when you've purged/re-toggled and I'll re-verify the live file end-to-end.
+
+### `/r/:slug` shared resumes are now indexable ✅ (code change, shipped in this branch)
+
+Per your instruction, future public shared resumes can now be indexed by Google + AI search. The **only** change to shared resumes is the crawler directive — content, footer, expiry, view counting, unguessable slug, and the renderer are all untouched:
+
+- `server.js` `/r/:slug` route: `X-Robots-Tag` header `noindex, nofollow` → **`index, follow`**, and `_shareResumeHtml(row, origin)` → **`_shareResumeHtml(row, origin, { indexable: true })`** (flips the page `<meta name="robots">` to `index,follow`).
+- `test/render-snapshot.js` + `test/golden/link.html`: the `/r/` byte-identical snapshot regenerated — the **only** diff is that one robots line (`noindex,nofollow` → `index,follow`). Full suite passes.
+- Docstring + `CLAUDE.md` factual lines updated from "noindex" to "indexable". No robots.txt block on `/r/` (there never was one), no auth added, nothing else changed.
+
+### Sitemap — intentionally left unchanged (already correct) ✅
+
+`public/sitemap.xml` needs **no** change to support indexing of future public `/r/...` resumes, and I made none:
+
+- `/r/` URLs are **dynamic, per-user, unguessable slugs that do not exist yet** (no customers). A sitemap can only list real, canonical, 200-status URLs — it cannot enumerate resumes that haven't been created, and there are none to add. Adding entries now would mean **placeholder URLs**, which you explicitly ruled out.
+- Enumerating every `/r/` slug in the public sitemap once they exist would also **publish every user's private share link** — the opposite of how these unlisted links are meant to work — so a dynamic `/r/` sitemap is the wrong tool, not a missing one.
+- Indexing of `/r/` pages does **not** depend on the sitemap: it depends on the pages being (a) crawlable — robots.txt already does not block `/r/` — and (b) indexable — now fixed above. Discovery happens through the inbound links users share (LinkedIn, email, etc.), which is exactly how UGC resume pages get found. The existing sitemap architecture already handles the site's canonical marketing/tool/SEO surface correctly, so per your instruction it is left alone.
+
+**Net:** the one blocker left is the live Cloudflare robots.txt (item ⚠️ above), which is on the Cloudflare side — purge the cache / confirm the managed-robots.txt toggle is fully off, and I'll re-verify.
