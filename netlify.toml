@@ -18,6 +18,13 @@
   to = "/preview.html"
   status = 200
 
+# /yourname is a placeholder string from the personal-website examples that
+# Google mistakenly crawled as a real URL (it 404s). 301 it to the homepage.
+[[redirects]]
+  from = "/yourname"
+  to = "/"
+  status = 301
+
 [[redirects]]
   from = "/"
   to = "/index.html"

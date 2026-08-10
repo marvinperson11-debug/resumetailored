@@ -897,6 +897,13 @@ for (const [flat, slug] of Object.entries(ALTERNATIVE_REDIRECTS)) {
   app.get(`/${flat}-alternative`, (req, res) => res.redirect(301, `/alternatives/${slug}`));
 }
 
+// /yourname is a placeholder string (personal-website examples show
+// "yourname.resumetailored.com" and "/site/yourname"); Google extracted it as a
+// URL and crawled https://resumetailored.com/yourname, which 404s. It maps to no
+// real page, so 301 it to the homepage to clear the Search Console 404 and funnel
+// any stray link there. Must run BEFORE express.static.
+app.get('/yourname', (req, res) => res.redirect(301, '/'));
+
 // ── Cache-busting for CSS/JS referenced by HTML pages ────────────────────────
 // The no-cache headers above are necessary but NOT sufficient: Cloudflare
 // (the CDN in front of Railway) silently overrides Cache-Control for
