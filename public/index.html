@@ -826,11 +826,15 @@
        DOM and the accessibility tree — this is not display:none, so a11y and
        SEO are unaffected. */
     main > section:not(.hero) { content-visibility: auto; }
+    /* Anchor targets (#pricing, #templates, …) must clear the 64px sticky nav
+       when jumped to, or the section title hides underneath it. */
+    main > section[id] { scroll-margin-top: 80px; }
     /* Per-section reserved height (measured at the 412px mobile viewport PSI
        emulates). `auto` lets Chrome swap in each section's real rendered height
        after first paint; these fallbacks match actual heights so the very first
        render reserves the right space and CLS stays ~0. nth-of-type(1) is the
-       hero and is intentionally left untouched. */
+       hero and is intentionally left untouched. Order (Aug 2026): … cta-banner(9),
+       New Tools(10), What's New(11), Pricing(12), FAQ(13, moved to the bottom). */
     main > section:nth-of-type(2)  { contain-intrinsic-size: auto 760px; }
     main > section:nth-of-type(3)  { contain-intrinsic-size: auto 1015px; }
     main > section:nth-of-type(4)  { contain-intrinsic-size: auto 9840px; }
@@ -839,10 +843,10 @@
     main > section:nth-of-type(7)  { contain-intrinsic-size: auto 2255px; }
     main > section:nth-of-type(8)  { contain-intrinsic-size: auto 1065px; }
     main > section:nth-of-type(9)  { contain-intrinsic-size: auto 455px; }
-    main > section:nth-of-type(10) { contain-intrinsic-size: auto 975px; }
-    main > section:nth-of-type(11) { contain-intrinsic-size: auto 1855px; }
-    main > section:nth-of-type(12) { contain-intrinsic-size: auto 1865px; }
-    main > section:nth-of-type(13) { contain-intrinsic-size: auto 3020px; }
+    main > section:nth-of-type(10) { contain-intrinsic-size: auto 1855px; }
+    main > section:nth-of-type(11) { contain-intrinsic-size: auto 1865px; }
+    main > section:nth-of-type(12) { contain-intrinsic-size: auto 3020px; }
+    main > section:nth-of-type(13) { contain-intrinsic-size: auto 975px; }
 
     /* ── Scroll Reveal ── */
     .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
@@ -2331,78 +2335,6 @@
   </div>
 </section>
 
-<!-- FAQ -->
-<section class="section section-gray">
-  <div class="container">
-    <div class="section-eyebrow">Common Questions</div>
-    <h2 class="section-title">Frequently asked <span>questions</span></h2>
-    <div class="faq-list">
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Is it really free to start?</span>
-          <span class="faq-arrow">+</span>
-        </div>
-        <div class="faq-a">Yes — the free tier gives you unlimited AI resume tailoring with no credit card required. You can sign up and get your first tailored resume in under 2 minutes.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          <span>How does the ATS scanner work?</span>
-          <span class="faq-arrow">+</span>
-        </div>
-        <div class="faq-a">The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — mirroring how real ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> — no account needed.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Can I import job descriptions from LinkedIn or Indeed by URL?</span>
-          <span class="faq-arrow">+</span>
-        </div>
-        <div class="faq-a">Yes. Paste a job URL and our AI extracts the full job description automatically. Supported job boards include LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and 40+ more. No manual copying required.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Does ResumeTailored AI support Chinese translation?</span>
-          <span class="faq-arrow">+</span>
-        </div>
-        <div class="faq-a">Yes. Our AI translation feature converts resumes written in Chinese (or any language) into professional English before tailoring. The full platform interface is also available in Simplified Chinese — toggle with one click. Chinese payment methods are accepted.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Will it fabricate experience I don't have?</span>
-          <span class="faq-arrow">+</span>
-        </div>
-        <div class="faq-a">Never. Our AI strictly rewrites and reframes your existing experience using the job's language — it never adds skills or experience you don't have. You stay 100% truthful while communicating your real value more clearly.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          <span>What AI model does it use?</span>
-          <span class="faq-arrow">+</span>
-        </div>
-        <div class="faq-a">We use Anthropic's Claude — the same AI trusted by Fortune 500 companies. It's significantly better at nuanced writing than older or cheaper models, which is why the output actually sounds like a talented human wrote it.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          <span>How is this different from Jobscan or Resume.io?</span>
-          <span class="faq-arrow">+</span>
-        </div>
-        <div class="faq-a">Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. Resume.io is a resume builder with templates. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          <span>Can I cancel Pro anytime?</span>
-          <span class="faq-arrow">+</span>
-        </div>
-        <div class="faq-a">Yes, completely. Month-to-month, no contracts, no cancellation fees. You keep full Pro access through the end of your billing period when you cancel. Use the cancel page or email us and we'll handle it within 1 hour.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          <span>What formats can I export my resume in?</span>
-          <span class="faq-arrow">+</span>
-        </div>
-        <div class="faq-a">Download it as a PDF or a formatted .docx Word document, copy it as plain text (perfect for pasting into ATS forms), or <strong>share it as a private web link</strong> that opens right in the browser — ideal for sending on LinkedIn or by email with no download needed. All formats are included in free and Pro plans.</div>
-      </div>
-    </div>
-  </div>
-</section>
 
 <!-- NEW FEATURES — promotional cards -->
 <section class="section" id="new-tools" style="padding:60px 0;">
@@ -2638,6 +2570,79 @@
           <li style="font-size:12px;color:#2E7D53;font-weight:700;">Saves $99+ vs. Rezi Lifetime</li>
         </ul>
         <button class="btn btn-full" style="background:#1F5C3D;color:#fff;border:none;" onclick="openLifetimeModal()">Get Lifetime Access — $129 →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section section-gray">
+  <div class="container">
+    <div class="section-eyebrow">Common Questions</div>
+    <h2 class="section-title">Frequently asked <span>questions</span></h2>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Is it really free to start?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">Yes — the free tier gives you unlimited AI resume tailoring with no credit card required. You can sign up and get your first tailored resume in under 2 minutes.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>How does the ATS scanner work?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">The ATS Scanner compares your resume against a job description and calculates a keyword match score from 0–100%. It identifies which required keywords are present, which are missing, and provides 5 specific AI-written rewrite suggestions — mirroring how real ATS platforms like Taleo, Workday, Greenhouse, and Lever rank candidates. Try it free at <a href="/score" style="color:#2E7D53;">resumetailored.com/score</a> — no account needed.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Can I import job descriptions from LinkedIn or Indeed by URL?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">Yes. Paste a job URL and our AI extracts the full job description automatically. Supported job boards include LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and 40+ more. No manual copying required.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Does ResumeTailored AI support Chinese translation?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">Yes. Our AI translation feature converts resumes written in Chinese (or any language) into professional English before tailoring. The full platform interface is also available in Simplified Chinese — toggle with one click. Chinese payment methods are accepted.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Will it fabricate experience I don't have?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">Never. Our AI strictly rewrites and reframes your existing experience using the job's language — it never adds skills or experience you don't have. You stay 100% truthful while communicating your real value more clearly.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>What AI model does it use?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">We use Anthropic's Claude — the same AI trusted by Fortune 500 companies. It's significantly better at nuanced writing than older or cheaper models, which is why the output actually sounds like a talented human wrote it.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>How is this different from Jobscan or Resume.io?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">Jobscan scores your resume and tells you what keywords to add — you still have to do the writing. Resume.io is a resume builder with templates. ResumeTailored AI actually rewrites your resume for you, using the exact language of the job posting, in 30 seconds.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>Can I cancel Pro anytime?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">Yes, completely. Month-to-month, no contracts, no cancellation fees. You keep full Pro access through the end of your billing period when you cancel. Use the cancel page or email us and we'll handle it within 1 hour.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>What formats can I export my resume in?</span>
+          <span class="faq-arrow">+</span>
+        </div>
+        <div class="faq-a">Download it as a PDF or a formatted .docx Word document, copy it as plain text (perfect for pasting into ATS forms), or <strong>share it as a private web link</strong> that opens right in the browser — ideal for sending on LinkedIn or by email with no download needed. All formats are included in free and Pro plans.</div>
       </div>
     </div>
   </div>
@@ -3274,8 +3279,8 @@
     ['.cta-banner p', null, 'Join thousands of job seekers who\'ve already tailored their resumes with AI. Free tier available — no credit card required.', '加入数千名已使用AI定制简历的求职者。免费版可用——无需信用卡。'],
     ['.cta-banner .btn-white', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
     // ── FAQ ─────────────────────────────────────────────────────────────────
-    ['.section-eyebrow', 5, 'Common Questions', '常见问题'],
-    ['.section-title', 6, 'Frequently asked <span>questions</span>', '常见<span>问题解答</span>'],
+    ['.section-eyebrow', 9, 'Common Questions', '常见问题'],
+    ['.section-title', 10, 'Frequently asked <span>questions</span>', '常见<span>问题解答</span>'],
     ['.faq-q span:first-child', 0, 'Is it really free to start?', '真的可以免费开始吗？'],
     ['.faq-a', 0, 'Yes — the free tier gives you unlimited AI resume tailoring with no credit card required. You can sign up and get your first tailored resume in under 2 minutes.', '是的——免费版每天为你提供1次AI简历定制，无需信用卡。注册后2分钟内即可获得第一份定制简历。'],
     ['.faq-q span:first-child', 1, 'Will it fabricate experience I don\'t have?', '它会编造我没有的经历吗？'],
@@ -3289,8 +3294,8 @@
     ['.faq-q span:first-child', 5, 'What formats can I export my resume in?', '简历可以导出哪些格式？'],
     ['.faq-a', 5, 'Your tailored resume is available to copy as plain text (perfect for pasting into ATS forms) or download as a formatted .docx Word document. Both are included in free and Pro plans.', '你的定制简历可以复制为纯文本（非常适合粘贴到ATS表格）或下载为格式化的.docx Word文档。两种格式均包含在免费版和专业版中。'],
     // ── Pricing ─────────────────────────────────────────────────────────────
-    ['.section-eyebrow', 6, 'Pricing', '定价'],
-    ['.section-title', 7, 'Simple, <span>transparent</span> pricing', '简单<span>透明</span>的定价'],
+    ['.section-eyebrow', 8, 'Pricing', '定价'],
+    ['.section-title', 9, 'Simple, <span>transparent</span> pricing', '简单<span>透明</span>的定价'],
     ['.cc-title', null, 'How we compare to Jobscan &amp; Rezi', '我们与Jobscan和Rezi的对比'],
     ['.cc-sub', null, 'Same result. No $49.95/month. No weak cover letters.', '同样的结果，不需要$49.95/月，没有质量差的求职信。'],
     ['.cc-table thead th', 0, 'Feature', '功能'],
@@ -3748,6 +3753,31 @@
         });
       })
       .catch(function () {});
+  })();
+  </script>
+
+  <!-- Anchor-scroll correction. The sections use content-visibility:auto with
+       mobile-measured contain-intrinsic-size fallbacks, so the browser's first
+       jump to an in-page anchor (#pricing, #templates, …) is estimated from
+       oversized off-screen heights and overshoots into empty space on desktop
+       — you'd land past the section and have to scroll back up. Re-run
+       scrollIntoView (which respects scroll-margin-top for the sticky nav) a
+       few times as the real sections render, so it settles on the section. -->
+  <script>
+  (function () {
+    function correct(id) {
+      if (!id) return;
+      var el = document.getElementById(id);
+      if (!el) return;
+      [0, 120, 300, 600, 1000].forEach(function (t) {
+        setTimeout(function () { el.scrollIntoView({ block: 'start' }); }, t);
+      });
+    }
+    if (location.hash.length > 1) {
+      window.addEventListener('load', function () { correct(location.hash.slice(1)); });
+    }
+    // Same-page anchor clicks (nav "Pricing", footer links) fire hashchange.
+    window.addEventListener('hashchange', function () { correct(location.hash.slice(1)); });
   })();
   </script>
 </body>
