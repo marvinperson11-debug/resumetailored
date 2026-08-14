@@ -54,11 +54,14 @@ check('.nav-actions block found', !!navActions);
 if (navActions) {
   const block = navActions[1];
   const langIdx = block.indexOf('id="langToggleBtn"');
-  const loginIdx = block.indexOf('data-i18n="nav_login"');
+  // The login control is now a "Login" button that opens the login chooser
+  // (data-nav="login"), not a plain nav_login link — but it must still sit
+  // between the 中文 toggle and the CTA: order [中文][Login][CTA].
+  const loginIdx = block.indexOf('data-nav="login"');
   const ctaIdx = block.indexOf('data-i18n="nav_cta"');
   check('中文 toggle is inside .nav-actions', langIdx !== -1);
-  check('中文 comes before Log In inside .nav-actions', langIdx !== -1 && loginIdx !== -1 && langIdx < loginIdx);
-  check('Log In comes before the CTA (order [中文][Login][CTA])', loginIdx !== -1 && ctaIdx !== -1 && loginIdx < ctaIdx);
+  check('中文 comes before Login inside .nav-actions', langIdx !== -1 && loginIdx !== -1 && langIdx < loginIdx);
+  check('Login comes before the CTA (order [中文][Login][CTA])', loginIdx !== -1 && ctaIdx !== -1 && loginIdx < ctaIdx);
 }
 // The old layout floated the toggle AFTER the actions group (a sibling of, not
 // inside, .nav-actions). Make sure that pattern is gone.
