@@ -376,6 +376,25 @@ function validateMatchResult(obj) {
 // thin scheduler. No external images — a CSS lockup, same house rule as the
 // other transactional emails.
 const EMPLOYER_NURTURE_STEPS = 3;
+// Days after the FIRST nurture email that each step becomes eligible.
+const NURTURE_STEP_DELAY_DAYS = { 1: 0, 2: 3, 3: 7 };
+// Given the steps already sent (map step->sentAtMs) and the current time,
+// return the next step that is DUE, or null. Pure so the scheduler script is a
+// thin wrapper and the pacing is unit-testable. Later steps are paced relative
+// to when step 1 was sent; each step is emitted at most once.
+function nurtureStepDue(sentSteps, now) {
+  const sent = sentSteps || {};
+  const firstAt = sent[1] || null;
+  const DAY = 24 * 60 * 60 * 1000;
+  for (let step = 1; step <= EMPLOYER_NURTURE_STEPS; step++) {
+    if (sent[step]) continue;
+    if (step > 1 && !firstAt) return null;
+    const eligibleAt = step === 1 ? 0 : firstAt + (NURTURE_STEP_DELAY_DAYS[step] || 0) * DAY;
+    if (now >= eligibleAt) return step;
+    return null;
+  }
+  return null;
+}
 function buildEmployerNurtureEmail(step, ctx) {
   const c = ctx || {};
   const company = normStr(c.companyName) || 'there';
@@ -410,8 +429,8 @@ function buildEmployerNurtureEmail(step, ctx) {
 module.exports = {
   WORK_MODES, JOB_TYPES, APPLICATION_STATUSES, EMPLOYER_LIMITS, REMOTE_PREFS, CONTACT_REQUEST_STATUSES, GIG_TYPES,
   INTERVIEW_MODES, INTERVIEW_STATUSES,
-  EMPLOYER_TIERS, EMPLOYER_TIER_NAMES, SCREENER_TYPES, EMPLOYER_NURTURE_STEPS, MATCH_PROMPT_VERSION,
-  tierConfig, canPostJob, resolveEmployerTier, applyMatchGate, validateScreenerQuestions, buildEmployerNurtureEmail,
+  EMPLOYER_TIERS, EMPLOYER_TIER_NAMES, SCREENER_TYPES, EMPLOYER_NURTURE_STEPS, NURTURE_STEP_DELAY_DAYS, MATCH_PROMPT_VERSION,
+  tierConfig, canPostJob, resolveEmployerTier, applyMatchGate, validateScreenerQuestions, buildEmployerNurtureEmail, nurtureStepDue,
   buildApplicantMatchPrompt, validateMatchResult,
   validateJobPosting, validateApplicationStatus, validateRating,
   validateCandidateProfile, validateContactRequestStatus, validateInterview,

@@ -87,6 +87,15 @@ check('nurture step 1 mentions the 2 free posts and $49', /2 free/.test(EH.build
 check('nurture returns null past the last step', EH.buildEmployerNurtureEmail(4, {}) === null);
 check('nurture personalizes the company name', /Acme/.test(EH.buildEmployerNurtureEmail(1, { companyName: 'Acme' }).subject));
 
+// ── nurture pacing (pure) ────────────────────────────────────────────────────
+const T0 = 1000000000000; const DAY = 86400000;
+check('pacing: step 1 is due when nothing has been sent', EH.nurtureStepDue({}, T0) === 1);
+check('pacing: step 2 is NOT due the same day as step 1', EH.nurtureStepDue({ 1: T0 }, T0 + DAY) === null);
+check('pacing: step 2 becomes due 3 days after step 1', EH.nurtureStepDue({ 1: T0 }, T0 + 3 * DAY) === 2);
+check('pacing: step 3 becomes due 7 days after step 1', EH.nurtureStepDue({ 1: T0, 2: T0 + 3 * DAY }, T0 + 7 * DAY) === 3);
+check('pacing: nothing left once all 3 sent', EH.nurtureStepDue({ 1: T0, 2: T0 + 3 * DAY, 3: T0 + 7 * DAY }, T0 + 30 * DAY) === null);
+check('pacing: is idempotent — a sent step is never re-emitted', EH.nurtureStepDue({ 1: T0 }, T0 + 100 * DAY) !== 1);
+
 // ── application status / rating ─────────────────────────────────────────────
 check('validateApplicationStatus accepts a real stage', EH.validateApplicationStatus('interview'));
 check('validateApplicationStatus is case-insensitive', EH.validateApplicationStatus('Hired'));
