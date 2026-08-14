@@ -1,0 +1,140 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="_brand.css">
+<style>
+  .page{width:1280px;background:var(--cream);font-family:var(--sans);color:var(--ink);position:relative;overflow:hidden}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 56px}
+  .grainpg{position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(90% 50% at 100% 0%, rgba(46,125,83,.07), transparent 60%),
+    radial-gradient(70% 40% at 0% 8%, rgba(180,86,46,.05), transparent 60%);}
+  section{position:relative;z-index:1}
+
+  /* hero */
+  .hero{padding:92px 0 46px;text-align:center}
+  .eyebrow{font-size:16px;letter-spacing:.22em}
+  .hero h1{font-family:var(--serif);font-weight:600;font-size:66px;line-height:1.02;letter-spacing:-.03em;margin:20px auto 0;max-width:900px}
+  .hero h1 em{font-style:italic;color:var(--forest)}
+  .hero p{font-size:23px;line-height:1.5;color:var(--muted);font-weight:500;margin:24px auto 0;max-width:680px}
+  .heronote{display:inline-flex;gap:10px;align-items:center;margin-top:26px;background:var(--paper);border:1px solid var(--border);
+    border-radius:999px;padding:12px 22px;font-weight:700;font-size:16px}
+  .heronote .dot{width:9px;height:9px;border-radius:50%;background:var(--forest-2);box-shadow:0 0 0 4px rgba(46,125,83,.16)}
+
+  /* pricing cards */
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;padding:44px 0 8px}
+  .card{background:var(--paper);border:1px solid var(--border);border-radius:22px;padding:38px 34px;display:flex;flex-direction:column;
+    box-shadow:0 10px 30px rgba(25,21,18,.05)}
+  .card.feat{border:2px solid var(--forest);box-shadow:0 24px 60px rgba(31,92,61,.16);position:relative}
+  .card.feat .tag{position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:var(--forest);color:#fff;
+    font-weight:800;font-size:13px;letter-spacing:.08em;padding:7px 16px;border-radius:999px}
+  .kicker{font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--forest-2)}
+  .cardname{font-family:var(--serif);font-weight:600;font-size:30px;margin:6px 0 4px}
+  .cardfor{font-size:16px;color:var(--muted);font-weight:600;min-height:44px}
+  .price{display:flex;align-items:baseline;gap:8px;margin:16px 0 2px}
+  .price b{font-family:var(--serif);font-weight:700;font-size:44px;color:var(--ink)}
+  .price span{font-size:16px;color:var(--muted);font-weight:600}
+  .pricesub{font-size:15px;color:var(--muted);font-weight:600;margin-bottom:22px}
+  .feats2{list-style:none;display:flex;flex-direction:column;gap:13px;margin-bottom:26px}
+  .feats2 li{display:flex;gap:12px;align-items:flex-start;font-size:16.5px;line-height:1.35;font-weight:500}
+  .feats2 svg{flex:none;width:20px;height:20px;stroke:var(--forest-2);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;margin-top:2px}
+  .cbtn{margin-top:auto;text-align:center;font-weight:800;font-size:17px;border-radius:12px;padding:15px;border:1.5px solid var(--forest);
+    color:var(--forest);background:transparent}
+  .cbtn.solid{background:var(--forest);color:#fff;border-color:var(--forest);box-shadow:0 12px 26px rgba(31,92,61,.24)}
+
+  /* value strip */
+  .strip{margin:56px 0 0;background:var(--forest);border-radius:24px;padding:44px 48px;color:#fff}
+  .strip h2{font-family:var(--serif);font-weight:600;font-size:30px;text-align:center;margin-bottom:30px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:28px}
+  .v h3{display:flex;gap:10px;align-items:center;font-family:var(--sans);font-weight:800;font-size:18px;margin-bottom:7px}
+  .v h3 svg{width:22px;height:22px;stroke:#F0C9B4;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .v p{font-size:15.5px;line-height:1.45;color:rgba(255,255,255,.8);font-weight:500}
+
+  /* closing cta */
+  .close{text-align:center;padding:58px 0 92px}
+  .close h2{font-family:var(--serif);font-weight:600;font-size:40px;letter-spacing:-.02em}
+  .close p{font-size:19px;color:var(--muted);font-weight:500;margin:14px auto 26px;max-width:560px}
+  .cta{padding:18px 34px;font-size:20px;margin:0 auto}
+  .cta .arrow{width:32px;height:32px;background:rgba(255,255,255,.18)}
+  .cta .arrow svg{width:17px;height:17px;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .brandrow{display:flex;justify-content:center;align-items:center;gap:12px;margin-bottom:40px}
+  .brandrow .mark{width:46px;height:46px;font-size:21px}
+  .brandrow .name{font-size:23px}
+</style></head>
+<body><div class="page"><div class="grainpg"></div>
+
+  <section class="wrap hero">
+    <div class="brandrow brand"><div class="mark">R</div><div class="name"><b>Resume</b>Tailored <span class="ai">for Teams</span></div></div>
+    <div class="eyebrow" style="color:var(--forest-2);font-weight:700;text-transform:uppercase">For employers, HR &amp; career services</div>
+    <h1>Give your people the tool that <em>gets them hired.</em></h1>
+    <p>Equip departing employees, students, or your whole team with AI resume tailoring, ATS scoring and cover letters — under one plan, one invoice, your branding.</p>
+    <div class="heronote"><span class="dot"></span>Powered by Anthropic&rsquo;s Claude · Bilingual EN / 中文</div>
+  </section>
+
+  <section class="wrap">
+    <div class="cards">
+      <div class="card">
+        <div class="kicker">Team</div>
+        <div class="cardname">For growing teams</div>
+        <div class="cardfor">Agencies, startups &amp; recruiting teams who want Pro for everyone.</div>
+        <div class="price"><b>$15</b><span>/ seat / mo</span></div>
+        <div class="pricesub">billed annually · min. 3 seats · 25% off Pro</div>
+        <ul class="feats2">
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Every Pro feature for each seat</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Admin dashboard &amp; bulk invites</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Premium templates + resume video</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Consolidated billing</li>
+        </ul>
+        <div class="cbtn">Start a team</div>
+      </div>
+
+      <div class="card feat">
+        <div class="tag">MOST POPULAR</div>
+        <div class="kicker">Outplacement</div>
+        <div class="cardname">For offboarding</div>
+        <div class="cardfor">Give laid-off employees a real head start on their next role.</div>
+        <div class="price"><b>$69</b><span>/ person</span></div>
+        <div class="pricesub">one-time · 6 months full Pro · volume pricing 50+</div>
+        <ul class="feats2">
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>6 months of Pro per departing employee</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Co-branded landing page &amp; invite email</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>No seat management — send &amp; done</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Volume: $49 (50+) · custom (200+)</li>
+        </ul>
+        <div class="cbtn solid">Book a 15-min call</div>
+      </div>
+
+      <div class="card">
+        <div class="kicker">Enterprise &amp; Partners</div>
+        <div class="cardname">For scale</div>
+        <div class="cardfor">Universities, bootcamps &amp; staffing firms serving many job seekers.</div>
+        <div class="price"><b>Custom</b></div>
+        <div class="pricesub">annual · white-label &amp; API available</div>
+        <ul class="feats2">
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Unlimited or pooled seats</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>SSO, white-label &amp; API access</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Usage reporting &amp; SLA</li>
+          <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Dedicated onboarding &amp; support</li>
+        </ul>
+        <div class="cbtn">Talk to us</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap">
+    <div class="strip">
+      <h2>Why teams choose ResumeTailored</h2>
+      <div class="grid4">
+        <div class="v"><h3><svg viewBox="0 0 24 24"><path d="M12 2 4 7v6c0 5 3.5 7.5 8 9 4.5-1.5 8-4 8-9V7z"/><path d="m9 12 2 2 4-4"/></svg>Better writing</h3><p>Built on Claude — resumes read human, not like keyword soup.</p></div>
+        <div class="v"><h3><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>ATS-ready</h3><p>Every resume scored and formatted to pass automated screening.</p></div>
+        <div class="v"><h3><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h5"/></svg>One invoice</h3><p>Consolidated billing, admin controls, and simple bulk onboarding.</p></div>
+        <div class="v"><h3><svg viewBox="0 0 24 24"><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>Bilingual</h3><p>Full English &amp; Simplified Chinese — UI and AI output.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap close">
+    <h2>Support your people. Strengthen your brand.</h2>
+    <p>Whether you&rsquo;re offboarding a team or equipping thousands of students, we&rsquo;ll tailor a plan to fit. Setup takes a day.</p>
+    <span class="cta">Book a 15-minute call<span class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+    <div class="url" style="margin-top:22px;font-size:17px">resumetailored.com/teams · teams@resumetailored.com</div>
+  </section>
+
+</div></body></html>
