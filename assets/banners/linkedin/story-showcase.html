@@ -1,0 +1,81 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="_brand.css">
+<style>
+  .stage{width:1080px;height:1920px;display:flex;flex-direction:column;justify-content:center;padding:120px 84px 108px;
+    background:
+      radial-gradient(70% 40% at 100% 0%, rgba(46,125,83,.12), transparent 60%),
+      radial-gradient(80% 40% at 0% 100%, rgba(180,86,46,.08), transparent 60%),
+      var(--cream);}
+  .brand{justify-content:center;position:absolute;top:112px;left:0;right:0}
+  .brand .mark{width:58px;height:58px;font-size:27px}
+  .brand .name{font-size:29px}
+  .eyebrow{text-align:center;font-size:22px;margin:0 0 26px}
+  h1{font-family:var(--serif);font-weight:600;font-size:96px;line-height:.98;letter-spacing:-.03em;text-align:center}
+  h1 em{font-style:italic;color:var(--forest)}
+  h1 .hl.terra{color:var(--terra)}
+  .sub{text-align:center;font-size:30px;line-height:1.45;color:var(--muted);font-weight:500;margin:34px auto 0;max-width:760px}
+
+  /* product mock */
+  .mock{position:relative;margin:78px auto 0;width:800px}
+  .card{background:var(--paper);border:1px solid var(--border);border-radius:28px;padding:50px 50px 46px;
+    box-shadow:0 50px 100px rgba(25,21,18,.16)}
+  .chead{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+  .nm{font-family:var(--serif);font-weight:700;font-size:44px}
+  .tl{color:var(--terra);font-weight:700;font-size:22px;letter-spacing:.03em;margin-top:4px}
+  .ring{width:132px;height:132px;border-radius:50%;flex:none;display:grid;place-items:center;
+    background:conic-gradient(var(--forest-2) 0 94%, var(--cream-alt) 0);}
+  .ring .in{width:100px;height:100px;border-radius:50%;background:var(--paper);display:grid;place-items:center;text-align:center;line-height:1}
+  .ring .in b{font-family:var(--serif);font-weight:700;font-size:38px;color:var(--forest)}
+  .ring .in span{font-size:15px;font-weight:700;color:var(--muted);letter-spacing:.08em}
+  .sec{font-weight:800;font-size:19px;letter-spacing:.16em;text-transform:uppercase;color:var(--forest-2);margin:26px 0 16px}
+  .bul{display:flex;gap:16px;align-items:flex-start;margin:15px 0}
+  .bul .mk{flex:none;width:26px;height:26px;border-radius:7px;background:rgba(46,125,83,.16);display:grid;place-items:center;margin-top:3px}
+  .bul .mk svg{width:16px;height:16px;stroke:var(--forest);fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round}
+  .bul p{font-size:26px;line-height:1.35;color:var(--ink)}
+  .bul p mark{background:rgba(180,86,46,.16);color:var(--terra);border-radius:4px;padding:0 4px;font-weight:700}
+  .tag{position:absolute;top:-34px;right:-24px;background:var(--forest);color:#fff;font-weight:800;font-size:24px;
+    padding:16px 26px;border-radius:16px;box-shadow:0 22px 44px rgba(31,92,61,.4);display:flex;gap:12px;align-items:center;transform:rotate(3deg)}
+  .tag svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+
+  .trust{display:flex;justify-content:center;gap:16px;margin-top:52px}
+  .trust span{display:inline-flex;align-items:center;gap:11px;background:var(--paper);border:1px solid var(--border);
+    border-radius:999px;padding:15px 26px;font-weight:700;font-size:23px;color:var(--ink);box-shadow:0 8px 22px rgba(25,21,18,.05)}
+  .trust svg{width:22px;height:22px;stroke:#2E7D53;fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+  .foot{position:absolute;bottom:96px;left:0;right:0;text-align:center}
+  .cta{padding:26px 46px;font-size:32px;margin:0 auto}
+  .cta .arrow{width:40px;height:40px;background:rgba(255,255,255,.18)}
+  .cta .arrow svg{width:20px;height:20px;stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .url{font-size:28px;margin-top:26px}
+</style></head>
+<body><div class="stage">
+  <div class="grain"></div>
+  <div class="brand"><div class="mark">R</div><div class="name"><b>Resume</b>Tailored <span class="ai">AI</span></div></div>
+  <div class="eyebrow">Free · Powered by Claude</div>
+  <h1>Rewritten for<br>the <span class="hl terra">exact job.</span></h1>
+  <p class="sub">Paste a job link and watch your résumé match it — keywords, ordering, tone.</p>
+
+  <div class="mock">
+    <div class="tag"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>ATS match 94%</div>
+    <div class="card">
+      <div class="chead">
+        <div><div class="nm">Alex Rivera</div><div class="tl">SENIOR PRODUCT MANAGER</div></div>
+        <div class="ring"><div class="in"><span></span><b>94%</b><span>MATCH</span></div></div>
+      </div>
+      <div class="sec">Tailored highlights</div>
+      <div class="bul"><span class="mk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><p>Drove <mark>+38% activation</mark> leading a 0→1 payments platform</p></div>
+      <div class="bul"><span class="mk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><p>Shipped <mark>A/B experimentation</mark> across 6 product teams</p></div>
+      <div class="bul"><span class="mk"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><p>Cut checkout drop-off <mark>21%</mark> with data-driven roadmap</p></div>
+    </div>
+  </div>
+
+  <div class="trust">
+    <span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Free &amp; unlimited</span>
+    <span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>ATS scanner</span>
+    <span><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Cover letters</span>
+  </div>
+
+  <div class="foot">
+    <span class="cta">Tailor mine free<span class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></span>
+    <div class="url">resumetailored.com</div>
+  </div>
+</div></body></html>

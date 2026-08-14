@@ -1,0 +1,44 @@
+/* ResumeTailored — shared brand tokens for LinkedIn promo kit */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --cream:#FAF7F0; --cream-alt:#F1EADD; --paper:#FFFFFF;
+  --forest:#1F5C3D; --forest-dark:#153F2A; --forest-2:#2E7D53;
+  --terra:#B4562E; --red:#B23A2E;
+  --ink:#191512; --muted:#57514A;
+  --border:#E7DFD1; --border-2:#D9CFBC;
+  --serif:'Fraunces',Georgia,'Times New Roman',serif;
+  --sans:'Inter','Helvetica Neue',Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--cream)}
+.stage{position:relative;overflow:hidden;font-family:var(--sans);color:var(--ink);
+  background:var(--cream);-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+
+/* paper grain + soft light */
+.grain{position:absolute;inset:0;pointer-events:none;z-index:-1;
+  background:
+    radial-gradient(120% 90% at 8% 0%, rgba(255,255,255,.9), rgba(255,255,255,0) 55%),
+    radial-gradient(90% 80% at 100% 100%, rgba(46,125,83,.06), rgba(46,125,83,0) 60%),
+    radial-gradient(70% 60% at 100% 0%, rgba(180,86,46,.05), rgba(180,86,46,0) 60%);}
+
+/* brand lockup */
+.brand{display:flex;align-items:center;gap:14px}
+.brand .mark{display:grid;place-items:center;background:var(--forest);color:#fff;
+  border-radius:14px;font-family:var(--serif);font-weight:900;box-shadow:0 8px 22px rgba(31,92,61,.28)}
+.brand .name{font-family:var(--sans);font-weight:800;letter-spacing:-.02em;line-height:1}
+.brand .name b{color:var(--forest)}
+.brand .name .ai{color:var(--terra)}
+
+.eyebrow{font-family:var(--sans);font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--forest-2)}
+.chip{display:inline-flex;align-items:center;gap:10px;background:var(--paper);border:1px solid var(--border);
+  border-radius:999px;font-weight:700;color:var(--ink)}
+.chip .dot{width:9px;height:9px;border-radius:50%;background:var(--forest-2);box-shadow:0 0 0 4px rgba(46,125,83,.16)}
+.hl{position:relative;white-space:nowrap}
+.hl.terra{color:var(--terra)}
+.hl.forest{color:var(--forest)}
+.underline{background:linear-gradient(transparent 62%, rgba(180,86,46,.28) 0);}
+.cta{display:inline-flex;align-items:center;gap:12px;background:var(--forest);color:#fff;
+  font-weight:800;border-radius:999px;box-shadow:0 14px 30px rgba(31,92,61,.30)}
+.cta .arrow{display:grid;place-items:center;background:rgba(255,255,255,.16);border-radius:50%}
+.url{font-family:var(--sans);font-weight:700;color:var(--muted)}
