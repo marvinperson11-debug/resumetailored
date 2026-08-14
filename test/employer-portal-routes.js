@@ -77,8 +77,8 @@ const server = app.listen(0, async () => {
     const setProfile = await req('POST', '/api/employer/profile', 'tokBoss', { companyName: 'Acme Health', website: 'https://acme.health' });
     check('creates the employer profile', setProfile.status === 200 && setProfile.json.companyName === 'Acme Health', setProfile.body);
     const s1 = await req('GET', '/api/employer/status', 'tokBoss');
-    check('status after setup: is an employer, not Pro, 0 active jobs', s1.json.isEmployer === true && s1.json.pro === false && s1.json.activeJobs === 0);
-    check('free active-post limit surfaced', s1.json.freeActiveJobLimit === 3);
+    check('status after setup: is an employer, free tier, 0 active jobs', s1.json.isEmployer === true && s1.json.pro === false && s1.json.tier === 'free' && s1.json.activeJobs === 0);
+    check('free lifetime job limit (2) surfaced', s1.json.freeLifetimeJobLimit === 2 && s1.json.jobsRemaining === 2 && s1.json.canPostJob === true);
 
     // ── posting jobs + validation ────────────────────────────────────────────
     const badPost = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: '' }));
@@ -96,10 +96,13 @@ const server = app.listen(0, async () => {
     const gigJob = list2.json.jobs.find(j => j.title === 'Event Staff');
     check('gig job carries isGig + rate + schedule', gigJob && gigJob.isGig === true && gigJob.gigRate === 25 && gigJob.gigSchedule === 'Sat 9am-5pm');
 
-    // ── free tier active-post cap (3) ────────────────────────────────────────
-    await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Job 3' }));
-    const capped = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Job 4 over cap' }));
-    check('free plan blocks a 4th active post', capped.status === 402 && capped.json.error === 'quota', capped.body);
+    // ── free tier LIFETIME cap (2 posts EVER) ────────────────────────────────
+    // p1 and the gig posting above are posts #1 and #2 — the free lifetime
+    // allowance. The third post must be blocked.
+    const sAt2 = await req('GET', '/api/employer/status', 'tokBoss');
+    check('status shows both lifetime posts used', sAt2.json.jobsPostedLifetime === 2 && sAt2.json.jobsRemaining === 0 && sAt2.json.canPostJob === false);
+    const capped = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Job 3 over lifetime cap' }));
+    check('free plan blocks the 3rd post EVER (lifetime cap)', capped.status === 402 && capped.json.error === 'quota' && capped.json.code === 'lifetime_job_limit', capped.body);
 
     // ── editing ───────────────────────────────────────────────────────────────
     const editBad = await req('PUT', '/api/employer/jobs/' + p1.json.id, 'tokBoss', { title: '' });
@@ -112,11 +115,10 @@ const server = app.listen(0, async () => {
     // ── close / reopen (status-only PUT) ─────────────────────────────────────
     const closeIt = await req('PUT', '/api/employer/jobs/' + p1.json.id, 'tokBoss', { status: 'closed' });
     check('closes a job via status-only update', closeIt.status === 200 && closeIt.json.status === 'closed');
-    const sAfterClose = await req('GET', '/api/employer/status', 'tokBoss');
-    check('closing a post frees up the active-post cap', sAfterClose.json.activeJobs === 2, String(sAfterClose.json.activeJobs));
-    // Cap was full with 3 active before closing one — now there's room again.
-    const afterCloseCanPost = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Job 5 after close' }));
-    check('posting works again after closing one to free the cap', afterCloseCanPost.status === 200, afterCloseCanPost.body);
+    // v2: the lifetime cap does NOT decrease when a post is closed/archived —
+    // a free employer who has posted twice still cannot post a third.
+    const afterCloseStillCapped = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Job after close still blocked' }));
+    check('closing a post does NOT free the lifetime cap', afterCloseStillCapped.status === 402 && afterCloseStillCapped.json.code === 'lifetime_job_limit', afterCloseStillCapped.body);
 
     // ── cross-account isolation ───────────────────────────────────────────────
     const rivalList = await req('GET', '/api/employer/jobs', 'tokRival');

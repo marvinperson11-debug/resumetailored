@@ -620,6 +620,45 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_employer_messages_thread ON employer_messages(employer_email, candidate_email);
 `);
 
+// ─── Employer Portal v2 (tiers, lifetime cap, AI matches, nurture) ───────────
+// Additive migrations + new tables layered on the existing employer schema.
+// `jobs_posted_lifetime` is the monotonic counter that backs the free plan's
+// "2 posts EVER" rule — it is ONLY ever incremented (on a successful create),
+// never decremented on archive/delete, so a free employer can't reclaim a slot.
+_ensureColumn('employer_profiles', 'jobs_posted_lifetime', 'jobs_posted_lifetime INTEGER NOT NULL DEFAULT 0');
+_ensureColumn('employer_subscribers', 'tier', "tier TEXT NOT NULL DEFAULT 'pro'");
+_ensureColumn('employer_subscribers', 'status', "status TEXT NOT NULL DEFAULT 'active'");
+_ensureColumn('employer_subscribers', 'current_period_end', 'current_period_end INTEGER');
+_ensureColumn('job_postings', 'screener_questions', "screener_questions TEXT DEFAULT ''");
+// Existing free employers predate the lifetime counter; seed it from how many
+// postings they already have so the cap is honored from their real history
+// rather than resetting everyone to 0.
+try {
+  db.prepare(`UPDATE employer_profiles SET jobs_posted_lifetime = (
+    SELECT COUNT(*) FROM job_postings WHERE job_postings.employer_email = employer_profiles.email
+  ) WHERE jobs_posted_lifetime = 0`).run();
+} catch (e) { /* fresh db: no rows yet */ }
+db.exec(`
+  CREATE TABLE IF NOT EXISTS employer_ai_matches (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id          INTEGER NOT NULL,
+    candidate_email TEXT NOT NULL,
+    score           INTEGER NOT NULL,
+    reasoning       TEXT DEFAULT '',
+    matched_keywords TEXT DEFAULT '[]',
+    missing_keywords TEXT DEFAULT '[]',
+    created_at      INTEGER NOT NULL,
+    UNIQUE(job_id, candidate_email)
+  );
+  CREATE INDEX IF NOT EXISTS idx_employer_ai_matches_job ON employer_ai_matches(job_id, score DESC);
+  CREATE TABLE IF NOT EXISTS employer_nurture (
+    employer_email TEXT NOT NULL,
+    step           INTEGER NOT NULL,
+    sent_at        INTEGER NOT NULL,
+    UNIQUE(employer_email, step)
+  );
+`);
+
 // ─── Job Application Tracker ──────────────────────────────────────────────────
 // The candidate-side personal tracker (distinct from the employer-side
 // `job_applications` table above, which tracks applicants to an employer's
@@ -6862,10 +6901,18 @@ app.post('/webhook', (req, res) => {
     const email = (session.metadata?.email || session.customer_email || '').toLowerCase();
     const isEmployer = session.metadata?.plan === 'employer';
     if (email && isEmployer) {
-      db.prepare('INSERT OR REPLACE INTO employer_subscribers (email, customer_id) VALUES (?, ?)').run(email, session.customer);
-      console.log(`New Pro Employer subscriber: ${email}`);
-      notifyOwner(`[ResumeTailored] 💼 New Pro Employer subscriber: ${email}`,
-        `<p>💼 <strong>${email}</strong> just subscribed — <strong>Pro Employer ($29/mo)</strong>.</p>`);
+      const tier = EH.resolveEmployerTier({
+        plan: session.metadata?.employerTier,
+        priceId: session.line_items?.data?.[0]?.price?.id,
+        proPriceId: process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID,
+        scalePriceId: process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID
+      });
+      const finalTier = tier === 'free' ? 'pro' : tier; // an employer checkout is never free
+      db.prepare("INSERT OR REPLACE INTO employer_subscribers (email, customer_id, tier, status) VALUES (?, ?, ?, 'active')").run(email, session.customer, finalTier);
+      const price = EH.EMPLOYER_TIERS[finalTier].price;
+      console.log(`New Employer ${finalTier} subscriber: ${email}`);
+      notifyOwner(`[ResumeTailored] 💼 New Employer ${finalTier.toUpperCase()} subscriber: ${email}`,
+        `<p>💼 <strong>${email}</strong> just subscribed — <strong>Employer ${finalTier} ($${price}/mo)</strong>.</p>`);
     } else if (email) {
       const isLifetime = session.metadata?.plan === 'lifetime' || session.mode === 'payment';
       // Lifetime subscribers get a sentinel customer_id so deletion webhooks never remove them
@@ -7753,16 +7800,31 @@ function employerAuthEmail(req, res) {
   if (!email) { res.status(401).json({ error: 'login_required', message: 'Please sign in first.' }); return null; }
   return email;
 }
-function isEmployerSubscriber(email) {
-  if (!email) return false;
+// v2: the employer plan is a tier, not a boolean. Owner gets Scale, comped
+// accounts get Pro; otherwise read the subscriber row (only an 'active' status
+// counts). `isEmployerSubscriber` stays as the boolean "is on a paid tier" for
+// the many call sites that only care paid-vs-free.
+function employerTier(email) {
+  if (!email) return 'free';
   const e = email.toLowerCase();
   const ownerEmail = (process.env.OWNER_EMAIL || 'support@resumetailored.com').toLowerCase();
-  if (e === ownerEmail) return true;
-  if (COMP_EMAILS.includes(e)) return true;
-  return !!db.prepare('SELECT 1 FROM employer_subscribers WHERE email = ?').get(e);
+  if (e === ownerEmail) return 'scale';
+  if (COMP_EMAILS.includes(e)) return 'pro';
+  const row = db.prepare('SELECT tier, status FROM employer_subscribers WHERE email = ?').get(e);
+  if (!row) return 'free';
+  if (row.status && row.status !== 'active') return 'free';
+  return EH.EMPLOYER_TIER_NAMES.includes(row.tier) ? row.tier : 'pro';
+}
+function isEmployerSubscriber(email) {
+  return employerTier(email) !== 'free';
 }
 function activeJobCount(email) {
   return db.prepare("SELECT COUNT(*) c FROM job_postings WHERE employer_email = ? AND status = 'active'").get(email.toLowerCase()).c;
+}
+// Monotonic lifetime post counter backing the free plan's "2 posts EVER" cap.
+function lifetimeJobsPosted(email) {
+  const row = db.prepare('SELECT jobs_posted_lifetime FROM employer_profiles WHERE email = ?').get(email.toLowerCase());
+  return row ? (row.jobs_posted_lifetime || 0) : 0;
 }
 const employerLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, skip: () => RATE_LIMIT_OFF, message: { error: 'rate_limited', message: 'Too many requests — please wait a minute.' } });
 
@@ -7771,13 +7833,24 @@ app.get('/api/employer/status', (req, res) => {
   const email = employerAuthEmail(req, res); if (!email) return;
   const e = email.toLowerCase();
   const profile = db.prepare('SELECT company_name, website, created_at FROM employer_profiles WHERE email = ?').get(e);
+  const tier = employerTier(email);
+  const cfg = EH.tierConfig(tier);
+  const posted = profile ? lifetimeJobsPosted(email) : 0;
+  const gate = EH.canPostJob({ tier, lifetimeJobsPosted: posted });
   res.json({
     isEmployer: !!profile,
     companyName: profile ? profile.company_name : null,
     website: profile ? profile.website : null,
-    pro: isEmployerSubscriber(email),
+    tier,                              // 'free' | 'pro' | 'scale'
+    pro: tier !== 'free',              // kept for existing frontend checks
+    scale: tier === 'scale',
     activeJobs: profile ? activeJobCount(email) : 0,
-    freeActiveJobLimit: EH.EMPLOYER_LIMITS.freeActiveJobs
+    jobsPostedLifetime: posted,
+    freeLifetimeJobLimit: EH.EMPLOYER_TIERS.free.lifetimeJobs,
+    canPostJob: gate.allowed,
+    jobsRemaining: gate.remaining,     // null = unlimited
+    features: { aiMatching: cfg.aiMatching, matchPreview: cfg.matchPreview === Infinity ? null : cfg.matchPreview, screener: cfg.screener, analytics: cfg.analytics, api: cfg.api, seats: cfg.seats === Infinity ? null : cfg.seats },
+    prices: { pro: EH.EMPLOYER_TIERS.pro.price, scale: EH.EMPLOYER_TIERS.scale.price }
   });
 });
 
@@ -7809,7 +7882,8 @@ function _jobPostingOut(r) {
     id: r.id, title: r.title, description: r.description, requirements: r.requirements,
     salaryMin: r.salary_min, salaryMax: r.salary_max, location: r.location,
     workMode: r.work_mode, jobType: r.job_type, isGig: !!r.is_gig, gigRate: r.gig_rate, gigSchedule: r.gig_schedule, gigType: r.gig_type,
-    status: r.status, createdAt: r.created_at, updatedAt: r.updated_at, applicantCount: r.applicant_count || 0
+    status: r.status, createdAt: r.created_at, updatedAt: r.updated_at, applicantCount: r.applicant_count || 0,
+    screenerQuestions: (() => { try { return r.screener_questions ? JSON.parse(r.screener_questions) : []; } catch { return []; } })()
   };
 }
 
@@ -7845,18 +7919,33 @@ app.post('/api/employer/jobs', employerLimiter, (req, res) => {
   const e = email.toLowerCase();
   const profile = db.prepare('SELECT email FROM employer_profiles WHERE email = ?').get(e);
   if (!profile) return res.status(400).json({ error: 'no_employer_profile', message: 'Set up your company profile before posting a job.' });
-  const pro = isEmployerSubscriber(email);
-  if (!pro && activeJobCount(email) >= EH.EMPLOYER_LIMITS.freeActiveJobs) {
-    return res.status(402).json({ error: 'quota', message: `Free plan allows ${EH.EMPLOYER_LIMITS.freeActiveJobs} active job posts. Upgrade to Pro Employer for unlimited.` });
+  // Free plan: 2 job posts EVER (lifetime). The counter never decreases, so
+  // archiving/deleting a posting does NOT free a slot — a 3rd post needs Pro.
+  const tier = employerTier(email);
+  const gate = EH.canPostJob({ tier, lifetimeJobsPosted: lifetimeJobsPosted(email) });
+  if (!gate.allowed) {
+    return res.status(402).json({ error: 'quota', code: 'lifetime_job_limit',
+      message: `Your free plan includes ${gate.limit} job posts total, and you've used them. Upgrade to Pro ($${EH.EMPLOYER_TIERS.pro.price}/mo) for unlimited job posts.` });
   }
   const v = EH.validateJobPosting(req.body);
   if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
+  // Screener questions are a Pro+ feature; silently ignored (not an error) for
+  // free employers so a stray field never blocks a legitimate free post.
+  let screener = '';
+  if (EH.tierConfig(tier).screener) {
+    const sc = EH.validateScreenerQuestions(req.body && req.body.screenerQuestions);
+    if (!sc.valid) return res.status(400).json({ error: 'bad_request', message: sc.errors[0], errors: sc.errors });
+    screener = JSON.stringify(sc.clean);
+  }
   const now = Date.now();
   const info = db.prepare(`
-    INSERT INTO job_postings (employer_email, title, description, requirements, salary_min, salary_max, location, work_mode, job_type, is_gig, gig_rate, gig_schedule, gig_type, status, created_at, updated_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?, ?)
+    INSERT INTO job_postings (employer_email, title, description, requirements, salary_min, salary_max, location, work_mode, job_type, is_gig, gig_rate, gig_schedule, gig_type, screener_questions, status, created_at, updated_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, 'active', ?, ?)
   `).run(e, v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
-    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, v.clean.gigType, now, now);
+    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, v.clean.gigType, screener, now, now);
+  // Increment the monotonic lifetime counter — this, not the row count, is what
+  // the free cap is measured against.
+  db.prepare('UPDATE employer_profiles SET jobs_posted_lifetime = jobs_posted_lifetime + 1 WHERE email = ?').run(e);
   const newJob = db.prepare('SELECT * FROM job_postings WHERE id = ?').get(info.lastInsertRowid);
   _syncEmployerJobToFeed(newJob);
   writeAuditLog(req, email, 'employer.job_posted', { targetType: 'job', targetId: info.lastInsertRowid, meta: { title: v.clean.title } });
@@ -7879,11 +7968,17 @@ app.put('/api/employer/jobs/:id', employerLimiter, (req, res) => {
   }
   const v = EH.validateJobPosting(req.body);
   if (!v.valid) return res.status(400).json({ error: 'bad_request', message: v.errors[0], errors: v.errors });
+  let screener = job.screener_questions || '';
+  if (EH.tierConfig(employerTier(email)).screener && req.body && req.body.screenerQuestions !== undefined) {
+    const sc = EH.validateScreenerQuestions(req.body.screenerQuestions);
+    if (!sc.valid) return res.status(400).json({ error: 'bad_request', message: sc.errors[0], errors: sc.errors });
+    screener = JSON.stringify(sc.clean);
+  }
   db.prepare(`
-    UPDATE job_postings SET title=?, description=?, requirements=?, salary_min=?, salary_max=?, location=?, work_mode=?, job_type=?, is_gig=?, gig_rate=?, gig_schedule=?, gig_type=?, updated_at=?
+    UPDATE job_postings SET title=?, description=?, requirements=?, salary_min=?, salary_max=?, location=?, work_mode=?, job_type=?, is_gig=?, gig_rate=?, gig_schedule=?, gig_type=?, screener_questions=?, updated_at=?
     WHERE id = ?
   `).run(v.clean.title, v.clean.description, v.clean.requirements, v.clean.salaryMin, v.clean.salaryMax,
-    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, v.clean.gigType, Date.now(), id);
+    v.clean.location, v.clean.workMode, v.clean.jobType, v.clean.isGig ? 1 : 0, v.clean.gigRate, v.clean.gigSchedule, v.clean.gigType, screener, Date.now(), id);
   _syncEmployerJobToFeed(db.prepare('SELECT * FROM job_postings WHERE id = ?').get(id));
   writeAuditLog(req, email, 'employer.job_edited', { targetType: 'job', targetId: id });
   res.json({ success: true });
@@ -7896,16 +7991,26 @@ app.delete('/api/employer/jobs/:id', (req, res) => {
   const job = db.prepare('SELECT id FROM job_postings WHERE id = ? AND employer_email = ?').get(id, e);
   if (!job) return res.status(404).json({ error: 'not_found' });
   db.prepare('DELETE FROM job_applications WHERE job_id = ?').run(id);
+  db.prepare('DELETE FROM employer_ai_matches WHERE job_id = ?').run(id);
   db.prepare('DELETE FROM job_postings WHERE id = ?').run(id);
   _removeEmployerJobFromFeed(id);
+  // Note: jobs_posted_lifetime is intentionally NOT decremented — the free
+  // "2 posts EVER" cap must survive a delete.
   res.json({ success: true });
 });
 
-// ─── API: Pro Employer Stripe checkout ($29/mo) ─────────────────────────────
+// ─── API: Employer Stripe checkout — Pro ($49/mo) or Scale ($199/mo) ─────────
+// `plan` (pro|scale) picks the price; the tier is carried in checkout metadata
+// so the webhook records exactly what was bought. STRIPE_EMPLOYER_PRICE_ID is
+// still honored as the Pro price for back-compat with existing config.
 app.post('/api/employer/subscribe', async (req, res) => {
   const email = employerAuthEmail(req, res); if (!email) return;
-  const priceId = process.env.STRIPE_EMPLOYER_PRICE_ID;
-  if (!priceId) return res.status(503).json({ error: 'not_configured', message: 'Pro Employer plan is not yet available.' });
+  const plan = String((req.body && req.body.plan) || 'pro').toLowerCase();
+  if (!['pro', 'scale'].includes(plan)) return res.status(400).json({ error: 'bad_request', message: 'Choose the Pro or Scale plan.' });
+  const priceId = plan === 'scale'
+    ? process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID
+    : (process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID);
+  if (!priceId) return res.status(503).json({ error: 'not_configured', message: `The ${plan === 'scale' ? 'Scale' : 'Pro'} plan is not yet available.` });
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -7914,7 +8019,7 @@ app.post('/api/employer/subscribe', async (req, res) => {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=employer`,
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/employer`,
-      metadata: { email, plan: 'employer' }
+      metadata: { email, plan: 'employer', employerTier: plan }
     });
     res.json({ url: session.url });
   } catch (err) {
