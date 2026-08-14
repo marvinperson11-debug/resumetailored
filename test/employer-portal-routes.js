@@ -344,6 +344,33 @@ const server = app.listen(0, async () => {
     });
     check('unknown company slug 404s', missing.status === 404);
 
+    // ═══════════════ v2: employer-portal access model ══════════════════════
+    // A job-seeker Pro subscriber (subscribers table) with no employer account
+    // is BLOCKED from the employer portal — it's a separate product.
+    db.prepare("INSERT INTO users (email,username,password_hash) VALUES (?,?,?)").run('prosub@x.com', 'Pro Sub', 'x');
+    db.prepare("INSERT INTO sessions (token,email) VALUES (?,?)").run('tokProSub', 'prosub@x.com');
+    db.prepare("INSERT INTO subscribers (email, customer_id) VALUES (?,?)").run('prosub@x.com', 'cus_js_pro');
+    const proStatus = await req('GET', '/api/employer/status', 'tokProSub');
+    check('access: job-seeker Pro sub is blocked_pro', proStatus.json.access === 'blocked_pro', proStatus.body);
+    const proProfile = await req('POST', '/api/employer/profile', 'tokProSub', { companyName: 'Sneaky Co' });
+    check('access: blocked_pro cannot create an employer account (402)', proProfile.status === 402 && proProfile.json.error === 'employer_separate_product', proProfile.body);
+
+    // A fresh free visitor may onboard (create a free employer account).
+    db.prepare("INSERT INTO users (email,username,password_hash) VALUES (?,?,?)").run('freshfree@x.com', 'Fresh', 'x');
+    db.prepare("INSERT INTO sessions (token,email) VALUES (?,?)").run('tokFresh', 'freshfree@x.com');
+    const freshStatus = await req('GET', '/api/employer/status', 'tokFresh');
+    check('access: a fresh free visitor gets onboard', freshStatus.json.access === 'onboard', freshStatus.body);
+
+    // An existing employer account (Free Co from above) has full access.
+    const empStatus = await req('GET', '/api/employer/status', 'tokFree');
+    check('access: an employer-account holder gets full access', empStatus.json.access === 'full', empStatus.body);
+
+    // The public employer landing page is served and has the onboarding CTA.
+    const landing = await new Promise((resolve) => {
+      http.get({ host: '127.0.0.1', port: PORT, path: '/for-employers' }, (r) => { let b = ''; r.on('data', d => b += d); r.on('end', () => resolve({ status: r.statusCode, body: b })); });
+    });
+    check('/for-employers landing page serves with a Create Employer Account CTA', landing.status === 200 && /Create Employer Account/.test(landing.body), String(landing.status));
+
   } catch (err) {
     failures++;
     console.error('FATAL', err);

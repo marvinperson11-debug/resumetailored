@@ -7826,6 +7826,24 @@ function employerTier(email) {
 function isEmployerSubscriber(email) {
   return employerTier(email) !== 'free';
 }
+// Who may enter the employer portal. The portal is its own product line:
+//   'full'        — owner/comp, or an employer plan, or an existing employer account
+//                   (incl. the free employer tier). Full run of the portal.
+//   'blocked_pro' — a JOB-SEEKER Pro/Lifetime subscriber with NO employer account:
+//                   their job-seeker plan does not grant employer access. Shown a
+//                   "separate product" upgrade message instead of the portal.
+//   'onboard'     — a free/new visitor: may create an employer account (free tier).
+// Enforced server-side; the client mirrors it for UX only.
+function employerPortalAccess(email) {
+  if (!email) return 'onboard';
+  const e = email.toLowerCase();
+  const ownerEmail = (process.env.OWNER_EMAIL || 'support@resumetailored.com').toLowerCase();
+  if (e === ownerEmail || COMP_EMAILS.includes(e)) return 'full';   // owner logs into both sides
+  if (employerTier(email) !== 'free') return 'full';                // employer Pro/Scale
+  if (db.prepare('SELECT 1 FROM employer_profiles WHERE email = ?').get(e)) return 'full'; // has an employer account
+  if (isSubscriber(email)) return 'blocked_pro';                    // job-seeker Pro/Lifetime, no employer account
+  return 'onboard';
+}
 function activeJobCount(email) {
   return db.prepare("SELECT COUNT(*) c FROM job_postings WHERE employer_email = ? AND status = 'active'").get(email.toLowerCase()).c;
 }
@@ -7860,6 +7878,7 @@ app.get('/api/employer/status', (req, res) => {
   const gate = EH.canPostJob({ tier, lifetimeJobsPosted: posted });
   res.json({
     isEmployer: !!profile,
+    access: employerPortalAccess(email), // 'full' | 'blocked_pro' | 'onboard'
     companyName: profile ? profile.company_name : null,
     website: profile ? profile.website : null,
     slug: profile ? (profile.slug || _ensureEmployerSlug(e, profile.company_name)) : null,
@@ -7880,6 +7899,12 @@ app.get('/api/employer/status', (req, res) => {
 app.post('/api/employer/profile', employerLimiter, (req, res) => {
   const email = employerAuthEmail(req, res); if (!email) return;
   const e = email.toLowerCase();
+  // A job-seeker Pro/Lifetime subscriber can't open an employer account off their
+  // job-seeker plan — the employer portal is a separate product.
+  if (employerPortalAccess(email) === 'blocked_pro') {
+    return res.status(402).json({ error: 'employer_separate_product',
+      message: 'The employer portal is a separate product from your job-seeker plan. Explore employer plans to start hiring.' });
+  }
   const companyName = String((req.body && req.body.companyName) || '').trim().slice(0, 120);
   const website = String((req.body && req.body.website) || '').trim().slice(0, 200);
   if (companyName.length < 2) return res.status(400).json({ error: 'bad_request', message: 'Company name is required.' });

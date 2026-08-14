@@ -922,7 +922,7 @@
       <a href="/pro-tools" style="color:#1F5C3D;font-weight:700;" data-i18n="nav_pro_tools">Pro Tools</a>
       <a href="/resume-examples">Resume Examples</a>
       <a href="/blog" data-i18n="nav_blog">Blog</a>
-      <a href="/employer" style="color:#0f172a;font-weight:700;white-space:nowrap;">For Employers</a>
+      <a href="/for-employers" style="color:#0f172a;font-weight:700;white-space:nowrap;">For Employers</a>
       <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
     </div>
     <!-- Canonical action group: [中文] [Log In] [CTA] — same order and position
@@ -930,7 +930,7 @@
          toggle never jumps between pages. -->
     <div class="nav-actions">
       <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">中文</button>
-      <a href="/login?redirect=/" class="btn btn-ghost" data-i18n="nav_login">Log In</a>
+      <button type="button" class="btn btn-ghost" style="background:none;cursor:pointer;font:inherit;" onclick="openLoginChooser()">Login</button>
       <a href="/dashboard" class="btn btn-primary" data-i18n="nav_cta">Tailor My Resume Free →</a>
     </div>
     <div class="nav-mobile-actions">
@@ -947,14 +947,36 @@
   <button class="mobile-close" onclick="document.querySelector('.mobile-menu').classList.remove('open')">&times;</button>
   <a href="/how-it-works" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_how">How It Works</a>
   <a href="/blog" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_blog">Blog</a>
-  <a href="/employer" onclick="document.querySelector('.mobile-menu').classList.remove('open')">For Employers</a>
+  <a href="/for-employers" onclick="document.querySelector('.mobile-menu').classList.remove('open')">For Employers</a>
   <a href="/score" onclick="document.querySelector('.mobile-menu').classList.remove('open')" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
   <a href="/pro-tools" onclick="document.querySelector('.mobile-menu').classList.remove('open')" style="color:#1F5C3D;" data-i18n="nav_pro_tools">Pro Tools</a>
-  <a href="#templates" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_templates">Templates</a>
   <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_pricing">Pricing</a>
-  <a href="/login?redirect=/" class="btn btn-ghost btn-lg" style="border-color:#1F5C3D;color:#1F5C3D;" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_login">Log In</a>
+  <button type="button" class="btn btn-ghost btn-lg" style="border-color:#1F5C3D;color:#1F5C3D;background:none;cursor:pointer;font:inherit;" onclick="document.querySelector('.mobile-menu').classList.remove('open');openLoginChooser()">Login</button>
   <a href="/dashboard" class="btn btn-primary btn-lg" data-i18n="mobile_cta">Tailor My Resume Free →</a>
 </div>
+
+<!-- Login chooser: pick which side to sign in to -->
+<div id="loginChooser" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(25,21,18,.5);align-items:center;justify-content:center;padding:22px;" onclick="if(event.target===this)closeLoginChooser()">
+  <div style="background:#fff;border-radius:20px;max-width:400px;width:100%;padding:30px 26px;box-shadow:0 30px 70px rgba(0,0,0,.3);position:relative;font-family:'Inter',sans-serif;">
+    <button onclick="closeLoginChooser()" aria-label="Close" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:26px;color:#57514A;cursor:pointer;line-height:1;">&times;</button>
+    <h2 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:26px;letter-spacing:-.02em;margin:0 0 4px;color:#191512;">Log in</h2>
+    <p style="color:#57514A;font-size:14px;margin:0 0 20px;">Choose how you want to sign in.</p>
+    <a href="/login?redirect=/dashboard" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#FAF7F0;border:1px solid #E7DFD1;border-radius:14px;padding:16px;margin-bottom:12px;transition:border-color .12s;" onmouseover="this.style.borderColor='#1F5C3D'" onmouseout="this.style.borderColor='#E7DFD1'">
+      <span style="font-size:26px;">👤</span>
+      <span><span style="display:block;font-weight:800;color:#191512;font-size:16px;">Login as Job Seeker</span><span style="display:block;color:#57514A;font-size:13px;">Tailor resumes, cover letters &amp; more</span></span>
+    </a>
+    <a href="/login?redirect=/employer" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#FAF7F0;border:1px solid #E7DFD1;border-radius:14px;padding:16px;transition:border-color .12s;" onmouseover="this.style.borderColor='#1F5C3D'" onmouseout="this.style.borderColor='#E7DFD1'">
+      <span style="font-size:26px;">💼</span>
+      <span><span style="display:block;font-weight:800;color:#191512;font-size:16px;">Login as Employer</span><span style="display:block;color:#57514A;font-size:13px;">Post jobs &amp; hire candidates</span></span>
+    </a>
+    <p style="text-align:center;margin:18px 0 0;font-size:13px;color:#57514A;">New employer? <a href="/for-employers" style="color:#1F5C3D;font-weight:700;">See employer plans →</a></p>
+  </div>
+</div>
+<script>
+  function openLoginChooser(){ document.getElementById('loginChooser').style.display='flex'; document.body.style.overflow='hidden'; }
+  function closeLoginChooser(){ document.getElementById('loginChooser').style.display='none'; document.body.style.overflow=''; }
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeLoginChooser(); });
+</script>
 
 <!-- HERO -->
 <main id="main-content">
