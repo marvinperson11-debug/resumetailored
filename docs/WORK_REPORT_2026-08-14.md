@@ -146,10 +146,41 @@ Rationale and options are documented in `docs/EMPLOYER_PORTAL_V2.md`.
 
 ### Config to go live (all optional; features degrade gracefully)
 
-- `STRIPE_EMPLOYER_PRO_PRICE_ID` / `STRIPE_EMPLOYER_SCALE_PRICE_ID` — create $49 and $199
-  recurring prices in Stripe (Pro falls back to the existing `STRIPE_EMPLOYER_PRICE_ID`).
+- `STRIPE_EMPLOYER_PRO_PRICE_ID` / `STRIPE_EMPLOYER_SCALE_PRICE_ID` — the $49 and $199
+  recurring Stripe prices (Pro falls back to the existing `STRIPE_EMPLOYER_PRICE_ID`).
+  See **Stripe employer plan setup** below for the actual IDs.
 - `CAREER_CRON=on` + `EMPLOYER_NURTURE_HOUR_UTC` (default 15:00 UTC) to run nurture emails;
   `RESEND_API_KEY` to actually send.
+
+---
+
+## Stripe employer plan setup (price IDs)
+
+The two employer plans are wired to these Stripe price IDs (provided 2026-08-14). They are
+**deployment config, not code** — the app reads them from the environment, so they go in
+Railway's Variables (Railway → the ResumeTailored web service → **Variables**), not in the repo.
+
+| Variable | Value | Plan |
+|---|---|---|
+| `STRIPE_EMPLOYER_PRO_PRICE_ID` | `price_1U4QHkCgLyCpwXXjlHMDBmHq` | Pro — $49/mo |
+| `STRIPE_EMPLOYER_SCALE_PRICE_ID` | `price_1U4QIgCgLyCpwXXjPy8UtUiS` | Scale — $199/mo |
+
+**After saving** (which triggers a redeploy — expected):
+- "Upgrade to Pro — $49/mo" uses `STRIPE_EMPLOYER_PRO_PRICE_ID`.
+- "Upgrade to Scale — $199/mo" uses `STRIPE_EMPLOYER_SCALE_PRICE_ID`.
+- The existing `/webhook` + `STRIPE_WEBHOOK_SECRET` record which tier was bought (`pro`/`scale`) — no new webhook setup needed.
+
+**Two things to check:**
+1. **Mode match** — these price IDs must be the same mode (live vs. test) as `STRIPE_SECRET_KEY`.
+   A live checkout with a test price (or vice-versa) fails. For real billing, use **live** price
+   IDs paired with a live secret key.
+2. `STRIPE_EMPLOYER_PRICE_ID` (the old single-price var) is no longer required — the code falls
+   back to it for Pro only if `STRIPE_EMPLOYER_PRO_PRICE_ID` is unset, and the explicit Pro var
+   above takes precedence.
+
+_Status: values provided; not yet applied to Railway. Setting Railway variables from this
+session required an approval that wasn't available, so they need to be added in the Railway
+dashboard (or re-run with the Railway integration approved)._
 
 ---
 
