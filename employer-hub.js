@@ -47,6 +47,14 @@ const EMPLOYER_TIERS = {
 };
 const EMPLOYER_TIER_NAMES = ['free', 'pro', 'scale'];
 
+// Slug for a public company page (/company/:slug). Lowercase, hyphenated,
+// stripped to [a-z0-9-]; capped; never empty (falls back to 'company').
+// Uniqueness is resolved by the caller (append -2/-3…); this is just the base.
+function slugifyCompany(name) {
+  const s = normStr(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/g, '');
+  return s || 'company';
+}
+
 function tierConfig(tier) {
   return EMPLOYER_TIERS[String(tier || 'free').toLowerCase()] || EMPLOYER_TIERS.free;
 }
@@ -430,7 +438,7 @@ module.exports = {
   WORK_MODES, JOB_TYPES, APPLICATION_STATUSES, EMPLOYER_LIMITS, REMOTE_PREFS, CONTACT_REQUEST_STATUSES, GIG_TYPES,
   INTERVIEW_MODES, INTERVIEW_STATUSES,
   EMPLOYER_TIERS, EMPLOYER_TIER_NAMES, SCREENER_TYPES, EMPLOYER_NURTURE_STEPS, NURTURE_STEP_DELAY_DAYS, MATCH_PROMPT_VERSION,
-  tierConfig, canPostJob, resolveEmployerTier, applyMatchGate, validateScreenerQuestions, buildEmployerNurtureEmail, nurtureStepDue,
+  tierConfig, canPostJob, resolveEmployerTier, applyMatchGate, validateScreenerQuestions, buildEmployerNurtureEmail, nurtureStepDue, slugifyCompany,
   buildApplicantMatchPrompt, validateMatchResult,
   validateJobPosting, validateApplicationStatus, validateRating,
   validateCandidateProfile, validateContactRequestStatus, validateInterview,

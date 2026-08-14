@@ -869,7 +869,9 @@ async function renderSettings(c){
       '<h3 style="margin:16px 0 10px;font-size:15px;">Notifications</h3>'+
       '<label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:8px;"><input type="checkbox" id="stNotifyApps" '+(SETTINGS.notifyApplications!==false?'checked':'')+'/> Email me on new applications</label>'+
       '<label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:14px;"><input type="checkbox" id="stNotifyMsgs" '+(SETTINGS.notifyMessages!==false?'checked':'')+'/> Email me on new messages</label>'+
-      '<button class="nv-btn" onclick="nvSaveSettings()">Save changes</button></div>'+
+      '<button class="nv-btn" onclick="nvSaveSettings()">Save changes</button>'+
+      (epStatus&&epStatus.slug?'<p class="nv-sub" style="margin:12px 0 0;font-size:13px;">Public hiring page: <a href="/company/'+esc(epStatus.slug)+'" target="_blank" style="color:var(--nv-accent);font-weight:700;">/company/'+esc(epStatus.slug)+' ↗</a></p>':'')+
+    '</div>'+
     nvBillingCard()+
     '<div class="nv-card" style="max-width:600px;"><h3 style="margin:0 0 8px;font-size:15px;">Team members</h3><p class="nv-sub" style="margin:0;">'+(epStatus.tier==='free'?'Team seats are a Pro feature — Pro includes 5 seats, Scale is unlimited.':'Multi-user sub-accounts are rolling out. Today the account owner manages everything above.')+'</p></div>';
 }

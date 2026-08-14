@@ -626,6 +626,7 @@ db.exec(`
 // "2 posts EVER" rule — it is ONLY ever incremented (on a successful create),
 // never decremented on archive/delete, so a free employer can't reclaim a slot.
 _ensureColumn('employer_profiles', 'jobs_posted_lifetime', 'jobs_posted_lifetime INTEGER NOT NULL DEFAULT 0');
+_ensureColumn('employer_profiles', 'slug', 'slug TEXT');
 _ensureColumn('employer_subscribers', 'tier', "tier TEXT NOT NULL DEFAULT 'pro'");
 _ensureColumn('employer_subscribers', 'status', "status TEXT NOT NULL DEFAULT 'active'");
 _ensureColumn('employer_subscribers', 'current_period_end', 'current_period_end INTEGER');
@@ -657,7 +658,14 @@ db.exec(`
     sent_at        INTEGER NOT NULL,
     UNIQUE(employer_email, step)
   );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_employer_profiles_slug ON employer_profiles(slug) WHERE slug IS NOT NULL;
 `);
+// Backfill public-page slugs for any employer created before the column existed.
+try {
+  for (const row of db.prepare("SELECT email, company_name FROM employer_profiles WHERE slug IS NULL OR slug = ''").all()) {
+    _ensureEmployerSlug(row.email, row.company_name);
+  }
+} catch (e) { /* fresh db: no rows */ }
 
 // ─── Job Application Tracker ──────────────────────────────────────────────────
 // The candidate-side personal tracker (distinct from the employer-side
@@ -7826,13 +7834,26 @@ function lifetimeJobsPosted(email) {
   const row = db.prepare('SELECT jobs_posted_lifetime FROM employer_profiles WHERE email = ?').get(email.toLowerCase());
   return row ? (row.jobs_posted_lifetime || 0) : 0;
 }
+// Return this employer's public-page slug, generating a unique one (base, then
+// base-2, base-3…) and persisting it on first use. Slugs are stable across
+// renames so links already shared keep working.
+function _ensureEmployerSlug(email, companyName) {
+  const e = email.toLowerCase();
+  const existing = db.prepare('SELECT slug FROM employer_profiles WHERE email = ?').get(e);
+  if (existing && existing.slug) return existing.slug;
+  const base = EH.slugifyCompany(companyName || 'company');
+  let slug = base, n = 1;
+  while (db.prepare('SELECT 1 FROM employer_profiles WHERE slug = ? AND email != ?').get(slug, e)) { n++; slug = `${base}-${n}`; }
+  db.prepare('UPDATE employer_profiles SET slug = ? WHERE email = ?').run(slug, e);
+  return slug;
+}
 const employerLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, skip: () => RATE_LIMIT_OFF, message: { error: 'rate_limited', message: 'Too many requests — please wait a minute.' } });
 
 // Is this account set up as an employer yet (has a company profile)?
 app.get('/api/employer/status', (req, res) => {
   const email = employerAuthEmail(req, res); if (!email) return;
   const e = email.toLowerCase();
-  const profile = db.prepare('SELECT company_name, website, created_at FROM employer_profiles WHERE email = ?').get(e);
+  const profile = db.prepare('SELECT company_name, website, slug, created_at FROM employer_profiles WHERE email = ?').get(e);
   const tier = employerTier(email);
   const cfg = EH.tierConfig(tier);
   const posted = profile ? lifetimeJobsPosted(email) : 0;
@@ -7841,6 +7862,7 @@ app.get('/api/employer/status', (req, res) => {
     isEmployer: !!profile,
     companyName: profile ? profile.company_name : null,
     website: profile ? profile.website : null,
+    slug: profile ? (profile.slug || _ensureEmployerSlug(e, profile.company_name)) : null,
     tier,                              // 'free' | 'pro' | 'scale'
     pro: tier !== 'free',              // kept for existing frontend checks
     scale: tier === 'scale',
@@ -7864,7 +7886,8 @@ app.post('/api/employer/profile', employerLimiter, (req, res) => {
   const exists = db.prepare('SELECT email FROM employer_profiles WHERE email = ?').get(e);
   if (exists) db.prepare('UPDATE employer_profiles SET company_name = ?, website = ? WHERE email = ?').run(companyName, website, e);
   else db.prepare('INSERT INTO employer_profiles (email, company_name, website, created_at) VALUES (?,?,?,?)').run(e, companyName, website, Date.now());
-  res.json({ success: true, companyName, website });
+  const slug = _ensureEmployerSlug(e, companyName);
+  res.json({ success: true, companyName, website, slug, publicUrl: `/company/${slug}` });
 });
 
 app.get('/api/employer/jobs', (req, res) => {
@@ -8026,6 +8049,84 @@ app.post('/api/employer/subscribe', async (req, res) => {
     console.error('Stripe employer error:', err);
     res.status(500).json({ error: 'Could not create checkout session.' });
   }
+});
+
+// ─── Public company profile page (/company/:slug) ────────────────────────────
+// Indexable, brand-footed public page: company header + its ACTIVE job posts.
+// Reuses employer_profiles + job_postings; no auth. A growth loop — every page
+// links back to the app.
+function _fmtSalary(min, max) {
+  const k = (n) => n >= 1000 ? '$' + Math.round(n / 1000) + 'k' : '$' + n;
+  if (min && max) return `${k(min)}–${k(max)}`;
+  if (min) return `From ${k(min)}`;
+  if (max) return `Up to ${k(max)}`;
+  return '';
+}
+function _companyPageHtml(p, jobs, origin) {
+  const name = _escHtml(p.company_name);
+  const desc = _escHtml(p.description || '');
+  const site = (p.website || '').trim();
+  const siteHost = site ? _escHtml(site.replace(/^https?:\/\//, '').replace(/\/$/, '')) : '';
+  const logo = (p.logo_url || '').trim();
+  const ogDesc = _escHtml((p.description || `${p.company_name} is hiring on ResumeTailored.`).slice(0, 155));
+  const jobsHtml = jobs.length ? jobs.map(j => {
+    const sal = _fmtSalary(j.salary_min, j.salary_max);
+    const meta = [j.location, j.job_type, j.work_mode, sal].filter(Boolean).map(x => `<span class="jm">${_escHtml(String(x))}</span>`).join('');
+    const snippet = _escHtml(String(j.description || '').slice(0, 200)) + (String(j.description || '').length > 200 ? '…' : '');
+    return `<a class="job" href="${origin}/employer">
+      <div class="jt">${_escHtml(j.title)}</div>
+      <div class="jmeta">${meta}</div>
+      <p class="jd">${snippet}</p>
+      <span class="japply">View &amp; apply →</span>
+    </a>`;
+  }).join('') : '<p class="empty">No open roles right now — check back soon.</p>';
+  const avatar = logo ? `<img src="${_escHtml(logo)}" alt="${name} logo" class="logo"/>` : `<div class="logo logo-ph">${_escHtml((p.company_name || '?').charAt(0).toUpperCase())}</div>`;
+  return `<!doctype html><html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>${name} — Careers · ResumeTailored</title>
+<meta name="description" content="${ogDesc}"/>
+<meta property="og:type" content="website"/><meta property="og:title" content="${name} — Careers"/>
+<meta property="og:description" content="${ogDesc}"/><meta property="og:url" content="${origin}/company/${_escHtml(p.slug)}"/>
+<link rel="canonical" href="${origin}/company/${_escHtml(p.slug)}"/>
+<style>
+  :root{--cream:#FAF7F0;--paper:#fff;--forest:#1F5C3D;--forest2:#2E7D53;--ink:#191512;--muted:#57514A;--line:#E7DFD1;}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--cream);color:var(--ink);font-family:'Inter',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.55;}
+  .wrap{max-width:820px;margin:0 auto;padding:40px 22px 70px;}
+  .head{display:flex;gap:20px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 8px 26px rgba(25,21,18,.05);}
+  .logo{width:78px;height:78px;border-radius:16px;object-fit:cover;flex:none;}
+  .logo-ph{background:var(--forest);color:#fff;display:grid;place-items:center;font-weight:800;font-size:34px;font-family:Georgia,serif;}
+  h1{font-size:30px;letter-spacing:-.02em;}
+  .site{color:var(--forest);text-decoration:none;font-weight:700;font-size:14px;}
+  .desc{margin-top:18px;color:var(--muted);font-size:16px;}
+  h2{margin:34px 0 14px;font-size:14px;text-transform:uppercase;letter-spacing:.14em;color:var(--forest2);}
+  .job{display:block;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:12px;text-decoration:none;color:inherit;transition:border-color .12s,transform .12s;}
+  .job:hover{border-color:var(--forest);transform:translateY(-1px);}
+  .jt{font-weight:800;font-size:18px;}
+  .jmeta{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0;}
+  .jm{background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:3px 11px;font-size:12.5px;font-weight:600;color:var(--muted);}
+  .jd{color:var(--muted);font-size:14px;}
+  .japply{display:inline-block;margin-top:8px;color:var(--forest);font-weight:700;font-size:14px;}
+  .empty{color:var(--muted);background:var(--paper);border:1px dashed var(--line);border-radius:14px;padding:26px;text-align:center;}
+  .foot{margin-top:40px;text-align:center;color:var(--muted);font-size:13px;}
+  .foot a{color:var(--forest);font-weight:700;text-decoration:none;}
+</style></head><body>
+  <div class="wrap">
+    <div class="head">${avatar}<div><h1>${name}</h1>${siteHost ? `<a class="site" href="${_escHtml(site)}" rel="nofollow noopener" target="_blank">${siteHost} ↗</a>` : ''}</div></div>
+    ${desc ? `<p class="desc">${desc}</p>` : ''}
+    <h2>Open roles${jobs.length ? ` (${jobs.length})` : ''}</h2>
+    ${jobsHtml}
+    <p class="foot">Hiring page powered by <a href="${origin}/employer">ResumeTailored for Employers</a> — post a job free.</p>
+  </div>
+</body></html>`;
+}
+app.get('/company/:slug', (req, res) => {
+  const slug = String(req.params.slug || '').toLowerCase();
+  const profile = db.prepare('SELECT company_name, website, slug, logo_url, description FROM employer_profiles WHERE slug = ?').get(slug);
+  if (!profile) return res.status(404).send('<!doctype html><meta charset="utf-8"><title>Company not found</title><div style="font-family:sans-serif;max-width:520px;margin:80px auto;text-align:center;color:#191512;"><h1>Company not found</h1><p>This hiring page doesn’t exist or was removed.</p><p><a href="/employer" style="color:#1F5C3D;">Post your own job free →</a></p></div>');
+  const jobs = db.prepare("SELECT title, description, location, work_mode, job_type, salary_min, salary_max FROM job_postings WHERE employer_email = (SELECT email FROM employer_profiles WHERE slug = ?) AND status = 'active' ORDER BY created_at DESC").all(slug);
+  const origin = `${req.protocol}://${req.get('host')}`;
+  res.set('Content-Type', 'text/html; charset=utf-8').send(_companyPageHtml(profile, jobs, origin));
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

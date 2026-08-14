@@ -73,6 +73,12 @@ check('validateScreenerQuestions accepts a valid set', sc.valid && sc.clean.leng
 check('validateScreenerQuestions requires >=2 options for choice', !EH.validateScreenerQuestions([{ question: 'Shift?', type: 'choice', options: ['Day'] }]).valid);
 check('validateScreenerQuestions caps at 10', !EH.validateScreenerQuestions(Array.from({ length: 11 }, () => ({ question: 'ok?', type: 'yesno' }))).valid);
 
+// ── company slug ─────────────────────────────────────────────────────────────
+check('slugifyCompany lowercases + hyphenates', EH.slugifyCompany('Acme Health Inc.') === 'acme-health-inc');
+check('slugifyCompany strips leading/trailing separators', EH.slugifyCompany('  !!Acme!!  ') === 'acme');
+check('slugifyCompany falls back to "company" when empty', EH.slugifyCompany('!!!') === 'company');
+check('slugifyCompany caps length', EH.slugifyCompany('x'.repeat(80)).length <= 40);
+
 // ── AI applicant match: prompt + result validation ───────────────────────────
 const mp = EH.buildApplicantMatchPrompt({ jobTitle: 'RN', jobDescription: 'ICU nurse', requirements: 'BLS', resumeText: 'RN, 5yrs ICU, BLS' });
 check('buildApplicantMatchPrompt embeds the job + resume', /RN/.test(mp.user) && /ICU/.test(mp.user) && /BLS/.test(mp.user));

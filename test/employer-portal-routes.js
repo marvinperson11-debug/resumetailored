@@ -329,6 +329,21 @@ const server = app.listen(0, async () => {
     const rivalAiMatches = await req('GET', '/api/employer/jobs/' + freeJobId + '/ai-matches', 'tokRival');
     check("AI matches: a different employer cannot read someone else's matches", rivalAiMatches.status === 404);
 
+    // ═══════════════ v2: public company profile page ════════════════════════
+    const st2 = await req('GET', '/api/employer/status', 'tokFree');
+    check('status returns a public-page slug', typeof st2.json.slug === 'string' && st2.json.slug.length > 0);
+    const slug = st2.json.slug;
+    const pubRes = await new Promise((resolve) => {
+      http.get({ host: '127.0.0.1', port: PORT, path: '/company/' + slug }, (r) => { let b = ''; r.on('data', d => b += d); r.on('end', () => resolve({ status: r.statusCode, body: b })); });
+    });
+    check('public company page renders with the company name', pubRes.status === 200 && /Free Co/.test(pubRes.body), String(pubRes.status));
+    check('public company page lists the active job', /Registered Nurse|Open roles/.test(pubRes.body));
+    check('public company page links back to the app (growth loop)', /ResumeTailored for Employers/.test(pubRes.body));
+    const missing = await new Promise((resolve) => {
+      http.get({ host: '127.0.0.1', port: PORT, path: '/company/no-such-company-xyz' }, (r) => { let b = ''; r.on('data', d => b += d); r.on('end', () => resolve({ status: r.statusCode, body: b })); });
+    });
+    check('unknown company slug 404s', missing.status === 404);
+
   } catch (err) {
     failures++;
     console.error('FATAL', err);
