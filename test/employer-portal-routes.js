@@ -77,8 +77,8 @@ const server = app.listen(0, async () => {
     const setProfile = await req('POST', '/api/employer/profile', 'tokBoss', { companyName: 'Acme Health', website: 'https://acme.health' });
     check('creates the employer profile', setProfile.status === 200 && setProfile.json.companyName === 'Acme Health', setProfile.body);
     const s1 = await req('GET', '/api/employer/status', 'tokBoss');
-    check('status after setup: is an employer, not Pro, 0 active jobs', s1.json.isEmployer === true && s1.json.pro === false && s1.json.activeJobs === 0);
-    check('free active-post limit surfaced', s1.json.freeActiveJobLimit === 3);
+    check('status after setup: is an employer, free tier, 0 active jobs', s1.json.isEmployer === true && s1.json.pro === false && s1.json.tier === 'free' && s1.json.activeJobs === 0);
+    check('free lifetime job limit (2) surfaced', s1.json.freeLifetimeJobLimit === 2 && s1.json.jobsRemaining === 2 && s1.json.canPostJob === true);
 
     // ── posting jobs + validation ────────────────────────────────────────────
     const badPost = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: '' }));
@@ -96,10 +96,13 @@ const server = app.listen(0, async () => {
     const gigJob = list2.json.jobs.find(j => j.title === 'Event Staff');
     check('gig job carries isGig + rate + schedule', gigJob && gigJob.isGig === true && gigJob.gigRate === 25 && gigJob.gigSchedule === 'Sat 9am-5pm');
 
-    // ── free tier active-post cap (3) ────────────────────────────────────────
-    await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Job 3' }));
-    const capped = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Job 4 over cap' }));
-    check('free plan blocks a 4th active post', capped.status === 402 && capped.json.error === 'quota', capped.body);
+    // ── free tier LIFETIME cap (2 posts EVER) ────────────────────────────────
+    // p1 and the gig posting above are posts #1 and #2 — the free lifetime
+    // allowance. The third post must be blocked.
+    const sAt2 = await req('GET', '/api/employer/status', 'tokBoss');
+    check('status shows both lifetime posts used', sAt2.json.jobsPostedLifetime === 2 && sAt2.json.jobsRemaining === 0 && sAt2.json.canPostJob === false);
+    const capped = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Job 3 over lifetime cap' }));
+    check('free plan blocks the 3rd post EVER (lifetime cap)', capped.status === 402 && capped.json.error === 'quota' && capped.json.code === 'lifetime_job_limit', capped.body);
 
     // ── editing ───────────────────────────────────────────────────────────────
     const editBad = await req('PUT', '/api/employer/jobs/' + p1.json.id, 'tokBoss', { title: '' });
@@ -112,11 +115,10 @@ const server = app.listen(0, async () => {
     // ── close / reopen (status-only PUT) ─────────────────────────────────────
     const closeIt = await req('PUT', '/api/employer/jobs/' + p1.json.id, 'tokBoss', { status: 'closed' });
     check('closes a job via status-only update', closeIt.status === 200 && closeIt.json.status === 'closed');
-    const sAfterClose = await req('GET', '/api/employer/status', 'tokBoss');
-    check('closing a post frees up the active-post cap', sAfterClose.json.activeJobs === 2, String(sAfterClose.json.activeJobs));
-    // Cap was full with 3 active before closing one — now there's room again.
-    const afterCloseCanPost = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Job 5 after close' }));
-    check('posting works again after closing one to free the cap', afterCloseCanPost.status === 200, afterCloseCanPost.body);
+    // v2: the lifetime cap does NOT decrease when a post is closed/archived —
+    // a free employer who has posted twice still cannot post a third.
+    const afterCloseStillCapped = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Job after close still blocked' }));
+    check('closing a post does NOT free the lifetime cap', afterCloseStillCapped.status === 402 && afterCloseStillCapped.json.code === 'lifetime_job_limit', afterCloseStillCapped.body);
 
     // ── cross-account isolation ───────────────────────────────────────────────
     const rivalList = await req('GET', '/api/employer/jobs', 'tokRival');
@@ -300,6 +302,47 @@ const server = app.listen(0, async () => {
 
     const rivalMatchesOwn = await req('GET', '/api/employer/jobs/' + gigJobId + '/matches', 'tokRival');
     check("a different employer cannot match against someone else's gig posting", rivalMatchesOwn.status === 404);
+
+    // ═══════════════ v2: AI match gating (top 3 free, rest locked) ═══════════
+    // Seed the match cache directly so the GET endpoint runs with no LLM call.
+    db.prepare("INSERT INTO users (email,username,password_hash) VALUES (?,?,?)").run('freeboss@co.com', 'Free Boss', 'x');
+    db.prepare("INSERT INTO sessions (token,email) VALUES (?,?)").run('tokFree', 'freeboss@co.com');
+    await req('POST', '/api/employer/profile', 'tokFree', { companyName: 'Free Co' });
+    const freeJob = await req('POST', '/api/employer/jobs', 'tokFree', goodJob);
+    const freeJobId = freeJob.json.id;
+    // 5 applicants with descending seeded match scores.
+    [95, 88, 77, 66, 55].forEach((sc, i) => {
+      const cemail = 'cand' + i + '@x.com';
+      db.prepare("INSERT OR IGNORE INTO users (email,username,password_hash) VALUES (?,?,?)").run(cemail, 'Cand ' + i, 'x');
+      db.prepare('INSERT INTO job_applications (job_id, candidate_email, status, created_at, updated_at) VALUES (?,?,?,?,?)').run(freeJobId, cemail, 'new', Date.now(), Date.now());
+      db.prepare('INSERT INTO employer_ai_matches (job_id, candidate_email, score, reasoning, matched_keywords, missing_keywords, created_at) VALUES (?,?,?,?,?,?,?)')
+        .run(freeJobId, cemail, sc, 'seeded', '["ICU"]', '["PALS"]', Date.now());
+    });
+    const freeMatches = await req('GET', '/api/employer/jobs/' + freeJobId + '/ai-matches', 'tokFree');
+    check('AI matches: free employer sees exactly the top 3 unlocked', freeMatches.status === 200 && freeMatches.json.unlockedCount === 3 && freeMatches.json.lockedCount === 2, freeMatches.body);
+    check('AI matches: top match is the highest score with full detail', freeMatches.json.matches[0].score === 95 && freeMatches.json.matches[0].candidateEmail === 'cand0@x.com' && freeMatches.json.matches[0].locked === false);
+    check('AI matches: locked entries expose no PII', freeMatches.json.matches[3].locked === true && freeMatches.json.matches[3].candidateEmail === undefined && !!freeMatches.json.matches[3].scoreBand);
+    // Upgrade Free Co to Pro → everything unlocks.
+    db.prepare("INSERT INTO employer_subscribers (email, customer_id, tier, status) VALUES (?,?, 'pro', 'active')").run('freeboss@co.com', 'cus_free_pro');
+    const proMatches = await req('GET', '/api/employer/jobs/' + freeJobId + '/ai-matches', 'tokFree');
+    check('AI matches: Pro unlocks every match with detail', proMatches.json.unlockedCount === 5 && proMatches.json.lockedCount === 0 && proMatches.json.matches[4].candidateEmail === 'cand4@x.com');
+    const rivalAiMatches = await req('GET', '/api/employer/jobs/' + freeJobId + '/ai-matches', 'tokRival');
+    check("AI matches: a different employer cannot read someone else's matches", rivalAiMatches.status === 404);
+
+    // ═══════════════ v2: public company profile page ════════════════════════
+    const st2 = await req('GET', '/api/employer/status', 'tokFree');
+    check('status returns a public-page slug', typeof st2.json.slug === 'string' && st2.json.slug.length > 0);
+    const slug = st2.json.slug;
+    const pubRes = await new Promise((resolve) => {
+      http.get({ host: '127.0.0.1', port: PORT, path: '/company/' + slug }, (r) => { let b = ''; r.on('data', d => b += d); r.on('end', () => resolve({ status: r.statusCode, body: b })); });
+    });
+    check('public company page renders with the company name', pubRes.status === 200 && /Free Co/.test(pubRes.body), String(pubRes.status));
+    check('public company page lists the active job', /Registered Nurse|Open roles/.test(pubRes.body));
+    check('public company page links back to the app (growth loop)', /ResumeTailored for Employers/.test(pubRes.body));
+    const missing = await new Promise((resolve) => {
+      http.get({ host: '127.0.0.1', port: PORT, path: '/company/no-such-company-xyz' }, (r) => { let b = ''; r.on('data', d => b += d); r.on('end', () => resolve({ status: r.statusCode, body: b })); });
+    });
+    check('unknown company slug 404s', missing.status === 404);
 
   } catch (err) {
     failures++;

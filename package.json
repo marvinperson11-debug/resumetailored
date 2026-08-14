@@ -11,7 +11,8 @@
     "career:warm": "node scripts/warm-career-cache.js",
     "career:job-digest": "node scripts/job-digest.js",
     "career:job-feed": "node scripts/refresh-job-feed.js",
-    "career:weekly-report": "node scripts/weekly-report.js"
+    "career:weekly-report": "node scripts/weekly-report.js",
+    "employer:nurture": "node scripts/employer-nurture.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",

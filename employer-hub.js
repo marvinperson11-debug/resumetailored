@@ -15,10 +15,131 @@ const APPLICATION_STATUSES = ['new', 'reviewed', 'interview', 'hired', 'rejected
 // engagement runs.
 const GIG_TYPES = ['same-day', 'short-term', 'event-based', 'seasonal'];
 
-// Free employer plan: 3 ACTIVE (non-closed) job posts. Pro Employer ($29/mo)
-// is unlimited plus full candidate search + ATS + priority listing.
+// ── Employer Portal v2 tiers ────────────────────────────────────────────────
+// Free is a LIFETIME cap of 2 job posts EVER — not "2 active at a time". Once
+// two postings have been created the counter never decreases, so archiving,
+// hiring or deleting a posting does NOT free a slot; a third post requires Pro.
+// This is enforced server-side against a monotonic `jobs_posted_lifetime`
+// counter on the employer profile (incremented on every successful create),
+// which is why deleting a row can't game it — the row is gone but the count
+// stays. Pro ($49/mo) unlocks unlimited posts, AI candidate matching, team
+// seats, screener questions and analytics; Scale ($199/mo) adds API access and
+// removes every remaining cap.
+const EMPLOYER_TIERS = {
+  free: {
+    label: 'Free', price: 0,
+    lifetimeJobs: 2, seats: 1,
+    aiMatching: false, matchPreview: 3,   // free sees the top 3 AI matches, rest locked
+    screener: false, analytics: false, api: false
+  },
+  pro: {
+    label: 'Pro', price: 49,
+    lifetimeJobs: Infinity, seats: 5,
+    aiMatching: true, matchPreview: Infinity,
+    screener: true, analytics: true, api: false
+  },
+  scale: {
+    label: 'Scale', price: 199,
+    lifetimeJobs: Infinity, seats: Infinity,
+    aiMatching: true, matchPreview: Infinity,
+    screener: true, analytics: true, api: true
+  }
+};
+const EMPLOYER_TIER_NAMES = ['free', 'pro', 'scale'];
+
+// Slug for a public company page (/company/:slug). Lowercase, hyphenated,
+// stripped to [a-z0-9-]; capped; never empty (falls back to 'company').
+// Uniqueness is resolved by the caller (append -2/-3…); this is just the base.
+function slugifyCompany(name) {
+  const s = normStr(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/g, '');
+  return s || 'company';
+}
+
+function tierConfig(tier) {
+  return EMPLOYER_TIERS[String(tier || 'free').toLowerCase()] || EMPLOYER_TIERS.free;
+}
+
+// Can this employer create another job posting? Pure — takes the tier and the
+// monotonic lifetime count, returns the decision plus the numbers the UI needs.
+function canPostJob({ tier, lifetimeJobsPosted }) {
+  const cfg = tierConfig(tier);
+  const posted = Number(lifetimeJobsPosted) || 0;
+  const limit = cfg.lifetimeJobs;
+  const allowed = posted < limit;
+  return {
+    allowed,
+    limit: limit === Infinity ? null : limit,
+    posted,
+    remaining: limit === Infinity ? null : Math.max(0, limit - posted)
+  };
+}
+
+// Map a Stripe price id (or an explicit plan name in checkout metadata) to a
+// tier. Returns 'free' when nothing matches so an unknown price can never
+// silently grant a paid tier.
+function resolveEmployerTier({ plan, priceId, proPriceId, scalePriceId }) {
+  const p = String(plan || '').toLowerCase();
+  if (p === 'pro' || p === 'scale') return p;
+  if (priceId && scalePriceId && priceId === scalePriceId) return 'scale';
+  if (priceId && proPriceId && priceId === proPriceId) return 'pro';
+  return 'free';
+}
+
+// AI-match gating. Given a ranked list (best first) and the employer's tier,
+// return which entries are visible and which are locked behind an upgrade.
+// Locked entries are stripped of identifying fields so nothing sensitive
+// reaches a client that hasn't paid to see it — only enough to render a
+// blurred placeholder card and a count. Pure, so the gate is unit-testable.
+function applyMatchGate(ranked, tier) {
+  const cfg = tierConfig(tier);
+  const list = Array.isArray(ranked) ? ranked : [];
+  const preview = cfg.matchPreview;
+  if (preview === Infinity) {
+    return { total: list.length, unlockedCount: list.length, lockedCount: 0, matches: list.map(m => Object.assign({ locked: false }, m)) };
+  }
+  const matches = list.map((m, i) => {
+    if (i < preview) return Object.assign({ locked: false }, m);
+    // Locked: keep only the score band so the UI can show a blurred bar; drop PII.
+    return { locked: true, scoreBand: m.score >= 80 ? 'high' : m.score >= 60 ? 'medium' : 'low' };
+  });
+  return { total: list.length, unlockedCount: Math.min(preview, list.length), lockedCount: Math.max(0, list.length - preview), matches };
+}
+
+// Screener questions attached to a job posting (Pro+). Accepts an array of
+// { question, type, required, options? }; caps count/length so a posting can't
+// carry an unbounded blob. type ∈ text|yesno|choice; choice needs ≥2 options.
+const SCREENER_TYPES = ['text', 'yesno', 'choice'];
+function validateScreenerQuestions(input) {
+  let arr = input;
+  if (arr == null || arr === '') return { valid: true, errors: [], clean: [] };
+  if (typeof arr === 'string') { try { arr = JSON.parse(arr); } catch { return { valid: false, errors: ['Screener questions must be valid JSON.'], clean: null }; } }
+  if (arr == null) return { valid: true, errors: [], clean: [] };
+  if (!Array.isArray(arr)) return { valid: false, errors: ['Screener questions must be a list.'], clean: null };
+  if (arr.length > 10) return { valid: false, errors: ['At most 10 screener questions.'], clean: null };
+  const errors = []; const clean = [];
+  arr.forEach((q, i) => {
+    const question = normStr(q && q.question, 300);
+    const type = normStr(q && q.type).toLowerCase() || 'text';
+    if (question.length < 3) { errors.push(`Question ${i + 1} is too short.`); return; }
+    if (!SCREENER_TYPES.includes(type)) { errors.push(`Question ${i + 1} has an invalid type.`); return; }
+    let options = null;
+    if (type === 'choice') {
+      options = (Array.isArray(q.options) ? q.options : []).map(o => normStr(o, 120)).filter(Boolean).slice(0, 8);
+      if (options.length < 2) { errors.push(`Question ${i + 1} needs at least 2 options.`); return; }
+    }
+    clean.push({ id: normStr(q && q.id, 40) || `q${i + 1}`, question, type, required: !!(q && q.required), options });
+  });
+  if (errors.length) return { valid: false, errors, clean: null };
+  return { valid: true, errors: [], clean };
+}
+
+// Back-compat shim: some older call sites/tests referenced a flat limits table.
+// freeLifetimeJobs is the v2 free cap (2). Kept so nothing that imports
+// EMPLOYER_LIMITS breaks; new code should read EMPLOYER_TIERS / tierConfig.
 const EMPLOYER_LIMITS = {
-  freeActiveJobs: 3
+  freeLifetimeJobs: EMPLOYER_TIERS.free.lifetimeJobs,
+  freeSeats: EMPLOYER_TIERS.free.seats,
+  freeMatchPreview: EMPLOYER_TIERS.free.matchPreview
 };
 
 function normStr(v, max) {
@@ -213,9 +334,112 @@ function toCsv(rows, cols) {
   return header + '\r\n' + body + '\r\n';
 }
 
+// ── AI applicant matching (prompt + validation, pure) ───────────────────────
+// The scoring itself runs through Claude in server.js; the prompt and the
+// output shape live here so they're stable, versioned and unit-testable, and
+// so a test can seed the cache without any LLM call. Bump MATCH_PROMPT_VERSION
+// to invalidate cached scores.
+const MATCH_PROMPT_VERSION = 1;
+function buildApplicantMatchPrompt({ jobTitle, jobDescription, requirements, resumeText }) {
+  const system = 'You are an expert technical recruiter and ATS. You score how well a candidate resume matches a specific job. Be objective and consistent. Respond with ONLY a JSON object, no markdown.';
+  const user = `JOB TITLE: ${normStr(jobTitle, 200)}
+
+JOB DESCRIPTION:
+${normStr(jobDescription, 4000)}
+
+REQUIREMENTS:
+${normStr(requirements, 2000) || '(none specified)'}
+
+CANDIDATE RESUME:
+${normStr(resumeText, 6000) || '(no resume text available)'}
+
+Return a JSON object exactly like:
+{
+  "score": <integer 0-100, how well this resume matches THIS job>,
+  "reasoning": "<one or two sentences, plain, specific to this candidate>",
+  "matchedKeywords": ["<skills/terms from the job the resume clearly demonstrates>"],
+  "missingKeywords": ["<important skills/terms from the job the resume is missing>"]
+}
+Keep each keyword list to at most 10 short items. Score 0 if there is no resume text.`;
+  return { system, user };
+}
+function validateMatchResult(obj) {
+  if (!obj || typeof obj !== 'object') return { ok: false, error: 'not an object' };
+  let score = Math.round(Number(obj.score));
+  if (!Number.isFinite(score)) return { ok: false, error: 'score not a number' };
+  score = Math.max(0, Math.min(100, score));
+  const arr = (v) => Array.isArray(v) ? v.map(x => normStr(x, 60)).filter(Boolean).slice(0, 10) : [];
+  return { ok: true, value: {
+    score,
+    reasoning: normStr(obj.reasoning, 400),
+    matchedKeywords: arr(obj.matchedKeywords),
+    missingKeywords: arr(obj.missingKeywords)
+  } };
+}
+
+// ── Free→Pro nurture sequence ────────────────────────────────────────────────
+// Three plain, brand-only emails that convert a free employer to Pro. `step`
+// is 1-based; each returns { subject, html } or null past the last step. Pure
+// so the copy is testable and the sender (scripts/employer-nurture.js) stays a
+// thin scheduler. No external images — a CSS lockup, same house rule as the
+// other transactional emails.
+const EMPLOYER_NURTURE_STEPS = 3;
+// Days after the FIRST nurture email that each step becomes eligible.
+const NURTURE_STEP_DELAY_DAYS = { 1: 0, 2: 3, 3: 7 };
+// Given the steps already sent (map step->sentAtMs) and the current time,
+// return the next step that is DUE, or null. Pure so the scheduler script is a
+// thin wrapper and the pacing is unit-testable. Later steps are paced relative
+// to when step 1 was sent; each step is emitted at most once.
+function nurtureStepDue(sentSteps, now) {
+  const sent = sentSteps || {};
+  const firstAt = sent[1] || null;
+  const DAY = 24 * 60 * 60 * 1000;
+  for (let step = 1; step <= EMPLOYER_NURTURE_STEPS; step++) {
+    if (sent[step]) continue;
+    if (step > 1 && !firstAt) return null;
+    const eligibleAt = step === 1 ? 0 : firstAt + (NURTURE_STEP_DELAY_DAYS[step] || 0) * DAY;
+    if (now >= eligibleAt) return step;
+    return null;
+  }
+  return null;
+}
+function buildEmployerNurtureEmail(step, ctx) {
+  const c = ctx || {};
+  const company = normStr(c.companyName) || 'there';
+  const origin = normStr(c.origin) || 'https://resumetailored.com';
+  const cta = (label) => `<p style="margin:22px 0;"><a href="${origin}/employer" style="background:#1F5C3D;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px;display:inline-block;">${label}</a></p>`;
+  const shell = (inner) => `<div style="font-family:Georgia,serif;max-width:540px;margin:0 auto;color:#191512;line-height:1.55;">${inner}<p style="color:#6B7280;font-size:13px;margin-top:26px;">— ResumeTailored for Employers · <a href="${origin}/employer" style="color:#1F5C3D;">resumetailored.com</a></p></div>`;
+  if (step === 1) {
+    return { subject: `You've used your 2 free job posts, ${company}`, html: shell(
+      `<p>Hi ${company},</p>
+       <p>You've posted your two free jobs on ResumeTailored — nice. That's the lifetime limit on the free plan, so your next posting needs <strong>Pro</strong>.</p>
+       <p>Pro is <strong>$49/month</strong> and unlocks <strong>unlimited job posts</strong>, <strong>AI candidate matching</strong>, team seats, screener questions and analytics.</p>
+       ${cta('Upgrade to Pro — $49/mo')}
+       <p>Cancel anytime.</p>`) };
+  }
+  if (step === 2) {
+    return { subject: `See who actually matches your roles`, html: shell(
+      `<p>Hi ${company},</p>
+       <p>Every applicant to your jobs gets an <strong>AI match score</strong> against the role — matched keywords, missing keywords, and a ranked shortlist. On the free plan you can see your <strong>top 3 matches</strong>; Pro reveals the rest.</p>
+       <p>Stop reading resumes top-to-bottom. Let the ranking do the first pass.</p>
+       ${cta('Unlock all matches — $49/mo')}` ) };
+  }
+  if (step === 3) {
+    return { subject: `A hiring pipeline your whole team can run`, html: shell(
+      `<p>Hi ${company},</p>
+       <p>Pro gives your recruiters a shared drag-and-drop pipeline — New → Reviewed → Interview → Hired — plus in-app messaging, one-click reject emails, screener questions and analytics. Hiring more? <strong>Scale ($199/mo)</strong> adds API access and removes every cap.</p>
+       ${cta('Start Pro — $49/mo')}
+       <p style="font-size:14px;color:#6B7280;">This is the last nudge — we won't email you about this again.</p>` ) };
+  }
+  return null;
+}
+
 module.exports = {
   WORK_MODES, JOB_TYPES, APPLICATION_STATUSES, EMPLOYER_LIMITS, REMOTE_PREFS, CONTACT_REQUEST_STATUSES, GIG_TYPES,
   INTERVIEW_MODES, INTERVIEW_STATUSES,
+  EMPLOYER_TIERS, EMPLOYER_TIER_NAMES, SCREENER_TYPES, EMPLOYER_NURTURE_STEPS, NURTURE_STEP_DELAY_DAYS, MATCH_PROMPT_VERSION,
+  tierConfig, canPostJob, resolveEmployerTier, applyMatchGate, validateScreenerQuestions, buildEmployerNurtureEmail, nurtureStepDue, slugifyCompany,
+  buildApplicantMatchPrompt, validateMatchResult,
   validateJobPosting, validateApplicationStatus, validateRating,
   validateCandidateProfile, validateContactRequestStatus, validateInterview,
   buildRejectionEmail, rankCandidates, matchGigCandidates,

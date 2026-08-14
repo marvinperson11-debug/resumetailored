@@ -38,8 +38,69 @@ check('rejects a negative gig rate', !EH.validateJobPosting(Object.assign({}, go
 
 check('trims and caps title length', EH.validateJobPosting(Object.assign({}, good, { title: '  ' + 'x'.repeat(200) + '  ' })).clean.title.length === 140);
 
-// ── EMPLOYER_LIMITS ─────────────────────────────────────────────────────────
-check('free plan caps active posts at 3', EH.EMPLOYER_LIMITS.freeActiveJobs === 3);
+// ── v2 tiers + lifetime job cap ──────────────────────────────────────────────
+check('free tier is a lifetime cap of 2 posts', EH.EMPLOYER_TIERS.free.lifetimeJobs === 2);
+check('pro tier is $49 with unlimited posts', EH.EMPLOYER_TIERS.pro.price === 49 && EH.EMPLOYER_TIERS.pro.lifetimeJobs === Infinity);
+check('scale tier is $199 with API access', EH.EMPLOYER_TIERS.scale.price === 199 && EH.EMPLOYER_TIERS.scale.api === true);
+check('tierConfig falls back to free on garbage', EH.tierConfig('bogus').lifetimeJobs === 2);
+
+check('canPostJob allows a free employer with 0 posts', EH.canPostJob({ tier: 'free', lifetimeJobsPosted: 0 }).allowed === true);
+check('canPostJob allows a free employer with 1 post', EH.canPostJob({ tier: 'free', lifetimeJobsPosted: 1 }).allowed === true);
+check('canPostJob BLOCKS a free employer at 2 lifetime posts', EH.canPostJob({ tier: 'free', lifetimeJobsPosted: 2 }).allowed === false);
+check('canPostJob still blocks at 2 even after archiving (count does not drop)', EH.canPostJob({ tier: 'free', lifetimeJobsPosted: 2 }).remaining === 0);
+check('canPostJob is unlimited for pro', EH.canPostJob({ tier: 'pro', lifetimeJobsPosted: 999 }).allowed === true);
+check('canPostJob reports remaining for free', EH.canPostJob({ tier: 'free', lifetimeJobsPosted: 1 }).remaining === 1);
+
+check('resolveEmployerTier maps explicit plan name', EH.resolveEmployerTier({ plan: 'scale' }) === 'scale');
+check('resolveEmployerTier maps a price id', EH.resolveEmployerTier({ priceId: 'price_X', proPriceId: 'price_X' }) === 'pro');
+check('resolveEmployerTier defaults to free on unknown', EH.resolveEmployerTier({ priceId: 'price_unknown' }) === 'free');
+
+// ── AI match gate: top 3 free, rest locked ───────────────────────────────────
+const gRanked = [90, 85, 80, 70, 60].map((s, i) => ({ score: s, candidateId: 'c' + i, email: 'c' + i + '@x.com' }));
+const freeGate = EH.applyMatchGate(gRanked, 'free');
+check('free gate unlocks exactly 3 matches', freeGate.unlockedCount === 3);
+check('free gate locks the remaining 2', freeGate.lockedCount === 2);
+check('free gate keeps PII on unlocked entries', freeGate.matches[0].email === 'c0@x.com' && freeGate.matches[0].locked === false);
+check('free gate strips PII from locked entries', freeGate.matches[3].locked === true && freeGate.matches[3].email === undefined);
+check('free gate exposes only a score band on locked entries', freeGate.matches[3].scoreBand === 'medium');
+const proGate = EH.applyMatchGate(gRanked, 'pro');
+check('pro gate unlocks everything', proGate.unlockedCount === 5 && proGate.lockedCount === 0 && proGate.matches[4].email === 'c4@x.com');
+
+// ── screener questions (Pro) ─────────────────────────────────────────────────
+check('validateScreenerQuestions accepts empty as []', EH.validateScreenerQuestions('').clean.length === 0);
+const sc = EH.validateScreenerQuestions([{ question: 'Years of experience?', type: 'text', required: true }, { question: 'Authorized to work?', type: 'yesno' }]);
+check('validateScreenerQuestions accepts a valid set', sc.valid && sc.clean.length === 2 && sc.clean[0].id === 'q1');
+check('validateScreenerQuestions requires >=2 options for choice', !EH.validateScreenerQuestions([{ question: 'Shift?', type: 'choice', options: ['Day'] }]).valid);
+check('validateScreenerQuestions caps at 10', !EH.validateScreenerQuestions(Array.from({ length: 11 }, () => ({ question: 'ok?', type: 'yesno' }))).valid);
+
+// ── company slug ─────────────────────────────────────────────────────────────
+check('slugifyCompany lowercases + hyphenates', EH.slugifyCompany('Acme Health Inc.') === 'acme-health-inc');
+check('slugifyCompany strips leading/trailing separators', EH.slugifyCompany('  !!Acme!!  ') === 'acme');
+check('slugifyCompany falls back to "company" when empty', EH.slugifyCompany('!!!') === 'company');
+check('slugifyCompany caps length', EH.slugifyCompany('x'.repeat(80)).length <= 40);
+
+// ── AI applicant match: prompt + result validation ───────────────────────────
+const mp = EH.buildApplicantMatchPrompt({ jobTitle: 'RN', jobDescription: 'ICU nurse', requirements: 'BLS', resumeText: 'RN, 5yrs ICU, BLS' });
+check('buildApplicantMatchPrompt embeds the job + resume', /RN/.test(mp.user) && /ICU/.test(mp.user) && /BLS/.test(mp.user));
+const mvGood = EH.validateMatchResult({ score: 87, reasoning: 'Strong ICU match', matchedKeywords: ['ICU', 'BLS'], missingKeywords: ['PALS'] });
+check('validateMatchResult accepts a good object', mvGood.ok && mvGood.value.score === 87 && mvGood.value.matchedKeywords.length === 2);
+check('validateMatchResult clamps score to 0-100', EH.validateMatchResult({ score: 250 }).value.score === 100 && EH.validateMatchResult({ score: -5 }).value.score === 0);
+check('validateMatchResult rejects a non-numeric score', !EH.validateMatchResult({ score: 'high' }).ok);
+check('validateMatchResult caps keyword lists at 10', EH.validateMatchResult({ score: 50, matchedKeywords: Array.from({ length: 20 }, (_, i) => 'k' + i) }).value.matchedKeywords.length === 10);
+
+// ── nurture emails ───────────────────────────────────────────────────────────
+check('nurture step 1 mentions the 2 free posts and $49', /2 free/.test(EH.buildEmployerNurtureEmail(1, { companyName: 'Acme' }).subject) || /49/.test(EH.buildEmployerNurtureEmail(1, {}).html));
+check('nurture returns null past the last step', EH.buildEmployerNurtureEmail(4, {}) === null);
+check('nurture personalizes the company name', /Acme/.test(EH.buildEmployerNurtureEmail(1, { companyName: 'Acme' }).subject));
+
+// ── nurture pacing (pure) ────────────────────────────────────────────────────
+const T0 = 1000000000000; const DAY = 86400000;
+check('pacing: step 1 is due when nothing has been sent', EH.nurtureStepDue({}, T0) === 1);
+check('pacing: step 2 is NOT due the same day as step 1', EH.nurtureStepDue({ 1: T0 }, T0 + DAY) === null);
+check('pacing: step 2 becomes due 3 days after step 1', EH.nurtureStepDue({ 1: T0 }, T0 + 3 * DAY) === 2);
+check('pacing: step 3 becomes due 7 days after step 1', EH.nurtureStepDue({ 1: T0, 2: T0 + 3 * DAY }, T0 + 7 * DAY) === 3);
+check('pacing: nothing left once all 3 sent', EH.nurtureStepDue({ 1: T0, 2: T0 + 3 * DAY, 3: T0 + 7 * DAY }, T0 + 30 * DAY) === null);
+check('pacing: is idempotent — a sent step is never re-emitted', EH.nurtureStepDue({ 1: T0 }, T0 + 100 * DAY) !== 1);
 
 // ── application status / rating ─────────────────────────────────────────────
 check('validateApplicationStatus accepts a real stage', EH.validateApplicationStatus('interview'));

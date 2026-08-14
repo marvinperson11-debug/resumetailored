@@ -186,6 +186,53 @@
   #nvPubMenu.open{display:flex;}
   #nvPubMenu a{font-size:22px;font-weight:700;color:var(--nv-ink);text-decoration:none;padding:10px 0;border-bottom:1px solid var(--nv-line);}
   #nvPubMenu .close{position:absolute;top:20px;right:24px;background:none;border:none;font-size:30px;color:var(--nv-muted);cursor:pointer;line-height:1;}
+  /* ── v2: Kanban pipeline ── */
+  .kanban{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:start;}
+  .kan-col{background:var(--nv-panel2);border:1px solid var(--nv-line);border-radius:12px;padding:8px;min-height:120px;transition:background .12s,border-color .12s;}
+  .kan-col.over{background:rgba(31,92,61,.08);border-color:var(--nv-accent);}
+  .kan-col-h{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.3px;color:var(--nv-muted);padding:4px 4px 8px;}
+  .kan-col-h .dot{width:8px;height:8px;border-radius:50%;background:var(--nv-muted);}
+  .kan-col-h .dot.new{background:var(--nv-accent2);}.kan-col-h .dot.reviewed{background:#3b82f6;}.kan-col-h .dot.interview{background:var(--nv-amber);}.kan-col-h .dot.hired{background:var(--nv-green);}.kan-col-h .dot.rejected{background:var(--nv-red);}
+  .kan-count{margin-left:auto;background:var(--nv-panel);border:1px solid var(--nv-line);border-radius:999px;padding:1px 7px;font-size:11px;}
+  .kan-cards{display:flex;flex-direction:column;gap:7px;}
+  .kan-empty{color:var(--nv-muted);font-size:12px;text-align:center;padding:10px 0;opacity:.6;}
+  .kan-card{background:var(--nv-panel);border:1px solid var(--nv-line);border-radius:9px;padding:9px;cursor:grab;box-shadow:0 1px 2px rgba(25,21,18,.04);}
+  .kan-card[draggable=true]:active{cursor:grabbing;}
+  .kan-card.drag{opacity:.4;}
+  .kan-card-name{font-size:12.5px;font-weight:700;word-break:break-all;line-height:1.3;}
+  .kan-card-acts{display:flex;gap:4px;margin-top:7px;}
+  .kan-card-acts button{background:var(--nv-panel2);border:1px solid var(--nv-line);border-radius:6px;padding:2px 7px;font-size:12px;cursor:pointer;line-height:1.4;}
+  .kan-card-acts button:hover{border-color:var(--nv-accent);}
+  /* ── v2: AI matches ── */
+  .ai-list{display:flex;flex-direction:column;gap:10px;}
+  .ai-card{background:var(--nv-panel);border:1px solid var(--nv-line);border-radius:12px;padding:14px;position:relative;}
+  .ai-top{display:flex;align-items:center;gap:12px;}
+  .ai-score{font-weight:800;font-size:20px;color:var(--nv-accent);background:rgba(31,92,61,.1);border-radius:10px;padding:6px 10px;min-width:56px;text-align:center;}
+  .ai-name{font-weight:800;font-size:14px;}
+  .ai-kws{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;}
+  .ai-tag{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;}
+  .ai-tag.ok{background:rgba(46,125,83,.14);color:var(--nv-accent);}
+  .ai-tag.no{background:rgba(178,58,46,.12);color:var(--nv-red);}
+  .ai-card.locked{overflow:hidden;}
+  .ai-blur{filter:blur(6px);opacity:.75;user-select:none;pointer-events:none;}
+  .ai-blur .ai-score{display:inline-block;margin-bottom:8px;}
+  .ai-blur .ai-name{letter-spacing:2px;}.ai-blur .ai-kw{letter-spacing:3px;color:var(--nv-muted);margin-top:6px;}
+  .ai-lock{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:26px;}
+  .ai-upsell{margin-top:14px;background:var(--nv-panel2);border:1px dashed var(--nv-accent);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px;}
+  /* ── v2: plan tiles ── */
+  .nv-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .nv-plan{border:1px solid var(--nv-line);border-radius:12px;padding:16px;background:var(--nv-panel2);display:flex;flex-direction:column;}
+  .nv-plan.cur{border-color:var(--nv-accent);box-shadow:0 0 0 1px var(--nv-accent);}
+  .nv-plan-h{display:flex;align-items:center;justify-content:space-between;}
+  .nv-plan-n{font-weight:800;font-size:15px;}
+  .nv-plan-badge{font-size:10px;font-weight:800;text-transform:uppercase;background:var(--nv-accent);color:#fff;border-radius:999px;padding:2px 8px;}
+  .nv-plan-p{font-size:26px;font-weight:800;margin:8px 0 2px;}.nv-plan-p span{font-size:13px;font-weight:600;color:var(--nv-muted);}
+  .nv-plan-t{font-size:12px;color:var(--nv-muted);margin-bottom:10px;}
+  .nv-plan-feats{list-style:none;padding:0;margin:0 0 12px;display:flex;flex-direction:column;gap:6px;flex:1;}
+  .nv-plan-feats li{font-size:12.5px;padding-left:18px;position:relative;}
+  .nv-plan-feats li:before{content:"✓";position:absolute;left:0;color:var(--nv-accent2);font-weight:800;}
+  .nv-btn-dark{background:var(--nv-ink);}
+  @media(max-width:760px){.kanban{grid-template-columns:1fr;}.nv-plans{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -314,7 +361,7 @@
       <span class="co" id="nvCoOut"></span>
       <span class="nv-pill nv-pill-pro" id="nvProPill" style="display:none;">PRO EMPLOYER</span>
       <div class="sp"></div>
-      <button class="nv-btn nv-btn-ghost nv-btn-sm" id="nvUpgradeBtn" onclick="nvUpgrade()" style="display:none;">Upgrade — $29/mo</button>
+      <button class="nv-btn nv-btn-ghost nv-btn-sm" id="nvUpgradeBtn" onclick="nvUpgrade('pro')" style="display:none;">Upgrade — $49/mo</button>
       <button class="nv-btn nv-btn-sm" onclick="nvOpenPost()">+ Post a Job</button>
       <a class="nv-linkbtn" style="font-size:12px;" id="nvLogout" onclick="nvDoLogout()">Log out</a>
     </div>
@@ -447,15 +494,19 @@ async function boot(){
   if(!epStatus.isEmployer){ show('nvSetup'); return; }
   show('nvShell');
   el('nvCoOut').textContent=epStatus.companyName;
+  var tierLabel=(epStatus.tier||'free').toUpperCase();
   el('nvProPill').style.display=epStatus.pro?'inline-block':'none';
+  el('nvProPill').textContent=epStatus.tier==='scale'?'SCALE':'PRO EMPLOYER';
   el('nvUpgradeBtn').style.display=epStatus.pro?'none':'inline-flex';
+  el('nvUpgradeBtn').textContent='Upgrade — $'+((epStatus.prices&&epStatus.prices.pro)||49)+'/mo';
   await loadJobs();
   nvGo('dashboard');
   refreshMsgBadge();
 }
-async function nvUpgrade(){
-  var r=await api('/api/employer/subscribe',{method:'POST',headers:AH()});
-  if(!r.ok) return toast(r.data.message||'Pro Employer checkout is not available yet.');
+async function nvUpgrade(plan){
+  plan=plan||'pro';
+  var r=await api('/api/employer/subscribe',{method:'POST',headers:AH(),body:JSON.stringify({plan:plan})});
+  if(!r.ok) return toast(r.data.message||'That plan is not available yet.');
   window.location.href=r.data.url;
 }
 
@@ -526,13 +577,13 @@ async function renderJobs(c){
         '<span class="nv-linkbtn" style="color:var(--nv-red);" onclick="nvDeletePost('+j.id+')">Delete</span>'+
       '</td></tr>';
   }).join('');
-  c.innerHTML='<div style="display:flex;align-items:center;gap:12px;"><div><h1 class="nv-h">Jobs</h1><p class="nv-sub">'+(epStatus.pro?'Unlimited active postings.':(epStatus.activeJobs+' of '+epStatus.freeActiveJobLimit+' free active posts used.'))+'</p></div><div style="flex:1;"></div><button class="nv-btn" onclick="nvOpenPost()">+ Post a Job</button></div>'+
+  c.innerHTML='<div style="display:flex;align-items:center;gap:12px;"><div><h1 class="nv-h">Jobs</h1><p class="nv-sub">'+(epStatus.pro?'Unlimited job posts.':(epStatus.jobsPostedLifetime+' of '+epStatus.freeLifetimeJobLimit+' lifetime free job posts used.'))+'</p></div><div style="flex:1;"></div><button class="nv-btn" onclick="nvOpenPost()">+ Post a Job</button></div>'+
     (JOBS.length?'<div class="nv-tablewrap"><table class="nv-table"><thead><tr><th>Job Title</th><th>Location</th><th>Posted</th><th>Applications</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'
       :'<div class="nv-empty">No jobs yet — click <strong>Post a Job</strong> to get started.</div>');
 }
 function nvToggleGig(){ el('nvGigFields').style.display=el('pfType').value==='temp'?'block':'none'; }
 function nvOpenPost(){
-  if(!epStatus.pro && epStatus.activeJobs>=epStatus.freeActiveJobLimit){ toast('Free plan limit reached ('+epStatus.freeActiveJobLimit+' active). Upgrade for unlimited.'); return; }
+  if(!epStatus.pro && epStatus.canPostJob===false){ toast('Free plan limit reached — '+epStatus.freeLifetimeJobLimit+' job posts total. Upgrade to Pro for unlimited.'); nvGo('settings'); return; }
   el('nvPostTitle').textContent='Post a Job'; el('nvEditId').value='';
   ['pfTitle','pfDesc','pfReq','pfLoc','pfSalMin','pfSalMax','pfGigRate','pfGigSched'].forEach(function(id){el(id).value='';});
   el('pfMode').value='remote'; el('pfType').value='full-time'; el('pfGigType').value='short-term'; nvToggleGig();
@@ -561,42 +612,92 @@ async function nvDeletePost(id){ if(!confirm('Delete this job posting? This cann
 async function refreshStatus(){ var r=await api('/api/employer/status'); if(r.ok)epStatus=r.data; }
 
 // ── APPLICANTS ───────────────────────────────────────────────────────────────
-var _appsJobId=null, _appsFilter='';
+var _appsJobId=null, _appsView='pipeline';
+var KAN_STAGES=[['new','New'],['reviewed','Reviewed'],['interview','Interview'],['hired','Hired'],['rejected','Rejected']];
 async function nvOpenApps(jobId){
-  _appsJobId=jobId; _appsFilter='';
+  _appsJobId=jobId; _appsView='pipeline';
   var j=JOBS.find(function(x){return x.id===jobId;});
   el('nvAppsJob').textContent=j?j.title:'';
-  el('nvAppsUpsell').style.display=epStatus.pro?'none':'block';
   el('nvAppsOverlay').classList.add('open');
-  var st=['','new','reviewed','interview','hired','rejected'];
-  el('nvAppsFilters').innerHTML=st.map(function(s){return '<button class="nv-btn nv-btn-ghost nv-btn-sm" onclick="_appsFilter=\''+s+'\';loadApps()">'+(s||'All')+'</button>';}).join('');
-  loadApps();
+  el('nvAppsFilters').innerHTML=
+    '<button class="nv-btn nv-btn-sm" id="avPipe" onclick="nvAppsView(\'pipeline\')">Pipeline</button>'+
+    '<button class="nv-btn nv-btn-sm nv-btn-ghost" id="avAi" onclick="nvAppsView(\'matches\')">🤖 AI Matches</button>';
+  nvAppsView('pipeline');
 }
+function nvAppsView(v){
+  _appsView=v;
+  el('avPipe').className='nv-btn nv-btn-sm'+(v==='pipeline'?'':' nv-btn-ghost');
+  el('avAi').className='nv-btn nv-btn-sm'+(v==='matches'?'':' nv-btn-ghost');
+  el('nvAppsUpsell').style.display=(v==='pipeline'&&!epStatus.pro)?'block':'none';
+  if(v==='pipeline') return loadApps();
+  return loadAiMatches();
+}
+// ── Drag-and-drop Kanban pipeline ────────────────────────────────────────────
 async function loadApps(){
   var r=await api('/api/employer/jobs/'+_appsJobId+'/applications');
   var apps=(r.ok&&r.data.applications)||[];
-  if(_appsFilter) apps=apps.filter(function(a){return a.status===_appsFilter;});
   var list=el('nvAppsList'), empty=el('nvAppsEmpty');
   if(!apps.length){ list.innerHTML=''; empty.style.display='block'; return; } empty.style.display='none';
-  list.innerHTML=apps.map(function(a){
-    var stSel=['new','reviewed','interview','hired','rejected'].map(function(s){return '<option value="'+s+'"'+(a.status===s?' selected':'')+'>'+s+'</option>';}).join('');
-    return '<div class="nv-card" style="margin-bottom:10px;">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">'+
-        '<div style="font-weight:800;">'+esc(a.candidateEmail)+' <span class="nv-status '+esc(a.status)+'">'+esc(a.status)+'</span></div>'+
-        (epStatus.pro?'<select class="nv-select" style="width:auto;" onchange="nvSetAppStatus('+a.id+',this.value)">'+stSel+'</select>':'')+
-      '</div>'+
-      (epStatus.pro?'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">'+
-        '<button class="nv-btn nv-btn-sm nv-btn-ghost" onclick="nvMsgCandidate(\''+esc(a.candidateEmail)+'\')">Message</button>'+
-        '<button class="nv-btn nv-btn-sm nv-btn-ghost" onclick="nvOpenInterviewFor(\''+esc(a.candidateEmail)+'\','+_appsJobId+')">Interview</button>'+
-        '<button class="nv-btn nv-btn-sm nv-btn-danger" onclick="nvSetAppStatus('+a.id+',\'rejected\')">Reject</button>'+
-      '</div>':'')+
-    '</div>';
-  }).join('');
+  var byStage={}; KAN_STAGES.forEach(function(s){byStage[s[0]]=[];});
+  apps.forEach(function(a){ (byStage[a.status]||byStage.new).push(a); });
+  var pro=epStatus.pro;
+  list.innerHTML='<div class="kanban">'+KAN_STAGES.map(function(s){
+    var cards=byStage[s[0]].map(function(a){ return kanCard(a,pro); }).join('')||'<div class="kan-empty">—</div>';
+    return '<div class="kan-col" data-stage="'+s[0]+'" ondragover="kanOver(event)" ondragleave="kanLeave(event)" ondrop="kanDrop(event,\''+s[0]+'\')">'+
+      '<div class="kan-col-h"><span class="dot '+s[0]+'"></span>'+s[1]+' <span class="kan-count">'+byStage[s[0]].length+'</span></div>'+
+      '<div class="kan-cards">'+cards+'</div></div>';
+  }).join('')+'</div>'+(pro?'':'<p class="nv-sub" style="margin-top:10px;">🔒 Drag-and-drop is a Pro feature — upgrade to move candidates through the pipeline.</p>');
 }
+function kanCard(a,pro){
+  return '<div class="kan-card"'+(pro?' draggable="true" ondragstart="kanDrag(event,'+a.id+')" ondragend="kanEnd(event)"':'')+'>'+
+    '<div class="kan-card-name">'+esc(a.candidateEmail)+'</div>'+
+    (pro?'<div class="kan-card-acts">'+
+      '<button title="Message" onclick="nvMsgCandidate(\''+esc(a.candidateEmail)+'\')">💬</button>'+
+      '<button title="Interview" onclick="nvOpenInterviewFor(\''+esc(a.candidateEmail)+'\','+_appsJobId+')">📅</button>'+
+      '<button title="Reject" onclick="nvSetAppStatus('+a.id+',\'rejected\')">✕</button>'+
+    '</div>':'')+
+  '</div>';
+}
+function kanDrag(e,id){ e.dataTransfer.setData('text/plain',String(id)); e.dataTransfer.effectAllowed='move'; e.target.classList.add('drag'); }
+function kanEnd(e){ e.target.classList.remove('drag'); }
+function kanOver(e){ e.preventDefault(); e.currentTarget.classList.add('over'); }
+function kanLeave(e){ e.currentTarget.classList.remove('over'); }
+function kanDrop(e,stage){ e.preventDefault(); e.currentTarget.classList.remove('over'); var id=e.dataTransfer.getData('text/plain'); if(id) nvSetAppStatus(parseInt(id,10),stage); }
 async function nvSetAppStatus(id,status){
   var r=await api('/api/employer/applications/'+id,{method:'PUT',headers:AH(),body:JSON.stringify({status:status})});
-  if(!r.ok){ if(r.status===402)return toast(r.data.message||'Pro Employer feature.'); return toast('Could not update.'); }
+  if(!r.ok){ if(r.status===402)return toast(r.data.message||'Upgrade to Pro to run the pipeline.'); return toast('Could not update.'); }
   toast('Moved to '+status+'.'); loadApps();
+}
+// ── AI Matches (top 3 free, rest blurred) ────────────────────────────────────
+async function loadAiMatches(){
+  var list=el('nvAppsList'), empty=el('nvAppsEmpty'); empty.style.display='none';
+  list.innerHTML='<p class="nv-sub">Scoring candidates…</p>';
+  var r=await api('/api/employer/jobs/'+_appsJobId+'/ai-matches');
+  if(!r.ok){ list.innerHTML='<div class="nv-empty">Could not load matches.</div>'; return; }
+  renderAiMatches(r.data);
+}
+async function nvRunAiMatch(){
+  el('aiRunBtn').textContent='Scoring…'; el('aiRunBtn').disabled=true;
+  var r=await api('/api/employer/jobs/'+_appsJobId+'/ai-matches',{method:'POST',headers:AH()});
+  if(!r.ok){ toast(r.data.message||'Matching failed.'); el('aiRunBtn').disabled=false; el('aiRunBtn').textContent='Run AI matching'; return; }
+  toast('Scored '+(r.data.scored||0)+' candidate'+((r.data.scored===1)?'':'s')+'.'); renderAiMatches(r.data);
+}
+function renderAiMatches(d){
+  var list=el('nvAppsList');
+  var run='<div style="margin-bottom:12px;"><button class="nv-btn nv-btn-sm" id="aiRunBtn" onclick="nvRunAiMatch()">Run AI matching</button> <span class="nv-sub" style="font-size:12px;">Scores each applicant\'s resume against this job.</span></div>';
+  var ms=d.matches||[];
+  if(!ms.length){ list.innerHTML=run+'<div class="nv-empty">No matches yet — click “Run AI matching” once you have applicants.</div>'; return; }
+  var cards=ms.map(function(m){
+    if(m.locked){ return '<div class="ai-card locked"><div class="ai-blur"><div class="ai-score">'+(m.scoreBand==='high'?'9x':m.scoreBand==='medium'?'7x':'5x')+'%</div><div class="ai-name">████████ ██████</div><div class="ai-kw">████ · █████ · ███</div></div><div class="ai-lock">🔒</div></div>'; }
+    var mk=(m.matchedKeywords||[]).slice(0,6).map(function(k){return '<span class="ai-tag ok">'+esc(k)+'</span>';}).join('');
+    var xk=(m.missingKeywords||[]).slice(0,4).map(function(k){return '<span class="ai-tag no">'+esc(k)+'</span>';}).join('');
+    return '<div class="ai-card"><div class="ai-top"><div class="ai-score">'+m.score+'%</div><div style="flex:1;"><div class="ai-name">'+esc(m.candidateName||m.candidateEmail)+'</div><div class="nv-sub" style="font-size:12px;margin:2px 0 0;">'+esc(m.reasoning||'')+'</div></div>'+
+      '<button class="nv-btn nv-btn-sm nv-btn-ghost" onclick="nvMsgCandidate(\''+esc(m.candidateEmail)+'\')">Message</button></div>'+
+      '<div class="ai-kws">'+mk+xk+'</div></div>';
+  }).join('');
+  var locked=d.lockedCount||0;
+  var upsell=locked>0?'<div class="ai-upsell">🔒 <strong>'+locked+' more match'+(locked===1?'':'es')+'</strong> are hidden on the free plan. <button class="nv-btn nv-btn-sm" onclick="nvUpgrade(\'pro\')">Unlock all — $'+((epStatus.prices&&epStatus.prices.pro)||49)+'/mo</button></div>':'';
+  list.innerHTML=run+'<div class="ai-list">'+cards+'</div>'+upsell;
 }
 
 // ── CANDIDATES ───────────────────────────────────────────────────────────────
@@ -768,13 +869,31 @@ async function renderSettings(c){
       '<h3 style="margin:16px 0 10px;font-size:15px;">Notifications</h3>'+
       '<label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:8px;"><input type="checkbox" id="stNotifyApps" '+(SETTINGS.notifyApplications!==false?'checked':'')+'/> Email me on new applications</label>'+
       '<label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-bottom:14px;"><input type="checkbox" id="stNotifyMsgs" '+(SETTINGS.notifyMessages!==false?'checked':'')+'/> Email me on new messages</label>'+
-      '<button class="nv-btn" onclick="nvSaveSettings()">Save changes</button></div>'+
-    '<div class="nv-card" style="max-width:600px;margin-bottom:16px;"><h3 style="margin:0 0 8px;font-size:15px;">Billing</h3>'+
-      (SETTINGS.pro
-        ? '<p class="nv-sub" style="margin:0;">You\'re on <strong style="color:var(--nv-amber);">Pro Employer</strong> — unlimited postings, full candidate search, ATS pipeline, interviews, analytics and CSV export.</p>'
-        : '<p class="nv-sub" style="margin:0 0 12px;">Free plan: up to '+((epStatus&&epStatus.freeActiveJobLimit)||3)+' active postings. Upgrade for unlimited postings, full candidate search, the ATS pipeline and CSV export.</p><button class="nv-btn" onclick="nvUpgrade()">Upgrade — $29/mo</button>')+
+      '<button class="nv-btn" onclick="nvSaveSettings()">Save changes</button>'+
+      (epStatus&&epStatus.slug?'<p class="nv-sub" style="margin:12px 0 0;font-size:13px;">Public hiring page: <a href="/company/'+esc(epStatus.slug)+'" target="_blank" style="color:var(--nv-accent);font-weight:700;">/company/'+esc(epStatus.slug)+' ↗</a></p>':'')+
     '</div>'+
-    '<div class="nv-card" style="max-width:600px;"><h3 style="margin:0 0 8px;font-size:15px;">Team members</h3><p class="nv-sub" style="margin:0;">Multi-user sub-accounts are coming soon. Today the account owner manages everything above.</p></div>';
+    nvBillingCard()+
+    '<div class="nv-card" style="max-width:600px;"><h3 style="margin:0 0 8px;font-size:15px;">Team members</h3><p class="nv-sub" style="margin:0;">'+(epStatus.tier==='free'?'Team seats are a Pro feature — Pro includes 5 seats, Scale is unlimited.':'Multi-user sub-accounts are rolling out. Today the account owner manages everything above.')+'</p></div>';
+}
+function nvBillingCard(){
+  var tier=(epStatus&&epStatus.tier)||'free';
+  var pPro=(epStatus.prices&&epStatus.prices.pro)||49, pScale=(epStatus.prices&&epStatus.prices.scale)||199;
+  var used=epStatus.jobsPostedLifetime||0, lim=epStatus.freeLifetimeJobLimit||2;
+  function plan(name,price,tagline,feats,cur,cta){
+    return '<div class="nv-plan'+(cur?' cur':'')+'">'+
+      '<div class="nv-plan-h"><span class="nv-plan-n">'+name+'</span>'+(cur?'<span class="nv-plan-badge">Current</span>':'')+'</div>'+
+      '<div class="nv-plan-p">'+(price?'$'+price+'<span>/mo</span>':'Free')+'</div>'+
+      '<div class="nv-plan-t">'+tagline+'</div>'+
+      '<ul class="nv-plan-feats">'+feats.map(function(f){return '<li>'+f+'</li>';}).join('')+'</ul>'+
+      (cta||'')+'</div>';
+  }
+  return '<div class="nv-card" style="max-width:760px;margin-bottom:16px;"><h3 style="margin:0 0 4px;font-size:15px;">Billing &amp; Plan</h3>'+
+    (tier==='free'?'<p class="nv-sub" style="margin:0 0 14px;">You\'ve used <strong>'+used+' of '+lim+'</strong> lifetime free job posts. The free plan is capped at '+lim+' posts <em>ever</em> — upgrade for unlimited.</p>':'<p class="nv-sub" style="margin:0 0 14px;">You\'re on <strong style="color:var(--nv-amber);">'+tier.toUpperCase()+'</strong>. Manage or cancel anytime — cancellation takes effect at period end.</p>')+
+    '<div class="nv-plans">'+
+      plan('Free',0,'Get started hiring',['2 job posts (lifetime)','Applicant list','Top 3 AI matches'],tier==='free','')+
+      plan('Pro',pPro,'For active hiring',['Unlimited job posts','All AI matches','Drag-and-drop pipeline','5 team seats · screener · analytics'],tier==='pro',tier==='pro'?'':'<button class="nv-btn" style="width:100%;" onclick="nvUpgrade(\'pro\')">'+(tier==='free'?'Upgrade to Pro':'Switch to Pro')+'</button>')+
+      plan('Scale',pScale,'For high-volume teams',['Everything in Pro','API access','Unlimited seats','Priority support'],tier==='scale',tier==='scale'?'':'<button class="nv-btn nv-btn-dark" style="width:100%;" onclick="nvUpgrade(\'scale\')">Upgrade to Scale</button>')+
+    '</div></div>';
 }
 async function nvSaveSettings(){
   var body={ companyName:el('stName').value.trim(), website:el('stSite').value.trim(), logoUrl:el('stLogo').value.trim(), description:el('stDesc').value.trim(), notifyApplications:el('stNotifyApps').checked, notifyMessages:el('stNotifyMsgs').checked };

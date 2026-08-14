@@ -89,7 +89,11 @@ function startCareerCron(log) {
   // Weekly Job Search Report — Pro-only Monday digest (day 1 UTC).
   const weeklyH = clampHour(process.env.WEEKLY_REPORT_HOUR_UTC, 13);
   scheduleWeekly(1, weeklyH, 0, 'weekly-report.js');
-  say(`[career-cron] enabled — warm @ ${pad(warmH)}:00 UTC (npm run career:warm), digest @ ${pad(digestH)}:00 UTC (npm run career:job-digest), job feed every ${feedIntervalH}h (npm run career:job-feed), weekly report Mon @ ${pad(weeklyH)}:00 UTC (npm run career:weekly-report)`);
+  // Employer free→Pro nurture sequence — daily; the script itself decides who
+  // is due (capped, unpaid, next step's delay elapsed) and is a no-op otherwise.
+  const nurtureH = clampHour(process.env.EMPLOYER_NURTURE_HOUR_UTC, 15);
+  scheduleDaily(nurtureH, 0, 'employer-nurture.js');
+  say(`[career-cron] enabled — warm @ ${pad(warmH)}:00 UTC (npm run career:warm), digest @ ${pad(digestH)}:00 UTC (npm run career:job-digest), job feed every ${feedIntervalH}h (npm run career:job-feed), weekly report Mon @ ${pad(weeklyH)}:00 UTC (npm run career:weekly-report), employer nurture @ ${pad(nurtureH)}:00 UTC (npm run employer:nurture)`);
   return true;
 }
 
