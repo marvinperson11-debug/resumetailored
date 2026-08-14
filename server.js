@@ -8230,6 +8230,84 @@ app.get('/api/employer/jobs/:id/applications', (req, res) => {
   res.json({ applications: rows.map(_applicationOut), pro: isEmployerSubscriber(email) });
 });
 
+// ─── AI candidate matching ───────────────────────────────────────────────────
+// Scores every applicant's resume against the job with Claude, caches the
+// result per (job, candidate) in employer_ai_matches, and returns the ranked
+// list GATED by tier: free employers see the top 3 in full and the rest as
+// locked/blurred placeholders (PII stripped server-side by EH.applyMatchGate),
+// Pro/Scale see everything. Cheap model (haiku) + cache so a re-open bills
+// nothing; a seeded cache lets the route tests avoid any LLM call.
+function _latestResumeText(candidateEmail, resumeId) {
+  if (resumeId) {
+    const r = db.prepare('SELECT content FROM saved_resumes WHERE id = ? AND email = ?').get(resumeId, candidateEmail);
+    if (r && r.content) return r.content;
+  }
+  const r = db.prepare('SELECT content FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(candidateEmail);
+  return r ? r.content : '';
+}
+function _aiMatchOut(row, candidateName) {
+  return {
+    candidateEmail: row.candidate_email, candidateName: candidateName || row.candidate_email,
+    score: row.score, reasoning: row.reasoning,
+    matchedKeywords: (() => { try { return JSON.parse(row.matched_keywords); } catch { return []; } })(),
+    missingKeywords: (() => { try { return JSON.parse(row.missing_keywords); } catch { return []; } })()
+  };
+}
+// Build the ranked+gated payload from whatever match rows already exist.
+function _gatedMatchesForJob(jobId, email) {
+  const rows = db.prepare(`
+    SELECT m.*, u.username FROM employer_ai_matches m
+    LEFT JOIN users u ON u.email = m.candidate_email
+    WHERE m.job_id = ? ORDER BY m.score DESC, m.created_at ASC
+  `).all(jobId);
+  const ranked = rows.map(r => _aiMatchOut(r, r.username));
+  const gate = EH.applyMatchGate(ranked, employerTier(email));
+  return Object.assign({ tier: employerTier(email) }, gate);
+}
+
+app.get('/api/employer/jobs/:id/ai-matches', (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const jobId = parseInt(req.params.id, 10);
+  const job = db.prepare('SELECT id FROM job_postings WHERE id = ? AND employer_email = ?').get(jobId, e);
+  if (!job) return res.status(404).json({ error: 'not_found' });
+  res.json(_gatedMatchesForJob(jobId, email));
+});
+
+const aiMatchLimiter = rateLimit({ windowMs: 60 * 1000, max: 6, skip: () => RATE_LIMIT_OFF, message: { error: 'rate_limited', message: 'Matching is running — give it a minute.' } });
+app.post('/api/employer/jobs/:id/ai-matches', aiMatchLimiter, async (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const jobId = parseInt(req.params.id, 10);
+  const job = db.prepare('SELECT * FROM job_postings WHERE id = ? AND employer_email = ?').get(jobId, e);
+  if (!job) return res.status(404).json({ error: 'not_found' });
+  const applicants = db.prepare('SELECT * FROM job_applications WHERE job_id = ?').all(jobId);
+  if (!applicants.length) return res.json(Object.assign({ scored: 0 }, _gatedMatchesForJob(jobId, email)));
+
+  // Only score applicants that aren't already cached; cap per request so a
+  // single click can't fan out into an unbounded number of LLM calls.
+  const uncached = applicants.filter(a => !db.prepare('SELECT 1 FROM employer_ai_matches WHERE job_id = ? AND candidate_email = ?').get(jobId, a.candidate_email));
+  const toScore = uncached.slice(0, 25);
+  let scored = 0;
+  for (const a of toScore) {
+    const resumeText = _latestResumeText(a.candidate_email, a.resume_id);
+    let result;
+    try {
+      const { system, user } = EH.buildApplicantMatchPrompt({ jobTitle: job.title, jobDescription: job.description, requirements: job.requirements, resumeText });
+      result = await callClaudeJSON({ model: 'claude-haiku-4-5', system, user, max_tokens: 600, validate: EH.validateMatchResult });
+    } catch (err) {
+      // Fail soft: a scoring error for one applicant must not 500 the batch.
+      console.error('[employer] ai-match failed for', a.candidate_email, err.message);
+      continue;
+    }
+    db.prepare(`INSERT OR REPLACE INTO employer_ai_matches (job_id, candidate_email, score, reasoning, matched_keywords, missing_keywords, created_at)
+      VALUES (?,?,?,?,?,?,?)`).run(jobId, a.candidate_email, result.score, result.reasoning,
+      JSON.stringify(result.matchedKeywords), JSON.stringify(result.missingKeywords), Date.now());
+    scored++;
+  }
+  res.json(Object.assign({ scored, pending: Math.max(0, uncached.length - toScore.length) }, _gatedMatchesForJob(jobId, email)));
+});
+
 app.put('/api/employer/applications/:id', employerLimiter, (req, res) => {
   const email = employerAuthEmail(req, res); if (!email) return;
   const e = email.toLowerCase();

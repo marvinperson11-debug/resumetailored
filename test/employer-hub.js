@@ -73,6 +73,15 @@ check('validateScreenerQuestions accepts a valid set', sc.valid && sc.clean.leng
 check('validateScreenerQuestions requires >=2 options for choice', !EH.validateScreenerQuestions([{ question: 'Shift?', type: 'choice', options: ['Day'] }]).valid);
 check('validateScreenerQuestions caps at 10', !EH.validateScreenerQuestions(Array.from({ length: 11 }, () => ({ question: 'ok?', type: 'yesno' }))).valid);
 
+// ── AI applicant match: prompt + result validation ───────────────────────────
+const mp = EH.buildApplicantMatchPrompt({ jobTitle: 'RN', jobDescription: 'ICU nurse', requirements: 'BLS', resumeText: 'RN, 5yrs ICU, BLS' });
+check('buildApplicantMatchPrompt embeds the job + resume', /RN/.test(mp.user) && /ICU/.test(mp.user) && /BLS/.test(mp.user));
+const mvGood = EH.validateMatchResult({ score: 87, reasoning: 'Strong ICU match', matchedKeywords: ['ICU', 'BLS'], missingKeywords: ['PALS'] });
+check('validateMatchResult accepts a good object', mvGood.ok && mvGood.value.score === 87 && mvGood.value.matchedKeywords.length === 2);
+check('validateMatchResult clamps score to 0-100', EH.validateMatchResult({ score: 250 }).value.score === 100 && EH.validateMatchResult({ score: -5 }).value.score === 0);
+check('validateMatchResult rejects a non-numeric score', !EH.validateMatchResult({ score: 'high' }).ok);
+check('validateMatchResult caps keyword lists at 10', EH.validateMatchResult({ score: 50, matchedKeywords: Array.from({ length: 20 }, (_, i) => 'k' + i) }).value.matchedKeywords.length === 10);
+
 // ── nurture emails ───────────────────────────────────────────────────────────
 check('nurture step 1 mentions the 2 free posts and $49', /2 free/.test(EH.buildEmployerNurtureEmail(1, { companyName: 'Acme' }).subject) || /49/.test(EH.buildEmployerNurtureEmail(1, {}).html));
 check('nurture returns null past the last step', EH.buildEmployerNurtureEmail(4, {}) === null);

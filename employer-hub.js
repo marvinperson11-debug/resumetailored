@@ -326,6 +326,49 @@ function toCsv(rows, cols) {
   return header + '\r\n' + body + '\r\n';
 }
 
+// ── AI applicant matching (prompt + validation, pure) ───────────────────────
+// The scoring itself runs through Claude in server.js; the prompt and the
+// output shape live here so they're stable, versioned and unit-testable, and
+// so a test can seed the cache without any LLM call. Bump MATCH_PROMPT_VERSION
+// to invalidate cached scores.
+const MATCH_PROMPT_VERSION = 1;
+function buildApplicantMatchPrompt({ jobTitle, jobDescription, requirements, resumeText }) {
+  const system = 'You are an expert technical recruiter and ATS. You score how well a candidate resume matches a specific job. Be objective and consistent. Respond with ONLY a JSON object, no markdown.';
+  const user = `JOB TITLE: ${normStr(jobTitle, 200)}
+
+JOB DESCRIPTION:
+${normStr(jobDescription, 4000)}
+
+REQUIREMENTS:
+${normStr(requirements, 2000) || '(none specified)'}
+
+CANDIDATE RESUME:
+${normStr(resumeText, 6000) || '(no resume text available)'}
+
+Return a JSON object exactly like:
+{
+  "score": <integer 0-100, how well this resume matches THIS job>,
+  "reasoning": "<one or two sentences, plain, specific to this candidate>",
+  "matchedKeywords": ["<skills/terms from the job the resume clearly demonstrates>"],
+  "missingKeywords": ["<important skills/terms from the job the resume is missing>"]
+}
+Keep each keyword list to at most 10 short items. Score 0 if there is no resume text.`;
+  return { system, user };
+}
+function validateMatchResult(obj) {
+  if (!obj || typeof obj !== 'object') return { ok: false, error: 'not an object' };
+  let score = Math.round(Number(obj.score));
+  if (!Number.isFinite(score)) return { ok: false, error: 'score not a number' };
+  score = Math.max(0, Math.min(100, score));
+  const arr = (v) => Array.isArray(v) ? v.map(x => normStr(x, 60)).filter(Boolean).slice(0, 10) : [];
+  return { ok: true, value: {
+    score,
+    reasoning: normStr(obj.reasoning, 400),
+    matchedKeywords: arr(obj.matchedKeywords),
+    missingKeywords: arr(obj.missingKeywords)
+  } };
+}
+
 // ── Free→Pro nurture sequence ────────────────────────────────────────────────
 // Three plain, brand-only emails that convert a free employer to Pro. `step`
 // is 1-based; each returns { subject, html } or null past the last step. Pure
@@ -367,8 +410,9 @@ function buildEmployerNurtureEmail(step, ctx) {
 module.exports = {
   WORK_MODES, JOB_TYPES, APPLICATION_STATUSES, EMPLOYER_LIMITS, REMOTE_PREFS, CONTACT_REQUEST_STATUSES, GIG_TYPES,
   INTERVIEW_MODES, INTERVIEW_STATUSES,
-  EMPLOYER_TIERS, EMPLOYER_TIER_NAMES, SCREENER_TYPES, EMPLOYER_NURTURE_STEPS,
+  EMPLOYER_TIERS, EMPLOYER_TIER_NAMES, SCREENER_TYPES, EMPLOYER_NURTURE_STEPS, MATCH_PROMPT_VERSION,
   tierConfig, canPostJob, resolveEmployerTier, applyMatchGate, validateScreenerQuestions, buildEmployerNurtureEmail,
+  buildApplicantMatchPrompt, validateMatchResult,
   validateJobPosting, validateApplicationStatus, validateRating,
   validateCandidateProfile, validateContactRequestStatus, validateInterview,
   buildRejectionEmail, rankCandidates, matchGigCandidates,
