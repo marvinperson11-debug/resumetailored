@@ -1,0 +1,81 @@
+        <div class="panel-header">
+          <h1>Cancel Anytime — No Questions Asked</h1>
+          <p>We believe you should only pay for what you love. Canceling is instant and effortless.</p>
+        </div>
+
+        <!-- Main promise card -->
+        <div class="salary-resource-card featured-card" style="margin-bottom:24px;text-align:center;">
+          <div style="font-size:56px;margin-bottom:16px;">🔓</div>
+          <h2 style="font-size:24px;font-weight:800;margin-bottom:12px;">Your subscription, your rules.</h2>
+          <p style="font-size:16px;line-height:1.8;max-width:560px;margin:0 auto;">Cancel your Pro subscription at any time — in seconds. No cancellation fees. No "are you sure?" hoops. No calling a 1-800 number. Just send us a message and it's done immediately.</p>
+        </div>
+
+        <!-- How to cancel -->
+        <div class="salary-grid" style="grid-template-columns:1fr 1fr;margin-bottom:32px;">
+          <div class="salary-resource-card">
+            <div class="resource-icon">💬</div>
+            <h3>How to Cancel</h3>
+            <ol class="salary-steps">
+              <li>Go to the <strong>Help & Support</strong> tab</li>
+              <li>Send a message with subject: <strong>"Cancel my subscription"</strong></li>
+              <li>Include the email you used to subscribe</li>
+              <li>We'll cancel and confirm within <strong>1 hour</strong></li>
+            </ol>
+            <button class="btn btn-outline" style="margin-top:16px;width:100%;" onclick="showTab('help')">Go to Help & Support →</button>
+          </div>
+
+          <div class="salary-resource-card">
+            <div class="resource-icon">📅</div>
+            <h3>What Happens When You Cancel</h3>
+            <ul class="salary-tips">
+              <li>Subscription stops at end of current billing period</li>
+              <li>You keep full Pro access until then</li>
+              <li>No partial-month charges — ever</li>
+              <li>No data deleted — your check-ins stay saved</li>
+              <li>Resubscribe anytime at the same $19.99/mo price</li>
+              <li>No penalty, no re-enrollment fee</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- FAQ section -->
+        <h2 style="font-size:20px;font-weight:800;margin-bottom:16px;">Cancellation FAQs</h2>
+        <div class="help-faq-card">
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Do I get a refund if I cancel mid-month?</span><span class="faq-arrow">▾</span>
+            </div>
+            <div class="faq-a">We don't offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>How fast does cancellation take effect?</span><span class="faq-arrow">▾</span>
+            </div>
+            <div class="faq-a">We process all cancellation requests within 1 hour. You'll receive a confirmation email once it's done. Your Pro access continues until your billing period ends.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Can I pause instead of cancel?</span><span class="faq-arrow">▾</span>
+            </div>
+            <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as easy. You'll always get the same $19.99/month rate — we don't price-lock or penalize returning members.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>What if I was charged but didn't mean to subscribe?</span><span class="faq-arrow">▾</span>
+            </div>
+            <div class="faq-a">Contact us within 7 days of the charge and we'll issue a full refund, no questions asked. We never want anyone paying for something they didn't intend to buy.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Will my resume history be deleted if I cancel?</span><span class="faq-arrow">▾</span>
+            </div>
+            <div class="faq-a">No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.</div>
+          </div>
+        </div>
+
+        <!-- Bottom CTA -->
+        <div style="margin-top:40px;padding:32px;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:16px;text-align:center;">
+          <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;">Still deciding whether to subscribe?</h3>
+          <p style="color:var(--text-muted,#9490b5);margin-bottom:20px;">Try it free first — unlimited tailoring. Upgrade only when you're convinced it works.</p>
+          <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try Free First →</button>
+        </div>

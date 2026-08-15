@@ -1,0 +1,20 @@
+        <div class="panel-header">
+          <h1>Community Forum</h1>
+          <p>Connect with other professionals. Share tips, wins, and advice with the ResumeTailored community.</p>
+        </div>
+
+        <!-- New post form -->
+        <div class="forum-compose">
+          <h3 style="font-size:16px;font-weight:700;margin-bottom:14px;">Share Something With the Community</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <input type="text" id="forumAuthor" placeholder="Your name" class="forum-input" />
+            <input type="text" id="forumRole" placeholder="Your role (e.g. Product Manager)" class="forum-input" />
+          </div>
+          <textarea id="forumText" class="forum-textarea" placeholder="Share a tip, a win, a question, or words of encouragement..."></textarea>
+          <button class="btn btn-primary" style="margin-top:10px;" onclick="submitPost()">Post to Community →</button>
+        </div>
+
+        <!-- Posts feed -->
+        <div id="forumFeed" style="margin-top:24px;display:flex;flex-direction:column;gap:16px;">
+          <div style="text-align:center;color:var(--muted);padding:40px;">Loading posts...</div>
+        </div>
