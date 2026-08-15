@@ -101,7 +101,7 @@
       "AI resume tailoring powered by Anthropic Claude",
       "ATS match score with keyword gap analysis",
       "AI-generated cover letter included with every tailoring",
-      "Live job description import by URL from LinkedIn, Indeed, Glassdoor, Greenhouse, Lever, Workday, ZipRecruiter, Monster, Dice, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, and 40+ more job boards",
+      "Live job description import by URL from LinkedIn, Indeed, Glassdoor, Greenhouse, Lever, Workday, ZipRecruiter, Monster, Dice, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, and more added regularly — any URL-accessible job post works",
       "File upload support for PDF and DOCX resume formats",
       "AI-powered English translation for resumes in any language",
       "LinkedIn profile optimizer (free)",
@@ -128,7 +128,7 @@
       {
         "@type": "Question",
         "name": "Is it really free to start?",
-        "acceptedAnswer": {"@type": "Answer", "text": "Yes — the free tier gives you unlimited AI resume tailoring with no credit card required. You can sign up and get your first tailored resume in under 2 minutes."}
+        "acceptedAnswer": {"@type": "Answer", "text": "Yes — the free tier gives you unlimited AI resume tailoring with no credit card and no account required. You can get your first tailored resume in under 2 minutes."}
       },
       {
         "@type": "Question",
@@ -834,7 +834,8 @@
        after first paint; these fallbacks match actual heights so the very first
        render reserves the right space and CLS stays ~0. nth-of-type(1) is the
        hero and is intentionally left untouched. Order (Aug 2026): … cta-banner(9),
-       New Tools(10), What's New(11), Pricing(12), FAQ(13, moved to the bottom). */
+       What's New(10, merges the former New Tools + What's New cards),
+       Pricing(11), FAQ(12, moved to the bottom). */
     main > section:nth-of-type(2)  { contain-intrinsic-size: auto 760px; }
     main > section:nth-of-type(3)  { contain-intrinsic-size: auto 1015px; }
     main > section:nth-of-type(4)  { contain-intrinsic-size: auto 9840px; }
@@ -843,10 +844,9 @@
     main > section:nth-of-type(7)  { contain-intrinsic-size: auto 2255px; }
     main > section:nth-of-type(8)  { contain-intrinsic-size: auto 1065px; }
     main > section:nth-of-type(9)  { contain-intrinsic-size: auto 455px; }
-    main > section:nth-of-type(10) { contain-intrinsic-size: auto 1855px; }
-    main > section:nth-of-type(11) { contain-intrinsic-size: auto 1865px; }
-    main > section:nth-of-type(12) { contain-intrinsic-size: auto 3020px; }
-    main > section:nth-of-type(13) { contain-intrinsic-size: auto 975px; }
+    main > section:nth-of-type(10) { contain-intrinsic-size: auto 3400px; }
+    main > section:nth-of-type(11) { contain-intrinsic-size: auto 3020px; }
+    main > section:nth-of-type(12) { contain-intrinsic-size: auto 975px; }
 
     /* ── Scroll Reveal ── */
     .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
@@ -1151,7 +1151,7 @@
                 <span data-i18n="feat_cl_label" style="font-size:10px;font-weight:800;color:#6F6858;text-transform:uppercase;letter-spacing:1px;">Cover Letter</span>
                 <span data-i18n="feat_cl_badge" style="background:rgba(16,185,129,0.15);color:#34d399;font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;">AI Generated</span>
               </div>
-              <div data-i18n="feat_cl_date" style="font-size:10px;color:#6F6858;margin-bottom:10px;">May 28, 2026 · Stripe, Inc.</div>
+              <div data-i18n="feat_cl_date" style="font-size:10px;color:#6F6858;margin-bottom:10px;"><span class="js-today"></span> · Stripe, Inc.</div>
               <div data-i18n="feat_cl_greeting" style="font-size:12px;font-weight:600;color:#57514A;margin-bottom:6px;">Dear Hiring Manager,</div>
               <div data-i18n="feat_cl_body" style="font-size:12px;color:#57514A;line-height:1.7;margin-bottom:8px;">
                 When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style="color:#1F5C3D;">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.
@@ -1372,7 +1372,7 @@
               <div class="hub-box" style="background:rgba(251,191,36,0.12);color:#fbbf24;" onclick="openCheckoutModal()">📈 Career Check-ins</div>
               <div class="hub-box" style="background:rgba(180,86,46,0.14);color:#2E7D53;" onclick="openCheckoutModal()">🏆 Pro Templates</div>
             </div>
-            <div style="margin-top:10px;font-size:11px;color:#6F6858;text-align:center;">Click any feature to unlock with Pro →</div>
+            <div style="margin-top:10px;text-align:center;"><button type="button" onclick="openCheckoutModal()" style="background:none;border:none;cursor:pointer;font:inherit;font-size:11px;color:#1F5C3D;font-weight:700;text-decoration:underline;padding:0;">Upgrade to Pro to unlock these features →</button></div>
           </div>
         </div>
       </div>
@@ -1395,7 +1395,7 @@
             <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--ink-soft);"><span style="color:var(--accent);font-weight:800;">✓</span> <span data-i18n="feat_emp_b4">Hiring funnel analytics + CSV export</span></li>
           </ul>
           <a class="btn btn-primary" style="margin-top:20px;background:var(--accent);border-color:var(--accent);display:inline-block;" href="/employer" data-i18n="feat_emp_cta">Open the Employer Portal →</a>
-          <a href="/blog/employer-portal-for-recruiters" style="margin-left:14px;font-size:14px;color:var(--accent);font-weight:700;" data-i18n="feat_emp_learn">Learn more →</a>
+          <a href="/blog/employer-portal-for-recruiters" style="margin-left:14px;font-size:14px;color:var(--accent);font-weight:700;" data-i18n="feat_emp_learn">See how it works →</a>
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner" style="border:2px solid var(--line);border-radius:14px;overflow:hidden;padding:0;background:#ffffff;">
@@ -1851,7 +1851,7 @@
           <div class="template-card">
             <div class="tcard-header">
               <div style="background:#fff;padding:10px;height:140px;overflow:hidden;font-family:Georgia,serif;" id="tpl-cl-classic">
-                <div style="font-size:6px;color:#6b7280;margin-bottom:5px;">May 28, 2026</div>
+                <div style="font-size:6px;color:#6b7280;margin-bottom:5px;"><span class="js-today"></span></div>
                 <div style="font-size:6.5px;font-weight:600;color:#111827;margin-bottom:5px;">Dear Hiring Manager,</div>
                 <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:4px;">When I saw your opening for Senior Engineer, I immediately thought of the 42% latency reduction I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale your team operates at.</div>
                 <div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:5px;">At TechCorp, I led a 5-person team rebuilding our checkout flow in React, driving 18% higher conversion and $1.8M in added annual revenue...</div>
@@ -2358,13 +2358,45 @@
 </section>
 
 
-<!-- NEW FEATURES — promotional cards -->
-<section class="section" id="new-tools" style="padding:60px 0;">
+<!-- NEW FEATURES — promotional cards (merged: employer/pro launches + free tools) -->
+<section class="section" id="whats-new" style="padding:60px 0;">
   <div class="container">
-    <div class="section-eyebrow" style="color:#2E7D53;">★ New Tools</div>
-    <h2 class="section-title">New tools to <span>win your job search</span></h2>
-    <p style="text-align:center;color:#57514A;font-size:16px;max-width:640px;margin:0 auto 36px;">From comparing offers to acing the interview — most are free, the rest bundle into one $19.99/mo Pro plan.</p>
+    <div class="section-eyebrow" style="color:#2E7D53;">✨ What's New</div>
+    <h2 class="section-title">New ways to <span>stand out</span> &amp; get hired</h2>
+    <p style="text-align:center;color:#57514A;font-size:16px;max-width:640px;margin:0 auto 36px;">Fresh tools added to ResumeTailored — most are free, the rest bundle into one $19.99/mo Pro plan (no add-ons).</p>
     <div class="promo-grid">
+      <div class="promo-card promo-emp">
+        <div class="promo-badge" style="background:#0f172a;color:#38bdf8;">NEW · FOR EMPLOYERS</div>
+        <div class="promo-ic">🏢</div>
+        <h3>Employer Portal</h3>
+        <p>Post jobs, track applicants through a hiring pipeline, schedule interviews and see analytics — a built-in ATS for small teams.</p>
+        <div class="promo-price"><span class="promo-free">Free to start</span> <span class="promo-sub">· Pro Employer $29/mo</span></div>
+        <a class="promo-cta" href="/employer" style="background:#0f172a;">Open Employer Portal →</a>
+      </div>
+      <div class="promo-card promo-pro">
+        <div class="promo-badge">NEW · PRO</div>
+        <div class="promo-ic">🎬</div>
+        <h3>Resume Video Maker</h3>
+        <p>Turn your resume into a narrated vertical video for LinkedIn, Shorts &amp; Reels — studio AI voiceover, your headshot &amp; brand color.</p>
+        <div class="promo-price"><span class="promo-amt">$19.99</span><span class="promo-per">/mo Pro</span></div>
+        <a class="promo-cta" href="/tools/resume-video">Try the video maker →</a>
+      </div>
+      <div class="promo-card promo-pro">
+        <div class="promo-badge">NEW · PRO</div>
+        <div class="promo-ic">🌐</div>
+        <h3>Personal Website Builder</h3>
+        <p>Publish your resume as a live, mobile-friendly personal website with a clean address — no code, watermark-free.</p>
+        <div class="promo-price"><span class="promo-amt">$19.99</span><span class="promo-per">/mo Pro</span></div>
+        <a class="promo-cta" href="/blog/resume-website-builder">See how it works →</a>
+      </div>
+      <div class="promo-card promo-freecard">
+        <div class="promo-badge" style="background:#157F3C;color:#fff;">NEW · FREE</div>
+        <div class="promo-ic">🧭</div>
+        <h3>Career Hub</h3>
+        <p>Skills tests, interview practice, gap analysis, a job finder and a personal dashboard — all driven by your target profession.</p>
+        <div class="promo-price"><span class="promo-free">Free</span> <span class="promo-sub">· Gold badges &amp; AI coach with Pro</span></div>
+        <a class="promo-cta" href="/dashboard" style="background:#157F3C;">Explore the Career Hub →</a>
+      </div>
       <div class="promo-card">
         <div class="promo-badge" style="background:rgba(52,211,153,0.14);color:#1F5C3D;">FREE</div>
         <div class="promo-ic">⚖️</div>
@@ -2404,48 +2436,6 @@
         <p>Practice with an AI interviewer tuned to your role and level, then get instant, scored feedback on every answer.</p>
         <div class="promo-price"><span class="promo-free">Free</span> <span class="promo-sub">· 1 a month</span></div>
         <a class="promo-cta" href="/tools/mock-interview" style="background:#1F5C3D;">Start practicing →</a>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="whats-new" style="padding:60px 0;">
-  <div class="container">
-    <div class="section-eyebrow" style="color:#2E7D53;">✨ What's New</div>
-    <h2 class="section-title">New ways to <span>stand out</span> &amp; get hired</h2>
-    <p style="text-align:center;color:#57514A;font-size:16px;max-width:640px;margin:0 auto 36px;">Fresh tools added to ResumeTailored — most are free, the rest bundle into one $19.99/mo Pro plan (no add-ons).</p>
-    <div class="promo-grid">
-      <div class="promo-card promo-emp">
-        <div class="promo-badge" style="background:#0f172a;color:#38bdf8;">NEW · FOR EMPLOYERS</div>
-        <div class="promo-ic">🏢</div>
-        <h3>Employer Portal</h3>
-        <p>Post jobs, track applicants through a hiring pipeline, schedule interviews and see analytics — a built-in ATS for small teams.</p>
-        <div class="promo-price"><span class="promo-free">Free to start</span> <span class="promo-sub">· Pro Employer $29/mo</span></div>
-        <a class="promo-cta" href="/employer" style="background:#0f172a;">Open Employer Portal →</a>
-      </div>
-      <div class="promo-card promo-pro">
-        <div class="promo-badge">NEW · PRO</div>
-        <div class="promo-ic">🎬</div>
-        <h3>Resume Video Maker</h3>
-        <p>Turn your resume into a narrated vertical video for LinkedIn, Shorts &amp; Reels — studio AI voiceover, your headshot &amp; brand color.</p>
-        <div class="promo-price"><span class="promo-amt">$19.99</span><span class="promo-per">/mo Pro</span></div>
-        <a class="promo-cta" href="/tools/resume-video">Try the video maker →</a>
-      </div>
-      <div class="promo-card promo-pro">
-        <div class="promo-badge">NEW · PRO</div>
-        <div class="promo-ic">🌐</div>
-        <h3>Personal Website Builder</h3>
-        <p>Publish your resume as a live, mobile-friendly personal website with a clean address — no code, watermark-free.</p>
-        <div class="promo-price"><span class="promo-amt">$19.99</span><span class="promo-per">/mo Pro</span></div>
-        <a class="promo-cta" href="/blog/resume-website-builder">See how it works →</a>
-      </div>
-      <div class="promo-card promo-freecard">
-        <div class="promo-badge" style="background:#157F3C;color:#fff;">NEW · FREE</div>
-        <div class="promo-ic">🧭</div>
-        <h3>Career Hub</h3>
-        <p>Skills tests, interview practice, gap analysis, a job finder and a personal dashboard — all driven by your target profession.</p>
-        <div class="promo-price"><span class="promo-free">Free</span> <span class="promo-sub">· Gold badges &amp; AI coach with Pro</span></div>
-        <a class="promo-cta" href="/dashboard" style="background:#157F3C;">Explore the Career Hub →</a>
       </div>
     </div>
   </div>
@@ -2589,7 +2579,7 @@
           <li><span class="check-icon">✓</span> <strong style="color:#1F5C3D;">🎬 Resume video + 🌐 personal website</strong></li>
           <li><span class="check-icon">✓</span> Career Hub access</li>
           <li><span class="check-icon">✓</span> All future features included</li>
-          <li style="font-size:12px;color:#2E7D53;font-weight:700;">Saves $99+ vs. Rezi Lifetime</li>
+          <li style="font-size:12px;color:#2E7D53;font-weight:700;">Saves $20+ vs. Rezi Lifetime</li>
         </ul>
         <button class="btn btn-full" style="background:#1F5C3D;color:#fff;border:none;" onclick="openLifetimeModal()">Get Lifetime Access — $129 →</button>
       </div>
@@ -2608,7 +2598,7 @@
           <span>Is it really free to start?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Yes — the free tier gives you unlimited AI resume tailoring with no credit card required. You can sign up and get your first tailored resume in under 2 minutes.</div>
+        <div class="faq-a">Yes — the free tier gives you unlimited AI resume tailoring with no credit card and no account required. You can get your first tailored resume in under 2 minutes.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
@@ -2622,7 +2612,7 @@
           <span>Can I import job descriptions from LinkedIn or Indeed by URL?</span>
           <span class="faq-arrow">+</span>
         </div>
-        <div class="faq-a">Yes. Paste a job URL and our AI extracts the full job description automatically. Supported job boards include LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and 40+ more. No manual copying required.</div>
+        <div class="faq-a">Yes. Paste a job URL and our AI extracts the full job description automatically. Supported job boards include LinkedIn, Indeed, Glassdoor, ZipRecruiter, Monster, Dice, Lever, Greenhouse, Workday, BambooHR, Wellfound, Ashby, Built In, We Work Remotely, Boss直聘, 猎聘, 智联招聘, and more added regularly — any URL-accessible job post works. No manual copying required.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">
@@ -3067,7 +3057,7 @@
       feat_emp_b3: 'Interview scheduling &amp; in-app messaging',
       feat_emp_b4: 'Hiring funnel analytics + CSV export',
       feat_emp_cta: 'Open the Employer Portal →',
-      feat_emp_learn: 'Learn more →',
+      feat_emp_learn: 'See how it works →',
       label_manual: 'Manual', label_with_ai: 'With AI',
       footer_dashboard: 'Dashboard', footer_contact: 'Contact Us',
       footer_payments: 'Accepted Payments', footer_pay_note: 'International cards & Chinese payment methods',
@@ -3083,7 +3073,7 @@
       feat_ats_pass: '✓ ATS PASS — Screener Cleared',
       feat_ats_pass_desc: "Your resume now speaks the job posting's language. Bots approve. Humans notice.",
       feat_cl_label: 'Cover Letter', feat_cl_badge: 'AI Generated',
-      feat_cl_date: 'May 28, 2026 · Stripe, Inc.', feat_cl_greeting: 'Dear Hiring Manager,',
+      feat_cl_date: '<span class="js-today"></span> · Stripe, Inc.', feat_cl_greeting: 'Dear Hiring Manager,',
       feat_cl_body: "When I saw Stripe's opening for Senior Engineer, I immediately thought of the <strong style=\"color:#2E7D53;\">42% latency reduction</strong> I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale Stripe operates at.",
       feat_cl_more: '+ 3 more paragraphs connecting your experience to their exact needs...',
       feat_li_before: 'Before',
@@ -3125,7 +3115,7 @@
       feat_emp_b3: '面试安排与应用内消息',
       feat_emp_b4: '招聘漏斗分析 + CSV 导出',
       feat_emp_cta: '打开雇主门户 →',
-      feat_emp_learn: '了解更多 →',
+      feat_emp_learn: '查看使用方法 →',
       label_manual: '手动', label_with_ai: 'AI辅助',
       footer_dashboard: '控制台', footer_contact: '联系我们',
       footer_payments: '支持的支付方式', footer_pay_note: '国际信用卡 · 支付宝 · 微信支付',
@@ -3141,7 +3131,7 @@
       feat_ats_pass: '✓ ATS 通过 — 初筛已过',
       feat_ats_pass_desc: '您的简历已能与招聘需求精准沟通。机器通过，HR关注。',
       feat_cl_label: '求职信', feat_cl_badge: 'AI 生成',
-      feat_cl_date: '2026年5月28日 · Stripe, Inc.', feat_cl_greeting: '尊敬的招聘负责人，',
+      feat_cl_date: '<span class="js-today"></span> · Stripe, Inc.', feat_cl_greeting: '尊敬的招聘负责人，',
       feat_cl_body: '当我看到 Stripe 高级工程师的职位时，我立刻想到了我在重建服务每日200万用户支付管道中实现的 <strong style="color:#1F5C3D;">42% 延迟降低</strong>——正是 Stripe 运营的规模。',
       feat_cl_more: '+ 还有3段将您的经历与职位需求紧密相连的内容...',
       feat_li_before: '优化前',
@@ -3225,7 +3215,7 @@
     ['.hub-box', 1, '👥 Community Forum', '👥 社区论坛'],
     ['.hub-box', 2, '📈 Career Check-ins', '📈 职业回顾'],
     ['.hub-box', 3, '🏆 Pro Templates', '🏆 专业模板'],
-    ['.features .feature-row:nth-child(7) .feature-visual-inner > div:last-child', null, 'Click any feature to unlock with Pro →', '点击任意功能升级专业版 →'],
+    ['.features .feature-row:nth-child(7) .feature-visual-inner > div:last-child', null, '<button type="button" onclick="openCheckoutModal()" style="background:none;border:none;cursor:pointer;font:inherit;font-size:11px;color:#1F5C3D;font-weight:700;text-decoration:underline;padding:0;">Upgrade to Pro to unlock these features →</button>', '<button type="button" onclick="openCheckoutModal()" style="background:none;border:none;cursor:pointer;font:inherit;font-size:11px;color:#1F5C3D;font-weight:700;text-decoration:underline;padding:0;">升级专业版解锁这些功能 →</button>'],
     ['.feature-body h3', 7, '30 Seconds vs. 45 Minutes', '30秒 vs. 45分钟'],
     ['.feature-body > p', 7, 'The average job seeker spends 45 minutes tailoring each application manually. At 20 applications a week, that\'s 15 hours of copy-editing. ResumeTailored AI does it in 30 seconds — apply to more jobs, faster, with higher-quality applications.', '普通求职者手动修改每份申请平均需45分钟。每周投递20份就是15小时的编辑工作。ResumeTailored AI只需30秒——用更高质量的申请，更快地投递更多职位。'],
     // ── Job Boards ──────────────────────────────────────────────────────────
@@ -3301,10 +3291,10 @@
     ['.cta-banner p', null, 'Join thousands of job seekers who\'ve already tailored their resumes with AI. Free tier available — no credit card required.', '加入数千名已使用AI定制简历的求职者。免费版可用——无需信用卡。'],
     ['.cta-banner .btn-white', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
     // ── FAQ ─────────────────────────────────────────────────────────────────
-    ['.section-eyebrow', 9, 'Common Questions', '常见问题'],
-    ['.section-title', 10, 'Frequently asked <span>questions</span>', '常见<span>问题解答</span>'],
+    ['.section-eyebrow', 8, 'Common Questions', '常见问题'],
+    ['.section-title', 9, 'Frequently asked <span>questions</span>', '常见<span>问题解答</span>'],
     ['.faq-q span:first-child', 0, 'Is it really free to start?', '真的可以免费开始吗？'],
-    ['.faq-a', 0, 'Yes — the free tier gives you unlimited AI resume tailoring with no credit card required. You can sign up and get your first tailored resume in under 2 minutes.', '是的——免费版每天为你提供1次AI简历定制，无需信用卡。注册后2分钟内即可获得第一份定制简历。'],
+    ['.faq-a', 0, 'Yes — the free tier gives you unlimited AI resume tailoring with no credit card and no account required. You can get your first tailored resume in under 2 minutes.', '是的——免费版为你提供无限次AI简历定制，无需信用卡，也无需注册账户。2分钟内即可获得第一份定制简历。'],
     ['.faq-q span:first-child', 1, 'Will it fabricate experience I don\'t have?', '它会编造我没有的经历吗？'],
     ['.faq-a', 1, 'Never. Our AI strictly rewrites and reframes your existing experience using the job\'s language — it never adds skills or experience you don\'t have. You stay 100% truthful while communicating your real value more clearly.', '绝对不会。我们的AI严格只重写和重新框架你已有的经历，使用职位的语言——绝不添加你没有的技能或经历。你保持100%真实，同时更清晰地传达真实价值。'],
     ['.faq-q span:first-child', 2, 'What AI model does it use?', '使用哪种AI模型？'],
@@ -3316,8 +3306,8 @@
     ['.faq-q span:first-child', 5, 'What formats can I export my resume in?', '简历可以导出哪些格式？'],
     ['.faq-a', 5, 'Your tailored resume is available to copy as plain text (perfect for pasting into ATS forms) or download as a formatted .docx Word document. Both are included in free and Pro plans.', '你的定制简历可以复制为纯文本（非常适合粘贴到ATS表格）或下载为格式化的.docx Word文档。两种格式均包含在免费版和专业版中。'],
     // ── Pricing ─────────────────────────────────────────────────────────────
-    ['.section-eyebrow', 8, 'Pricing', '定价'],
-    ['.section-title', 9, 'Simple, <span>transparent</span> pricing', '简单<span>透明</span>的定价'],
+    ['.section-eyebrow', 7, 'Pricing', '定价'],
+    ['.section-title', 8, 'Simple, <span>transparent</span> pricing', '简单<span>透明</span>的定价'],
     ['.cc-title', null, 'How we compare to Jobscan &amp; Rezi', '我们与Jobscan和Rezi的对比'],
     ['.cc-sub', null, 'Same result. No $49.95/month. No weak cover letters.', '同样的结果，不需要$49.95/月，没有质量差的求职信。'],
     ['.cc-table thead th', 0, 'Feature', '功能'],
@@ -3427,13 +3417,13 @@
     var _tEN = {
       rc: '<div style="text-align:center;border-bottom:1.5px solid #1e293b;padding-bottom:5px;margin-bottom:5px;"><div style="font-size:9.5px;font-weight:700;letter-spacing:2px;color:#0f172a;text-transform:uppercase;">ALEX JOHNSON</div><div style="font-size:5.5px;color:#475569;margin-top:2px;">alex@email.com · (555) 234-5678 · New York, NY</div></div><div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">Experience</div><div style="font-size:6.5px;font-weight:700;color:#0f172a;margin-bottom:1px;">Sr. Marketing Manager · TechCorp Inc.</div><div style="font-size:5.5px;color:#475569;line-height:1.4;margin-bottom:3px;">• Grew pipeline 34% YoY · $2.1M attributed revenue<br>• Led 8-person cross-functional team across 4 products</div><div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">Skills</div><div style="font-size:5.5px;color:#475569;">Python · SQL · Tableau · Salesforce · HubSpot</div>',
       rm: '<div style="background:#2563eb;padding:10px 10px 8px;"><div style="font-size:9.5px;font-weight:800;color:#fff;letter-spacing:.5px;">SARAH CHEN</div><div style="font-size:5.5px;color:#F0F5FF;margin-top:2px;">sarah@email.com · (555) 987-6543 · San Francisco, CA</div></div><div style="padding:7px 10px;"><div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Experience</div><div style="font-size:6.5px;font-weight:700;color:#111827;">Software Engineer · Stripe</div><div style="font-size:5.5px;color:#4b5563;line-height:1.4;margin-bottom:3px;">• API handling 50M+ daily transactions<br>• Reduced latency 42% via pipeline rebuild</div><div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Skills</div><div style="font-size:5.5px;color:#4b5563;">TypeScript · React · Node.js · AWS · PostgreSQL</div></div>',
-      cc: '<div style="font-size:6px;color:#6b7280;margin-bottom:5px;">May 28, 2026</div><div style="font-size:6.5px;font-weight:600;color:#111827;margin-bottom:5px;">Dear Hiring Manager,</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:4px;">When I saw your opening for Senior Engineer, I immediately thought of the 42% latency reduction I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale your team operates at.</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:5px;">At TechCorp, I led a 5-person team rebuilding our checkout flow in React, driving 18% higher conversion and $1.8M in added annual revenue...</div><div style="font-size:5.5px;color:#6b7280;">Sincerely,<br><span style="font-weight:600;color:#374151;">Alex Johnson</span></div>',
+      cc: '<div style="font-size:6px;color:#6b7280;margin-bottom:5px;"><span class="js-today"></span></div><div style="font-size:6.5px;font-weight:600;color:#111827;margin-bottom:5px;">Dear Hiring Manager,</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:4px;">When I saw your opening for Senior Engineer, I immediately thought of the 42% latency reduction I achieved rebuilding a payments pipeline serving 2M daily users — exactly the scale your team operates at.</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:5px;">At TechCorp, I led a 5-person team rebuilding our checkout flow in React, driving 18% higher conversion and $1.8M in added annual revenue...</div><div style="font-size:5.5px;color:#6b7280;">Sincerely,<br><span style="font-weight:600;color:#374151;">Alex Johnson</span></div>',
       cm: '<div style="background:#2563eb;padding:8px 10px;"><div style="font-size:8px;font-weight:800;color:#fff;">SARAH CHEN</div><div style="font-size:5px;color:#F0F5FF;">sarah@email.com · Software Engineer</div></div><div style="padding:8px 10px;"><div style="font-size:5.5px;font-weight:600;color:#374151;margin-bottom:4px;">Dear Ms. Rodriguez,</div><div style="font-size:5.5px;color:#4b5563;line-height:1.55;margin-bottom:3px;">Stripe\'s engineering culture mirrors exactly how I led TechCorp\'s infra team to cut downtime by 60% — through obsessive ownership and data-driven decisions.</div><div style="font-size:5.5px;color:#4b5563;line-height:1.55;">My API work at scale (50M+ daily txns) directly maps to your reliability goals...</div></div>'
     };
     var _tZH = {
       rc: '<div style="text-align:center;border-bottom:1.5px solid #1e293b;padding-bottom:5px;margin-bottom:5px;"><div style="font-size:9.5px;font-weight:700;letter-spacing:2px;color:#0f172a;">李明华</div><div style="font-size:5.5px;color:#475569;margin-top:2px;">lmh@email.com · 138-0010-1234 · 上海市</div></div><div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">工作经历</div><div style="font-size:6.5px;font-weight:700;color:#0f172a;margin-bottom:1px;">高级市场总监 · 腾讯科技</div><div style="font-size:5.5px;color:#475569;line-height:1.4;margin-bottom:3px;">• 年度营收增长34% · 创造2,100万元营收<br>• 领导8人跨职能团队管理4条产品线</div><div style="font-size:6px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#0f172a;border-bottom:1px solid #1e293b;padding-bottom:1px;margin-bottom:3px;">技能</div><div style="font-size:5.5px;color:#475569;">Python · SQL · Tableau · Salesforce · HubSpot</div>',
       rm: '<div style="background:#2563eb;padding:10px 10px 8px;"><div style="font-size:9.5px;font-weight:800;color:#fff;letter-spacing:.5px;">张晓雯</div><div style="font-size:5.5px;color:#F0F5FF;margin-top:2px;">xzhang@email.com · 139-0020-5678 · 北京市</div></div><div style="padding:7px 10px;"><div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">工作经历</div><div style="font-size:6.5px;font-weight:700;color:#111827;">软件工程师 · 字节跳动</div><div style="font-size:5.5px;color:#4b5563;line-height:1.4;margin-bottom:3px;">• API每日处理5,000万+次请求<br>• 重构管道延迟降低42%</div><div style="font-size:6px;font-weight:800;color:#2563eb;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">技能</div><div style="font-size:5.5px;color:#4b5563;">TypeScript · React · Node.js · AWS · PostgreSQL</div></div>',
-      cc: '<div style="font-size:6px;color:#6b7280;margin-bottom:5px;">2026年5月28日</div><div style="font-size:6.5px;font-weight:600;color:#111827;margin-bottom:5px;">尊敬的招聘负责人，</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:4px;">看到贵公司高级工程师职位，我立刻想到了自己在重构支付管道时实现的42%延迟降低——正是贵团队的运营规模。</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:5px;">在腾讯，我带领5人团队重建支付结算系统，使转化率提升18%，年营收增加1,800万元...</div><div style="font-size:5.5px;color:#6b7280;">此致，<br><span style="font-weight:600;color:#374151;">李明华</span></div>',
+      cc: '<div style="font-size:6px;color:#6b7280;margin-bottom:5px;"><span class="js-today"></span></div><div style="font-size:6.5px;font-weight:600;color:#111827;margin-bottom:5px;">尊敬的招聘负责人，</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:4px;">看到贵公司高级工程师职位，我立刻想到了自己在重构支付管道时实现的42%延迟降低——正是贵团队的运营规模。</div><div style="font-size:5.5px;color:#374151;line-height:1.55;margin-bottom:5px;">在腾讯，我带领5人团队重建支付结算系统，使转化率提升18%，年营收增加1,800万元...</div><div style="font-size:5.5px;color:#6b7280;">此致，<br><span style="font-weight:600;color:#374151;">李明华</span></div>',
       cm: '<div style="background:#2563eb;padding:8px 10px;"><div style="font-size:8px;font-weight:800;color:#fff;">张晓雯</div><div style="font-size:5px;color:#F0F5FF;">xzhang@email.com · 软件工程师</div></div><div style="padding:8px 10px;"><div style="font-size:5.5px;font-weight:600;color:#374151;margin-bottom:4px;">尊敬的王女士，</div><div style="font-size:5.5px;color:#4b5563;line-height:1.55;margin-bottom:3px;">字节跳动的工程文化与我带领腾讯基础架构团队将停机降低60%的方式高度契合——通过极致的主人翁精神和数据驱动决策。</div><div style="font-size:5.5px;color:#4b5563;line-height:1.55;">我在大规模API的经验（每日5,000万+次请求）与贵公司的可靠性目标直接对应...</div></div>'
     };
     var _tplMap = {'tpl-resume-classic':'rc','tpl-resume-modern':'rm','tpl-cl-classic':'cc','tpl-cl-modern':'cm'};
@@ -3531,6 +3521,21 @@
     if (btn3) btn3.textContent = isZh ? 'EN / 中文' : '中文 / EN';
     document.documentElement.lang = isZh ? 'zh-CN' : 'en';
     localStorage.setItem('rt_lang', lang);
+
+    // Sample cover-letter dates always render as today's date so they never go
+    // stale. Runs last so it refills the .js-today spans after any innerHTML
+    // rewrites above (feat_cl_date + the template-card previews) wipe them.
+    stampDates(isZh);
+  }
+
+  // Fill every .js-today placeholder with the current date, localized.
+  function stampDates(isZh) {
+    if (isZh === undefined) isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+    var d = new Date();
+    var s = isZh
+      ? d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
+      : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    document.querySelectorAll('.js-today').forEach(function(el) { el.textContent = s; });
   }
 
   function toggleLang() {
@@ -3542,6 +3547,9 @@
   (function() {
     var saved = localStorage.getItem('rt_lang') || 'en';
     if (saved !== 'en') applyLang(saved);
+    // applyLang (via stampDates) covers the zh path; stamp here for the English
+    // default, where applyLang is intentionally skipped.
+    else stampDates(false);
   })();
 
   // Scroll reveal.
