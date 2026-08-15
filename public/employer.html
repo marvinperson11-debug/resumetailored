@@ -337,19 +337,6 @@
   </div>
 </div>
 
-<!-- Blocked: a job-seeker Pro/Lifetime subscriber — the employer portal is a separate product. -->
-<div id="nvBlocked" class="nv-authwrap" style="display:none;">
-  <div class="nv-authcard">
-    <div class="nv-authhead">
-      <span class="tag">EMPLOYER PORTAL</span>
-      <h1>A separate product</h1>
-      <p>The employer portal is separate from your job-seeker plan. Your ResumeTailored Pro / Lifetime subscription covers the job-seeker tools — hiring runs on its own employer plan.</p>
-    </div>
-    <a class="nv-btn" style="width:100%;display:block;text-align:center;text-decoration:none;box-sizing:border-box;" href="/for-employers">See employer plans →</a>
-    <a class="nv-btn nv-btn-ghost" style="width:100%;display:block;text-align:center;text-decoration:none;box-sizing:border-box;margin-top:10px;" href="/dashboard">← Back to job-seeker dashboard</a>
-  </div>
-</div>
-
 <!-- ══ PORTAL SHELL ══ -->
 <div id="nvShell" class="nv-shell">
   <aside class="nv-sidebar" id="nvSidebar">
@@ -497,16 +484,13 @@ async function nvSaveProfile(){
   boot();
 }
 
-function show(which){ ['nvAuth','nvSetup','nvBlocked','nvShell'].forEach(function(id){ el(id).style.display='none'; }); el(which).style.display=which==='nvShell'?'block':'block'; el('nvPubNav').style.display=which==='nvShell'?'none':'block'; }
+function show(which){ ['nvAuth','nvSetup','nvShell'].forEach(function(id){ el(id).style.display='none'; }); el(which).style.display=which==='nvShell'?'block':'block'; el('nvPubNav').style.display=which==='nvShell'?'none':'block'; }
 
 async function boot(){
   if(!tok()){ show('nvAuth'); return; }
   var r=await api('/api/employer/status');
   if(r.status===401){ localStorage.removeItem('rt_token'); return boot(); }
   epStatus=r.data;
-  // Job-seeker Pro/Lifetime subscribers can't enter — the employer portal is a
-  // separate product (owner + employer accounts pass; enforced server-side too).
-  if(epStatus.access==='blocked_pro'){ show('nvBlocked'); return; }
   if(!epStatus.isEmployer){ show('nvSetup'); return; }
   show('nvShell');
   el('nvCoOut').textContent=epStatus.companyName;

@@ -345,15 +345,18 @@ const server = app.listen(0, async () => {
     check('unknown company slug 404s', missing.status === 404);
 
     // ═══════════════ v2: employer-portal access model ══════════════════════
-    // A job-seeker Pro subscriber (subscribers table) with no employer account
-    // is BLOCKED from the employer portal — it's a separate product.
+    // The free employer tier is open to EVERYONE, incl. job-seeker Pro/Lifetime
+    // subscribers — they get 'onboard' and can create a free employer account
+    // (2 lifetime posts) like anyone else. Only PAID employer features are gated.
     db.prepare("INSERT INTO users (email,username,password_hash) VALUES (?,?,?)").run('prosub@x.com', 'Pro Sub', 'x');
     db.prepare("INSERT INTO sessions (token,email) VALUES (?,?)").run('tokProSub', 'prosub@x.com');
     db.prepare("INSERT INTO subscribers (email, customer_id) VALUES (?,?)").run('prosub@x.com', 'cus_js_pro');
     const proStatus = await req('GET', '/api/employer/status', 'tokProSub');
-    check('access: job-seeker Pro sub is blocked_pro', proStatus.json.access === 'blocked_pro', proStatus.body);
-    const proProfile = await req('POST', '/api/employer/profile', 'tokProSub', { companyName: 'Sneaky Co' });
-    check('access: blocked_pro cannot create an employer account (402)', proProfile.status === 402 && proProfile.json.error === 'employer_separate_product', proProfile.body);
+    check('access: a job-seeker Pro sub gets onboard (not blocked)', proStatus.json.access === 'onboard', proStatus.body);
+    const proProfile = await req('POST', '/api/employer/profile', 'tokProSub', { companyName: 'Pro Sub Co' });
+    check('access: a job-seeker Pro sub CAN create a free employer account', proProfile.status === 200 && proProfile.json.slug, proProfile.body);
+    const proStatus2 = await req('GET', '/api/employer/status', 'tokProSub');
+    check('access: with an employer account they now have full access + 2 free posts', proStatus2.json.access === 'full' && proStatus2.json.freeLifetimeJobLimit === 2 && proStatus2.json.canPostJob === true, proStatus2.body);
 
     // A fresh free visitor may onboard (create a free employer account).
     db.prepare("INSERT INTO users (email,username,password_hash) VALUES (?,?,?)").run('freshfree@x.com', 'Fresh', 'x');
