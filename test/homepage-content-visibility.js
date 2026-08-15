@@ -31,10 +31,11 @@ check('hero is NOT given content-visibility (LCP stays eager)',
   !/\.hero\s*\{[^}]*content-visibility/.test(html) && /:not\(\.hero\)/.test(html));
 
 // Every contained section reserves space with contain-intrinsic-size using the
-// `auto` keyword (so Chrome remembers real heights → CLS ~0). There are 12
-// below-the-fold sections (13 total minus the hero).
+// `auto` keyword (so Chrome remembers real heights → CLS ~0). There are 11
+// below-the-fold sections (12 total minus the hero) after the former "New Tools"
+// + "What's New" promo sections were merged into one.
 const sizeRules = html.match(/contain-intrinsic-size:\s*auto\s+\d+px/g) || [];
-check('contain-intrinsic-size set on each below-the-fold section (12)', sizeRules.length >= 12, `found ${sizeRules.length}`);
+check('contain-intrinsic-size set on each below-the-fold section (11)', sizeRules.length >= 11, `found ${sizeRules.length}`);
 check('intrinsic sizes use the auto keyword (remembered real height)', sizeRules.every(r => /auto/.test(r)));
 
 // It must not be applied via display:none-style hiding (a11y/SEO safety) — the
