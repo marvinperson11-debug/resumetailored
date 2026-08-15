@@ -1,17 +1,24 @@
 # ResumeTailored AI — Landing Page Fixes
 
-All work is in `public/index.html` (the marketing landing page). The dev server
-was run (`node server.js`, HTTP 200) and every change verified against the
-rendered output. Inline JS was syntax-checked (0 errors across all real JS
-blocks) and the bilingual (EN/中文) `applyLang` indexing was re-validated.
+All work is in **`public/index.html`** (the marketing landing page), plus one
+test update. The free-tier copy was also updated to reflect that free usage now
+requires **no login/account**. Every change was verified against the running dev
+server (`node server.js`, HTTP 200); inline JS was syntax-checked (0 errors) and
+the bilingual (EN/中文) `applyLang` heading indices were re-validated.
+
+## Links
+
+- **Pull request (draft):** https://github.com/marvinperson11-debug/resumetailored/pull/385
+- **Branch:** `claude/resumetailored-site-fixes-fh0gmv`
+- **Netlify deploy preview:** https://deploy-preview-385--mellow-macaron-463353.netlify.app
 
 ## Summary of the 10 items
 
 | # | Issue | Status | What changed |
 |---|-------|--------|--------------|
 | 1 | Pricing math ($99 → $20) | **Fixed** | Lifetime card savings claim corrected |
-| 2 | Duplicate "New Tools" / "What's New" | **Fixed** | Merged into one section |
-| 3 | "No account required" consistency | **Fixed** | FAQ + JSON-LD + zh rewritten |
+| 2 | Duplicate "New Tools" / "What's New" | **Fixed** | Merged into one section (all 9 cards kept) |
+| 3 | "No account required" consistency | **Fixed** | FAQ + JSON-LD + 中文 rewritten |
 | 4 | Missing testimonial attribution | Already correct | Verified |
 | 5 | Resume sample skills run-together | Already correct | Verified |
 | 6 | Static cover-letter date | **Fixed** | Now renders today's date |
@@ -19,6 +26,11 @@ blocks) and the bilingual (EN/中文) `applyLang` indexing was re-validated.
 | 8 | "Click any feature to unlock" not clickable | **Fixed** | Now a real CTA button |
 | 9 | Employer Portal redundant CTAs | **Fixed** | Labels made distinct |
 | 10 | Hero tagline spacing | Already correct | Verified |
+
+**7 genuinely fixed, 3 already correct** (#4, #5, #10 were verified in the
+rendered page — no change needed).
+
+---
 
 ## Details
 
@@ -106,9 +118,26 @@ The hero `<h1>` is built from spaced `word-animate` spans with `<br>` line break
 and renders correctly as three lines: **"Your resume, / perfectly tailored / to
 every job."** No missing spaces — verified in the rendered page.
 
+---
+
 ## Verification performed
 - `node server.js` → HTTP 200; each fix confirmed against `curl` output.
 - All inline JS blocks syntax-checked (0 errors).
-- Bilingual heading indices re-checked: `.section-title[8]`=Pricing,
+- Bilingual heading indices re-checked post-merge: `.section-title[8]`=Pricing,
   `[9]`=FAQ; `.section-eyebrow[7]`=Pricing, `[8]`=Common Questions — all aligned.
 - Dynamic date confirmed to render today's date via `stampDates()`.
+- Full test suite (`for f in test/*.js; do node $f; done`) passes by exit code
+  (the same check CI uses).
+
+## CI note
+The first CI run flagged `test/homepage-content-visibility.js`, which hardcoded a
+count of 12 below-the-fold sections. Merging the two promo sections into one
+legitimately reduced the page to 12 total sections (11 below the fold), so I
+updated that test's assertion and comment to match (11) and pushed. This is a
+test tracking an intentional structural change, not a workaround.
+
+## Commits
+1. `Fix landing page copy: pricing, dupes, no-account, dates, CTAs`
+   — the 7 landing-page fixes in `public/index.html`.
+2. `Update content-visibility test for merged promo section`
+   — `test/homepage-content-visibility.js` (12 → 11 sections).
