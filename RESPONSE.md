@@ -1,72 +1,59 @@
-# Homepage UI bug fixes
+# Response — ResumeTailored Landing Page Fixes
 
-All three reported UI/UX bugs are fixed, verified in a real headless Chromium at
-1366×768 and 1920×1080, and the full test suite is green (**39/39**).
+## Open questions
+**None.** Nothing about the task was ambiguous enough to block on. Where an issue
+offered options (a)/(b), I picked the lower-risk, cleaner one and noted it below.
+If you'd like any of those decisions changed, tell me and I'll adjust.
 
-## What was wrong and what I changed
+## What I did
+Fixed the marketing landing page (`public/index.html`) plus one test. **7 of the
+10 items were genuinely present and fixed; 3 were already correct** in this
+snapshot and verified in the rendered page.
 
-This is a **static HTML site** (no Next.js). The homepage (`public/index.html`)
-ships its own hardcoded nav, while every other marketing/SEO/blog page has its
-nav injected by `public/site-nav.js`. That split is the root of bugs 2 and 3.
+| # | Issue | Result |
+|---|-------|--------|
+| 1 | Lifetime "Saves $99+" (Rezi $149 vs our $129) | → **"Saves $20+ vs. Rezi Lifetime"** |
+| 2 | Duplicate "New Tools" + "What's New" sections | **Merged into one** "What's New" (all 9 cards kept) |
+| 3 | FAQ implied signup for free tier | Rewritten to **"…no credit card and no account required."** (visible + JSON-LD + 中文) |
+| 4 | Testimonial attribution | **Already correct** — all three carry name/title |
+| 5 | Sample skills run-together | **Already correct** — renders as separated pills |
+| 6 | Static "May 28, 2026" cover-letter date | Now renders **today's date** via `stampDates()` (localized EN/中文) |
+| 7 | Inflated "40+ more" platforms claim | → **"more added regularly — any URL-accessible job post works"** |
+| 8 | "Click any feature to unlock" (not a control) | → real **"Upgrade to Pro to unlock these features →"** button |
+| 9 | Two redundant Employer CTAs | Distinct labels: **"Open the Employer Portal →"** / **"See how it works →"** |
+| 10 | Hero tagline spacing | **Already correct** — spaced across three `<br>` lines |
 
-### BUG 1 — Hero CTA below the fold on desktop
-`public/index.html` (CSS)
+## Decisions I made (where the brief gave options)
+- **#6 date** — chose *(a) dynamic today's date* over a relative phrase, so the
+  sample never goes stale and stays correct in both languages.
+- **#7 platforms** — chose *(b) remove the number* ("more added regularly — any
+  URL-accessible job post works") rather than padding the visible list to 40+.
+- **#8 unlock CTA** — chose *(b) a single real CTA button* ("Upgrade to Pro…")
+  rather than wiring each tile, since the tiles already had click handlers.
+- **#9 employer CTAs** — the two links go to *different* destinations, so I made
+  the labels distinct rather than deleting one.
+- **#4 / #5 / #10** — already correct in the source; verified rather than
+  changing, to avoid needless churn.
 
-The hero stacked `padding-top: 100px` + a `clamp(…, 76px)` headline + wide
-margins, pushing the primary CTA past 768px.
+## Note on the bilingual toggle (why #2 touched more than HTML)
+The EN/中文 toggle targets section headings by **positional index**. Removing one
+section shifted the trailing indices, so I decremented the Pricing/FAQ entries,
+updated the `contain-intrinsic-size` CLS fallbacks, and re-verified DOM alignment
+with the Chinese dictionary.
 
-- `.hero` top padding `100px → 48px`
-- `.hero h1` `clamp(42px, 6.4vw, 76px) → clamp(40px, 5.4vw, 62px)`,
-  line-height `1.06 → 1.05`, margin-bottom `24px → 18px`
-- `.hero-sub` margin-bottom `34px → 22px`, line-height `1.72 → 1.6`
+## CI
+The first CI run failed one test that hardcoded "12 below-the-fold sections."
+Merging two sections into one legitimately reduced that to 11, so I updated the
+test's assertion/comment to 11 and pushed. Full suite passes locally by exit code
+(the same check CI uses). I'm still watching the PR.
 
-**Measured result (real browser, full viewport):**
+## Links & artifacts
+- **Pull request (draft):** https://github.com/marvinperson11-debug/resumetailored/pull/385
+- **Branch:** `claude/resumetailored-site-fixes-fh0gmv`
+- **Netlify deploy preview:** https://deploy-preview-385--mellow-macaron-463353.netlify.app
+- **Detailed technical write-up:** `SITE_FIXES_REPORT.md` (in the repo/branch)
 
-| Viewport | CTA row bottom | Fold | Above fold? |
-|---|---|---|---|
-| 1366×768 | 490px | 768px | ✅ 278px to spare |
-| 1920×1080 | 490px | 1080px | ✅ 590px to spare |
-
-Comfortably clears the fold even after real browser chrome (~130px) is
-subtracted from a physical 768px laptop screen.
-
-### BUG 2 — 中文 toggle jumped position between pages
-`public/index.html` (nav markup + CSS)
-
-On the homepage the toggle was floated **after** the CTA (far right); on
-site-nav pages it sits **before** Log In. Same button, two positions.
-
-Fix: locked the homepage nav to the exact canonical order used by
-`site-nav.js` — `[中文] [Log In] [CTA]`, all inside the one right-aligned
-`.nav-actions` group. Added a separate `.nav-mobile-actions` group (中文 +
-hamburger) so mobile parity is preserved. No conditional rendering moves the
-toggle any more.
-
-**Measured result** — `中文` is now left-of-Login and right-aligned on both `/`
-and `/resume-examples`, at matching coordinates.
-
-### BUG 3 — Full-page white flash between tabs
-`public/index.html` (inline CSS) + `public/site-nav.js` (injected CSS)
-
-Static MPA, so I used the **cross-document View Transitions API**:
-
-```css
-@view-transition { navigation: auto; }
-@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
-```
-
-Chromium (the browser in the screenshots) now cross-fades between full page
-loads instead of hard-flashing; other browsers ignore the rule and behave as
-before; reduced-motion users get no animation. The rule is declared on **both
-ends** of every navigation — inline on the homepage and injected by
-`site-nav.js` on every other route — which is what a same-origin MPA transition
-requires. Verified present in the CSSOM on both page types.
-
-## Tests
-- Added `test/homepage-ui-bugs.js` — 13 source-level guards locking all three fixes.
-- Full suite: **39/39 pass** (`for f in test/*.js; do node $f; done`).
-- Browser geometry verified out-of-band with the pre-installed Chromium.
-
-## Shipping
-Changes are committed to `claude/fix-homepage-ui-bugs-nac5xn` and pushed; a pull
-request into `main` is open. Railway auto-deploys on merge to `main`.
+## Commits
+1. `Fix landing page copy: pricing, dupes, no-account, dates, CTAs`
+2. `Update content-visibility test for merged promo section`
+3. `Expand fixes report with PR link, CI note, and commit list`
