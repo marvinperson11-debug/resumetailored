@@ -97,7 +97,17 @@ if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID 
     const val = raw && raw.trim();
     const fb = fallbackRaw && fallbackRaw.trim();
     if (val && looksLikePrice(raw)) { console.log(`[stripe] ${label}: loaded ✓`); return; }
-    if (val && !looksLikePrice(raw)) { console.error(`[stripe] ${label}: SET but MALFORMED — value is not a "price_…" id (stray whitespace/newline or wrong id type). Employer checkout for this tier will 503.`); return; }
+    if (val && !looksLikePrice(raw)) {
+      // Diagnose WITHOUT exposing the id — only its type prefix and lengths.
+      const t = raw.trim();
+      let why;
+      if (/^prod_/.test(t)) why = 'it is a Stripe PRODUCT id ("prod_…") — use the PRICE id ("price_…"), found on the price row under the product';
+      else if (/\s/.test(t)) why = 'it contains whitespace/newline INSIDE the value';
+      else if (raw.length !== t.length) why = `it has surrounding whitespace (rawLen=${raw.length}, trimmedLen=${t.length})`;
+      else why = `it is not "price_<alphanumeric>" (len=${t.length}, prefix="${t.slice(0, 6)}")`;
+      console.error(`[stripe] ${label}: SET but MALFORMED — ${why}. Employer checkout for this tier will 503.`);
+      return;
+    }
     if (fb && looksLikePrice(fallbackRaw)) { console.log(`[stripe] ${label}: not set, using fallback ✓`); return; }
     console.error(`[stripe] ${label}: NOT set — employer checkout for this tier will return 503 not_configured.`);
   };
