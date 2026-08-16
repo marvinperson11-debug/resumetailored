@@ -1,0 +1,769 @@
+    /* ── Phase 1: off-screen rendering containment ──────────────────────────── */
+    /* Keep the browser from laying out heavy hidden panels on first paint. */
+    .tab-content { contain: layout paint; content-visibility: auto; contain-intrinsic-size: 0 500px; }
+    .tab-content.active { content-visibility: visible; }
+    .cv-shell { contain: layout paint; }
+    .bo-sites, .cv-tplgrid, .template-gallery { contain: layout paint; }
+    /* Lazy-panel loading spinner (shown until /panels/<name>.html is injected) */
+    .panel-loading { display: flex; align-items: center; justify-content: center; min-height: 320px; }
+    .panel-spin { width: 34px; height: 34px; border-radius: 50%;
+      border: 3px solid rgba(150,150,170,0.25); border-top-color: #6c5ce7;
+      animation: panelSpin 0.8s linear infinite; }
+    @keyframes panelSpin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .panel-spin { animation-duration: 2s; } }
+
+    /* ── Auth Modal ── */
+    .auth-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .auth-card {
+      background: #FFFFFF; border: 1px solid #E7DFD1;
+      border-radius: 20px; padding: 30px 32px; width: 100%; max-width: 440px;
+      max-height: 92vh; overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(25,21,18,0.28), 0 0 0 1px rgba(31,92,61,0.08);
+    }
+    .auth-logo { font-size: 20px; font-weight: 900; color: #191512; margin-bottom: 24px; text-align: center; font-family: 'Fraunces', Georgia, serif; letter-spacing: -0.02em; }
+    .auth-logo .badge-ai { background: #1F5C3D; color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 12px; margin-left: 4px; -webkit-text-fill-color: #fff; font-family: 'Inter', sans-serif; }
+    .auth-heading { font-size: 24px; font-weight: 800; color: #191512; margin-bottom: 6px; text-align: center; font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+    .auth-sub { font-size: 14px; color: #57514A; text-align: center; margin-bottom: 24px; }
+    .auth-tabs { display: flex; background: #F1EADD; border-radius: 10px; padding: 4px; margin-bottom: 24px; border: 1px solid #E7DFD1; }
+    .auth-tab-btn {
+      flex: 1; padding: 9px; border: none; border-radius: 8px; font-family: inherit;
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s;
+      background: transparent; color: #57514A;
+    }
+    .auth-tab-btn.active { background: #FFFFFF; color: #1F5C3D; box-shadow: 0 1px 3px rgba(25,21,18,.08); }
+    .auth-field { margin-bottom: 14px; }
+    .auth-field input {
+      width: 100%; box-sizing: border-box;
+      background: #FAF7F0; border: 1.5px solid #D9CFBC;
+      border-radius: 10px; padding: 13px 16px; color: #191512; font-size: 15px;
+      font-family: inherit; outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    .auth-field input:focus { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
+    .auth-field input::placeholder { color: #918A7E; }
+    .auth-error { color: #B23A2E; font-size: 13px; font-weight: 600; min-height: 20px; margin-bottom: 8px; text-align: center; }
+    .auth-switch { text-align: center; margin-top: 18px; font-size: 13px; color: #57514A; }
+    .auth-switch a { color: #1F5C3D; cursor: pointer; font-weight: 600; text-decoration: none; }
+    .auth-switch a:hover { text-decoration: underline; }
+    .auth-card .btn-primary { background: #1F5C3D; color: #fff; background-image: none; box-shadow: 0 6px 18px rgba(31,92,61,0.3); }
+    .auth-card .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); background: #153F2A; box-shadow: 0 8px 24px rgba(31,92,61,0.4); }
+    /* ── Nav (dark glassmorphism) ── */
+    .nav { background: rgba(3,7,18,0.85) !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; }
+    .nav .logo { background: none; -webkit-background-clip: unset; -webkit-text-fill-color: #f1f5f9; background-clip: unset; color: #f1f5f9; font-size: 18px; }
+    .nav .logo .badge-ai { background: linear-gradient(135deg,#1F5C3D,#2E7D53) !important; color: #fff !important; -webkit-text-fill-color: #fff !important; padding: 2px 7px; border-radius: 5px; font-size: 11px; }
+    .nav .btn-outline { border-color: rgba(31,92,61,0.5) !important; color: #2E7D53 !important; background: rgba(31,92,61,0.1) !important; box-shadow: none !important; }
+    .nav .btn-outline:hover { background: rgba(31,92,61,0.2) !important; transform: none !important; }
+    #navUsername { color: #94a3b8 !important; }
+    /* ── Upload / Download ── */
+    .upload-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      border: 1.5px dashed rgba(31,92,61,0.4); background: rgba(31,92,61,0.08);
+      color: #2E7D53; cursor: pointer; font-family: inherit; transition: all .2s;
+      white-space: nowrap;
+    }
+    .upload-btn:hover { background: rgba(31,92,61,0.15); border-color: rgba(31,92,61,0.7); }
+    .upload-btn .spinner { width:14px;height:14px;border-width:2px; }
+    .field-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .field-header label { margin-bottom:0; }
+    .download-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .download-btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 20px; border-radius: 9px; font-size: 14px; font-weight: 700;
+      cursor: pointer; font-family: inherit; transition: all .2s; border: none;
+    }
+    .download-btn-txt {
+      background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);
+      color: #e2e8f0;
+    }
+    .download-btn-txt:hover { background: rgba(255,255,255,0.1); }
+    .download-btn-docx {
+      background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff;
+    }
+    .download-btn-docx:hover { opacity: 0.9; }
+    .download-btn-pdf {
+      background: #dc2626; color: #fff;
+    }
+    .download-btn-pdf:hover { background: #b91c1c; }
+    @media (max-width: 480px) {
+      .auth-overlay { padding: 0; align-items: flex-end; }
+      .auth-card { border-radius: 16px 16px 0 0; max-width: 100%; max-height: 90vh; overflow-y: auto; }
+      #goProNavBtn { display: none !important; }
+    }
+    /* ── Template type toggle ── */
+    .sample-toggle { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+    .sample-toggle-btn {
+      padding: 9px 18px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.05); color: #94a3b8; font-size: 14px;
+      font-weight: 700; cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .sample-toggle-btn.active {
+      background: rgba(31,92,61,0.2); border-color: rgba(31,92,61,0.5); color: #2E7D53;
+    }
+    /* ── Font picker ── */
+    .font-pick-row { display:flex; align-items:center; gap:7px; margin-bottom:14px; flex-wrap:wrap; }
+    .font-pick-label { font-size:11.5px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.6px; margin-right:2px; }
+    .font-btn { padding:5px 12px; font-size:12px; font-weight:600; border:1.5px solid rgba(255,255,255,0.1); border-radius:6px; background:rgba(255,255,255,0.05); color:#94a3b8; cursor:pointer; transition:all .15s; font-family:inherit; }
+    .font-btn.active { background:#0E2A1C; color:#fff; border-color:#0E2A1C; }
+    .font-btn:hover:not(.active) { border-color:#1F5C3D; color:#153F2A; }
+    /* ── Output Template Picker ── */
+    .tpl-pick-section { margin: 14px 0 16px; }
+    .tpl-pick-label { font-size: 11.5px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .6px; display: flex; justify-content: space-between; align-items: center; }
+    .tpl-pick-label span { font-size: 10px; font-weight: 600; color: #64748b; letter-spacing: .3px; text-transform: none; }
+    .tpl-pick-outer { position: relative; overflow: hidden; }
+    .tpl-pick-outer::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 48px; background: linear-gradient(to right, transparent, var(--bg,#030712)); pointer-events: none; z-index: 1; border-radius: 0 6px 0 0; }
+    .tpl-pick-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; -webkit-overflow-scrolling: touch; }
+    .tpl-pick-row::-webkit-scrollbar { height: 3px; }
+    .tpl-pick-row::-webkit-scrollbar-track { background: transparent; }
+    .tpl-pick-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+    .tpl-pick-item {
+      flex-shrink: 0; width: 160px; cursor: pointer; border-radius: 12px;
+      border: 2px solid rgba(255,255,255,0.1); overflow: hidden; background: rgba(255,255,255,0.04);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all .2s;
+    }
+    .tpl-pick-item:hover:not(.locked) { border-color: rgba(31,92,61,0.5); box-shadow: 0 4px 16px rgba(31,92,61,0.2); transform: translateY(-2px); }
+    .tpl-pick-item.selected { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,.25); }
+    .tpl-pick-item.locked { cursor: default; }
+    .tpl-pick-thumb { height: 140px; overflow: hidden; position: relative; background: rgba(255,255,255,0.03); }
+    .tpl-pick-thumb-inner { transform-origin: top left; position: absolute; top: 0; left: 0; pointer-events: none; }
+    .tpl-pick-body { padding: 10px; }
+    .tpl-pick-name { font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
+    .tpl-pick-badge { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
+    .tpl-pick-badge-free { background: rgba(16,185,129,0.15); color: #34d399; }
+    .tpl-pick-badge-pro { background: rgba(31,92,61,0.2); color: #8FD3AC; }
+    .tpl-ats-badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; display: inline-block; margin: 0 0 8px 4px; background: rgba(16,185,129,0.12); color: #6ee7b7; letter-spacing: .3px; }
+    .tpl-human-note { font-size: 9.5px; color: #94a3b8; margin: -4px 0 8px; line-height: 1.4; }
+    .export-warn-box { background: #12121f; border: 1px solid rgba(251,191,36,0.35); border-radius: 14px; max-width: 440px; padding: 26px 28px; margin: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.5); }
+    .export-warn-title { font-size: 16px; font-weight: 800; color: #fbbf24; margin-bottom: 10px; }
+    .export-warn-text { font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 20px; }
+    .export-warn-actions { display: flex; gap: 12px; align-items: center; }
+    .export-warn-dismiss { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: #e2e8f0; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-family: inherit; }
+    .export-warn-dismiss:hover { background: rgba(255,255,255,0.1); }
+    .export-fmt-banner { position: sticky; top: 0; z-index: 5; display: flex; gap: 10px; align-items: flex-start; background: rgba(251,191,36,0.09); border: 1px solid rgba(251,191,36,0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 12.5px; color: #fcd34d; line-height: 1.55; text-align: left; width: 100%; box-sizing: border-box; }
+    .export-fmt-banner a { color: #fbbf24; font-weight: 700; }
+    .tpl-pick-btn { display: block; width: 100%; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 700; text-align: center; border: none; cursor: pointer; transition: background .15s; font-family: inherit; box-sizing: border-box; }
+    .tpl-pick-btn-select { background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff; }
+    .tpl-pick-btn-select:hover { opacity: 0.9; }
+    .tpl-pick-btn-selected { background: rgba(16,185,129,0.15); color: #34d399; cursor: default; }
+    .tpl-pick-btn-locked { background: rgba(255,255,255,0.06); color: #64748b; }
+    .tpl-pick-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.35); font-size: 24px; }
+    /* ── Edit mode ── */
+    .edit-bar { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: rgba(31,92,61,0.1); border: 1px solid rgba(31,92,61,0.25); border-radius: 9px; margin-bottom: 10px; font-size: 13px; color: #2E7D53; font-weight: 600; flex-wrap: wrap; }
+    .edit-bar .eb-btn { padding: 5px 14px; border-radius: 7px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .edit-bar .eb-save { background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff; }
+    .edit-bar .eb-cancel { background: rgba(255,255,255,0.08); color: #94a3b8; }
+    #outputBox[contenteditable="true"] { outline: 2px dashed rgba(31,92,61,0.6); outline-offset: 2px; cursor: text; border-radius: 8px; }
+
+    /* ── Resume build form ── */
+    .resume-mode-toggle { display: flex; gap: 6px; }
+    .rmode-btn { padding: 6px 13px; font-size: 12px; font-weight: 600; border: 1.5px solid var(--border); border-radius: 7px; background: rgba(255,255,255,0.05); color: var(--text-muted); cursor: pointer; transition: all 0.15s; font-family: inherit; }
+    .rmode-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .rmode-btn:hover:not(.active) { background: var(--blue-light); color: var(--blue); }
+    .rb-section { margin-bottom: 18px; }
+    .rb-section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; }
+    .rb-optional { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; }
+    .rb-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px; }
+    .rb-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: rgba(255,255,255,0.06); font-family: inherit; transition: border-color 0.15s; box-sizing: border-box; }
+    .rb-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
+    .rb-textarea { width: 100%; min-height: 90px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: rgba(255,255,255,0.06); font-family: inherit; resize: vertical; transition: border-color 0.15s; box-sizing: border-box; }
+    .rb-textarea-sm { min-height: 56px; }
+    .rb-textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
+    .rb-entry { background: rgba(255,255,255,0.04); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+    .rb-entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .rb-entry-label { font-size: 13px; font-weight: 700; color: var(--text); }
+    .rb-remove-btn { font-size: 12px; color: #ef4444; background: none; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer; font-weight: 600; padding: 4px 10px; font-family: inherit; transition: background 0.15s; }
+    .rb-remove-btn:hover { background: #fef2f2; }
+    .rb-add-btn { width: 100%; padding: 10px; border: 1.5px dashed var(--border); border-radius: 8px; background: transparent; color: var(--blue); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .rb-add-btn:hover { background: var(--blue-light); border-color: var(--blue); }
+    @media (max-width: 560px) {
+      .rb-grid-2 { grid-template-columns: 1fr; }
+      .resume-mode-toggle { flex-wrap: wrap; }
+      .field-header { flex-wrap: wrap; gap: 8px; }
+    }
+    /* ── Signature ── */
+    .sig-section { margin-bottom: 16px; background: var(--blue-light); border: 1.5px solid rgba(31,92,61,0.25); border-radius: 10px; padding: 16px; }
+    .sig-label { font-size: 13px; font-weight: 700; color: var(--text); display: block; margin-bottom: 8px; }
+    .sig-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); background: rgba(255,255,255,0.06); box-sizing: border-box; transition: border-color 0.15s; }
+    .sig-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
+    .sig-fonts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .sig-font-btn { padding: 6px 13px; border: 1.5px solid var(--border); border-radius: 7px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted); font-family: inherit; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
+    .sig-font-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
+    .sig-font-btn:hover:not(.active) { border-color: rgba(31,92,61,0.4); }
+    .sig-preview { margin-top: 10px; padding: 14px 20px; background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px; }
+
+    /* ── LinkedIn sidebar button highlight ── */
+    /* No standing highlight. This used to carry a blue background and border
+       unconditionally, so the button looked selected on every page — the
+       "active" gradient on top of it was indistinguishable at a glance. Only
+       .active is lit now. */
+    .sidebar-btn-linkedin {
+      display: flex !important;
+      align-items: center !important;
+    }
+    .sidebar-btn-linkedin:hover:not(.active) {
+      background: rgba(0,119,181,0.18) !important;
+      border-color: rgba(0,119,181,0.6) !important;
+    }
+    .sidebar-btn-linkedin.active {
+      background: linear-gradient(135deg, #0077b5 0%, #1d4ed8 100%) !important;
+      color: #fff !important;
+      border-color: #0077b5 !important;
+    }
+    .sidebar-btn-linkedin.active span[style*="background:#0077b5"] {
+      background: rgba(255,255,255,0.3) !important;
+    }
+
+    /* ── A4 size toggle ── */
+    .page-size-toggle { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
+    .page-size-btn { padding: 5px 12px; font-size: 11px; font-weight: 700; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(255,255,255,0.05); color: #94a3b8; cursor: pointer; font-family: inherit; transition: all .15s; text-transform: uppercase; letter-spacing: .5px; }
+    .page-size-btn.active { background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff; border-color: transparent; }
+
+    /* ── Chinese job board note ── */
+    .job-platform-note { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .platform-chip { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,0.06); color: #94a3b8; white-space: nowrap; }
+    .platform-chip-cn { background: rgba(251,191,36,0.1); color: #fbbf24; }
+
+    /* ── Website Creator ── */
+    .wc-vtab { flex: 1; border: none; background: transparent; color: #64748b; font-size: 13px; font-weight: 700; padding: 8px 10px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
+    .wc-vtab-active { background: #fff; color: #153F2A; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+    /* ── A PHONE, NOT A NARROW RECTANGLE ──────────────────────────────────
+       The mobile preview is the right WIDTH but reads as a column of the page
+       rather than as a phone. A chassis around it says which it is at a glance.
+
+       Only on a screen big enough to be pretending. On an actual phone the
+       chassis is the one in your hand, and drawing a second one would spend
+       real pixels — the scarcest thing there — on decoration. `is-on` is put
+       on by the two fit functions, which are also the only things that know
+       whether mobile is selected.
+
+       OUTSIDE the scaled frame, so the bezel is a constant thickness on the
+       glass rather than something that shrinks with the page it surrounds. */
+    /* ── NO DEVICE TOGGLE ON A PHONE ──────────────────────────────────────
+       Since the published page keeps its layout and is scaled to fit, the two
+       views on a phone differ only in the width the page is laid out at — and
+       the "desktop" one IS what a visitor on a phone gets. There is nothing
+       left for the toggle to switch between there, so it is a control that
+       costs a row of the smallest screen to do nothing.
+
+       It is hidden AND the device is pinned to desktop below this width, not
+       one or the other: a toggle you cannot see cannot be used to get back out
+       of the state it left behind, and a phone stuck in "mobile" would preview
+       a 390px page inside a 390px frame — scaled twice, and not what is
+       published. `_pvDeviceLocked()` is the single answer to "does the device
+       follow the buttons here?", used by both previews. */
+    @media (max-width: 820px) {
+      .cv-seg--device, .wc-tplhead-dev { display: none !important; }
+    }
+    .pv-chassis { flex: 0 0 auto; }
+    .pv-chassis.is-on {
+      position: relative;
+      padding: 12px 10px 16px;
+      background: linear-gradient(180deg, #2b2f39, #14171d);
+      border-radius: 44px;
+      box-shadow: 0 0 0 2px #3f4552, 0 26px 60px rgba(0,0,0,.45);
+    }
+    /* Earpiece and home indicator: the two marks that read as "phone" at any
+       size. Positioned inside the padding, so they never cover the page. */
+    .pv-chassis.is-on::before {
+      content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+      width: 64px; height: 5px; border-radius: 3px; background: #4a5160;
+    }
+    .pv-chassis.is-on::after {
+      content: ''; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+      width: 40%; max-width: 110px; height: 4px; border-radius: 2px; background: #5b6373;
+    }
+    .pv-chassis.is-on > * { border-radius: 32px; overflow: hidden; }
+
+    /* ── THE TEMPLATE MODAL'S HEADER, ON A PHONE ──────────────────────────
+       Measured at 390px: 195px of header above a 353px preview — more than
+       half the modal spent on chrome, for a screen whose whole job is showing
+       you the template. Two rows instead of three, the blurb dropped (it is on
+       the card you just came from), and everything a size down. Desktop is
+       untouched: every rule here is inside the phone query. */
+    .wc-tplhead-brk { display: none; }
+    @media (max-width: 820px) {
+      .wc-tplhead { padding: 8px 10px !important; gap: 7px !important; }
+      #wcTplBlurb { display: none; }
+      #wcTplName { font-size: 13.5px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      /* Row 1: name, then Close. Row 2: the toggle, then Use. */
+      .wc-tplhead-txt { order: 1; flex: 1 1 auto !important; min-width: 0 !important; }
+      .wc-tplhead-close { order: 2; font-size: 12.5px !important; padding: 6px 12px !important; flex: 0 0 auto; }
+      .wc-tplhead-brk { display: block; order: 3; flex: 0 0 100%; height: 0; }
+      .wc-tplhead-dev { order: 4; padding: 3px !important; gap: 3px !important; flex: 0 0 auto; }
+      .wc-tplhead-dev .wc-vtab { font-size: 12px; padding: 6px 10px; }
+      .wc-tplhead-use { order: 5; flex: 1 1 auto; font-size: 12.5px !important; padding: 7px 10px !important; }
+    }
+    .wc-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 16px; padding: 22px; margin-bottom: 18px; }
+    .wc-step { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 14px; }
+    .wc-pal-btn { border: 1.5px solid #C9E3D4; background: #E8F0E9; color: #153F2A; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 9px; cursor: pointer; }
+    .wc-pal-btn:hover { background: #E8F0E9; }
+    .wc-blk { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: #fafafa; }
+    .wc-blk.wc-drag-over { border-color: #1F5C3D; box-shadow: 0 0 0 2px rgba(31,92,61,0.2); }
+    .wc-blk-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .wc-blk-handle { cursor: grab; color: #9ca3af; font-size: 15px; user-select: none; }
+    .wc-blk-type { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #1F5C3D; flex: 1; }
+    .wc-blk-del { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; line-height: 1; }
+    .wc-blk-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .wc-blk input.text-input, .wc-blk textarea.text-input, .wc-blk select.text-input { font-size: 13px; }
+    .wc-blk-width { font-size: 12px; color: #6b7280; }
+    .bo-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #f1f5f9; }
+    .bo-row:first-child { border-top: none; }
+    .bo-row-title { flex: 1; min-width: 0; font-size: 14px; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bo-row-meta { font-size: 12px; color: #9ca3af; white-space: nowrap; }
+    .bo-act { border: 1.5px solid #e5e7eb; background: #fff; color: #374151; font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 8px; cursor: pointer; }
+    .bo-act.bo-danger { color: #dc2626; border-color: #fecaca; }
+    .bo-empty { font-size: 13px; color: #9ca3af; padding: 6px 0; }
+    .bo-bulk { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+    /* Site cards. A website is a thing you look at, so the list shows the page
+       rather than a filename — thumbnails are a scaled-down live render of the
+       user's own site, not the template's sample person. */
+    .bo-sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+    .bo-site { border: 1.5px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
+    .bo-site.is-live { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.09); }
+    .bo-thumb { position: relative; height: 150px; background: #f8fafc; border-bottom: 1px solid #eef2f7; overflow: hidden; }
+    /* 500% then scale(.2) — the two cancel out to exactly the card's width at
+       any column size, which a fixed pixel width cannot do in a fluid grid (it
+       left a white strip down the side of every card). The iframe's own
+       viewport ends up 5× the card, so the site inside lays out as desktop
+       rather than collapsing to its mobile breakpoint.
+       pointer-events off: the whole card is the target, and a live page inside
+       would swallow the click. */
+    .bo-thumb iframe { position: absolute; top: 0; left: 0; width: 500%; height: 500%; border: 0;
+      transform: scale(.2); transform-origin: 0 0; pointer-events: none; background: #fff; }
+    .bo-thumb-badge { position: absolute; top: 8px; left: 8px; z-index: 2; font-size: 10px; font-weight: 800;
+      letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
+      background: #16a34a; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
+    .bo-thumb-badge.is-draft { background: #fff; color: #6b7280; border: 1px solid #e5e7eb; box-shadow: none; }
+    .bo-site-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .bo-site-tpl { font-size: 13px; font-weight: 800; color: #111827; }
+    .bo-site-addr { font-size: 12px; color: #153F2A; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bo-site-addr:hover { text-decoration: underline; }
+    .bo-site-meta { font-size: 11px; color: #9ca3af; }
+    .bo-site-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .bo-addr-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px;
+      color: #374151; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; padding: 9px 12px; margin-bottom: 14px; }
+    .bo-addr-bar b { font-weight: 800; color: #111827; }
+    .bo-sync { font-size: 10px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 999px; background: #ecfdf5; color: #047857; white-space: nowrap; vertical-align: 1px; }
+    .bo-sync.is-off { background: #fff7ed; color: #b45309; }
+    .wc-pal-btn.is-on { background: #153F2A; color: #fff; border-color: #153F2A; }
+    .wc-tpl { border: 2px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff; transition: border-color .15s, box-shadow .15s; }
+    .wc-tpl:hover { border-color: #C9E3D4; box-shadow: 0 6px 18px rgba(31,92,61,.14); }
+    .wc-tpl.is-on { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,.16); }
+    .wc-tpl-thumb { display: block; width: 100%; height: 118px; border: none; cursor: pointer; position: relative; }
+    .wc-tpl-eye { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; opacity: 0; transition: opacity .15s; background: rgba(0,0,0,.35); }
+    .wc-tpl-thumb:hover .wc-tpl-eye { opacity: 1; }
+    .wc-tpl-body { padding: 12px 13px 13px; }
+    .wc-tpl-name { font-size: 14px; font-weight: 800; color: #111827; }
+    .wc-tpl-on { font-size: 10px; font-weight: 800; color: #153F2A; background: #E8F0E9; padding: 2px 6px; border-radius: 8px; }
+    .wc-tpl-cat { font-size: 11px; font-weight: 700; color: #1F5C3D; text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+    .wc-tpl-blurb { font-size: 12.5px; color: #6b7280; margin-top: 6px; line-height: 1.45; }
+    .ed-box { position: absolute; border: 1px dashed rgba(31,92,61,.45); cursor: move; }
+    .ed-box:hover { border-color: #1F5C3D; background: rgba(31,92,61,.06); }
+    .ed-box.is-sel { border: 2px solid #1F5C3D; background: rgba(31,92,61,.08); }
+    /* ── Overlay chrome, at a constant SIZE ON SCREEN ──────────────────────
+       The overlay lives inside #wcEdWrap, which is scaled to fit the stage. At
+       390px the 1200px canvas is drawn at about 0.29, so a "28px" gear was
+       measured at 7×5 physical pixels — present, correct, and impossible to
+       hit. `--edk` carries the current scale and the chrome divides it out, so
+       a control specified at 28px is 28px on the glass at every zoom level.
+
+       One row rather than three absolutely-positioned pieces: counter-scaled
+       individually they grow into each other at small scales, and the tag,
+       the hint and the gear all want the same corner. */
+    .ed-chrome { position: absolute; left: 0; bottom: 100%; display: flex; align-items: center; gap: 4px;
+      white-space: nowrap; transform-origin: bottom left; transform: scale(calc(1 / var(--edk, 1))); padding-bottom: 4px; }
+    .ed-tag { background: #1F5C3D; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: .5px; }
+    /* EIGHT HANDLES, not one. A single corner meant an element could only ever
+       be made bigger down-and-right from where it already was — to widen
+       something on its left you had to resize it and then drag it back. Each
+       one is counter-scaled like the rest of the overlay chrome, or at phone
+       zoom they are four physical pixels of target. */
+    .ed-h { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #1F5C3D; border-radius: 3px;
+      transform-origin: center; transform: scale(calc(1 / var(--edk, 1))); }
+    .ed-h-nw { left: -8px;  top: -8px;    cursor: nwse-resize; }
+    .ed-h-n  { left: 50%;   top: -8px;    margin-left: -7px; cursor: ns-resize; }
+    .ed-h-ne { right: -8px; top: -8px;    cursor: nesw-resize; }
+    .ed-h-e  { right: -8px; top: 50%;     margin-top: -7px;  cursor: ew-resize; }
+    .ed-h-se { right: -8px; bottom: -8px; cursor: nwse-resize; }
+    .ed-h-s  { left: 50%;   bottom: -8px; margin-left: -7px; cursor: ns-resize; }
+    .ed-h-sw { left: -8px;  bottom: -8px; cursor: nesw-resize; }
+    .ed-h-w  { left: -8px;  top: 50%;     margin-top: -7px;  cursor: ew-resize; }
+    /* Typing is one press away on a selected text element, and nothing on
+       screen would say so. The hint sits on the box itself rather than in a
+       toolbar, because that is where the user is looking. */
+    .ed-tip { background: #111827; color: #e5e7eb; font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 5px; pointer-events: none; }
+    /* Everything about this box, a press away, ON the box. Sized for a finger:
+       28px is the smallest this can be and still be hit reliably on a phone —
+       and it is 28px on screen, not 28px before the canvas scale eats it. */
+    .ed-gear { width: 28px; height: 22px; background: #1F5C3D; color: #fff; border: none; border-radius: 5px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
+    .ed-gear:hover { background: #153F2A; }
+    .ed-play { width: 28px; height: 22px; background: #059669; color: #fff; border: none; border-radius: 5px; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
+    .ed-play:hover { background: #047857; }
+    .ed-play.is-playing { background: #b45309; }
+    .ed-box.is-text { cursor: text; }
+    #wcEdOverlay.is-drop { background: rgba(31,92,61,.08); outline: 2px dashed #1F5C3D; outline-offset: -4px; }
+    /* While typing, the overlay hands its pointer events to the page beneath so
+       the caret, selection and clicks all land on the real text. */
+    #wcEdOverlay.is-typing { pointer-events: none; }
+    .ed-pal-group { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #9ca3af; margin: 10px 0 5px; }
+    .ed-pal-items { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .ed-pal-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border: 1.5px solid #e5e7eb; border-radius: 9px; background: #fff; cursor: grab; font: inherit; }
+    .ed-pal-item:hover { border-color: #1F5C3D; background: #E8F0E9; }
+    .ed-pal-item:active { cursor: grabbing; }
+    .ed-pal-ico { font-size: 15px; line-height: 1; }
+    .ed-pal-lbl { font-size: 10px; font-weight: 700; color: #4b5563; text-align: center; line-height: 1.2; }
+    .wc-pg { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 10px; background: #fff; }
+    .wc-pg.is-on { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,.12); }
+    .wc-pg-home { font-size: 10px; font-weight: 800; color: #153F2A; background: #E8F0E9; padding: 4px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: .5px; }
+    .bo-act:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* While the Website Creator is open it owns the screen. The app header is
+       position:sticky with z-index 100 inside a stacking context the editor
+       cannot climb out of, so it is hidden outright rather than out-ranked. */
+    body.wb-immersive .nav { display: none !important; }
+
+    /* ── What is visible in each mode ──────────────────────────────────────
+       Three states, one switch. Public view is the site and nothing else;
+       edit mode keeps the left rail; the template picker is shown alone to
+       someone who has no site yet. */
+    /* The app sidebar STAYS on the picker, so the shell keeps its 240px offset
+       and the two stay paired. (Hiding one without moving the other is what
+       left a blank strip down the left.) */
+    /* The first-run picker borrows the editor's shell to host the template
+       grid, and borrowing it dragged the entire editor on screen: a top bar of
+       tools, a rail, a canvas and an inspector, before the user had chosen
+       anything. That is the "second editor" they landed in. Only the grid
+       shows now — the shell is a container, not a destination. */
+    body.wb-picker .cv-top,
+    body.wb-picker .cv-rail,
+    body.wb-picker .cv-canvasbox,
+    body.wb-picker .cv-inspector,
+    body.wb-picker .cv-railtoggle,
+    body.wb-picker .cv-bottom { display: none !important; }
+    body.wb-picker .cv-panel { width: 100%; max-width: none; padding: 22px 26px 40px; }
+    /* Card-sized, not banner-sized. `1fr 1fr` is right inside the 300px rail
+       panel, but across a full-width gallery it stretched each tile to roughly
+       700px. Sized by content instead, so the column count follows the window
+       and a tile stays about as wide as the page it is showing. */
+    body.wb-picker .cv-tplgrid { grid-template-columns: repeat(auto-fill, minmax(210px, 240px));
+      justify-content: center; gap: 18px; max-width: 1120px; margin: 0 auto; }
+    body.wb-picker .cv-tplgrid .wc-tpl-thumb { height: 150px; }
+    body.wb-picker .cv-editmine { max-width: 1120px; margin: 0 auto 18px; }
+    body.wb-picker .cv-search, body.wb-picker .cv-chips { max-width: 1120px; margin-left: auto; margin-right: auto; }
+
+    /* Only one rail panel open at a time, and none of them to begin with. */
+    .cv-panel[hidden] { display: none !important; }
+    /* The rail can be pulled in so the page gets the whole width. */
+    .cv-shell.is-railed .cv-panel { display: none !important; }
+    .cv-shell.is-railed .cv-rail { width: 0; overflow: hidden; padding: 0; }
+    /* Anchored to the BOTTOM, not the middle. Pinned at 50% it landed on top of
+       the "Uploads" rail button at every width — measured overlapping on
+       desktop as well as on a phone. Down here it clears the last rail item. */
+    .cv-railtoggle {
+      position: absolute; left: 0; top: auto; bottom: 56px; transform: none;
+      z-index: 12; width: 22px; height: 54px; border: none; cursor: pointer;
+      background: #3b3c42; color: #e5e7eb; font-size: 13px; line-height: 1;
+      border-radius: 0 8px 8px 0; box-shadow: 2px 0 8px rgba(0,0,0,.3);
+    }
+    .cv-railtoggle:hover { background: #4b4c53; }
+    /* Toasts default to the bottom-right, which is exactly where the "Not sure?"
+       button and its panel live. Centre them while the Website Creator is open
+       so the two never sit on top of each other. */
+    body.wb-immersive .toast { right: auto; left: 50%; transform: translateX(-50%) translateY(10px); }
+    body.wb-immersive .toast.show { transform: translateX(-50%) translateY(0); }
+
+
+    /* ── Canva-style website editor shell ── */
+    #panel-website.active { display: block; padding: 0 !important; }
+    /* Above the app's sticky top nav (z-index 100), which was sitting over the
+       editor's own toolbar and swallowing every click on Pages, Undo, Preview and
+       Publish. Still far below the modals, which live in the 9500+ range. */
+    .cv-shell { position: fixed; inset: 0; left: 0; display: flex; flex-direction: column; background: #18191b; z-index: 200; }
+    /* Matched to .sidebar's OWN collapse point (style.css, `@media (max-width:
+       900px)`), not picked independently. It used to be 981px — a number with
+       no relationship to where the app sidebar actually stops being a 240px
+       left column, so between 901 and 980px the sidebar was still a real
+       column (the app's own `.dashboard{grid-template-columns:240px 1fr}`)
+       while the shell had not yet been pushed past it, and the editor's rail
+       rendered underneath the app's sidebar in that whole window — reported
+       as "the sidebar is cut off, tucking behind the canvas." Below 901px the
+       sidebar is a horizontal bar with nothing to avoid, which is why the
+       breakpoints must be the same number, not merely close.
+       A flat 240px only holds while `.dashboard` itself starts at the viewport's
+       left edge. `.dashboard` (style.css) is `max-width:1600px;margin:0 auto`,
+       so past 1600px wide it centers and .sidebar's real left edge moves right
+       with it — at 1920px wide, .sidebar sits at x=160..400, not x=0..240. The
+       flat 240px shell then started 160px short of the sidebar's actual right
+       edge, so the shell's own opaque background painted over the last 64-240px
+       of the sidebar — covering the FREE/PRO badges and the tail of every label,
+       which reads as "the sidebar text is cut off" on any Mac wide/external
+       display, a distinct bug from the 901-980px case above (that one is a gap
+       with nothing painted over it; this one is real content hidden under the
+       shell). `max(240px, calc((100vw - 1600px) / 2 + 240px))` reproduces
+       .dashboard's own centering math instead of assuming .sidebar starts at 0,
+       so the shell's left edge always lands exactly on .sidebar's right edge,
+       at every width — proven by live geometry in
+       test/browser/sidebar-breakpoint.js up to 2560px. */
+    @media (min-width: 901px) { .cv-shell { left: max(240px, calc((100vw - 1600px) / 2 + 240px)); } }
+    /* `flex-wrap: wrap` + `height: auto` here, not just below 820px. Nothing in
+       this row shrinks (see the `flex-shrink: 0` below) — the empty `.cv-title`
+       is the only slack — so a row that is even a few pixels too wide for the
+       viewport has nowhere to go but past the edge, permanently, since a fixed
+       `height: 54px` with no wrap does not scroll and does not reflow. Those few
+       pixels are real: this was measured comfortable in Chromium on Linux at
+       every width down to 1024px, but Safari/macOS renders system-font button
+       labels at a different width, and that difference alone was enough to push
+       Publish off the visible toolbar for a Mac user while every automated
+       check here stayed green. Wrapping to a second line — already the phone
+       fix below — is the same one-line safety net applied everywhere, not just
+       under 820px: the common case (everything fits) looks identical, because
+       `flex-wrap: wrap` only wraps when it has to. */
+    .cv-top { height: auto; min-height: 54px; flex-shrink: 0; flex-wrap: wrap; background: linear-gradient(90deg,#153F2A,#1F5C3D); display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: #fff; }
+    .cv-logo { font-weight: 900; font-size: 14px; letter-spacing: -.02em; margin-right: 6px; flex-shrink: 0; }
+    /* The ONLY thing in this row allowed to shrink — an empty spacer, so
+       shrinking it costs nothing. Everything real keeps `flex-shrink: 0`
+       (below) so a too-wide row wraps to a second line instead of squeezing
+       "Publish website" down into half a button — "half the sidebar is cut
+       off" is exactly what that squeeze looks like. */
+    .cv-title { flex: 1; text-align: center; font-size: 13px; opacity: .85; }
+    .cv-top-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .cv-top-right > * { flex-shrink: 0; white-space: nowrap; }
+    .cv-tbtn { background: rgba(255,255,255,.14); border: none; color: #fff; font: inherit; font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .cv-tbtn:hover { background: rgba(255,255,255,.24); }
+    .cv-tbtn:disabled { opacity: .4; cursor: not-allowed; }
+    .cv-publish { background: #fff; color: #153F2A; border: none; font: inherit; font-size: 13px; font-weight: 800; padding: 8px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+    .cv-seg { display: flex; gap: 3px; background: rgba(255,255,255,.14); border-radius: 8px; padding: 3px; flex-shrink: 0; }
+    .cv-segbtn { background: none; border: none; color: #fff; font-size: 13px; padding: 4px 9px; border-radius: 6px; cursor: pointer; }
+    .cv-segbtn.is-on { background: #fff; color: #153F2A; }
+    .cv-body { flex: 1; display: flex; min-height: 0; }
+    .cv-rail { width: 74px; flex-shrink: 0; background: #1f2023; display: flex; flex-direction: column; padding: 8px 0; overflow-y: auto; }
+    .cv-rbtn { background: none; border: none; color: #9ca3af; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 11px 4px; cursor: pointer; border-radius: 9px; margin: 0 6px 2px; }
+    .cv-rbtn span { font-size: 18px; line-height: 1; }
+    .cv-rbtn em { font-style: normal; font-size: 10px; font-weight: 600; }
+    .cv-rbtn:hover { background: rgba(255,255,255,.07); color: #e5e7eb; }
+    .cv-rbtn.is-on { background: rgba(31,92,61,.22); color: #fff; }
+    .cv-panel { width: 300px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 12px; }
+    /* The inspector is NOT hidden on a phone. A `display: none !important` used
+       to live here, and it flatly contradicted the ≤820px rules below, which go
+       to the trouble of floating the inspector over the canvas as a right-hand
+       overlay. Both applied at phone width and `!important` won, so the phone
+       got the layout work and none of the panel: an element could be selected,
+       the controls were rendered, and nothing was on screen. */
+    @media (max-width: 780px) { .cv-panel { width: 220px; } }
+    .cv-search input { width: 100%; background: #34353a; border: 1px solid #45464c; color: #f3f4f6; border-radius: 9px; padding: 10px 12px; font: inherit; font-size: 13px; }
+    .cv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+    .cv-tplgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .cv-lbl { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; margin: 12px 0 5px; }
+    .cv-input { width: 100%; background: #34353a; border: 1px solid #45464c; color: #f3f4f6; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px; }
+    .cv-wide { display: block; width: 100%; margin-top: 8px; background: #34353a; border: 1px solid #45464c; color: #e5e7eb; font: inherit; font-size: 12.5px; font-weight: 700; padding: 9px; border-radius: 8px; cursor: pointer; }
+    .cv-wide:hover { background: #3f4046; }
+    .cv-note { font-size: 11.5px; color: #9ca3af; margin-top: 8px; line-height: 1.45; }
+    .cv-meter { font-size: 11px; color: #9ca3af; margin: 8px 0; }
+    .cv-updgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .cv-addr { display: flex; align-items: center; gap: 5px; }
+    .cv-addr span { font-size: 11px; color: #9ca3af; white-space: nowrap; }
+    /* `safe center` so that if the canvas is ever wider than the stage (zoom
+       above 100%), the overflow goes to the RIGHT where it can be scrolled to,
+       instead of spilling equally off both sides and putting the left edge
+       somewhere no scrollbar can reach. */
+    .cv-stage { flex: 1; min-width: 0; overflow: auto; background: #303136; display: flex; flex-direction: column; align-items: center; align-items: safe center; padding: 16px 10px 32px; }
+    /* ── THE CANVAS IS SIZED, NOT ONLY SCALED ──────────────────────────────
+       `transform: scale()` changes what is PAINTED and nothing about the
+       layout box. #wcEdWrap is 1200px wide and stayed 1200px wide however far
+       it was scaled down, so this box was 1200px inside an 1126px stage and
+       the stage scrolled sideways by the difference — measured at 47px on a
+       1440px laptop and 443px on a 390px phone. That is the canvas "moving
+       left to right".
+
+       The wrap is taken OUT of flow (absolute) and this box is given the
+       SCALED size instead, so the layout box and the painted box are the same
+       rectangle and there is nothing left to scroll. `edFitStage` writes the
+       width/height; the height was already being compensated this way, the
+       width never was. */
+    .cv-canvasbox { position: relative; display: block; flex: 0 0 auto; margin: 0 auto; }
+    #wcEdFrame { border: 0; display: block; background: #fff; box-shadow: 0 8px 40px rgba(0,0,0,.45); }
+    #wcEdOverlay { position: absolute; inset: 0; }
+    .cv-addpage { margin-top: 16px; background: #3b3c42; border: 1px dashed #5a5b62; color: #cbd5e1; font: inherit; font-size: 12.5px; font-weight: 700; padding: 10px 26px; border-radius: 9px; cursor: pointer; }
+    .cv-addpage:hover { background: #45464c; }
+    .cv-inspector { width: 230px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 14px; color: #e5e7eb; }
+    /* Floated by the gear: the SAME panel, moved next to the element. Fixed
+       rather than absolute so it is positioned against the viewport, which is
+       what the anchor's own rect is measured in. */
+    .cv-inspector.is-float { position: fixed; z-index: 240; width: 260px; max-height: 70vh;
+      border-radius: 12px; box-shadow: 0 18px 48px rgba(0,0,0,.5); border: 1px solid #3b3c42; }
+    .cv-inspector .text-input, .cv-inspector input, .cv-inspector select, .cv-inspector textarea { background: #34353a; border: 1px solid #45464c; color: #f3f4f6; }
+    .cv-inspector .bo-act { background: #34353a; border-color: #45464c; color: #e5e7eb; }
+    .cv-editmine { display: none; width: 100%; align-items: center; justify-content: center; gap: 8px;
+      font: inherit; font-size: 14px; font-weight: 800; color: #fff; cursor: pointer;
+      background: linear-gradient(90deg,#153F2A,#1F5C3D); border: none; border-radius: 12px;
+      padding: 13px 16px; margin-bottom: 12px; }
+    body.wb-picker .cv-editmine:not([hidden]) { display: flex; }
+    .cv-bottom { height: 44px; flex-shrink: 0; background: #1f2023; display: flex; align-items: center; gap: 14px; padding: 0 14px; color: #9ca3af; font-size: 12px; }
+
+    /* ── The builder on a phone ────────────────────────────────────────────
+       At 390px the desktop layout put Preview and Publish off the right edge
+       of the top bar — you could not publish at all — and the rail (74px) plus
+       a fixed 300px panel left the canvas sixteen pixels wide. */
+    @media (max-width: 820px) {
+      /* Wrap rather than overflow. Publish is the point of the whole screen and
+         must never be the thing that falls off the edge. `height: auto` and
+         `flex-wrap: wrap` are the base rule now (they protect desktop widths
+         too); a phone just needs its gap and padding tightened further. */
+      .cv-top { gap: 6px; padding: 7px 10px; }
+      /* The brand and the document title are the two things worth their width
+         least. The desktop/mobile toggle STAYS: checking how the site looks on
+         a laptop is exactly what someone building it on a phone cannot do any
+         other way. */
+      .cv-logo, .cv-title { display: none; }
+      .cv-seg { transform: scale(.92); transform-origin: right center; }
+      .cv-top-right { margin-left: auto; gap: 6px; }
+      .cv-tbtn { font-size: 12px; padding: 7px 10px; }
+      .cv-publish { font-size: 12px; padding: 8px 13px; }
+
+      .cv-rail { width: 56px; }
+      .cv-rbtn { padding: 9px 2px; margin: 0 3px 2px; }
+      .cv-rbtn span { font-size: 16px; }
+      .cv-rbtn em { font-size: 9px; }
+
+      /* The panel floats OVER the canvas instead of squeezing it out of
+         existence. The rail button that opened it closes it again, so the
+         canvas is always one tap away. */
+      .cv-body { position: relative; }
+      .cv-panel { position: absolute; left: 56px; top: 0; bottom: 0; width: calc(100% - 56px);
+        z-index: 6; box-shadow: 8px 0 24px rgba(0,0,0,.4); }
+      /* A BOTTOM SHEET on a phone, not a right-hand rail. Pinned right at 230px
+         wide it covered 59% of a 390px viewport — and it only ever appears when
+         something is selected, so it landed exactly on top of the element the
+         user had just tapped. Measured: the centre of a selected heading was
+         underneath it, which meant a second tap could not reach the canvas and
+         typing was unreachable on a phone. Along the bottom it leaves the thing
+         being edited visible, which is the whole point of selecting it. */
+      .cv-inspector { position: absolute; left: 0; right: 0; bottom: 0; top: auto; z-index: 7;
+        width: auto; max-height: 45vh; border-radius: 16px 16px 0 0;
+        box-shadow: 0 -8px 24px rgba(0,0,0,.4); }
+      /* The gear opens the same sheet on a phone rather than a floating panel:
+         a 260px card anchored beside a box on a 390px screen has nowhere to go
+         that is not on top of the box. */
+      .cv-inspector.is-float { position: absolute; left: 0 !important; right: 0; top: auto !important;
+        bottom: 0; width: auto; max-height: 45vh; border-radius: 16px 16px 0 0; }
+      /* The collapse handle stays — it was only ever in the wrong PLACE. Pinned
+         mid-rail it sat on top of the "Uploads" button; moved down to the
+         bottom corner, clear of the last rail item and above the zoom bar, it
+         covers nothing and is still where a thumb naturally reaches. */
+      .cv-railtoggle { top: auto; bottom: 56px; transform: none; left: 56px;
+        width: 26px; height: 46px; border-radius: 0 10px 10px 0; }
+    }
+
+    /* ── THE TEMPLATE PICKER ON A PHONE ────────────────────────────────────
+       DESKTOP IS UNTOUCHED. Everything here is inside the same 820px phone
+       breakpoint the editor already uses, and every selector is prefixed with
+       `body.wb-picker`, so it applies to the gallery and to nothing else.
+
+       Measured before changing anything, at a 390px viewport:
+
+         columns 1 · rows 12 · grid 3282px tall · page 3479px
+         panel left 56px · panel width 390px  ← 56px WIDER THAN THE WINDOW
+
+       Two separate problems in that. The grid asks for `minmax(210px, 240px)`,
+       which is right on a laptop and can only ever fit ONE column on a phone —
+       twelve full-width cards and a very long scroll. And the panel inherits
+       the editor's `left:56px` (the rail's width) while the picker's own rule
+       makes it `width:100%`, so the whole gallery sat pushed 56px right with
+       56px of itself off the right-hand edge. The rail is hidden in the picker,
+       so that offset was never wanted here at all. */
+    @media (max-width: 820px) {
+      /* No rail to make room for. */
+      body.wb-picker .cv-panel { left: 0; width: 100%; padding: 12px 12px 32px; }
+
+      /* THREE across, and two on a narrow phone. Content-sized columns were
+         tried first and gave five at 768px — more choice on screen, but a
+         141px tile of a whole web page is a smudge. An explicit count is the
+         honest control here: the card stays legible and the number changes
+         once, at the width where it needs to. */
+      body.wb-picker .cv-tplgrid { grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px; max-width: none; justify-content: stretch; }
+      body.wb-picker .cv-tplgrid .wc-tpl-thumb { height: 96px; }
+      body.wb-picker .cv-tplgrid .wc-tpl { border-width: 1px; border-radius: 11px; }
+      body.wb-picker .cv-tplgrid .wc-tpl-body { padding: 8px 9px 9px; }
+      body.wb-picker .cv-tplgrid .wc-tpl-name { font-size: 12.5px; line-height: 1.25; }
+      body.wb-picker .cv-tplgrid .wc-tpl-cat { font-size: 9.5px; letter-spacing: .4px; }
+      body.wb-picker .cv-tplgrid .wc-tpl-on { font-size: 9px; padding: 1px 4px; }
+      /* Two buttons on a 170px card: equal halves, and still 30px tall, which
+         is the least a thumb can be asked to hit. */
+      body.wb-picker .cv-tplgrid .wc-tpl-body > div:last-child { gap: 5px; margin-top: 7px; }
+      body.wb-picker .cv-tplgrid .wc-tpl-body .bo-act { flex: 1 1 0; min-width: 0; text-align: center;
+        font-size: 11px; padding: 7px 4px; min-height: 30px; }
+
+      /* The filter pills scroll sideways instead of wrapping into a block that
+         is taller than the first row of templates. `nowrap` plus a scroller,
+         with the pills refusing to shrink — a squashed "Professional CV" is
+         not a filter anyone can read. Measured at 72px tall before this. */
+      body.wb-picker .cv-chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+        margin: 8px 0 10px; padding-bottom: 2px; }
+      body.wb-picker .cv-chips::-webkit-scrollbar { display: none; }
+      body.wb-picker .cv-chips > * { flex: 0 0 auto; }
+
+      body.wb-picker .cv-editmine { margin-bottom: 10px; }
+      body.wb-picker .cv-search { margin-bottom: 4px; }
+    }
+    /* A 390px phone: two. Three would be 110px each, which is not a preview of
+       anything. */
+    @media (max-width: 560px) {
+      body.wb-picker .cv-tplgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      body.wb-picker .cv-tplgrid .wc-tpl-thumb { height: 104px; }
+    }
+
+    .cv-bottom .cv-tbtn { background: rgba(255,255,255,.1); }
+    .cv-zoom { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .cv-zoom input { width: 180px; max-width: 40vw; }
+    .cv-pagecount { white-space: nowrap; }
+    /* A TILE AND ITS OWN DELETE. The upload panel could only ever ADD, so when
+       the server said "delete one first" it was naming an action the app did
+       not have — the endpoint existed and nothing reached it. The wrapper is
+       what positions the remove button; the tile itself still fills it. */
+    .cv-upwrap { position: relative; }
+    .cv-upitem { height: 78px; width: 100%; border-radius: 8px; border: 1px solid #45464c; background-size: cover; background-position: center; cursor: pointer; background-color: #34353a; }
+    .cv-upitem--file { display: flex; align-items: center; justify-content: center; font-size: 22px; color: #cbd5e1; }
+    .cv-upitem:hover { border-color: #1F5C3D; }
+    /* 26px, and always visible rather than shown on hover — a phone has no
+       hover, and this panel is reachable there. */
+    .cv-updel { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 7px;
+      border: none; background: rgba(15,17,22,.82); color: #fca5a5; font-size: 15px; line-height: 1;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .cv-updel:hover { background: #b91c1c; color: #fff; }
+    .cv-upkind { position: absolute; left: 4px; bottom: 4px; font-size: 9.5px; font-weight: 800; letter-spacing: .4px;
+      text-transform: uppercase; color: #cbd5e1; background: rgba(15,17,22,.75); border-radius: 5px; padding: 2px 5px; pointer-events: none; }
+    /* Live template thumbnails: a real render, scaled down like Canva's. */
+    .wc-tpl-thumb { position: relative; overflow: hidden; background: #fff; }
+    .wc-tpl-shot { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    /* 500% then scale(.2) cancel out to exactly the tile's width at ANY tile
+       size — and the iframe's own viewport lands at 5x240 = 1200px, the design
+       canvas width, so the preview is laid out as desktop. A fixed
+       `width:1200px; scale(.115)` was pinned to the old tile size and left a
+       hundred pixels of dead space once the tiles were narrowed. */
+    .wc-tpl-shot iframe { width: 500%; height: 500%; border: 0; transform: scale(.2); transform-origin: top left; pointer-events: none; }
+    .cv-tplgrid .wc-tpl-thumb { height: 104px; }
+    .cv-tplgrid .wc-tpl { background: #34353a; border-color: #45464c; }
+    /* Half the templates are white pages. Sitting flush in the card they had no
+       visible edge and read as a blank area rather than as a design. A mat and
+       a border give every preview an outline, whatever colour it happens to be. */
+    .cv-tplgrid .wc-tpl-thumb { background: #1f2023; border-bottom: 1px solid #45464c;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+    .cv-tplgrid .wc-tpl-name { color: #f3f4f6; }
+    .cv-tplgrid .wc-tpl-blurb, .cv-tplgrid .wc-tpl-cat { color: #9ca3af; }
+    .cv-tplgrid .bo-act { background: #3f4046; border-color: #55565c; color: #e5e7eb; }
+    /* Wide mode: hide the app sidebar and the editor panel for a full-width canvas. */
+    .cv-collapse { border-top: 1px solid rgba(255,255,255,.08); margin-top: 6px !important; padding-top: 12px !important; }
+    body.cv-wide .sidebar { display: none !important; }
+    body.cv-wide .cv-shell { left: 0 !important; }
+    body.cv-wide .cv-panel { display: none !important; }
+    .cv-shell, .cv-panel { transition: left .18s ease, width .18s ease; }

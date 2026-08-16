@@ -1173,6 +1173,11 @@ app.use((req, res, next) => {
 function _isSecureReq(req) {
   return req.secure || (req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
 }
+// Phase 4: the Website Creator is a desktop tool (its editor UI is hidden on
+// small screens). The client gates it for UX; the server is the source of truth.
+function _isMobileUA(req) {
+  return /Mobi|Android|iPhone|iPod|iPad|Windows Phone|BlackBerry/i.test(req.headers['user-agent'] || '');
+}
 const SESSION_COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
 // Set the httpOnly session cookie + the readable double-submit CSRF cookie.
 // The session cookie mirrors the bearer token (same UUID row in `sessions`), so
@@ -5235,6 +5240,12 @@ app.post('/api/personal-site', (req, res) => {
     return res.status(402).json({ error: 'pro_required', message: 'Publishing a personal website is a Pro feature. Upgrade to unlock it.' });
   }
   const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config, publish } = req.body || {};
+  // Phase 4: publishing (not autosave) requires a desktop browser — the editor
+  // can't be driven on a phone, so a live publish from one is almost certainly a
+  // mistake or a scripted call. Autosaves (no `publish` flag) are unaffected.
+  if (publish === true && _isMobileUA(req)) {
+    return res.status(400).json({ error: 'desktop_required', message: 'Website publishing requires a desktop browser. Please publish from a computer.' });
+  }
   // Drafts. A site is public the moment `published` is 1, so anything created
   // on the user's behalf — the auto-generated starter site — must be able to
   // save WITHOUT going live.
@@ -7123,6 +7134,21 @@ app.post('/api/forum/:id/reply', (req, res) => {
   db.prepare('INSERT INTO forum_replies (post_id, author, text, time) VALUES (?, ?, ?, ?)')
     .run(id, cleanAuthor, cleanText, 'just now');
   res.json({ author: cleanAuthor, text: cleanText, time: 'just now' });
+});
+
+// ─── Phase 4: client error sink ───────────────────────────────────────────────
+// Front-end crashes POST here so they show up in server logs. Log-only (never
+// stored), truncated, and behind the global /api rate limiter — a noisy client
+// can't flood it.
+app.post('/api/client-error', (req, res) => {
+  try {
+    const { msg, stack, url } = req.body || {};
+    console.error('[client-error]',
+      String(url || '').slice(0, 200), '|',
+      String(msg || '').slice(0, 300), '|',
+      String(stack || '').slice(0, 600));
+  } catch (_) {}
+  res.json({ ok: true });
 });
 
 // ─── API: Career check-in ─────────────────────────────────────────────────────

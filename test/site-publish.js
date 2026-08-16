@@ -533,7 +533,10 @@ const server = app.listen(0, async () => {
 
        It now opens the Website Creator instead. This is a static check on the
        shipped client, because the failure is a button existing at all. */
-    const appJs = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.html'), 'utf8');
+    // Phase 3 extracted the dashboard's inline <style> into public/css/app.css,
+    // so the shipped-client source these checks scan is now app.html + app.css.
+    const appJs = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.html'), 'utf8')
+      + '\n' + fs.readFileSync(path.join(__dirname, '..', 'public', 'css', 'app.css'), 'utf8');
     check('the Tailor tab no longer publishes directly', !/function publishPersonalSite/.test(appJs));
     check('its button opens the Website Creator', /onclick="startPersonalSite\(\)"/.test(appJs));
     check('and it no longer promises to publish', !/Publish as Website/.test(appJs));
