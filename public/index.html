@@ -220,9 +220,12 @@
     /* ── NAV ── */
     .nav {
       position: sticky; top: 0; z-index: 100;
-      background: rgba(250,247,240,0.85);
+      /* Was rgba(…,0.85) + backdrop-filter: blur(18px). On a STICKY element the
+         backdrop blur re-samples the whole viewport every scroll frame — the
+         single biggest source of the scroll jank. A near-opaque bar reads almost
+         identically with zero per-frame cost. */
+      background: rgba(250,247,240,0.97);
       border-bottom: 1px solid var(--line);
-      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
       padding: 0 24px;
     }
     .nav-inner {
@@ -354,6 +357,11 @@
     .hero-orb {
       position: absolute; border-radius: 50%;
       filter: blur(90px); pointer-events: none; z-index: 0;
+      /* Promote to its own compositor layer so the 90px blur is rasterized ONCE
+         into a texture and the float becomes a cheap transform-only composite,
+         instead of re-rasterizing a 600px blurred region on every scroll/anim
+         frame (this was the bulk of the RasterTask cost during scroll). */
+      will-change: transform; transform: translateZ(0);
       animation: floatOrb 11s ease-in-out infinite;
     }
     .orb-1 {
@@ -876,7 +884,17 @@
     .hero h1 .word-animate { animation-delay: 0s !important; animation-duration: .45s; }
     @media (prefers-reduced-motion: reduce) {
       .hero h1 .word-animate { animation: none !important; opacity: 1 !important; }
+      .hero-orb, .btn-shine::after, .nav-shine { animation: none !important; }
     }
+    /* The button/nav "shine" animates a registered @property gradient (--btn-x),
+       which repaints the element every frame — and .nav-shine lives in the STICKY
+       nav, so it repainted the nav on every scroll tick. Pause these decorative
+       infinite animations while the user is actively scrolling (class toggled by
+       a passive, debounced listener) so nothing competes with the scroll
+       compositor; they resume ~150ms after scrolling stops. */
+    html.is-scrolling .hero-orb,
+    html.is-scrolling .btn-shine::after,
+    html.is-scrolling .nav-shine { animation-play-state: paused !important; }
     .hero h1 .word-animate:hover {
       transform: translateY(-3px);
       text-shadow: 0 2px 18px rgba(31,92,61,0.28);
@@ -1068,7 +1086,7 @@
         </div>
         <a href="/score" class="btn-shine" data-i18n="promo_cta" style="display:inline-block;background:#1F5C3D;color:#fff;padding:14px 32px;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;box-shadow:0 0 28px rgba(31,92,61,0.28);transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Check My Resume Free →</a>
       </div>
-      <div style="flex:1;min-width:260px;background:#FFFFFF;border:1px solid rgba(31,92,61,0.25);border-radius:18px;padding:28px;backdrop-filter:blur(10px);">
+      <div style="flex:1;min-width:260px;background:#FFFFFF;border:1px solid rgba(31,92,61,0.25);border-radius:18px;padding:28px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
           <span data-i18n="promo_card_title" style="font-size:14px;font-weight:700;color:#191512;">ATS Match Score</span>
           <span data-i18n="promo_card_badge" style="background:rgba(31,92,61,0.12);color:#1F5C3D;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;">Preview</span>
@@ -3844,6 +3862,20 @@
     }
     // Same-page anchor clicks (nav "Pricing", footer links) fire hashchange.
     window.addEventListener('hashchange', function () { correct(location.hash.slice(1)); });
+  })();
+  </script>
+  <script>
+  /* Pause decorative infinite animations (button/nav shine, hero orbs) while
+     scrolling so they don't repaint every frame and compete with the scroll
+     compositor. Passive listener, debounced with a timer — it only toggles one
+     class on <html>, never reads layout, so it adds no scroll-time work. */
+  (function () {
+    var root = document.documentElement, t = 0, on = false;
+    window.addEventListener('scroll', function () {
+      if (!on) { on = true; root.classList.add('is-scrolling'); }
+      if (t) clearTimeout(t);
+      t = setTimeout(function () { on = false; root.classList.remove('is-scrolling'); }, 150);
+    }, { passive: true });
   })();
   </script>
 </body>
