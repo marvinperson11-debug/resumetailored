@@ -87,6 +87,24 @@ if (!process.env.ANTHROPIC_API_KEY) console.error('STARTUP ERROR: ANTHROPIC_API_
 if (!process.env.STRIPE_SECRET_KEY) console.error('STARTUP ERROR: STRIPE_SECRET_KEY is not set — payments will fail.');
 if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID is not set — checkout will fail.');
 
+// Employer checkout price IDs (Pro / Scale). Logs presence only — never the
+// value. A Stripe Price ID looks like "price_..."; anything set but not matching
+// that shape (e.g. a stray newline/space, or a "prod_" product id by mistake) is
+// flagged, because that was exactly how these two vars were broken before.
+(function checkEmployerPriceIds() {
+  const looksLikePrice = (v) => typeof v === 'string' && /^price_[A-Za-z0-9]+$/.test(v.trim());
+  const report = (label, raw, fallbackRaw) => {
+    const val = raw && raw.trim();
+    const fb = fallbackRaw && fallbackRaw.trim();
+    if (val && looksLikePrice(raw)) { console.log(`[stripe] ${label}: loaded ✓`); return; }
+    if (val && !looksLikePrice(raw)) { console.error(`[stripe] ${label}: SET but MALFORMED — value is not a "price_…" id (stray whitespace/newline or wrong id type). Employer checkout for this tier will 503.`); return; }
+    if (fb && looksLikePrice(fallbackRaw)) { console.log(`[stripe] ${label}: not set, using fallback ✓`); return; }
+    console.error(`[stripe] ${label}: NOT set — employer checkout for this tier will return 503 not_configured.`);
+  };
+  report('STRIPE_EMPLOYER_PRO_PRICE_ID',   process.env.STRIPE_EMPLOYER_PRO_PRICE_ID, process.env.STRIPE_EMPLOYER_PRICE_ID);
+  report('STRIPE_EMPLOYER_SCALE_PRICE_ID', process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, null);
+})();
+
 // ─── Email helper ─────────────────────────────────────────────────────────────
 // Priority: Resend (RESEND_API_KEY) → SMTP (SMTP_USER + SMTP_PASS) → console log
 async function sendEmail({ to, subject, html, replyTo }) {
@@ -8307,9 +8325,13 @@ app.post('/api/employer/subscribe', async (req, res) => {
   const email = employerAuthEmail(req, res); if (!email) return;
   const plan = String((req.body && req.body.plan) || 'pro').toLowerCase();
   if (!['pro', 'scale'].includes(plan)) return res.status(400).json({ error: 'bad_request', message: 'Choose the Pro or Scale plan.' });
-  const priceId = plan === 'scale'
+  // .trim() defends against a price id pasted with a stray newline/space (this
+  // project had exactly that on these vars); a whitespace-corrupted id would
+  // otherwise be sent to Stripe and rejected. Empty after trim ⇒ 503, never
+  // undefined-to-Stripe.
+  const priceId = ((plan === 'scale'
     ? process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID
-    : (process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID);
+    : (process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID)) || '').trim();
   if (!priceId) return res.status(503).json({ error: 'not_configured', message: `The ${plan === 'scale' ? 'Scale' : 'Pro'} plan is not yet available.` });
   try {
     const session = await stripe.checkout.sessions.create({
