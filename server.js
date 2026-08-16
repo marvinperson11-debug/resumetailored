@@ -87,28 +87,37 @@ if (!process.env.ANTHROPIC_API_KEY) console.error('STARTUP ERROR: ANTHROPIC_API_
 if (!process.env.STRIPE_SECRET_KEY) console.error('STARTUP ERROR: STRIPE_SECRET_KEY is not set — payments will fail.');
 if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID is not set — checkout will fail.');
 
+// Normalize a Stripe price id: strip ALL whitespace. A price id is
+// "price_<alphanumeric>" and NEVER contains whitespace, so this is always safe —
+// and it repairs the exact corruption this project keeps hitting: a value pasted
+// into the Railway dashboard with a newline inside it (the same way the variable
+// NAMES once had a literal "\n"). Trimming only fixes the ends; an internal
+// newline would still be sent to Stripe and rejected. Used at every read site.
+function _normPriceId(v) { return (v == null ? '' : String(v)).replace(/\s+/g, ''); }
+const _looksLikePriceId = (v) => /^price_[A-Za-z0-9]+$/.test(_normPriceId(v));
+
 // Employer checkout price IDs (Pro / Scale). Logs presence only — never the
-// value. A Stripe Price ID looks like "price_..."; anything set but not matching
-// that shape (e.g. a stray newline/space, or a "prod_" product id by mistake) is
-// flagged, because that was exactly how these two vars were broken before.
+// value. Reports each id as loaded / auto-cleaned (usable but has stray
+// whitespace — clean it in the dashboard) / MALFORMED / NOT set.
 (function checkEmployerPriceIds() {
-  const looksLikePrice = (v) => typeof v === 'string' && /^price_[A-Za-z0-9]+$/.test(v.trim());
   const report = (label, raw, fallbackRaw) => {
-    const val = raw && raw.trim();
-    const fb = fallbackRaw && fallbackRaw.trim();
-    if (val && looksLikePrice(raw)) { console.log(`[stripe] ${label}: loaded ✓`); return; }
-    if (val && !looksLikePrice(raw)) {
-      // Diagnose WITHOUT exposing the id — only its type prefix and lengths.
-      const t = raw.trim();
-      let why;
-      if (/^prod_/.test(t)) why = 'it is a Stripe PRODUCT id ("prod_…") — use the PRICE id ("price_…"), found on the price row under the product';
-      else if (/\s/.test(t)) why = 'it contains whitespace/newline INSIDE the value';
-      else if (raw.length !== t.length) why = `it has surrounding whitespace (rawLen=${raw.length}, trimmedLen=${t.length})`;
-      else why = `it is not "price_<alphanumeric>" (len=${t.length}, prefix="${t.slice(0, 6)}")`;
+    const has = (v) => v != null && String(v).trim() !== '';
+    const usable = (v) => has(v) && _looksLikePriceId(v);
+    if (usable(raw)) {
+      const dirty = _normPriceId(raw) !== String(raw);
+      console[dirty ? 'error' : 'log'](`[stripe] ${label}: ${dirty ? 'loaded but has stray whitespace — auto-cleaned at runtime; please re-enter the value on one line in Railway' : 'loaded ✓'}`);
+      return;
+    }
+    if (has(raw)) {
+      // Set but not a price id even after stripping whitespace — diagnose safely.
+      const n = _normPriceId(raw);
+      const why = /^prod_/.test(n)
+        ? 'it is a Stripe PRODUCT id ("prod_…") — use the PRICE id ("price_…"), found on the price row under the product'
+        : `it is not "price_<alphanumeric>" (len=${n.length}, prefix="${n.slice(0, 6)}")`;
       console.error(`[stripe] ${label}: SET but MALFORMED — ${why}. Employer checkout for this tier will 503.`);
       return;
     }
-    if (fb && looksLikePrice(fallbackRaw)) { console.log(`[stripe] ${label}: not set, using fallback ✓`); return; }
+    if (usable(fallbackRaw)) { console.log(`[stripe] ${label}: not set, using fallback ✓`); return; }
     console.error(`[stripe] ${label}: NOT set — employer checkout for this tier will return 503 not_configured.`);
   };
   report('STRIPE_EMPLOYER_PRO_PRICE_ID',   process.env.STRIPE_EMPLOYER_PRO_PRICE_ID, process.env.STRIPE_EMPLOYER_PRICE_ID);
@@ -7171,8 +7180,8 @@ app.post('/webhook', (req, res) => {
       const tier = EH.resolveEmployerTier({
         plan: session.metadata?.employerTier,
         priceId: session.line_items?.data?.[0]?.price?.id,
-        proPriceId: process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID,
-        scalePriceId: process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID
+        proPriceId: _normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID),
+        scalePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID)
       });
       const finalTier = tier === 'free' ? 'pro' : tier; // an employer checkout is never free
       db.prepare("INSERT OR REPLACE INTO employer_subscribers (email, customer_id, tier, status) VALUES (?, ?, ?, 'active')").run(email, session.customer, finalTier);
@@ -8339,9 +8348,9 @@ app.post('/api/employer/subscribe', async (req, res) => {
   // project had exactly that on these vars); a whitespace-corrupted id would
   // otherwise be sent to Stripe and rejected. Empty after trim ⇒ 503, never
   // undefined-to-Stripe.
-  const priceId = ((plan === 'scale'
+  const priceId = _normPriceId(plan === 'scale'
     ? process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID
-    : (process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID)) || '').trim();
+    : (process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID));
   if (!priceId) return res.status(503).json({ error: 'not_configured', message: `The ${plan === 'scale' ? 'Scale' : 'Pro'} plan is not yet available.` });
   try {
     const session = await stripe.checkout.sessions.create({
