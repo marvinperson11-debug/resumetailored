@@ -2464,12 +2464,47 @@
     }
 
     // ── Auth helpers ───────────────────────────────────────────────────────────
+    // Phase 2: auth is cookie-first. The httpOnly rt_session cookie is sent
+    // automatically on every same-origin request (fetch defaults to
+    // credentials:'same-origin'), so JS no longer needs the token. A legacy
+    // rt_token in localStorage (from before this change) is still honored and
+    // sent as a bearer header until checkAuth() migrates the user to cookies.
     function getToken() { return localStorage.getItem('rt_token') || ''; }
     function getStoredEmail() { return localStorage.getItem('rt_email') || ''; }
     function getStoredUsername() { return localStorage.getItem('rt_username') || ''; }
+    // The readable double-submit CSRF token (set alongside the session cookie).
+    function getCsrf() {
+      var m = document.cookie.match(/(?:^|;\s*)rt_csrf=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    // Belt-and-suspenders CSRF: attach X-CSRF-Token to EVERY same-origin mutating
+    // fetch, so no manual call site can forget it. The server only requires it
+    // for cookie-authenticated requests, but sending it always is harmless.
+    (function () {
+      var _origFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        init = init || {};
+        var method = (init.method || (input && typeof input !== 'string' && input.method) || 'GET').toUpperCase();
+        var url = typeof input === 'string' ? input : (input && input.url) || '';
+        var sameOrigin = url.charAt(0) === '/' || url.indexOf(location.origin) === 0;
+        if (sameOrigin && method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+          var c = getCsrf();
+          if (c) {
+            var h = new Headers(init.headers || (input && typeof input !== 'string' && input.headers) || {});
+            if (!h.has('X-CSRF-Token')) h.set('X-CSRF-Token', c);
+            init.headers = h;
+          }
+        }
+        return _origFetch(input, init);
+      };
+    })();
 
     function authHeaders() {
-      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() };
+      var h = { 'Content-Type': 'application/json' };
+      var c = getCsrf(); if (c) h['X-CSRF-Token'] = c;
+      var t = getToken(); if (t) h['Authorization'] = 'Bearer ' + t;
+      return h;
     }
 
     /* AUTH WITHOUT A CONTENT-TYPE, for file uploads.
@@ -2484,18 +2519,32 @@
        Every photo, video and voice-clip upload in the Website Creator failed
        this way. From the user's side the file simply vanished. */
     function authHeadersNoType() {
-      return { 'Authorization': 'Bearer ' + getToken() };
+      var h = {};
+      var c = getCsrf(); if (c) h['X-CSRF-Token'] = c;
+      var t = getToken(); if (t) h['Authorization'] = 'Bearer ' + t;
+      return h;
+    }
+
+    // Phase 2: reject oversized documents client-side before the upload (server
+    // enforces the same 5 MB limit authoritatively). Returns true if OK.
+    var MAX_DOC_BYTES = 5 * 1024 * 1024;
+    function checkDocSize(file) {
+      if (file && file.size > MAX_DOC_BYTES) {
+        showToast('That file is over 5 MB. Please upload a smaller document or paste the text.');
+        return false;
+      }
+      return true;
     }
 
     async function checkAuth() {
-      const token = getToken();
-      if (!token) {
-        isLoggedIn = false;
-        updateNavForGuest();
-        return;
-      }
+      // Always ask the server — the httpOnly session cookie may authenticate us
+      // even with nothing in localStorage. A lingering legacy token is sent as a
+      // bearer header for the transition, then dropped once cookies take over.
+      const legacy = getToken();
       try {
-        const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+        const headers = {};
+        if (legacy) headers['Authorization'] = 'Bearer ' + legacy;
+        const res = await fetch('/api/auth/me', { headers });
         if (!res.ok) {
           localStorage.removeItem('rt_token');
           isLoggedIn = false;
@@ -2505,10 +2554,14 @@
         const data = await res.json();
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
+        // The server minted session + CSRF cookies on this request, so the legacy
+        // token is no longer needed — drop it so we stop sending the bearer header.
+        if (legacy) localStorage.removeItem('rt_token');
         isLoggedIn = true;
         updateNavForLogged();
         document.getElementById('authOverlay').style.display = 'none';
       } catch(e) {
+        console.error('checkAuth failed', e);
         isLoggedIn = false;
         updateNavForGuest();
       }
@@ -2690,7 +2743,8 @@
         });
         const data = await res.json();
         if (!res.ok) { errEl.textContent = data.error || 'Signup failed.'; return; }
-        localStorage.setItem('rt_token', data.token);
+        // Session now lives in the httpOnly rt_session cookie the server just
+        // set — no token in localStorage (Phase 2). Keep email/username for UI.
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
         hideAuthModal();
@@ -2726,7 +2780,8 @@
         });
         const data = await res.json();
         if (!res.ok) { errEl.textContent = data.error || 'Login failed.'; return; }
-        localStorage.setItem('rt_token', data.token);
+        // Session now lives in the httpOnly rt_session cookie the server just
+        // set — no token in localStorage (Phase 2). Keep email/username for UI.
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
         hideAuthModal();
@@ -3230,16 +3285,19 @@
         feed.innerHTML = `<div style="text-align:center;color:var(--muted);padding:40px;">${isZhF ? '来第一个发帖吧！' : 'Be the first to post!'}</div>`;
         return;
       }
+      // Phase 2: forum content is user-supplied — every interpolated field is
+      // HTML-escaped here (authoritative XSS defense; the server also strips
+      // tags on storage). Numeric ids/likes come from the DB and are safe.
       feed.innerHTML = posts.map(p => `
         <div class="forum-post" id="post-${p.id}">
           <div class="post-header">
-            <div class="post-avatar">${p.author.charAt(0)}</div>
+            <div class="post-avatar">${escHtml(String(p.author || '?').charAt(0))}</div>
             <div>
-              <div class="post-author">${p.author}</div>
-              <div class="post-meta">${p.role} · ${p.time}</div>
+              <div class="post-author">${escHtml(p.author)}</div>
+              <div class="post-meta">${escHtml(p.role)} · ${escHtml(p.time)}</div>
             </div>
           </div>
-          <div class="post-body">${p.text}</div>
+          <div class="post-body">${escHtml(p.text)}</div>
           <div class="post-actions">
             <button class="post-action-btn" onclick="likePost(${p.id}, this)">👍 <span>${p.likes}</span></button>
             <button class="post-action-btn" onclick="toggleReply(${p.id})">💬 ${isZhF ? '回复' : 'Reply'}</button>
@@ -3250,7 +3308,7 @@
             <button class="btn btn-primary" style="margin-top:8px;font-size:13px;padding:8px 16px;" onclick="submitReply(${p.id})">${isZhF ? '发布回复' : 'Post Reply'}</button>
           </div>
           <div class="post-replies" id="replies-${p.id}">
-            ${(p.replies||[]).map(r => `<div class="reply-item"><strong>${r.author}</strong>: ${r.text} <span class="reply-time">${r.time}</span></div>`).join('')}
+            ${(p.replies||[]).map(r => `<div class="reply-item"><strong>${escHtml(r.author)}</strong>: ${escHtml(r.text)} <span class="reply-time">${escHtml(r.time)}</span></div>`).join('')}
           </div>
         </div>
       `).join('');
@@ -3503,6 +3561,7 @@
     async function handleAtsResumeUpload(input) {
       const file = input.files[0];
       if (!file) return;
+      if (!checkDocSize(file)) { input.value = ''; return; }
       const btn = document.getElementById('atsUploadBtn');
       btn.textContent = 'Loading…';
       btn.disabled = true;
@@ -5038,6 +5097,7 @@ Aaliyah Washington`
     async function handleResumeUpload(input) {
       const file = input.files[0];
       if (!file) return;
+      if (!checkDocSize(file)) { input.value = ''; return; }
 
       const btnText = document.getElementById('uploadBtnText');
       btnText.innerHTML = '<span class="spinner"></span> Reading...';
@@ -5260,7 +5320,7 @@ Aaliyah Washington`
 
     async function saveTailoredResume(content) {
       const t = (content || '').trim();
-      if (!t || t.length < 40 || !getToken()) return;
+      if (!t || t.length < 40 || !isLoggedIn) return;
       try {
         const r = await fetch('/api/resumes', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ content: t }) });
         if (r.ok) _savedResumesCache = []; // invalidate so the next fetch is fresh
@@ -5271,12 +5331,12 @@ Aaliyah Washington`
     // Office can list it (same dedupe/keep-20 behavior as resumes).
     async function saveTailoredCoverLetter(content) {
       const t = (content || '').trim();
-      if (!t || t.length < 40 || !getToken()) return;
+      if (!t || t.length < 40 || !isLoggedIn) return;
       try { await fetch('/api/cover-letters', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ content: t }) }); } catch (_) {}
     }
 
     async function fetchSavedResumes() {
-      if (!getToken()) return [];
+      if (!isLoggedIn) return [];
       try {
         const r = await fetch('/api/resumes', { headers: authHeaders() });
         if (!r.ok) return [];
@@ -5428,6 +5488,7 @@ Aaliyah Washington`
     async function handleVideoResumeUpload(input) {
       const file = input.files[0];
       if (!file) return;
+      if (!checkDocSize(file)) { input.value = ''; return; }
       const btn = document.getElementById('videoUploadBtn');
       btn.textContent = 'Loading…';
       btn.disabled = true;
@@ -6038,7 +6099,8 @@ Aaliyah Washington`
         if (!r.ok) { showToast('LinkedIn sign-in link expired — please try again.'); return true; }
         const data = await r.json();
         if (!data.token) { showToast('LinkedIn sign-in failed — please try again.'); return true; }
-        localStorage.setItem('rt_token', data.token);
+        // Session now lives in the httpOnly rt_session cookie the server just
+        // set — no token in localStorage (Phase 2). Keep email/username for UI.
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
         if (_consumePostLogin()) return true;
@@ -6066,7 +6128,8 @@ Aaliyah Washington`
         if (!r.ok) { showToast('Google sign-in link expired — please try again.'); return true; }
         const data = await r.json();
         if (!data.token) { showToast('Google sign-in failed — please try again.'); return true; }
-        localStorage.setItem('rt_token', data.token);
+        // Session now lives in the httpOnly rt_session cookie the server just
+        // set — no token in localStorage (Phase 2). Keep email/username for UI.
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
         if (_consumePostLogin()) return true;
