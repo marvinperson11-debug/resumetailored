@@ -1209,6 +1209,14 @@ function _clearAuthCookies(req, res) {
 // So: require X-CSRF-Token === rt_csrf ONLY when auth came via cookie.
 function csrfGuard(req, res, next) {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  // Auth endpoints are exempt. Login/signup are PRE-session (you can't present a
+  // CSRF token you don't have yet), and a leftover rt_session cookie from a prior
+  // visit must never block a fresh login — it did, returning "Invalid or missing
+  // CSRF token" on the email/password login (dashboard AND employer portal, which
+  // doesn't carry the double-submit token at all). Password reset is gated by its
+  // own emailed token; logout is harmless. OAuth callbacks are GETs.
+  const p = (req.originalUrl || '').split('?')[0];
+  if (p.startsWith('/api/auth/')) return next();
   const { viaCookie } = _resolveSession(req);
   if (!viaCookie) return next();
   const header = req.headers['x-csrf-token'];
