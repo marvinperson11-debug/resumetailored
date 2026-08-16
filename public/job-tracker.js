@@ -129,7 +129,11 @@
 
   JT.prototype.mount = async function () {
     if (!this.root) return;
-    if (!token()) { this.renderLoggedOut(); return; }
+    // Logged-in check must not rely on the legacy localStorage token — cookie
+    // sessions have none. Treat a stored email (set by the app on login) OR a
+    // legacy token as "maybe logged in" and let the API be the authority (load()
+    // renders the logged-out gate on a 401).
+    if (!token() && !localStorage.getItem('rt_email')) { this.renderLoggedOut(); return; }
     this.root.innerHTML = '<div class="jt-wrap"><p style="color:#918A7E;font-size:14px;">Loading your applications…</p></div>';
     await this.load();
   };

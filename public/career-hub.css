@@ -153,6 +153,13 @@
     gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: #fff; border-top: 1px solid var(--ch-line); }
   .ch-sticky-bar .ch-btn { flex: 1; }
 }
+/* At ≤480px the app sidebar becomes a fixed 62px bottom nav; the Job Finder's
+   sticky action bar (bottom:0, z-index:900) sat ON TOP of it and hid it, leaving
+   the user with no way back. Lift the action bar to sit ABOVE the bottom nav. */
+@media (max-width: 480px) {
+  .ch-sticky-bar { bottom: calc(62px + env(safe-area-inset-bottom));
+    padding-bottom: 10px; }
+}
 
 .ch-upsell { background: #FBF3E0; border: 1px solid var(--ch-gold); border-radius: 12px; padding: 14px 16px; margin: 14px 0; font-size: 14px; color: #6b4a12; }
 .ch-upsell button { margin-top: 8px; }

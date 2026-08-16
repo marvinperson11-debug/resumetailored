@@ -1894,10 +1894,12 @@ app.get('/api/auth/google/session', (req, res) => {
 
 // ── Saved resumes (per signed-in user, so they're available on every device) ──
 function emailFromToken(req) {
-  const token = (req.headers.authorization || '').replace('Bearer ', '');
-  if (!token) return null;
-  const row = db.prepare('SELECT email FROM sessions WHERE token = ?').get(token);
-  return row ? row.email : null;
+  // Legacy name, still called by ~12 routes (saved resumes, cover letters, Back
+  // Office, Link, Video). Delegate to the single cookie-aware resolver so a
+  // cookie session authenticates — this function used to read ONLY the bearer
+  // header, so every one of those routes 401'd for cookie-authenticated users
+  // (Back Office "Nothing here yet", Link "Nothing to share yet", etc.).
+  return getSessionEmail(req);
 }
 
 // List the signed-in user's saved resumes, most recent first.
@@ -5916,17 +5918,34 @@ function consumeFreeTier(userKey, mode) {
 // tells the CSRF layer whether this request was authenticated by an
 // automatically-sent cookie (needs CSRF) or an explicit bearer token (immune).
 function _resolveSession(req) {
-  const hdr = (req.headers.authorization || '').replace('Bearer ', '').trim();
-  if (hdr) return { token: hdr, viaCookie: false };
-  const ck = (req.cookies && req.cookies.rt_session ? String(req.cookies.rt_session) : '').trim();
-  if (ck) return { token: ck, viaCookie: true };
-  return { token: '', viaCookie: false };
+  if (req._rtSession) return req._rtSession;
+  // Try the Authorization bearer FIRST (legacy header clients), but only accept
+  // it if it actually resolves to a session — then fall back to the httpOnly
+  // rt_session cookie. This is the critical fix: modules that read an empty
+  // localStorage token (career-hub.js, job-tracker.js) send "Authorization:
+  // Bearer " with no token; the old code turned that into a bogus token that
+  // SHADOWED a perfectly valid session cookie, 401-ing every cookie-authed user
+  // ("Please sign in to use the Career Hub", the Tracker login gate, etc.).
+  // A stale/expired bearer must likewise defer to the cookie, never mask it.
+  const raw = req.headers.authorization || '';
+  const hdrToken = raw.replace(/^\s*bearer\s*/i, '').trim();
+  let result = { token: '', email: null, viaCookie: false };
+  if (hdrToken) {
+    const row = db.prepare('SELECT email FROM sessions WHERE token = ?').get(hdrToken);
+    if (row) result = { token: hdrToken, email: row.email, viaCookie: false };
+  }
+  if (!result.email) {
+    const ck = (req.cookies && req.cookies.rt_session ? String(req.cookies.rt_session) : '').trim();
+    if (ck) {
+      const row = db.prepare('SELECT email FROM sessions WHERE token = ?').get(ck);
+      if (row) result = { token: ck, email: row.email, viaCookie: true };
+    }
+  }
+  req._rtSession = result;
+  return result;
 }
 function getSessionEmail(req) {
-  const { token } = _resolveSession(req);
-  if (!token) return null;
-  const row = db.prepare('SELECT email FROM sessions WHERE token = ?').get(token);
-  return row ? row.email : null;
+  return _resolveSession(req).email;
 }
 
 // Returns a per-user key for free tier tracking: email (if logged in) or IP

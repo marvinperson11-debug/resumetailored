@@ -5659,11 +5659,21 @@ Aaliyah Washington`
       //
       // Back Office "Edit this site" is the one exception: they named a site,
       // so asking them to choose again would ignore what they pressed.
-      if (!openSub && !openRename) { wcOpenPicker(); return; }
+      // Error boundary: never leave the user on a blank white screen. If opening
+      // the picker or entering the editor throws (e.g. a missing dependency on
+      // the blank-site path), surface it and drop back to a usable tab instead.
+      try {
+        if (!openSub && !openRename) { wcOpenPicker(); return; }
 
-      if (!wcDoc) await wcEnsureSite(openSub);
-      wcEnterEditor();
-      if (openRename) { wcChangeAddress(); return; }
+        if (!wcDoc) await wcEnsureSite(openSub);
+        wcEnterEditor();
+        if (openRename) { wcChangeAddress(); return; }
+      } catch (e) {
+        console.error('Website Creator failed to open:', e);
+        try { fetch('/api/client-error', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ msg: 'wc-open: ' + (e && e.message), stack: e && e.stack, url: location.href }) }).catch(function () {}); } catch (_) {}
+        showToast('The website builder hit a snag. Please try again or tailor a resume first.');
+        document.body.classList.remove('wb-picker', 'wb-immersive');
+      }
     }
 
     /**
