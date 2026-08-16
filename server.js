@@ -87,13 +87,15 @@ if (!process.env.ANTHROPIC_API_KEY) console.error('STARTUP ERROR: ANTHROPIC_API_
 if (!process.env.STRIPE_SECRET_KEY) console.error('STARTUP ERROR: STRIPE_SECRET_KEY is not set — payments will fail.');
 if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID is not set — checkout will fail.');
 
-// Normalize a Stripe price id: strip ALL whitespace. A price id is
-// "price_<alphanumeric>" and NEVER contains whitespace, so this is always safe —
-// and it repairs the exact corruption this project keeps hitting: a value pasted
-// into the Railway dashboard with a newline inside it (the same way the variable
-// NAMES once had a literal "\n"). Trimming only fixes the ends; an internal
-// newline would still be sent to Stripe and rejected. Used at every read site.
-function _normPriceId(v) { return (v == null ? '' : String(v)).replace(/\s+/g, ''); }
+// Normalize a Stripe price id: strip every character that CANNOT appear in one.
+// A price id is "price_" + alphanumerics — no whitespace, no invisible/zero-width
+// characters. The live logs showed this project's employer price ids were pasted
+// into the Railway dashboard with junk INSIDE the value (first a newline, then —
+// after we stripped whitespace — a non-alphanumeric/zero-width char that \s
+// doesn't catch). Removing anything outside [A-Za-z0-9_] is always safe (those
+// are the only characters a real id contains) and repairs the value so checkout
+// works despite the corruption. Used at every read site.
+function _normPriceId(v) { return (v == null ? '' : String(v)).replace(/[^A-Za-z0-9_]/g, ''); }
 const _looksLikePriceId = (v) => /^price_[A-Za-z0-9]+$/.test(_normPriceId(v));
 
 // Employer checkout price IDs (Pro / Scale). Logs presence only — never the
