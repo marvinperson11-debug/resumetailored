@@ -180,6 +180,15 @@ const dataDir = process.env.DATA_DIR || path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 const db = new Database(path.join(dataDir, 'resumetailor.db'));
 db.pragma('journal_mode = WAL');
+// Loud warning when persistence isn't configured: without DATA_DIR the DB lives
+// in the ephemeral container filesystem and every deploy/restart wipes it (this
+// is the "saved resumes/sessions disappear on deploy" bug). Set DATA_DIR=/data
+// in Railway and mount a Volume at /data. Verify at runtime via GET /api/health.
+if (!process.env.DATA_DIR) {
+  console.error('STARTUP ERROR: DATA_DIR is not set — the SQLite DB is in EPHEMERAL storage and ALL data (saved resumes, cover letters, sessions, subscribers) will be lost on the next deploy. Set DATA_DIR=/data and mount a Railway Volume at /data.');
+} else {
+  console.log(`[persistence] DATA_DIR=${dataDir} — DB at ${path.join(dataDir, 'resumetailor.db')}`);
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -6031,13 +6040,67 @@ ${jobDescription.slice(0, 10000)}`
 
 // ─── API: Health check ────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  res.json({
+  const out = {
     status: 'ok',
+    time: new Date().toISOString(),
     anthropic: !!process.env.ANTHROPIC_API_KEY,
     stripe: !!process.env.STRIPE_SECRET_KEY,
     stripePrice: !!process.env.STRIPE_PRICE_ID,
-    rapidapi: !!process.env.RAPIDAPI_KEY
-  });
+    rapidapi: !!process.env.RAPIDAPI_KEY,
+  };
+
+  // ── Persistence checks ──────────────────────────────────────────────────────
+  // DB connectivity: an actual query proves the SQLite file is open and usable.
+  try {
+    db.prepare('SELECT 1 AS ok').get();
+    out.db = { connected: true, file: path.join(dataDir, 'resumetailor.db') };
+  } catch (e) {
+    out.status = 'degraded';
+    out.db = { connected: false, error: e.message };
+  }
+
+  // DATA_DIR: the resolved directory + whether it came from the env var. If it
+  // did NOT, the app is writing to ephemeral container storage and every deploy
+  // wipes it — the exact cause of "saved resumes disappear on deploy".
+  const fromEnv = !!process.env.DATA_DIR;
+  out.dataDir = { path: dataDir, fromEnv };
+  out.persistent = fromEnv;
+
+  // Writable at runtime: actually write + delete a probe file in DATA_DIR. This
+  // is what verifies the mounted volume is attached and writable right now.
+  try {
+    const probe = path.join(dataDir, '.health-write-probe');
+    fs.writeFileSync(probe, String(Date.now()));
+    fs.unlinkSync(probe);
+    out.dataDir.writable = true;
+  } catch (e) {
+    out.status = 'degraded';
+    out.dataDir.writable = false;
+    out.dataDir.writeError = e.message;
+  }
+
+  // Disk usage of the volume that holds DATA_DIR.
+  try {
+    const st = fs.statfsSync(dataDir);
+    const total = st.blocks * st.bsize;
+    const avail = st.bavail * st.bsize;
+    out.disk = {
+      totalMB: Math.round(total / 1048576),
+      freeMB: Math.round(avail / 1048576),
+      usedMB: Math.round((total - avail) / 1048576),
+      usedPct: total ? Math.round(((total - avail) / total) * 100) : null,
+    };
+  } catch (e) {
+    out.disk = { error: e.message };
+  }
+
+  if (!fromEnv) {
+    out.warning = 'DATA_DIR is not set — data is stored in EPHEMERAL container storage and will be lost on the next deploy/restart. Set DATA_DIR=/data in Railway and mount a Volume at /data.';
+  }
+
+  // 200 even when degraded/non-persistent so a healthcheck watching this route
+  // never blocks the deploy from coming up; the JSON body carries the real state.
+  res.json(out);
 });
 
 // ─── API: AI connection test ──────────────────────────────────────────────────
