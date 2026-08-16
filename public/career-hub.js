@@ -23,7 +23,10 @@
 
   // ── small helpers ──────────────────────────────────────────────────────────
   function tok() { return localStorage.getItem('rt_token') || ''; }
-  function authH() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok() }; }
+  // Omit the Authorization header entirely when there's no legacy token — cookie
+  // sessions authenticate via the httpOnly cookie, and sending an empty
+  // "Bearer " used to shadow that cookie server-side (401 "Please sign in").
+  function authH() { var h = { 'Content-Type': 'application/json' }; var t = tok(); if (t) h.Authorization = 'Bearer ' + t; return h; }
   function isPro() { try { return !!isSubscriberFlag; } catch (e) { return false; } }
   function toast(m, ms) { if (typeof showToast === 'function') return showToast(m, ms); }
   function goPro() { if (typeof startPro === 'function') startPro(); }
