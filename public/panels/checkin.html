@@ -1,0 +1,92 @@
+        <div class="panel-header">
+          <h1>Quarterly Career Check-In</h1>
+          <p>Successful careers don't happen by accident. Take 5 minutes every quarter to reflect, refocus, and level up.</p>
+        </div>
+
+        <!-- Prompt of the quarter -->
+        <div class="checkin-prompt-box">
+          <div class="checkin-prompt-label">✦ This Quarter's Reflection Prompt</div>
+          <div class="checkin-prompt-text" id="checkinPrompt">Loading your prompt...</div>
+        </div>
+
+        <!-- Check-in form -->
+        <div class="checkin-form">
+          <h3 style="font-size:18px;font-weight:700;margin-bottom:20px;">Your Career Check-In</h3>
+
+          <div class="checkin-fields">
+            <div class="checkin-field">
+              <label>Your Email (saves your progress)</label>
+              <input type="email" id="checkinEmail" placeholder="your@email.com" class="forum-input" />
+            </div>
+            <div class="checkin-field">
+              <label>Current Role / Title</label>
+              <input type="text" id="checkinCurrentRole" placeholder="e.g. Marketing Coordinator" class="forum-input" />
+            </div>
+            <div class="checkin-field">
+              <label>Target Role (next 12 months)</label>
+              <input type="text" id="checkinTargetRole" placeholder="e.g. Marketing Manager" class="forum-input" />
+            </div>
+            <div class="checkin-field" style="grid-column:1/-1;">
+              <label>Your Goals & Reflections for This Quarter</label>
+              <textarea id="checkinGoals" class="forum-textarea" style="min-height:160px;" placeholder="What did you achieve last quarter? What are your goals for the next 3 months? What skills are you developing? What do you want to change?"></textarea>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-lg" onclick="saveCheckIn()" style="margin-top:16px;">Save My Check-In →</button>
+        </div>
+
+        <!-- Milestones -->
+        <div class="checkin-milestones">
+          <h3 style="font-size:18px;font-weight:700;margin-bottom:20px;">Career Milestone Checklist</h3>
+          <div class="milestone-grid">
+            <div class="milestone-item" onclick="toggleMilestone(this)">
+              <div class="milestone-check">✓</div>
+              <div class="milestone-text">
+                <strong>Update Your Resume</strong>
+                <span>Reflect your last 3 months of achievements</span>
+              </div>
+            </div>
+            <div class="milestone-item" onclick="toggleMilestone(this)">
+              <div class="milestone-check">✓</div>
+              <div class="milestone-text">
+                <strong>Benchmark Your Salary</strong>
+                <span>Check Glassdoor, Levels.fyi, LinkedIn Salary</span>
+              </div>
+            </div>
+            <div class="milestone-item" onclick="toggleMilestone(this)">
+              <div class="milestone-check">✓</div>
+              <div class="milestone-text">
+                <strong>Connect With 3 New People</strong>
+                <span>Grow your professional network intentionally</span>
+              </div>
+            </div>
+            <div class="milestone-item" onclick="toggleMilestone(this)">
+              <div class="milestone-check">✓</div>
+              <div class="milestone-text">
+                <strong>Complete a New Skill Course</strong>
+                <span>Coursera, LinkedIn Learning, or Udemy</span>
+              </div>
+            </div>
+            <div class="milestone-item" onclick="toggleMilestone(this)">
+              <div class="milestone-check">✓</div>
+              <div class="milestone-text">
+                <strong>Request Feedback From Your Manager</strong>
+                <span>Know where you stand before review season</span>
+              </div>
+            </div>
+            <div class="milestone-item" onclick="toggleMilestone(this)">
+              <div class="milestone-check">✓</div>
+              <div class="milestone-text">
+                <strong>Set 3 Goals for Next Quarter</strong>
+                <span>Specific, measurable, time-bound targets</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next check-in reminder -->
+        <div class="checkin-reminder">
+          <div style="font-size:24px;margin-bottom:8px;">⏰</div>
+          <h3>Next Check-In: <span id="nextCheckinDate"></span></h3>
+          <p>We'll remind you to come back in 90 days. Consistent reflection is what separates good careers from great ones.</p>
+        </div>

@@ -9,21 +9,15 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon-32.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&family=Satisfy&family=Caveat:wght@600&display=swap" rel="stylesheet" />
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-JWC76X5X68');
-  </script>
+  <!-- Phase 1: only the critical Inter font is preloaded. The decorative fonts
+       (Dancing Script, Great Vibes, Satisfy, Caveat, Fraunces, Syne) are injected
+       lazily by loadDecorativeFonts() on first need (signature input / Samples /
+       cover-letter mode). Analytics (gtag) and jsPDF are deferred too. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet"/>
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" onload="this.rel='stylesheet'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" /></noscript>
   <link rel="stylesheet" href="style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <!-- ?v= is not decoration. These modules are coupled to this file, and this
        file is served no-cache while they were cached for a day — so a returning
        browser ran new HTML against an old module and any newly-added call threw
@@ -35,763 +29,8 @@
   <!-- Loaded early so the OAuth-return handlers (top-level in the boot script)
        can consume the post-login redirect stashed by the /login page. -->
   <script src="/login-redirect.js"></script>
-  <style>
-    /* ── Auth Modal ── */
-    .auth-overlay {
-      position: fixed; inset: 0; z-index: 9999;
-      background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center;
-      padding: 24px;
-    }
-    .auth-card {
-      background: #FFFFFF; border: 1px solid #E7DFD1;
-      border-radius: 20px; padding: 30px 32px; width: 100%; max-width: 440px;
-      max-height: 92vh; overflow-y: auto;
-      box-shadow: 0 24px 80px rgba(25,21,18,0.28), 0 0 0 1px rgba(31,92,61,0.08);
-    }
-    .auth-logo { font-size: 20px; font-weight: 900; color: #191512; margin-bottom: 24px; text-align: center; font-family: 'Fraunces', Georgia, serif; letter-spacing: -0.02em; }
-    .auth-logo .badge-ai { background: #1F5C3D; color: #fff; padding: 2px 8px; border-radius: 6px; font-size: 12px; margin-left: 4px; -webkit-text-fill-color: #fff; font-family: 'Inter', sans-serif; }
-    .auth-heading { font-size: 24px; font-weight: 800; color: #191512; margin-bottom: 6px; text-align: center; font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
-    .auth-sub { font-size: 14px; color: #57514A; text-align: center; margin-bottom: 24px; }
-    .auth-tabs { display: flex; background: #F1EADD; border-radius: 10px; padding: 4px; margin-bottom: 24px; border: 1px solid #E7DFD1; }
-    .auth-tab-btn {
-      flex: 1; padding: 9px; border: none; border-radius: 8px; font-family: inherit;
-      font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s;
-      background: transparent; color: #57514A;
-    }
-    .auth-tab-btn.active { background: #FFFFFF; color: #1F5C3D; box-shadow: 0 1px 3px rgba(25,21,18,.08); }
-    .auth-field { margin-bottom: 14px; }
-    .auth-field input {
-      width: 100%; box-sizing: border-box;
-      background: #FAF7F0; border: 1.5px solid #D9CFBC;
-      border-radius: 10px; padding: 13px 16px; color: #191512; font-size: 15px;
-      font-family: inherit; outline: none; transition: border-color .2s, box-shadow .2s;
-    }
-    .auth-field input:focus { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
-    .auth-field input::placeholder { color: #918A7E; }
-    .auth-error { color: #B23A2E; font-size: 13px; font-weight: 600; min-height: 20px; margin-bottom: 8px; text-align: center; }
-    .auth-switch { text-align: center; margin-top: 18px; font-size: 13px; color: #57514A; }
-    .auth-switch a { color: #1F5C3D; cursor: pointer; font-weight: 600; text-decoration: none; }
-    .auth-switch a:hover { text-decoration: underline; }
-    .auth-card .btn-primary { background: #1F5C3D; color: #fff; background-image: none; box-shadow: 0 6px 18px rgba(31,92,61,0.3); }
-    .auth-card .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); background: #153F2A; box-shadow: 0 8px 24px rgba(31,92,61,0.4); }
-    /* ── Nav (dark glassmorphism) ── */
-    .nav { background: rgba(3,7,18,0.85) !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; backdrop-filter: blur(20px) !important; -webkit-backdrop-filter: blur(20px) !important; }
-    .nav .logo { background: none; -webkit-background-clip: unset; -webkit-text-fill-color: #f1f5f9; background-clip: unset; color: #f1f5f9; font-size: 18px; }
-    .nav .logo .badge-ai { background: linear-gradient(135deg,#1F5C3D,#2E7D53) !important; color: #fff !important; -webkit-text-fill-color: #fff !important; padding: 2px 7px; border-radius: 5px; font-size: 11px; }
-    .nav .btn-outline { border-color: rgba(31,92,61,0.5) !important; color: #2E7D53 !important; background: rgba(31,92,61,0.1) !important; box-shadow: none !important; }
-    .nav .btn-outline:hover { background: rgba(31,92,61,0.2) !important; transform: none !important; }
-    #navUsername { color: #94a3b8 !important; }
-    /* ── Upload / Download ── */
-    .upload-btn {
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 700;
-      border: 1.5px dashed rgba(31,92,61,0.4); background: rgba(31,92,61,0.08);
-      color: #2E7D53; cursor: pointer; font-family: inherit; transition: all .2s;
-      white-space: nowrap;
-    }
-    .upload-btn:hover { background: rgba(31,92,61,0.15); border-color: rgba(31,92,61,0.7); }
-    .upload-btn .spinner { width:14px;height:14px;border-width:2px; }
-    .field-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
-    .field-header label { margin-bottom:0; }
-    .download-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
-    .download-btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 11px 20px; border-radius: 9px; font-size: 14px; font-weight: 700;
-      cursor: pointer; font-family: inherit; transition: all .2s; border: none;
-    }
-    .download-btn-txt {
-      background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);
-      color: #e2e8f0;
-    }
-    .download-btn-txt:hover { background: rgba(255,255,255,0.1); }
-    .download-btn-docx {
-      background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff;
-    }
-    .download-btn-docx:hover { opacity: 0.9; }
-    .download-btn-pdf {
-      background: #dc2626; color: #fff;
-    }
-    .download-btn-pdf:hover { background: #b91c1c; }
-    @media (max-width: 480px) {
-      .auth-overlay { padding: 0; align-items: flex-end; }
-      .auth-card { border-radius: 16px 16px 0 0; max-width: 100%; max-height: 90vh; overflow-y: auto; }
-      #goProNavBtn { display: none !important; }
-    }
-    /* ── Template type toggle ── */
-    .sample-toggle { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
-    .sample-toggle-btn {
-      padding: 9px 18px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05); color: #94a3b8; font-size: 14px;
-      font-weight: 700; cursor: pointer; transition: all .15s; font-family: inherit;
-    }
-    .sample-toggle-btn.active {
-      background: rgba(31,92,61,0.2); border-color: rgba(31,92,61,0.5); color: #2E7D53;
-    }
-    /* ── Font picker ── */
-    .font-pick-row { display:flex; align-items:center; gap:7px; margin-bottom:14px; flex-wrap:wrap; }
-    .font-pick-label { font-size:11.5px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.6px; margin-right:2px; }
-    .font-btn { padding:5px 12px; font-size:12px; font-weight:600; border:1.5px solid rgba(255,255,255,0.1); border-radius:6px; background:rgba(255,255,255,0.05); color:#94a3b8; cursor:pointer; transition:all .15s; font-family:inherit; }
-    .font-btn.active { background:#0E2A1C; color:#fff; border-color:#0E2A1C; }
-    .font-btn:hover:not(.active) { border-color:#1F5C3D; color:#153F2A; }
-    /* ── Output Template Picker ── */
-    .tpl-pick-section { margin: 14px 0 16px; }
-    .tpl-pick-label { font-size: 11.5px; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .6px; display: flex; justify-content: space-between; align-items: center; }
-    .tpl-pick-label span { font-size: 10px; font-weight: 600; color: #64748b; letter-spacing: .3px; text-transform: none; }
-    .tpl-pick-outer { position: relative; overflow: hidden; }
-    .tpl-pick-outer::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 48px; background: linear-gradient(to right, transparent, var(--bg,#030712)); pointer-events: none; z-index: 1; border-radius: 0 6px 0 0; }
-    .tpl-pick-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; -webkit-overflow-scrolling: touch; }
-    .tpl-pick-row::-webkit-scrollbar { height: 3px; }
-    .tpl-pick-row::-webkit-scrollbar-track { background: transparent; }
-    .tpl-pick-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
-    .tpl-pick-item {
-      flex-shrink: 0; width: 160px; cursor: pointer; border-radius: 12px;
-      border: 2px solid rgba(255,255,255,0.1); overflow: hidden; background: rgba(255,255,255,0.04);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all .2s;
-    }
-    .tpl-pick-item:hover:not(.locked) { border-color: rgba(31,92,61,0.5); box-shadow: 0 4px 16px rgba(31,92,61,0.2); transform: translateY(-2px); }
-    .tpl-pick-item.selected { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,.25); }
-    .tpl-pick-item.locked { cursor: default; }
-    .tpl-pick-thumb { height: 140px; overflow: hidden; position: relative; background: rgba(255,255,255,0.03); }
-    .tpl-pick-thumb-inner { transform-origin: top left; position: absolute; top: 0; left: 0; pointer-events: none; }
-    .tpl-pick-body { padding: 10px; }
-    .tpl-pick-name { font-size: 12px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; }
-    .tpl-pick-badge { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-bottom: 8px; }
-    .tpl-pick-badge-free { background: rgba(16,185,129,0.15); color: #34d399; }
-    .tpl-pick-badge-pro { background: rgba(31,92,61,0.2); color: #8FD3AC; }
-    .tpl-ats-badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 20px; display: inline-block; margin: 0 0 8px 4px; background: rgba(16,185,129,0.12); color: #6ee7b7; letter-spacing: .3px; }
-    .tpl-human-note { font-size: 9.5px; color: #94a3b8; margin: -4px 0 8px; line-height: 1.4; }
-    .export-warn-box { background: #12121f; border: 1px solid rgba(251,191,36,0.35); border-radius: 14px; max-width: 440px; padding: 26px 28px; margin: auto; box-shadow: 0 24px 64px rgba(0,0,0,0.5); }
-    .export-warn-title { font-size: 16px; font-weight: 800; color: #fbbf24; margin-bottom: 10px; }
-    .export-warn-text { font-size: 14px; color: #cbd5e1; line-height: 1.6; margin-bottom: 20px; }
-    .export-warn-actions { display: flex; gap: 12px; align-items: center; }
-    .export-warn-dismiss { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: #e2e8f0; font-size: 13px; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; font-family: inherit; }
-    .export-warn-dismiss:hover { background: rgba(255,255,255,0.1); }
-    .export-fmt-banner { position: sticky; top: 0; z-index: 5; display: flex; gap: 10px; align-items: flex-start; background: rgba(251,191,36,0.09); border: 1px solid rgba(251,191,36,0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; font-size: 12.5px; color: #fcd34d; line-height: 1.55; text-align: left; width: 100%; box-sizing: border-box; }
-    .export-fmt-banner a { color: #fbbf24; font-weight: 700; }
-    .tpl-pick-btn { display: block; width: 100%; padding: 7px; border-radius: 6px; font-size: 12px; font-weight: 700; text-align: center; border: none; cursor: pointer; transition: background .15s; font-family: inherit; box-sizing: border-box; }
-    .tpl-pick-btn-select { background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff; }
-    .tpl-pick-btn-select:hover { opacity: 0.9; }
-    .tpl-pick-btn-selected { background: rgba(16,185,129,0.15); color: #34d399; cursor: default; }
-    .tpl-pick-btn-locked { background: rgba(255,255,255,0.06); color: #64748b; }
-    .tpl-pick-lock { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.35); font-size: 24px; }
-    /* ── Edit mode ── */
-    .edit-bar { display: flex; align-items: center; gap: 8px; padding: 9px 13px; background: rgba(31,92,61,0.1); border: 1px solid rgba(31,92,61,0.25); border-radius: 9px; margin-bottom: 10px; font-size: 13px; color: #2E7D53; font-weight: 600; flex-wrap: wrap; }
-    .edit-bar .eb-btn { padding: 5px 14px; border-radius: 7px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
-    .edit-bar .eb-save { background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff; }
-    .edit-bar .eb-cancel { background: rgba(255,255,255,0.08); color: #94a3b8; }
-    #outputBox[contenteditable="true"] { outline: 2px dashed rgba(31,92,61,0.6); outline-offset: 2px; cursor: text; border-radius: 8px; }
-
-    /* ── Resume build form ── */
-    .resume-mode-toggle { display: flex; gap: 6px; }
-    .rmode-btn { padding: 6px 13px; font-size: 12px; font-weight: 600; border: 1.5px solid var(--border); border-radius: 7px; background: rgba(255,255,255,0.05); color: var(--text-muted); cursor: pointer; transition: all 0.15s; font-family: inherit; }
-    .rmode-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .rmode-btn:hover:not(.active) { background: var(--blue-light); color: var(--blue); }
-    .rb-section { margin-bottom: 18px; }
-    .rb-section-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 10px; }
-    .rb-optional { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 11px; }
-    .rb-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px; }
-    .rb-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: rgba(255,255,255,0.06); font-family: inherit; transition: border-color 0.15s; box-sizing: border-box; }
-    .rb-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
-    .rb-textarea { width: 100%; min-height: 90px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text); background: rgba(255,255,255,0.06); font-family: inherit; resize: vertical; transition: border-color 0.15s; box-sizing: border-box; }
-    .rb-textarea-sm { min-height: 56px; }
-    .rb-textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
-    .rb-entry { background: rgba(255,255,255,0.04); border: 1.5px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
-    .rb-entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .rb-entry-label { font-size: 13px; font-weight: 700; color: var(--text); }
-    .rb-remove-btn { font-size: 12px; color: #ef4444; background: none; border: 1px solid #fecaca; border-radius: 6px; cursor: pointer; font-weight: 600; padding: 4px 10px; font-family: inherit; transition: background 0.15s; }
-    .rb-remove-btn:hover { background: #fef2f2; }
-    .rb-add-btn { width: 100%; padding: 10px; border: 1.5px dashed var(--border); border-radius: 8px; background: transparent; color: var(--blue); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.15s; }
-    .rb-add-btn:hover { background: var(--blue-light); border-color: var(--blue); }
-    @media (max-width: 560px) {
-      .rb-grid-2 { grid-template-columns: 1fr; }
-      .resume-mode-toggle { flex-wrap: wrap; }
-      .field-header { flex-wrap: wrap; gap: 8px; }
-    }
-    /* ── Signature ── */
-    .sig-section { margin-bottom: 16px; background: var(--blue-light); border: 1.5px solid rgba(31,92,61,0.25); border-radius: 10px; padding: 16px; }
-    .sig-label { font-size: 13px; font-weight: 700; color: var(--text); display: block; margin-bottom: 8px; }
-    .sig-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text); background: rgba(255,255,255,0.06); box-sizing: border-box; transition: border-color 0.15s; }
-    .sig-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(31,92,61,0.15); }
-    .sig-fonts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-    .sig-font-btn { padding: 6px 13px; border: 1.5px solid var(--border); border-radius: 7px; background: rgba(255,255,255,0.05); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted); font-family: inherit; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px; }
-    .sig-font-btn.active { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
-    .sig-font-btn:hover:not(.active) { border-color: rgba(31,92,61,0.4); }
-    .sig-preview { margin-top: 10px; padding: 14px 20px; background: #ffffff; border: 1.5px solid var(--border); border-radius: 8px; }
-
-    /* ── LinkedIn sidebar button highlight ── */
-    /* No standing highlight. This used to carry a blue background and border
-       unconditionally, so the button looked selected on every page — the
-       "active" gradient on top of it was indistinguishable at a glance. Only
-       .active is lit now. */
-    .sidebar-btn-linkedin {
-      display: flex !important;
-      align-items: center !important;
-    }
-    .sidebar-btn-linkedin:hover:not(.active) {
-      background: rgba(0,119,181,0.18) !important;
-      border-color: rgba(0,119,181,0.6) !important;
-    }
-    .sidebar-btn-linkedin.active {
-      background: linear-gradient(135deg, #0077b5 0%, #1d4ed8 100%) !important;
-      color: #fff !important;
-      border-color: #0077b5 !important;
-    }
-    .sidebar-btn-linkedin.active span[style*="background:#0077b5"] {
-      background: rgba(255,255,255,0.3) !important;
-    }
-
-    /* ── A4 size toggle ── */
-    .page-size-toggle { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
-    .page-size-btn { padding: 5px 12px; font-size: 11px; font-weight: 700; border: 1.5px solid rgba(255,255,255,0.1); border-radius: 6px; background: rgba(255,255,255,0.05); color: #94a3b8; cursor: pointer; font-family: inherit; transition: all .15s; text-transform: uppercase; letter-spacing: .5px; }
-    .page-size-btn.active { background: linear-gradient(135deg,#1F5C3D,#2E7D53); color: #fff; border-color: transparent; }
-
-    /* ── Chinese job board note ── */
-    .job-platform-note { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-    .platform-chip { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,0.06); color: #94a3b8; white-space: nowrap; }
-    .platform-chip-cn { background: rgba(251,191,36,0.1); color: #fbbf24; }
-
-    /* ── Website Creator ── */
-    .wc-vtab { flex: 1; border: none; background: transparent; color: #64748b; font-size: 13px; font-weight: 700; padding: 8px 10px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
-    .wc-vtab-active { background: #fff; color: #153F2A; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-
-    /* ── A PHONE, NOT A NARROW RECTANGLE ──────────────────────────────────
-       The mobile preview is the right WIDTH but reads as a column of the page
-       rather than as a phone. A chassis around it says which it is at a glance.
-
-       Only on a screen big enough to be pretending. On an actual phone the
-       chassis is the one in your hand, and drawing a second one would spend
-       real pixels — the scarcest thing there — on decoration. `is-on` is put
-       on by the two fit functions, which are also the only things that know
-       whether mobile is selected.
-
-       OUTSIDE the scaled frame, so the bezel is a constant thickness on the
-       glass rather than something that shrinks with the page it surrounds. */
-    /* ── NO DEVICE TOGGLE ON A PHONE ──────────────────────────────────────
-       Since the published page keeps its layout and is scaled to fit, the two
-       views on a phone differ only in the width the page is laid out at — and
-       the "desktop" one IS what a visitor on a phone gets. There is nothing
-       left for the toggle to switch between there, so it is a control that
-       costs a row of the smallest screen to do nothing.
-
-       It is hidden AND the device is pinned to desktop below this width, not
-       one or the other: a toggle you cannot see cannot be used to get back out
-       of the state it left behind, and a phone stuck in "mobile" would preview
-       a 390px page inside a 390px frame — scaled twice, and not what is
-       published. `_pvDeviceLocked()` is the single answer to "does the device
-       follow the buttons here?", used by both previews. */
-    @media (max-width: 820px) {
-      .cv-seg--device, .wc-tplhead-dev { display: none !important; }
-    }
-    .pv-chassis { flex: 0 0 auto; }
-    .pv-chassis.is-on {
-      position: relative;
-      padding: 12px 10px 16px;
-      background: linear-gradient(180deg, #2b2f39, #14171d);
-      border-radius: 44px;
-      box-shadow: 0 0 0 2px #3f4552, 0 26px 60px rgba(0,0,0,.45);
-    }
-    /* Earpiece and home indicator: the two marks that read as "phone" at any
-       size. Positioned inside the padding, so they never cover the page. */
-    .pv-chassis.is-on::before {
-      content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
-      width: 64px; height: 5px; border-radius: 3px; background: #4a5160;
-    }
-    .pv-chassis.is-on::after {
-      content: ''; position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
-      width: 40%; max-width: 110px; height: 4px; border-radius: 2px; background: #5b6373;
-    }
-    .pv-chassis.is-on > * { border-radius: 32px; overflow: hidden; }
-
-    /* ── THE TEMPLATE MODAL'S HEADER, ON A PHONE ──────────────────────────
-       Measured at 390px: 195px of header above a 353px preview — more than
-       half the modal spent on chrome, for a screen whose whole job is showing
-       you the template. Two rows instead of three, the blurb dropped (it is on
-       the card you just came from), and everything a size down. Desktop is
-       untouched: every rule here is inside the phone query. */
-    .wc-tplhead-brk { display: none; }
-    @media (max-width: 820px) {
-      .wc-tplhead { padding: 8px 10px !important; gap: 7px !important; }
-      #wcTplBlurb { display: none; }
-      #wcTplName { font-size: 13.5px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      /* Row 1: name, then Close. Row 2: the toggle, then Use. */
-      .wc-tplhead-txt { order: 1; flex: 1 1 auto !important; min-width: 0 !important; }
-      .wc-tplhead-close { order: 2; font-size: 12.5px !important; padding: 6px 12px !important; flex: 0 0 auto; }
-      .wc-tplhead-brk { display: block; order: 3; flex: 0 0 100%; height: 0; }
-      .wc-tplhead-dev { order: 4; padding: 3px !important; gap: 3px !important; flex: 0 0 auto; }
-      .wc-tplhead-dev .wc-vtab { font-size: 12px; padding: 6px 10px; }
-      .wc-tplhead-use { order: 5; flex: 1 1 auto; font-size: 12.5px !important; padding: 7px 10px !important; }
-    }
-    .wc-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 16px; padding: 22px; margin-bottom: 18px; }
-    .wc-step { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 14px; }
-    .wc-pal-btn { border: 1.5px solid #C9E3D4; background: #E8F0E9; color: #153F2A; font-size: 13px; font-weight: 700; padding: 8px 12px; border-radius: 9px; cursor: pointer; }
-    .wc-pal-btn:hover { background: #E8F0E9; }
-    .wc-blk { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: #fafafa; }
-    .wc-blk.wc-drag-over { border-color: #1F5C3D; box-shadow: 0 0 0 2px rgba(31,92,61,0.2); }
-    .wc-blk-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-    .wc-blk-handle { cursor: grab; color: #9ca3af; font-size: 15px; user-select: none; }
-    .wc-blk-type { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #1F5C3D; flex: 1; }
-    .wc-blk-del { background: none; border: none; color: #ef4444; cursor: pointer; font-size: 16px; line-height: 1; }
-    .wc-blk-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .wc-blk input.text-input, .wc-blk textarea.text-input, .wc-blk select.text-input { font-size: 13px; }
-    .wc-blk-width { font-size: 12px; color: #6b7280; }
-    .bo-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #f1f5f9; }
-    .bo-row:first-child { border-top: none; }
-    .bo-row-title { flex: 1; min-width: 0; font-size: 14px; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .bo-row-meta { font-size: 12px; color: #9ca3af; white-space: nowrap; }
-    .bo-act { border: 1.5px solid #e5e7eb; background: #fff; color: #374151; font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 8px; cursor: pointer; }
-    .bo-act.bo-danger { color: #dc2626; border-color: #fecaca; }
-    .bo-empty { font-size: 13px; color: #9ca3af; padding: 6px 0; }
-    .bo-bulk { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-
-    /* Site cards. A website is a thing you look at, so the list shows the page
-       rather than a filename — thumbnails are a scaled-down live render of the
-       user's own site, not the template's sample person. */
-    .bo-sites { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-    .bo-site { border: 1.5px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
-    .bo-site.is-live { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,.09); }
-    .bo-thumb { position: relative; height: 150px; background: #f8fafc; border-bottom: 1px solid #eef2f7; overflow: hidden; }
-    /* 500% then scale(.2) — the two cancel out to exactly the card's width at
-       any column size, which a fixed pixel width cannot do in a fluid grid (it
-       left a white strip down the side of every card). The iframe's own
-       viewport ends up 5× the card, so the site inside lays out as desktop
-       rather than collapsing to its mobile breakpoint.
-       pointer-events off: the whole card is the target, and a live page inside
-       would swallow the click. */
-    .bo-thumb iframe { position: absolute; top: 0; left: 0; width: 500%; height: 500%; border: 0;
-      transform: scale(.2); transform-origin: 0 0; pointer-events: none; background: #fff; }
-    .bo-thumb-badge { position: absolute; top: 8px; left: 8px; z-index: 2; font-size: 10px; font-weight: 800;
-      letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px;
-      background: #16a34a; color: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.18); }
-    .bo-thumb-badge.is-draft { background: #fff; color: #6b7280; border: 1px solid #e5e7eb; box-shadow: none; }
-    .bo-site-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
-    .bo-site-tpl { font-size: 13px; font-weight: 800; color: #111827; }
-    .bo-site-addr { font-size: 12px; color: #153F2A; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .bo-site-addr:hover { text-decoration: underline; }
-    .bo-site-meta { font-size: 11px; color: #9ca3af; }
-    .bo-site-acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-    .bo-addr-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px;
-      color: #374151; background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; padding: 9px 12px; margin-bottom: 14px; }
-    .bo-addr-bar b { font-weight: 800; color: #111827; }
-    .bo-sync { font-size: 10px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
-      padding: 2px 7px; border-radius: 999px; background: #ecfdf5; color: #047857; white-space: nowrap; vertical-align: 1px; }
-    .bo-sync.is-off { background: #fff7ed; color: #b45309; }
-    .wc-pal-btn.is-on { background: #153F2A; color: #fff; border-color: #153F2A; }
-    .wc-tpl { border: 2px solid #e5e7eb; border-radius: 14px; overflow: hidden; background: #fff; transition: border-color .15s, box-shadow .15s; }
-    .wc-tpl:hover { border-color: #C9E3D4; box-shadow: 0 6px 18px rgba(31,92,61,.14); }
-    .wc-tpl.is-on { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,.16); }
-    .wc-tpl-thumb { display: block; width: 100%; height: 118px; border: none; cursor: pointer; position: relative; }
-    .wc-tpl-eye { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; opacity: 0; transition: opacity .15s; background: rgba(0,0,0,.35); }
-    .wc-tpl-thumb:hover .wc-tpl-eye { opacity: 1; }
-    .wc-tpl-body { padding: 12px 13px 13px; }
-    .wc-tpl-name { font-size: 14px; font-weight: 800; color: #111827; }
-    .wc-tpl-on { font-size: 10px; font-weight: 800; color: #153F2A; background: #E8F0E9; padding: 2px 6px; border-radius: 8px; }
-    .wc-tpl-cat { font-size: 11px; font-weight: 700; color: #1F5C3D; text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
-    .wc-tpl-blurb { font-size: 12.5px; color: #6b7280; margin-top: 6px; line-height: 1.45; }
-    .ed-box { position: absolute; border: 1px dashed rgba(31,92,61,.45); cursor: move; }
-    .ed-box:hover { border-color: #1F5C3D; background: rgba(31,92,61,.06); }
-    .ed-box.is-sel { border: 2px solid #1F5C3D; background: rgba(31,92,61,.08); }
-    /* ── Overlay chrome, at a constant SIZE ON SCREEN ──────────────────────
-       The overlay lives inside #wcEdWrap, which is scaled to fit the stage. At
-       390px the 1200px canvas is drawn at about 0.29, so a "28px" gear was
-       measured at 7×5 physical pixels — present, correct, and impossible to
-       hit. `--edk` carries the current scale and the chrome divides it out, so
-       a control specified at 28px is 28px on the glass at every zoom level.
-
-       One row rather than three absolutely-positioned pieces: counter-scaled
-       individually they grow into each other at small scales, and the tag,
-       the hint and the gear all want the same corner. */
-    .ed-chrome { position: absolute; left: 0; bottom: 100%; display: flex; align-items: center; gap: 4px;
-      white-space: nowrap; transform-origin: bottom left; transform: scale(calc(1 / var(--edk, 1))); padding-bottom: 4px; }
-    .ed-tag { background: #1F5C3D; color: #fff; font-size: 10px; font-weight: 800; padding: 3px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: .5px; }
-    /* EIGHT HANDLES, not one. A single corner meant an element could only ever
-       be made bigger down-and-right from where it already was — to widen
-       something on its left you had to resize it and then drag it back. Each
-       one is counter-scaled like the rest of the overlay chrome, or at phone
-       zoom they are four physical pixels of target. */
-    .ed-h { position: absolute; width: 14px; height: 14px; background: #fff; border: 2px solid #1F5C3D; border-radius: 3px;
-      transform-origin: center; transform: scale(calc(1 / var(--edk, 1))); }
-    .ed-h-nw { left: -8px;  top: -8px;    cursor: nwse-resize; }
-    .ed-h-n  { left: 50%;   top: -8px;    margin-left: -7px; cursor: ns-resize; }
-    .ed-h-ne { right: -8px; top: -8px;    cursor: nesw-resize; }
-    .ed-h-e  { right: -8px; top: 50%;     margin-top: -7px;  cursor: ew-resize; }
-    .ed-h-se { right: -8px; bottom: -8px; cursor: nwse-resize; }
-    .ed-h-s  { left: 50%;   bottom: -8px; margin-left: -7px; cursor: ns-resize; }
-    .ed-h-sw { left: -8px;  bottom: -8px; cursor: nesw-resize; }
-    .ed-h-w  { left: -8px;  top: 50%;     margin-top: -7px;  cursor: ew-resize; }
-    /* Typing is one press away on a selected text element, and nothing on
-       screen would say so. The hint sits on the box itself rather than in a
-       toolbar, because that is where the user is looking. */
-    .ed-tip { background: #111827; color: #e5e7eb; font-size: 10px; font-weight: 700; padding: 3px 7px; border-radius: 5px; pointer-events: none; }
-    /* Everything about this box, a press away, ON the box. Sized for a finger:
-       28px is the smallest this can be and still be hit reliably on a phone —
-       and it is 28px on screen, not 28px before the canvas scale eats it. */
-    .ed-gear { width: 28px; height: 22px; background: #1F5C3D; color: #fff; border: none; border-radius: 5px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; }
-    .ed-gear:hover { background: #153F2A; }
-    .ed-play { width: 28px; height: 22px; background: #059669; color: #fff; border: none; border-radius: 5px; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; }
-    .ed-play:hover { background: #047857; }
-    .ed-play.is-playing { background: #b45309; }
-    .ed-box.is-text { cursor: text; }
-    #wcEdOverlay.is-drop { background: rgba(31,92,61,.08); outline: 2px dashed #1F5C3D; outline-offset: -4px; }
-    /* While typing, the overlay hands its pointer events to the page beneath so
-       the caret, selection and clicks all land on the real text. */
-    #wcEdOverlay.is-typing { pointer-events: none; }
-    .ed-pal-group { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .8px; color: #9ca3af; margin: 10px 0 5px; }
-    .ed-pal-items { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-    .ed-pal-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border: 1.5px solid #e5e7eb; border-radius: 9px; background: #fff; cursor: grab; font: inherit; }
-    .ed-pal-item:hover { border-color: #1F5C3D; background: #E8F0E9; }
-    .ed-pal-item:active { cursor: grabbing; }
-    .ed-pal-ico { font-size: 15px; line-height: 1; }
-    .ed-pal-lbl { font-size: 10px; font-weight: 700; color: #4b5563; text-align: center; line-height: 1.2; }
-    .wc-pg { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 12px; margin-bottom: 10px; background: #fff; }
-    .wc-pg.is-on { border-color: #1F5C3D; box-shadow: 0 0 0 3px rgba(31,92,61,.12); }
-    .wc-pg-home { font-size: 10px; font-weight: 800; color: #153F2A; background: #E8F0E9; padding: 4px 8px; border-radius: 8px; text-transform: uppercase; letter-spacing: .5px; }
-    .bo-act:disabled { opacity: .4; cursor: not-allowed; }
-
-    /* While the Website Creator is open it owns the screen. The app header is
-       position:sticky with z-index 100 inside a stacking context the editor
-       cannot climb out of, so it is hidden outright rather than out-ranked. */
-    body.wb-immersive .nav { display: none !important; }
-
-    /* ── What is visible in each mode ──────────────────────────────────────
-       Three states, one switch. Public view is the site and nothing else;
-       edit mode keeps the left rail; the template picker is shown alone to
-       someone who has no site yet. */
-    /* The app sidebar STAYS on the picker, so the shell keeps its 240px offset
-       and the two stay paired. (Hiding one without moving the other is what
-       left a blank strip down the left.) */
-    /* The first-run picker borrows the editor's shell to host the template
-       grid, and borrowing it dragged the entire editor on screen: a top bar of
-       tools, a rail, a canvas and an inspector, before the user had chosen
-       anything. That is the "second editor" they landed in. Only the grid
-       shows now — the shell is a container, not a destination. */
-    body.wb-picker .cv-top,
-    body.wb-picker .cv-rail,
-    body.wb-picker .cv-canvasbox,
-    body.wb-picker .cv-inspector,
-    body.wb-picker .cv-railtoggle,
-    body.wb-picker .cv-bottom { display: none !important; }
-    body.wb-picker .cv-panel { width: 100%; max-width: none; padding: 22px 26px 40px; }
-    /* Card-sized, not banner-sized. `1fr 1fr` is right inside the 300px rail
-       panel, but across a full-width gallery it stretched each tile to roughly
-       700px. Sized by content instead, so the column count follows the window
-       and a tile stays about as wide as the page it is showing. */
-    body.wb-picker .cv-tplgrid { grid-template-columns: repeat(auto-fill, minmax(210px, 240px));
-      justify-content: center; gap: 18px; max-width: 1120px; margin: 0 auto; }
-    body.wb-picker .cv-tplgrid .wc-tpl-thumb { height: 150px; }
-    body.wb-picker .cv-editmine { max-width: 1120px; margin: 0 auto 18px; }
-    body.wb-picker .cv-search, body.wb-picker .cv-chips { max-width: 1120px; margin-left: auto; margin-right: auto; }
-
-    /* Only one rail panel open at a time, and none of them to begin with. */
-    .cv-panel[hidden] { display: none !important; }
-    /* The rail can be pulled in so the page gets the whole width. */
-    .cv-shell.is-railed .cv-panel { display: none !important; }
-    .cv-shell.is-railed .cv-rail { width: 0; overflow: hidden; padding: 0; }
-    /* Anchored to the BOTTOM, not the middle. Pinned at 50% it landed on top of
-       the "Uploads" rail button at every width — measured overlapping on
-       desktop as well as on a phone. Down here it clears the last rail item. */
-    .cv-railtoggle {
-      position: absolute; left: 0; top: auto; bottom: 56px; transform: none;
-      z-index: 12; width: 22px; height: 54px; border: none; cursor: pointer;
-      background: #3b3c42; color: #e5e7eb; font-size: 13px; line-height: 1;
-      border-radius: 0 8px 8px 0; box-shadow: 2px 0 8px rgba(0,0,0,.3);
-    }
-    .cv-railtoggle:hover { background: #4b4c53; }
-    /* Toasts default to the bottom-right, which is exactly where the "Not sure?"
-       button and its panel live. Centre them while the Website Creator is open
-       so the two never sit on top of each other. */
-    body.wb-immersive .toast { right: auto; left: 50%; transform: translateX(-50%) translateY(10px); }
-    body.wb-immersive .toast.show { transform: translateX(-50%) translateY(0); }
-
-
-    /* ── Canva-style website editor shell ── */
-    #panel-website.active { display: block; padding: 0 !important; }
-    /* Above the app's sticky top nav (z-index 100), which was sitting over the
-       editor's own toolbar and swallowing every click on Pages, Undo, Preview and
-       Publish. Still far below the modals, which live in the 9500+ range. */
-    .cv-shell { position: fixed; inset: 0; left: 0; display: flex; flex-direction: column; background: #18191b; z-index: 200; }
-    /* Matched to .sidebar's OWN collapse point (style.css, `@media (max-width:
-       900px)`), not picked independently. It used to be 981px — a number with
-       no relationship to where the app sidebar actually stops being a 240px
-       left column, so between 901 and 980px the sidebar was still a real
-       column (the app's own `.dashboard{grid-template-columns:240px 1fr}`)
-       while the shell had not yet been pushed past it, and the editor's rail
-       rendered underneath the app's sidebar in that whole window — reported
-       as "the sidebar is cut off, tucking behind the canvas." Below 901px the
-       sidebar is a horizontal bar with nothing to avoid, which is why the
-       breakpoints must be the same number, not merely close.
-       A flat 240px only holds while `.dashboard` itself starts at the viewport's
-       left edge. `.dashboard` (style.css) is `max-width:1600px;margin:0 auto`,
-       so past 1600px wide it centers and .sidebar's real left edge moves right
-       with it — at 1920px wide, .sidebar sits at x=160..400, not x=0..240. The
-       flat 240px shell then started 160px short of the sidebar's actual right
-       edge, so the shell's own opaque background painted over the last 64-240px
-       of the sidebar — covering the FREE/PRO badges and the tail of every label,
-       which reads as "the sidebar text is cut off" on any Mac wide/external
-       display, a distinct bug from the 901-980px case above (that one is a gap
-       with nothing painted over it; this one is real content hidden under the
-       shell). `max(240px, calc((100vw - 1600px) / 2 + 240px))` reproduces
-       .dashboard's own centering math instead of assuming .sidebar starts at 0,
-       so the shell's left edge always lands exactly on .sidebar's right edge,
-       at every width — proven by live geometry in
-       test/browser/sidebar-breakpoint.js up to 2560px. */
-    @media (min-width: 901px) { .cv-shell { left: max(240px, calc((100vw - 1600px) / 2 + 240px)); } }
-    /* `flex-wrap: wrap` + `height: auto` here, not just below 820px. Nothing in
-       this row shrinks (see the `flex-shrink: 0` below) — the empty `.cv-title`
-       is the only slack — so a row that is even a few pixels too wide for the
-       viewport has nowhere to go but past the edge, permanently, since a fixed
-       `height: 54px` with no wrap does not scroll and does not reflow. Those few
-       pixels are real: this was measured comfortable in Chromium on Linux at
-       every width down to 1024px, but Safari/macOS renders system-font button
-       labels at a different width, and that difference alone was enough to push
-       Publish off the visible toolbar for a Mac user while every automated
-       check here stayed green. Wrapping to a second line — already the phone
-       fix below — is the same one-line safety net applied everywhere, not just
-       under 820px: the common case (everything fits) looks identical, because
-       `flex-wrap: wrap` only wraps when it has to. */
-    .cv-top { height: auto; min-height: 54px; flex-shrink: 0; flex-wrap: wrap; background: linear-gradient(90deg,#153F2A,#1F5C3D); display: flex; align-items: center; gap: 8px; padding: 8px 12px; color: #fff; }
-    .cv-logo { font-weight: 900; font-size: 14px; letter-spacing: -.02em; margin-right: 6px; flex-shrink: 0; }
-    /* The ONLY thing in this row allowed to shrink — an empty spacer, so
-       shrinking it costs nothing. Everything real keeps `flex-shrink: 0`
-       (below) so a too-wide row wraps to a second line instead of squeezing
-       "Publish website" down into half a button — "half the sidebar is cut
-       off" is exactly what that squeeze looks like. */
-    .cv-title { flex: 1; text-align: center; font-size: 13px; opacity: .85; }
-    .cv-top-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .cv-top-right > * { flex-shrink: 0; white-space: nowrap; }
-    .cv-tbtn { background: rgba(255,255,255,.14); border: none; color: #fff; font: inherit; font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-    .cv-tbtn:hover { background: rgba(255,255,255,.24); }
-    .cv-tbtn:disabled { opacity: .4; cursor: not-allowed; }
-    .cv-publish { background: #fff; color: #153F2A; border: none; font: inherit; font-size: 13px; font-weight: 800; padding: 8px 16px; border-radius: 8px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
-    .cv-seg { display: flex; gap: 3px; background: rgba(255,255,255,.14); border-radius: 8px; padding: 3px; flex-shrink: 0; }
-    .cv-segbtn { background: none; border: none; color: #fff; font-size: 13px; padding: 4px 9px; border-radius: 6px; cursor: pointer; }
-    .cv-segbtn.is-on { background: #fff; color: #153F2A; }
-    .cv-body { flex: 1; display: flex; min-height: 0; }
-    .cv-rail { width: 74px; flex-shrink: 0; background: #1f2023; display: flex; flex-direction: column; padding: 8px 0; overflow-y: auto; }
-    .cv-rbtn { background: none; border: none; color: #9ca3af; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 11px 4px; cursor: pointer; border-radius: 9px; margin: 0 6px 2px; }
-    .cv-rbtn span { font-size: 18px; line-height: 1; }
-    .cv-rbtn em { font-style: normal; font-size: 10px; font-weight: 600; }
-    .cv-rbtn:hover { background: rgba(255,255,255,.07); color: #e5e7eb; }
-    .cv-rbtn.is-on { background: rgba(31,92,61,.22); color: #fff; }
-    .cv-panel { width: 300px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 12px; }
-    /* The inspector is NOT hidden on a phone. A `display: none !important` used
-       to live here, and it flatly contradicted the ≤820px rules below, which go
-       to the trouble of floating the inspector over the canvas as a right-hand
-       overlay. Both applied at phone width and `!important` won, so the phone
-       got the layout work and none of the panel: an element could be selected,
-       the controls were rendered, and nothing was on screen. */
-    @media (max-width: 780px) { .cv-panel { width: 220px; } }
-    .cv-search input { width: 100%; background: #34353a; border: 1px solid #45464c; color: #f3f4f6; border-radius: 9px; padding: 10px 12px; font: inherit; font-size: 13px; }
-    .cv-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-    .cv-tplgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .cv-lbl { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #9ca3af; margin: 12px 0 5px; }
-    .cv-input { width: 100%; background: #34353a; border: 1px solid #45464c; color: #f3f4f6; border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 13px; }
-    .cv-wide { display: block; width: 100%; margin-top: 8px; background: #34353a; border: 1px solid #45464c; color: #e5e7eb; font: inherit; font-size: 12.5px; font-weight: 700; padding: 9px; border-radius: 8px; cursor: pointer; }
-    .cv-wide:hover { background: #3f4046; }
-    .cv-note { font-size: 11.5px; color: #9ca3af; margin-top: 8px; line-height: 1.45; }
-    .cv-meter { font-size: 11px; color: #9ca3af; margin: 8px 0; }
-    .cv-updgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-    .cv-addr { display: flex; align-items: center; gap: 5px; }
-    .cv-addr span { font-size: 11px; color: #9ca3af; white-space: nowrap; }
-    /* `safe center` so that if the canvas is ever wider than the stage (zoom
-       above 100%), the overflow goes to the RIGHT where it can be scrolled to,
-       instead of spilling equally off both sides and putting the left edge
-       somewhere no scrollbar can reach. */
-    .cv-stage { flex: 1; min-width: 0; overflow: auto; background: #303136; display: flex; flex-direction: column; align-items: center; align-items: safe center; padding: 16px 10px 32px; }
-    /* ── THE CANVAS IS SIZED, NOT ONLY SCALED ──────────────────────────────
-       `transform: scale()` changes what is PAINTED and nothing about the
-       layout box. #wcEdWrap is 1200px wide and stayed 1200px wide however far
-       it was scaled down, so this box was 1200px inside an 1126px stage and
-       the stage scrolled sideways by the difference — measured at 47px on a
-       1440px laptop and 443px on a 390px phone. That is the canvas "moving
-       left to right".
-
-       The wrap is taken OUT of flow (absolute) and this box is given the
-       SCALED size instead, so the layout box and the painted box are the same
-       rectangle and there is nothing left to scroll. `edFitStage` writes the
-       width/height; the height was already being compensated this way, the
-       width never was. */
-    .cv-canvasbox { position: relative; display: block; flex: 0 0 auto; margin: 0 auto; }
-    #wcEdFrame { border: 0; display: block; background: #fff; box-shadow: 0 8px 40px rgba(0,0,0,.45); }
-    #wcEdOverlay { position: absolute; inset: 0; }
-    .cv-addpage { margin-top: 16px; background: #3b3c42; border: 1px dashed #5a5b62; color: #cbd5e1; font: inherit; font-size: 12.5px; font-weight: 700; padding: 10px 26px; border-radius: 9px; cursor: pointer; }
-    .cv-addpage:hover { background: #45464c; }
-    .cv-inspector { width: 230px; flex-shrink: 0; background: #26272b; overflow-y: auto; padding: 14px; color: #e5e7eb; }
-    /* Floated by the gear: the SAME panel, moved next to the element. Fixed
-       rather than absolute so it is positioned against the viewport, which is
-       what the anchor's own rect is measured in. */
-    .cv-inspector.is-float { position: fixed; z-index: 240; width: 260px; max-height: 70vh;
-      border-radius: 12px; box-shadow: 0 18px 48px rgba(0,0,0,.5); border: 1px solid #3b3c42; }
-    .cv-inspector .text-input, .cv-inspector input, .cv-inspector select, .cv-inspector textarea { background: #34353a; border: 1px solid #45464c; color: #f3f4f6; }
-    .cv-inspector .bo-act { background: #34353a; border-color: #45464c; color: #e5e7eb; }
-    .cv-editmine { display: none; width: 100%; align-items: center; justify-content: center; gap: 8px;
-      font: inherit; font-size: 14px; font-weight: 800; color: #fff; cursor: pointer;
-      background: linear-gradient(90deg,#153F2A,#1F5C3D); border: none; border-radius: 12px;
-      padding: 13px 16px; margin-bottom: 12px; }
-    body.wb-picker .cv-editmine:not([hidden]) { display: flex; }
-    .cv-bottom { height: 44px; flex-shrink: 0; background: #1f2023; display: flex; align-items: center; gap: 14px; padding: 0 14px; color: #9ca3af; font-size: 12px; }
-
-    /* ── The builder on a phone ────────────────────────────────────────────
-       At 390px the desktop layout put Preview and Publish off the right edge
-       of the top bar — you could not publish at all — and the rail (74px) plus
-       a fixed 300px panel left the canvas sixteen pixels wide. */
-    @media (max-width: 820px) {
-      /* Wrap rather than overflow. Publish is the point of the whole screen and
-         must never be the thing that falls off the edge. `height: auto` and
-         `flex-wrap: wrap` are the base rule now (they protect desktop widths
-         too); a phone just needs its gap and padding tightened further. */
-      .cv-top { gap: 6px; padding: 7px 10px; }
-      /* The brand and the document title are the two things worth their width
-         least. The desktop/mobile toggle STAYS: checking how the site looks on
-         a laptop is exactly what someone building it on a phone cannot do any
-         other way. */
-      .cv-logo, .cv-title { display: none; }
-      .cv-seg { transform: scale(.92); transform-origin: right center; }
-      .cv-top-right { margin-left: auto; gap: 6px; }
-      .cv-tbtn { font-size: 12px; padding: 7px 10px; }
-      .cv-publish { font-size: 12px; padding: 8px 13px; }
-
-      .cv-rail { width: 56px; }
-      .cv-rbtn { padding: 9px 2px; margin: 0 3px 2px; }
-      .cv-rbtn span { font-size: 16px; }
-      .cv-rbtn em { font-size: 9px; }
-
-      /* The panel floats OVER the canvas instead of squeezing it out of
-         existence. The rail button that opened it closes it again, so the
-         canvas is always one tap away. */
-      .cv-body { position: relative; }
-      .cv-panel { position: absolute; left: 56px; top: 0; bottom: 0; width: calc(100% - 56px);
-        z-index: 6; box-shadow: 8px 0 24px rgba(0,0,0,.4); }
-      /* A BOTTOM SHEET on a phone, not a right-hand rail. Pinned right at 230px
-         wide it covered 59% of a 390px viewport — and it only ever appears when
-         something is selected, so it landed exactly on top of the element the
-         user had just tapped. Measured: the centre of a selected heading was
-         underneath it, which meant a second tap could not reach the canvas and
-         typing was unreachable on a phone. Along the bottom it leaves the thing
-         being edited visible, which is the whole point of selecting it. */
-      .cv-inspector { position: absolute; left: 0; right: 0; bottom: 0; top: auto; z-index: 7;
-        width: auto; max-height: 45vh; border-radius: 16px 16px 0 0;
-        box-shadow: 0 -8px 24px rgba(0,0,0,.4); }
-      /* The gear opens the same sheet on a phone rather than a floating panel:
-         a 260px card anchored beside a box on a 390px screen has nowhere to go
-         that is not on top of the box. */
-      .cv-inspector.is-float { position: absolute; left: 0 !important; right: 0; top: auto !important;
-        bottom: 0; width: auto; max-height: 45vh; border-radius: 16px 16px 0 0; }
-      /* The collapse handle stays — it was only ever in the wrong PLACE. Pinned
-         mid-rail it sat on top of the "Uploads" button; moved down to the
-         bottom corner, clear of the last rail item and above the zoom bar, it
-         covers nothing and is still where a thumb naturally reaches. */
-      .cv-railtoggle { top: auto; bottom: 56px; transform: none; left: 56px;
-        width: 26px; height: 46px; border-radius: 0 10px 10px 0; }
-    }
-
-    /* ── THE TEMPLATE PICKER ON A PHONE ────────────────────────────────────
-       DESKTOP IS UNTOUCHED. Everything here is inside the same 820px phone
-       breakpoint the editor already uses, and every selector is prefixed with
-       `body.wb-picker`, so it applies to the gallery and to nothing else.
-
-       Measured before changing anything, at a 390px viewport:
-
-         columns 1 · rows 12 · grid 3282px tall · page 3479px
-         panel left 56px · panel width 390px  ← 56px WIDER THAN THE WINDOW
-
-       Two separate problems in that. The grid asks for `minmax(210px, 240px)`,
-       which is right on a laptop and can only ever fit ONE column on a phone —
-       twelve full-width cards and a very long scroll. And the panel inherits
-       the editor's `left:56px` (the rail's width) while the picker's own rule
-       makes it `width:100%`, so the whole gallery sat pushed 56px right with
-       56px of itself off the right-hand edge. The rail is hidden in the picker,
-       so that offset was never wanted here at all. */
-    @media (max-width: 820px) {
-      /* No rail to make room for. */
-      body.wb-picker .cv-panel { left: 0; width: 100%; padding: 12px 12px 32px; }
-
-      /* THREE across, and two on a narrow phone. Content-sized columns were
-         tried first and gave five at 768px — more choice on screen, but a
-         141px tile of a whole web page is a smudge. An explicit count is the
-         honest control here: the card stays legible and the number changes
-         once, at the width where it needs to. */
-      body.wb-picker .cv-tplgrid { grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px; max-width: none; justify-content: stretch; }
-      body.wb-picker .cv-tplgrid .wc-tpl-thumb { height: 96px; }
-      body.wb-picker .cv-tplgrid .wc-tpl { border-width: 1px; border-radius: 11px; }
-      body.wb-picker .cv-tplgrid .wc-tpl-body { padding: 8px 9px 9px; }
-      body.wb-picker .cv-tplgrid .wc-tpl-name { font-size: 12.5px; line-height: 1.25; }
-      body.wb-picker .cv-tplgrid .wc-tpl-cat { font-size: 9.5px; letter-spacing: .4px; }
-      body.wb-picker .cv-tplgrid .wc-tpl-on { font-size: 9px; padding: 1px 4px; }
-      /* Two buttons on a 170px card: equal halves, and still 30px tall, which
-         is the least a thumb can be asked to hit. */
-      body.wb-picker .cv-tplgrid .wc-tpl-body > div:last-child { gap: 5px; margin-top: 7px; }
-      body.wb-picker .cv-tplgrid .wc-tpl-body .bo-act { flex: 1 1 0; min-width: 0; text-align: center;
-        font-size: 11px; padding: 7px 4px; min-height: 30px; }
-
-      /* The filter pills scroll sideways instead of wrapping into a block that
-         is taller than the first row of templates. `nowrap` plus a scroller,
-         with the pills refusing to shrink — a squashed "Professional CV" is
-         not a filter anyone can read. Measured at 72px tall before this. */
-      body.wb-picker .cv-chips { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
-        -webkit-overflow-scrolling: touch; scrollbar-width: none;
-        margin: 8px 0 10px; padding-bottom: 2px; }
-      body.wb-picker .cv-chips::-webkit-scrollbar { display: none; }
-      body.wb-picker .cv-chips > * { flex: 0 0 auto; }
-
-      body.wb-picker .cv-editmine { margin-bottom: 10px; }
-      body.wb-picker .cv-search { margin-bottom: 4px; }
-    }
-    /* A 390px phone: two. Three would be 110px each, which is not a preview of
-       anything. */
-    @media (max-width: 560px) {
-      body.wb-picker .cv-tplgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      body.wb-picker .cv-tplgrid .wc-tpl-thumb { height: 104px; }
-    }
-
-    .cv-bottom .cv-tbtn { background: rgba(255,255,255,.1); }
-    .cv-zoom { flex: 1; display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .cv-zoom input { width: 180px; max-width: 40vw; }
-    .cv-pagecount { white-space: nowrap; }
-    /* A TILE AND ITS OWN DELETE. The upload panel could only ever ADD, so when
-       the server said "delete one first" it was naming an action the app did
-       not have — the endpoint existed and nothing reached it. The wrapper is
-       what positions the remove button; the tile itself still fills it. */
-    .cv-upwrap { position: relative; }
-    .cv-upitem { height: 78px; width: 100%; border-radius: 8px; border: 1px solid #45464c; background-size: cover; background-position: center; cursor: pointer; background-color: #34353a; }
-    .cv-upitem--file { display: flex; align-items: center; justify-content: center; font-size: 22px; color: #cbd5e1; }
-    .cv-upitem:hover { border-color: #1F5C3D; }
-    /* 26px, and always visible rather than shown on hover — a phone has no
-       hover, and this panel is reachable there. */
-    .cv-updel { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 7px;
-      border: none; background: rgba(15,17,22,.82); color: #fca5a5; font-size: 15px; line-height: 1;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
-    .cv-updel:hover { background: #b91c1c; color: #fff; }
-    .cv-upkind { position: absolute; left: 4px; bottom: 4px; font-size: 9.5px; font-weight: 800; letter-spacing: .4px;
-      text-transform: uppercase; color: #cbd5e1; background: rgba(15,17,22,.75); border-radius: 5px; padding: 2px 5px; pointer-events: none; }
-    /* Live template thumbnails: a real render, scaled down like Canva's. */
-    .wc-tpl-thumb { position: relative; overflow: hidden; background: #fff; }
-    .wc-tpl-shot { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-    /* 500% then scale(.2) cancel out to exactly the tile's width at ANY tile
-       size — and the iframe's own viewport lands at 5x240 = 1200px, the design
-       canvas width, so the preview is laid out as desktop. A fixed
-       `width:1200px; scale(.115)` was pinned to the old tile size and left a
-       hundred pixels of dead space once the tiles were narrowed. */
-    .wc-tpl-shot iframe { width: 500%; height: 500%; border: 0; transform: scale(.2); transform-origin: top left; pointer-events: none; }
-    .cv-tplgrid .wc-tpl-thumb { height: 104px; }
-    .cv-tplgrid .wc-tpl { background: #34353a; border-color: #45464c; }
-    /* Half the templates are white pages. Sitting flush in the card they had no
-       visible edge and read as a blank area rather than as a design. A mat and
-       a border give every preview an outline, whatever colour it happens to be. */
-    .cv-tplgrid .wc-tpl-thumb { background: #1f2023; border-bottom: 1px solid #45464c;
-      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
-    .cv-tplgrid .wc-tpl-name { color: #f3f4f6; }
-    .cv-tplgrid .wc-tpl-blurb, .cv-tplgrid .wc-tpl-cat { color: #9ca3af; }
-    .cv-tplgrid .bo-act { background: #3f4046; border-color: #55565c; color: #e5e7eb; }
-    /* Wide mode: hide the app sidebar and the editor panel for a full-width canvas. */
-    .cv-collapse { border-top: 1px solid rgba(255,255,255,.08); margin-top: 6px !important; padding-top: 12px !important; }
-    body.cv-wide .sidebar { display: none !important; }
-    body.cv-wide .cv-shell { left: 0 !important; }
-    body.cv-wide .cv-panel { display: none !important; }
-    .cv-shell, .cv-panel { transition: left .18s ease, width .18s ease; }
-  </style>
+  <script src="/js/i18n-data.js"></script>
+  <link rel="stylesheet" href="/css/app.css" />
   <link rel="stylesheet" href="/app-theme.css"/>
   <link rel="stylesheet" href="/site-fx.css"/>
   <link rel="stylesheet" href="/career-hub.css"/>
@@ -1117,7 +356,7 @@
             <div class="tpl-pick-row" id="tplPickRow"></div>
           </div>
           <div id="resumePhotoRow" style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <img id="resumePhotoPreview" alt="" style="display:none;width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid #1F5C3D;" />
+            <img id="resumePhotoPreview" alt="" loading="lazy" width="38" height="38" style="display:none;width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid #1F5C3D;" />
             <button type="button" class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="document.getElementById('resumePhotoInput').click()">📷 Add your photo</button>
             <button type="button" class="btn btn-outline" id="resumePhotoClear" style="display:none;font-size:12px;padding:6px 12px;" onclick="clearResumePhoto()">Remove</button>
             <input type="file" id="resumePhotoInput" accept="image/*" style="display:none;" onchange="handleResumePhoto(this)" />
@@ -1275,7 +514,7 @@
               <div style="font-size:12px;color:var(--muted);margin-top:1px;">Your name will appear signed at the bottom of your document</div>
             </div>
           </div>
-          <input class="sig-input" id="sigNameInput" type="text" placeholder="Type your name here..." oninput="updateSigPreview()" />
+          <input class="sig-input" id="sigNameInput" type="text" placeholder="Type your name here..." oninput="updateSigPreview()" onfocus="loadDecorativeFonts()" />
           <div class="sig-fonts" id="sigFontsRow">
             <button class="sig-font-btn active" onclick="setSigFont('Dancing Script')" data-font="Dancing Script"><span style="font-family:'Dancing Script',cursive;font-size:16px;">Aa</span> Script</button>
             <button class="sig-font-btn" onclick="setSigFont('Great Vibes')" data-font="Great Vibes"><span style="font-family:'Great Vibes',cursive;font-size:16px;">Aa</span> Elegant</button>
@@ -1332,301 +571,16 @@
       </div>
 
       <!-- ═══ TAB: LINKEDIN OPTIMIZER ═══ -->
-      <div class="tab-content" id="panel-linkedin">
-        <div class="panel-header" style="border-bottom:3px solid #0077b5;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-            <div style="width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg viewBox="0 0 24 24" width="44" height="44" aria-label="LinkedIn" role="img"><rect width="24" height="24" rx="5" fill="#0A66C2"/><path fill="#fff" d="M6.94 8.5a2 2 0 1 1 0-4 2 2 0 0 1 0 4zM5.2 9.75h3.48V20H5.2zM10.4 9.75h3.34v1.4h.05c.47-.85 1.6-1.75 3.3-1.75 3.53 0 4.18 2.24 4.18 5.15V20h-3.48v-4.7c0-1.12-.02-2.56-1.56-2.56-1.56 0-1.8 1.22-1.8 2.48V20H10.4z"/></svg></div>
-            <div>
-              <h1 style="color:#0077b5;" data-i18n="li_title">LinkedIn Profile Optimizer</h1>
-              <span style="background:#16a34a;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;" data-i18n="li_free_badge">✓ FREE &amp; UNLIMITED</span>
-            </div>
-          </div>
-          <p data-i18n="li_sub">Paste your current LinkedIn profile and target role — get an AI-optimized headline, About section, and experience bullets that get recruiters to click. Works for all industries and global markets including MNCs.</p>
-        </div>
-
-        <!-- Free tier status -->
-        <div id="linkedinFreeStatus" style="display:none;background:rgba(37,99,235,0.06);border:1px solid rgba(37,99,235,0.18);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#2563eb;font-weight:600;">
-          <span id="linkedinFreeText">✓ LinkedIn optimization — free &amp; unlimited</span>
-        </div>
-
-        <div class="input-section">
-          <div class="input-group">
-            <label class="input-label" for="linkedinTargetRole">Target Role / Job Title</label>
-            <input type="text" id="linkedinTargetRole" class="text-input" placeholder="e.g. Senior Product Manager, Software Engineer, Marketing Director" />
-          </div>
-
-          <div class="input-group" style="margin-top:16px;">
-            <label class="input-label" for="linkedinProfileText">Your Current LinkedIn Profile Text</label>
-            <p style="font-size:13px;color:#6b7280;margin-bottom:8px;">Import your profile from LinkedIn as a PDF, or paste it below.</p>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-              <button id="linkedinOptImportBtn" onclick="document.getElementById('linkedinProfileFileInput').click()" style="display:inline-flex;background:#0a66c2;color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px;">
-                <span data-i18n="li_upload_btn">Import PDF from LinkedIn</span>
-              </button>
-              <button id="linkedinHowToBtn" onclick="openLinkedInHowTo()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(10,102,194,0.08);color:#0a66c2;border:1px solid rgba(10,102,194,0.35);border-radius:6px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;">
-                <span style="font-weight:800;">?</span> <span data-i18n="li_howto_btn">How to</span>
-              </button>
-            </div>
-            <input type="file" id="linkedinProfileFileInput" accept=".pdf,.txt,.doc,.docx" style="display:none;" onchange="handleLinkedInProfileUpload(this)" />
-            <textarea id="linkedinProfileText" class="resume-textarea" style="min-height:200px;" placeholder="Paste your LinkedIn headline, About section, and experience bullets here...&#10;&#10;Example:&#10;Headline: Product Manager at Acme Corp&#10;&#10;About: I am a passionate product manager with 5 years of experience...&#10;&#10;Experience:&#10;Product Manager, Acme Corp (2020–Present)&#10;- Managed product roadmap&#10;- Worked with engineering team&#10;- Helped launch new features"></textarea>
-          </div>
-
-          <button class="btn btn-primary" id="linkedinOptBtn" onclick="optimizeLinkedIn()" style="margin-top:16px;width:100%;padding:14px;background:#0077b5;border-color:#0077b5;" data-i18n="li_optimize_btn">
-            Optimize My LinkedIn Profile →
-          </button>
-        </div>
-
-        <!-- Output -->
-        <div id="linkedinOutput" style="display:none;margin-top:28px;">
-          <div style="border-top:1px solid #e5e7eb;padding-top:24px;">
-
-            <div class="linkedin-result-block" id="linkedinHeadlineBlock" style="margin-bottom:20px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <h3 style="font-size:15px;font-weight:700;color:#111827;margin:0;">✦ Optimized Headline</h3>
-                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyLinkedInSection('linkedinHeadlineText')">Copy</button>
-              </div>
-              <div id="linkedinHeadlineText" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:15px;font-weight:600;color:#1e293b;line-height:1.6;white-space:pre-wrap;"></div>
-            </div>
-
-            <div class="linkedin-result-block" id="linkedinAboutBlock" style="margin-bottom:20px;">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <h3 style="font-size:15px;font-weight:700;color:#111827;margin:0;">✦ Optimized About Section</h3>
-                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyLinkedInSection('linkedinAboutText')">Copy</button>
-              </div>
-              <div id="linkedinAboutText" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:14px;color:#1e293b;line-height:1.75;white-space:pre-wrap;"></div>
-            </div>
-
-            <div class="linkedin-result-block" id="linkedinExpBlock">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <h3 style="font-size:15px;font-weight:700;color:#111827;margin:0;">✦ Optimized Experience Bullets</h3>
-                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyLinkedInSection('linkedinExpText')">Copy</button>
-              </div>
-              <div id="linkedinExpText" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;font-size:14px;color:#1e293b;line-height:1.75;white-space:pre-wrap;"></div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- Limit / upsell banners -->
-        <div class="upsell" id="linkedinLimitBanner" style="display:none;margin-top:20px;">
-          <p>LinkedIn optimization is free and unlimited. Upgrade to Pro for premium templates, the resume video, a personal website & watermark-free exports — $19.99/month.</p>
-          <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
-        </div>
-      </div>
+      <div class="tab-content" id="panel-linkedin" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: RESUME VIDEO ═══ -->
-      <div class="tab-content" id="panel-video">
-        <div class="panel-header" style="border-bottom:3px solid #e11d48;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-            <div style="width:44px;height:44px;background:#e11d48;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎬</div>
-            <div>
-              <h1 style="color:#e11d48;">Resume Video Maker</h1>
-              <span id="videoBadge" style="background:linear-gradient(135deg,#1F5C3D,#2E7D53);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;">✦ PRO FEATURE</span>
-            </div>
-          </div>
-          <p>Turn any resume into a short, shareable vertical video with a studio AI voiceover — perfect for LinkedIn, Shorts, and Reels. Pick a male or female voice, address it to the hiring manager, and download a polished MP4. A Pro feature.</p>
-        </div>
-
-        <div class="input-section">
-          <div class="input-group">
-            <label class="input-label" for="videoName">Your Name <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — overrides the name read from the resume)</span></label>
-            <input type="text" id="videoName" class="text-input" placeholder="e.g. Jordan Mitchell" />
-          </div>
-
-          <div class="input-group" style="margin-top:16px;">
-            <label class="input-label">Send to <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — opens the video addressing them: “Hi Mr. Smith…”)</span></label>
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <input type="text" id="videoRecipientName" class="text-input" style="flex:1;min-width:160px;" placeholder="Recipient — e.g. Mr. Smith" />
-              <input type="text" id="videoRecipientTitle" class="text-input" style="flex:1;min-width:160px;" placeholder="Their title — e.g. Hiring Manager" />
-            </div>
-          </div>
-
-          <div class="input-group" style="margin-top:16px;">
-            <label class="input-label">Your Photo <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — adds your face to the intro)</span></label>
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-              <img id="videoPhotoPreview" alt="" style="display:none;width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #0891b2;" />
-              <button type="button" class="upload-btn" id="videoPhotoBtn" onclick="document.getElementById('videoPhotoInput').click()">⬆ Upload Photo</button>
-              <button type="button" class="btn btn-outline" id="videoPhotoClear" style="display:none;font-size:12px;padding:6px 12px;" onclick="clearVideoPhoto()">Remove</button>
-              <input type="file" id="videoPhotoInput" accept="image/*" style="display:none;" onchange="handleVideoPhoto(this)" />
-            </div>
-          </div>
-
-          <div class="input-group" style="margin-top:16px;">
-            <label class="input-label" for="videoVoiceGender">Narration voice <span style="color:#9ca3af;font-weight:400;font-size:12px;">(it speaks in first person — pick the one that matches you)</span></label>
-            <select id="videoVoiceGender" class="text-input" style="max-width:320px;">
-              <optgroup label="Female">
-                <option value="bella">Bella — soft &amp; warm</option>
-                <option value="rachel">Rachel — calm &amp; professional</option>
-                <option value="matilda">Matilda — friendly &amp; upbeat</option>
-                <option value="charlotte">Charlotte — warm, gentle accent</option>
-              </optgroup>
-              <optgroup label="Male">
-                <option value="adam">Adam — deep &amp; warm</option>
-                <option value="antoni">Antoni — warm &amp; well-rounded</option>
-                <option value="josh">Josh — young &amp; energetic</option>
-                <option value="daniel">Daniel — deep, British newsreader</option>
-              </optgroup>
-            </select>
-          </div>
-
-          <div class="input-group" style="margin-top:16px;">
-            <label class="input-label" for="videoVoiceSpeed">Voice speed <span id="videoVoiceSpeedLabel" style="color:#1F5C3D;font-weight:600;font-size:12px;">Relaxed</span></label>
-            <input type="range" id="videoVoiceSpeed" min="0.7" max="1.2" step="0.05" value="0.9" style="width:100%;max-width:320px;display:block;" oninput="updateVoiceSpeedLabel(this.value)">
-            <div style="display:flex;justify-content:space-between;max-width:320px;font-size:11px;color:#9ca3af;margin-top:2px;">
-              <span>Slower</span><span>Normal</span><span>Faster</span>
-            </div>
-          </div>
-
-          <div class="input-group" style="margin-top:16px;">
-            <label class="input-label" for="videoOutro">Closing message <span style="color:#9ca3af;font-weight:400;font-size:12px;">(spoken at the very end)</span></label>
-            <select id="videoOutro" class="text-input" style="max-width:420px;" onchange="onOutroChange()">
-              <option value="default">Thank you &amp; have a great day (default)</option>
-            </select>
-            <div id="videoOutroPreview" style="font-size:12px;color:#9ca3af;margin-top:6px;max-width:520px;font-style:italic;"></div>
-            <textarea id="videoOutroCustom" class="text-input" placeholder="Write your own closing line…" rows="3" maxlength="400" style="display:none;margin-top:8px;max-width:520px;"></textarea>
-          </div>
-
-          <div class="input-group" style="margin-top:16px;">
-            <div id="savedResumesRow" style="display:none;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
-              <label class="input-label" style="margin:0;">Saved resumes</label>
-              <select id="videoSavedResumes" class="text-input" style="flex:1;min-width:180px;max-width:340px;" onchange="useSavedResume(this.value)"></select>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
-              <label class="input-label" for="videoResume" style="margin:0;">Your Resume</label>
-              <span style="display:flex;gap:8px;">
-                <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;" onclick="copyTailorResumeToVideo()">Use my tailored resume</button>
-                <button class="upload-btn" id="videoUploadBtn" onclick="document.getElementById('videoResumeFileInput').click()">⬆ Upload File</button>
-              </span>
-              <input type="file" id="videoResumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleVideoResumeUpload(this)" />
-            </div>
-            <textarea id="videoResume" class="resume-textarea" style="min-height:220px;" placeholder="Paste your resume text here, or upload a PDF/DOCX/TXT above.&#10;&#10;The video highlights your name, title, top achievements, and skills — so include your experience bullets and a skills section for the best result."></textarea>
-          </div>
-
-          <button class="btn btn-primary" id="videoGenBtn" onclick="generateStandaloneVideo()" style="margin-top:16px;width:100%;padding:14px;background:#0891b2;border-color:#0891b2;">
-            🎬 Open Video Maker →
-          </button>
-          <div id="videoStatus" style="display:none;font-size:13px;color:#0891b2;margin-top:12px;text-align:center;font-weight:600;"></div>
-          <p id="videoHelp" style="font-size:12px;color:#6b7280;margin-top:10px;text-align:center;">Opens the free in-browser maker — preview instantly, pick a voiceover (device voice, or your own ElevenLabs key for a studio voice), and record to share.</p>
-        </div>
-
-        <!-- Upsell: free users get the in-browser maker above; Pro gets the
-             server-rendered studio MP4 (natural voice, synced reveal, download). -->
-        <div class="upsell" id="videoUpsell" style="display:none;margin-top:20px;">
-          <p><strong>Want the studio version?</strong> Pro renders your video on our servers with a natural human voiceover synced to the narration, and downloads a polished, shareable <strong>.mp4</strong> — $19.99/month.</p>
-          <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
-        </div>
-      </div>
+      <div class="tab-content" id="panel-video" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: ATS SCANNER ═══ -->
-      <div class="tab-content" id="panel-ats">
-        <div class="panel-header" style="border-bottom:3px solid #1F5C3D;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-            <div style="width:44px;height:44px;background:linear-gradient(135deg,#1F5C3D,#2E7D53);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎯</div>
-            <div>
-              <h1 style="color:#1F5C3D;">ATS Match Scanner</h1>
-              <span style="background:#16a34a;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;" data-i18n="ats_free_badge">✓ FREE &amp; UNLIMITED</span>
-            </div>
-          </div>
-          <p>Paste your resume and a job posting — get an ATS keyword match score, see exactly which keywords are missing, and receive 5 specific AI rewrite suggestions to close the gap.</p>
-        </div>
-
-        <div id="atsProStatus" style="display:none;background:rgba(31,92,61,0.06);border:1px solid rgba(31,92,61,0.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#1F5C3D;font-weight:600;"></div>
-
-        <div class="input-section">
-          <!-- Two-column inputs -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-
-            <div class="input-group">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <label class="input-label" style="margin:0;">📄 Your Resume</label>
-                <button id="atsUploadBtn" onclick="document.getElementById('atsResumeFileInput').click()" class="btn btn-outline" style="font-size:12px;padding:5px 10px;">⬆ Upload File</button>
-                <input type="file" id="atsResumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleAtsResumeUpload(this)" />
-              </div>
-              <textarea id="atsResumeInput" class="resume-textarea" style="min-height:220px;" placeholder="Paste your resume here, or click Upload File to import .txt, .pdf, or .docx…" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
-              <button class="btn btn-outline" style="margin-top:6px;font-size:12px;padding:6px 12px;" onclick="copyResumeToAts()">↑ Use Resume from Tailor tab</button>
-            </div>
-
-            <div class="input-group">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <label class="input-label" style="margin:0;">📋 Job Description</label>
-                <div style="display:flex;gap:3px;background:rgba(0,0,0,0.06);border-radius:7px;padding:2px;">
-                  <button id="atsJmtPaste" onclick="setAtsJobMode('paste')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#1F5C3D;color:#fff;font-family:inherit;">Paste</button>
-                  <button id="atsJmtUrl" onclick="setAtsJobMode('url')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:#6b7280;font-family:inherit;">🔗 URL</button>
-                </div>
-              </div>
-              <textarea id="atsJobInput" class="resume-textarea" style="min-height:220px;" placeholder="Paste the full job description here…" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
-              <div id="atsUrlPane" style="display:none;">
-                <div style="display:flex;gap:8px;margin-top:6px;">
-                  <input type="url" id="atsUrlInput" style="flex:1;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;" placeholder="https://www.linkedin.com/jobs/view/…" spellcheck="false" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')fetchAtsJobUrl()" />
-                  <button onclick="fetchAtsJobUrl()" id="atsFetchBtn" style="padding:9px 14px;border-radius:8px;border:none;background:#1F5C3D;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Fetch →</button>
-                </div>
-                <div id="atsUrlStatus" style="font-size:12px;color:#6b7280;margin-top:5px;min-height:16px;"></div>
-                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">LinkedIn · Indeed · Glassdoor · Lever · Greenhouse · Workday · and more</div>
-              </div>
-            </div>
-
-          </div>
-
-          <button class="btn btn-primary" id="atsScanBtn" onclick="runDashboardATS()" style="margin-top:16px;width:100%;padding:14px;background:linear-gradient(135deg,#1F5C3D,#2E7D53);border:none;">
-            Analyze ATS Match →
-          </button>
-        </div>
-
-        <!-- Results -->
-        <div id="atsDashResults" style="display:none;margin-top:28px;border-top:1px solid #e5e7eb;padding-top:24px;">
-
-          <!-- Score card -->
-          <div style="display:flex;align-items:center;gap:24px;margin-bottom:24px;flex-wrap:wrap;">
-            <div style="text-align:center;">
-              <div id="atsDashScoreNum" style="font-size:52px;font-weight:900;line-height:1;color:#1F5C3D;">—</div>
-              <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;">ATS Score</div>
-            </div>
-            <div>
-              <div id="atsDashVerdict" style="font-size:18px;font-weight:800;color:#111827;margin-bottom:4px;"></div>
-              <div id="atsDashBar" style="width:220px;height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden;">
-                <div id="atsDashBarFill" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#1F5C3D,#34d399);transition:width .5s;"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Keywords grid -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
-            <div>
-              <div style="font-size:13px;font-weight:800;color:#16a34a;margin-bottom:8px;">✓ Matched Keywords</div>
-              <div id="atsDashMatched" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-            </div>
-            <div>
-              <div style="font-size:13px;font-weight:800;color:#dc2626;margin-bottom:8px;">✕ Missing Keywords</div>
-              <div id="atsDashMissing" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
-            </div>
-          </div>
-
-          <!-- AI Suggestions -->
-          <div>
-            <div style="font-size:13px;font-weight:800;color:#1F5C3D;margin-bottom:10px;">💡 AI Rewrite Suggestions</div>
-            <div id="atsDashSuggestions" style="display:flex;flex-direction:column;gap:10px;"></div>
-          </div>
-
-          <!-- CTA: use Tailor tab to fix -->
-          <div style="margin-top:24px;background:linear-gradient(135deg,rgba(31,92,61,0.06),rgba(46,125,83,0.06));border:1px solid rgba(31,92,61,0.2);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-            <div>
-              <div style="font-size:14px;font-weight:800;color:#111827;margin-bottom:3px;">Fix missing keywords automatically →</div>
-              <div style="font-size:13px;color:#6b7280;">Use the Tailor tab to let AI rewrite your resume with all the right keywords in 30 seconds.</div>
-            </div>
-            <button class="btn btn-primary" onclick="copyJobToTailorAndSwitch()" style="white-space:nowrap;">Tailor My Resume →</button>
-          </div>
-        </div>
-
-        <!-- Free limit banner -->
-        <div class="upsell" id="atsLimitBanner" style="display:none;margin-top:20px;">
-          <p>ATS scans are free and unlimited. Upgrade to Pro for premium templates, the resume video, a personal website & watermark-free exports — $19.99/month.</p>
-          <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
-        </div>
-      </div>
+      <div class="tab-content" id="panel-ats" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: JOB APPLICATION TRACKER ═══ -->
-      <div class="tab-content" id="panel-jobtracker">
-        <div id="jtDashRoot"></div>
-      </div>
+      <div class="tab-content" id="panel-jobtracker" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: PERSONAL WEBSITE (Website Creator, Pro) ═══ -->
       <!-- ═══ TAB: WEBSITE BUILDER (Canva-style editor) ═══ -->
@@ -1730,7 +684,7 @@
                 <div id="wcSiteExtras" style="display:none;margin-top:12px;">
                   <div id="wcStats" class="cv-note"></div>
                   <div id="wcLeadsEmailNote" class="cv-note" style="display:none;color:#b45309;" data-i18n="wc_leads_emailoff">Add RESEND_API_KEY to get leads by email.</div>
-                  <img id="wcQrImg" alt="QR" style="width:110px;background:#fff;border-radius:8px;padding:6px;margin-top:8px;"/>
+                  <img id="wcQrImg" alt="QR" loading="lazy" width="110" height="110" style="width:110px;height:110px;aspect-ratio:1;background:#fff;border-radius:8px;padding:6px;margin-top:8px;"/>
                   <button type="button" class="cv-wide" onclick="wcDownloadQr()" data-i18n="wc_qr_download">⬇ Download QR</button>
                 </div>
               </div>
@@ -1785,566 +739,28 @@
 
 
       <!-- ═══ TAB: BACK OFFICE (Pro asset hub) ═══ -->
-      <div class="tab-content" id="panel-backoffice">
-        <div class="panel-header">
-          <h1 data-i18n="bo_title">Back Office</h1>
-          <p data-i18n="bo_subtitle">Manage everything in one place — your saved resumes, cover letters, videos and personal website.</p>
-        </div>
-        <div id="bo-resumes" class="wc-card"><div class="wc-step" data-i18n="bo_resumes">Resumes</div><div class="bo-list"></div></div>
-        <div id="bo-covers" class="wc-card"><div class="wc-step" data-i18n="bo_covers">Cover letters</div><div class="bo-list"></div></div>
-        <div id="bo-videos" class="wc-card"><div class="wc-step" data-i18n="bo_videos">Resume videos</div><div class="bo-list"></div></div>
-        <div id="bo-site" class="wc-card"><div class="wc-step" data-i18n="bo_websites">Your websites</div><div class="bo-list"></div></div>
-        <!-- Contact-form submissions. They were stored and emailed from the
-             first day the form element existed, and there was nowhere in the
-             product to read them — so a lead arriving while the owner's email
-             was misconfigured was, from their side, a lead that never came. -->
-        <div id="bo-leads" class="wc-card"><div class="wc-step" data-i18n="bo_leads">Messages from your website</div><div class="bo-list"></div></div>
-      </div>
+      <div class="tab-content" id="panel-backoffice" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: COMMUNITY FORUM ═══ -->
-      <div class="tab-content" id="panel-forum">
-        <div class="panel-header">
-          <h1>Community Forum</h1>
-          <p>Connect with other professionals. Share tips, wins, and advice with the ResumeTailored community.</p>
-        </div>
-
-        <!-- New post form -->
-        <div class="forum-compose">
-          <h3 style="font-size:16px;font-weight:700;margin-bottom:14px;">Share Something With the Community</h3>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-            <input type="text" id="forumAuthor" placeholder="Your name" class="forum-input" />
-            <input type="text" id="forumRole" placeholder="Your role (e.g. Product Manager)" class="forum-input" />
-          </div>
-          <textarea id="forumText" class="forum-textarea" placeholder="Share a tip, a win, a question, or words of encouragement..."></textarea>
-          <button class="btn btn-primary" style="margin-top:10px;" onclick="submitPost()">Post to Community →</button>
-        </div>
-
-        <!-- Posts feed -->
-        <div id="forumFeed" style="margin-top:24px;display:flex;flex-direction:column;gap:16px;">
-          <div style="text-align:center;color:var(--muted);padding:40px;">Loading posts...</div>
-        </div>
-      </div>
+      <div class="tab-content" id="panel-forum" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: SALARY GUIDE ═══ -->
-      <div class="tab-content" id="panel-salary">
-        <div class="panel-header">
-          <h1>Salary Negotiation Guide</h1>
-          <p>Know your worth. Use these strategies and resources to negotiate confidently and get paid what you deserve.</p>
-        </div>
-
-        <!-- Salary benchmarks -->
-        <div class="salary-grid">
-          <div class="salary-resource-card featured-card">
-            <div class="resource-icon">📊</div>
-            <h3>Know Your Market Value</h3>
-            <p>Before negotiating, research salary ranges for your exact role, location, and experience level. Never go in blind.</p>
-            <div class="resource-links">
-              <a href="https://www.levels.fyi" target="_blank" class="resource-link">Levels.fyi →</a>
-              <a href="https://www.glassdoor.com/Salaries" target="_blank" class="resource-link">Glassdoor →</a>
-              <a href="https://www.linkedin.com/salary" target="_blank" class="resource-link">LinkedIn Salary →</a>
-              <a href="https://www.bls.gov/oes" target="_blank" class="resource-link">BLS.gov (official) →</a>
-            </div>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">🎯</div>
-            <h3>The Negotiation Framework</h3>
-            <p style="margin-bottom:12px;">Follow this proven 5-step process for every offer:</p>
-            <ol class="salary-steps">
-              <li><strong>Never give a number first.</strong> Let them anchor.</li>
-              <li><strong>Get the full offer in writing</strong> before responding.</li>
-              <li><strong>Take 24–48 hours</strong> to "review" before countering.</li>
-              <li><strong>Counter 10–20% above</strong> your target number.</li>
-              <li><strong>Negotiate total comp</strong> — salary, equity, PTO, remote days, signing bonus.</li>
-            </ol>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">💬</div>
-            <h3>Scripts That Work</h3>
-            <div class="script-box">
-              <div class="script-label">When they ask your number:</div>
-              <div class="script-text">"Based on my research and experience, I'm targeting a range of $X to $Y. What budget have you allocated for this role?"</div>
-            </div>
-            <div class="script-box" style="margin-top:12px;">
-              <div class="script-label">When making a counter offer:</div>
-              <div class="script-text">"I'm very excited about this opportunity. Based on my [X years of experience / specific skills], I was hoping we could get closer to $Y. Is there flexibility there?"</div>
-            </div>
-            <div class="script-box" style="margin-top:12px;">
-              <div class="script-label">When negotiating beyond salary:</div>
-              <div class="script-text">"If the base salary is firm, I'd love to explore an additional week of PTO and a signing bonus to bridge the gap."</div>
-            </div>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">📈</div>
-            <h3>After You Land the Role</h3>
-            <p style="margin-bottom:12px;">Salary growth doesn't stop at the offer. Keep advancing:</p>
-            <ul class="salary-tips">
-              <li>Document every win and contribution from Day 1</li>
-              <li>Request a formal performance review at 6 months</li>
-              <li>Benchmark your salary annually — markets shift fast</li>
-              <li>Don't wait for a raise — ask for it proactively</li>
-              <li>Every new role is a chance to reset your salary ceiling</li>
-              <li>Build relationships with recruiters even when employed</li>
-            </ul>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">🛠️</div>
-            <h3>Free Tools & Calculators</h3>
-            <div class="resource-links">
-              <a href="https://www.payscale.com/salary-negotiation-guide" target="_blank" class="resource-link">PayScale Guide →</a>
-              <a href="https://www.negotiatesalary.com" target="_blank" class="resource-link">NegotiateSalary.com →</a>
-              <a href="https://www.calculator.net/salary-calculator.html" target="_blank" class="resource-link">Salary Calculator →</a>
-              <a href="https://www.indeed.com/career/salary-negotiation" target="_blank" class="resource-link">Indeed Guide →</a>
-            </div>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">🚀</div>
-            <h3>Growth Resources</h3>
-            <p style="margin-bottom:12px;">Keep developing your career capital:</p>
-            <div class="resource-links">
-              <a href="https://www.coursera.org" target="_blank" class="resource-link">Coursera (free courses) →</a>
-              <a href="https://www.linkedin.com/learning" target="_blank" class="resource-link">LinkedIn Learning →</a>
-              <a href="https://www.udemy.com" target="_blank" class="resource-link">Udemy →</a>
-              <a href="https://www.toastmasters.org" target="_blank" class="resource-link">Toastmasters (leadership) →</a>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="tab-content" id="panel-salary" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: CAREER CHECK-IN ═══ -->
-      <div class="tab-content" id="panel-checkin">
-        <div class="panel-header">
-          <h1>Quarterly Career Check-In</h1>
-          <p>Successful careers don't happen by accident. Take 5 minutes every quarter to reflect, refocus, and level up.</p>
-        </div>
-
-        <!-- Prompt of the quarter -->
-        <div class="checkin-prompt-box">
-          <div class="checkin-prompt-label">✦ This Quarter's Reflection Prompt</div>
-          <div class="checkin-prompt-text" id="checkinPrompt">Loading your prompt...</div>
-        </div>
-
-        <!-- Check-in form -->
-        <div class="checkin-form">
-          <h3 style="font-size:18px;font-weight:700;margin-bottom:20px;">Your Career Check-In</h3>
-
-          <div class="checkin-fields">
-            <div class="checkin-field">
-              <label>Your Email (saves your progress)</label>
-              <input type="email" id="checkinEmail" placeholder="your@email.com" class="forum-input" />
-            </div>
-            <div class="checkin-field">
-              <label>Current Role / Title</label>
-              <input type="text" id="checkinCurrentRole" placeholder="e.g. Marketing Coordinator" class="forum-input" />
-            </div>
-            <div class="checkin-field">
-              <label>Target Role (next 12 months)</label>
-              <input type="text" id="checkinTargetRole" placeholder="e.g. Marketing Manager" class="forum-input" />
-            </div>
-            <div class="checkin-field" style="grid-column:1/-1;">
-              <label>Your Goals & Reflections for This Quarter</label>
-              <textarea id="checkinGoals" class="forum-textarea" style="min-height:160px;" placeholder="What did you achieve last quarter? What are your goals for the next 3 months? What skills are you developing? What do you want to change?"></textarea>
-            </div>
-          </div>
-
-          <button class="btn btn-primary btn-lg" onclick="saveCheckIn()" style="margin-top:16px;">Save My Check-In →</button>
-        </div>
-
-        <!-- Milestones -->
-        <div class="checkin-milestones">
-          <h3 style="font-size:18px;font-weight:700;margin-bottom:20px;">Career Milestone Checklist</h3>
-          <div class="milestone-grid">
-            <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
-              <div class="milestone-text">
-                <strong>Update Your Resume</strong>
-                <span>Reflect your last 3 months of achievements</span>
-              </div>
-            </div>
-            <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
-              <div class="milestone-text">
-                <strong>Benchmark Your Salary</strong>
-                <span>Check Glassdoor, Levels.fyi, LinkedIn Salary</span>
-              </div>
-            </div>
-            <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
-              <div class="milestone-text">
-                <strong>Connect With 3 New People</strong>
-                <span>Grow your professional network intentionally</span>
-              </div>
-            </div>
-            <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
-              <div class="milestone-text">
-                <strong>Complete a New Skill Course</strong>
-                <span>Coursera, LinkedIn Learning, or Udemy</span>
-              </div>
-            </div>
-            <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
-              <div class="milestone-text">
-                <strong>Request Feedback From Your Manager</strong>
-                <span>Know where you stand before review season</span>
-              </div>
-            </div>
-            <div class="milestone-item" onclick="toggleMilestone(this)">
-              <div class="milestone-check">✓</div>
-              <div class="milestone-text">
-                <strong>Set 3 Goals for Next Quarter</strong>
-                <span>Specific, measurable, time-bound targets</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Next check-in reminder -->
-        <div class="checkin-reminder">
-          <div style="font-size:24px;margin-bottom:8px;">⏰</div>
-          <h3>Next Check-In: <span id="nextCheckinDate"></span></h3>
-          <p>We'll remind you to come back in 90 days. Consistent reflection is what separates good careers from great ones.</p>
-        </div>
-      </div>
+      <div class="tab-content" id="panel-checkin" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: HELP & SUPPORT ═══ -->
-      <div class="tab-content" id="panel-help">
-        <div class="panel-header">
-          <h1>Help & Support</h1>
-          <p>Have a question or running into an issue? Send us a message and we'll get back to you within 24 hours.</p>
-        </div>
-
-        <div class="help-grid">
-          <!-- Contact form -->
-          <div class="help-form-card">
-            <h3 style="font-size:18px;font-weight:700;margin-bottom:6px;">Send Us a Message</h3>
-            <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px;">We read every message personally and respond within 24 hours.</p>
-
-            <div class="checkin-fields">
-              <div class="checkin-field">
-                <label>Your Name</label>
-                <input type="text" id="helpName" placeholder="Your name" class="forum-input" />
-              </div>
-              <div class="checkin-field">
-                <label>Your Email</label>
-                <input type="email" id="helpEmail" placeholder="your@email.com" class="forum-input" />
-              </div>
-              <div class="checkin-field" style="grid-column:1/-1;">
-                <label>Subject</label>
-                <input type="text" id="helpSubject" placeholder="e.g. Question about Pro plan, Issue with resume output..." class="forum-input" />
-              </div>
-              <div class="checkin-field" style="grid-column:1/-1;">
-                <label>Message</label>
-                <textarea id="helpMessage" class="forum-textarea" style="min-height:160px;" placeholder="Describe your question or issue in detail. The more info you provide, the faster we can help."></textarea>
-              </div>
-            </div>
-
-            <button class="btn btn-primary btn-lg" onclick="submitHelp()" id="helpBtn" style="margin-top:20px;">
-              Send Message →
-            </button>
-            <div id="helpSuccess" style="display:none;margin-top:20px;padding:16px 20px;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:12px;color:#22c55e;font-weight:600;">
-              ✓ Message sent! We'll reply to your email within 24 hours.
-            </div>
-          </div>
-
-          <!-- FAQ + quick answers -->
-          <div>
-            <div class="help-faq-card">
-              <h3 style="font-size:16px;font-weight:700;margin-bottom:18px;">Frequently Asked Questions</h3>
-
-              <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">
-                  <span>How does the free tier work?</span><span class="faq-arrow">▾</span>
-                </div>
-                <div class="faq-a">You get unlimited free resume tailoring and cover letters — no credit card required. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports.</div>
-              </div>
-
-              <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">
-                  <span>How do I verify my Pro subscription?</span><span class="faq-arrow">▾</span>
-                </div>
-                <div class="faq-a">After subscribing, enter the email you used at checkout into the email field on the Resume Tailor tab and click away. Your Pro status will activate automatically.</div>
-              </div>
-
-              <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">
-                  <span>Will the AI make up experience I don't have?</span><span class="faq-arrow">▾</span>
-                </div>
-                <div class="faq-a">No. Our AI strictly rewrites and reframes your existing experience using the job posting's language and keywords. It never adds skills or experience you didn't include in your original resume.</div>
-              </div>
-
-              <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">
-                  <span>How do I cancel my Pro subscription?</span><span class="faq-arrow">▾</span>
-                </div>
-                <div class="faq-a">Send us a message using the form on this page with your email and we'll cancel immediately. No questions asked. You can also reply to any of our emails.</div>
-              </div>
-
-              <div class="faq-item">
-                <div class="faq-q" onclick="toggleFaq(this)">
-                  <span>What format should I paste my resume in?</span><span class="faq-arrow">▾</span>
-                </div>
-                <div class="faq-a">Plain text works best. Open your resume in Word or Google Docs, select all (Ctrl+A), copy (Ctrl+C), and paste into the resume field. The AI handles the formatting.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div class="tab-content" id="panel-help" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: ABOUT ═══ -->
-      <div class="tab-content" id="panel-about">
-        <div class="panel-header">
-          <h1>How Does It Work?</h1>
-          <p>Built for serious job seekers. Powered by the most advanced AI available.</p>
-        </div>
-
-        <!-- How it works -->
-        <div class="salary-resource-card featured-card" style="margin-bottom:20px;">
-          <div class="resource-icon">⚡</div>
-          <h3 style="font-size:20px;margin-bottom:12px;">How It Works</h3>
-          <div class="salary-steps" style="list-style:none;padding:0;">
-            <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">
-              <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</div>
-              <div><strong>Paste your resume</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Copy your existing resume text — Word, PDF, Google Docs, it doesn't matter. Plain text is all we need.</span></div>
-            </div>
-            <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">
-              <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">2</div>
-              <div><strong>Paste the job posting</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Copy the full job description from LinkedIn, Indeed, a company website — anywhere you found the role.</span></div>
-            </div>
-            <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">
-              <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">3</div>
-              <div><strong>AI rewrites your resume</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Our AI — powered by Claude (Anthropic) — rewrites your bullet points using the job's exact keywords, reorders sections by relevance, and rewrites your summary to speak directly to this role.</span></div>
-            </div>
-            <div style="display:flex;gap:16px;align-items:flex-start;">
-              <div style="background:var(--brand,#f5c842);color:#07070f;font-weight:800;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">4</div>
-              <div><strong>Get a custom cover letter too</strong><br/><span style="color:var(--text-muted,#9490b5);font-size:14px;">Optionally generate a full cover letter — a compelling 3–4 paragraph letter that connects your achievements to the job requirements. Ready to submit in under 30 seconds.</span></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Why we're better -->
-        <h2 style="font-size:22px;font-weight:800;margin:32px 0 16px;">Why ResumeTailored AI Beats the Competition</h2>
-        <div class="salary-grid">
-          <div class="salary-resource-card">
-            <div class="resource-icon">🧠</div>
-            <h3>Powered by Claude AI</h3>
-            <p>We use Anthropic's Claude — the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.</p>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">🎯</div>
-            <h3>Actually Job-Specific</h3>
-            <p>Tools like Jobscan and Resume Worded score your resume for keywords but don't <em>rewrite</em> it. ResumeTailored AI reads both your resume AND the job posting, then rewrites your bullets to mirror the exact language the hiring manager used.</p>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">✅</div>
-            <h3>Never Fabricates Experience</h3>
-            <p>Unlike some AI tools, we never invent skills or experience you don't have. We reframe what you already did using the role's language. You stay 100% truthful — you just communicate your value more clearly.</p>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">⚡</div>
-            <h3>30 Seconds, Not 45 Minutes</h3>
-            <p>The average job seeker spends 45 minutes tailoring each application. We do it in under 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it manually.</p>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">💰</div>
-            <h3>$19.99/mo vs. $40–$100/mo Elsewhere</h3>
-            <p>Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19.99 — the most value in the market.</p>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">🏆</div>
-            <h3>More Than a Resume Tool</h3>
-            <p>Pro members get the full Career Hub: salary negotiation guides, word-for-word negotiation scripts, a professional community forum, and quarterly career check-ins. No competitor bundles this much career value at this price.</p>
-          </div>
-        </div>
-
-        <!-- Comparison table -->
-        <h2 style="font-size:22px;font-weight:800;margin:36px 0 16px;">Head-to-Head Comparison</h2>
-        <div style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:14px;">
-            <thead>
-              <tr style="background:rgba(245,200,66,0.1);border-bottom:2px solid rgba(245,200,66,0.3);">
-                <th style="padding:12px 16px;text-align:left;font-weight:700;">Feature</th>
-                <th style="padding:12px 16px;text-align:center;color:#f5c842;font-weight:700;">ResumeTailored AI</th>
-                <th style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">Jobscan</th>
-                <th style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">Resume.io</th>
-                <th style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">Teal</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
-                <td style="padding:12px 16px;">AI rewrites your resume</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#f59e0b;">Partial</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
-                <td style="padding:12px 16px;">Custom cover letter AI</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#f59e0b;">Basic</td>
-                <td style="padding:12px 16px;text-align:center;color:#f59e0b;">Basic</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
-                <td style="padding:12px 16px;">Job-specific keyword matching</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
-                <td style="padding:12px 16px;">Salary negotiation guide</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
-                <td style="padding:12px 16px;">Community forum</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-              </tr>
-              <tr style="border-bottom:1px solid rgba(255,255,255,0.07);">
-                <td style="padding:12px 16px;">Free tier (no credit card)</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;font-weight:700;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
-                <td style="padding:12px 16px;text-align:center;color:#ef4444;">✗</td>
-                <td style="padding:12px 16px;text-align:center;color:#22c55e;">✓</td>
-              </tr>
-              <tr>
-                <td style="padding:12px 16px;font-weight:700;">Monthly price (Pro)</td>
-                <td style="padding:12px 16px;text-align:center;color:#f5c842;font-weight:800;">$19.99</td>
-                <td style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">$49</td>
-                <td style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">$45</td>
-                <td style="padding:12px 16px;text-align:center;color:var(--text-muted,#9490b5);">$29</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div style="margin-top:32px;text-align:center;">
-          <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try It Free Now →</button>
-          <p style="color:var(--text-muted,#9490b5);font-size:13px;margin-top:12px;">Unlimited free tailoring</p>
-        </div>
-      </div>
+      <div class="tab-content" id="panel-about" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: SAMPLES ═══ -->
-      <div class="tab-content" id="panel-samples">
-        <div class="panel-header">
-          <h1>Resume & Cover Letter Templates</h1>
-          <p>56 beautifully designed resume templates + 48 cover letter templates. Every style, every industry. Free members get 6 basic templates (3 resume + 3 cover letter) — Pro unlocks all 104.</p>
-        </div>
-
-        <div class="sample-toggle">
-          <button class="sample-toggle-btn active" id="toggleResumes" onclick="switchTemplateType('resume')">📄 Resume Templates (56)</button>
-          <button class="sample-toggle-btn" id="toggleCovers" onclick="switchTemplateType('cover')">✉️ Cover Letter Templates (48)</button>
-        </div>
-
-        <div class="tpl-free-note">
-          <span>✦ <strong style="color:#f5c842;">6 free templates</strong> included (3 resume + 3 cover letter) — upgrade to Pro to unlock all 104 templates.</span>
-          <button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="startPro()">Unlock All 104 →</button>
-        </div>
-
-        <div class="template-gallery-outer">
-          <div class="template-gallery" id="templateGallery"></div>
-        </div>
-      </div>
+      <div class="tab-content" id="panel-samples" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
       <!-- ═══ TAB: CANCEL ANYTIME ═══ -->
-      <div class="tab-content" id="panel-cancel">
-        <div class="panel-header">
-          <h1>Cancel Anytime — No Questions Asked</h1>
-          <p>We believe you should only pay for what you love. Canceling is instant and effortless.</p>
-        </div>
-
-        <!-- Main promise card -->
-        <div class="salary-resource-card featured-card" style="margin-bottom:24px;text-align:center;">
-          <div style="font-size:56px;margin-bottom:16px;">🔓</div>
-          <h2 style="font-size:24px;font-weight:800;margin-bottom:12px;">Your subscription, your rules.</h2>
-          <p style="font-size:16px;line-height:1.8;max-width:560px;margin:0 auto;">Cancel your Pro subscription at any time — in seconds. No cancellation fees. No "are you sure?" hoops. No calling a 1-800 number. Just send us a message and it's done immediately.</p>
-        </div>
-
-        <!-- How to cancel -->
-        <div class="salary-grid" style="grid-template-columns:1fr 1fr;margin-bottom:32px;">
-          <div class="salary-resource-card">
-            <div class="resource-icon">💬</div>
-            <h3>How to Cancel</h3>
-            <ol class="salary-steps">
-              <li>Go to the <strong>Help & Support</strong> tab</li>
-              <li>Send a message with subject: <strong>"Cancel my subscription"</strong></li>
-              <li>Include the email you used to subscribe</li>
-              <li>We'll cancel and confirm within <strong>1 hour</strong></li>
-            </ol>
-            <button class="btn btn-outline" style="margin-top:16px;width:100%;" onclick="showTab('help')">Go to Help & Support →</button>
-          </div>
-
-          <div class="salary-resource-card">
-            <div class="resource-icon">📅</div>
-            <h3>What Happens When You Cancel</h3>
-            <ul class="salary-tips">
-              <li>Subscription stops at end of current billing period</li>
-              <li>You keep full Pro access until then</li>
-              <li>No partial-month charges — ever</li>
-              <li>No data deleted — your check-ins stay saved</li>
-              <li>Resubscribe anytime at the same $19.99/mo price</li>
-              <li>No penalty, no re-enrollment fee</li>
-            </ul>
-          </div>
-        </div>
-
-        <!-- FAQ section -->
-        <h2 style="font-size:20px;font-weight:800;margin-bottom:16px;">Cancellation FAQs</h2>
-        <div class="help-faq-card">
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Do I get a refund if I cancel mid-month?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">We don't offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.</div>
-          </div>
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>How fast does cancellation take effect?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">We process all cancellation requests within 1 hour. You'll receive a confirmation email once it's done. Your Pro access continues until your billing period ends.</div>
-          </div>
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Can I pause instead of cancel?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">We don't currently offer a pause feature, but canceling and re-subscribing later is just as easy. You'll always get the same $19.99/month rate — we don't price-lock or penalize returning members.</div>
-          </div>
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>What if I was charged but didn't mean to subscribe?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">Contact us within 7 days of the charge and we'll issue a full refund, no questions asked. We never want anyone paying for something they didn't intend to buy.</div>
-          </div>
-          <div class="faq-item">
-            <div class="faq-q" onclick="toggleFaq(this)">
-              <span>Will my resume history be deleted if I cancel?</span><span class="faq-arrow">▾</span>
-            </div>
-            <div class="faq-a">No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.</div>
-          </div>
-        </div>
-
-        <!-- Bottom CTA -->
-        <div style="margin-top:40px;padding:32px;background:rgba(245,200,66,0.05);border:1px solid rgba(245,200,66,0.2);border-radius:16px;text-align:center;">
-          <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;">Still deciding whether to subscribe?</h3>
-          <p style="color:var(--text-muted,#9490b5);margin-bottom:20px;">Try it free first — unlimited tailoring. Upgrade only when you're convinced it works.</p>
-          <button class="btn btn-primary btn-lg" onclick="showTab('tailor')">Try Free First →</button>
-        </div>
-      </div>
+      <div class="tab-content" id="panel-cancel" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
     </main>
   </div>
@@ -2420,421 +836,6 @@
     }
 
     // ── Bilingual i18n (English / Simplified Chinese) ─────────────────────────
-    const APP_I18N = {
-      en: {
-        nav_go_pro: 'Go Pro — $19.99/mo', nav_logout: 'Log Out',
-        sidebar_jobsearch: 'Job Search', sidebar_tailor: 'Resume Tailor', sidebar_linkedin: 'LinkedIn Optimizer',
-        sidebar_jobtracker: 'Job Tracker',
-        sidebar_sharelink: 'Resume Link', sidebar_website: 'Personal Website', sidebar_backoffice: 'Back Office', sidebar_newtools: 'New Tools',
-        bo_title: 'Back Office', bo_subtitle: 'Manage everything in one place — your saved resumes, cover letters, videos and personal website.',
-        bo_resumes: 'Resumes', bo_covers: 'Cover letters', bo_videos: 'Resume videos', bo_website: 'Personal website',
-        bo_empty: 'Nothing here yet.', bo_novideos: 'No saved videos yet — make one in the Resume Video tab.', bo_nosite: 'No website yet — build one in the Website Creator.',
-        bo_use: 'Use', bo_duplicate: 'Duplicate', bo_delete: 'Delete', bo_edit: 'Edit', bo_viewlive: 'View live',
-        bo_publish: 'Publish', bo_unpublish: 'Unpublish', bo_live: 'Live', bo_hidden: 'Hidden',
-        bo_websites: 'Your websites', bo_published: 'Published', bo_draft: 'Draft',
-        bo_site_untitled: 'My website', bo_makesite: 'Build my website',
-        bo_addr_live: 'Your web address:', bo_change_addr: 'Change address',
-        bo_addr_none: 'Nothing is published yet — these are all private drafts that only you can see.',
-        bo_edited: 'Edited {t}', bo_ago_now: 'just now', bo_ago_min: '{n} min ago', bo_ago_hr: '{n}h ago', bo_ago_day: '{n}d ago',
-        bo_confirm_pub: 'Publish this one? Only one website can be live at a time, so your current one comes down.',
-        bo_confirm_unpub: 'Take this website off the internet? Nothing is deleted — you can publish it again.',
-        bo_now_live: 'Your website is live.', bo_now_hidden: 'Your website is hidden.',
-        bo_bulk_dup: 'Duplicate selected', bo_bulk_del: 'Delete selected',
-        bo_pro: 'The Back Office is a Pro feature.', bo_loaded: 'Loaded into the Tailor tab.',
-        bo_none_sel: 'Select some items first.', bo_confirm_del: 'Delete this item? This cannot be undone.',
-        bo_confirm_bulk: 'Delete the selected items? This cannot be undone.', bo_confirm_site: 'Delete this website? This cannot be undone.',
-        wc_ed_addel: 'Add elements', wc_ed_addsection: '+ Add section', wc_ed_added: 'Added — drag to position it.',
-        wc_ed_sectionadded: 'Section added.', wc_ed_nosection: 'Add a section first.',
-        wc_pal_text: 'Text', wc_pal_media: 'Media', wc_pal_gallery: 'Gallery', wc_pal_interactive: 'Interactive',
-        wc_pal_layout: 'Layout', wc_pal_resumetailored: 'ResumeTailored',
-        wc_ed_align: 'Align', wc_ed_link: 'Links to', wc_ed_linkpage: 'or a page', wc_ed_style: 'Style',
-        wc_ed_formmode: 'Form type', wc_contact_msg: 'Contact form', wc_contact_pdf: 'Request my resume',
-        wc_ed_bg: 'Background', wc_ed_radius: 'Corner radius', wc_ed_thickness: 'Thickness',
-        wc_ed_gallayout: 'Layout', wc_ed_galcols: 'Columns', wc_ed_galitems: 'Items', wc_ed_galtitle: 'Title',
-        wc_ed_galadd: '+ Add image', wc_ed_soclinks: 'Links', wc_ed_socadd: '+ Add link',
-        wc_ed_cards: 'Cards', wc_ed_cardadd: '+ Add card',
-        wc_ed_mobile: 'Mobile', wc_ed_mwidth: 'Width on mobile', wc_ed_malign: 'Align on mobile',
-        wc_ed_mfull: 'Full width', wc_ed_mauto: 'Default', wc_ed_morder: 'Stack order',
-        wc_ed_mup: 'Move earlier', wc_ed_mdown: 'Move later', wc_ed_mreset: 'Auto',
-        cv_record: '🎙️ Record a voice clip', cv_rec_stop: '⏹ Stop recording',
-        cv_rec_recording: 'Recording… tap Stop when done.', cv_rec_saving: 'Saving…',
-        cv_rec_saved: '✓ Saved to your uploads.', cv_rec_err: 'Could not save the recording.',
-        cv_rec_mic: 'Could not access the microphone.',
-        cv_rec_unsupported: 'Recording is not supported in this browser — upload an audio file instead.',
-        wc_pal_shapes: 'Shapes',
-        cv_r_wide: 'Wide',
-        cv_pages: 'Pages', cv_preview: 'Preview', cv_publish: 'Publish website', cv_edit: '✏️ Edit',
-        cv_r_templates: 'Templates', cv_r_elements: 'Elements', cv_r_text: 'Text', cv_r_brand: 'Brand',
-        cv_r_uploads: 'Uploads', cv_r_content: 'Content', cv_upload: '⬆ Upload media',
-        cv_addsection: '+ Add section', cv_pagesword: 'Pages', cv_up_empty: 'Nothing uploaded yet.',
-        cv_b_primary: 'Primary', cv_b_accent: 'Accent', cv_b_paper: 'Page background', cv_b_ink: 'Text',
-        cv_b_note: 'Colours apply to the whole site. Undo works here too.',
-        wc_ed_pages: '⧉ Pages', wc_pg_title: 'Pages', wc_pg_add: '+ Add page', wc_pg_done: 'Done',
-        wc_pg_help: 'Your home page is served at /site/your-name. Other pages live at /site/your-name/their-slug.',
-        wc_pg_home: 'Home', wc_pg_sethome: 'Set home', wc_pg_edit: 'Edit page',
-        wc_pg_seotitle: 'SEO title', wc_pg_seodesc: 'SEO description',
-        wc_pg_prompt: 'Name this page:', wc_pg_added: 'Page added.', wc_pg_homeset: 'Home page updated.',
-        wc_pg_duped: 'Page duplicated.', wc_pg_deleted: 'Page deleted.',
-        wc_pg_last: 'A site needs at least one page.',
-        wc_pg_confirm: 'Delete this page? This cannot be undone from the published site until you republish.',
-        wc_step_design: '3. Design your page',
-        wc_ed_undo: 'Undo', wc_ed_redo: 'Redo', wc_ed_undone: 'Undone',
-        wc_ed_hint: 'Click an element to select it. Drag to move, or drag a corner handle to resize. Ctrl/Cmd+Z undoes.',
-        wc_ed_text: 'Text', wc_ed_src: 'Media', wc_ed_caption: 'Caption', wc_ed_label: 'Label',
-        wc_ed_color: 'Colour', wc_ed_pos: 'Position & size', wc_ed_mhide: 'Hide on mobile',
-        wc_ed_delete: 'Delete element', wc_upload2: 'Upload',
-        wc_ed_clicktotype: '✎ click to type', wc_ed_reset_done: 'Back in sync with your resume',
-        wc_ed_address2: 'Address', wc_ed_addrph: '1 Market St, San Francisco', wc_ed_zoom: 'Zoom',
-        wc_ed_socmode: 'Show as', wc_ed_socicons: 'A row of icons', wc_ed_soclink: 'Find me on…',
-        wc_ed_fields: 'Fields', wc_ed_flabel: 'Label', wc_ed_ftext: 'Text', wc_ed_flong: 'Long',
-        wc_ed_fphone: 'Phone', wc_ed_fkeep: 'Every form needs one email field',
-        wc_ed_faddfield: '+ Add a field', wc_ed_fnew: 'New field',
-        wc_ed_fmax: 'Eight fields is the most a contact form should ask for.',
-        wc_c_name: 'Your name', wc_c_email: 'Your email', wc_c_msg: 'Your message',
-        wc_ed_filled: 'Filled', wc_ed_outline: 'Outline', wc_ed_btncolor: 'Button colour',
-        wc_ed_usetheme: 'Use the theme colour',
-        wc_ed_section: 'This section', wc_ed_anim: 'Animate on scroll',
-        wc_ed_anim_up: 'Slide up', wc_ed_anim_fade: 'Fade in', wc_ed_anim_scale: 'Gentle zoom',
-        wc_ed_anim_note: 'Off on the canvas so nothing flickers while you work — open your live site to see it.',
-        cv_b_fonth: 'Heading font', cv_b_fontb: 'Body font', cv_b_fontmatch: 'Use the heading font for both',
-        bo_leads: 'Messages from your website', bo_lead_reply: 'Reply', bo_lead_anon: 'A visitor',
-        bo_leads_empty: 'No messages yet. Add a contact form to your website and they will appear here.',
-        cv_save: '💾 Save', cv_back_edit: '← Back to editing',
-        wc_saved: '💾 Saved', wc_save_err: 'Could not save — check your connection and try again.',
-        wc_up_photo: '📷 Photo uploaded', wc_up_video: '🎬 Video uploaded', wc_up_audio: '🎙 Audio uploaded',
-        wc_ed_elbg: 'Background', wc_ed_elbgimg: 'Use an image', wc_ed_elbgnone: 'No background',
-        wc_ed_elbgnograd: 'No gradient', wc_ed_pad: 'Padding',
-        wc_ed_split: '⛶ Split into separate boxes',
-        wc_ed_split_note: 'This is one element holding several pictures. Split it and each box becomes its own — click one, style one, put a video in one.',
-        wc_ed_split_done: 'Split into {n} boxes — each one is its own now.',
-        wc_ed_split_no: 'There is nothing to split in this element.',
-        wc_ed_play: 'Play / pause', wc_ed_vidbad: 'This video will not play in this browser — MP4 is the safest format.',
-        wc_ed_addinto: 'Add into this box', wc_ed_add_photo: '📷 Photo', wc_ed_add_video: '🎬 Video',
-        wc_ed_add_voice: '🎙 Voice', wc_ed_add_text: '✍️ Text',
-        wc_ed_gear: 'Options for this box', wc_ed_size: 'Size', wc_ed_weight: 'Weight',
-        wc_ed_auto: 'Template', wc_ed_spacing: 'Spacing', wc_ed_lh: 'Line', wc_ed_ls: 'Letter',
-        wc_ed_italic: 'Italic', wc_ed_layer: 'Layer', wc_ed_front: 'Bring forward',
-        wc_ed_back: 'Send back', wc_ed_duplicate: '⧉ Duplicate',
-        wc_ed_w300: 'Light', wc_ed_w400: 'Regular', wc_ed_w500: 'Medium', wc_ed_w600: 'Semibold',
-        wc_ed_w700: 'Bold', wc_ed_w800: 'Extra bold', wc_ed_w900: 'Black',
-        wc_ed_type_slow: 'The page is still loading — try again in a moment.',
-        wc_ed_lastsection: 'A page needs at least one section.',
-        wc_step_template: '2. Pick a template',
-        wc_template_help: 'Every template is a complete, multi-section site. Preview it on desktop and mobile before you choose — then make it yours.',
-        sm_edit_saved: 'Saved', 
-        bo_sync_ok: 'Synced with website', bo_sync_off: 'Out of sync with website',
-        sm_addr_prompt: 'Your web address. 3–30 letters, numbers or hyphens.',
-        sm_addr_warn: 'Your website is live. The old address will send visitors to the new one automatically, so links you have already shared keep working.',
-        sm_addr_taken: 'That address is taken — try another.',
-        sm_addr_len: 'Use 3 to 30 letters, numbers or hyphens.',
-        sm_addr_err: 'Could not change your address — try again.',
-        sm_addr_done: 'Your website has a new address.',
-        wc_tpl_desktop: '🖥 Desktop', wc_tpl_mobile: '📱 Mobile', wc_tpl_close: 'Close', wc_tpl_use: 'Use this template →',
-        wc_tpl_none: 'No templates available.', wc_tpl_previewbtn: 'Preview', wc_tpl_current: 'in use', wc_tpl_pick: 'Use',
-        wc_tpl_err: 'Could not load that template.', wc_tpl_applied: '✓ Template applied — preview it, then publish.',
-        wc_err_no_tpl: 'Pick a template first.', wc_preview_notpl: 'Pick a template in step 2 to preview your site.',
-        wc_video_uploaded: '✓ Video uploaded to your media library — drop it into a video slot in the editor.',
-        tv_saved_video: '✓ Text video saved to your media library.', tv_saved_audio: '✓ Voiceover saved to your media library.',
-        wc_title: 'Website Builder',
-        wc_subtitle: 'Start from a designed template, then make it yours.',
-        wc_view_edit: '✏️ Edit', wc_view_preview: '👁 Preview',
-        wc_layout_help: "Add blocks and drag to reorder. Set each block's width — blocks flow into rows, so two half-width blocks sit side by side. On phones everything stacks.", wc_uploading: 'Uploading…', wc_upload_err: 'Upload failed.', wc_video_toolong: 'That video is {dur} long — the limit is {cap} per clip.',
-        wc_media_usage: 'Storage', wc_media_imgaudio: 'images & audio', wc_media_video: 'video',
-        wc_video_text: '✍️ Create a text video', wc_pro_video: 'Video features are Pro.',
-        tv_title: 'Create a text video',
-        tv_help: "Type a short script, add a voiceover (record or upload), and we'll turn it into a video with your text on screen — generated right in your browser.",
-        tv_script_label: 'On-screen text / script', tv_voice_label: 'Voiceover',
-        tv_record: '🎙️ Record', tv_stop: '⏹ Stop', tv_upload_audio: '⬆ Upload audio',
-        tv_cancel: 'Cancel', tv_generate: 'Generate video →',
-        tv_voice_ready: 'Voiceover ready. Add your text, then Generate.',
-        tv_recording: 'Recording… tap Stop when done.', tv_mic_err: 'Could not access the microphone.',
-        tv_no_record: 'Recording is not supported in this browser — upload an audio file instead.',
-        tv_need_voice: 'Add a voiceover first.', tv_generating: 'Generating your video… (this plays through your voiceover once)',
-        tv_fallback: "Your browser can't encode video — saving as a voiceover + text block instead…",
-        tv_too_big: 'That video is over 25 MB — try a shorter voiceover.',
-        tv_audio_err: 'Could not read the voiceover audio.', tv_play_err: 'Could not play the voiceover to record it.',
-        tv_err: 'Something went wrong.',
-        wc_stat_views: 'Views', wc_stat_topref: 'Top source', wc_stat_leads: 'Leads',
-        wc_leads_emailoff: 'Leads are saved here. Add RESEND_API_KEY in your environment to also get them by email.',
-        wc_qr_title: 'Your site QR code', wc_qr_help: 'For resume footers, business cards or LinkedIn.', wc_qr_download: '⬇ Download QR',
-        wc_preview_norecipient: 'Pick a resume in step 1 to preview your site.',
-        wc_preview_loading: 'Building preview…', wc_preview_err: 'Could not build the preview — try again.',
-        wc_step_content: '1. Choose your content',
-        wc_resume_label: 'Resume (shown on your site)', wc_resume_none: 'No saved resumes yet',
-        wc_cover_label: 'Cover letter (optional)', wc_cover_none: 'None',
-        wc_no_assets: "No saved resumes yet — tailor one in the Tailor tab and it'll appear here automatically.",
-        wc_step_video: '4. Add a video (optional)',
-        wc_video_help: 'Add a video hero to your site — generate one from your résumé, or upload your own.',
-        wc_video_generate: '🎬 Generate from my résumé', wc_video_upload: '⬆ Upload your own video',
-        wc_video_upload_soon: 'Uploading your own video unlocks with media uploads in the next update — for now, generate one from your résumé.',
-        wc_step_publish: '5. Publish', wc_address_label: 'Your website address',
-        wc_publish_btn: '🌐 Publish my website', wc_view_live: 'View live ↗',
-        wc_more_soon: 'More customization — themes, backgrounds, and drag-and-drop layout — is coming next.',
-        wc_preview_empty: 'Publish your site to preview it live here.',
-        wc_publishing: 'Publishing…', wc_live_at: 'Live at', wc_link_copied: 'link copied',
-        wc_err_no_resume: 'Pick a resume to publish first.',
-        wc_err_addr: 'Choose an address of 3–30 letters, numbers or hyphens.',
-        wc_err_publish: 'Could not publish your website.',
-        wc_gate_title: 'Tailor a resume first',
-        wc_gate_body: "Your website is built from your saved resumes and cover letters. Tailor one (it's free) and it'll appear here automatically.",
-        wc_gate_go: 'Go to Tailor →', wc_gate_blank: 'Start from a blank site anyway',
-        wc_nudge_text: '💡 Want recipients to download your resume directly? Upgrade to Pro to publish a Personal Website with a built-in download button.',
-        wc_nudge_cta: 'See Pro →',
-        sidebar_careerhub: 'Career Hub',
-        sidebar_forum: 'Community Forum', sidebar_salary: 'Salary Guide',
-        sidebar_checkin: 'Career Check-In', sidebar_help: 'Help & Support',
-        sidebar_samples: 'Samples', sidebar_learn: 'Learn More',
-        sidebar_about: 'How Does It Work?', sidebar_cancel: 'Cancel Anytime',
-        sidebar_pro_title: '✦ Unlock Full Access',
-        sidebar_pro_text: 'Career Hub features are available to Pro members.',
-        sidebar_pro_btn: 'Upgrade — $19.99/mo',
-        mobile_upgrade_p: '✦ Unlock unlimited tailorings, cover letters & Career Hub features.',
-        mobile_upgrade_btn: 'Upgrade — $19.99/mo',
-        tailor_title: 'Tailor Your Resume',
-        tailor_sub: 'Paste your resume and the job posting. We\'ll match your experience to what they\'re looking for.',
-        li_banner_title: 'LinkedIn Profile Optimizer',
-        li_banner_desc: 'Get an AI-optimized headline, About section & experience bullets. Click here to open →',
-        li_title: 'LinkedIn Profile Optimizer',
-        li_free_badge: '✓ FREE &amp; UNLIMITED',
-        ats_free_badge: '✓ FREE &amp; UNLIMITED',
-        li_sub: 'Paste your current LinkedIn profile and target role — get an AI-optimized headline, About section, and experience bullets that get recruiters to click. Works for all industries and global markets including MNCs.',
-        mode_label: 'Generate:',
-        mode_resume: 'Resume', mode_cover: 'Cover Letter',
-        resume_label: 'Your Resume',
-        rmode_upload: '⬆ Upload / Paste', rmode_build: '✏️ Fill Out Form',
-        upload_btn: '⬆ Upload File',
-        resume_placeholder: 'Paste your resume text here, OR click Upload File to import a .txt, .pdf, or .docx file.',
-        font_label: 'Font:',
-        job_label: 'Job Posting',
-        job_placeholder: 'Paste the full job description here...\n\nWorks with: LinkedIn, Indeed, Glassdoor, Boss直聘 (Boss Zhipin), 猎聘 (Liepin), 智联招聘 (Zhaopin), and any job posting in any language.',
-        output_title: 'Tailored Result',
-        pagesize_label: 'Page:',
-        btn_edit: 'Edit', btn_copy: 'Copy',
-        tailor_btn: 'Get Tailored →', tailor_btn_cover: 'Get Tailored →',
-        li_optimize_btn: 'Optimize My LinkedIn Profile →',
-        li_import_btn: 'Import from LinkedIn',
-        li_upload_btn: 'Import PDF from LinkedIn',
-        li_howto_btn: 'How to',
-        li_howto_title: 'Save your LinkedIn profile as a PDF',
-        li_howto_intro: "LinkedIn doesn't offer a direct link to it, so here's exactly where the button is hiding:",
-        li_howto_s1: 'Go to <strong>your own profile</strong> — tap your photo (top-left), then <strong>“View Profile.”</strong>',
-        li_howto_s2: 'Look just under your name &amp; headline, in the same row as <strong>“Open to,” “Add profile section,”</strong> and <strong>“Enhance profile.”</strong> At the end of that row, tap <strong>“More”</strong> (on a computer it may say <strong>“Resources”</strong>).',
-        li_howto_s3: 'In the menu that pops up, tap <strong>“Save to PDF.”</strong> The file downloads to your device.',
-        li_howto_s4: 'Come back here and tap <strong>“Import PDF from LinkedIn”</strong> to upload that file.',
-        li_howto_tip: '📱 Can\'t find "More" or "Save to PDF" on your phone? It\'s easiest on a computer — go to linkedin.com, open your profile, and the button is right under your name.',
-        li_howto_open: 'Open my LinkedIn profile →',
-        li_howto_upload: 'I have the PDF — upload it',
-        li_login_btn: 'Continue with LinkedIn',
-        auth_tab_subscribe: 'Subscribe', auth_tab_login: 'Sign In', auth_tab_signup: 'Create Account',
-        google_login_btn: 'Continue with Google', google_signup_btn: 'Sign up with Google'
-      },
-      zh: {
-        nav_go_pro: '升级专业版 — ¥19.99/月', nav_logout: '退出登录',
-        sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
-        sidebar_jobtracker: '求职跟踪',
-        sidebar_sharelink: '简历链接', sidebar_website: '个人网站', sidebar_backoffice: '后台管理', sidebar_newtools: '新工具',
-        bo_title: '后台管理', bo_subtitle: '一站式管理——你保存的简历、求职信、视频和个人网站。',
-        bo_resumes: '简历', bo_covers: '求职信', bo_videos: '简历视频', bo_website: '个人网站',
-        bo_empty: '暂无内容。', bo_novideos: '暂无保存的视频——在简历视频标签页制作一个。', bo_nosite: '暂无网站——在网站创建器中制作一个。',
-        bo_use: '使用', bo_duplicate: '复制', bo_delete: '删除', bo_edit: '编辑', bo_viewlive: '查看网站',
-        bo_publish: '发布', bo_unpublish: '取消发布', bo_live: '已上线', bo_hidden: '已隐藏',
-        bo_websites: '你的网站', bo_published: '已发布', bo_draft: '草稿',
-        bo_site_untitled: '我的网站', bo_makesite: '制作我的网站',
-        bo_addr_live: '你的网址：', bo_change_addr: '更改网址',
-        bo_addr_none: '尚未发布——这些都是只有你能看到的私密草稿。',
-        bo_edited: '编辑于 {t}', bo_ago_now: '刚刚', bo_ago_min: '{n} 分钟前', bo_ago_hr: '{n} 小时前', bo_ago_day: '{n} 天前',
-        bo_confirm_pub: '发布这个？同一时间只能有一个网站上线，你当前的网站会下线。',
-        bo_confirm_unpub: '将这个网站从互联网上撤下？不会删除任何内容——你可以再次发布。',
-        bo_now_live: '你的网站已上线。', bo_now_hidden: '你的网站已隐藏。',
-        bo_bulk_dup: '复制所选', bo_bulk_del: '删除所选',
-        bo_pro: '后台管理是专业版功能。', bo_loaded: '已加载到定制标签页。',
-        bo_none_sel: '请先选择项目。', bo_confirm_del: '删除此项？此操作无法撤销。',
-        bo_confirm_bulk: '删除所选项目？此操作无法撤销。', bo_confirm_site: '删除这个网站？此操作无法撤销。',
-        wc_ed_addel: '添加元素', wc_ed_addsection: '+ 添加板块', wc_ed_added: '已添加——拖动以调整位置。',
-        wc_ed_sectionadded: '板块已添加。', wc_ed_nosection: '请先添加一个板块。',
-        wc_pal_text: '文字', wc_pal_media: '媒体', wc_pal_gallery: '相册', wc_pal_interactive: '互动',
-        wc_pal_layout: '布局', wc_pal_resumetailored: 'ResumeTailored',
-        wc_ed_align: '对齐', wc_ed_link: '链接到', wc_ed_linkpage: '或某个页面', wc_ed_style: '样式',
-        wc_ed_formmode: '表单类型', wc_contact_msg: '联系表单', wc_contact_pdf: '索取我的简历',
-        wc_ed_bg: '背景', wc_ed_radius: '圆角', wc_ed_thickness: '粗细',
-        wc_ed_gallayout: '布局', wc_ed_galcols: '列数', wc_ed_galitems: '项目', wc_ed_galtitle: '标题',
-        wc_ed_galadd: '+ 添加图片', wc_ed_soclinks: '链接', wc_ed_socadd: '+ 添加链接',
-        wc_ed_cards: '卡片', wc_ed_cardadd: '+ 添加卡片',
-        wc_ed_mobile: '手机', wc_ed_mwidth: '手机宽度', wc_ed_malign: '手机对齐',
-        wc_ed_mfull: '整宽', wc_ed_mauto: '默认', wc_ed_morder: '堆叠顺序',
-        wc_ed_mup: '上移', wc_ed_mdown: '下移', wc_ed_mreset: '自动',
-        cv_record: '🎙️ 录制语音', cv_rec_stop: '⏹ 停止录制',
-        cv_rec_recording: '录制中……完成后点击停止。', cv_rec_saving: '保存中…',
-        cv_rec_saved: '✓ 已保存到上传。', cv_rec_err: '无法保存录音。',
-        cv_rec_mic: '无法访问麦克风。',
-        cv_rec_unsupported: '此浏览器不支持录制——请改为上传音频文件。',
-        wc_pal_shapes: '形状',
-        cv_r_wide: '宽屏',
-        cv_pages: '页面', cv_preview: '预览', cv_publish: '发布网站', cv_edit: '✏️ 编辑',
-        cv_r_templates: '模板', cv_r_elements: '元素', cv_r_text: '文字', cv_r_brand: '品牌',
-        cv_r_uploads: '上传', cv_r_content: '内容', cv_upload: '⬆ 上传媒体',
-        cv_addsection: '+ 添加板块', cv_pagesword: '页面', cv_up_empty: '还没有上传内容。',
-        cv_b_primary: '主色', cv_b_accent: '强调色', cv_b_paper: '页面背景', cv_b_ink: '文字',
-        cv_b_note: '颜色应用于整个网站。撤销同样有效。',
-        wc_ed_pages: '⧉ 页面', wc_pg_title: '页面', wc_pg_add: '+ 添加页面', wc_pg_done: '完成',
-        wc_pg_help: '首页地址为 /site/你的名称，其他页面为 /site/你的名称/页面标识。',
-        wc_pg_home: '首页', wc_pg_sethome: '设为首页', wc_pg_edit: '编辑页面',
-        wc_pg_seotitle: 'SEO 标题', wc_pg_seodesc: 'SEO 描述',
-        wc_pg_prompt: '为此页面命名：', wc_pg_added: '页面已添加。', wc_pg_homeset: '首页已更新。',
-        wc_pg_duped: '页面已复制。', wc_pg_deleted: '页面已删除。',
-        wc_pg_last: '网站至少需要一个页面。',
-        wc_pg_confirm: '删除此页面？在重新发布之前，已发布的网站不会恢复。',
-        wc_step_design: '3. 设计你的页面',
-        wc_ed_undo: '撤销', wc_ed_redo: '重做', wc_ed_undone: '已撤销',
-        wc_ed_hint: '点击元素以选中。拖动移动，拖动右下角手柄调整大小。Ctrl/Cmd+Z 撤销。',
-        wc_ed_text: '文字', wc_ed_src: '媒体', wc_ed_caption: '说明', wc_ed_label: '标签',
-        wc_ed_color: '颜色', wc_ed_pos: '位置和尺寸', wc_ed_mhide: '在手机上隐藏',
-        wc_ed_delete: '删除元素', wc_upload2: '上传',
-        wc_ed_clicktotype: '✎ 点击输入', wc_ed_reset_done: '已与你的简历重新同步',
-        wc_ed_address2: '地址', wc_ed_addrph: '北京市朝阳区…', wc_ed_zoom: '缩放',
-        wc_ed_socmode: '显示方式', wc_ed_socicons: '一排图标', wc_ed_soclink: '在……上找到我',
-        wc_ed_fields: '字段', wc_ed_flabel: '标签', wc_ed_ftext: '文本', wc_ed_flong: '长文本',
-        wc_ed_fphone: '电话', wc_ed_fkeep: '每个表单都需要一个邮箱字段',
-        wc_ed_faddfield: '+ 添加字段', wc_ed_fnew: '新字段',
-        wc_ed_fmax: '联系表单最多八个字段。',
-        wc_c_name: '你的姓名', wc_c_email: '你的邮箱', wc_c_msg: '你的留言',
-        wc_ed_filled: '实心', wc_ed_outline: '描边', wc_ed_btncolor: '按钮颜色',
-        wc_ed_usetheme: '使用主题颜色',
-        wc_ed_section: '当前板块', wc_ed_anim: '滚动时动画',
-        wc_ed_anim_up: '向上滑入', wc_ed_anim_fade: '淡入', wc_ed_anim_scale: '轻微缩放',
-        wc_ed_anim_note: '编辑画布上不播放动画，以免打扰你——请打开线上网站查看。',
-        cv_b_fonth: '标题字体', cv_b_fontb: '正文字体', cv_b_fontmatch: '标题与正文使用同一字体',
-        bo_leads: '来自网站的消息', bo_lead_reply: '回复', bo_lead_anon: '一位访客',
-        bo_leads_empty: '还没有消息。在网站上添加联系表单后，消息会显示在这里。',
-        cv_save: '💾 保存', cv_back_edit: '← 返回编辑',
-        wc_saved: '💾 已保存', wc_save_err: '保存失败——请检查网络后重试。',
-        wc_up_photo: '📷 照片已上传', wc_up_video: '🎬 视频已上传', wc_up_audio: '🎙 音频已上传',
-        wc_ed_elbg: '背景', wc_ed_elbgimg: '使用图片', wc_ed_elbgnone: '无背景',
-        wc_ed_elbgnograd: '无渐变', wc_ed_pad: '内边距',
-        wc_ed_split: '⛶ 拆分为独立区块',
-        wc_ed_split_note: '这是一个包含多张图片的元素。拆分后每个区块都是独立的——可单独点击、单独设置样式、放入视频。',
-        wc_ed_split_done: '已拆分为 {n} 个区块，每个都是独立的。',
-        wc_ed_split_no: '此元素没有可拆分的内容。',
-        wc_ed_play: '播放 / 暂停', wc_ed_vidbad: '此视频在当前浏览器中无法播放——MP4 是最通用的格式。',
-        wc_ed_addinto: '向此区块添加', wc_ed_add_photo: '📷 照片', wc_ed_add_video: '🎬 视频',
-        wc_ed_add_voice: '🎙 语音', wc_ed_add_text: '✍️ 文字',
-        wc_ed_gear: '此区块的选项', wc_ed_size: '字号', wc_ed_weight: '字重',
-        wc_ed_auto: '跟随模板', wc_ed_spacing: '间距', wc_ed_lh: '行高', wc_ed_ls: '字距',
-        wc_ed_italic: '斜体', wc_ed_layer: '图层', wc_ed_front: '上移一层',
-        wc_ed_back: '下移一层', wc_ed_duplicate: '⧉ 复制',
-        wc_ed_w300: '细', wc_ed_w400: '常规', wc_ed_w500: '中等', wc_ed_w600: '半粗',
-        wc_ed_w700: '粗', wc_ed_w800: '特粗', wc_ed_w900: '黑体',
-        wc_ed_type_slow: '页面仍在加载，请稍后再试。',
-        wc_ed_lastsection: '页面至少需要一个板块。',
-        wc_step_template: '2. 选择模板',
-        wc_template_help: '每个模板都是完整的多板块网站。选择前可在桌面和手机视图预览——然后把它变成你的。',
-        sm_edit_saved: '已保存', 
-        bo_sync_ok: '与网站同步', bo_sync_off: '与网站不同步',
-        sm_addr_prompt: '你的网址，3–30 个字母、数字或连字符。',
-        sm_addr_warn: '你的网站已上线。旧网址会自动跳转到新网址，你已经分享出去的链接仍然有效。',
-        sm_addr_taken: '该网址已被占用，请换一个。',
-        sm_addr_len: '请使用 3 到 30 个字母、数字或连字符。',
-        sm_addr_err: '更改网址失败，请重试。',
-        sm_addr_done: '你的网站已启用新网址。',
-        wc_tpl_desktop: '🖥 桌面', wc_tpl_mobile: '📱 手机', wc_tpl_close: '关闭', wc_tpl_use: '使用此模板 →',
-        wc_tpl_none: '暂无可用模板。', wc_tpl_previewbtn: '预览', wc_tpl_current: '使用中', wc_tpl_pick: '使用',
-        wc_tpl_err: '无法加载该模板。', wc_tpl_applied: '✓ 模板已应用——预览后即可发布。',
-        wc_err_no_tpl: '请先选择一个模板。', wc_preview_notpl: '在第2步选择模板以预览你的网站。',
-        wc_video_uploaded: '✓ 视频已上传到媒体库——可在编辑器中放入视频位。',
-        tv_saved_video: '✓ 文字视频已保存到媒体库。', tv_saved_audio: '✓ 配音已保存到媒体库。',
-        wc_title: '网站构建器',
-        wc_subtitle: '从设计好的模板开始，然后把它变成你的。',
-        wc_view_edit: '✏️ 编辑', wc_view_preview: '👁 预览', wc_uploading: '上传中…', wc_upload_err: '上传失败。', wc_video_toolong: '这个视频时长 {dur} —— 每个视频最长 {cap}。',
-        wc_media_usage: '存储', wc_media_imgaudio: '图片和音频', wc_media_video: '视频',
-        wc_video_text: '✍️ 制作文字视频', wc_pro_video: '视频功能是专业版。',
-        tv_title: '制作文字视频',
-        tv_help: '输入一段简短脚本，添加配音（录制或上传），我们会在你的浏览器中直接生成一段带文字画面的视频。',
-        tv_script_label: '屏幕文字/脚本', tv_voice_label: '配音',
-        tv_record: '🎙️ 录制', tv_stop: '⏹ 停止', tv_upload_audio: '⬆ 上传音频',
-        tv_cancel: '取消', tv_generate: '生成视频 →',
-        tv_voice_ready: '配音已就绪。添加文字后点击生成。',
-        tv_recording: '录制中……完成后点击停止。', tv_mic_err: '无法访问麦克风。',
-        tv_no_record: '此浏览器不支持录制——请改为上传音频文件。',
-        tv_need_voice: '请先添加配音。', tv_generating: '正在生成视频……（会完整播放一遍你的配音）',
-        tv_fallback: '你的浏览器无法编码视频——改为保存为配音和文字区块……',
-        tv_too_big: '视频超过 25 MB——请尝试更短的配音。',
-        tv_audio_err: '无法读取配音音频。', tv_play_err: '无法播放配音以进行录制。',
-        tv_err: '出了点问题。',
-        wc_stat_views: '浏览量', wc_stat_topref: '主要来源', wc_stat_leads: '线索',
-        wc_leads_emailoff: '线索已保存在此。在环境中添加 RESEND_API_KEY 即可同时通过邮件接收。',
-        wc_qr_title: '你的网站二维码', wc_qr_help: '用于简历页脚、名片或 LinkedIn。', wc_qr_download: '⬇ 下载二维码',
-        wc_preview_norecipient: '在第1步选择一份简历以预览你的网站。',
-        wc_preview_loading: '正在生成预览…', wc_preview_err: '无法生成预览——请重试。',
-        wc_step_content: '1. 选择内容',
-        wc_resume_label: '简历（显示在你的网站上）', wc_resume_none: '暂无已保存的简历',
-        wc_cover_label: '求职信（可选）', wc_cover_none: '无',
-        wc_no_assets: '暂无已保存的简历——在"定制"标签页定制一份，它会自动出现在这里。',
-        wc_step_video: '4. 添加视频（可选）',
-        wc_video_help: '为你的网站添加视频封面——用简历生成，或上传你自己的视频。',
-        wc_video_generate: '🎬 用我的简历生成', wc_video_upload: '⬆ 上传我自己的视频',
-        wc_video_upload_soon: '上传自己的视频将随媒体上传功能在下次更新中开放——目前请先用简历生成。',
-        wc_step_publish: '5. 发布', wc_address_label: '你的网站地址',
-        wc_publish_btn: '🌐 发布我的网站', wc_view_live: '查看网站 ↗',
-        wc_more_soon: '更多自定义功能——主题、背景和拖拽布局——即将推出。',
-        wc_preview_empty: '发布你的网站后即可在此实时预览。',
-        wc_publishing: '发布中…', wc_live_at: '已上线：', wc_link_copied: '链接已复制',
-        wc_err_no_resume: '请先选择要发布的简历。',
-        wc_err_addr: '请选择3–30位字母、数字或连字符的地址。',
-        wc_err_publish: '无法发布你的网站。',
-        wc_gate_title: '请先定制一份简历',
-        wc_gate_body: '你的网站由你保存的简历和求职信生成。免费定制一份，它会自动出现在这里。',
-        wc_gate_go: '前往定制 →', wc_gate_blank: '仍然从空白网站开始',
-        wc_nudge_text: '💡 想让收件人直接下载你的简历？升级专业版，发布带有下载按钮的个人网站。',
-        wc_nudge_cta: '查看专业版 →',
-        sidebar_careerhub: '职业中心',
-        sidebar_forum: '社区论坛', sidebar_salary: '薪资指南',
-        sidebar_checkin: '职业回顾', sidebar_help: '帮助与支持',
-        sidebar_samples: '模板样本', sidebar_learn: '了解更多',
-        sidebar_about: '它是如何工作的？', sidebar_cancel: '随时取消',
-        sidebar_pro_title: '✦ 解锁完整权限',
-        sidebar_pro_text: '职业中心功能仅限专业版会员使用。',
-        sidebar_pro_btn: '升级 — ¥19.99/月',
-        mobile_upgrade_p: '✦ 解锁无限次简历定制、求职信及职业中心功能。',
-        mobile_upgrade_btn: '立即升级 — ¥19.99/月',
-        tailor_title: '定制你的简历',
-        tailor_sub: '粘贴你的简历和职位描述，AI将根据招聘要求优化你的简历关键词和经历描述。',
-        li_banner_title: 'LinkedIn 个人资料优化',
-        li_banner_desc: '获取AI优化的标题、个人简介和工作经历要点，点击此处打开 →',
-        li_title: 'LinkedIn 个人资料优化器',
-        li_free_badge: '✓ 免费且无限次',
-        ats_free_badge: '✓ 免费且无限次',
-        li_sub: '粘贴你当前的LinkedIn个人资料和目标职位——获取AI优化的标题、个人简介和工作经历要点，让更多招聘人员主动联系你。适用于所有行业和全球市场，包括跨国企业。',
-        mode_label: '生成内容：',
-        mode_resume: '简历', mode_cover: '求职信',
-        resume_label: '你的简历',
-        rmode_upload: '⬆ 上传 / 粘贴', rmode_build: '✏️ 填写表单',
-        upload_btn: '⬆ 上传文件',
-        resume_placeholder: '在此粘贴简历文本，或点击「上传文件」导入 .txt、.pdf 或 .docx 文件。',
-        font_label: '字体：',
-        job_label: '职位描述',
-        job_placeholder: '在此粘贴完整职位描述...\n\n支持以下平台：LinkedIn、Indeed、Glassdoor、Boss直聘、猎聘、智联招聘，以及任何语言的招聘信息。',
-        output_title: 'AI优化结果',
-        pagesize_label: '页面：',
-        btn_edit: '编辑', btn_copy: '复制',
-        tailor_btn: '开始定制简历 →', tailor_btn_cover: '定制我的求职信 →',
-        li_optimize_btn: '优化我的LinkedIn资料 →',
-        li_import_btn: '从 LinkedIn 导入',
-        li_upload_btn: '从 LinkedIn 导入 PDF',
-        li_howto_btn: '操作方法',
-        li_howto_title: '将你的 LinkedIn 个人资料保存为 PDF',
-        li_howto_intro: 'LinkedIn 没有直接链接，所以这里告诉你按钮藏在哪：',
-        li_howto_s1: '进入<strong>你自己的个人资料</strong>——点击左上角你的头像，然后选择<strong>“查看资料（View Profile）”</strong>。',
-        li_howto_s2: '在你的姓名和标题下方，与<strong>“开放求职（Open to）”“添加板块（Add profile section）”</strong>和<strong>“完善资料（Enhance profile）”</strong>同一行的末尾，点击<strong>“更多（More）”</strong>（在电脑上可能显示为<strong>“资源（Resources）”</strong>）。',
-        li_howto_s3: '在弹出的菜单中，点击<strong>“保存为 PDF（Save to PDF）”</strong>。文件会下载到你的设备。',
-        li_howto_s4: '回到这里，点击<strong>“从 LinkedIn 导入 PDF”</strong>上传该文件。',
-        li_howto_tip: '📱 在手机上找不到“更多”或“保存为 PDF”？用电脑最简单——访问 linkedin.com，打开你的资料，按钮就在你姓名下方。',
-        li_howto_open: '打开我的 LinkedIn 资料 →',
-        li_howto_upload: '我已有 PDF——上传',
-        li_login_btn: '使用 LinkedIn 继续',
-        auth_tab_subscribe: '订阅', auth_tab_login: '登录', auth_tab_signup: '创建账户',
-        google_login_btn: '使用 Google 继续', google_signup_btn: '使用 Google 注册'
-      }
-    };
 
     function applyLangApp(lang) {
       var isZh = lang === 'zh';
@@ -3279,12 +1280,71 @@
     }
 
     // ── Auth helpers ───────────────────────────────────────────────────────────
+    // Phase 2: auth is cookie-first. The httpOnly rt_session cookie is sent
+    // automatically on every same-origin request (fetch defaults to
+    // credentials:'same-origin'), so JS no longer needs the token. A legacy
+    // rt_token in localStorage (from before this change) is still honored and
+    // sent as a bearer header until checkAuth() migrates the user to cookies.
     function getToken() { return localStorage.getItem('rt_token') || ''; }
     function getStoredEmail() { return localStorage.getItem('rt_email') || ''; }
     function getStoredUsername() { return localStorage.getItem('rt_username') || ''; }
+    // The readable double-submit CSRF token (set alongside the session cookie).
+    function getCsrf() {
+      var m = document.cookie.match(/(?:^|;\s*)rt_csrf=([^;]+)/);
+      return m ? decodeURIComponent(m[1]) : '';
+    }
+
+    // Belt-and-suspenders CSRF: attach X-CSRF-Token to EVERY same-origin mutating
+    // fetch, so no manual call site can forget it. The server only requires it
+    // for cookie-authenticated requests, but sending it always is harmless.
+    (function () {
+      var _origFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        init = init || {};
+        var method = (init.method || (input && typeof input !== 'string' && input.method) || 'GET').toUpperCase();
+        var url = typeof input === 'string' ? input : (input && input.url) || '';
+        var sameOrigin = url.charAt(0) === '/' || url.indexOf(location.origin) === 0;
+        if (sameOrigin && method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+          var c = getCsrf();
+          if (c) {
+            var h = new Headers(init.headers || (input && typeof input !== 'string' && input.headers) || {});
+            if (!h.has('X-CSRF-Token')) h.set('X-CSRF-Token', c);
+            init.headers = h;
+          }
+        }
+        return _origFetch(input, init);
+      };
+    })();
+
+    // Phase 4: report uncaught front-end errors to the server (log-only). The
+    // report fetch swallows its own rejection so it can't re-trigger the handler
+    // (no feedback loop); capped per page load so a broken loop can't flood.
+    (function () {
+      var _errCount = 0;
+      function reportClientError(payload) {
+        if (_errCount++ > 10) return;
+        try {
+          window.fetch('/api/client-error', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          }).catch(function () {});
+        } catch (_) {}
+      }
+      window.addEventListener('error', function (e) {
+        reportClientError({ msg: e.message, stack: e.error && e.error.stack, url: location.href });
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        var r = e.reason;
+        reportClientError({ msg: 'unhandledrejection: ' + ((r && r.message) || String(r)), stack: r && r.stack, url: location.href });
+      });
+    })();
 
     function authHeaders() {
-      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() };
+      var h = { 'Content-Type': 'application/json' };
+      var c = getCsrf(); if (c) h['X-CSRF-Token'] = c;
+      var t = getToken(); if (t) h['Authorization'] = 'Bearer ' + t;
+      return h;
     }
 
     /* AUTH WITHOUT A CONTENT-TYPE, for file uploads.
@@ -3299,18 +1359,32 @@
        Every photo, video and voice-clip upload in the Website Creator failed
        this way. From the user's side the file simply vanished. */
     function authHeadersNoType() {
-      return { 'Authorization': 'Bearer ' + getToken() };
+      var h = {};
+      var c = getCsrf(); if (c) h['X-CSRF-Token'] = c;
+      var t = getToken(); if (t) h['Authorization'] = 'Bearer ' + t;
+      return h;
+    }
+
+    // Phase 2: reject oversized documents client-side before the upload (server
+    // enforces the same 5 MB limit authoritatively). Returns true if OK.
+    var MAX_DOC_BYTES = 5 * 1024 * 1024;
+    function checkDocSize(file) {
+      if (file && file.size > MAX_DOC_BYTES) {
+        showToast('That file is over 5 MB. Please upload a smaller document or paste the text.');
+        return false;
+      }
+      return true;
     }
 
     async function checkAuth() {
-      const token = getToken();
-      if (!token) {
-        isLoggedIn = false;
-        updateNavForGuest();
-        return;
-      }
+      // Always ask the server — the httpOnly session cookie may authenticate us
+      // even with nothing in localStorage. A lingering legacy token is sent as a
+      // bearer header for the transition, then dropped once cookies take over.
+      const legacy = getToken();
       try {
-        const res = await fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } });
+        const headers = {};
+        if (legacy) headers['Authorization'] = 'Bearer ' + legacy;
+        const res = await fetch('/api/auth/me', { headers });
         if (!res.ok) {
           localStorage.removeItem('rt_token');
           isLoggedIn = false;
@@ -3320,10 +1394,14 @@
         const data = await res.json();
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
+        // The server minted session + CSRF cookies on this request, so the legacy
+        // token is no longer needed — drop it so we stop sending the bearer header.
+        if (legacy) localStorage.removeItem('rt_token');
         isLoggedIn = true;
         updateNavForLogged();
         document.getElementById('authOverlay').style.display = 'none';
       } catch(e) {
+        console.error('checkAuth failed', e);
         isLoggedIn = false;
         updateNavForGuest();
       }
@@ -3356,6 +1434,7 @@
 
     function showAuthModal(tab) {
       pendingDownloadFn = null;
+      loadDecorativeFonts();  // Fraunces wordmark in the modal — load before it shows
       document.getElementById('authOverlay').style.display = 'flex';
       switchAuthTab(tab === 'subscribe' ? 'subscribe' : 'login');
     }
@@ -3504,7 +1583,8 @@
         });
         const data = await res.json();
         if (!res.ok) { errEl.textContent = data.error || 'Signup failed.'; return; }
-        localStorage.setItem('rt_token', data.token);
+        // Session now lives in the httpOnly rt_session cookie the server just
+        // set — no token in localStorage (Phase 2). Keep email/username for UI.
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
         hideAuthModal();
@@ -3540,7 +1620,8 @@
         });
         const data = await res.json();
         if (!res.ok) { errEl.textContent = data.error || 'Login failed.'; return; }
-        localStorage.setItem('rt_token', data.token);
+        // Session now lives in the httpOnly rt_session cookie the server just
+        // set — no token in localStorage (Phase 2). Keep email/username for UI.
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
         hideAuthModal();
@@ -3580,25 +1661,88 @@
         else if (!history.state || history.state.rtTab !== name) { history.pushState({ rtTab: name }, ''); }
       } catch (e) {}
     }
-    function showTab(name) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      // Every sidebar button, not just those matching a selector that has
-      // drifted — LinkedIn Optimizer was staying lit on other pages.
-      document.querySelectorAll('.sidebar-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById('panel-' + name).classList.add('active');
-      document.getElementById('tab-' + name).classList.add('active');
+    // ── Lazy tab panels ─────────────────────────────────────────────────────────
+    // Only #panel-tailor (landing tab) and #panel-website (the editor shell) ship
+    // inline. The other 12 panels are empty shells whose HTML lives in
+    // /panels/<name>.html and is fetched + injected on first open. This keeps
+    // ~7,000 nodes out of the first paint (fixes the janky-scroll bug).
+    const panelCache = new Map();
+    const LAZY_PANELS = new Set(['linkedin','video','ats','jobtracker','backoffice','forum','salary','checkin','help','about','samples','cancel']);
+
+    // ── Phase 1: decorative fonts loaded on demand ──────────────────────────────
+    // Signature fonts (Dancing Script, Great Vibes, Satisfy, Caveat), Fraunces
+    // (brand wordmark) and Syne (display headings) are NOT in the critical path.
+    // Injected the first time they're actually needed so they never block paint.
+    let _decorFontsLoaded = false;
+    function loadDecorativeFonts() {
+      if (_decorFontsLoaded) return;
+      _decorFontsLoaded = true;
+      [
+        'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&family=Satisfy&family=Caveat:wght@600&display=swap',
+        'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap',
+        'https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&display=swap'
+      ].forEach(function (href) {
+        var l = document.createElement('link');
+        l.rel = 'stylesheet'; l.href = href;
+        document.head.appendChild(l);
+      });
+    }
+
+    async function hydratePanel(name) {
+      if (!LAZY_PANELS.has(name)) return;
+      const panel = document.getElementById('panel-' + name);
+      if (!panel || panel.dataset.loaded === '1') return;
+      try {
+        let html = panelCache.get(name);
+        if (html == null) {
+          // Clean URL (no .html) — the server 301-redirects *.html to it, so we
+          // request the canonical path directly and skip the redirect hop.
+          const res = await fetch('/panels/' + name);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          html = await res.text();
+          panelCache.set(name, html);
+        }
+        panel.innerHTML = html;                 // replaces the spinner
+        panel.dataset.loaded = '1';
+        // The pre-Phase-3 i18n pass queries straight into panel content
+        // (#panel-about h1, #panel-linkedin …). Re-run it so a freshly injected
+        // panel is translated for non-English users.
+        var _lng = localStorage.getItem('rt_lang') || 'en';
+        if (_lng !== 'en' && typeof applyLangApp === 'function') applyLangApp(_lng);
+      } catch (e) {
+        console.error('panel load failed:', name, e);
+        panel.dataset.loaded = '';
+        panel.innerHTML = '<div class="panel-loading"><p style="color:var(--text-muted,#9490b5);text-align:center;padding:24px;">Couldn’t load this section. '
+          + '<a href="#" onclick="showTab(\'' + name + '\');return false;">Retry</a></p></div>';
+      }
+    }
+
+    function runTabInit(name) {
       if (name === 'forum') loadForum();
       if (name === 'checkin') loadCheckIn();
       if (name === 'samples') initSamples();
       if (name === 'linkedin') updateLinkedInFreeStatus();
       if (name === 'video') updateVideoGate();
       if (name === 'jobtracker') initJobTracker();
+      if (name === 'website') loadWebsiteCreator();
+      if (name === 'backoffice') loadBackOffice();
+    }
+
+    function showTab(name) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      // Every sidebar button, not just those matching a selector that has
+      // drifted — LinkedIn Optimizer was staying lit on other pages.
+      document.querySelectorAll('.sidebar-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      var _tab = document.getElementById('tab-' + name);
+      if (_tab) _tab.classList.add('active');
       // The Website Creator takes over the screen: its own slim bar replaces
       // the app header, which otherwise sits on top of the editor toolbar and
       // eats every click on Pages, Undo, Preview and Publish.
       document.body.classList.toggle('wb-immersive', name === 'website');
-      if (name === 'website') loadWebsiteCreator();
-      if (name === 'backoffice') loadBackOffice();
+      // Fetch/inject the panel (no-op for the two inline panels), then run its
+      // per-tab init. Runs on a microtask for inline panels — harmless.
+      hydratePanel(name).then(() => runTabInit(name));
       _rtNav(name);
     }
     window.addEventListener('popstate', function (e) {
@@ -3616,6 +1760,7 @@
         selectedMode = btn.dataset.mode;
         renderTplPicker();
         const isCover = selectedMode === 'cover_letter';
+        if (isCover) loadDecorativeFonts();  // signature fonts used in cover output
         document.getElementById('resumeFieldLabel').textContent = isCover ? 'Your Cover Letter Draft' : 'Your Resume';
         document.getElementById('resume').placeholder = isCover
           ? 'Paste your cover letter draft here (optional), OR click Upload File to import a file. Leave blank to generate from scratch.'
@@ -3980,16 +2125,19 @@
         feed.innerHTML = `<div style="text-align:center;color:var(--muted);padding:40px;">${isZhF ? '来第一个发帖吧！' : 'Be the first to post!'}</div>`;
         return;
       }
+      // Phase 2: forum content is user-supplied — every interpolated field is
+      // HTML-escaped here (authoritative XSS defense; the server also strips
+      // tags on storage). Numeric ids/likes come from the DB and are safe.
       feed.innerHTML = posts.map(p => `
         <div class="forum-post" id="post-${p.id}">
           <div class="post-header">
-            <div class="post-avatar">${p.author.charAt(0)}</div>
+            <div class="post-avatar">${escHtml(String(p.author || '?').charAt(0))}</div>
             <div>
-              <div class="post-author">${p.author}</div>
-              <div class="post-meta">${p.role} · ${p.time}</div>
+              <div class="post-author">${escHtml(p.author)}</div>
+              <div class="post-meta">${escHtml(p.role)} · ${escHtml(p.time)}</div>
             </div>
           </div>
-          <div class="post-body">${p.text}</div>
+          <div class="post-body">${escHtml(p.text)}</div>
           <div class="post-actions">
             <button class="post-action-btn" onclick="likePost(${p.id}, this)">👍 <span>${p.likes}</span></button>
             <button class="post-action-btn" onclick="toggleReply(${p.id})">💬 ${isZhF ? '回复' : 'Reply'}</button>
@@ -4000,16 +2148,26 @@
             <button class="btn btn-primary" style="margin-top:8px;font-size:13px;padding:8px 16px;" onclick="submitReply(${p.id})">${isZhF ? '发布回复' : 'Post Reply'}</button>
           </div>
           <div class="post-replies" id="replies-${p.id}">
-            ${(p.replies||[]).map(r => `<div class="reply-item"><strong>${r.author}</strong>: ${r.text} <span class="reply-time">${r.time}</span></div>`).join('')}
+            ${(p.replies||[]).map(r => `<div class="reply-item"><strong>${escHtml(r.author)}</strong>: ${escHtml(r.text)} <span class="reply-time">${escHtml(r.time)}</span></div>`).join('')}
           </div>
         </div>
       `).join('');
     }
 
+    // Phase 4: strip <script> blocks + inline event handlers from user input
+    // before sending (belt-and-suspenders — the server also strips all tags on
+    // storage, and the client HTML-escapes on render).
+    function stripUnsafe(s) {
+      return String(s == null ? '' : s)
+        .replace(/<\s*script[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, '')
+        .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/javascript:/gi, '');
+    }
+
     async function submitPost() {
-      const author = document.getElementById('forumAuthor').value.trim();
-      const role = document.getElementById('forumRole').value.trim();
-      const text = document.getElementById('forumText').value.trim();
+      const author = stripUnsafe(document.getElementById('forumAuthor').value.trim());
+      const role = stripUnsafe(document.getElementById('forumRole').value.trim());
+      const text = stripUnsafe(document.getElementById('forumText').value.trim());
       if (!text) return showToast('Please write something before posting.');
 
       try {
@@ -4042,8 +2200,8 @@
     }
 
     async function submitReply(id) {
-      const author = document.getElementById('reply-author-' + id).value.trim();
-      const text = document.getElementById('reply-text-' + id).value.trim();
+      const author = stripUnsafe(document.getElementById('reply-author-' + id).value.trim());
+      const text = stripUnsafe(document.getElementById('reply-text-' + id).value.trim());
       if (!text) return showToast('Reply cannot be empty.');
 
       try {
@@ -4054,7 +2212,7 @@
         });
         const reply = await res.json();
         const repliesDiv = document.getElementById('replies-' + id);
-        repliesDiv.innerHTML += `<div class="reply-item"><strong>${reply.author || 'Anonymous'}</strong>: ${reply.text} <span class="reply-time">just now</span></div>`;
+        repliesDiv.innerHTML += `<div class="reply-item"><strong>${escHtml(reply.author || 'Anonymous')}</strong>: ${escHtml(reply.text)} <span class="reply-time">just now</span></div>`;
         document.getElementById('reply-text-' + id).value = '';
         document.getElementById('reply-' + id).style.display = 'none';
         showToast('Reply posted!');
@@ -4253,6 +2411,7 @@
     async function handleAtsResumeUpload(input) {
       const file = input.files[0];
       if (!file) return;
+      if (!checkDocSize(file)) { input.value = ''; return; }
       const btn = document.getElementById('atsUploadBtn');
       btn.textContent = 'Loading…';
       btn.disabled = true;
@@ -5587,6 +3746,7 @@
     }
 
     function initSamples(){
+      loadDecorativeFonts();  // template gallery previews use the decorative faces
       renderTemplateGallery();
       window.removeEventListener('resize',updateTplScales);
       window.addEventListener('resize',updateTplScales);
@@ -5787,6 +3947,7 @@ Aaliyah Washington`
     async function handleResumeUpload(input) {
       const file = input.files[0];
       if (!file) return;
+      if (!checkDocSize(file)) { input.value = ''; return; }
 
       const btnText = document.getElementById('uploadBtnText');
       btnText.innerHTML = '<span class="spinner"></span> Reading...';
@@ -6009,7 +4170,7 @@ Aaliyah Washington`
 
     async function saveTailoredResume(content) {
       const t = (content || '').trim();
-      if (!t || t.length < 40 || !getToken()) return;
+      if (!t || t.length < 40 || !isLoggedIn) return;
       try {
         const r = await fetch('/api/resumes', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ content: t }) });
         if (r.ok) _savedResumesCache = []; // invalidate so the next fetch is fresh
@@ -6020,12 +4181,12 @@ Aaliyah Washington`
     // Office can list it (same dedupe/keep-20 behavior as resumes).
     async function saveTailoredCoverLetter(content) {
       const t = (content || '').trim();
-      if (!t || t.length < 40 || !getToken()) return;
+      if (!t || t.length < 40 || !isLoggedIn) return;
       try { await fetch('/api/cover-letters', { method: 'POST', headers: authHeaders(), body: JSON.stringify({ content: t }) }); } catch (_) {}
     }
 
     async function fetchSavedResumes() {
-      if (!getToken()) return [];
+      if (!isLoggedIn) return [];
       try {
         const r = await fetch('/api/resumes', { headers: authHeaders() });
         if (!r.ok) return [];
@@ -6177,6 +4338,7 @@ Aaliyah Washington`
     async function handleVideoResumeUpload(input) {
       const file = input.files[0];
       if (!file) return;
+      if (!checkDocSize(file)) { input.value = ''; return; }
       const btn = document.getElementById('videoUploadBtn');
       btn.textContent = 'Loading…';
       btn.disabled = true;
@@ -6787,7 +4949,8 @@ Aaliyah Washington`
         if (!r.ok) { showToast('LinkedIn sign-in link expired — please try again.'); return true; }
         const data = await r.json();
         if (!data.token) { showToast('LinkedIn sign-in failed — please try again.'); return true; }
-        localStorage.setItem('rt_token', data.token);
+        // Session now lives in the httpOnly rt_session cookie the server just
+        // set — no token in localStorage (Phase 2). Keep email/username for UI.
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
         if (_consumePostLogin()) return true;
@@ -6815,7 +4978,8 @@ Aaliyah Washington`
         if (!r.ok) { showToast('Google sign-in link expired — please try again.'); return true; }
         const data = await r.json();
         if (!data.token) { showToast('Google sign-in failed — please try again.'); return true; }
-        localStorage.setItem('rt_token', data.token);
+        // Session now lives in the httpOnly rt_session cookie the server just
+        // set — no token in localStorage (Phase 2). Keep email/username for UI.
         localStorage.setItem('rt_email', data.email);
         localStorage.setItem('rt_username', data.username);
         if (_consumePostLogin()) return true;
@@ -10167,7 +8331,7 @@ Aaliyah Washington`
           s.published ? `${(s.views || 0)} ${_t('wc_stat_views', 'Views')}` : '',
         ].filter(Boolean).join(' · ');
         return `<div class="bo-site${s.published ? ' is-live' : ''}">
-          <div class="bo-thumb">${badge}<iframe title="" data-site-thumb="${wcEsc(sub)}" scrolling="no" tabindex="-1"></iframe></div>
+          <div class="bo-thumb">${badge}<iframe title="" loading="lazy" data-site-thumb="${wcEsc(sub)}" scrolling="no" tabindex="-1"></iframe></div>
           <div class="bo-site-body">
             <span class="bo-site-tpl">${wcEsc(s.templateName || s.name || _t('bo_site_untitled', 'My website'))}</span>
             ${s.published
@@ -10567,5 +8731,13 @@ Aaliyah Washington`
   })();</script>
   <script src="/job-tracker.js" defer></script>
   <script src="/career-hub.js"></script>
+  <!-- Phase 1: Google Analytics moved out of <head> so it never blocks first paint. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-JWC76X5X68');
+  </script>
 </body>
 </html>

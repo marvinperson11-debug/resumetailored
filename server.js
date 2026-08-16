@@ -1044,6 +1044,13 @@ function _sendVersionedHtml(res, filePath) {
     if (err) { res.status(404); return res.sendFile(path.join(__dirname, 'public', '404.html')); }
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
+    // Phase 2 note: a global Content-Security-Policy is already applied to every
+    // response by the security-headers middleware (SC.buildCSP()). That policy
+    // is stronger and better-tuned than the one this refactor's checklist
+    // suggested — it already keeps 'unsafe-inline' only until the inline blocks
+    // move out (Phase 3), and it correctly allows Cloudflare's edge-injected
+    // analytics beacon + esm.sh, which a dashboard-only override would have
+    // regressed. So no per-page CSP is set here.
     res.send(_selfHostFonts(_versionAssetRefs(html)));
   });
 }
@@ -1139,6 +1146,77 @@ app.get('/blog',         (req, res) => _sendVersionedHtml(res, blogIndexHtml));
 // Raw body needed for Stripe webhook verification
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
+
+// ─── Phase 2: cookie parsing + auth-cookie helpers ────────────────────────────
+// Dependency-free cookie parser (avoids pulling in cookie-parser). Populates
+// req.cookies for every route registered below this line — which is all of the
+// API. Values are URL-decoded; malformed pairs are skipped.
+app.use((req, res, next) => {
+  const out = {};
+  const raw = req.headers.cookie;
+  if (raw) {
+    for (const part of raw.split(';')) {
+      const i = part.indexOf('=');
+      if (i < 0) continue;
+      const k = part.slice(0, i).trim();
+      if (!k) continue;
+      let v = part.slice(i + 1).trim();
+      if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1);
+      try { out[k] = decodeURIComponent(v); } catch (_) { out[k] = v; }
+    }
+  }
+  req.cookies = out;
+  next();
+});
+
+// A request is over https either directly or behind Railway/Netlify's proxy.
+function _isSecureReq(req) {
+  return req.secure || (req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'https';
+}
+// Phase 4: the Website Creator is a desktop tool (its editor UI is hidden on
+// small screens). The client gates it for UX; the server is the source of truth.
+function _isMobileUA(req) {
+  return /Mobi|Android|iPhone|iPod|iPad|Windows Phone|BlackBerry/i.test(req.headers['user-agent'] || '');
+}
+const SESSION_COOKIE_MAX_AGE = 1000 * 60 * 60 * 24 * 30; // 30 days
+// Set the httpOnly session cookie + the readable double-submit CSRF cookie.
+// The session cookie mirrors the bearer token (same UUID row in `sessions`), so
+// nothing about the server-side session model changes — a browser just no longer
+// has to hand the token to JS. Returns the CSRF token so callers can echo it.
+function _setAuthCookies(req, res, token) {
+  const secure = _isSecureReq(req);
+  const base = `Path=/; Max-Age=${Math.floor(SESSION_COOKIE_MAX_AGE / 1000)}; SameSite=Strict${secure ? '; Secure' : ''}`;
+  const csrf = crypto.randomBytes(24).toString('hex');
+  res.append('Set-Cookie', `rt_session=${encodeURIComponent(token)}; HttpOnly; ${base}`);
+  // rt_csrf is intentionally NOT HttpOnly — the SPA reads it and echoes it in the
+  // X-CSRF-Token header (double-submit). Knowing it grants nothing on its own.
+  res.append('Set-Cookie', `rt_csrf=${csrf}; ${base}`);
+  return csrf;
+}
+function _clearAuthCookies(req, res) {
+  const secure = _isSecureReq(req);
+  const base = `Path=/; Max-Age=0; SameSite=Strict${secure ? '; Secure' : ''}`;
+  res.append('Set-Cookie', `rt_session=; HttpOnly; ${base}`);
+  res.append('Set-Cookie', `rt_csrf=; ${base}`);
+}
+
+// ─── Phase 2: CSRF guard (double-submit cookie) ───────────────────────────────
+// Only COOKIE-authenticated mutations need CSRF protection — the browser sends
+// the session cookie automatically, so a cross-site form/fetch could ride it.
+// A request carrying an explicit `Authorization: Bearer` token is immune (an
+// attacker's page cannot read the token out of our localStorage), and an
+// unauthenticated mutation (login, signup, contact) has no session to abuse.
+// So: require X-CSRF-Token === rt_csrf ONLY when auth came via cookie.
+function csrfGuard(req, res, next) {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  const { viaCookie } = _resolveSession(req);
+  if (!viaCookie) return next();
+  const header = req.headers['x-csrf-token'];
+  const cookie = req.cookies && req.cookies.rt_csrf;
+  if (header && cookie && header === cookie) return next();
+  return res.status(403).json({ error: 'Invalid or missing CSRF token. Please refresh and try again.' });
+}
+app.use('/api', csrfGuard);
 
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 // Set only by the test harness, which fires a few hundred requests from one IP
@@ -1270,7 +1348,8 @@ app.post('/api/auth/signup', authRateLimiter, authLockoutGuard, async (req, res)
   db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)').run(key, cleanUsername, hashPassword(password));
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
-  res.json({ token, username: cleanUsername, email: key });
+  const csrf = _setAuthCookies(req, res, token);
+  res.json({ token, csrf, username: cleanUsername, email: key });
 
   notifyOwner(`[ResumeTailored] New signup: ${key}`,
     `<p>🎉 <strong>${cleanUsername}</strong> (${key}) just created an account.</p>`);
@@ -1391,7 +1470,8 @@ app.post('/api/auth/login', authRateLimiter, authLockoutGuard, (req, res) => {
   }
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
-  res.json({ token, username: user.username, email: key });
+  const csrf = _setAuthCookies(req, res, token);
+  res.json({ token, csrf, username: user.username, email: key });
 
   const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
   sendEmail({
@@ -1402,16 +1482,23 @@ app.post('/api/auth/login', authRateLimiter, authLockoutGuard, (req, res) => {
 });
 
 app.get('/api/auth/me', (req, res) => {
-  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  const { token, viaCookie } = _resolveSession(req);
   const row = token && db.prepare('SELECT email FROM sessions WHERE token = ?').get(token);
   if (!row) return res.status(401).json({ error: 'Not authenticated.' });
   const user = db.prepare('SELECT username FROM users WHERE email = ?').get(row.email);
-  res.json({ email: row.email, username: user ? user.username : '' });
+  // Auto-migrate: a returning user still authenticating via the legacy bearer
+  // header (no cookie yet) gets the httpOnly session + CSRF cookies minted here,
+  // so nobody is force-logged-out by the localStorage→cookie switch.
+  let csrf;
+  if (!viaCookie) csrf = _setAuthCookies(req, res, token);
+  else if (req.cookies && req.cookies.rt_csrf) csrf = req.cookies.rt_csrf;
+  res.json({ email: row.email, username: user ? user.username : '', csrf });
 });
 
 app.post('/api/auth/logout', (req, res) => {
-  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  const { token } = _resolveSession(req);
   if (token) db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+  _clearAuthCookies(req, res);
   res.json({ success: true });
 });
 
@@ -1703,7 +1790,8 @@ app.get('/api/auth/linkedin/session', (req, res) => {
   const entry = t && _liDrafts.get(t);
   if (!entry || !entry.session) return res.status(404).json({ error: 'expired' });
   _liDrafts.delete(t);
-  res.json(entry.session); // { token, email, username }
+  const csrf = _setAuthCookies(req, res, entry.session.token);
+  res.json({ ...entry.session, csrf }); // { token, email, username, csrf }
 });
 
 // ── Google Sign-In (OpenID Connect) ─────────────────────────────────────────
@@ -1792,7 +1880,8 @@ app.get('/api/auth/google/session', (req, res) => {
   const entry = t && _liDrafts.get(t);
   if (!entry || !entry.session) return res.status(404).json({ error: 'expired' });
   _liDrafts.delete(t);
-  res.json(entry.session); // { token, email, username }
+  const csrf = _setAuthCookies(req, res, entry.session.token);
+  res.json({ ...entry.session, csrf }); // { token, email, username, csrf }
 });
 
 // ── Saved resumes (per signed-in user, so they're available on every device) ──
@@ -2649,9 +2738,28 @@ app.post('/api/auth/reset-password', authRateLimiter, async (req, res) => {
 });
 
 // ─── File upload config ───────────────────────────────────────────────────────
+// Phase 2: validate a document's real content against its extension by sniffing
+// magic bytes — so a renamed executable or a spoofed MIME type can't slip
+// through the extension/mimetype filter. Executables are always rejected.
+function _docMagicOk(ext, buf) {
+  if (!buf || buf.length < 4) return ext === 'txt';
+  const b = buf;
+  if (b[0] === 0x4D && b[1] === 0x5A) return false;                                   // MZ (exe/dll)
+  if (b[0] === 0x7F && b[1] === 0x45 && b[2] === 0x4C && b[3] === 0x46) return false; // ELF
+  if (b[0] === 0x23 && b[1] === 0x21) return false;                                   // #! shebang
+  if (ext === 'pdf')  return b.slice(0, 5).toString('latin1') === '%PDF-';
+  if (ext === 'docx') return b[0] === 0x50 && b[1] === 0x4B && (b[2] === 0x03 || b[2] === 0x05 || b[2] === 0x07); // PK zip
+  if (ext === 'doc')  return b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0;                    // OLE2
+  if (ext === 'txt') {                                                                 // plain text: no NUL bytes
+    const n = Math.min(b.length, 8000);
+    for (let i = 0; i < n; i++) if (b[i] === 0) return false;
+    return true;
+  }
+  return false;
+}
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB max
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB max (documents)
   fileFilter: (req, file, cb) => {
     const allowed = ['text/plain', 'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -2674,7 +2782,7 @@ function uploadSingleFile(req, res, next) {
     if (err) {
       const isMulterErr = err instanceof multer.MulterError;
       const msg = err.code === 'LIMIT_FILE_SIZE'
-        ? 'File is too large. Maximum size is 10 MB.'
+        ? 'File is too large. Maximum size is 5 MB.'
         : err.message || 'Upload failed.';
       return res.status(400).json({ error: msg, code: isMulterErr ? err.code : 'INVALID_FILE' });
     }
@@ -2685,6 +2793,11 @@ function uploadSingleFile(req, res, next) {
 app.post('/api/extract-text', uploadSingleFile, async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded.' });
   const ext = (req.file.originalname || '').toLowerCase().split('.').pop();
+  // Magic-byte check: the file's real content must match its extension, and no
+  // executable is ever accepted (defends against a renamed/MIME-spoofed upload).
+  if (!_docMagicOk(ext, req.file.buffer)) {
+    return res.status(400).json({ error: 'This file’s contents don’t match a real .txt, .pdf, or .docx document.' });
+  }
   try {
     let text = '';
     if (ext === 'txt') {
@@ -5127,6 +5240,12 @@ app.post('/api/personal-site', (req, res) => {
     return res.status(402).json({ error: 'pro_required', message: 'Publishing a personal website is a Pro feature. Upgrade to unlock it.' });
   }
   const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config, publish } = req.body || {};
+  // Phase 4: publishing (not autosave) requires a desktop browser — the editor
+  // can't be driven on a phone, so a live publish from one is almost certainly a
+  // mistake or a scripted call. Autosaves (no `publish` flag) are unaffected.
+  if (publish === true && _isMobileUA(req)) {
+    return res.status(400).json({ error: 'desktop_required', message: 'Website publishing requires a desktop browser. Please publish from a computer.' });
+  }
   // Drafts. A site is public the moment `published` is 1, so anything created
   // on the user's behalf — the auto-generated starter site — must be able to
   // save WITHOUT going live.
@@ -5784,8 +5903,19 @@ function consumeFreeTier(userKey, mode) {
 }
 
 // Returns the authenticated email from the Bearer token, or null
+// Resolve the session token from the Authorization header first (existing
+// clients), falling back to the httpOnly rt_session cookie (Phase 2). `viaCookie`
+// tells the CSRF layer whether this request was authenticated by an
+// automatically-sent cookie (needs CSRF) or an explicit bearer token (immune).
+function _resolveSession(req) {
+  const hdr = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  if (hdr) return { token: hdr, viaCookie: false };
+  const ck = (req.cookies && req.cookies.rt_session ? String(req.cookies.rt_session) : '').trim();
+  if (ck) return { token: ck, viaCookie: true };
+  return { token: '', viaCookie: false };
+}
 function getSessionEmail(req) {
-  const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  const { token } = _resolveSession(req);
   if (!token) return null;
   const row = db.prepare('SELECT email FROM sessions WHERE token = ?').get(token);
   return row ? row.email : null;
@@ -6953,6 +7083,16 @@ app.post('/webhook', (req, res) => {
 });
 
 // ─── API: Forum ───────────────────────────────────────────────────────────────
+// Strip HTML tags + control chars from user-submitted content before storage
+// (defense-in-depth — the client also HTML-escapes on render). Caps length so
+// a single post can't be unbounded.
+function _sanitizeUserText(s, max) {
+  return String(s == null ? '' : s)
+    .replace(/<[^>]*>/g, '')                 // drop any HTML tag
+    .replace(/[\x00-\x1F\x7F]/g, ' ')        // strip control chars
+    .trim()
+    .slice(0, max || 5000);
+}
 app.get('/api/forum', (req, res) => {
   const posts = db.prepare('SELECT * FROM forum_posts ORDER BY id DESC').all();
   const replies = db.prepare('SELECT * FROM forum_replies').all();
@@ -6966,9 +7106,12 @@ app.get('/api/forum', (req, res) => {
 
 app.post('/api/forum', (req, res) => {
   const { author, role, text } = req.body;
-  if (!text || text.trim().length < 5) return res.status(400).json({ error: 'Post too short.' });
+  const cleanText = _sanitizeUserText(text, 5000);
+  if (!cleanText || cleanText.length < 5) return res.status(400).json({ error: 'Post too short.' });
+  const cleanAuthor = _sanitizeUserText(author, 60) || 'Anonymous';
+  const cleanRole = _sanitizeUserText(role, 60) || 'Professional';
   const result = db.prepare('INSERT INTO forum_posts (author, role, time, text, likes) VALUES (?, ?, ?, ?, 0)')
-    .run(author || 'Anonymous', role || 'Professional', 'just now', text.trim());
+    .run(cleanAuthor, cleanRole, 'just now', cleanText);
   const post = db.prepare('SELECT * FROM forum_posts WHERE id = ?').get(result.lastInsertRowid);
   res.json({ ...post, replies: [] });
 });
@@ -6985,10 +7128,27 @@ app.post('/api/forum/:id/reply', (req, res) => {
   const id = parseInt(req.params.id);
   if (!db.prepare('SELECT 1 FROM forum_posts WHERE id = ?').get(id)) return res.status(404).json({ error: 'Not found.' });
   const { author, text } = req.body;
-  if (!text || text.trim().length < 2) return res.status(400).json({ error: 'Reply too short.' });
+  const cleanText = _sanitizeUserText(text, 3000);
+  if (!cleanText || cleanText.length < 2) return res.status(400).json({ error: 'Reply too short.' });
+  const cleanAuthor = _sanitizeUserText(author, 60) || 'Anonymous';
   db.prepare('INSERT INTO forum_replies (post_id, author, text, time) VALUES (?, ?, ?, ?)')
-    .run(id, author || 'Anonymous', text.trim(), 'just now');
-  res.json({ author: author || 'Anonymous', text: text.trim(), time: 'just now' });
+    .run(id, cleanAuthor, cleanText, 'just now');
+  res.json({ author: cleanAuthor, text: cleanText, time: 'just now' });
+});
+
+// ─── Phase 4: client error sink ───────────────────────────────────────────────
+// Front-end crashes POST here so they show up in server logs. Log-only (never
+// stored), truncated, and behind the global /api rate limiter — a noisy client
+// can't flood it.
+app.post('/api/client-error', (req, res) => {
+  try {
+    const { msg, stack, url } = req.body || {};
+    console.error('[client-error]',
+      String(url || '').slice(0, 200), '|',
+      String(msg || '').slice(0, 300), '|',
+      String(stack || '').slice(0, 600));
+  } catch (_) {}
+  res.json({ ok: true });
 });
 
 // ─── API: Career check-in ─────────────────────────────────────────────────────

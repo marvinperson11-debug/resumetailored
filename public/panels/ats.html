@@ -1,0 +1,103 @@
+        <div class="panel-header" style="border-bottom:3px solid #1F5C3D;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <div style="width:44px;height:44px;background:linear-gradient(135deg,#1F5C3D,#2E7D53);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🎯</div>
+            <div>
+              <h1 style="color:#1F5C3D;">ATS Match Scanner</h1>
+              <span style="background:#16a34a;color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:10px;letter-spacing:.5px;" data-i18n="ats_free_badge">✓ FREE &amp; UNLIMITED</span>
+            </div>
+          </div>
+          <p>Paste your resume and a job posting — get an ATS keyword match score, see exactly which keywords are missing, and receive 5 specific AI rewrite suggestions to close the gap.</p>
+        </div>
+
+        <div id="atsProStatus" style="display:none;background:rgba(31,92,61,0.06);border:1px solid rgba(31,92,61,0.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#1F5C3D;font-weight:600;"></div>
+
+        <div class="input-section">
+          <!-- Two-column inputs -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+            <div class="input-group">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <label class="input-label" style="margin:0;">📄 Your Resume</label>
+                <button id="atsUploadBtn" onclick="document.getElementById('atsResumeFileInput').click()" class="btn btn-outline" style="font-size:12px;padding:5px 10px;">⬆ Upload File</button>
+                <input type="file" id="atsResumeFileInput" accept=".txt,.pdf,.doc,.docx" style="display:none;" onchange="handleAtsResumeUpload(this)" />
+              </div>
+              <textarea id="atsResumeInput" class="resume-textarea" style="min-height:220px;" placeholder="Paste your resume here, or click Upload File to import .txt, .pdf, or .docx…" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+              <button class="btn btn-outline" style="margin-top:6px;font-size:12px;padding:6px 12px;" onclick="copyResumeToAts()">↑ Use Resume from Tailor tab</button>
+            </div>
+
+            <div class="input-group">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <label class="input-label" style="margin:0;">📋 Job Description</label>
+                <div style="display:flex;gap:3px;background:rgba(0,0,0,0.06);border-radius:7px;padding:2px;">
+                  <button id="atsJmtPaste" onclick="setAtsJobMode('paste')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:#1F5C3D;color:#fff;font-family:inherit;">Paste</button>
+                  <button id="atsJmtUrl" onclick="setAtsJobMode('url')" style="padding:3px 9px;border-radius:5px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:#6b7280;font-family:inherit;">🔗 URL</button>
+                </div>
+              </div>
+              <textarea id="atsJobInput" class="resume-textarea" style="min-height:220px;" placeholder="Paste the full job description here…" spellcheck="false" autocorrect="off" autocapitalize="off"></textarea>
+              <div id="atsUrlPane" style="display:none;">
+                <div style="display:flex;gap:8px;margin-top:6px;">
+                  <input type="url" id="atsUrlInput" style="flex:1;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;outline:none;" placeholder="https://www.linkedin.com/jobs/view/…" spellcheck="false" autocorrect="off" autocapitalize="off" onkeydown="if(event.key==='Enter')fetchAtsJobUrl()" />
+                  <button onclick="fetchAtsJobUrl()" id="atsFetchBtn" style="padding:9px 14px;border-radius:8px;border:none;background:#1F5C3D;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">Fetch →</button>
+                </div>
+                <div id="atsUrlStatus" style="font-size:12px;color:#6b7280;margin-top:5px;min-height:16px;"></div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:3px;">LinkedIn · Indeed · Glassdoor · Lever · Greenhouse · Workday · and more</div>
+              </div>
+            </div>
+
+          </div>
+
+          <button class="btn btn-primary" id="atsScanBtn" onclick="runDashboardATS()" style="margin-top:16px;width:100%;padding:14px;background:linear-gradient(135deg,#1F5C3D,#2E7D53);border:none;">
+            Analyze ATS Match →
+          </button>
+        </div>
+
+        <!-- Results -->
+        <div id="atsDashResults" style="display:none;margin-top:28px;border-top:1px solid #e5e7eb;padding-top:24px;">
+
+          <!-- Score card -->
+          <div style="display:flex;align-items:center;gap:24px;margin-bottom:24px;flex-wrap:wrap;">
+            <div style="text-align:center;">
+              <div id="atsDashScoreNum" style="font-size:52px;font-weight:900;line-height:1;color:#1F5C3D;">—</div>
+              <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-top:2px;">ATS Score</div>
+            </div>
+            <div>
+              <div id="atsDashVerdict" style="font-size:18px;font-weight:800;color:#111827;margin-bottom:4px;"></div>
+              <div id="atsDashBar" style="width:220px;height:10px;background:#e5e7eb;border-radius:99px;overflow:hidden;">
+                <div id="atsDashBarFill" style="height:100%;border-radius:99px;background:linear-gradient(90deg,#1F5C3D,#34d399);transition:width .5s;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Keywords grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+            <div>
+              <div style="font-size:13px;font-weight:800;color:#16a34a;margin-bottom:8px;">✓ Matched Keywords</div>
+              <div id="atsDashMatched" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:800;color:#dc2626;margin-bottom:8px;">✕ Missing Keywords</div>
+              <div id="atsDashMissing" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+            </div>
+          </div>
+
+          <!-- AI Suggestions -->
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#1F5C3D;margin-bottom:10px;">💡 AI Rewrite Suggestions</div>
+            <div id="atsDashSuggestions" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+
+          <!-- CTA: use Tailor tab to fix -->
+          <div style="margin-top:24px;background:linear-gradient(135deg,rgba(31,92,61,0.06),rgba(46,125,83,0.06));border:1px solid rgba(31,92,61,0.2);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div>
+              <div style="font-size:14px;font-weight:800;color:#111827;margin-bottom:3px;">Fix missing keywords automatically →</div>
+              <div style="font-size:13px;color:#6b7280;">Use the Tailor tab to let AI rewrite your resume with all the right keywords in 30 seconds.</div>
+            </div>
+            <button class="btn btn-primary" onclick="copyJobToTailorAndSwitch()" style="white-space:nowrap;">Tailor My Resume →</button>
+          </div>
+        </div>
+
+        <!-- Free limit banner -->
+        <div class="upsell" id="atsLimitBanner" style="display:none;margin-top:20px;">
+          <p>ATS scans are free and unlimited. Upgrade to Pro for premium templates, the resume video, a personal website & watermark-free exports — $19.99/month.</p>
+          <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
+        </div>
