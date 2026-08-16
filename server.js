@@ -176,7 +176,13 @@ function _sendPublishSuccessEmail(email, siteUrl, origin) {
 // ─── SQLite database ──────────────────────────────────────────────────────────
 // DATA_DIR defaults to ./data; set DATA_DIR=/data and mount a Railway Volume
 // at /data for full persistence across deploys.
-const dataDir = process.env.DATA_DIR || path.join(__dirname, 'data');
+// .trim() is deliberate, not cosmetic: a DATA_DIR value pasted into the Railway
+// dashboard with a trailing newline/space (this project has other vars with a
+// literal "\n" in them) would make path.join(DATA_DIR,'resumetailor.db') resolve
+// to "/data\n/resumetailor.db" — a directory OUTSIDE the volume mounted at
+// "/data", i.e. ephemeral storage — silently wiping data on every deploy.
+const _rawDataDir = process.env.DATA_DIR && process.env.DATA_DIR.trim();
+const dataDir = _rawDataDir || path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 const db = new Database(path.join(dataDir, 'resumetailor.db'));
 db.pragma('journal_mode = WAL');
@@ -184,10 +190,10 @@ db.pragma('journal_mode = WAL');
 // in the ephemeral container filesystem and every deploy/restart wipes it (this
 // is the "saved resumes/sessions disappear on deploy" bug). Set DATA_DIR=/data
 // in Railway and mount a Volume at /data. Verify at runtime via GET /api/health.
-if (!process.env.DATA_DIR) {
+if (!_rawDataDir) {
   console.error('STARTUP ERROR: DATA_DIR is not set — the SQLite DB is in EPHEMERAL storage and ALL data (saved resumes, cover letters, sessions, subscribers) will be lost on the next deploy. Set DATA_DIR=/data and mount a Railway Volume at /data.');
 } else {
-  console.log(`[persistence] DATA_DIR=${dataDir} — DB at ${path.join(dataDir, 'resumetailor.db')}`);
+  console.log(`[persistence] DATA_DIR=${JSON.stringify(dataDir)} — DB at ${path.join(dataDir, 'resumetailor.db')}`);
 }
 
 db.exec(`
@@ -6062,8 +6068,13 @@ app.get('/api/health', (req, res) => {
   // DATA_DIR: the resolved directory + whether it came from the env var. If it
   // did NOT, the app is writing to ephemeral container storage and every deploy
   // wipes it — the exact cause of "saved resumes disappear on deploy".
-  const fromEnv = !!process.env.DATA_DIR;
+  const fromEnv = !!_rawDataDir;
   out.dataDir = { path: dataDir, fromEnv };
+  // Flag the trailing-whitespace corruption case explicitly — it's invisible in
+  // the dashboard and is a prime suspect for silent data loss on this project.
+  if (process.env.DATA_DIR && process.env.DATA_DIR !== process.env.DATA_DIR.trim()) {
+    out.dataDir.rawHadWhitespace = true;
+  }
   out.persistent = fromEnv;
 
   // Writable at runtime: actually write + delete a probe file in DATA_DIR. This
