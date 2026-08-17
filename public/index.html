@@ -311,6 +311,15 @@
       border: 1px solid var(--line-2);
     }
     .btn-ghost:hover { background: rgba(25,21,18,0.04); border-color: var(--ink-faint); color: var(--ink); }
+    /* Employer CTA ("Start hiring"). Deliberately the EMPLOYER colour used
+       everywhere else on this page for hiring (the dark-navy #0f172a of the
+       "For Employers" promo card + its CTA), NOT the green job-seeker accent —
+       so the two hero buttons read as two distinct audiences and an employer
+       scanning the page spots theirs at a glance. The 🏢 icon is the same one
+       the Employer Portal feature card uses. */
+    .btn-hire { background: #0f172a; color: #fff; box-shadow: 0 6px 18px rgba(15,23,42,0.28); }
+    .btn-hire:hover { background: #1e293b; box-shadow: 0 10px 26px rgba(15,23,42,0.4); transform: translateY(-1px); }
+    .btn-hire .btn-hire-ic { margin-right: 9px; font-size: 1.08em; line-height: 1; }
     .btn-lg { padding: 14px 28px; font-size: 16px; border-radius: 11px; }
     .btn-full { width: 100%; }
     .btn-white {
@@ -856,6 +865,33 @@
     main > section:nth-of-type(11) { contain-intrinsic-size: auto 3020px; }
     main > section:nth-of-type(12) { contain-intrinsic-size: auto 975px; }
 
+    /* The fallbacks above were measured at the 412px mobile viewport. On a wider
+       screen every section lays out SHORTER (wider columns, fewer wrapped lines),
+       so those mobile heights massively OVER-reserve on desktop — e.g. #features
+       is ~5430px on a 1440px screen but reserves 9840px, #job-boards is ~726px
+       but reserves 1460px. content-visibility:auto paints that oversized
+       placeholder for each below-the-fold section, then collapses it to the real
+       (smaller) height the instant the section renders on scroll — so content
+       below jumps upward as you scroll toward it, and a section can flash blank
+       before it settles. That is the "renders lazily, have to scroll back and
+       forth" report, and it began at the first fully-below-the-fold section
+       (#job-boards). These desktop-measured fallbacks (Chromium @1440px) reserve
+       the right space so the first scroll-through is shift-free; `auto` still
+       self-corrects to each section's real height after its first paint. */
+    @media (min-width: 901px) {
+      main > section:nth-of-type(2)  { contain-intrinsic-size: auto 490px; }
+      main > section:nth-of-type(3)  { contain-intrinsic-size: auto 630px; }
+      main > section:nth-of-type(4)  { contain-intrinsic-size: auto 5450px; }
+      main > section:nth-of-type(5)  { contain-intrinsic-size: auto 730px; }
+      main > section:nth-of-type(6)  { contain-intrinsic-size: auto 635px; }
+      main > section:nth-of-type(7)  { contain-intrinsic-size: auto 1030px; }
+      main > section:nth-of-type(8)  { contain-intrinsic-size: auto 575px; }
+      main > section:nth-of-type(9)  { contain-intrinsic-size: auto 355px; }
+      main > section:nth-of-type(10) { contain-intrinsic-size: auto 1660px; }
+      main > section:nth-of-type(11) { contain-intrinsic-size: auto 1545px; }
+      main > section:nth-of-type(12) { contain-intrinsic-size: auto 960px; }
+    }
+
     /* ── Scroll Reveal ── */
     .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
     .reveal.visible { opacity: 1; transform: none; }
@@ -1007,7 +1043,12 @@
     <div class="hero-cta">
       <div class="hero-cta-row">
         <a href="/dashboard" class="btn btn-primary btn-lg">Start Unlimited Free Tailoring →</a>
-        <a href="/how-it-works" class="btn btn-ghost btn-lg">See how it works</a>
+        <!-- Employer CTA. Points at the employer LANDING page for the logged-out
+             visitor (the same /for-employers the hamburger "For Employers" uses);
+             the auth-aware script at the bottom of the page upgrades the href to
+             the employer dashboard (/employer) once a signed-in session is
+             confirmed. -->
+        <a href="/for-employers" id="heroHireBtn" class="btn btn-hire btn-lg"><span class="btn-hire-ic" aria-hidden="true">🏢</span>Start hiring</a>
       </div>
       <span class="hero-note">Unlimited free tailoring &amp; cover letters · No credit card, no daily limit</span>
     </div>
@@ -3164,7 +3205,7 @@
     ['.hero h1', null, '<span class="word-animate" style="animation-delay:0ms">Your</span>&nbsp;<span class="word-animate" style="animation-delay:120ms">resume,</span><br /><span class="word-animate blue" style="animation-delay:260ms">perfectly</span>&nbsp;<span class="word-animate blue" style="animation-delay:380ms">tailored</span><br /><span class="word-animate" style="animation-delay:520ms">to</span>&nbsp;<span class="word-animate" style="animation-delay:620ms">every</span>&nbsp;<span class="word-animate" style="animation-delay:740ms">job.</span>', '<span class="word-animate" style="animation-delay:0ms">你的简历，</span><br /><span class="word-animate blue" style="animation-delay:260ms">精准匹配</span><br /><span class="word-animate" style="animation-delay:520ms">每一份工作。</span>'],
     ['.hero-sub', null, 'Paste your resume + a job posting. Our AI rewrites your resume with the right keywords and writes a compelling cover letter — in under 30 seconds.', '粘贴简历和职位描述，AI将用精准关键词重写你的简历，并在30秒内生成有力的求职信。'],
     ['.hero-cta-row > .btn-primary', null, 'Tailor My Resume Free →', '免费定制我的简历 →'],
-    ['.hero-cta-row > .btn-ghost', null, 'See how it works', '了解工作原理'],
+    ['#heroHireBtn', null, '<span class="btn-hire-ic" aria-hidden="true">🏢</span>Start hiring', '<span class="btn-hire-ic" aria-hidden="true">🏢</span>开始招聘'],
     ['.hero-note', null, 'Unlimited free tailoring · No payment required', '无限次免费定制 · 无需付款'],
     ['.hero-trust', null,
       '<span class="hero-trust-stars">★★★★★</span><span>Powered by Anthropic&nbsp;Claude</span><span class="hero-trust-dot">·</span><span>100+ ATS-ready templates</span><span class="hero-trust-dot">·</span><span>Free tier — no card required</span>',
@@ -3835,6 +3876,11 @@
           a.setAttribute('href', '/dashboard');
           a.textContent = zh ? '控制台' : 'Dashboard';
         });
+        // "Start hiring" hero CTA: a logged-out visitor lands on the employer
+        // marketing page (/for-employers); a signed-in one is taken straight to
+        // the employer dashboard (/employer), skipping the pitch.
+        var hire = document.getElementById('heroHireBtn');
+        if (hire) hire.setAttribute('href', '/employer');
       })
       .catch(function () {});
   })();

@@ -2,6 +2,19 @@
     /* Keep the browser from laying out heavy hidden panels on first paint. */
     .tab-content { contain: layout paint; content-visibility: auto; contain-intrinsic-size: 0 500px; }
     .tab-content.active { content-visibility: visible; }
+    /* ONE EXCEPTION — and it was the Website tab's blank-screen bug. This panel's
+       content is a `position: fixed` full-screen editor shell (.cv-shell) that
+       must be positioned against the VIEWPORT. But `contain: layout` (and
+       content-visibility's own containment) turns ANY element into the
+       containing block for its fixed-position descendants — so with the rule
+       above, .cv-shell's `inset: 0` resolved against #panel-website instead of
+       the viewport. That panel's only child is the out-of-flow shell, so the
+       panel itself is 0px tall, and `inset: 0` against a 0-height box gave the
+       shell 0 height: the editor collapsed to a blank, zero-height white screen
+       (measured shellRect height === 0). This one panel must NEVER establish a
+       containing block. ID specificity beats `.tab-content.active`, so no
+       !important is needed. */
+    #panel-website { contain: none; content-visibility: visible; contain-intrinsic-size: auto; }
     .cv-shell { contain: layout paint; }
     .bo-sites, .cv-tplgrid, .template-gallery { contain: layout paint; }
     /* Lazy-panel loading spinner (shown until /panels/<name>.html is injected) */
