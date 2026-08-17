@@ -92,24 +92,21 @@ const server = app.listen(0, async () => {
     const strongSignup = await req('POST', '/api/auth/signup', { body: { email: 'strong@x.com', username: 'Strong', password: 'Xq7$vTmz!wR29Lp' } });
     check('signup accepts a compliant password', strongSignup.status === 200 && !!strongSignup.json.token, strongSignup.body);
 
-    // ── Login lockout (5 failures -> 429, Retry-After) ──────────────────────
+    // ── Login: a wrong password is NEVER a lockout ──────────────────────────
+    // Product decision: mistyping your password tells you it was wrong, it does
+    // not lock you out of your own account (see /api/auth/login in server.js).
+    // Brute force stays bounded by authRateLimiter (20/15min); the hard 5-strike
+    // lockout was removed because it locked out legitimate users.
     let lastFail;
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 8; i++) {
       lastFail = await req('POST', '/api/auth/login', { body: { email: 'exists@x.com', password: 'wrong-password' } });
     }
-    check('5th failed login is still a normal 401 (not yet locked)', lastFail.status === 401, lastFail.body);
-    const lockedAttempt = await req('POST', '/api/auth/login', { body: { email: 'exists@x.com', password: 'wrong-password' } });
-    check('6th failed attempt is locked out (429)', lockedAttempt.status === 429, lockedAttempt.body);
-    check('locked response carries Retry-After', !!lockedAttempt.headers['retry-after']);
-    const evenCorrectPwLocked = await req('POST', '/api/auth/login', { body: { email: 'exists@x.com', password: 'Correct-Horse-1!' } });
-    check('lockout blocks even the CORRECT password until it expires', evenCorrectPwLocked.status === 429);
-
-    // A different IP is unaffected by exists@x.com's lockout (lockout is per-IP,
-    // and every request in this test comes from the same loopback IP, so this
-    // instead proves a DIFFERENT account from the same IP is also blocked —
-    // confirming the key really is the IP, not the email.
-    const differentAccountSameIp = await req('POST', '/api/auth/login', { body: { email: 'strong@x.com', password: 'Xq7$vTmz!wR29Lp' } });
-    check('lockout is per-IP: a different account from the same IP is also blocked', differentAccountSameIp.status === 429);
+    check('repeated wrong passwords keep returning 401, never a 429 lockout', lastFail.status === 401, lastFail.body);
+    check('the 401 says the credentials were wrong', /incorrect|invalid/i.test((lastFail.json && lastFail.json.error) || ''), lastFail.body);
+    // The correct password still works right after several wrong tries — the
+    // account is never locked, which is the whole point of the change.
+    const correctAfterFails = await req('POST', '/api/auth/login', { body: { email: 'exists@x.com', password: 'Correct-Horse-1!' } });
+    check('the correct password still logs in after repeated failures (no lockout)', correctAfterFails.status === 200 && !!correctAfterFails.json.token, correctAfterFails.body);
 
     // ── Admin secret guard ───────────────────────────────────────────────────
     const badAdmin = await req('GET', '/api/admin/users-list?secret=totally-wrong');

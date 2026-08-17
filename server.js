@@ -1511,7 +1511,14 @@ app.post('/api/auth/signup', authRateLimiter, authLockoutGuard, async (req, res)
   }
 });
 
-app.post('/api/auth/login', authRateLimiter, authLockoutGuard, (req, res) => {
+// NB: no `authLockoutGuard` here, by product decision. A mistyped password must
+// tell the user it was wrong — never lock them out of their own account. Repeated
+// wrong passwords simply keep returning 401 "Incorrect email or password"; the
+// user can retry or use "Forgot password". Brute force is still bounded by
+// `authRateLimiter` (20 requests / 15 min per IP) above and the site-wide
+// failed-login alert below, so removing the hard lockout doesn't open the door to
+// unbounded credential stuffing — it only stops legitimate users being locked out.
+app.post('/api/auth/login', authRateLimiter, (req, res) => {
   const { email, password } = req.body;
   if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
     return res.status(400).json({ error: 'Email and password are required.' });
@@ -1519,11 +1526,11 @@ app.post('/api/auth/login', authRateLimiter, authLockoutGuard, (req, res) => {
   const key = email.toLowerCase().trim();
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(key);
   if (!user || !verifyPassword(password, user.password_hash)) {
-    authLockout.recordFailure(req.ip);
+    // Not recorded into `authLockout`: a wrong login must not lock this IP out of
+    // signup/other auth routes that share the tracker. The owner alert still fires.
     _recordFailedLoginForAlert();
-    return res.status(401).json({ error: 'Invalid email or password.' });
+    return res.status(401).json({ error: 'Incorrect email or password.' });
   }
-  authLockout.clear(req.ip);
   // Lazy migration: re-hash legacy SHA-256 accounts to bcrypt on successful login.
   if (isLegacyHash(user.password_hash)) {
     try {
