@@ -47,7 +47,26 @@
   .closer p{color:rgba(255,255,255,.82);margin:10px auto 0;max-width:520px;}
   .closer .cta{background:#fff;color:var(--forest);}
   footer{text-align:center;color:var(--muted);font-size:13px;padding:20px 0 50px;}
-  @media(max-width:760px){.grid{grid-template-columns:1fr;}.plans{grid-template-columns:1fr;}}
+  /* ── Comparison card: ResumeTailored vs. traditional job boards ── */
+  .cmp{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:30px 28px;margin:26px 0 6px;box-shadow:0 18px 44px rgba(31,92,61,.08);}
+  .cmp .cmp-h{text-align:center;font-family:var(--serif);font-weight:600;font-size:27px;letter-spacing:-.02em;}
+  .cmp .cmp-sub{text-align:center;color:var(--muted);font-size:14.5px;margin:6px auto 4px;max-width:560px;}
+  .cmp .logos{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 14px;margin:18px 0 22px;}
+  .cmp .logos .lbl{width:100%;text-align:center;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+  .cmp .logo{background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-weight:800;font-size:15px;letter-spacing:-.01em;line-height:1;}
+  .cmp table{width:100%;border-collapse:collapse;table-layout:fixed;}
+  .cmp th,.cmp td{padding:13px 12px;text-align:left;border-top:1px solid var(--line);vertical-align:top;overflow-wrap:break-word;}
+  .cmp thead th{border-top:none;font-size:13px;text-transform:uppercase;letter-spacing:.06em;}
+  .cmp thead .c-rt{color:var(--forest);}
+  .cmp thead .c-bd{color:var(--muted);}
+  .cmp .feat-c{font-weight:700;font-size:14.5px;width:44%;}
+  .cmp td.rt{color:var(--ink);font-weight:700;font-size:14px;}
+  .cmp td.rt:before{content:"✓ ";color:var(--forest2);font-weight:800;}
+  .cmp td.bd{color:var(--muted);font-size:14px;}
+  .cmp col.col-rt,.cmp th.c-rt{background:rgba(31,92,61,.05);}
+  .cmp td.rt{background:rgba(31,92,61,.05);}
+  @media(max-width:760px){.grid{grid-template-columns:1fr;}.plans{grid-template-columns:1fr;}
+    .cmp{padding:22px 14px;}.cmp .feat-c{width:40%;}.cmp th,.cmp td{padding:11px 8px;font-size:13px;}}
 </style></head>
 <body>
   <nav class="nav">
@@ -62,6 +81,58 @@
     <a class="cta" href="/employer">Create Employer Account →</a>
     <div class="note">Start free — 2 job posts, no credit card.</div>
   </header>
+
+  <section class="wrap">
+    <div class="cmp">
+      <div class="cmp-h">ResumeTailored vs. traditional job boards</div>
+      <p class="cmp-sub">The big boards get your listing seen. ResumeTailored is built to help you actually <em>hire</em> — AI ranks every applicant and moves them through a pipeline, so you spend time on the best-fit people, not on sorting.</p>
+      <div class="logos">
+        <span class="lbl">How hiring usually works on</span>
+        <span class="logo" style="color:#2557A7;">Indeed</span>
+        <span class="logo" style="color:#1A9E5B;">ZipRecruiter</span>
+        <span class="logo" style="color:#6E46AE;">Monster</span>
+        <span class="logo" style="color:#E8590C;">CareerBuilder</span>
+        <span class="logo" style="color:#0CAA41;">Glassdoor</span>
+      </div>
+      <table>
+        <colgroup><col/><col class="col-rt"/><col/></colgroup>
+        <thead>
+          <tr>
+            <th class="feat-c"></th>
+            <th class="c-rt">ResumeTailored</th>
+            <th class="c-bd">Traditional job boards</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="feat-c">AI ranks every applicant against your role</td>
+            <td class="rt">Built in — matched &amp; missing keywords, best-first</td>
+            <td class="bd">Mostly manual, or a paid add-on</td>
+          </tr>
+          <tr>
+            <td class="feat-c">Hiring pipeline &amp; applicant tracking</td>
+            <td class="rt">Drag-and-drop New → Hired, in-app messaging</td>
+            <td class="bd">Job distribution — bring your own ATS</td>
+          </tr>
+          <tr>
+            <td class="feat-c">Start free, no credit card</td>
+            <td class="rt">2 job posts free, forever</td>
+            <td class="bd">Pay to post or sponsor for real visibility</td>
+          </tr>
+          <tr>
+            <td class="feat-c">Pricing you can predict</td>
+            <td class="rt">Flat $49/mo Pro — unlimited posts</td>
+            <td class="bd">Pay-per-click / per-post, varies by market</td>
+          </tr>
+          <tr>
+            <td class="feat-c">Candidates arrive job-ready</td>
+            <td class="rt">Resumes AI-tailored to your posting</td>
+            <td class="bd">Generic resumes, any role</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
   <section class="wrap">
     <div class="grid">

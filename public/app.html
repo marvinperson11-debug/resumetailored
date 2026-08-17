@@ -6991,8 +6991,19 @@ Aaliyah Washington`
       left = Math.max(M, Math.min(left, innerWidth - w - M));
       let top = a.top;
       top = Math.max(M, Math.min(top, innerHeight - h - M));
-      box.style.left = left + 'px';
-      box.style.top = top + 'px';
+      // `left`/`top` are VIEWPORT coordinates (from getBoundingClientRect and
+      // innerWidth/innerHeight). The panel is `position: fixed`, but .cv-shell
+      // carries `contain: layout paint`, which makes the SHELL — not the
+      // viewport — the containing block for its fixed descendants. So a value
+      // written straight to style.left is measured from the shell's own box,
+      // which starts ~240px in from the left on desktop: the panel landed
+      // shifted right by that offset and fell off the screen. Convert to the
+      // containing block's coordinate space by subtracting its origin. When no
+      // containing block exists (offsetParent null → viewport) the origin is
+      // (0,0) and nothing changes.
+      const host = box.offsetParent ? box.offsetParent.getBoundingClientRect() : { left: 0, top: 0 };
+      box.style.left = (left - host.left) + 'px';
+      box.style.top = (top - host.top) + 'px';
     }
     // The canvas scrolls and zooms under the panel, so the anchor moves.
     window.addEventListener('resize', edPositionInspector);
