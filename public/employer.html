@@ -527,6 +527,23 @@ async function boot(){
   await loadJobs();
   nvGo('dashboard');
   refreshMsgBadge();
+  _maybeAutoPlan();
+}
+/* Deep link from the marketing page. "Choose Pro/Scale" on /for-employers sends
+   the visitor to /employer?plan=pro|scale. Logged out, they hit sign-in first
+   (unavoidable — you need an account to subscribe); the `?plan` rides along and
+   is honored here once they're signed in with a company profile, so the click
+   actually continues to that plan's checkout instead of dead-ending at login.
+   The param is consumed (replaceState) so a refresh doesn't re-trigger it, and
+   we never re-checkout a plan the account is already on. */
+function _maybeAutoPlan(){
+  try{
+    var p=(new URLSearchParams(location.search).get('plan')||'').toLowerCase();
+    if(p!=='pro'&&p!=='scale') return;
+    history.replaceState(null,'',location.pathname);
+    nvGo('settings');
+    if(!epStatus || epStatus.tier!==p) nvUpgrade(p);
+  }catch(e){}
 }
 async function nvUpgrade(plan){
   plan=plan||'pro';
