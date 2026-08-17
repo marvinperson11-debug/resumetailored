@@ -38,9 +38,17 @@
   .plan.feat2{border:2px solid var(--forest);box-shadow:0 18px 44px rgba(31,92,61,.14);}
   .plan .pn{font-weight:800;font-size:16px;}
   .plan .pp{font-family:var(--serif);font-weight:700;font-size:34px;margin:6px 0 2px;}.plan .pp span{font-size:14px;font-weight:600;color:var(--muted);font-family:var(--sans);}
-  .plan .pf{list-style:none;display:flex;flex-direction:column;gap:8px;margin:14px 0 0;}
+  .plan .pf{list-style:none;display:flex;flex-direction:column;gap:8px;margin:14px 0 20px;}
   .plan .pf li{font-size:14px;padding-left:20px;position:relative;}
   .plan .pf li:before{content:"✓";position:absolute;left:0;color:var(--forest2);font-weight:800;}
+  /* Per-plan CTA. The plan cards used to show prices with no way to act on them,
+     which read as "there are no buttons". These route into the employer portal,
+     where a signed-in owner actually subscribes/switches plans. margin-top:auto
+     bottom-aligns them across the equal-height grid cards. */
+  .plan-cta{margin-top:auto;display:block;text-align:center;text-decoration:none;font-weight:800;font-size:15px;border-radius:12px;padding:13px 18px;background:var(--paper);color:var(--forest);border:1.5px solid var(--forest);transition:background .12s,color .12s;}
+  .plan-cta:hover{background:var(--forest);color:#fff;}
+  .plan.feat2 .plan-cta{background:var(--forest);color:#fff;}
+  .plan.feat2 .plan-cta:hover{background:var(--forest2);}
   .tag{align-self:flex-start;background:var(--forest);color:#fff;font-size:11px;font-weight:800;letter-spacing:.06em;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
   .closer{text-align:center;background:var(--forest);color:#fff;border-radius:22px;padding:44px 22px;margin:44px 0;}
   .closer h2{color:#fff;margin-top:0;}
@@ -152,15 +160,18 @@
       <div class="plan">
         <div class="pn">Free</div><div class="pp">$0</div>
         <ul class="pf"><li>2 job posts (lifetime)</li><li>Applicant list</li><li>Top 3 AI matches</li></ul>
+        <a class="plan-cta" href="/employer">Get started free</a>
       </div>
       <div class="plan feat2">
         <div class="tag">MOST POPULAR</div>
         <div class="pn">Pro</div><div class="pp">$49<span>/mo</span></div>
         <ul class="pf"><li>Unlimited job posts</li><li>All AI matches</li><li>Drag-and-drop pipeline</li><li>Team seats · screener · analytics</li></ul>
+        <a class="plan-cta" href="/employer">Choose Pro</a>
       </div>
       <div class="plan">
         <div class="pn">Scale</div><div class="pp">$199<span>/mo</span></div>
         <ul class="pf"><li>Everything in Pro</li><li>API access</li><li>Unlimited seats</li><li>Priority support</li></ul>
+        <a class="plan-cta" href="/employer">Choose Scale</a>
       </div>
     </div>
   </section>
