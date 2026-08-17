@@ -769,6 +769,23 @@
       .hero-sub { font-size: 15px; }
       .hero h1 { font-size: 40px; }
     }
+    /* Pricing cards: horizontal swipe below the width where three columns fit.
+       The 3-up grid (max-width 1020px) held its columns down to 768px, so in the
+       tablet range three cards no longer fit and the last one (Pro Lifetime) was
+       cut off on the right (reported on iPad). Below 1064px the row becomes a
+       smooth, scroll-snapping, touch-swipeable strip so every plan is reachable;
+       the desktop 3-up grid above 1064px is unchanged. This block is placed after
+       the 768px rule so it wins on both tablet and phone widths. */
+    @media (max-width: 1064px) {
+      .pricing-cards {
+        display: flex; grid-template-columns: none; max-width: none;
+        gap: 16px; overflow-x: auto; scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch; padding-bottom: 12px;
+        scrollbar-width: none;
+      }
+      .pricing-cards::-webkit-scrollbar { display: none; }
+      .pricing-card { flex: 0 0 clamp(258px, 82%, 320px); scroll-snap-align: center; }
+    }
     /* ── Resume Tiers ── */
     .tiers-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
     .tier-card {
