@@ -310,6 +310,17 @@
       <div class="nv-field"><label class="nv-label">Email</label><input class="nv-input" id="nvLoginEmail" type="email" autocomplete="email"/></div>
       <div class="nv-field"><label class="nv-label">Password</label><input class="nv-input" id="nvLoginPw" type="password" autocomplete="current-password"/></div>
       <button class="nv-btn" style="width:100%;" onclick="nvLogin()">Sign In →</button>
+      <p style="text-align:center;margin-top:14px;font-size:13px;"><a href="#" onclick="nvShowForgot();return false;" style="color:var(--nv-accent);font-weight:700;">Forgot password?</a></p>
+    </div>
+    <!-- Password reset: enter your email, get a reset link. Uses the shared
+         /api/auth/forgot-password endpoint (the link lands on /reset-password.html,
+         which works for employer accounts too — same users table). -->
+    <div id="nvForgotForm" style="display:none;">
+      <p style="font-size:13px;color:var(--nv-muted);margin-bottom:14px;line-height:1.5;">Enter your account email and we'll send you a link to reset your password.</p>
+      <div class="nv-field"><label class="nv-label">Email</label><input class="nv-input" id="nvForgotEmail" type="email" autocomplete="email"/></div>
+      <button class="nv-btn" style="width:100%;" onclick="nvSendReset()">Send reset link →</button>
+      <p id="nvForgotOk" style="display:none;font-size:13px;color:var(--nv-accent);font-weight:600;margin-top:14px;line-height:1.5;"></p>
+      <p style="text-align:center;margin-top:14px;font-size:13px;"><a href="#" onclick="nvHideForgot();return false;" style="color:var(--nv-muted);font-weight:700;">← Back to sign in</a></p>
     </div>
     <div id="nvSignupForm" style="display:none;">
       <div class="nv-field"><label class="nv-label">Your name</label><input class="nv-input" id="nvSuUser" type="text" autocomplete="name"/></div>
@@ -455,14 +466,28 @@ async function api(url,opts){ try{ var r=await fetch(url,opts||{headers:AH()}); 
 var epStatus=null, JOBS=[], SETTINGS=null;
 
 // ── auth ─────────────────────────────────────────────────────────────────────
-function nvSetAuthTab(w){ el('nvTabLogin').classList.toggle('on',w==='login'); el('nvTabSignup').classList.toggle('on',w==='signup'); el('nvLoginForm').style.display=w==='login'?'block':'none'; el('nvSignupForm').style.display=w==='signup'?'block':'none'; el('nvAuthErr').style.display='none'; el('nvAuthTitle').textContent=w==='login'?'Recruiter sign in':'Create your recruiter account'; }
+function nvSetAuthTab(w){ el('nvTabLogin').classList.toggle('on',w==='login'); el('nvTabSignup').classList.toggle('on',w==='signup'); el('nvLoginForm').style.display=w==='login'?'block':'none'; el('nvSignupForm').style.display=w==='signup'?'block':'none'; el('nvForgotForm').style.display='none'; el('nvAuthErr').style.display='none'; el('nvAuthTitle').textContent=w==='login'?'Recruiter sign in':'Create your recruiter account'; }
 function authErr(m){ var e=el('nvAuthErr'); e.textContent=m; e.style.display='block'; }
+// A few server responses are bare codes; show real sentences instead of e.g. "locked_out".
+function nvFriendlyErr(d){ var codes={locked_out:'Too many attempts — please wait a moment and try again.',rate_limited:'Too many requests. Please wait a moment and try again.'}; var e=(d&&(d.message||d.error))||''; return codes[e]||e||'Login failed.'; }
 async function nvLogin(){
   var email=el('nvLoginEmail').value.trim(), password=el('nvLoginPw').value;
   if(!email||!password) return authErr('Email and password are required.');
   var r=await api('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email,password:password})});
-  if(!r.ok) return authErr(r.data.error||'Login failed.');
+  if(!r.ok) return authErr(nvFriendlyErr(r.data));
   saveSession(r.data); boot();
+}
+// ── Forgot password ───────────────────────────────────────────────────────────
+function nvShowForgot(){ el('nvLoginForm').style.display='none'; el('nvSignupForm').style.display='none'; el('nvForgotForm').style.display='block'; el('nvForgotOk').style.display='none'; el('nvAuthErr').style.display='none'; el('nvAuthTitle').textContent='Reset your password'; var lg=el('nvLoginEmail').value.trim(); if(lg) el('nvForgotEmail').value=lg; }
+function nvHideForgot(){ nvSetAuthTab('login'); el('nvAuthTitle').textContent='Recruiter sign in'; }
+async function nvSendReset(){
+  var email=el('nvForgotEmail').value.trim();
+  if(!email) return authErr('Enter your account email.');
+  el('nvAuthErr').style.display='none';
+  var r=await api('/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
+  if(!r.ok) return authErr(nvFriendlyErr(r.data));
+  // The endpoint always returns success (it never reveals whether an account exists).
+  var ok=el('nvForgotOk'); ok.textContent='If an account exists for '+email+', a reset link is on its way. Check your inbox (and spam).'; ok.style.display='block';
 }
 async function nvSignup(){
   var username=el('nvSuUser').value.trim(), email=el('nvSuEmail').value.trim(), password=el('nvSuPw').value;
