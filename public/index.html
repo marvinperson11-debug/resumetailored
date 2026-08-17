@@ -841,8 +841,17 @@
        space matches actual content and CLS stays 0 (the fallback is only the
        first-paint guess for sections never yet rendered). Content stays in the
        DOM and the accessibility tree — this is not display:none, so a11y and
-       SEO are unaffected. */
-    main > section:not(.hero) { content-visibility: auto; }
+       SEO are unaffected.
+
+       DESKTOP ONLY. On mobile Safari (WebKit) a `content-visibility: auto`
+       section can stay BLANK until a scroll/resize forces a repaint — the
+       "content only shows after I scroll back and forth" report, seen on a real
+       iPhone and invisible in headless Chromium. That initial-load saving is a
+       desktop PageSpeed concern; on a phone it trades a marginal score for
+       genuinely broken rendering, so it is scoped to >=901px, where it both
+       helps and works. The per-section fallbacks below are inert without
+       content-visibility, so they simply do nothing on mobile. */
+    @media (min-width: 901px) { main > section:not(.hero) { content-visibility: auto; } }
     /* Anchor targets (#pricing, #templates, …) must clear the 64px sticky nav
        when jumped to, or the section title hides underneath it. */
     main > section[id] { scroll-margin-top: 80px; }
@@ -893,8 +902,20 @@
     }
 
     /* ── Scroll Reveal ── */
-    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
-    .reveal.visible { opacity: 1; transform: none; }
+    /* Per-element CSS failsafe. `revealSafety` forces any armed element visible
+       1.2s after the `.reveal` class lands on IT — not from one global page
+       timer. The old JS-only failsafe fired once, 1.2s after load, and only
+       un-hid elements already armed by then; on a slow / Low Power phone an
+       element armed by a late IntersectionObserver callback (after that timer)
+       stayed at opacity:0 with nothing left to reveal it — the blank-section
+       report from a real iPhone. With this, content can never stay hidden,
+       whenever it was armed. When JS adds `.visible` first (the common path),
+       `animation: none` cancels the safety and the normal fade runs. */
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease;
+      animation: revealSafety 0.01s linear 1.2s forwards; }
+    .reveal.visible { opacity: 1; transform: none; animation: none; }
+    @keyframes revealSafety { to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1 !important; transform: none !important; animation: none !important; } }
 
     /* Demo wrap hover */
     .demo-wrap { transition: box-shadow 0.3s ease; }
@@ -921,6 +942,15 @@
     @media (prefers-reduced-motion: reduce) {
       .hero h1 .word-animate { animation: none !important; opacity: 1 !important; }
       .hero-orb, .btn-shine::after, .nav-shine { animation: none !important; }
+    }
+    /* On a phone the headline paints instantly — no `opacity: 0` entrance. The
+       stagger buys little on a small screen, and an entrance that starts from
+       opacity:0 is exactly the kind of animation iOS Safari can leave stuck
+       (Low Power Mode, or the `filter: blur()` keyframe), which shows as a blank
+       hero on a real device while headless Chromium renders it fine. Removing
+       the animation here removes that failure mode where it was reported. */
+    @media (max-width: 900px) {
+      .hero h1 .word-animate { animation: none !important; opacity: 1 !important; filter: none !important; transform: none !important; }
     }
     /* The button/nav "shine" animates a registered @property gradient (--btn-x),
        which repaints the element every frame — and .nav-shine lives in the STICKY
