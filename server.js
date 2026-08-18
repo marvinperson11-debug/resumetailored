@@ -7170,6 +7170,60 @@ app.post('/api/subscribe-lifetime', async (req, res) => {
 });
 
 // ─── Stripe webhook: activate subscription ────────────────────────────────────
+// After a successful Stripe payment, a guest who checked out by email has a
+// `subscribers` row but no way to LOG IN — no `users` account exists yet. Give
+// them one (the same password-less pattern as LinkedIn sign-in) and email a
+// one-time link to set their password and finish setup, so the flow is
+// Landing → Stripe payment → confirmation email → set password. Idempotent and
+// best-effort: an email that already has an account is left alone (they can
+// already sign in and were just upgraded), and any failure is swallowed so it
+// never fails the webhook — a thrown webhook makes Stripe retry and would
+// double-fire the "new subscriber" side effects.
+function _provisionPaidAccount(email, planLabel) {
+  try {
+    const key = String(email || '').toLowerCase().trim();
+    if (!key) return;
+    if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(key)) return; // already can log in
+    const uname = (key.split('@')[0] || 'member').slice(0, 30);
+    db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)')
+      .run(key, uname, hashPassword(crypto.randomBytes(24).toString('hex')));
+    const token = uuidv4();
+    const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days to set the first password
+    db.prepare('INSERT OR REPLACE INTO reset_tokens (token, email, expires_at) VALUES (?, ?, ?)').run(token, key, expiresAt);
+    const origin = process.env.PUBLIC_ORIGIN || 'https://resumetailored.com';
+    const link = `${origin}/reset-password.html?token=${token}&welcome=1`;
+    console.log(`[account] provisioned paid account for ${key} (${planLabel}); set-password link issued`);
+    sendEmail({
+      to: key,
+      subject: 'Welcome to ResumeTailored Pro — set your password',
+      html: `
+        <div style="font-family:'Inter',Arial,sans-serif;max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
+          <div style="background:#1F5C3D;padding:28px 32px;">
+            <span style="font-size:18px;font-weight:800;color:#fff;">ResumeTailored <span style="background:rgba(255,255,255,0.25);padding:2px 7px;border-radius:5px;font-size:11px;">AI</span></span>
+          </div>
+          <div style="padding:36px 32px;">
+            <div style="font-size:36px;text-align:center;margin-bottom:12px;">🎉</div>
+            <h2 style="font-size:22px;font-weight:800;color:#111827;text-align:center;margin:0 0 10px;">Payment received — welcome to Pro!</h2>
+            <p style="font-size:15px;color:#6b7280;line-height:1.7;text-align:center;margin:0 0 26px;">
+              Your <strong>${planLabel}</strong> plan is active. One last step: set a password so you can log in to <strong>${key}</strong> and use everything you unlocked.
+            </p>
+            <div style="text-align:center;margin-bottom:26px;">
+              <a href="${link}" style="display:inline-block;background:#1F5C3D;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Set my password →</a>
+            </div>
+            <p style="font-size:13px;color:#9ca3af;text-align:center;line-height:1.6;margin:0;">
+              This link is valid for 7 days. If it expires, use “Forgot password” on the login page with this email.
+            </p>
+          </div>
+          <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
+            <span style="font-size:12px;color:#9ca3af;">© ResumeTailored AI · <a href="${origin}" style="color:#1F5C3D;text-decoration:none;">resumetailored.com</a></span>
+          </div>
+        </div>`
+    }).catch(err => console.error('[Email] welcome/set-password failed:', err.message));
+  } catch (e) {
+    console.error('[account] provisioning failed:', e.message);
+  }
+}
+
 app.post('/webhook', (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -7205,6 +7259,9 @@ app.post('/webhook', (req, res) => {
       db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, customerId);
       console.log(`New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`);
       const plan = isLifetime ? 'lifetime ($129)' : 'monthly ($19/mo)';
+      // Guest checkout: make sure they can actually log in, and email a
+      // set-password link (no-op if they already had an account).
+      _provisionPaidAccount(email, isLifetime ? 'Pro Lifetime' : 'Pro ($19.99/mo)');
       notifyOwner(`[ResumeTailored] 💰 New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`,
         `<p>💰 <strong>${email}</strong> just subscribed — <strong>${plan}</strong>. Cha-ching!</p>`);
     }
