@@ -182,16 +182,11 @@
          upsell (market data + email templates; response analytics + AI
          diagnosis) surfaced inside the tool itself. -->
 
-    <!-- Weekly Job Search Report -->
-    <a href="/tools/weekly-report" class="pt-card">
-      <div class="pt-card-top"><span class="pt-icon">📅</span><span class="pt-badge" data-i18n="badge_pro">✦ Pro</span></div>
-      <h3 data-i18n="t_weekly_h">Weekly Job Search Report</h3>
-      <p data-i18n="t_weekly_p">Automated Monday email with your stats, follow-ups, and action items for the week.</p>
-      <span class="pt-open" data-i18n="t_open">Open tool →</span>
-    </a>
+    <!-- Weekly Job Search Report is now a FREE tool and lives in the Free Tools
+         hub (/score). -->
 
     <!-- Resume Video Maker -->
-    <a href="/dashboard?tab=video" class="pt-card">
+    <a href="/dashboard?tab=video" class="pt-card" data-checkout="pro">
       <div class="pt-card-top"><span class="pt-icon">🎬</span><span class="pt-badge" data-i18n="badge_pro">✦ Pro</span></div>
       <h3 data-i18n="t_video_h">Resume Video Maker</h3>
       <p data-i18n="t_video_p">Turn your resume into a short vertical video with a natural studio AI voiceover — addressed to the hiring manager by name, ready for LinkedIn, Shorts and Reels.</p>
@@ -199,7 +194,7 @@
     </a>
 
     <!-- Personal Website Builder -->
-    <a href="/dashboard?tab=website" class="pt-card">
+    <a href="/dashboard?tab=website" class="pt-card" data-checkout="pro">
       <div class="pt-card-top"><span class="pt-icon">🌐</span><span class="pt-badge" data-i18n="badge_pro">✦ Pro</span></div>
       <h3 data-i18n="t_site_h">Personal Website Builder</h3>
       <p data-i18n="t_site_p">Publish your resume as a live personal website at your own address — watermark-free, mobile-perfect, indexable by Google, built in one click.</p>
@@ -207,7 +202,7 @@
     </a>
 
     <!-- Career Hub -->
-    <a href="/dashboard" class="pt-card">
+    <a href="/dashboard" class="pt-card" data-checkout="pro">
       <div class="pt-card-top"><span class="pt-icon">🚀</span><span class="pt-badge" data-i18n="badge_pro">✦ Pro</span></div>
       <h3 data-i18n="t_hub_h">Career Hub</h3>
       <p data-i18n="t_hub_p">Skills Lab quizzes, interview practice with AI scoring, gap analysis, scenario training, a job finder and salary negotiation scripts — a full career platform.</p>
@@ -215,7 +210,7 @@
     </a>
 
     <!-- Premium Templates -->
-    <a href="/dashboard?tab=tailor" class="pt-card">
+    <a href="/dashboard?tab=tailor" class="pt-card" data-checkout="pro">
       <div class="pt-card-top"><span class="pt-icon">🎨</span><span class="pt-badge" data-i18n="badge_pro">✦ Pro</span></div>
       <h3 data-i18n="t_tpl_h">Premium Templates</h3>
       <p data-i18n="t_tpl_p">All 104 resume and cover-letter templates, plus clean watermark-free PDF, DOCX and TXT exports on every download.</p>
@@ -348,6 +343,27 @@
     document.getElementById('hamburgerBtn').classList.remove('open');
     document.body.style.overflow = '';
   }));
+
+  /* Pro tools are gated. A logged-OUT visitor who taps a Pro tool card goes
+     straight to Stripe Checkout (the payment-first funnel) instead of into the
+     tool — Stripe collects their email, and after payment the webhook creates
+     their account and emails a set-password link. A signed-in visitor is let
+     through to the tool as before (login = the same rt_token the app uses). */
+  (function () {
+    var loggedIn = false;
+    try { loggedIn = !!localStorage.getItem('rt_token'); } catch (e) {}
+    if (loggedIn) return;
+    document.querySelectorAll('.pt-card[data-checkout="pro"]').forEach(function (card) {
+      card.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        try { if (typeof gtag === 'function') gtag('event', 'pro_tool_checkout_click'); } catch (e) {}
+        fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+          .then(function (r) { return r.json(); })
+          .then(function (d) { window.location.href = (d && d.url) ? d.url : '/#pricing'; })
+          .catch(function () { window.location.href = '/#pricing'; });
+      });
+    });
+  })();
 </script>
 <script src="/site-nav.js" defer></script>
 </body>

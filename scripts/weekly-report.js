@@ -72,7 +72,8 @@ function statsFor(email) {
   let sent = 0, skipped = 0;
   for (const row of subs) {
     const email = row.user_email;
-    if (!isPro(email)) { skipped++; continue; } // Pro-only; a lapsed sub silently stops.
+    // Weekly Job Search Report is a FREE tool — send to every enabled
+    // subscriber regardless of plan (no Pro filter).
     try {
       const stats = statsFor(email);
       const user = db.prepare('SELECT username FROM users WHERE email = ?').get(email);
