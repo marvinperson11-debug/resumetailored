@@ -7123,17 +7123,22 @@ OUTPUT: LinkedIn Optimization (three labeled sections only — no preamble or ex
 // ─── API: Create Stripe checkout session ──────────────────────────────────────
 app.post('/api/subscribe', async (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email required.' });
-
+  // email is OPTIONAL. A logged-out guest can go straight to Stripe Checkout,
+  // which collects the email itself (subscription mode always requires one). If
+  // we have it (logged-in user or a prefilled form) we prefill it and stamp it
+  // in metadata so the webhook can key on it; otherwise Stripe collects it and
+  // the webhook falls back to session.customer_email (then _provisionPaidAccount
+  // creates the login + set-password email). This is what lets the Pro-tool
+  // cards send guests directly to checkout.
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
-      customer_email: email,
+      ...(email ? { customer_email: email } : {}),
       line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
       success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/dashboard`,
-      metadata: { email }
+      metadata: email ? { email } : {}
     });
     res.json({ url: session.url });
   } catch (err) {
@@ -9329,7 +9334,9 @@ app.get('/api/tools/weekly-report', toolsLimiter, (req, res) => {
 });
 app.post('/api/tools/weekly-report/toggle', toolsLimiter, (req, res) => {
   const gate = toolGate(req, res, null); if (!gate) return;
-  if (!gate.pro) return res.status(402).json({ error: 'pro_only', message: 'The Weekly Job Search Report is a Pro feature. Upgrade to $19.99/mo to switch it on.' });
+  // Weekly Job Search Report is now a FREE tool — any signed-in user can switch
+  // it on. An account is required only so there's an address to email it to; no
+  // Pro subscription needed.
   const enabled = (req.body && req.body.enabled) ? 1 : 0;
   db.prepare(`INSERT INTO weekly_report_subscriptions (user_email, is_enabled) VALUES (?, ?)
     ON CONFLICT(user_email) DO UPDATE SET is_enabled = excluded.is_enabled`).run(gate.email.toLowerCase(), enabled);

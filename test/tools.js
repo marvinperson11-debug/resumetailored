@@ -206,7 +206,10 @@ const server = app.listen(0, async () => {
     check('versions: delete again => 404', (await req('DELETE', '/api/tools/resume-version/' + vid, 'tokFree')).status === 404);
 
     // ── Weekly Report: Pro-only toggle ──────────────────────────────────────
-    check('weekly: free toggle => 402', (await req('POST', '/api/tools/weekly-report/toggle', 'tokFree', { enabled: true })).status === 402);
+    // Weekly Job Search Report is now a FREE tool — a signed-in free user can
+    // switch it on (no Pro gate). Only sign-in is required.
+    { const fr = await req('POST', '/api/tools/weekly-report/toggle', 'tokFree', { enabled: true });
+      check('weekly: free toggle => 200 enabled', fr.status === 200 && fr.json.enabled === true, fr.body); }
     r = await req('POST', '/api/tools/weekly-report/toggle', 'tokPro', { enabled: true });
     check('weekly: pro toggle on => 200 enabled', r.status === 200 && r.json.enabled === true, r.body);
     r = await req('GET', '/api/tools/weekly-report', 'tokPro');

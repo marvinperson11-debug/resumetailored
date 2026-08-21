@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Weekly Job Search Report — Your Monday Progress Email | ResumeTailored AI</title>
-<meta name="description" content="An automated Monday email with your job-search stats, follow-ups due, and action items for the week. A Pro feature."/>
+<meta name="description" content="An automated Monday email with your job-search stats, follow-ups due, and action items for the week. A free tool."/>
 <link rel="canonical" href="https://resumetailored.com/tools/weekly-report"/>
 <meta property="og:title" content="Weekly Job Search Report"/>
 <meta property="og:description" content="Automated Monday email with your stats, follow-ups, and action items."/>
@@ -25,10 +25,10 @@
     "operatingSystem": "Web",
     "offers": {
       "@type": "Offer",
-      "price": "19.99",
+      "price": "0",
       "priceCurrency": "USD"
     },
-    "description": "An automated Monday email with your job-search stats, follow-ups due, and action items for the week. A Pro feature."
+    "description": "An automated Monday email with your job-search stats, follow-ups due, and action items for the week. A free tool."
   }
   </script>
 </head>
@@ -40,8 +40,8 @@
 </div></nav>
 
 <main class="th-wrap">
-  <a href="/pro-tools" class="th-back" data-i18n="back">← Back to Pro Tools</a>
-  <span class="th-badge th-badge--pro" data-i18n="pro_badge">Pro</span>
+  <a href="/score" class="th-back" data-i18n="back">← Back to Free Tools</a>
+  <span class="th-badge" data-i18n="pro_badge" style="background:rgba(52,211,153,0.14);color:#1F5C3D;">Free</span>
   <h1 class="th-title" data-i18n="title">Weekly Job Search Report</h1>
   <p class="th-sub" data-i18n="sub">Every Monday, get an email with your stats, the follow-ups you owe, and your action items for the week — so you always know your next move.</p>
 
@@ -63,26 +63,24 @@
     </ul>
   </div>
 
-  <div class="th-promo"><h3 data-i18n="promo_h">This is a Pro feature.</h3><p data-i18n="promo_p">The Weekly Job Search Report is included with Pro, along with every other tool.</p><button class="th-btn" onclick="thStartPro()">Upgrade — $19.99/mo</button></div>
+  <div class="th-promo"><h3 data-i18n="promo_h">Free, forever.</h3><p data-i18n="promo_p">The Weekly Job Search Report is completely free — just sign in and switch it on.</p><a class="th-btn" href="/dashboard" style="text-decoration:none;">Open the app →</a></div>
 </main>
-
-<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">A Pro feature</h3><p id="thUpgradeMsg">The Weekly Job Search Report is a Pro feature. Upgrade to switch it on.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.99/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
 
 <footer class="th-foot"><a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a><p style="margin-top:10px;">© ResumeTailored AI</p></footer>
 
 <script src="/tools-hub.js"></script>
 <script>
 window.TH_I18N = {
-  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Pro Tools', pro_badge:'Pro',
+  en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools', pro_badge:'Free',
     title:'Weekly Job Search Report', sub:'Every Monday, get an email with your stats, the follow-ups you owe, and your action items for the week — so you always know your next move.',
     toggle_h:'Monday morning report', toggle_p:'Sent to your account email.', off:'Off', on:'On',
     whats_h:"What's in it", w1:'Applications sent, responses, and interviews last week', w2:'Applications sitting 7+ days with no reply — ready to follow up', w3:'Two or three concrete action items for the week',
-    promo_h:'This is a Pro feature.', promo_p:'The Weekly Job Search Report is included with Pro, along with every other tool.', up_h:'A Pro feature', up_x:'Maybe later', copied:'Copied ✓' },
-  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回专业工具', pro_badge:'专业版',
+    promo_h:'Free, forever.', promo_p:'The Weekly Job Search Report is completely free — just sign in and switch it on.', up_h:'A Pro feature', up_x:'Maybe later', copied:'Copied ✓' },
+  zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回专业工具', pro_badge:'免费',
     title:'每周求职报告', sub:'每周一，收到一封包含你的数据、待跟进事项和本周行动项的邮件 — 让你始终清楚下一步该做什么。',
     toggle_h:'周一晨间报告', toggle_p:'发送到你的账户邮箱。', off:'关闭', on:'开启',
     whats_h:'报告内容', w1:'上周投递、回复和面试数量', w2:'超过 7 天无回复的申请 — 可跟进', w3:'本周两到三个具体行动项',
-    promo_h:'这是一项专业版功能。', promo_p:'每周求职报告包含在专业版中，以及所有其他工具。', up_h:'专业版功能', up_x:'以后再说', copied:'已复制 ✓' }
+    promo_h:'永久免费。', promo_p:'每周求职报告完全免费——登录即可开启。', up_h:'专业版功能', up_x:'以后再说', copied:'已复制 ✓' }
 };
 var PRO=false;
 function setLabel(on){ var el=document.getElementById('toggleLabel'); el.textContent = on ? thT('on','On') : thT('off','Off'); }
@@ -90,21 +88,19 @@ async function load(){
   var res=await thApi('GET','/api/tools/weekly-report');
   if(thHandleGate(res)) return;
   if(res.status!==200) return;
-  PRO=res.data.pro;
   document.getElementById('toggle').checked=!!res.data.enabled; setLabel(!!res.data.enabled);
   var zh=(localStorage.getItem('rt_lang')==='zh');
-  if(!PRO){ document.getElementById('status').innerHTML='<span style="color:var(--danger)">'+(zh?'需要专业版才能开启。':'Requires Pro to turn on.')+'</span>'; }
-  else if(res.data.lastSentAt){ document.getElementById('status').textContent=(zh?'上次发送：':'Last sent: ')+res.data.lastSentAt; }
+  if(res.data.lastSentAt){ document.getElementById('status').textContent=(zh?'上次发送：':'Last sent: ')+res.data.lastSentAt; }
 }
 async function save(){
   var on=document.getElementById('toggle').checked;
   var res=await thApi('POST','/api/tools/weekly-report/toggle',{enabled:on});
-  if(res.status===402){ document.getElementById('toggle').checked=false; setLabel(false); thUpgrade(res.data&&res.data.message); return; }
   if(thHandleGate(res)) return;
   if(res.status!==200){ document.getElementById('err').textContent='Could not update.'; document.getElementById('err').classList.add('show'); return; }
   setLabel(res.data.enabled);
 }
 if(thRequireLogin()) load();
 </script>
+<script src="/site-nav.js" defer></script>
 </body>
 </html>

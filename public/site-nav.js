@@ -123,7 +123,7 @@
       '#snavMenu a{font-family:\'Fraunces\',Georgia,serif;font-size:24px;font-weight:600;color:#191512;text-decoration:none;padding:10px 0;border-bottom:1px solid #E7DFD1;}' +
       '#snavMenu .snav-mclose{position:absolute;top:20px;right:24px;background:none;border:none;font-size:30px;color:#57514A;cursor:pointer;line-height:1;}' +
       '#snavMenu .snav-mcta{margin-top:14px;background:#1F5C3D;color:#fff;border:none;border-radius:10px;text-align:center;border-bottom:none;}' +
-      '@media(max-width:1180px){#snav .snav-links,#snav .snav-act{display:none!important;}#snav .snav-hamwrap{display:flex!important;}}';
+      '@media(max-width:1180px){#snav .snav-links,#snav .snav-act{display:none!important;}#snav .snav-hamwrap{display:flex!important;}#snav .snav-ham{display:block!important;}}';
 
     var style = document.createElement('style');
     style.id = 'snav-css';
