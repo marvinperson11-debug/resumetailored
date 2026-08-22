@@ -169,6 +169,32 @@ const server = app.listen(0, async () => {
     const overSeat = await req('POST', '/api/portal/members', 'tPro', { email: 'seat6@pro.co' });
     check('seat limit enforced on pro tier (403 seat_limit)', overSeat.status === 403 && overSeat.json.error === 'seat_limit', overSeat.body);
 
+    // ── file uploads ─────────────────────────────────────────────────────────
+    function postFile(urlPath, token, filename, mime, content) {
+      return new Promise((resolve, reject) => {
+        const boundary = '----rtb' + Math.random().toString(16).slice(2);
+        const pre = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${mime}\r\n\r\n`;
+        const post = `\r\n--${boundary}--\r\n`;
+        const payload = Buffer.concat([Buffer.from(pre), Buffer.from(content), Buffer.from(post)]);
+        const headers = { 'Content-Type': 'multipart/form-data; boundary=' + boundary, 'Content-Length': payload.length };
+        if (token) headers.Authorization = 'Bearer ' + token;
+        const r = http.request({ host: '127.0.0.1', port: PORT, path: urlPath, method: 'POST', headers }, (res) => {
+          let b = ''; res.setEncoding('utf8'); res.on('data', c => b += c);
+          res.on('end', () => { let j = null; try { j = JSON.parse(b); } catch (e) {} resolve({ status: res.statusCode, json: j, body: b }); });
+        });
+        r.on('error', reject); r.write(payload); r.end();
+      });
+    }
+    check('upload requires auth', (await postFile('/api/portal/upload', null, 'r.pdf', 'application/pdf', 'PDF')).status === 401);
+    const up = await postFile('/api/portal/upload', 'tCorp', 'receipt.pdf', 'application/pdf', '%PDF-1.4 test receipt');
+    check('admin can upload a receipt (10MB pdf/img whitelist)', up.status === 200 && up.json.url && /\/api\/portal\/file\//.test(up.json.url), up.body);
+    const badUp = await postFile('/api/portal/upload', 'tCorp', 'evil.exe', 'application/x-msdownload', 'MZ');
+    check('a disallowed file type is rejected', badUp.status === 400, badUp.body);
+    const fetchOwn = await req('GET', up.json.url, 'tCorp');
+    check('uploader can fetch their file', fetchOwn.status === 200);
+    const fetchCross = await req('GET', up.json.url, 'tScale');
+    check('another company cannot fetch the file (tenant isolation)', fetchCross.status === 404, fetchCross.body);
+
     console.log(failures ? `\nFAILED (${failures} failure${failures === 1 ? '' : 's'})` : '\nALL PASS (0 failures)');
     server.close(() => process.exit(failures ? 1 : 0));
   } catch (e) {

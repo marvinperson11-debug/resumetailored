@@ -9797,6 +9797,59 @@ app.get('/api/portal/modules/:key/export.csv', (req, res) => {
   res.send(csv);
 });
 
+// ── Portal file uploads (receipts, compliance docs, signature files) ─────────
+// Hardened like the rest of the app: 10 MB cap, MIME + extension whitelist,
+// streamed to a company-scoped dir, metadata in portal_files. The returned url
+// is stored in a record field (e.g. an expense receiptUrl). Fetching is scoped
+// to the uploader's company, so one tenant can never read another's files.
+db.exec(`CREATE TABLE IF NOT EXISTS portal_files (
+  id TEXT PRIMARY KEY,
+  owner_email TEXT NOT NULL,
+  uploaded_by TEXT NOT NULL,
+  filename TEXT NOT NULL,
+  mimetype TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  path TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+)`);
+const _portalUploadDir = path.join(dataDir, 'portal-uploads');
+try { if (!fs.existsSync(_portalUploadDir)) fs.mkdirSync(_portalUploadDir, { recursive: true }); } catch (_) {}
+const PORTAL_UPLOAD_MIME = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/csv'];
+const PORTAL_UPLOAD_EXT = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'doc', 'docx', 'csv'];
+const portalUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, _portalUploadDir),
+    filename: (req, file, cb) => cb(null, uuidv4() + '.' + ((file.originalname || '').toLowerCase().split('.').pop() || 'bin').replace(/[^a-z0-9]/g, ''))
+  }),
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 }, // 10 MB, per the plan
+  fileFilter: (req, file, cb) => {
+    const ext = (file.originalname || '').toLowerCase().split('.').pop();
+    if (PORTAL_UPLOAD_MIME.includes(file.mimetype) || PORTAL_UPLOAD_EXT.includes(ext)) cb(null, true);
+    else cb(new Error('Unsupported file type.'));
+  }
+});
+app.post('/api/portal/upload', (req, res) => {
+  // Resolve auth BEFORE consuming the body, then run multer. A rejected file is
+  // deleted so nothing orphaned is left on disk.
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  portalUpload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: 'upload_failed', message: err.message });
+    if (!req.file) return res.status(400).json({ error: 'no_file', message: 'No file was uploaded.' });
+    const id = uuidv4();
+    db.prepare('INSERT INTO portal_files (id, owner_email, uploaded_by, filename, mimetype, size, path, created_at) VALUES (?,?,?,?,?,?,?,?)')
+      .run(id, ctx.ownerEmail, ctx.email, String(req.file.originalname || 'file').slice(0, 200), req.file.mimetype || 'application/octet-stream', req.file.size, req.file.path, Date.now());
+    res.json({ success: true, id, url: '/api/portal/file/' + id, filename: req.file.originalname, size: req.file.size });
+  });
+});
+app.get('/api/portal/file/:id', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const row = db.prepare('SELECT * FROM portal_files WHERE id = ? AND owner_email = ?').get(String(req.params.id), ctx.ownerEmail);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  res.setHeader('Content-Type', row.mimetype);
+  res.setHeader('Content-Disposition', `inline; filename="${row.filename.replace(/[^\w.\- ]/g, '_')}"`);
+  return res.sendFile(row.path, (e) => { if (e && !res.headersSent) res.status(404).json({ error: 'gone' }); });
+});
+
 // ── Manager analytics (manager+) ────────────────────────────────────────────
 app.get('/api/portal/analytics', (req, res) => {
   const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return;
