@@ -41,6 +41,12 @@
 const fs = require('fs'), os = require('os'), path = require('path');
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-md-'));
 process.env.RT_DISABLE_RATE_LIMIT = '1';
+// Keep this integration test hermetic: it asserts the no-provider console
+// fallback as proof that the owner alert fired, and must never send a real
+// email merely because local .env credentials are present.
+process.env.RESEND_API_KEY = '';
+process.env.SMTP_USER = '';
+process.env.SMTP_PASS = '';
 const { app } = require('../server.js');
 const Database = require('better-sqlite3');
 

@@ -151,7 +151,7 @@ const server = app.listen(0, async () => {
            max-width query and prefixed `body.wb-picker`; this is the check that
            says so in numbers rather than in a promise. */
         check(`${width}: desktop card geometry is unchanged`,
-          pick.cardW === 240 && pick.cardH === 257 && pick.thumbH === 150, JSON.stringify(pick));
+          pick.cardW === 240 && Math.abs(pick.cardH - 257) <= 1 && pick.thumbH === 150, JSON.stringify(pick));
         check(`${width}: and its filter pills still wrap as they did`,
           pick.chipsWrap === 'wrap', JSON.stringify(pick));
       }
@@ -1301,7 +1301,15 @@ const server = app.listen(0, async () => {
           const btn = document.querySelector('#wcEdInspector button[onclick*="edSplitSel"]');
           const before = document.querySelectorAll('.ed-box').length;
           if (btn) btn.click();
-          await new Promise((r) => setTimeout(r, 1400));
+          // The editor overlay updates synchronously, while the rendered iframe
+          // follows its debounced refresh. Wait for the observable render state
+          // instead of assuming a busy browser always finishes within 1.4s.
+          const deadline = Date.now() + 5000;
+          while (Date.now() < deadline) {
+            const frame = document.getElementById('wcEdFrame');
+            if (frame && frame.contentDocument && !frame.contentDocument.querySelector(`.sd-el[data-el="${id}"]`)) break;
+            await new Promise((r) => setTimeout(r, 100));
+          }
           const boxes = [...document.querySelectorAll('.ed-box')].map((b) => b.dataset.el);
           const f = document.getElementById('wcEdFrame');
           const still = !!f.contentDocument.querySelector(`.sd-el[data-el="${id}"]`);

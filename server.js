@@ -8192,6 +8192,18 @@ app.get('/api/jobs/search', jobSearchLimiter, async (req, res) => {
         const c = JSON.parse(stale.payload);
         return res.json({ jobs: c.jobs || c, query, profession: prof ? prof.label : null, stale: true, staleAt: stale.fetched_at });
       }
+      // Present-but-invalid credentials are operationally equivalent to an
+      // unconfigured provider. Adzuna and RapidAPI/JSearch report expired,
+      // revoked, or wrong-environment keys as 401/403; do not leak those
+      // upstream authorization failures through as a generic gateway error.
+      const credentialsRejected = keyedFailed.every(s => /_(?:401|403)$/.test(String(s.error || '')));
+      if (credentialsRejected) {
+        return res.status(503).json({
+          error: 'jobs_unconfigured',
+          message: 'Live job search credentials are invalid or expired. Update the configured provider credentials.',
+          sources: keyedFailed.map(s => ({ name: s.name, error: 'credentials_invalid' }))
+        });
+      }
       return res.status(502).json({
         error: 'jobs_error',
         message: 'The job data source is temporarily unavailable. Please try again shortly.',
@@ -8666,6 +8678,12 @@ app.post('/api/employer/subscribe', async (req, res) => {
     });
     res.json({ url: session.url });
   } catch (err) {
+    // A fallback price can still be unavailable when the server is using a
+    // Stripe test key against a live-mode price. Treat that as missing checkout
+    // configuration, rather than surfacing an opaque internal error.
+    if (err && err.code === 'resource_missing' && err.param === 'line_items[0][price]') {
+      return res.status(503).json({ error: 'not_configured', message: 'Employer checkout is not configured.' });
+    }
     console.error('Stripe employer error:', err);
     res.status(500).json({ error: 'Could not create checkout session.' });
   }

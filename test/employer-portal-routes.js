@@ -322,10 +322,10 @@ const server = app.listen(0, async () => {
     check('AI matches: free employer sees exactly the top 3 unlocked', freeMatches.status === 200 && freeMatches.json.unlockedCount === 3 && freeMatches.json.lockedCount === 2, freeMatches.body);
     check('AI matches: top match is the highest score with full detail', freeMatches.json.matches[0].score === 95 && freeMatches.json.matches[0].candidateEmail === 'cand0@x.com' && freeMatches.json.matches[0].locked === false);
     check('AI matches: locked entries expose no PII', freeMatches.json.matches[3].locked === true && freeMatches.json.matches[3].candidateEmail === undefined && !!freeMatches.json.matches[3].scoreBand);
-    // Upgrade Free Co to Pro → everything unlocks.
+    // Employer Portal (Pro) includes screening for the top 3; Scale unlocks all.
     db.prepare("INSERT INTO employer_subscribers (email, customer_id, tier, status) VALUES (?,?, 'pro', 'active')").run('freeboss@co.com', 'cus_free_pro');
     const proMatches = await req('GET', '/api/employer/jobs/' + freeJobId + '/ai-matches', 'tokFree');
-    check('AI matches: Pro unlocks every match with detail', proMatches.json.unlockedCount === 5 && proMatches.json.lockedCount === 0 && proMatches.json.matches[4].candidateEmail === 'cand4@x.com');
+    check('AI matches: Employer Portal screens the top 3 and keeps the rest locked', proMatches.json.unlockedCount === 3 && proMatches.json.lockedCount === 2 && proMatches.json.matches[3].candidateEmail === undefined);
     const rivalAiMatches = await req('GET', '/api/employer/jobs/' + freeJobId + '/ai-matches', 'tokRival');
     check("AI matches: a different employer cannot read someone else's matches", rivalAiMatches.status === 404);
 
