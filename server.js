@@ -7,6 +7,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const Stripe = require('stripe');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
@@ -7941,6 +7942,33 @@ async function _aiComplete({ system, user, max_tokens = 500, model }) {
   const e = new Error('no AI provider configured'); e.code = 'ai_unconfigured'; throw e;
 }
 
+// Provider-agnostic JSON generation. Prefers OpenAI (the plan's choice for the
+// Decoder — gpt-4o-mini, JSON mode) when OPENAI_API_KEY is set; on any OpenAI
+// error or invalid output it falls back to the existing Claude JSON path, so a
+// missing/broken OpenAI key never breaks a working feature.
+async function callAIJSON({ model, system, user, max_tokens, validate }) {
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini', max_tokens, temperature: 0.4,
+          response_format: { type: 'json_object' },
+          messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
+        })
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const obj = CH.extractJson(d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content);
+        const v = validate(obj);
+        if (v.ok) return v.value;
+      }
+    } catch (_) { /* fall through to Claude */ }
+  }
+  return callClaudeJSON({ model, system, user, max_tokens, validate });
+}
+
 const careerGenLimiter = rateLimit({ windowMs: 60 * 1000, max: 15, message: { error: 'rate_limited', message: 'Slow down a moment and try again.' } });
 const jobSearchLimiter = rateLimit({ windowMs: 60 * 1000, max: 15, message: { error: 'rate_limited', message: 'Too many searches — wait a minute.' } });
 const answerScoreLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, message: { error: 'rate_limited', message: 'Too many requests — wait a minute.' } });
@@ -9960,7 +9988,9 @@ app.post('/api/decoder-key', toolsLimiter, async (req, res) => {
   }
   try {
     const p = TOOLS.buildJobDecodePrompt(text, _reqLang(req));
-    const value = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1800, validate: TOOLS.validateJobDecode });
+    // Decoder uses OpenAI (gpt-4o-mini) when configured — the plan's choice —
+    // and falls back to Claude Haiku otherwise. Same validated JSON contract.
+    const value = await callAIJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1800, validate: TOOLS.validateJobDecode });
     res.json({ result: value, complimentary: true });
   } catch (err) { toolLLMError(res, err); }
 });
@@ -10182,7 +10212,31 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
-  app.listen(PORT, () => console.log(`ResumeTailored running on http://localhost:${PORT}`));
+  // Real HTTP server so Socket.io can share the port (the plan's real-time
+  // layer). Attached ONLY on real startup — the test harness calls app.listen()
+  // directly and never needs a socket server; the portal chat route degrades to
+  // its REST store when global._portalIO is absent, so tests are unaffected.
+  const httpServer = http.createServer(app);
+  try {
+    const { Server } = require('socket.io');
+    const io = new Server(httpServer, { cors: { origin: false } });
+    global._portalIO = io;
+    io.on('connection', (socket) => {
+      // A client authenticates by sending its rt_token; we resolve it to an
+      // email → company and join that company's room so chat/notifications only
+      // reach the right tenant. No token ⇒ the socket joins nothing.
+      socket.on('portal:join', (token) => {
+        try {
+          const row = token && db.prepare('SELECT email FROM sessions WHERE token = ?').get(String(token));
+          if (!row) return;
+          const ctx = _portalContext(String(row.email).toLowerCase());
+          if (ctx) { socket.join('company:' + ctx.ownerEmail); socket.emit('portal:joined', { company: ctx.companyName || null, role: ctx.role }); }
+        } catch (_) { /* never let a bad token crash the socket */ }
+      });
+    });
+    console.log('[socket.io] real-time portal layer attached');
+  } catch (e) { console.error('[socket.io] init skipped:', e.message); }
+  httpServer.listen(PORT, () => console.log(`ResumeTailored running on http://localhost:${PORT}`));
   // Career Hub daily jobs (warm cache + job-alert digest). In-process because
   // both need this service's SQLite volume, which a separate cron service
   // cannot reach — see career-cron.js. Off unless CAREER_CRON=on.
