@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
- * Byte-identical render regression check for the Create-a-Link (/r/:slug) and
- * personal-site (/site/:name) renderers.
+ * Render regression check for the Create-a-Link (/r/:slug) and personal-site
+ * (/site/:name) renderers. Comparison is byte-identical after normalizing the
+ * checkout's platform line endings (Git may materialize goldens as CRLF on
+ * Windows while template literals always render LF).
  *
  * Why: the Website Creator work evolves _renderPersonalSite() while "Create a
  * Link" must stay exactly as it is. This snapshots the exact HTML both renderers
@@ -101,16 +103,17 @@ const cases = {
 fs.mkdirSync(GOLDEN_DIR, { recursive: true });
 let failed = 0;
 for (const [file, render] of Object.entries(cases)) {
-  const out = render();
+  const normalizeEol = (value) => String(value).replace(/\r\n?/g, '\n');
+  const out = normalizeEol(render());
   const goldenPath = path.join(GOLDEN_DIR, file);
   if (UPDATE || !fs.existsSync(goldenPath)) {
     fs.writeFileSync(goldenPath, out);
     console.log(`${UPDATE ? 'updated' : 'created'} golden: ${file} (${out.length} bytes)`);
     continue;
   }
-  const golden = fs.readFileSync(goldenPath, 'utf8');
+  const golden = normalizeEol(fs.readFileSync(goldenPath, 'utf8'));
   if (golden === out) {
-    console.log(`PASS  ${file} — byte-identical (${out.length} bytes)`);
+    console.log(`PASS  ${file} — content-identical (${out.length} bytes, LF-normalized)`);
   } else {
     failed++;
     console.error(`FAIL  ${file} — output changed vs golden (golden ${golden.length}B, now ${out.length}B).`);

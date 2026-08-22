@@ -34,6 +34,7 @@
   <link rel="stylesheet" href="/app-theme.css"/>
   <link rel="stylesheet" href="/site-fx.css"/>
   <link rel="stylesheet" href="/career-hub.css"/>
+  <link rel="stylesheet" href="/web-studio-luxury.css"/>
 </head>
 <body>
 
@@ -104,8 +105,9 @@
 
       <!-- Subscribe -->
       <div id="authSubscribeForm" style="display:none;">
+        <div style="margin-bottom:14px;"><a class="rt-explicit-back" href="/pricing" aria-label="Back to Pricing">← Back to Pricing</a></div>
         <div style="background:#E8F0E9;border:1px solid rgba(31,92,61,0.2);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
-          <div style="font-size:13px;font-weight:800;color:#1F5C3D;margin-bottom:8px;">✦ Pro — $19.99/month</div>
+          <div style="font-size:13px;font-weight:800;color:#1F5C3D;margin-bottom:8px;">✦ Pro — $19.00/month</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
             <div style="font-size:12px;color:#57514A;">✓ Unlimited resume tailoring &amp; cover letters</div>
             <div style="font-size:12px;color:#57514A;">✓ Unlimited ATS scans</div>
@@ -116,7 +118,7 @@
         </div>
         <div class="auth-field"><input type="email" id="subscribeEmail" placeholder="Your email address" autocomplete="email" /></div>
         <div class="auth-error" id="subscribeError"></div>
-        <button class="btn btn-primary btn-full" id="subscribeBtn" onclick="doModalSubscribe()">Subscribe — $19.99/mo →</button>
+        <button class="btn btn-primary btn-full" id="subscribeBtn" onclick="doModalSubscribe()">Subscribe — $19.00/mo →</button>
         <p style="font-size:11px;color:#918A7E;text-align:center;margin-top:10px;line-height:1.5;">You'll be taken to Stripe for secure checkout. Pro access activates instantly after payment.</p>
         <div class="auth-switch">Already subscribed? <a onclick="switchAuthTab('login')">Log in →</a></div>
       </div>
@@ -156,7 +158,7 @@
       <div style="text-align:center;margin-bottom:20px;">
         <div style="font-size:11px;font-weight:900;letter-spacing:1px;color:#1F5C3D;text-transform:uppercase;">✨ What's New</div>
         <h2 style="font-size:22px;font-weight:900;margin:6px 0 4px;color:#191512;">New ways to stand out &amp; get hired</h2>
-        <p style="font-size:13px;color:#57514A;margin:0;">Most are free — the rest bundle into one $19.99/mo Pro plan.</p>
+        <p style="font-size:13px;color:#57514A;margin:0;">Most are free — the rest bundle into one $19.00/mo Pro plan.</p>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
         <div class="wn-card">
@@ -172,15 +174,15 @@
           <div style="font-size:26px;">🎬</div>
           <h3>Resume Video</h3>
           <p>Turn your resume into a narrated vertical video with studio AI voiceover for LinkedIn &amp; Reels.</p>
-          <div class="wn-price"><strong style="color:#191512;">$19.99</strong>/mo Pro</div>
+          <div class="wn-price"><strong style="color:#191512;">$19.00</strong>/mo Pro</div>
           <a class="wn-cta" onclick="document.getElementById('whatsNewOverlay').style.display='none';showTab('video');">Make a video →</a>
         </div>
         <div class="wn-card">
           <div class="wn-badge">NEW · PRO</div>
           <div style="font-size:26px;">🌐</div>
-          <h3>Personal Website</h3>
-          <p>Publish your resume as a live, watermark-free personal website — no code needed.</p>
-          <div class="wn-price"><strong style="color:#191512;">$19.99</strong>/mo Pro</div>
+          <h3>Web Studio</h3>
+          <p>Create and publish a live, editorial website with boutique-level control — no code needed.</p>
+          <div class="wn-price"><strong style="color:#191512;">$19.00</strong>/mo Pro</div>
           <a class="wn-cta" onclick="document.getElementById('whatsNewOverlay').style.display='none';openWebsiteCreator();">Build a site →</a>
         </div>
         <div class="wn-card">
@@ -192,7 +194,7 @@
           <a class="wn-cta" onclick="document.getElementById('whatsNewOverlay').style.display='none';if(window.CareerHub)CareerHub.go('career');" style="background:#16a34a;">Explore →</a>
         </div>
       </div>
-      <div style="text-align:center;margin-top:20px;"><button class="btn btn-primary" onclick="startPro()">Go Pro — $19.99/mo →</button></div>
+      <div style="text-align:center;margin-top:20px;"><button class="btn btn-primary" onclick="startPro()">Go Pro — $19.00/mo →</button></div>
     </div>
   </div>
 
@@ -225,7 +227,7 @@
       <div style="display:flex;gap:12px;align-items:center;">
         <span id="navStatus"></span>
         <span id="navUsername" style="color:#9490b5;font-size:13px;font-weight:600;display:none;"></span>
-        <button class="btn btn-outline" id="goProNavBtn" onclick="startPro()" style="font-size:13px;padding:8px 14px;" data-i18n="nav_go_pro">Go Pro — $19.99/mo</button>
+        <button class="btn btn-outline" id="goProNavBtn" onclick="startPro()" style="font-size:13px;padding:8px 14px;" data-i18n="nav_go_pro">Go Pro — $19.00/mo</button>
         <button class="btn btn-outline" id="loginNavBtn" onclick="showAuthModal('login')" style="font-size:13px;padding:8px 14px;display:none;">Log In</button>
         <button onclick="toggleLang()" id="langToggleBtn" style="background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.1);border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;color:#94a3b8;cursor:pointer;font-family:inherit;transition:all .15s;" title="Switch language / 切换语言">中文</button>
         <button class="btn btn-outline" id="logoutBtn" onclick="doLogout()" style="display:none;font-size:13px;padding:8px 14px;" data-i18n="nav_logout">Log Out</button>
@@ -278,7 +280,7 @@
         </button>
         <button class="sidebar-btn" onclick="openWebsiteCreator()" id="tab-website" data-label="Website" title="Build & publish your live personal website (desktop only)">
           <span class="sidebar-icon">🌐</span>
-          <span style="flex:1;text-align:left;" data-i18n="sidebar_website">Personal Website</span>
+          <span style="flex:1;text-align:left;" data-i18n="sidebar_website">Web Studio</span>
           <span style="background:#B4832A;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
         </button>
         <button class="sidebar-btn" onclick="openBackOffice()" id="tab-backoffice" data-label="Back Office" title="Manage all your resumes, cover letters, videos & website">
@@ -322,7 +324,7 @@
       <div class="sidebar-pro-box" id="sidebarProBox">
         <div class="sidebar-pro-title" data-i18n="sidebar_pro_title">✦ Unlock Full Access</div>
         <div class="sidebar-pro-text" data-i18n="sidebar_pro_text">Career Hub features are available to Pro members.</div>
-        <button class="btn btn-primary" style="width:100%;margin-top:10px;font-size:13px;" onclick="startPro()" data-i18n="sidebar_pro_btn">Upgrade — $19.99/mo</button>
+        <button class="btn btn-primary" style="width:100%;margin-top:10px;font-size:13px;" onclick="startPro()" data-i18n="sidebar_pro_btn">Upgrade — $19.00/mo</button>
       </div>
     </aside>
 
@@ -338,7 +340,7 @@
 
         <div class="mobile-upgrade-banner" id="mobileUpgradeBanner" style="display:none;">
           <p data-i18n="mobile_upgrade_p">✦ Unlock unlimited tailorings, cover letters & Career Hub features.</p>
-          <button class="btn btn-primary" onclick="startPro()" data-i18n="mobile_upgrade_btn">Upgrade — $19.99/mo</button>
+          <button class="btn btn-primary" onclick="startPro()" data-i18n="mobile_upgrade_btn">Upgrade — $19.00/mo</button>
         </div>
 
         <div id="statusBadge" style="margin-bottom:16px;"></div>
@@ -560,12 +562,12 @@
         </div>
 
         <div class="upsell" id="upsell" style="display:none;">
-          <p>Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19.99/month, cancel anytime.</p>
+          <p>Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19.00/month, cancel anytime.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
 
         <div class="upsell" id="limitBanner" style="display:none;">
-          <p>Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports — $19.99/month.</p>
+          <p>Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports — $19.00/month.</p>
           <button class="btn btn-primary" onclick="startPro()">Upgrade to Pro →</button>
         </div>
       </div>
@@ -782,7 +784,7 @@
           <div class="tpl-modal-lock-icon">🔒</div>
           <div class="tpl-modal-lock-title">Pro Template</div>
           <div class="tpl-modal-lock-sub">Upgrade to Pro to unlock all 104 premium templates, the resume video, your personal website, and watermark-free exports.</div>
-          <button class="btn btn-primary" style="font-size:16px;padding:14px 36px;" onclick="startPro()">Upgrade to Pro — $19.99/mo →</button>
+          <button class="btn btn-primary" style="font-size:16px;padding:14px 36px;" onclick="startPro()">Upgrade to Pro — $19.00/mo →</button>
           <div class="tpl-modal-lock-peek" onclick="document.getElementById('tplModalLock').style.display='none'">View preview only ↓</div>
         </div>
         <iframe id="tplFrame" sandbox="allow-same-origin" style="width:794px;min-height:1123px;border:none;display:block;margin:0 auto;background:#fff;"></iframe>
@@ -812,6 +814,7 @@
     };
     let isSubscriberFlag = false;
     let isLoggedIn = false;
+    let authReadyPromise = null;
     let pendingDownloadFn = null;
     let freeResumesLeft = 1;
     let freeCoverLettersLeft = 1;
@@ -861,7 +864,7 @@
           authHeadingEl.textContent = isZh ? '忘记密码？' : 'Forgot Password?';
         } else if (isSubscribeActive) {
           authHeadingEl.textContent = isZh ? '升级专业版' : 'Go Pro';
-          if (authSubtextEl) authSubtextEl.textContent = isZh ? '无限次定制简历，$19.99/月。' : 'Unlimited tailoring, ATS scans & more — $19.99/mo.';
+          if (authSubtextEl) authSubtextEl.textContent = isZh ? '无限次定制简历，$19.00/月。' : 'Unlimited tailoring, ATS scans & more — $19.00/mo.';
         } else {
           authHeadingEl.textContent = isZh ? '欢迎回来' : 'Welcome Back';
           if (authSubtextEl) authSubtextEl.textContent = isZh ? '登录以访问你的控制台。' : 'Log in to access your dashboard.';
@@ -881,7 +884,7 @@
       var forgotBtnEl = document.getElementById('forgotBtn');
       if (forgotBtnEl) forgotBtnEl.textContent = isZh ? '发送重置链接 →' : 'Send Reset Link →';
       var subscribeBtnEl = document.getElementById('subscribeBtn');
-      if (subscribeBtnEl) subscribeBtnEl.textContent = isZh ? '订阅 — $19.99/月 →' : 'Subscribe — $19.99/mo →';
+      if (subscribeBtnEl) subscribeBtnEl.textContent = isZh ? '订阅 — $19.00/月 →' : 'Subscribe — $19.00/mo →';
       var loginBtnEl = document.getElementById('loginBtn');
       if (loginBtnEl) loginBtnEl.textContent = isZh ? '登录 →' : 'Log In →';
       // 5. Remember email label & forgot link
@@ -913,17 +916,17 @@
       if (editBarEl) editBarEl.innerHTML = (isZh ? '✏️ 点击任意文字进行编辑' : '✏️ Click any text to edit it directly') + '<button class="eb-btn eb-save" onclick="saveEdit()">' + (isZh ? '保存修改' : 'Save Changes') + '</button><button class="eb-btn eb-cancel" onclick="cancelEdit()">' + (isZh ? '取消' : 'Cancel') + '</button>';
       // 10. Upsell/limit banners
       var upsellP = document.querySelector('#upsell p');
-      if (upsellP) upsellP.innerHTML = isZh ? '想要<strong>无限次定制</strong>？升级专业版 — ¥19.99/月，随时取消。' : 'Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19.99/month, cancel anytime.';
+      if (upsellP) upsellP.innerHTML = isZh ? '想要<strong>无限次定制</strong>？升级专业版 — ¥19.00/月，随时取消。' : 'Want <strong>unlimited tailorings</strong>? Upgrade to Pro — $19.00/month, cancel anytime.';
       document.querySelectorAll('.upsell .btn-primary').forEach(function(btn) { btn.textContent = isZh ? '升级专业版 →' : 'Upgrade to Pro →'; });
       var limitPEl = document.querySelector('#limitBanner p');
-      if (limitPEl) limitPEl.innerHTML = isZh ? '简历定制和求职信<strong>免费且无限次</strong>。升级专业版解锁100+高级模板、简历视频、个人网站和无水印导出 — ¥19.99/月。' : 'Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports — $19.99/month.';
+      if (limitPEl) limitPEl.innerHTML = isZh ? '简历定制和求职信<strong>免费且无限次</strong>。升级专业版解锁100+高级模板、简历视频、个人网站和无水印导出 — ¥19.00/月。' : 'Resume tailoring and cover letters are <strong>free and unlimited</strong>. Upgrade to Pro to unlock 100+ premium templates, the resume video, a personal website, and watermark-free exports — $19.00/month.';
       // 11. LinkedIn output section
       var liH3 = document.querySelector('#linkedinHeadlineBlock h3'); if (liH3) liH3.textContent = isZh ? '✦ 优化后的标题' : '✦ Optimized Headline';
       var liAboutH3 = document.querySelector('#linkedinAboutBlock h3'); if (liAboutH3) liAboutH3.textContent = isZh ? '✦ 优化后的个人简介' : '✦ Optimized About Section';
       var liExpH3 = document.querySelector('#linkedinExpBlock h3'); if (liExpH3) liExpH3.textContent = isZh ? '✦ 优化后的工作经历' : '✦ Optimized Experience Bullets';
       document.querySelectorAll('#linkedinHeadlineBlock .btn-outline, #linkedinAboutBlock .btn-outline, #linkedinExpBlock .btn-outline').forEach(function(btn) { btn.textContent = isZh ? '复制' : 'Copy'; });
       var liLimitP = document.querySelector('#linkedinLimitBanner p');
-      if (liLimitP) liLimitP.innerHTML = isZh ? 'LinkedIn 优化免费且无限次。升级专业版解锁高级模板、简历视频、个人网站和无水印导出 — ¥19.99/月。' : 'LinkedIn optimization is free and unlimited. Upgrade to Pro for premium templates, the resume video, a personal website & watermark-free exports — $19.99/month.';
+      if (liLimitP) liLimitP.innerHTML = isZh ? 'LinkedIn 优化免费且无限次。升级专业版解锁高级模板、简历视频、个人网站和无水印导出 — ¥19.00/月。' : 'LinkedIn optimization is free and unlimited. Upgrade to Pro for premium templates, the resume video, a personal website & watermark-free exports — $19.00/month.';
       var liLimitBtn = document.querySelector('#linkedinLimitBanner .btn-primary');
       if (liLimitBtn) liLimitBtn.textContent = isZh ? '升级专业版 →' : 'Upgrade to Pro →';
       // 12. Template preview modal
@@ -1009,7 +1012,7 @@
       if (aboutWhyH2s[0]) aboutWhyH2s[0].textContent = isZh ? '为什么ResumeTailored AI优于竞品' : 'Why ResumeTailored AI Beats the Competition';
       if (aboutWhyH2s[1]) aboutWhyH2s[1].textContent = isZh ? '竞品对比' : 'Head-to-Head Comparison';
       var aboutCards = document.querySelectorAll('#panel-about .salary-grid .salary-resource-card');
-      var aCD = isZh ? [{h3:'由Claude AI驱动',p:'我们使用Anthropic的Claude——同样被财富500强企业信赖的AI。大多数竞品使用更旧、更廉价的模型，产出通用的机器人式内容。Claude写作就像一位拥有15年以上经验的职业顾问。'},{h3:'真正针对具体职位',p:'Jobscan和Resume Worded等工具会对你的简历关键词评分，但不会<em>改写</em>它。ResumeTailored AI同时读取你的简历和职位描述，然后改写你的工作要点，精确匹配招聘经理使用的语言。'},{h3:'绝不捏造经历',p:'与某些AI工具不同，我们绝不虚构你没有的技能或经历。我们使用职位的语言重新表达你已有的经历。你始终100%诚实——只是更清晰地传达了你的价值。'},{h3:'30秒，而非45分钟',p:'普通求职者每次申请花45分钟定制简历。我们在30秒内完成。以更高质量的申请，比手动操作的候选人投递更多职位，效率更快。'},{h3:'¥19.99/月，竞品需¥40–¥100/月',p:'Resume.io收费¥44.95/月。Zety仅下载就收费¥23.70/月。Teal+收费¥29/月。ResumeTailored AI提供无限次AI定制加完整职业中心，仅¥19.99——市场上最高性价比。'},{h3:'不只是一个简历工具',p:'专业版会员获得完整职业中心：薪资谈判指南、逐字谈判话术、专业社区论坛和季度职业回顾。没有任何竞品能以这个价格提供如此多的职业价值。'}] : [{h3:'Powered by Claude AI',p:'We use Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.'},{h3:'Actually Job-Specific',p:'Tools like Jobscan and Resume Worded score your resume for keywords but don\'t <em>rewrite</em> it. ResumeTailored AI reads both your resume AND the job posting, then rewrites your bullets to mirror the exact language the hiring manager used.'},{h3:'Never Fabricates Experience',p:'Unlike some AI tools, we never invent skills or experience you don\'t have. We reframe what you already did using the role\'s language. You stay 100% truthful — you just communicate your value more clearly.'},{h3:'30 Seconds, Not 45 Minutes',p:'The average job seeker spends 45 minutes tailoring each application. We do it in under 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it manually.'},{h3:'$19.99/mo vs. $40–$100/mo Elsewhere',p:'Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19.99 — the most value in the market.'},{h3:'More Than a Resume Tool',p:'Pro members get the full Career Hub: salary negotiation guides, word-for-word negotiation scripts, a professional community forum, and quarterly career check-ins. No competitor bundles this much career value at this price.'}];
+      var aCD = isZh ? [{h3:'由Claude AI驱动',p:'我们使用Anthropic的Claude——同样被财富500强企业信赖的AI。大多数竞品使用更旧、更廉价的模型，产出通用的机器人式内容。Claude写作就像一位拥有15年以上经验的职业顾问。'},{h3:'真正针对具体职位',p:'Jobscan和Resume Worded等工具会对你的简历关键词评分，但不会<em>改写</em>它。ResumeTailored AI同时读取你的简历和职位描述，然后改写你的工作要点，精确匹配招聘经理使用的语言。'},{h3:'绝不捏造经历',p:'与某些AI工具不同，我们绝不虚构你没有的技能或经历。我们使用职位的语言重新表达你已有的经历。你始终100%诚实——只是更清晰地传达了你的价值。'},{h3:'30秒，而非45分钟',p:'普通求职者每次申请花45分钟定制简历。我们在30秒内完成。以更高质量的申请，比手动操作的候选人投递更多职位，效率更快。'},{h3:'¥19.00/月，竞品需¥40–¥100/月',p:'Resume.io收费¥44.95/月。Zety仅下载就收费¥23.70/月。Teal+收费¥29/月。ResumeTailored AI提供无限次AI定制加完整职业中心，仅¥19.00——市场上最高性价比。'},{h3:'不只是一个简历工具',p:'专业版会员获得完整职业中心：薪资谈判指南、逐字谈判话术、专业社区论坛和季度职业回顾。没有任何竞品能以这个价格提供如此多的职业价值。'}] : [{h3:'Powered by Claude AI',p:'We use Anthropic\'s Claude — the same AI trusted by Fortune 500 companies. Most competitors use older, cheaper models that produce generic, robotic output. Claude writes like a real career coach with 15+ years of experience.'},{h3:'Actually Job-Specific',p:'Tools like Jobscan and Resume Worded score your resume for keywords but don\'t <em>rewrite</em> it. ResumeTailored AI reads both your resume AND the job posting, then rewrites your bullets to mirror the exact language the hiring manager used.'},{h3:'Never Fabricates Experience',p:'Unlike some AI tools, we never invent skills or experience you don\'t have. We reframe what you already did using the role\'s language. You stay 100% truthful — you just communicate your value more clearly.'},{h3:'30 Seconds, Not 45 Minutes',p:'The average job seeker spends 45 minutes tailoring each application. We do it in under 30 seconds. Apply to more jobs, faster, with higher-quality applications than candidates doing it manually.'},{h3:'$19.00/mo vs. $40–$100/mo Elsewhere',p:'Resume.io charges $44.95/mo. Zety charges $23.70/mo just for downloads. Teal+ costs $29/mo. ResumeTailored AI gives you unlimited AI tailoring plus a full Career Hub for $19.00 — the most value in the market.'},{h3:'More Than a Resume Tool',p:'Pro members get the full Career Hub: salary negotiation guides, word-for-word negotiation scripts, a professional community forum, and quarterly career check-ins. No competitor bundles this much career value at this price.'}];
       aboutCards.forEach(function(card, i) { if(!aCD[i]) return; var h3=card.querySelector('h3'); if(h3) h3.textContent=aCD[i].h3; var p=card.querySelector('p'); if(p) p.innerHTML=aCD[i].p; });
       var aboutTable = document.querySelector('#panel-about table');
       if (aboutTable) {
@@ -1046,14 +1049,14 @@
       var cStepD = isZh ? ['前往 <strong>帮助与支持</strong> 标签','发送消息，主题：<strong>"取消我的订阅"</strong>','附上你订阅时使用的邮箱','我们将在 <strong>1小时</strong> 内取消并确认'] : ['Go to the <strong>Help & Support</strong> tab','Send a message with subject: <strong>"Cancel my subscription"</strong>','Include the email you used to subscribe','We\'ll cancel and confirm within <strong>1 hour</strong>'];
       cancelSteps.forEach(function(li, i) { if (cStepD[i]) li.innerHTML = cStepD[i]; });
       var cancelTips = document.querySelectorAll('#panel-cancel .salary-tips li');
-      var cTipD = isZh ? ['订阅在当前计费周期结束时停止','在此之前保留完整专业版权限','不收取部分月份费用——永远不会','不删除数据——你的回顾记录保持保存','随时以相同的¥19.99/月价格重新订阅','无罚款，无重新注册费'] : ['Subscription stops at end of current billing period','You keep full Pro access until then','No partial-month charges — ever','No data deleted — your check-ins stay saved','Resubscribe anytime at the same $19.99/mo price','No penalty, no re-enrollment fee'];
+      var cTipD = isZh ? ['订阅在当前计费周期结束时停止','在此之前保留完整专业版权限','不收取部分月份费用——永远不会','不删除数据——你的回顾记录保持保存','随时以相同的¥19.00/月价格重新订阅','无罚款，无重新注册费'] : ['Subscription stops at end of current billing period','You keep full Pro access until then','No partial-month charges — ever','No data deleted — your check-ins stay saved','Resubscribe anytime at the same $19.00/mo price','No penalty, no re-enrollment fee'];
       cancelTips.forEach(function(li, i) { if (cTipD[i]) li.textContent = cTipD[i]; });
       var cancelGoHelpBtn = document.querySelector('#panel-cancel .btn-outline'); if (cancelGoHelpBtn) cancelGoHelpBtn.textContent = isZh ? '前往帮助与支持 →' : 'Go to Help & Support →';
       var cancelFaqH2 = document.querySelector('#panel-cancel h2'); if (cancelFaqH2) cancelFaqH2.textContent = isZh ? '取消订阅常见问题' : 'Cancellation FAQs';
       var cancelFaqQs = document.querySelectorAll('#panel-cancel .faq-q > span:first-child');
       var cancelFaqAs = document.querySelectorAll('#panel-cancel .faq-a');
       var cFaqQD = isZh ? ['取消后能退款吗？','取消生效需要多长时间？','我可以暂停而不是取消吗？','如果我被扣款但不是有意订阅怎么办？','取消后我的简历历史会被删除吗？'] : ['Do I get a refund if I cancel mid-month?','How fast does cancellation take effect?','Can I pause instead of cancel?','What if I was charged but didn\'t mean to subscribe?','Will my resume history be deleted if I cancel?'];
-      var cFaqAD = isZh ? ['我们不提供按比例退款，但你将在当前计费周期结束前保留完整专业版权限。因此，如果你已支付当月费用，你就可以使用整个月。','我们在1小时内处理所有取消请求。完成后你会收到确认邮件。你的专业版权限将持续到计费周期结束。','我们目前不提供暂停功能，但取消并在之后重新订阅同样简单。你始终享有相同的¥19.99/月费率——我们不对价格锁定或惩罚回归会员。','在扣款7天内联系我们，我们将全额退款，无需解释。我们从不希望有人为无意购买的服务付费。','不会。你的职业回顾数据和社区帖子保持完整。如果你之后重新订阅，一切都在你离开的地方。'] : ['We don\'t offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.','We process all cancellation requests within 1 hour. You\'ll receive a confirmation email once it\'s done. Your Pro access continues until your billing period ends.','We don\'t currently offer a pause feature, but canceling and re-subscribing later is just as easy. You\'ll always get the same $19.99/month rate — we don\'t price-lock or penalize returning members.','Contact us within 7 days of the charge and we\'ll issue a full refund, no questions asked. We never want anyone paying for something they didn\'t intend to buy.','No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.'];
+      var cFaqAD = isZh ? ['我们不提供按比例退款，但你将在当前计费周期结束前保留完整专业版权限。因此，如果你已支付当月费用，你就可以使用整个月。','我们在1小时内处理所有取消请求。完成后你会收到确认邮件。你的专业版权限将持续到计费周期结束。','我们目前不提供暂停功能，但取消并在之后重新订阅同样简单。你始终享有相同的¥19.00/月费率——我们不对价格锁定或惩罚回归会员。','在扣款7天内联系我们，我们将全额退款，无需解释。我们从不希望有人为无意购买的服务付费。','不会。你的职业回顾数据和社区帖子保持完整。如果你之后重新订阅，一切都在你离开的地方。'] : ['We don\'t offer prorated refunds, but you keep full Pro access through the end of your current billing period. So if you paid for the month, you use the month.','We process all cancellation requests within 1 hour. You\'ll receive a confirmation email once it\'s done. Your Pro access continues until your billing period ends.','We don\'t currently offer a pause feature, but canceling and re-subscribing later is just as easy. You\'ll always get the same $19.00/month rate — we don\'t price-lock or penalize returning members.','Contact us within 7 days of the charge and we\'ll issue a full refund, no questions asked. We never want anyone paying for something they didn\'t intend to buy.','No. Your career check-in data and community posts remain intact. If you re-subscribe later, everything is right where you left it.'];
       cancelFaqQs.forEach(function(el, i) { if (cFaqQD[i]) el.textContent = cFaqQD[i]; });
       cancelFaqAs.forEach(function(el, i) { if (cFaqAD[i]) el.textContent = cFaqAD[i]; });
       var cancelBottomH3 = document.querySelector('#panel-cancel > div:last-of-type h3'); if (cancelBottomH3) cancelBottomH3.textContent = isZh ? '还在考虑是否订阅？' : 'Still deciding whether to subscribe?';
@@ -1123,7 +1126,7 @@
       var tplLockSub = document.querySelector('.tpl-modal-lock-sub');
       if (tplLockSub) tplLockSub.textContent = isZh ? '升级专业版以解锁全部104个高级模板、简历视频、个人网站和无水印导出。' : 'Upgrade to Pro to unlock all 104 premium templates, the resume video, your personal website, and watermark-free exports.';
       var tplLockBtn = document.querySelector('.tpl-modal-lock .btn-primary');
-      if (tplLockBtn) tplLockBtn.textContent = isZh ? '升级专业版 — ¥19.99/月 →' : 'Upgrade to Pro — $19.99/mo →';
+      if (tplLockBtn) tplLockBtn.textContent = isZh ? '升级专业版 — ¥19.00/月 →' : 'Upgrade to Pro — $19.00/mo →';
       var tplLockPeek = document.querySelector('.tpl-modal-lock-peek');
       if (tplLockPeek) tplLockPeek.textContent = isZh ? '仅查看预览 ↓' : 'View preview only ↓';
       // 22e. Dynamic work/edu entries — update already-rendered entries
@@ -1389,7 +1392,7 @@
           localStorage.removeItem('rt_token');
           isLoggedIn = false;
           updateNavForGuest();
-          return;
+          return false;
         }
         const data = await res.json();
         localStorage.setItem('rt_email', data.email);
@@ -1400,11 +1403,40 @@
         isLoggedIn = true;
         updateNavForLogged();
         document.getElementById('authOverlay').style.display = 'none';
+        return true;
       } catch(e) {
         console.error('checkAuth failed', e);
         isLoggedIn = false;
         updateNavForGuest();
+        return false;
       }
+    }
+
+    function promptFreeActionLogin(action, message) {
+      isLoggedIn = false;
+      authReadyPromise = null;
+      pendingDownloadFn = action;
+      showAuthModal('login', true);
+      showToast(message || 'Sign in once, then your free result will generate automatically.');
+    }
+
+    async function requireFreeActionLogin(action, message) {
+      // Await the authoritative cookie/session check before deciding to prompt.
+      // This prevents a valid signed-in user from seeing the login modal during
+      // the short window before the page's initial auth request completes.
+      if (!isLoggedIn) {
+        if (!authReadyPromise) authReadyPromise = checkAuth();
+        await authReadyPromise;
+        // A completed negative boot check may be stale (for example, the user
+        // signed in in another tab). Revalidate once at the actual action.
+        if (!isLoggedIn) {
+          authReadyPromise = checkAuth();
+          await authReadyPromise;
+        }
+      }
+      if (isLoggedIn) return true;
+      promptFreeActionLogin(action, message);
+      return false;
     }
 
     function updateNavForGuest() {
@@ -1432,8 +1464,8 @@
       document.getElementById('authOverlay').style.display = 'flex';
     }
 
-    function showAuthModal(tab) {
-      pendingDownloadFn = null;
+    function showAuthModal(tab, preservePending) {
+      if (!preservePending) pendingDownloadFn = null;
       loadDecorativeFonts();  // Fraunces wordmark in the modal — load before it shows
       document.getElementById('authOverlay').style.display = 'flex';
       switchAuthTab(tab === 'subscribe' ? 'subscribe' : 'login');
@@ -1458,7 +1490,7 @@
       var pro = isSubscriberFlag;
       document.getElementById('newToolsProNote').textContent = pro
         ? '✓ All included in your Pro plan.'
-        : 'Most are free — the rest bundle into one $19.99/mo Pro plan.';
+        : 'Most are free — the rest bundle into one $19.00/mo Pro plan.';
       document.getElementById('newToolsList').innerHTML = NEW_TOOLS.map(function (t) {
         var status = pro ? '✓ Included in your Pro plan' : t.free;
         var color = pro ? '#1F5C3D' : (t.pro ? '#B4832A' : '#16a34a');
@@ -1504,7 +1536,7 @@
       var sub = {
         login: isZh ? '登录以访问你的控制台。' : 'Sign in to access your dashboard.',
         signup: isZh ? '免费注册 — 无需信用卡。' : 'Free forever — no credit card required.',
-        subscribe: isZh ? '无限次定制简历，$19.99/月。' : 'Unlimited tailoring, ATS scans & more — $19.99/mo.'
+        subscribe: isZh ? '无限次定制简历，$19.00/月。' : 'Unlimited tailoring, ATS scans & more — $19.00/mo.'
       };
       document.getElementById('authHeading').textContent = heading[tab];
       document.getElementById('authSubtext').textContent = sub[tab];
@@ -1724,7 +1756,11 @@
       if (name === 'linkedin') updateLinkedInFreeStatus();
       if (name === 'video') updateVideoGate();
       if (name === 'jobtracker') initJobTracker();
-      if (name === 'website') loadWebsiteCreator();
+      // The website creator lives in the second inline bundle below. A direct
+      // /website deep link can activate this tab while that bundle is still
+      // being parsed, so only initialize here once its loader exists. The
+      // second bundle performs the matching deferred initialization.
+      if (name === 'website' && typeof loadWebsiteCreator === 'function') loadWebsiteCreator();
       if (name === 'backoffice') loadBackOffice();
     }
 
@@ -1740,9 +1776,17 @@
       // the app header, which otherwise sits on top of the editor toolbar and
       // eats every click on Pages, Undo, Preview and Publish.
       document.body.classList.toggle('wb-immersive', name === 'website');
+      // On phones the bottom control bar remains on browsing/landing pages, but
+      // gets out of the way once a Pro user is inside the actual video studio.
+      document.body.classList.toggle('video-immersive', name === 'video' && isSubscriberFlag);
       // Fetch/inject the panel (no-op for the two inline panels), then run its
       // per-tab init. Runs on a microtask for inline panels — harmless.
-      hydratePanel(name).then(() => runTabInit(name));
+      hydratePanel(name).then(() => {
+        runTabInit(name);
+        // Lazy panel hydration replaces innerHTML, so mount the Back control
+        // only after the requested tool page is present.
+        if (window.RTBackNav) window.RTBackNav.refreshApp(name);
+      });
       _rtNav(name);
     }
     window.addEventListener('popstate', function (e) {
@@ -2002,6 +2046,7 @@
       const email = getStoredEmail();
 
       if (!job) return showToast('Please paste the job posting.');
+      if (!(await requireFreeActionLogin(tailor))) return;
 
       const btn = document.getElementById('tailorBtn');
       btn.innerHTML = '<span class="spinner"></span>Tailoring...';
@@ -2019,8 +2064,7 @@
         const data = await res.json();
 
         if (res.status === 401) {
-          showAuthModal('tailor');
-          showToast('Please sign in — tailoring is free and unlimited.');
+          promptFreeActionLogin(tailor, 'Sign in once, then your free result will generate automatically.');
           return;
         }
         if (res.status === 402) {
@@ -2246,6 +2290,7 @@
 
       if (!profileText) return showToast('Please paste your LinkedIn profile text.');
       if (!targetRole)  return showToast('Please enter your target role.');
+      if (!(await requireFreeActionLogin(optimizeLinkedIn, 'Sign in once, then your free optimization will run automatically.'))) return;
 
       const btn = document.getElementById('linkedinOptBtn');
       btn.disabled = true;
@@ -2261,6 +2306,10 @@
         });
         const data = await res.json();
 
+        if (res.status === 401) {
+          promptFreeActionLogin(optimizeLinkedIn, 'Sign in once, then your free optimization will run automatically.');
+          return;
+        }
         if (res.status === 402) {
           document.getElementById('linkedinLimitBanner').style.display = 'block';
           document.getElementById('linkedinFreeStatus').style.display = 'block';
@@ -2458,6 +2507,7 @@
       const job    = document.getElementById('atsJobInput').value.trim();
       if (!resume) return showToast('Please paste your resume in the left box.');
       if (!job)    return showToast('Please paste the job description in the right box.');
+      if (!(await requireFreeActionLogin(runDashboardATS, 'Sign in once, then your free ATS scan will run automatically.'))) return;
 
       const btn = document.getElementById('atsScanBtn');
       btn.disabled = true;
@@ -2474,6 +2524,10 @@
         });
         const data = await res.json();
 
+        if (res.status === 401) {
+          promptFreeActionLogin(runDashboardATS, 'Sign in once, then your free ATS scan will run automatically.');
+          return;
+        }
         if (res.status === 402) {
           document.getElementById('atsLimitBanner').style.display = 'block';
           document.getElementById('atsProStatus').style.display = 'block';
@@ -4102,7 +4156,7 @@ Aaliyah Washington`
             primary: tplMeta(primaryTpl), cover: tplMeta(cTpl),
             meta: window.lastCoverMeta || null,
             email: getStoredEmail() || undefined,
-            photoUrl: videoPhotoDataUrl || undefined
+            photoUrl: (window.rtResumePhoto || undefined)
           })
         });
         if (!res.ok) {
@@ -4143,6 +4197,8 @@ Aaliyah Washington`
       const btn = document.getElementById('videoGenBtn');
       const help = document.getElementById('videoHelp');
       const badge = document.getElementById('videoBadge');
+      const videoPanel = document.getElementById('panel-video');
+      document.body.classList.toggle('video-immersive', !!(isSubscriberFlag && videoPanel && videoPanel.classList.contains('active')));
       if (badge) badge.textContent = isSubscriberFlag ? '✦ PRO · STUDIO VOICE' : '✦ PRO FEATURE';
       if (isSubscriberFlag) {
         if (btn) btn.innerHTML = '🎬 Generate Studio Video →';
@@ -4774,8 +4830,8 @@ Aaliyah Washington`
         });
         const data = await res.json();
         if (data.url) { window.location.href = data.url; }
-        else { errEl.textContent = data.error || 'Could not start checkout. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19.99/mo →'; }
-      } catch { errEl.textContent = 'Connection error. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19.99/mo →'; }
+        else { errEl.textContent = data.error || 'Could not start checkout. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19.00/mo →'; }
+      } catch { errEl.textContent = 'Connection error. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19.00/mo →'; }
     }
 
     function showToast(msg, ms) {
@@ -5064,7 +5120,7 @@ Aaliyah Washington`
     if (new URLSearchParams(window.location.search).get('plan') === 'pro') {
       pendingPro = true;
     }
-    checkAuth();
+    authReadyPromise = checkAuth();
     initLinkedInImport();
     initGoogleLogin();
     // A Google or LinkedIn *login* return takes priority; only try a LinkedIn
@@ -5092,7 +5148,13 @@ Aaliyah Washington`
     // (Resume Creator) tab — which is why the LinkedIn card appeared to open
     // the resume builder instead of the LinkedIn Optimizer.
     (function () {
-      const tab = new URLSearchParams(window.location.search).get('tab');
+      const pathRoute = {
+        '/tailor': 'tailor', '/app/tailor': 'tailor',
+        '/cover-letter': 'tailor', '/app/cover-letter': 'tailor',
+        '/video': 'video', '/app/video': 'video',
+        '/website': 'website', '/app/website': 'website', '/web-studio': 'website'
+      }[window.location.pathname.replace(/\/$/, '') || '/'];
+      const tab = new URLSearchParams(window.location.search).get('tab') || pathRoute;
       if (!tab) return;
       const ALLOWED = ['tailor', 'linkedin', 'ats', 'jobtracker', 'video', 'website', 'backoffice', 'forum', 'salary', 'checkin', 'help', 'about', 'samples'];
       if (!ALLOWED.includes(tab)) return;
@@ -5100,8 +5162,19 @@ Aaliyah Washington`
       const params = new URLSearchParams(window.location.search);
       params.delete('tab');
       history.replaceState(null, '', window.location.pathname + (params.toString() ? '?' + params.toString() : ''));
-      setTimeout(() => { try { showTab(tab); } catch (_) {} }, 0);
+      setTimeout(() => {
+        try {
+          showTab(tab);
+          if (/cover-letter$/.test(window.location.pathname)) {
+            const coverBtn = document.querySelector('.mode-btn[data-mode="cover_letter"]');
+            if (coverBtn) coverBtn.click();
+          }
+        } catch (_) {}
+      }, 0);
     })();
+    if (window.location.pathname.replace(/\/$/, '') === '/tools') {
+      setTimeout(() => { try { openNewToolsModal(); } catch (_) {} }, 0);
+    }
     // Apply language preference. An explicit ?lang= in the URL wins and is
     // persisted — this is how the /zh/ landing pages hand a Chinese visitor
     // into a Chinese dashboard instead of dropping them back to English.
@@ -5290,6 +5363,7 @@ Aaliyah Washington`
         <button onclick="openShareLink()" class="btn btn-outline" style="flex:1;font-size:13px;padding:10px;">Open link ↗</button>
         <button onclick="closeShareModal()" class="btn btn-primary" style="flex:1;font-size:13px;padding:10px;">Done</button>
       </div>
+      <div style="margin-top:14px;text-align:center;"><a class="rt-explicit-back" href="/score" aria-label="Back to Free Tools">← Back to Free Tools</a></div>
     </div>
   </div>
 
@@ -5386,6 +5460,7 @@ Aaliyah Washington`
     // Entry point from the "Share as Link" buttons — reset the modal controls to
     // their defaults (show contact, never expire), then create a fresh link.
     async function shareResumeLink() {
+      if (!(await requireFreeActionLogin(shareResumeLink, 'Sign in once, then your free share link will be created automatically.'))) return;
       const cb = document.getElementById('shareHideContact'); if (cb) cb.checked = false;
       const exp = document.getElementById('shareExpiry'); if (exp) exp.value = '0';
       return _createShareLink();
@@ -8528,6 +8603,11 @@ Aaliyah Washington`
           })
         });
         const d = await res.json();
+        if (res.status === 401) {
+          closeShareModal();
+          promptFreeActionLogin(shareResumeLink, 'Sign in once, then your free share link will be created automatically.');
+          return;
+        }
         if (!res.ok || !d.url) throw new Error(d.error || 'Could not create link.');
         _lastShareUrl = d.url;
         if (linkBox) linkBox.value = d.url;
@@ -8732,6 +8812,13 @@ Aaliyah Washington`
       startEdit();
     }
 
+    // Complete initialization for a /website or /app/website deep link. The
+    // first bundle deliberately skips this call until this bundle has defined
+    // loadWebsiteCreator, avoiding a parser-order race on a cold page load.
+    if (document.getElementById('panel-website')?.classList.contains('active')) {
+      setTimeout(() => loadWebsiteCreator(), 0);
+    }
+
   </script>
   <script src="/mobile-native.js" defer></script>
   <script>/* editor thumb-zone action bar (mobile) */
@@ -8752,6 +8839,14 @@ Aaliyah Washington`
   })();</script>
   <script src="/job-tracker.js" defer></script>
   <script src="/career-hub.js"></script>
+  <script src="/back-nav.js?v=1"></script>
+  <script>
+    // career-hub.js extends showTab above; initialize after that wrapper exists.
+    (function () {
+      var active = document.querySelector('.tab-content.active');
+      if (active && window.RTBackNav) window.RTBackNav.refreshApp(active.id.replace('panel-', ''));
+    })();
+  </script>
   <!-- Phase 1: Google Analytics moved out of <head> so it never blocks first paint. -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWC76X5X68"></script>
   <script>

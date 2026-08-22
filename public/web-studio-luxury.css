@@ -1,0 +1,16 @@
+/* Web Studio presentation layer. Editing, preview and publishing mechanics
+   remain owned by the existing Website Creator implementation. */
+body.wb-immersive .cv-shell{background:#071724!important;color:#f7f1e6}
+body.wb-immersive .cv-top{background:#071724!important;border-bottom:1px solid rgba(201,168,93,.38)!important;color:#f7f1e6!important}
+body.wb-immersive .cv-logo{font-family:Fraunces,Georgia,serif;font-weight:600!important;letter-spacing:.01em!important}
+body.wb-immersive .cv-logo::after{content:" · WEB STUDIO";color:#e3cc91;font:700 9px Inter,sans-serif;letter-spacing:.16em}
+body.wb-immersive .cv-tbtn{background:transparent!important;border:1px solid rgba(201,168,93,.28)!important;border-radius:2px!important;color:#d8e2e0!important}
+body.wb-immersive .cv-publish{background:#c9a85d!important;color:#071724!important;border-radius:2px!important;text-transform:uppercase;letter-spacing:.08em}
+body.wb-immersive .cv-rail,body.wb-immersive .cv-bottom{background:#06131e!important;border-color:rgba(201,168,93,.22)!important}
+body.wb-immersive .cv-panel,body.wb-immersive .cv-inspector{background:#0b2231!important;color:#eef3ef!important;border-color:rgba(201,168,93,.2)!important}
+body.wb-immersive .cv-stage{background:#102631!important;background-image:linear-gradient(rgba(201,168,93,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,93,.035) 1px,transparent 1px)!important;background-size:40px 40px!important}
+body.wb-immersive .cv-rbtn.is-on{background:rgba(201,168,93,.15)!important;color:#e3cc91!important}
+body.wb-immersive .cv-wide,body.wb-immersive .cv-input,body.wb-immersive .cv-search input,body.wb-immersive .cv-inspector input,body.wb-immersive .cv-inspector select,body.wb-immersive .cv-inspector textarea{background:#102d3b!important;border-color:rgba(201,168,93,.26)!important;color:#f7f1e6!important;border-radius:2px!important}
+body.wb-immersive .cv-lbl{color:#c9a85d!important;letter-spacing:.12em!important}
+body.wb-immersive .cv-tplgrid .wc-tpl{background:#102d3b!important;border-color:rgba(201,168,93,.24)!important;border-radius:2px!important}
+body.wb-immersive .cv-tplgrid .wc-tpl-name{color:#f7f1e6!important;font-family:Fraunces,Georgia,serif!important;font-weight:500!important}

@@ -107,6 +107,12 @@
       .auth-overlay { padding: 0; align-items: flex-end; }
       .auth-card { border-radius: 16px 16px 0 0; max-width: 100%; max-height: 90vh; overflow-y: auto; }
       #goProNavBtn { display: none !important; }
+      /* New Tools is a browsing surface, so leave the app's bottom controls
+         visible and tappable below its sheet. Creator canvases are immersive:
+         hide the controls only after entering Website/Video creation itself. */
+      #newToolsOverlay { bottom: calc(62px + env(safe-area-inset-bottom)) !important; }
+      body.wb-immersive:not(.wb-picker) .sidebar,
+      body.video-immersive .sidebar { display: none !important; }
     }
     /* ── Template type toggle ── */
     .sample-toggle { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }

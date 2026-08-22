@@ -535,8 +535,12 @@ const server = app.listen(0, async () => {
        shipped client, because the failure is a button existing at all. */
     // Phase 3 extracted the dashboard's inline <style> into public/css/app.css,
     // so the shipped-client source these checks scan is now app.html + app.css.
-    const appJs = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.html'), 'utf8')
-      + '\n' + fs.readFileSync(path.join(__dirname, '..', 'public', 'css', 'app.css'), 'utf8');
+    const appJs = (fs.readFileSync(path.join(__dirname, '..', 'public', 'app.html'), 'utf8')
+      + '\n' + fs.readFileSync(path.join(__dirname, '..', 'public', 'css', 'app.css'), 'utf8'))
+      // These source-contract checks intentionally match multiline control
+      // flow and CSS blocks. Normalize the checkout's line endings first so
+      // Windows CRLF does not turn working editor behavior into false failures.
+      .replace(/\r\n?/g, '\n');
     check('the Tailor tab no longer publishes directly', !/function publishPersonalSite/.test(appJs));
     check('its button opens the Website Creator', /onclick="startPersonalSite\(\)"/.test(appJs));
     check('and it no longer promises to publish', !/Publish as Website/.test(appJs));

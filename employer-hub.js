@@ -23,8 +23,9 @@ const GIG_TYPES = ['same-day', 'short-term', 'event-based', 'seasonal'];
 // counter on the employer profile (incremented on every successful create),
 // which is why deleting a row can't game it — the row is gone but the count
 // stays. Pro ($49/mo) unlocks unlimited posts, AI candidate matching, team
-// seats, screener questions and analytics; Scale ($199/mo) adds API access and
-// removes every remaining cap.
+// seats, screener questions and analytics. The public name of the internal
+// `pro` key is Employer Portal ($49/mo). Scale ($99/mo) adds the collaboration
+// layer and five retained modules; Corporate ($299/mo) unlocks the full suite.
 const EMPLOYER_TIERS = {
   free: {
     label: 'Free', price: 0,
@@ -33,19 +34,27 @@ const EMPLOYER_TIERS = {
     screener: false, analytics: false, api: false
   },
   pro: {
-    label: 'Pro', price: 49,
+    label: 'Employer Portal', price: 49,
     lifetimeJobs: Infinity, seats: 5,
-    aiMatching: true, matchPreview: Infinity,
+    aiMatching: true, matchPreview: 3,
     screener: true, analytics: true, api: false
   },
   scale: {
-    label: 'Scale', price: 199,
+    label: 'Scale', price: 99,
     lifetimeJobs: Infinity, seats: Infinity,
     aiMatching: true, matchPreview: Infinity,
-    screener: true, analytics: true, api: true
+    screener: true, analytics: true, api: true,
+    operationalModules: 5
+  },
+  corporate: {
+    label: 'Corporate', price: 299,
+    lifetimeJobs: Infinity, seats: Infinity,
+    aiMatching: true, matchPreview: Infinity,
+    screener: true, analytics: true, api: true,
+    operationalModules: Infinity, jobDecoder: true, webStudio: true
   }
 };
-const EMPLOYER_TIER_NAMES = ['free', 'pro', 'scale'];
+const EMPLOYER_TIER_NAMES = ['free', 'pro', 'scale', 'corporate'];
 
 // Slug for a public company page (/company/:slug). Lowercase, hyphenated,
 // stripped to [a-z0-9-]; capped; never empty (falls back to 'company').
@@ -77,9 +86,11 @@ function canPostJob({ tier, lifetimeJobsPosted }) {
 // Map a Stripe price id (or an explicit plan name in checkout metadata) to a
 // tier. Returns 'free' when nothing matches so an unknown price can never
 // silently grant a paid tier.
-function resolveEmployerTier({ plan, priceId, proPriceId, scalePriceId }) {
+function resolveEmployerTier({ plan, priceId, proPriceId, scalePriceId, corporatePriceId }) {
   const p = String(plan || '').toLowerCase();
-  if (p === 'pro' || p === 'scale') return p;
+  if (p === 'portal' || p === 'employer-portal') return 'pro';
+  if (p === 'pro' || p === 'scale' || p === 'corporate') return p;
+  if (priceId && corporatePriceId && priceId === corporatePriceId) return 'corporate';
   if (priceId && scalePriceId && priceId === scalePriceId) return 'scale';
   if (priceId && proPriceId && priceId === proPriceId) return 'pro';
   return 'free';
@@ -427,7 +438,7 @@ function buildEmployerNurtureEmail(step, ctx) {
   if (step === 3) {
     return { subject: `A hiring pipeline your whole team can run`, html: shell(
       `<p>Hi ${company},</p>
-       <p>Pro gives your recruiters a shared drag-and-drop pipeline — New → Reviewed → Interview → Hired — plus in-app messaging, one-click reject emails, screener questions and analytics. Hiring more? <strong>Scale ($199/mo)</strong> adds API access and removes every cap.</p>
+       <p>Employer Portal gives your recruiters a shared drag-and-drop pipeline — New → Reviewed → Interview → Hired — plus in-app messaging, one-click reject emails, screener questions and analytics. Hiring more? <strong>Scale ($99/mo)</strong> adds the collaboration layer and five retained operational modules.</p>
        ${cta('Start Pro — $49/mo')}
        <p style="font-size:14px;color:#6B7280;">This is the last nudge — we won't email you about this again.</p>` ) };
   }

@@ -16,6 +16,7 @@
  * Usage: node test/media-upload-disk.js
  */
 const fs = require('fs');
+const http = require('http');
 const os = require('os');
 const path = require('path');
 
@@ -57,6 +58,40 @@ const server = app.listen(0, async () => {
     });
     return { status: r.status, body: await r.json().catch(() => ({})) };
   };
+  const upStreamed = (bytes, name, mime) => new Promise((resolve, reject) => {
+    const boundary = '----rtMediaLimitBoundary';
+    const before = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${name}"\r\nContent-Type: ${mime}\r\n\r\n`);
+    const after = Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="subdomain"\r\n\r\n${SUB}\r\n--${boundary}--\r\n`);
+    const target = new URL(B + '/api/site-media');
+    const req = http.request({
+      hostname: target.hostname, port: target.port, path: target.pathname, method: 'POST',
+      headers: {
+        Authorization: 'Bearer tokM',
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': before.length + bytes + after.length,
+      },
+    }, (res) => {
+      const chunks = [];
+      res.on('data', (chunk) => chunks.push(chunk));
+      res.on('end', () => {
+        let body = {}; try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch (_) {}
+        resolve({ status: res.statusCode, body });
+      });
+    });
+    req.on('error', reject);
+    req.write(before);
+    const chunk = Buffer.alloc(MB, 3);
+    let remaining = bytes;
+    const write = () => {
+      while (remaining > 0) {
+        const part = remaining >= chunk.length ? chunk : chunk.subarray(0, remaining);
+        remaining -= part.length;
+        if (!req.write(part)) { req.once('drain', write); return; }
+      }
+      req.end(after);
+    };
+    write();
+  });
 
   try {
     const limits = (await (await fetch(B + '/api/site-media?subdomain=' + SUB, { headers: { Authorization: 'Bearer tokM' } })).json()).usage.limits;
@@ -68,15 +103,20 @@ const server = app.listen(0, async () => {
     /* THE HEADLINE: a file far past the OLD 25 MB ceiling goes through. Really
        100 MB of bytes, not a claim about one — the point is that it never sits
        in the heap, and only a real file exercises that. */
-    const big = Buffer.alloc(100 * MB - 1024, 9);
+    let big = Buffer.alloc(100 * MB - 1024, 9);
+    const bigBytes = big.length;
     const r1 = await up(big, 'big.mp4', 'video/mp4');
     check('a 100 MB video uploads', r1.status === 200, JSON.stringify(r1.body).slice(0, 200));
-    check('and is stored at its full size', r1.body.bytes === big.length, String(r1.body.bytes));
+    check('and is stored at its full size', r1.body.bytes === bigBytes, String(r1.body.bytes));
     const row = db.prepare('SELECT path, bytes FROM site_media WHERE id = ?').get(r1.body.id);
     check('the bytes really reached the disk',
-      row && fs.existsSync(row.path) && fs.statSync(row.path).size === big.length,
+      row && fs.existsSync(row.path) && fs.statSync(row.path).size === bigBytes,
       row ? String(fs.existsSync(row.path) && fs.statSync(row.path).size) : 'no row');
     check('and the temp directory is empty afterwards', tmpCount() === 0, 'left ' + tmpCount());
+    // Do not retain two 100+ MB client fixtures simultaneously. Real browser
+    // uploads are sequential too; keeping the first Buffer alive made undici
+    // intermittently fail before the second request reached the server.
+    big = null;
 
     /* EVERY REJECTION SWEEPS UP. Each of these writes a file to disk before the
        route can refuse it; each must leave the temp directory as it found it. */
@@ -108,7 +148,10 @@ const server = app.listen(0, async () => {
 
     /* Past multer's own ceiling the request dies mid-stream; the partial file
        still has to go. */
-    const past = await up(Buffer.alloc(101 * MB, 3), 'huge.mp4', 'video/mp4');
+    // Stream this fixture in 1 MB chunks. Constructing another 101 MB Blob in
+    // Node's experimental FormData client can fail locally before any request
+    // reaches Express, which tests undici's heap rather than the upload route.
+    const past = await upStreamed(101 * MB, 'huge.mp4', 'video/mp4');
     check('a file past 100 MB is refused with the right number',
       past.status === 400 && /100 MB/.test(past.body.error || ''), JSON.stringify(past.body));
     await new Promise((r) => setTimeout(r, 300));

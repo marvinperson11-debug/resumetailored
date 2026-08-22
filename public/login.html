@@ -221,6 +221,14 @@
 
     (function init() {
       setMode(mode);
+      // /forgot-password is a stable deep link. Keep the email field available
+      // and focus it; the reset request still needs the address so this page
+      // never reveals whether an account exists.
+      if (location.pathname === '/forgot-password') {
+        document.getElementById('ttl').textContent = 'Reset your password';
+        document.getElementById('sub').textContent = 'Enter your account email, then choose “Forgot password?” below.';
+        setTimeout(function () { document.getElementById('email').focus(); }, 0);
+      }
       probe('/api/auth/google/status', 'googleBtn');
       probe('/api/auth/linkedin/status', 'linkedinBtn');
       var tok = localStorage.getItem('rt_token');

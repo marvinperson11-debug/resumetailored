@@ -19,17 +19,24 @@
  */
 (function () {
   'use strict';
+
+  // Tool and landing pages share one deterministic parent-route map. Loading
+  // it here keeps those pages consistent without duplicating inline handlers.
+  if (!window.RTBackNav && !document.querySelector('script[data-rt-back-nav]')) {
+    var backScript = document.createElement('script');
+    backScript.src = '/back-nav.js?v=1';
+    backScript.defer = true;
+    backScript.setAttribute('data-rt-back-nav', '1');
+    document.head.appendChild(backScript);
+  }
   // [English label, href, 中文 label]
-  // Job Tracker is intentionally NOT a top-level tab — it lives inside the Free
-  // Tools hub (/score) so the nav stays compact. Keep it out of this list.
+  // The ecosystem's four fixed pillars remain visible on every marketing and
+  // tool page. Supporting pages stay available through the pillars and footer.
   var LINKS = [
-    ['How It Works', '/how-it-works', '功能介绍'],
-    ['Free Tools', '/score', '免费工具'],
-    ['Pro Tools', '/pro-tools', '专业版工具'],
-    ['Resume Examples', '/resume-examples', '简历范例'],
-    ['Blog', '/blog', '博客'],
-    ['For Employers', '/employer', '雇主专区'],
-    ['Pricing', '/#pricing', '定价']
+    ['Decoder Key', '/decoder-key', '解码密钥'],
+    ['Corporate', '/corporate', '企业门户'],
+    ['Resume Video', '/resume-video', '简历视频'],
+    ['Web Studio', '/web-studio', '网站工作室']
   ];
   var UI = {
     login:     { en: 'Log In', zh: '登录' },
@@ -58,11 +65,7 @@
     // Per-link emphasis mirrors the homepage's inline nav EXACTLY so the bar
     // reads identically on every route: Free Tools shimmers, Pro Tools is
     // green-bold, For Employers is dark-bold. Keyed by href.
-    var EMPH = {
-      '/score':     ' snav-shine',   // Free Tools — gold shimmer
-      '/pro-tools': ' snav-pro',     // Pro Tools  — green bold
-      '/employer':  ' snav-emp'      // For Employers — dark bold
-    };
+    var EMPH = {};
     var linksHtml = LINKS.map(function (l, i) {
       var cls = (isActive(l[1]) ? 'snav-active' : '') + (EMPH[l[1]] || '');
       cls = cls.trim();
@@ -123,7 +126,18 @@
       '#snavMenu a{font-family:\'Fraunces\',Georgia,serif;font-size:24px;font-weight:600;color:#191512;text-decoration:none;padding:10px 0;border-bottom:1px solid #E7DFD1;}' +
       '#snavMenu .snav-mclose{position:absolute;top:20px;right:24px;background:none;border:none;font-size:30px;color:#57514A;cursor:pointer;line-height:1;}' +
       '#snavMenu .snav-mcta{margin-top:14px;background:#1F5C3D;color:#fff;border:none;border-radius:10px;text-align:center;border-bottom:none;}' +
-      '@media(max-width:1180px){#snav .snav-links,#snav .snav-act{display:none!important;}#snav .snav-hamwrap{display:flex!important;}#snav .snav-ham{display:block!important;}}';
+      '@media(max-width:1180px){#snav .snav-links,#snav .snav-act{display:none!important;}#snav .snav-hamwrap{display:flex!important;}#snav .snav-ham{display:block!important;}}' +
+      /* Luxury ecosystem override. Appended so it wins over the legacy
+         editorial-light declarations above without changing nav behavior. */
+      '#snav{background:rgba(7,23,36,.97)!important;border-bottom-color:rgba(201,168,93,.25)!important;}' +
+      '#snav .snav-logo{color:#fff!important;font-weight:600;}' +
+      '#snav .snav-logo b{background:#c9a85d!important;color:#071724!important;border-radius:2px;}' +
+      '#snav .snav-links a{color:#d4dede!important;font-size:13px;letter-spacing:.03em;}' +
+      '#snav .snav-links a:hover,#snav .snav-links a.snav-active{color:#e3cc91!important;}' +
+      '#snav .snav-lang,#snav .snav-ham{color:#f7f1e6!important;border-color:rgba(201,168,93,.38)!important;border-radius:2px;}' +
+      '#snav .snav-ghost{color:#f7f1e6!important;border-color:rgba(201,168,93,.38)!important;border-radius:2px;}' +
+      '#snav .snav-primary{background:#c9a85d!important;color:#071724!important;box-shadow:none;border-radius:2px;text-transform:uppercase;letter-spacing:.07em;font-size:11px;}' +
+      '#snavMenu{background:#071724!important;}#snavMenu a{color:#f7f1e6!important;border-bottom-color:rgba(201,168,93,.2)!important;}';
 
     var style = document.createElement('style');
     style.id = 'snav-css';

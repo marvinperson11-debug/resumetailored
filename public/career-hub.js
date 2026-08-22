@@ -81,7 +81,7 @@
     ch_nav_gap: '技能差距', ch_nav_jobfinder: '职位搜索', ch_nav_scenariolab: '情景实验室',
     ch_pick_title: '你的目标职业是什么？', ch_pick_search: '搜索 60+ 种职业…',
     ch_sen_none: '资历（可选）', ch_sen_entry: '初级', ch_sen_mid: '中级', ch_sen_senior: '高级', ch_sen_lead: '资深',
-    ch_save: '保存', ch_cancel: '取消', ch_change: '更改', ch_upgrade: '升级', ch_upgrade_price: '升级 — $19.99/月',
+    ch_save: '保存', ch_cancel: '取消', ch_change: '更改', ch_upgrade: '升级', ch_upgrade_price: '升级 — $19.00/月',
     ch_tailored: '以下所有内容都为该职业量身定制', ch_prof_set: '目标职业已设置：', ch_could_not_save: '无法保存。',
     ch_np_title: '设置你的目标职业', ch_np_blurb: '选择一次职业，每个职业中心工具都会为其量身定制。', ch_np_btn: '选择职业',
     ch_dash_fail: '无法加载你的仪表板。', ch_d_resumes: '简历', ch_d_tests: '技能测试', ch_d_ivqs: '面试题',
@@ -368,7 +368,7 @@
       '</div>' +
       '<div class="ch-card"><h3>' + t('ch_d_next', 'Recommended next steps') + '</h3><ol style="margin:8px 0 0;padding-left:20px;">' + (steps || '<li class="ch-note">' + t('ch_d_caught', "You're all caught up! 🎉") + '</li>') + '</ol>' +
       (d.isSubscriber ? '<div id="chCoach" style="margin-top:14px;"><button class="ch-btn ch-btn-ghost ch-btn-sm" onclick="CareerHub.coach()">✨ ' + t('ch_d_coach', 'AI coach summary') + '</button></div>'
-        : '<div class="ch-upsell" style="margin-top:14px;">' + t('ch_d_upsell', 'Unlock the AI coach summary, Gold badges, technical interview prep and unlimited analyses with Pro.') + '<br><button class="ch-btn ch-btn-sm" onclick="CareerHub.pro()">' + t('ch_upgrade_price', 'Upgrade — $19.99/mo') + '</button></div>') +
+        : '<div class="ch-upsell" style="margin-top:14px;">' + t('ch_d_upsell', 'Unlock the AI coach summary, Gold badges, technical interview prep and unlimited analyses with Pro.') + '<br><button class="ch-btn ch-btn-sm" onclick="CareerHub.pro()">' + t('ch_upgrade_price', 'Upgrade — $19.00/mo') + '</button></div>') +
       '</div>' +
       '<div class="ch-card" style="margin-top:16px;" id="chCandidateCard">' + spin() + '</div>';
     renderCandidateSection();

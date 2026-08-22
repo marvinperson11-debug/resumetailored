@@ -220,7 +220,7 @@
   .ai-lock{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:26px;}
   .ai-upsell{margin-top:14px;background:var(--nv-panel2);border:1px dashed var(--nv-accent);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:14px;}
   /* ── v2: plan tiles ── */
-  .nv-plans{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+  .nv-plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
   .nv-plan{border:1px solid var(--nv-line);border-radius:12px;padding:16px;background:var(--nv-panel2);display:flex;flex-direction:column;}
   .nv-plan.cur{border-color:var(--nv-accent);box-shadow:0 0 0 1px var(--nv-accent);}
   .nv-plan-h{display:flex;align-items:center;justify-content:space-between;}
@@ -233,6 +233,14 @@
   .nv-plan-feats li:before{content:"✓";position:absolute;left:0;color:var(--nv-accent2);font-weight:800;}
   .nv-btn-dark{background:var(--nv-ink);}
   @media(max-width:760px){.kanban{grid-template-columns:1fr;}.nv-plans{grid-template-columns:1fr;}}
+  /* Old Money command-center skin: the existing recruiter workflows remain
+     intact; only their presentation is unified with the Corporate suite. */
+  :root{--nv-bg:#071724;--nv-panel:#0b2231;--nv-panel2:#102d3b;--nv-line:rgba(201,168,93,.26);--nv-ink:#f7f1e6;--nv-muted:#aab9bb;--nv-accent:#c9a85d;--nv-accent2:#7fae96;--nv-green:#7fae96;--nv-amber:#e3cc91;--nv-red:#e78a7e}
+  body{background:var(--nv-bg);background-image:linear-gradient(rgba(201,168,93,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,93,.025) 1px,transparent 1px);background-size:72px 72px}
+  .nv-sidebar{background:#06131e;border-right-color:var(--nv-line)}.nv-topbar{background:rgba(7,23,36,.97);border-bottom-color:var(--nv-line)}
+  .nv-card,.nv-modal,.nv-authcard{box-shadow:0 22px 60px rgba(0,0,0,.18)}.nv-btn{background:linear-gradient(135deg,#1d5b49,#123f35);border:1px solid rgba(201,168,93,.45)}
+  .nv-btn-ghost{background:transparent}.nv-pill-pro{background:#c9a85d;color:#071724}.nv-h{font-family:Georgia,'Times New Roman',serif;font-weight:500;letter-spacing:-.025em}
+  #nvPubNav{background:rgba(7,23,36,.98);border-bottom-color:var(--nv-line)}#nvPubNav .logo{color:#fff}#nvPubNav .links a{color:#c7d1d2}#nvPubNav .links a:hover{color:#e3cc91}
 </style>
 </head>
 <body>
@@ -359,6 +367,7 @@
       <button class="nv-navbtn" data-view="interviews" onclick="nvGo('interviews')"><span class="ic">📅</span> Interviews</button>
       <button class="nv-navbtn" data-view="analytics" onclick="nvGo('analytics')"><span class="ic">📈</span> Analytics</button>
       <button class="nv-navbtn" data-view="messages" onclick="nvGo('messages')"><span class="ic">💬</span> Messages <span class="badge" id="nvMsgBadge" style="display:none;">0</span></button>
+      <a class="nv-navbtn" href="/corporate"><span class="ic">✦</span> Corporate Modules</a>
       <button class="nv-navbtn" data-view="settings" onclick="nvGo('settings')"><span class="ic">⚙️</span> Settings</button>
       <div class="nv-seeker-link">
         <a class="nv-navbtn" href="/dashboard"><span class="ic">↩︎</span> Job Seeker Dashboard</a>
@@ -521,7 +530,7 @@ async function boot(){
   el('nvCoOut').textContent=epStatus.companyName;
   var tierLabel=(epStatus.tier||'free').toUpperCase();
   el('nvProPill').style.display=epStatus.pro?'inline-block':'none';
-  el('nvProPill').textContent=epStatus.tier==='scale'?'SCALE':'PRO EMPLOYER';
+  el('nvProPill').textContent=epStatus.tier==='corporate'?'CORPORATE':(epStatus.tier==='scale'?'SCALE':'EMPLOYER PORTAL');
   el('nvUpgradeBtn').style.display=epStatus.pro?'none':'inline-flex';
   el('nvUpgradeBtn').textContent='Upgrade — $'+((epStatus.prices&&epStatus.prices.pro)||49)+'/mo';
   await loadJobs();
@@ -539,7 +548,8 @@ async function boot(){
 function _maybeAutoPlan(){
   try{
     var p=(new URLSearchParams(location.search).get('plan')||'').toLowerCase();
-    if(p!=='pro'&&p!=='scale') return;
+    if(p==='portal') p='pro';
+    if(p!=='pro'&&p!=='scale'&&p!=='corporate') return;
     history.replaceState(null,'',location.pathname);
     nvGo('settings');
     if(!epStatus || epStatus.tier!==p) nvUpgrade(p);
@@ -556,6 +566,7 @@ async function nvUpgrade(plan){
 function nvGo(view){
   document.querySelectorAll('.nv-navbtn[data-view]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-view')===view); });
   el('nvSidebar').classList.remove('open');
+  if(window.RTBackNav) window.RTBackNav.refreshEmployer(view);
   var c=el('nvContent');
   if(view==='dashboard') return renderDashboard(c);
   if(view==='jobs') return renderJobs(c);
@@ -688,7 +699,7 @@ async function loadApps(){
     return '<div class="kan-col" data-stage="'+s[0]+'" ondragover="kanOver(event)" ondragleave="kanLeave(event)" ondrop="kanDrop(event,\''+s[0]+'\')">'+
       '<div class="kan-col-h"><span class="dot '+s[0]+'"></span>'+s[1]+' <span class="kan-count">'+byStage[s[0]].length+'</span></div>'+
       '<div class="kan-cards">'+cards+'</div></div>';
-  }).join('')+'</div>'+(pro?'':'<p class="nv-sub" style="margin-top:10px;">🔒 Drag-and-drop is a Pro feature — upgrade to move candidates through the pipeline.</p>');
+  }).join('')+'</div>'+(pro?'':'<p class="nv-sub" style="margin-top:10px;color:var(--nv-amber);">Preview · Candidate movement is available in Employer Portal.</p>');
 }
 function kanCard(a,pro){
   return '<div class="kan-card"'+(pro?' draggable="true" ondragstart="kanDrag(event,'+a.id+')" ondragend="kanEnd(event)"':'')+'>'+
@@ -730,7 +741,7 @@ function renderAiMatches(d){
   var ms=d.matches||[];
   if(!ms.length){ list.innerHTML=run+'<div class="nv-empty">No matches yet — click “Run AI matching” once you have applicants.</div>'; return; }
   var cards=ms.map(function(m){
-    if(m.locked){ return '<div class="ai-card locked"><div class="ai-blur"><div class="ai-score">'+(m.scoreBand==='high'?'9x':m.scoreBand==='medium'?'7x':'5x')+'%</div><div class="ai-name">████████ ██████</div><div class="ai-kw">████ · █████ · ███</div></div><div class="ai-lock">🔒</div></div>'; }
+    if(m.locked){ return '<div class="ai-card locked"><div class="ai-blur"><div class="ai-score">'+(m.scoreBand==='high'?'9x':m.scoreBand==='medium'?'7x':'5x')+'%</div><div class="ai-name">Candidate profile</div><div class="ai-kw">competencies · evidence · fit</div></div><div class="ai-lock" style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--nv-amber);">Preview</div></div>'; }
     var mk=(m.matchedKeywords||[]).slice(0,6).map(function(k){return '<span class="ai-tag ok">'+esc(k)+'</span>';}).join('');
     var xk=(m.missingKeywords||[]).slice(0,4).map(function(k){return '<span class="ai-tag no">'+esc(k)+'</span>';}).join('');
     return '<div class="ai-card"><div class="ai-top"><div class="ai-score">'+m.score+'%</div><div style="flex:1;"><div class="ai-name">'+esc(m.candidateName||m.candidateEmail)+'</div><div class="nv-sub" style="font-size:12px;margin:2px 0 0;">'+esc(m.reasoning||'')+'</div></div>'+
@@ -738,7 +749,7 @@ function renderAiMatches(d){
       '<div class="ai-kws">'+mk+xk+'</div></div>';
   }).join('');
   var locked=d.lockedCount||0;
-  var upsell=locked>0?'<div class="ai-upsell">🔒 <strong>'+locked+' more match'+(locked===1?'':'es')+'</strong> are hidden on the free plan. <button class="nv-btn nv-btn-sm" onclick="nvUpgrade(\'pro\')">Unlock all — $'+((epStatus.prices&&epStatus.prices.pro)||49)+'/mo</button></div>':'';
+  var upsell=locked>0?'<div class="ai-upsell"><strong>Preview · '+locked+' more match'+(locked===1?'':'es')+'</strong> are available in Employer Portal. <button class="nv-btn nv-btn-sm" onclick="nvUpgrade(\'portal\')">Continue with Employer Portal</button></div>':'';
   list.innerHTML=run+'<div class="ai-list">'+cards+'</div>'+upsell;
 }
 
@@ -919,7 +930,7 @@ async function renderSettings(c){
 }
 function nvBillingCard(){
   var tier=(epStatus&&epStatus.tier)||'free';
-  var pPro=(epStatus.prices&&epStatus.prices.pro)||49, pScale=(epStatus.prices&&epStatus.prices.scale)||199;
+  var pPro=(epStatus.prices&&epStatus.prices.pro)||49, pScale=(epStatus.prices&&epStatus.prices.scale)||99, pCorporate=(epStatus.prices&&epStatus.prices.corporate)||299;
   var used=epStatus.jobsPostedLifetime||0, lim=epStatus.freeLifetimeJobLimit||2;
   function plan(name,price,tagline,feats,cur,cta){
     return '<div class="nv-plan'+(cur?' cur':'')+'">'+
@@ -933,8 +944,9 @@ function nvBillingCard(){
     (tier==='free'?'<p class="nv-sub" style="margin:0 0 14px;">You\'ve used <strong>'+used+' of '+lim+'</strong> lifetime free job posts. The free plan is capped at '+lim+' posts <em>ever</em> — upgrade for unlimited.</p>':'<p class="nv-sub" style="margin:0 0 14px;">You\'re on <strong style="color:var(--nv-amber);">'+tier.toUpperCase()+'</strong>. Manage or cancel anytime — cancellation takes effect at period end.</p>')+
     '<div class="nv-plans">'+
       plan('Free',0,'Get started hiring',['2 job posts (lifetime)','Applicant list','Top 3 AI matches'],tier==='free','')+
-      plan('Pro',pPro,'For active hiring',['Unlimited job posts','All AI matches','Drag-and-drop pipeline','5 team seats · screener · analytics'],tier==='pro',tier==='pro'?'':'<button class="nv-btn" style="width:100%;" onclick="nvUpgrade(\'pro\')">'+(tier==='free'?'Upgrade to Pro':'Switch to Pro')+'</button>')+
-      plan('Scale',pScale,'For high-volume teams',['Everything in Pro','API access','Unlimited seats','Priority support'],tier==='scale',tier==='scale'?'':'<button class="nv-btn nv-btn-dark" style="width:100%;" onclick="nvUpgrade(\'scale\')">Upgrade to Scale</button>')+
+      plan('Employer Portal',pPro,'For focused hiring',['AI screening for 3 candidates','Custom landing pages','Candidate pipeline'],tier==='pro',tier==='pro'?'':'<button class="nv-btn" style="width:100%;" onclick="nvUpgrade(\'portal\')">Choose Employer Portal</button>')+
+      plan('Scale',pScale,'For operating teams',['Base collaboration layer','Choose and retain any 5 modules','API access · unlimited seats'],tier==='scale',tier==='scale'?'':'<button class="nv-btn nv-btn-dark" style="width:100%;" onclick="nvUpgrade(\'scale\')">Choose Scale</button>')+
+      plan('Corporate',pCorporate,'For the complete organization',['All 21 operational modules','Job Decoder','Web Studio · white-labeling · SSO-ready'],tier==='corporate',tier==='corporate'?'':'<button class="nv-btn nv-btn-dark" style="width:100%;" onclick="nvUpgrade(\'corporate\')">Choose Corporate</button>')+
     '</div></div>';
 }
 async function nvSaveSettings(){
@@ -951,6 +963,19 @@ document.querySelectorAll('.nv-overlay').forEach(function(o){ o.addEventListener
 window.nvMsgCandidate=function(email){ nvMsgCandidateOpen(email); };
 
 boot();
+</script>
+<script src="/back-nav.js?v=1"></script>
+<script>
+  // Auth and company-setup screens have a stable marketing parent too.
+  document.addEventListener('DOMContentLoaded', function () {
+    ['nvAuth','nvSetup'].forEach(function (id) {
+      var card=document.querySelector('#'+id+' .nv-authcard'); if(!card) return;
+      var wrap=document.createElement('div'); wrap.style.marginBottom='16px';
+      var a=document.createElement('a'); a.href='/for-employers'; a.className='rt-explicit-back';
+      a.setAttribute('aria-label','Back to Employer Home'); a.textContent='← Back to Employer Home';
+      wrap.appendChild(a); card.insertBefore(wrap,card.firstChild);
+    });
+  });
 </script>
 </body>
 </html>

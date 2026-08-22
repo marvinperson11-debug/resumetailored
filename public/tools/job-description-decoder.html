@@ -107,7 +107,7 @@ async function decode(){
   document.getElementById('result').classList.remove('show'); document.getElementById('loading').classList.add('show');
   var res=await thApi('POST','/api/tools/job-description-decode',{jobText:jd});
   document.getElementById('loading').classList.remove('show'); btn.disabled=false;
-  if(thHandleGate(res)) return;
+  if(thHandleGate(res,'decode')) return;
   if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Something went wrong.'; err.classList.add('show'); return; }
   var d=res.data.result, zh=(localStorage.getItem('rt_lang')==='zh');
   document.getElementById('r-summary').textContent=d.summary;

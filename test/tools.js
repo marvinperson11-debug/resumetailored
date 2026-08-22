@@ -137,10 +137,12 @@ let PORT;
 const server = app.listen(0, async () => {
   PORT = server.address().port;
   try {
-    // ── Offer Comparison: free + anonymous ──────────────────────────────────
+    // ── Offer Comparison: browse anonymously, sign in only at Compare ───────
     let r = await req('POST', '/api/tools/offer-comparison', null, { offers: [{ label: 'A', baseSalary: 100000 }, { label: 'B', baseSalary: 130000, remote: true }] });
-    check('offer route: anonymous 200 + winner', r.status === 200 && r.json.bestLabel === 'B', r.body);
-    r = await req('POST', '/api/tools/offer-comparison', null, { offers: [{ label: 'A' }] });
+    check('offer route: anonymous Generate is login-gated', r.status === 401 && r.json.error === 'auth_required', r.body);
+    r = await req('POST', '/api/tools/offer-comparison', 'tokFree', { offers: [{ label: 'A', baseSalary: 100000 }, { label: 'B', baseSalary: 130000, remote: true }] });
+    check('offer route: logged-in free user gets winner immediately', r.status === 200 && r.json.bestLabel === 'B', r.body);
+    r = await req('POST', '/api/tools/offer-comparison', 'tokFree', { offers: [{ label: 'A' }] });
     check('offer route: <2 offers => 400', r.status === 400);
 
     // ── Gated generative tools: auth + validation gates (no LLM call) ───────
@@ -149,11 +151,12 @@ const server = app.listen(0, async () => {
     check('follow-up: missing fields => 400', (await req('POST', '/api/tools/follow-up-generate', 'tokFree', { company: '' })).status === 400);
     check('mock interview: missing role => 400', (await req('POST', '/api/tools/mock-interview', 'tokFree', { action: 'questions', role: '' })).status === 400);
     check('mock feedback: no answers => 400', (await req('POST', '/api/tools/mock-interview', 'tokFree', { action: 'feedback', answers: [] })).status === 400);
-    // Salary is FREE + unlimited + no account required — so no 401. Only the
-    // missing-role validation (which runs before any LLM call) is exercised
-    // here, for both an anonymous and a signed-in caller.
-    check('salary: anonymous is allowed (missing role => 400, not 401)', (await req('POST', '/api/tools/salary-negotiation', null, { role: '' })).status === 400);
+    // Salary stays free/unlimited, but the Generate action now follows the same
+    // login-at-action rule as every other free tool.
+    check('salary: anonymous Generate is login-gated', (await req('POST', '/api/tools/salary-negotiation', null, { role: '' })).status === 401);
     check('salary: signed-in missing role => 400', (await req('POST', '/api/tools/salary-negotiation', 'tokFree', { role: '' })).status === 400);
+    check('keyword extractor: anonymous Generate is login-gated', (await req('POST', '/api/tools/extract-keywords', null, { jobDescription: 'x'.repeat(60) })).status === 401);
+    check('keyword extractor: signed-in validation runs without a login prompt', (await req('POST', '/api/tools/extract-keywords', 'tokFree', { jobDescription: 'short' })).status === 400);
 
     // ── Quota gate: pre-seed tool_usage rows to hit the day/month cap ────────
     for (let i = 0; i < TOOLS.LIMITS.jobDecode.free; i++) db.prepare('INSERT INTO tool_usage (user_email,tool_name) VALUES (?,?)').run('free@x.com', TOOLS.LIMITS.jobDecode.tool);

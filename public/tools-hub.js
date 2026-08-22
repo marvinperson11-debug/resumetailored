@@ -8,6 +8,7 @@
   // ── auth (shares the SPA's localStorage session) ──────────────────────────
   window.thToken = function () { try { return localStorage.getItem('rt_token') || ''; } catch (e) { return ''; } };
   window.thLoggedIn = function () { return !!window.thToken(); };
+  var PENDING_KEY = 'rt_tool_hub_pending_v1';
   function authHeaders(json) {
     var h = {};
     var t = window.thToken(); if (t) h.Authorization = 'Bearer ' + t;
@@ -59,10 +60,11 @@
     m.classList.add('show');
   };
   window.thCloseUpgrade = function () { var m = document.getElementById('thUpgradeModal'); if (m) m.classList.remove('show'); };
-  window.thStartPro = function () {
-    // Signed-in users go through the app's checkout; guests are sent to sign in first.
-    if (window.thLoggedIn()) location.href = '/dashboard?upgrade=1';
-    else location.href = '/login?next=' + encodeURIComponent(location.pathname);
+  window.thStartPro = async function () {
+    // Ask the server so cookie-only sessions never get sent back to login.
+    var me = await window.thApi('GET', '/api/auth/me');
+    if (me.status === 200) location.href = '/dashboard?upgrade=1';
+    else location.href = '/login?redirect=' + encodeURIComponent(location.pathname);
   };
 
   // ── copy / download ───────────────────────────────────────────────────────
@@ -80,20 +82,51 @@
     document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   };
 
-  // ── login gate helper for pages that need it up front ─────────────────────
-  window.thRequireLogin = function () {
-    if (window.thLoggedIn()) return true;
-    location.href = '/login?next=' + encodeURIComponent(location.pathname);
+  // ── login-at-action gate ─────────────────────────────────────────────────
+  // Never call this during page boot. It is only for a Generate/Save response
+  // that came back 401, which means the server has definitively rejected both
+  // the cookie session and any legacy bearer token.
+  function savePending(action) {
+    if (!action) return;
+    var fields = [];
+    document.querySelectorAll('input,textarea,select').forEach(function (el) {
+      if (el.type === 'file' || el.type === 'password') return;
+      fields.push(el.type === 'checkbox' || el.type === 'radio' ? { checked: !!el.checked } : { value: el.value });
+    });
+    try { sessionStorage.setItem(PENDING_KEY, JSON.stringify({ path: location.pathname + location.search, action: action, fields: fields, offerCount: document.querySelectorAll('[data-offer]').length, at: Date.now() })); } catch (e) {}
+  }
+  window.thRequireLogin = function (action) {
+    savePending(action);
+    location.href = '/login?redirect=' + encodeURIComponent(location.pathname + location.search);
     return false;
   };
 
   // ── standard error/quota handling for a tool response ─────────────────────
   // Returns true if the caller should stop (handled), false to continue.
-  window.thHandleGate = function (res) {
-    if (res.status === 401) { window.thRequireLogin(); return true; }
+  window.thHandleGate = function (res, action) {
+    if (res.status === 401) { window.thRequireLogin(action); return true; }
     if (res.status === 402) { window.thUpgrade(res.data && res.data.message); return true; }
     return false;
   };
 
-  document.addEventListener('DOMContentLoaded', function () { applyLang(currentLang()); });
+  async function resumePending() {
+    var pending = null;
+    try { pending = JSON.parse(sessionStorage.getItem(PENDING_KEY) || 'null'); } catch (e) {}
+    if (!pending || pending.path !== location.pathname + location.search || !pending.at || Date.now() - pending.at > 30 * 60 * 1000) return;
+    if (pending.offerCount && typeof window.addOffer === 'function') {
+      while (document.querySelectorAll('[data-offer]').length < pending.offerCount) window.addOffer();
+    }
+    var controls = document.querySelectorAll('input,textarea,select');
+    (pending.fields || []).forEach(function (state, index) {
+      var el = controls[index]; if (!el || !state || el.type === 'file' || el.type === 'password') return;
+      if (Object.prototype.hasOwnProperty.call(state, 'checked')) el.checked = !!state.checked; else el.value = state.value;
+      try { el.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
+    });
+    var me = await window.thApi('GET', '/api/auth/me');
+    if (me.status !== 200) return;
+    try { sessionStorage.removeItem(PENDING_KEY); } catch (e) {}
+    if (/^[A-Za-z_$][\w$]*$/.test(pending.action) && typeof window[pending.action] === 'function') setTimeout(function () { window[pending.action](); }, 100);
+  }
+
+  document.addEventListener('DOMContentLoaded', function () { applyLang(currentLang()); resumePending(); });
 })();

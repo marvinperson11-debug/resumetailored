@@ -110,6 +110,9 @@ var PRO=false, ANALYTICS=false, LIMIT=3, LEADER=null;
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 async function load(){
   var res=await thApi('GET','/api/tools/resume-versions');
+  // Browsing this tool is public. A 401 on the background list fetch renders
+  // an empty workspace; login is requested only when Save is clicked.
+  if(res.status===401){ render([]); return; }
   if(thHandleGate(res)) return;
   if(res.status!==200) return;
   PRO=res.data.pro; ANALYTICS=!!res.data.analytics; LIMIT=res.data.limit; LEADER=res.data.leaderId;
@@ -153,7 +156,7 @@ async function saveVersion(){
   if(!name){ err.textContent=thT('reqname','Give this version a name.'); err.classList.add('show'); return; }
   var body={ versionName:name, templateUsed:document.getElementById('vtpl').value.trim(), jobTag:document.getElementById('vtag').value.trim(), resumeText:document.getElementById('vtext').value, jobsAppliedWith:parseInt(document.getElementById('vapplied').value,10)||0, responsesReceived:parseInt(document.getElementById('vresp').value,10)||0 };
   var res=await thApi('POST','/api/tools/resume-version',body);
-  if(thHandleGate(res)) return;
+  if(thHandleGate(res,'saveVersion')) return;
   if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Could not save.'; err.classList.add('show'); return; }
   document.getElementById('vname').value=''; document.getElementById('vtpl').value=''; document.getElementById('vtag').value=''; document.getElementById('vtext').value=''; document.getElementById('vapplied').value='0'; document.getElementById('vresp').value='0';
   load();
@@ -180,7 +183,7 @@ async function runDiag(id){
     +'<p class="th-label" style="margin-top:8px;">'+thT('tips','Suggested edits')+'</p><ul class="th-flaglist good">'+(d.suggestions||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'
     +'</div>';
 }
-if(thRequireLogin()) load();
+load();
 </script>
 <script src="/site-nav.js" defer></script>
 </body>

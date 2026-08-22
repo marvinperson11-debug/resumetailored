@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Free ATS Keyword Extractor — Extract Top Keywords From Any Job Description | ResumeTailored AI</title>
-  <meta name="description" content="Free tool: paste any job description and Claude AI instantly extracts the top 15 ATS keywords your resume needs to pass the filter. No account required. Works with any job board." />
+  <meta name="description" content="Free tool: paste any job description and Claude AI extracts the top 15 ATS keywords your resume needs. Fill it out freely; sign in only when you extract." />
   <meta name="keywords" content="free ATS keyword extractor, job description keyword finder, ATS keywords from job description, resume keyword extractor, free ATS tool, extract keywords from job posting" />
   <link rel="canonical" href="https://resumetailored.com/tools/ats-keyword-extractor" />
   <meta property="og:title" content="Free ATS Keyword Extractor — Powered by Claude AI" />
-  <meta property="og:description" content="Paste any job description. Claude extracts the top 15 ATS keywords your resume must include. Free, no account needed." />
+  <meta property="og:description" content="Paste any job description freely. Sign in only when you extract the top 15 ATS keywords." />
   <meta property="og:url" content="https://resumetailored.com/tools/ats-keyword-extractor" />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="https://resumetailored.com/og-image.png" />
@@ -169,10 +169,10 @@
   <div class="tool-wrap">
 
     <!-- HEADER -->
-    <div class="tool-eyebrow">Free Tool — No Account Required</div>
+      <div class="tool-eyebrow">Free Tool — Sign In Only to Extract</div>
     <h1 class="tool-title">Free ATS Keyword Extractor<br /><span>Powered by Claude AI</span></h1>
     <p class="tool-desc">Paste any job description below. Claude AI instantly analyzes it and surfaces the top 15 ATS keywords your resume needs to include — the exact technical skills, tools, certifications, and phrases that Applicant Tracking Systems score for.</p>
-    <div class="tool-free-badge">&#9989; 100% Free &bull; No Account Needed &bull; Results in Seconds</div>
+      <div class="tool-free-badge">&#9989; 100% Free &bull; Browse Freely &bull; Sign In at Extract</div>
 
     <!-- INPUT -->
     <div class="input-card">
@@ -261,6 +261,7 @@
   </div>
 </footer>
 
+<script src="/free-tool-auth.js"></script>
 <script>
   function updateCount() {
     const ta = document.getElementById('jobDesc');
@@ -282,6 +283,7 @@
       errorEl.style.display = 'block';
       return;
     }
+    if (!(await RTFreeToolAuth.requireForAction('extractKeywords'))) return;
 
     btn.disabled = true;
     document.getElementById('btnIcon').textContent = '';

@@ -41,7 +41,7 @@ check('trims and caps title length', EH.validateJobPosting(Object.assign({}, goo
 // ── v2 tiers + lifetime job cap ──────────────────────────────────────────────
 check('free tier is a lifetime cap of 2 posts', EH.EMPLOYER_TIERS.free.lifetimeJobs === 2);
 check('pro tier is $49 with unlimited posts', EH.EMPLOYER_TIERS.pro.price === 49 && EH.EMPLOYER_TIERS.pro.lifetimeJobs === Infinity);
-check('scale tier is $199 with API access', EH.EMPLOYER_TIERS.scale.price === 199 && EH.EMPLOYER_TIERS.scale.api === true);
+check('scale tier is $99 with API access', EH.EMPLOYER_TIERS.scale.price === 99 && EH.EMPLOYER_TIERS.scale.api === true);
 check('tierConfig falls back to free on garbage', EH.tierConfig('bogus').lifetimeJobs === 2);
 
 check('canPostJob allows a free employer with 0 posts', EH.canPostJob({ tier: 'free', lifetimeJobsPosted: 0 }).allowed === true);
@@ -64,7 +64,9 @@ check('free gate keeps PII on unlocked entries', freeGate.matches[0].email === '
 check('free gate strips PII from locked entries', freeGate.matches[3].locked === true && freeGate.matches[3].email === undefined);
 check('free gate exposes only a score band on locked entries', freeGate.matches[3].scoreBand === 'medium');
 const proGate = EH.applyMatchGate(gRanked, 'pro');
-check('pro gate unlocks everything', proGate.unlockedCount === 5 && proGate.lockedCount === 0 && proGate.matches[4].email === 'c4@x.com');
+check('Employer Portal screening is capped at 3 candidates', proGate.unlockedCount === 3 && proGate.lockedCount === 2);
+const scaleGate = EH.applyMatchGate(gRanked, 'scale');
+check('Scale gate unlocks everything', scaleGate.unlockedCount === 5 && scaleGate.lockedCount === 0 && scaleGate.matches[4].email === 'c4@x.com');
 
 // ── screener questions (Pro) ─────────────────────────────────────────────────
 check('validateScreenerQuestions accepts empty as []', EH.validateScreenerQuestions('').clean.length === 0);

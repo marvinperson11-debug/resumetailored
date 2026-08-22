@@ -3,7 +3,7 @@
 // script so APP_I18N is a shared global by the time any handler reads it.
     const APP_I18N = {
       en: {
-        nav_go_pro: 'Go Pro — $19.99/mo', nav_logout: 'Log Out',
+        nav_go_pro: 'Go Pro — $19.00/mo', nav_logout: 'Log Out',
         sidebar_jobsearch: 'Job Search', sidebar_tailor: 'Resume Tailor', sidebar_linkedin: 'LinkedIn Optimizer',
         sidebar_jobtracker: 'Job Tracker',
         sidebar_sharelink: 'Resume Link', sidebar_website: 'Personal Website', sidebar_backoffice: 'Back Office', sidebar_newtools: 'New Tools',
@@ -168,9 +168,9 @@
         sidebar_about: 'How Does It Work?', sidebar_cancel: 'Cancel Anytime',
         sidebar_pro_title: '✦ Unlock Full Access',
         sidebar_pro_text: 'Career Hub features are available to Pro members.',
-        sidebar_pro_btn: 'Upgrade — $19.99/mo',
+        sidebar_pro_btn: 'Upgrade — $19.00/mo',
         mobile_upgrade_p: '✦ Unlock unlimited tailorings, cover letters & Career Hub features.',
-        mobile_upgrade_btn: 'Upgrade — $19.99/mo',
+        mobile_upgrade_btn: 'Upgrade — $19.00/mo',
         tailor_title: 'Tailor Your Resume',
         tailor_sub: 'Paste your resume and the job posting. We\'ll match your experience to what they\'re looking for.',
         li_banner_title: 'LinkedIn Profile Optimizer',
@@ -210,7 +210,7 @@
         google_login_btn: 'Continue with Google', google_signup_btn: 'Sign up with Google'
       },
       zh: {
-        nav_go_pro: '升级专业版 — ¥19.99/月', nav_logout: '退出登录',
+        nav_go_pro: '升级专业版 — ¥19.00/月', nav_logout: '退出登录',
         sidebar_jobsearch: '求职工具', sidebar_tailor: '简历定制', sidebar_linkedin: 'LinkedIn优化',
         sidebar_jobtracker: '求职跟踪',
         sidebar_sharelink: '简历链接', sidebar_website: '个人网站', sidebar_backoffice: '后台管理', sidebar_newtools: '新工具',
@@ -374,9 +374,9 @@
         sidebar_about: '它是如何工作的？', sidebar_cancel: '随时取消',
         sidebar_pro_title: '✦ 解锁完整权限',
         sidebar_pro_text: '职业中心功能仅限专业版会员使用。',
-        sidebar_pro_btn: '升级 — ¥19.99/月',
+        sidebar_pro_btn: '升级 — ¥19.00/月',
         mobile_upgrade_p: '✦ 解锁无限次简历定制、求职信及职业中心功能。',
-        mobile_upgrade_btn: '立即升级 — ¥19.99/月',
+        mobile_upgrade_btn: '立即升级 — ¥19.00/月',
         tailor_title: '定制你的简历',
         tailor_sub: '粘贴你的简历和职位描述，AI将根据招聘要求优化你的简历关键词和经历描述。',
         li_banner_title: 'LinkedIn 个人资料优化',

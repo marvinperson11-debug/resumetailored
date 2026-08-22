@@ -114,7 +114,7 @@
     ],
     "offers": [
       {"@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free — Unlimited tailoring"},
-      {"@type": "Offer", "price": "19.99", "priceCurrency": "USD", "priceSpecification": {"@type": "UnitPriceSpecification", "billingDuration": "P1M"}, "name": "Pro — Unlimited"},
+      {"@type": "Offer", "price": "19.00", "priceCurrency": "USD", "priceSpecification": {"@type": "UnitPriceSpecification", "billingDuration": "P1M"}, "name": "Pro — Unlimited"},
       {"@type": "Offer", "price": "129", "priceCurrency": "USD", "name": "Pro Lifetime"}
     ],
     "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "312", "ratingCount": "312", "bestRating": "5", "worstRating": "1"}
@@ -1007,8 +1007,27 @@
        then applies it on load; <noscript> keeps it working without JS. -->
   <link rel="stylesheet" href="/site-fx.css" media="print" onload="this.media='all'"/>
   <noscript><link rel="stylesheet" href="/site-fx.css"/></noscript>
+  <link rel="stylesheet" href="/luxury-ecosystem.css"/>
 </head>
-<body>
+<body class="ecosystem-redesign">
+
+<header class="club-nav">
+  <div class="club-nav__inner">
+    <a class="club-brand" href="/">ResumeTailored <small>Private career &amp; people office</small></a>
+    <nav class="club-nav__links" aria-label="Primary ecosystem navigation">
+      <a href="/decoder-key">Decoder Key</a>
+      <a href="/corporate">Corporate</a>
+      <a href="/resume-video">Resume Video</a>
+      <a href="/web-studio">Web Studio</a>
+      <a href="#ecosystem-pricing">Membership</a>
+    </nav>
+    <button class="club-mobile" type="button" data-club-mobile onclick="void 0" aria-label="Open navigation" aria-expanded="false">☰</button>
+    <div class="club-nav__actions">
+      <button class="club-button club-button--quiet" type="button" onclick="openLoginChooser()">Member login</button>
+      <a class="club-button club-button--gold" href="/dashboard" data-context="job-seeker">Enter the office</a>
+    </div>
+  </div>
+</header>
 
 <!-- Animated interactive neural-vortex background (fixed, behind all content) -->
 <canvas id="neuro" aria-hidden="true"></canvas>
@@ -1081,6 +1100,64 @@
 
 <!-- HERO -->
 <main id="main-content">
+<section class="ecosystem-home" aria-labelledby="ecosystem-title">
+  <div class="ecosystem-home__inner">
+    <div class="club-kicker">Career intelligence, privately delivered</div>
+    <h1 id="ecosystem-title">Your next move,<br><em>properly considered.</em></h1>
+    <p class="ecosystem-home__lead">A private digital office for ambitious candidates and exacting employers—combining resume intelligence, cinematic presentation, recruiting operations, and an editorial web studio.</p>
+    <div class="ecosystem-doors">
+      <a class="ecosystem-door" href="/dashboard" data-context="job-seeker">
+        <span class="ecosystem-door__index">For candidates · 01</span>
+        <h2>Tailor My Resume</h2>
+        <p>Translate the role, position your experience, prepare for the conversation, and present your work with quiet confidence.</p>
+        <span class="ecosystem-door__price">Free to begin · Pro $19.00/month</span><span class="ecosystem-door__arrow">↗</span>
+      </a>
+      <a class="ecosystem-door" href="/corporate" data-context="employer">
+        <span class="ecosystem-door__index">For organizations · 02</span>
+        <h2>Employers</h2>
+        <p>Screen candidates, run hiring, and bring twenty-one people operations modules into one composed command center.</p>
+        <span class="ecosystem-door__price">Employer Portal $49/month · Corporate $299/month</span><span class="ecosystem-door__arrow">↗</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="club-returning" data-returning-context hidden>
+  <div class="club-returning__inner">
+    <div><strong>Welcome back.</strong><p>Continue where you last left the office.</p></div>
+    <div class="club-returning__actions"><a class="club-button club-button--gold" data-returning-link href="/dashboard">Open <span data-returning-name>workspace</span></a><a class="club-button club-button--quiet" href="/">Choose another entrance</a></div>
+  </div>
+</section>
+
+<section class="pillar-story" id="ecosystem-pillars">
+  <div class="pillar-story__inner">
+    <div class="pillar-story__head"><h2>Four rooms.<br>One private office.</h2><p>Begin with the question in front of you. Each room shares the same language, standards, and sense of discretion—so your work moves naturally from understanding to action.</p></div>
+    <div class="pillar-grid">
+      <a class="pillar-card" href="/decoder-key"><span class="pillar-card__no">01 / Complimentary</span><h3>Decoder Key</h3><p>Your insider translation layer for job descriptions, policy language, and the phrases that decide who gets noticed.</p><span>Translate the language →</span></a>
+      <a class="pillar-card" href="/corporate"><span class="pillar-card__no">02 / Organizations</span><h3>Corporate</h3><p>A composed gateway to screening, collaboration, people operations, analytics, onboarding, and the Manager's Admin Panel.</p><span>Enter the command center →</span></a>
+      <a class="pillar-card" href="/resume-video"><span class="pillar-card__no">03 / Pro</span><h3>Resume Video</h3><p>Shape your experience into a confident cinematic narrative with structured scenes and studio voice.</p><span>Direct your story →</span></a>
+      <a class="pillar-card" href="/web-studio"><span class="pillar-card__no">04 / Corporate</span><h3>Web Studio</h3><p>A boutique site creator for portfolios, consultancies, firms, and quietly persuasive landing pages.</p><span>Open the studio →</span></a>
+    </div>
+  </div>
+</section>
+
+<section class="club-price-architecture" id="ecosystem-pricing">
+  <div class="club-price-architecture__inner">
+    <div class="club-kicker">Membership</div><h2>Clear terms. No theatre.</h2>
+    <div class="club-price-columns">
+      <div class="club-price-group"><h3>ResumeTailored</h3>
+        <article class="club-plan"><h4>Free</h4><strong>$0</strong><p>Core resume tools, Decoder Key, and a basic interview checklist.</p><a href="/dashboard">Begin complimentary →</a></article>
+        <article class="club-plan"><h4>Pro</h4><strong>$19.00/mo</strong><p>AI Interview Coach in text and voice modes, plus Resume Video.</p><button type="button" data-checkout-plan="pro" onclick="void 0">Choose Pro →</button></article>
+        <article class="club-plan"><h4>Lifetime Pro</h4><strong>$129</strong><p>The complete Pro membership, retained forever.</p><button type="button" data-checkout-plan="lifetime" onclick="void 0">Choose Lifetime →</button></article>
+      </div>
+      <div class="club-price-group"><h3>The Portal</h3>
+        <article class="club-plan"><h4>Employer Portal</h4><strong>$49/mo</strong><p>AI candidate screening for three candidates and custom landing pages.</p><button type="button" data-checkout-plan="portal" onclick="void 0">Choose Employer Portal →</button></article>
+        <article class="club-plan"><h4>Scale</h4><strong>$99/mo</strong><p>Base collaboration platform plus any five operational modules, selected permanently.</p><button type="button" data-checkout-plan="scale" onclick="void 0">Choose Scale →</button></article>
+        <article class="club-plan"><h4>Corporate</h4><strong>$299/mo</strong><p>The full ecosystem: every module, Job Decoder, and Web Studio.</p><button type="button" data-checkout-plan="corporate" onclick="void 0">Choose Corporate →</button></article>
+      </div>
+    </div>
+  </div>
+</section>
 <section class="hero">
   <div class="hero-orb orb-1"></div>
   <div class="hero-orb orb-2"></div>
@@ -1400,7 +1477,7 @@
             <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#1F5C3D;font-weight:800;">✓</span> Vertical MP4 for LinkedIn, Shorts &amp; Reels</li>
             <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#1F5C3D;font-weight:800;">✓</span> Add your own headshot &amp; brand color</li>
           </ul>
-          <button class="btn btn-primary" style="margin-top:20px;background:#1F5C3D;border-color:#1F5C3D;" onclick="openCheckoutModal()">Unlock Resume Video — $19.99/mo →</button>
+          <button class="btn btn-primary" style="margin-top:20px;background:#1F5C3D;border-color:#1F5C3D;" onclick="openCheckoutModal()">Unlock Resume Video — $19.00/mo →</button>
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner" style="display:flex;justify-content:center;background:transparent;border:none;padding:0;">
@@ -1435,7 +1512,7 @@
             <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#1F5C3D;font-weight:800;">✓</span> Watermark-free &amp; indexable by Google</li>
             <li style="display:flex;gap:8px;align-items:flex-start;font-size:14px;color:#374151;"><span style="color:#1F5C3D;font-weight:800;">✓</span> Editable design, mobile-optimized, 100+ templates</li>
           </ul>
-          <button class="btn btn-primary" style="margin-top:20px;background:#1F5C3D;border-color:#1F5C3D;" onclick="openCheckoutModal()">Unlock Personal Website — $19.99/mo →</button>
+          <button class="btn btn-primary" style="margin-top:20px;background:#1F5C3D;border-color:#1F5C3D;" onclick="openCheckoutModal()">Unlock Personal Website — $19.00/mo →</button>
         </div>
         <div class="feature-visual">
           <div class="feature-visual-inner" style="background:transparent;border:none;padding:0;">
@@ -2264,9 +2341,9 @@
 <div class="modal-overlay" id="proModal" onclick="closeProModal(event)">
   <div class="modal-box">
     <h3>🔒 <span id="modalTemplateName">Executive</span> is a Pro Template</h3>
-    <p>Unlock all 104 premium resume and cover letter templates, plus unlimited AI tailorings, Career Hub access, and more — for just $19.99/month.</p>
+    <p>Unlock all 104 premium resume and cover letter templates, plus unlimited AI tailorings, Career Hub access, and more — for just $19.00/month.</p>
     <div class="modal-actions">
-      <button class="btn btn-primary btn-lg" onclick="document.getElementById('proModal').classList.remove('open');openCheckoutModal()">Upgrade to Pro — $19.99/mo →</button>
+      <button class="btn btn-primary btn-lg" onclick="document.getElementById('proModal').classList.remove('open');openCheckoutModal()">Upgrade to Pro — $19.00/mo →</button>
       <button class="btn btn-ghost" onclick="document.getElementById('proModal').classList.remove('open')">Try Free Templates First</button>
     </div>
   </div>
@@ -2276,12 +2353,12 @@
 <div class="modal-overlay" id="checkoutModal" onclick="closeCheckoutModal(event)">
   <div class="modal-box">
     <h3>🚀 Start Your Pro Subscription</h3>
-    <p>Enter your email to go to secure Stripe checkout. $19.99/month — cancel anytime, no questions asked.</p>
+    <p>Enter your email to go to secure Stripe checkout. $19.00/month — cancel anytime, no questions asked.</p>
     <input type="email" id="checkoutEmail" class="checkout-input" placeholder="your@email.com"
            onkeydown="if(event.key==='Enter') submitCheckout()" />
     <div id="checkoutError" class="checkout-error"></div>
     <div class="modal-actions">
-      <button id="checkoutBtn" class="btn btn-primary btn-lg" onclick="submitCheckout()">Start Pro — $19.99/mo →</button>
+      <button id="checkoutBtn" class="btn btn-primary btn-lg" onclick="submitCheckout()">Start Pro — $19.00/mo →</button>
       <button class="btn btn-ghost" onclick="closeCheckoutModal()">Cancel</button>
     </div>
   </div>
@@ -2336,7 +2413,7 @@
       <!-- PROFESSIONAL -->
       <div class="tier-card tier-pro-card" onclick="openTierModal('professional')">
         <div class="tier-top">
-          <div class="tier-level-badge" style="background:rgba(31,92,61,0.14);color:#1F5C3D;">Pro — $19.99/mo</div>
+          <div class="tier-level-badge" style="background:rgba(31,92,61,0.14);color:#1F5C3D;">Pro — $19.00/mo</div>
           <div class="tier-name" style="color:#1F5C3D;">Professional</div>
           <div class="tier-desc">Polished, keyword-rich resumes for mid-career professionals targeting competitive roles.</div>
         </div>
@@ -2366,14 +2443,14 @@
             <li><span class="tier-check" style="color:#2563eb;">✓</span> DOCX + PDF download</li>
             <li><span class="tier-check" style="color:#2563eb;">✓</span> Career Hub access</li>
           </ul>
-          <button class="btn btn-primary btn-full" onclick="event.stopPropagation();openCheckoutModal()">Go Pro — $19.99/mo →</button>
+          <button class="btn btn-primary btn-full" onclick="event.stopPropagation();openCheckoutModal()">Go Pro — $19.00/mo →</button>
         </div>
       </div>
 
       <!-- EXECUTIVE -->
       <div class="tier-card tier-exec-card" onclick="openTierModal('executive')">
         <div class="tier-top">
-          <div class="tier-level-badge" style="background:rgba(30,58,95,0.12);color:#1e3a5f;">Pro — $19.99/mo</div>
+          <div class="tier-level-badge" style="background:rgba(30,58,95,0.12);color:#1e3a5f;">Pro — $19.00/mo</div>
           <div class="tier-name" style="color:#1e3a5f;">Executive</div>
           <div class="tier-desc">Authority-commanding resumes for directors, VPs, and C-suite leaders.</div>
         </div>
@@ -2404,7 +2481,7 @@
             <li><span class="tier-check" style="color:#1e3a5f;">✓</span> Board-ready formatting</li>
             <li><span class="tier-check" style="color:#1e3a5f;">✓</span> C-suite cover letters</li>
           </ul>
-          <button class="btn btn-full btn-shine" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="event.stopPropagation();openCheckoutModal()">Go Executive — $19.99/mo →</button>
+          <button class="btn btn-full btn-shine" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="event.stopPropagation();openCheckoutModal()">Go Executive — $19.00/mo →</button>
         </div>
       </div>
 
@@ -2463,7 +2540,7 @@
   <div class="container">
     <div class="section-eyebrow" style="color:#2E7D53;">✨ What's New</div>
     <h2 class="section-title">New ways to <span>stand out</span> &amp; get hired</h2>
-    <p style="text-align:center;color:#57514A;font-size:16px;max-width:640px;margin:0 auto 36px;">Fresh tools added to ResumeTailored — most are free, the rest bundle into one $19.99/mo Pro plan (no add-ons).</p>
+    <p style="text-align:center;color:#57514A;font-size:16px;max-width:640px;margin:0 auto 36px;">Fresh tools added to ResumeTailored — most are free, the rest bundle into one $19.00/mo Pro plan (no add-ons).</p>
     <div class="promo-grid">
       <div class="promo-card promo-emp">
         <div class="promo-badge" style="background:#0f172a;color:#38bdf8;">NEW · FOR EMPLOYERS</div>
@@ -2478,7 +2555,7 @@
         <div class="promo-ic">🎬</div>
         <h3>Resume Video Maker</h3>
         <p>Turn your resume into a narrated vertical video for LinkedIn, Shorts &amp; Reels — studio AI voiceover, your headshot &amp; brand color.</p>
-        <div class="promo-price"><span class="promo-amt">$19.99</span><span class="promo-per">/mo Pro</span></div>
+        <div class="promo-price"><span class="promo-amt">$19.00</span><span class="promo-per">/mo Pro</span></div>
         <a class="promo-cta" href="/tools/resume-video">Try the video maker →</a>
       </div>
       <div class="promo-card promo-pro">
@@ -2486,7 +2563,7 @@
         <div class="promo-ic">🌐</div>
         <h3>Personal Website Builder</h3>
         <p>Publish your resume as a live, mobile-friendly personal website with a clean address — no code, watermark-free.</p>
-        <div class="promo-price"><span class="promo-amt">$19.99</span><span class="promo-per">/mo Pro</span></div>
+        <div class="promo-price"><span class="promo-amt">$19.00</span><span class="promo-per">/mo Pro</span></div>
         <a class="promo-cta" href="/blog/resume-website-builder">See how it works →</a>
       </div>
       <div class="promo-card promo-freecard">
@@ -2585,7 +2662,7 @@
               <td><strong>Monthly price</strong></td>
               <td class="lose">$49.95/mo</td>
               <td>$29/mo</td>
-              <td class="ours win">$19.99/mo</td>
+              <td class="ours win">$19.00/mo</td>
             </tr>
             <tr>
               <td><strong>Free tier</strong></td>
@@ -2653,7 +2730,7 @@
       <div class="pricing-card pricing-card-featured">
         <div class="plan-badge">✦ Most Popular</div>
         <div class="plan-name">Pro</div>
-        <div class="plan-price">$19.99</div>
+        <div class="plan-price">$19.00</div>
         <div class="plan-period">per month · cancel anytime</div>
         <ul class="plan-features">
           <li><span class="check-icon">✓</span> Everything in Free, unlimited</li>
@@ -2665,7 +2742,7 @@
           <li><span class="check-icon">✓</span> Salary negotiation guide</li>
           <li><span class="check-icon">✓</span> Quarterly career check-ins</li>
         </ul>
-        <button class="btn btn-primary btn-full" onclick="openCheckoutModal()">Start Pro — $19.99/mo →</button>
+        <button class="btn btn-primary btn-full" onclick="openCheckoutModal()">Start Pro — $19.00/mo →</button>
       </div>
       <div class="pricing-card" style="border-color:rgba(31,92,61,0.45);">
         <div class="plan-badge" style="background:#1F5C3D;">⚡ Best Value</div>
@@ -2937,7 +3014,7 @@
         </div>
       </div>
       <div style="text-align:center;margin-top:24px;">
-        <button class="btn btn-primary" onclick="document.getElementById('tierModal').classList.remove('open');openCheckoutModal()">Unlock Professional — $19.99/mo →</button>
+        <button class="btn btn-primary" onclick="document.getElementById('tierModal').classList.remove('open');openCheckoutModal()">Unlock Professional — $19.00/mo →</button>
       </div>`
     },
     executive: {
@@ -2967,7 +3044,7 @@
         </div>
       </div>
       <div style="text-align:center;margin-top:24px;">
-        <button class="btn btn-shine" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="document.getElementById('tierModal').classList.remove('open');openCheckoutModal()">Unlock Executive — $19.99/mo →</button>
+        <button class="btn btn-shine" style="background:#1e3a5f;color:#fff;border-color:#1e3a5f;" onclick="document.getElementById('tierModal').classList.remove('open');openCheckoutModal()">Unlock Executive — $19.00/mo →</button>
       </div>`
     }
   };
@@ -3037,7 +3114,7 @@
   function openCheckoutModal() {
     document.getElementById('checkoutError').textContent = '';
     document.getElementById('checkoutEmail').value = '';
-    document.getElementById('checkoutBtn').textContent = 'Start Pro — $19.99/mo →';
+    document.getElementById('checkoutBtn').textContent = 'Start Pro — $19.00/mo →';
     document.getElementById('checkoutBtn').disabled = false;
     document.getElementById('checkoutModal').classList.add('open');
     setTimeout(() => document.getElementById('checkoutEmail').focus(), 50);
@@ -3116,12 +3193,12 @@
         window.location.href = data.url;
       } else {
         errEl.textContent = data.error || 'Could not start checkout. Please try again.';
-        btn.textContent = 'Start Pro — $19.99/mo →';
+        btn.textContent = 'Start Pro — $19.00/mo →';
         btn.disabled = false;
       }
     } catch {
       errEl.textContent = 'Network error. Please try again.';
-      btn.textContent = 'Start Pro — $19.99/mo →';
+      btn.textContent = 'Start Pro — $19.00/mo →';
       btn.disabled = false;
     }
   }
@@ -3302,13 +3379,13 @@
     ['.features .feature-row:nth-child(5) .feature-body ul li', 1, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Addressed to the hiring manager: “Hi Mr. Smith…”', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 直接称呼招聘经理姓名：“您好，Smith 先生……”'],
     ['.features .feature-row:nth-child(5) .feature-body ul li', 2, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Vertical MP4 for LinkedIn, Shorts &amp; Reels', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 竖版 MP4，适用于 LinkedIn、Shorts 和 Reels'],
     ['.features .feature-row:nth-child(5) .feature-body ul li', 3, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Add your own headshot &amp; brand color', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 添加你的头像与品牌色'],
-    ['.features .feature-row:nth-child(5) .feature-body .btn-primary', null, 'Unlock Resume Video — $19.99/mo →', '解锁简历视频 — ¥19.99/月 →'],
+    ['.features .feature-row:nth-child(5) .feature-body .btn-primary', null, 'Unlock Resume Video — $19.00/mo →', '解锁简历视频 — ¥19.00/月 →'],
     // Personal Website card — same gap.
     ['.features .feature-row:nth-child(6) .feature-body ul li', 0, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Your own live address — <em>yourname.resumetailored.com</em>', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 专属网址 — <em>yourname.resumetailored.com</em>'],
     ['.features .feature-row:nth-child(6) .feature-body ul li', 1, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Built from your resume — publish in one click', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 基于你的简历自动生成——一键发布'],
     ['.features .feature-row:nth-child(6) .feature-body ul li', 2, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Watermark-free &amp; indexable by Google', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 无水印，可被 Google 收录'],
     ['.features .feature-row:nth-child(6) .feature-body ul li', 3, '<span style="color:#1F5C3D;font-weight:800;">✓</span> Editable design, mobile-optimized, 100+ templates', '<span style="color:#1F5C3D;font-weight:800;">✓</span> 可编辑设计，移动端优化，100+模板可选'],
-    ['.features .feature-row:nth-child(6) .feature-body .btn-primary', null, 'Unlock Personal Website — $19.99/mo →', '解锁个人网站 — ¥19.99/月 →'],
+    ['.features .feature-row:nth-child(6) .feature-body .btn-primary', null, 'Unlock Personal Website — $19.00/mo →', '解锁个人网站 — ¥19.00/月 →'],
     ['.feature-body h3', 6, 'Career Hub for Pro Members', '职业发展中心（专业版）'],
     ['.feature-body > p', 6, 'Unlock the full Career Hub: word-for-word salary negotiation scripts, market rate research, a professional community forum, and quarterly career check-ins. A complete career platform, not just a resume tool.', '解锁完整职业发展中心：逐字薪资谈判脚本、市场薪酬调研、专业社区论坛和季度职业回顾。这是完整的职业平台，不只是简历工具。'],
     ['.hub-box', 0, '💰 Salary Guide', '💰 薪资指南'],
@@ -3338,13 +3415,13 @@
     ['.gallery-tab', 0, 'Resume Templates', '简历模板'],
     ['.gallery-tab', 1, 'Cover Letter Templates', '求职信模板'],
     // ── Pro Modal ───────────────────────────────────────────────────────────
-    ['#proModal .modal-box > p', null, 'Unlock all 104 premium resume and cover letter templates, plus unlimited AI tailorings, Career Hub access, and more — for just $19.99/month.', '解锁全部104个高级简历和求职信模板，加上无限AI定制次数、职业发展中心及更多——每月仅需¥19.99。'],
-    ['#proModal .btn-primary', null, 'Upgrade to Pro — $19.99/mo →', '升级专业版 — ¥19.99/月 →'],
+    ['#proModal .modal-box > p', null, 'Unlock all 104 premium resume and cover letter templates, plus unlimited AI tailorings, Career Hub access, and more — for just $19.00/month.', '解锁全部104个高级简历和求职信模板，加上无限AI定制次数、职业发展中心及更多——每月仅需¥19.00。'],
+    ['#proModal .btn-primary', null, 'Upgrade to Pro — $19.00/mo →', '升级专业版 — ¥19.00/月 →'],
     ['#proModal .btn-ghost', null, 'Try Free Templates First', '先试用免费模板'],
     // ── Checkout Modal ──────────────────────────────────────────────────────
     ['#checkoutModal h3', null, '🚀 Start Your Pro Subscription', '🚀 开始你的专业版订阅'],
-    ['#checkoutModal > .modal-box > p', null, 'Enter your email to go to secure Stripe checkout. $19.99/month — cancel anytime, no questions asked.', '输入邮箱前往安全的Stripe结账页面。¥19.99/月——随时取消，无需解释。'],
-    ['#checkoutBtn', null, 'Start Pro — $19.99/mo →', '开始专业版 — ¥19.99/月 →'],
+    ['#checkoutModal > .modal-box > p', null, 'Enter your email to go to secure Stripe checkout. $19.00/month — cancel anytime, no questions asked.', '输入邮箱前往安全的Stripe结账页面。¥19.00/月——随时取消，无需解释。'],
+    ['#checkoutBtn', null, 'Start Pro — $19.00/mo →', '开始专业版 — ¥19.00/月 →'],
     // ── Career Levels ───────────────────────────────────────────────────────
     ['.section-eyebrow', 3, 'Career Levels', '职业级别'],
     ['.section-title', 4, 'Every career stage, <span>perfectly tailored</span>', '每个职业阶段，<span>精准定制</span>'],
@@ -3358,7 +3435,7 @@
     ['.tier-basic-card .tier-features li', 3, '<span class="tier-check" style="color:#6b7280;">✓</span> PDF &amp; text download', '<span class="tier-check" style="color:#6b7280;">✓</span> PDF和文本下载'],
     ['.tier-basic-card .tier-overlay span', null, '👁 View Full Sample', '👁 查看完整样本'],
     ['.tier-basic-card .btn-ghost', null, 'Start Free →', '免费开始 →'],
-    ['.tier-pro-card .tier-level-badge', null, 'Pro — $19.99/mo', '专业版 — ¥19.99/月'],
+    ['.tier-pro-card .tier-level-badge', null, 'Pro — $19.00/mo', '专业版 — ¥19.00/月'],
     ['.tier-pro-card .tier-name', null, 'Professional', '专业版'],
     ['.tier-pro-card .tier-desc', null, 'Polished, keyword-rich resumes for mid-career professionals targeting competitive roles.', '精致、富含关键词的简历，适合针对竞争性职位的职场中期专业人士。'],
     ['.tier-pro-card .tier-features li', 0, '<span class="tier-check" style="color:#2563eb;">✓</span> 15+ premium templates', '<span class="tier-check" style="color:#2563eb;">✓</span> 15+高级模板'],
@@ -3367,8 +3444,8 @@
     ['.tier-pro-card .tier-features li', 3, '<span class="tier-check" style="color:#2563eb;">✓</span> DOCX + PDF download', '<span class="tier-check" style="color:#2563eb;">✓</span> DOCX + PDF下载'],
     ['.tier-pro-card .tier-features li', 4, '<span class="tier-check" style="color:#2563eb;">✓</span> Career Hub access', '<span class="tier-check" style="color:#2563eb;">✓</span> 职业发展中心访问'],
     ['.tier-pro-card .tier-overlay span', null, '👁 View Full Sample', '👁 查看完整样本'],
-    ['.tier-pro-card .btn-primary', null, 'Go Pro — $19.99/mo →', '升级专业版 — ¥19.99/月 →'],
-    ['.tier-exec-card .tier-level-badge', null, 'Pro — $19.99/mo', '专业版 — ¥19.99/月'],
+    ['.tier-pro-card .btn-primary', null, 'Go Pro — $19.00/mo →', '升级专业版 — ¥19.00/月 →'],
+    ['.tier-exec-card .tier-level-badge', null, 'Pro — $19.00/mo', '专业版 — ¥19.00/月'],
     ['.tier-exec-card .tier-name', null, 'Executive', '高管版'],
     ['.tier-exec-card .tier-desc', null, 'Authority-commanding resumes for directors, VPs, and C-suite leaders.', '彰显权威的简历，适合总监、副总裁和C级高管。'],
     ['.tier-exec-card .tier-features li', 0, '<span class="tier-check" style="color:#1e3a5f;">✓</span> Executive &amp; Elegant templates', '<span class="tier-check" style="color:#1e3a5f;">✓</span> 高管与优雅模板'],
@@ -3376,7 +3453,7 @@
     ['.tier-exec-card .tier-features li', 2, '<span class="tier-check" style="color:#1e3a5f;">✓</span> Executive summary generation', '<span class="tier-check" style="color:#1e3a5f;">✓</span> 高管摘要生成'],
     ['.tier-exec-card .tier-features li', 3, '<span class="tier-check" style="color:#1e3a5f;">✓</span> Board-ready formatting', '<span class="tier-check" style="color:#1e3a5f;">✓</span> 董事会级格式'],
     ['.tier-exec-card .tier-features li', 4, '<span class="tier-check" style="color:#1e3a5f;">✓</span> C-suite cover letters', '<span class="tier-check" style="color:#1e3a5f;">✓</span> C级高管求职信'],
-    ['.tier-exec-card .tier-bottom .btn', null, 'Go Executive — $19.99/mo →', '升级高管版 — ¥19.99/月 →'],
+    ['.tier-exec-card .tier-bottom .btn', null, 'Go Executive — $19.00/mo →', '升级高管版 — ¥19.00/月 →'],
     // ── Testimonials ────────────────────────────────────────────────────────
     ['.section-eyebrow', 4, 'Real Results', '真实成果'],
     ['.section-title', 5, 'What job seekers are <span>saying</span>', '求职者都在<span>说什么</span>'],
@@ -3433,8 +3510,8 @@
     ['.pricing-card-featured .plan-features li', 5, '<span class="check-icon">✓</span> Community networking forum', '<span class="check-icon">✓</span> 职业社区论坛'],
     ['.pricing-card-featured .plan-features li', 6, '<span class="check-icon">✓</span> Salary negotiation guide', '<span class="check-icon">✓</span> 薪资谈判指南'],
     ['.pricing-card-featured .plan-features li', 7, '<span class="check-icon">✓</span> Quarterly career check-ins', '<span class="check-icon">✓</span> 季度职业回顾'],
-    ['.pricing-card-featured .plan-price', null, '$19.99', '¥19.99'],
-    ['.pricing-card-featured .btn-primary', null, 'Start Pro — $19.99/mo →', '开始专业版 — ¥19.99/月 →'],
+    ['.pricing-card-featured .plan-price', null, '$19.00', '¥19.00'],
+    ['.pricing-card-featured .btn-primary', null, 'Start Pro — $19.00/mo →', '开始专业版 — ¥19.00/月 →'],
     ['.pricing-cards .pricing-card:last-child .plan-badge', null, '⚡ Best Value', '⚡ 最超值'],
     ['.pricing-cards .pricing-card:last-child .plan-period', null, 'one-time · never expires', '一次性付费 · 永不过期'],
     ['.pricing-cards .pricing-card:last-child .plan-features li', 0, '<span class="check-icon">✓</span> Everything in Pro, forever', '<span class="check-icon">✓</span> 专业版所有功能，永久有效'],
@@ -3581,7 +3658,7 @@
     var ccThD = isZh ? ['功能', 'Jobscan', 'Rezi', 'ResumeTailored AI ✦'] : ['Feature', 'Jobscan', 'Rezi', 'ResumeTailored AI ✦'];
     ccThs.forEach(function(th, i) { if (ccThD[i] !== undefined) th.textContent = ccThD[i]; });
     var ccRowData = isZh ? [
-      ['月费', '$49.95/月', '$29/月', '¥19.99/月'],
+      ['月费', '$49.95/月', '$29/月', '¥19.00/月'],
       ['免费版', '仅5次扫描', '仅1份简历', '每日1次完整重写'],
       ['完整AI简历重写', '✗ 仅评分', '✓', '✓'],
       ['求职信', '基础生成器', '⚠ 需要大量编辑', '✓ 针对职位，即发即用'],
@@ -3589,7 +3666,7 @@
       ['终身方案', '✗', '$149一次性', '$129一次性'],
       ['简历+求职信同时生成', '✗', '✗', '✓ 30秒完成']
     ] : [
-      ['Monthly price', '$49.95/mo', '$29/mo', '$19.99/mo'],
+      ['Monthly price', '$49.95/mo', '$29/mo', '$19.00/mo'],
       ['Free tier', '5 scans only', '1 resume only', 'unlimited rewrites'],
       ['Full AI resume rewrite', '✗ Score only', '✓', '✓'],
       ['Cover letters', 'Basic generator', '⚠ Needs heavy editing', '✓ Job-specific, ready to send'],
@@ -3932,6 +4009,16 @@
       .catch(function () {});
   })();
   </script>
+  <script>
+  // Locked template cards are real CTAs, not decorative controls. Keep one
+  // delegated handler so every current and future Pro card opens checkout.
+  document.addEventListener('click', function (event) {
+    var button = event.target && event.target.closest ? event.target.closest('.tcard-btn-pro') : null;
+    if (!button) return;
+    event.preventDefault();
+    openCheckoutModal();
+  });
+  </script>
 
   <!-- Anchor-scroll correction. The sections use content-visibility:auto with
        mobile-measured contain-intrinsic-size fallbacks, so the browser's first
@@ -3949,6 +4036,12 @@
       [0, 120, 300, 600, 1000].forEach(function (t) {
         setTimeout(function () { el.scrollIntoView({ block: 'start' }); }, t);
       });
+    }
+    // Stable server aliases /pricing and /checkout serve this landing shell.
+    // Normalize both to the pricing section so a direct visit never looks like
+    // a generic homepage or depends on the previous browser history entry.
+    if (!location.hash && /^\/(pricing|checkout)\/?$/.test(location.pathname)) {
+      location.hash = 'pricing';
     }
     if (location.hash.length > 1) {
       window.addEventListener('load', function () { correct(location.hash.slice(1)); });
@@ -3971,5 +4064,7 @@
     }, { passive: true });
   })();
   </script>
+<script src="/back-nav.js?v=1"></script>
+<script src="/luxury-ecosystem.js" defer></script>
 </body>
 </html>

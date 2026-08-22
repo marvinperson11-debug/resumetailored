@@ -97,6 +97,15 @@ if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID 
 // works despite the corruption. Used at every read site.
 function _normPriceId(v) { return (v == null ? '' : String(v)).replace(/[^A-Za-z0-9_]/g, ''); }
 const _looksLikePriceId = (v) => /^price_[A-Za-z0-9]+$/.test(_normPriceId(v));
+// Canonical catalog. Code-level fallbacks prevent stale deployment variables
+// from silently sending a visitor to the wrong product.
+const STRIPE_PRICE_IDS = Object.freeze({
+  pro: 'price_1Tak3BCgLyCpwXXjBnE6P3BR',
+  lifetime: 'price_1TeHW5CgLyCpwXXjy5OMkohS',
+  portal: 'price_1U4QHkCgLyCpwXXjlHMDBmHq',
+  scale: 'price_1U4QIgCgLyCpwXXjPy8UtUiS',
+  corporate: 'price_1U71yWCgLyCpwXXjiRpwjm0b'
+});
 
 // Employer checkout price IDs (Pro / Scale). Logs presence only — never the
 // value. Reports each id as loaded / auto-cleaned (usable but has stray
@@ -122,17 +131,21 @@ const _looksLikePriceId = (v) => /^price_[A-Za-z0-9]+$/.test(_normPriceId(v));
     if (usable(fallbackRaw)) { console.log(`[stripe] ${label}: not set, using fallback ✓`); return; }
     console.error(`[stripe] ${label}: NOT set — employer checkout for this tier will return 503 not_configured.`);
   };
-  report('STRIPE_EMPLOYER_PRO_PRICE_ID',   process.env.STRIPE_EMPLOYER_PRO_PRICE_ID, process.env.STRIPE_EMPLOYER_PRICE_ID);
-  report('STRIPE_EMPLOYER_SCALE_PRICE_ID', process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, null);
+  report('STRIPE_EMPLOYER_PRO_PRICE_ID',   process.env.STRIPE_EMPLOYER_PRO_PRICE_ID, STRIPE_PRICE_IDS.portal);
+  report('STRIPE_EMPLOYER_SCALE_PRICE_ID', process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, STRIPE_PRICE_IDS.scale);
+  report('STRIPE_EMPLOYER_CORPORATE_PRICE_ID', process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID, STRIPE_PRICE_IDS.corporate);
 })();
 
 // ─── Email helper ─────────────────────────────────────────────────────────────
 // Priority: Resend (RESEND_API_KEY) → SMTP (SMTP_USER + SMTP_PASS) → console log
-async function sendEmail({ to, subject, html, replyTo }) {
+async function sendEmail({ to, subject, html, replyTo, headers = {} }) {
   const resendKey  = process.env.RESEND_API_KEY;
   const smtpUser   = process.env.SMTP_USER;
   const smtpPass   = process.env.SMTP_PASS;
-  const fromAddr   = process.env.EMAIL_FROM || (smtpUser ? smtpUser : 'support@resumetailored.com');
+  // The authenticated SMTP user may differ from the visible From address.
+  // Keep the public sender on the verified domain for authentication alignment.
+  const fromAddr   = process.env.EMAIL_FROM || 'support@resumetailored.com';
+  const fromName   = process.env.EMAIL_FROM_NAME || 'ResumeTailored AI';
   const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
   // Always set a Reply-To so replies don't bounce back to the sending domain
   const effectiveReplyTo = replyTo || ownerEmail;
@@ -141,7 +154,7 @@ async function sendEmail({ to, subject, html, replyTo }) {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
-      body: JSON.stringify({ from: `ResumeTailored AI <${fromAddr}>`, to, subject, html, reply_to: effectiveReplyTo })
+      body: JSON.stringify({ from: `${fromName} <${fromAddr}>`, to, subject, html, reply_to: effectiveReplyTo, headers })
     });
     if (r.ok) { console.log(`[Resend] Email sent to ${to}`); return; }
     const err = await r.json().catch(() => ({}));
@@ -156,7 +169,7 @@ async function sendEmail({ to, subject, html, replyTo }) {
       secure: process.env.SMTP_SECURE === 'true',
       auth: { user: smtpUser, pass: smtpPass }
     });
-    await transporter.sendMail({ from: `ResumeTailored AI <${fromAddr || smtpUser}>`, to, subject, html, replyTo: effectiveReplyTo });
+    await transporter.sendMail({ from: `${fromName} <${fromAddr}>`, to, subject, html, replyTo: effectiveReplyTo, headers });
     console.log(`[SMTP] Email sent to ${to}`);
     return;
   }
@@ -253,6 +266,12 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS subscribers (
     email       TEXT PRIMARY KEY,
     customer_id TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS email_preferences (
+    email                  TEXT PRIMARY KEY,
+    unsubscribe_token      TEXT NOT NULL UNIQUE,
+    product_emails_enabled INTEGER NOT NULL DEFAULT 1,
+    updated_at             INTEGER NOT NULL
   );
   CREATE TABLE IF NOT EXISTS usage_store (
     key   TEXT PRIMARY KEY,
@@ -508,9 +527,8 @@ function _ensureColumn(table, column, ddl) {
 // Remember which template family a shared resume was created with, so /r/:slug can
 // render it in the layout the user actually chose (sidebar, two-column, etc.).
 _ensureColumn('shared_resumes', 'layout', 'layout TEXT');
-// Nullable: POST /api/share never required auth, so an anonymous share stays
-// NULL here (an accepted, separate limitation — there's no account to tie it
-// to). When the request WAS authenticated, this is what lets account
+// Older rows can be NULL. New share links require authentication and store the
+// owner here, which lets account
 // export/deletion find and remove the link along with everything else —
 // without it, deleting an account left "all associated data" not actually
 // true for anyone who'd shared a resume first. See DELETE /api/user/me.
@@ -754,10 +772,10 @@ db.exec(`
 // tool_usage       — one row per gated action, counted against a UTC day/month
 //                    window (see toolUsageCount). This is the sign-in-gated
 //                    quota ledger for JD Decoder / Follow-Up / Mock Interview /
-//                    Salary Negotiation. Offer Comparison is free + anonymous
-//                    and is never written here.
-// resume_versions  — the Resume A/B Tracker's saved versions (free = 2 rows).
-// weekly_report_subscriptions — Pro-only Monday digest opt-in (career-cron.js
+//                    Salary Negotiation. Offer Comparison also requires sign-in
+//                    at Compare but is deterministic and not metered here.
+// resume_versions  — the Resume A/B Tracker's saved versions (free = 3 rows).
+// weekly_report_subscriptions — free Monday digest opt-in (career-cron.js
 //                    sends it via scripts/weekly-report.js).
 db.exec(`
   CREATE TABLE IF NOT EXISTS tool_usage (
@@ -1026,13 +1044,19 @@ const ASSET_REWRITES = [
   ['href="/tool-theme-fix.css"', `href="/tool-theme-fix.css?v=${ASSET_VERSION}"`],
   ['href="/career-hub.css"', `href="/career-hub.css?v=${ASSET_VERSION}"`],
   ['href="/app-theme.css"', `href="/app-theme.css?v=${ASSET_VERSION}"`],
+  ['href="/luxury-ecosystem.css"', `href="/luxury-ecosystem.css?v=${ASSET_VERSION}"`],
+  ['href="/resume-video-luxury.css"', `href="/resume-video-luxury.css?v=${ASSET_VERSION}"`],
+  ['href="/web-studio-luxury.css"', `href="/web-studio-luxury.css?v=${ASSET_VERSION}"`],
   ['href="style.css"', `href="style.css?v=${ASSET_VERSION}"`],
   ['src="/career-hub.js"', `src="/career-hub.js?v=${ASSET_VERSION}"`],
   ['src="/site-nav.js"', `src="/site-nav.js?v=${ASSET_VERSION}"`],
   ['src="/login-redirect.js"', `src="/login-redirect.js?v=${ASSET_VERSION}"`],
+  ['src="/free-tool-auth.js"', `src="/free-tool-auth.js?v=${ASSET_VERSION}"`],
   ['src="/job-tracker.js"', `src="/job-tracker.js?v=${ASSET_VERSION}"`],
   ['href="/tools-hub.css"', `href="/tools-hub.css?v=${ASSET_VERSION}"`],
   ['src="/tools-hub.js"', `src="/tools-hub.js?v=${ASSET_VERSION}"`],
+  ['src="/luxury-ecosystem.js"', `src="/luxury-ecosystem.js?v=${ASSET_VERSION}"`],
+  ['src="/corporate.js"', `src="/corporate.js?v=${ASSET_VERSION}"`],
   // Render-blocking in <head> on 300+ pages — defer it (the consent banner does
   // not need to run before first paint) and version-stamp it like the rest.
   ['<script src="/cookie-consent.js">', `<script defer src="/cookie-consent.js?v=${ASSET_VERSION}">`],
@@ -1105,6 +1129,10 @@ function _sendVersionedHtml(res, filePath) {
     // move out (Phase 3), and it correctly allows Cloudflare's edge-injected
     // analytics beacon + esm.sh, which a dashboard-only override would have
     // regressed. So no per-page CSP is set here.
+    // One canonical public price across legacy SEO pages and freshly-built
+    // ecosystem pages. This avoids stale long-tail copy advertising $19.99
+    // while Stripe and the membership architecture use exactly $19.00.
+    html = html.split('19.99').join('19.00');
     res.send(_selfHostFonts(_versionAssetRefs(html)));
   });
 }
@@ -1128,6 +1156,39 @@ function _resolveHtmlFile(reqPath) {
   try { if (fs.statSync(indexFile).isFile()) return indexFile; } catch (e) {}
   return null;
 }
+
+// Email-client HTML is deliberately table-based: Outlook desktop does not
+// reliably support flex/grid and several mobile clients ignore gradients.
+function _welcomeEmailHtml(username, unsubscribeUrl) {
+  const tplPath = path.join(__dirname, 'emails', 'welcome.html');
+  return fs.readFileSync(tplPath, 'utf8')
+    .replace(/\{\{USERNAME\}\}/g, _escHtml(username))
+    .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, _escHtml(unsubscribeUrl));
+}
+
+function _subscriptionEndedEmailHtml() {
+  const appUrl = String(process.env.PUBLIC_APP_URL || process.env.PUBLIC_ORIGIN || 'https://resumetailored.com').replace(/\/$/, '');
+  return fs.readFileSync(path.join(__dirname, 'emails', 'subscription-ended.html'), 'utf8')
+    .replace(/\{\{DASHBOARD_URL\}\}/g, `${appUrl}/dashboard`)
+    .replace(/\{\{PRICING_URL\}\}/g, `${appUrl}/pricing`);
+}
+
+function _sendSubscriptionEndedEmail(email) {
+  try {
+    sendEmail({
+      to: email,
+      subject: 'Your ResumeTailored Pro access has ended',
+      html: _subscriptionEndedEmailHtml()
+    }).catch(err => console.error('[Email] subscription-ended email failed:', err.message));
+  } catch (err) {
+    console.error('[Email] subscription-ended template failed:', err.message);
+  }
+}
+// `/tools` collides with the on-disk `public/tools/` directory, which has no
+// index.html. express.static would otherwise issue `/tools` → `/tools/` and the
+// result would be a 404. Register the virtual New Tools page before static so
+// the direct URL is a real 200 and the dashboard can open its tools catalog.
+app.get('/tools', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'app.html')));
 // Placed exactly where express.static's own HTML serving used to sit — every
 // route above still wins (registration order), everything that resolves to
 // an .html file is versioned and sent from here, and express.static below
@@ -1186,11 +1247,27 @@ app.use(express.static(path.join(__dirname, 'public'), {
 // unversioned on exactly the pages this bug was reported on.
 const appHtml = path.join(__dirname, 'public', 'app.html');
 const loginHtml = path.join(__dirname, 'public', 'login.html');
+const landingHtml = path.join(__dirname, 'public', 'index.html');
 app.get('/dashboard',    (req, res) => _sendVersionedHtml(res, appHtml));
+app.get('/resume-video', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'tools', 'resume-video.html')));
+app.get('/web-studio',   (req, res) => _sendVersionedHtml(res, appHtml));
 // /login and /signup serve the dedicated login page (not the app). It reads
 // ?redirect= and sends the user back where they came from after signing in.
 app.get('/login',        (req, res) => _sendVersionedHtml(res, loginHtml));
 app.get('/signup',       (req, res) => _sendVersionedHtml(res, loginHtml));
+// Stable deep links used by marketing pages, bookmarks, and older clients.
+// This app is a tab-driven SPA rather than a framework router, so serve the
+// correct shell here and let app.html select the tab from the pathname. Keeping
+// these as real 200 responses makes a refresh or pasted URL deterministic.
+for (const route of [
+  '/tailor', '/cover-letter', '/website', '/video',
+  '/web-studio',
+  '/app/tailor', '/app/cover-letter', '/app/website', '/app/video',
+]) {
+  app.get(route, (req, res) => _sendVersionedHtml(res, appHtml));
+}
+app.get(['/pricing', '/checkout'], (req, res) => _sendVersionedHtml(res, landingHtml));
+app.get('/forgot-password', (req, res) => _sendVersionedHtml(res, loginHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 // Live in-browser video preview (Remotion Player — plays client-side, no render)
 app.get('/preview',      (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'preview.html')));
@@ -1382,6 +1459,45 @@ function writeAuditLog(req, actorEmail, action, { targetType, targetId, meta } =
   }
 }
 
+// ─── Email preferences ────────────────────────────────────────────────────────
+function _unsubscribePage({ token, completed = false, invalid = false }) {
+  const title = invalid ? 'Link unavailable' : (completed ? 'Email preferences updated' : 'Email preferences');
+  const message = invalid
+    ? 'This unsubscribe link is invalid or has expired.'
+    : (completed
+      ? 'You will no longer receive product and promotional emails from ResumeTailored AI. Essential account, security, and purchase emails may still be sent.'
+      : 'Stop product tips, feature announcements, and promotional emails from ResumeTailored AI? Essential account, security, and purchase emails will continue.');
+  const action = (!invalid && !completed)
+    ? `<form method="post" action="/unsubscribe/${encodeURIComponent(token)}"><button type="submit" style="min-height:44px;border:0;border-radius:8px;background:#1d4ed8;color:#fff;font:700 15px Arial,sans-serif;padding:12px 22px;cursor:pointer">Unsubscribe</button></form>`
+    : '';
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · ResumeTailored AI</title></head><body style="margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#111827"><main style="max-width:560px;margin:64px auto;background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:32px"><h1 style="font-size:24px;margin:0 0 12px">${title}</h1><p style="font-size:16px;line-height:1.6;color:#4b5563">${message}</p>${action}<p style="margin-top:24px"><a href="/" style="color:#1d4ed8">Return to ResumeTailored AI</a></p></main></body></html>`;
+}
+
+app.get('/unsubscribe', (req, res) => {
+  const token = String(req.query.token || '');
+  const row = token && db.prepare('SELECT product_emails_enabled FROM email_preferences WHERE unsubscribe_token = ?').get(token);
+  if (!row) return res.status(404).type('html').send(_unsubscribePage({ token, invalid: true }));
+  res.type('html').send(_unsubscribePage({ token, completed: !row.product_emails_enabled }));
+});
+
+// GET only displays a confirmation, preventing inbox link scanners from opting
+// users out merely by checking a URL. POST also supports RFC 8058 one-click.
+function _completeUnsubscribe(token, res) {
+  const info = db.prepare('UPDATE email_preferences SET product_emails_enabled = 0, updated_at = ? WHERE unsubscribe_token = ?')
+    .run(Date.now(), token);
+  if (!info.changes) return res.status(404).type('html').send(_unsubscribePage({ token, invalid: true }));
+  return res.type('html').send(_unsubscribePage({ token, completed: true }));
+}
+
+// Mailbox providers POST to the exact URL in List-Unsubscribe, including its
+// query token. The visible confirmation form uses the path-token variant below.
+app.post('/unsubscribe', (req, res) => _completeUnsubscribe(String(req.query.token || ''), res));
+
+app.post('/unsubscribe/:token', (req, res) => {
+  const token = String(req.params.token || '');
+  return _completeUnsubscribe(token, res);
+});
+
 // ─── Auth endpoints ───────────────────────────────────────────────────────────
 app.post('/api/auth/signup', authRateLimiter, authLockoutGuard, async (req, res) => {
   const { email, username, password } = req.body;
@@ -1410,6 +1526,9 @@ app.post('/api/auth/signup', authRateLimiter, authLockoutGuard, async (req, res)
   db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)').run(key, cleanUsername, hashPassword(password));
   const token = uuidv4();
   db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, key);
+  const unsubscribeToken = crypto.randomBytes(24).toString('base64url');
+  db.prepare('INSERT INTO email_preferences (email, unsubscribe_token, product_emails_enabled, updated_at) VALUES (?, ?, 1, ?)')
+    .run(key, unsubscribeToken, Date.now());
   const csrf = _setAuthCookies(req, res, token);
   res.json({ token, csrf, username: cleanUsername, email: key });
 
@@ -1418,10 +1537,17 @@ app.post('/api/auth/signup', authRateLimiter, authLockoutGuard, async (req, res)
 
   // Welcome email — fire and forget, don't block the response
   try {
+    const appUrl = String(process.env.PUBLIC_APP_URL || 'https://resumetailored.com').replace(/\/$/, '');
+    const unsubscribeUrl = `${appUrl}/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
     await sendEmail({
       to: key,
       subject: 'Welcome to ResumeTailored AI — You\'re in!',
-      html: `
+      html: _welcomeEmailHtml(cleanUsername, unsubscribeUrl),
+      headers: {
+        'List-Unsubscribe': `<${unsubscribeUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
+      }
+      /* Previous inline template retained temporarily for source-history clarity.
         <div style="font-family:'Inter',Arial,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
 
           <!-- Header -->
@@ -1478,9 +1604,9 @@ app.post('/api/auth/signup', authRateLimiter, authLockoutGuard, async (req, res)
               <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
                 <div>
                   <div style="font-size:16px;font-weight:700;color:#111827;">Free Tier</div>
-                  <div style="font-size:13px;color:#6b7280;margin-top:3px;">1 free AI tailoring per day · Full template access</div>
+                  <div style="font-size:13px;color:#6b7280;margin-top:3px;">Unlimited core AI tools · 6 free templates · watermarked exports</div>
                 </div>
-                <a href="https://resumetailored.com/#pricing" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:13px;padding:10px 20px;border-radius:8px;text-decoration:none;white-space:nowrap;">Upgrade to Pro — $19/mo →</a>
+                <a href="https://resumetailored.com/#pricing" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:13px;padding:10px 20px;border-radius:8px;text-decoration:none;white-space:nowrap;">Upgrade to Pro — $19.00/mo →</a>
               </div>
             </div>
 
@@ -1504,7 +1630,7 @@ app.post('/api/auth/signup', authRateLimiter, authLockoutGuard, async (req, res)
           </div>
 
         </div>
-      `
+      */
     });
   } catch(err) {
     console.error('[Email] Failed to send welcome email:', err.message);
@@ -1583,7 +1709,7 @@ const EXPORT_TABLES_BY_EMAIL = [
   'check_ins', 'saved_resumes', 'saved_cover_letters', 'saved_videos', 'site_media',
   'site_leads', 'site_aliases', 'personal_sites', 'skill_attempts', 'badges',
   'interview_progress', 'gap_reports', 'saved_jobs', 'scenario_progress',
-  'employer_profiles', 'candidate_profiles',
+  'employer_profiles', 'candidate_profiles', 'email_preferences',
 ];
 // Shared two-party tables: a row belongs to this account if it appears on
 // EITHER side. Exported as two labeled groups (asEmployer / asCandidate) so
@@ -2279,7 +2405,13 @@ try { fs.mkdirSync(mediaTmpDir, { recursive: true }); } catch (_) {}
 const mediaUpload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => { try { fs.mkdirSync(mediaTmpDir, { recursive: true }); } catch (_) {} cb(null, mediaTmpDir); },
-    filename: (req, file, cb) => cb(null, `up_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`),
+    filename: (req, file, cb) => {
+      const name = `up_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
+      // Multer does not always expose req.file when its global size limit
+      // fires, so retain the exact partial-file path for deterministic cleanup.
+      req._mediaTmpPath = path.join(mediaTmpDir, name);
+      cb(null, name);
+    },
   }),
   limits: { fileSize: MEDIA_MAX_FILE, files: 1 },
 });
@@ -2294,6 +2426,17 @@ const mediaUpload = multer({
    disk.js — can observe the file still there). */
 function _mediaDiscard(file) {
   if (file && file.path) { try { fs.unlinkSync(file.path); } catch (_) {} }
+}
+async function _mediaDiscardSettled(file) {
+  if (!file || !file.path) return;
+  for (let attempt = 0; attempt < 80; attempt++) {
+    _mediaDiscard(file);
+    if (!fs.existsSync(file.path)) return;
+    // Windows can retain the upload handle for a few milliseconds after
+    // Multer's callback. Do not answer until that rejected temp file is gone.
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  _mediaDiscard(file);
 }
 /* Delete every media file that belongs to ONE site, on disk and in the row.
    Called wherever a site itself goes away — media that outlives its site is
@@ -2320,11 +2463,26 @@ function _deleteAllMediaForEmail(email) {
 function mediaUploadSingle(req, res, next) {
   mediaUpload.single('file')(req, res, (err) => {
     if (err) {
-      _mediaDiscard(req.file);
       const msg = err.code === 'LIMIT_FILE_SIZE'
         ? `File is too large (max ${Math.round(MEDIA_MAX_FILE / 1024 / 1024)} MB).`
         : (err.message || 'Upload failed.');
-      return res.status(400).json({ error: msg });
+      const file = req._mediaTmpPath ? { path: req._mediaTmpPath } : req.file;
+      const reply = async () => {
+        await _mediaDiscardSettled(file);
+        if (!res.headersSent) res.status(400).json({ error: msg });
+      };
+      /* Multer 2 can report LIMIT_FILE_SIZE while the client is still sending
+         the tail of the multipart body. Replying immediately makes Node close
+         that in-flight upload and browsers/undici see a network reset instead
+         of the useful 400 JSON. Drain the remaining bytes first so oversized
+         uploads fail cleanly and predictably. */
+      if (!req.complete) {
+        req.once('end', () => { reply().catch(next); });
+        req.resume();
+        return;
+      }
+      reply().catch(next);
+      return;
     }
     next();
   });
@@ -2428,7 +2586,10 @@ app.post('/api/site-media', mediaUploadSingle, async (req, res) => {
      runs, so every `return` below has to take the temp file with it — a
      rejected upload that leaves 100 MB behind fills the volume with files no
      row will ever point at. `bail` is the only way out. */
-  const bail = (code, body) => { _mediaDiscard(req.file); return res.status(code).json(body); };
+  const bail = async (code, body) => {
+    await _mediaDiscardSettled(req._mediaTmpPath ? { path: req._mediaTmpPath } : req.file);
+    return res.status(code).json(body);
+  };
   if (!email) return bail(401, { error: 'Please sign in.' });
   if (!isSubscriber(email)) return bail(402, { error: 'pro_required', message: 'Media uploads are a Pro feature.' });
   // Every upload belongs to a specific site now — see the site_sub migration
@@ -3332,7 +3493,10 @@ async function buildTemplatedDocxBuffer({ text, coverText, sigName, pageSize, mo
 }
 
 async function handleTemplatedDocx(req, res) {
-  const { text, coverText, filename, sigName, pageSize, mode, primary, cover, meta, docFont, email } = req.body;
+  const { text, coverText, filename, sigName, pageSize, mode, primary, cover, meta, docFont } = req.body;
+  // Never trust a body-supplied email for billing. A caller could otherwise
+  // claim any subscriber address and remove the watermark/use Pro templates.
+  const email = getSessionEmail(req);
   const subscribed = isSubscriber(email);
 
   // Server-side template gating: non-subscribers may only render free templates.
@@ -5016,6 +5180,8 @@ function _sdEditLayer() {
 const shareLimiter = rateLimit({ windowMs: 60 * 1000, max: 12, message: { error: 'rate_limited', message: 'Too many share links — please wait a minute.' } });
 app.post('/api/share', shareLimiter, (req, res) => {
   try {
+    const ownerEmail = getSessionEmail(req);
+    if (!ownerEmail) return res.status(401).json({ error: 'login_required', message: 'Please sign in to create your free resume link.' });
     const { text, name, colors, photoUrl, hideContact, serif, expiresDays, layout } = req.body || {};
     if (!text || typeof text !== 'string' || text.trim().length < 20) return res.status(400).json({ error: 'No resume to share.' });
     if (text.length > 40000) return res.status(400).json({ error: 'Resume is too long to share.' });
@@ -5033,11 +5199,7 @@ app.post('/api/share', shareLimiter, (req, res) => {
     // back to the linear layout at render time.
     const _layout = _SHARE_LAYOUTS.has(layout) ? layout : null;
     const slug = _shareSlug();
-    // No auth is required to create a share link, but when the request DOES
-    // carry a valid session (the normal case — this is called from the
-    // signed-in dashboard), recording who made it is what lets account
-    // export/deletion find it later. Anonymous shares stay NULL here.
-    const ownerEmail = getSessionEmail(req);
+    // Recording the authenticated owner lets account export/deletion find it.
     db.prepare(`INSERT INTO shared_resumes (slug, name, text, accent, primary_hex, serif, photo, hide_contact, created_at, expires_at, views, layout, owner_email)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`).run(
       slug,
@@ -5051,7 +5213,7 @@ app.post('/api/share', shareLimiter, (req, res) => {
       Date.now(),
       expiresAt,
       _layout,
-      ownerEmail ? ownerEmail.toLowerCase() : null
+      ownerEmail.toLowerCase()
     );
     const origin = `${req.protocol}://${req.get('host')}`;
     res.json({ url: `${origin}/r/${slug}`, slug, expiresAt });
@@ -6066,6 +6228,9 @@ app.post('/api/tools/extract-keywords', keywordExtractorLimiter, async (req, res
   if (jobDescription.length > 12000) {
     return res.status(400).json({ error: 'Job description too long — paste the key sections only (under 12,000 characters).' });
   }
+  if (!getSessionEmail(req)) {
+    return res.status(401).json({ error: 'login_required', message: 'Please sign in to extract your free ATS keywords.' });
+  }
   try {
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
@@ -6181,7 +6346,9 @@ app.get('/api/test-ai', async (req, res) => {
 // ─── API: Check usage status ──────────────────────────────────────────────────
 app.get('/api/status', (req, res) => {
   const usageKey = getUsageKey(req);
-  const email = req.query.email || '';
+  // Subscription state is identity data, not a public email lookup. Derive it
+  // from the validated session so query-string spoofing cannot unlock the UI.
+  const email = getSessionEmail(req);
   res.json({
     freeResumesLeft: hasFreeTierLeft(usageKey, 'resume') ? 1 : 0,
     freeCoverLettersLeft: hasFreeTierLeft(usageKey, 'cover_letter') ? 1 : 0,
@@ -6339,6 +6506,7 @@ app.post('/api/ats-scan', async (req, res) => {
   }
 
   const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required', message: 'Please sign in to run your free ATS scan.' });
   const subscribed = isSubscriber(email);
   // ATS scanner is a free-tier feature and now unlimited — no per-day cap.
 
@@ -6972,12 +7140,16 @@ app.get('/api/video-outros', (req, res) => {
 // background so the request doesn't have to stay open for the whole ~2-min
 // render (which mobile networks won't tolerate). Poll /status and fetch /file.
 app.post('/api/resume-video', (req, res) => {
-  const { resume, email } = req.body || {};
+  const { resume } = req.body || {};
   if (!resume || !resume.trim()) {
     return res.status(400).json({ error: 'Tailored resume text is required.' });
   }
 
-  // The resume video is a Pro feature — subscribers (and the owner) only.
+  const email = getSessionEmail(req);
+  if (!email) {
+    return res.status(401).json({ error: 'login_required', mode: 'video', message: 'Please sign in to access the Resume Video Maker.' });
+  }
+  // The resume video is a Pro feature — authenticated subscribers only.
   if (!isSubscriber(email)) {
     return res.status(402).json({ error: 'pro_only', mode: 'video', message: 'The resume video is a Pro feature. Upgrade to Pro to generate one.' });
   }
@@ -6996,27 +7168,33 @@ app.post('/api/resume-video', (req, res) => {
   }
 
   const jobId = uuidv4();
-  videoJobs.set(jobId, { status: 'rendering', outPath: null, error: null, startedAt: Date.now(), finishedAt: 0 });
+  videoJobs.set(jobId, { status: 'rendering', ownerEmail: email, outPath: null, error: null, startedAt: Date.now(), finishedAt: 0 });
   videoRenderStartedAt = Date.now(); // hold the single-render lock for this job
   res.status(202).json({ jobId });
   // Fire-and-forget: the job updates its own status; errors are captured there.
-  runVideoRender(jobId, req.body, { renderModule, parseModule }).catch((e) => {
+  runVideoRender(jobId, { ...req.body, email }, { renderModule, parseModule }).catch((e) => {
     console.error('Unexpected render job failure:', e?.message || e);
   });
 });
 
 // Poll a render job's status: 'rendering' | 'done' | 'error' (or 404 if expired).
 app.get('/api/resume-video/status/:jobId', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required' });
   const job = videoJobs.get(req.params.jobId);
   if (!job) return res.status(404).json({ status: 'unknown', error: 'Render job not found or expired.' });
+  if (job.ownerEmail !== email) return res.status(403).json({ error: 'forbidden' });
   res.json({ status: job.status, error: job.error || undefined });
 });
 
 // Download the finished MP4 for a job. Kept available (re-downloadable) until the
 // job's TTL so a dropped download on mobile can simply be retried.
 app.get('/api/resume-video/file/:jobId', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required' });
   const job = videoJobs.get(req.params.jobId);
   if (!job) return res.status(404).json({ error: 'Render job not found or expired.' });
+  if (job.ownerEmail !== email) return res.status(403).json({ error: 'forbidden' });
   if (job.status === 'error') return res.status(500).json({ error: job.error || 'Video generation failed.' });
   if (job.status !== 'done' || !job.outPath) return res.status(409).json({ error: 'Video is not ready yet.' });
   res.download(job.outPath, 'resume-video.mp4', (err) => {
@@ -7026,9 +7204,10 @@ app.get('/api/resume-video/file/:jobId', (req, res) => {
 
 // ─── API: Translate resume Chinese → English ──────────────────────────────────
 app.post('/api/translate-resume', async (req, res) => {
-  const { resume, email } = req.body;
+  const { resume } = req.body;
   if (!resume || !resume.trim()) return res.status(400).json({ error: 'Resume text is required.' });
 
+  const email = getSessionEmail(req);
   const usageKey = getUsageKey(req);
   const subscribed = isSubscriber(email);
   if (!subscribed && !hasFreeTierLeft(usageKey, 'translate')) {
@@ -7065,9 +7244,12 @@ app.post('/api/translate-resume', async (req, res) => {
 
 // ─── API: LinkedIn profile optimizer ─────────────────────────────────────────
 app.post('/api/optimize-linkedin', async (req, res) => {
-  const { profileText, targetRole, email } = req.body;
+  const { profileText, targetRole } = req.body;
   if (!profileText) return res.status(400).json({ error: 'Profile text is required.' });
   if (!targetRole)  return res.status(400).json({ error: 'Target role is required.' });
+
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required', message: 'Please sign in to use the free LinkedIn optimizer.' });
 
   // LinkedIn optimization is a free-tier feature and now unlimited — no cap.
   try {
@@ -7135,7 +7317,7 @@ app.post('/api/subscribe', async (req, res) => {
       payment_method_types: ['card'],
       mode: 'subscription',
       ...(email ? { customer_email: email } : {}),
-      line_items: [{ price: process.env.STRIPE_PRICE_ID, quantity: 1 }],
+      line_items: [{ price: _normPriceId(process.env.STRIPE_PRICE_ID) || STRIPE_PRICE_IDS.pro, quantity: 1 }],
       success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/dashboard`,
       metadata: email ? { email } : {}
@@ -7152,10 +7334,7 @@ app.post('/api/subscribe-lifetime', async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email required.' });
 
-  const lifetimePriceId = process.env.STRIPE_LIFETIME_PRICE_ID;
-  if (!lifetimePriceId) {
-    return res.status(503).json({ error: 'Lifetime plan not yet available. Please use the monthly plan.' });
-  }
+  const lifetimePriceId = _normPriceId(process.env.STRIPE_LIFETIME_PRICE_ID) || STRIPE_PRICE_IDS.lifetime;
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -7248,8 +7427,9 @@ app.post('/webhook', (req, res) => {
       const tier = EH.resolveEmployerTier({
         plan: session.metadata?.employerTier,
         priceId: session.line_items?.data?.[0]?.price?.id,
-        proPriceId: _normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID),
-        scalePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID)
+        proPriceId: _normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal,
+        scalePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale,
+        corporatePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate
       });
       const finalTier = tier === 'free' ? 'pro' : tier; // an employer checkout is never free
       db.prepare("INSERT OR REPLACE INTO employer_subscribers (email, customer_id, tier, status) VALUES (?, ?, ?, 'active')").run(email, session.customer, finalTier);
@@ -7266,7 +7446,7 @@ app.post('/webhook', (req, res) => {
       const plan = isLifetime ? 'lifetime ($129)' : 'monthly ($19/mo)';
       // Guest checkout: make sure they can actually log in, and email a
       // set-password link (no-op if they already had an account).
-      _provisionPaidAccount(email, isLifetime ? 'Pro Lifetime' : 'Pro ($19.99/mo)');
+      _provisionPaidAccount(email, isLifetime ? 'Pro Lifetime' : 'Pro ($19.00/mo)');
       notifyOwner(`[ResumeTailored] 💰 New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`,
         `<p>💰 <strong>${email}</strong> just subscribed — <strong>${plan}</strong>. Cha-ching!</p>`);
     }
@@ -7279,13 +7459,61 @@ app.post('/webhook', (req, res) => {
     // belong to either the job-seeker or the employer plan.
     const row = db.prepare('SELECT email FROM subscribers WHERE customer_id = ?').get(customerId);
     const employerRow = db.prepare('SELECT email FROM employer_subscribers WHERE customer_id = ?').get(customerId);
-    db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(customerId);
+    const removed = db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(customerId);
     db.prepare('DELETE FROM employer_subscribers WHERE customer_id = ?').run(customerId);
+    if (row && removed.changes) _sendSubscriptionEndedEmail(row.email);
     console.log(`Removed subscriber with customer_id: ${customerId}`);
     const who = row?.email || employerRow?.email || customerId;
     const label = employerRow ? ' (Pro Employer)' : '';
     notifyOwner(`[ResumeTailored] Subscription canceled: ${who}${label}`,
       `<p>👋 <strong>${who}</strong>'s subscription${label} was canceled.</p>`);
+  }
+
+  if (event.type === 'customer.subscription.updated') {
+    const sub = event.data.object;
+    const active = ['active', 'trialing'].includes(String(sub.status || ''));
+    if (sub.customer) {
+      const priceId = sub.items && sub.items.data && sub.items.data[0] && sub.items.data[0].price && sub.items.data[0].price.id;
+      const tier = EH.resolveEmployerTier({
+        priceId,
+        proPriceId: _normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal,
+        scalePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale,
+        corporatePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate
+      });
+      if (tier !== 'free') db.prepare('UPDATE employer_subscribers SET status = ?, tier = ? WHERE customer_id = ?').run(active ? 'active' : String(sub.status || 'inactive'), tier, sub.customer);
+      else db.prepare('UPDATE employer_subscribers SET status = ? WHERE customer_id = ?').run(active ? 'active' : String(sub.status || 'inactive'), sub.customer);
+      if (!active) db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(sub.customer);
+    }
+  }
+
+  if (event.type === 'invoice.payment_failed') {
+    const customerId = event.data.object.customer;
+    const row = customerId && db.prepare('SELECT email FROM subscribers WHERE customer_id = ?').get(customerId);
+    if (row) {
+      const removed = db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(customerId);
+      if (removed.changes) {
+        _sendSubscriptionEndedEmail(row.email);
+        console.log(`Payment-failed subscriber downgraded: ${row.email}`);
+      }
+    }
+  }
+
+  if (event.type === 'charge.refunded') {
+    const charge = event.data.object;
+    // A charge.refunded event is also emitted for partial refunds. Only a full
+    // refund removes lifetime access; monthly access is managed by subscription
+    // cancellation and never uses the lifetime_<email> marker.
+    if (charge.refunded === true) {
+      const email = String(
+        charge.metadata?.email || charge.billing_details?.email || charge.receipt_email || ''
+      ).toLowerCase().trim();
+      if (email) {
+        const lifetimeCustomerId = `lifetime_${email}`;
+        const removed = db.prepare('DELETE FROM subscribers WHERE email = ? AND customer_id = ?')
+          .run(email, lifetimeCustomerId);
+        if (removed.changes) console.log(`Refunded lifetime subscriber downgraded: ${email}`);
+      }
+    }
   }
 
   res.json({ received: true });
@@ -8169,7 +8397,7 @@ app.get('/api/career/coach', async (req, res) => {
 // "Hire Mode" by saving an employer profile; no separate login. Free tier is
 // EH.EMPLOYER_LIMITS.freeActiveJobs (3) active posts with no ATS/search; Pro
 // Employer ($29/mo, separate `employer_subscribers` table so it can never be
-// confused with the $19.99 job-seeker plan) is unlimited + priority listing.
+// confused with the $19.00 job-seeker plan) is unlimited + priority listing.
 // Candidate search, ATS kanban and applications land in Phase B.
 // ═══════════════════════════════════════════════════════════════════════════
 function employerAuthEmail(req, res) {
@@ -8185,7 +8413,7 @@ function employerTier(email) {
   if (!email) return 'free';
   const e = email.toLowerCase();
   const ownerEmail = (process.env.OWNER_EMAIL || 'support@resumetailored.com').toLowerCase();
-  if (e === ownerEmail) return 'scale';
+  if (e === ownerEmail) return 'corporate';
   if (COMP_EMAILS.includes(e)) return 'pro';
   const row = db.prepare('SELECT tier, status FROM employer_subscribers WHERE email = ?').get(e);
   if (!row) return 'free';
@@ -8248,16 +8476,17 @@ app.get('/api/employer/status', (req, res) => {
     companyName: profile ? profile.company_name : null,
     website: profile ? profile.website : null,
     slug: profile ? (profile.slug || _ensureEmployerSlug(e, profile.company_name)) : null,
-    tier,                              // 'free' | 'pro' | 'scale'
+    tier,                              // 'free' | 'pro' | 'scale' | 'corporate'
     pro: tier !== 'free',              // kept for existing frontend checks
-    scale: tier === 'scale',
+    scale: tier === 'scale' || tier === 'corporate',
+    corporate: tier === 'corporate',
     activeJobs: profile ? activeJobCount(email) : 0,
     jobsPostedLifetime: posted,
     freeLifetimeJobLimit: EH.EMPLOYER_TIERS.free.lifetimeJobs,
     canPostJob: gate.allowed,
     jobsRemaining: gate.remaining,     // null = unlimited
     features: { aiMatching: cfg.aiMatching, matchPreview: cfg.matchPreview === Infinity ? null : cfg.matchPreview, screener: cfg.screener, analytics: cfg.analytics, api: cfg.api, seats: cfg.seats === Infinity ? null : cfg.seats },
-    prices: { pro: EH.EMPLOYER_TIERS.pro.price, scale: EH.EMPLOYER_TIERS.scale.price }
+    prices: { pro: EH.EMPLOYER_TIERS.pro.price, portal: EH.EMPLOYER_TIERS.pro.price, scale: EH.EMPLOYER_TIERS.scale.price, corporate: EH.EMPLOYER_TIERS.corporate.price }
   });
 });
 
@@ -8407,22 +8636,24 @@ app.delete('/api/employer/jobs/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// ─── API: Employer Stripe checkout — Pro ($49/mo) or Scale ($199/mo) ─────────
-// `plan` (pro|scale) picks the price; the tier is carried in checkout metadata
+// ─── API: Employer Stripe checkout — Portal, Scale, or Corporate ─────────────
+// `plan` picks the price; the tier is carried in checkout metadata
 // so the webhook records exactly what was bought. STRIPE_EMPLOYER_PRICE_ID is
 // still honored as the Pro price for back-compat with existing config.
 app.post('/api/employer/subscribe', async (req, res) => {
   const email = employerAuthEmail(req, res); if (!email) return;
-  const plan = String((req.body && req.body.plan) || 'pro').toLowerCase();
-  if (!['pro', 'scale'].includes(plan)) return res.status(400).json({ error: 'bad_request', message: 'Choose the Pro or Scale plan.' });
+  const requestedPlan = String((req.body && req.body.plan) || 'portal').toLowerCase();
+  const plan = requestedPlan === 'portal' ? 'pro' : requestedPlan;
+  if (!['pro', 'scale', 'corporate'].includes(plan)) return res.status(400).json({ error: 'bad_request', message: 'Choose Employer Portal, Scale, or Corporate.' });
   // .trim() defends against a price id pasted with a stray newline/space (this
   // project had exactly that on these vars); a whitespace-corrupted id would
   // otherwise be sent to Stripe and rejected. Empty after trim ⇒ 503, never
   // undefined-to-Stripe.
-  const priceId = _normPriceId(plan === 'scale'
-    ? process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID
-    : (process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID));
-  if (!priceId) return res.status(503).json({ error: 'not_configured', message: `The ${plan === 'scale' ? 'Scale' : 'Pro'} plan is not yet available.` });
+  const priceId = plan === 'corporate'
+    ? (_normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate)
+    : plan === 'scale'
+      ? (_normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale)
+      : (_normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal);
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -9072,10 +9303,10 @@ app.post('/api/employer/settings', employerLimiter, (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════
 // The 7 job-search tools — API routes (server-side gating)
 // ══════════════════════════════════════════════════════════════════════════
-// Offer Comparison is free + anonymous. The other four generative tools require
-// a signed-in account (getSessionEmail → 401) and are metered against the
+// Every action requires a signed-in account (getSessionEmail → 401). The
+// generative quota-limited tools are metered against the
 // tool_usage ledger; Pro (isSubscriber) lifts every cap. Resume A/B Tracker
-// counts rows in resume_versions (free = 2). Weekly Report is Pro-only.
+// counts rows in resume_versions (free = 3). Weekly Report is free.
 const toolsLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 20,
@@ -9122,8 +9353,9 @@ function toolLLMError(res, err) {
   return res.status(502).json({ error: 'ai_error', message: msg });
 }
 
-// ── 1. Offer Comparison — free, anonymous, deterministic (no LLM) ────────────
+// ── 1. Offer Comparison — free, signed-in, deterministic (no LLM) ────────────
 app.post('/api/tools/offer-comparison', toolsLimiter, (req, res) => {
+  const gate = toolGate(req, res, null); if (!gate) return;
   try {
     const offers = (req.body && req.body.offers) || [];
     const result = TOOLS.scoreOffers(offers);
@@ -9147,6 +9379,71 @@ app.post('/api/tools/job-description-decode', toolsLimiter, async (req, res) => 
     if (!gate.pro) toolUsageRecord(gate.email, TOOLS.LIMITS.jobDecode.tool);
     const used = gate.pro ? 0 : toolUsageCount(gate.email, TOOLS.LIMITS.jobDecode.tool, 'day');
     res.json({ result: value, usage: { pro: gate.pro, used, limit: TOOLS.LIMITS.jobDecode.free } });
+  } catch (err) { toolLLMError(res, err); }
+});
+
+const CORPORATE_OPERATIONAL_MODULES = Object.freeze([
+  'Handbook Wizard','Compliance Vault','Automated Onboarding','Resource Optimizer','Incident Reporter',
+  'Supply Chain Hub','Supplier Hub','AI Spreadsheet Engine','Internal Email System','E-Signature Engine',
+  'Applicant Tracking System (ATS)','Pulse Surveys / Engagement','Employee Recognition','360° Performance Reviews',
+  'Training & LMS','Shift Scheduling','Time Clock & Attendance','Expense & Financial Document Tracker',
+  'Manager Analytics Dashboard','Help Center / Knowledge Base','Data Export / Portability'
+]);
+db.exec(`CREATE TABLE IF NOT EXISTS corporate_module_selections (
+  email TEXT PRIMARY KEY,
+  modules_json TEXT NOT NULL,
+  confirmed_at INTEGER NOT NULL
+)`);
+
+app.get('/api/corporate/config', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required' });
+  const internalTier = employerTier(email);
+  const tier = internalTier === 'pro' ? 'portal' : internalTier;
+  const row = db.prepare('SELECT modules_json, confirmed_at FROM corporate_module_selections WHERE email = ?').get(email.toLowerCase());
+  let modules = [];
+  if (internalTier === 'corporate') modules = CORPORATE_OPERATIONAL_MODULES.slice();
+  else if (row) { try { modules = JSON.parse(row.modules_json); } catch (_) {} }
+  res.json({ tier, modules, confirmed: !!row || internalTier === 'corporate', immutable: true });
+});
+
+app.post('/api/corporate/modules', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required', message: 'Sign in to confirm the Scale selection.' });
+  if (employerTier(email) !== 'scale') return res.status(403).json({ error: 'scale_required', message: 'A Scale membership is required to retain five modules.' });
+  const key = email.toLowerCase();
+  const existing = db.prepare('SELECT modules_json FROM corporate_module_selections WHERE email = ?').get(key);
+  if (existing) return res.status(409).json({ error: 'selection_final', message: 'Your five Scale modules are already confirmed and cannot be swapped.' });
+  const modules = Array.isArray(req.body && req.body.modules) ? req.body.modules.map(String) : [];
+  const unique = Array.from(new Set(modules));
+  if (unique.length !== 5 || unique.some(name => !CORPORATE_OPERATIONAL_MODULES.includes(name))) {
+    return res.status(400).json({ error: 'invalid_selection', message: 'Choose exactly five operational modules.' });
+  }
+  db.prepare('INSERT INTO corporate_module_selections (email, modules_json, confirmed_at) VALUES (?, ?, ?)').run(key, JSON.stringify(unique), Date.now());
+  writeAuditLog(req, email, 'corporate.modules_confirmed', { targetType: 'membership', meta: { modules: unique } });
+  res.json({ success: true, modules: unique, confirmed: true });
+});
+
+// Decoder Key — public lead-magnet entrance. Unlike the signed-in tools-hub
+// route above, this is intentionally usable before account creation. The same
+// validated analysis core is reused so the public and member experiences never
+// drift. Contact capture is explicit and optional; an address is stored only
+// when the visitor asks for product notes.
+app.post('/api/decoder-key', toolsLimiter, async (req, res) => {
+  const body = req.body || {};
+  const text = String(body.text || body.jobText || '').trim();
+  if (text.length < 40) return res.status(400).json({ error: 'too_short', message: 'Share at least a few sentences so the Key has enough context.' });
+  if (text.length > 12000) return res.status(400).json({ error: 'too_long', message: 'Please keep the text under 12,000 characters.' });
+  const email = String(body.email || '').trim().toLowerCase().slice(0, 254);
+  if (body.contactOptIn && email) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'bad_email', message: 'Please check the email address.' });
+    db.exec('CREATE TABLE IF NOT EXISTS decoder_leads (email TEXT PRIMARY KEY, created_at INTEGER NOT NULL, source TEXT NOT NULL)');
+    db.prepare('INSERT OR IGNORE INTO decoder_leads (email, created_at, source) VALUES (?, ?, ?)').run(email, Date.now(), 'decoder-key');
+  }
+  try {
+    const p = TOOLS.buildJobDecodePrompt(text, _reqLang(req));
+    const value = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1800, validate: TOOLS.validateJobDecode });
+    res.json({ result: value, complimentary: true });
   } catch (err) { toolLLMError(res, err); }
 });
 
@@ -9184,7 +9481,10 @@ app.post('/api/tools/mock-interview', toolsLimiter, async (req, res) => {
       const value = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1200, validate: TOOLS.validateMockQuestions });
       if (!gate.pro) toolUsageRecord(gate.email, TOOLS.LIMITS.mockInterview.tool);
       const used = gate.pro ? 0 : toolUsageCount(gate.email, TOOLS.LIMITS.mockInterview.tool, 'month');
-      res.json({ result: value, usage: { pro: gate.pro, used, limit: TOOLS.LIMITS.mockInterview.free } });
+      // Complimentary members receive one complete text question; the client
+      // then presents the remaining coaching modes as quiet Pro previews.
+      const result = gate.pro ? value : { questions: value.questions.slice(0, 1) };
+      res.json({ result, usage: { pro: gate.pro, used, limit: TOOLS.LIMITS.mockInterview.free }, preview: gate.pro ? null : { voiceMode: true, progressTracking: true, fullReport: true, weaknessTargeting: true } });
     } catch (err) { toolLLMError(res, err); }
   } else {
     // Feedback needs only sign-in (the quota was spent generating the questions).
@@ -9199,7 +9499,7 @@ app.post('/api/tools/mock-interview', toolsLimiter, async (req, res) => {
 });
 
 // ── 5. Salary Negotiation Script — FREE + unlimited; Pro adds intelligence ────
-// FREE (no account required): a custom counter-offer script + talking points in
+// FREE (sign-in at Generate): a custom counter-offer script + talking points in
 // a professional tone. PRO: live market data (a real median for the role/city),
 // three email templates, and a risk meter. Market data + templates are gated by
 // TOOLS.PRO_FLAGS.marketData / .emailTemplates — the free response omits them.
@@ -9224,10 +9524,9 @@ async function salaryMarketData(role, location) {
   } catch (e) { return null; }
 }
 app.post('/api/tools/salary-negotiation', toolsLimiter, async (req, res) => {
-  // FREE + unlimited: no sign-in required. A session (if present) only decides
-  // whether the caller is Pro and therefore gets the market data + templates.
   const email = getSessionEmail(req);
-  const pro = email ? isSubscriber(email) : false;
+  if (!email) return res.status(401).json({ error: 'auth_required', message: 'Please sign in to generate your free salary script.' });
+  const pro = isSubscriber(email);
   const b = req.body || {};
   if (!String(b.role || '').trim()) return res.status(400).json({ error: 'missing_role', message: 'Enter the role you\'re negotiating for.' });
   const lang = _reqLang(req);
@@ -9293,7 +9592,7 @@ app.post('/api/tools/resume-version', toolsLimiter, (req, res) => {
 app.post('/api/tools/resume-version/:id/diagnose', toolsLimiter, async (req, res) => {
   const gate = toolGate(req, res, null); if (!gate) return;
   if (!gate.pro) return res.status(402).json({ error: 'pro_only', feature: TOOLS.PRO_FLAGS.aiDiagnosis,
-    message: 'AI diagnosis is a Pro feature — it reads your version against the job description and tells you exactly which keywords it is missing. Upgrade to $19.99/mo.' });
+    message: 'AI diagnosis is a Pro feature — it reads your version against the job description and tells you exactly which keywords it is missing. Upgrade to $19.00/mo.' });
   const id = parseInt(req.params.id, 10);
   const row = db.prepare('SELECT resume_text FROM resume_versions WHERE id = ? AND user_email = ?').get(id, gate.email.toLowerCase());
   if (!row) return res.status(404).json({ error: 'not_found', message: 'Version not found.' });

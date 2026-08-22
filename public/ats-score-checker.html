@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Free ATS Resume Checker — Keyword Match Score Instantly | ResumeTailored AI</title>
-  <meta name="description" content="Paste your resume and job description. Our free ATS checker instantly shows your keyword match score and which keywords you're missing. No sign-up required." />
+  <meta name="description" content="Paste your resume and job description freely. Sign in only when you run the free ATS scan to see your match score and missing keywords." />
   <meta name="keywords" content="ATS score checker, ATS resume checker, keyword match score, resume ATS test, free ATS checker, resume keyword analyzer" />
   <link rel="canonical" href="https://resumetailored.com/ats-score-checker" />
   <script type="application/ld+json">
@@ -26,7 +26,7 @@
   <meta property="og:image" content="https://resumetailored.com/favicon.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Free ATS Resume Checker — Keyword Match Score Instantly | ResumeTailored AI" />
-  <meta name="twitter:description" content="Paste your resume and job description. Instantly see your keyword match score and what's missing. Free, no sign-up." />
+  <meta name="twitter:description" content="Paste your resume and job description freely. Sign in only when you run the free ATS scan." />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="favicon-32.png" sizes="32x32" />
   <link rel="apple-touch-icon" href="apple-touch-icon.png" />
@@ -520,7 +520,7 @@
 <section class="hero">
   <div class="container">
     <div class="hero-badge" data-i18n="hero_badge">📊 Free ATS Score Checker</div>
-    <h1 data-i18n-html="hero_title">Instant <span class="blue">ATS Keyword Match</span><br />Score — No Sign-Up</h1>
+    <h1 data-i18n-html="hero_title">Instant <span class="blue">ATS Keyword Match</span><br />Score — Free</h1>
     <p class="hero-sub" data-i18n="hero_sub">Paste your resume and the job description. We'll show you your keyword match score and exactly which keywords you're missing — in seconds.</p>
   </div>
 </section>
@@ -643,7 +643,7 @@
   <div class="container">
     <p class="section-eyebrow" data-i18n="how_eyebrow">How It Works</p>
     <h2 class="section-title" data-i18n-html="how_title">Three Steps to Your <span>ATS Score</span></h2>
-    <p class="section-sub" data-i18n="how_sub">No account needed. Paste or upload your resume and job description — Claude AI analyzes the match in seconds.</p>
+    <p class="section-sub" data-i18n="how_sub">Paste or upload freely. Sign in only when you click Check ATS Score, then Claude AI analyzes the match in seconds.</p>
     <div class="how-grid">
       <div class="how-card">
         <div class="how-step">1</div>
@@ -694,11 +694,12 @@
 <div style="background:linear-gradient(135deg,rgba(31,92,61,0.14),rgba(46,125,83,0.10));border-top:1px solid rgba(31,92,61,0.25);padding:28px 24px;text-align:center;">
   <p style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#1F5C3D;margin-bottom:8px;">Free AI Resume Tools</p>
   <p style="font-size:18px;font-weight:800;color:#191512;margin-bottom:6px;">Get Your ATS Score &amp; Readability Review — Free</p>
-  <p style="font-size:14px;color:#57514A;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Paste your resume and job description. Claude AI scores your match and gives you 5 specific fixes — no account needed.</p>
+  <p style="font-size:14px;color:#57514A;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Paste freely, then sign in only when you run the free ATS scan.</p>
   <a href="/score" style="background:#1F5C3D;color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 6px 18px rgba(31,92,61,0.3);">Check My Resume Free &rarr;</a>
 </div>
 </footer>
 
+<script src="/free-tool-auth.js"></script>
 <script>
   // ─── FILE UPLOAD ──────────────────────────────────────────────────────────
   async function handleResumeFile(input) {
@@ -806,6 +807,7 @@
       errorEl.textContent = 'Please paste the job description in the right box.';
       errorEl.classList.add('visible'); return;
     }
+    if (!(await RTFreeToolAuth.requireForAction('runCheck'))) return;
 
     btn.querySelector('[data-i18n]').textContent = currentLang === 'zh' ? 'AI 分析中…' : 'Analyzing with AI…';
     btn.disabled = true;
@@ -881,7 +883,7 @@
       nav_how: 'How It Works', nav_blog: 'Blog', nav_pricing: 'Pricing',
       nav_login: 'Log In', nav_cta: 'Tailor My Resume Free →',
       hero_badge: '📊 Free ATS Score Checker',
-      hero_title: 'Instant <span class="blue">ATS Keyword Match</span><br />Score — No Sign-Up',
+      hero_title: 'Instant <span class="blue">ATS Keyword Match</span><br />Score — Free',
       hero_sub: "Paste your resume and the job description. We'll show you your keyword match score and exactly which keywords you're missing — in seconds.",
       resume_label: 'Paste Your Resume',
       resume_placeholder: 'Paste your full resume text here, or click Upload File to import .txt, .pdf, or .docx...',
@@ -899,7 +901,7 @@
       cta_strip_btn: 'Tailor My Resume Free →',
       how_eyebrow: 'How It Works',
       how_title: 'Three Steps to Your <span>ATS Score</span>',
-      how_sub: 'No account needed. Paste or upload your resume and job description — Claude AI analyzes the match in seconds.',
+      how_sub: 'Paste or upload freely. Sign in only when you click Check ATS Score, then Claude AI analyzes the match in seconds.',
       how1_title: 'Paste Your Resume',
       how1_desc: 'Copy and paste your resume text into the left box. Plain text works best — no need to worry about formatting.',
       how2_title: 'Paste the Job Posting',

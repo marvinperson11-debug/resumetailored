@@ -114,7 +114,7 @@ async function gen(){
   document.getElementById('result').classList.remove('show'); document.getElementById('loading').classList.add('show');
   var res=await thApi('POST','/api/tools/follow-up-generate',b);
   document.getElementById('loading').classList.remove('show'); btn.disabled=false;
-  if(thHandleGate(res)) return;
+  if(thHandleGate(res,'gen')) return;
   if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Something went wrong.'; err.classList.add('show'); return; }
   document.getElementById('email').textContent=res.data.result;
   var u=res.data.usage||{}, zh=(localStorage.getItem('rt_lang')==='zh');

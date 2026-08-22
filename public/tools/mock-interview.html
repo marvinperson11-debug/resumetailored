@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AI Mock Interview — Practice & Get Instant Feedback | ResumeTailored AI</title>
-<meta name="description" content="Practice with an AI interviewer tailored to your role and level, then get instant, scored feedback on every answer. 1 free mock interview a month."/>
+<title>AI Interview Coach — Text & Voice Practice | ResumeTailored AI</title>
+<meta name="description" content="Practice one complete interview question in text mode with feedback, then continue with voice coaching and full reports in Pro."/>
 <link rel="canonical" href="https://resumetailored.com/tools/mock-interview"/>
-<meta property="og:title" content="AI Mock Interview"/>
+<meta property="og:title" content="AI Interview Coach"/>
 <meta property="og:description" content="Practice with an AI interviewer and get instant feedback on your answers."/>
 <meta property="og:url" content="https://resumetailored.com/tools/mock-interview"/>
 <link rel="icon" href="/favicon.png" type="image/png"/>
@@ -15,11 +15,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/tools-hub.css"/>
+<style>.coach-previews{display:none;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}.coach-previews.show{display:grid}.coach-preview{position:relative;min-height:145px;padding:20px;border:1px solid rgba(180,131,42,.55);overflow:hidden;background:#fff}.coach-preview>div{filter:blur(3px);opacity:.72}.coach-preview:after{content:attr(data-label);position:absolute;inset:0;display:grid;place-items:center;padding:18px;background:rgba(7,23,36,.13);color:#806323;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;text-align:center}.coach-preview h3{margin:0 0 8px;font-family:Fraunces,Georgia,serif}.coach-continue{display:none;text-align:center;margin:18px 0}.coach-continue.show{display:block}@media(max-width:650px){.coach-previews{grid-template-columns:1fr}}</style>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "AI Mock Interview",
+    "name": "AI Interview Coach",
     "url": "https://resumetailored.com/tools/mock-interview",
     "applicationCategory": "BusinessApplication",
     "operatingSystem": "Web",
@@ -41,9 +42,9 @@
 
 <main class="th-wrap">
   <a href="/score" class="th-back" data-i18n="back">← Back to Free Tools</a>
-  <p class="th-eyebrow" data-i18n="eyebrow">★ Free · 1 mock interview a month</p>
-  <h1 class="th-title" data-i18n="title">AI Mock Interview</h1>
-  <p class="th-sub" data-i18n="sub">Practice with an AI interviewer and get instant feedback on your answers.</p>
+  <p class="th-eyebrow" data-i18n="eyebrow">Complimentary · one complete text question</p>
+  <h1 class="th-title" data-i18n="title">AI Interview Coach</h1>
+  <p class="th-sub" data-i18n="sub">Practice with a calm, professional AI interviewer. Your first text question and basic feedback are complimentary.</p>
 
   <div class="th-card" id="setup">
     <div class="th-row">
@@ -71,11 +72,12 @@
     </div>
     <div id="feedback"></div>
   </div>
+  <div class="coach-previews" id="coachPreviews"><article class="coach-preview" data-label="Available in Pro"><div><h3>Voice mode</h3><p>Practice aloud with a composed interviewer and natural pacing.</p></div></article><article class="coach-preview" data-label="Available in Pro"><div><h3>Progress tracking</h3><p>See how clarity, evidence, and confidence improve over time.</p></div></article><article class="coach-preview" data-label="Available in Pro"><div><h3>Full report</h3><p>Receive a considered review across the complete interview.</p></div></article><article class="coach-preview" data-label="Available in Pro"><div><h3>Weakness targeting</h3><p>Practice the question types where another answer would help.</p></div></article></div><div class="coach-continue" id="coachContinue"><button class="th-btn" onclick="thStartPro()">Continue your preparation in Pro</button></div>
 
-  <div class="th-promo"><h3 data-i18n="promo_h">Want unlimited practice?</h3><p data-i18n="promo_p">Upgrade to Pro for unlimited mock interviews and every other tool.</p><button class="th-btn" onclick="thStartPro()">Upgrade — $19.99/mo</button></div>
+  <div class="th-promo"><h3 data-i18n="promo_h">Continue the conversation</h3><p data-i18n="promo_p">Pro adds the full text interview, voice mode, progress tracking, and targeted reports.</p><button class="th-btn" onclick="thStartPro()">Continue in Pro — $19.00/mo</button></div>
 </main>
 
-<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">You've used your free interview</h3><p id="thUpgradeMsg">You've used your free mock interview this month. Upgrade to Pro for unlimited access.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.99/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
+<div class="th-modal" id="thUpgradeModal"><div class="th-modal-box"><div class="badge">✦</div><h3 data-i18n="up_h">You've used your free interview</h3><p id="thUpgradeMsg">You've used your free mock interview this month. Upgrade to Pro for unlimited access.</p><button class="th-btn th-btn--full" onclick="thStartPro()">Upgrade — $19.00/mo</button><button class="th-modal-x" onclick="thCloseUpgrade()" data-i18n="up_x">Maybe later</button></div></div>
 
 <footer class="th-foot"><a href="/score" data-i18n="nav_free">Free Tools</a> · <a href="/pro-tools" data-i18n="nav_pro">Pro Tools</a> · <a href="/blog">Blog</a><p style="margin-top:10px;">© ResumeTailored AI</p></footer>
 
@@ -83,7 +85,7 @@
 <script>
 window.TH_I18N = {
   en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools',
-    eyebrow:'★ Free · 1 mock interview a month', title:'AI Mock Interview', sub:'Practice with an AI interviewer and get instant feedback on your answers.',
+    eyebrow:'★ Free · 1 mock interview a month', title:'AI Interview Coach', sub:'Practice with an AI interviewer and get instant feedback on your answers.',
     l_role:'Role', l_exp:'Experience level', e_entry:'Entry-level', e_mid:'Mid-level', e_senior:'Senior', e_lead:'Lead',
     start:'Start mock interview →', loading:'Preparing your interview…', grading:'Scoring your answers…', submit:'Get my feedback →', overall:'Overall score',
     promo_h:'Want unlimited practice?', promo_p:'Upgrade to Pro for unlimited mock interviews and every other tool.', up_h:"You've used your free interview", up_x:'Maybe later', answer_ph:'Type your answer…', copied:'Copied ✓' },
@@ -93,7 +95,7 @@ window.TH_I18N = {
     start:'开始模拟面试 →', loading:'正在准备您的面试…', grading:'正在评分…', submit:'获取我的反馈 →', overall:'总分',
     promo_h:'想要无限练习？', promo_p:'升级专业版，无限模拟面试和所有其他工具。', up_h:'本月免费面试已用完', up_x:'以后再说', answer_ph:'输入你的答案…', copied:'已复制 ✓' }
 };
-var QUESTIONS=[];
+var QUESTIONS=[], IS_PRO=false;
 async function start(){
   var role=document.getElementById('role').value.trim(); var exp=document.getElementById('exp').value;
   var err=document.getElementById('err'); err.classList.remove('show');
@@ -103,9 +105,10 @@ async function start(){
   document.getElementById('loading').classList.add('show');
   var res=await thApi('POST','/api/tools/mock-interview',{action:'questions',role:role,experience:exp});
   document.getElementById('loading').classList.remove('show'); btn.disabled=false;
-  if(thHandleGate(res)) return;
+  if(thHandleGate(res,'start')) return;
   if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Something went wrong.'; err.classList.add('show'); return; }
   QUESTIONS=res.data.result.questions;
+  IS_PRO=!!(res.data.usage&&res.data.usage.pro);
   var html=QUESTIONS.map(function(q,i){
     return '<div class="th-result-card"><div style="display:flex;gap:8px;align-items:baseline;"><span class="th-badge" style="margin:0;">'+(i+1)+'</span><strong style="font-size:15px;">'+q.question+'</strong></div>'
       +'<textarea class="th-textarea" data-q="'+i+'" style="min-height:110px;margin-top:12px;" placeholder="'+thT('answer_ph','Type your answer…')+'"></textarea></div>';
@@ -135,6 +138,7 @@ async function submit(){
   }).join('');
   document.getElementById('submitBtn').style.display='none';
   document.getElementById('result').classList.add('show');
+  if(!IS_PRO){ document.getElementById('coachPreviews').classList.add('show'); document.getElementById('coachContinue').classList.add('show'); }
   document.getElementById('result').scrollIntoView({behavior:'smooth'});
 }
 </script>

@@ -125,6 +125,9 @@ function buildJobDecodePrompt(jdText, lang) {
   "redFlags": ["short phrases — vague overtime language, unrealistic scope, churn signals; [] if none"],
   "greenFlags": ["genuinely positive signals; [] if none"],
   "hiddenRequirements": ["skills/experience implied but not stated as requirements"],
+  "keyThemes": ["the central themes and competencies this language rewards"],
+  "keywords": ["specific ATS or profile keywords worth mirroring"],
+  "mirrorSuggestions": ["truthful example phrases the reader can adapt for a resume or LinkedIn profile"],
   "salaryRange": { "low": number_or_null, "high": number_or_null, "currency": "USD", "note": "one sentence; say if this is an estimate" }
 }
 Keep each array to at most 6 concise items. If the posting states a salary, use it; otherwise estimate a realistic band and say so in note.
@@ -144,6 +147,9 @@ function validateJobDecode(obj) {
     redFlags: arr('redFlags'),
     greenFlags: arr('greenFlags'),
     hiddenRequirements: arr('hiddenRequirements'),
+    keyThemes: arr('keyThemes'),
+    keywords: arr('keywords'),
+    mirrorSuggestions: arr('mirrorSuggestions'),
     salaryRange: {
       low: sr.low == null ? null : num(sr.low),
       high: sr.high == null ? null : num(sr.high),

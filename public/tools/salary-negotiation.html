@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Free Salary Negotiation Script Generator — Counter Any Offer | ResumeTailored AI</title>
-<meta name="description" content="Generate a custom counter-offer script for free — talking points, a defensible number, and a ready-to-send message. No account, no limits. Pro adds live market data and email templates."/>
+<meta name="description" content="Generate a custom counter-offer script for free — talking points, a defensible number, and a ready-to-send message. Sign in only when you generate. Pro adds live market data and email templates."/>
 <link rel="canonical" href="https://resumetailored.com/tools/salary-negotiation"/>
 <meta property="og:title" content="Free Salary Negotiation Script Generator"/>
 <meta property="og:description" content="Custom counter-offer scripts, free and unlimited. Pro adds live market data."/>
@@ -28,7 +28,7 @@
       "price": "0",
       "priceCurrency": "USD"
     },
-    "description": "Generate a custom counter-offer script for free — talking points, a defensible number, and a ready-to-send message. No account, no limits. Pro adds live market data and email templates."
+    "description": "Generate a custom counter-offer script for free. Fill it out freely and sign in only when you generate. Pro adds live market data and email templates."
   }
   </script>
 </head>
@@ -43,7 +43,7 @@
   <a href="/score" class="th-back" data-i18n="back">← Back to Free Tools</a>
   <span class="th-badge" data-i18n="free_badge">FREE · No limits</span>
   <h1 class="th-title" data-i18n="title">Salary Negotiation Script</h1>
-  <p class="th-sub" data-i18n="sub">Get a custom counter-offer script — talking points, a defensible number, and a ready-to-send message. Free and unlimited, no account needed.</p>
+<p class="th-sub" data-i18n="sub">Get a custom counter-offer script — talking points, a defensible number, and a ready-to-send message. Fill it out freely; sign in only when you generate.</p>
 
   <div class="th-card">
     <div class="th-row">
@@ -101,7 +101,7 @@
 <script>
 window.TH_I18N = {
   en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools', free_badge:'FREE · No limits',
-    title:'Salary Negotiation Script', sub:'Get a custom counter-offer script — talking points, a defensible number, and a ready-to-send message. Free and unlimited, no account needed.',
+title:'Salary Negotiation Script', sub:'Get a custom counter-offer script — talking points, a defensible number, and a ready-to-send message. Fill it out freely; sign in only when you generate.',
     l_role:'Role', l_location:'Location', l_current:'Current salary ($, optional)', l_offer:'Current offer base ($)', l_target:'Your target base ($)', l_leverage:'Competing offer / leverage (optional)',
     go:'Generate my script →', loading:'Building your negotiation plan…', r_counter:'Your counter-offer', r_points:'Talking points', r_script:'Ready-to-send script',
     r_market:'Market data for your role', r_emails:'Email templates',
@@ -130,7 +130,7 @@ async function gen(){
   document.getElementById('result').classList.remove('show'); document.getElementById('loading').classList.add('show');
   var res=await thApi('POST','/api/tools/salary-negotiation',b);
   document.getElementById('loading').classList.remove('show'); btn.disabled=false;
-  if(thHandleGate(res)) return;
+  if(thHandleGate(res,'gen')) return;
   if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Something went wrong.'; err.classList.add('show'); return; }
   var d=res.data.result;
   var co=d.counterOffer||{}; document.getElementById('r-counter').textContent=fmt(co.base);

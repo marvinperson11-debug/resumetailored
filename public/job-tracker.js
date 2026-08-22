@@ -129,11 +129,9 @@
 
   JT.prototype.mount = async function () {
     if (!this.root) return;
-    // Logged-in check must not rely on the legacy localStorage token — cookie
-    // sessions have none. Treat a stored email (set by the app on login) OR a
-    // legacy token as "maybe logged in" and let the API be the authority (load()
-    // renders the logged-out gate on a 401).
-    if (!token() && !localStorage.getItem('rt_email')) { this.renderLoggedOut(); return; }
+    // Always let the server check the cookie/bearer session. Local markers can
+    // lag behind a valid httpOnly cookie and must never cause a signed-in user
+    // to see a login prompt.
     this.root.innerHTML = '<div class="jt-wrap"><p style="color:#918A7E;font-size:14px;">Loading your applications…</p></div>';
     await this.load();
   };
@@ -141,10 +139,14 @@
   JT.prototype.renderLoggedOut = function () {
     var here = (location.pathname || '/') + (location.search || '');
     var loginHref = '/login?redirect=' + encodeURIComponent(here.indexOf('/login') === 0 ? '/job-tracker' : here);
-    this.root.innerHTML = '<div class="jt-wrap"><div class="jt-empty"><div class="e">🔑</div>' +
-      '<h3>Log in to track your applications</h3>' +
-      '<p>The Job Tracker saves your applications to your free account.</p>' +
-      '<a class="jt-btn jt-btn--primary" href="' + loginHref + '">Log in / Sign up →</a></div></div>';
+    // Anonymous visitors see the tool and its empty workflow. Authentication
+    // is requested only when they take the first persistence action.
+    this.root.innerHTML = '<div class="jt-wrap"><div class="jt-head"><h2>Job Tracker</h2>' +
+      '<div class="jt-actions"><div class="jt-seg"><button class="on">Board</button><button>List</button></div>' +
+      '<a class="jt-btn jt-btn--primary" href="' + loginHref + '">+ Add Application</a></div></div>' +
+      '<div class="jt-empty"><div class="e">📋</div><h3>Start tracking your first application</h3>' +
+      '<p>Explore the board now. When you add your first application, we’ll save it to your free account.</p>' +
+      '<a class="jt-btn jt-btn--primary" href="' + loginHref + '">+ Add your first application</a></div></div>';
   };
 
   JT.prototype.load = async function () {

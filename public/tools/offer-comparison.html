@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Offer Comparison Calculator — Compare Job Offers Side by Side | ResumeTailored AI</title>
-<meta name="description" content="Free tool: compare multiple job offers side by side — salary, bonus, equity, benefits, commute, PTO and remote — and get a clear score for each. No account needed."/>
+  <meta name="description" content="Free tool: compare multiple job offers side by side — salary, bonus, equity, benefits, commute, PTO and remote. Fill it out freely; sign in only when you compare."/>
 <link rel="canonical" href="https://resumetailored.com/tools/offer-comparison"/>
 <meta property="og:title" content="Offer Comparison Calculator — Free"/>
 <meta property="og:description" content="Compare job offers side by side and see which one really wins."/>
@@ -29,7 +29,7 @@
       "price": "0",
       "priceCurrency": "USD"
     },
-    "description": "Free tool: compare multiple job offers side by side — salary, bonus, equity, benefits, commute, PTO and remote — and get a clear score for each. No account needed."
+    "description": "Free tool: compare multiple job offers side by side. Fill it out freely and sign in only when you compare."
   }
   </script>
 </head>
@@ -46,7 +46,7 @@
 
 <main class="th-wrap">
   <a href="/score" class="th-back" data-i18n="back">← Back to Free Tools</a>
-  <p class="th-eyebrow" data-i18n="eyebrow">★ Free · No account needed</p>
+<p class="th-eyebrow" data-i18n="eyebrow">★ Free · Sign in only to compare</p>
   <h1 class="th-title" data-i18n="title">Offer Comparison Calculator</h1>
   <p class="th-sub" data-i18n="sub">Compare multiple job offers side by side — salary, benefits, equity, commute — and see which one really wins.</p>
 
@@ -86,13 +86,13 @@
 <script>
 window.TH_I18N = {
   en: { nav_free:'Free Tools', nav_pro:'Pro Tools', nav_cta:'Open App →', back:'← Back to Free Tools',
-    eyebrow:'★ Free · No account needed', title:'Offer Comparison Calculator',
+eyebrow:'★ Free · Sign in only to compare', title:'Offer Comparison Calculator',
     sub:'Compare multiple job offers side by side — salary, benefits, equity, commute — and see which one really wins.',
     add:'+ Add another offer', compare:'Compare offers →', results:'Results',
     promo_h:'Landed the offer? Now negotiate it.', promo_p:'Get a custom counter-offer script backed by market data with the Salary Negotiation tool.',
     promo_btn:'Salary Negotiation Script →', up_h:'Upgrade to Pro', up_p:'Unlock unlimited access to every tool.', up_x:'Maybe later', copied:'Copied ✓' },
   zh: { nav_free:'免费工具', nav_pro:'专业工具', nav_cta:'打开应用 →', back:'← 返回免费工具',
-    eyebrow:'★ 免费 · 无需注册', title:'Offer 对比计算器',
+    eyebrow:'★ 免费 · 仅比较时登录', title:'Offer 对比计算器',
     sub:'并排比较多个工作 Offer — 薪资、福利、股权、通勤 — 看看哪个真正胜出。',
     add:'+ 添加一个 Offer', compare:'比较 Offer →', results:'结果',
     promo_h:'拿到 Offer 了？现在去谈薪。', promo_p:'用薪资谈判工具获取基于市场数据的定制还价脚本。',
@@ -126,6 +126,7 @@ async function compare(){
   var err=document.getElementById('err'); err.classList.remove('show');
   var offers=readOffers();
   var res=await thApi('POST','/api/tools/offer-comparison',{offers:offers});
+  if(thHandleGate(res,'compare')) return;
   if(res.status!==200){ err.textContent=(res.data&&res.data.message)||'Could not compare those offers.'; err.classList.add('show'); return; }
   var zh=(localStorage.getItem('rt_lang')==='zh');
   document.getElementById('winner').innerHTML = '🏆 <strong>'+res.data.bestLabel+'</strong> '+(zh?'得分最高 ':'scores highest ')+'('+res.data.bestScore+'/100)';

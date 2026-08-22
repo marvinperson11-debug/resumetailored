@@ -26,7 +26,9 @@ const check = (name, cond, detail) => {
   else { failures++; console.error(`FAIL  ${name}${detail ? ' — ' + detail : ''}`); }
 };
 
-const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+// Keep source-shape checks platform-independent. The repository is commonly
+// exercised on Windows (CRLF) as well as Linux CI (LF).
+const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8').replace(/\r\n/g, '\n');
 
 // ── static asset Cache-Control ──────────────────────────────────────────────
 const staticBlockMatch = src.match(/app\.use\(express\.static\([\s\S]*?setHeaders:[\s\S]*?\n  \}\n\}\)\);/);

@@ -3200,5 +3200,15 @@
 </script>
 
 
-<script>function toggleLang(){window.location.href='/';}</script>
+<script>
+function toggleLang(){window.location.href='/';}
+// All locked template cards must open the subscription flow. Delegation also
+// covers cards re-rendered by the language and gallery scripts.
+document.addEventListener('click', function (event) {
+  var button = event.target && event.target.closest ? event.target.closest('.tcard-btn-pro') : null;
+  if (!button) return;
+  event.preventDefault();
+  openCheckoutModal();
+});
+</script>
 </body></html>
