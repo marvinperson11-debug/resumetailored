@@ -7,6 +7,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const Stripe = require('stripe');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
+const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
@@ -18,6 +19,8 @@ const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 const CH = require('./career-hub.js');           // Career Hub pure core (taxonomy, prompts, validators, scoring)
 const EH = require('./employer-hub.js');         // Employer Portal pure core (validation, limits, ranking)
+const EM = require('./employer-modules.js');     // Employer module engine pure core (registry, RBAC, tier gating)
+const IC = require('./interview-coach.js');      // AI Interview Coach pure core (questions, delivery analysis, feedback)
 const JP = require('./job-providers.js');        // Multi-source live job search (Adzuna, JSearch, free fallbacks)
 const TOOLS = require('./tools-core.js');         // 7 job-search tools pure core (offer scoring, prompts, validators, limits)
 const SC = require('./security.js');             // Security pure core (password policy, HIBP, lockout, CSP, log scrubbing)
@@ -7516,6 +7519,26 @@ app.post('/webhook', (req, res) => {
     }
   }
 
+  // invoice.paid — a recurring charge succeeded. Idempotently re-affirm that the
+  // customer's subscription is active and extends for another period. This never
+  // creates access on its own (that's checkout.session.completed's job); it only
+  // repairs a row that a transient failure or an out-of-order past_due event may
+  // have left marked non-active, so a paying customer is never stranded.
+  if (event.type === 'invoice.paid') {
+    const inv = event.data.object || {};
+    const customerId = inv.customer;
+    if (customerId) {
+      const emp = db.prepare('SELECT email, status FROM employer_subscribers WHERE customer_id = ?').get(customerId);
+      if (emp && emp.status !== 'active') {
+        db.prepare("UPDATE employer_subscribers SET status = 'active' WHERE customer_id = ?").run(customerId);
+        console.log(`invoice.paid re-activated employer subscriber: ${emp.email}`);
+      }
+      // Job-seeker subscribers have no status column (presence = active); nothing
+      // to repair there. Log for observability.
+      console.log(`invoice.paid for customer ${customerId}`);
+    }
+  }
+
   res.json({ received: true });
 });
 
@@ -7890,6 +7913,60 @@ async function callClaudeJSON({ model, system, user, max_tokens, validate }) {
     lastErr = v.error || 'invalid';
   }
   const e = new Error('llm_json_invalid: ' + lastErr); e.code = 'llm_json_invalid'; throw e;
+}
+
+// Provider-agnostic single-shot text completion. Uses OpenAI when
+// OPENAI_API_KEY is set (the plan's choice for the Decoder + Copilot), otherwise
+// falls back to the existing Anthropic Claude client. Throws { code:'ai_unconfigured' }
+// when neither is available so callers can degrade gracefully.
+async function _aiComplete({ system, user, max_tokens = 500, model }) {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (openaiKey) {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model: model || process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        max_tokens, temperature: 0.5,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
+      })
+    });
+    if (!r.ok) { const t = await r.text().catch(() => ''); const e = new Error('openai_error: ' + t.slice(0, 200)); e.code = 'ai_error'; throw e; }
+    const d = await r.json();
+    return (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content || '').trim();
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    const msg = await anthropic.messages.create({ model: model || 'claude-haiku-4-5', max_tokens, system, messages: [{ role: 'user', content: user }] });
+    return (msg.content[0] && msg.content[0].text || '').trim();
+  }
+  const e = new Error('no AI provider configured'); e.code = 'ai_unconfigured'; throw e;
+}
+
+// Provider-agnostic JSON generation. Prefers OpenAI (the plan's choice for the
+// Decoder — gpt-4o-mini, JSON mode) when OPENAI_API_KEY is set; on any OpenAI
+// error or invalid output it falls back to the existing Claude JSON path, so a
+// missing/broken OpenAI key never breaks a working feature.
+async function callAIJSON({ model, system, user, max_tokens, validate }) {
+  if (process.env.OPENAI_API_KEY) {
+    try {
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini', max_tokens, temperature: 0.4,
+          response_format: { type: 'json_object' },
+          messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
+        })
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const obj = CH.extractJson(d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content);
+        const v = validate(obj);
+        if (v.ok) return v.value;
+      }
+    } catch (_) { /* fall through to Claude */ }
+  }
+  return callClaudeJSON({ model, system, user, max_tokens, validate });
 }
 
 const careerGenLimiter = rateLimit({ windowMs: 60 * 1000, max: 15, message: { error: 'rate_limited', message: 'Slow down a moment and try again.' } });
@@ -8657,6 +8734,13 @@ app.post('/api/employer/subscribe', async (req, res) => {
   const requestedPlan = String((req.body && req.body.plan) || 'portal').toLowerCase();
   const plan = requestedPlan === 'portal' ? 'pro' : requestedPlan;
   if (!['pro', 'scale', 'corporate'].includes(plan)) return res.status(400).json({ error: 'bad_request', message: 'Choose Employer Portal, Scale, or Corporate.' });
+  // No Stripe secret key ⇒ checkout genuinely cannot run. Fail gracefully with
+  // the same not_configured contract the per-tier price guard uses, rather than
+  // sending a fallback price to an unauthenticated Stripe client and surfacing
+  // an opaque 500.
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return res.status(503).json({ error: 'not_configured', message: 'Employer checkout is not configured.' });
+  }
   // .trim() defends against a price id pasted with a stray newline/space (this
   // project had exactly that on these vars); a whitespace-corrupted id would
   // otherwise be sent to Stripe and rejected. Empty after trim ⇒ 503, never
@@ -9442,6 +9526,503 @@ app.post('/api/corporate/modules', (req, res) => {
   res.json({ success: true, modules: unique, confirmed: true });
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Employer Portal — module engine, RBAC & Base Collaboration Layer
+// Pure gating/validation lives in employer-modules.js (EM); this wires it to
+// SQLite + auth. A "company" is an employer account (the owner is its admin);
+// managers/employees are invited members. Which operational modules are active
+// is the single source of truth already used by the corporate UI: Corporate has
+// all 21, Scale has exactly the five it confirmed once (by display name).
+// ═══════════════════════════════════════════════════════════════════════════
+db.exec(`
+  CREATE TABLE IF NOT EXISTS company_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_email TEXT NOT NULL,
+    member_email TEXT NOT NULL,
+    name TEXT,
+    role TEXT NOT NULL DEFAULT 'employee',
+    status TEXT NOT NULL DEFAULT 'active',
+    invited_at INTEGER NOT NULL,
+    UNIQUE(owner_email, member_email)
+  );
+  CREATE TABLE IF NOT EXISTS module_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_email TEXT NOT NULL,
+    module_key TEXT NOT NULL,
+    title TEXT NOT NULL,
+    status TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    assigned_to TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_module_records_owner_mod ON module_records(owner_email, module_key);
+  CREATE TABLE IF NOT EXISTS collab_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_email TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    title TEXT,
+    body TEXT,
+    ref TEXT,
+    at INTEGER,
+    created_by TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_collab_owner_kind ON collab_events(owner_email, kind);
+  CREATE TABLE IF NOT EXISTS interview_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    role TEXT,
+    question_id TEXT,
+    question TEXT,
+    answer TEXT,
+    feedback_json TEXT,
+    delivery_json TEXT,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_interview_email ON interview_sessions(email, created_at);
+`);
+
+// Resolve the company + role for a signed-in user. An account that owns an
+// employer profile (or is on a paid employer tier) is the ADMIN of its own
+// company; otherwise the user may be an invited member of someone else's.
+function _isCompanyOwner(e) {
+  if (db.prepare('SELECT 1 FROM employer_profiles WHERE email = ?').get(e)) return true;
+  if (employerTier(e) !== 'free') return true; // subscriber who hasn't built a profile yet
+  return false;
+}
+function _portalContext(email) {
+  if (!email) return null;
+  const e = email.toLowerCase();
+  if (_isCompanyOwner(e)) {
+    const prof = db.prepare('SELECT company_name FROM employer_profiles WHERE email = ?').get(e);
+    return { ownerEmail: e, role: 'admin', companyName: prof ? prof.company_name : null };
+  }
+  const mem = db.prepare("SELECT owner_email, role, name FROM company_members WHERE member_email = ? AND status = 'active' ORDER BY invited_at DESC LIMIT 1").get(e);
+  if (mem) {
+    const prof = db.prepare('SELECT company_name FROM employer_profiles WHERE email = ?').get(mem.owner_email);
+    return { ownerEmail: mem.owner_email, role: EM.normRole(mem.role), companyName: prof ? prof.company_name : null, memberName: mem.name };
+  }
+  return null;
+}
+// Display names of the operational modules active for a company.
+function _confirmedModuleNames(ownerEmail, tier) {
+  if (tier === 'corporate') return EM.MODULE_REGISTRY.map(m => m.name);
+  const row = db.prepare('SELECT modules_json FROM corporate_module_selections WHERE email = ?').get(ownerEmail);
+  if (!row) return [];
+  try { return JSON.parse(row.modules_json); } catch (_) { return []; }
+}
+// Auth gate for every portal route. Returns the resolved context or sends the
+// error and returns null. `minRole` optionally requires admin/manager.
+function portalAuth(req, res, { minRole } = {}) {
+  const email = getSessionEmail(req);
+  if (!email) { res.status(401).json({ error: 'login_required', message: 'Please sign in first.' }); return null; }
+  const ctx = _portalContext(email.toLowerCase());
+  if (!ctx) { res.status(403).json({ error: 'not_in_company', message: 'Create an employer account to use the portal.' }); return null; }
+  ctx.email = email.toLowerCase();
+  ctx.tier = employerTier(ctx.ownerEmail);
+  ctx.confirmedNames = _confirmedModuleNames(ctx.ownerEmail, ctx.tier);
+  if (minRole && !EM.roleAtLeast(ctx.role, minRole)) { res.status(403).json({ error: 'forbidden', message: 'You do not have permission for that.' }); return null; }
+  return ctx;
+}
+// Module-active gate. 402 when the plan has no operational modules at all
+// (free/pro), 403 when the plan has some but not this one (a Scale module the
+// company didn't pick).
+function _moduleActiveGate(res, ctx, moduleKey) {
+  const m = EM.moduleByKey(moduleKey);
+  if (!m) { res.status(404).json({ error: 'unknown_module', message: 'No such module.' }); return null; }
+  if (!EM.isModuleActive({ tier: ctx.tier, confirmedNames: ctx.confirmedNames, moduleKey })) {
+    const hasAny = EM.activeModuleKeys(ctx.tier, ctx.confirmedNames).length > 0;
+    res.status(hasAny ? 403 : 402).json({ error: 'module_not_active', message: hasAny ? 'That module is not part of your Scale selection. Upgrade to Corporate for full access.' : 'Operational modules require Scale or Corporate.' });
+    return null;
+  }
+  return m;
+}
+function _collabGate(res, ctx) {
+  if (!['scale', 'corporate'].includes(ctx.tier)) { res.status(402).json({ error: 'collab_locked', message: 'The collaboration layer is included with Scale and Corporate.' }); return false; }
+  return true;
+}
+function _rowToRecord(r) {
+  let data = {}; try { data = JSON.parse(r.data_json); } catch (_) {}
+  return { id: r.id, moduleKey: r.module_key, title: r.title, status: r.status, data, createdBy: r.created_by, assignedTo: r.assigned_to, createdAt: r.created_at, updatedAt: r.updated_at };
+}
+// Redact the submitter of a confidential+anonymous record from anyone who
+// isn't its author (privacy-respecting incident reporting).
+function _redactRecord(rec, moduleKey, viewerEmail) {
+  const m = EM.moduleByKey(moduleKey);
+  if (m && m.confidential && rec.data && rec.data.anonymous && rec.createdBy !== viewerEmail) {
+    return Object.assign({}, rec, { createdBy: null, assignedTo: null });
+  }
+  return rec;
+}
+
+// ── Portal context ──────────────────────────────────────────────────────────
+app.get('/api/portal/context', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const activeKeys = EM.activeModuleKeys(ctx.tier, ctx.confirmedNames);
+  const cfg = EH.tierConfig(ctx.tier);
+  const memberCount = db.prepare('SELECT COUNT(*) c FROM company_members WHERE owner_email = ?').get(ctx.ownerEmail).c;
+  res.json({
+    role: ctx.role, tier: ctx.tier, companyName: ctx.companyName, ownerEmail: ctx.role === 'admin' ? ctx.ownerEmail : undefined,
+    collabActive: ['scale', 'corporate'].includes(ctx.tier),
+    activeModules: activeKeys.map(k => ({ key: k, name: EM.moduleNameForKey(k), category: EM.moduleByKey(k).category, permissions: EM.modulePermissions(ctx.role, k) })),
+    allModules: EM.MODULE_REGISTRY.map(m => ({ key: m.key, name: m.name, category: m.category, active: activeKeys.includes(m.key) })),
+    collabLayer: EM.COLLAB_LAYER,
+    seats: cfg.seats === Infinity ? null : cfg.seats, memberCount,
+    scaleCap: EM.SCALE_MODULE_CAP, scaleRemaining: ctx.tier === 'scale' ? Math.max(0, EM.SCALE_MODULE_CAP - activeKeys.length) : null
+  });
+});
+
+// ── Incremental module activation (admin) — the Scale "up to 5, then 403" rule ─
+app.post('/api/portal/modules/activate', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'admin' }); if (!ctx) return;
+  const moduleKey = String((req.body && req.body.moduleKey) || '');
+  const decision = EM.canActivateModule({ tier: ctx.tier, confirmedNames: ctx.confirmedNames, moduleKey });
+  if (!decision.allowed) return res.status(decision.status).json({ error: decision.code, message: decision.message });
+  if (ctx.tier === 'scale') {
+    const names = ctx.confirmedNames.slice();
+    names.push(EM.moduleNameForKey(moduleKey));
+    const existing = db.prepare('SELECT 1 FROM corporate_module_selections WHERE email = ?').get(ctx.ownerEmail);
+    if (existing) db.prepare('UPDATE corporate_module_selections SET modules_json = ?, confirmed_at = ? WHERE email = ?').run(JSON.stringify(names), Date.now(), ctx.ownerEmail);
+    else db.prepare('INSERT INTO corporate_module_selections (email, modules_json, confirmed_at) VALUES (?,?,?)').run(ctx.ownerEmail, JSON.stringify(names), Date.now());
+    writeAuditLog(req, ctx.email, 'portal.module_activated', { targetType: 'module', targetId: moduleKey, meta: { count: names.length } });
+  }
+  const activeKeys = EM.activeModuleKeys(ctx.tier, _confirmedModuleNames(ctx.ownerEmail, ctx.tier));
+  res.json({ success: true, activeModules: activeKeys, scaleRemaining: ctx.tier === 'scale' ? Math.max(0, EM.SCALE_MODULE_CAP - activeKeys.length) : null });
+});
+
+// ── Members / RBAC (admin) ──────────────────────────────────────────────────
+app.get('/api/portal/members', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return;
+  const rows = db.prepare('SELECT id, member_email, name, role, status, invited_at FROM company_members WHERE owner_email = ? ORDER BY invited_at DESC').all(ctx.ownerEmail);
+  res.json({ members: rows.map(r => ({ id: r.id, email: r.member_email, name: r.name, role: r.role, status: r.status, invitedAt: r.invited_at })) });
+});
+app.post('/api/portal/members', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'admin' }); if (!ctx) return;
+  const b = req.body || {};
+  const memberEmail = String(b.email || '').trim().toLowerCase();
+  const role = EM.normRole(b.role);
+  const name = String(b.name || '').trim().slice(0, 120);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(memberEmail)) return res.status(400).json({ error: 'bad_email', message: 'A valid email is required.' });
+  if (memberEmail === ctx.ownerEmail) return res.status(400).json({ error: 'is_owner', message: 'You are already the admin of this company.' });
+  const cfg = EH.tierConfig(ctx.tier);
+  const count = db.prepare('SELECT COUNT(*) c FROM company_members WHERE owner_email = ?').get(ctx.ownerEmail).c;
+  if (cfg.seats !== Infinity && count >= cfg.seats) return res.status(403).json({ error: 'seat_limit', message: `Your plan includes ${cfg.seats} seats. Upgrade for more.` });
+  try {
+    db.prepare('INSERT INTO company_members (owner_email, member_email, name, role, status, invited_at) VALUES (?,?,?,?,?,?)').run(ctx.ownerEmail, memberEmail, name, role, 'active', Date.now());
+  } catch (e) { return res.status(409).json({ error: 'already_member', message: 'That person is already on your team.' }); }
+  writeAuditLog(req, ctx.email, 'portal.member_added', { targetType: 'member', targetId: memberEmail, meta: { role } });
+  res.json({ success: true });
+});
+app.patch('/api/portal/members/:id', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'admin' }); if (!ctx) return;
+  const row = db.prepare('SELECT * FROM company_members WHERE id = ? AND owner_email = ?').get(parseInt(req.params.id, 10), ctx.ownerEmail);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  const b = req.body || {};
+  const role = b.role != null ? EM.normRole(b.role) : row.role;
+  const status = b.status != null ? (['active', 'suspended'].includes(String(b.status)) ? String(b.status) : row.status) : row.status;
+  db.prepare('UPDATE company_members SET role = ?, status = ? WHERE id = ?').run(role, status, row.id);
+  res.json({ success: true, role, status });
+});
+app.delete('/api/portal/members/:id', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'admin' }); if (!ctx) return;
+  const r = db.prepare('DELETE FROM company_members WHERE id = ? AND owner_email = ?').run(parseInt(req.params.id, 10), ctx.ownerEmail);
+  if (!r.changes) return res.status(404).json({ error: 'not_found' });
+  res.json({ success: true });
+});
+
+// ── Module records (the generic engine) ─────────────────────────────────────
+app.get('/api/portal/modules/:key/records', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const m = _moduleActiveGate(res, ctx, req.params.key); if (!m) return;
+  const perms = EM.modulePermissions(ctx.role, m.key);
+  if (!perms.read) return res.status(403).json({ error: 'forbidden', message: 'You cannot view this module.' });
+  let rows;
+  if (perms.ownOnly) rows = db.prepare('SELECT * FROM module_records WHERE owner_email = ? AND module_key = ? AND created_by = ? ORDER BY updated_at DESC').all(ctx.ownerEmail, m.key, ctx.email);
+  else rows = db.prepare('SELECT * FROM module_records WHERE owner_email = ? AND module_key = ? ORDER BY updated_at DESC').all(ctx.ownerEmail, m.key);
+  const records = rows.map(_rowToRecord).map(rec => _redactRecord(rec, m.key, ctx.email));
+  res.json({ module: { key: m.key, name: m.name, statuses: m.statuses, fields: m.fields, recordLabel: m.recordLabel }, records, permissions: perms });
+});
+app.post('/api/portal/modules/:key/records', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const m = _moduleActiveGate(res, ctx, req.params.key); if (!m) return;
+  const perms = EM.modulePermissions(ctx.role, m.key);
+  if (!perms.write) return res.status(403).json({ error: 'forbidden', message: 'You cannot add to this module.' });
+  const v = EM.validateRecord(m.key, req.body || {});
+  if (!v.valid) return res.status(400).json({ error: 'invalid', messages: v.errors });
+  const now = Date.now();
+  const assignedTo = String((req.body && req.body.assignedTo) || '').trim().toLowerCase() || null;
+  const info = db.prepare('INSERT INTO module_records (owner_email, module_key, title, status, data_json, created_by, assigned_to, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)')
+    .run(ctx.ownerEmail, m.key, v.clean.title, v.clean.status, JSON.stringify(v.clean.data), ctx.email, assignedTo, now, now);
+  res.json({ success: true, id: info.lastInsertRowid });
+});
+app.patch('/api/portal/modules/:key/records/:id', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const m = _moduleActiveGate(res, ctx, req.params.key); if (!m) return;
+  const perms = EM.modulePermissions(ctx.role, m.key);
+  const row = db.prepare('SELECT * FROM module_records WHERE id = ? AND owner_email = ? AND module_key = ?').get(parseInt(req.params.id, 10), ctx.ownerEmail, m.key);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  const isOwnerOfRecord = row.created_by === ctx.email;
+  if (!perms.write) return res.status(403).json({ error: 'forbidden' });
+  if (!isOwnerOfRecord && !perms.manage) return res.status(403).json({ error: 'forbidden', message: 'You can only edit your own entries.' });
+  // Merge: start from stored data so a partial update keeps the rest.
+  let stored = {}; try { stored = JSON.parse(row.data_json); } catch (_) {}
+  const merged = Object.assign({ title: row.title }, stored, req.body || {});
+  const v = EM.validateRecord(m.key, merged, { status: (req.body && req.body.status) || row.status });
+  if (!v.valid) return res.status(400).json({ error: 'invalid', messages: v.errors });
+  db.prepare('UPDATE module_records SET title = ?, status = ?, data_json = ?, updated_at = ? WHERE id = ?')
+    .run(v.clean.title, v.clean.status, JSON.stringify(v.clean.data), Date.now(), row.id);
+  res.json({ success: true });
+});
+app.delete('/api/portal/modules/:key/records/:id', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const m = _moduleActiveGate(res, ctx, req.params.key); if (!m) return;
+  const perms = EM.modulePermissions(ctx.role, m.key);
+  const row = db.prepare('SELECT created_by FROM module_records WHERE id = ? AND owner_email = ? AND module_key = ?').get(parseInt(req.params.id, 10), ctx.ownerEmail, m.key);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  if (!perms.manage && row.created_by !== ctx.email) return res.status(403).json({ error: 'forbidden' });
+  db.prepare('DELETE FROM module_records WHERE id = ? AND owner_email = ?').run(parseInt(req.params.id, 10), ctx.ownerEmail);
+  res.json({ success: true });
+});
+// CSV export for a module (manager+). Data portability, per the plan.
+app.get('/api/portal/modules/:key/export.csv', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return;
+  const m = _moduleActiveGate(res, ctx, req.params.key); if (!m) return;
+  const rows = db.prepare('SELECT * FROM module_records WHERE owner_email = ? AND module_key = ? ORDER BY created_at').all(ctx.ownerEmail, m.key).map(_rowToRecord);
+  const csv = EM.recordsToCsv(m.key, rows.map(r => ({ title: r.title, status: r.status, data: r.data, created_at: new Date(r.createdAt).toISOString(), updated_at: new Date(r.updatedAt).toISOString() })));
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${m.key}-export.csv"`);
+  res.send(csv);
+});
+
+// ── Portal file uploads (receipts, compliance docs, signature files) ─────────
+// Hardened like the rest of the app: 10 MB cap, MIME + extension whitelist,
+// streamed to a company-scoped dir, metadata in portal_files. The returned url
+// is stored in a record field (e.g. an expense receiptUrl). Fetching is scoped
+// to the uploader's company, so one tenant can never read another's files.
+db.exec(`CREATE TABLE IF NOT EXISTS portal_files (
+  id TEXT PRIMARY KEY,
+  owner_email TEXT NOT NULL,
+  uploaded_by TEXT NOT NULL,
+  filename TEXT NOT NULL,
+  mimetype TEXT NOT NULL,
+  size INTEGER NOT NULL,
+  path TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+)`);
+const _portalUploadDir = path.join(dataDir, 'portal-uploads');
+try { if (!fs.existsSync(_portalUploadDir)) fs.mkdirSync(_portalUploadDir, { recursive: true }); } catch (_) {}
+const PORTAL_UPLOAD_MIME = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/csv'];
+const PORTAL_UPLOAD_EXT = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'doc', 'docx', 'csv'];
+const portalUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, _portalUploadDir),
+    filename: (req, file, cb) => cb(null, uuidv4() + '.' + ((file.originalname || '').toLowerCase().split('.').pop() || 'bin').replace(/[^a-z0-9]/g, ''))
+  }),
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 }, // 10 MB, per the plan
+  fileFilter: (req, file, cb) => {
+    const ext = (file.originalname || '').toLowerCase().split('.').pop();
+    if (PORTAL_UPLOAD_MIME.includes(file.mimetype) || PORTAL_UPLOAD_EXT.includes(ext)) cb(null, true);
+    else cb(new Error('Unsupported file type.'));
+  }
+});
+app.post('/api/portal/upload', (req, res) => {
+  // Resolve auth BEFORE consuming the body, then run multer. A rejected file is
+  // deleted so nothing orphaned is left on disk.
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  portalUpload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: 'upload_failed', message: err.message });
+    if (!req.file) return res.status(400).json({ error: 'no_file', message: 'No file was uploaded.' });
+    const id = uuidv4();
+    db.prepare('INSERT INTO portal_files (id, owner_email, uploaded_by, filename, mimetype, size, path, created_at) VALUES (?,?,?,?,?,?,?,?)')
+      .run(id, ctx.ownerEmail, ctx.email, String(req.file.originalname || 'file').slice(0, 200), req.file.mimetype || 'application/octet-stream', req.file.size, req.file.path, Date.now());
+    res.json({ success: true, id, url: '/api/portal/file/' + id, filename: req.file.originalname, size: req.file.size });
+  });
+});
+app.get('/api/portal/file/:id', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const row = db.prepare('SELECT * FROM portal_files WHERE id = ? AND owner_email = ?').get(String(req.params.id), ctx.ownerEmail);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  res.setHeader('Content-Type', row.mimetype);
+  res.setHeader('Content-Disposition', `inline; filename="${row.filename.replace(/[^\w.\- ]/g, '_')}"`);
+  return res.sendFile(row.path, (e) => { if (e && !res.headersSent) res.status(404).json({ error: 'gone' }); });
+});
+
+// ── Manager analytics (manager+) ────────────────────────────────────────────
+app.get('/api/portal/analytics', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return;
+  const rows = db.prepare('SELECT module_key, status, data_json, created_at, updated_at FROM module_records WHERE owner_email = ?').all(ctx.ownerEmail)
+    .map(r => { let data = {}; try { data = JSON.parse(r.data_json); } catch (_) {} return { module_key: r.module_key, status: r.status, data, created_at: r.created_at, updated_at: r.updated_at }; });
+  res.json(EM.buildManagerAnalytics(rows));
+});
+
+// ── Base Collaboration Layer ────────────────────────────────────────────────
+app.get('/api/portal/directory', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  if (!_collabGate(res, ctx)) return;
+  const members = db.prepare('SELECT member_email, name, role, status FROM company_members WHERE owner_email = ? ORDER BY role DESC, name').all(ctx.ownerEmail);
+  const admin = { email: ctx.ownerEmail, name: ctx.companyName ? `${ctx.companyName} (admin)` : 'Admin', role: 'admin', status: 'active' };
+  res.json({ directory: [admin].concat(members.map(m => ({ email: m.member_email, name: m.name, role: m.role, status: m.status }))) });
+});
+function _collabList(ctx, kind) {
+  return db.prepare('SELECT id, title, body, ref, at, created_by, created_at FROM collab_events WHERE owner_email = ? AND kind = ? ORDER BY COALESCE(at, created_at) DESC LIMIT 200').all(ctx.ownerEmail, kind);
+}
+function _collabPost(ctx, kind, b) {
+  const now = Date.now();
+  const at = b.at != null && b.at !== '' ? Number(b.at) : null;
+  const info = db.prepare('INSERT INTO collab_events (owner_email, kind, title, body, ref, at, created_by, created_at) VALUES (?,?,?,?,?,?,?,?)')
+    .run(ctx.ownerEmail, kind, String(b.title || '').slice(0, 300), String(b.body || '').slice(0, 8000), String(b.ref || '').slice(0, 500), (at != null && isFinite(at)) ? at : null, ctx.email, now);
+  return info.lastInsertRowid;
+}
+// Calendar + Drive: read all members, write manager+.
+for (const kind of ['calendar', 'drive']) {
+  app.get(`/api/portal/${kind}`, (req, res) => {
+    const ctx = portalAuth(req, res); if (!ctx) return; if (!_collabGate(res, ctx)) return;
+    res.json({ items: _collabList(ctx, kind) });
+  });
+  app.post(`/api/portal/${kind}`, (req, res) => {
+    const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return; if (!_collabGate(res, ctx)) return;
+    const id = _collabPost(ctx, kind, req.body || {});
+    res.json({ success: true, id });
+  });
+}
+// Chat: any active member reads + posts (real-time delivery is layered on via
+// Socket.io; this REST path is the durable store + fallback).
+app.get('/api/portal/chat', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return; if (!_collabGate(res, ctx)) return;
+  res.json({ messages: _collabList(ctx, 'chat').reverse() });
+});
+app.post('/api/portal/chat', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return; if (!_collabGate(res, ctx)) return;
+  const body = String((req.body && req.body.body) || '').trim();
+  if (!body) return res.status(400).json({ error: 'empty' });
+  const id = _collabPost(ctx, 'chat', { body });
+  const msg = { id, body, created_by: ctx.email, created_at: Date.now() };
+  try { if (global._portalIO) global._portalIO.to('company:' + ctx.ownerEmail).emit('chat', msg); } catch (_) {}
+  res.json({ success: true, message: msg });
+});
+
+// ── Cross-Module AI Copilot (manager+) ──────────────────────────────────────
+// Reads across the company's module records and answers a question / drafts
+// content. Provider-agnostic: OpenAI when OPENAI_API_KEY is set, else Claude,
+// else a deterministic analytics summary so the feature never hard-fails.
+app.post('/api/portal/copilot', async (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return;
+  if (!_collabGate(res, ctx)) return;
+  const question = String((req.body && req.body.question) || '').trim().slice(0, 1000);
+  if (!question) return res.status(400).json({ error: 'empty', message: 'Ask the copilot a question.' });
+  const rows = db.prepare('SELECT module_key, status, data_json, created_at, updated_at FROM module_records WHERE owner_email = ?').all(ctx.ownerEmail)
+    .map(r => { let data = {}; try { data = JSON.parse(r.data_json); } catch (_) {} return { module_key: r.module_key, status: r.status, data, created_at: r.created_at, updated_at: r.updated_at }; });
+  const analytics = EM.buildManagerAnalytics(rows);
+  const grounding = `Company context (aggregated, no PII):\n${JSON.stringify(analytics.kpis)}\nModule record counts: ${JSON.stringify(Object.fromEntries(Object.entries(analytics.modules).map(([k, v]) => [k, v.total])))}`;
+  try {
+    const answer = await _aiComplete({
+      system: 'You are the Cross-Module AI Copilot for a company operations portal. Answer concisely and professionally using ONLY the provided aggregated context. If the context lacks the data, say what the manager should look at. Never invent specific people or numbers.',
+      user: `${grounding}\n\nQuestion: ${question}`,
+      max_tokens: 400
+    });
+    res.json({ answer, grounded: true });
+  } catch (e) {
+    // Deterministic fallback — still useful, never an error page.
+    const k = analytics.kpis;
+    const answer = `Here's what the portal data shows right now: ${k.totalRecords} records across your active modules — ${k.hires} hire(s), ${k.openRequisitions} open requisition(s), ${k.openIncidents} open incident(s), $${k.pendingExpenseTotal} in pending expenses${k.avgPulse != null ? `, average pulse score ${k.avgPulse}/10` : ''}. Open the Manager Analytics module for the full breakdown.`;
+    res.json({ answer, grounded: false });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI Interview Coach (job-seeker) — text + voice practice with a free teaser.
+// Pure logic (question bank, delivery analysis, heuristic feedback) is in IC;
+// _aiComplete provides richer feedback when a provider is configured. Free tier
+// gets one full text question + basic feedback per day; Pro unlocks unlimited
+// questions, voice mode, the delivery report and saved progress. Sign-in
+// required (consistent with the rest of the tools).
+// ═══════════════════════════════════════════════════════════════════════════
+const interviewCoachLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, skip: () => RATE_LIMIT_OFF, message: { error: 'rate_limited', message: 'Slow down a moment and try again.' } });
+
+// Next question. Free users always get the behavioral teaser; the response
+// tells the client what's locked so it can render the tasteful preview scrim.
+app.post('/api/interview-coach/question', interviewCoachLimiter, (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required', message: 'Sign in to practice with the coach.' });
+  const pro = isSubscriber(email);
+  const b = req.body || {};
+  const role = String(b.role || '').slice(0, 120);
+  const askedIds = Array.isArray(b.askedIds) ? b.askedIds.map(String).slice(0, 50) : [];
+  // Free: one question/day. Count today's questions served.
+  const usedToday = _quotaUsed(email.toLowerCase(), 'interview_coach_q', 'day');
+  if (!pro && usedToday >= IC.LIMITS.freePerDay) {
+    return res.status(402).json({ error: 'teaser_used', pro: false,
+      message: 'You\'ve used today\'s free coaching question. Continue in Pro for unlimited practice, voice mode and your full report.',
+      locked: { voice: true, report: true, progress: true, unlimited: true } });
+  }
+  const q = IC.nextQuestion({ role, askedIds });
+  if (!pro) _quotaConsume(email.toLowerCase(), 'interview_coach_q', 'day');
+  res.json({
+    question: q, pro,
+    modes: pro ? IC.MODES : ['text'],
+    teaser: !pro,
+    locked: pro ? {} : { voice: true, report: true, progress: true, unlimited: true },
+    remainingFree: pro ? null : Math.max(0, IC.LIMITS.freePerDay - (usedToday + 1))
+  });
+});
+
+// Feedback on one answer. Text mode → content feedback. Voice mode (Pro) also
+// returns the delivery analysis (pace, filler words). Uses AI when configured,
+// else the deterministic heuristic — either way the card renders identically.
+app.post('/api/interview-coach/feedback', interviewCoachLimiter, async (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required', message: 'Sign in to practice with the coach.' });
+  const pro = isSubscriber(email);
+  const b = req.body || {};
+  const mode = IC.MODES.includes(String(b.mode)) ? String(b.mode) : 'text';
+  if (mode === 'voice' && !pro) return res.status(402).json({ error: 'pro_required', message: 'Voice mode is a Pro feature. Practice with a calm, professional AI interviewer.' });
+  const role = String(b.role || '').slice(0, 120);
+  const question = String(b.question || '').slice(0, 600);
+  const answer = String(b.answer || '').slice(0, 8000);
+  if (answer.trim().length < 5) return res.status(400).json({ error: 'too_short', message: 'Give the coach a real answer to review.' });
+
+  let feedback;
+  try {
+    const p = IC.buildFeedbackPrompt({ role, question, answer, mode });
+    const raw = await _aiComplete({ system: p.system, user: p.user, max_tokens: 600 });
+    const parsed = validateInterviewJson(raw);
+    feedback = parsed || IC.heuristicFeedback({ answer, role, question });
+  } catch (_) {
+    feedback = IC.heuristicFeedback({ answer, role, question }); // graceful — never a dead end
+  }
+  // Voice delivery analysis is Pro-only (the whole voice mode is).
+  const delivery = mode === 'voice' ? IC.analyzeDelivery(answer, Number(b.durationSec)) : null;
+
+  // Progress is saved for Pro (the free teaser is stateless).
+  if (pro) {
+    db.prepare('INSERT INTO interview_sessions (email, mode, role, question_id, question, answer, feedback_json, delivery_json, created_at) VALUES (?,?,?,?,?,?,?,?,?)')
+      .run(email.toLowerCase(), mode, role, String(b.questionId || ''), question, answer, JSON.stringify(feedback), delivery ? JSON.stringify(delivery) : null, Date.now());
+  }
+  res.json({ feedback, delivery, pro, savedToProgress: pro, fullReport: pro });
+});
+
+// Progress history (Pro) — the "progress tracking" the teaser previews.
+app.get('/api/interview-coach/progress', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Progress tracking is a Pro feature.', locked: true });
+  const rows = db.prepare('SELECT id, mode, role, question, feedback_json, delivery_json, created_at FROM interview_sessions WHERE email = ? ORDER BY created_at DESC LIMIT 100').all(email.toLowerCase());
+  const sessions = rows.map(r => { let f = {}, d = null; try { f = JSON.parse(r.feedback_json); } catch (_) {} try { d = r.delivery_json ? JSON.parse(r.delivery_json) : null; } catch (_) {} return { id: r.id, mode: r.mode, role: r.role, question: r.question, feedback: f, delivery: d, at: r.created_at }; });
+  const overalls = sessions.map(s => s.feedback && s.feedback.overall).filter(n => typeof n === 'number');
+  const avg = overalls.length ? Math.round((overalls.reduce((a, n) => a + n, 0) / overalls.length) * 10) / 10 : null;
+  res.json({ sessions, count: sessions.length, avgOverall: avg });
+});
+
+// Parse + validate AI feedback JSON (tolerates ```json fences via CH.extractJson).
+function validateInterviewJson(raw) {
+  const obj = CH.extractJson(raw);
+  const v = IC.validateFeedback(obj);
+  return v.ok ? v.value : null;
+}
+
 // Decoder Key — public lead-magnet entrance. Unlike the signed-in tools-hub
 // route above, this is intentionally usable before account creation. The same
 // validated analysis core is reused so the public and member experiences never
@@ -9460,7 +10041,9 @@ app.post('/api/decoder-key', toolsLimiter, async (req, res) => {
   }
   try {
     const p = TOOLS.buildJobDecodePrompt(text, _reqLang(req));
-    const value = await callClaudeJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1800, validate: TOOLS.validateJobDecode });
+    // Decoder uses OpenAI (gpt-4o-mini) when configured — the plan's choice —
+    // and falls back to Claude Haiku otherwise. Same validated JSON contract.
+    const value = await callAIJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1800, validate: TOOLS.validateJobDecode });
     res.json({ result: value, complimentary: true });
   } catch (err) { toolLLMError(res, err); }
 });
@@ -9682,7 +10265,31 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
-  app.listen(PORT, () => console.log(`ResumeTailored running on http://localhost:${PORT}`));
+  // Real HTTP server so Socket.io can share the port (the plan's real-time
+  // layer). Attached ONLY on real startup — the test harness calls app.listen()
+  // directly and never needs a socket server; the portal chat route degrades to
+  // its REST store when global._portalIO is absent, so tests are unaffected.
+  const httpServer = http.createServer(app);
+  try {
+    const { Server } = require('socket.io');
+    const io = new Server(httpServer, { cors: { origin: false } });
+    global._portalIO = io;
+    io.on('connection', (socket) => {
+      // A client authenticates by sending its rt_token; we resolve it to an
+      // email → company and join that company's room so chat/notifications only
+      // reach the right tenant. No token ⇒ the socket joins nothing.
+      socket.on('portal:join', (token) => {
+        try {
+          const row = token && db.prepare('SELECT email FROM sessions WHERE token = ?').get(String(token));
+          if (!row) return;
+          const ctx = _portalContext(String(row.email).toLowerCase());
+          if (ctx) { socket.join('company:' + ctx.ownerEmail); socket.emit('portal:joined', { company: ctx.companyName || null, role: ctx.role }); }
+        } catch (_) { /* never let a bad token crash the socket */ }
+      });
+    });
+    console.log('[socket.io] real-time portal layer attached');
+  } catch (e) { console.error('[socket.io] init skipped:', e.message); }
+  httpServer.listen(PORT, () => console.log(`ResumeTailored running on http://localhost:${PORT}`));
   // Career Hub daily jobs (warm cache + job-alert digest). In-process because
   // both need this service's SQLite volume, which a separate cron service
   // cannot reach — see career-cron.js. Off unless CAREER_CRON=on.
