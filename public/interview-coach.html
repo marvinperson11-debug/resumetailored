@@ -1,0 +1,276 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Interview Coach — Calm, Private Practice | ResumeTailored</title>
+<meta name="description" content="Practice interviews with a calm, professional AI coach. Type or speak your answers and get instant feedback on structure, relevance, keywords, pace and filler words.">
+<link rel="canonical" href="https://resumetailored.com/interview-coach">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/luxury-ecosystem.css">
+<link rel="stylesheet" href="/fonts.css">
+<style>
+*{box-sizing:border-box}html{background:#071724}body{margin:0;background:#f3ede1;color:#132028;font-family:Inter,Arial,sans-serif}
+.ic-hero{background:radial-gradient(circle at 78% 18%,rgba(29,91,73,.42),transparent 34%),#071724;color:#fff;padding:74px 26px 60px;border-bottom:1px solid #c9a85d}
+.ic-hero__in{max-width:1080px;margin:auto}
+.ic-hero h1{margin:20px 0 16px;font:500 clamp(46px,7vw,88px)/.94 Fraunces,Georgia,serif;letter-spacing:-.04em}
+.ic-hero h1 em{color:#e3cc91;font-weight:400}
+.ic-hero p{max-width:640px;color:#b9c7c8;font-size:17px;line-height:1.7}
+.ic-shell{max-width:1080px;margin:-34px auto 90px;padding:0 26px;position:relative;z-index:2}
+.ic-card{background:#fffdf8;border:1px solid #d7c69f;padding:30px;margin-bottom:22px;box-shadow:0 18px 45px rgba(7,23,36,.08)}
+.ic-card h2{margin:0 0 6px;font:500 30px Fraunces,Georgia,serif;color:#071724}
+.ic-kicker{color:#8a6a24;font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+.ic-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.ic-input{flex:1;min-width:200px;padding:13px 15px;border:1px solid #d4c7aa;background:#fff;color:#132028;font-size:15px;outline:none}
+.ic-input:focus{border-color:#98752f}
+.ic-seg{display:inline-flex;border:1px solid #123f35}
+.ic-seg button{border:0;background:#fff;color:#123f35;padding:12px 20px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.ic-seg button.active{background:#123f35;color:#fff}
+.ic-btn{border:1px solid #123f35;background:#123f35;color:#fff;padding:13px 24px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background .2s}
+.ic-btn:hover{background:#0e3227}
+.ic-btn--gold{background:transparent;color:#8a6a24;border:1px solid #c9a85d}
+.ic-btn--gold:hover{background:#faf4e6}
+.ic-btn[disabled]{opacity:.5;cursor:not-allowed}
+.ic-q{font:500 24px/1.35 Fraunces,Georgia,serif;color:#071724;margin:6px 0 18px}
+.ic-textarea{width:100%;min-height:150px;padding:15px;border:1px solid #d4c7aa;background:#fff;color:#132028;font-size:15px;line-height:1.6;font-family:inherit;resize:vertical;outline:none}
+.ic-textarea:focus{border-color:#98752f}
+.ic-scores{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+.ic-score{background:#f3ede1;border:1px solid #e2d8c3;padding:16px;text-align:center}
+.ic-score b{display:block;font:500 34px Fraunces,Georgia,serif;color:#123f35}
+.ic-score span{display:block;margin-top:4px;color:#667078;font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.ic-list{margin:10px 0 0;padding-left:18px;color:#3c4750;line-height:1.7}
+.ic-list li{margin-bottom:6px}
+.ic-mic{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.ic-mic__dot{width:14px;height:14px;border-radius:50%;background:#c9a85d;transition:transform .3s}
+.ic-mic.live .ic-mic__dot{background:#b5432f;animation:icpulse 1s infinite}
+@keyframes icpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.7)}}
+.ic-transcript{margin-top:14px;padding:14px;background:#f7f2e6;border:1px dashed #d4c7aa;color:#3c4750;min-height:52px;font-size:15px;line-height:1.6}
+.ic-hidden{display:none}
+.ic-preview{position:relative;margin-top:22px;border:1px solid #c9a85d;overflow:hidden}
+.ic-preview__body{padding:26px;filter:blur(3px);opacity:.7;pointer-events:none;user-select:none}
+.ic-preview__scrim{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:26px;background:rgba(7,23,36,.12)}
+.ic-preview__scrim div{max-width:420px}
+.ic-preview__label{color:#8a6a24;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.ic-preview__scrim p{color:#334049;margin:10px 0 16px;font-size:15px;line-height:1.6}
+.ic-note{margin-top:14px;color:#667078;font-size:13px}
+.ic-note a{color:#8a6a24;font-weight:700}
+.ic-delivery{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px}
+.ic-delivery div{background:#0d2a20;color:#e7f0ea;padding:14px;text-align:center}
+.ic-delivery b{display:block;font:500 26px Fraunces,Georgia,serif;color:#e3cc91}
+.ic-delivery span{font-size:11px;color:#a9c2b6;letter-spacing:.06em;text-transform:uppercase}
+@media(max-width:680px){.ic-scores{grid-template-columns:1fr 1fr}.ic-delivery{grid-template-columns:1fr}.club-nav__links{display:none}}
+</style></head><body>
+<header class="club-nav"><div class="club-nav__inner"><a class="club-brand" href="/">ResumeTailored <small>Private career &amp; people office</small></a><nav class="club-nav__links"><a href="/decoder-key">Decoder Key</a><a href="/interview-coach" aria-current="page">Interview Coach</a><a href="/corporate">Corporate</a><a href="/resume-video">Resume Video</a></nav><div class="club-nav__actions"><a class="club-button club-button--gold" href="/dashboard">Open the app</a></div></div></header>
+<main>
+<section class="ic-hero"><div class="ic-hero__in"><div class="club-kicker">Job Seeker · Interview Coach</div><h1>Rehearse in private.<br><em>Walk in composed.</em></h1><p>A calm, professional interviewer asks; you answer by typing or by voice. You get instant, specific feedback on structure, relevance and the keywords that matter — and, in voice mode, on your pace and filler words. Audio only. No cameras, no avatars.</p></div></section>
+<div class="ic-shell">
+
+  <section class="ic-card" id="icSetup">
+    <div class="ic-kicker">Set the scene</div>
+    <h2>What role are you preparing for?</h2>
+    <div class="ic-row">
+      <input class="ic-input" id="icRole" type="text" placeholder="e.g. Senior Product Manager" autocomplete="off">
+      <div class="ic-seg" role="group" aria-label="Practice mode">
+        <button id="icModeText" class="active" type="button">Text</button>
+        <button id="icModeVoice" type="button">Voice</button>
+      </div>
+      <button class="ic-btn" id="icStart" type="button">Begin practice</button>
+    </div>
+    <p class="ic-note" id="icAuthNote"></p>
+  </section>
+
+  <section class="ic-card ic-hidden" id="icPractice">
+    <div class="ic-kicker" id="icQKicker">Question</div>
+    <div class="ic-q" id="icQuestion">…</div>
+
+    <div id="icTextMode">
+      <textarea class="ic-textarea" id="icAnswer" placeholder="Take a breath. Answer in two to four specific sentences — situation, what you did, and the result."></textarea>
+    </div>
+
+    <div id="icVoiceMode" class="ic-hidden">
+      <div class="ic-mic" id="icMicWrap"><span class="ic-mic__dot"></span>
+        <button class="ic-btn ic-btn--gold" id="icMicBtn" type="button">🎙 Start speaking</button>
+        <span class="ic-note" id="icMicHint">The coach will read the question aloud, then listen.</span>
+      </div>
+      <div class="ic-transcript" id="icTranscript" aria-live="polite"></div>
+    </div>
+
+    <div class="ic-row">
+      <button class="ic-btn" id="icSubmit" type="button">Get feedback</button>
+      <button class="ic-btn ic-btn--gold" id="icNext" type="button">Next question →</button>
+    </div>
+  </section>
+
+  <section class="ic-card ic-hidden" id="icFeedback">
+    <div class="ic-kicker">Coach feedback</div>
+    <h2 id="icOverall">—</h2>
+    <div class="ic-scores">
+      <div class="ic-score"><b id="icScoreStructure">–</b><span>Structure</span></div>
+      <div class="ic-score"><b id="icScoreRelevance">–</b><span>Relevance</span></div>
+      <div class="ic-score"><b id="icScoreKeywords">–</b><span>Keywords</span></div>
+      <div class="ic-score"><b id="icScoreOverall">–</b><span>Overall</span></div>
+    </div>
+    <div id="icDeliveryWrap" class="ic-hidden">
+      <div class="ic-kicker">Delivery (voice)</div>
+      <div class="ic-delivery">
+        <div><b id="icWpm">–</b><span>Words / min</span></div>
+        <div><b id="icPace">–</b><span>Pace</span></div>
+        <div><b id="icFillers">–</b><span>Filler words</span></div>
+      </div>
+    </div>
+    <p class="ic-kicker" style="margin-top:20px">What worked</p>
+    <ul class="ic-list" id="icStrengths"></ul>
+    <p class="ic-kicker" style="margin-top:14px">Sharpen this</p>
+    <ul class="ic-list" id="icImprovements"></ul>
+  </section>
+
+  <section class="ic-card ic-hidden" id="icTeaser">
+    <div class="ic-kicker">Preview</div>
+    <h2>More, when you're ready</h2>
+    <div class="ic-preview">
+      <div class="ic-preview__body">
+        <p><strong>Voice mode</strong> — the coach speaks each question and listens to your spoken answer, then reports your pace and filler words alongside the content feedback.</p>
+        <p><strong>Full report &amp; progress</strong> — every session saved, your average score tracked over time, and a trend across competencies.</p>
+      </div>
+      <div class="ic-preview__scrim"><div>
+        <div class="ic-preview__label" id="icTeaserLabel">Available in Pro</div>
+        <p>Practice with a calm, professional AI interviewer — unlimited questions, voice mode, and your full progress report.</p>
+        <button class="ic-btn" id="icUpgrade" type="button">Continue in Pro — $19/mo</button>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="ic-card ic-hidden" id="icProgress">
+    <div class="ic-kicker">Your progress</div>
+    <h2 id="icProgHead">Sessions</h2>
+    <ul class="ic-list" id="icProgList"></ul>
+  </section>
+
+</div>
+</main>
+<script>
+(function(){'use strict';
+  var token=null; try{token=localStorage.getItem('rt_token');}catch(e){}
+  var state={mode:'text',pro:false,askedIds:[],question:'',questionId:'',voiceStart:0,voiceDur:0,recognizing:false};
+  var rec=null;
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function headers(json){var h={};if(token)h.Authorization='Bearer '+token;if(json)h['Content-Type']='application/json';return h;}
+
+  function setAuthNote(){
+    if(!token){$('icAuthNote').innerHTML='You’ll need a free account to practice. <a href="/login">Sign in or create one</a> — it takes a moment.';}
+    else{$('icAuthNote').textContent='';}
+  }
+  setAuthNote();
+
+  $('icModeText').addEventListener('click',function(){selectMode('text');});
+  $('icModeVoice').addEventListener('click',function(){selectMode('voice');});
+  function selectMode(m){
+    if(m==='voice'&&!speechOk()){alert('Your browser does not support in-browser voice. Text mode works everywhere.');return;}
+    state.mode=m;
+    $('icModeText').classList.toggle('active',m==='text');
+    $('icModeVoice').classList.toggle('active',m==='voice');
+  }
+  function speechOk(){return !!(window.SpeechRecognition||window.webkitSpeechRecognition);}
+
+  $('icStart').addEventListener('click',function(){ if(!token){location.href='/login';return;} nextQuestion(); });
+  $('icNext').addEventListener('click',nextQuestion);
+  $('icUpgrade').addEventListener('click',function(){ location.href='/dashboard?upgrade=1'; });
+
+  function nextQuestion(){
+    $('icStart').disabled=true;
+    fetch('/api/interview-coach/question',{method:'POST',headers:headers(true),body:JSON.stringify({role:$('icRole').value.slice(0,120),askedIds:state.askedIds})})
+      .then(function(r){return r.json().then(function(j){return{status:r.status,j:j};});})
+      .then(function(res){
+        $('icStart').disabled=false;
+        if(res.status===401){location.href='/login';return;}
+        if(res.status===402){ // teaser used
+          showTeaser(res.j.locked,'Pro'); return;
+        }
+        var d=res.j; state.pro=!!d.pro; state.question=d.question.text; state.questionId=d.question.id;
+        state.askedIds.push(d.question.id);
+        $('icQuestion').textContent=d.question.text;
+        $('icQKicker').textContent=(d.question.competency||'question').replace(/-/g,' ');
+        $('icPractice').classList.remove('ic-hidden');
+        $('icFeedback').classList.add('ic-hidden');
+        $('icAnswer').value=''; $('icTranscript').textContent='';
+        // mode surfaces
+        var voice=state.mode==='voice';
+        $('icTextMode').classList.toggle('ic-hidden',voice);
+        $('icVoiceMode').classList.toggle('ic-hidden',!voice);
+        if(voice&&state.pro) speak(d.question.text);
+        if(!d.pro){ showTeaser({voice:true,report:true,progress:true},'Pro'); }
+        else { $('icTeaser').classList.add('ic-hidden'); loadProgress(); }
+        $('icPractice').scrollIntoView({behavior:'smooth',block:'start'});
+      })
+      .catch(function(){$('icStart').disabled=false;});
+  }
+
+  function showTeaser(locked,tier){
+    $('icTeaserLabel').textContent='Available in '+(tier||'Pro');
+    $('icTeaser').classList.remove('ic-hidden');
+  }
+
+  // ── Voice (Web Speech API) ──
+  function speak(text){ try{ if(!window.speechSynthesis)return; var u=new SpeechSynthesisUtterance(text); u.rate=.98; u.pitch=1; window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);}catch(e){} }
+  $('icMicBtn').addEventListener('click',function(){ state.recognizing?stopRec():startRec(); });
+  function startRec(){
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition; if(!SR)return;
+    rec=new SR(); rec.lang='en-US'; rec.interimResults=true; rec.continuous=true;
+    var finalText='';
+    rec.onresult=function(e){var interim='';for(var i=e.resultIndex;i<e.results.length;i++){var t=e.results[i][0].transcript;if(e.results[i].isFinal)finalText+=t+' ';else interim+=t;}$('icTranscript').textContent=(finalText+interim).trim();};
+    rec.onend=function(){state.recognizing=false;$('icMicWrap').classList.remove('live');$('icMicBtn').textContent='🎙 Start speaking';state.voiceDur=(Date.now()-state.voiceStart)/1000;};
+    rec.onerror=function(){state.recognizing=false;$('icMicWrap').classList.remove('live');};
+    try{rec.start();state.recognizing=true;state.voiceStart=Date.now();$('icMicWrap').classList.add('live');$('icMicBtn').textContent='■ Stop';}catch(e){}
+  }
+  function stopRec(){ try{rec&&rec.stop();}catch(e){} }
+
+  // ── Feedback ──
+  $('icSubmit').addEventListener('click',function(){
+    var answer=state.mode==='voice'?$('icTranscript').textContent.trim():$('icAnswer').value.trim();
+    if(answer.length<5){alert('Give the coach a real answer to review.');return;}
+    var payload={role:$('icRole').value.slice(0,120),question:state.question,questionId:state.questionId,answer:answer,mode:state.mode};
+    if(state.mode==='voice')payload.durationSec=state.voiceDur||0;
+    $('icSubmit').disabled=true;
+    fetch('/api/interview-coach/feedback',{method:'POST',headers:headers(true),body:JSON.stringify(payload)})
+      .then(function(r){return r.json().then(function(j){return{status:r.status,j:j};});})
+      .then(function(res){
+        $('icSubmit').disabled=false;
+        if(res.status===401){location.href='/login';return;}
+        if(res.status===402){showTeaser({voice:true},'Pro');return;}
+        if(res.status>=400){alert(res.j.message||'Could not get feedback.');return;}
+        renderFeedback(res.j);
+      })
+      .catch(function(){$('icSubmit').disabled=false;});
+  });
+
+  function renderFeedback(d){
+    var f=d.feedback||{};var s=f.scores||{};
+    $('icOverall').textContent=(f.summary||'Feedback');
+    $('icScoreStructure').textContent=fmt(s.structure);
+    $('icScoreRelevance').textContent=fmt(s.relevance);
+    $('icScoreKeywords').textContent=fmt(s.keywords);
+    $('icScoreOverall').textContent=fmt(f.overall);
+    $('icStrengths').innerHTML=(f.strengths||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')||'<li>A solid start.</li>';
+    $('icImprovements').innerHTML=(f.improvements||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')||'<li>Keep going.</li>';
+    if(d.delivery){
+      $('icDeliveryWrap').classList.remove('ic-hidden');
+      $('icWpm').textContent=d.delivery.wpm!=null?d.delivery.wpm:'—';
+      $('icPace').textContent=d.delivery.pace||'—';
+      $('icFillers').textContent=d.delivery.fillerCount;
+    } else { $('icDeliveryWrap').classList.add('ic-hidden'); }
+    $('icFeedback').classList.remove('ic-hidden');
+    $('icFeedback').scrollIntoView({behavior:'smooth',block:'start'});
+    if(d.pro)loadProgress();
+  }
+  function fmt(n){return (n==null||isNaN(n))?'–':(Math.round(n*10)/10);}
+
+  function loadProgress(){
+    fetch('/api/interview-coach/progress',{headers:headers(false)})
+      .then(function(r){if(r.status!==200)return null;return r.json();})
+      .then(function(d){
+        if(!d||!d.count){$('icProgress').classList.add('ic-hidden');return;}
+        $('icProgHead').textContent=d.count+' session'+(d.count===1?'':'s')+(d.avgOverall!=null?' · avg '+d.avgOverall+'/5':'');
+        $('icProgList').innerHTML=d.sessions.slice(0,8).map(function(s){var ov=s.feedback&&s.feedback.overall;return '<li>'+esc((s.role||'General')+' — '+(s.question||'').slice(0,60))+' · <strong>'+(ov!=null?ov+'/5':'—')+'</strong></li>';}).join('');
+        $('icProgress').classList.remove('ic-hidden');
+      }).catch(function(){});
+  }
+})();
+</script>
+</body></html>
