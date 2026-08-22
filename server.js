@@ -19,6 +19,7 @@ const nodemailer = require('nodemailer');
 const CH = require('./career-hub.js');           // Career Hub pure core (taxonomy, prompts, validators, scoring)
 const EH = require('./employer-hub.js');         // Employer Portal pure core (validation, limits, ranking)
 const EM = require('./employer-modules.js');     // Employer module engine pure core (registry, RBAC, tier gating)
+const IC = require('./interview-coach.js');      // AI Interview Coach pure core (questions, delivery analysis, feedback)
 const JP = require('./job-providers.js');        // Multi-source live job search (Adzuna, JSearch, free fallbacks)
 const TOOLS = require('./tools-core.js');         // 7 job-search tools pure core (offer scoring, prompts, validators, limits)
 const SC = require('./security.js');             // Security pure core (password policy, HIBP, lockout, CSP, log scrubbing)
@@ -9541,6 +9542,19 @@ db.exec(`
     created_at INTEGER NOT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_collab_owner_kind ON collab_events(owner_email, kind);
+  CREATE TABLE IF NOT EXISTS interview_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    mode TEXT NOT NULL,
+    role TEXT,
+    question_id TEXT,
+    question TEXT,
+    answer TEXT,
+    feedback_json TEXT,
+    delivery_json TEXT,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_interview_email ON interview_sessions(email, created_at);
 `);
 
 // Resolve the company + role for a signed-in user. An account that owns an
@@ -9836,6 +9850,97 @@ app.post('/api/portal/copilot', async (req, res) => {
     res.json({ answer, grounded: false });
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AI Interview Coach (job-seeker) — text + voice practice with a free teaser.
+// Pure logic (question bank, delivery analysis, heuristic feedback) is in IC;
+// _aiComplete provides richer feedback when a provider is configured. Free tier
+// gets one full text question + basic feedback per day; Pro unlocks unlimited
+// questions, voice mode, the delivery report and saved progress. Sign-in
+// required (consistent with the rest of the tools).
+// ═══════════════════════════════════════════════════════════════════════════
+const interviewCoachLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, skip: () => RATE_LIMIT_OFF, message: { error: 'rate_limited', message: 'Slow down a moment and try again.' } });
+
+// Next question. Free users always get the behavioral teaser; the response
+// tells the client what's locked so it can render the tasteful preview scrim.
+app.post('/api/interview-coach/question', interviewCoachLimiter, (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required', message: 'Sign in to practice with the coach.' });
+  const pro = isSubscriber(email);
+  const b = req.body || {};
+  const role = String(b.role || '').slice(0, 120);
+  const askedIds = Array.isArray(b.askedIds) ? b.askedIds.map(String).slice(0, 50) : [];
+  // Free: one question/day. Count today's questions served.
+  const usedToday = _quotaUsed(email.toLowerCase(), 'interview_coach_q', 'day');
+  if (!pro && usedToday >= IC.LIMITS.freePerDay) {
+    return res.status(402).json({ error: 'teaser_used', pro: false,
+      message: 'You\'ve used today\'s free coaching question. Continue in Pro for unlimited practice, voice mode and your full report.',
+      locked: { voice: true, report: true, progress: true, unlimited: true } });
+  }
+  const q = IC.nextQuestion({ role, askedIds });
+  if (!pro) _quotaConsume(email.toLowerCase(), 'interview_coach_q', 'day');
+  res.json({
+    question: q, pro,
+    modes: pro ? IC.MODES : ['text'],
+    teaser: !pro,
+    locked: pro ? {} : { voice: true, report: true, progress: true, unlimited: true },
+    remainingFree: pro ? null : Math.max(0, IC.LIMITS.freePerDay - (usedToday + 1))
+  });
+});
+
+// Feedback on one answer. Text mode → content feedback. Voice mode (Pro) also
+// returns the delivery analysis (pace, filler words). Uses AI when configured,
+// else the deterministic heuristic — either way the card renders identically.
+app.post('/api/interview-coach/feedback', interviewCoachLimiter, async (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required', message: 'Sign in to practice with the coach.' });
+  const pro = isSubscriber(email);
+  const b = req.body || {};
+  const mode = IC.MODES.includes(String(b.mode)) ? String(b.mode) : 'text';
+  if (mode === 'voice' && !pro) return res.status(402).json({ error: 'pro_required', message: 'Voice mode is a Pro feature. Practice with a calm, professional AI interviewer.' });
+  const role = String(b.role || '').slice(0, 120);
+  const question = String(b.question || '').slice(0, 600);
+  const answer = String(b.answer || '').slice(0, 8000);
+  if (answer.trim().length < 5) return res.status(400).json({ error: 'too_short', message: 'Give the coach a real answer to review.' });
+
+  let feedback;
+  try {
+    const p = IC.buildFeedbackPrompt({ role, question, answer, mode });
+    const raw = await _aiComplete({ system: p.system, user: p.user, max_tokens: 600 });
+    const parsed = validateInterviewJson(raw);
+    feedback = parsed || IC.heuristicFeedback({ answer, role, question });
+  } catch (_) {
+    feedback = IC.heuristicFeedback({ answer, role, question }); // graceful — never a dead end
+  }
+  // Voice delivery analysis is Pro-only (the whole voice mode is).
+  const delivery = mode === 'voice' ? IC.analyzeDelivery(answer, Number(b.durationSec)) : null;
+
+  // Progress is saved for Pro (the free teaser is stateless).
+  if (pro) {
+    db.prepare('INSERT INTO interview_sessions (email, mode, role, question_id, question, answer, feedback_json, delivery_json, created_at) VALUES (?,?,?,?,?,?,?,?,?)')
+      .run(email.toLowerCase(), mode, role, String(b.questionId || ''), question, answer, JSON.stringify(feedback), delivery ? JSON.stringify(delivery) : null, Date.now());
+  }
+  res.json({ feedback, delivery, pro, savedToProgress: pro, fullReport: pro });
+});
+
+// Progress history (Pro) — the "progress tracking" the teaser previews.
+app.get('/api/interview-coach/progress', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email) return res.status(401).json({ error: 'login_required' });
+  if (!isSubscriber(email)) return res.status(402).json({ error: 'pro_required', message: 'Progress tracking is a Pro feature.', locked: true });
+  const rows = db.prepare('SELECT id, mode, role, question, feedback_json, delivery_json, created_at FROM interview_sessions WHERE email = ? ORDER BY created_at DESC LIMIT 100').all(email.toLowerCase());
+  const sessions = rows.map(r => { let f = {}, d = null; try { f = JSON.parse(r.feedback_json); } catch (_) {} try { d = r.delivery_json ? JSON.parse(r.delivery_json) : null; } catch (_) {} return { id: r.id, mode: r.mode, role: r.role, question: r.question, feedback: f, delivery: d, at: r.created_at }; });
+  const overalls = sessions.map(s => s.feedback && s.feedback.overall).filter(n => typeof n === 'number');
+  const avg = overalls.length ? Math.round((overalls.reduce((a, n) => a + n, 0) / overalls.length) * 10) / 10 : null;
+  res.json({ sessions, count: sessions.length, avgOverall: avg });
+});
+
+// Parse + validate AI feedback JSON (tolerates ```json fences via CH.extractJson).
+function validateInterviewJson(raw) {
+  const obj = CH.extractJson(raw);
+  const v = IC.validateFeedback(obj);
+  return v.ok ? v.value : null;
+}
 
 // Decoder Key — public lead-magnet entrance. Unlike the signed-in tools-hub
 // route above, this is intentionally usable before account creation. The same
