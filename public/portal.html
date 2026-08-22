@@ -1,0 +1,202 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Portal — Manager's Admin Panel | ResumeTailored</title>
+<meta name="description" content="Run hiring, people operations, compliance and collaboration from one calm command center.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/luxury-ecosystem.css">
+<link rel="stylesheet" href="/fonts.css">
+<style>
+*{box-sizing:border-box}html,body{margin:0}body{background:#071724;color:#e9eef0;font-family:Inter,Arial,sans-serif;min-height:100vh}
+.pt-top{display:flex;align-items:center;gap:16px;padding:16px 24px;border-bottom:1px solid rgba(201,168,93,.35);background:#071724;position:sticky;top:0;z-index:20}
+.pt-top a.pt-brand{color:#e3cc91;text-decoration:none;font:500 20px Fraunces,Georgia,serif}
+.pt-top .pt-co{color:#9fb1b2;font-size:13px}
+.pt-top .pt-role{margin-left:auto;padding:6px 12px;border:1px solid #c9a85d;color:#e3cc91;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.pt-wrap{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 60px)}
+.pt-rail{border-right:1px solid rgba(201,168,93,.22);padding:20px 14px;background:#0a1c2b;overflow:auto}
+.pt-rail h3{color:#8ea0a1;font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin:18px 8px 8px}
+.pt-navbtn{display:block;width:100%;text-align:left;border:0;background:none;color:#cdd9da;padding:10px 12px;font-size:14px;cursor:pointer;border-radius:6px}
+.pt-navbtn:hover{background:rgba(255,255,255,.05)}
+.pt-navbtn.active{background:#123f35;color:#fff}
+.pt-navbtn small{display:block;color:#7f9391;font-size:11px}
+.pt-main{padding:30px 34px;overflow:auto}
+.pt-h{display:flex;align-items:end;gap:18px;margin-bottom:20px}
+.pt-h h1{margin:0;font:500 clamp(28px,4vw,44px) Fraunces,Georgia,serif;color:#fff}
+.pt-h p{margin:0 0 6px;color:#9fb1b2}
+.pt-btn{border:1px solid #c9a85d;background:transparent;color:#e3cc91;padding:10px 18px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.pt-btn--solid{background:#123f35;border-color:#123f35;color:#fff}
+.pt-btn:hover{background:rgba(201,168,93,.12)}
+.pt-card{background:#0d2434;border:1px solid rgba(201,168,93,.2);padding:20px;margin-bottom:16px;border-radius:8px}
+.pt-rec{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.pt-rec b{color:#fff}.pt-rec .pt-status{margin-left:auto;padding:4px 10px;border:1px solid #c9a85d;color:#e3cc91;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.pt-rec small{color:#8ea0a1}
+.pt-field{display:block;margin:10px 0}
+.pt-field label{display:block;color:#9fb1b2;font-size:12px;margin-bottom:4px}
+.pt-field input,.pt-field textarea,.pt-field select{width:100%;padding:11px 13px;border:1px solid rgba(201,168,93,.3);background:#071724;color:#e9eef0;font-size:14px;font-family:inherit}
+.pt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.pt-kpi{background:#0d2434;border:1px solid rgba(201,168,93,.2);padding:18px;text-align:center;border-radius:8px}
+.pt-kpi b{display:block;font:500 32px Fraunces,Georgia,serif;color:#e3cc91}
+.pt-kpi span{color:#8ea0a1;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.pt-msg{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.pt-msg b{color:#e3cc91;font-size:12px}.pt-msg span{color:#cdd9da}
+.pt-hidden{display:none}
+.pt-gate{max-width:520px;margin:80px auto;text-align:center}
+.pt-gate h1{font:500 40px Fraunces,Georgia,serif;color:#fff}
+.pt-gate p{color:#9fb1b2;line-height:1.7}
+.pt-gate a{display:inline-block;margin-top:16px;border:1px solid #c9a85d;color:#e3cc91;text-decoration:none;padding:12px 22px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+@media(max-width:820px){.pt-wrap{grid-template-columns:1fr}.pt-rail{border-right:0;border-bottom:1px solid rgba(201,168,93,.22)}}
+</style></head><body>
+<div class="pt-top"><a class="pt-brand" href="/">ResumeTailored</a><span class="pt-co" id="ptCo">The Portal</span><span class="pt-role" id="ptRole"></span></div>
+<div id="ptGate" class="pt-gate pt-hidden"><h1>The Portal</h1><p id="ptGateMsg">Sign in with an employer account to enter the Manager's Admin Panel.</p><a href="/employer" id="ptGateLink">Open the employer portal</a></div>
+<div class="pt-wrap pt-hidden" id="ptWrap">
+  <aside class="pt-rail" id="ptRail"></aside>
+  <main class="pt-main" id="ptMain"></main>
+</div>
+<script>
+(function(){'use strict';
+  var token=null; try{token=localStorage.getItem('rt_token');}catch(e){}
+  var ctx=null, view={type:'home'};
+  function $(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function h(json){var x={};if(token)x.Authorization='Bearer '+token;if(json)x['Content-Type']='application/json';return x;}
+  function api(method,path,body){return fetch(path,{method:method,headers:h(!!body),body:body?JSON.stringify(body):undefined}).then(function(r){return r.json().then(function(j){return{status:r.status,j:j};}).catch(function(){return{status:r.status,j:{}};});});}
+
+  function gate(msg){$('ptGate').classList.remove('pt-hidden');$('ptWrap').classList.add('pt-hidden');if(msg)$('ptGateMsg').textContent=msg;}
+
+  function boot(){
+    if(!token){gate('Please sign in first.');$('ptGateLink').setAttribute('href','/login');return;}
+    api('GET','/api/portal/context').then(function(res){
+      if(res.status===401){gate('Please sign in first.');$('ptGateLink').setAttribute('href','/login');return;}
+      if(res.status===403){gate('Create an employer account to use the portal.');return;}
+      ctx=res.j;
+      $('ptWrap').classList.remove('pt-hidden');$('ptGate').classList.add('pt-hidden');
+      $('ptCo').textContent=ctx.companyName||'The Portal';
+      $('ptRole').textContent=ctx.role+' · '+ctx.tier;
+      renderRail(); go({type:'home'});
+    });
+  }
+
+  function renderRail(){
+    var html='<h3>Overview</h3>';
+    html+=navBtn({type:'home'},'Dashboard','Manager analytics');
+    if(ctx.collabActive){
+      html+='<h3>Collaboration</h3>';
+      html+=navBtn({type:'chat'},'Team Chat','Real-time messaging');
+      html+=navBtn({type:'directory'},'Directory','People &amp; roles');
+      html+=navBtn({type:'calendar'},'Calendar','Company dates');
+      if(rankAtLeast('manager'))html+=navBtn({type:'copilot'},'AI Copilot','Ask across modules');
+    }
+    html+='<h3>Modules ('+ctx.activeModules.length+')</h3>';
+    if(!ctx.activeModules.length)html+='<p style="color:#7f9391;font-size:13px;padding:0 10px">No operational modules on this plan. Upgrade to Scale or Corporate.</p>';
+    ctx.activeModules.forEach(function(m){html+=navBtn({type:'module',key:m.key},esc(m.name),esc(m.category));});
+    if(ctx.role==='admin'){html+='<h3>Administration</h3>';html+=navBtn({type:'members'},'Team &amp; Roles','Seats &amp; permissions');if(ctx.tier==='scale')html+=navBtn({type:'activate'},'Activate Modules',(ctx.scaleRemaining||0)+' of 5 remaining');}
+    $('ptRail').innerHTML=html;
+    Array.prototype.forEach.call($('ptRail').querySelectorAll('.pt-navbtn'),function(b){b.addEventListener('click',function(){go(JSON.parse(b.getAttribute('data-view')));});});
+  }
+  function navBtn(v,label,sub){var active=(v.type===view.type&&(v.key||'')===(view.key||''))?' active':'';return '<button class="pt-navbtn'+active+'" data-view=\''+esc(JSON.stringify(v))+'\'>'+label+(sub?'<small>'+sub+'</small>':'')+'</button>';}
+  function rankAtLeast(min){var r={admin:3,manager:2,employee:1};return (r[ctx.role]||0)>=(r[min]||0);}
+
+  function go(v){view=v;renderRail();var m=$('ptMain');m.innerHTML='<p style="color:#8ea0a1">Loading…</p>';
+    if(v.type==='home')return renderHome(m);
+    if(v.type==='module')return renderModule(m,v.key);
+    if(v.type==='chat')return renderChat(m);
+    if(v.type==='directory')return renderDirectory(m);
+    if(v.type==='calendar')return renderCalendar(m);
+    if(v.type==='copilot')return renderCopilot(m);
+    if(v.type==='members')return renderMembers(m);
+    if(v.type==='activate')return renderActivate(m);
+  }
+
+  function head(title,sub,btnLabel){return '<div class="pt-h"><div><h1>'+title+'</h1></div><p>'+(sub||'')+'</p>'+(btnLabel?'<button class="pt-btn pt-headbtn" type="button">'+btnLabel+'</button>':'')+'</div>';}
+
+  function renderHome(m){
+    if(!rankAtLeast('manager')){m.innerHTML=head('Welcome','Your tools are in the left rail.')+'<div class="pt-card">Select a module to begin. Analytics are available to managers and admins.</div>';return;}
+    api('GET','/api/portal/analytics').then(function(res){
+      var k=(res.j&&res.j.kpis)||{};
+      m.innerHTML=head('Manager Analytics','A calm read on the whole operation.')+
+        '<div class="pt-grid">'+
+        kpi(k.totalRecords,'Records')+kpi(k.hires,'Hires')+kpi(k.openRequisitions,'Open reqs')+
+        kpi(k.openIncidents,'Open incidents')+kpi('$'+(k.pendingExpenseTotal||0),'Pending expenses')+kpi(k.avgPulse!=null?k.avgPulse:'—','Avg pulse')+
+        '</div>';
+    });
+  }
+  function kpi(v,l){return '<div class="pt-kpi"><b>'+esc(v)+'</b><span>'+esc(l)+'</span></div>';}
+
+  function renderModule(m,key){
+    api('GET','/api/portal/modules/'+encodeURIComponent(key)+'/records').then(function(res){
+      if(res.status!==200){m.innerHTML=head('Unavailable',res.j.message||'This module is not available.');return;}
+      var mod=res.j.module,perms=res.j.permissions,recs=res.j.records;
+      var html=head(esc(mod.name),(recs.length)+' '+esc(mod.recordLabel).toLowerCase()+(recs.length===1?'':'s'),perms.manage?'Export CSV':'');
+      if(perms.write)html+='<div class="pt-card" id="ptForm"><b style="color:#e3cc91">Add '+esc(mod.recordLabel)+'</b>'+mod.fields.map(fieldInput).join('')+statusSelect(mod.statuses)+'<button class="pt-btn pt-btn--solid" id="ptAdd" style="margin-top:12px">Add</button></div>';
+      html+='<div class="pt-card">'+(recs.length?recs.map(function(r){return recRow(r,mod);}).join(''):'<p style="color:#8ea0a1">Nothing here yet.</p>')+'</div>';
+      m.innerHTML=html;
+      Array.prototype.forEach.call(m.querySelectorAll('.pt-headbtn'),function(b){b.addEventListener('click',function(){window.location.href='/api/portal/modules/'+encodeURIComponent(key)+'/export.csv';});});
+      if(perms.write&&$('ptAdd'))$('ptAdd').addEventListener('click',function(){addRecord(key,mod);});
+    });
+  }
+  function fieldInput(f){
+    var id='ptf_'+f.key;
+    if(f.type==='longtext')return '<div class="pt-field"><label>'+esc(f.label)+(f.required?' *':'')+'</label><textarea id="'+id+'" rows="3"></textarea></div>';
+    if(f.type==='bool')return '<div class="pt-field"><label><input type="checkbox" id="'+id+'" style="width:auto"> '+esc(f.label)+'</label></div>';
+    var t=f.type==='number'?'number':(f.type==='date'?'date':(f.type==='datetime'?'datetime-local':'text'));
+    return '<div class="pt-field"><label>'+esc(f.label)+(f.required?' *':'')+'</label><input type="'+t+'" id="'+id+'"></div>';
+  }
+  function statusSelect(statuses){return '<div class="pt-field"><label>Status</label><select id="ptf_status">'+statuses.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join('')+'</select></div>';}
+  function recRow(r,mod){var sub=Object.keys(r.data||{}).filter(function(k){return k!=='title'&&r.data[k]!==''&&r.data[k]!=null;}).slice(0,2).map(function(k){return esc(r.data[k]);}).join(' · ');return '<div class="pt-rec"><div><b>'+esc(r.title)+'</b>'+(sub?'<br><small>'+sub+'</small>':'')+'</div><span class="pt-status">'+esc(r.status)+'</span></div>';}
+  function addRecord(key,mod){
+    var body={};mod.fields.forEach(function(f){var el=$('ptf_'+f.key);if(!el)return;body[f.key]=f.type==='bool'?el.checked:el.value;});
+    var st=$('ptf_status');if(st)body.status=st.value;
+    api('POST','/api/portal/modules/'+encodeURIComponent(key)+'/records',body).then(function(res){
+      if(res.status!==200){alert((res.j.messages&&res.j.messages.join('\n'))||res.j.message||'Could not save.');return;}
+      go({type:'module',key:key});
+    });
+  }
+
+  function renderChat(m){
+    m.innerHTML=head('Team Chat','Fast, focused company conversations.')+'<div class="pt-card" id="ptMsgs">…</div><div class="pt-field"><input id="ptChatInput" placeholder="Message your team…"></div><button class="pt-btn pt-btn--solid" id="ptChatSend">Send</button>';
+    loadChat();
+    $('ptChatSend').addEventListener('click',sendChat);
+    $('ptChatInput').addEventListener('keydown',function(e){if(e.key==='Enter')sendChat();});
+  }
+  function loadChat(){api('GET','/api/portal/chat').then(function(res){var msgs=(res.j&&res.j.messages)||[];$('ptMsgs').innerHTML=msgs.length?msgs.map(function(x){return '<div class="pt-msg"><b>'+esc(x.created_by)+'</b> <span>'+esc(x.body)+'</span></div>';}).join(''):'<p style="color:#8ea0a1">No messages yet.</p>';});}
+  function sendChat(){var v=$('ptChatInput').value.trim();if(!v)return;$('ptChatInput').value='';api('POST','/api/portal/chat',{body:v}).then(loadChat);}
+
+  function renderDirectory(m){api('GET','/api/portal/directory').then(function(res){var d=(res.j&&res.j.directory)||[];m.innerHTML=head('Employee Directory','Roles, teams and contact context.')+'<div class="pt-card">'+d.map(function(p){return '<div class="pt-rec"><div><b>'+esc(p.name||p.email)+'</b><br><small>'+esc(p.email)+'</small></div><span class="pt-status">'+esc(p.role)+'</span></div>';}).join('')+'</div>';});}
+
+  function renderCalendar(m){
+    api('GET','/api/portal/calendar').then(function(res){
+      var items=(res.j&&res.j.items)||[];
+      var html=head('Company Calendar','People and operational dates together.');
+      if(rankAtLeast('manager'))html+='<div class="pt-card"><div class="pt-field"><label>Event</label><input id="ptCalTitle"></div><div class="pt-field"><label>Date</label><input id="ptCalAt" type="datetime-local"></div><button class="pt-btn pt-btn--solid" id="ptCalAdd">Add event</button></div>';
+      html+='<div class="pt-card">'+(items.length?items.map(function(x){return '<div class="pt-rec"><b>'+esc(x.title)+'</b><span class="pt-status">'+(x.at?new Date(x.at).toLocaleDateString():'—')+'</span></div>';}).join(''):'<p style="color:#8ea0a1">No events.</p>')+'</div>';
+      m.innerHTML=html;
+      if($('ptCalAdd'))$('ptCalAdd').addEventListener('click',function(){var t=$('ptCalTitle').value.trim();if(!t)return;var at=$('ptCalAt').value?new Date($('ptCalAt').value).getTime():null;api('POST','/api/portal/calendar',{title:t,at:at}).then(function(){go({type:'calendar'});});});
+    });
+  }
+
+  function renderCopilot(m){
+    m.innerHTML=head('Cross-Module AI Copilot','Answers and drafts across your whole operation.')+'<div class="pt-field"><input id="ptCopQ" placeholder="e.g. How are we doing on hiring and incidents?"></div><button class="pt-btn pt-btn--solid" id="ptCopAsk">Ask</button><div class="pt-card pt-hidden" id="ptCopA" style="margin-top:16px"></div>';
+    $('ptCopAsk').addEventListener('click',function(){var q=$('ptCopQ').value.trim();if(!q)return;$('ptCopA').classList.remove('pt-hidden');$('ptCopA').textContent='Thinking…';api('POST','/api/portal/copilot',{question:q}).then(function(res){$('ptCopA').textContent=(res.j&&res.j.answer)||'No answer.';});});
+  }
+
+  function renderMembers(m){
+    api('GET','/api/portal/members').then(function(res){
+      var members=(res.j&&res.j.members)||[];
+      var html=head('Team &amp; Roles','Admins manage the company; managers run operations; employees submit their own.','','');
+      html+='<div class="pt-card"><div class="pt-field"><label>Email</label><input id="ptMemEmail"></div><div class="pt-field"><label>Name</label><input id="ptMemName"></div><div class="pt-field"><label>Role</label><select id="ptMemRole"><option value="employee">Employee</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div><button class="pt-btn pt-btn--solid" id="ptMemAdd">Invite member</button></div>';
+      html+='<div class="pt-card">'+(members.length?members.map(function(x){return '<div class="pt-rec"><div><b>'+esc(x.name||x.email)+'</b><br><small>'+esc(x.email)+'</small></div><span class="pt-status">'+esc(x.role)+'</span></div>';}).join(''):'<p style="color:#8ea0a1">No members yet.</p>')+'</div>';
+      m.innerHTML=html;
+      $('ptMemAdd').addEventListener('click',function(){var e=$('ptMemEmail').value.trim();if(!e)return;api('POST','/api/portal/members',{email:e,name:$('ptMemName').value.trim(),role:$('ptMemRole').value}).then(function(res){if(res.status!==200){alert(res.j.message||'Could not add member.');return;}go({type:'members'});});});
+    });
+  }
+
+  function renderActivate(m){
+    var html=head('Activate Modules',(ctx.scaleRemaining||0)+' of 5 remaining. Choices are permanent on Scale.','','');
+    html+='<div class="pt-card">'+ctx.allModules.map(function(mod){return '<div class="pt-rec"><div><b>'+esc(mod.name)+'</b><br><small>'+esc(mod.category)+'</small></div>'+(mod.active?'<span class="pt-status">Active</span>':'<button class="pt-btn pt-act" type="button" data-act="'+esc(mod.key)+'">Activate</button>')+'</div>';}).join('')+'</div>';
+    m.innerHTML=html;
+    Array.prototype.forEach.call(m.querySelectorAll('.pt-act'),function(b){b.addEventListener('click',function(){api('POST','/api/portal/modules/activate',{moduleKey:b.getAttribute('data-act')}).then(function(res){if(res.status!==200){alert(res.j.message||'Could not activate.');return;}boot();});});});
+  }
+
+  boot();
+})();
+</script>
+</body></html>
