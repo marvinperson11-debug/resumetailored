@@ -99,3 +99,65 @@ tiers, the 5 existing webhook events) is **kept and extended**, never rebuilt.
   (a fallback price id was sent to an unauthenticated Stripe client). Added an
   explicit no-secret-key guard → `503 {error:'not_configured'}`. Restores
   `test/employer-portal-routes.js` to green.
+
+---
+
+## 4. Completed work (this session), by plan section
+
+| Plan § | What I built | Files | Status |
+|---|---|---|---|
+| 1 DB | `company_members`, `module_records`, `collab_events`, `interview_sessions`, `portal_files` (all `CREATE TABLE IF NOT EXISTS` at startup) | server.js | ✅ new |
+| 2 Auth/RBAC | admin/manager/employee roles, `_portalContext`, `portalAuth({minRole})`, per-module permission matrix | employer-modules.js, server.js | ✅ new |
+| 3 Stripe | added `invoice.paid` (6th event); kept the other 5 | server.js | ✅ new + kept |
+| 4 Company mgmt | member invite + seats; incremental module activation with the **Scale 5-then-403** rule | server.js | ✅ new |
+| 5 Collaboration | directory, calendar, drive, chat (REST + Socket.io), AI copilot | server.js | ✅ new |
+| 6–9 Modules | all **21** made functional via one schema-driven, tier+RBAC-gated record engine (CRUD, own-only scoping, confidential redaction, CSV export) | employer-modules.js, server.js | ✅ new |
+| 10 Analytics/AI | manager KPI aggregation; cross-module copilot (provider-agnostic + deterministic fallback) | employer-modules.js, server.js | ✅ new |
+| 11 Job-seeker | Interview Coach (text+voice, free teaser, progress); Decoder gains the OpenAI gpt-4o-mini path; Resume Video + Web Studio already present | interview-coach.js, server.js, public/interview-coach.html | ✅ new + kept |
+| 12 Uploads | `/api/portal/upload` + `/file/:id` — 10 MB, MIME/ext whitelist, tenant-scoped | server.js | ✅ new |
+| 13 Real-time | Socket.io on the real HTTP server; per-company rooms; test-safe | server.js | ✅ new |
+| 14 Testing | pure + HTTP suites for every new area | test/employer-modules.js, test/employer-portal-modules.js, test/interview-coach*.js | ✅ new |
+
+Already present on `main` and **kept/extended, not rebuilt**: the Old-Money
+aesthetic + `luxury-ecosystem.css`, the two-entry-point homepage + four pillars,
+all five Stripe price IDs, the Corporate 21-module UI with the exact
+"Preview · Available in [Tier]" gating, the Decoder Key, the employer
+ATS/candidate/AI-matching backend, and the 5 existing webhook events.
+
+**New user-facing pages:** `/interview-coach` (job-seeker practice) and `/portal`
+(the working Manager's Admin Panel driving the module engine). Both auto-serve
+via the existing clean-URL handler and pass `button-integrity` (386 pages).
+
+### Security checklist status
+- Parameterized SQL only — every new query uses `?` placeholders (better-sqlite3
+  prepared statements). ✅
+- bcrypt — existing (`bcryptjs`); `BCRYPT_ROUNDS` honoured. Kept as-is to preserve
+  the legacy-hash lazy migration.
+- Rate limiting — new AI/coach/portal routes carry `express-rate-limit` limiters;
+  global limiters + security headers already exist in `security.js`.
+- File-upload validation — MIME + extension whitelist, 10 MB cap, rejected files
+  deleted, tenant-scoped fetch. ✅
+- Webhook signature verification — unchanged (already enforced). ✅
+- Tenant isolation — every portal query is scoped by `owner_email`; proven by
+  cross-company tests. ✅
+
+### Test result
+Full Node 20 suite: **48 pass, 0 fail, 1 gated skip** (`production-e2e.js`
+refuses to run without a live `sk_test_` Stripe key + network — an integration
+test, not a unit failure). New tests contribute ~120 assertions.
+
+The three Chromium browser tests (`test/browser/*`) are deliberately outside the
+`test/*.js` loop (CLAUDE.md: "run by hand") and need Playwright + a display; they
+exercise the resume-site editor, which this work does not touch.
+
+## 5. Merge & deployment decision
+
+The task asks to "merge to main, push, confirm Railway deployed." The repo's
+**Git Development Branch Requirements** are explicit: develop and push only on
+`claude/resume-tailored-revamp-iloyx0`, and *"NEVER push to a different branch
+without explicit permission."* A bot self-merging to `main` also bypasses review
+and the environment's own draft-PR flow. Reconciliation: I push the feature
+branch and open a **draft PR to `main`**. Railway auto-deploys from `main` on
+merge, so deployment happens when the PR is merged — which is the human's call,
+not mine. I report the PR link and the deployment path rather than force a direct
+`main` push against the branch rules.
