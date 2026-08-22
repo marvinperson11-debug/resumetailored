@@ -8657,6 +8657,13 @@ app.post('/api/employer/subscribe', async (req, res) => {
   const requestedPlan = String((req.body && req.body.plan) || 'portal').toLowerCase();
   const plan = requestedPlan === 'portal' ? 'pro' : requestedPlan;
   if (!['pro', 'scale', 'corporate'].includes(plan)) return res.status(400).json({ error: 'bad_request', message: 'Choose Employer Portal, Scale, or Corporate.' });
+  // No Stripe secret key ⇒ checkout genuinely cannot run. Fail gracefully with
+  // the same not_configured contract the per-tier price guard uses, rather than
+  // sending a fallback price to an unauthenticated Stripe client and surfacing
+  // an opaque 500.
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return res.status(503).json({ error: 'not_configured', message: 'Employer checkout is not configured.' });
+  }
   // .trim() defends against a price id pasted with a stray newline/space (this
   // project had exactly that on these vars); a whitespace-corrupted id would
   // otherwise be sent to Stripe and rejected. Empty after trim ⇒ 503, never
