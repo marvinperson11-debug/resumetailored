@@ -18,6 +18,7 @@ const Database = require('better-sqlite3');
 const nodemailer = require('nodemailer');
 const CH = require('./career-hub.js');           // Career Hub pure core (taxonomy, prompts, validators, scoring)
 const EH = require('./employer-hub.js');         // Employer Portal pure core (validation, limits, ranking)
+const EM = require('./employer-modules.js');     // Employer module engine pure core (registry, RBAC, tier gating)
 const JP = require('./job-providers.js');        // Multi-source live job search (Adzuna, JSearch, free fallbacks)
 const TOOLS = require('./tools-core.js');         // 7 job-search tools pure core (offer scoring, prompts, validators, limits)
 const SC = require('./security.js');             // Security pure core (password policy, HIBP, lockout, CSP, log scrubbing)
@@ -7516,6 +7517,26 @@ app.post('/webhook', (req, res) => {
     }
   }
 
+  // invoice.paid — a recurring charge succeeded. Idempotently re-affirm that the
+  // customer's subscription is active and extends for another period. This never
+  // creates access on its own (that's checkout.session.completed's job); it only
+  // repairs a row that a transient failure or an out-of-order past_due event may
+  // have left marked non-active, so a paying customer is never stranded.
+  if (event.type === 'invoice.paid') {
+    const inv = event.data.object || {};
+    const customerId = inv.customer;
+    if (customerId) {
+      const emp = db.prepare('SELECT email, status FROM employer_subscribers WHERE customer_id = ?').get(customerId);
+      if (emp && emp.status !== 'active') {
+        db.prepare("UPDATE employer_subscribers SET status = 'active' WHERE customer_id = ?").run(customerId);
+        console.log(`invoice.paid re-activated employer subscriber: ${emp.email}`);
+      }
+      // Job-seeker subscribers have no status column (presence = active); nothing
+      // to repair there. Log for observability.
+      console.log(`invoice.paid for customer ${customerId}`);
+    }
+  }
+
   res.json({ received: true });
 });
 
@@ -7890,6 +7911,33 @@ async function callClaudeJSON({ model, system, user, max_tokens, validate }) {
     lastErr = v.error || 'invalid';
   }
   const e = new Error('llm_json_invalid: ' + lastErr); e.code = 'llm_json_invalid'; throw e;
+}
+
+// Provider-agnostic single-shot text completion. Uses OpenAI when
+// OPENAI_API_KEY is set (the plan's choice for the Decoder + Copilot), otherwise
+// falls back to the existing Anthropic Claude client. Throws { code:'ai_unconfigured' }
+// when neither is available so callers can degrade gracefully.
+async function _aiComplete({ system, user, max_tokens = 500, model }) {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (openaiKey) {
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${openaiKey}` },
+      body: JSON.stringify({
+        model: model || process.env.OPENAI_MODEL || 'gpt-4o-mini',
+        max_tokens, temperature: 0.5,
+        messages: [{ role: 'system', content: system }, { role: 'user', content: user }]
+      })
+    });
+    if (!r.ok) { const t = await r.text().catch(() => ''); const e = new Error('openai_error: ' + t.slice(0, 200)); e.code = 'ai_error'; throw e; }
+    const d = await r.json();
+    return (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content || '').trim();
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    const msg = await anthropic.messages.create({ model: model || 'claude-haiku-4-5', max_tokens, system, messages: [{ role: 'user', content: user }] });
+    return (msg.content[0] && msg.content[0].text || '').trim();
+  }
+  const e = new Error('no AI provider configured'); e.code = 'ai_unconfigured'; throw e;
 }
 
 const careerGenLimiter = rateLimit({ windowMs: 60 * 1000, max: 15, message: { error: 'rate_limited', message: 'Slow down a moment and try again.' } });
@@ -9447,6 +9495,346 @@ app.post('/api/corporate/modules', (req, res) => {
   db.prepare('INSERT INTO corporate_module_selections (email, modules_json, confirmed_at) VALUES (?, ?, ?)').run(key, JSON.stringify(unique), Date.now());
   writeAuditLog(req, email, 'corporate.modules_confirmed', { targetType: 'membership', meta: { modules: unique } });
   res.json({ success: true, modules: unique, confirmed: true });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Employer Portal — module engine, RBAC & Base Collaboration Layer
+// Pure gating/validation lives in employer-modules.js (EM); this wires it to
+// SQLite + auth. A "company" is an employer account (the owner is its admin);
+// managers/employees are invited members. Which operational modules are active
+// is the single source of truth already used by the corporate UI: Corporate has
+// all 21, Scale has exactly the five it confirmed once (by display name).
+// ═══════════════════════════════════════════════════════════════════════════
+db.exec(`
+  CREATE TABLE IF NOT EXISTS company_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_email TEXT NOT NULL,
+    member_email TEXT NOT NULL,
+    name TEXT,
+    role TEXT NOT NULL DEFAULT 'employee',
+    status TEXT NOT NULL DEFAULT 'active',
+    invited_at INTEGER NOT NULL,
+    UNIQUE(owner_email, member_email)
+  );
+  CREATE TABLE IF NOT EXISTS module_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_email TEXT NOT NULL,
+    module_key TEXT NOT NULL,
+    title TEXT NOT NULL,
+    status TEXT NOT NULL,
+    data_json TEXT NOT NULL,
+    created_by TEXT NOT NULL,
+    assigned_to TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_module_records_owner_mod ON module_records(owner_email, module_key);
+  CREATE TABLE IF NOT EXISTS collab_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    owner_email TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    title TEXT,
+    body TEXT,
+    ref TEXT,
+    at INTEGER,
+    created_by TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_collab_owner_kind ON collab_events(owner_email, kind);
+`);
+
+// Resolve the company + role for a signed-in user. An account that owns an
+// employer profile (or is on a paid employer tier) is the ADMIN of its own
+// company; otherwise the user may be an invited member of someone else's.
+function _isCompanyOwner(e) {
+  if (db.prepare('SELECT 1 FROM employer_profiles WHERE email = ?').get(e)) return true;
+  if (employerTier(e) !== 'free') return true; // subscriber who hasn't built a profile yet
+  return false;
+}
+function _portalContext(email) {
+  if (!email) return null;
+  const e = email.toLowerCase();
+  if (_isCompanyOwner(e)) {
+    const prof = db.prepare('SELECT company_name FROM employer_profiles WHERE email = ?').get(e);
+    return { ownerEmail: e, role: 'admin', companyName: prof ? prof.company_name : null };
+  }
+  const mem = db.prepare("SELECT owner_email, role, name FROM company_members WHERE member_email = ? AND status = 'active' ORDER BY invited_at DESC LIMIT 1").get(e);
+  if (mem) {
+    const prof = db.prepare('SELECT company_name FROM employer_profiles WHERE email = ?').get(mem.owner_email);
+    return { ownerEmail: mem.owner_email, role: EM.normRole(mem.role), companyName: prof ? prof.company_name : null, memberName: mem.name };
+  }
+  return null;
+}
+// Display names of the operational modules active for a company.
+function _confirmedModuleNames(ownerEmail, tier) {
+  if (tier === 'corporate') return EM.MODULE_REGISTRY.map(m => m.name);
+  const row = db.prepare('SELECT modules_json FROM corporate_module_selections WHERE email = ?').get(ownerEmail);
+  if (!row) return [];
+  try { return JSON.parse(row.modules_json); } catch (_) { return []; }
+}
+// Auth gate for every portal route. Returns the resolved context or sends the
+// error and returns null. `minRole` optionally requires admin/manager.
+function portalAuth(req, res, { minRole } = {}) {
+  const email = getSessionEmail(req);
+  if (!email) { res.status(401).json({ error: 'login_required', message: 'Please sign in first.' }); return null; }
+  const ctx = _portalContext(email.toLowerCase());
+  if (!ctx) { res.status(403).json({ error: 'not_in_company', message: 'Create an employer account to use the portal.' }); return null; }
+  ctx.email = email.toLowerCase();
+  ctx.tier = employerTier(ctx.ownerEmail);
+  ctx.confirmedNames = _confirmedModuleNames(ctx.ownerEmail, ctx.tier);
+  if (minRole && !EM.roleAtLeast(ctx.role, minRole)) { res.status(403).json({ error: 'forbidden', message: 'You do not have permission for that.' }); return null; }
+  return ctx;
+}
+// Module-active gate. 402 when the plan has no operational modules at all
+// (free/pro), 403 when the plan has some but not this one (a Scale module the
+// company didn't pick).
+function _moduleActiveGate(res, ctx, moduleKey) {
+  const m = EM.moduleByKey(moduleKey);
+  if (!m) { res.status(404).json({ error: 'unknown_module', message: 'No such module.' }); return null; }
+  if (!EM.isModuleActive({ tier: ctx.tier, confirmedNames: ctx.confirmedNames, moduleKey })) {
+    const hasAny = EM.activeModuleKeys(ctx.tier, ctx.confirmedNames).length > 0;
+    res.status(hasAny ? 403 : 402).json({ error: 'module_not_active', message: hasAny ? 'That module is not part of your Scale selection. Upgrade to Corporate for full access.' : 'Operational modules require Scale or Corporate.' });
+    return null;
+  }
+  return m;
+}
+function _collabGate(res, ctx) {
+  if (!['scale', 'corporate'].includes(ctx.tier)) { res.status(402).json({ error: 'collab_locked', message: 'The collaboration layer is included with Scale and Corporate.' }); return false; }
+  return true;
+}
+function _rowToRecord(r) {
+  let data = {}; try { data = JSON.parse(r.data_json); } catch (_) {}
+  return { id: r.id, moduleKey: r.module_key, title: r.title, status: r.status, data, createdBy: r.created_by, assignedTo: r.assigned_to, createdAt: r.created_at, updatedAt: r.updated_at };
+}
+// Redact the submitter of a confidential+anonymous record from anyone who
+// isn't its author (privacy-respecting incident reporting).
+function _redactRecord(rec, moduleKey, viewerEmail) {
+  const m = EM.moduleByKey(moduleKey);
+  if (m && m.confidential && rec.data && rec.data.anonymous && rec.createdBy !== viewerEmail) {
+    return Object.assign({}, rec, { createdBy: null, assignedTo: null });
+  }
+  return rec;
+}
+
+// ── Portal context ──────────────────────────────────────────────────────────
+app.get('/api/portal/context', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const activeKeys = EM.activeModuleKeys(ctx.tier, ctx.confirmedNames);
+  const cfg = EH.tierConfig(ctx.tier);
+  const memberCount = db.prepare('SELECT COUNT(*) c FROM company_members WHERE owner_email = ?').get(ctx.ownerEmail).c;
+  res.json({
+    role: ctx.role, tier: ctx.tier, companyName: ctx.companyName, ownerEmail: ctx.role === 'admin' ? ctx.ownerEmail : undefined,
+    collabActive: ['scale', 'corporate'].includes(ctx.tier),
+    activeModules: activeKeys.map(k => ({ key: k, name: EM.moduleNameForKey(k), category: EM.moduleByKey(k).category, permissions: EM.modulePermissions(ctx.role, k) })),
+    allModules: EM.MODULE_REGISTRY.map(m => ({ key: m.key, name: m.name, category: m.category, active: activeKeys.includes(m.key) })),
+    collabLayer: EM.COLLAB_LAYER,
+    seats: cfg.seats === Infinity ? null : cfg.seats, memberCount,
+    scaleCap: EM.SCALE_MODULE_CAP, scaleRemaining: ctx.tier === 'scale' ? Math.max(0, EM.SCALE_MODULE_CAP - activeKeys.length) : null
+  });
+});
+
+// ── Incremental module activation (admin) — the Scale "up to 5, then 403" rule ─
+app.post('/api/portal/modules/activate', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'admin' }); if (!ctx) return;
+  const moduleKey = String((req.body && req.body.moduleKey) || '');
+  const decision = EM.canActivateModule({ tier: ctx.tier, confirmedNames: ctx.confirmedNames, moduleKey });
+  if (!decision.allowed) return res.status(decision.status).json({ error: decision.code, message: decision.message });
+  if (ctx.tier === 'scale') {
+    const names = ctx.confirmedNames.slice();
+    names.push(EM.moduleNameForKey(moduleKey));
+    const existing = db.prepare('SELECT 1 FROM corporate_module_selections WHERE email = ?').get(ctx.ownerEmail);
+    if (existing) db.prepare('UPDATE corporate_module_selections SET modules_json = ?, confirmed_at = ? WHERE email = ?').run(JSON.stringify(names), Date.now(), ctx.ownerEmail);
+    else db.prepare('INSERT INTO corporate_module_selections (email, modules_json, confirmed_at) VALUES (?,?,?)').run(ctx.ownerEmail, JSON.stringify(names), Date.now());
+    writeAuditLog(req, ctx.email, 'portal.module_activated', { targetType: 'module', targetId: moduleKey, meta: { count: names.length } });
+  }
+  const activeKeys = EM.activeModuleKeys(ctx.tier, _confirmedModuleNames(ctx.ownerEmail, ctx.tier));
+  res.json({ success: true, activeModules: activeKeys, scaleRemaining: ctx.tier === 'scale' ? Math.max(0, EM.SCALE_MODULE_CAP - activeKeys.length) : null });
+});
+
+// ── Members / RBAC (admin) ──────────────────────────────────────────────────
+app.get('/api/portal/members', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return;
+  const rows = db.prepare('SELECT id, member_email, name, role, status, invited_at FROM company_members WHERE owner_email = ? ORDER BY invited_at DESC').all(ctx.ownerEmail);
+  res.json({ members: rows.map(r => ({ id: r.id, email: r.member_email, name: r.name, role: r.role, status: r.status, invitedAt: r.invited_at })) });
+});
+app.post('/api/portal/members', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'admin' }); if (!ctx) return;
+  const b = req.body || {};
+  const memberEmail = String(b.email || '').trim().toLowerCase();
+  const role = EM.normRole(b.role);
+  const name = String(b.name || '').trim().slice(0, 120);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(memberEmail)) return res.status(400).json({ error: 'bad_email', message: 'A valid email is required.' });
+  if (memberEmail === ctx.ownerEmail) return res.status(400).json({ error: 'is_owner', message: 'You are already the admin of this company.' });
+  const cfg = EH.tierConfig(ctx.tier);
+  const count = db.prepare('SELECT COUNT(*) c FROM company_members WHERE owner_email = ?').get(ctx.ownerEmail).c;
+  if (cfg.seats !== Infinity && count >= cfg.seats) return res.status(403).json({ error: 'seat_limit', message: `Your plan includes ${cfg.seats} seats. Upgrade for more.` });
+  try {
+    db.prepare('INSERT INTO company_members (owner_email, member_email, name, role, status, invited_at) VALUES (?,?,?,?,?,?)').run(ctx.ownerEmail, memberEmail, name, role, 'active', Date.now());
+  } catch (e) { return res.status(409).json({ error: 'already_member', message: 'That person is already on your team.' }); }
+  writeAuditLog(req, ctx.email, 'portal.member_added', { targetType: 'member', targetId: memberEmail, meta: { role } });
+  res.json({ success: true });
+});
+app.patch('/api/portal/members/:id', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'admin' }); if (!ctx) return;
+  const row = db.prepare('SELECT * FROM company_members WHERE id = ? AND owner_email = ?').get(parseInt(req.params.id, 10), ctx.ownerEmail);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  const b = req.body || {};
+  const role = b.role != null ? EM.normRole(b.role) : row.role;
+  const status = b.status != null ? (['active', 'suspended'].includes(String(b.status)) ? String(b.status) : row.status) : row.status;
+  db.prepare('UPDATE company_members SET role = ?, status = ? WHERE id = ?').run(role, status, row.id);
+  res.json({ success: true, role, status });
+});
+app.delete('/api/portal/members/:id', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'admin' }); if (!ctx) return;
+  const r = db.prepare('DELETE FROM company_members WHERE id = ? AND owner_email = ?').run(parseInt(req.params.id, 10), ctx.ownerEmail);
+  if (!r.changes) return res.status(404).json({ error: 'not_found' });
+  res.json({ success: true });
+});
+
+// ── Module records (the generic engine) ─────────────────────────────────────
+app.get('/api/portal/modules/:key/records', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const m = _moduleActiveGate(res, ctx, req.params.key); if (!m) return;
+  const perms = EM.modulePermissions(ctx.role, m.key);
+  if (!perms.read) return res.status(403).json({ error: 'forbidden', message: 'You cannot view this module.' });
+  let rows;
+  if (perms.ownOnly) rows = db.prepare('SELECT * FROM module_records WHERE owner_email = ? AND module_key = ? AND created_by = ? ORDER BY updated_at DESC').all(ctx.ownerEmail, m.key, ctx.email);
+  else rows = db.prepare('SELECT * FROM module_records WHERE owner_email = ? AND module_key = ? ORDER BY updated_at DESC').all(ctx.ownerEmail, m.key);
+  const records = rows.map(_rowToRecord).map(rec => _redactRecord(rec, m.key, ctx.email));
+  res.json({ module: { key: m.key, name: m.name, statuses: m.statuses, fields: m.fields, recordLabel: m.recordLabel }, records, permissions: perms });
+});
+app.post('/api/portal/modules/:key/records', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const m = _moduleActiveGate(res, ctx, req.params.key); if (!m) return;
+  const perms = EM.modulePermissions(ctx.role, m.key);
+  if (!perms.write) return res.status(403).json({ error: 'forbidden', message: 'You cannot add to this module.' });
+  const v = EM.validateRecord(m.key, req.body || {});
+  if (!v.valid) return res.status(400).json({ error: 'invalid', messages: v.errors });
+  const now = Date.now();
+  const assignedTo = String((req.body && req.body.assignedTo) || '').trim().toLowerCase() || null;
+  const info = db.prepare('INSERT INTO module_records (owner_email, module_key, title, status, data_json, created_by, assigned_to, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)')
+    .run(ctx.ownerEmail, m.key, v.clean.title, v.clean.status, JSON.stringify(v.clean.data), ctx.email, assignedTo, now, now);
+  res.json({ success: true, id: info.lastInsertRowid });
+});
+app.patch('/api/portal/modules/:key/records/:id', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const m = _moduleActiveGate(res, ctx, req.params.key); if (!m) return;
+  const perms = EM.modulePermissions(ctx.role, m.key);
+  const row = db.prepare('SELECT * FROM module_records WHERE id = ? AND owner_email = ? AND module_key = ?').get(parseInt(req.params.id, 10), ctx.ownerEmail, m.key);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  const isOwnerOfRecord = row.created_by === ctx.email;
+  if (!perms.write) return res.status(403).json({ error: 'forbidden' });
+  if (!isOwnerOfRecord && !perms.manage) return res.status(403).json({ error: 'forbidden', message: 'You can only edit your own entries.' });
+  // Merge: start from stored data so a partial update keeps the rest.
+  let stored = {}; try { stored = JSON.parse(row.data_json); } catch (_) {}
+  const merged = Object.assign({ title: row.title }, stored, req.body || {});
+  const v = EM.validateRecord(m.key, merged, { status: (req.body && req.body.status) || row.status });
+  if (!v.valid) return res.status(400).json({ error: 'invalid', messages: v.errors });
+  db.prepare('UPDATE module_records SET title = ?, status = ?, data_json = ?, updated_at = ? WHERE id = ?')
+    .run(v.clean.title, v.clean.status, JSON.stringify(v.clean.data), Date.now(), row.id);
+  res.json({ success: true });
+});
+app.delete('/api/portal/modules/:key/records/:id', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  const m = _moduleActiveGate(res, ctx, req.params.key); if (!m) return;
+  const perms = EM.modulePermissions(ctx.role, m.key);
+  const row = db.prepare('SELECT created_by FROM module_records WHERE id = ? AND owner_email = ? AND module_key = ?').get(parseInt(req.params.id, 10), ctx.ownerEmail, m.key);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  if (!perms.manage && row.created_by !== ctx.email) return res.status(403).json({ error: 'forbidden' });
+  db.prepare('DELETE FROM module_records WHERE id = ? AND owner_email = ?').run(parseInt(req.params.id, 10), ctx.ownerEmail);
+  res.json({ success: true });
+});
+// CSV export for a module (manager+). Data portability, per the plan.
+app.get('/api/portal/modules/:key/export.csv', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return;
+  const m = _moduleActiveGate(res, ctx, req.params.key); if (!m) return;
+  const rows = db.prepare('SELECT * FROM module_records WHERE owner_email = ? AND module_key = ? ORDER BY created_at').all(ctx.ownerEmail, m.key).map(_rowToRecord);
+  const csv = EM.recordsToCsv(m.key, rows.map(r => ({ title: r.title, status: r.status, data: r.data, created_at: new Date(r.createdAt).toISOString(), updated_at: new Date(r.updatedAt).toISOString() })));
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${m.key}-export.csv"`);
+  res.send(csv);
+});
+
+// ── Manager analytics (manager+) ────────────────────────────────────────────
+app.get('/api/portal/analytics', (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return;
+  const rows = db.prepare('SELECT module_key, status, data_json, created_at, updated_at FROM module_records WHERE owner_email = ?').all(ctx.ownerEmail)
+    .map(r => { let data = {}; try { data = JSON.parse(r.data_json); } catch (_) {} return { module_key: r.module_key, status: r.status, data, created_at: r.created_at, updated_at: r.updated_at }; });
+  res.json(EM.buildManagerAnalytics(rows));
+});
+
+// ── Base Collaboration Layer ────────────────────────────────────────────────
+app.get('/api/portal/directory', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return;
+  if (!_collabGate(res, ctx)) return;
+  const members = db.prepare('SELECT member_email, name, role, status FROM company_members WHERE owner_email = ? ORDER BY role DESC, name').all(ctx.ownerEmail);
+  const admin = { email: ctx.ownerEmail, name: ctx.companyName ? `${ctx.companyName} (admin)` : 'Admin', role: 'admin', status: 'active' };
+  res.json({ directory: [admin].concat(members.map(m => ({ email: m.member_email, name: m.name, role: m.role, status: m.status }))) });
+});
+function _collabList(ctx, kind) {
+  return db.prepare('SELECT id, title, body, ref, at, created_by, created_at FROM collab_events WHERE owner_email = ? AND kind = ? ORDER BY COALESCE(at, created_at) DESC LIMIT 200').all(ctx.ownerEmail, kind);
+}
+function _collabPost(ctx, kind, b) {
+  const now = Date.now();
+  const at = b.at != null && b.at !== '' ? Number(b.at) : null;
+  const info = db.prepare('INSERT INTO collab_events (owner_email, kind, title, body, ref, at, created_by, created_at) VALUES (?,?,?,?,?,?,?,?)')
+    .run(ctx.ownerEmail, kind, String(b.title || '').slice(0, 300), String(b.body || '').slice(0, 8000), String(b.ref || '').slice(0, 500), (at != null && isFinite(at)) ? at : null, ctx.email, now);
+  return info.lastInsertRowid;
+}
+// Calendar + Drive: read all members, write manager+.
+for (const kind of ['calendar', 'drive']) {
+  app.get(`/api/portal/${kind}`, (req, res) => {
+    const ctx = portalAuth(req, res); if (!ctx) return; if (!_collabGate(res, ctx)) return;
+    res.json({ items: _collabList(ctx, kind) });
+  });
+  app.post(`/api/portal/${kind}`, (req, res) => {
+    const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return; if (!_collabGate(res, ctx)) return;
+    const id = _collabPost(ctx, kind, req.body || {});
+    res.json({ success: true, id });
+  });
+}
+// Chat: any active member reads + posts (real-time delivery is layered on via
+// Socket.io; this REST path is the durable store + fallback).
+app.get('/api/portal/chat', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return; if (!_collabGate(res, ctx)) return;
+  res.json({ messages: _collabList(ctx, 'chat').reverse() });
+});
+app.post('/api/portal/chat', (req, res) => {
+  const ctx = portalAuth(req, res); if (!ctx) return; if (!_collabGate(res, ctx)) return;
+  const body = String((req.body && req.body.body) || '').trim();
+  if (!body) return res.status(400).json({ error: 'empty' });
+  const id = _collabPost(ctx, 'chat', { body });
+  const msg = { id, body, created_by: ctx.email, created_at: Date.now() };
+  try { if (global._portalIO) global._portalIO.to('company:' + ctx.ownerEmail).emit('chat', msg); } catch (_) {}
+  res.json({ success: true, message: msg });
+});
+
+// ── Cross-Module AI Copilot (manager+) ──────────────────────────────────────
+// Reads across the company's module records and answers a question / drafts
+// content. Provider-agnostic: OpenAI when OPENAI_API_KEY is set, else Claude,
+// else a deterministic analytics summary so the feature never hard-fails.
+app.post('/api/portal/copilot', async (req, res) => {
+  const ctx = portalAuth(req, res, { minRole: 'manager' }); if (!ctx) return;
+  if (!_collabGate(res, ctx)) return;
+  const question = String((req.body && req.body.question) || '').trim().slice(0, 1000);
+  if (!question) return res.status(400).json({ error: 'empty', message: 'Ask the copilot a question.' });
+  const rows = db.prepare('SELECT module_key, status, data_json, created_at, updated_at FROM module_records WHERE owner_email = ?').all(ctx.ownerEmail)
+    .map(r => { let data = {}; try { data = JSON.parse(r.data_json); } catch (_) {} return { module_key: r.module_key, status: r.status, data, created_at: r.created_at, updated_at: r.updated_at }; });
+  const analytics = EM.buildManagerAnalytics(rows);
+  const grounding = `Company context (aggregated, no PII):\n${JSON.stringify(analytics.kpis)}\nModule record counts: ${JSON.stringify(Object.fromEntries(Object.entries(analytics.modules).map(([k, v]) => [k, v.total])))}`;
+  try {
+    const answer = await _aiComplete({
+      system: 'You are the Cross-Module AI Copilot for a company operations portal. Answer concisely and professionally using ONLY the provided aggregated context. If the context lacks the data, say what the manager should look at. Never invent specific people or numbers.',
+      user: `${grounding}\n\nQuestion: ${question}`,
+      max_tokens: 400
+    });
+    res.json({ answer, grounded: true });
+  } catch (e) {
+    // Deterministic fallback — still useful, never an error page.
+    const k = analytics.kpis;
+    const answer = `Here's what the portal data shows right now: ${k.totalRecords} records across your active modules — ${k.hires} hire(s), ${k.openRequisitions} open requisition(s), ${k.openIncidents} open incident(s), $${k.pendingExpenseTotal} in pending expenses${k.avgPulse != null ? `, average pulse score ${k.avgPulse}/10` : ''}. Open the Manager Analytics module for the full breakdown.`;
+    res.json({ answer, grounded: false });
+  }
 });
 
 // Decoder Key — public lead-magnet entrance. Unlike the signed-in tools-hub
