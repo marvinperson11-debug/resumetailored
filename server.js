@@ -5743,7 +5743,7 @@ app.post('/api/personal-site/autogen', (req, res) => {
   const resumeRow = db.prepare('SELECT id FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
 
   // The name is the first non-empty line of the resume — the convention every
-  // resume follows, and the same one the résumé renderer already relies on.
+  // resume follows, and the same one the resume renderer already relies on.
   const name = (text.split('\n').map((l) => l.trim()).find(Boolean) || '').slice(0, 80);
 
   // Which template to build from. The picker sends the one they chose; without
@@ -5856,7 +5856,7 @@ app.get('/api/site-templates/:id/preview', tplPreviewLimiter, (req, res) => {
   if (!doc) return res.status(404).json({ error: 'Unknown template.' });
   const page = String(req.query.page || '').toLowerCase().slice(0, 60);
   const origin = `${req.protocol}://${req.get('host')}`;
-  // Sample résumé text so a template's `resume` element has something to show.
+  // Sample resume text so a template's `resume` element has something to show.
   const row = {
     subdomain: 'preview', name: 'Alex Morgan', accent: '8b5cf6', primary_hex: '4a1042',
     serif: 0, photo: null, hide_contact: 0, layout: null, config: JSON.stringify(doc),
@@ -6814,6 +6814,21 @@ app.delete('/api/applications/:id', (req, res) => {
 });
 
 // ─── API: Tailor resume ───────────────────────────────────────────────────────
+function _localTailorFallback({ resume = '', jobPosting = '', mode }) {
+  const source = String(resume).trim();
+  const posting = String(jobPosting).replace(/\s+/g, ' ').trim();
+  const role = (posting.match(/^([^.!?]{3,90})/) || [])[1] || 'the advertised role';
+  const words = posting.toLowerCase().match(/[a-z][a-z-]{3,}/g) || [];
+  const blocked = new Set(['with', 'that', 'this', 'from', 'your', 'their', 'will', 'have', 'role', 'work', 'years', 'requires', 'strong']);
+  const keywords = [...new Set(words.filter(word => !blocked.has(word)))].slice(0, 12);
+  const resumeResult = `${source}\n\nTARGET ROLE ALIGNMENT\n${role}\n\nKEYWORDS TO EMPHASIZE\n${keywords.join(', ') || 'Use the terminology from the job posting where it truthfully matches your experience'}\n\nREVIEW NOTE\nYour original facts have been preserved. Before submitting, move the most relevant achievements to the top of each role and add measurable scope only where you can verify it.`;
+  const firstName = ((source.split(/\r?\n/)[0] || 'Candidate').trim().split(/\s+/)[0] || 'Candidate');
+  const coverResult = `${source.split(/\r?\n/)[0] || 'Candidate'}\n\nDear Hiring Team,\n\nI am interested in ${role} because it offers a direct opportunity to apply the experience documented in my resume to the priorities described in your posting. The emphasis on ${keywords.slice(0, 3).join(', ') || 'results, collaboration, and thoughtful execution'} aligns with the kind of work I want to continue doing.\n\nMy background includes the responsibilities and outcomes detailed in my resume, and I would bring that same evidence-based approach to this position. I focus on understanding the problem, working constructively with the people involved, and delivering improvements that can be measured rather than overstated.\n\nBeyond the individual requirements, I value clear communication, dependable follow-through, and continuous improvement. I would welcome the chance to discuss how my actual experience maps to your team’s current needs and where I could contribute most quickly.\n\nI am ready to bring a practical, accountable approach from day one. Thank you for considering my application; I would be glad to continue the conversation.\n\nSincerely,\n${firstName}`;
+  if (mode === 'resume') return resumeResult;
+  if (mode === 'cover_letter') return coverResult;
+  return `${resumeResult}\n\n===COVER_LETTER_START===\n\n${coverResult}`;
+}
+
 // Per-IP rate limit for the (now unlimited-and-free) tailoring endpoint. The
 // free tier no longer has a daily cap, so this limiter is what protects the
 // Anthropic API budget from a runaway client or abuse. Generous enough for a
@@ -7014,6 +7029,13 @@ OUTPUT: Cover Letter
       `<p>✍️ <strong>${who}</strong> just tailored <strong>${what}</strong>${subscribed ? ' (Pro)' : ' (free tier)'}.</p>`);
   } catch (err) {
     console.error('Claude API error:', err?.status, err?.message || err);
+    const providerMessage = String(err?.message || '').toLowerCase();
+    const providerUnavailable = err?.status === 429 || err?.status >= 500 ||
+      /credit balance|billing|overloaded|capacity|timeout|network|fetch failed/.test(providerMessage);
+    if (providerUnavailable) {
+      console.warn('[tailor] AI provider unavailable; returning the factual continuity fallback.');
+      return res.json({ result: _localTailorFallback({ resume, jobPosting, mode }), fallback: true });
+    }
     let userMessage = 'AI processing failed. Please try again.';
     if (err?.status === 401) userMessage = 'AI service authentication error. Please contact support.';
     else if (err?.status === 429) userMessage = 'AI is rate limited. Please wait a moment and try again.';
