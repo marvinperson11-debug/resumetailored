@@ -1083,17 +1083,58 @@ function _versionAssetRefs(html) {
   for (const [from, to] of ASSET_REWRITES) html = html.split(from).join(to);
   return html;
 }
+// Insert a snippet immediately before the document's REAL closing </body>.
+// Must target the LAST </body>, not the first: app.html (and any page that
+// builds an HTML document string in JS) contains a `</body>` inside a template
+// literal well before the real one. Injecting at the first match dropped a
+// <script>…</script> into the middle of that JS string — its </script>
+// truncated the whole inline script in the browser ("Unexpected end of input"),
+// so showTab() and every other handler was undefined and every dashboard button
+// went dead. lastIndexOf finds the document's own closing tag.
+function _insertBeforeLastBody(html, snippet) {
+  const idx = html.toLowerCase().lastIndexOf('</body>');
+  if (idx === -1) return html + snippet;
+  return html.slice(0, idx) + snippet + html.slice(idx);
+}
 function _injectGlobalLanguageToggle(html) {
   if (/src=["']\/top-language-toggle\.js/.test(html)) return html;
   const script = `<script defer src="/top-language-toggle.js?v=${ASSET_VERSION}"></script>`;
-  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${script}</body>`) : html + script;
+  return _insertBeforeLastBody(html, script);
 }
 function _injectSharedPublicNav(html, filePath) {
   const ownNavPages = new Set(['app.html', 'employer.html', 'portal.html']);
   const isHomepage = path.resolve(filePath) === path.resolve(path.join(__dirname, 'public', 'index.html'));
   if (isHomepage || ownNavPages.has(path.basename(filePath)) || /src=["']\/site-nav\.js/.test(html)) return html;
   const script = `<script defer src="/site-nav.js?v=${ASSET_VERSION}"></script>`;
-  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${script}</body>`) : html + script;
+  return _insertBeforeLastBody(html, script);
+}
+
+// ── Global luxury palette (colour consistency, A-to-Z) ───────────────────────
+// The ~300 generated SEO/role pages and the standalone tool pages were built on
+// a near-black + green theme (#030712 / #1F5C3D / #2E7D53 / #8FD3AC). The site's
+// canonical palette is deep navy #0a1628, emerald #1a4d3a, gold #c9a227, cream
+// text. Rather than hand-edit hundreds of near-identical files, every served
+// HTML page is repainted at send time by remapping the legacy hexes/rgba tints
+// onto the canonical palette. This only ever rewrites colour values (never
+// layout), so it cannot break a page. The three app shells manage their own
+// palette (dashboard-luxury-unified.css) and embed live resume/template colour
+// pickers, so they are excluded — mirroring the shared-nav exclusion.
+const _LUXURY_SHELL_PAGES = new Set(['app.html', 'employer.html', 'portal.html']);
+const _LUXURY_COLOR_MAP = [
+  [/#030712/gi, '#0a1628'],   // near-black background  → navy
+  [/#1F5C3D/gi, '#1a4d3a'],   // deep green accent      → emerald
+  [/#2E7D53/gi, '#256d4d'],   // mid green (gradients)  → mid emerald
+  [/#8FD3AC/gi, '#c9a227'],   // bright mint highlight  → gold
+  [/#C9E3D4/gi, '#e3cc91'],   // pale mint text/pills   → soft gold
+  [/#FBBF24/gi, '#c9a227'],   // amber star rating      → gold
+  [/rgba\(\s*3\s*,\s*7\s*,\s*18\s*/gi, 'rgba(10,22,40'],     // navy-black tint  → navy
+  [/rgba\(\s*31\s*,\s*92\s*,\s*61\s*/gi, 'rgba(26,77,58'],   // green tint       → emerald
+  [/rgba\(\s*46\s*,\s*125\s*,\s*83\s*/gi, 'rgba(37,109,77'], // mid green tint   → emerald
+];
+function _luxuryRepaint(html, filePath) {
+  if (_LUXURY_SHELL_PAGES.has(path.basename(filePath))) return html;
+  for (const [re, to] of _LUXURY_COLOR_MAP) html = html.replace(re, to);
+  return html;
 }
 
 // ── Self-hosted fonts (performance) ──────────────────────────────────────────
@@ -1163,6 +1204,7 @@ function _sendVersionedHtml(res, filePath) {
     // ecosystem pages. This avoids stale long-tail copy advertising $19.99
     // while Stripe and the membership architecture use exactly $19.00.
     html = html.split('19.99').join('19.00');
+    html = _luxuryRepaint(html, filePath);
     const prepared = _injectSharedPublicNav(_selfHostFonts(_versionAssetRefs(html)), filePath);
     res.send(_injectGlobalLanguageToggle(prepared));
   });

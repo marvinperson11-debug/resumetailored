@@ -153,3 +153,11 @@ body::before { opacity: .45 !important; }
   box-shadow: 0 6px 18px rgba(31,92,61,0.3) !important;
 }
 .jmt-btn.active, .btn-fetch { background: var(--accent) !important; }
+
+/* Free-tools catalog cards (score.html) use inline cream styles → navy. */
+.ft-card { background: #0d1e30 !important; border-color: rgba(201,162,39,.22) !important; }
+.ft-catalog h2 { color: #f5f1e8 !important; }
+.ft-card h3, .ft-card [style*="#191512"] { color: #f5f1e8 !important; }
+.ft-card p, .ft-card [style*="#57514A"] { color: #cdd6d3 !important; }
+.ft-catalog [data-i18n="tools_eyebrow"] { color: #c9a227 !important; }
+.ft-catalog [data-i18n="tools_sub"] { color: #cdd6d3 !important; }

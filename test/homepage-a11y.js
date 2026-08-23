@@ -60,11 +60,12 @@ for (const f of ['index.html', 'zh/index.html']) {
 {
   const html = read('index.html');
   // The shared caption/meta colour (--ink-faint) drives .hero-note/.demo-label/
-  // .footer-copy. It must clear AA on the lightest backgrounds it sits on.
-  const vm = html.match(/--ink-faint:\s*(#[0-9a-fA-F]{6})/);
+  // .footer-copy. On the navy luxury palette it is light text and must clear AA
+  // on the darkest navy surfaces it sits on (page, band, and card).
+  const vm = html.match(/--ink-faint:\s*(rgba?\([^)]+\)|#[0-9a-fA-F]{6})/);
   check('index.html --ink-faint defined', !!vm, vm ? vm[1] : 'not found');
   if (vm) {
-    for (const bg of ['#ffffff', '#faf7f0', '#e8f0e9', '#f1eadd']) {
+    for (const bg of ['#0a1628', '#081422', '#0d1e30']) {
       check(`--ink-faint ≥ 4.5:1 on ${bg}`, ratio(vm[1], bg) >= 4.5, `${vm[1]} => ${ratio(vm[1], bg).toFixed(2)}`);
     }
   }
