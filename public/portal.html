@@ -6,46 +6,26 @@
 <link rel="stylesheet" href="/luxury-ecosystem.css">
 <link rel="stylesheet" href="/fonts.css">
 <style>
-*{box-sizing:border-box}html,body{margin:0}body{background:#071724;color:#e9eef0;font-family:Inter,Arial,sans-serif;min-height:100vh}
-.pt-top{display:flex;align-items:center;gap:16px;padding:16px 24px;border-bottom:1px solid rgba(201,168,93,.35);background:#071724;position:sticky;top:0;z-index:20}
-.pt-top a.pt-brand{color:#e3cc91;text-decoration:none;font:500 20px Fraunces,Georgia,serif}
-.pt-top .pt-co{color:#9fb1b2;font-size:13px}
-.pt-top .pt-role{margin-left:auto;padding:6px 12px;border:1px solid #c9a85d;color:#e3cc91;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
-.pt-wrap{display:grid;grid-template-columns:280px 1fr;min-height:calc(100vh - 60px)}
-.pt-rail{border-right:1px solid rgba(201,168,93,.22);padding:20px 14px;background:#0a1c2b;overflow:auto}
-.pt-rail h3{color:#8ea0a1;font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin:18px 8px 8px}
-.pt-navbtn{display:block;width:100%;text-align:left;border:0;background:none;color:#cdd9da;padding:10px 12px;font-size:14px;cursor:pointer;border-radius:6px}
-.pt-navbtn:hover{background:rgba(255,255,255,.05)}
-.pt-navbtn.active{background:#123f35;color:#fff}
-.pt-navbtn small{display:block;color:#7f9391;font-size:11px}
-.pt-main{padding:30px 34px;overflow:auto}
-.pt-h{display:flex;align-items:end;gap:18px;margin-bottom:20px}
-.pt-h h1{margin:0;font:500 clamp(28px,4vw,44px) Fraunces,Georgia,serif;color:#fff}
-.pt-h p{margin:0 0 6px;color:#9fb1b2}
-.pt-btn{border:1px solid #c9a85d;background:transparent;color:#e3cc91;padding:10px 18px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
-.pt-btn--solid{background:#123f35;border-color:#123f35;color:#fff}
-.pt-btn:hover{background:rgba(201,168,93,.12)}
-.pt-card{background:#0d2434;border:1px solid rgba(201,168,93,.2);padding:20px;margin-bottom:16px;border-radius:8px}
-.pt-rec{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06)}
-.pt-rec b{color:#fff}.pt-rec .pt-status{margin-left:auto;padding:4px 10px;border:1px solid #c9a85d;color:#e3cc91;font-size:10px;text-transform:uppercase;letter-spacing:.08em}
-.pt-rec small{color:#8ea0a1}
-.pt-field{display:block;margin:10px 0}
-.pt-field label{display:block;color:#9fb1b2;font-size:12px;margin-bottom:4px}
-.pt-field input,.pt-field textarea,.pt-field select{width:100%;padding:11px 13px;border:1px solid rgba(201,168,93,.3);background:#071724;color:#e9eef0;font-size:14px;font-family:inherit}
-.pt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-.pt-kpi{background:#0d2434;border:1px solid rgba(201,168,93,.2);padding:18px;text-align:center;border-radius:8px}
-.pt-kpi b{display:block;font:500 32px Fraunces,Georgia,serif;color:#e3cc91}
-.pt-kpi span{color:#8ea0a1;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
-.pt-msg{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)}
-.pt-msg b{color:#e3cc91;font-size:12px}.pt-msg span{color:#cdd9da}
-.pt-hidden{display:none}
-.pt-gate{max-width:520px;margin:80px auto;text-align:center}
-.pt-gate h1{font:500 40px Fraunces,Georgia,serif;color:#fff}
-.pt-gate p{color:#9fb1b2;line-height:1.7}
-.pt-gate a{display:inline-block;margin-top:16px;border:1px solid #c9a85d;color:#e3cc91;text-decoration:none;padding:12px 22px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
-@media(max-width:820px){.pt-wrap{grid-template-columns:1fr}.pt-rail{border-right:0;border-bottom:1px solid rgba(201,168,93,.22)}}
+*{box-sizing:border-box}html,body{margin:0}body{--navy:#0a1628;--emerald:#1a4d3a;--gold:#c9a227;--ivory:#f5f1e8;background:var(--navy);color:#e9efec;font-family:Inter,Arial,sans-serif;min-height:100vh}
+.pt-top{height:66px;display:flex;align-items:center;gap:18px;padding:0 28px;border-bottom:1px solid rgba(201,162,39,.25);background:rgba(10,22,40,.96);position:sticky;top:0;z-index:20;backdrop-filter:blur(14px)}
+.pt-top a.pt-brand{color:var(--ivory);text-decoration:none;font:500 20px Fraunces,Georgia,serif}.pt-mark{width:8px;height:8px;background:var(--gold);transform:rotate(45deg)}
+.pt-top .pt-co{color:#9eb2aa;font-size:12px;letter-spacing:.04em}.pt-links{display:flex;gap:4px;margin-left:auto}.pt-links a{padding:8px 10px;color:#9eb2aa;text-decoration:none;font-size:11px}.pt-links a:hover{color:var(--ivory)}
+.pt-top .pt-role{padding:6px 10px;border:1px solid rgba(201,162,39,.48);color:#e0c45d;font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.pt-wrap{display:grid;grid-template-columns:252px minmax(0,1fr);min-height:calc(100vh - 66px)}
+.pt-rail{border-right:1px solid rgba(201,162,39,.16);padding:22px 12px;background:#081422;overflow:auto}.pt-rail::before{content:"MANAGER ADMIN PANEL";display:block;margin:2px 10px 24px;color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.18em}
+.pt-rail h3{color:#657b75;font-size:9px;letter-spacing:.18em;text-transform:uppercase;margin:22px 10px 8px}.pt-rail p{line-height:1.6}
+.pt-navbtn{display:block;width:100%;text-align:left;border:1px solid transparent;background:none;color:#b9c8c3;padding:10px 12px;font-size:13px;cursor:pointer;border-radius:3px;transition:.18s}.pt-navbtn:hover{border-color:rgba(201,162,39,.13);background:rgba(255,255,255,.025)}.pt-navbtn.active{border-color:rgba(201,162,39,.2);background:rgba(26,77,58,.52);color:#fff}.pt-navbtn small{display:block;margin-top:3px;color:#718780;font-size:10px}
+.pt-main{padding:clamp(28px,5vw,58px);overflow:auto;max-width:1500px;width:100%;margin:0 auto}.pt-h{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px 20px;margin-bottom:28px;border-bottom:1px solid rgba(201,162,39,.13);padding-bottom:22px}.pt-h h1{margin:0;color:var(--ivory);font:500 clamp(32px,4vw,50px)/1 Fraunces,Georgia,serif;letter-spacing:-.025em}.pt-h p{grid-column:1;margin:0;color:#8fa39c;font-size:13px}.pt-h .pt-headbtn{grid-column:2;grid-row:1/3}
+.pt-btn{border:1px solid rgba(201,162,39,.6);background:transparent;color:#e1c65d;padding:10px 16px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}.pt-btn--solid{background:var(--emerald);border-color:var(--emerald);color:#fff}.pt-btn:hover{background:rgba(201,162,39,.09)}.pt-btn--solid:hover{background:#22634c}
+.pt-card{background:#0d1e30;border:1px solid rgba(201,162,39,.14);padding:20px;margin-bottom:14px;border-radius:3px;box-shadow:0 18px 44px rgba(0,0,0,.12)}details.pt-card{padding:0}details.pt-card>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;padding:18px 20px;color:var(--ivory);font:500 16px Fraunces,Georgia,serif;cursor:pointer}details.pt-card>summary::-webkit-details-marker{display:none}details.pt-card>summary::after{content:"+";color:var(--gold);font:400 20px Inter,sans-serif}details.pt-card[open]>summary::after{content:"−"}details.pt-card>.pt-card-body{padding:0 20px 20px;border-top:1px solid rgba(201,162,39,.1)}
+.pt-rec{display:flex;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.045)}.pt-rec:last-child{border-bottom:0}.pt-rec b{color:#edf2ef;font-weight:600}.pt-rec .pt-status{margin-left:auto;padding:5px 9px;border:1px solid rgba(201,162,39,.42);color:#dcc25d;font-size:9px;text-transform:uppercase;letter-spacing:.1em}.pt-rec small{color:#738983}
+.pt-field{display:block;margin:12px 0}.pt-field label{display:block;color:#91a49e;font-size:11px;margin-bottom:6px}.pt-field input,.pt-field textarea,.pt-field select{width:100%;padding:12px;border:1px solid rgba(201,162,39,.2);border-radius:2px;background:#081624;color:#e9efec;font-size:13px;font-family:inherit;outline:none}.pt-field input:focus,.pt-field textarea:focus,.pt-field select:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,162,39,.08)}
+.pt-grid{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));gap:12px}.pt-kpi{position:relative;min-height:144px;background:#0d1e30;border:1px solid rgba(201,162,39,.14);padding:24px;text-align:left;border-radius:3px;overflow:hidden}.pt-kpi::after{content:"";position:absolute;width:52px;height:52px;border:1px solid rgba(201,162,39,.12);right:-24px;bottom:-24px;transform:rotate(45deg)}.pt-kpi b{display:block;margin-bottom:22px;color:var(--ivory);font:500 38px/1 Fraunces,Georgia,serif}.pt-kpi span{color:#81968f;font-size:9px;text-transform:uppercase;letter-spacing:.13em}
+.pt-msg{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.045)}.pt-msg b{color:#dfc55f;font-size:11px}.pt-msg span{color:#c2cfca}.pt-hidden{display:none!important}
+.pt-gate{max-width:560px;margin:100px auto;padding:48px;border:1px solid var(--gold);background:#0d1e30;text-align:center}.pt-gate h1{margin:0 0 12px;color:var(--ivory);font:500 44px Fraunces,Georgia,serif}.pt-gate p{color:#94a8a1;line-height:1.7}.pt-gate a{display:inline-block;margin-top:16px;border:1px solid var(--gold);background:var(--gold);color:var(--navy);text-decoration:none;padding:12px 22px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:10px}
+@media(max-width:920px){.pt-links{display:none}.pt-wrap{grid-template-columns:1fr}.pt-rail{border-right:0;border-bottom:1px solid rgba(201,162,39,.18);max-height:250px}.pt-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.pt-top{padding:0 16px}.pt-main{padding:24px 16px}.pt-grid{grid-template-columns:1fr}.pt-h{grid-template-columns:1fr}.pt-h .pt-headbtn{grid-column:1;grid-row:auto}.pt-role{display:none}}
 </style></head><body>
-<div class="pt-top"><a class="pt-brand" href="/">ResumeTailored</a><span class="pt-co" id="ptCo">The Portal</span><span class="pt-role" id="ptRole"></span></div>
+<div class="pt-top"><span class="pt-mark" aria-hidden="true"></span><a class="pt-brand" href="/">ResumeTailored</a><span class="pt-co" id="ptCo">The Portal</span><nav class="pt-links" aria-label="Portal links"><a href="/dashboard">Job Seeker</a><a href="/employer">Hiring</a><a href="/corporate">Plans</a><a href="/">Home</a></nav><span class="pt-role" id="ptRole"></span></div>
 <div id="ptGate" class="pt-gate pt-hidden"><h1>The Portal</h1><p id="ptGateMsg">Sign in with an employer account to enter the Manager's Admin Panel.</p><a href="/employer" id="ptGateLink">Open the employer portal</a></div>
 <div class="pt-wrap pt-hidden" id="ptWrap">
   <aside class="pt-rail" id="ptRail"></aside>
@@ -58,12 +38,11 @@
   function $(id){return document.getElementById(id);}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function h(json){var x={};if(token)x.Authorization='Bearer '+token;if(json)x['Content-Type']='application/json';return x;}
-  function api(method,path,body){return fetch(path,{method:method,headers:h(!!body),body:body?JSON.stringify(body):undefined}).then(function(r){return r.json().then(function(j){return{status:r.status,j:j};}).catch(function(){return{status:r.status,j:{}};});});}
+  function api(method,path,body){return fetch(path,{method:method,headers:h(!!body),credentials:'same-origin',body:body?JSON.stringify(body):undefined}).then(function(r){return r.json().then(function(j){return{status:r.status,j:j};}).catch(function(){return{status:r.status,j:{}};});});}
 
   function gate(msg){$('ptGate').classList.remove('pt-hidden');$('ptWrap').classList.add('pt-hidden');if(msg)$('ptGateMsg').textContent=msg;}
 
   function boot(){
-    if(!token){gate('Please sign in first.');$('ptGateLink').setAttribute('href','/login');return;}
     api('GET','/api/portal/context').then(function(res){
       if(res.status===401){gate('Please sign in first.');$('ptGateLink').setAttribute('href','/login');return;}
       if(res.status===403){gate('Create an employer account to use the portal.');return;}
@@ -126,8 +105,8 @@
       if(res.status!==200){m.innerHTML=head('Unavailable',res.j.message||'This module is not available.');return;}
       var mod=res.j.module,perms=res.j.permissions,recs=res.j.records;
       var html=head(esc(mod.name),(recs.length)+' '+esc(mod.recordLabel).toLowerCase()+(recs.length===1?'':'s'),perms.manage?'Export CSV':'');
-      if(perms.write)html+='<div class="pt-card" id="ptForm"><b style="color:#e3cc91">Add '+esc(mod.recordLabel)+'</b>'+mod.fields.map(fieldInput).join('')+statusSelect(mod.statuses)+'<button class="pt-btn pt-btn--solid" id="ptAdd" style="margin-top:12px">Add</button></div>';
-      html+='<div class="pt-card">'+(recs.length?recs.map(function(r){return recRow(r,mod);}).join(''):'<p style="color:#8ea0a1">Nothing here yet.</p>')+'</div>';
+      if(perms.write)html+='<details class="pt-card" id="ptForm"><summary>Add '+esc(mod.recordLabel)+'</summary><div class="pt-card-body">'+mod.fields.map(fieldInput).join('')+statusSelect(mod.statuses)+'<button class="pt-btn pt-btn--solid" id="ptAdd" style="margin-top:12px">Add</button></div></details>';
+      html+='<details class="pt-card" open><summary>'+esc(mod.name)+' records <small>'+recs.length+'</small></summary><div class="pt-card-body">'+(recs.length?recs.map(function(r){return recRow(r,mod);}).join(''):'<p style="color:#8ea0a1">Nothing here yet.</p>')+'</div></details>';
       m.innerHTML=html;
       Array.prototype.forEach.call(m.querySelectorAll('.pt-headbtn'),function(b){b.addEventListener('click',function(){window.location.href='/api/portal/modules/'+encodeURIComponent(key)+'/export.csv';});});
       if(perms.write&&$('ptAdd'))$('ptAdd').addEventListener('click',function(){addRecord(key,mod);});
@@ -166,8 +145,8 @@
     api('GET','/api/portal/calendar').then(function(res){
       var items=(res.j&&res.j.items)||[];
       var html=head('Company Calendar','People and operational dates together.');
-      if(rankAtLeast('manager'))html+='<div class="pt-card"><div class="pt-field"><label>Event</label><input id="ptCalTitle"></div><div class="pt-field"><label>Date</label><input id="ptCalAt" type="datetime-local"></div><button class="pt-btn pt-btn--solid" id="ptCalAdd">Add event</button></div>';
-      html+='<div class="pt-card">'+(items.length?items.map(function(x){return '<div class="pt-rec"><b>'+esc(x.title)+'</b><span class="pt-status">'+(x.at?new Date(x.at).toLocaleDateString():'—')+'</span></div>';}).join(''):'<p style="color:#8ea0a1">No events.</p>')+'</div>';
+      if(rankAtLeast('manager'))html+='<details class="pt-card"><summary>Add company event</summary><div class="pt-card-body"><div class="pt-field"><label>Event</label><input id="ptCalTitle"></div><div class="pt-field"><label>Date</label><input id="ptCalAt" type="datetime-local"></div><button class="pt-btn pt-btn--solid" id="ptCalAdd">Add event</button></div></details>';
+      html+='<details class="pt-card" open><summary>Upcoming dates <small>'+items.length+'</small></summary><div class="pt-card-body">'+(items.length?items.map(function(x){return '<div class="pt-rec"><b>'+esc(x.title)+'</b><span class="pt-status">'+(x.at?new Date(x.at).toLocaleDateString():'—')+'</span></div>';}).join(''):'<p style="color:#8ea0a1">No events.</p>')+'</div></details>';
       m.innerHTML=html;
       if($('ptCalAdd'))$('ptCalAdd').addEventListener('click',function(){var t=$('ptCalTitle').value.trim();if(!t)return;var at=$('ptCalAt').value?new Date($('ptCalAt').value).getTime():null;api('POST','/api/portal/calendar',{title:t,at:at}).then(function(){go({type:'calendar'});});});
     });
@@ -182,8 +161,8 @@
     api('GET','/api/portal/members').then(function(res){
       var members=(res.j&&res.j.members)||[];
       var html=head('Team &amp; Roles','Admins manage the company; managers run operations; employees submit their own.','','');
-      html+='<div class="pt-card"><div class="pt-field"><label>Email</label><input id="ptMemEmail"></div><div class="pt-field"><label>Name</label><input id="ptMemName"></div><div class="pt-field"><label>Role</label><select id="ptMemRole"><option value="employee">Employee</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div><button class="pt-btn pt-btn--solid" id="ptMemAdd">Invite member</button></div>';
-      html+='<div class="pt-card">'+(members.length?members.map(function(x){return '<div class="pt-rec"><div><b>'+esc(x.name||x.email)+'</b><br><small>'+esc(x.email)+'</small></div><span class="pt-status">'+esc(x.role)+'</span></div>';}).join(''):'<p style="color:#8ea0a1">No members yet.</p>')+'</div>';
+      html+='<details class="pt-card"><summary>Invite a team member</summary><div class="pt-card-body"><div class="pt-field"><label>Email</label><input id="ptMemEmail"></div><div class="pt-field"><label>Name</label><input id="ptMemName"></div><div class="pt-field"><label>Role</label><select id="ptMemRole"><option value="employee">Employee</option><option value="manager">Manager</option><option value="admin">Admin</option></select></div><button class="pt-btn pt-btn--solid" id="ptMemAdd">Invite member</button></div></details>';
+      html+='<details class="pt-card" open><summary>Current team <small>'+members.length+'</small></summary><div class="pt-card-body">'+(members.length?members.map(function(x){return '<div class="pt-rec"><div><b>'+esc(x.name||x.email)+'</b><br><small>'+esc(x.email)+'</small></div><span class="pt-status">'+esc(x.role)+'</span></div>';}).join(''):'<p style="color:#8ea0a1">No members yet.</p>')+'</div></details>';
       m.innerHTML=html;
       $('ptMemAdd').addEventListener('click',function(){var e=$('ptMemEmail').value.trim();if(!e)return;api('POST','/api/portal/members',{email:e,name:$('ptMemName').value.trim(),role:$('ptMemRole').value}).then(function(res){if(res.status!==200){alert(res.j.message||'Could not add member.');return;}go({type:'members'});});});
     });
@@ -191,7 +170,7 @@
 
   function renderActivate(m){
     var html=head('Activate Modules',(ctx.scaleRemaining||0)+' of 5 remaining. Choices are permanent on Scale.','','');
-    html+='<div class="pt-card">'+ctx.allModules.map(function(mod){return '<div class="pt-rec"><div><b>'+esc(mod.name)+'</b><br><small>'+esc(mod.category)+'</small></div>'+(mod.active?'<span class="pt-status">Active</span>':'<button class="pt-btn pt-act" type="button" data-act="'+esc(mod.key)+'">Activate</button>')+'</div>';}).join('')+'</div>';
+    html+='<details class="pt-card" open><summary>Module collection</summary><div class="pt-card-body">'+ctx.allModules.map(function(mod){return '<div class="pt-rec"><div><b>'+esc(mod.name)+'</b><br><small>'+esc(mod.category)+'</small></div>'+(mod.active?'<span class="pt-status">Active</span>':'<button class="pt-btn pt-act" type="button" data-act="'+esc(mod.key)+'">Activate</button>')+'</div>';}).join('')+'</div></details>';
     m.innerHTML=html;
     Array.prototype.forEach.call(m.querySelectorAll('.pt-act'),function(b){b.addEventListener('click',function(){api('POST','/api/portal/modules/activate',{moduleKey:b.getAttribute('data-act')}).then(function(res){if(res.status!==200){alert(res.j.message||'Could not activate.');return;}boot();});});});
   }
