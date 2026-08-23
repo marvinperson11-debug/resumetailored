@@ -1020,15 +1020,44 @@
       <a href="/corporate">Corporate</a>
       <a href="/resume-video">Resume Video</a>
       <a href="/web-studio">Web Studio</a>
-      <a href="#ecosystem-pricing">Membership</a>
     </nav>
-    <button class="club-mobile" type="button" data-club-mobile onclick="void 0" aria-label="Open navigation" aria-expanded="false">☰</button>
-    <div class="club-nav__actions">
-      <button class="club-button club-button--quiet" type="button" onclick="openLoginChooser()">Member login</button>
-      <a class="club-button club-button--gold" href="/dashboard" data-context="job-seeker">Enter the office</a>
-    </div>
+    <button class="club-mobile" type="button" data-club-mobile aria-controls="clubMobileMenu" aria-label="Open navigation" aria-expanded="false">☰</button>
   </div>
 </header>
+
+<div class="club-mobile-menu" id="clubMobileMenu" aria-hidden="true">
+  <div class="club-mobile-menu__head"><span>Explore the office</span><button class="club-mobile-menu__close" type="button" aria-label="Close navigation">&times;</button></div>
+  <nav class="club-mobile-menu__links" aria-label="Mobile navigation">
+    <a href="/ai-resume-tailor">Tailor My Resume</a>
+    <a href="/ai-cover-letter-generator">Cover Letter</a>
+    <a href="/free-ats-resume-checker">ATS Scanner</a>
+    <a href="/linkedin-optimizer">LinkedIn Optimizer</a>
+    <a href="/resume-video">Resume Video</a>
+    <a href="/web-studio">Web Studio</a>
+    <a href="/decoder-key">Decoder Key</a>
+    <a href="/interview-coach">Interview Coach</a>
+    <a href="/career-hub">Career Hub</a>
+    <a class="club-mobile-menu__account" href="/signup">Create Account</a>
+    <button class="club-mobile-menu__lang" type="button" data-club-lang onclick="void 0">中文 <span aria-hidden="true">→</span></button>
+  </nav>
+</div>
+<script>
+(function () {
+  var trigger = document.querySelector('[data-club-mobile]');
+  var menu = document.getElementById('clubMobileMenu');
+  if (!trigger || !menu) return;
+  function setOpen(open) {
+    menu.classList.toggle('open', open);
+    menu.setAttribute('aria-hidden', open ? 'false' : 'true');
+    trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  trigger.addEventListener('click', function () { setOpen(!menu.classList.contains('open')); });
+  menu.querySelector('.club-mobile-menu__close').addEventListener('click', function () { setOpen(false); });
+  menu.querySelectorAll('a').forEach(function (link) { link.addEventListener('click', function () { setOpen(false); }); });
+  menu.querySelector('[data-club-lang]').addEventListener('click', function () { setOpen(false); if (typeof toggleLang === 'function') toggleLang(); });
+  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setOpen(false); });
+})();
+</script>
 
 <!-- Animated interactive neural-vortex background (fixed, behind all content) -->
 <canvas id="neuro" aria-hidden="true"></canvas>
@@ -1044,7 +1073,6 @@
       <a href="/resume-examples">Resume Examples</a>
       <a href="/blog" data-i18n="nav_blog">Blog</a>
       <a href="/for-employers" style="color:#0f172a;font-weight:700;white-space:nowrap;">For Employers</a>
-      <a href="#pricing" data-i18n="nav_pricing">Pricing</a>
     </div>
     <!-- Canonical action group: [中文] [Log In] [CTA] — same order and position
          as the injected nav (site-nav.js) on every other route, so the language
@@ -1066,14 +1094,17 @@
 <!-- Mobile Menu -->
 <div class="mobile-menu">
   <button class="mobile-close" onclick="document.querySelector('.mobile-menu').classList.remove('open')">&times;</button>
-  <a href="/how-it-works" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_how">How It Works</a>
-  <a href="/blog" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_blog">Blog</a>
-  <a href="/for-employers" onclick="document.querySelector('.mobile-menu').classList.remove('open')">For Employers</a>
-  <a href="/score" onclick="document.querySelector('.mobile-menu').classList.remove('open')" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
-  <a href="/pro-tools" onclick="document.querySelector('.mobile-menu').classList.remove('open')" style="color:#1F5C3D;" data-i18n="nav_pro_tools">Pro Tools</a>
-  <a href="#pricing" onclick="document.querySelector('.mobile-menu').classList.remove('open')" data-i18n="nav_pricing">Pricing</a>
-  <button type="button" class="btn btn-ghost btn-lg" style="border-color:#1F5C3D;color:#1F5C3D;background:none;cursor:pointer;font:inherit;" onclick="document.querySelector('.mobile-menu').classList.remove('open');openLoginChooser()">Login</button>
-  <a href="/dashboard" class="btn btn-primary btn-lg" data-i18n="mobile_cta">Tailor My Resume Free →</a>
+  <a href="/ai-resume-tailor">Tailor My Resume</a>
+  <a href="/ai-cover-letter-generator">Cover Letter</a>
+  <a href="/free-ats-resume-checker">ATS Scanner</a>
+  <a href="/linkedin-optimizer">LinkedIn Optimizer</a>
+  <a href="/resume-video">Resume Video</a>
+  <a href="/web-studio">Web Studio</a>
+  <a href="/decoder-key">Decoder Key</a>
+  <a href="/interview-coach">Interview Coach</a>
+  <a href="/career-hub">Career Hub</a>
+  <a href="/signup" class="btn btn-primary btn-lg">Create Account</a>
+  <button type="button" class="btn btn-ghost btn-lg" onclick="document.querySelector('.mobile-menu').classList.remove('open');toggleLang()">中文</button>
 </div>
 
 <!-- Login chooser: pick which side to sign in to -->
@@ -1107,7 +1138,7 @@
     <h1 id="ecosystem-title">Your next move,<br><em>properly considered.</em></h1>
     <p class="ecosystem-home__lead">A private digital office for ambitious candidates and exacting employers—combining resume intelligence, cinematic presentation, recruiting operations, and an editorial web studio.</p>
     <div class="ecosystem-doors">
-      <a class="ecosystem-door" href="/dashboard" data-context="job-seeker">
+      <a class="ecosystem-door" href="/ai-resume-tailor" data-context="job-seeker">
         <span class="ecosystem-door__index">For candidates · 01</span>
         <h2>Tailor My Resume</h2>
         <p>Translate the role, position your experience, prepare for the conversation, and present your work with quiet confidence.</p>

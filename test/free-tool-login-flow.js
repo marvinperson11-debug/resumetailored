@@ -17,16 +17,15 @@ const shared = read('public/free-tool-auth.js');
 const hub = read('public/tools-hub.js');
 const tracker = read('public/job-tracker.js');
 
-// Only Tailor/Cover Letter prompt at Generate; their shared callback preserves
-// all in-place form state and replays the same action after authentication.
+// Tailor/Cover Letter generate anonymously, then recommend account creation.
 for (const tool of [['AI Resume Tailor', 'tailor'], ['Cover Letter', 'tailor']]) {
-  check(`${tool[0]} uses login-at-Generate`, app.includes(`requireFreeActionLogin(${tool[1]}`));
+  check(`${tool[0]} does not gate Generate with login`, !app.includes(`requireFreeActionLogin(${tool[1]}`));
 }
 check('ATS Scanner never opens an auth gate', !app.includes('requireFreeActionLogin(runDashboardATS'));
 check('LinkedIn Optimizer never opens an auth gate', !app.includes('requireFreeActionLogin(optimizeLinkedIn'));
-check('dashboard waits for the authoritative auth request', /await authReadyPromise/.test(app));
-check('dashboard preserves the pending callback through the modal', /showAuthModal\('login', true\)/.test(app));
-check('dashboard replays output after login', /setTimeout\(fn, 300\)/.test(app));
+check('post-creation recommendation explains that anonymous work is not saved', /Create an account to save your resumes and cover letters\. Without an account, your work will not be saved\./.test(app));
+check('post-creation recommendation is explicitly skippable', /Skip for now/.test(app));
+check('generated work is preserved through optional signup', /rt_pending_creation/.test(app) && /restoreAnonymousCreation/.test(app));
 
 // Standalone local/API tools use the shared gate only inside their action.
 const standalone = [
@@ -90,6 +89,9 @@ check('LinkedIn generation accepts anonymous requests', !/optimize-linkedin'[\s\
 check('ATS Keyword Extractor accepts anonymous requests', !/extract-keywords'[\s\S]{0,500}getSessionEmail\(req\)/.test(server));
 check('Salary Script uses the anonymous public tool gate', /salary-negotiation'[\s\S]{0,300}toolGate\(req, res, null\)/.test(server));
 check('Weekly Report does not redirect on page load', !/if\(thRequireLogin\(\)\) load\(\)/.test(read('public/tools/weekly-report.html')));
+check('Tailor API accepts anonymous generation', !/api\/tailor'[\s\S]{0,1800}if \(!email\)[\s\S]{0,120}login_required/.test(server));
+check('Interview Coach practice uses the anonymous public tool gate', /interview-coach\/question'[\s\S]{0,260}toolGate\(req, res/.test(server) && !/icStart[^\n]{0,180}location\.href='\/login'/.test(read('public/interview-coach.html')));
+check('named tools route through explanation pages before their workspaces', /linkedin-optimizer'[\s\S]{0,100}decoder-key'[\s\S]{0,100}interview-coach'[\s\S]{0,100}career-hub'/.test(server) && /\/tools\/decoder-key/.test(server) && /\/tools\/interview-coach/.test(server));
 
 if (failures) {
   console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`);

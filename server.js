@@ -1187,6 +1187,54 @@ function _sendSubscriptionEndedEmail(email) {
     console.error('[Email] subscription-ended template failed:', err.message);
   }
 }
+
+// Parse cookies before any HTML route that makes an entitlement decision. The
+// API used to be the first cookie-aware surface, which meant a direct GET could
+// not protect paid workspaces even though the same session protected their API.
+function _parseRequestCookies(req, res, next) {
+  if (req.cookies) return next();
+  const out = {};
+  const raw = req.headers.cookie;
+  if (raw) {
+    for (const part of raw.split(';')) {
+      const i = part.indexOf('=');
+      if (i < 0) continue;
+      const k = part.slice(0, i).trim();
+      if (!k) continue;
+      let v = part.slice(i + 1).trim();
+      if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1);
+      try { out[k] = decodeURIComponent(v); } catch (_) { out[k] = v; }
+    }
+  }
+  req.cookies = out;
+  next();
+}
+app.use(_parseRequestCookies);
+
+const resumeVideoLandingHtml = path.join(__dirname, 'public', 'resume-video-landing.html');
+const resumeVideoStudioHtml = path.join(__dirname, 'public', 'tools', 'resume-video.html');
+const resumeVideoPreviewHtml = path.join(__dirname, 'public', 'preview.html');
+const toolLandingHtml = path.join(__dirname, 'public', 'tool-landing.html');
+
+// Resume Video has a public explanation page and a separate, server-protected
+// studio. Redirect legacy/static aliases so no anonymous visitor can bypass the
+// landing page by knowing an old filename.
+app.get('/resume-video', (req, res) => _sendVersionedHtml(res, resumeVideoLandingHtml));
+app.get(['/tools/resume-video', '/tools/resume-video.html'], (req, res) => res.redirect(302, '/resume-video'));
+app.get(['/video', '/app/video'], (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email || !isSubscriber(email)) return res.redirect(302, '/resume-video');
+  return _sendVersionedHtml(res, resumeVideoStudioHtml);
+});
+app.get(['/preview', '/preview.html'], (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email || !isSubscriber(email)) return res.redirect(302, '/resume-video');
+  return _sendVersionedHtml(res, resumeVideoPreviewHtml);
+});
+app.get(['/linkedin-optimizer', '/decoder-key', '/interview-coach', '/career-hub'], (req, res) => _sendVersionedHtml(res, toolLandingHtml));
+app.get('/tools/decoder-key', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'decoder-key.html')));
+app.get('/tools/interview-coach', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'interview-coach.html')));
+app.get(['/decoder-key.html', '/interview-coach.html'], (req, res) => res.redirect(302, req.path.replace(/\.html$/, '')));
 // `/tools` collides with the on-disk `public/tools/` directory, which has no
 // index.html. express.static would otherwise issue `/tools` → `/tools/` and the
 // result would be a 404. Register the virtual New Tools page before static so
@@ -1252,7 +1300,6 @@ const appHtml = path.join(__dirname, 'public', 'app.html');
 const loginHtml = path.join(__dirname, 'public', 'login.html');
 const landingHtml = path.join(__dirname, 'public', 'index.html');
 app.get('/dashboard',    (req, res) => _sendVersionedHtml(res, appHtml));
-app.get('/resume-video', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'tools', 'resume-video.html')));
 app.get('/web-studio',   (req, res) => _sendVersionedHtml(res, appHtml));
 // /login and /signup serve the dedicated login page (not the app). It reads
 // ?redirect= and sends the user back where they came from after signing in.
@@ -1263,17 +1310,15 @@ app.get('/signup',       (req, res) => _sendVersionedHtml(res, loginHtml));
 // correct shell here and let app.html select the tab from the pathname. Keeping
 // these as real 200 responses makes a refresh or pasted URL deterministic.
 for (const route of [
-  '/tailor', '/cover-letter', '/website', '/video',
+  '/tailor', '/cover-letter', '/website',
   '/web-studio',
-  '/app/tailor', '/app/cover-letter', '/app/website', '/app/video',
+  '/app/tailor', '/app/cover-letter', '/app/website',
 ]) {
   app.get(route, (req, res) => _sendVersionedHtml(res, appHtml));
 }
 app.get(['/pricing', '/checkout'], (req, res) => _sendVersionedHtml(res, landingHtml));
 app.get('/forgot-password', (req, res) => _sendVersionedHtml(res, loginHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
-// Live in-browser video preview (Remotion Player — plays client-side, no render)
-app.get('/preview',      (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'preview.html')));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
 app.get('/blog',         (req, res) => _sendVersionedHtml(res, blogIndexHtml));
 
@@ -1282,26 +1327,8 @@ app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 // ─── Phase 2: cookie parsing + auth-cookie helpers ────────────────────────────
-// Dependency-free cookie parser (avoids pulling in cookie-parser). Populates
-// req.cookies for every route registered below this line — which is all of the
-// API. Values are URL-decoded; malformed pairs are skipped.
-app.use((req, res, next) => {
-  const out = {};
-  const raw = req.headers.cookie;
-  if (raw) {
-    for (const part of raw.split(';')) {
-      const i = part.indexOf('=');
-      if (i < 0) continue;
-      const k = part.slice(0, i).trim();
-      if (!k) continue;
-      let v = part.slice(i + 1).trim();
-      if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1);
-      try { out[k] = decodeURIComponent(v); } catch (_) { out[k] = v; }
-    }
-  }
-  req.cookies = out;
-  next();
-});
+// Cookies are already parsed before the HTML entitlement routes above, so the
+// API and CSRF guard consume the same req.cookies object here.
 
 // A request is over https either directly or behind Railway/Netlify's proxy.
 function _isSecureReq(req) {
@@ -1351,6 +1378,13 @@ function csrfGuard(req, res, next) {
   // own emailed token; logout is harmless. OAuth callbacks are GETs.
   const p = (req.originalUrl || '').split('?')[0];
   if (p.startsWith('/api/auth/')) return next();
+  // Starting Checkout is intentionally guest-friendly and does not change an
+  // account or charge a card; Stripe performs the actual confirmation. Exempt
+  // these three session-creation routes so a returning visitor with an old
+  // session cookie can never be blocked before reaching Stripe. The shared
+  // client still echoes rt_csrf when present for a consistent authenticated
+  // flow.
+  if (p === '/api/subscribe' || p === '/api/subscribe-lifetime' || p === '/api/employer/subscribe') return next();
   const { viaCookie } = _resolveSession(req);
   if (!viaCookie) return next();
   const header = req.headers['x-csrf-token'];
@@ -6779,16 +6813,10 @@ app.post('/api/tailor', tailorLimiter, async (req, res) => {
     return res.status(400).json({ error: 'Text is too long. Please paste the resume/job posting text only.' });
   }
 
-  // Tailoring requires a signed-in account. The free tier is now unlimited, so
-  // an account — not a per-day cap — is what guards against anonymous API-cost
-  // abuse. The dashboard already forces login before this screen is reachable.
-  // Using the session email (not a body-supplied one) also prevents spoofing
-  // someone else's subscription status.
+  // Tailoring is anonymous-friendly. A validated session unlocks saving and Pro
+  // presentation features, while the IP limiter above protects the AI budget.
+  // Body-supplied email never grants subscription access.
   const email = getSessionEmail(req);
-  if (!email) {
-    return res.status(401).json({ error: 'login_required', message: 'Please sign in to tailor your resume — it\'s free and unlimited.' });
-  }
-
   const subscribed = isSubscriber(email);
   // Free tier now includes unlimited resumes and cover letters — no per-day
   // gating here anymore. Pro-only features (video, personal website, premium
@@ -9999,21 +10027,17 @@ const interviewCoachLimiter = rateLimit({ windowMs: 60 * 1000, max: 20, skip: ()
 // Next question. Free users always get the behavioral teaser; the response
 // tells the client what's locked so it can render the tasteful preview scrim.
 app.post('/api/interview-coach/question', interviewCoachLimiter, (req, res) => {
-  const email = getSessionEmail(req);
-  if (!email) return res.status(401).json({ error: 'login_required', message: 'Sign in to practice with the coach.' });
-  const pro = isSubscriber(email);
+  const gate = toolGate(req, res, { tool: 'interview_coach_q', free: IC.LIMITS.freePerDay, period: 'day' });
+  if (!gate) return;
+  const email = gate.email;
+  const pro = gate.pro;
   const b = req.body || {};
   const role = String(b.role || '').slice(0, 120);
   const askedIds = Array.isArray(b.askedIds) ? b.askedIds.map(String).slice(0, 50) : [];
   // Free: one question/day. Count today's questions served.
-  const usedToday = _quotaUsed(email.toLowerCase(), 'interview_coach_q', 'day');
-  if (!pro && usedToday >= IC.LIMITS.freePerDay) {
-    return res.status(402).json({ error: 'teaser_used', pro: false,
-      message: 'You\'ve used today\'s free coaching question. Continue in Pro for unlimited practice, voice mode and your full report.',
-      locked: { voice: true, report: true, progress: true, unlimited: true } });
-  }
+  const usedToday = toolUsageCount(email, 'interview_coach_q', 'day');
   const q = IC.nextQuestion({ role, askedIds });
-  if (!pro) _quotaConsume(email.toLowerCase(), 'interview_coach_q', 'day');
+  if (!pro) toolUsageRecord(email, 'interview_coach_q');
   res.json({
     question: q, pro,
     modes: pro ? IC.MODES : ['text'],
@@ -10027,9 +10051,9 @@ app.post('/api/interview-coach/question', interviewCoachLimiter, (req, res) => {
 // returns the delivery analysis (pace, filler words). Uses AI when configured,
 // else the deterministic heuristic — either way the card renders identically.
 app.post('/api/interview-coach/feedback', interviewCoachLimiter, async (req, res) => {
-  const email = getSessionEmail(req);
-  if (!email) return res.status(401).json({ error: 'login_required', message: 'Sign in to practice with the coach.' });
-  const pro = isSubscriber(email);
+  const gate = toolGate(req, res, null); if (!gate) return;
+  const email = gate.email;
+  const pro = gate.pro;
   const b = req.body || {};
   const mode = IC.MODES.includes(String(b.mode)) ? String(b.mode) : 'text';
   if (mode === 'voice' && !pro) return res.status(402).json({ error: 'pro_required', message: 'Voice mode is a Pro feature. Practice with a calm, professional AI interviewer.' });

@@ -27,6 +27,8 @@
     '/resume-examples':              ['/score', 'Back to Free Tools'],
     '/cover-letter-examples':        ['/score', 'Back to Free Tools'],
     '/tools/resume-video':           ['/tools', 'Back to New Tools'],
+    '/tools/decoder-key':            ['/decoder-key', 'Back to Decoder Key overview'],
+    '/tools/interview-coach':        ['/interview-coach', 'Back to Interview Coach overview'],
     '/decoder-key':                  ['/', 'Back to Home'],
     '/corporate':                    ['/', 'Back to Home'],
     '/resume-video':                 ['/', 'Back to Home'],

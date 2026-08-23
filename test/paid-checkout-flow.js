@@ -18,6 +18,9 @@ for (const plan of ['pro', 'lifetime', 'portal', 'scale', 'corporate']) {
 }
 check('shared checkout client supports all five paid plans', /pro: 1, lifetime: 1, portal: 1, scale: 1, corporate: 1/.test(checkout));
 check('checkout failures stay on-page in a graceful alert', /role', 'alert'/.test(checkout) && /Checkout was cancelled/.test(checkout));
+check('checkout echoes the readable CSRF cookie when available', /rt_csrf=/.test(checkout) && /X-CSRF-Token/.test(checkout) && /headers:\s*checkoutHeaders\(\)/.test(checkout));
+check('guest-friendly checkout starts cannot be blocked by stale session CSRF', /p === '\/api\/subscribe'[\s\S]{0,180}p === '\/api\/subscribe-lifetime'[\s\S]{0,180}p === '\/api\/employer\/subscribe'[\s\S]{0,80}return next\(\)/.test(server));
+check('Corporate pricing uses the standard logo and hamburger-only header', /class="club-nav cp-header"[\s\S]{0,350}class="club-mobile cp-menu-trigger"/.test(corporate) && !/class="club-nav cp-header"[\s\S]{0,500}Open the Portal/.test(corporate));
 check('monthly checkout accepts guest email collection', /app\.post\('\/api\/subscribe'[\s\S]{0,900}email is OPTIONAL/.test(server));
 check('lifetime checkout no longer requires a pre-entered email', !/subscribe-lifetime'[\s\S]{0,250}Email required/.test(server));
 check('employer checkout no longer requires employer auth', /employer\/subscribe'[\s\S]{0,500}guest-friendly/.test(server));

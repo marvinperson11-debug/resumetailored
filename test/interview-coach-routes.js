@@ -51,14 +51,14 @@ let PORT;
 const server = app.listen(0, async () => {
   PORT = server.address().port;
   try {
-    check('question requires sign-in', (await req('POST', '/api/interview-coach/question', null, {})).status === 401);
+    check('question supports anonymous practice', (await req('POST', '/api/interview-coach/question', null, {})).status === 200);
 
     // Free teaser: one question, then locked for the day.
     const q1 = await req('POST', '/api/interview-coach/question', 'tFree', { role: 'Data Analyst' });
     check('free gets the teaser question (text mode only)', q1.status === 200 && q1.json.teaser === true && q1.json.modes.join() === 'text', q1.body);
     check('teaser marks voice/report/progress as locked', q1.json.locked.voice && q1.json.locked.report && q1.json.locked.progress);
     const q2 = await req('POST', '/api/interview-coach/question', 'tFree', { role: 'Data Analyst' });
-    check('free second question same day → 402 teaser_used', q2.status === 402 && q2.json.error === 'teaser_used', q2.body);
+    check('free second question same day → 402 quota', q2.status === 402 && q2.json.error === 'quota', q2.body);
 
     // Free gets basic feedback (heuristic).
     const fb = await req('POST', '/api/interview-coach/feedback', 'tFree', { role: 'Data Analyst', question: 'Tell me about impact', answer, mode: 'text' });

@@ -7,72 +7,73 @@
 <meta property="og:type" content="website"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/luxury-ecosystem.css"/>
 <style>
-  :root{--cream:#FAF7F0;--cream2:#F1EADD;--paper:#fff;--forest:#1F5C3D;--forest2:#2E7D53;--terra:#B4562E;--ink:#191512;--muted:#57514A;--line:#E7DFD1;--serif:'Fraunces',Georgia,serif;--sans:'Inter',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+  :root{--luxury-navy:#0a1628;--luxury-navy-soft:#101f33;--luxury-emerald:#1a4d3a;--luxury-gold:#c9a227;--luxury-gold-soft:#e4ce7d;--luxury-ink:#f8f4e8;--luxury-muted:#aeb9c5;--luxury-line:rgba(201,162,39,.3);--serif:'Fraunces',Georgia,serif;--sans:'Inter',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:var(--cream);color:var(--ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;}
+  body{background:var(--luxury-navy);color:var(--luxury-ink);font-family:var(--sans);line-height:1.55;-webkit-font-smoothing:antialiased;background-image:radial-gradient(circle at 80% 8%,rgba(26,77,58,.35),transparent 34%),linear-gradient(rgba(201,162,39,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(201,162,39,.035) 1px,transparent 1px);background-size:auto,72px 72px,72px 72px;}
   a{color:inherit;text-decoration:none}
-  .nav{display:flex;align-items:center;justify-content:space-between;max-width:1080px;margin:0 auto;padding:18px 22px;}
+  .nav{display:flex;align-items:center;justify-content:space-between;max-width:1080px;margin:0 auto;padding:20px 22px;border-bottom:1px solid var(--luxury-line);}
   .brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;font-size:19px;}
-  .brand .mk{width:30px;height:30px;border-radius:8px;background:var(--forest);color:#fff;display:grid;place-items:center;font-family:var(--serif);font-weight:700;}
-  .brand b{color:var(--forest)}.brand .ai{color:var(--terra)}
-  .nav a.home{font-weight:700;color:var(--muted);font-size:14px;}
+  .brand .mk{width:30px;height:30px;border:1px solid var(--luxury-gold);background:var(--luxury-emerald);color:var(--luxury-gold-soft);display:grid;place-items:center;font-family:var(--serif);font-weight:700;}
+  .brand b{color:var(--luxury-ink)}.brand .ai{color:var(--luxury-gold-soft)}
+  .nav a.home{font-weight:700;color:var(--luxury-muted);font-size:14px;}
   .wrap{max-width:1080px;margin:0 auto;padding:0 22px;}
   .hero{text-align:center;padding:56px 22px 30px;}
-  .eyebrow{font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--forest2);font-size:13px;}
+  .eyebrow{font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--luxury-gold);font-size:13px;}
   h1{font-family:var(--serif);font-weight:600;font-size:min(11vw,58px);line-height:1.03;letter-spacing:-.03em;margin:16px auto 0;max-width:780px;}
-  h1 em{font-style:italic;color:var(--forest);}
-  .sub{font-size:19px;color:var(--muted);font-weight:500;margin:20px auto 0;max-width:600px;}
-  .cta{display:inline-flex;align-items:center;gap:10px;background:var(--forest);color:#fff;font-weight:800;font-size:17px;border-radius:999px;padding:15px 28px;box-shadow:0 14px 30px rgba(31,92,61,.28);margin-top:26px;border:none;cursor:pointer;}
+  h1 em{font-style:italic;color:var(--luxury-gold-soft);}
+  .sub{font-size:19px;color:var(--luxury-muted);font-weight:500;margin:20px auto 0;max-width:600px;}
+  .cta{display:inline-flex;align-items:center;gap:10px;background:var(--luxury-gold);color:var(--luxury-navy);font-weight:800;font-size:17px;border-radius:2px;padding:15px 28px;box-shadow:0 14px 34px rgba(0,0,0,.28);margin-top:26px;border:1px solid var(--luxury-gold);cursor:pointer;}
   .cta.lg{font-size:19px;padding:18px 34px;}
-  .note{font-size:14px;color:var(--muted);font-weight:600;margin-top:12px;}
+  .note{font-size:14px;color:var(--luxury-muted);font-weight:600;margin-top:12px;}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:30px 0;}
-  .feat{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:22px;}
-  .feat .ic{width:44px;height:44px;border-radius:11px;background:var(--cream2);display:grid;place-items:center;font-size:22px;margin-bottom:12px;}
+  .feat{background:rgba(16,31,51,.82);border:1px solid var(--luxury-line);border-radius:4px;padding:22px;}
+  .feat .ic{width:44px;height:44px;border:1px solid var(--luxury-line);background:var(--luxury-emerald);display:grid;place-items:center;font-size:22px;margin-bottom:12px;}
   .feat h3{font-size:18px;font-weight:800;letter-spacing:-.01em;margin-bottom:5px;}
-  .feat p{font-size:14.5px;color:var(--muted);}
+  .feat p{font-size:14.5px;color:var(--luxury-muted);}
   h2{font-family:var(--serif);font-weight:600;font-size:34px;letter-spacing:-.02em;text-align:center;margin:44px 0 6px;}
-  .h2sub{text-align:center;color:var(--muted);margin-bottom:22px;}
+  .h2sub{text-align:center;color:var(--luxury-muted);margin-bottom:22px;}
   .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
-  .plan{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px;display:flex;flex-direction:column;}
-  .plan.feat2{border:2px solid var(--forest);box-shadow:0 18px 44px rgba(31,92,61,.14);}
+  .plan{background:rgba(16,31,51,.9);border:1px solid var(--luxury-line);border-radius:4px;padding:24px;display:flex;flex-direction:column;}
+  .plan.feat2{border:1px solid var(--luxury-gold);box-shadow:0 18px 44px rgba(0,0,0,.22);}
   .plan .pn{font-weight:800;font-size:16px;}
-  .plan .pp{font-family:var(--serif);font-weight:700;font-size:34px;margin:6px 0 2px;}.plan .pp span{font-size:14px;font-weight:600;color:var(--muted);font-family:var(--sans);}
+  .plan .pp{font-family:var(--serif);font-weight:700;font-size:34px;margin:6px 0 2px;color:var(--luxury-gold-soft);}.plan .pp span{font-size:14px;font-weight:600;color:var(--luxury-muted);font-family:var(--sans);}
   .plan .pf{list-style:none;display:flex;flex-direction:column;gap:8px;margin:14px 0 20px;}
   .plan .pf li{font-size:14px;padding-left:20px;position:relative;}
-  .plan .pf li:before{content:"✓";position:absolute;left:0;color:var(--forest2);font-weight:800;}
+  .plan .pf li:before{content:"✓";position:absolute;left:0;color:var(--luxury-gold);font-weight:800;}
   /* Per-plan CTA. The plan cards used to show prices with no way to act on them,
      which read as "there are no buttons". These route into the employer portal,
      where a signed-in owner actually subscribes/switches plans. margin-top:auto
      bottom-aligns them across the equal-height grid cards. */
-  .plan-cta{margin-top:auto;display:block;text-align:center;text-decoration:none;font-weight:800;font-size:15px;border-radius:12px;padding:13px 18px;background:var(--paper);color:var(--forest);border:1.5px solid var(--forest);transition:background .12s,color .12s;}
-  .plan-cta:hover{background:var(--forest);color:#fff;}
-  .plan.feat2 .plan-cta{background:var(--forest);color:#fff;}
-  .plan.feat2 .plan-cta:hover{background:var(--forest2);}
-  .tag{align-self:flex-start;background:var(--forest);color:#fff;font-size:11px;font-weight:800;letter-spacing:.06em;border-radius:999px;padding:3px 10px;margin-bottom:8px;}
-  .closer{text-align:center;background:var(--forest);color:#fff;border-radius:22px;padding:44px 22px;margin:44px 0;}
+  .plan-cta{margin-top:auto;display:block;text-align:center;text-decoration:none;font-weight:800;font-size:15px;border-radius:2px;padding:13px 18px;background:transparent;color:var(--luxury-gold-soft);border:1px solid var(--luxury-gold);transition:background .12s,color .12s;}
+  .plan-cta:hover{background:var(--luxury-gold);color:var(--luxury-navy);}
+  .plan.feat2 .plan-cta{background:var(--luxury-gold);color:var(--luxury-navy);}
+  .plan.feat2 .plan-cta:hover{background:var(--luxury-gold-soft);}
+  .tag{align-self:flex-start;background:var(--luxury-emerald);color:var(--luxury-gold-soft);font-size:11px;font-weight:800;letter-spacing:.06em;border:1px solid var(--luxury-line);border-radius:999px;padding:3px 10px;margin-bottom:8px;}
+  .closer{text-align:center;background:var(--luxury-emerald);color:#fff;border:1px solid var(--luxury-line);border-radius:4px;padding:44px 22px;margin:44px 0;}
   .closer h2{color:#fff;margin-top:0;}
   .closer p{color:rgba(255,255,255,.82);margin:10px auto 0;max-width:520px;}
-  .closer .cta{background:#fff;color:var(--forest);}
-  footer{text-align:center;color:var(--muted);font-size:13px;padding:20px 0 50px;}
+  .closer .cta{background:var(--luxury-gold);color:var(--luxury-navy);}
+  footer{text-align:center;color:var(--luxury-muted);font-size:13px;padding:20px 0 50px;}
   /* ── Comparison card: ResumeTailored vs. traditional job boards ── */
-  .cmp{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:30px 28px;margin:26px 0 6px;box-shadow:0 18px 44px rgba(31,92,61,.08);}
+  .cmp{background:rgba(16,31,51,.9);border:1px solid var(--luxury-line);border-radius:4px;padding:30px 28px;margin:26px 0 6px;box-shadow:0 18px 44px rgba(0,0,0,.18);}
   .cmp .cmp-h{text-align:center;font-family:var(--serif);font-weight:600;font-size:27px;letter-spacing:-.02em;}
-  .cmp .cmp-sub{text-align:center;color:var(--muted);font-size:14.5px;margin:6px auto 4px;max-width:560px;}
+  .cmp .cmp-sub{text-align:center;color:var(--luxury-muted);font-size:14.5px;margin:6px auto 4px;max-width:560px;}
   .cmp .logos{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 14px;margin:18px 0 22px;}
-  .cmp .logos .lbl{width:100%;text-align:center;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
-  .cmp .logo{background:var(--cream);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-weight:800;font-size:15px;letter-spacing:-.01em;line-height:1;}
+  .cmp .logos .lbl{width:100%;text-align:center;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--luxury-muted);margin-bottom:2px;}
+  .cmp .logo{background:var(--luxury-navy);border:1px solid var(--luxury-line);border-radius:2px;padding:8px 14px;font-weight:800;font-size:15px;letter-spacing:-.01em;line-height:1;color:var(--luxury-muted)!important;}
   .cmp table{width:100%;border-collapse:collapse;table-layout:fixed;}
-  .cmp th,.cmp td{padding:13px 12px;text-align:left;border-top:1px solid var(--line);vertical-align:top;overflow-wrap:break-word;}
+  .cmp th,.cmp td{padding:13px 12px;text-align:left;border-top:1px solid var(--luxury-line);vertical-align:top;overflow-wrap:break-word;}
   .cmp thead th{border-top:none;font-size:13px;text-transform:uppercase;letter-spacing:.06em;}
-  .cmp thead .c-rt{color:var(--forest);}
-  .cmp thead .c-bd{color:var(--muted);}
+  .cmp thead .c-rt{color:var(--luxury-gold-soft);}
+  .cmp thead .c-bd{color:var(--luxury-muted);}
   .cmp .feat-c{font-weight:700;font-size:14.5px;width:44%;}
-  .cmp td.rt{color:var(--ink);font-weight:700;font-size:14px;}
-  .cmp td.rt:before{content:"✓ ";color:var(--forest2);font-weight:800;}
-  .cmp td.bd{color:var(--muted);font-size:14px;}
-  .cmp col.col-rt,.cmp th.c-rt{background:rgba(31,92,61,.05);}
-  .cmp td.rt{background:rgba(31,92,61,.05);}
+  .cmp td.rt{color:var(--luxury-ink);font-weight:700;font-size:14px;}
+  .cmp td.rt:before{content:"✓ ";color:var(--luxury-gold);font-weight:800;}
+  .cmp td.bd{color:var(--luxury-muted);font-size:14px;}
+  .cmp col.col-rt,.cmp th.c-rt{background:rgba(26,77,58,.22);}
+  .cmp td.rt{background:rgba(26,77,58,.22);}
   @media(max-width:760px){.grid{grid-template-columns:1fr;}.plans{grid-template-columns:1fr;}
     .cmp{padding:22px 14px;}.cmp .feat-c{width:40%;}.cmp th,.cmp td{padding:11px 8px;font-size:13px;}}
 </style></head>
@@ -86,7 +87,7 @@
     <div class="eyebrow">For Employers &amp; Recruiters</div>
     <h1>Hire faster with <em>AI-ranked</em> candidates.</h1>
     <p class="sub">Post a job, let AI score every applicant against it, and move people through a drag-and-drop pipeline — all in one place.</p>
-    <a class="cta" href="/employer">Create Employer Account →</a>
+    <button class="cta" type="button" data-checkout-plan="portal" onclick="void 0">Choose Employer Portal · $49/mo →</button>
     <div class="note">Employer Portal from $49/month · Corporate $299/month.</div>
   </header>
 
@@ -161,14 +162,14 @@
         <div class="tag">THE PORTAL</div>
         <div class="pn">Employer Portal</div><div class="pp">$49<span>/mo</span></div>
         <ul class="pf"><li>AI candidate screening for 3 candidates</li><li>Custom landing pages</li><li>Candidate pipeline</li></ul>
-        <a class="plan-cta" href="/employer?plan=portal">Choose Employer Portal</a>
+        <button class="plan-cta" type="button" data-checkout-plan="portal" onclick="void 0">Choose Employer Portal</button>
       </div>
       <div class="plan">
         <div class="pn">Scale</div><div class="pp">$99<span>/mo</span></div>
         <ul class="pf"><li>Base collaboration layer</li><li>Choose and retain any 5 modules</li><li>API access · unlimited seats</li></ul>
-        <a class="plan-cta" href="/employer?plan=scale">Choose Scale</a>
+        <button class="plan-cta" type="button" data-checkout-plan="scale" onclick="void 0">Choose Scale</button>
       </div>
-      <div class="plan"><div class="pn">Corporate</div><div class="pp">$299<span>/mo</span></div><ul class="pf"><li>All 21 operational modules</li><li>Job Decoder</li><li>Web Studio · white-labeling · SSO-ready</li></ul><a class="plan-cta" href="/employer?plan=corporate">Choose Corporate</a></div>
+      <div class="plan"><div class="pn">Corporate</div><div class="pp">$299<span>/mo</span></div><ul class="pf"><li>All 21 operational modules</li><li>Job Decoder</li><li>Web Studio · white-labeling · SSO-ready</li></ul><button class="plan-cta" type="button" data-checkout-plan="corporate" onclick="void 0">Choose Corporate</button></div>
     </div>
   </section>
 
@@ -176,10 +177,10 @@
     <div class="closer">
       <h2>Ready to start hiring?</h2>
       <p>Choose the room your team needs today. The underlying Portal is ready when you are.</p>
-      <a class="cta lg" href="/employer">Create Employer Account →</a>
+      <a class="cta lg" href="/employer?intent=free">Continue with the free employer quota →</a>
     </div>
   </section>
 
-  <footer>ResumeTailored for Employers · <a href="/" style="color:var(--forest);font-weight:700;">resumetailored.com</a></footer>
-<script src="/site-nav.js" defer></script>
+  <footer>ResumeTailored for Employers · <a href="/" style="color:var(--luxury-gold-soft);font-weight:700;">resumetailored.com</a></footer>
+<script src="/paid-checkout.js" defer></script><script src="/site-nav.js" defer></script>
 </body></html>

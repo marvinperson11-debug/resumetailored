@@ -30,9 +30,20 @@
     document.head.appendChild(backScript);
   }
   // [English label, href, 中文 label]
-  // The ecosystem's four fixed pillars remain visible on every marketing and
-  // tool page. Supporting pages stay available through the pillars and footer.
+  // The compact desktop row keeps the four ecosystem pillars. The hamburger
+  // is the complete product directory, including every free and paid tool.
   var LINKS = [
+    ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历'],
+    ['Cover Letter', '/ai-cover-letter-generator', '求职信'],
+    ['ATS Scanner', '/free-ats-resume-checker', 'ATS 扫描器'],
+    ['LinkedIn Optimizer', '/linkedin-optimizer', 'LinkedIn 优化器'],
+    ['Resume Video', '/resume-video', '简历视频'],
+    ['Web Studio', '/web-studio', '网站工作室'],
+    ['Decoder Key', '/decoder-key', '解码密钥'],
+    ['Interview Coach', '/interview-coach', '面试教练'],
+    ['Career Hub', '/career-hub', '职业中心']
+  ];
+  var PRIMARY_LINKS = [
     ['Decoder Key', '/decoder-key', '解码密钥'],
     ['Corporate', '/corporate', '企业门户'],
     ['Resume Video', '/resume-video', '简历视频'],
@@ -66,10 +77,10 @@
     // reads identically on every route: Free Tools shimmers, Pro Tools is
     // green-bold, For Employers is dark-bold. Keyed by href.
     var EMPH = {};
-    var linksHtml = LINKS.map(function (l, i) {
+    var linksHtml = PRIMARY_LINKS.map(function (l, i) {
       var cls = (isActive(l[1]) ? 'snav-active' : '') + (EMPH[l[1]] || '');
       cls = cls.trim();
-      return '<a href="' + l[1] + '" data-snav-i="' + i + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + l[0] + '</a>';
+      return '<a href="' + l[1] + '" data-snav-primary="' + i + '"' + (cls ? ' class="' + cls + '"' : '') + '>' + l[0] + '</a>';
     }).join('');
 
     // ── Styles (self-contained; !important beats each page's own nav CSS,
@@ -121,11 +132,13 @@
       '#snav .snav-primary:hover{background:#153F2A;}' +
       '#snav .snav-ham{display:none;background:none;border:1px solid #D9CFBC;border-radius:8px;color:#191512;font-size:18px;line-height:1;padding:7px 11px;cursor:pointer;}' +
       '#snav .snav-hamwrap{display:none;align-items:center;gap:10px;margin-left:auto;}' +
-      '#snavMenu{position:fixed;inset:0;z-index:1001;background:#FAF7F0;display:none;flex-direction:column;padding:80px 28px 28px;gap:6px;}' +
-      '#snavMenu.open{display:flex;}' +
-      '#snavMenu a{font-family:\'Fraunces\',Georgia,serif;font-size:24px;font-weight:600;color:#191512;text-decoration:none;padding:10px 0;border-bottom:1px solid #E7DFD1;}' +
+      '#snavMenu{position:fixed;top:68px;right:24px;z-index:1001;background:#FAF7F0;display:none;grid-template-columns:1fr 1fr;width:min(390px,calc(100vw - 36px));max-height:calc(100vh - 86px);overflow:auto;padding:52px 18px 18px;gap:0 14px;border:1px solid #E7DFD1;box-shadow:0 28px 70px rgba(0,0,0,.35);}' +
+      '#snavMenu.open{display:grid;}' +
+      '#snavMenu a,#snavMenu .snav-mlang{font-family:\'Inter\',sans-serif;font-size:14px;font-weight:600;color:#191512;text-decoration:none;padding:12px 4px;border:0;border-bottom:1px solid #E7DFD1;background:none;text-align:left;cursor:pointer;}' +
       '#snavMenu .snav-mclose{position:absolute;top:20px;right:24px;background:none;border:none;font-size:30px;color:#57514A;cursor:pointer;line-height:1;}' +
-      '#snavMenu .snav-mcta{margin-top:14px;background:#1F5C3D;color:#fff;border:none;border-radius:10px;text-align:center;border-bottom:none;}' +
+      '#snavMenu .snav-maccount{grid-column:1/-1;margin-top:12px;background:#c9a85d;color:#071724!important;border:1px solid #c9a85d;text-align:center;text-transform:uppercase;letter-spacing:.08em;font-size:11px;}' +
+      '#snavMenu .snav-mlang{grid-column:1/-1;color:#e3cc91!important;}' +
+      '@media(max-width:520px){#snavMenu{top:64px;right:0;width:100vw;max-height:calc(100vh - 64px);grid-template-columns:1fr;border-left:0;border-right:0;}#snavMenu .snav-maccount,#snavMenu .snav-mlang{grid-column:1;}}' +
       '@media(max-width:1180px){#snav .snav-links,#snav .snav-act{display:none!important;}#snav .snav-hamwrap{display:flex!important;}#snav .snav-ham{display:block!important;}}' +
       /* Luxury ecosystem override. Appended so it wins over the legacy
          editorial-light declarations above without changing nav behavior. */
@@ -153,12 +166,9 @@
         '<div class="snav-links">' + linksHtml + '</div>' +
         '<div class="snav-act">' +
           '<button type="button" class="snav-lang" id="langToggleBtn" title="Switch language / 切换语言">中文</button>' +
-          '<a href="' + loginHref + '" class="snav-btn snav-ghost" data-snav-login>Log In</a>' +
-          '<a href="/dashboard" class="snav-btn snav-primary" data-snav-cta>Tailor My Resume Free →</a>' +
         '</div>' +
         '<div class="snav-hamwrap">' +
-          '<button type="button" class="snav-lang" id="langToggleBtnMobile" title="Switch language / 切换语言">中文</button>' +
-          '<button class="snav-ham" aria-label="Open menu">&#9776;</button>' +
+          '<button class="snav-ham" aria-label="Open menu" aria-controls="snavMenu" aria-expanded="false">&#9776;</button>' +
         '</div>' +
       '</div>';
 
@@ -173,20 +183,27 @@
     menu.innerHTML =
       '<button class="snav-mclose" aria-label="Close menu">&times;</button>' +
       LINKS.map(function (l, i) { return '<a href="' + l[1] + '" data-snav-mi="' + i + '">' + l[0] + '</a>'; }).join('') +
-      '<a href="' + loginHref + '" data-snav-login>Log In</a>' +
-      '<a href="/dashboard" class="snav-mcta" data-snav-cta>Tailor My Resume Free →</a>';
+      '<a href="/signup" class="snav-maccount" data-snav-account>Create Account</a>' +
+      '<button type="button" class="snav-mlang" id="langToggleBtnMobile" title="Switch language / 切换语言">中文</button>';
     document.body.appendChild(menu);
 
-    nav.querySelector('.snav-ham').addEventListener('click', function () { menu.classList.add('open'); });
-    menu.querySelector('.snav-mclose').addEventListener('click', function () { menu.classList.remove('open'); });
+    var menuTrigger = nav.querySelector('.snav-ham');
+    function setMenuOpen(open) {
+      menu.classList.toggle('open', open);
+      menuTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    menuTrigger.addEventListener('click', function () { setMenuOpen(!menu.classList.contains('open')); });
+    menu.querySelector('.snav-mclose').addEventListener('click', function () { setMenuOpen(false); });
+    menu.querySelectorAll('a').forEach(function (link) { link.addEventListener('click', function () { setMenuOpen(false); }); });
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setMenuOpen(false); });
 
     // ── Language ─────────────────────────────────────────────────────────────
     // Translate only the nav's own chrome. The page body is translated by the
     // page's own translator (window.applyLang) when it has one.
     function setNavLang(lang) {
       var zh = lang === 'zh';
-      nav.querySelectorAll('[data-snav-i]').forEach(function (a) {
-        var l = LINKS[+a.getAttribute('data-snav-i')]; if (l) a.textContent = zh ? l[2] : l[0];
+      nav.querySelectorAll('[data-snav-primary]').forEach(function (a) {
+        var l = PRIMARY_LINKS[+a.getAttribute('data-snav-primary')]; if (l) a.textContent = zh ? l[2] : l[0];
       });
       menu.querySelectorAll('[data-snav-mi]').forEach(function (a) {
         var l = LINKS[+a.getAttribute('data-snav-mi')]; if (l) a.textContent = zh ? l[2] : l[0];
@@ -199,6 +216,7 @@
           ? (zh ? UI.dashboard.zh : UI.dashboard.en)
           : (zh ? UI.login.zh : UI.login.en);
         var ct = root.querySelector('[data-snav-cta]'); if (ct) ct.textContent = zh ? UI.cta.zh : UI.cta.en;
+        var account = root.querySelector('[data-snav-account]'); if (account) account.textContent = zh ? '创建账户' : 'Create Account';
       });
       var t1 = document.getElementById('langToggleBtn');
       var t2 = document.getElementById('langToggleBtnMobile');

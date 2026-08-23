@@ -1436,6 +1436,62 @@
       showToast(message || 'Sign in once, then your free result will generate automatically.');
     }
 
+    function rememberAnonymousCreation() {
+      try {
+        sessionStorage.setItem('rt_pending_creation', JSON.stringify({
+          mode: selectedMode,
+          resume: document.getElementById('resume').value,
+          job: document.getElementById('job').value,
+          result: lastRawResult,
+          coverResult: lastRawCoverResult
+        }));
+      } catch (_) {}
+    }
+
+    function showPostCreationAccountPrompt() {
+      if (isLoggedIn || document.getElementById('postCreationAccount')) return;
+      try { localStorage.setItem('rt_creation_complete', '1'); localStorage.setItem('rt_last_context', 'job-seeker'); } catch (_) {}
+      rememberAnonymousCreation();
+      var overlay = document.createElement('div');
+      overlay.id = 'postCreationAccount';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:22px;background:rgba(10,22,40,.88);backdrop-filter:blur(10px)';
+      var card = document.createElement('section');
+      card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true'); card.setAttribute('aria-labelledby', 'postCreationTitle');
+      card.style.cssText = 'width:min(560px,100%);padding:34px;background:#0a1628;color:#f7f3e8;border:1px solid #c9a227;box-shadow:0 30px 90px rgba(0,0,0,.48);font-family:Inter,Arial,sans-serif';
+      card.innerHTML = '<div style="color:#c9a227;font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase">Your work is ready</div>' +
+        '<h2 id="postCreationTitle" style="margin:14px 0 10px;font:500 34px/1.05 Fraunces,Georgia,serif;color:#fff">Keep this version for later.</h2>' +
+        '<p style="margin:0;color:#b6c2c9;font-size:15px;line-height:1.7">Create an account to save your resumes and cover letters. Without an account, your work will not be saved.</p>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:26px"><button type="button" data-create onclick="void 0" style="min-height:46px;padding:12px 20px;border:1px solid #c9a227;background:#c9a227;color:#0a1628;font-weight:800;cursor:pointer">Create Account</button><button type="button" data-skip onclick="void 0" style="min-height:46px;padding:12px 20px;border:1px solid rgba(201,162,39,.45);background:transparent;color:#f7f3e8;font-weight:700;cursor:pointer">Skip for now</button></div>';
+      overlay.appendChild(card); document.body.appendChild(overlay);
+      card.querySelector('[data-create]').onclick = function () {
+        location.href = '/signup?redirect=' + encodeURIComponent('/dashboard?restoreCreation=1');
+      };
+      card.querySelector('[data-skip]').onclick = function () {
+        try { sessionStorage.removeItem('rt_pending_creation'); } catch (_) {}
+        overlay.remove();
+      };
+    }
+
+    function restoreAnonymousCreation() {
+      if (new URLSearchParams(location.search).get('restoreCreation') !== '1') return;
+      var data = null; try { data = JSON.parse(sessionStorage.getItem('rt_pending_creation') || 'null'); } catch (_) {}
+      if (!data || !data.result) return;
+      selectedMode = data.mode || 'resume';
+      var modeButton = document.querySelector('.mode-btn[data-mode="' + selectedMode + '"]'); if (modeButton) modeButton.click();
+      document.getElementById('resume').value = data.resume || '';
+      document.getElementById('job').value = data.job || '';
+      lastRawResult = data.result; lastRawCoverResult = data.coverResult || '';
+      var outputBox = document.getElementById('outputBox');
+      var category = selectedMode === 'cover_letter' ? 'cover' : 'resume';
+      outputBox.innerHTML = renderAIOutput(lastRawResult, selectedOutputTpl[category], selectedMode);
+      document.getElementById('outputTitle').textContent = selectedMode === 'cover_letter' ? 'Cover Letter' : 'Tailored Resume';
+      document.getElementById('outputWrap').style.display = 'block';
+      if (selectedMode === 'cover_letter') saveTailoredCoverLetter(lastRawResult); else saveTailoredResume(lastRawResult);
+      try { sessionStorage.removeItem('rt_pending_creation'); } catch (_) {}
+      var params = new URLSearchParams(location.search); params.delete('restoreCreation'); history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params : ''));
+      setTimeout(function () { outputBox.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+    }
+
     async function requireFreeActionLogin(action, message) {
       // Await the authoritative cookie/session check before deciding to prompt.
       // This prevents a valid signed-in user from seeing the login modal during
@@ -1456,7 +1512,8 @@
     }
 
     function updateNavForGuest() {
-      document.getElementById('loginNavBtn').style.display = 'inline-flex';
+      var creationComplete = false; try { creationComplete = localStorage.getItem('rt_creation_complete') === '1'; } catch (_) {}
+      document.getElementById('loginNavBtn').style.display = creationComplete ? 'inline-flex' : 'none';
       document.getElementById('logoutBtn').style.display = 'none';
       document.getElementById('navUsername').style.display = 'none';
     }
@@ -1781,6 +1838,13 @@
     }
 
     function showTab(name) {
+      // Resume Video is never a free dashboard panel. Public navigation opens
+      // its explanation page; only an authenticated Pro/Lifetime member can
+      // enter the actual studio route.
+      if (name === 'video' && !isSubscriberFlag) {
+        window.location.assign('/resume-video');
+        return;
+      }
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       // Every sidebar button, not just those matching a selector that has
       // drifted — LinkedIn Optimizer was staying lit on other pages.
@@ -2064,7 +2128,6 @@
       const email = getStoredEmail();
 
       if (!job) return showToast('Please paste the job posting.');
-      if (!(await requireFreeActionLogin(tailor))) return;
 
       const btn = document.getElementById('tailorBtn');
       btn.innerHTML = '<span class="spinner"></span>Tailoring...';
@@ -2081,10 +2144,6 @@
         });
         const data = await res.json();
 
-        if (res.status === 401) {
-          promptFreeActionLogin(tailor, 'Sign in once, then your free result will generate automatically.');
-          return;
-        }
         if (res.status === 402) {
           document.getElementById('limitBanner').style.display = 'flex';
           await checkStatus();
@@ -2157,6 +2216,7 @@
         if (abBanner) abBanner.style.display = (selectedMode !== 'cover_letter') ? 'flex' : 'none';
         document.getElementById('outputWrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
         setTimeout(() => openPreview(), 800);
+        if (!isLoggedIn) setTimeout(showPostCreationAccountPrompt, 950);
 
         await checkStatus();
         if (!isSubscriberFlag) document.getElementById('upsell').style.display = 'flex';
@@ -5123,6 +5183,7 @@ Aaliyah Washington`
       pendingPro = true;
     }
     authReadyPromise = checkAuth();
+    authReadyPromise.then(function (ok) { if (ok) restoreAnonymousCreation(); });
     initLinkedInImport();
     initGoogleLogin();
     // A Google or LinkedIn *login* return takes priority; only try a LinkedIn

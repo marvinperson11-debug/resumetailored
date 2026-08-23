@@ -51,11 +51,23 @@ function request(method, urlPath, token, body) {
 const server = app.listen(0, async () => {
   PORT = server.address().port;
   try {
-    const appRoutes = ['/tailor', '/cover-letter', '/website', '/video', '/tools', '/app/tailor', '/app/video', '/app/website', '/app/cover-letter'];
+    const appRoutes = ['/tailor', '/cover-letter', '/website', '/tools', '/app/tailor', '/app/website', '/app/cover-letter'];
     for (const route of appRoutes) {
       const r = await request('GET', route);
       check(`${route} serves the dashboard shell`, r.status === 200 && r.text.includes('DASHBOARD LAYOUT'), `HTTP ${r.status}`);
     }
+    const videoLanding = await request('GET', '/resume-video');
+    check('/resume-video serves the public explanation page', videoLanding.status === 200 && videoLanding.text.includes('data-checkout-plan="pro"') && !videoLanding.text.includes('studioResume'), `HTTP ${videoLanding.status}`);
+    const anonStudio = await request('GET', '/video');
+    check('anonymous visitors cannot load the video studio', anonStudio.status === 302 && anonStudio.headers.location === '/resume-video', `HTTP ${anonStudio.status}`);
+    const freeStudio = await request('GET', '/video', 'tokFree');
+    check('free accounts cannot load the video studio', freeStudio.status === 302 && freeStudio.headers.location === '/resume-video', `HTTP ${freeStudio.status}`);
+    const proStudio = await request('GET', '/video', 'tokPro');
+    check('Pro accounts retain the cinematic video studio', proStudio.status === 200 && proStudio.text.includes('class="studio-workspace"'), `HTTP ${proStudio.status}`);
+    const oldStudioAlias = await request('GET', '/tools/resume-video');
+    check('legacy public studio alias redirects to its explanation page', oldStudioAlias.status === 302 && oldStudioAlias.headers.location === '/resume-video', `HTTP ${oldStudioAlias.status}`);
+    check('anonymous preview route cannot bypass the studio gate', (await request('GET', '/preview')).status === 302);
+    check('Pro preview route remains available to the studio', (await request('GET', '/preview', 'tokPro')).status === 200);
     for (const route of ['/pricing', '/checkout']) {
       const r = await request('GET', route);
       check(`${route} serves the pricing landing shell`, r.status === 200 && r.text.includes('id="pricing"'), `HTTP ${r.status}`);
@@ -93,8 +105,8 @@ const server = app.listen(0, async () => {
 
     const appSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.html'), 'utf8');
     check('DOCX export sends the resume photo, not the video-only photo', /photoUrl:\s*\(window\.rtResumePhoto\s*\|\|\s*undefined\)/.test(appSource));
-    check('only Tailor and Cover Letter use the session-aware generation gate', appSource.includes('requireFreeActionLogin(tailor') && !appSource.includes('requireFreeActionLogin(optimizeLinkedIn') && !appSource.includes('requireFreeActionLogin(runDashboardATS'));
-    check('free generators preserve and replay their pending action after login', /showAuthModal\('login', true\)/.test(appSource) && /setTimeout\(fn, 300\)/.test(appSource));
+    check('Tailor and Cover Letter generate before any account recommendation', !appSource.includes('requireFreeActionLogin(tailor') && /setTimeout\(showPostCreationAccountPrompt, 950\)/.test(appSource));
+    check('anonymous creation prompt preserves work and remains skippable', /rt_pending_creation/.test(appSource) && /Create an account to save your resumes and cover letters/.test(appSource) && /Skip for now/.test(appSource));
     const appCss = fs.readFileSync(path.join(__dirname, '..', 'public', 'css', 'app.css'), 'utf8');
     check('New Tools leaves the mobile bottom controls visible', /#newToolsOverlay\s*\{[^}]*bottom:\s*calc\(62px/.test(appCss));
     check('creator tools hide the mobile controls only while immersive', /body\.wb-immersive:not\(\.wb-picker\)[\s\S]*body\.video-immersive\s+\.sidebar\s*\{\s*display:\s*none\s*!important/.test(appCss));

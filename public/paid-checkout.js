@@ -17,6 +17,16 @@
     el.appendChild(close); document.body.appendChild(el);
   }
 
+  function checkoutHeaders() {
+    var headers = { 'Content-Type': 'application/json' };
+    var match = document.cookie.match(/(?:^|;\s*)rt_csrf=([^;]+)/);
+    if (match) {
+      try { headers['X-CSRF-Token'] = decodeURIComponent(match[1]); }
+      catch (_) { headers['X-CSRF-Token'] = match[1]; }
+    }
+    return headers;
+  }
+
   async function start(plan, trigger) {
     plan = String(plan || '').toLowerCase();
     if (!labels[plan]) return showError('That plan is not available. Please refresh and try again.');
@@ -25,7 +35,7 @@
     var original = trigger && trigger.textContent;
     if (trigger) { trigger.disabled = true; trigger.setAttribute('aria-busy', 'true'); trigger.textContent = 'Opening secure checkout…'; }
     try {
-      var res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      var res = await fetch(endpoint, { method: 'POST', headers: checkoutHeaders(), body: JSON.stringify(body) });
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok || !data.url) throw new Error(data.message || data.error || 'Secure checkout could not be opened.');
       window.location.assign(data.url);

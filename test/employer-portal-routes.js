@@ -372,7 +372,7 @@ const server = app.listen(0, async () => {
     const landing = await new Promise((resolve) => {
       http.get({ host: '127.0.0.1', port: PORT, path: '/for-employers' }, (r) => { let b = ''; r.on('data', d => b += d); r.on('end', () => resolve({ status: r.statusCode, body: b })); });
     });
-    check('/for-employers landing page serves with a Create Employer Account CTA', landing.status === 200 && /Create Employer Account/.test(landing.body), String(landing.status));
+    check('/for-employers landing offers paid checkout and the contextual free quota', landing.status === 200 && /data-checkout-plan="portal"/.test(landing.body) && /free employer quota/.test(landing.body), String(landing.status));
 
   } catch (err) {
     failures++;

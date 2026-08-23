@@ -56,7 +56,7 @@
 .ic-delivery span{font-size:11px;color:#a9c2b6;letter-spacing:.06em;text-transform:uppercase}
 @media(max-width:680px){.ic-scores{grid-template-columns:1fr 1fr}.ic-delivery{grid-template-columns:1fr}.club-nav__links{display:none}}
 </style></head><body>
-<header class="club-nav"><div class="club-nav__inner"><a class="club-brand" href="/">ResumeTailored <small>Private career &amp; people office</small></a><nav class="club-nav__links"><a href="/decoder-key">Decoder Key</a><a href="/interview-coach" aria-current="page">Interview Coach</a><a href="/corporate">Corporate</a><a href="/resume-video">Resume Video</a></nav><div class="club-nav__actions"><a class="club-button club-button--gold" href="/dashboard">Open the app</a></div></div></header>
+<header class="club-nav"><div class="club-nav__inner"><a class="club-brand" href="/">ResumeTailored <small>Private career &amp; people office</small></a><nav class="club-nav__links"><a href="/decoder-key">Decoder Key</a><a href="/interview-coach" aria-current="page">Interview Coach</a><a href="/corporate">Corporate</a><a href="/resume-video">Resume Video</a></nav><div class="club-nav__actions"><a class="club-button club-button--quiet" href="/interview-coach">Back to overview</a></div></div></header>
 <main>
 <section class="ic-hero"><div class="ic-hero__in"><div class="club-kicker">Job Seeker · Interview Coach</div><h1>Rehearse in private.<br><em>Walk in composed.</em></h1><p>A calm, professional interviewer asks; you answer by typing or by voice. You get instant, specific feedback on structure, relevance and the keywords that matter — and, in voice mode, on your pace and filler words. Audio only. No cameras, no avatars.</p></div></section>
 <div class="ic-shell">
@@ -131,7 +131,7 @@
       <div class="ic-preview__scrim"><div>
         <div class="ic-preview__label" id="icTeaserLabel">Available in Pro</div>
         <p>Practice with a calm, professional AI interviewer — unlimited questions, voice mode, and your full progress report.</p>
-        <button class="ic-btn" id="icUpgrade" type="button">Continue in Pro — $19/mo</button>
+        <button class="ic-btn" id="icUpgrade" type="button" data-checkout-plan="pro" onclick="void 0">Continue in Pro — $19/mo</button>
       </div></div>
     </div>
   </section>
@@ -153,10 +153,7 @@
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function headers(json){var h={};if(token)h.Authorization='Bearer '+token;if(json)h['Content-Type']='application/json';return h;}
 
-  function setAuthNote(){
-    if(!token){$('icAuthNote').innerHTML='You’ll need a free account to practice. <a href="/login">Sign in or create one</a> — it takes a moment.';}
-    else{$('icAuthNote').textContent='';}
-  }
+  function setAuthNote(){$('icAuthNote').textContent='Text practice runs anonymously. Pro adds voice mode and saved progress.';}
   setAuthNote();
 
   $('icModeText').addEventListener('click',function(){selectMode('text');});
@@ -169,9 +166,8 @@
   }
   function speechOk(){return !!(window.SpeechRecognition||window.webkitSpeechRecognition);}
 
-  $('icStart').addEventListener('click',function(){ if(!token){location.href='/login';return;} nextQuestion(); });
+  $('icStart').addEventListener('click',nextQuestion);
   $('icNext').addEventListener('click',nextQuestion);
-  $('icUpgrade').addEventListener('click',function(){ location.href='/dashboard?upgrade=1'; });
 
   function nextQuestion(){
     $('icStart').disabled=true;
@@ -179,7 +175,7 @@
       .then(function(r){return r.json().then(function(j){return{status:r.status,j:j};});})
       .then(function(res){
         $('icStart').disabled=false;
-        if(res.status===401){location.href='/login';return;}
+        if(res.status===401){alert('The coach could not start. Please try again.');return;}
         if(res.status===402){ // teaser used
           showTeaser(res.j.locked,'Pro'); return;
         }
@@ -232,7 +228,7 @@
       .then(function(r){return r.json().then(function(j){return{status:r.status,j:j};});})
       .then(function(res){
         $('icSubmit').disabled=false;
-        if(res.status===401){location.href='/login';return;}
+        if(res.status===401){alert('Feedback is temporarily unavailable. Please try again.');return;}
         if(res.status===402){showTeaser({voice:true},'Pro');return;}
         if(res.status>=400){alert(res.j.message||'Could not get feedback.');return;}
         renderFeedback(res.j);
@@ -272,5 +268,5 @@
       }).catch(function(){});
   }
 })();
-</script>
+</script><script src="/paid-checkout.js" defer></script><script src="/back-nav.js?v=1" defer></script>
 </body></html>
