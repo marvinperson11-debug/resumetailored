@@ -30,8 +30,8 @@
     document.head.appendChild(backScript);
   }
   // [English label, href, 中文 label]
-  // The compact desktop row keeps the four ecosystem pillars. The hamburger
-  // is the complete product directory, including every free and paid tool.
+  // The desktop toolbar is deliberately restrained and identical everywhere.
+  // The hamburger remains the complete job-seeker product directory.
   var LINKS = [
     ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历'],
     ['Cover Letter', '/ai-cover-letter-generator', '求职信'],
@@ -44,10 +44,9 @@
     ['Career Hub', '/career-hub', '职业中心']
   ];
   var PRIMARY_LINKS = [
-    ['Decoder Key', '/decoder-key', '解码密钥'],
-    ['Corporate', '/corporate', '企业门户'],
-    ['Resume Video', '/resume-video', '简历视频'],
-    ['Web Studio', '/web-studio', '网站工作室']
+    ['Membership', '/pricing#ecosystem-pricing', '会员方案'],
+    ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历'],
+    ['For Employer', '/for-employers', '雇主入口']
   ];
   var UI = {
     login:     { en: 'Log In', zh: '登录' },
@@ -61,6 +60,7 @@
   }
 
   function run() {
+    if (document.getElementById('snav')) return;
     var path = (location.pathname || '/').replace(/\/+$/, '') || '/';
     // "Log In" sends the user to the dedicated login page and back to where they
     // are now after signing in.
@@ -172,8 +172,11 @@
         '</div>' +
       '</div>';
 
-    // Replace the page's existing <nav> (first one) if present, else prepend.
-    var existing = document.querySelector('nav');
+    // Remove page-specific marketing chrome so the shared toolbar is the only
+    // desktop header. Dashboard shells do not load this script.
+    document.querySelectorAll('body > .club-mobile-menu, body > .mobile-menu').forEach(function (node) { node.remove(); });
+    var existing = document.querySelector('body > nav, body > header.club-nav, body > header.cp-header');
+    if (!existing) existing = document.querySelector('nav');
     if (existing && existing.parentNode) existing.parentNode.replaceChild(nav, existing);
     else document.body.insertBefore(nav, document.body.firstChild);
 

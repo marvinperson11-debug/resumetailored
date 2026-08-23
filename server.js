@@ -1081,6 +1081,13 @@ function _injectGlobalLanguageToggle(html) {
   const script = `<script defer src="/top-language-toggle.js?v=${ASSET_VERSION}"></script>`;
   return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${script}</body>`) : html + script;
 }
+function _injectSharedPublicNav(html, filePath) {
+  const ownNavPages = new Set(['app.html', 'employer.html', 'portal.html']);
+  const isHomepage = path.resolve(filePath) === path.resolve(path.join(__dirname, 'public', 'index.html'));
+  if (isHomepage || ownNavPages.has(path.basename(filePath)) || /src=["']\/site-nav\.js/.test(html)) return html;
+  const script = `<script defer src="/site-nav.js?v=${ASSET_VERSION}"></script>`;
+  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${script}</body>`) : html + script;
+}
 
 // ── Self-hosted fonts (performance) ──────────────────────────────────────────
 // The site's body/heading fonts (Inter, Fraunces, Syne) are self-hosted in
@@ -1149,7 +1156,8 @@ function _sendVersionedHtml(res, filePath) {
     // ecosystem pages. This avoids stale long-tail copy advertising $19.99
     // while Stripe and the membership architecture use exactly $19.00.
     html = html.split('19.99').join('19.00');
-    res.send(_injectGlobalLanguageToggle(_selfHostFonts(_versionAssetRefs(html))));
+    const prepared = _injectSharedPublicNav(_selfHostFonts(_versionAssetRefs(html)), filePath);
+    res.send(_injectGlobalLanguageToggle(prepared));
   });
 }
 // Mirrors express.static's own `extensions:['html']` + `index.html`

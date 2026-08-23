@@ -3,7 +3,7 @@
 
   function hasTopLanguageControl() {
     var selectors = [
-      '#snav .snav-lang', '.club-nav [data-club-lang]', '.club-nav .club-nav__lang',
+      '#snav .snav-lang', '.club-nav [data-club-lang-top]', '.club-nav .club-nav__lang',
       'header #langToggleBtn', '.topbar #langToggleBtn', '#emLangBtn'
     ];
     return selectors.some(function (selector) {
