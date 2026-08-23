@@ -40,6 +40,7 @@ for (const u of Object.values(USERS)) {
   db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run(u.email, u.name, 'x');
   db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run(u.token, u.email);
   db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run(u.email, 'c_' + u.name);
+  db.prepare("INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?, 'corporate','active')").run(u.email, 'ec_' + u.name);
 }
 /* A one-pixel PNG. The upload path is the thing under test, not the file. */
 const PIXEL = path.join(os.tmpdir(), 'rt-pixel.png');

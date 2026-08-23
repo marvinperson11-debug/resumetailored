@@ -23,6 +23,7 @@ const db = new Database(path.join(process.env.DATA_DIR, 'resumetailor.db'));
 db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('a@x.com', 'alice', 'x');
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokA', 'a@x.com');
 db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run('a@x.com', 'cA');
+db.prepare("INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?,'corporate','active')").run('a@x.com', 'ecA');
 
 const RESUME = 'Alice Nakamura\nalice@example.com | Seattle\n\nSUMMARY\nEngineer.\n\nEXPERIENCE\nStaff Engineer\n• Did things\n\nSKILLS\nGo';
 

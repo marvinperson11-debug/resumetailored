@@ -25,6 +25,7 @@ const mkUser = (email, token, username) => {
   db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run(email, username, 'x');
   db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run(token, email);
   db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run(email, 'c_' + username);
+  db.prepare("INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?, 'corporate','active')").run(email, 'ec_' + username);
 };
 mkUser('a@x.com', 'tokA', 'alice');
 mkUser('b@x.com', 'tokB', 'bob');

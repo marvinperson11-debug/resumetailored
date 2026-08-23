@@ -137,25 +137,24 @@ let PORT;
 const server = app.listen(0, async () => {
   PORT = server.address().port;
   try {
-    // ── Offer Comparison: browse anonymously, sign in only at Compare ───────
+    // ── Offer Comparison: anonymous end to end ──────────────────────────────
     let r = await req('POST', '/api/tools/offer-comparison', null, { offers: [{ label: 'A', baseSalary: 100000 }, { label: 'B', baseSalary: 130000, remote: true }] });
-    check('offer route: anonymous Generate is login-gated', r.status === 401 && r.json.error === 'auth_required', r.body);
+    check('offer route: anonymous user gets winner immediately', r.status === 200 && r.json.bestLabel === 'B', r.body);
     r = await req('POST', '/api/tools/offer-comparison', 'tokFree', { offers: [{ label: 'A', baseSalary: 100000 }, { label: 'B', baseSalary: 130000, remote: true }] });
     check('offer route: logged-in free user gets winner immediately', r.status === 200 && r.json.bestLabel === 'B', r.body);
     r = await req('POST', '/api/tools/offer-comparison', 'tokFree', { offers: [{ label: 'A' }] });
     check('offer route: <2 offers => 400', r.status === 400);
 
-    // ── Gated generative tools: auth + validation gates (no LLM call) ───────
-    check('jd decode: no auth => 401', (await req('POST', '/api/tools/job-description-decode', null, { jobText: 'x'.repeat(60) })).status === 401);
+    // ── Free generative tools: validation runs anonymously (no LLM call) ────
+    check('jd decode: anonymous validation => 400', (await req('POST', '/api/tools/job-description-decode', null, { jobText: 'short' })).status === 400);
     check('jd decode: too short => 400', (await req('POST', '/api/tools/job-description-decode', 'tokFree', { jobText: 'short' })).status === 400);
     check('follow-up: missing fields => 400', (await req('POST', '/api/tools/follow-up-generate', 'tokFree', { company: '' })).status === 400);
     check('mock interview: missing role => 400', (await req('POST', '/api/tools/mock-interview', 'tokFree', { action: 'questions', role: '' })).status === 400);
     check('mock feedback: no answers => 400', (await req('POST', '/api/tools/mock-interview', 'tokFree', { action: 'feedback', answers: [] })).status === 400);
-    // Salary stays free/unlimited, but the Generate action now follows the same
-    // login-at-action rule as every other free tool.
-    check('salary: anonymous Generate is login-gated', (await req('POST', '/api/tools/salary-negotiation', null, { role: '' })).status === 401);
+    // Salary and keyword extraction stay free without an account.
+    check('salary: anonymous validation runs without login', (await req('POST', '/api/tools/salary-negotiation', null, { role: '' })).status === 400);
     check('salary: signed-in missing role => 400', (await req('POST', '/api/tools/salary-negotiation', 'tokFree', { role: '' })).status === 400);
-    check('keyword extractor: anonymous Generate is login-gated', (await req('POST', '/api/tools/extract-keywords', null, { jobDescription: 'x'.repeat(60) })).status === 401);
+    check('keyword extractor: anonymous validation runs without login', (await req('POST', '/api/tools/extract-keywords', null, { jobDescription: 'short' })).status === 400);
     check('keyword extractor: signed-in validation runs without a login prompt', (await req('POST', '/api/tools/extract-keywords', 'tokFree', { jobDescription: 'short' })).status === 400);
 
     // ── Quota gate: pre-seed tool_usage rows to hit the day/month cap ────────
@@ -172,7 +171,7 @@ const server = app.listen(0, async () => {
     // ── Resume A/B Tracker: CRUD + free 3-version cap + analytics gating ─────
     r = await req('GET', '/api/tools/resume-versions', 'tokFree');
     check('versions: list starts empty', r.status === 200 && r.json.versions.length === 0);
-    check('versions: unauth 401', (await req('GET', '/api/tools/resume-versions')).status === 401);
+    check('versions: anonymous list is available', (await req('GET', '/api/tools/resume-versions')).status === 200);
     await req('POST', '/api/tools/resume-version', 'tokFree', { versionName: 'v1', jobTag: 'Stripe — PM', jobsAppliedWith: 10, responsesReceived: 2 });
     await req('POST', '/api/tools/resume-version', 'tokFree', { versionName: 'v2', jobsAppliedWith: 8, responsesReceived: 4 });
     await req('POST', '/api/tools/resume-version', 'tokFree', { versionName: 'v3', jobsAppliedWith: 5, responsesReceived: 1 });
@@ -219,7 +218,7 @@ const server = app.listen(0, async () => {
     check('weekly: pro GET reflects enabled', r.json.enabled === true && r.json.pro === true);
     r = await req('POST', '/api/tools/weekly-report/toggle', 'tokPro', { enabled: false });
     check('weekly: pro toggle off => 200 disabled', r.status === 200 && r.json.enabled === false);
-    check('weekly: unauth GET 401', (await req('GET', '/api/tools/weekly-report')).status === 401);
+    check('weekly: anonymous page state is available', (await req('GET', '/api/tools/weekly-report')).status === 200);
 
     // ── Pages serve with versioned shared assets ────────────────────────────
     const page = await req('GET', '/tools/offer-comparison');

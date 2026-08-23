@@ -98,6 +98,7 @@ const db = new Database(path.join(process.env.DATA_DIR, 'resumetailor.db'));
 db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('a@x.com', 'alice', 'x');
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokA', 'a@x.com');
 db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run('a@x.com', 'cA');
+db.prepare("INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?,'corporate','active')").run('a@x.com', 'ecA');
 
 const RESUME = 'Alice Nakamura\nalice@example.com | Seattle\n\nSUMMARY\nStaff engineer with 10 years building distributed systems.\n\nEXPERIENCE\nStaff Engineer, Northwind\n- Cut p99 latency by 40%\n\nSKILLS\nGo, Postgres';
 
@@ -159,6 +160,7 @@ const server = app.listen(0, async () => {
     db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('b@x.com', 'bob', 'x');
     db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokB', 'b@x.com');
     db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run('b@x.com', 'cB');
+    db.prepare("INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?,'corporate','active')").run('b@x.com', 'ecB');
     await fetch(`${B}/api/personal-site`, {
       method: 'POST', headers: { Authorization: 'Bearer tokB', 'Content-Type': 'application/json' },
       body: JSON.stringify({ subdomain: 'bob', text: RESUME.replace('Alice Nakamura', 'Bob Reyes').replace('alice@example.com', 'bob@example.com'), name: 'Bob Reyes', publish: true }),

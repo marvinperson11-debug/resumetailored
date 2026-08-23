@@ -6231,9 +6231,6 @@ app.post('/api/tools/extract-keywords', keywordExtractorLimiter, async (req, res
   if (jobDescription.length > 12000) {
     return res.status(400).json({ error: 'Job description too long — paste the key sections only (under 12,000 characters).' });
   }
-  if (!getSessionEmail(req)) {
-    return res.status(401).json({ error: 'login_required', message: 'Please sign in to extract your free ATS keywords.' });
-  }
   try {
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
@@ -9484,9 +9481,9 @@ function toolUsageCount(email, tool, period) {
 function toolUsageRecord(email, tool) {
   db.prepare('INSERT INTO tool_usage (user_email, tool_name) VALUES (?, ?)').run(email.toLowerCase(), tool);
 }
-// Auth + quota gate. Returns { email, pro } or writes a 401/402 and returns null.
-// Pass limitDef (a TOOLS.LIMITS entry) to meter free users; omit it for a tool
-// that only needs sign-in.
+// Anonymous-friendly quota gate. Signed-in members are keyed by account; guests
+// receive a stable, privacy-preserving IP hash so every free tool can run
+// without an account while its published quota remains enforceable.
 function toolGate(req, res, limitDef) {
   const sessionEmail = getSessionEmail(req);
   const email = sessionEmail || `guest-${crypto.createHash('sha256').update(`free-tools:${req.ip}`).digest('hex').slice(0, 24)}@anonymous.local`;
@@ -9512,7 +9509,7 @@ function toolLLMError(res, err) {
   return res.status(502).json({ error: 'ai_error', message: msg });
 }
 
-// ── 1. Offer Comparison — free, signed-in, deterministic (no LLM) ────────────
+// ── 1. Offer Comparison — free and anonymous, deterministic (no LLM) ─────────
 app.post('/api/tools/offer-comparison', toolsLimiter, (req, res) => {
   const gate = toolGate(req, res, null); if (!gate) return;
   try {
@@ -9526,7 +9523,7 @@ app.post('/api/tools/offer-comparison', toolsLimiter, (req, res) => {
   }
 });
 
-// ── 2. Job Description Decoder — 3/day free (sign-in required) ────────────────
+// ── 2. Job Description Decoder — 3/day free, no sign-in ──────────────────────
 app.post('/api/tools/job-description-decode', toolsLimiter, async (req, res) => {
   const gate = toolGate(req, res, TOOLS.LIMITS.jobDecode); if (!gate) return;
   const jd = (req.body && req.body.jobText ? String(req.body.jobText) : '').trim();
@@ -10105,7 +10102,7 @@ app.post('/api/decoder-key', toolsLimiter, async (req, res) => {
   } catch (err) { toolLLMError(res, err); }
 });
 
-// ── 3. Ghosted Follow-Up Generator — 5/month free (sign-in required) ─────────
+// ── 3. Ghosted Follow-Up Generator — 5/month free, no sign-in ────────────────
 app.post('/api/tools/follow-up-generate', toolsLimiter, async (req, res) => {
   const gate = toolGate(req, res, TOOLS.LIMITS.followUp); if (!gate) return;
   const b = req.body || {};
@@ -10157,7 +10154,7 @@ app.post('/api/tools/mock-interview', toolsLimiter, async (req, res) => {
 });
 
 // ── 5. Salary Negotiation Script — FREE + unlimited; Pro adds intelligence ────
-// FREE (sign-in at Generate): a custom counter-offer script + talking points in
+// FREE (no sign-in): a custom counter-offer script + talking points in
 // a professional tone. PRO: live market data (a real median for the role/city),
 // three email templates, and a risk meter. Market data + templates are gated by
 // TOOLS.PRO_FLAGS.marketData / .emailTemplates — the free response omits them.
@@ -10182,9 +10179,8 @@ async function salaryMarketData(role, location) {
   } catch (e) { return null; }
 }
 app.post('/api/tools/salary-negotiation', toolsLimiter, async (req, res) => {
-  const email = getSessionEmail(req);
-  if (!email) return res.status(401).json({ error: 'auth_required', message: 'Please sign in to generate your free salary script.' });
-  const pro = isSubscriber(email);
+  const gate = toolGate(req, res, null); if (!gate) return;
+  const pro = gate.pro;
   const b = req.body || {};
   if (!String(b.role || '').trim()) return res.status(400).json({ error: 'missing_role', message: 'Enter the role you\'re negotiating for.' });
   const lang = _reqLang(req);

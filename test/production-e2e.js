@@ -250,7 +250,7 @@ async function waitForMail(predicate, timeoutMs = 15000) {
     record('Stripe', 'signed checkout webhook accepted', wh.status === 200, `HTTP ${wh.status}`);
     record('Stripe', 'monthly webhook grants entitlement', !!db.prepare('SELECT 1 FROM subscribers WHERE email = ?').get(paymentEmail));
     await new Promise(r => setTimeout(r, 250));
-    const paymentMail = await waitForMail(m => /Welcome to ResumeTailored Pro/.test(m.subject || '') && m.to === paymentEmail);
+    const paymentMail = await waitForMail(m => /Welcome to Pro — your access is ready/.test(m.subject || '') && m.to === paymentEmail);
     record('Email', 'payment/welcome email provider acceptance', !!(paymentMail && paymentMail.accepted), paymentMail ? `HTTP ${paymentMail.status}` : 'no payment email captured');
 
     const cancelEvent = { ...checkoutEvent, id: `evt_rt_cancel_${Date.now()}`, type: 'customer.subscription.deleted', data: { object: { id: monthlySub.id, object: 'subscription', customer: customer.id } } };
@@ -280,6 +280,7 @@ async function waitForMail(predicate, timeoutMs = 15000) {
     // the same authenticated test account an explicit active test subscription
     // before exercising Pro-only website creation and publishing.
     db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(welcomeEmail, 'cus_rt_e2e_website_active');
+    db.prepare("INSERT OR REPLACE INTO employer_subscribers (email, customer_id, tier, status) VALUES (?, ?, 'corporate', 'active')").run(welcomeEmail, 'cus_rt_e2e_website_corporate');
 
     const ai = await request(base, 'POST', '/api/tailor', {
       mode: 'both',

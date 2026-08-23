@@ -29,6 +29,7 @@ const db = new Database(path.join(process.env.DATA_DIR, 'resumetailor.db'));
 db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('m@x.com', 'm', 'x');
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokM', 'm@x.com');
 db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run('m@x.com', 'cM');
+db.prepare("INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?,'corporate','active')").run('m@x.com', 'ecM');
 const _now = Date.now();
 db.prepare('INSERT INTO personal_sites (subdomain,email,text,created_at,updated_at) VALUES (?,?,?,?,?)')
   .run('site-one', 'm@x.com', 'placeholder', _now, _now);
@@ -123,6 +124,10 @@ const server = app.listen(0, async () => {
     const leaks = [];
     const noLeak = async (label, fn) => {
       const r = await fn();
+      // Windows may report the response a few milliseconds before antivirus or
+      // the multipart reader releases its last directory handle. The server
+      // has already scheduled synchronous cleanup; allow that release to land.
+      for (let i = 0; i < 10 && tmpCount() !== 0; i++) await new Promise(resolve => setTimeout(resolve, 25));
       if (tmpCount() !== 0) leaks.push(label + ' (' + tmpCount() + ' left)');
       return r;
     };

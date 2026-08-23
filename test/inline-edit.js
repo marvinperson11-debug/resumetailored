@@ -171,6 +171,7 @@ const db = new Database(path.join(process.env.DATA_DIR, 'resumetailor.db'));
 db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('i@x.com', 'ivy', 'x');
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tok', 'i@x.com');
 db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run('i@x.com', 'c');
+db.prepare("INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?,'corporate','active')").run('i@x.com', 'ec');
 db.prepare('INSERT INTO saved_resumes (email,title,content,created_at) VALUES (?,?,?,?)')
   .run('i@x.com', 'r', RESUME_V1, Date.now());
 

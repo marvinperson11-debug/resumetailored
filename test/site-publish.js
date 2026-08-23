@@ -49,6 +49,7 @@ const mkUser = (email, token, username) => {
   db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run(email, username, 'x');
   db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run(token, email);
   db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run(email, 'c_' + username);
+  db.prepare("INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?, 'corporate','active')").run(email, 'ec_' + username);
 };
 mkUser('a@x.com', 'tokA', 'alice');
 mkUser('b@x.com', 'tokB', 'bob');
@@ -110,6 +111,7 @@ const server = app.listen(0, async () => {
     db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('c@x.com', 'cara', 'x');
     db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokC', 'c@x.com');
     db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run('c@x.com', 'c3');
+    db.prepare("INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?,'corporate','active')").run('c@x.com', 'ec3');
     const chosen = await (await fetch(`${B}/api/personal-site/autogen`, {
       method: 'POST', headers: AJ('tokC'), body: JSON.stringify({ templateId: 'developer' }),
     })).json();
@@ -360,8 +362,8 @@ const server = app.listen(0, async () => {
     check('an unknown subdomain 404s', (await getWithHost(port, '/', 'nobody.resumetailored.com')).status === 404);
 
     // ── Gating ──────────────────────────────────────────────────────────────
-    db.prepare("DELETE FROM subscribers WHERE email = 'a@x.com'").run();
-    check('autogen is Pro-gated',
+    db.prepare("DELETE FROM employer_subscribers WHERE email = 'a@x.com'").run();
+    check('autogen is Corporate-gated',
       (await fetch(`${B}/api/personal-site/autogen`, { method: 'POST', headers: AJ('tokA') })).status === 402);
     check('autogen requires sign-in',
       (await fetch(`${B}/api/personal-site/autogen`, { method: 'POST' })).status === 401);
@@ -369,9 +371,9 @@ const server = app.listen(0, async () => {
     // Trying a different template must not destroy the one they have been
     // working on, and two versions of the same person must never be live at
     // once.
-    // The gating checks above deliberately cancel this user's subscription;
-    // restore it, since everything below needs a Pro account.
-    db.prepare("INSERT OR REPLACE INTO subscribers (email,customer_id) VALUES ('a@x.com','c_alice')").run();
+    // The gating checks above deliberately remove Corporate access; restore it
+    // because everything below exercises the Corporate-only Web Studio.
+    db.prepare("INSERT OR REPLACE INTO employer_subscribers (email,customer_id,tier,status) VALUES ('a@x.com','ec_alice','corporate','active')").run();
     const mk = (tpl) => fetch(`${B}/api/personal-site/autogen`, {
       method: 'POST', headers: AJ('tokA'), body: JSON.stringify({ templateId: tpl, fresh: true }),
     }).then(r => r.json());

@@ -87,6 +87,9 @@ for (const endpoint of ['job-description-decode', 'follow-up-generate', 'mock-in
 check('anonymous tool identity is privacy-preserving and quota-capable', /guest-.*createHash\('sha256'\).*anonymous\.local/.test(server));
 check('ATS generation accepts anonymous requests', !/ats-scan'[\s\S]{0,500}if \(!email\) return res\.status\(401\)/.test(server));
 check('LinkedIn generation accepts anonymous requests', !/optimize-linkedin'[\s\S]{0,500}if \(!email\) return res\.status\(401\)/.test(server));
+check('ATS Keyword Extractor accepts anonymous requests', !/extract-keywords'[\s\S]{0,500}getSessionEmail\(req\)/.test(server));
+check('Salary Script uses the anonymous public tool gate', /salary-negotiation'[\s\S]{0,300}toolGate\(req, res, null\)/.test(server));
+check('Weekly Report does not redirect on page load', !/if\(thRequireLogin\(\)\) load\(\)/.test(read('public/tools/weekly-report.html')));
 
 if (failures) {
   console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`);

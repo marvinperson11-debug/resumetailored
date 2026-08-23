@@ -80,6 +80,7 @@ const db = new Database(path.join(process.env.DATA_DIR, 'resumetailor.db'));
 db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('t@x.com', 't', 'x');
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tok', 't@x.com');
 db.prepare('INSERT INTO subscribers (email,customer_id) VALUES (?,?)').run('t@x.com', 'c');
+db.prepare("INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?,'corporate','active')").run('t@x.com', 'ec');
 
 let failures = 0;
 const check = (name, cond, detail) => {
