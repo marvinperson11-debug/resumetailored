@@ -30,8 +30,8 @@
     document.head.appendChild(backScript);
   }
   // [English label, href, 中文 label]
-  // The compact desktop row keeps the four ecosystem pillars. The hamburger
-  // is the complete product directory, including every free and paid tool.
+  // The desktop toolbar is deliberately restrained and identical everywhere.
+  // The hamburger remains the complete job-seeker product directory.
   var LINKS = [
     ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历'],
     ['Cover Letter', '/ai-cover-letter-generator', '求职信'],
@@ -43,11 +43,16 @@
     ['Interview Coach', '/interview-coach', '面试教练'],
     ['Career Hub', '/career-hub', '职业中心']
   ];
+  var EMPLOYER_LINKS = [
+    ['Employer Portal', '/for-employers', '雇主门户'],
+    ['Recruitment Decoder', '/employer?view=decoder', '招聘解码器'],
+    ['Employer Dashboard', '/employer', '雇主控制台'],
+    ['Corporate Ecosystem', '/corporate', '企业生态系统']
+  ];
   var PRIMARY_LINKS = [
-    ['Decoder Key', '/decoder-key', '解码密钥'],
-    ['Corporate', '/corporate', '企业门户'],
-    ['Resume Video', '/resume-video', '简历视频'],
-    ['Web Studio', '/web-studio', '网站工作室']
+    ['Membership', '/pricing#ecosystem-pricing', '会员方案'],
+    ['Tailor My Resume', '/ai-resume-tailor', '定制我的简历'],
+    ['For Employer', '/for-employers', '雇主入口']
   ];
   var UI = {
     login:     { en: 'Log In', zh: '登录' },
@@ -61,7 +66,10 @@
   }
 
   function run() {
+    if (document.getElementById('snav')) return;
     var path = (location.pathname || '/').replace(/\/+$/, '') || '/';
+    var employerSide = /^\/(?:for-employers|corporate|company(?:\/|$))/.test(path);
+    var menuLinks = employerSide ? EMPLOYER_LINKS : LINKS;
     // "Log In" sends the user to the dedicated login page and back to where they
     // are now after signing in.
     var here = (location.pathname || '/') + (location.search || '');
@@ -172,8 +180,11 @@
         '</div>' +
       '</div>';
 
-    // Replace the page's existing <nav> (first one) if present, else prepend.
-    var existing = document.querySelector('nav');
+    // Remove page-specific marketing chrome so the shared toolbar is the only
+    // desktop header. Dashboard shells do not load this script.
+    document.querySelectorAll('body > .club-mobile-menu, body > .mobile-menu').forEach(function (node) { node.remove(); });
+    var existing = document.querySelector('body > nav, body > header.club-nav, body > header.cp-header');
+    if (!existing) existing = document.querySelector('nav');
     if (existing && existing.parentNode) existing.parentNode.replaceChild(nav, existing);
     else document.body.insertBefore(nav, document.body.firstChild);
 
@@ -182,8 +193,8 @@
     menu.id = 'snavMenu';
     menu.innerHTML =
       '<button class="snav-mclose" aria-label="Close menu">&times;</button>' +
-      LINKS.map(function (l, i) { return '<a href="' + l[1] + '" data-snav-mi="' + i + '">' + l[0] + '</a>'; }).join('') +
-      '<a href="/signup" class="snav-maccount" data-snav-account>Create Account</a>' +
+      menuLinks.map(function (l, i) { return '<a href="' + l[1] + '" data-snav-mi="' + i + '">' + l[0] + '</a>'; }).join('') +
+      '<a href="' + (employerSide ? '/employer' : '/signup') + '" class="snav-maccount" data-snav-account>' + (employerSide ? 'Recruiter Account' : 'Create Account') + '</a>' +
       '<button type="button" class="snav-mlang" id="langToggleBtnMobile" title="Switch language / 切换语言">中文</button>';
     document.body.appendChild(menu);
 
@@ -206,7 +217,7 @@
         var l = PRIMARY_LINKS[+a.getAttribute('data-snav-primary')]; if (l) a.textContent = zh ? l[2] : l[0];
       });
       menu.querySelectorAll('[data-snav-mi]').forEach(function (a) {
-        var l = LINKS[+a.getAttribute('data-snav-mi')]; if (l) a.textContent = zh ? l[2] : l[0];
+        var l = menuLinks[+a.getAttribute('data-snav-mi')]; if (l) a.textContent = zh ? l[2] : l[0];
       });
       [nav, menu].forEach(function (root) {
         var lg = root.querySelector('[data-snav-login]');
@@ -216,7 +227,7 @@
           ? (zh ? UI.dashboard.zh : UI.dashboard.en)
           : (zh ? UI.login.zh : UI.login.en);
         var ct = root.querySelector('[data-snav-cta]'); if (ct) ct.textContent = zh ? UI.cta.zh : UI.cta.en;
-        var account = root.querySelector('[data-snav-account]'); if (account) account.textContent = zh ? '创建账户' : 'Create Account';
+        var account = root.querySelector('[data-snav-account]'); if (account) account.textContent = employerSide ? (zh ? '招聘人员账户' : 'Recruiter Account') : (zh ? '创建账户' : 'Create Account');
       });
       var t1 = document.getElementById('langToggleBtn');
       var t2 = document.getElementById('langToggleBtnMobile');

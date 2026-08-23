@@ -12,7 +12,7 @@ const http = require('http');
 
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-ic-'));
 process.env.RT_DISABLE_RATE_LIMIT = '1';
-delete process.env.OPENAI_API_KEY; delete process.env.ANTHROPIC_API_KEY; // force heuristic feedback
+process.env.OPENAI_API_KEY = ''; process.env.ANTHROPIC_API_KEY = ''; // force heuristic feedback even when dotenv is present
 const { app } = require('../server.js');
 const Database = require('better-sqlite3');
 

@@ -38,7 +38,7 @@ A **hiring funnel**, average **time-to-hire**, applications-by-source, and one-c
 - Office and operations managers hiring hourly, seasonal, or gig roles
 
 ## How it saves time
-The Employer Portal collapses the job board, inbox, spreadsheet, and calendar into one system, so a résumé that arrives Monday is one click from "Reviewed" and two from an interview invite. Because thousands of job seekers already [tailor their resumes with AI](/blog/how-to-tailor-resume-with-ai) on ResumeTailored, applicants tend to arrive with cleaner, better-matched resumes.
+The Employer Portal collapses the job board, inbox, spreadsheet, and calendar into one system, so a resume that arrives Monday is one click from "Reviewed" and two from an interview invite. Because thousands of job seekers already [tailor their resumes with AI](/blog/how-to-tailor-resume-with-ai) on ResumeTailored, applicants tend to arrive with cleaner, better-matched resumes.
 
 ## What it costs
 **Free to start** (up to three active postings, review every applicant). Pro Employer ($29/month) unlocks unlimited postings, full candidate search, the complete ATS pipeline, priority placement, and CSV export. See the [pricing page](/#pricing).

@@ -17,10 +17,6 @@
   // New luxury headers own a real dropdown. Keep the legacy inline-link toggle
   // only for older pages that have not adopted that menu yet.
   if(mobile&&!document.getElementById('clubMobileMenu'))mobile.addEventListener('click',function(){var links=document.querySelector('.club-nav__links');if(!links)return;var open=links.classList.toggle('is-open');links.style.display=open?'flex':'';mobile.setAttribute('aria-expanded',String(open));});
-  document.querySelectorAll('[data-checkout-plan]').forEach(function(button){button.addEventListener('click',async function(){
-    var plan=button.dataset.checkoutPlan;
-    if(plan==='pro'&&typeof window.openCheckoutModal==='function'){window.openCheckoutModal();return;}
-    if(plan==='lifetime'&&typeof window.openLifetimeModal==='function'){window.openLifetimeModal();return;}
-    if(plan==='portal'||plan==='scale'||plan==='corporate'){location.href='/employer?plan='+plan;}
-  });});
+  // Paid-plan buttons are owned exclusively by paid-checkout.js. Keeping a
+  // second handler here used to race Stripe and send employer plans to /login.
 })();

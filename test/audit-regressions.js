@@ -68,6 +68,12 @@ const server = app.listen(0, async () => {
     check('legacy public studio alias redirects to its explanation page', oldStudioAlias.status === 302 && oldStudioAlias.headers.location === '/resume-video', `HTTP ${oldStudioAlias.status}`);
     check('anonymous preview route cannot bypass the studio gate', (await request('GET', '/preview')).status === 302);
     check('Pro preview route remains available to the studio', (await request('GET', '/preview', 'tokPro')).status === 200);
+    check('anonymous visitors cannot load the Job Seeker Decoder workspace', (await request('GET', '/tools/decoder-key')).status === 302);
+    check('free accounts cannot load the Job Seeker Decoder workspace', (await request('GET', '/tools/decoder-key', 'tokFree')).status === 302);
+    check('Pro accounts can load the Job Seeker Decoder workspace', (await request('GET', '/tools/decoder-key', 'tokPro')).status === 200);
+    check('anonymous Job Seeker Decoder API calls are rejected', (await request('POST', '/api/decoder-key', null, { text: 'A complete job description with enough context to analyze the position, responsibilities, required competencies, and expected outcomes.' })).status === 401);
+    check('free Job Seeker Decoder API calls require Pro', (await request('POST', '/api/decoder-key', 'tokFree', { text: 'A complete job description with enough context to analyze the position, responsibilities, required competencies, and expected outcomes.' })).status === 402);
+    check('Pro Job Seeker Decoder reaches input validation', (await request('POST', '/api/decoder-key', 'tokPro', { text: 'too short' })).status === 400);
     for (const route of ['/pricing', '/checkout']) {
       const r = await request('GET', route);
       check(`${route} serves the pricing landing shell`, r.status === 200 && r.text.includes('id="pricing"'), `HTTP ${r.status}`);

@@ -11,7 +11,7 @@ check('portal accepts secure cookie sessions', /credentials:'same-origin'/.test(
 check('legacy bearer token remains supported', /if\(token\)x\.Authorization='Bearer '\+token/.test(html));
 check('manager KPI grid stays restrained', /grid-template-columns:repeat\(3,minmax\(150px,1fr\)\)/.test(html));
 check('record forms and lists use premium disclosure cards', /<details class="pt-card" id="ptForm">/.test(html) && /<details class="pt-card" open><summary>/.test(html));
-check('portal header links across the product', ['/dashboard', '/employer', '/corporate', '/'].every(href => html.includes(`href="${href}"`)));
+check('portal header stays on the employer side', ['/portal', '/employer', '/corporate'].every(href => html.includes(`href="${href}"`)) && !/href="\/(?:dashboard|ai-resume-tailor|resume-video|web-studio)"/.test(html));
 check('mobile layout remains responsive', /@media\(max-width:560px\)/.test(html));
 check('copy uses plain resume spelling', !/résumé/i.test(html));
 

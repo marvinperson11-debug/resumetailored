@@ -242,20 +242,18 @@
   .nv-btn-ghost{background:transparent}.nv-pill-pro{background:#c9a85d;color:#071724}.nv-h{font-family:Georgia,'Times New Roman',serif;font-weight:500;letter-spacing:-.025em}
   #nvPubNav{background:rgba(7,23,36,.98);border-bottom-color:var(--nv-line)}#nvPubNav .logo{color:#fff}#nvPubNav .links a{color:#c7d1d2}#nvPubNav .links a:hover{color:#e3cc91}
 </style>
+<link rel="stylesheet" href="/dashboard-luxury-unified.css"/>
 </head>
 <body>
 
 <!-- ══ PUBLIC NAV (sign-in / setup screens only; hidden once the portal shell shows) ══ -->
 <nav id="nvPubNav">
   <div class="in">
-    <a href="/" class="logo">ResumeTailored</a>
+    <a href="/for-employers" class="logo">ResumeTailored</a>
     <div class="links">
-      <a href="/how-it-works" data-emi="how">How It Works</a>
-      <a href="/score" data-emi="free">Free Tools</a>
-      <a href="/pro-tools" data-emi="pro">Pro Tools</a>
-      <a href="/blog" data-emi="blog">Blog</a>
-      <a href="/#pricing" data-emi="pricing">Pricing</a>
-      <a href="/dashboard" data-emi="jobseeker">Job Seeker Dashboard</a>
+      <a href="/for-employers" data-emi="portal">Employer Portal</a>
+      <a href="/employer?view=decoder" data-emi="decoder">Recruitment Decoder</a>
+      <a href="/corporate" data-emi="plans">Employer Plans</a>
     </div>
     <button type="button" id="emLangBtn" onclick="emToggleLang()" title="Switch language / 切换语言" style="background:#F1EADD;color:#57514A;border:1px solid #D9CFBC;border-radius:8px;font-size:13px;font-weight:700;padding:8px 12px;cursor:pointer;font-family:inherit;margin-left:14px;">中文</button>
     <button class="ham" aria-label="Open menu" onclick="document.getElementById('nvPubMenu').classList.add('open')">&#9776;</button>
@@ -263,13 +261,9 @@
 </nav>
 <div id="nvPubMenu">
   <button class="close" aria-label="Close menu" onclick="document.getElementById('nvPubMenu').classList.remove('open')">&times;</button>
-  <a href="/" data-emi="home">Home</a>
-  <a href="/how-it-works" data-emi="how">How It Works</a>
-  <a href="/score" data-emi="free">Free Tools</a>
-  <a href="/pro-tools" data-emi="pro">Pro Tools</a>
-  <a href="/blog" data-emi="blog">Blog</a>
-  <a href="/#pricing" data-emi="pricing">Pricing</a>
-  <a href="/dashboard" data-emi="jobseeker">Job Seeker Dashboard</a>
+  <a href="/for-employers" data-emi="portal">Employer Portal</a>
+  <a href="/employer?view=decoder" data-emi="decoder">Recruitment Decoder</a>
+  <a href="/corporate" data-emi="plans">Employer Plans</a>
   <button type="button" onclick="emToggleLang()" style="margin-top:14px;background:#1F5C3D;color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-family:inherit;cursor:pointer;" id="emLangBtnMobile">中文 / EN</button>
 </div>
 <script>
@@ -279,9 +273,7 @@
   // in the chosen language). Full portal translation is a tracked follow-up.
   (function () {
     var EM_NAV = {
-      home:['Home','首页'], how:['How It Works','功能介绍'], free:['Free Tools','免费工具'],
-      pro:['Pro Tools','专业版工具'], blog:['Blog','博客'], pricing:['Pricing','定价'],
-      jobseeker:['Job Seeker Dashboard','求职者面板']
+      portal:['Employer Portal','雇主门户'], decoder:['Recruitment Decoder','招聘解码器'], plans:['Employer Plans','雇主方案']
     };
     window.emApplyLang = function (lang) {
       var zh = lang === 'zh';
@@ -337,7 +329,6 @@
       <button class="nv-btn" style="width:100%;" onclick="nvSignup()">Create Account →</button>
     </div>
     <p class="nv-err" id="nvAuthErr"></p>
-    <p style="text-align:center;margin-top:18px;font-size:12px;color:var(--nv-muted);">Looking for work instead? <a href="/dashboard" style="color:var(--nv-accent);font-weight:700;">Job Seeker Dashboard →</a></p>
   </div>
 </div>
 
@@ -364,14 +355,12 @@
       <button class="nv-navbtn on" data-view="dashboard" onclick="nvGo('dashboard')"><span class="ic">📊</span> Dashboard</button>
       <button class="nv-navbtn" data-view="jobs" onclick="nvGo('jobs')"><span class="ic">💼</span> Jobs</button>
       <button class="nv-navbtn" data-view="candidates" onclick="nvGo('candidates')"><span class="ic">👥</span> Candidates</button>
+      <button class="nv-navbtn" data-view="decoder" onclick="nvGo('decoder')"><span class="ic">◇</span> Recruitment Decoder</button>
       <button class="nv-navbtn" data-view="interviews" onclick="nvGo('interviews')"><span class="ic">📅</span> Interviews</button>
       <button class="nv-navbtn" data-view="analytics" onclick="nvGo('analytics')"><span class="ic">📈</span> Analytics</button>
       <button class="nv-navbtn" data-view="messages" onclick="nvGo('messages')"><span class="ic">💬</span> Messages <span class="badge" id="nvMsgBadge" style="display:none;">0</span></button>
       <a class="nv-navbtn" href="/corporate"><span class="ic">✦</span> Corporate Modules</a>
       <button class="nv-navbtn" data-view="settings" onclick="nvGo('settings')"><span class="ic">⚙️</span> Settings</button>
-      <div class="nv-seeker-link">
-        <a class="nv-navbtn" href="/dashboard"><span class="ic">↩︎</span> Job Seeker Dashboard</a>
-      </div>
     </nav>
   </aside>
 
@@ -534,7 +523,8 @@ async function boot(){
   el('nvUpgradeBtn').style.display=epStatus.pro?'none':'inline-flex';
   el('nvUpgradeBtn').textContent='Upgrade — $'+((epStatus.prices&&epStatus.prices.pro)||49)+'/mo';
   await loadJobs();
-  nvGo('dashboard');
+  var requestedView=(new URLSearchParams(location.search).get('view')||'').toLowerCase();
+  nvGo(requestedView==='decoder'?'decoder':'dashboard');
   refreshMsgBadge();
   _maybeAutoPlan();
 }
@@ -571,10 +561,28 @@ function nvGo(view){
   if(view==='dashboard') return renderDashboard(c);
   if(view==='jobs') return renderJobs(c);
   if(view==='candidates') return renderCandidates(c);
+  if(view==='decoder') return renderDecoder(c);
   if(view==='interviews') return renderInterviews(c);
   if(view==='analytics') return renderAnalytics(c);
   if(view==='messages') return renderMessages(c);
   if(view==='settings') return renderSettings(c);
+}
+
+// ── EMPLOYER RECRUITMENT DECODER ───────────────────────────────────────────
+function renderDecoder(c){
+  if(!epStatus.pro){c.innerHTML='<h1 class="nv-h">Recruitment Decoder</h1><p class="nv-sub">Employer intelligence stays inside the employer portal.</p><div class="nv-card"><span class="nv-pill">EMPLOYER ONLY</span><h2>Included with Employer Portal, Scale, and Corporate.</h2><p class="nv-sub">Upgrade to decompose roles, map competencies, benchmark salary, generate an inclusive job description, score candidates, and detect bias.</p><button class="nv-btn" onclick="nvUpgrade(\'portal\')">Choose Employer Portal · $49/mo</button></div>';return;}
+  c.innerHTML='<h1 class="nv-h">Recruitment Decoder</h1><p class="nv-sub">Role intelligence for employers and recruiters only.</p><div class="nv-card"><div class="nv-field"><label class="nv-label" for="nvDecoderText">Job description</label><textarea class="nv-textarea" id="nvDecoderText" maxlength="14000" style="min-height:240px" placeholder="Paste the complete role or draft job description…"></textarea></div><button class="nv-btn" id="nvDecoderRun" onclick="nvRunDecoder()">Generate Recruitment Intelligence →</button><p class="nv-err" id="nvDecoderErr"></p></div><div id="nvDecoderResult"></div>';
+}
+function nvDecoderList(title,items){return '<div class="nv-card"><h3>'+esc(title)+'</h3><ul>'+((items&&items.length)?items:['No material finding.']).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>';}
+async function nvRunDecoder(){
+  var source=el('nvDecoderText').value.trim(),run=el('nvDecoderRun'),err=el('nvDecoderErr');err.style.display='none';
+  if(source.length<80){err.textContent='Paste a complete job description for a useful analysis.';err.style.display='block';return;}
+  run.disabled=true;run.textContent='Analyzing the role…';
+  var r=await api('/api/employer/decoder',{method:'POST',headers:AH(),body:JSON.stringify({jobDescription:source})});
+  run.disabled=false;run.textContent='Generate Recruitment Intelligence →';
+  if(!r.ok){err.textContent=r.data.message||'The recruitment analysis could not be completed.';err.style.display='block';return;}
+  var d=r.data.result||{},cm=d.competencyMap||{},sal=d.salaryBand||{},jd=d.jobDescription||{};
+  el('nvDecoderResult').innerHTML='<div class="nv-card" style="margin-top:16px"><span class="nv-pill nv-pill-pro">EMPLOYER INTELLIGENCE</span><h2>'+esc(d.roleSummary||'Role decomposition')+'</h2></div><div class="nv-two">'+nvDecoderList('Role decomposition',d.roleDecomposition)+nvDecoderList('Must-have competencies',cm.mustHave)+nvDecoderList('Nice-to-have competencies',cm.niceToHave)+nvDecoderList('Leadership competencies',cm.leadership)+'</div><div class="nv-card"><h3>Salary band</h3><p><strong>'+esc(sal.currency||'USD')+' '+Number(sal.low||0).toLocaleString()+'–'+Number(sal.high||0).toLocaleString()+'</strong></p><p class="nv-sub">'+esc(sal.rationale||'')+'</p></div><div class="nv-card"><h3>Generated job description · '+esc(jd.title||'Role')+'</h3><p>'+esc(jd.summary||'')+'</p><div class="nv-two">'+nvDecoderList('Responsibilities',jd.responsibilities)+nvDecoderList('Requirements',jd.requirements)+'</div></div><div class="nv-two">'+nvDecoderList('Candidate scorecard',(d.candidateScorecard||[]).map(function(x){return x.competency+' · '+x.weight+'% — '+x.evidence;}))+nvDecoderList('Bias detection',(d.biasFindings||[]).map(function(x){return (x.phrase?'“'+x.phrase+'” — ':'')+x.reason+(x.replacement?' Replace with: '+x.replacement:'' );}))+'</div>';
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────────────────────
@@ -604,10 +612,10 @@ async function renderDashboard(c){
       '</div></div>'+
     '</div>'+
     '<div class="nv-card" style="margin-top:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">'+
-      '<span style="font-size:26px;">💬</span>'+
-      '<div style="flex:1;min-width:220px;"><h3 style="margin:0 0 2px;font-size:15px;">Extending an offer?</h3>'+
-      '<p style="margin:0;font-size:13px;color:var(--nv-muted);">Share the Salary Negotiation Script tool with candidates so offers close smoothly.</p></div>'+
-      '<a class="nv-btn nv-btn-ghost" href="/tools/salary-negotiation" target="_blank" rel="noopener">Open tool →</a>'+
+      '<span style="font-size:26px;">◇</span>'+
+      '<div style="flex:1;min-width:220px;"><h3 style="margin:0 0 2px;font-size:15px;">Define the role before you screen it.</h3>'+
+      '<p style="margin:0;font-size:13px;color:var(--nv-muted);">Use Recruitment Decoder for competencies, salary bands, scorecards, and bias detection.</p></div>'+
+      '<button class="nv-btn nv-btn-ghost" onclick="nvGo(\'decoder\')">Open Recruitment Decoder →</button>'+
     '</div>';
 }
 
@@ -946,7 +954,7 @@ function nvBillingCard(){
       plan('Free',0,'Get started hiring',['2 job posts (lifetime)','Applicant list','Top 3 AI matches'],tier==='free','')+
       plan('Employer Portal',pPro,'For focused hiring',['AI screening for 3 candidates','Custom landing pages','Candidate pipeline'],tier==='pro',tier==='pro'?'':'<button class="nv-btn" style="width:100%;" onclick="nvUpgrade(\'portal\')">Choose Employer Portal</button>')+
       plan('Scale',pScale,'For operating teams',['Base collaboration layer','Choose and retain any 5 modules','API access · unlimited seats'],tier==='scale',tier==='scale'?'':'<button class="nv-btn nv-btn-dark" style="width:100%;" onclick="nvUpgrade(\'scale\')">Choose Scale</button>')+
-      plan('Corporate',pCorporate,'For the complete organization',['All 21 operational modules','Job Decoder','Web Studio · white-labeling · SSO-ready'],tier==='corporate',tier==='corporate'?'':'<button class="nv-btn nv-btn-dark" style="width:100%;" onclick="nvUpgrade(\'corporate\')">Choose Corporate</button>')+
+      plan('Corporate',pCorporate,'For the complete organization',['All 21 operational modules','Recruitment Decoder','White-labeling · employee portal · SSO-ready'],tier==='corporate',tier==='corporate'?'':'<button class="nv-btn nv-btn-dark" style="width:100%;" onclick="nvUpgrade(\'corporate\')">Choose Corporate</button>')+
     '</div></div>';
 }
 async function nvSaveSettings(){

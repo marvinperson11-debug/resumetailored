@@ -35,6 +35,7 @@
   <link rel="stylesheet" href="/site-fx.css"/>
   <link rel="stylesheet" href="/career-hub.css"/>
   <link rel="stylesheet" href="/web-studio-luxury.css"/>
+  <link rel="stylesheet" href="/dashboard-luxury-unified.css"/>
   <script src="/paid-checkout.js" defer></script>
 </head>
 <body>
@@ -138,17 +139,6 @@
         <div class="auth-switch"><a onclick="switchAuthTab('login')">← Back to login</a></div>
       </div>
 
-      <!-- Employer Portal — separate entry point for recruiters / hiring managers -->
-      <div id="authEmployerCta" style="margin-top:20px;padding-top:18px;border-top:1px solid #E7DFD1;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:34px;height:34px;border-radius:8px;background:#1F5C3D;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;">🏢</div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:800;color:#191512;">Hiring, not job hunting?</div>
-            <div style="font-size:11px;color:#57514A;">Post jobs & manage candidates in the Employer Portal.</div>
-          </div>
-          <a href="/employer" class="btn btn-outline" style="font-size:12px;padding:7px 12px;white-space:nowrap;border-color:#D9CFBC;color:#191512;">Employer Portal →</a>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -163,14 +153,6 @@
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;">
         <div class="wn-card">
-          <div class="wn-badge" style="background:#0f172a;color:#38bdf8;">NEW · EMPLOYERS</div>
-          <div style="font-size:26px;">🏢</div>
-          <h3>Employer Portal</h3>
-          <p>Post jobs, track applicants, schedule interviews &amp; see hiring analytics — a built-in ATS.</p>
-          <div class="wn-price"><span style="color:#4ade80;font-weight:900;">Free to start</span> · Pro $29/mo</div>
-          <a class="wn-cta" href="/employer" style="background:#0f172a;">Open Portal →</a>
-        </div>
-        <div class="wn-card">
           <div class="wn-badge">NEW · PRO</div>
           <div style="font-size:26px;">🎬</div>
           <h3>Resume Video</h3>
@@ -183,7 +165,7 @@
           <div style="font-size:26px;">🌐</div>
           <h3>Web Studio</h3>
           <p>Create and publish a live, editorial website with boutique-level control — no code needed.</p>
-          <div class="wn-price"><strong style="color:#191512;">$299</strong>/mo Corporate</div>
+          <div class="wn-price"><strong style="color:#191512;">$19</strong>/mo Pro</div>
           <a class="wn-cta" onclick="document.getElementById('whatsNewOverlay').style.display='none';openWebsiteCreator();">Build a site →</a>
         </div>
         <div class="wn-card">
@@ -282,7 +264,7 @@
         <button class="sidebar-btn" onclick="openWebsiteCreator()" id="tab-website" data-label="Website" title="Build & publish your live personal website (desktop only)">
           <span class="sidebar-icon">🌐</span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_website">Web Studio</span>
-          <span style="background:#c9a227;color:#0a1628;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">CORPORATE</span>
+          <span style="background:#c9a227;color:#0a1628;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
         </button>
         <button class="sidebar-btn" onclick="openBackOffice()" id="tab-backoffice" data-label="Back Office" title="Manage all your resumes, cover letters, videos & website">
           <span class="sidebar-icon">🗂️</span>
@@ -585,7 +567,7 @@
       <!-- ═══ TAB: JOB APPLICATION TRACKER ═══ -->
       <div class="tab-content" id="panel-jobtracker" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
-      <!-- ═══ TAB: PERSONAL WEBSITE (Website Creator, Corporate) ═══ -->
+      <!-- ═══ TAB: PERSONAL WEBSITE (Website Creator, Pro) ═══ -->
       <!-- ═══ TAB: WEBSITE BUILDER (Canva-style editor) ═══ -->
       <div class="tab-content" id="panel-website">
         <!-- Desktop-only gate. Building a site means dragging elements around a
@@ -594,14 +576,14 @@
 
         <section class="ws-corporate-teaser" id="webStudioCorporateTeaser" aria-labelledby="webStudioTeaserTitle">
           <div class="ws-teaser-card">
-            <span class="ws-teaser-label">Available in Corporate</span>
+            <span class="ws-teaser-label">Available in Pro</span>
             <p class="ws-teaser-kicker">ResumeTailored Web Studio</p>
             <h1 id="webStudioTeaserTitle">Your brand deserves a better stage.</h1>
             <p>Build polished landing pages in a focused visual workspace, publish on your own ResumeTailored address, and manage every site from one back office.</p>
-            <div class="ws-teaser-features" aria-label="Corporate Web Studio features">
+            <div class="ws-teaser-features" aria-label="Pro Web Studio features">
               <span>Editorial templates</span><span>Live visual editing</span><span>Publishing & analytics</span>
             </div>
-            <button class="ws-teaser-cta" type="button" data-checkout-plan="corporate" onclick="void 0">Unlock Corporate — $299/mo</button>
+            <button class="ws-teaser-cta" type="button" data-checkout-plan="pro" onclick="void 0">Unlock Pro — $19/mo</button>
             <button class="ws-teaser-back" type="button" onclick="showTab('tailor')">← Back to dashboard</button>
           </div>
         </section>
@@ -5529,8 +5511,8 @@ Aaliyah Washington`
       return _createShareLink();
     }
 
-    // ── Website Creator (Corporate) ───────────────────────────────────────────
-    // Entry point from the sidebar. Corporate-gates, then applies the pop-up gate: the
+    // ── Website Creator (Pro) ─────────────────────────────────────────────────
+    // Entry point from the sidebar. Pro-gates, then applies the pop-up gate: the
     // "tailor first" modal only shows when the user has zero saved resumes AND
     // cover letters. Users with assets go straight into the creator tab.
     let wcResumes = [], wcCovers = [], wcSite = null;

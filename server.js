@@ -109,6 +109,13 @@ const STRIPE_PRICE_IDS = Object.freeze({
   scale: 'price_1U4QIgCgLyCpwXXjPy8UtUiS',
   corporate: 'price_1U71yWCgLyCpwXXjiRpwjm0b'
 });
+// Railway variables are sometimes present with the sample value from .env
+// (for example `your_stripe_price_id_here`). A truthy-but-invalid value used to
+// override the working catalog entry and make Pro Checkout return HTTP 500.
+// Only a syntactically real Stripe price id is allowed to override the catalog.
+function _configuredPriceId(raw, fallback) {
+  return _looksLikePriceId(raw) ? _normPriceId(raw) : fallback;
+}
 
 // Employer checkout price IDs (Pro / Scale). Logs presence only — never the
 // value. Reports each id as loaded / auto-cleaned (usable but has stray
@@ -1050,6 +1057,7 @@ const ASSET_REWRITES = [
   ['href="/luxury-ecosystem.css"', `href="/luxury-ecosystem.css?v=${ASSET_VERSION}"`],
   ['href="/resume-video-luxury.css"', `href="/resume-video-luxury.css?v=${ASSET_VERSION}"`],
   ['href="/web-studio-luxury.css"', `href="/web-studio-luxury.css?v=${ASSET_VERSION}"`],
+  ['href="/dashboard-luxury-unified.css"', `href="/dashboard-luxury-unified.css?v=${ASSET_VERSION}"`],
   ['href="style.css"', `href="style.css?v=${ASSET_VERSION}"`],
   ['src="/career-hub.js"', `src="/career-hub.js?v=${ASSET_VERSION}"`],
   ['src="/site-nav.js"', `src="/site-nav.js?v=${ASSET_VERSION}"`],
@@ -1060,6 +1068,7 @@ const ASSET_REWRITES = [
   ['src="/tools-hub.js"', `src="/tools-hub.js?v=${ASSET_VERSION}"`],
   ['src="/luxury-ecosystem.js"', `src="/luxury-ecosystem.js?v=${ASSET_VERSION}"`],
   ['src="/corporate.js"', `src="/corporate.js?v=${ASSET_VERSION}"`],
+  ['src="/top-language-toggle.js"', `src="/top-language-toggle.js?v=${ASSET_VERSION}"`],
   // Render-blocking in <head> on 300+ pages — defer it (the consent banner does
   // not need to run before first paint) and version-stamp it like the rest.
   ['<script src="/cookie-consent.js">', `<script defer src="/cookie-consent.js?v=${ASSET_VERSION}">`],
@@ -1067,6 +1076,18 @@ const ASSET_REWRITES = [
 function _versionAssetRefs(html) {
   for (const [from, to] of ASSET_REWRITES) html = html.split(from).join(to);
   return html;
+}
+function _injectGlobalLanguageToggle(html) {
+  if (/src=["']\/top-language-toggle\.js/.test(html)) return html;
+  const script = `<script defer src="/top-language-toggle.js?v=${ASSET_VERSION}"></script>`;
+  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${script}</body>`) : html + script;
+}
+function _injectSharedPublicNav(html, filePath) {
+  const ownNavPages = new Set(['app.html', 'employer.html', 'portal.html']);
+  const isHomepage = path.resolve(filePath) === path.resolve(path.join(__dirname, 'public', 'index.html'));
+  if (isHomepage || ownNavPages.has(path.basename(filePath)) || /src=["']\/site-nav\.js/.test(html)) return html;
+  const script = `<script defer src="/site-nav.js?v=${ASSET_VERSION}"></script>`;
+  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${script}</body>`) : html + script;
 }
 
 // ── Self-hosted fonts (performance) ──────────────────────────────────────────
@@ -1136,7 +1157,8 @@ function _sendVersionedHtml(res, filePath) {
     // ecosystem pages. This avoids stale long-tail copy advertising $19.99
     // while Stripe and the membership architecture use exactly $19.00.
     html = html.split('19.99').join('19.00');
-    res.send(_selfHostFonts(_versionAssetRefs(html)));
+    const prepared = _injectSharedPublicNav(_selfHostFonts(_versionAssetRefs(html)), filePath);
+    res.send(_injectGlobalLanguageToggle(prepared));
   });
 }
 // Mirrors express.static's own `extensions:['html']` + `index.html`
@@ -1232,7 +1254,11 @@ app.get(['/preview', '/preview.html'], (req, res) => {
   return _sendVersionedHtml(res, resumeVideoPreviewHtml);
 });
 app.get(['/linkedin-optimizer', '/decoder-key', '/interview-coach', '/career-hub'], (req, res) => _sendVersionedHtml(res, toolLandingHtml));
-app.get('/tools/decoder-key', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'decoder-key.html')));
+app.get('/tools/decoder-key', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email || !isSubscriber(email)) return res.redirect(302, '/decoder-key');
+  return _sendVersionedHtml(res, path.join(__dirname, 'public', 'decoder-key.html'));
+});
 app.get('/tools/interview-coach', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'interview-coach.html')));
 app.get(['/decoder-key.html', '/interview-coach.html'], (req, res) => res.redirect(302, req.path.replace(/\.html$/, '')));
 // `/tools` collides with the on-disk `public/tools/` directory, which has no
@@ -2628,7 +2654,7 @@ app.post('/api/site-media', mediaUploadSingle, async (req, res) => {
     return res.status(code).json(body);
   };
   if (!email) return bail(401, { error: 'Please sign in.' });
-  if (!hasCorporateWebStudio(email)) return bail(402, { error: 'corporate_required', message: 'Web Studio media uploads are available with Corporate.' });
+  if (!hasWebStudioAccess(email)) return bail(402, { error: 'pro_required', message: 'Web Studio media uploads are available with Pro.' });
   // Every upload belongs to a specific site now — see the site_sub migration
   // comment above. multer puts non-file multipart fields on req.body.
   const sub = _validSubdomain(req.body && req.body.subdomain);
@@ -5506,8 +5532,8 @@ app.get('/api/personal-sites/:sub/render', tplPreviewLimiter, (req, res) => {
 app.post('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  if (!hasCorporateWebStudio(email)) {
-    return res.status(402).json({ error: 'corporate_required', message: 'Web Studio is available with the Corporate plan.' });
+  if (!hasWebStudioAccess(email)) {
+    return res.status(402).json({ error: 'pro_required', message: 'Web Studio is available with Pro at $19/month.' });
   }
   const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config, publish } = req.body || {};
   // Phase 4: publishing (not autosave) requires a desktop browser — the editor
@@ -5660,7 +5686,7 @@ function _autogenFill(doc, text) {
 app.post('/api/personal-site/autogen', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  if (!hasCorporateWebStudio(email)) return res.status(402).json({ error: 'corporate_required', message: 'Web Studio is available with the Corporate plan.' });
+  if (!hasWebStudioAccess(email)) return res.status(402).json({ error: 'pro_required', message: 'Web Studio is available with Pro at $19/month.' });
 
   // `fresh` means "make me another one" — trying a different template rather
   // than reopening what they already have. Each template gets its own site so
@@ -5717,7 +5743,7 @@ app.post('/api/personal-site/autogen', (req, res) => {
   const resumeRow = db.prepare('SELECT id FROM saved_resumes WHERE email = ? ORDER BY created_at DESC LIMIT 1').get(email);
 
   // The name is the first non-empty line of the resume — the convention every
-  // resume follows, and the same one the résumé renderer already relies on.
+  // resume follows, and the same one the resume renderer already relies on.
   const name = (text.split('\n').map((l) => l.trim()).find(Boolean) || '').slice(0, 80);
 
   // Which template to build from. The picker sends the one they chose; without
@@ -5762,11 +5788,11 @@ app.post('/api/personal-site/autogen', (req, res) => {
 });
 
 // WYSIWYG preview: render the personal site from posted fields WITHOUT saving,
-// so the Website Creator's Edit/Preview toggle can show unpublished edits. Corporate-gated.
+// so the Website Creator's Edit/Preview toggle can show unpublished edits. Pro-gated.
 app.post('/api/personal-site/preview', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  if (!hasCorporateWebStudio(email)) return res.status(402).json({ error: 'corporate_required', message: 'Web Studio is available with the Corporate plan.' });
+  if (!hasWebStudioAccess(email)) return res.status(402).json({ error: 'pro_required', message: 'Web Studio is available with Pro at $19/month.' });
   const { text, name, colors, photoUrl, hideContact, serif, layout, config, subdomain, page, editable } = req.body || {};
   if (!text || typeof text !== 'string' || text.trim().length < 10) {
     return res.status(400).json({ error: 'Nothing to preview yet.' });
@@ -5830,7 +5856,7 @@ app.get('/api/site-templates/:id/preview', tplPreviewLimiter, (req, res) => {
   if (!doc) return res.status(404).json({ error: 'Unknown template.' });
   const page = String(req.query.page || '').toLowerCase().slice(0, 60);
   const origin = `${req.protocol}://${req.get('host')}`;
-  // Sample résumé text so a template's `resume` element has something to show.
+  // Sample resume text so a template's `resume` element has something to show.
   const row = {
     subdomain: 'preview', name: 'Alex Morgan', accent: '8b5cf6', primary_hex: '4a1042',
     serif: 0, photo: null, hide_contact: 0, layout: null, config: JSON.stringify(doc),
@@ -6390,7 +6416,7 @@ app.get('/api/status', (req, res) => {
     freeAtsLeft: hasFreeTierLeft(usageKey, 'ats_scan') ? 1 : 0,
     isSubscriber: isSubscriber(email),
     employerTier: employerTier(email),
-    webStudioAccess: hasCorporateWebStudio(email)
+    webStudioAccess: hasWebStudioAccess(email)
   });
 });
 
@@ -6788,6 +6814,21 @@ app.delete('/api/applications/:id', (req, res) => {
 });
 
 // ─── API: Tailor resume ───────────────────────────────────────────────────────
+function _localTailorFallback({ resume = '', jobPosting = '', mode }) {
+  const source = String(resume).trim();
+  const posting = String(jobPosting).replace(/\s+/g, ' ').trim();
+  const role = (posting.match(/^([^.!?]{3,90})/) || [])[1] || 'the advertised role';
+  const words = posting.toLowerCase().match(/[a-z][a-z-]{3,}/g) || [];
+  const blocked = new Set(['with', 'that', 'this', 'from', 'your', 'their', 'will', 'have', 'role', 'work', 'years', 'requires', 'strong']);
+  const keywords = [...new Set(words.filter(word => !blocked.has(word)))].slice(0, 12);
+  const resumeResult = `${source}\n\nTARGET ROLE ALIGNMENT\n${role}\n\nKEYWORDS TO EMPHASIZE\n${keywords.join(', ') || 'Use the terminology from the job posting where it truthfully matches your experience'}\n\nREVIEW NOTE\nYour original facts have been preserved. Before submitting, move the most relevant achievements to the top of each role and add measurable scope only where you can verify it.`;
+  const firstName = ((source.split(/\r?\n/)[0] || 'Candidate').trim().split(/\s+/)[0] || 'Candidate');
+  const coverResult = `${source.split(/\r?\n/)[0] || 'Candidate'}\n\nDear Hiring Team,\n\nI am interested in ${role} because it offers a direct opportunity to apply the experience documented in my resume to the priorities described in your posting. The emphasis on ${keywords.slice(0, 3).join(', ') || 'results, collaboration, and thoughtful execution'} aligns with the kind of work I want to continue doing.\n\nMy background includes the responsibilities and outcomes detailed in my resume, and I would bring that same evidence-based approach to this position. I focus on understanding the problem, working constructively with the people involved, and delivering improvements that can be measured rather than overstated.\n\nBeyond the individual requirements, I value clear communication, dependable follow-through, and continuous improvement. I would welcome the chance to discuss how my actual experience maps to your team’s current needs and where I could contribute most quickly.\n\nI am ready to bring a practical, accountable approach from day one. Thank you for considering my application; I would be glad to continue the conversation.\n\nSincerely,\n${firstName}`;
+  if (mode === 'resume') return resumeResult;
+  if (mode === 'cover_letter') return coverResult;
+  return `${resumeResult}\n\n===COVER_LETTER_START===\n\n${coverResult}`;
+}
+
 // Per-IP rate limit for the (now unlimited-and-free) tailoring endpoint. The
 // free tier no longer has a daily cap, so this limiter is what protects the
 // Anthropic API budget from a runaway client or abuse. Generous enough for a
@@ -6988,6 +7029,13 @@ OUTPUT: Cover Letter
       `<p>✍️ <strong>${who}</strong> just tailored <strong>${what}</strong>${subscribed ? ' (Pro)' : ' (free tier)'}.</p>`);
   } catch (err) {
     console.error('Claude API error:', err?.status, err?.message || err);
+    const providerMessage = String(err?.message || '').toLowerCase();
+    const providerUnavailable = err?.status === 429 || err?.status >= 500 ||
+      /credit balance|billing|overloaded|capacity|timeout|network|fetch failed/.test(providerMessage);
+    if (providerUnavailable) {
+      console.warn('[tailor] AI provider unavailable; returning the factual continuity fallback.');
+      return res.json({ result: _localTailorFallback({ resume, jobPosting, mode }), fallback: true });
+    }
     let userMessage = 'AI processing failed. Please try again.';
     if (err?.status === 401) userMessage = 'AI service authentication error. Please contact support.';
     else if (err?.status === 429) userMessage = 'AI is rate limited. Please wait a moment and try again.';
@@ -7345,7 +7393,7 @@ app.post('/api/subscribe', async (req, res) => {
       payment_method_types: ['card'],
       mode: 'subscription',
       ...(email ? { customer_email: email } : {}),
-      line_items: [{ price: _normPriceId(process.env.STRIPE_PRICE_ID) || STRIPE_PRICE_IDS.pro, quantity: 1 }],
+      line_items: [{ price: _configuredPriceId(process.env.STRIPE_PRICE_ID, STRIPE_PRICE_IDS.pro), quantity: 1 }],
       success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/pricing?checkout=cancelled#ecosystem-pricing`,
       metadata: email ? { email } : {}
@@ -7361,7 +7409,7 @@ app.post('/api/subscribe', async (req, res) => {
 app.post('/api/subscribe-lifetime', async (req, res) => {
   const email = String((req.body && req.body.email) || getSessionEmail(req) || '').toLowerCase().trim();
 
-  const lifetimePriceId = _normPriceId(process.env.STRIPE_LIFETIME_PRICE_ID) || STRIPE_PRICE_IDS.lifetime;
+  const lifetimePriceId = _configuredPriceId(process.env.STRIPE_LIFETIME_PRICE_ID, STRIPE_PRICE_IDS.lifetime);
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -7457,9 +7505,9 @@ function _fulfillCheckoutSession(session, { sendWelcome = true } = {}) {
     tier = EH.resolveEmployerTier({
       plan: session.metadata?.employerTier,
       priceId: session.line_items?.data?.[0]?.price?.id,
-      proPriceId: _normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal,
-      scalePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale,
-      corporatePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate
+      proPriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID, STRIPE_PRICE_IDS.portal),
+      scalePriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, STRIPE_PRICE_IDS.scale),
+      corporatePriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID, STRIPE_PRICE_IDS.corporate)
     });
     tier = tier === 'free' ? 'pro' : tier;
     planLabel = tier === 'pro' ? 'Employer Portal' : tier.charAt(0).toUpperCase() + tier.slice(1);
@@ -7556,9 +7604,9 @@ app.post('/webhook', (req, res) => {
       const priceId = sub.items && sub.items.data && sub.items.data[0] && sub.items.data[0].price && sub.items.data[0].price.id;
       const tier = EH.resolveEmployerTier({
         priceId,
-        proPriceId: _normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal,
-        scalePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale,
-        corporatePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate
+        proPriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID, STRIPE_PRICE_IDS.portal),
+        scalePriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, STRIPE_PRICE_IDS.scale),
+        corporatePriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID, STRIPE_PRICE_IDS.corporate)
       });
       if (tier !== 'free') db.prepare('UPDATE employer_subscribers SET status = ?, tier = ? WHERE customer_id = ?').run(active ? 'active' : String(sub.status || 'inactive'), tier, sub.customer);
       else db.prepare('UPDATE employer_subscribers SET status = ? WHERE customer_id = ?').run(active ? 'active' : String(sub.status || 'inactive'), sub.customer);
@@ -8586,8 +8634,8 @@ function employerTier(email) {
   if (row.status && row.status !== 'active') return 'free';
   return EH.EMPLOYER_TIER_NAMES.includes(row.tier) ? row.tier : 'pro';
 }
-function hasCorporateWebStudio(email) {
-  return employerTier(email) === 'corporate';
+function hasWebStudioAccess(email) {
+  return isSubscriber(email);
 }
 function isEmployerSubscriber(email) {
   return employerTier(email) !== 'free';
@@ -8654,7 +8702,7 @@ app.get('/api/employer/status', (req, res) => {
     freeLifetimeJobLimit: EH.EMPLOYER_TIERS.free.lifetimeJobs,
     canPostJob: gate.allowed,
     jobsRemaining: gate.remaining,     // null = unlimited
-    features: { aiMatching: cfg.aiMatching, matchPreview: cfg.matchPreview === Infinity ? null : cfg.matchPreview, screener: cfg.screener, analytics: cfg.analytics, api: cfg.api, seats: cfg.seats === Infinity ? null : cfg.seats },
+    features: { aiMatching: cfg.aiMatching, matchPreview: cfg.matchPreview === Infinity ? null : cfg.matchPreview, screener: cfg.screener, analytics: cfg.analytics, api: cfg.api, recruitmentDecoder: !!cfg.recruitmentDecoder, seats: cfg.seats === Infinity ? null : cfg.seats },
     prices: { pro: EH.EMPLOYER_TIERS.pro.price, portal: EH.EMPLOYER_TIERS.pro.price, scale: EH.EMPLOYER_TIERS.scale.price, corporate: EH.EMPLOYER_TIERS.corporate.price }
   });
 });
@@ -8671,6 +8719,51 @@ app.post('/api/employer/profile', employerLimiter, (req, res) => {
   else db.prepare('INSERT INTO employer_profiles (email, company_name, website, created_at) VALUES (?,?,?,?)').run(e, companyName, website, Date.now());
   const slug = _ensureEmployerSlug(e, companyName);
   res.json({ success: true, companyName, website, slug, publicUrl: `/company/${slug}` });
+});
+
+function _decoderStrings(value, max) {
+  return (Array.isArray(value) ? value : []).map(v => String(v || '').trim()).filter(Boolean).slice(0, max || 10);
+}
+function _validateEmployerDecoder(obj) {
+  if (!obj || typeof obj !== 'object' || !String(obj.roleSummary || '').trim()) return { ok: false, error: 'missing_role_summary' };
+  const competencies = obj.competencyMap && typeof obj.competencyMap === 'object' ? obj.competencyMap : {};
+  const salary = obj.salaryBand && typeof obj.salaryBand === 'object' ? obj.salaryBand : {};
+  const jd = obj.jobDescription && typeof obj.jobDescription === 'object' ? obj.jobDescription : {};
+  const scorecard = (Array.isArray(obj.candidateScorecard) ? obj.candidateScorecard : []).slice(0, 10).map(x => ({
+    competency: String(x && x.competency || '').trim(), weight: Math.max(0, Math.min(100, Number(x && x.weight) || 0)), evidence: String(x && x.evidence || '').trim()
+  })).filter(x => x.competency);
+  const bias = (Array.isArray(obj.biasFindings) ? obj.biasFindings : []).slice(0, 10).map(x => ({
+    phrase: String(x && x.phrase || '').trim(), reason: String(x && x.reason || '').trim(), replacement: String(x && x.replacement || '').trim()
+  })).filter(x => x.phrase || x.reason);
+  return { ok: true, value: {
+    roleSummary: String(obj.roleSummary).trim().slice(0, 2000),
+    roleDecomposition: _decoderStrings(obj.roleDecomposition, 10),
+    competencyMap: { mustHave: _decoderStrings(competencies.mustHave, 10), niceToHave: _decoderStrings(competencies.niceToHave, 10), leadership: _decoderStrings(competencies.leadership, 8) },
+    salaryBand: { low: Math.max(0, Number(salary.low) || 0), high: Math.max(0, Number(salary.high) || 0), currency: String(salary.currency || 'USD').slice(0, 8), rationale: String(salary.rationale || '').trim().slice(0, 1000) },
+    jobDescription: { title: String(jd.title || '').trim().slice(0, 160), summary: String(jd.summary || '').trim().slice(0, 1500), responsibilities: _decoderStrings(jd.responsibilities, 12), requirements: _decoderStrings(jd.requirements, 12) },
+    candidateScorecard: scorecard,
+    biasFindings: bias
+  }};
+}
+
+// Employer Decoder: recruitment intelligence lives only behind an authenticated
+// paid employer account. It is deliberately separate from the job-seeker
+// Decoder Key and never accepts a job-seeker Pro subscription as entitlement.
+app.post('/api/employer/decoder', employerLimiter, async (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const profile = db.prepare('SELECT 1 FROM employer_profiles WHERE email = ?').get(email.toLowerCase());
+  if (!profile) return res.status(403).json({ error: 'employer_profile_required', message: 'Set up your employer profile first.' });
+  const tier = employerTier(email);
+  if (tier === 'free') return res.status(402).json({ error: 'employer_plan_required', message: 'Recruitment Decoder is included with Employer Portal, Scale, and Corporate.' });
+  const source = String((req.body && (req.body.jobDescription || req.body.text)) || '').trim();
+  if (source.length < 80) return res.status(400).json({ error: 'too_short', message: 'Paste a complete job description for a useful recruitment analysis.' });
+  if (source.length > 14000) return res.status(400).json({ error: 'too_long', message: 'Keep the job description under 14,000 characters.' });
+  const system = 'You are a senior recruiting strategist. Return only valid JSON. Analyze roles for employers; do not provide job-seeker resume advice.';
+  const user = `Analyze this job description and return: {"roleSummary":"plain role decomposition","roleDecomposition":["outcome or responsibility"],"competencyMap":{"mustHave":[],"niceToHave":[],"leadership":[]},"salaryBand":{"low":0,"high":0,"currency":"USD","rationale":"market and scope rationale"},"jobDescription":{"title":"improved title","summary":"inclusive summary","responsibilities":[],"requirements":[]},"candidateScorecard":[{"competency":"","weight":0,"evidence":"what good evidence looks like"}],"biasFindings":[{"phrase":"","reason":"","replacement":""}]}. Candidate scorecard weights should total about 100.\n\nJOB DESCRIPTION:\n${source}`;
+  try {
+    const result = await callAIJSON({ model: 'claude-haiku-4-5', system, user, max_tokens: 2600, validate: _validateEmployerDecoder });
+    res.json({ result, employerOnly: true, includedWith: ['portal', 'scale', 'corporate'] });
+  } catch (err) { toolLLMError(res, err); }
 });
 
 app.get('/api/employer/jobs', (req, res) => {
@@ -8828,10 +8921,10 @@ app.post('/api/employer/subscribe', async (req, res) => {
   // otherwise be sent to Stripe and rejected. Empty after trim ⇒ 503, never
   // undefined-to-Stripe.
   const priceId = plan === 'corporate'
-    ? (_normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate)
+    ? _configuredPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID, STRIPE_PRICE_IDS.corporate)
     : plan === 'scale'
-      ? (_normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale)
-      : (_normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal);
+      ? _configuredPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, STRIPE_PRICE_IDS.scale)
+      : _configuredPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID, STRIPE_PRICE_IDS.portal);
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -10101,28 +10194,22 @@ function validateInterviewJson(raw) {
   return v.ok ? v.value : null;
 }
 
-// Decoder Key — public lead-magnet entrance. Unlike the signed-in tools-hub
-// route above, this is intentionally usable before account creation. The same
-// validated analysis core is reused so the public and member experiences never
-// drift. Contact capture is explicit and optional; an address is stored only
-// when the visitor asks for product notes.
+// Job-seeker Decoder Key — Pro only. Employer recruitment intelligence has a
+// separate authenticated endpoint above and never crosses into this response.
 app.post('/api/decoder-key', toolsLimiter, async (req, res) => {
+  const accountEmail = getSessionEmail(req);
+  if (!accountEmail) return res.status(401).json({ error: 'login_required', message: 'Complete Pro checkout to open the Job Seeker Decoder Key.' });
+  if (!isSubscriber(accountEmail)) return res.status(402).json({ error: 'pro_required', message: 'Job Seeker Decoder Key is included with Pro at $19/month.' });
   const body = req.body || {};
   const text = String(body.text || body.jobText || '').trim();
   if (text.length < 40) return res.status(400).json({ error: 'too_short', message: 'Share at least a few sentences so the Key has enough context.' });
   if (text.length > 12000) return res.status(400).json({ error: 'too_long', message: 'Please keep the text under 12,000 characters.' });
-  const email = String(body.email || '').trim().toLowerCase().slice(0, 254);
-  if (body.contactOptIn && email) {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'bad_email', message: 'Please check the email address.' });
-    db.exec('CREATE TABLE IF NOT EXISTS decoder_leads (email TEXT PRIMARY KEY, created_at INTEGER NOT NULL, source TEXT NOT NULL)');
-    db.prepare('INSERT OR IGNORE INTO decoder_leads (email, created_at, source) VALUES (?, ?, ?)').run(email, Date.now(), 'decoder-key');
-  }
   try {
     const p = TOOLS.buildJobDecodePrompt(text, _reqLang(req));
     // Decoder uses OpenAI (gpt-4o-mini) when configured — the plan's choice —
     // and falls back to Claude Haiku otherwise. Same validated JSON contract.
     const value = await callAIJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1800, validate: TOOLS.validateJobDecode });
-    res.json({ result: value, complimentary: true });
+    res.json({ result: value, pro: true, audience: 'job-seeker' });
   } catch (err) { toolLLMError(res, err); }
 });
 

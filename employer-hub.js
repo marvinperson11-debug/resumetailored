@@ -37,21 +37,21 @@ const EMPLOYER_TIERS = {
     label: 'Employer Portal', price: 49,
     lifetimeJobs: Infinity, seats: 5,
     aiMatching: true, matchPreview: 3,
-    screener: true, analytics: true, api: false
+    screener: true, analytics: true, api: false, recruitmentDecoder: true
   },
   scale: {
     label: 'Scale', price: 99,
     lifetimeJobs: Infinity, seats: Infinity,
     aiMatching: true, matchPreview: Infinity,
     screener: true, analytics: true, api: true,
-    operationalModules: 5
+    operationalModules: 5, recruitmentDecoder: true
   },
   corporate: {
     label: 'Corporate', price: 299,
     lifetimeJobs: Infinity, seats: Infinity,
     aiMatching: true, matchPreview: Infinity,
     screener: true, analytics: true, api: true,
-    operationalModules: Infinity, jobDecoder: true, webStudio: true
+    operationalModules: Infinity, recruitmentDecoder: true, jobDecoder: true, whiteLabeling: true
   }
 };
 const EMPLOYER_TIER_NAMES = ['free', 'pro', 'scale', 'corporate'];
