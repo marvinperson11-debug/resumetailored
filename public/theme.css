@@ -8,29 +8,29 @@
    ============================================================================ */
 
 :root {
-  --bg:        #FAF7F0;
-  --bg-alt:    #F1EADD;
-  --surface:   #FFFFFF;
-  --ink:       #191512;
-  --ink-soft:  #57514A;
-  --ink-faint: #918A7E;
-  --line:      #E7DFD1;
-  --line-2:    #D9CFBC;
-  --accent:    #1F5C3D;
-  --accent-2:  #2E7D53;
-  --accent-ink:#153F2A;
-  --accent-tint:#E8F0E9;
-  --warm:      #B4562E;
-  --gold:      #B4832A;
-  --danger:    #B23A2E;
+  --bg:        #0a1628;   /* deep navy               */
+  --bg-alt:    #081422;   /* deeper navy band        */
+  --surface:   #0d1e30;   /* cards                   */
+  --ink:       #f5f1e8;   /* cream heading ink       */
+  --ink-soft:  #cdd6d3;   /* body copy               */
+  --ink-faint: #9eb2aa;   /* captions / meta         */
+  --line:      rgba(201,162,39,.22);   /* gold hairline */
+  --line-2:    rgba(201,162,39,.34);
+  --accent:    #1a4d3a;   /* emerald                 */
+  --accent-2:  #c9a227;   /* gold highlight          */
+  --accent-ink:#14402f;
+  --accent-tint:rgba(26,77,58,.30);
+  --warm:      #c9a227;
+  --gold:      #c9a227;
+  --danger:    #e5675a;
   --serif: 'Fraunces', Georgia, 'Times New Roman', serif;
   --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   /* spacing scale */
   --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-6:24px;
   --sp-8:32px; --sp-12:48px; --sp-16:64px; --sp-24:96px;
   --radius:14px; --radius-sm:9px;
-  --shadow-sm: 0 1px 2px rgba(25,21,18,.05), 0 4px 14px rgba(25,21,18,.05);
-  --shadow-md: 0 2px 6px rgba(25,21,18,.06), 0 18px 44px rgba(25,21,18,.09);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.28), 0 4px 14px rgba(0,0,0,.34);
+  --shadow-md: 0 2px 6px rgba(0,0,0,.34), 0 18px 44px rgba(0,0,0,.44);
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────── */
@@ -60,7 +60,7 @@ hr, section { border-color: var(--line) !important; }
 
 /* ── Nav (shared across SEO + blog) ───────────────────────────────────── */
 .nav {
-  background: rgba(250,247,240,0.85) !important;
+  background: rgba(10,22,40,0.9) !important;
   border-bottom: 1px solid var(--line) !important;
   -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
 }
@@ -179,11 +179,11 @@ footer a:not([style*="background:#1F5C3D"]) { color: var(--accent) !important; }
    phones and some cards run their text off the right edge. Scope every fix to
    the mobile viewport so the desktop editorial look is untouched. */
 @media (max-width: 820px) {
-  /* Darken the muted text tokens so body/label/FAQ text clears WCAG AA on cream.
-     --ink stays #191512; these two were the low-contrast culprits. */
-  :root { --ink-soft: #2d2d2d; --ink-faint: #4a4a4a; }
-  /* Anything explicitly set to the common light grays becomes readable too. */
-  [style*="#9ca3af"], [style*="#94a3b8"], [style*="#a1a1aa"] { color: #4a4a4a !important; }
+  /* Keep the muted text tokens light so body/label/FAQ text clears WCAG AA on
+     the navy background. */
+  :root { --ink-soft: #d5dee0; --ink-faint: #b7c3c0; }
+  /* Anything explicitly set to the common dark grays becomes readable too. */
+  [style*="#9ca3af"], [style*="#94a3b8"], [style*="#a1a1aa"] { color: #d5dee0 !important; }
   /* Never let a page scroll sideways, and force long unbreakable strings
      (e.g. yourname.resumetailored.com) to wrap instead of overflowing a card.
      `clip`, not `hidden` — `overflow-x:hidden` makes the UA compute
@@ -194,8 +194,8 @@ footer a:not([style*="background:#1F5C3D"]) { color: var(--accent) !important; }
      covers. `clip` blocks horizontal overflow without that side effect. */
   html, body { overflow-x: clip !important; }
   .feat-card, .card, .cards .card, .feature-row, .feature-body, .container { overflow-wrap: anywhere; word-break: break-word; }
-  /* Give white cards a light edge so they don't float on the cream. */
-  .card, .cards .card { border: 1px solid rgba(0,0,0,0.08) !important; }
+  /* Give navy cards a gold hairline so they don't float on the navy. */
+  .card, .cards .card { border: 1px solid rgba(201,162,39,0.22) !important; }
 
   /* ── Headings must never be faint on mobile ──────────────────────────────
      The biggest offender: headings drawn as GRADIENT-CLIPPED text
@@ -209,19 +209,18 @@ footer a:not([style*="background:#1F5C3D"]) { color: var(--accent) !important; }
   h1 span, h2 span, h3 span, h4 span,
   .faq-q, .feature-body h3, .feat-card h2, .feat-card h3,
   [class*="title"], [class*="heading"], [class*="headline"] {
-    -webkit-text-fill-color: #1a1a1a !important;
-    color: #1a1a1a !important;
+    -webkit-text-fill-color: #f5f1e8 !important;
+    color: #f5f1e8 !important;
     background: none !important;
     background-image: none !important;
     -webkit-background-clip: border-box !important;
     background-clip: border-box !important;
     opacity: 1 !important;
   }
-  /* Light-tint chips/cards (e.g. the lavender "ATS Match Rate" pill) had light
-     text on a light fill — make their text dark too. */
-  [style*="#2E7D53"], [style*="#8FD3AC"], [style*="#8FD3AC"], [style*="#C9E3D4"] { color: #2d2d2d !important; }
-  /* Legacy dark-theme slate/near-white text colors left inline on some tool
-     pages (labels like "YOUR RESUME", "JOB DESCRIPTION") — invisible on cream. */
+  /* Emerald/gold chips remapped onto the navy palette — keep their text light. */
+  [style*="#256d4d"], [style*="#c9a227"], [style*="#e3cc91"] { color: #f5f1e8 !important; }
+  /* Legacy slate/near-white inline text colors already read on navy — keep them
+     light (do NOT darken them, or they vanish on the navy background). */
   [style*="#e2e8f0"], [style*="#f1f5f9"], [style*="#cbd5e1"], [style*="#e5e7eb"],
-  [style*="#d1d5db"], [style*="#f8fafc"], [style*="#94a3b8"] { color: #2d2d2d !important; }
+  [style*="#d1d5db"], [style*="#f8fafc"], [style*="#94a3b8"] { color: #cdd6d3 !important; }
 }
