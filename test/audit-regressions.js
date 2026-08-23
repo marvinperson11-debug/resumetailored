@@ -124,7 +124,11 @@ const server = app.listen(0, async () => {
     check('anonymous creation prompt preserves work and remains skippable', /rt_pending_creation/.test(appSource) && /Create an account to save your resumes and cover letters/.test(appSource) && /Skip for now/.test(appSource));
     const appCss = fs.readFileSync(path.join(__dirname, '..', 'public', 'css', 'app.css'), 'utf8');
     check('New Tools leaves the mobile bottom controls visible', /#newToolsOverlay\s*\{[^}]*bottom:\s*calc\(62px/.test(appCss));
-    check('creator tools hide the mobile controls only while immersive', /body\.wb-immersive:not\(\.wb-picker\)[\s\S]*body\.video-immersive\s+\.sidebar\s*\{\s*display:\s*none\s*!important/.test(appCss));
+    // The Website Creator is a full-screen editor with its own bottom controls,
+    // so it still hides the mobile bottom bar.
+    check('the Website Creator still hides the mobile bottom bar', /body\.wb-immersive:not\(\.wb-picker\)\s+\.sidebar\s*\{\s*display:\s*none\s*!important/.test(appCss));
+    // The Video page must keep the bottom tab bar visible (it stays on every tab).
+    check('the Video page keeps the mobile bottom tab bar visible', !/body\.video-immersive\s+\.sidebar\s*\{\s*display:\s*none/.test(appCss));
   } catch (err) {
     failures++;
     console.error(err && err.stack || err);
