@@ -109,6 +109,13 @@ const STRIPE_PRICE_IDS = Object.freeze({
   scale: 'price_1U4QIgCgLyCpwXXjPy8UtUiS',
   corporate: 'price_1U71yWCgLyCpwXXjiRpwjm0b'
 });
+// Railway variables are sometimes present with the sample value from .env
+// (for example `your_stripe_price_id_here`). A truthy-but-invalid value used to
+// override the working catalog entry and make Pro Checkout return HTTP 500.
+// Only a syntactically real Stripe price id is allowed to override the catalog.
+function _configuredPriceId(raw, fallback) {
+  return _looksLikePriceId(raw) ? _normPriceId(raw) : fallback;
+}
 
 // Employer checkout price IDs (Pro / Scale). Logs presence only — never the
 // value. Reports each id as loaded / auto-cleaned (usable but has stray
@@ -7345,7 +7352,7 @@ app.post('/api/subscribe', async (req, res) => {
       payment_method_types: ['card'],
       mode: 'subscription',
       ...(email ? { customer_email: email } : {}),
-      line_items: [{ price: _normPriceId(process.env.STRIPE_PRICE_ID) || STRIPE_PRICE_IDS.pro, quantity: 1 }],
+      line_items: [{ price: _configuredPriceId(process.env.STRIPE_PRICE_ID, STRIPE_PRICE_IDS.pro), quantity: 1 }],
       success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/pricing?checkout=cancelled#ecosystem-pricing`,
       metadata: email ? { email } : {}
@@ -7361,7 +7368,7 @@ app.post('/api/subscribe', async (req, res) => {
 app.post('/api/subscribe-lifetime', async (req, res) => {
   const email = String((req.body && req.body.email) || getSessionEmail(req) || '').toLowerCase().trim();
 
-  const lifetimePriceId = _normPriceId(process.env.STRIPE_LIFETIME_PRICE_ID) || STRIPE_PRICE_IDS.lifetime;
+  const lifetimePriceId = _configuredPriceId(process.env.STRIPE_LIFETIME_PRICE_ID, STRIPE_PRICE_IDS.lifetime);
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -7457,9 +7464,9 @@ function _fulfillCheckoutSession(session, { sendWelcome = true } = {}) {
     tier = EH.resolveEmployerTier({
       plan: session.metadata?.employerTier,
       priceId: session.line_items?.data?.[0]?.price?.id,
-      proPriceId: _normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal,
-      scalePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale,
-      corporatePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate
+      proPriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID, STRIPE_PRICE_IDS.portal),
+      scalePriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, STRIPE_PRICE_IDS.scale),
+      corporatePriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID, STRIPE_PRICE_IDS.corporate)
     });
     tier = tier === 'free' ? 'pro' : tier;
     planLabel = tier === 'pro' ? 'Employer Portal' : tier.charAt(0).toUpperCase() + tier.slice(1);
@@ -7556,9 +7563,9 @@ app.post('/webhook', (req, res) => {
       const priceId = sub.items && sub.items.data && sub.items.data[0] && sub.items.data[0].price && sub.items.data[0].price.id;
       const tier = EH.resolveEmployerTier({
         priceId,
-        proPriceId: _normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal,
-        scalePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale,
-        corporatePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate
+        proPriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID, STRIPE_PRICE_IDS.portal),
+        scalePriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, STRIPE_PRICE_IDS.scale),
+        corporatePriceId: _configuredPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID, STRIPE_PRICE_IDS.corporate)
       });
       if (tier !== 'free') db.prepare('UPDATE employer_subscribers SET status = ?, tier = ? WHERE customer_id = ?').run(active ? 'active' : String(sub.status || 'inactive'), tier, sub.customer);
       else db.prepare('UPDATE employer_subscribers SET status = ? WHERE customer_id = ?').run(active ? 'active' : String(sub.status || 'inactive'), sub.customer);
@@ -8828,10 +8835,10 @@ app.post('/api/employer/subscribe', async (req, res) => {
   // otherwise be sent to Stripe and rejected. Empty after trim ⇒ 503, never
   // undefined-to-Stripe.
   const priceId = plan === 'corporate'
-    ? (_normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate)
+    ? _configuredPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID, STRIPE_PRICE_IDS.corporate)
     : plan === 'scale'
-      ? (_normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale)
-      : (_normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal);
+      ? _configuredPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, STRIPE_PRICE_IDS.scale)
+      : _configuredPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID, STRIPE_PRICE_IDS.portal);
   try {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],

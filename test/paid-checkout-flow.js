@@ -12,6 +12,7 @@ const index = read('public/index.html');
 const corporate = read('public/corporate.html');
 const success = read('public/success.html');
 const checkout = read('public/paid-checkout.js');
+const ecosystem = read('public/luxury-ecosystem.js');
 
 for (const plan of ['pro', 'lifetime', 'portal', 'scale', 'corporate']) {
   check(`${plan} has a direct checkout trigger`, index.includes(`data-checkout-plan="${plan}"`) || corporate.includes(`data-checkout-plan="${plan}"`) || (plan === 'pro' && /RTCheckout\.start\('pro'\)/.test(index)) || (plan === 'lifetime' && /RTCheckout\.start\('lifetime'\)/.test(index)));
@@ -24,6 +25,8 @@ check('Corporate pricing uses the standard logo and hamburger-only header', /cla
 check('monthly checkout accepts guest email collection', /app\.post\('\/api\/subscribe'[\s\S]{0,900}email is OPTIONAL/.test(server));
 check('lifetime checkout no longer requires a pre-entered email', !/subscribe-lifetime'[\s\S]{0,250}Email required/.test(server));
 check('employer checkout no longer requires employer auth', /employer\/subscribe'[\s\S]{0,500}guest-friendly/.test(server));
+check('placeholder price variables cannot override the canonical Stripe catalog', /function _configuredPriceId[\s\S]{0,220}_looksLikePriceId/.test(server) && /_configuredPriceId\(process\.env\.STRIPE_PRICE_ID, STRIPE_PRICE_IDS\.pro\)/.test(server));
+check('marketing plan buttons have one owner and never race checkout with a login redirect', !/data-checkout-plan|\/employer\?plan=/.test(ecosystem));
 check('paid fulfillment auto-creates a user', /function _provisionPaidAccount[\s\S]{0,1800}INSERT INTO users/.test(server));
 check('paid fulfillment sends a welcome email', /subject: `Welcome to \$\{planLabel\}/.test(server));
 check('completion verifies Stripe before creating a session', /api\/checkout\/complete[\s\S]{0,1500}checkout\.sessions\.retrieve[\s\S]{0,1500}_setAuthCookies/.test(server));
