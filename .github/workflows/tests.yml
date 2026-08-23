@@ -21,6 +21,12 @@ jobs:
         run: npm ci
 
       - name: Run test suite
+        env:
+          # Passed through when the repo has the secret configured, so the ATS /
+          # LinkedIn regression subtests run for real. When it is unset the env var
+          # is simply empty and those two subtests fall back to their gate-only
+          # assertion (see test/audit-regressions.js), so CI stays green either way.
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -e
           for f in test/*.js; do
