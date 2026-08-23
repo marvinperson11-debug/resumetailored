@@ -1,16 +1,36 @@
-/* Web Studio presentation layer. Editing, preview and publishing mechanics
-   remain owned by the existing Website Creator implementation. */
-body.wb-immersive .cv-shell{background:#071724!important;color:#f7f1e6}
-body.wb-immersive .cv-top{background:#071724!important;border-bottom:1px solid rgba(201,168,93,.38)!important;color:#f7f1e6!important}
+/* Web Studio presentation layer. The existing editor owns behavior; this file
+   supplies the Corporate teaser and the focused luxury workspace. */
+:root{--ws-navy:#0a1628;--ws-emerald:#1a4d3a;--ws-gold:#c9a227;--ws-ivory:#f6f1e7}
+
+.ws-corporate-teaser{display:none;min-height:calc(100vh - 72px);padding:clamp(28px,6vw,72px);place-items:center;position:relative;overflow:hidden;background:var(--ws-navy);color:var(--ws-ivory)}
+.ws-corporate-teaser::before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(10,22,40,.9),rgba(10,22,40,.68)),radial-gradient(circle at 78% 20%,rgba(26,77,58,.72),transparent 42%);pointer-events:none}
+.ws-corporate-teaser::after{content:"";position:absolute;width:430px;height:430px;border:1px solid rgba(201,162,39,.17);border-radius:50%;right:-150px;bottom:-220px;box-shadow:0 0 0 70px rgba(201,162,39,.025),0 0 0 140px rgba(201,162,39,.018)}
+body.web-studio-locked .ws-corporate-teaser{display:grid}
+body.web-studio-locked #cvShell{display:none!important}
+.ws-teaser-card{position:relative;z-index:1;width:min(760px,100%);padding:clamp(30px,6vw,62px);border:1px solid var(--ws-gold);background:rgba(10,22,40,.88);box-shadow:0 28px 90px rgba(0,0,0,.42);text-align:center;backdrop-filter:blur(14px)}
+.ws-teaser-label{display:inline-flex;padding:7px 12px;border:1px solid rgba(201,162,39,.62);color:#e3c55f;font:800 10px/1 Inter,sans-serif;letter-spacing:.17em;text-transform:uppercase}
+.ws-teaser-kicker{margin:28px 0 8px;color:#a6beb4;font:700 11px/1 Inter,sans-serif;letter-spacing:.19em;text-transform:uppercase}
+.ws-teaser-card h1{margin:0 auto 18px;max-width:640px;color:var(--ws-ivory);font:500 clamp(35px,6vw,64px)/1.02 Fraunces,Georgia,serif;letter-spacing:-.035em}
+.ws-teaser-card>p:not(.ws-teaser-kicker){max-width:590px;margin:0 auto;color:#b9c7c3;font:400 15px/1.75 Inter,sans-serif}
+.ws-teaser-features{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:30px 0}
+.ws-teaser-features span{padding:8px 12px;border:1px solid rgba(201,162,39,.18);background:rgba(26,77,58,.34);color:#d8e4df;font:600 11px/1 Inter,sans-serif;letter-spacing:.04em}
+.ws-teaser-cta{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 24px;border:1px solid var(--ws-gold);background:var(--ws-gold);color:var(--ws-navy);font:800 12px/1 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:transform .2s,box-shadow .2s}
+.ws-teaser-cta:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(201,162,39,.2)}
+.ws-teaser-back{display:block;margin:16px auto 0;border:0;background:transparent;color:#9eada9;font:600 12px/1 Inter,sans-serif;cursor:pointer}
+
+body.wb-immersive .cv-shell{background:var(--ws-navy)!important;color:var(--ws-ivory)}
+body.wb-immersive .cv-top{background:var(--ws-navy)!important;border-bottom:1px solid rgba(201,162,39,.34)!important;color:var(--ws-ivory)!important}
 body.wb-immersive .cv-logo{font-family:Fraunces,Georgia,serif;font-weight:600!important;letter-spacing:.01em!important}
-body.wb-immersive .cv-logo::after{content:" · WEB STUDIO";color:#e3cc91;font:700 9px Inter,sans-serif;letter-spacing:.16em}
-body.wb-immersive .cv-tbtn{background:transparent!important;border:1px solid rgba(201,168,93,.28)!important;border-radius:2px!important;color:#d8e2e0!important}
-body.wb-immersive .cv-publish{background:#c9a85d!important;color:#071724!important;border-radius:2px!important;text-transform:uppercase;letter-spacing:.08em}
-body.wb-immersive .cv-rail,body.wb-immersive .cv-bottom{background:#06131e!important;border-color:rgba(201,168,93,.22)!important}
-body.wb-immersive .cv-panel,body.wb-immersive .cv-inspector{background:#0b2231!important;color:#eef3ef!important;border-color:rgba(201,168,93,.2)!important}
-body.wb-immersive .cv-stage{background:#102631!important;background-image:linear-gradient(rgba(201,168,93,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,93,.035) 1px,transparent 1px)!important;background-size:40px 40px!important}
-body.wb-immersive .cv-rbtn.is-on{background:rgba(201,168,93,.15)!important;color:#e3cc91!important}
-body.wb-immersive .cv-wide,body.wb-immersive .cv-input,body.wb-immersive .cv-search input,body.wb-immersive .cv-inspector input,body.wb-immersive .cv-inspector select,body.wb-immersive .cv-inspector textarea{background:#102d3b!important;border-color:rgba(201,168,93,.26)!important;color:#f7f1e6!important;border-radius:2px!important}
-body.wb-immersive .cv-lbl{color:#c9a85d!important;letter-spacing:.12em!important}
-body.wb-immersive .cv-tplgrid .wc-tpl{background:#102d3b!important;border-color:rgba(201,168,93,.24)!important;border-radius:2px!important}
-body.wb-immersive .cv-tplgrid .wc-tpl-name{color:#f7f1e6!important;font-family:Fraunces,Georgia,serif!important;font-weight:500!important}
+body.wb-immersive .cv-logo::after{content:" · WEB STUDIO";color:var(--ws-gold);font:700 9px Inter,sans-serif;letter-spacing:.16em}
+body.wb-immersive .cv-tbtn{background:transparent!important;border:1px solid rgba(201,162,39,.24)!important;border-radius:2px!important;color:#d8e2e0!important}
+body.wb-immersive .cv-publish{background:var(--ws-gold)!important;color:var(--ws-navy)!important;border-radius:2px!important;text-transform:uppercase;letter-spacing:.08em}
+body.wb-immersive .cv-rail,body.wb-immersive .cv-bottom{background:#071221!important;border-color:rgba(201,162,39,.2)!important}
+body.wb-immersive .cv-panel,body.wb-immersive .cv-inspector{background:#0d2031!important;color:#eef3ef!important;border-color:rgba(201,162,39,.18)!important}
+body.wb-immersive .cv-stage{background:#10283a!important;background-image:linear-gradient(rgba(201,162,39,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(201,162,39,.035) 1px,transparent 1px)!important;background-size:40px 40px!important}
+body.wb-immersive .cv-rbtn.is-on{background:rgba(26,77,58,.58)!important;color:#e7cb6a!important}
+body.wb-immersive .cv-wide,body.wb-immersive .cv-input,body.wb-immersive .cv-search input,body.wb-immersive .cv-inspector input,body.wb-immersive .cv-inspector select,body.wb-immersive .cv-inspector textarea{background:#102d3b!important;border-color:rgba(201,162,39,.24)!important;color:var(--ws-ivory)!important;border-radius:2px!important}
+body.wb-immersive .cv-lbl{color:var(--ws-gold)!important;letter-spacing:.12em!important}
+body.wb-immersive .cv-tplgrid .wc-tpl{background:#102d3b!important;border-color:rgba(201,162,39,.22)!important;border-radius:2px!important}
+body.wb-immersive .cv-tplgrid .wc-tpl-name{color:var(--ws-ivory)!important;font-family:Fraunces,Georgia,serif!important;font-weight:500!important}
+
+@media(max-width:700px){.ws-corporate-teaser{padding:18px}.ws-teaser-card{padding:30px 20px}.ws-teaser-card h1{font-size:36px}.ws-teaser-features{display:none}}

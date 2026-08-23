@@ -183,7 +183,7 @@
           <div style="font-size:26px;">🌐</div>
           <h3>Web Studio</h3>
           <p>Create and publish a live, editorial website with boutique-level control — no code needed.</p>
-          <div class="wn-price"><strong style="color:#191512;">$19.00</strong>/mo Pro</div>
+          <div class="wn-price"><strong style="color:#191512;">$299</strong>/mo Corporate</div>
           <a class="wn-cta" onclick="document.getElementById('whatsNewOverlay').style.display='none';openWebsiteCreator();">Build a site →</a>
         </div>
         <div class="wn-card">
@@ -282,7 +282,7 @@
         <button class="sidebar-btn" onclick="openWebsiteCreator()" id="tab-website" data-label="Website" title="Build & publish your live personal website (desktop only)">
           <span class="sidebar-icon">🌐</span>
           <span style="flex:1;text-align:left;" data-i18n="sidebar_website">Web Studio</span>
-          <span style="background:#B4832A;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">PRO</span>
+          <span style="background:#c9a227;color:#0a1628;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px;letter-spacing:.5px;flex-shrink:0;margin-left:4px;">CORPORATE</span>
         </button>
         <button class="sidebar-btn" onclick="openBackOffice()" id="tab-backoffice" data-label="Back Office" title="Manage all your resumes, cover letters, videos & website">
           <span class="sidebar-icon">🗂️</span>
@@ -585,12 +585,26 @@
       <!-- ═══ TAB: JOB APPLICATION TRACKER ═══ -->
       <div class="tab-content" id="panel-jobtracker" data-lazy="1"><div class="panel-loading" aria-hidden="true"><span class="panel-spin"></span></div></div>
 
-      <!-- ═══ TAB: PERSONAL WEBSITE (Website Creator, Pro) ═══ -->
+      <!-- ═══ TAB: PERSONAL WEBSITE (Website Creator, Corporate) ═══ -->
       <!-- ═══ TAB: WEBSITE BUILDER (Canva-style editor) ═══ -->
       <div class="tab-content" id="panel-website">
         <!-- Desktop-only gate. Building a site means dragging elements around a
              large canvas, which is not workable on a phone. Published sites are
              still fully responsive — this gate is about the EDITOR only. -->
+
+        <section class="ws-corporate-teaser" id="webStudioCorporateTeaser" aria-labelledby="webStudioTeaserTitle">
+          <div class="ws-teaser-card">
+            <span class="ws-teaser-label">Available in Corporate</span>
+            <p class="ws-teaser-kicker">ResumeTailored Web Studio</p>
+            <h1 id="webStudioTeaserTitle">Your brand deserves a better stage.</h1>
+            <p>Build polished landing pages in a focused visual workspace, publish on your own ResumeTailored address, and manage every site from one back office.</p>
+            <div class="ws-teaser-features" aria-label="Corporate Web Studio features">
+              <span>Editorial templates</span><span>Live visual editing</span><span>Publishing & analytics</span>
+            </div>
+            <button class="ws-teaser-cta" type="button" data-checkout-plan="corporate">Unlock Corporate — $299/mo</button>
+            <button class="ws-teaser-back" type="button" onclick="showTab('tailor')">← Back to dashboard</button>
+          </div>
+        </section>
 
         <div class="cv-shell" id="cvShell">
           <button type="button" class="cv-railtoggle" id="cvRailToggle" onclick="cvToggleRail()" title="Hide or show the panel">‹</button>
@@ -814,6 +828,7 @@
       times:   "'Times New Roman',Georgia,serif"
     };
     let isSubscriberFlag = false;
+    let webStudioAccessFlag = false;
     let isLoggedIn = false;
     let authReadyPromise = null;
     let pendingDownloadFn = null;
@@ -1761,7 +1776,7 @@
       // /website deep link can activate this tab while that bundle is still
       // being parsed, so only initialize here once its loader exists. The
       // second bundle performs the matching deferred initialization.
-      if (name === 'website' && typeof loadWebsiteCreator === 'function') loadWebsiteCreator();
+      if (name === 'website' && webStudioAccessFlag && typeof loadWebsiteCreator === 'function') loadWebsiteCreator();
       if (name === 'backoffice') loadBackOffice();
     }
 
@@ -1776,7 +1791,8 @@
       // The Website Creator takes over the screen: its own slim bar replaces
       // the app header, which otherwise sits on top of the editor toolbar and
       // eats every click on Pages, Undo, Preview and Publish.
-      document.body.classList.toggle('wb-immersive', name === 'website');
+      document.body.classList.toggle('wb-immersive', name === 'website' && webStudioAccessFlag);
+      document.body.classList.toggle('web-studio-locked', name === 'website' && !webStudioAccessFlag);
       // On phones the bottom control bar remains on browsing/landing pages, but
       // gets out of the way once a Pro user is inside the actual video studio.
       document.body.classList.toggle('video-immersive', name === 'video' && isSubscriberFlag);
@@ -1841,6 +1857,7 @@
         const res = await fetch(`/api/status?email=${encodeURIComponent(email)}`);
         const data = await res.json();
         isSubscriberFlag = data.isSubscriber;
+        webStudioAccessFlag = data.webStudioAccess === true;
         freeResumesLeft = data.freeResumesLeft;
         freeCoverLettersLeft = data.freeCoverLettersLeft;
         freeLinkedInLeft = data.freeLinkedInLeft !== undefined ? data.freeLinkedInLeft : 1;
@@ -5451,8 +5468,8 @@ Aaliyah Washington`
       return _createShareLink();
     }
 
-    // ── Website Creator (Pro) ─────────────────────────────────────────────────
-    // Entry point from the sidebar. Pro-gates, then applies the pop-up gate: the
+    // ── Website Creator (Corporate) ───────────────────────────────────────────
+    // Entry point from the sidebar. Corporate-gates, then applies the pop-up gate: the
     // "tailor first" modal only shows when the user has zero saved resumes AND
     // cover letters. Users with assets go straight into the creator tab.
     let wcResumes = [], wcCovers = [], wcSite = null;
@@ -5460,7 +5477,7 @@ Aaliyah Washington`
     // resume picker overwrites it when the user chooses a different one).
     let wcSiteText = '';
     async function openWebsiteCreator() {
-      if (!isSubscriberFlag) { showToast('The Website Creator is a Pro feature.'); startPro(); return; }
+      if (!webStudioAccessFlag) { showTab('website'); return; }
       try {
         const res = await fetch('/api/assets/summary', { headers: authHeaders() });
         const data = await res.json().catch(() => ({}));
@@ -5648,6 +5665,7 @@ Aaliyah Washington`
     // `opts.subdomain` (or a stashed wcOpenSub) opens that particular site — the
     // Back Office lists them all, and Edit there has to reopen the card pressed.
     async function loadWebsiteCreator(opts) {
+      if (!webStudioAccessFlag) return;
       const openSub = (opts && opts.subdomain) || wcOpenSub;
       const openRename = wcOpenRename;
       wcOpenSub = null; wcOpenRename = false;
@@ -8542,7 +8560,7 @@ Aaliyah Washington`
      * was built from.
      */
     function startPersonalSite() {
-      if (!isSubscriberFlag) { showToast('A personal website is a Pro feature.'); startPro(); return; }
+      if (!webStudioAccessFlag) { showTab('website'); return; }
       if (!getOutputText()) { showToast('Tailor a resume first, then build your website from it.'); return; }
       showTab('website');
     }
