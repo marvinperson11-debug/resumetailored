@@ -36,7 +36,7 @@
     document.body.appendChild(button);
 
     var style = document.createElement('style');
-    style.textContent = '[data-global-language-toggle]{position:fixed;top:12px;right:14px;z-index:2147483000;min-width:52px;padding:8px 12px;border:1px solid rgba(201,162,39,.55);border-radius:2px;background:#0a1628;color:#f7f3e8;font:700 12px/1 Inter,system-ui,sans-serif;letter-spacing:.05em;cursor:pointer;box-shadow:0 8px 28px rgba(0,0,0,.22)}[data-global-language-toggle]:hover,[data-global-language-toggle]:focus-visible{background:#1a4d3a;color:#fff;outline:2px solid #c9a227;outline-offset:2px}';
+    style.textContent = '[data-global-language-toggle]{position:fixed;top:12px;right:14px;z-index:2147483000;min-width:52px;padding:8px 12px;border:1px solid #c9a227;border-radius:2px;background:#fff;color:#0a1628;font:700 12px/1 Inter,system-ui,sans-serif;letter-spacing:.05em;cursor:pointer;box-shadow:0 8px 28px rgba(0,0,0,.22)}[data-global-language-toggle]:hover,[data-global-language-toggle]:focus-visible{background:#1a4d3a;color:#f7f3e8;outline:2px solid #c9a227;outline-offset:2px}';
     document.head.appendChild(style);
   }
 
