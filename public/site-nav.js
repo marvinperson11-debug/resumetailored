@@ -23,8 +23,13 @@
   // Tool and landing pages share one deterministic parent-route map. Loading
   // it here keeps those pages consistent without duplicating inline handlers.
   if (!window.RTBackNav && !document.querySelector('script[data-rt-back-nav]')) {
+    // Cache-bust back-nav.js on every deploy by reusing site-nav.js's own
+    // asset version (the ?v= the server stamps onto this script's src). A frozen
+    // ?v=1 meant browsers kept running a stale back-nav.js after it changed.
+    var snavTag = document.querySelector('script[src*="site-nav.js"]');
+    var ver = (snavTag && (snavTag.getAttribute('src').match(/[?&]v=([^&]+)/) || [])[1]) || '2';
     var backScript = document.createElement('script');
-    backScript.src = '/back-nav.js?v=1';
+    backScript.src = '/back-nav.js?v=' + ver;
     backScript.defer = true;
     backScript.setAttribute('data-rt-back-nav', '1');
     document.head.appendChild(backScript);
