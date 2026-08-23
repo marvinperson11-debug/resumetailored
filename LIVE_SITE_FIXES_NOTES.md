@@ -59,6 +59,35 @@ Full Node suite: **59 pass, 1 fail**. The single failure — `audit-regressions.
 `test/homepage-a11y.js` to check `--ink-faint` against the navy surfaces it now
 sits on.
 
+## CI status on PR #406 — red `test` check is pre‑existing, NOT from this PR
+GitHub Actions `test` is red on two subtests in `test/audit-regressions.js`:
+- `anonymous ATS generation is publicly usable`
+- `anonymous LinkedIn generation is publicly usable`
+
+Both fail with *"Could not resolve authentication method"* — they POST to the
+ATS / LinkedIn generation routes, which call the Anthropic API, and CI has no
+`ANTHROPIC_API_KEY` secret.
+
+**Proof it is not this PR's fault:**
+- This diff changes neither `test/audit-regressions.js` nor those routes
+  (`git diff origin/main...HEAD` on that file is empty; no ATS/LinkedIn route
+  hunks in `server.js`).
+- Running the same test against `origin/main` fails on the **exact same two
+  subtests** — so `main` is red here too.
+- It cannot self‑recover: it is a missing CI secret, not a code issue.
+
+**Decision:** not fixing it in this PR — that would widen a colours/buttons PR
+into unrelated test infra. Posted the same explanation as a comment on PR #406.
+
+**Options to make CI green (separate change):**
+1. Add `ANTHROPIC_API_KEY` as a repo Actions secret and pass it into the
+   `Run test suite` step, or
+2. Have those two subtests skip (or assert a graceful 5xx) when
+   `ANTHROPIC_API_KEY` is unset, so keyless CI stays green.
+
+Everything else in the suite passes (58/58). The PR's Netlify deploy preview
+built successfully.
+
 ## Not touched (per your rules)
 Stripe checkout, pricing, tiers, tool assignments, navigation structure, and
 backend API logic are unchanged.
