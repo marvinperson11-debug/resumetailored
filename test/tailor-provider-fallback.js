@@ -8,6 +8,7 @@ function check(name, ok) { if (ok) console.log('PASS', name); else { failures++;
 
 check('tailoring has a factual provider continuity fallback', /function _localTailorFallback/.test(src) && /Your original facts have been preserved/.test(src));
 check('billing and capacity failures activate the fallback', /credit balance\|billing\|overloaded\|capacity\|timeout\|network\|fetch failed/.test(src));
+check('anonymous ATS and LinkedIn tools share provider continuity', /ATS scan error:[\s\S]{0,1800}fallback: true/.test(src) && /LinkedIn optimizer error:[\s\S]{0,1400}fallback: true/.test(src));
 check('fallback response is explicitly identified', /fallback: true/.test(src));
 check('fallback supports resume, cover letter, and combined modes', /mode === 'resume'/.test(src) && /mode === 'cover_letter'/.test(src) && /===COVER_LETTER_START===/.test(src));
 check('fallback copy uses plain resume spelling', !/résumé/i.test(src.match(/function _localTailorFallback[\s\S]*?\n}\n/)?.[0] || ''));

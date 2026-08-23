@@ -26,6 +26,7 @@ check('monthly checkout accepts guest email collection', /app\.post\('\/api\/sub
 check('lifetime checkout no longer requires a pre-entered email', !/subscribe-lifetime'[\s\S]{0,250}Email required/.test(server));
 check('employer checkout no longer requires employer auth', /employer\/subscribe'[\s\S]{0,500}guest-friendly/.test(server));
 check('placeholder price variables cannot override the canonical Stripe catalog', /function _configuredPriceId[\s\S]{0,220}_looksLikePriceId/.test(server) && /_configuredPriceId\(process\.env\.STRIPE_PRICE_ID, STRIPE_PRICE_IDS\.pro\)/.test(server));
+check('Pro checkout recovers from a stale Railway price id with exact inline pricing', /StripeInvalidRequestError[\s\S]{0,900}unit_amount: 1900[\s\S]{0,200}recurring: \{ interval: 'month' \}/.test(server));
 check('marketing plan buttons have one owner and never race checkout with a login redirect', !/data-checkout-plan|\/employer\?plan=/.test(ecosystem));
 check('paid fulfillment auto-creates a user', /function _provisionPaidAccount[\s\S]{0,1800}INSERT INTO users/.test(server));
 check('paid fulfillment sends a welcome email', /subject: `Welcome to \$\{planLabel\}/.test(server));

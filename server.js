@@ -117,6 +117,12 @@ function _configuredPriceId(raw, fallback) {
   return _looksLikePriceId(raw) ? _normPriceId(raw) : fallback;
 }
 
+function _isAIProviderUnavailable(err) {
+  const message = String(err?.message || '').toLowerCase();
+  return err?.status === 429 || err?.status >= 500 ||
+    /credit balance|billing|overloaded|capacity|timeout|network|fetch failed/.test(message);
+}
+
 // Employer checkout price IDs (Pro / Scale). Logs presence only — never the
 // value. Reports each id as loaded / auto-cleaned (usable but has stray
 // whitespace — clean it in the dashboard) / MALFORMED / NOT set.
@@ -6612,6 +6618,25 @@ ${jobPosting.slice(0, 4000)}`
     res.json(result);
   } catch(e) {
     console.error('ATS scan error:', e.message);
+    if (_isAIProviderUnavailable(e)) {
+      const tokenize = text => [...new Set(String(text).toLowerCase().match(/[a-z][a-z0-9+#.-]{2,}/g) || [])];
+      const resumeWords = new Set(tokenize(resume));
+      const jobWords = tokenize(jobPosting);
+      const matched = jobWords.filter(word => resumeWords.has(word)).slice(0, 20);
+      const missing = jobWords.filter(word => !resumeWords.has(word)).slice(0, 15);
+      const score = Math.max(20, Math.min(95, Math.round((matched.length / Math.max(1, jobWords.length)) * 100)));
+      const verdict = score >= 80 ? 'Strong Match' : score >= 60 ? 'Good Match' : score >= 40 ? 'Fair Match' : 'Weak Match';
+      return res.json({
+        score, verdict, matched, missing,
+        suggestions: [
+          `Add ${missing.slice(0, 3).join(', ') || 'the role’s most important terms'} where they truthfully describe your experience.`,
+          'Move the achievements most relevant to this job closer to the top of each role.',
+          'Use measurable scope, results, or team size only where you can verify the facts.',
+          'Mirror the job posting’s terminology without copying full sentences.'
+        ],
+        fallback: true
+      });
+    }
     res.status(500).json({ error: 'Analysis failed. Please try again.' });
   }
 });
@@ -7029,10 +7054,7 @@ OUTPUT: Cover Letter
       `<p>✍️ <strong>${who}</strong> just tailored <strong>${what}</strong>${subscribed ? ' (Pro)' : ' (free tier)'}.</p>`);
   } catch (err) {
     console.error('Claude API error:', err?.status, err?.message || err);
-    const providerMessage = String(err?.message || '').toLowerCase();
-    const providerUnavailable = err?.status === 429 || err?.status >= 500 ||
-      /credit balance|billing|overloaded|capacity|timeout|network|fetch failed/.test(providerMessage);
-    if (providerUnavailable) {
+    if (_isAIProviderUnavailable(err)) {
       console.warn('[tailor] AI provider unavailable; returning the factual continuity fallback.');
       return res.json({ result: _localTailorFallback({ resume, jobPosting, mode }), fallback: true });
     }
@@ -7371,6 +7393,14 @@ OUTPUT: LinkedIn Optimization (three labeled sections only — no preamble or ex
     res.json({ result: message.content[0].text });
   } catch (err) {
     console.error('LinkedIn optimizer error:', err?.status, err?.message || err);
+    if (_isAIProviderUnavailable(err)) {
+      const source = String(profileText).trim();
+      const role = String(targetRole).trim();
+      return res.json({
+        result: `OPTIMIZED HEADLINE\n${role} | Results • Collaboration • Continuous Improvement\n\nOPTIMIZED ABOUT SECTION\nI am pursuing ${role} opportunities where I can apply the experience documented in my profile. My work is grounded in clear communication, dependable execution, and measurable improvement. I focus on solving the problem in front of me while keeping colleagues and stakeholders aligned. The details below preserve my original experience and should be strengthened with verified metrics wherever available. I am interested in teams that value practical judgment, accountability, and continuous learning.\n\nOPTIMIZED EXPERIENCE BULLETS\n${source}\n\nReview note: preserve every fact from your source profile and add numbers only when you can verify them.`,
+        fallback: true
+      });
+    }
     let userMessage = 'AI processing failed. Please try again.';
     if (err?.status === 429) userMessage = 'AI is rate limited. Please wait a moment and try again.';
     else if (err?.status >= 500) userMessage = 'AI service is temporarily busy. Please try again in 30 seconds.';
@@ -7389,15 +7419,41 @@ app.post('/api/subscribe', async (req, res) => {
   // creates the login + set-password email). This is what lets the Pro-tool
   // cards send guests directly to checkout.
   try {
-    const session = await stripe.checkout.sessions.create({
+    const checkoutBase = {
       payment_method_types: ['card'],
       mode: 'subscription',
       ...(email ? { customer_email: email } : {}),
-      line_items: [{ price: _configuredPriceId(process.env.STRIPE_PRICE_ID, STRIPE_PRICE_IDS.pro), quantity: 1 }],
       success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/pricing?checkout=cancelled#ecosystem-pricing`,
       metadata: email ? { email } : {}
-    });
+    };
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        ...checkoutBase,
+        line_items: [{ price: _configuredPriceId(process.env.STRIPE_PRICE_ID, STRIPE_PRICE_IDS.pro), quantity: 1 }]
+      });
+    } catch (priceErr) {
+      // Railway can retain a syntactically valid price id that was archived or
+      // belongs to an older Stripe account. Stripe then rejects the session even
+      // though the value looks correct. Inline price_data is account-local and
+      // preserves the exact $19/month product while removing that stale-id
+      // dependency. Retry only invalid-request errors; outages still surface.
+      if (priceErr?.type !== 'StripeInvalidRequestError') throw priceErr;
+      console.warn('[stripe] Pro catalog price was rejected; retrying with inline $19/month price data.');
+      session = await stripe.checkout.sessions.create({
+        ...checkoutBase,
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            unit_amount: 1900,
+            recurring: { interval: 'month' },
+            product_data: { name: 'ResumeTailored Pro' }
+          },
+          quantity: 1
+        }]
+      });
+    }
     res.json({ url: session.url });
   } catch (err) {
     console.error('Stripe error:', err);
