@@ -39,3 +39,13 @@ body.ecosystem-redesign>nav.nav,body.ecosystem-redesign>div.mobile-menu{display:
 @media(max-width:1000px){.club-nav__links,.club-nav__actions{display:none}.club-mobile{display:block}.pillar-grid{grid-template-columns:1fr 1fr}.club-price-columns{grid-template-columns:1fr}.pillar-story__head{grid-template-columns:1fr;gap:20px}}
 @media(max-width:700px){.club-nav__inner{height:66px;padding:0 18px}.club-brand{font-size:19px}.club-mobile-menu{top:66px;right:0;width:100vw;max-height:calc(100vh - 66px);border-left:0;border-right:0}.club-mobile-menu__links{grid-template-columns:1fr}.club-mobile-menu__account,.club-mobile-menu__lang{grid-column:1}.ecosystem-home{padding:64px 18px 54px;min-height:auto}.ecosystem-home h1{font-size:48px}.ecosystem-doors{grid-template-columns:1fr}.ecosystem-door{min-height:200px;padding:24px}.pillar-story{padding:74px 18px}.pillar-grid{grid-template-columns:1fr}.club-returning__inner{align-items:flex-start;flex-direction:column}.club-returning__actions{margin-left:0;flex-wrap:wrap}.club-price-architecture{padding:74px 18px}.club-price-group{padding:20px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.ecosystem-door,.pillar-card{transition:none}}
+
+/* ── Navy palette consistency: pillar-story was a cream band ─────────────── */
+.pillar-story{background:#0a1628;color:#cdd6d3}
+.pillar-story h2,.pillar-card h3{color:#f5f1e8}
+.pillar-story__head p,.pillar-card p{color:#9eb2aa}
+.pillar-grid{border-top:1px solid rgba(201,162,39,.22);border-left:1px solid rgba(201,162,39,.22)}
+.pillar-card{border-right:1px solid rgba(201,162,39,.22);border-bottom:1px solid rgba(201,162,39,.22);background:rgba(255,255,255,.04);color:#cdd6d3!important}
+.pillar-card:hover{background:rgba(29,91,73,.34)}
+.pillar-card__no{color:#c9a227}
+.pillar-card span:last-child{color:#c9a227}

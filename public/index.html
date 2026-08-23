@@ -186,18 +186,18 @@
        dark/purple SaaS look. Layout & content unchanged.
        ============================================================ */
     :root {
-      --bg:        #FAF7F0;   /* warm cream paper           */
-      --bg-alt:    #F1EADD;   /* slightly deeper cream band */
-      --surface:   #FFFFFF;   /* cards                      */
-      --ink:       #191512;   /* near-black warm ink        */
-      --ink-soft:  #57514A;   /* body copy                  */
-      --ink-faint: #6B6459;   /* captions / meta (WCAG-AA ≥4.5:1 on every light bg) */
-      --line:      #E7DFD1;   /* hairline                   */
-      --line-2:    #D9CFBC;   /* stronger hairline          */
-      --accent:    #1F5C3D;   /* deep forest green          */
-      --accent-2:  #2E7D53;   /* lighter green              */
-      --accent-ink:#153F2A;
-      --accent-tint:#E8F0E9;
+      --bg:        #0a1628;   /* deep navy                  */
+      --bg-alt:    #081422;   /* deeper navy band           */
+      --surface:   #0d1e30;   /* cards                      */
+      --ink:       #f5f1e8;   /* cream heading ink          */
+      --ink-soft:  #cdd6d3;   /* body copy                  */
+      --ink-faint: #9eb2aa;   /* captions / meta            */
+      --line:      rgba(201,162,39,.22);   /* gold hairline */
+      --line-2:    rgba(201,162,39,.34);   /* stronger gold hairline */
+      --accent:    #1a4d3a;   /* emerald                    */
+      --accent-2:  #c9a227;   /* gold highlight             */
+      --accent-ink:#14402f;
+      --accent-tint:rgba(26,77,58,.30);
       --warm:      #9C3F1C;   /* terracotta (eyebrows/warn) */
       --warm-tint: #F5E6DC;
       --gold:      #B4832A;
@@ -984,9 +984,9 @@
     }
     /* ── Mobile legibility & containment (≤820px only; desktop unchanged) ── */
     @media (max-width: 820px) {
-      /* Darken muted body/caption text so it clears WCAG AA on the cream bg. */
-      :root { --ink-soft: #2d2d2d; --ink-faint: #4a4a4a; }
-      [style*="#57514A"], [style*="#918A7E"], [style*="#9ca3af"] { color: #2d2d2d !important; }
+      /* Keep muted body/caption text light so it clears WCAG AA on the navy bg. */
+      :root { --ink-soft: #d5dee0; --ink-faint: #b7c3c0; }
+      [style*="#57514A"], [style*="#918A7E"], [style*="#9ca3af"] { color: #d5dee0 !important; }
       /* No sideways scroll; long unbreakable strings (URLs) wrap in their card.
          `clip`, not `hidden` — `overflow-x:hidden` makes the UA compute
          overflow-y as `auto` per spec, turning body into its own scroll
@@ -1009,6 +1009,34 @@
   <noscript><link rel="stylesheet" href="/site-fx.css"/></noscript>
   <link rel="stylesheet" href="/luxury-ecosystem.css"/>
   <script src="/paid-checkout.js" defer></script>
+<style>
+  /* Item 2 — card-based layout: give each step/feature/tool its own distinct
+     navy card with spacing and a subtle gold hairline, instead of a flat wall. */
+  .steps{gap:24px}
+  .step{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:32px 26px;box-shadow:var(--shadow-sm)}
+  .step-num{margin-left:auto;margin-right:auto}
+  .feature-row{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:32px;box-shadow:var(--shadow-sm);align-items:center}
+  @media(max-width:820px){.feature-row{padding:24px}}
+  .feat-card--free{background:var(--surface)}
+  .testimonial{background:var(--surface);border:1px solid var(--line)}
+  .hub-box{background:var(--surface);border:1px solid var(--line)}
+  /* Job-boards cream box → navy (scoped so resume-template paper previews stay white). */
+  #job-boards [style*="#F7F3EB"]{background:#0d1e30!important;border-color:rgba(201,162,39,.22)!important}
+  #job-boards [style*="color:#57514A"]{color:#cdd6d3!important}
+  #job-boards h3{color:#c9a227!important}
+  /* Feature preview mockups → navy (scoped to .feature-visual so #templates
+     resume-paper thumbnails are untouched). */
+  .feature-visual [style*="background:#fff"],
+  .feature-visual [style*="background:#F4F1EA"],
+  .feature-visual [style*="background:#fffbf5"],
+  .feature-visual [style*="background:#F7F3EB"]{background:#0d1e30!important;border-color:rgba(201,162,39,.2)!important}
+  .feature-visual [style*="color:#191512"]{color:#f5f1e8!important}
+  .feature-visual [style*="color:#57514A"],
+  .feature-visual [style*="color:#6F6858"],
+  .feature-visual [style*="color:#6b7280"]{color:#cdd6d3!important}
+  /* Keep the injected white language toggle white on the navy footer. */
+  #langToggleBtnFooter{background:#fff!important;color:#0a1628!important;border-color:#c9a227!important}
+</style>
 </head>
 <body class="ecosystem-redesign">
 
@@ -1268,24 +1296,24 @@
 </section>
 
 <!-- FREE TOOLS HUB PROMO BLOCK -->
-<section style="padding:64px 0;background:#F1EADD;">
+<section style="padding:64px 0;background:#081422;">
   <div class="container" style="max-width:960px;margin:0 auto;padding:0 24px;">
     <div class="feat-card feat-card--free" style="display:flex;flex-wrap:wrap;align-items:center;gap:48px;">
       <div style="flex:1;min-width:280px;">
-        <p data-i18n="promo_eyebrow" style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#1F5C3D;margin-bottom:12px;">100% Free · No Account Required</p>
-        <h2 data-i18n="promo_title" style="font-size:clamp(26px,3.5vw,38px);font-weight:300;letter-spacing:0.01em;color:#191512;margin-bottom:16px;line-height:1.2;">Is Your Resume <span style="font-weight:400;background:#1F5C3D;-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span></h2>
-        <p data-i18n="promo_desc" style="font-size:16px;color:#57514A;margin-bottom:28px;line-height:1.7;">Paste your resume and job description. Claude AI scores your keyword match, flags what's missing, and gives you 5 specific fixes — in seconds. No login, no credit card.</p>
+        <p data-i18n="promo_eyebrow" style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#c9a227;margin-bottom:12px;">100% Free · No Account Required</p>
+        <h2 data-i18n="promo_title" style="font-size:clamp(26px,3.5vw,38px);font-weight:300;letter-spacing:0.01em;color:#f5f1e8;margin-bottom:16px;line-height:1.2;">Is Your Resume <span style="font-weight:400;background:linear-gradient(135deg,#c9a227,#e3cc91);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Passing ATS?</span></h2>
+        <p data-i18n="promo_desc" style="font-size:16px;color:#cdd6d3;margin-bottom:28px;line-height:1.7;">Paste your resume and job description. Claude AI scores your keyword match, flags what's missing, and gives you 5 specific fixes — in seconds. No login, no credit card.</p>
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:28px;">
-          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#57514A;"><span style="color:#1F5C3D;font-size:18px;">✓</span> <span data-i18n="promo_c1">ATS Match Score</span></div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#57514A;"><span style="color:#1F5C3D;font-size:18px;">✓</span> <span data-i18n="promo_c2">Missing Keywords</span></div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#57514A;"><span style="color:#1F5C3D;font-size:18px;">✓</span> <span data-i18n="promo_c3">Readability Review</span></div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#57514A;"><span style="color:#1F5C3D;font-size:18px;">✓</span> <span data-i18n="promo_c4">AI Suggestions</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#cdd6d3;"><span style="color:#c9a227;font-size:18px;">✓</span> <span data-i18n="promo_c1">ATS Match Score</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#cdd6d3;"><span style="color:#c9a227;font-size:18px;">✓</span> <span data-i18n="promo_c2">Missing Keywords</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#cdd6d3;"><span style="color:#c9a227;font-size:18px;">✓</span> <span data-i18n="promo_c3">Readability Review</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:#cdd6d3;"><span style="color:#c9a227;font-size:18px;">✓</span> <span data-i18n="promo_c4">AI Suggestions</span></div>
         </div>
         <a href="/score" class="btn-shine" data-i18n="promo_cta" style="display:inline-block;background:#1F5C3D;color:#fff;padding:14px 32px;border-radius:12px;font-weight:800;font-size:16px;text-decoration:none;box-shadow:0 0 28px rgba(31,92,61,0.28);transition:opacity .2s;" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">Check My Resume Free →</a>
       </div>
-      <div style="flex:1;min-width:260px;background:#FFFFFF;border:1px solid rgba(31,92,61,0.25);border-radius:18px;padding:28px;">
+      <div style="flex:1;min-width:260px;background:#0d1e30;border:1px solid rgba(201,162,39,0.25);border-radius:18px;padding:28px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-          <span data-i18n="promo_card_title" style="font-size:14px;font-weight:700;color:#191512;">ATS Match Score</span>
+          <span data-i18n="promo_card_title" style="font-size:14px;font-weight:700;color:#f5f1e8;">ATS Match Score</span>
           <span data-i18n="promo_card_badge" style="background:rgba(31,92,61,0.12);color:#1F5C3D;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px;">Preview</span>
         </div>
         <div style="text-align:center;margin-bottom:20px;">
@@ -1299,7 +1327,7 @@
           <span style="filter:blur(4px);background:rgba(239,68,68,0.12);color:#f87171;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">machine learning</span>
           <span style="filter:blur(4px);background:rgba(239,68,68,0.12);color:#f87171;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">Tableau</span>
         </div>
-        <p data-i18n="promo_card_lock" style="font-size:12px;color:#6F6858;text-align:center;">🔒 Missing keywords unlocked for Pro users</p>
+        <p data-i18n="promo_card_lock" style="font-size:12px;color:#9eb2aa;text-align:center;">🔒 Missing keywords unlocked for Pro users</p>
       </div>
     </div>
   </div>
@@ -2952,10 +2980,10 @@
     <span class="footer-copy" data-i18n="footer_copy">© 2026 ResumeTailored AI. All rights reserved.</span>
   </div>
 <!-- Free Tools CTA Banner -->
-<div style="background:#F1EADD;border-top:1px solid rgba(31,92,61,0.3);padding:28px 24px;text-align:center;">
-  <p data-i18n="footer_cta_eyebrow" style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#1F5C3D;margin-bottom:8px;">Free AI Resume Tools</p>
-  <p data-i18n="footer_cta_title" style="font-size:18px;font-weight:800;color:#191512;margin-bottom:6px;">Get Your ATS Score &amp; Readability Review — Free</p>
-  <p data-i18n="footer_cta_desc" style="font-size:14px;color:#57514A;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Paste your resume and job description. Claude AI scores your match and gives you 5 specific fixes — no account needed.</p>
+<div style="background:#081422;border-top:1px solid rgba(201,162,39,0.28);padding:28px 24px;text-align:center;">
+  <p data-i18n="footer_cta_eyebrow" style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#c9a227;margin-bottom:8px;">Free AI Resume Tools</p>
+  <p data-i18n="footer_cta_title" style="font-size:18px;font-weight:800;color:#f5f1e8;margin-bottom:6px;">Get Your ATS Score &amp; Readability Review — Free</p>
+  <p data-i18n="footer_cta_desc" style="font-size:14px;color:#cdd6d3;margin-bottom:20px;max-width:480px;margin-left:auto;margin-right:auto;">Paste your resume and job description. Claude AI scores your match and gives you 5 specific fixes — no account needed.</p>
   <a href="/score" class="btn-shine" data-i18n="footer_cta_btn" style="background:#1F5C3D;color:#fff;padding:12px 28px;border-radius:10px;font-weight:800;font-size:15px;display:inline-block;text-decoration:none;box-shadow:0 0 20px rgba(31,92,61,0.28);">Check My Resume Free →</a>
 </div>
 </footer>
