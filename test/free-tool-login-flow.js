@@ -17,15 +17,13 @@ const shared = read('public/free-tool-auth.js');
 const hub = read('public/tools-hub.js');
 const tracker = read('public/job-tracker.js');
 
-// Dashboard tools: one server-authoritative helper, pending callback preserved,
-// and no raw client flag deciding whether a login modal appears.
-for (const tool of [
-  ['AI Resume Tailor', 'tailor'], ['Cover Letter', 'tailor'],
-  ['ATS Scanner', 'runDashboardATS'], ['LinkedIn Optimizer', 'optimizeLinkedIn'],
-  ['Share Link', 'shareResumeLink']
-]) {
+// Only Tailor/Cover Letter prompt at Generate; their shared callback preserves
+// all in-place form state and replays the same action after authentication.
+for (const tool of [['AI Resume Tailor', 'tailor'], ['Cover Letter', 'tailor']]) {
   check(`${tool[0]} uses login-at-Generate`, app.includes(`requireFreeActionLogin(${tool[1]}`));
 }
+check('ATS Scanner never opens an auth gate', !app.includes('requireFreeActionLogin(runDashboardATS'));
+check('LinkedIn Optimizer never opens an auth gate', !app.includes('requireFreeActionLogin(optimizeLinkedIn'));
 check('dashboard waits for the authoritative auth request', /await authReadyPromise/.test(app));
 check('dashboard preserves the pending callback through the modal', /showAuthModal\('login', true\)/.test(app));
 check('dashboard replays output after login', /setTimeout\(fn, 300\)/.test(app));
@@ -41,9 +39,7 @@ for (const [name, file, action] of standalone) {
   check(`${name} loads the shared action gate`, /free-tool-auth\.js/.test(src));
   check(`${name} gates only its action`, src.includes(`requireForAction('${action}')`));
 }
-check('standalone forms are saved for post-login continuation', /sessionStorage\.setItem\(KEY/.test(shared));
-check('standalone actions resume after verified login', /typeof window\[pending\.action\] === 'function'/.test(shared));
-check('cookie sessions are checked through /api/auth/me', /fetch\('\/api\/auth\/me'/.test(shared));
+check('standalone public-tool compatibility gate always allows the action', /async function requireForAction\(\)[\s\S]{0,220}return true/.test(shared));
 
 // Shared /tools pages all wait for a 401 from the action endpoint; browsing and
 // client-side validation happen before that point.
@@ -63,7 +59,7 @@ const ab = read('public/tools/resume-ab-tracker.html');
 check('A/B Test Tracker no longer redirects on page load', !/if\s*\(thRequireLogin\(\)\)\s*load\(\)/.test(ab));
 check('A/B Test Tracker renders a public empty workspace on 401', /res\.status===401\)\{ render\(\[\]\); return; \}/.test(ab));
 check('tool-hub pending state restores dynamic Offer fields', /offerCount/.test(hub) && /while \(document\.querySelectorAll\('\[data-offer\]'\)/.test(hub));
-check('tool-hub checks cookie sessions before Pro checkout', /thStartPro = async/.test(hub) && /thApi\('GET', '\/api\/auth\/me'\)/.test(hub));
+check('tool-hub upgrades route to direct checkout or pricing', /RTCheckout/.test(hub) && /pricing#ecosystem-pricing/.test(hub));
 
 // Job Tracker is browsable anonymously; only Add Application links to login.
 check('Job Tracker always asks the API instead of trusting local markers', !/if \(!token\(\) && !localStorage\.getItem\('rt_email'\)\)/.test(tracker));
@@ -83,18 +79,14 @@ for (const [name, file] of [
 }
 check('Cover Letter CTA opens Cover Letter mode', /href="\/cover-letter"[^>]*>Generate Cover Letter Free/.test(read('public/ai-cover-letter-generator.html')));
 
-// Server enforcement ensures anonymous callers cannot bypass the UI, while
-// authenticated free sessions reach validation/output without a Pro gate.
+// Server free utilities use an anonymous IP-scoped identity instead of auth.
 for (const endpoint of ['job-description-decode', 'follow-up-generate', 'mock-interview']) {
   const route = new RegExp(`app\\.post\\('\\/api\\/tools\\/${endpoint}'[\\s\\S]{0,300}toolGate\\(req, res`);
-  check(`${endpoint} is server login-gated`, route.test(server));
+  check(`${endpoint} uses the public tool gate`, route.test(server));
 }
-check('Offer comparison is server login-gated', /offer-comparison'[\s\S]{0,180}toolGate\(req, res, null\)/.test(server));
-check('Salary generation is server login-gated', /salary-negotiation'[\s\S]{0,260}if \(!email\) return res\.status\(401\)/.test(server));
-check('Keyword extraction is server login-gated', /extract-keywords'[\s\S]{0,900}if \(!getSessionEmail\(req\)\)/.test(server));
-check('ATS generation is server login-gated', /ats-scan'[\s\S]{0,500}if \(!email\) return res\.status\(401\)/.test(server));
-check('LinkedIn generation is server login-gated', /optimize-linkedin'[\s\S]{0,500}if \(!email\) return res\.status\(401\)/.test(server));
-check('Share Link generation is server login-gated', /api\/share'[\s\S]{0,300}if \(!ownerEmail\) return res\.status\(401\)/.test(server));
+check('anonymous tool identity is privacy-preserving and quota-capable', /guest-.*createHash\('sha256'\).*anonymous\.local/.test(server));
+check('ATS generation accepts anonymous requests', !/ats-scan'[\s\S]{0,500}if \(!email\) return res\.status\(401\)/.test(server));
+check('LinkedIn generation accepts anonymous requests', !/optimize-linkedin'[\s\S]{0,500}if \(!email\) return res\.status\(401\)/.test(server));
 
 if (failures) {
   console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`);

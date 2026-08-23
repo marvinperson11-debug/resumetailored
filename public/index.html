@@ -1008,6 +1008,7 @@
   <link rel="stylesheet" href="/site-fx.css" media="print" onload="this.media='all'"/>
   <noscript><link rel="stylesheet" href="/site-fx.css"/></noscript>
   <link rel="stylesheet" href="/luxury-ecosystem.css"/>
+  <script src="/paid-checkout.js" defer></script>
 </head>
 <body class="ecosystem-redesign">
 
@@ -3112,12 +3113,7 @@
   }
 
   function openCheckoutModal() {
-    document.getElementById('checkoutError').textContent = '';
-    document.getElementById('checkoutEmail').value = '';
-    document.getElementById('checkoutBtn').textContent = 'Start Pro — $19.00/mo →';
-    document.getElementById('checkoutBtn').disabled = false;
-    document.getElementById('checkoutModal').classList.add('open');
-    setTimeout(() => document.getElementById('checkoutEmail').focus(), 50);
+    window.RTCheckout.start('pro');
   }
 
   function closeCheckoutModal(e) {
@@ -3127,12 +3123,7 @@
   }
 
   function openLifetimeModal() {
-    document.getElementById('lifetimeError').textContent = '';
-    document.getElementById('lifetimeEmail').value = '';
-    document.getElementById('lifetimeBtn').textContent = 'Get Lifetime Access — $129 →';
-    document.getElementById('lifetimeBtn').disabled = false;
-    document.getElementById('lifetimeModal').classList.add('open');
-    setTimeout(() => document.getElementById('lifetimeEmail').focus(), 50);
+    window.RTCheckout.start('lifetime');
   }
   function closeLifetimeModal(e) {
     if (!e || e.target === document.getElementById('lifetimeModal')) {

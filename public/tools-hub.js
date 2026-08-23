@@ -61,10 +61,8 @@
   };
   window.thCloseUpgrade = function () { var m = document.getElementById('thUpgradeModal'); if (m) m.classList.remove('show'); };
   window.thStartPro = async function () {
-    // Ask the server so cookie-only sessions never get sent back to login.
-    var me = await window.thApi('GET', '/api/auth/me');
-    if (me.status === 200) location.href = '/dashboard?upgrade=1';
-    else location.href = '/login?redirect=' + encodeURIComponent(location.pathname);
+    if (window.RTCheckout) window.RTCheckout.start('pro');
+    else location.href = '/pricing#ecosystem-pricing';
   };
 
   // ── copy / download ───────────────────────────────────────────────────────
@@ -104,7 +102,7 @@
   // ── standard error/quota handling for a tool response ─────────────────────
   // Returns true if the caller should stop (handled), false to continue.
   window.thHandleGate = function (res, action) {
-    if (res.status === 401) { window.thRequireLogin(action); return true; }
+    if (res.status === 401) { alert((res.data && res.data.message) || 'This saved-data feature needs an account.'); return true; }
     if (res.status === 402) { window.thUpgrade(res.data && res.data.message); return true; }
     return false;
   };

@@ -87,8 +87,8 @@
 <div class="main">
   <div class="card">
     <div class="checkmark">🎉</div>
-    <h1>You're Pro now!</h1>
-    <p class="subtitle">Your subscription is active. Here's everything you've just unlocked:</p>
+    <h1 id="successTitle">Confirming your membership…</h1>
+    <p class="subtitle" id="successSubtitle">We’re verifying the payment securely with Stripe.</p>
 
     <div class="perks-grid">
       <div class="perk"><span class="perk-icon">♾️</span><span class="perk-text">Unlimited resume tailorings</span></div>
@@ -101,11 +101,12 @@
       <div class="perk"><span class="perk-icon">🛡️</span><span class="perk-text">Cancel anytime, no fees</span></div>
     </div>
 
-    <div style="background:#f0f7f2;border:1px solid #cfe6d8;border-radius:12px;padding:16px 18px;margin:0 0 22px;text-align:left;">
-      <div style="font-weight:800;color:#1F5C3D;font-size:15px;margin-bottom:4px;">📧 Check your email to finish setup</div>
-      <div style="font-size:13.5px;color:#4b5563;line-height:1.55;">We just emailed you a link to <strong>set your password</strong> and log in to your Pro account. Already had an account? You're upgraded — just sign in.</div>
+    <div id="setupNote" style="background:#0f263a;border:1px solid #c9a227;border-radius:12px;padding:16px 18px;margin:0 0 22px;text-align:left;">
+      <div style="font-weight:800;color:#e3cc91;font-size:15px;margin-bottom:4px;">Secure checkout verification</div>
+      <div id="setupText" style="font-size:13.5px;color:#b8c5ca;line-height:1.55;">Please keep this page open for a moment.</div>
     </div>
-    <a href="/dashboard" class="btn btn-primary">Go to my dashboard →</a>
+    <a href="/dashboard" class="btn btn-primary" id="dashboardLink" style="display:none">Go to my dashboard →</a>
+    <button class="btn btn-primary" id="retryBtn" style="display:none" type="button">Retry verification</button>
     <p class="footer-note">Questions? Email <a href="mailto:support@resumetailored.com">support@resumetailored.com</a></p>
   </div>
 </div>
@@ -115,5 +116,29 @@
   <script src="/vendor/lenis.min.js" defer></script>
   <script src="/site-motion.js" defer></script>
   <script src="/mobile-native.js" defer></script>
+  <script>
+  (function(){
+    var sid=new URLSearchParams(location.search).get('session_id');
+    var title=document.getElementById('successTitle'),sub=document.getElementById('successSubtitle');
+    var text=document.getElementById('setupText'),link=document.getElementById('dashboardLink'),retry=document.getElementById('retryBtn');
+    async function complete(){
+      retry.style.display='none';
+      if(!sid){ fail('The Stripe session id is missing. Use the welcome email or contact support.'); return; }
+      try{
+        var res=await fetch('/api/checkout/complete?session_id='+encodeURIComponent(sid));
+        var data=await res.json();
+        if(!res.ok)throw new Error(data.message||'Payment verification is still pending.');
+        try{localStorage.setItem('rt_email',data.email);localStorage.setItem('rt_username',data.username||'Member');localStorage.removeItem('rt_token');}catch(e){}
+        title.textContent='Welcome to '+data.plan+'.';
+        sub.textContent='Your payment is confirmed and your account is ready.';
+        text.textContent='A welcome email is on its way. Redirecting you to your dashboard now…';
+        link.href=data.redirect||'/dashboard';link.style.display='inline-flex';link.textContent='Open my dashboard →';
+        setTimeout(function(){location.assign(link.href);},1200);
+      }catch(err){fail(err.message||'We could not verify the payment yet.');}
+    }
+    function fail(message){title.textContent='Your payment needs verification';sub.textContent='You have not lost your purchase.';text.textContent=message;retry.style.display='inline-flex';}
+    retry.addEventListener('click',complete);complete();
+  })();
+  </script>
 </body>
 </html>

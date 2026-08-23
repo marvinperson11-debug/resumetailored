@@ -35,6 +35,7 @@
   <link rel="stylesheet" href="/site-fx.css"/>
   <link rel="stylesheet" href="/career-hub.css"/>
   <link rel="stylesheet" href="/web-studio-luxury.css"/>
+  <script src="/paid-checkout.js" defer></script>
 </head>
 <body>
 
@@ -2290,7 +2291,6 @@
 
       if (!profileText) return showToast('Please paste your LinkedIn profile text.');
       if (!targetRole)  return showToast('Please enter your target role.');
-      if (!(await requireFreeActionLogin(optimizeLinkedIn, 'Sign in once, then your free optimization will run automatically.'))) return;
 
       const btn = document.getElementById('linkedinOptBtn');
       btn.disabled = true;
@@ -2306,10 +2306,6 @@
         });
         const data = await res.json();
 
-        if (res.status === 401) {
-          promptFreeActionLogin(optimizeLinkedIn, 'Sign in once, then your free optimization will run automatically.');
-          return;
-        }
         if (res.status === 402) {
           document.getElementById('linkedinLimitBanner').style.display = 'block';
           document.getElementById('linkedinFreeStatus').style.display = 'block';
@@ -2507,7 +2503,6 @@
       const job    = document.getElementById('atsJobInput').value.trim();
       if (!resume) return showToast('Please paste your resume in the left box.');
       if (!job)    return showToast('Please paste the job description in the right box.');
-      if (!(await requireFreeActionLogin(runDashboardATS, 'Sign in once, then your free ATS scan will run automatically.'))) return;
 
       const btn = document.getElementById('atsScanBtn');
       btn.disabled = true;
@@ -2524,10 +2519,6 @@
         });
         const data = await res.json();
 
-        if (res.status === 401) {
-          promptFreeActionLogin(runDashboardATS, 'Sign in once, then your free ATS scan will run automatically.');
-          return;
-        }
         if (res.status === 402) {
           document.getElementById('atsLimitBanner').style.display = 'block';
           document.getElementById('atsProStatus').style.display = 'block';
@@ -4783,13 +4774,7 @@ Aaliyah Washington`
     }
 
     function startPro() {
-      // Already logged in? Go straight to Stripe checkout with the known email.
-      // Only guests need the login/signup modal first.
-      if (isLoggedIn && getStoredEmail()) {
-        subscribe();
-      } else {
-        showAuthModal('subscribe');
-      }
+      window.RTCheckout.start('pro');
     }
 
     // ── Job Application Tracker (dashboard tab) ──────────────────────────────────

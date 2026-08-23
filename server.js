@@ -6509,8 +6509,7 @@ app.post('/api/ats-scan', async (req, res) => {
   }
 
   const email = getSessionEmail(req);
-  if (!email) return res.status(401).json({ error: 'login_required', message: 'Please sign in to run your free ATS scan.' });
-  const subscribed = isSubscriber(email);
+  const subscribed = !!email && isSubscriber(email);
   // ATS scanner is a free-tier feature and now unlimited — no per-day cap.
 
   try {
@@ -7252,7 +7251,6 @@ app.post('/api/optimize-linkedin', async (req, res) => {
   if (!targetRole)  return res.status(400).json({ error: 'Target role is required.' });
 
   const email = getSessionEmail(req);
-  if (!email) return res.status(401).json({ error: 'login_required', message: 'Please sign in to use the free LinkedIn optimizer.' });
 
   // LinkedIn optimization is a free-tier feature and now unlimited — no cap.
   try {
@@ -7307,7 +7305,7 @@ OUTPUT: LinkedIn Optimization (three labeled sections only — no preamble or ex
 
 // ─── API: Create Stripe checkout session ──────────────────────────────────────
 app.post('/api/subscribe', async (req, res) => {
-  const { email } = req.body;
+  const email = String((req.body && req.body.email) || getSessionEmail(req) || '').toLowerCase().trim();
   // email is OPTIONAL. A logged-out guest can go straight to Stripe Checkout,
   // which collects the email itself (subscription mode always requires one). If
   // we have it (logged-in user or a prefilled form) we prefill it and stamp it
@@ -7322,7 +7320,7 @@ app.post('/api/subscribe', async (req, res) => {
       ...(email ? { customer_email: email } : {}),
       line_items: [{ price: _normPriceId(process.env.STRIPE_PRICE_ID) || STRIPE_PRICE_IDS.pro, quantity: 1 }],
       success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/dashboard`,
+      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/pricing?checkout=cancelled#ecosystem-pricing`,
       metadata: email ? { email } : {}
     });
     res.json({ url: session.url });
@@ -7334,8 +7332,7 @@ app.post('/api/subscribe', async (req, res) => {
 
 // ─── API: Create Stripe lifetime checkout session ─────────────────────────────
 app.post('/api/subscribe-lifetime', async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email required.' });
+  const email = String((req.body && req.body.email) || getSessionEmail(req) || '').toLowerCase().trim();
 
   const lifetimePriceId = _normPriceId(process.env.STRIPE_LIFETIME_PRICE_ID) || STRIPE_PRICE_IDS.lifetime;
 
@@ -7343,11 +7340,11 @@ app.post('/api/subscribe-lifetime', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'payment',
-      customer_email: email,
+      ...(email ? { customer_email: email } : {}),
       line_items: [{ price: lifetimePriceId, quantity: 1 }],
       success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=lifetime`,
-      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/#pricing`,
-      metadata: { email, plan: 'lifetime' }
+      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/pricing?checkout=cancelled#ecosystem-pricing`,
+      metadata: { ...(email ? { email } : {}), plan: 'lifetime' }
     });
     res.json({ url: session.url });
   } catch (err) {
@@ -7366,50 +7363,115 @@ app.post('/api/subscribe-lifetime', async (req, res) => {
 // already sign in and were just upgraded), and any failure is swallowed so it
 // never fails the webhook — a thrown webhook makes Stripe retry and would
 // double-fire the "new subscriber" side effects.
-function _provisionPaidAccount(email, planLabel) {
+db.exec(`CREATE TABLE IF NOT EXISTS checkout_fulfillments (
+  session_id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  plan TEXT NOT NULL,
+  fulfilled_at INTEGER NOT NULL
+)`);
+
+function _paidWelcomeHtml({ email, planLabel, dashboardUrl, resetLink }) {
+  const setup = resetLink
+    ? `<p style="font-size:15px;color:#aebdc4;line-height:1.7;text-align:center;margin:0 0 26px;">We created your account for <strong style="color:#fff">${email}</strong>. Set a password now, or use the dashboard button below to begin immediately.</p>
+       <div style="text-align:center;margin-bottom:12px"><a href="${resetLink}" style="display:inline-block;background:#1a4d3a;color:#fff;font-weight:700;font-size:15px;padding:13px 30px;border-radius:8px;text-decoration:none">Set my password →</a></div>`
+    : `<p style="font-size:15px;color:#aebdc4;line-height:1.7;text-align:center;margin:0 0 26px;">Your existing account has been upgraded. Sign in with <strong style="color:#fff">${email}</strong> to use everything included in your plan.</p>`;
+  return `<div style="font-family:Inter,Arial,sans-serif;max-width:560px;margin:0 auto;background:#0a1628;border:1px solid #c9a227;border-radius:14px;overflow:hidden">
+    <div style="padding:30px 34px;border-bottom:1px solid rgba(201,162,39,.35);color:#c9a227;font-size:18px;font-weight:800">ResumeTailored AI</div>
+    <div style="padding:38px 34px"><div style="color:#c9a227;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;text-align:center">Membership confirmed</div>
+      <h2 style="font:600 28px Georgia,serif;color:#fff;text-align:center;margin:12px 0 10px">Welcome to ${planLabel}</h2>${setup}
+      <div style="text-align:center"><a href="${dashboardUrl}" style="display:inline-block;border:1px solid #c9a227;color:#f3db8b;font-weight:700;font-size:15px;padding:13px 30px;border-radius:8px;text-decoration:none">Open my dashboard →</a></div>
+    </div></div>`;
+}
+
+function _provisionPaidAccount(email, planLabel, { dashboardPath = '/dashboard', sendWelcome = true } = {}) {
   try {
     const key = String(email || '').toLowerCase().trim();
-    if (!key) return;
-    if (db.prepare('SELECT 1 FROM users WHERE email = ?').get(key)) return; // already can log in
-    const uname = (key.split('@')[0] || 'member').slice(0, 30);
-    db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)')
+    if (!key) return null;
+    const existing = db.prepare('SELECT email, username FROM users WHERE email = ?').get(key);
+    const created = !existing;
+    const uname = existing ? existing.username : (key.split('@')[0] || 'member').slice(0, 30);
+    if (created) db.prepare('INSERT INTO users (email, username, password_hash) VALUES (?, ?, ?)')
       .run(key, uname, hashPassword(crypto.randomBytes(24).toString('hex')));
-    const token = uuidv4();
-    const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days to set the first password
-    db.prepare('INSERT OR REPLACE INTO reset_tokens (token, email, expires_at) VALUES (?, ?, ?)').run(token, key, expiresAt);
+    let resetLink = '';
+    if (created) {
+      const resetToken = uuidv4();
+      const expiresAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      db.prepare('INSERT OR REPLACE INTO reset_tokens (token, email, expires_at) VALUES (?, ?, ?)').run(resetToken, key, expiresAt);
+      const origin = process.env.PUBLIC_ORIGIN || 'https://resumetailored.com';
+      resetLink = `${origin}/reset-password.html?token=${resetToken}&welcome=1`;
+    }
     const origin = process.env.PUBLIC_ORIGIN || 'https://resumetailored.com';
-    const link = `${origin}/reset-password.html?token=${token}&welcome=1`;
-    console.log(`[account] provisioned paid account for ${key} (${planLabel}); set-password link issued`);
-    sendEmail({
+    console.log(`[account] ${created ? 'provisioned' : 'upgraded'} paid account for ${key} (${planLabel})`);
+    if (sendWelcome) sendEmail({
       to: key,
-      subject: 'Welcome to ResumeTailored Pro — set your password',
-      html: `
-        <div style="font-family:'Inter',Arial,sans-serif;max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
-          <div style="background:#1F5C3D;padding:28px 32px;">
-            <span style="font-size:18px;font-weight:800;color:#fff;">ResumeTailored <span style="background:rgba(255,255,255,0.25);padding:2px 7px;border-radius:5px;font-size:11px;">AI</span></span>
-          </div>
-          <div style="padding:36px 32px;">
-            <div style="font-size:36px;text-align:center;margin-bottom:12px;">🎉</div>
-            <h2 style="font-size:22px;font-weight:800;color:#111827;text-align:center;margin:0 0 10px;">Payment received — welcome to Pro!</h2>
-            <p style="font-size:15px;color:#6b7280;line-height:1.7;text-align:center;margin:0 0 26px;">
-              Your <strong>${planLabel}</strong> plan is active. One last step: set a password so you can log in to <strong>${key}</strong> and use everything you unlocked.
-            </p>
-            <div style="text-align:center;margin-bottom:26px;">
-              <a href="${link}" style="display:inline-block;background:#1F5C3D;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Set my password →</a>
-            </div>
-            <p style="font-size:13px;color:#9ca3af;text-align:center;line-height:1.6;margin:0;">
-              This link is valid for 7 days. If it expires, use “Forgot password” on the login page with this email.
-            </p>
-          </div>
-          <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
-            <span style="font-size:12px;color:#9ca3af;">© ResumeTailored AI · <a href="${origin}" style="color:#1F5C3D;text-decoration:none;">resumetailored.com</a></span>
-          </div>
-        </div>`
+      subject: `Welcome to ${planLabel} — your access is ready`,
+      html: _paidWelcomeHtml({ email: key, planLabel, dashboardUrl: `${origin}${dashboardPath}`, resetLink })
     }).catch(err => console.error('[Email] welcome/set-password failed:', err.message));
+    return { email: key, username: uname, created };
   } catch (e) {
     console.error('[account] provisioning failed:', e.message);
+    return null;
   }
 }
+
+function _checkoutEmail(session) {
+  return String(session && (session.metadata?.email || session.customer_details?.email || session.customer_email) || '').toLowerCase().trim();
+}
+
+function _fulfillCheckoutSession(session, { sendWelcome = true } = {}) {
+  const email = _checkoutEmail(session);
+  if (!email) return null;
+  const isEmployer = session.metadata?.plan === 'employer';
+  const isLifetime = !isEmployer && (session.metadata?.plan === 'lifetime' || session.mode === 'payment');
+  let tier = '';
+  let planLabel = isLifetime ? 'Pro Lifetime' : 'Pro';
+  let dashboardPath = '/dashboard';
+  if (isEmployer) {
+    tier = EH.resolveEmployerTier({
+      plan: session.metadata?.employerTier,
+      priceId: session.line_items?.data?.[0]?.price?.id,
+      proPriceId: _normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal,
+      scalePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale,
+      corporatePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate
+    });
+    tier = tier === 'free' ? 'pro' : tier;
+    planLabel = tier === 'pro' ? 'Employer Portal' : tier.charAt(0).toUpperCase() + tier.slice(1);
+    dashboardPath = '/portal';
+    db.prepare("INSERT OR REPLACE INTO employer_subscribers (email, customer_id, tier, status) VALUES (?, ?, ?, 'active')").run(email, session.customer, tier);
+    const company = (email.split('@')[1] || 'Your company').split('.')[0].replace(/[-_]+/g, ' ');
+    db.prepare('INSERT OR IGNORE INTO employer_profiles (email, company_name, website, created_at) VALUES (?,?,?,?)').run(email, company.replace(/\b\w/g, c => c.toUpperCase()), '', Date.now());
+  } else {
+    db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, isLifetime ? `lifetime_${email}` : session.customer);
+  }
+  const firstFulfillment = session.id
+    ? db.prepare('INSERT OR IGNORE INTO checkout_fulfillments (session_id, email, plan, fulfilled_at) VALUES (?,?,?,?)').run(session.id, email, isEmployer ? tier : (isLifetime ? 'lifetime' : 'pro'), Date.now()).changes > 0
+    : true;
+  const account = _provisionPaidAccount(email, planLabel, { dashboardPath, sendWelcome: sendWelcome && firstFulfillment });
+  return account && { ...account, isEmployer, tier, dashboardPath, planLabel };
+}
+
+// Stripe returns the browser with an opaque Checkout Session id. Re-read that
+// session from Stripe, verify payment, fulfill idempotently, then establish the
+// normal httpOnly app session so a guest buyer lands inside the right dashboard.
+app.get('/api/checkout/complete', async (req, res) => {
+  const sessionId = String(req.query.session_id || '').trim();
+  if (!sessionId.startsWith('cs_')) return res.status(400).json({ error: 'invalid_session', message: 'That checkout session is invalid.' });
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['line_items.data.price'] });
+    if (session.status !== 'complete' || !['paid', 'no_payment_required'].includes(session.payment_status)) {
+      return res.status(402).json({ error: 'payment_incomplete', message: 'Payment was not completed. No access has been changed.' });
+    }
+    const fulfilled = _fulfillCheckoutSession(session);
+    if (!fulfilled) return res.status(422).json({ error: 'email_missing', message: 'Stripe did not return an email for this payment.' });
+    const token = uuidv4();
+    db.prepare('INSERT INTO sessions (token, email) VALUES (?, ?)').run(token, fulfilled.email);
+    const csrf = _setAuthCookies(req, res, token);
+    res.json({ ok: true, email: fulfilled.email, username: fulfilled.username, csrf, redirect: fulfilled.dashboardPath, plan: fulfilled.planLabel });
+  } catch (err) {
+    console.error('[checkout] completion failed:', err.message);
+    res.status(502).json({ error: 'checkout_verification_failed', message: 'We could not verify the payment yet. Please retry in a moment.' });
+  }
+});
 
 app.post('/webhook', (req, res) => {
   const sig = req.headers['stripe-signature'];
@@ -7424,34 +7486,22 @@ app.post('/webhook', (req, res) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const email = (session.metadata?.email || session.customer_email || '').toLowerCase();
+    const email = _checkoutEmail(session);
     const isEmployer = session.metadata?.plan === 'employer';
-    if (email && isEmployer) {
-      const tier = EH.resolveEmployerTier({
-        plan: session.metadata?.employerTier,
-        priceId: session.line_items?.data?.[0]?.price?.id,
-        proPriceId: _normPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID) || STRIPE_PRICE_IDS.portal,
-        scalePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID) || STRIPE_PRICE_IDS.scale,
-        corporatePriceId: _normPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID) || STRIPE_PRICE_IDS.corporate
-      });
-      const finalTier = tier === 'free' ? 'pro' : tier; // an employer checkout is never free
-      db.prepare("INSERT OR REPLACE INTO employer_subscribers (email, customer_id, tier, status) VALUES (?, ?, ?, 'active')").run(email, session.customer, finalTier);
-      const price = EH.EMPLOYER_TIERS[finalTier].price;
-      console.log(`New Employer ${finalTier} subscriber: ${email}`);
-      notifyOwner(`[ResumeTailored] 💼 New Employer ${finalTier.toUpperCase()} subscriber: ${email}`,
-        `<p>💼 <strong>${email}</strong> just subscribed — <strong>Employer ${finalTier} ($${price}/mo)</strong>.</p>`);
-    } else if (email) {
-      const isLifetime = session.metadata?.plan === 'lifetime' || session.mode === 'payment';
-      // Lifetime subscribers get a sentinel customer_id so deletion webhooks never remove them
-      const customerId = isLifetime ? `lifetime_${email}` : session.customer;
-      db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, customerId);
-      console.log(`New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`);
-      const plan = isLifetime ? 'lifetime ($129)' : 'monthly ($19/mo)';
-      // Guest checkout: make sure they can actually log in, and email a
-      // set-password link (no-op if they already had an account).
-      _provisionPaidAccount(email, isLifetime ? 'Pro Lifetime' : 'Pro ($19.00/mo)');
-      notifyOwner(`[ResumeTailored] 💰 New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`,
-        `<p>💰 <strong>${email}</strong> just subscribed — <strong>${plan}</strong>. Cha-ching!</p>`);
+    if (email) {
+      const fulfilled = _fulfillCheckoutSession(session);
+      if (fulfilled && isEmployer) {
+        const price = EH.EMPLOYER_TIERS[fulfilled.tier].price;
+        console.log(`New Employer ${fulfilled.tier} subscriber: ${email}`);
+        notifyOwner(`[ResumeTailored] 💼 New Employer ${fulfilled.tier.toUpperCase()} subscriber: ${email}`,
+          `<p>💼 <strong>${email}</strong> just subscribed — <strong>${fulfilled.planLabel} ($${price}/mo)</strong>.</p>`);
+      } else if (fulfilled) {
+        const isLifetime = session.metadata?.plan === 'lifetime' || session.mode === 'payment';
+        const plan = isLifetime ? 'lifetime ($129)' : 'monthly ($19/mo)';
+        console.log(`New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`);
+        notifyOwner(`[ResumeTailored] 💰 New ${isLifetime ? 'lifetime' : 'monthly'} subscriber: ${email}`,
+          `<p>💰 <strong>${email}</strong> just subscribed — <strong>${plan}</strong>. Cha-ching!</p>`);
+      }
     }
   }
 
@@ -8730,7 +8780,9 @@ app.delete('/api/employer/jobs/:id', (req, res) => {
 // so the webhook records exactly what was bought. STRIPE_EMPLOYER_PRICE_ID is
 // still honored as the Pro price for back-compat with existing config.
 app.post('/api/employer/subscribe', async (req, res) => {
-  const email = employerAuthEmail(req, res); if (!email) return;
+  // Checkout is intentionally guest-friendly: Stripe collects the email when
+  // no signed-in account exists, and fulfillment creates/logs in that account.
+  const email = String(getSessionEmail(req) || (req.body && req.body.email) || '').toLowerCase().trim();
   const requestedPlan = String((req.body && req.body.plan) || 'portal').toLowerCase();
   const plan = requestedPlan === 'portal' ? 'pro' : requestedPlan;
   if (!['pro', 'scale', 'corporate'].includes(plan)) return res.status(400).json({ error: 'bad_request', message: 'Choose Employer Portal, Scale, or Corporate.' });
@@ -8754,11 +8806,11 @@ app.post('/api/employer/subscribe', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
-      customer_email: email,
+      ...(email ? { customer_email: email } : {}),
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=employer`,
-      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/employer`,
-      metadata: { email, plan: 'employer', employerTier: plan }
+      cancel_url: `${req.headers.origin || 'http://localhost:3000'}/pricing?checkout=cancelled#ecosystem-pricing`,
+      metadata: { ...(email ? { email } : {}), plan: 'employer', employerTier: plan }
     });
     res.json({ url: session.url });
   } catch (err) {
@@ -9431,9 +9483,9 @@ function toolUsageRecord(email, tool) {
 // Pass limitDef (a TOOLS.LIMITS entry) to meter free users; omit it for a tool
 // that only needs sign-in.
 function toolGate(req, res, limitDef) {
-  const email = getSessionEmail(req);
-  if (!email) { res.status(401).json({ error: 'auth_required', message: 'Please sign in to use this tool.' }); return null; }
-  const pro = isSubscriber(email);
+  const sessionEmail = getSessionEmail(req);
+  const email = sessionEmail || `guest-${crypto.createHash('sha256').update(`free-tools:${req.ip}`).digest('hex').slice(0, 24)}@anonymous.local`;
+  const pro = !!sessionEmail && isSubscriber(sessionEmail);
   if (!pro && limitDef) {
     const used = toolUsageCount(email, limitDef.tool, limitDef.period);
     if (used >= limitDef.free) {

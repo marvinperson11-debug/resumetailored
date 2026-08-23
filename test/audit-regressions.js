@@ -85,15 +85,15 @@ const server = app.listen(0, async () => {
     check('anonymous video download is private', (await request('GET', '/api/resume-video/file/not-real')).status === 401);
 
     const ats = await request('POST', '/api/ats-scan', null, { resume: 'resume', jobPosting: 'job' });
-    check('anonymous ATS generation is login-gated', ats.status === 401, ats.text);
+    check('anonymous ATS generation is publicly usable', ats.status === 200, ats.text);
     const linkedin = await request('POST', '/api/optimize-linkedin', null, { profileText: 'profile', targetRole: 'Engineer' });
-    check('anonymous LinkedIn generation is login-gated', linkedin.status === 401, linkedin.text);
+    check('anonymous LinkedIn generation is publicly usable', linkedin.status === 200, linkedin.text);
     const share = await request('POST', '/api/share', null, { text: 'This is a long enough resume body to share publicly.' });
     check('anonymous share-link generation is login-gated', share.status === 401, share.text);
 
     const appSource = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.html'), 'utf8');
     check('DOCX export sends the resume photo, not the video-only photo', /photoUrl:\s*\(window\.rtResumePhoto\s*\|\|\s*undefined\)/.test(appSource));
-    check('free generators use the session-aware login-at-action helper', ['tailor', 'optimizeLinkedIn', 'runDashboardATS', 'shareResumeLink'].every((fn) => appSource.includes(`requireFreeActionLogin(${fn}`)));
+    check('only Tailor and Cover Letter use the session-aware generation gate', appSource.includes('requireFreeActionLogin(tailor') && !appSource.includes('requireFreeActionLogin(optimizeLinkedIn') && !appSource.includes('requireFreeActionLogin(runDashboardATS'));
     check('free generators preserve and replay their pending action after login', /showAuthModal\('login', true\)/.test(appSource) && /setTimeout\(fn, 300\)/.test(appSource));
     const appCss = fs.readFileSync(path.join(__dirname, '..', 'public', 'css', 'app.css'), 'utf8');
     check('New Tools leaves the mobile bottom controls visible', /#newToolsOverlay\s*\{[^}]*bottom:\s*calc\(62px/.test(appCss));

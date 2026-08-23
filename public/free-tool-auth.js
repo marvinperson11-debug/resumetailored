@@ -60,12 +60,10 @@
     });
   }
 
-  async function requireForAction(action) {
-    if (await authenticated()) return true;
-    snapshot(action);
-    var back = location.pathname + location.search;
-    location.assign('/login?redirect=' + encodeURIComponent(back));
-    return false;
+  async function requireForAction() {
+    // Public tools never require an account. Keep this compatibility helper so
+    // older standalone pages can call it without being rewritten as a group.
+    return true;
   }
 
   async function resume() {
