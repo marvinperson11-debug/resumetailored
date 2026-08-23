@@ -1057,6 +1057,7 @@ const ASSET_REWRITES = [
   ['href="/luxury-ecosystem.css"', `href="/luxury-ecosystem.css?v=${ASSET_VERSION}"`],
   ['href="/resume-video-luxury.css"', `href="/resume-video-luxury.css?v=${ASSET_VERSION}"`],
   ['href="/web-studio-luxury.css"', `href="/web-studio-luxury.css?v=${ASSET_VERSION}"`],
+  ['href="/dashboard-luxury-unified.css"', `href="/dashboard-luxury-unified.css?v=${ASSET_VERSION}"`],
   ['href="style.css"', `href="style.css?v=${ASSET_VERSION}"`],
   ['src="/career-hub.js"', `src="/career-hub.js?v=${ASSET_VERSION}"`],
   ['src="/site-nav.js"', `src="/site-nav.js?v=${ASSET_VERSION}"`],

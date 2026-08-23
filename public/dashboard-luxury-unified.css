@@ -1,0 +1,100 @@
+/* Shared dashboard palette. Loaded last so every dashboard surface uses the
+   same four core colors as the public homepage without changing layout. */
+:root {
+  --rt-dashboard-navy: #0a1628;
+  --rt-dashboard-emerald: #1a4d3a;
+  --rt-dashboard-gold: #c9a227;
+  --rt-dashboard-ivory: #f5f1e8;
+  --rt-dashboard-panel: #0d1e30;
+  --rt-dashboard-muted: #9eb2aa;
+  --rt-dashboard-line: rgba(201, 162, 39, .22);
+}
+
+body:has(.dashboard),
+body:has(.nv-shell),
+body:has(.pt-wrap) {
+  background: var(--rt-dashboard-navy) !important;
+  color: var(--rt-dashboard-ivory) !important;
+}
+
+/* Job seeker dashboard */
+body:has(.dashboard) {
+  --bg: var(--rt-dashboard-navy);
+  --bg-alt: #081422;
+  --bg2: var(--rt-dashboard-panel);
+  --surface: var(--rt-dashboard-panel);
+  --ink: var(--rt-dashboard-ivory);
+  --ink-soft: #d5dfdb;
+  --ink-faint: var(--rt-dashboard-muted);
+  --text: var(--rt-dashboard-ivory);
+  --text-muted: var(--rt-dashboard-muted);
+  --border: var(--rt-dashboard-line);
+  --border-2: rgba(201, 162, 39, .38);
+  --line: var(--rt-dashboard-line);
+  --line-2: rgba(201, 162, 39, .38);
+  --blue: var(--rt-dashboard-gold);
+  --blue-dark: var(--rt-dashboard-emerald);
+  --blue-light: rgba(26, 77, 58, .48);
+  --accent: var(--rt-dashboard-emerald);
+  --accent-2: var(--rt-dashboard-gold);
+  --accent-ink: #22634c;
+  --accent-tint: rgba(26, 77, 58, .48);
+}
+body:has(.dashboard)::before { background: radial-gradient(circle at 52% -10%, rgba(26,77,58,.28), transparent 44%) !important; }
+.dashboard, .dash-main, .tab-content { background: var(--rt-dashboard-navy) !important; color: var(--rt-dashboard-ivory) !important; }
+.nav { background: rgba(10,22,40,.96) !important; border-color: var(--rt-dashboard-line) !important; }
+.nav .logo, .nav #navUsername { color: var(--rt-dashboard-ivory) !important; -webkit-text-fill-color: var(--rt-dashboard-ivory) !important; }
+.sidebar { background: #081422 !important; border-color: var(--rt-dashboard-line) !important; }
+.sidebar-label { color: var(--rt-dashboard-gold) !important; }
+.sidebar-btn { color: #b9c8c3 !important; }
+.sidebar-btn:hover, .sidebar-btn.active { background: rgba(26,77,58,.52) !important; color: var(--rt-dashboard-ivory) !important; }
+.sidebar-pro-box, .mobile-upgrade-banner { background: rgba(26,77,58,.34) !important; border-color: rgba(201,162,39,.42) !important; }
+.sidebar-pro-title, .panel-header h1, .tab-content h1, .tab-content h2, .tab-content h3 { color: var(--rt-dashboard-ivory) !important; -webkit-text-fill-color: var(--rt-dashboard-ivory) !important; }
+.panel-header p, .tab-content p, .tab-content label { color: var(--rt-dashboard-muted) !important; }
+.tab-content input:not([type="color"]), .tab-content textarea, .tab-content select,
+.auth-field input, .modal-box input, .modal-box textarea, .modal-box select {
+  background: #081624 !important; color: var(--rt-dashboard-ivory) !important;
+  border-color: var(--rt-dashboard-line) !important;
+}
+.tab-content input::placeholder, .tab-content textarea::placeholder { color: #718780 !important; }
+.mode-btn, .sample-toggle-btn, .font-btn, .rmode-btn, .page-size-btn,
+.download-btn-txt, .tpl-pick-item, .modal-box, .auth-card, .wn-card {
+  background: var(--rt-dashboard-panel) !important; color: var(--rt-dashboard-ivory) !important;
+  border-color: var(--rt-dashboard-line) !important;
+}
+.mode-btn.active, .sample-toggle-btn.active, .rmode-btn.active, .page-size-btn.active {
+  background: var(--rt-dashboard-emerald) !important; color: var(--rt-dashboard-ivory) !important;
+  border-color: var(--rt-dashboard-gold) !important;
+}
+.btn-primary, .download-btn-docx { background: var(--rt-dashboard-emerald) !important; color: var(--rt-dashboard-ivory) !important; }
+.btn-outline, .btn-ghost { border-color: var(--rt-dashboard-gold) !important; color: var(--rt-dashboard-gold) !important; }
+.auth-overlay { background: rgba(3,10,20,.82) !important; }
+
+/* Employer dashboard */
+body:has(.nv-shell) {
+  --nv-bg: var(--rt-dashboard-navy);
+  --nv-panel: var(--rt-dashboard-panel);
+  --nv-panel2: #081624;
+  --nv-line: var(--rt-dashboard-line);
+  --nv-ink: var(--rt-dashboard-ivory);
+  --nv-muted: var(--rt-dashboard-muted);
+  --nv-accent: var(--rt-dashboard-emerald);
+  --nv-accent2: var(--rt-dashboard-gold);
+  --nv-green: var(--rt-dashboard-emerald);
+  --nv-amber: var(--rt-dashboard-gold);
+}
+.nv-sidebar, .nv-topbar, #nvPubNav { background: rgba(10,22,40,.97) !important; border-color: var(--rt-dashboard-line) !important; }
+.nv-card, .nv-stat, .nv-modal, .nv-authcard { background: var(--rt-dashboard-panel) !important; border-color: var(--rt-dashboard-line) !important; }
+.nv-input, .nv-select, .nv-textarea, .nv-table th, .nv-threads, .nv-bubble.them, .nv-composer { background: #081624 !important; color: var(--rt-dashboard-ivory) !important; border-color: var(--rt-dashboard-line) !important; }
+.nv-navbtn:hover, .nv-navbtn.on, .nv-tab.on { background: rgba(26,77,58,.52) !important; color: var(--rt-dashboard-ivory) !important; }
+.nv-btn { background: var(--rt-dashboard-emerald) !important; color: var(--rt-dashboard-ivory) !important; }
+.nv-btn-ghost { background: transparent !important; border-color: var(--rt-dashboard-gold) !important; color: var(--rt-dashboard-gold) !important; }
+
+/* Corporate back office already uses this system; these rules keep dynamically
+   rendered tabs and controls pinned to the same shared tokens. */
+.pt-wrap, .pt-main { background: var(--rt-dashboard-navy) !important; color: var(--rt-dashboard-ivory) !important; }
+.pt-top, .pt-rail { background: #081422 !important; border-color: var(--rt-dashboard-line) !important; }
+.pt-card, .pt-kpi, .pt-gate { background: var(--rt-dashboard-panel) !important; border-color: var(--rt-dashboard-line) !important; }
+.pt-field input, .pt-field textarea, .pt-field select { background: #081624 !important; color: var(--rt-dashboard-ivory) !important; border-color: var(--rt-dashboard-line) !important; }
+.pt-btn--solid, .pt-navbtn.active { background: var(--rt-dashboard-emerald) !important; }
+.pt-btn { border-color: var(--rt-dashboard-gold) !important; color: var(--rt-dashboard-gold) !important; }
