@@ -2653,7 +2653,7 @@ app.post('/api/site-media', mediaUploadSingle, async (req, res) => {
     return res.status(code).json(body);
   };
   if (!email) return bail(401, { error: 'Please sign in.' });
-  if (!hasCorporateWebStudio(email)) return bail(402, { error: 'corporate_required', message: 'Web Studio media uploads are available with Corporate.' });
+  if (!hasWebStudioAccess(email)) return bail(402, { error: 'pro_required', message: 'Web Studio media uploads are available with Pro.' });
   // Every upload belongs to a specific site now — see the site_sub migration
   // comment above. multer puts non-file multipart fields on req.body.
   const sub = _validSubdomain(req.body && req.body.subdomain);
@@ -5531,8 +5531,8 @@ app.get('/api/personal-sites/:sub/render', tplPreviewLimiter, (req, res) => {
 app.post('/api/personal-site', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  if (!hasCorporateWebStudio(email)) {
-    return res.status(402).json({ error: 'corporate_required', message: 'Web Studio is available with the Corporate plan.' });
+  if (!hasWebStudioAccess(email)) {
+    return res.status(402).json({ error: 'pro_required', message: 'Web Studio is available with Pro at $19/month.' });
   }
   const { subdomain, text, name, colors, photoUrl, hideContact, serif, layout, config, publish } = req.body || {};
   // Phase 4: publishing (not autosave) requires a desktop browser — the editor
@@ -5685,7 +5685,7 @@ function _autogenFill(doc, text) {
 app.post('/api/personal-site/autogen', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  if (!hasCorporateWebStudio(email)) return res.status(402).json({ error: 'corporate_required', message: 'Web Studio is available with the Corporate plan.' });
+  if (!hasWebStudioAccess(email)) return res.status(402).json({ error: 'pro_required', message: 'Web Studio is available with Pro at $19/month.' });
 
   // `fresh` means "make me another one" — trying a different template rather
   // than reopening what they already have. Each template gets its own site so
@@ -5787,11 +5787,11 @@ app.post('/api/personal-site/autogen', (req, res) => {
 });
 
 // WYSIWYG preview: render the personal site from posted fields WITHOUT saving,
-// so the Website Creator's Edit/Preview toggle can show unpublished edits. Corporate-gated.
+// so the Website Creator's Edit/Preview toggle can show unpublished edits. Pro-gated.
 app.post('/api/personal-site/preview', (req, res) => {
   const email = getSessionEmail(req);
   if (!email) return res.status(401).json({ error: 'Please sign in.' });
-  if (!hasCorporateWebStudio(email)) return res.status(402).json({ error: 'corporate_required', message: 'Web Studio is available with the Corporate plan.' });
+  if (!hasWebStudioAccess(email)) return res.status(402).json({ error: 'pro_required', message: 'Web Studio is available with Pro at $19/month.' });
   const { text, name, colors, photoUrl, hideContact, serif, layout, config, subdomain, page, editable } = req.body || {};
   if (!text || typeof text !== 'string' || text.trim().length < 10) {
     return res.status(400).json({ error: 'Nothing to preview yet.' });
@@ -6415,7 +6415,7 @@ app.get('/api/status', (req, res) => {
     freeAtsLeft: hasFreeTierLeft(usageKey, 'ats_scan') ? 1 : 0,
     isSubscriber: isSubscriber(email),
     employerTier: employerTier(email),
-    webStudioAccess: hasCorporateWebStudio(email)
+    webStudioAccess: hasWebStudioAccess(email)
   });
 });
 
@@ -8611,8 +8611,8 @@ function employerTier(email) {
   if (row.status && row.status !== 'active') return 'free';
   return EH.EMPLOYER_TIER_NAMES.includes(row.tier) ? row.tier : 'pro';
 }
-function hasCorporateWebStudio(email) {
-  return employerTier(email) === 'corporate';
+function hasWebStudioAccess(email) {
+  return isSubscriber(email);
 }
 function isEmployerSubscriber(email) {
   return employerTier(email) !== 'free';

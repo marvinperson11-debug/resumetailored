@@ -362,8 +362,8 @@ const server = app.listen(0, async () => {
     check('an unknown subdomain 404s', (await getWithHost(port, '/', 'nobody.resumetailored.com')).status === 404);
 
     // ── Gating ──────────────────────────────────────────────────────────────
-    db.prepare("DELETE FROM employer_subscribers WHERE email = 'a@x.com'").run();
-    check('autogen is Corporate-gated',
+    db.prepare("DELETE FROM subscribers WHERE email = 'a@x.com'").run();
+    check('autogen is job-seeker Pro-gated even when Corporate employer access exists',
       (await fetch(`${B}/api/personal-site/autogen`, { method: 'POST', headers: AJ('tokA') })).status === 402);
     check('autogen requires sign-in',
       (await fetch(`${B}/api/personal-site/autogen`, { method: 'POST' })).status === 401);
@@ -371,9 +371,9 @@ const server = app.listen(0, async () => {
     // Trying a different template must not destroy the one they have been
     // working on, and two versions of the same person must never be live at
     // once.
-    // The gating checks above deliberately remove Corporate access; restore it
-    // because everything below exercises the Corporate-only Web Studio.
-    db.prepare("INSERT OR REPLACE INTO employer_subscribers (email,customer_id,tier,status) VALUES ('a@x.com','ec_alice','corporate','active')").run();
+    // The gating check above deliberately removes job-seeker Pro; restore it
+    // because everything below exercises the Pro Web Studio.
+    db.prepare("INSERT OR REPLACE INTO subscribers (email,customer_id) VALUES ('a@x.com','c_alice')").run();
     const mk = (tpl) => fetch(`${B}/api/personal-site/autogen`, {
       method: 'POST', headers: AJ('tokA'), body: JSON.stringify({ templateId: tpl, fresh: true }),
     }).then(r => r.json());

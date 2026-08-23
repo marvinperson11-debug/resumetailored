@@ -51,7 +51,7 @@ const EMPLOYER_TIERS = {
     lifetimeJobs: Infinity, seats: Infinity,
     aiMatching: true, matchPreview: Infinity,
     screener: true, analytics: true, api: true,
-    operationalModules: Infinity, recruitmentDecoder: true, jobDecoder: true, webStudio: true
+    operationalModules: Infinity, recruitmentDecoder: true, jobDecoder: true, whiteLabeling: true
   }
 };
 const EMPLOYER_TIER_NAMES = ['free', 'pro', 'scale', 'corporate'];
