@@ -1253,7 +1253,11 @@ app.get(['/preview', '/preview.html'], (req, res) => {
   return _sendVersionedHtml(res, resumeVideoPreviewHtml);
 });
 app.get(['/linkedin-optimizer', '/decoder-key', '/interview-coach', '/career-hub'], (req, res) => _sendVersionedHtml(res, toolLandingHtml));
-app.get('/tools/decoder-key', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'decoder-key.html')));
+app.get('/tools/decoder-key', (req, res) => {
+  const email = getSessionEmail(req);
+  if (!email || !isSubscriber(email)) return res.redirect(302, '/decoder-key');
+  return _sendVersionedHtml(res, path.join(__dirname, 'public', 'decoder-key.html'));
+});
 app.get('/tools/interview-coach', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'public', 'interview-coach.html')));
 app.get(['/decoder-key.html', '/interview-coach.html'], (req, res) => res.redirect(302, req.path.replace(/\.html$/, '')));
 // `/tools` collides with the on-disk `public/tools/` directory, which has no
@@ -8675,7 +8679,7 @@ app.get('/api/employer/status', (req, res) => {
     freeLifetimeJobLimit: EH.EMPLOYER_TIERS.free.lifetimeJobs,
     canPostJob: gate.allowed,
     jobsRemaining: gate.remaining,     // null = unlimited
-    features: { aiMatching: cfg.aiMatching, matchPreview: cfg.matchPreview === Infinity ? null : cfg.matchPreview, screener: cfg.screener, analytics: cfg.analytics, api: cfg.api, seats: cfg.seats === Infinity ? null : cfg.seats },
+    features: { aiMatching: cfg.aiMatching, matchPreview: cfg.matchPreview === Infinity ? null : cfg.matchPreview, screener: cfg.screener, analytics: cfg.analytics, api: cfg.api, recruitmentDecoder: !!cfg.recruitmentDecoder, seats: cfg.seats === Infinity ? null : cfg.seats },
     prices: { pro: EH.EMPLOYER_TIERS.pro.price, portal: EH.EMPLOYER_TIERS.pro.price, scale: EH.EMPLOYER_TIERS.scale.price, corporate: EH.EMPLOYER_TIERS.corporate.price }
   });
 });
@@ -8692,6 +8696,51 @@ app.post('/api/employer/profile', employerLimiter, (req, res) => {
   else db.prepare('INSERT INTO employer_profiles (email, company_name, website, created_at) VALUES (?,?,?,?)').run(e, companyName, website, Date.now());
   const slug = _ensureEmployerSlug(e, companyName);
   res.json({ success: true, companyName, website, slug, publicUrl: `/company/${slug}` });
+});
+
+function _decoderStrings(value, max) {
+  return (Array.isArray(value) ? value : []).map(v => String(v || '').trim()).filter(Boolean).slice(0, max || 10);
+}
+function _validateEmployerDecoder(obj) {
+  if (!obj || typeof obj !== 'object' || !String(obj.roleSummary || '').trim()) return { ok: false, error: 'missing_role_summary' };
+  const competencies = obj.competencyMap && typeof obj.competencyMap === 'object' ? obj.competencyMap : {};
+  const salary = obj.salaryBand && typeof obj.salaryBand === 'object' ? obj.salaryBand : {};
+  const jd = obj.jobDescription && typeof obj.jobDescription === 'object' ? obj.jobDescription : {};
+  const scorecard = (Array.isArray(obj.candidateScorecard) ? obj.candidateScorecard : []).slice(0, 10).map(x => ({
+    competency: String(x && x.competency || '').trim(), weight: Math.max(0, Math.min(100, Number(x && x.weight) || 0)), evidence: String(x && x.evidence || '').trim()
+  })).filter(x => x.competency);
+  const bias = (Array.isArray(obj.biasFindings) ? obj.biasFindings : []).slice(0, 10).map(x => ({
+    phrase: String(x && x.phrase || '').trim(), reason: String(x && x.reason || '').trim(), replacement: String(x && x.replacement || '').trim()
+  })).filter(x => x.phrase || x.reason);
+  return { ok: true, value: {
+    roleSummary: String(obj.roleSummary).trim().slice(0, 2000),
+    roleDecomposition: _decoderStrings(obj.roleDecomposition, 10),
+    competencyMap: { mustHave: _decoderStrings(competencies.mustHave, 10), niceToHave: _decoderStrings(competencies.niceToHave, 10), leadership: _decoderStrings(competencies.leadership, 8) },
+    salaryBand: { low: Math.max(0, Number(salary.low) || 0), high: Math.max(0, Number(salary.high) || 0), currency: String(salary.currency || 'USD').slice(0, 8), rationale: String(salary.rationale || '').trim().slice(0, 1000) },
+    jobDescription: { title: String(jd.title || '').trim().slice(0, 160), summary: String(jd.summary || '').trim().slice(0, 1500), responsibilities: _decoderStrings(jd.responsibilities, 12), requirements: _decoderStrings(jd.requirements, 12) },
+    candidateScorecard: scorecard,
+    biasFindings: bias
+  }};
+}
+
+// Employer Decoder: recruitment intelligence lives only behind an authenticated
+// paid employer account. It is deliberately separate from the job-seeker
+// Decoder Key and never accepts a job-seeker Pro subscription as entitlement.
+app.post('/api/employer/decoder', employerLimiter, async (req, res) => {
+  const email = employerAuthEmail(req, res); if (!email) return;
+  const profile = db.prepare('SELECT 1 FROM employer_profiles WHERE email = ?').get(email.toLowerCase());
+  if (!profile) return res.status(403).json({ error: 'employer_profile_required', message: 'Set up your employer profile first.' });
+  const tier = employerTier(email);
+  if (tier === 'free') return res.status(402).json({ error: 'employer_plan_required', message: 'Recruitment Decoder is included with Employer Portal, Scale, and Corporate.' });
+  const source = String((req.body && (req.body.jobDescription || req.body.text)) || '').trim();
+  if (source.length < 80) return res.status(400).json({ error: 'too_short', message: 'Paste a complete job description for a useful recruitment analysis.' });
+  if (source.length > 14000) return res.status(400).json({ error: 'too_long', message: 'Keep the job description under 14,000 characters.' });
+  const system = 'You are a senior recruiting strategist. Return only valid JSON. Analyze roles for employers; do not provide job-seeker resume advice.';
+  const user = `Analyze this job description and return: {"roleSummary":"plain role decomposition","roleDecomposition":["outcome or responsibility"],"competencyMap":{"mustHave":[],"niceToHave":[],"leadership":[]},"salaryBand":{"low":0,"high":0,"currency":"USD","rationale":"market and scope rationale"},"jobDescription":{"title":"improved title","summary":"inclusive summary","responsibilities":[],"requirements":[]},"candidateScorecard":[{"competency":"","weight":0,"evidence":"what good evidence looks like"}],"biasFindings":[{"phrase":"","reason":"","replacement":""}]}. Candidate scorecard weights should total about 100.\n\nJOB DESCRIPTION:\n${source}`;
+  try {
+    const result = await callAIJSON({ model: 'claude-haiku-4-5', system, user, max_tokens: 2600, validate: _validateEmployerDecoder });
+    res.json({ result, employerOnly: true, includedWith: ['portal', 'scale', 'corporate'] });
+  } catch (err) { toolLLMError(res, err); }
 });
 
 app.get('/api/employer/jobs', (req, res) => {
@@ -10122,28 +10171,22 @@ function validateInterviewJson(raw) {
   return v.ok ? v.value : null;
 }
 
-// Decoder Key — public lead-magnet entrance. Unlike the signed-in tools-hub
-// route above, this is intentionally usable before account creation. The same
-// validated analysis core is reused so the public and member experiences never
-// drift. Contact capture is explicit and optional; an address is stored only
-// when the visitor asks for product notes.
+// Job-seeker Decoder Key — Pro only. Employer recruitment intelligence has a
+// separate authenticated endpoint above and never crosses into this response.
 app.post('/api/decoder-key', toolsLimiter, async (req, res) => {
+  const accountEmail = getSessionEmail(req);
+  if (!accountEmail) return res.status(401).json({ error: 'login_required', message: 'Complete Pro checkout to open the Job Seeker Decoder Key.' });
+  if (!isSubscriber(accountEmail)) return res.status(402).json({ error: 'pro_required', message: 'Job Seeker Decoder Key is included with Pro at $19/month.' });
   const body = req.body || {};
   const text = String(body.text || body.jobText || '').trim();
   if (text.length < 40) return res.status(400).json({ error: 'too_short', message: 'Share at least a few sentences so the Key has enough context.' });
   if (text.length > 12000) return res.status(400).json({ error: 'too_long', message: 'Please keep the text under 12,000 characters.' });
-  const email = String(body.email || '').trim().toLowerCase().slice(0, 254);
-  if (body.contactOptIn && email) {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'bad_email', message: 'Please check the email address.' });
-    db.exec('CREATE TABLE IF NOT EXISTS decoder_leads (email TEXT PRIMARY KEY, created_at INTEGER NOT NULL, source TEXT NOT NULL)');
-    db.prepare('INSERT OR IGNORE INTO decoder_leads (email, created_at, source) VALUES (?, ?, ?)').run(email, Date.now(), 'decoder-key');
-  }
   try {
     const p = TOOLS.buildJobDecodePrompt(text, _reqLang(req));
     // Decoder uses OpenAI (gpt-4o-mini) when configured — the plan's choice —
     // and falls back to Claude Haiku otherwise. Same validated JSON contract.
     const value = await callAIJSON({ model: 'claude-haiku-4-5', system: p.system, user: p.user, max_tokens: 1800, validate: TOOLS.validateJobDecode });
-    res.json({ result: value, complimentary: true });
+    res.json({ result: value, pro: true, audience: 'job-seeker' });
   } catch (err) { toolLLMError(res, err); }
 });
 

@@ -79,6 +79,9 @@ const server = app.listen(0, async () => {
     const s1 = await req('GET', '/api/employer/status', 'tokBoss');
     check('status after setup: is an employer, free tier, 0 active jobs', s1.json.isEmployer === true && s1.json.pro === false && s1.json.tier === 'free' && s1.json.activeJobs === 0);
     check('free lifetime job limit (2) surfaced', s1.json.freeLifetimeJobLimit === 2 && s1.json.jobsRemaining === 2 && s1.json.canPostJob === true);
+    const decoderSource = 'We are hiring a senior operations leader to own strategy, lead cross-functional teams, manage budgets, define measurable outcomes, and build an inclusive high-performing organization.';
+    const freeDecoder = await req('POST', '/api/employer/decoder', 'tokBoss', { jobDescription: decoderSource });
+    check('free employer cannot use the paid Employer Decoder', freeDecoder.status === 402 && freeDecoder.json.error === 'employer_plan_required', freeDecoder.body);
 
     // ── posting jobs + validation ────────────────────────────────────────────
     const badPost = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: '' }));
@@ -138,6 +141,9 @@ const server = app.listen(0, async () => {
     db.prepare('INSERT INTO employer_subscribers (email, customer_id) VALUES (?,?)').run('boss@acme.com', 'cus_employer_1');
     const sPro = await req('GET', '/api/employer/status', 'tokBoss');
     check('Pro Employer status flips pro:true', sPro.json.pro === true);
+    check('paid Employer Portal status includes Recruitment Decoder', sPro.json.features.recruitmentDecoder === true);
+    const paidDecoderValidation = await req('POST', '/api/employer/decoder', 'tokBoss', { jobDescription: 'too short' });
+    check('paid Employer Decoder reaches role-input validation', paidDecoderValidation.status === 400 && paidDecoderValidation.json.error === 'too_short', paidDecoderValidation.body);
     // Fill well past the free cap — should never 402 once Pro.
     for (let i = 0; i < 5; i++) await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Pro overflow ' + i }));
     const stillOk = await req('POST', '/api/employer/jobs', 'tokBoss', Object.assign({}, goodJob, { title: 'Pro overflow final' }));

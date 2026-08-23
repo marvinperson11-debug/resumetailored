@@ -364,6 +364,7 @@
       <button class="nv-navbtn on" data-view="dashboard" onclick="nvGo('dashboard')"><span class="ic">📊</span> Dashboard</button>
       <button class="nv-navbtn" data-view="jobs" onclick="nvGo('jobs')"><span class="ic">💼</span> Jobs</button>
       <button class="nv-navbtn" data-view="candidates" onclick="nvGo('candidates')"><span class="ic">👥</span> Candidates</button>
+      <button class="nv-navbtn" data-view="decoder" onclick="nvGo('decoder')"><span class="ic">◇</span> Recruitment Decoder</button>
       <button class="nv-navbtn" data-view="interviews" onclick="nvGo('interviews')"><span class="ic">📅</span> Interviews</button>
       <button class="nv-navbtn" data-view="analytics" onclick="nvGo('analytics')"><span class="ic">📈</span> Analytics</button>
       <button class="nv-navbtn" data-view="messages" onclick="nvGo('messages')"><span class="ic">💬</span> Messages <span class="badge" id="nvMsgBadge" style="display:none;">0</span></button>
@@ -571,10 +572,28 @@ function nvGo(view){
   if(view==='dashboard') return renderDashboard(c);
   if(view==='jobs') return renderJobs(c);
   if(view==='candidates') return renderCandidates(c);
+  if(view==='decoder') return renderDecoder(c);
   if(view==='interviews') return renderInterviews(c);
   if(view==='analytics') return renderAnalytics(c);
   if(view==='messages') return renderMessages(c);
   if(view==='settings') return renderSettings(c);
+}
+
+// ── EMPLOYER RECRUITMENT DECODER ───────────────────────────────────────────
+function renderDecoder(c){
+  if(!epStatus.pro){c.innerHTML='<h1 class="nv-h">Recruitment Decoder</h1><p class="nv-sub">Employer intelligence stays inside the employer portal.</p><div class="nv-card"><span class="nv-pill">EMPLOYER ONLY</span><h2>Included with Employer Portal, Scale, and Corporate.</h2><p class="nv-sub">Upgrade to decompose roles, map competencies, benchmark salary, generate an inclusive job description, score candidates, and detect bias.</p><button class="nv-btn" onclick="nvUpgrade(\'portal\')">Choose Employer Portal · $49/mo</button></div>';return;}
+  c.innerHTML='<h1 class="nv-h">Recruitment Decoder</h1><p class="nv-sub">Role intelligence for employers and recruiters only.</p><div class="nv-card"><div class="nv-field"><label class="nv-label" for="nvDecoderText">Job description</label><textarea class="nv-textarea" id="nvDecoderText" maxlength="14000" style="min-height:240px" placeholder="Paste the complete role or draft job description…"></textarea></div><button class="nv-btn" id="nvDecoderRun" onclick="nvRunDecoder()">Generate Recruitment Intelligence →</button><p class="nv-err" id="nvDecoderErr"></p></div><div id="nvDecoderResult"></div>';
+}
+function nvDecoderList(title,items){return '<div class="nv-card"><h3>'+esc(title)+'</h3><ul>'+((items&&items.length)?items:['No material finding.']).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul></div>';}
+async function nvRunDecoder(){
+  var source=el('nvDecoderText').value.trim(),run=el('nvDecoderRun'),err=el('nvDecoderErr');err.style.display='none';
+  if(source.length<80){err.textContent='Paste a complete job description for a useful analysis.';err.style.display='block';return;}
+  run.disabled=true;run.textContent='Analyzing the role…';
+  var r=await api('/api/employer/decoder',{method:'POST',headers:AH(),body:JSON.stringify({jobDescription:source})});
+  run.disabled=false;run.textContent='Generate Recruitment Intelligence →';
+  if(!r.ok){err.textContent=r.data.message||'The recruitment analysis could not be completed.';err.style.display='block';return;}
+  var d=r.data.result||{},cm=d.competencyMap||{},sal=d.salaryBand||{},jd=d.jobDescription||{};
+  el('nvDecoderResult').innerHTML='<div class="nv-card" style="margin-top:16px"><span class="nv-pill nv-pill-pro">EMPLOYER INTELLIGENCE</span><h2>'+esc(d.roleSummary||'Role decomposition')+'</h2></div><div class="nv-two">'+nvDecoderList('Role decomposition',d.roleDecomposition)+nvDecoderList('Must-have competencies',cm.mustHave)+nvDecoderList('Nice-to-have competencies',cm.niceToHave)+nvDecoderList('Leadership competencies',cm.leadership)+'</div><div class="nv-card"><h3>Salary band</h3><p><strong>'+esc(sal.currency||'USD')+' '+Number(sal.low||0).toLocaleString()+'–'+Number(sal.high||0).toLocaleString()+'</strong></p><p class="nv-sub">'+esc(sal.rationale||'')+'</p></div><div class="nv-card"><h3>Generated job description · '+esc(jd.title||'Role')+'</h3><p>'+esc(jd.summary||'')+'</p><div class="nv-two">'+nvDecoderList('Responsibilities',jd.responsibilities)+nvDecoderList('Requirements',jd.requirements)+'</div></div><div class="nv-two">'+nvDecoderList('Candidate scorecard',(d.candidateScorecard||[]).map(function(x){return x.competency+' · '+x.weight+'% — '+x.evidence;}))+nvDecoderList('Bias detection',(d.biasFindings||[]).map(function(x){return (x.phrase?'“'+x.phrase+'” — ':'')+x.reason+(x.replacement?' Replace with: '+x.replacement:'' );}))+'</div>';
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────────────────────

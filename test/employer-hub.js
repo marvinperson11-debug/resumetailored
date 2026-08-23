@@ -41,6 +41,8 @@ check('trims and caps title length', EH.validateJobPosting(Object.assign({}, goo
 // ── v2 tiers + lifetime job cap ──────────────────────────────────────────────
 check('free tier is a lifetime cap of 2 posts', EH.EMPLOYER_TIERS.free.lifetimeJobs === 2);
 check('pro tier is $49 with unlimited posts', EH.EMPLOYER_TIERS.pro.price === 49 && EH.EMPLOYER_TIERS.pro.lifetimeJobs === Infinity);
+check('Employer Decoder is included in every paid employer tier', EH.EMPLOYER_TIERS.pro.recruitmentDecoder === true && EH.EMPLOYER_TIERS.scale.recruitmentDecoder === true && EH.EMPLOYER_TIERS.corporate.recruitmentDecoder === true);
+check('Employer Decoder is not included in the free employer tier', !EH.EMPLOYER_TIERS.free.recruitmentDecoder);
 check('scale tier is $99 with API access', EH.EMPLOYER_TIERS.scale.price === 99 && EH.EMPLOYER_TIERS.scale.api === true);
 check('tierConfig falls back to free on garbage', EH.tierConfig('bogus').lifetimeJobs === 2);
 
