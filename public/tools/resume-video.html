@@ -125,11 +125,25 @@
     <h1 class="tool-title">Your experience,<br /><span>directed with intention.</span></h1>
     <p class="tool-lead">Turn structured resume details, portfolio links, or a focused prompt into a concise narrative arc—then preview the scenes, choose the voice, and create an executive-ready vertical film.</p>
 
-    <div class="studio-workspace">
-      <aside class="studio-rail"><small>Source &amp; direction</small><div class="studio-step"><b>01 · Resume</b><span>Upload PDF or DOCX, paste text, or use a saved resume.</span></div><div class="studio-step"><b>02 · Recipient</b><span>Address a hiring manager, team, or committee.</span></div><div class="studio-step"><b>03 · Identity</b><span>Choose accent, headshot, pacing, and format.</span></div></aside>
-      <div class="studio-stage"><div class="embed-card"><iframe class="embed-frame" src="/preview" title="Resume Video Maker Preview" loading="lazy"></iframe></div></div>
-      <aside class="studio-rail studio-rail--right"><small>AI direction</small><div class="studio-step"><b>Narrative arc</b><span>Opening, proof, skills, summary, and considered close.</span></div><div class="studio-step"><b>Studio voice</b><span>Natural voice options with adjustable pace.</span></div><div class="studio-step"><b>Export</b><span>Pro members render and retain the finished MP4.</span></div></aside>
-      <div class="scene-strip"><div><small>Scene sequence</small></div><div class="scene-track"><div class="scene">01 / Introduction</div><div class="scene">02 / Evidence</div><div class="scene">03 / Capabilities</div><div class="scene">04 / Close</div></div><div><small>9:16 · MP4</small></div></div>
+    <div class="studio-workspace" aria-label="Resume video studio">
+      <aside class="studio-rail">
+        <small>Source &amp; direction</small><h2 class="studio-panel-title">Build the story</h2>
+        <label class="studio-field"><span>Resume source</span><textarea class="studio-textarea" id="studioResume" placeholder="Paste your resume, or upload PDF, DOCX, or TXT…"></textarea></label>
+        <input id="studioFile" type="file" accept=".pdf,.docx,.txt" hidden>
+        <button class="studio-action studio-action--quiet" id="studioUpload" type="button">Upload resume</button>
+        <button class="studio-action" id="studioApply" type="button">Direct preview</button>
+        <div class="studio-status" id="studioStatus">Your resume stays in this browser for the live preview.</div>
+      </aside>
+      <div class="studio-stage"><div class="embed-card"><iframe id="studioPreview" class="embed-frame" src="/preview?embed=1" title="Resume Video Maker Preview" loading="eager"></iframe></div></div>
+      <aside class="studio-rail studio-rail--right">
+        <div><small>AI direction</small><h2 class="studio-panel-title">Finishing room</h2></div>
+        <label class="studio-toggle"><span>Device voiceover</span><input id="studioVoice" type="checkbox"></label>
+        <label class="studio-toggle"><span>Emerald accent</span><input id="studioAccent" class="studio-color" type="color" value="#1a4d3a"></label>
+        <div class="studio-step"><b>Narrative arc</b><span>Introduction, quantified evidence, capabilities, and a considered close are extracted automatically.</span></div>
+        <div class="studio-step"><b>Studio export</b><span>Pro members render the finished story as a voice-synced MP4 from the dashboard.</span></div>
+        <a class="studio-action" style="display:block;text-align:center;text-decoration:none;margin-top:18px" href="/dashboard?tab=video">Open Pro export</a>
+      </aside>
+      <div class="scene-strip"><div><small>Transport</small><div class="studio-transport" style="margin-top:12px"><button id="studioPlay" type="button" aria-label="Play">▶</button><button id="studioPause" type="button" aria-label="Pause">Ⅱ</button></div></div><div><div class="scene-track"><div class="scene">01 / Introduction</div><div class="scene">02 / Evidence</div><div class="scene">03 / Capabilities</div><div class="scene">04 / Close</div></div><input class="studio-scrub" id="studioScrub" type="range" min="0" max="1000" value="0" aria-label="Video timeline"></div><div><small>Canvas</small><div style="margin-top:10px;color:#d8e1df;font-size:12px">9:16 · 1080 × 1920<br><span style="color:#819496">Live Remotion preview</span></div></div></div>
     </div>
     <p class="embed-note">Trouble viewing the player? <a href="/preview" target="_blank" rel="noopener">Open the full-screen version &rarr;</a></p>
 
@@ -181,11 +195,23 @@
   </div>
 </footer>
 
-  <script src="/vendor/gsap.min.js" defer></script>
-  <script src="/vendor/ScrollTrigger.min.js" defer></script>
-  <script src="/vendor/lenis.min.js" defer></script>
-  <script src="/site-motion.js" defer></script>
   <script src="/mobile-native.js" defer></script>
 <script src="/site-nav.js" defer></script>
+<script>
+(function(){
+  var frame=document.getElementById('studioPreview'),resume=document.getElementById('studioResume');
+  var status=document.getElementById('studioStatus'),scrub=document.getElementById('studioScrub');
+  function send(type,extra){if(frame&&frame.contentWindow)frame.contentWindow.postMessage(Object.assign({source:'rt-video-studio',type:type},extra||{}),location.origin);}
+  document.getElementById('studioApply').addEventListener('click',function(){var text=resume.value.trim();if(!text){status.textContent='Paste or upload a resume first.';resume.focus();return;}send('resume',{text:text});status.textContent='Preview directed from your resume.';});
+  document.getElementById('studioUpload').addEventListener('click',function(){document.getElementById('studioFile').click();});
+  document.getElementById('studioFile').addEventListener('change',function(){var file=this.files&&this.files[0];if(!file)return;if(file.size>5*1024*1024){status.textContent='Please choose a file smaller than 5 MB.';return;}send('file',{file:file});status.textContent='Reading '+file.name+'…';this.value='';});
+  document.getElementById('studioVoice').addEventListener('change',function(){send('voice',{enabled:this.checked});});
+  document.getElementById('studioAccent').addEventListener('input',function(){send('accent',{value:this.value});});
+  document.getElementById('studioPlay').addEventListener('click',function(){send('play');});
+  document.getElementById('studioPause').addEventListener('click',function(){send('pause');});
+  scrub.addEventListener('input',function(){send('seek',{ratio:Number(this.value)/1000});});
+  window.addEventListener('message',function(e){if(e.origin!==location.origin||!e.data||e.data.source!=='rt-video-preview')return;if(e.data.type==='loaded')status.textContent='Loaded '+e.data.name+'.';if(e.data.type==='error')status.textContent=e.data.message;});
+})();
+</script>
 </body>
 </html>

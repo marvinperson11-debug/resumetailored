@@ -69,12 +69,18 @@
     footer { text-align: center; color: var(--subtext); font-size: 12px; margin-top: 30px; }
     footer a { color: var(--accent); text-decoration: none; }
     .loading { text-align: center; color: var(--subtext); padding: 40px 0; }
+    body.is-embedded { background:#030b12; min-height:0; overflow:hidden; }
+    body.is-embedded .wrap { padding:0; max-width:none; }
+    body.is-embedded header, body.is-embedded footer { display:none; }
+    body.is-embedded .player-shell { max-width:none; height:100vh; width:auto; margin:auto; border:0; border-radius:0; box-shadow:none; }
+    body.is-embedded #root > div > .row, body.is-embedded #root > div > .panel { display:none; }
   </style>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/theme.css"/>
 </head>
 <body>
+  <script>if(new URLSearchParams(location.search).get('embed')==='1')document.body.classList.add('is-embedded');</script>
   <div class="wrap">
     <header>
       <div class="badge">Live Preview · Remotion Player</div>
@@ -441,6 +447,7 @@
 
     // ── Page app: the Player + an upload / paste resume panel ───────────────────
     const App = () => {
+      const embedded = new URLSearchParams(window.location.search).get('embed') === '1';
       const [props, setProps] = React.useState(defaultProps);
       const [text, setText] = React.useState('');
       const [status, setStatus] = React.useState('');
@@ -586,6 +593,29 @@
       const update = () => apply(text);
       const reset = () => { setText(''); setStatus(''); setProps(defaultProps); };
 
+      // Same-origin studio shell API. The outer /resume-video workspace owns the
+      // tools and transport while this frame stays a focused preview canvas.
+      React.useEffect(() => {
+        if (!embedded) return;
+        const onMessage = async (event) => {
+          if (event.origin !== window.location.origin || !event.data || event.data.source !== 'rt-video-studio') return;
+          const msg = event.data;
+          if (msg.type === 'resume') apply(String(msg.text || ''));
+          if (msg.type === 'file' && msg.file) {
+            try { const t = await extractText(msg.file); apply(t); parent.postMessage({ source:'rt-video-preview', type:'loaded', name:msg.file.name }, location.origin); }
+            catch (_) { parent.postMessage({ source:'rt-video-preview', type:'error', message:'Could not read that resume. Try PDF, DOCX, or TXT.' }, location.origin); }
+          }
+          if (msg.type === 'voice') setVoiceOn(!!msg.enabled);
+          if (msg.type === 'accent') setProps((p) => ({ ...p, accentColor: String(msg.value || '#1a4d3a') }));
+          if (msg.type === 'play' && playerRef.current) playerRef.current.play();
+          if (msg.type === 'pause' && playerRef.current) playerRef.current.pause();
+          if (msg.type === 'seek' && playerRef.current) playerRef.current.seekTo(Math.max(0, Math.min(duration - 1, Math.round(Number(msg.ratio || 0) * duration))));
+        };
+        window.addEventListener('message', onMessage);
+        parent.postMessage({ source:'rt-video-preview', type:'ready', duration }, location.origin);
+        return () => window.removeEventListener('message', onMessage);
+      }, [embedded, duration]);
+
       // One-shot handoff from the dashboard: the 🎬 button stashes the tailored
       // resume in localStorage before opening this page, so we load it straight
       // into the preview and then clear it.
@@ -625,7 +655,8 @@
               compositionWidth=${1080}
               compositionHeight=${1920}
               fps=${FPS}
-              controls
+              acknowledgeRemotionLicense
+              controls=${!embedded}
               autoPlay
               loop
               style=${{ width: '100%', height: '100%' }}
