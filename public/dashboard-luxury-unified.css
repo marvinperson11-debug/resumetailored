@@ -98,3 +98,15 @@ body:has(.nv-shell) {
 .pt-field input, .pt-field textarea, .pt-field select { background: #081624 !important; color: var(--rt-dashboard-ivory) !important; border-color: var(--rt-dashboard-line) !important; }
 .pt-btn--solid, .pt-navbtn.active { background: var(--rt-dashboard-emerald) !important; }
 .pt-btn { border-color: var(--rt-dashboard-gold) !important; color: var(--rt-dashboard-gold) !important; }
+
+/* New Tools + What's New modals (inline cream styles in app.html) → navy. */
+#newToolsOverlay > div { background: var(--rt-dashboard-panel) !important; border-color: var(--rt-dashboard-line) !important; }
+#newToolsOverlay h2 { color: var(--rt-dashboard-ivory) !important; }
+#newToolsOverlay #newToolsProNote { color: var(--rt-dashboard-muted) !important; }
+#newToolsList > a { background: var(--rt-dashboard-navy) !important; border-color: var(--rt-dashboard-line) !important; }
+#newToolsList a span[style*="#191512"] { color: var(--rt-dashboard-ivory) !important; }
+#newToolsList a span[style*="#57514A"] { color: #c7d2cf !important; }
+#whatsNewOverlay .wn-card { background: var(--rt-dashboard-panel) !important; border-color: var(--rt-dashboard-line) !important; }
+#whatsNewOverlay .wn-card h3 { color: var(--rt-dashboard-ivory) !important; }
+#whatsNewOverlay .wn-card p { color: #c7d2cf !important; }
+#whatsNewOverlay .wn-price { color: var(--rt-dashboard-muted) !important; }

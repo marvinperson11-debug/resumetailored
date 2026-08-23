@@ -1083,17 +1083,30 @@ function _versionAssetRefs(html) {
   for (const [from, to] of ASSET_REWRITES) html = html.split(from).join(to);
   return html;
 }
+// Insert a snippet immediately before the document's REAL closing </body>.
+// Must target the LAST </body>, not the first: app.html (and any page that
+// builds an HTML document string in JS) contains a `</body>` inside a template
+// literal well before the real one. Injecting at the first match dropped a
+// <script>…</script> into the middle of that JS string — its </script>
+// truncated the whole inline script in the browser ("Unexpected end of input"),
+// so showTab() and every other handler was undefined and every dashboard button
+// went dead. lastIndexOf finds the document's own closing tag.
+function _insertBeforeLastBody(html, snippet) {
+  const idx = html.toLowerCase().lastIndexOf('</body>');
+  if (idx === -1) return html + snippet;
+  return html.slice(0, idx) + snippet + html.slice(idx);
+}
 function _injectGlobalLanguageToggle(html) {
   if (/src=["']\/top-language-toggle\.js/.test(html)) return html;
   const script = `<script defer src="/top-language-toggle.js?v=${ASSET_VERSION}"></script>`;
-  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${script}</body>`) : html + script;
+  return _insertBeforeLastBody(html, script);
 }
 function _injectSharedPublicNav(html, filePath) {
   const ownNavPages = new Set(['app.html', 'employer.html', 'portal.html']);
   const isHomepage = path.resolve(filePath) === path.resolve(path.join(__dirname, 'public', 'index.html'));
   if (isHomepage || ownNavPages.has(path.basename(filePath)) || /src=["']\/site-nav\.js/.test(html)) return html;
   const script = `<script defer src="/site-nav.js?v=${ASSET_VERSION}"></script>`;
-  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${script}</body>`) : html + script;
+  return _insertBeforeLastBody(html, script);
 }
 
 // ── Global luxury palette (colour consistency, A-to-Z) ───────────────────────
