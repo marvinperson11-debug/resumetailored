@@ -1067,6 +1067,7 @@ const ASSET_REWRITES = [
   ['src="/tools-hub.js"', `src="/tools-hub.js?v=${ASSET_VERSION}"`],
   ['src="/luxury-ecosystem.js"', `src="/luxury-ecosystem.js?v=${ASSET_VERSION}"`],
   ['src="/corporate.js"', `src="/corporate.js?v=${ASSET_VERSION}"`],
+  ['src="/top-language-toggle.js"', `src="/top-language-toggle.js?v=${ASSET_VERSION}"`],
   // Render-blocking in <head> on 300+ pages — defer it (the consent banner does
   // not need to run before first paint) and version-stamp it like the rest.
   ['<script src="/cookie-consent.js">', `<script defer src="/cookie-consent.js?v=${ASSET_VERSION}">`],
@@ -1074,6 +1075,11 @@ const ASSET_REWRITES = [
 function _versionAssetRefs(html) {
   for (const [from, to] of ASSET_REWRITES) html = html.split(from).join(to);
   return html;
+}
+function _injectGlobalLanguageToggle(html) {
+  if (/src=["']\/top-language-toggle\.js/.test(html)) return html;
+  const script = `<script defer src="/top-language-toggle.js?v=${ASSET_VERSION}"></script>`;
+  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${script}</body>`) : html + script;
 }
 
 // ── Self-hosted fonts (performance) ──────────────────────────────────────────
@@ -1143,7 +1149,7 @@ function _sendVersionedHtml(res, filePath) {
     // ecosystem pages. This avoids stale long-tail copy advertising $19.99
     // while Stripe and the membership architecture use exactly $19.00.
     html = html.split('19.99').join('19.00');
-    res.send(_selfHostFonts(_versionAssetRefs(html)));
+    res.send(_injectGlobalLanguageToggle(_selfHostFonts(_versionAssetRefs(html))));
   });
 }
 // Mirrors express.static's own `extensions:['html']` + `index.html`
