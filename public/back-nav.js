@@ -27,6 +27,10 @@
     '/resume-examples':              ['/score', 'Back to Free Tools'],
     '/cover-letter-examples':        ['/score', 'Back to Free Tools'],
     '/tools/resume-video':           ['/tools', 'Back to New Tools'],
+    '/decoder-key':                  ['/', 'Back to Home'],
+    '/corporate':                    ['/', 'Back to Home'],
+    '/resume-video':                 ['/', 'Back to Home'],
+    '/portal':                       ['/corporate', 'Back to Corporate'],
     '/pricing':                      ['/', 'Back to Home'],
     '/checkout':                     ['/pricing', 'Back to Pricing'],
     '/for-employers':                ['/', 'Back to Home']

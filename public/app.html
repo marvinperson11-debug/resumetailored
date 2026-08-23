@@ -690,7 +690,7 @@
                 <select id="wcCoverSelect" class="cv-input"><option value="">None</option></select>
                 <p id="wcNoAssets" class="cv-note" style="display:none;" data-i18n="wc_no_assets">No saved resumes yet.</p>
                 <label class="cv-lbl" data-i18n="wc_step_video">Video</label>
-                <button type="button" class="cv-wide" onclick="wcGoGenerateVideo()" data-i18n="wc_video_generate">🎬 Generate from résumé</button>
+                <button type="button" class="cv-wide" onclick="wcGoGenerateVideo()" data-i18n="wc_video_generate">🎬 Generate from resume</button>
                 <button type="button" class="cv-wide" onclick="wcUploadOwnVideo()" data-i18n="wc_video_upload">⬆ Upload your own</button>
                 <button type="button" class="cv-wide" onclick="openTextVideo()" data-i18n="wc_video_text">✍️ Text video</button>
                 <div id="wcVideoNote" class="cv-note"></div>
@@ -6000,7 +6000,7 @@ Aaliyah Washington`
       if (el) el.value = el.value.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
     }
 
-    // The video entry points: "Generate from résumé" reuses the existing (working)
+    // The video entry points: "Generate from resume" reuses the existing (working)
     // Video tool; "Upload your own" is surfaced now, wired to storage in the media phase.
     function wcGoGenerateVideo() { showTab('video'); }
     // Add a video block and immediately upload a file into it.
@@ -6649,7 +6649,7 @@ Aaliyah Washington`
         { type: 'spacer', label: 'Spacer', icon: '␣', w: 1040, h: 40, props: {} },
       ] },
       { group: 'ResumeTailored', items: [
-        { type: 'resume', label: 'Résumé', icon: '📋', w: 1040, h: 440, props: {} },
+        { type: 'resume', label: 'Resume', icon: '📋', w: 1040, h: 440, props: {} },
         { type: 'casestudies', label: 'Case studies', icon: '★', w: 1040, h: 280, props: { items: [{ title: 'A result you drove', metric: '30%', detail: 'What you did and what changed.' }] } },
         { type: 'qr', label: 'QR code', icon: '▩', w: 160, h: 160, props: {} },
       ] },

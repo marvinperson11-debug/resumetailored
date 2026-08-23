@@ -29,7 +29,7 @@
 
   /**
    * Every hero template was drawn with a FIXED gap between one element and the
-   * next — a résumé's role, in particular, has no natural length limit ("Senior
+   * next — a resume's role, in particular, has no natural length limit ("Senior
    * Regional Director of Manufacturing Operations and Continuous Improvement
    * Strategy" is a real job title), and the summary section can run to whole
    * paragraphs. Handed to the templates unbounded, either one grows past the
@@ -56,7 +56,7 @@
     var lines = String(text || '').split('\n').map(function (l) { return l.trim(); });
 
     // The name is the first non-empty line — the one convention every resume
-    // follows, and the same one the résumé renderer already relies on.
+    // follows, and the same one the resume renderer already relies on.
     var name = '';
     for (var i = 0; i < lines.length; i++) { if (lines[i]) { name = lines[i].slice(0, 80); break; } }
 
