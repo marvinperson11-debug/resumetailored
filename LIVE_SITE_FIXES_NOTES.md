@@ -1,38 +1,64 @@
-# Live Site Fixes — Working Notes & Questions
+# Live Site Fixes — Summary
 
 Branch: `claude/live-site-fixes-2ffkxa`
 
-## Baseline
-- Installed deps; regression suite: **57/58 pass**. The 1 "fail" (`test/audit-regressions.js`) is only the two ATS/LinkedIn subtests that need a live `ANTHROPIC_API_KEY` (absent in this sandbox) — pre-existing, unrelated to these fixes.
+All four requested fixes are done. Colours only where colour was asked for; no
+new features, no navigation/Stripe/tier/backend-logic changes.
 
-## Status by item
+## 1. Colour consistency — navy #0a1628 / emerald #1a4d3a / gold #c9a227 / cream — A‑to‑Z ✅
+The whole site now renders on the navy palette. Verified in‑browser (effective
+`body` background) across every page type:
+- **~340 SEO/blog/tool/static pages** — the shared `theme.css` (linked by 342
+  pages) was a cream editorial theme whose `body{background:var(--bg)!important}`
+  overrode even the role pages' own dark inline styles, so the entire long tail
+  actually rendered **cream**. Flipped `theme.css`'s `:root` + nav + the ≤820px
+  "darken‑for‑cream" mobile overrides to navy. This fixes role pages,
+  `/alternatives/*`, `/resume-examples`, `/cover-letter-examples`, `/zh/`, blog
+  articles, `/success`, `/cancel`, `/terms`, `/privacy`, `/reset-password`,
+  `/404`, `/help/`, and the interactive tools (`/ats-score-checker`,
+  `/resume-analyzer`, `/ai-resume-tailor`, …) at once.
+- **Serve‑time hex remap** (`_luxuryRepaint` in `server.js`) shifts the legacy
+  green accents (`#1F5C3D/#2E7D53/#8FD3AC`) onto emerald + gold on every served
+  page (app shells excluded).
+- **Homepage** (`index.html`) — flipped its variable‑driven `:root`; the
+  pillar band, promo band, job‑boards box, footer CTA and feature mockups are
+  navy. Resume‑template paper thumbnails deliberately stay white.
+- **Dashboards** — job‑seeker (`app.html`) + New Tools/What's New modals +
+  Career Hub (`career-hub.css`); employer portal; `/corporate` admin board.
+- **Bespoke pages** — `login`, `pro-tools`, `job-tracker`, `interview-coach`,
+  `blog`, and the `/tools/*` hub (`tools-hub.css`) + `/score` catalog.
+- **Global chrome** — cookie‑consent bar and the language toggle.
 
-### ✅ 4. Chinese language toggle visibility — DONE (committed)
-Root cause found and fixed in three places where the toggle blended into navy:
-- `public/luxury-ecosystem.css` `.club-nav__lang` — used dark ink text on the navy nav → now white bg / navy text, emerald hover.
-- `public/index.html` `#langToggleBtnFooter` — was a beige (`#E7DFD1`) chip → now white / navy palette.
-- `public/top-language-toggle.js` global fallback — had a navy (`#0a1628`) background on navy pages → now white bg. (Its palette test still passes.)
+## 2. Card‑based layout ✅
+- Homepage "how it works" steps and feature rows are now distinct navy cards
+  with spacing and a gold hairline (no more flat wall).
+- Dashboard tools: the "New Tools" catalog is a navy card grid; the SEO role
+  pages were already card‑based.
 
-Note: on all pages that use the shared injected nav (`#snav`, from `site-nav.js`), the toggle was already forced to visible cream — those were fine.
+## 3. Dashboard buttons now clickable ✅ (root cause found & fixed)
+The global language‑toggle/shared‑nav injectors inserted their `<script>` at the
+**first** `</body>`. `app.html` builds a full HTML document string in a JS
+template literal containing `</body>` long before the page's own — so the
+injected `<script>…</script>` landed inside that JS string; the browser
+terminated the whole inline app script at that stray `</script>`
+("Unexpected end of input"), leaving `showTab()` and every handler undefined and
+every dashboard button dead. Fixed by injecting before the **last** `</body>`
+(`_insertBeforeLastBody`). Verified in a headless browser: `showTab` is defined
+and clicking a sidebar tool switches the tab. New test:
+`test/dashboard-script-integrity.js`.
 
-### 🟡 1. Color consistency — PARTIALLY in place, needs a scope decision
-- Dashboards already use the **exact** requested palette via `public/dashboard-luxury-unified.css` (`#0a1628 / #1a4d3a / #c9a227 / #f5f1e8`). Job-seeker, employer, and corporate back-office surfaces are covered.
-- **Remaining old-color offenders I can see:**
-  - Homepage (`index.html`) still has the OLD stacked sections below the ecosystem redesign with light/beige backgrounds — e.g. `section-gray`, an inline `background:#F1EADD` band (~line 1271), the old pricing/whats-new sections.
-  - `luxury-ecosystem.css` `.pillar-story` deliberately uses a **cream** panel (`--club-cream:#f7f1e6`).
-  - The ~400 SEO role/landing pages (`*-resume.html`, `*-cover-letter.html`, `/alternatives/*`, blog, tool pages) are currently **light-themed marketing pages**.
-- **Decision needed:** see Q1 below — the 400 SEO pages are the big fork.
+## 4. Chinese language toggle is white ✅
+The homepage nav toggle, the footer toggle, and the global fallback toggle now
+use a white/high‑contrast treatment so they're clearly visible on navy.
 
-### 🟡 2. Card-based layout — needs a scope decision
-- The "long vertical newsfeed" is the stack of OLD full-width sections on `index.html` (features → job-boards → templates → tiers → whats-new → pricing → footer), sitting under the newer "ecosystem" hero/pillars/pricing.
-- Converting these to a card grid is a real redesign of the homepage. I want to confirm exactly which surface and how far before touching it (see Q2).
+## Tests
+Full Node suite: **59 pass, 1 fail**. The single failure — `audit-regressions.js`
+— is only its two ATS/LinkedIn subtests that require a live `ANTHROPIC_API_KEY`
+(absent in this sandbox); pre‑existing and unrelated. Added
+`test/luxury-global-repaint.js`, `test/dashboard-script-integrity.js`; updated
+`test/homepage-a11y.js` to check `--ink-faint` against the navy surfaces it now
+sits on.
 
-### 🔴 3. Dashboard buttons not clickable — needs specifics
-- Every `<button>` in the repo has a click/submit handler in source (`test/button-integrity.js` passes), so this isn't missing handlers.
-- The palette overlay (`body:has(.dashboard)::before`) sets only `background` with no `content`, so it generates no box and does **not** block clicks — ruled out.
-- I can't reproduce "dead buttons" from source alone. I need to know **which** buttons, on **which** dashboard (job-seeker `/app` vs employer), and desktop vs mobile (see Q3).
-
-## Questions
-- **Q1 (scope of color audit):** Do the ~400 light-themed SEO/marketing landing pages need the navy treatment too, or only the core app/dashboard/tool/login + homepage surfaces?
-- **Q2 (card layout):** Should I convert the homepage's old stacked sections into a card grid (keeping content/links/Stripe CTAs identical), or is a different page the "newsfeed"?
-- **Q3 (dead buttons):** Which specific buttons are dead, on which dashboard, and desktop or mobile?
+## Not touched (per your rules)
+Stripe checkout, pricing, tiers, tool assignments, navigation structure, and
+backend API logic are unchanged.
