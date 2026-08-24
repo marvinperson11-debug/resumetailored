@@ -9,7 +9,7 @@ function check(name, ok) { if (ok) console.log('PASS', name); else { failures++;
 
 const server = read('server.js');
 const toggle = read('public/top-language-toggle.js');
-check('every versioned HTML response receives the global language control', /const prepared = _injectSharedPublicNav\(_selfHostFonts\(_versionAssetRefs\(html\)\), filePath\);[\s\S]{0,100}res\.send\(_injectGlobalLanguageToggle\(prepared\)\)/.test(server));
+check('every versioned HTML response receives the global language control', /const prepared = _injectSiteI18n\(_injectSharedPublicNav\(_selfHostFonts\(_versionAssetRefs\(html\)\), filePath\), filePath\);[\s\S]{0,100}res\.send\(_injectGlobalLanguageToggle\(prepared\)\)/.test(server));
 check('the language control stays at the top of pages without a shared header', /position:fixed;top:12px;right:14px/.test(toggle));
 check('pages with an existing top language control do not get a duplicate', /hasTopLanguageControl\(\)[\s\S]{0,100}data-global-language-toggle/.test(toggle));
 check('Chinese selection routes to the Chinese experience', /location\.assign\('\/zh\/'\)/.test(toggle));
