@@ -1048,7 +1048,7 @@
       <a href="/ai-resume-tailor">Tailor My Resume</a>
       <a href="/for-employers">For Employer</a>
     </nav>
-    <div class="club-nav__actions"><button class="club-nav__lang" type="button" data-club-lang-top onclick="toggleLang()">中文</button></div>
+    <div class="club-nav__actions"><button class="club-nav__lang" type="button" data-club-lang-top onclick="toggleLang()">中文</button><button class="club-nav__login" type="button" onclick="openLoginChooser()">Login</button></div>
     <button class="club-mobile" type="button" data-club-mobile aria-controls="clubMobileMenu" aria-label="Open navigation" aria-expanded="false">☰</button>
   </div>
 </header>
@@ -1137,19 +1137,19 @@
 
 <!-- Login chooser: pick which side to sign in to -->
 <div id="loginChooser" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(25,21,18,.5);align-items:center;justify-content:center;padding:22px;" onclick="if(event.target===this)closeLoginChooser()">
-  <div style="background:#fff;border-radius:20px;max-width:400px;width:100%;padding:30px 26px;box-shadow:0 30px 70px rgba(0,0,0,.3);position:relative;font-family:'Inter',sans-serif;">
-    <button onclick="closeLoginChooser()" aria-label="Close" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:26px;color:#57514A;cursor:pointer;line-height:1;">&times;</button>
-    <h2 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:26px;letter-spacing:-.02em;margin:0 0 4px;color:#191512;">Log in</h2>
-    <p style="color:#57514A;font-size:14px;margin:0 0 20px;">Choose how you want to sign in.</p>
-    <a href="/login?redirect=/dashboard" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#FAF7F0;border:1px solid #E7DFD1;border-radius:14px;padding:16px;margin-bottom:12px;transition:border-color .12s;" onmouseover="this.style.borderColor='#1F5C3D'" onmouseout="this.style.borderColor='#E7DFD1'">
+  <div style="background:#0d1e30;border:1px solid rgba(201,162,39,.28);border-radius:20px;max-width:400px;width:100%;padding:30px 26px;box-shadow:0 30px 70px rgba(0,0,0,.5);position:relative;font-family:'Inter',sans-serif;">
+    <button onclick="closeLoginChooser()" aria-label="Close" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:26px;color:#9eb2aa;cursor:pointer;line-height:1;">&times;</button>
+    <h2 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:26px;letter-spacing:-.02em;margin:0 0 4px;color:#f5f1e8;">Log in</h2>
+    <p style="color:#9eb2aa;font-size:14px;margin:0 0 20px;">Are you logging in as a Job Seeker or an Employer?</p>
+    <a href="/login?redirect=/dashboard" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#0a1628;border:1px solid rgba(201,162,39,.3);border-radius:14px;padding:16px;margin-bottom:12px;transition:border-color .12s,background .12s;" onmouseover="this.style.borderColor='#c9a227';this.style.background='#123a2b'" onmouseout="this.style.borderColor='rgba(201,162,39,.3)';this.style.background='#0a1628'">
       <span style="font-size:26px;">👤</span>
-      <span><span style="display:block;font-weight:800;color:#191512;font-size:16px;">Login as Job Seeker</span><span style="display:block;color:#57514A;font-size:13px;">Tailor resumes, cover letters &amp; more</span></span>
+      <span><span style="display:block;font-weight:800;color:#f5f1e8;font-size:16px;">Job Seeker</span><span style="display:block;color:#9eb2aa;font-size:13px;">Tailor resumes, cover letters &amp; more</span></span>
     </a>
-    <a href="/login?redirect=/employer" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#FAF7F0;border:1px solid #E7DFD1;border-radius:14px;padding:16px;transition:border-color .12s;" onmouseover="this.style.borderColor='#1F5C3D'" onmouseout="this.style.borderColor='#E7DFD1'">
+    <a href="/login?redirect=/employer" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#0a1628;border:1px solid rgba(201,162,39,.3);border-radius:14px;padding:16px;transition:border-color .12s,background .12s;" onmouseover="this.style.borderColor='#c9a227';this.style.background='#12233a'" onmouseout="this.style.borderColor='rgba(201,162,39,.3)';this.style.background='#0a1628'">
       <span style="font-size:26px;">💼</span>
-      <span><span style="display:block;font-weight:800;color:#191512;font-size:16px;">Login as Employer</span><span style="display:block;color:#57514A;font-size:13px;">Post jobs &amp; hire candidates</span></span>
+      <span><span style="display:block;font-weight:800;color:#f5f1e8;font-size:16px;">Employer</span><span style="display:block;color:#9eb2aa;font-size:13px;">Post jobs &amp; hire candidates</span></span>
     </a>
-    <p style="text-align:center;margin:18px 0 0;font-size:13px;color:#57514A;">New employer? <a href="/for-employers" style="color:#1F5C3D;font-weight:700;">See employer plans →</a></p>
+    <p style="text-align:center;margin:18px 0 0;font-size:13px;color:#9eb2aa;">New employer? <a href="/for-employers" style="color:#c9a227;font-weight:700;">See employer plans →</a></p>
   </div>
 </div>
 <script>
