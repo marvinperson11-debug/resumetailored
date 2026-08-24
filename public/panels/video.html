@@ -11,12 +11,12 @@
 
         <div class="input-section">
           <div class="input-group">
-            <label class="input-label" for="videoName">Your Name <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — overrides the name read from the resume)</span></label>
+            <label class="input-label" for="videoName">Your Name <span style="color:#b9c4c1;font-weight:400;font-size:12px;">(optional — overrides the name read from the resume)</span></label>
             <input type="text" id="videoName" class="text-input" placeholder="e.g. Jordan Mitchell" />
           </div>
 
           <div class="input-group" style="margin-top:16px;">
-            <label class="input-label">Send to <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — opens the video addressing them: “Hi Mr. Smith…”)</span></label>
+            <label class="input-label">Send to <span style="color:#b9c4c1;font-weight:400;font-size:12px;">(optional — opens the video addressing them: “Hi Mr. Smith…”)</span></label>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
               <input type="text" id="videoRecipientName" class="text-input" style="flex:1;min-width:160px;" placeholder="Recipient — e.g. Mr. Smith" />
               <input type="text" id="videoRecipientTitle" class="text-input" style="flex:1;min-width:160px;" placeholder="Their title — e.g. Hiring Manager" />
@@ -24,7 +24,7 @@
           </div>
 
           <div class="input-group" style="margin-top:16px;">
-            <label class="input-label">Your Photo <span style="color:#9ca3af;font-weight:400;font-size:12px;">(optional — adds your face to the intro)</span></label>
+            <label class="input-label">Your Photo <span style="color:#b9c4c1;font-weight:400;font-size:12px;">(optional — adds your face to the intro)</span></label>
             <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
               <img id="videoPhotoPreview" alt="" loading="lazy" width="56" height="56" style="display:none;width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #0891b2;" />
               <button type="button" class="upload-btn" id="videoPhotoBtn" onclick="document.getElementById('videoPhotoInput').click()">⬆ Upload Photo</button>
@@ -34,7 +34,7 @@
           </div>
 
           <div class="input-group" style="margin-top:16px;">
-            <label class="input-label" for="videoVoiceGender">Narration voice <span style="color:#9ca3af;font-weight:400;font-size:12px;">(it speaks in first person — pick the one that matches you)</span></label>
+            <label class="input-label" for="videoVoiceGender">Narration voice <span style="color:#b9c4c1;font-weight:400;font-size:12px;">(it speaks in first person — pick the one that matches you)</span></label>
             <select id="videoVoiceGender" class="text-input" style="max-width:320px;">
               <optgroup label="Female">
                 <option value="bella">Bella — soft &amp; warm</option>
@@ -54,17 +54,17 @@
           <div class="input-group" style="margin-top:16px;">
             <label class="input-label" for="videoVoiceSpeed">Voice speed <span id="videoVoiceSpeedLabel" style="color:#1F5C3D;font-weight:600;font-size:12px;">Relaxed</span></label>
             <input type="range" id="videoVoiceSpeed" min="0.7" max="1.2" step="0.05" value="0.9" style="width:100%;max-width:320px;display:block;" oninput="updateVoiceSpeedLabel(this.value)">
-            <div style="display:flex;justify-content:space-between;max-width:320px;font-size:11px;color:#9ca3af;margin-top:2px;">
+            <div style="display:flex;justify-content:space-between;max-width:320px;font-size:11px;color:#b9c4c1;margin-top:2px;">
               <span>Slower</span><span>Normal</span><span>Faster</span>
             </div>
           </div>
 
           <div class="input-group" style="margin-top:16px;">
-            <label class="input-label" for="videoOutro">Closing message <span style="color:#9ca3af;font-weight:400;font-size:12px;">(spoken at the very end)</span></label>
+            <label class="input-label" for="videoOutro">Closing message <span style="color:#b9c4c1;font-weight:400;font-size:12px;">(spoken at the very end)</span></label>
             <select id="videoOutro" class="text-input" style="max-width:420px;" onchange="onOutroChange()">
               <option value="default">Thank you &amp; have a great day (default)</option>
             </select>
-            <div id="videoOutroPreview" style="font-size:12px;color:#9ca3af;margin-top:6px;max-width:520px;font-style:italic;"></div>
+            <div id="videoOutroPreview" style="font-size:12px;color:#b9c4c1;margin-top:6px;max-width:520px;font-style:italic;"></div>
             <textarea id="videoOutroCustom" class="text-input" placeholder="Write your own closing line…" rows="3" maxlength="400" style="display:none;margin-top:8px;max-width:520px;"></textarea>
           </div>
 
@@ -88,7 +88,7 @@
             🎬 Open Video Maker →
           </button>
           <div id="videoStatus" style="display:none;font-size:13px;color:#0891b2;margin-top:12px;text-align:center;font-weight:600;"></div>
-          <p id="videoHelp" style="font-size:12px;color:#6b7280;margin-top:10px;text-align:center;">Opens the free in-browser maker — preview instantly, pick a voiceover (device voice, or your own ElevenLabs key for a studio voice), and record to share.</p>
+          <p id="videoHelp" style="font-size:12px;color:#9eb2aa;margin-top:10px;text-align:center;">Opens the free in-browser maker — preview instantly, pick a voiceover (device voice, or your own ElevenLabs key for a studio voice), and record to share.</p>
         </div>
 
         <!-- Upsell: free users get the in-browser maker above; Pro gets the
