@@ -293,6 +293,16 @@ db.exec(`
     key   TEXT PRIMARY KEY,
     count INTEGER NOT NULL DEFAULT 0
   );
+  -- Cross-user machine-translation cache for the site-wide UI translator
+  -- (site-i18n.js). Keyed by sha256(source) + language, so an identical
+  -- string is translated ONCE for the whole user base and then bills nothing.
+  CREATE TABLE IF NOT EXISTS i18n_cache (
+    hash TEXT NOT NULL,
+    lang TEXT NOT NULL,
+    src  TEXT NOT NULL,
+    txt  TEXT NOT NULL,
+    PRIMARY KEY (hash, lang)
+  );
   CREATE TABLE IF NOT EXISTS check_ins (
     email        TEXT PRIMARY KEY,
     last_check_in TEXT,
@@ -1109,6 +1119,29 @@ function _injectSharedPublicNav(html, filePath) {
   return _insertBeforeLastBody(html, script);
 }
 
+// ── Site-wide UI translator (full-DOM 中文/EN) ────────────────────────────────
+// The homepage and the app dashboard carry their own exhaustive, hand-authored
+// translators. Every OTHER page (the ~300 SEO/role pages, the marketing/tool
+// pages, the blog, the alternatives pages) previously had NO body translator —
+// clicking 中文 there only translated the shared nav chrome and left the entire
+// page in English. site-i18n.js fixes that generically: on toggle it walks the
+// whole DOM (text nodes + placeholder/title/aria-label/alt/value attributes),
+// sends the unique strings to /api/i18n/translate (cross-user cached, so cost is
+// one-time per unique string), and swaps them in — then restores the stored
+// originals instantly on switching back to EN. It CHAINS after a page's own
+// window.applyLang when one exists, so curated translations still run first.
+// Excluded: the homepage and the three app shells (their own systems own them).
+function _injectSiteI18n(html, filePath) {
+  // Exclude the three app shells (own systems) and the HOMEPAGE specifically —
+  // matched by resolved path, NOT basename, or every directory index.html (blog,
+  // tools, …) would be wrongly excluded too.
+  const ownShells = new Set(['app.html', 'employer.html', 'portal.html']);
+  const isHomepage = path.resolve(filePath) === path.resolve(path.join(__dirname, 'public', 'index.html'));
+  if (isHomepage || ownShells.has(path.basename(filePath)) || /src=["']\/site-i18n\.js/.test(html)) return html;
+  const script = `<script defer src="/site-i18n.js?v=${ASSET_VERSION}"></script>`;
+  return _insertBeforeLastBody(html, script);
+}
+
 // ── Global luxury palette (colour consistency, A-to-Z) ───────────────────────
 // The ~300 generated SEO/role pages and the standalone tool pages were built on
 // a near-black + green theme (#030712 / #1F5C3D / #2E7D53 / #8FD3AC). The site's
@@ -1205,7 +1238,7 @@ function _sendVersionedHtml(res, filePath) {
     // while Stripe and the membership architecture use exactly $19.00.
     html = html.split('19.99').join('19.00');
     html = _luxuryRepaint(html, filePath);
-    const prepared = _injectSharedPublicNav(_selfHostFonts(_versionAssetRefs(html)), filePath);
+    const prepared = _injectSiteI18n(_injectSharedPublicNav(_selfHostFonts(_versionAssetRefs(html)), filePath), filePath);
     res.send(_injectGlobalLanguageToggle(prepared));
   });
 }
@@ -7369,6 +7402,83 @@ app.get('/api/resume-video/file/:jobId', (req, res) => {
 });
 
 // ─── API: Translate resume Chinese → English ──────────────────────────────────
+// ── Site-wide UI translation (powers site-i18n.js) ───────────────────────────
+// Batch-translates short UI strings to Simplified Chinese, cross-user cached in
+// i18n_cache so an identical string is only ever sent to Claude ONCE for the
+// whole user base (every later request — every other visitor, every other page
+// that reuses the phrase — is a free DB read). Fails OPEN: on any error, a
+// missing API key, or an unsupported language it returns whatever it has (often
+// nothing), and the client simply leaves those strings in English rather than
+// breaking the page.
+const _i18nGet = db.prepare('SELECT txt FROM i18n_cache WHERE hash = ? AND lang = ?');
+const _i18nPut = db.prepare('INSERT OR IGNORE INTO i18n_cache (hash, lang, src, txt) VALUES (?, ?, ?, ?)');
+
+// Translate an array of strings via Claude, in modest chunks so the JSON stays
+// reliable. Returns an array aligned 1:1 with the input; an element is null when
+// that chunk could not be translated (caller then leaves it in English).
+async function _mtBatch(strings, lang) {
+  if (!process.env.ANTHROPIC_API_KEY || lang !== 'zh' || !strings.length) return strings.map(() => null);
+  const CHUNK = 60;
+  const out = new Array(strings.length).fill(null);
+  const system = 'You are a professional UI localizer for a résumé/career SaaS product. Translate each English UI string to natural, concise Simplified Chinese as used in software interfaces. Rules: keep brand and proper names unchanged (ResumeTailored, LinkedIn, ATS, Claude, Stripe, Indeed, Glassdoor, Jobscan, Rezi, Teal, Google, PDF, DOCX); keep URLs, email addresses, and placeholder tokens such as {n} or {t} unchanged; preserve any leading or trailing emoji, arrows (→, ↗) and punctuation; do not add quotes or explanations. Return ONLY a JSON array of strings, exactly the same length and order as the input.';
+  for (let i = 0; i < strings.length; i += CHUNK) {
+    const chunk = strings.slice(i, i + CHUNK);
+    try {
+      const arr = await callClaudeJSON({
+        model: 'claude-haiku-4-5',
+        system,
+        user: JSON.stringify(chunk),
+        max_tokens: 4000,
+        validate: (v) => (Array.isArray(v) && v.length === chunk.length
+          ? { ok: true, value: v }
+          : { ok: false, error: 'expected array of length ' + chunk.length }),
+      });
+      if (Array.isArray(arr) && arr.length === chunk.length) {
+        for (let j = 0; j < chunk.length; j++) if (typeof arr[j] === 'string' && arr[j].trim()) out[i + j] = arr[j];
+      }
+    } catch (e) { /* fail open — leave this chunk's slots null */ }
+  }
+  return out;
+}
+
+app.post('/api/i18n/translate', async (req, res) => {
+  try {
+    const lang = String((req.body && req.body.lang) || '').toLowerCase();
+    let strings = req.body && req.body.strings;
+    if (lang !== 'zh' || !Array.isArray(strings)) return res.json({ translations: {} });
+    // De-dupe + bound the request: short UI strings only, hard caps on count/size.
+    const seen = new Set();
+    strings = strings.filter((s) => {
+      if (typeof s !== 'string') return false;
+      const t = s.trim();
+      if (!t || t.length > 600 || seen.has(s)) return false;
+      seen.add(s); return true;
+    }).slice(0, 600);
+
+    const out = {};
+    const misses = [];
+    for (const s of strings) {
+      const h = crypto.createHash('sha256').update(s).digest('hex');
+      const row = _i18nGet.get(h, lang);
+      if (row) out[s] = row.txt;
+      else misses.push({ s, h });
+    }
+    if (misses.length) {
+      const translated = await _mtBatch(misses.map((m) => m.s), lang);
+      const putMany = db.transaction((items) => {
+        items.forEach((m, i) => {
+          const t = translated[i];
+          if (typeof t === 'string' && t.trim()) { out[m.s] = t; _i18nPut.run(m.h, lang, m.s, t); }
+        });
+      });
+      putMany(misses);
+    }
+    res.json({ translations: out });
+  } catch (e) {
+    res.json({ translations: {} });
+  }
+});
+
 app.post('/api/translate-resume', async (req, res) => {
   const { resume } = req.body;
   if (!resume || !resume.trim()) return res.status(400).json({ error: 'Resume text is required.' });
