@@ -152,7 +152,7 @@
       '#snavMenu .snav-maccount{grid-column:1/-1;margin-top:12px;background:#c9a85d;color:#071724!important;border:1px solid #c9a85d;text-align:center;text-transform:uppercase;letter-spacing:.08em;font-size:11px;}' +
       '#snavMenu .snav-mlang{grid-column:1/-1;color:#e3cc91!important;}' +
       '@media(max-width:520px){#snavMenu{top:64px;right:0;width:100vw;max-height:calc(100vh - 64px);grid-template-columns:1fr;border-left:0;border-right:0;}#snavMenu .snav-maccount,#snavMenu .snav-mlang{grid-column:1;}}' +
-      '@media(max-width:1180px){#snav .snav-links,#snav .snav-act{display:none!important;}#snav .snav-hamwrap{display:flex!important;}#snav .snav-ham{display:block!important;}}' +
+      '@media(max-width:1180px){#snav .snav-links{display:none!important;}#snav .snav-ham{display:block!important;}}' +
       /* Luxury ecosystem override. Appended so it wins over the legacy
          editorial-light declarations above without changing nav behavior. */
       '#snav{background:rgba(7,23,36,.97)!important;border-bottom-color:rgba(201,168,93,.25)!important;}' +
@@ -163,7 +163,29 @@
       '#snav .snav-lang,#snav .snav-ham{color:#f7f1e6!important;border-color:rgba(201,168,93,.38)!important;border-radius:2px;}' +
       '#snav .snav-ghost{color:#f7f1e6!important;border-color:rgba(201,168,93,.38)!important;border-radius:2px;}' +
       '#snav .snav-primary{background:#c9a85d!important;color:#071724!important;box-shadow:none;border-radius:2px;text-transform:uppercase;letter-spacing:.07em;font-size:11px;}' +
-      '#snavMenu{background:#071724!important;}#snavMenu a{color:#f7f1e6!important;border-bottom-color:rgba(201,168,93,.2)!important;}';
+      '#snavMenu{background:#071724!important;}#snavMenu a{color:#f7f1e6!important;border-bottom-color:rgba(201,168,93,.2)!important;}' +
+      /* Top-nav 中文 toggle + Login: always visible beside the hamburger at
+         every width. 中文 is WHITE for contrast on the navy bar; Login is a
+         gold-outline luxury button. */
+      '#snav .snav-act{display:flex!important;gap:10px;align-items:center;margin-left:auto;}' +
+      '#snav .snav-lang{background:#fff!important;color:#0a1628!important;border:1px solid #c9a227!important;border-radius:8px;font-weight:700;}' +
+      '#snav .snav-lang:hover{background:#1a4d3a!important;color:#fff!important;border-color:#c9a227!important;}' +
+      '#snav .snav-login{background:transparent!important;color:#f7f1e6!important;border:1px solid #c9a227!important;border-radius:8px;padding:8px 16px!important;font-weight:700;box-shadow:none!important;text-transform:none;letter-spacing:normal;font-size:13px!important;}' +
+      '#snav .snav-login:hover{background:#1a4d3a!important;color:#fff!important;border-color:#c9a227!important;}' +
+      '#snav .snav-ham{color:#f7f1e6!important;border-color:rgba(201,162,39,.5)!important;}' +
+      '@media(max-width:520px){#snav{padding:0 12px;}#snav .snav-act{gap:7px;}#snav .snav-login{padding:8px 12px!important;}#snav .snav-lang{padding:7px 10px;}}' +
+      /* Role-selection modal (Job Seeker vs Employer) */
+      '#snavRole{position:fixed;inset:0;z-index:2147483001;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(3,10,20,.72);}' +
+      '#snavRole.open{display:flex;}' +
+      '#snavRole .snr-box{width:100%;max-width:420px;background:#0d1e30;border:1px solid rgba(201,162,39,.28);border-radius:18px;padding:28px 24px;box-shadow:0 30px 80px rgba(0,0,0,.5);text-align:center;font-family:\'Inter\',sans-serif;}' +
+      '#snavRole h3{margin:0 0 6px;font:700 20px/1.25 \'Fraunces\',Georgia,serif;color:#f5f1e8;}' +
+      '#snavRole p{margin:0 0 20px;font-size:14px;color:#9eb2aa;}' +
+      '#snavRole .snr-opts{display:grid;gap:12px;}' +
+      '#snavRole .snr-opt{display:block;width:100%;padding:16px;border-radius:12px;border:1px solid rgba(201,162,39,.3);background:#0a1628;color:#f5f1e8;font:700 15px/1.2 \'Inter\',sans-serif;cursor:pointer;transition:all .15s;}' +
+      '#snavRole .snr-opt:hover{border-color:#c9a227;background:#123a2b;}' +
+      '#snavRole .snr-opt small{display:block;margin-top:4px;font-weight:500;font-size:12px;color:#9eb2aa;}' +
+      '#snavRole .snr-opt--emp:hover{background:#12233a;}' +
+      '#snavRole .snr-close{margin-top:16px;background:none;border:none;color:#9eb2aa;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}';
 
     var style = document.createElement('style');
     style.id = 'snav-css';
@@ -179,8 +201,7 @@
         '<div class="snav-links">' + linksHtml + '</div>' +
         '<div class="snav-act">' +
           '<button type="button" class="snav-lang" id="langToggleBtn" title="Switch language / 切换语言">中文</button>' +
-        '</div>' +
-        '<div class="snav-hamwrap">' +
+          '<button type="button" class="snav-btn snav-login" id="snavLoginBtn" data-snav-login>Log In</button>' +
           '<button class="snav-ham" aria-label="Open menu" aria-controls="snavMenu" aria-expanded="false">&#9776;</button>' +
         '</div>' +
       '</div>';
@@ -199,9 +220,40 @@
     menu.innerHTML =
       '<button class="snav-mclose" aria-label="Close menu">&times;</button>' +
       menuLinks.map(function (l, i) { return '<a href="' + l[1] + '" data-snav-mi="' + i + '">' + l[0] + '</a>'; }).join('') +
-      '<a href="' + (employerSide ? '/employer' : '/signup') + '" class="snav-maccount" data-snav-account>' + (employerSide ? 'Recruiter Account' : 'Create Account') + '</a>' +
-      '<button type="button" class="snav-mlang" id="langToggleBtnMobile" title="Switch language / 切换语言">中文</button>';
+      '<a href="' + (employerSide ? '/employer' : '/signup') + '" class="snav-maccount" data-snav-account>' + (employerSide ? 'Recruiter Account' : 'Create Account') + '</a>';
     document.body.appendChild(menu);
+
+    // ── Role-selection modal (opened by the top-nav Login button) ────────────
+    var roleModal = document.createElement('div');
+    roleModal.id = 'snavRole';
+    roleModal.setAttribute('role', 'dialog');
+    roleModal.setAttribute('aria-modal', 'true');
+    roleModal.innerHTML =
+      '<div class="snr-box">' +
+        '<h3 data-snr-h>Log in to ResumeTailored</h3>' +
+        '<p data-snr-p>Are you logging in as a Job Seeker or an Employer?</p>' +
+        '<div class="snr-opts">' +
+          '<button type="button" class="snr-opt" data-snr-seeker>👤 Job Seeker<small data-snr-seeker-sub>Tailor resumes, cover letters &amp; more</small></button>' +
+          '<button type="button" class="snr-opt snr-opt--emp" data-snr-employer>🏢 Employer<small data-snr-employer-sub>Post jobs &amp; find candidates</small></button>' +
+        '</div>' +
+        '<button type="button" class="snr-close" data-snr-close>Cancel</button>' +
+      '</div>';
+    document.body.appendChild(roleModal);
+    function setRoleOpen(open) { roleModal.classList.toggle('open', open); }
+    roleModal.addEventListener('click', function (e) { if (e.target === roleModal) setRoleOpen(false); });
+    roleModal.querySelector('[data-snr-close]').addEventListener('click', function () { setRoleOpen(false); });
+    roleModal.querySelector('[data-snr-seeker]').addEventListener('click', function () { location.assign(loginHref); });
+    roleModal.querySelector('[data-snr-employer]').addEventListener('click', function () { location.assign('/login?redirect=%2Femployer'); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setRoleOpen(false); });
+    function setRoleLang(zh) {
+      roleModal.querySelector('[data-snr-h]').textContent = zh ? '登录 ResumeTailored' : 'Log in to ResumeTailored';
+      roleModal.querySelector('[data-snr-p]').textContent = zh ? '您是以求职者还是雇主身份登录？' : 'Are you logging in as a Job Seeker or an Employer?';
+      roleModal.querySelector('[data-snr-seeker]').childNodes[0].nodeValue = zh ? '👤 求职者' : '👤 Job Seeker';
+      roleModal.querySelector('[data-snr-seeker-sub]').textContent = zh ? '定制简历、求职信等' : 'Tailor resumes, cover letters & more';
+      roleModal.querySelector('[data-snr-employer]').childNodes[0].nodeValue = zh ? '🏢 雇主' : '🏢 Employer';
+      roleModal.querySelector('[data-snr-employer-sub]').textContent = zh ? '发布职位并寻找候选人' : 'Post jobs & find candidates';
+      roleModal.querySelector('[data-snr-close]').textContent = zh ? '取消' : 'Cancel';
+    }
 
     var menuTrigger = nav.querySelector('.snav-ham');
     function setMenuOpen(open) {
@@ -254,7 +306,17 @@
     }
 
     document.getElementById('langToggleBtn').addEventListener('click', toggle);
-    document.getElementById('langToggleBtnMobile').addEventListener('click', toggle);
+    var t2el = document.getElementById('langToggleBtnMobile');
+    if (t2el) t2el.addEventListener('click', toggle);
+
+    // The top-nav Login button opens the role-selection modal (signed-out); when
+    // a session is present it becomes a direct "Dashboard" link instead.
+    var loginBtn = document.getElementById('snavLoginBtn');
+    if (loginBtn) loginBtn.addEventListener('click', function () {
+      if (loginBtn.getAttribute('data-snav-authed')) { location.assign('/dashboard'); return; }
+      setRoleLang(getLang() === 'zh');
+      setRoleOpen(true);
+    });
 
     // Reflect the stored preference on load (the page's own boot handles its body).
     setNavLang(getLang());

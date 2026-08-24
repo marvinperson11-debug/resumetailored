@@ -27,9 +27,14 @@ check('public HTML responses receive the shared toolbar while dashboards retain 
 check('pillar pages still load back-nav.js (now the back-control teardown)', ['public/decoder-key.html','public/corporate.html','public/portal.html'].every(file => read(file).includes('/back-nav.js')) && read('public/tools/resume-video.html').includes('/site-nav.js'));
 check('homepage hamburger contains the complete tool directory', menuRoutes.every(route => index.includes(`href="${route}"`)));
 check('shared hamburger contains the complete tool directory', menuRoutes.every(route => siteNav.includes(`'${route}'`)));
-check('hamburger menus offer account creation and language switching', /club-mobile-menu__account[^>]+href="\/signup"/.test(index) && /data-club-lang/.test(index) && /data-snav-account/.test(siteNav) && /id="langToggleBtnMobile"/.test(siteNav));
+// 中文 has been MOVED OUT of the hamburger and onto the always-visible top-nav
+// actions cluster (beside Login + the hamburger), on both the homepage's
+// club-nav and the shared site-nav. Account creation still lives in the hamburger.
+check('nav offers account creation in the hamburger and language switching on the top bar', /club-mobile-menu__account[^>]+href="\/signup"/.test(index) && /data-snav-account/.test(siteNav) && /class="club-nav__lang"[^>]*data-club-lang-top/.test(index) && /id="langToggleBtn"/.test(siteNav) && /class="snav-lang"/.test(siteNav) && !/id="langToggleBtnMobile"/.test(siteNav));
 check('hamburger menus do not expose Pricing', !/club-mobile-menu[\s\S]{0,2500}href="#pricing"/.test(index) && !/snavMenu[\s\S]{0,2500}href=["']#pricing/.test(siteNav));
-check('mobile luxury header hides horizontal links and actions', /@media\(max-width:1000px\)\{\.club-nav__links,\.club-nav__actions\{display:none\}/.test(read('public/luxury-ecosystem.css')));
+// Mobile header hides the horizontal LINKS but keeps the actions cluster
+// (中文 + Login) visible beside the hamburger at every width.
+check('mobile luxury header hides links but keeps the actions cluster visible', /@media\(max-width:1000px\)\{\.club-nav__links\{display:none\}/.test(read('public/luxury-ecosystem.css')) && !/\.club-nav__links,\.club-nav__actions\{display:none\}/.test(read('public/luxury-ecosystem.css')));
 check('mobile bottom controls are scoped to the phone media query', /@media \(max-width: 480px\)[\s\S]{0,1200}position: fixed; bottom: 0;/.test(style));
 check('mobile bottom controls have no desktop fixed rule', !/^\.sidebar\s*\{[^}]*position:\s*fixed/m.test(style));
 check('reviewed product copy uses plain resume spelling', publicFiles.every(file => !/résumé/i.test(read(file))));

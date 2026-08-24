@@ -1301,6 +1301,23 @@ app.get(['/preview', '/preview.html'], (req, res) => {
   if (!email || !isSubscriber(email)) return res.redirect(302, '/resume-video');
   return _sendVersionedHtml(res, resumeVideoPreviewHtml);
 });
+// ── Role separation (job-seeker vs employer) ────────────────────────────────
+// A logged-in user is routed to the dashboard that matches their subscription.
+// A pure job-seeker (Pro/Lifetime, no employer plan) is kept off the employer
+// side; a pure paid employer is kept off the job-seeker dashboard. Owner/comped
+// accounts (isSubscriber AND isEmployerSubscriber are both true for them),
+// dual-subscription users, and free accounts keep access to both sides so the
+// employer sign-up funnel and both-sides owner login are preserved. Redirects,
+// not hard 403s, so nobody is locked out. Registered before the HTML catch-all
+// (which would otherwise serve employer.html unguarded).
+const _employerHtmlPath = path.join(__dirname, 'public', 'employer.html');
+app.get('/employer', (req, res) => {
+  const email = getSessionEmail(req);
+  if (email && isSubscriber(email) && !isEmployerSubscriber(email)) {
+    return res.redirect(302, '/dashboard');
+  }
+  return _sendVersionedHtml(res, _employerHtmlPath);
+});
 app.get(['/linkedin-optimizer', '/decoder-key', '/interview-coach', '/career-hub'], (req, res) => _sendVersionedHtml(res, toolLandingHtml));
 app.get('/tools/decoder-key', (req, res) => {
   const email = getSessionEmail(req);
@@ -1373,7 +1390,15 @@ app.use(express.static(path.join(__dirname, 'public'), {
 const appHtml = path.join(__dirname, 'public', 'app.html');
 const loginHtml = path.join(__dirname, 'public', 'login.html');
 const landingHtml = path.join(__dirname, 'public', 'index.html');
-app.get('/dashboard',    (req, res) => _sendVersionedHtml(res, appHtml));
+app.get('/dashboard',    (req, res) => {
+  const email = getSessionEmail(req);
+  // A pure paid employer (employer plan, no job-seeker plan) belongs on the
+  // employer side — send them there instead of the job-seeker dashboard.
+  if (email && isEmployerSubscriber(email) && !isSubscriber(email)) {
+    return res.redirect(302, '/employer');
+  }
+  return _sendVersionedHtml(res, appHtml);
+});
 app.get('/web-studio',   (req, res) => _sendVersionedHtml(res, appHtml));
 // /login and /signup serve the dedicated login page (not the app). It reads
 // ?redirect= and sends the user back where they came from after signing in.
