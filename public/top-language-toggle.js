@@ -4,7 +4,7 @@
   function hasTopLanguageControl() {
     var selectors = [
       '#snav .snav-lang', '.club-nav [data-club-lang-top]', '.club-nav .club-nav__lang',
-      'header #langToggleBtn', '.topbar #langToggleBtn', '#emLangBtn'
+      'header #langToggleBtn', '.topbar #langToggleBtn', '.nav #langToggleBtn', '#emLangBtn'
     ];
     return selectors.some(function (selector) {
       var node = document.querySelector(selector);
