@@ -21,7 +21,9 @@ check('homepage Employers door opens the employer entry', /class="ecosystem-door
 // teardown/no-op that strips any legacy back controls.
 check('back-nav.js no longer maps static parent routes (back button removed)', !/STATIC_PARENTS/.test(back) && !/'\/decoder-key'\s*:/.test(back) && /function removeBackControls\(/.test(back));
 const desktopLinks = [['Membership','/pricing#ecosystem-pricing'],['Tailor My Resume','/ai-resume-tailor'],['For Employer','/for-employers']];
-check('homepage desktop toolbar contains exactly the three requested destinations', desktopLinks.every(([name, route]) => index.includes(`<a href="${route}">${name}</a>`)) && /club-nav__links[\s\S]{0,500}/.test(index));
+// The club-nav links now carry a data-i18n attribute (so the toggle translates
+// them), so match href + visible label tolerantly rather than as an exact tag.
+check('homepage desktop toolbar contains exactly the three requested destinations', desktopLinks.every(([name, route]) => new RegExp(`<a href="${route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>${name}</a>`).test(index)) && /club-nav__links[\s\S]{0,500}/.test(index));
 check('shared desktop toolbar contains exactly the three requested destinations', desktopLinks.every(([name, route]) => siteNav.includes(`['${name}', '${route}'`)) && /var PRIMARY_LINKS = \[[\s\S]*?\];/.exec(siteNav)[0].match(/^\s*\[/gm).length === 3);
 check('public HTML responses receive the shared toolbar while dashboards retain their own nav', /function _injectSharedPublicNav/.test(read('server.js')) && /ownNavPages = new Set\(\['app\.html', 'employer\.html', 'portal\.html'\]\)/.test(read('server.js')));
 check('pillar pages still load back-nav.js (now the back-control teardown)', ['public/decoder-key.html','public/corporate.html','public/portal.html'].every(file => read(file).includes('/back-nav.js')) && read('public/tools/resume-video.html').includes('/site-nav.js'));
