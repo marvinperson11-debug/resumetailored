@@ -1042,11 +1042,11 @@
 
 <header class="club-nav">
   <div class="club-nav__inner">
-    <a class="club-brand" href="/">ResumeTailored <small>Private career &amp; people office</small></a>
+    <a class="club-brand" href="/">ResumeTailored <small data-i18n="eco_brand_sub">Private career &amp; people office</small></a>
     <nav class="club-nav__links" aria-label="Primary ecosystem navigation">
-      <a href="/pricing#ecosystem-pricing">Membership</a>
-      <a href="/ai-resume-tailor">Tailor My Resume</a>
-      <a href="/for-employers">For Employer</a>
+      <a href="/pricing#ecosystem-pricing" data-i18n="eco_nav_membership">Membership</a>
+      <a href="/ai-resume-tailor" data-i18n="eco_nav_tailor">Tailor My Resume</a>
+      <a href="/for-employers" data-i18n="eco_nav_employer">For Employer</a>
     </nav>
     <div class="club-nav__actions"><button class="club-nav__lang" type="button" data-club-lang-top onclick="toggleLang()">中文</button><button class="club-nav__login" type="button" onclick="openLoginChooser()">Login</button></div>
     <button class="club-mobile" type="button" data-club-mobile aria-controls="clubMobileMenu" aria-label="Open navigation" aria-expanded="false">☰</button>
@@ -1054,18 +1054,18 @@
 </header>
 
 <div class="club-mobile-menu" id="clubMobileMenu" aria-hidden="true">
-  <div class="club-mobile-menu__head"><span>Explore the office</span><button class="club-mobile-menu__close" type="button" aria-label="Close navigation">&times;</button></div>
+  <div class="club-mobile-menu__head"><span data-i18n="eco_m_explore">Explore the office</span><button class="club-mobile-menu__close" type="button" aria-label="Close navigation">&times;</button></div>
   <nav class="club-mobile-menu__links" aria-label="Mobile navigation">
-    <a href="/ai-resume-tailor">Tailor My Resume</a>
-    <a href="/ai-cover-letter-generator">Cover Letter</a>
-    <a href="/free-ats-resume-checker">ATS Scanner</a>
-    <a href="/linkedin-optimizer">LinkedIn Optimizer</a>
-    <a href="/resume-video">Resume Video</a>
-    <a href="/web-studio">Web Studio</a>
-    <a href="/decoder-key">Decoder Key</a>
-    <a href="/interview-coach">Interview Coach</a>
-    <a href="/career-hub">Career Hub</a>
-    <a class="club-mobile-menu__account" href="/signup">Create Account</a>
+    <a href="/ai-resume-tailor" data-i18n="eco_nav_tailor">Tailor My Resume</a>
+    <a href="/ai-cover-letter-generator" data-i18n="eco_m_cover">Cover Letter</a>
+    <a href="/free-ats-resume-checker" data-i18n="eco_m_ats">ATS Scanner</a>
+    <a href="/linkedin-optimizer" data-i18n="eco_m_linkedin">LinkedIn Optimizer</a>
+    <a href="/resume-video" data-i18n="eco_m_video">Resume Video</a>
+    <a href="/web-studio" data-i18n="eco_m_webstudio">Web Studio</a>
+    <a href="/decoder-key" data-i18n="eco_m_decoder">Decoder Key</a>
+    <a href="/interview-coach" data-i18n="eco_m_interview">Interview Coach</a>
+    <a href="/career-hub" data-i18n="eco_m_careerhub">Career Hub</a>
+    <a class="club-mobile-menu__account" href="/signup" data-i18n="eco_m_account">Create Account</a>
     <button class="club-mobile-menu__lang" type="button" data-club-lang onclick="void 0">中文 <span aria-hidden="true">→</span></button>
   </nav>
 </div>
@@ -1139,17 +1139,17 @@
 <div id="loginChooser" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(25,21,18,.5);align-items:center;justify-content:center;padding:22px;" onclick="if(event.target===this)closeLoginChooser()">
   <div style="background:#0d1e30;border:1px solid rgba(201,162,39,.28);border-radius:20px;max-width:400px;width:100%;padding:30px 26px;box-shadow:0 30px 70px rgba(0,0,0,.5);position:relative;font-family:'Inter',sans-serif;">
     <button onclick="closeLoginChooser()" aria-label="Close" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:26px;color:#9eb2aa;cursor:pointer;line-height:1;">&times;</button>
-    <h2 style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:26px;letter-spacing:-.02em;margin:0 0 4px;color:#f5f1e8;">Log in</h2>
-    <p style="color:#9eb2aa;font-size:14px;margin:0 0 20px;">Are you logging in as a Job Seeker or an Employer?</p>
+    <h2 data-i18n="eco_login_title" style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:26px;letter-spacing:-.02em;margin:0 0 4px;color:#f5f1e8;">Log in</h2>
+    <p data-i18n="eco_login_prompt" style="color:#9eb2aa;font-size:14px;margin:0 0 20px;">Are you logging in as a Job Seeker or an Employer?</p>
     <a href="/login?redirect=/dashboard" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#0a1628;border:1px solid rgba(201,162,39,.3);border-radius:14px;padding:16px;margin-bottom:12px;transition:border-color .12s,background .12s;" onmouseover="this.style.borderColor='#c9a227';this.style.background='#123a2b'" onmouseout="this.style.borderColor='rgba(201,162,39,.3)';this.style.background='#0a1628'">
       <span style="font-size:26px;">👤</span>
-      <span><span style="display:block;font-weight:800;color:#f5f1e8;font-size:16px;">Job Seeker</span><span style="display:block;color:#9eb2aa;font-size:13px;">Tailor resumes, cover letters &amp; more</span></span>
+      <span><span data-i18n="eco_login_seeker" style="display:block;font-weight:800;color:#f5f1e8;font-size:16px;">Job Seeker</span><span data-i18n="eco_login_seeker_sub" style="display:block;color:#9eb2aa;font-size:13px;">Tailor resumes, cover letters &amp; more</span></span>
     </a>
     <a href="/login?redirect=/employer" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#0a1628;border:1px solid rgba(201,162,39,.3);border-radius:14px;padding:16px;transition:border-color .12s,background .12s;" onmouseover="this.style.borderColor='#c9a227';this.style.background='#12233a'" onmouseout="this.style.borderColor='rgba(201,162,39,.3)';this.style.background='#0a1628'">
       <span style="font-size:26px;">💼</span>
-      <span><span style="display:block;font-weight:800;color:#f5f1e8;font-size:16px;">Employer</span><span style="display:block;color:#9eb2aa;font-size:13px;">Post jobs &amp; hire candidates</span></span>
+      <span><span data-i18n="eco_login_employer" style="display:block;font-weight:800;color:#f5f1e8;font-size:16px;">Employer</span><span data-i18n="eco_login_employer_sub" style="display:block;color:#9eb2aa;font-size:13px;">Post jobs &amp; hire candidates</span></span>
     </a>
-    <p style="text-align:center;margin:18px 0 0;font-size:13px;color:#9eb2aa;">New employer? <a href="/for-employers" style="color:#c9a227;font-weight:700;">See employer plans →</a></p>
+    <p data-i18n="eco_login_newemp" style="text-align:center;margin:18px 0 0;font-size:13px;color:#9eb2aa;">New employer? <a href="/for-employers" style="color:#c9a227;font-weight:700;">See employer plans →</a></p>
   </div>
 </div>
 <script>
@@ -1162,21 +1162,21 @@
 <main id="main-content">
 <section class="ecosystem-home" aria-labelledby="ecosystem-title">
   <div class="ecosystem-home__inner">
-    <div class="club-kicker">Career intelligence, privately delivered</div>
-    <h1 id="ecosystem-title">Your next move,<br><em>properly considered.</em></h1>
-    <p class="ecosystem-home__lead">A private digital office for ambitious candidates and exacting employers—combining resume intelligence, cinematic presentation, recruiting operations, and an editorial web studio.</p>
+    <div class="club-kicker" data-i18n="eco_kicker">Career intelligence, privately delivered</div>
+    <h1 id="ecosystem-title" data-i18n="eco_title">Your next move,<br><em>properly considered.</em></h1>
+    <p class="ecosystem-home__lead" data-i18n="eco_lead">A private digital office for ambitious candidates and exacting employers—combining resume intelligence, cinematic presentation, recruiting operations, and an editorial web studio.</p>
     <div class="ecosystem-doors">
       <a class="ecosystem-door" href="/ai-resume-tailor" data-context="job-seeker">
-        <span class="ecosystem-door__index">For candidates · 01</span>
-        <h2>Tailor My Resume</h2>
-        <p>Translate the role, position your experience, prepare for the conversation, and present your work with quiet confidence.</p>
-        <span class="ecosystem-door__price">Free to begin · Pro $19.00/month</span><span class="ecosystem-door__arrow">↗</span>
+        <span class="ecosystem-door__index" data-i18n="eco_door1_index">For candidates · 01</span>
+        <h2 data-i18n="eco_door1_h">Tailor My Resume</h2>
+        <p data-i18n="eco_door1_p">Translate the role, position your experience, prepare for the conversation, and present your work with quiet confidence.</p>
+        <span class="ecosystem-door__price" data-i18n="eco_door1_price">Free to begin · Pro $19.00/month</span><span class="ecosystem-door__arrow">↗</span>
       </a>
       <a class="ecosystem-door" href="/for-employers" data-context="employer">
-        <span class="ecosystem-door__index">For organizations · 02</span>
-        <h2>Employers</h2>
-        <p>Screen candidates, run hiring, and bring twenty-one people operations modules into one composed command center.</p>
-        <span class="ecosystem-door__price">Employer Portal $49/month · Corporate $299/month</span><span class="ecosystem-door__arrow">↗</span>
+        <span class="ecosystem-door__index" data-i18n="eco_door2_index">For organizations · 02</span>
+        <h2 data-i18n="eco_door2_h">Employers</h2>
+        <p data-i18n="eco_door2_p">Screen candidates, run hiring, and bring twenty-one people operations modules into one composed command center.</p>
+        <span class="ecosystem-door__price" data-i18n="eco_door2_price">Employer Portal $49/month · Corporate $299/month</span><span class="ecosystem-door__arrow">↗</span>
       </a>
     </div>
   </div>
@@ -1184,36 +1184,36 @@
 
 <section class="club-returning" data-returning-context hidden>
   <div class="club-returning__inner">
-    <div><strong>Welcome back.</strong><p>Continue where you last left the office.</p></div>
-    <div class="club-returning__actions"><a class="club-button club-button--gold" data-returning-link href="/dashboard">Open <span data-returning-name>workspace</span></a><a class="club-button club-button--quiet" href="/">Choose another entrance</a></div>
+    <div><strong data-i18n="eco_ret_title">Welcome back.</strong><p data-i18n="eco_ret_p">Continue where you last left the office.</p></div>
+    <div class="club-returning__actions"><a class="club-button club-button--gold" data-returning-link href="/dashboard">Open <span data-returning-name>workspace</span></a><a class="club-button club-button--quiet" href="/" data-i18n="eco_ret_alt">Choose another entrance</a></div>
   </div>
 </section>
 
 <section class="pillar-story" id="ecosystem-pillars">
   <div class="pillar-story__inner">
-    <div class="pillar-story__head"><h2>Four rooms.<br>One private office.</h2><p>Begin with the question in front of you. Each room shares the same language, standards, and sense of discretion—so your work moves naturally from understanding to action.</p></div>
+    <div class="pillar-story__head"><h2 data-i18n="eco_pillars_h">Four rooms.<br>One private office.</h2><p data-i18n="eco_pillars_p">Begin with the question in front of you. Each room shares the same language, standards, and sense of discretion—so your work moves naturally from understanding to action.</p></div>
     <div class="pillar-grid">
-      <a class="pillar-card" href="/decoder-key"><span class="pillar-card__no">01 / Complimentary</span><h3>Decoder Key</h3><p>Your insider translation layer for job descriptions, policy language, and the phrases that decide who gets noticed.</p><span>Translate the language →</span></a>
-      <a class="pillar-card" href="/career-hub"><span class="pillar-card__no">02 / Freemium</span><h3>Career Hub</h3><p>Skills, interview practice, career planning, and practical guidance organized around your next professional move.</p><span>Plan the next move →</span></a>
-      <a class="pillar-card" href="/resume-video"><span class="pillar-card__no">03 / Pro</span><h3>Resume Video</h3><p>Shape your experience into a confident cinematic narrative with structured scenes and studio voice.</p><span>Direct your story →</span></a>
-      <a class="pillar-card" href="/web-studio"><span class="pillar-card__no">04 / Pro</span><h3>Web Studio</h3><p>A focused resume website creator for job seekers, portfolios, and quietly persuasive personal landing pages.</p><span>Open the studio →</span></a>
+      <a class="pillar-card" href="/decoder-key"><span class="pillar-card__no" data-i18n="eco_p1_no">01 / Complimentary</span><h3 data-i18n="eco_p1_h">Decoder Key</h3><p data-i18n="eco_p1_p">Your insider translation layer for job descriptions, policy language, and the phrases that decide who gets noticed.</p><span data-i18n="eco_p1_cta">Translate the language →</span></a>
+      <a class="pillar-card" href="/career-hub"><span class="pillar-card__no" data-i18n="eco_p2_no">02 / Freemium</span><h3 data-i18n="eco_p2_h">Career Hub</h3><p data-i18n="eco_p2_p">Skills, interview practice, career planning, and practical guidance organized around your next professional move.</p><span data-i18n="eco_p2_cta">Plan the next move →</span></a>
+      <a class="pillar-card" href="/resume-video"><span class="pillar-card__no" data-i18n="eco_p3_no">03 / Pro</span><h3 data-i18n="eco_p3_h">Resume Video</h3><p data-i18n="eco_p3_p">Shape your experience into a confident cinematic narrative with structured scenes and studio voice.</p><span data-i18n="eco_p3_cta">Direct your story →</span></a>
+      <a class="pillar-card" href="/web-studio"><span class="pillar-card__no" data-i18n="eco_p4_no">04 / Pro</span><h3 data-i18n="eco_p4_h">Web Studio</h3><p data-i18n="eco_p4_p">A focused resume website creator for job seekers, portfolios, and quietly persuasive personal landing pages.</p><span data-i18n="eco_p4_cta">Open the studio →</span></a>
     </div>
   </div>
 </section>
 
 <section class="club-price-architecture" id="ecosystem-pricing">
   <div class="club-price-architecture__inner">
-    <div class="club-kicker">Membership</div><h2>Clear terms. No theatre.</h2>
+    <div class="club-kicker" data-i18n="eco_price_kicker">Membership</div><h2 data-i18n="eco_price_h">Clear terms. No theatre.</h2>
     <div class="club-price-columns">
       <div class="club-price-group"><h3>ResumeTailored</h3>
-        <article class="club-plan"><h4>Free</h4><strong>$0</strong><p>Core resume tools, Decoder Key, and a basic interview checklist.</p><a href="/dashboard">Begin complimentary →</a></article>
-        <article class="club-plan"><h4>Pro</h4><strong>$19.00/mo</strong><p>Job Seeker Decoder Key, Resume Video, and Web Studio.</p><button type="button" data-checkout-plan="pro" onclick="void 0">Choose Pro →</button></article>
-        <article class="club-plan"><h4>Lifetime Pro</h4><strong>$129</strong><p>The complete Pro membership, retained forever.</p><button type="button" data-checkout-plan="lifetime" onclick="void 0">Choose Lifetime →</button></article>
+        <article class="club-plan"><h4 data-i18n="eco_pl_free">Free</h4><strong>$0</strong><p data-i18n="eco_pl_free_p">Core resume tools, Decoder Key, and a basic interview checklist.</p><a href="/dashboard" data-i18n="eco_pl_free_cta">Begin complimentary →</a></article>
+        <article class="club-plan"><h4 data-i18n="eco_pl_pro">Pro</h4><strong>$19.00/mo</strong><p data-i18n="eco_pl_pro_p">Job Seeker Decoder Key, Resume Video, and Web Studio.</p><button type="button" data-checkout-plan="pro" onclick="void 0" data-i18n="eco_pl_pro_cta">Choose Pro →</button></article>
+        <article class="club-plan"><h4 data-i18n="eco_pl_life">Lifetime Pro</h4><strong>$129</strong><p data-i18n="eco_pl_life_p">The complete Pro membership, retained forever.</p><button type="button" data-checkout-plan="lifetime" onclick="void 0" data-i18n="eco_pl_life_cta">Choose Lifetime →</button></article>
       </div>
-      <div class="club-price-group"><h3>The Portal</h3>
-        <article class="club-plan"><h4>Employer Portal</h4><strong>$49/mo</strong><p>AI candidate screening for three candidates and custom landing pages.</p><button type="button" data-checkout-plan="portal" onclick="void 0">Choose Employer Portal →</button></article>
-        <article class="club-plan"><h4>Scale</h4><strong>$99/mo</strong><p>Base collaboration platform plus any five operational modules, selected permanently.</p><button type="button" data-checkout-plan="scale" onclick="void 0">Choose Scale →</button></article>
-        <article class="club-plan"><h4>Corporate</h4><strong>$299/mo</strong><p>The full employer ecosystem, Recruitment Decoder, and white-labeling.</p><button type="button" data-checkout-plan="corporate" onclick="void 0">Choose Corporate →</button></article>
+      <div class="club-price-group"><h3 data-i18n="eco_price_g2">The Portal</h3>
+        <article class="club-plan"><h4 data-i18n="eco_pl_portal">Employer Portal</h4><strong>$49/mo</strong><p data-i18n="eco_pl_portal_p">AI candidate screening for three candidates and custom landing pages.</p><button type="button" data-checkout-plan="portal" onclick="void 0" data-i18n="eco_pl_portal_cta">Choose Employer Portal →</button></article>
+        <article class="club-plan"><h4 data-i18n="eco_pl_scale">Scale</h4><strong>$99/mo</strong><p data-i18n="eco_pl_scale_p">Base collaboration platform plus any five operational modules, selected permanently.</p><button type="button" data-checkout-plan="scale" onclick="void 0" data-i18n="eco_pl_scale_cta">Choose Scale →</button></article>
+        <article class="club-plan"><h4 data-i18n="eco_pl_corp">Corporate</h4><strong>$299/mo</strong><p data-i18n="eco_pl_corp_p">The full employer ecosystem, Recruitment Decoder, and white-labeling.</p><button type="button" data-checkout-plan="corporate" onclick="void 0" data-i18n="eco_pl_corp_cta">Choose Corporate →</button></article>
       </div>
     </div>
   </div>
@@ -1273,23 +1273,23 @@
 <!-- HOW IT WORKS -->
 <section class="section section-gray">
   <div class="container">
-    <div class="section-eyebrow">Simple Process</div>
-    <h2 class="section-title">How it <span>works</span></h2>
+    <div class="section-eyebrow" data-i18n="hiw_eyebrow">Simple Process</div>
+    <h2 class="section-title" data-i18n="hiw_title">How it <span>works</span></h2>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
-        <h3>Paste your resume</h3>
-        <p>Copy and paste your current resume text. No formatting required — our AI reads the raw content.</p>
+        <h3 data-i18n="hiw_s1_h">Paste your resume</h3>
+        <p data-i18n="hiw_s1_p">Copy and paste your current resume text. No formatting required — our AI reads the raw content.</p>
       </div>
       <div class="step">
         <div class="step-num">2</div>
-        <h3>Paste the job posting</h3>
-        <p>Copy the full job description from LinkedIn, Indeed, or any job board. The more detail, the better.</p>
+        <h3 data-i18n="hiw_s2_h">Paste the job posting</h3>
+        <p data-i18n="hiw_s2_p">Copy the full job description from LinkedIn, Indeed, or any job board. The more detail, the better.</p>
       </div>
       <div class="step">
         <div class="step-num">3</div>
-        <h3>Get tailored results</h3>
-        <p>Our AI rewrites your resume with the role's exact keywords and generates a custom cover letter.</p>
+        <h3 data-i18n="hiw_s3_h">Get tailored results</h3>
+        <p data-i18n="hiw_s3_p">Our AI rewrites your resume with the role's exact keywords and generates a custom cover letter.</p>
       </div>
     </div>
   </div>
@@ -3256,6 +3256,53 @@
   // ── Bilingual i18n (English / Simplified Chinese) ──────────────────────────
   const I18N = {
     en: {
+      // ── Ecosystem (luxury) homepage: nav, hero, doors, pillars, pricing, login modal ──
+      eco_brand_sub: 'Private career &amp; people office',
+      eco_nav_membership: 'Membership', eco_nav_tailor: 'Tailor My Resume', eco_nav_employer: 'For Employer',
+      eco_m_explore: 'Explore the office', eco_m_cover: 'Cover Letter', eco_m_ats: 'ATS Scanner',
+      eco_m_linkedin: 'LinkedIn Optimizer', eco_m_video: 'Resume Video', eco_m_webstudio: 'Web Studio',
+      eco_m_decoder: 'Decoder Key', eco_m_interview: 'Interview Coach', eco_m_careerhub: 'Career Hub',
+      eco_m_account: 'Create Account',
+      eco_login_title: 'Log in', eco_login_prompt: 'Are you logging in as a Job Seeker or an Employer?',
+      eco_login_seeker: 'Job Seeker', eco_login_seeker_sub: 'Tailor resumes, cover letters &amp; more',
+      eco_login_employer: 'Employer', eco_login_employer_sub: 'Post jobs &amp; hire candidates',
+      eco_login_newemp: 'New employer? <a href="/for-employers" style="color:#c9a227;font-weight:700;">See employer plans →</a>',
+      eco_kicker: 'Career intelligence, privately delivered',
+      eco_title: 'Your next move,<br><em>properly considered.</em>',
+      eco_lead: 'A private digital office for ambitious candidates and exacting employers—combining resume intelligence, cinematic presentation, recruiting operations, and an editorial web studio.',
+      eco_door1_index: 'For candidates · 01', eco_door1_h: 'Tailor My Resume',
+      eco_door1_p: 'Translate the role, position your experience, prepare for the conversation, and present your work with quiet confidence.',
+      eco_door1_price: 'Free to begin · Pro $19.00/month',
+      eco_door2_index: 'For organizations · 02', eco_door2_h: 'Employers',
+      eco_door2_p: 'Screen candidates, run hiring, and bring twenty-one people operations modules into one composed command center.',
+      eco_door2_price: 'Employer Portal $49/month · Corporate $299/month',
+      eco_ret_title: 'Welcome back.', eco_ret_p: 'Continue where you last left the office.',
+      eco_ret_alt: 'Choose another entrance',
+      eco_pillars_h: 'Four rooms.<br>One private office.',
+      eco_pillars_p: 'Begin with the question in front of you. Each room shares the same language, standards, and sense of discretion—so your work moves naturally from understanding to action.',
+      eco_p1_no: '01 / Complimentary', eco_p1_h: 'Decoder Key',
+      eco_p1_p: 'Your insider translation layer for job descriptions, policy language, and the phrases that decide who gets noticed.',
+      eco_p1_cta: 'Translate the language →',
+      eco_p2_no: '02 / Freemium', eco_p2_h: 'Career Hub',
+      eco_p2_p: 'Skills, interview practice, career planning, and practical guidance organized around your next professional move.',
+      eco_p2_cta: 'Plan the next move →',
+      eco_p3_no: '03 / Pro', eco_p3_h: 'Resume Video',
+      eco_p3_p: 'Shape your experience into a confident cinematic narrative with structured scenes and studio voice.',
+      eco_p3_cta: 'Direct your story →',
+      eco_p4_no: '04 / Pro', eco_p4_h: 'Web Studio',
+      eco_p4_p: 'A focused resume website creator for job seekers, portfolios, and quietly persuasive personal landing pages.',
+      eco_p4_cta: 'Open the studio →',
+      eco_price_kicker: 'Membership', eco_price_h: 'Clear terms. No theatre.', eco_price_g2: 'The Portal',
+      eco_pl_free: 'Free', eco_pl_free_p: 'Core resume tools, Decoder Key, and a basic interview checklist.', eco_pl_free_cta: 'Begin complimentary →',
+      eco_pl_pro: 'Pro', eco_pl_pro_p: 'Job Seeker Decoder Key, Resume Video, and Web Studio.', eco_pl_pro_cta: 'Choose Pro →',
+      eco_pl_life: 'Lifetime Pro', eco_pl_life_p: 'The complete Pro membership, retained forever.', eco_pl_life_cta: 'Choose Lifetime →',
+      eco_pl_portal: 'Employer Portal', eco_pl_portal_p: 'AI candidate screening for three candidates and custom landing pages.', eco_pl_portal_cta: 'Choose Employer Portal →',
+      eco_pl_scale: 'Scale', eco_pl_scale_p: 'Base collaboration platform plus any five operational modules, selected permanently.', eco_pl_scale_cta: 'Choose Scale →',
+      eco_pl_corp: 'Corporate', eco_pl_corp_p: 'The full employer ecosystem, Recruitment Decoder, and white-labeling.', eco_pl_corp_cta: 'Choose Corporate →',
+      hiw_eyebrow: 'Simple Process', hiw_title: 'How it <span>works</span>',
+      hiw_s1_h: 'Paste your resume', hiw_s1_p: 'Copy and paste your current resume text. No formatting required — our AI reads the raw content.',
+      hiw_s2_h: 'Paste the job posting', hiw_s2_p: 'Copy the full job description from LinkedIn, Indeed, or any job board. The more detail, the better.',
+      hiw_s3_h: 'Get tailored results', hiw_s3_p: "Our AI rewrites your resume with the role's exact keywords and generates a custom cover letter.",
       nav_how: 'How It Works', nav_blog: 'Blog', nav_free_tools: 'Free Tools', nav_pro_tools: 'Pro Tools',
       nav_templates: 'Templates', nav_tiers: 'Career Levels', nav_pricing: 'Pricing',
       nav_login: 'Log In', nav_cta: 'Tailor My Resume Free →',
@@ -3314,6 +3361,53 @@
       footer_cta_btn: 'Check My Resume Free →',
     },
     zh: {
+      // ── 生态首页（豪华版）：导航、主视觉、入口、板块、定价、登录弹窗 ──
+      eco_brand_sub: '私人职业与人才办公室',
+      eco_nav_membership: '会员', eco_nav_tailor: '定制我的简历', eco_nav_employer: '雇主专区',
+      eco_m_explore: '探索办公室', eco_m_cover: '求职信', eco_m_ats: 'ATS 扫描',
+      eco_m_linkedin: 'LinkedIn 优化', eco_m_video: '简历视频', eco_m_webstudio: '网站工作室',
+      eco_m_decoder: '解码钥匙', eco_m_interview: '面试教练', eco_m_careerhub: '职业中心',
+      eco_m_account: '创建账户',
+      eco_login_title: '登录', eco_login_prompt: '您是以求职者还是雇主身份登录？',
+      eco_login_seeker: '求职者', eco_login_seeker_sub: '定制简历、求职信及更多',
+      eco_login_employer: '雇主', eco_login_employer_sub: '发布职位并招聘人才',
+      eco_login_newemp: '新雇主？<a href="/for-employers" style="color:#c9a227;font-weight:700;">查看雇主方案 →</a>',
+      eco_kicker: '职业智慧，私密呈现',
+      eco_title: '你的下一步，<br><em>深思熟虑。</em>',
+      eco_lead: '一间为进取的求职者与严选的雇主打造的私人数字办公室——融合简历智能、影院级呈现、招聘运营与编辑级网站工作室。',
+      eco_door1_index: '求职者专区 · 01', eco_door1_h: '定制我的简历',
+      eco_door1_p: '解读职位、定位你的经历、准备面谈，并以从容自信的方式呈现你的作品。',
+      eco_door1_price: '免费开始 · 专业版 ¥19.00/月',
+      eco_door2_index: '组织专区 · 02', eco_door2_h: '雇主',
+      eco_door2_p: '筛选候选人、管理招聘，将二十一个人才运营模块整合进一个从容的指挥中心。',
+      eco_door2_price: '雇主门户 $49/月 · 企业版 $299/月',
+      eco_ret_title: '欢迎回来。', eco_ret_p: '从你上次离开办公室的地方继续。',
+      eco_ret_alt: '选择其他入口',
+      eco_pillars_h: '四个房间。<br>一间私人办公室。',
+      eco_pillars_p: '从眼前的问题开始。每个房间共享同样的语言、标准与分寸感——让你的工作从理解自然过渡到行动。',
+      eco_p1_no: '01 / 免费', eco_p1_h: '解码钥匙',
+      eco_p1_p: '你的内行翻译层，解析职位描述、政策措辞，以及决定谁被注意到的关键短语。',
+      eco_p1_cta: '解读语言 →',
+      eco_p2_no: '02 / 免费增值', eco_p2_h: '职业中心',
+      eco_p2_p: '围绕你的下一步职业行动，组织技能、面试练习、职业规划与实用指导。',
+      eco_p2_cta: '规划下一步 →',
+      eco_p3_no: '03 / 专业版', eco_p3_h: '简历视频',
+      eco_p3_p: '用结构化的场景与录音室级配音，将你的经历塑造成自信的影院级叙事。',
+      eco_p3_cta: '导演你的故事 →',
+      eco_p4_no: '04 / 专业版', eco_p4_h: '网站工作室',
+      eco_p4_p: '专注的简历网站创建器，适用于求职者、作品集与低调而有说服力的个人落地页。',
+      eco_p4_cta: '打开工作室 →',
+      eco_price_kicker: '会员', eco_price_h: '条款清晰。绝无套路。', eco_price_g2: '门户',
+      eco_pl_free: '免费版', eco_pl_free_p: '核心简历工具、解码钥匙，以及基础面试清单。', eco_pl_free_cta: '免费开始 →',
+      eco_pl_pro: '专业版', eco_pl_pro_p: '求职者解码钥匙、简历视频与网站工作室。', eco_pl_pro_cta: '选择专业版 →',
+      eco_pl_life: '终身专业版', eco_pl_life_p: '完整的专业版会员，永久保留。', eco_pl_life_cta: '选择终身版 →',
+      eco_pl_portal: '雇主门户', eco_pl_portal_p: 'AI 候选人筛选（三名候选人）及自定义落地页。', eco_pl_portal_cta: '选择雇主门户 →',
+      eco_pl_scale: 'Scale 版', eco_pl_scale_p: '基础协作平台，外加任选五个运营模块，永久选定。', eco_pl_scale_cta: '选择 Scale →',
+      eco_pl_corp: '企业版', eco_pl_corp_p: '完整的雇主生态、招聘解码器与白标定制。', eco_pl_corp_cta: '选择企业版 →',
+      hiw_eyebrow: '简单流程', hiw_title: '<span>工作原理</span>',
+      hiw_s1_h: '粘贴你的简历', hiw_s1_p: '复制粘贴你现有的简历文本。无需排版——我们的 AI 会读取原始内容。',
+      hiw_s2_h: '粘贴职位描述', hiw_s2_p: '从 LinkedIn、Indeed 或任何招聘网站复制完整的职位描述。信息越详细越好。',
+      hiw_s3_h: '获取定制结果', hiw_s3_p: '我们的 AI 会用职位的精确关键词重写你的简历，并生成一封定制求职信。',
       nav_how: '工作原理', nav_blog: '博客', nav_free_tools: '免费工具', nav_pro_tools: '专业工具',
       nav_templates: '简历模板', nav_tiers: '职业级别', nav_pricing: '定价',
       nav_login: '登录', nav_cta: '免费定制我的简历 →',
