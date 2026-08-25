@@ -7788,10 +7788,23 @@ app.post('/webhook', (req, res) => {
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
+    // Signature verification failure is the ONLY case that returns a non-2xx.
+    // A bad signature means the request may not be from Stripe, so we reject it
+    // (400) rather than silently accepting it.
     console.error('Webhook signature error:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // Everything below is post-verification event processing. It is wrapped in a
+  // single try/catch so that a failure in any handler (a DB error, an
+  // unexpected event shape, a downstream email send) is logged but STILL
+  // returns HTTP 200 to Stripe. Returning a non-2xx here makes Stripe mark the
+  // delivery as failed and retry it for days — which is exactly what caused the
+  // backlog of failed webhook requests. The event is verified and durable on
+  // Stripe's side; if our processing has a bug, the right move is to fix it and
+  // (if needed) replay from the Stripe dashboard, not to have Stripe hammer a
+  // broken endpoint. So: log, then acknowledge.
+  try {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const email = _checkoutEmail(session);
@@ -7895,6 +7908,13 @@ app.post('/webhook', (req, res) => {
       // to repair there. Log for observability.
       console.log(`invoice.paid for customer ${customerId}`);
     }
+  }
+  } catch (err) {
+    // Processing failed AFTER a valid signature. Log it (Sentry too, when
+    // configured) but do not surface a non-2xx to Stripe — see the comment
+    // above. The 200 below still runs.
+    console.error(`Webhook processing error for event ${event && event.type} (${event && event.id}):`, err && err.stack || err);
+    if (Sentry) { try { Sentry.captureException(err); } catch (e) { /* never let reporting crash the ack */ } }
   }
 
   res.json({ received: true });
