@@ -1,16 +1,28 @@
 # Stripe webhook failures — diagnosis & fix
 
+> ⚠️ **REVISED after checking production logs (2026-08-26).** The code fix below
+> is real and deployed, but the Railway logs show the actual production failures
+> were **4xx (400 signature-verification failures), not 5xx**. The code fix
+> hardens a genuine latent 500 bug but was **not** the cause of the ~2,753 failed
+> deliveries. The real cause is a **mismatched `STRIPE_WEBHOOK_SECRET`**. See
+> "Production log analysis" below — that is the section to act on.
+
 ## TL;DR
 
-The reported "most likely cause" (`express.json()` mounted before the webhook
-route) was **not** the problem — that ordering was already correct. The real
-cause was that **event processing had no `try/catch`**, so any error thrown
-while handling a verified event escaped to the Express error handler and
-returned **HTTP 500**. Stripe records any non-2xx as a failed delivery and
-retries it for days, which is what produced the backlog of failed requests.
+Two separate things:
 
-Fix: wrap all post-verification processing in a `try/catch` that logs the error
-but **still returns HTTP 200**. Signature failures remain the only non-2xx (400).
+1. **Code (fixed & deployed):** event processing had no `try/catch`, so any error
+   thrown while handling a *verified* event escaped to the Express error handler
+   and returned **HTTP 500**. Wrapped all post-verification processing in a
+   `try/catch` that logs but **still returns 200**; signature failures remain the
+   only non-2xx (400). Good hardening — but see below.
+
+2. **Production reality (the actual outage):** `/webhook` received **2,588
+   requests over 7 days, 100% 4xx, zero 5xx** — all *before* the deploy. On this
+   route a 4xx can only be the **400 from failed signature verification**. The
+   `STRIPE_WEBHOOK_SECRET` env var **is set** but its value does not match the
+   signing secret Stripe is using → every delivery is rejected. **The code fix
+   does not touch this.** The fix is to correct the webhook secret.
 
 ## What I checked first
 
@@ -113,3 +125,67 @@ the Stripe dashboard. If a large share of the 2,753 failures were `400`s (not
 `500`s), a missing/mismatched secret would be the cause instead — worth a glance
 at the failed-request status codes in the dashboard. The code path for both is
 now correct; this env var is the one thing to verify in the deploy environment.
+
+---
+
+## Production log analysis (2026-08-26) — the real cause
+
+After the fix was merged and deployed, I pulled the Railway proxy metrics and
+logs for the production service to confirm the endpoint was healthy. It is not —
+and the data revises the diagnosis above.
+
+### `/webhook` request metrics (production, last 7 days)
+
+| Status class | Count |
+|---|---|
+| 2xx | **0** |
+| 3xx | 0 |
+| **4xx** | **2,588** |
+| 5xx | **0** |
+| **Total** | **2,588** |
+
+- **Zero requests to `/webhook` in the last 24h.** Every one of the 2,588 hits
+  falls in time buckets spanning **~Aug 21–24**, i.e. *before* the Aug 25 deploy.
+  Nothing has hit the endpoint since.
+- **Every request was 4xx. None were 5xx.**
+
+### What a 4xx means on this route
+
+`POST /webhook` returns exactly two things: **200** (acknowledged) or **400**
+(`stripe.webhooks.constructEvent()` rejected the signature). It is not under
+`/api`, so no CSRF guard, rate limiter, or auth middleware can 4xx it; the route
+is mounted, so it is not a 404. Therefore **4xx on this endpoint = 400 = signature
+verification failed.** The ~2,588 (≈ the 2,753 Stripe reported) failed deliveries
+were **signature rejections all along** — not the 500s the code fix addresses.
+
+### Environment check
+
+`STRIPE_WEBHOOK_SECRET` **is present** in Railway production (variable confirmed;
+value redacted). Since the secret exists yet signatures are rejected, its **value
+does not match** the signing secret of the endpoint Stripe is POSTing to. Most
+likely one of:
+
+- The `whsec_…` in Railway is **stale/rotated** and no longer matches the value
+  shown on that endpoint in the Stripe dashboard.
+- **Mode mismatch:** `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are from
+  different modes (one live, one test), or the secret belongs to a different
+  endpoint. Both vars are set, but they must come from the *same* mode and the
+  *same* endpoint.
+
+### Fix (requires Stripe dashboard access — cannot be done from this repo)
+
+1. Stripe → **Developers → Webhooks → the `resumetailored.com/webhook` endpoint →
+   reveal the Signing secret** (`whsec_…`).
+2. Confirm that endpoint's **mode (test/live) matches `STRIPE_SECRET_KEY`** in
+   Railway.
+3. Set that exact `whsec_…` as `STRIPE_WEBHOOK_SECRET` in Railway production and
+   **redeploy**.
+4. **Send test webhook** from the Stripe dashboard → it should now return **200**.
+5. Re-check the Railway `/webhook` metrics — 2xx should begin appearing.
+
+### Verification caveat
+
+Because Stripe has sent **nothing** in the last 24h (the endpoint appears
+backed-off or near the Aug 30 auto-disable after so many failures), there is
+currently **no live traffic to observe a 200 against**. End-to-end confirmation
+depends on the **Send test webhook** step above once the secret is corrected.
