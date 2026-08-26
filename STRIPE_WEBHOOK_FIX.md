@@ -189,3 +189,47 @@ Because Stripe has sent **nothing** in the last 24h (the endpoint appears
 backed-off or near the Aug 30 auto-disable after so many failures), there is
 currently **no live traffic to observe a 200 against**. End-to-end confirmation
 depends on the **Send test webhook** step above once the secret is corrected.
+
+---
+
+## Live endpoint probe (2026-08-26 ~22:40 UTC)
+
+Direct HTTP requests to production `POST https://resumetailored.com/webhook`, to
+test the deployed endpoint's behavior without going through Stripe:
+
+| Request | Response |
+|---|---|
+| No `Stripe-Signature` header | **HTTP 400** |
+| Bogus `Stripe-Signature: t=123,v1=deadbeef` | **HTTP 400** — `"No signatures found matching the expected signature for payload. Are you passing the raw request body…"` |
+
+**What this confirms (endpoint health):**
+
+- The endpoint is **reachable** — not down, not 404. The route is mounted.
+- It returns a clean **400 on a bad/missing signature — not 500, not 404.** The
+  deployed try/catch fix is live and the handler reaches `constructEvent()`.
+- The **raw body is handled correctly** — Stripe's verifier received a body to
+  check; the error is a signature *mismatch*, which is the correct response to a
+  request that isn't really from Stripe.
+
+**What it does NOT prove (the important limitation):**
+
+- The probe sends an **invalid** signature, so a 400 is the *correct* answer to
+  it — indistinguishable from what real Stripe requests were getting. It cannot
+  confirm that a **valid** Stripe request now returns **200**. A valid Stripe
+  signature can only be produced by Stripe's **Send test webhook** button or by
+  signing with the real `whsec_…` secret (not extractable from here). Claude
+  cannot forge a valid Stripe signature.
+
+**State of the underlying issue at probe time:**
+
+- Still **zero real `/webhook` traffic** in the preceding 6h.
+- `STRIPE_WEBHOOK_SECRET` was **not changed.** The deployment that went up around
+  this time (`b11c5692`, SUCCESS) is from an **unrelated PR #415** (a mobile
+  modal-overflow fix), not a Stripe/secret change. So real Stripe deliveries
+  would still fail signature verification → 400.
+
+**Conclusion:** the endpoint is healthy and the code fix is live, but the
+production root cause (mismatched `STRIPE_WEBHOOK_SECRET`) is **still unresolved**
+until the secret is corrected and a **Send test webhook** returns 200. That final
+2xx is the one thing that can be verified end-to-end from Railway metrics once the
+secret is fixed.
