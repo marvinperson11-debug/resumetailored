@@ -233,3 +233,52 @@ production root cause (mismatched `STRIPE_WEBHOOK_SECRET`) is **still unresolved
 until the secret is corrected and a **Send test webhook** returns 200. That final
 2xx is the one thing that can be verified end-to-end from Railway metrics once the
 secret is fixed.
+
+---
+
+## Retest after first secret-fix attempt (2026-08-26 ~23:05 UTC)
+
+Re-checked the production `/webhook` traffic after the owner reported fixing the
+secret. This time **real Stripe requests appear in the logs** — a step forward —
+but they still returned 400, and, critically, they **predate the secret change**.
+
+### The actual proxy log lines (genuine Stripe traffic)
+
+```
+22:52:06  POST /webhook  →  HTTP 400   srcIp 54.187.216.72   UA: Stripe/1.0 (+https://stripe.com/docs/webhooks)
+22:52:20  POST /webhook  →  HTTP 400   srcIp 54.187.216.72   UA: Stripe/1.0 (+https://stripe.com/docs/webhooks)
+```
+
+These are unambiguously from Stripe (Stripe user-agent + Stripe IP), unlike the
+earlier manual curl probes. So Stripe is actively delivering to the endpoint
+again. Both got **400 — signature still rejected.**
+
+### Timing: the Stripe test predates the fix
+
+The deployment history shows **three redeploys of the identical commit**
+(`a6fd9c4`, PR #415 — a mobile modal fix, unrelated to Stripe) in quick
+succession: **22:37, 22:53, and 23:03 UTC**. Redeploying the *same commit*
+repeatedly is the fingerprint of **environment-variable edits** (each variable
+save triggers a redeploy of the current commit). Reconstructed sequence:
+
+| Time (UTC) | Event | Serving deploy | Secret in effect |
+|---|---|---|---|
+| 22:52 | **Stripe test webhook → 400** | `b11c5692` | **old** |
+| 22:53 | redeploy (secret change #1) | `5bc5fcef` | changed |
+| 23:03 | redeploy (secret change #2) | `844e9a26` (current) | latest |
+
+The only real Stripe test (22:52) hit the **old** secret. **No Stripe webhook has
+arrived since the 23:03 redeploy**, so the latest secret has **not been exercised
+yet** — the fix can be neither confirmed nor refuted from current data. (The other
+recent 4xx in the metrics were the two manual curl probes at ~22:36.)
+
+### Next step to actually verify
+
+Send **another** test webhook from the Stripe dashboard **now** (current
+deployment `844e9a26` is live with the latest secret). Then re-pull the proxy
+logs and confirm **200** vs **400**.
+
+If it is still 400 after a *post-23:03* test: the secret value still does not match
+this endpoint. Confirm the signing secret was copied from **this exact endpoint**,
+and that its **mode (test/live) matches `STRIPE_SECRET_KEY`** — a live endpoint's
+`whsec_…` will not validate test-mode events, and vice-versa.
