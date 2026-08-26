@@ -30,13 +30,27 @@
       position: fixed; inset: 0; z-index: 9999;
       background: rgba(0,0,0,0.7);
       backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center;
+      display: flex; justify-content: center;
+      /* Scroll-safe centering: a modal card taller than the viewport is
+         centered when it fits, but overflows toward the BOTTOM (never clips its
+         top) once it is too tall — so the close control at the card's top edge
+         is always reachable. `safe center` handles this where supported; the
+         overlay's own `overflow-y:auto` lets the whole card (X included) be
+         scrolled into view as a fallback. Without this, a centered/flex-end
+         child taller than the overlay hid its top past the viewport edge with
+         no way to scroll to it. */
+      align-items: center;
+      align-items: safe center;
+      overflow-y: auto; overscroll-behavior: contain;
+      /* Honour the notch / status-bar safe areas so the header never renders
+         under a cutout. Falls back to a flat 24px where env() is unsupported. */
       padding: 24px;
+      padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
     }
     .auth-card {
       background: #FFFFFF; border: 1px solid #E7DFD1;
       border-radius: 20px; padding: 30px 32px; width: 100%; max-width: 440px;
-      max-height: 92vh; overflow-y: auto;
+      max-height: 92vh; overflow-y: auto; margin: auto;
       box-shadow: 0 24px 80px rgba(25,21,18,0.28), 0 0 0 1px rgba(31,92,61,0.08);
     }
     .auth-logo { font-size: 20px; font-weight: 900; color: #191512; margin-bottom: 24px; text-align: center; font-family: 'Fraunces', Georgia, serif; letter-spacing: -0.02em; }
@@ -104,8 +118,25 @@
     }
     .download-btn-pdf:hover { background: #b91c1c; }
     @media (max-width: 480px) {
+      /* Bottom-sheet presentation on phones. The overlay keeps its safe-area
+         padding so a flex-end sheet cannot slide its top edge under the notch,
+         and each card is height-capped to the space actually available so the
+         top (and its close control) is guaranteed on-screen — a sheet taller
+         than the viewport used to overflow upward with the X unreachable. */
       .auth-overlay { padding: 0; align-items: flex-end; }
-      .auth-card { border-radius: 16px 16px 0 0; max-width: 100%; max-height: 90vh; overflow-y: auto; }
+      .auth-card {
+        border-radius: 16px 16px 0 0; max-width: 100%; margin: 0;
+        max-height: 90vh; overflow-y: auto;
+        max-height: calc(100dvh - env(safe-area-inset-top) - 8px);
+      }
+      /* The two grid modals ("What's New", "New Tools") are the tall ones. Cap
+         their inline-styled cards to the visible height and pad past the notch
+         so their top-right close button never lands off-screen. */
+      #whatsNewOverlay > div {
+        max-height: calc(100vh - 16px);
+        max-height: calc(100dvh - env(safe-area-inset-top) - 12px);
+        padding-top: max(26px, calc(env(safe-area-inset-top) + 8px));
+      }
       #goProNavBtn { display: none !important; }
       /* New Tools is a browsing surface, so leave the app's bottom controls
          visible and tappable below its sheet. The Website Creator canvas is a
@@ -113,6 +144,20 @@
          bottom bar; the Video page keeps the bottom tab bar visible (it must
          stay on every tab, Video included). */
       #newToolsOverlay { bottom: calc(62px + env(safe-area-inset-bottom)) !important; }
+      /* Its overlay is shortened by the 62px bottom bar, so the card must fit
+         inside (viewport − bar − safe areas) or it overflows past the top. */
+      #newToolsOverlay > div {
+        max-height: calc(100vh - 78px);
+        max-height: calc(100dvh - 62px - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px);
+        padding-top: max(26px, calc(env(safe-area-inset-top) + 8px));
+      }
+      /* Keep the close control pinned to the top of the scrolling card so it
+         stays within the viewport even after the user scrolls the list. */
+      #whatsNewOverlay > div > button[onclick],
+      #newToolsOverlay > div > button[onclick] {
+        position: sticky !important; top: 0; float: right;
+        z-index: 3; margin: -8px -8px 0 0;
+      }
       body.wb-immersive:not(.wb-picker) .sidebar { display: none !important; }
     }
     /* ── Template type toggle ── */
