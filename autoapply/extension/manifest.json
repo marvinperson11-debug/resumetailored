@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "AutoApply — Application Autofill",
+  "version": "0.1.0",
+  "description": "Auto-fills job applications on LinkedIn, Greenhouse, Lever, and Workday from your AutoApply dashboard. You review and submit.",
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "AutoApply"
+  },
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "permissions": ["storage", "tabs", "scripting"],
+  "host_permissions": [
+    "http://localhost:3000/*",
+    "https://www.linkedin.com/*",
+    "https://*.greenhouse.io/*",
+    "https://jobs.lever.co/*",
+    "https://*.myworkdayjobs.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:3000/*"],
+      "js": ["src/content/dashboard-bridge.ts"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.linkedin.com/jobs/*",
+        "https://*.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://*.myworkdayjobs.com/*"
+      ],
+      "js": ["src/content/ats.ts"],
+      "run_at": "document_idle"
+    }
+  ]
+}
