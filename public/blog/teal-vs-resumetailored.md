@@ -26,7 +26,7 @@ ResumeTailored AI is a **resume rewriter**. You paste your resume and a job URL 
 
 | Feature | Teal HQ | ResumeTailored AI |
 |---------|---------|-------------------|
-| Monthly price (full AI) | $29/mo | **$19.99/mo — over 30% less** |
+| Monthly price (full AI) | $29/mo | **$19.00/mo — over 30% less** |
 | Free tier | Job tracker free; AI paywalled | **unlimited rewrites + cover letters, no card** |
 | AI resume rewrite | No — you write all content | **Yes — complete rewrite in 30 seconds** |
 | Cover letter generation | No cover letter feature | **Yes — included every time** |
@@ -54,7 +54,7 @@ If your problem is that you're getting too many interviews and need to manage th
 
 ATS software rejects 88% of qualified candidates before a human sees their resume. The fix is tailoring — using the exact language and keywords from each job description in your resume. Manual tailoring takes 45 minutes per application. Claude-powered tailoring takes 30 seconds.
 
-At $19.99/mo (vs Teal's $29/mo for AI features), ResumeTailored AI also delivers a job-specific cover letter with every rewrite. Teal has no cover letter functionality at any price point.
+At $19.00/mo (vs Teal's $29/mo for AI features), ResumeTailored AI also delivers a job-specific cover letter with every rewrite. Teal has no cover letter functionality at any price point.
 
 ---
 

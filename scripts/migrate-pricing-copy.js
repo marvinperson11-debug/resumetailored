@@ -4,7 +4,7 @@
  *
  * What changed (see PLAN.md):
  *   - Free tier is now UNLIMITED resumes + cover letters (was 1/day).
- *   - Pro price is $19.99/mo (was $19/mo).
+ *   - Pro price is $19.00/mo (was $19/mo).
  *   - Pro now sells 100+ premium templates, the resume video, personal websites
  *     and watermark-free exports (NOT "unlimited tailoring", which is free now).
  *
@@ -31,12 +31,12 @@ const LITERAL = [
   // The big FAQ/hero free-tier sentence (JSON-LD + visible), 226 pages.
   [
     'One full tailoring (resume + cover letter) per day is free, forever, with no credit card. Pro ($19/mo) unlocks unlimited tailoring and all 100+ templates.',
-    'Unlimited resume tailoring and cover letters are free, forever, with no credit card. Pro ($19.99/mo) unlocks 100+ premium templates, the resume video, a personal website, and watermark-free exports.',
+    'Unlimited resume tailoring and cover letters are free, forever, with no credit card. Pro ($19.00/mo) unlocks 100+ premium templates, the resume video, a personal website, and watermark-free exports.',
   ],
   // Hero notes.
   ['1 free tailoring per day · No credit card required', 'Unlimited free tailoring · No credit card required'],
   ['1 free cover letter per day · No credit card required', 'Unlimited free cover letters · No credit card required'],
-  ['1 free tailoring/day &bull; No credit card &bull; Upgrade to Pro for $19/mo', 'Unlimited free tailoring &bull; No credit card &bull; Pro from $19.99/mo'],
+  ['1 free tailoring/day &bull; No credit card &bull; Upgrade to Pro for $19/mo', 'Unlimited free tailoring &bull; No credit card &bull; Pro from $19.00/mo'],
   ['Free tier: 1 full tailoring/day &bull; No credit card &bull; No account needed to start', 'Free tier: unlimited tailoring &bull; No credit card &bull; Sign up free to start'],
   // ── Sentence-level free-tier claims (specific first) ──────────────────────
   ['You get 1 free resume tailoring + 1 free cover letter per day', 'You get unlimited free resume tailoring and cover letters'],
@@ -95,8 +95,8 @@ const LITERAL = [
   ['Free daily tailoring', 'Unlimited free tailoring'],
   ['free on the daily free tier', 'free on the free tier'],
   // Structured-data (JSON-LD) Offer price — has no "$", so the regex skips it.
-  ['"price":"19"', '"price":"19.99"'],
-  ['"price": "19"', '"price": "19.99"'],
+  ['"price":"19"', '"price":"19.00"'],
+  ['"price": "19"', '"price": "19.00"'],
   // Offer names / hero notes still saying "1 tailoring/day".
   ['Free — 1 tailoring/day', 'Free — Unlimited tailoring'],
   ['1 full AI tailoring/day', 'unlimited AI tailoring'],
@@ -145,7 +145,7 @@ const LITERAL = [
   ['1/day', 'unlimited'],
 ];
 
-// Final pass: $19 -> $19.99, but never $19.99 (already dotted) or $190+ (digit).
+// Final pass: $19 -> $19.00, but never $19.00 (already dotted) or $190+ (digit).
 const DOLLAR = /\$19(?![\d.])/g;
 
 function migrate(content) {
@@ -158,7 +158,7 @@ function migrate(content) {
     }
   }
   const before = out;
-  out = out.replace(DOLLAR, '$19.99');
+  out = out.replace(DOLLAR, '$19.00');
   if (out !== before) hits++;
   return { out, changed: out !== content, hits };
 }

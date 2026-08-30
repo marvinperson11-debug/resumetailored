@@ -99,7 +99,7 @@ I can start Phase 1 immediately on your go, or compress phases if you want fewer
    existing users' résumés. Do you intend to expose job-seekers' résumés to employers? That's
    a significant privacy/ToS change and needs candidate opt-in. What's the intended consent model?
 2. **Billing model.** Is the Employer Portal a **separate** paid product (its own tiers), or
-   bundled into the existing $19.99 Pro? The `EmployerPlan` tiers suggest separate — confirm
+   bundled into the existing $19.00 Pro? The `EmployerPlan` tiers suggest separate — confirm
    prices for `starter` / `pro` / `scale` and the seat/job/contact limits per tier.
 3. **This vs. "Teams".** Earlier we drafted a "ResumeTailored for Teams" outplacement/B2B
    offer. Is the Employer Portal the same initiative or a distinct hiring-side product?

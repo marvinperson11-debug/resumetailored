@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project is
 
-ResumeTailored AI is a SaaS product that uses Claude (claude-sonnet-4-6) to tailor resumes and generate cover letters from job postings. It charges **$19.99/month** (or $129 lifetime) via Stripe. The **free tier is unlimited** — unlimited resume tailoring, cover letters, ATS scans, and LinkedIn optimizations — differentiated from Pro by a small watermark on exports and a limited template set. Tailoring requires a (free) signed-in account.
+ResumeTailored AI is a SaaS product that uses Claude (claude-sonnet-4-6) to tailor resumes and generate cover letters from job postings. It charges **$19.00/month** (or $129 lifetime) via Stripe. The **free tier is unlimited** — unlimited resume tailoring, cover letters, ATS scans, and LinkedIn optimizations — differentiated from Pro by a small watermark on exports and a limited template set. Tailoring requires a (free) signed-in account.
 
 ### Free vs Pro (2026 structure)
 
-| | Free | Pro ($19.99/mo or $129 lifetime) |
+| | Free | Pro ($19.00/mo or $129 lifetime) |
 |---|---|---|
 | Resume tailoring + cover letters | ✅ unlimited (login required, IP rate-limited) | ✅ unlimited |
 | ATS scanner, LinkedIn optimizer, LinkedIn import | ✅ | ✅ |
@@ -64,7 +64,7 @@ The Career Hub turns a single **saved profession** into the driver of six tools.
 - **Routes in `server.js`** wire CH into SQLite + Anthropic + RapidAPI. **Model choice: `claude-haiku-4-5`** for the high-volume generative endpoints (quizzes, interview questions, scenarios, coach summary), **`claude-sonnet-4-6`** only for the reasoning-heavy Gap Analyzer and "Score my answer". `callClaudeJSON()` retries once if the first output fails validation.
 - **Cross-user content caches are the cost story.** `quiz_cache` / `interview_cache` / `gap_cache` / `scenario_cache` / `job_cache` are keyed by a content hash + `CH.PROMPT_VERSION`, so an identical request is generated **once for the whole user base** and then bills nothing. Bump `PROMPT_VERSION` to invalidate everything at once. `job_cache` additionally has a 6h TTL. Per-user tables: `skill_attempts`, `badges`, `interview_progress`, `gap_reports`, `saved_jobs`, `scenario_progress`.
 - **Answers never reach the client.** `/api/skills-lab/quiz` strips `answerIndex`/`explanation` and sends a shuffled `order` per question; `/submit` scores server-side against the cached canonical payload using that `order` (which reveals nothing about the answer, so it round-trips safely).
-- **Free vs Pro gating** reuses `isSubscriber()` + `usage_store` via `_quotaUsed`/`_quotaConsume` (day/week/total buckets keyed off `CH.LIMITS`): Skills Lab 1 quiz + 1 retake/day and Silver-capped badges (Gold is Pro); Interview behavioral free, technical + "Score my answer" Pro; Job Finder 5 searches/day + 5 saved jobs; Gap Analyzer 1/week; Scenario Lab 1/week; Dashboard AI coach summary Pro. **Everything bundles into the existing $19.99/mo Pro — no separate tier.**
+- **Free vs Pro gating** reuses `isSubscriber()` + `usage_store` via `_quotaUsed`/`_quotaConsume` (day/week/total buckets keyed off `CH.LIMITS`): Skills Lab 1 quiz + 1 retake/day and Silver-capped badges (Gold is Pro); Interview behavioral free, technical + "Score my answer" Pro; Job Finder 5 searches/day + 5 saved jobs; Gap Analyzer 1/week; Scenario Lab 1/week; Dashboard AI coach summary Pro. **Everything bundles into the existing $19.00/mo Pro — no separate tier.**
 - **Frontend** is `public/career-hub.js` + `public/career-hub.css` (cream `#FAF7F0` + forest `#1F5C3D`, all motion behind `prefers-reduced-motion`). It **self-injects** its sidebar buttons + panels into `app.html` and wraps `showTab()` so each tool inits on open (first-run soft gate opens the profession picker). Reuses the app's `rt_token`, `showToast`, `startPro`, `isSubscriberFlag`. Mobile: bottom-sheet picker, swipe through interview questions, `navigator.vibrate` haptics, sticky Job Finder action bar. Only two `app.html` edits: the CSS `<link>` and the JS `<script>`.
 - **Tests**: `test/career-hub.js` (pure core + badge page) and `test/career-hub-routes.js` (boots the real app against a temp DB and drives every route; generative routes are exercised through **pre-seeded caches** so no LLM/RapidAPI call is made — routing, auth, gating, scoring, badge minting, quotas and dashboard composition are all real).
 - **Env**: `RAPIDAPI_KEY` (optional) enables the JSearch Job Finder; unset ⇒ `/api/jobs/search` returns a friendly `jobs_unconfigured` and the rest of the Hub is unaffected.
@@ -237,7 +237,7 @@ To switch from Stripe test mode to live mode: replace all three Stripe env vars 
 - **Job URL Import**: Paste any LinkedIn, Indeed, Glassdoor, or 40+ job board URL — AI auto-extracts the full job description (no competitor offers this)
 - **Bilingual**: Full English/Chinese UI + AI-powered translation for non-English resumes (unique in market)
 - **Share as Link**: Turn any tailored resume into a private, unlisted web link (`/r/:slug`) that opens instantly in the browser — great for sending on LinkedIn or by email with no attachment/download
-- **Pricing**: $19.99/mo (cheaper than Teal $29 and Jobscan ~$30) | $129 lifetime deal (vs Rezi $149)
+- **Pricing**: $19.00/mo (cheaper than Teal $29 and Jobscan ~$30) | $129 lifetime deal (vs Rezi $149)
 
 ### Competitor Intelligence
 | Competitor | Monthly Traffic | Price | Key Weakness |

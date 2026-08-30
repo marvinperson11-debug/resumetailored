@@ -759,7 +759,7 @@ tier.** Rationale:
 
 - A second subscription ($/mo for "Career Hub") fragments the offer and tanks
   conversion; the whole pitch of this expansion is *one* unified platform.
-- The existing **$19.99/mo (or $129 lifetime)** Pro already gates templates,
+- The existing **$19.00/mo (or $129 lifetime)** Pro already gates templates,
   video, and personal website. Career Hub Pro features (unlimited gap analysis,
   Gold badges, technical interview + answer scoring, unlimited job search) become
   **new reasons to buy the same plan** — increasing perceived value without

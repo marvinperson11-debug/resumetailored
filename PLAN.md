@@ -19,7 +19,7 @@ This plan covers five changes:
 | Template library | Defined **once** in `public/app.html` as `OUT_TPLS` (line ~3199): **56 resume** (`r1`–`r56`) across 7 base layouts, **48 cover** (`c1`–`c48`) across 6 base layouts. Each entry has a `free:true/false` flag. |
 | Current free templates | Only **`r1` (Classic)** and **`c1` (Formal)** are `free:true`. Everything else is `free:false`. (Note: several marketing pages say "2 free templates" — that already doesn't match the 1+1 in code.) |
 | Template gating | **Client-side only.** `renderTplPicker()` (line ~3490) computes `locked = !tpl.free && !isSubscriberFlag`. The **server does not verify** the chosen template on `/api/download-docx` or `/api/share` — a crafted request can use any template. This must change (see §2). |
-| Pricing in code | `$19/mo` everywhere. ⚠️ Your brief says "current Pro price is **$19.99**/month." **Flagged — see Open Questions.** I will not change the price without your say-so. |
+| Pricing in code | `$19/mo` everywhere. ⚠️ Your brief says "current Pro price is **$19.00**/month." **Flagged — see Open Questions.** I will not change the price without your say-so. |
 | Exports | **PDF** = client-side `window.print()` of generated HTML (`downloadPdf()`, app.html ~5149). **DOCX** = server-side `docx` library in `buildTemplatedDocxBuffer()` (server.js ~1102), assembled as `sections`. **Share link** = server-rendered HTML via `_shareResumeHtml()` (server.js ~1219), reachable at `/r/:slug`. |
 | Video generator | `/api/resume-video` already **Pro-gated** (server.js ~2337). No change needed except confirming free tier gets 0. |
 | Existing "LinkedIn optimization" | `/api/optimize-linkedin` — a **paste-your-profile → AI rewrite** feature. This is NOT the same as the new OAuth import. It stays in the free tier. |
@@ -180,7 +180,7 @@ There are **two very different categories** of reference, and conflating them wo
 ## 8. Risks, tradeoffs, open questions
 
 **Open questions (need your answers before/at implementation):**
-1. **Price:** code says `$19/mo`; your brief says `$19.99`. Which is canonical? I'll standardize all copy to whichever you confirm. (Default: leave `$19` untouched unless you say otherwise.)
+1. **Price:** code says `$19/mo`; your brief says `$19.00`. Which is canonical? I'll standardize all copy to whichever you confirm. (Default: leave `$19` untouched unless you say otherwise.)
 2. **Do ATS scanner + LinkedIn optimization become unlimited for free users, or stay 1/day?** Your brief lists them as "kept" but only explicitly makes *resumes/cover letters* unlimited. Recommendation: keep them metered (1/day) unless you want them unlimited.
 3. **3+3 template picks** — approve my list (r1/r5/r17, c1/c5/c17) or swap IDs?
 4. **LinkedIn scope reality:** standard LinkedIn OIDC won't return full work history/education/skills. OK to ship "autofill name/headline/photo + prompt user to complete," or do you have LinkedIn Partner API access for the richer fields?
