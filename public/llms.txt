@@ -1,4 +1,4 @@
-<!-- Last updated: 2026-08-30 -->
+<!-- Last updated: 2026-08-30 (added AutoApply, Job Finder, Share-as-Link) -->
 # ResumeTailored AI
 
 > ResumeTailored AI is a SaaS tool that uses Claude AI to tailor resumes and generate cover letters for any job posting. It rewrites your resume with the right keywords, reorders your bullet points for relevance, and produces a custom cover letter — in under 60 seconds. The free tier is genuinely unlimited — unlimited resume tailoring, cover letters, ATS scans and LinkedIn optimization with a free signed-in account. Pro plan at $19.00/month or $129 lifetime.
@@ -27,6 +27,9 @@
 - [Free ATS Resume Checker](https://resumetailored.com/free-ats-resume-checker): paste your resume and a job description to get an ATS match score and keyword gap analysis.
 - [ATS Score Checker](https://resumetailored.com/ats-score-checker): scores how well your resume matches a specific job posting.
 - [Resume Video Maker](https://resumetailored.com/tools/resume-video): turns a resume into a short shareable video, live in the browser.
+- [AutoApply (Auto-Applyer)](https://resumetailored.com/tools/autoapply): auto-fills job applications on LinkedIn Easy Apply, Greenhouse, Lever and Workday — AI scores your fit and tailors your resume, then a browser extension fills the form. You always review and submit.
+- [Job Finder](https://resumetailored.com/dashboard): searches live job postings tailored to your target profession, with one-click Auto-Apply, save, and resume-gap analysis.
+- [Share Resume as a Link](https://resumetailored.com/share-resume-link): turns any resume into a private, unlisted web link that opens instantly — no attachment, no download.
 
 ## Resume examples
 

@@ -46,7 +46,8 @@
     ['Web Studio', '/web-studio', '网站工作室'],
     ['Decoder Key', '/decoder-key', '解码密钥'],
     ['Interview Coach', '/interview-coach', '面试教练'],
-    ['Career Hub', '/career-hub', '职业中心']
+    ['Career Hub', '/career-hub', '职业中心'],
+    ['AutoApply', '/tools/autoapply', '自动申请']
   ];
   var EMPLOYER_LINKS = [
     ['Employer Portal', '/for-employers', '雇主门户'],

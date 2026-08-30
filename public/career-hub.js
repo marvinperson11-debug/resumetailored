@@ -121,6 +121,13 @@
     ch_search_failed: '搜索失败。', ch_no_jobs: '未找到职位 — 试试更宽泛的搜索。', ch_remote: '远程',
     ch_apply: '申请', ch_save2: '收藏', ch_job_saved: '职位已收藏。', ch_saved: '已收藏', ch_none_yet: '暂无。',
     ch_alerts_on: '每日职位提醒已开启。', ch_alerts_off: '职位提醒已关闭。',
+    ch_autoapply: '自动申请', ch_aa_queue: '我的申请队列', ch_aa_added: '已加入你的自动申请队列。',
+    ch_aa_dupe: '该职位已在你的队列中。', ch_aa_empty: '队列为空 — 在职位搜索中点击“自动申请”即可添加。',
+    ch_aa_open: '在 AutoApply 中打开', ch_aa_remove: '移除', ch_aa_run: '运行 AutoApply →',
+    ch_aa_no_url: '该职位没有申请链接。', ch_aa_setup_title: '先设置 AutoApply',
+    ch_aa_setup_msg: 'AutoApply 会用你的资料自动填写申请表 — 你始终审核并提交。请先完成一次快速设置。',
+    ch_aa_setup_go: '设置 AutoApply', ch_aa_setup_later: '暂不',
+    ch_aa_setup_done: 'AutoApply 已就绪 — 现在从职位搜索添加职位吧。', ch_queued: '已入队 ✓',
     ch_scenario_lab: '情景实验室', ch_scenario_intro: '解决一个真实的{p}问题，一步一步做决定。',
     ch_sc_type: '情景类型', ch_sc_start: '开始情景', ch_sc_free: '免费：每周 1 个情景。',
     ch_st_cs: '客户服务', ch_st_debug: '技术排查', ch_st_doc: '表格/文档错误', ch_st_conflict: '团队冲突', ch_st_safety: '安全/合规',
@@ -653,11 +660,14 @@
       '<a onclick="CareerHub.go(\'skillslab\')">🧪 ' + tp('ch_xsell_quiz', 'Take the {p} Skills Test') + '</a>' +
       '<a onclick="CareerHub.go(\'gap\')">📊 ' + t('ch_xsell_gap', 'Analyze a job vs. your resume') + '</a>' +
       '<a onclick="CareerHub.go(\'tailor\')">✦ ' + t('ch_xsell_tailor', 'Tailor your resume') + '</a>' +
+      '<a href="/tools/autoapply" target="_blank" rel="noopener">⚡ ' + t('ch_autoapply', 'Auto-Apply') + '</a>' +
+      '<div id="chApplyQueue" style="margin-top:12px;"></div>' +
       '<div id="chSavedJobs" style="margin-top:12px;"></div></aside></div>' +
       '<div class="ch-sticky-bar"><button class="ch-btn" onclick="CareerHub.searchJobs()">' + t('ch_search', 'Search') + '</button><button class="ch-btn ch-btn-ghost" onclick="CareerHub.go(\'gap\')">' + t('ch_analyze', 'Analyze') + '</button></div>';
     loadSavedJobs();
     loadAlerts();
     loadJobFeed();
+    renderApplyQueue();
   }
   async function loadJobFeed() {
     var box = el('chFeedResults'); if (!box) return;
@@ -672,11 +682,16 @@
       var applyBtn = j.jobPostingId
         ? '<button class="ch-btn ch-btn-sm" onclick="CareerHub.applyFeedJob(' + j.jobPostingId + ', this)">' + t('ch_apply', 'Apply') + '</button>'
         : (j.url ? '<a class="ch-btn ch-btn-sm" href="' + esc(j.url) + '" target="_blank" rel="noopener">' + t('ch_apply', 'Apply') + '</a>' : '');
+      // External (non-featured) postings carry a real URL, so they can flow into
+      // the AutoApply queue. Featured internal postings apply in-app instead.
+      var aaBtn = (!j.jobPostingId && j.url)
+        ? '<button class="ch-btn ch-btn-sm" style="background:#157F3C;" onclick=\'CareerHub.autoApply(' + JSON.stringify({ title: j.title, company: j.company, location: j.location, url: j.url, descriptionSnippet: j.descriptionSnippet }).replace(/'/g, '&#39;') + ')\'>⚡ ' + t('ch_autoapply', 'Auto-Apply') + '</button>'
+        : '';
       return '<div class="ch-job">' + (j.jobPostingId ? '<span class="ch-pill ch-pill-pro" style="float:right;">' + t('ch_featured', 'Featured') + '</span>' : '') +
         '<div class="ch-job-title">' + esc(j.title) + '</div>' +
         '<div class="ch-job-meta">' + esc(j.company) + (j.location ? ' · ' + esc(j.location) : '') + (j.remote ? ' · 🏠 ' + t('ch_remote', 'Remote') : '') + '</div>' +
         (j.descriptionSnippet ? '<div class="ch-note">' + esc(j.descriptionSnippet) + '…</div>' : '') +
-        '<div class="ch-row" style="margin-top:10px;">' + applyBtn + '</div></div>';
+        '<div class="ch-row" style="margin-top:10px;">' + applyBtn + aaBtn + '</div></div>';
     }).join('');
   }
   async function applyFeedJob(jobPostingId, btn) {
@@ -720,6 +735,7 @@
         '<div class="ch-note">' + esc(j.descriptionSnippet || '') + '…</div>' +
         '<div class="ch-row" style="margin-top:10px;">' +
         (j.url ? '<a class="ch-btn ch-btn-sm" href="' + esc(j.url) + '" target="_blank" rel="noopener">' + t('ch_apply', 'Apply') + '</a>' : '') +
+        '<button class="ch-btn ch-btn-sm" style="background:#157F3C;" onclick=\'CareerHub.autoApply(' + JSON.stringify(j).replace(/'/g, '&#39;') + ')\'>⚡ ' + t('ch_autoapply', 'Auto-Apply') + '</button>' +
         '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick=\'CareerHub.saveJob(' + JSON.stringify(j).replace(/'/g, '&#39;') + ')\'>' + t('ch_save2', 'Save') + '</button>' +
         '<button class="ch-btn ch-btn-sm ch-btn-ghost" onclick=\'CareerHub.analyzeJob(' + JSON.stringify(j).replace(/'/g, '&#39;') + ')\'>' + t('ch_analyze', 'Analyze') + '</button>' +
         '</div></div>';
@@ -746,6 +762,87 @@
       }).join('') : '<span class="ch-note">' + t('ch_none_yet', 'None yet.') + '</span>');
   }
   async function unsaveJob(id) { await api('/api/jobs/saved/' + id, { method: 'DELETE', headers: authH() }); loadSavedJobs(); }
+
+  // ── Auto-Apply queue (bridges the Job Finder into the AutoApply tool) ─────────
+  // The AutoApply extension fills the application form on the employer's site;
+  // this queue is the hand-off point — the Job Finder collects jobs into it and
+  // /tools/autoapply (the AutoApply app + browser extension) works through it.
+  // Stored per-browser in localStorage so it survives navigation and is instantly
+  // pre-populated the moment a user clicks Auto-Apply, before any account round-trip.
+  var AA_QUEUE_KEY = 'rt_aa_queue', AA_SETUP_KEY = 'rt_aa_setup';
+  function aaLoad() { try { return JSON.parse(localStorage.getItem(AA_QUEUE_KEY) || '[]') || []; } catch (e) { return []; } }
+  function aaSave(q) { try { localStorage.setItem(AA_QUEUE_KEY, JSON.stringify(q.slice(0, 100))); } catch (e) {} }
+  function aaSetupDone() { try { return localStorage.getItem(AA_SETUP_KEY) === '1'; } catch (e) { return false; } }
+  function aaMarkSetup() { try { localStorage.setItem(AA_SETUP_KEY, '1'); } catch (e) {} }
+  function aaKey(job) { return (job.url || '') + '|' + (job.title || '') + '|' + (job.company || ''); }
+  // Click handler for the per-job "Auto-Apply" button. Gates on a one-time setup
+  // step (the AutoApply profile that fills the forms); if not done, prompt for it
+  // and remember the job so it lands in the queue the moment setup completes.
+  function autoApply(job) {
+    if (!aaSetupDone()) { openAaSetup(job); return; }
+    aaEnqueue(job);
+  }
+  function aaEnqueue(job) {
+    var q = aaLoad();
+    var k = aaKey(job);
+    if (q.some(function (j) { return aaKey(j) === k; })) { toast(t('ch_aa_dupe', 'That job is already in your queue.')); return false; }
+    q.unshift({ title: job.title || '', company: job.company || '', location: job.location || '',
+      url: job.url || '', snippet: job.descriptionSnippet || '', addedAt: Date.now(), status: 'queued' });
+    aaSave(q);
+    ga('autoapply_queue_add', { profession: profile && profile.id });
+    toast(t('ch_aa_added', 'Added to your Auto-Apply queue.')); vibrate(15);
+    renderApplyQueue();
+    return true;
+  }
+  function removeFromQueue(idx) { var q = aaLoad(); q.splice(idx, 1); aaSave(q); renderApplyQueue(); }
+  // The "My Apply Queue" panel, rendered into the Job Finder aside.
+  function renderApplyQueue() {
+    var box = el('chApplyQueue'); if (!box) return;
+    var q = aaLoad();
+    var head = '<h3 style="font-size:14px;margin-top:0;">⚡ ' + t('ch_aa_queue', 'My Apply Queue') + ' (' + q.length + ')</h3>';
+    if (!q.length) { box.innerHTML = head + '<span class="ch-note">' + t('ch_aa_empty', 'Your queue is empty — click Auto-Apply on a job to add it.') + '</span>'; return; }
+    box.innerHTML = head +
+      q.map(function (j, i) {
+        return '<div style="font-size:13px;padding:8px 0;border-bottom:1px solid var(--ch-line);">' +
+          '<div style="font-weight:700;">' + esc(j.title) +
+          ' <a style="color:#dc2626;cursor:pointer;float:right;" title="' + t('ch_aa_remove', 'Remove') + '" onclick="CareerHub.removeFromQueue(' + i + ')">✕</a></div>' +
+          '<div class="ch-note" style="margin:2px 0 6px;">' + esc(j.company) + (j.location ? ' · ' + esc(j.location) : '') + '</div>' +
+          (j.url ? '<a class="ch-btn ch-btn-sm" href="' + esc(j.url) + '" target="_blank" rel="noopener">' + t('ch_aa_open', 'Open in AutoApply') + ' ↗</a>' : '') +
+          '</div>';
+      }).join('') +
+      '<a class="ch-btn ch-btn-sm ch-btn-ghost" style="margin-top:10px;display:inline-block;" href="/tools/autoapply" target="_blank" rel="noopener">' + t('ch_aa_run', 'Run AutoApply') + '</a>';
+  }
+  // First-run setup gate. Reuses the picker overlay's dimmed-modal styling via a
+  // lightweight injected dialog so it matches the rest of the Hub.
+  var aaPendingJob = null;
+  function openAaSetup(job) {
+    aaPendingJob = job || null;
+    var ov = el('chAaOverlay');
+    if (!ov) {
+      ov = document.createElement('div');
+      ov.className = 'ch-picker-overlay'; ov.id = 'chAaOverlay';
+      ov.innerHTML =
+        '<div class="ch-picker" role="dialog" aria-modal="true" style="max-width:440px;">' +
+        '<div class="ch-picker-grip"></div>' +
+        '<div class="ch-picker-head"><h2 id="chAaTitle">⚡ ' + t('ch_aa_setup_title', 'Set up AutoApply first') + '</h2>' +
+        '<p class="ch-note" id="chAaMsg" style="margin:6px 0 0;">' + t('ch_aa_setup_msg', 'AutoApply auto-fills application forms with your profile — you always review and submit. Complete a quick one-time setup first.') + '</p></div>' +
+        '<div class="ch-picker-foot" style="padding-top:14px;">' +
+        '<button class="ch-btn" id="chAaGo">' + t('ch_aa_setup_go', 'Set up AutoApply') + ' →</button>' +
+        '<button class="ch-btn ch-btn-ghost ch-btn-sm" id="chAaLater">' + t('ch_aa_setup_later', 'Not now') + '</button></div></div>';
+      document.body.appendChild(ov);
+      ov.addEventListener('click', function (e) { if (e.target === ov) ov.classList.remove('open'); });
+      el('chAaLater').onclick = function () { ov.classList.remove('open'); };
+      el('chAaGo').onclick = function () {
+        aaMarkSetup();
+        ga('autoapply_setup_done', { profession: profile && profile.id });
+        ov.classList.remove('open');
+        try { window.open('/tools/autoapply', '_blank', 'noopener'); } catch (e) {}
+        toast(t('ch_aa_setup_done', 'AutoApply is ready — adding your job now.'));
+        if (aaPendingJob) { aaEnqueue(aaPendingJob); aaPendingJob = null; }
+      };
+    }
+    ov.classList.add('open');
+  }
 
   // ── Scenario Lab ─────────────────────────────────────────────────────────────
   var scState = null;
@@ -816,6 +913,7 @@
     loadIv: loadIv, reveal: reveal, setConf: setConf, ivNav: ivNav, scoreAnswer: scoreAnswer,
     gapResumeSel: gapResumeSel, runGap: runGap,
     searchJobs: searchJobs, saveJob: saveJob, analyzeJob: analyzeJob, unsaveJob: unsaveJob, toggleAlerts: toggleAlerts, applyFeedJob: applyFeedJob,
+    autoApply: autoApply, removeFromQueue: removeFromQueue,
     startScenario: startScenario, scPick: scPick, scNext: scNext, renderScStep: renderScStep,
     badgeShared: function () { ga('badge_share', { profession: profile && profile.id }); },
     toggleGigFields: toggleGigFields, saveCandidateProfile: saveCandidateProfile, answerContact: answerContact
