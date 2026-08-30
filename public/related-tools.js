@@ -29,7 +29,7 @@
     { href: '/tools/weekly-report',         icon: '📅', label: 'Weekly Job Search Report', desc: 'A weekly email digest of your job-search progress.' },
     { href: '/tools/follow-up-generator',   icon: '⏰', label: 'Follow-Up Email Generator',      desc: 'Write the perfect post-application follow-up email.' },
     { href: '/tools/mock-interview',        icon: '🎤', label: 'AI Mock Interview',        desc: 'Practice real interview questions and get feedback.' },
-    { href: '/dashboard',                   icon: '🔎', label: 'Job Finder',               desc: 'Search live job postings tailored to your profession.' },
+    { href: '/job-finder',                  icon: '🔎', label: 'Job Finder',               desc: 'Search live job postings tailored to your profession.' },
     { href: '/tools/autoapply',             icon: '⚡', label: 'Auto-Applyer',                   desc: 'Auto-fill applications on LinkedIn, Greenhouse & Lever.' }
   ];
 

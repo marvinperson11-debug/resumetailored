@@ -73,8 +73,10 @@ check('component lists the Auto-Applyer', /\/tools\/autoapply/.test(rt));
  '/tools/ats-keyword-extractor', '/linkedin-optimizer', '/job-tracker', '/share-resume-link',
  '/resume-examples', '/cover-letter-examples', '/tools/salary-negotiation', '/tools/resume-ab-tracker',
  '/tools/offer-comparison', '/tools/job-description-decoder', '/tools/weekly-report',
- '/tools/follow-up-generator', '/tools/mock-interview', '/dashboard', '/tools/autoapply'
+ '/tools/follow-up-generator', '/tools/mock-interview', '/job-finder', '/tools/autoapply'
 ].forEach((href) => check('component links ' + href, rt.indexOf('\'' + href + '\'') !== -1 || rt.indexOf('"' + href + '"') !== -1));
+// Job Finder now has its own dedicated SEO landing page.
+check('Job Finder landing page exists', exists('public/job-finder.html'));
 
 // Every tool landing page includes the shared cross-link component.
 const toolPages = [
