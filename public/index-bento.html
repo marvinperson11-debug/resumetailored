@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a1628" />
+  <title>ResumeTailored — Private Career &amp; People Office</title>
+  <meta name="description" content="A private digital office for ambitious candidates and exacting employers — resume intelligence, cinematic presentation, and recruiting operations composed into one quiet workspace. Free to begin, powered by Anthropic Claude." />
+  <link rel="canonical" href="https://resumetailored.com/" />
+  <link rel="alternate" hreflang="en" href="https://resumetailored.com/" />
+  <link rel="alternate" hreflang="zh-CN" href="https://resumetailored.com/zh/" />
+  <link rel="alternate" hreflang="x-default" href="https://resumetailored.com/" />
+  <!-- Open Graph -->
+  <meta property="og:title" content="ResumeTailored — Private Career &amp; People Office" />
+  <meta property="og:description" content="Your next move, properly considered. Resume intelligence, cinematic presentation, and recruiting operations in one quiet workspace." />
+  <meta property="og:url" content="https://resumetailored.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://resumetailored.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ResumeTailored — Private Career &amp; People Office" />
+  <meta name="twitter:description" content="AI resume intelligence, cinematic presentation, and recruiting operations. Free to begin." />
+  <!-- Favicon -->
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+
+  <!-- Fonts: Fraunces (serif, italic for emphasis) + Inter (sans) — same faces as the site -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- ============================================================
+       JSON-LD — preserved from the current index.html:
+       Organization, SoftwareApplication (carries AggregateRating).
+       ============================================================ -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "ResumeTailored AI",
+    "url": "https://resumetailored.com",
+    "logo": "https://resumetailored.com/favicon.png",
+    "description": "AI-powered resume tailoring, ATS scoring, and cover letter generation for job seekers worldwide.",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "customer support",
+      "email": "support@resumetailored.com"
+    },
+    "sameAs": []
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ResumeTailored AI",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "url": "https://resumetailored.com",
+    "inLanguage": ["en", "zh-CN"],
+    "description": "AI-powered resume tailoring, ATS scoring, and cover letter generation. Paste your resume and any job description — the AI rewrites your resume with the right keywords in under 60 seconds.",
+    "featureList": [
+      "AI resume tailoring powered by Anthropic Claude",
+      "ATS match score with keyword gap analysis",
+      "AI-generated cover letter included with every tailoring",
+      "Live job description import by URL from LinkedIn, Indeed, Glassdoor, Greenhouse, Lever, Workday and more",
+      "File upload support for PDF and DOCX resume formats",
+      "Interview preparation with structured guidance",
+      "100+ professional resume and cover letter templates (6 free, the rest Pro)",
+      "Publish your resume as a personal website (Pro)",
+      "Chinese (Simplified) and English bilingual interface",
+      "Free tier: unlimited AI resume rewrites and cover letters, no credit card required"
+    ],
+    "offers": [
+      {"@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free — Unlimited tailoring"},
+      {"@type": "Offer", "price": "19.00", "priceCurrency": "USD", "priceSpecification": {"@type": "UnitPriceSpecification", "billingDuration": "P1M"}, "name": "Pro — Unlimited"},
+      {"@type": "Offer", "price": "129", "priceCurrency": "USD", "name": "Pro Lifetime"}
+    ],
+    "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "312", "ratingCount": "312", "bestRating": "5", "worstRating": "1"}
+  }
+  </script>
+
+  <style>
+    /* ============================================================
+       PALETTE — extracted verbatim from the current index.html.
+       No new colors. No gradients. No drop shadows. Depth is built
+       from 1px gold borders, surface opacity, spacing, typography.
+       ============================================================ */
+    :root {
+      /* Structural */
+      --bg:          #0a1628;              /* deep navy — page background      */
+      --bg-alt:      #081422;              /* deeper navy band                 */
+
+      /* Card surfaces (opacity variations = depth) */
+      --surf-navy:   rgba(13,30,48,.72);   /* navy card                        */
+      --surf-teal:   rgba(26,77,58,.20);   /* teal-tinted card                 */
+      --surf-recess: rgba(8,20,34,.66);    /* recessed navy card               */
+      --teal-solid:  #1a4d3a;              /* dark teal — the ONE filled card  */
+
+      /* Ink */
+      --ink:         #f5f1e8;              /* warm cream — headings/key text   */
+      --ink-soft:    #cdd6d3;              /* body copy                        */
+      --ink-faint:   #9eb2aa;              /* captions / meta                  */
+
+      /* Gold */
+      --gold:        #c9a227;              /* champagne gold — accents/labels  */
+      --line:        rgba(201,162,39,.22); /* subtle gold hairline             */
+      --line-2:      rgba(201,162,39,.34); /* stronger gold hairline           */
+      --line-hover:  rgba(201,162,39,.50); /* hover border (50% gold)          */
+      --gold-fill:   rgba(201,162,39,.10); /* button hover fill (10% gold)     */
+
+      --radius:      16px;
+      --gap:         20px;
+      --ease:        cubic-bezier(.2,.6,.2,1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: var(--bg); scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink-soft);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: inherit; text-decoration: none; }
+    ::selection { background: var(--teal-solid); color: var(--ink); }
+    :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 4px; }
+
+    /* Skip link */
+    .skip { position: absolute; left: -999px; top: 8px; background: var(--teal-solid); color: var(--ink);
+            padding: 8px 14px; border-radius: 8px; z-index: 300; font-size: 14px; }
+    .skip:focus { left: 12px; }
+
+    /* ── Typography helpers ── */
+    .serif { font-family: 'Fraunces', Georgia, serif; }
+    em.emph, .emph { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-weight: 500; }
+    .label {
+      font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--gold);
+    }
+    .meta { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
+
+    /* ============================================================
+       NAVIGATION — sticky bar above the grid
+       ============================================================ */
+    .nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,22,40,.94);
+      border-bottom: 1px solid var(--line);
+      padding: 0 24px;
+    }
+    .nav-inner {
+      max-width: 1320px; margin: 0 auto;
+      display: flex; align-items: center; gap: 28px;
+      height: 66px;
+    }
+    .brand { display: flex; flex-direction: column; line-height: 1.15; }
+    .brand__name { font-family: 'Fraunces', Georgia, serif; font-size: 20px; font-weight: 600; color: var(--ink); letter-spacing: -.01em; }
+    .brand__sub { font-size: 9.5px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-faint); }
+    .nav-links { display: flex; gap: 22px; align-items: center; margin-left: 8px; }
+    .nav-links a { font-size: 13.5px; font-weight: 500; color: var(--ink-soft); transition: color .18s var(--ease); }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      font-family: inherit; font-size: 13.5px; font-weight: 600;
+      border-radius: 10px; padding: 9px 18px; cursor: pointer;
+      border: 1px solid var(--line-2); background: transparent; color: var(--ink);
+      transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+      white-space: nowrap;
+    }
+    .btn:hover { border-color: var(--line-hover); background: var(--gold-fill); }
+    .btn-ghost { border-color: var(--line); color: var(--ink-soft); }
+    .btn-lang { font-size: 13px; padding: 8px 13px; }
+
+    .hamburger { display: none; flex-direction: column; gap: 5px; background: none; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; padding: 9px 8px; }
+    .hamburger span { display: block; width: 20px; height: 2px; background: var(--ink); border-radius: 2px; }
+
+    /* Mobile drawer */
+    .drawer {
+      position: fixed; inset: 0; z-index: 200; background: rgba(8,20,34,.86);
+      display: none; padding: 22px;
+    }
+    .drawer.open { display: block; }
+    .drawer__panel {
+      max-width: 340px; margin-left: auto; height: 100%; background: var(--bg);
+      border-left: 1px solid var(--line-2); border-radius: 16px 0 0 16px;
+      padding: 22px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .drawer__panel a { padding: 12px 6px; font-size: 16px; color: var(--ink); border-bottom: 1px solid var(--line); }
+    .drawer__close { align-self: flex-end; background: none; border: 1px solid var(--line); border-radius: 9px; color: var(--ink); font-size: 22px; line-height: 1; padding: 4px 12px; cursor: pointer; margin-bottom: 8px; }
+    .drawer__row { display: flex; gap: 10px; margin-top: 14px; }
+
+    /* ============================================================
+       BENTO GRID — 12 columns, 20px gap
+       ============================================================ */
+    .bento-wrap { max-width: 1320px; margin: 0 auto; padding: 40px 24px 64px; }
+    .bento {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-auto-rows: minmax(10px, auto);
+      gap: var(--gap);
+    }
+
+    /* Card base — all depth from 1px gold border + surface opacity */
+    .card {
+      position: relative; overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 26px;
+      display: flex; flex-direction: column;
+      transition: border-color .2s var(--ease), transform .2s var(--ease), background .2s var(--ease);
+    }
+    .card--navy   { background: var(--surf-navy); }
+    .card--teal   { background: var(--surf-teal); }
+    .card--recess { background: var(--surf-recess); }
+    .card--filled { background: var(--teal-solid); border-color: var(--line-2); }
+
+    /* Hover: brighten border to 50% gold + lift 2px (no scale) */
+    a.card:hover, .card--hoverable:hover { border-color: var(--line-hover); transform: translateY(-2px); }
+
+    /* Arrow glyph — nudges on card hover */
+    .arrow { color: var(--gold); font-size: 18px; line-height: 1; display: inline-block; transition: transform .2s var(--ease); }
+    a.card:hover .arrow, .card--hoverable:hover .arrow { transform: translate(3px, -3px); }
+    .card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+
+    /* ── Grid placement ── */
+    .c-hero       { grid-column: 1 / 7;   grid-row: 1 / 3; min-height: 340px; }
+    .c-candidates { grid-column: 7 / 10;  grid-row: 1 / 3; min-height: 340px; }
+    .c-employers  { grid-column: 10 / 13; grid-row: 1 / 3; min-height: 340px; }
+    .c-cinematic  { grid-column: 1 / 13;  grid-row: 3 / 4; min-height: 260px; }
+    .c-ai         { grid-column: 1 / 3;   min-height: 208px; }
+    .c-cover      { grid-column: 3 / 5;   min-height: 208px; }
+    .c-interview  { grid-column: 5 / 7;   min-height: 208px; }
+    .c-pricing    { grid-column: 7 / 9;   min-height: 208px; }
+    .c-social     { grid-column: 9 / 11;  min-height: 208px; }
+    .c-finalcta   { grid-column: 11 / 13; min-height: 208px; }
+
+    /* ── HERO ── */
+    .c-hero .label { margin-bottom: 20px; }
+    .hero__h {
+      font-family: 'Fraunces', Georgia, serif; font-weight: 500;
+      font-size: clamp(30px, 4vw, 46px); line-height: 1.08; letter-spacing: -.02em;
+      color: var(--ink); margin-bottom: 18px; max-width: 15ch;
+    }
+    .hero__h em { font-style: italic; font-weight: 500; }
+    .hero__body { font-size: 15.5px; color: var(--ink-soft); max-width: 46ch; margin-bottom: auto; }
+    .hero__cta-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 26px; }
+    .cta-solid {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-weight: 600; font-size: 15px; color: var(--ink);
+      background: transparent; border: 1px solid var(--line-2);
+      border-radius: 11px; padding: 12px 22px;
+      transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+    }
+    .cta-solid:hover { border-color: var(--line-hover); background: var(--gold-fill); transform: translateY(-2px); }
+    .cta-solid .arrow { color: var(--gold); }
+    .cta-solid:hover .arrow { transform: translate(3px, -3px); }
+    .hero__meta { font-size: 12px; color: var(--ink-faint); letter-spacing: .02em; }
+    .hero__meta .star { color: var(--gold); letter-spacing: .05em; }
+    /* Decorative gold arc — inside hero only */
+    .hero__arc { position: absolute; top: -70px; right: -70px; width: 300px; height: 300px; opacity: .14; pointer-events: none; }
+
+    /* ── CANDIDATES / EMPLOYERS ── */
+    .door__h { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 24px; letter-spacing: -.01em; color: var(--ink); margin: 16px 0 12px; }
+    .door__body { font-size: 14.5px; color: var(--ink-soft); margin-bottom: auto; }
+    .door__foot { display: flex; align-items: center; justify-content: space-between; margin-top: 22px; }
+
+    /* ── CINEMATIC SHOWCASE ── */
+    .cine { display: grid; grid-template-columns: 1.1fr 1fr; gap: 32px; align-items: center; height: 100%; }
+    .cine__h { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: clamp(24px,2.6vw,32px); line-height: 1.12; letter-spacing: -.02em; color: var(--ink); margin: 14px 0 14px; max-width: 20ch; }
+    .cine__body { font-size: 15px; color: var(--ink-soft); max-width: 48ch; margin-bottom: 22px; }
+    .cine__cta { display: inline-flex; align-items: center; gap: 8px; }
+    .cine__cta .label { color: var(--gold); }
+    /* Wireframe preview — hairlines only, no images/gradients/shadows */
+    .wire { border: 1px solid var(--line-2); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 190px; }
+    .wire__bar { display: flex; align-items: center; gap: 6px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+    .wire__dot { width: 8px; height: 8px; border: 1px solid var(--line-2); border-radius: 50%; }
+    .wire__url { flex: 1; height: 8px; border: 1px solid var(--line); border-radius: 4px; margin-left: 6px; }
+    .wire__cols { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; flex: 1; }
+    .wire__side { display: flex; flex-direction: column; gap: 8px; }
+    .wire__ph { border: 1px solid var(--line); border-radius: 6px; }
+    .wire__avatar { height: 42px; }
+    .wire__line { height: 8px; }
+    .wire__line--short { width: 55%; }
+    .wire__line--mid { width: 75%; }
+    .wire__block { flex: 1; min-height: 40px; }
+
+    /* ── PRICING ── */
+    .price__big { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 30px; color: var(--ink); letter-spacing: -.01em; }
+    .price__amt { font-size: 22px; font-weight: 600; color: var(--ink); margin-top: 4px; }
+    .price__amt span { font-size: 13px; color: var(--ink-faint); font-weight: 500; }
+    .price__note { font-size: 12.5px; color: var(--ink-faint); margin-top: auto; }
+
+    /* ── SOCIAL PROOF ── */
+    .stars { color: var(--gold); font-size: 15px; letter-spacing: .08em; }
+    .quote { font-family: 'Fraunces', Georgia, serif; font-style: italic; font-weight: 400; font-size: 17px; line-height: 1.4; color: var(--ink); margin: 14px 0 auto; }
+    .attrib { font-size: 12px; color: var(--ink-faint); letter-spacing: .02em; }
+
+    /* ── FINAL CTA (filled) ── */
+    .c-finalcta .label { color: var(--gold); }
+    .final__h { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 22px; line-height: 1.2; color: var(--ink); margin: 12px 0 auto; }
+    .final__link { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; color: var(--ink); margin-top: 18px; }
+    .final__link .arrow { color: var(--gold); }
+    a.c-finalcta:hover { border-color: var(--line-hover); }
+    a.c-finalcta:hover .arrow { transform: translate(3px, -3px); }
+
+    /* Small feature-card icon */
+    .fic { color: var(--gold); }
+    .feat__h { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 18px; color: var(--ink); margin: 14px 0 8px; }
+    .feat__body { font-size: 13.5px; color: var(--ink-soft); margin-bottom: auto; }
+
+    /* ============================================================
+       SCROLL ENTRANCE — fade-up, staggered. Reserve space to avoid CLS.
+       ============================================================ */
+    .reveal { opacity: 0; transform: translateY(16px); transition: opacity .5s var(--ease), transform .5s var(--ease); }
+    .reveal.is-in { opacity: 1; transform: none; }
+
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
+    /* Tablet: 2 across for the small row, keep hero prominent */
+    @media (max-width: 1040px) {
+      .c-hero       { grid-column: 1 / 13; grid-row: auto; min-height: 300px; }
+      .c-candidates { grid-column: 1 / 7;  grid-row: auto; }
+      .c-employers  { grid-column: 7 / 13; grid-row: auto; }
+      .c-cinematic  { grid-column: 1 / 13; grid-row: auto; }
+      .cine { grid-template-columns: 1fr 1fr; }
+      .c-ai        { grid-column: 1 / 5; }
+      .c-cover     { grid-column: 5 / 9; }
+      .c-interview { grid-column: 9 / 13; }
+      .c-pricing   { grid-column: 1 / 5; }
+      .c-social    { grid-column: 5 / 9; }
+      .c-finalcta  { grid-column: 9 / 13; }
+    }
+    /* Hide the desktop link row a little earlier for breathing room */
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .nav-actions .btn-desktoponly { display: none; }
+    }
+    /* Mobile: single column, 12px gap, hero stays dominant */
+    @media (max-width: 680px) {
+      .bento-wrap { padding: 24px 16px 48px; }
+      .bento { gap: 12px; }
+      .card { padding: 22px; }
+      .c-hero, .c-candidates, .c-employers, .c-cinematic,
+      .c-ai, .c-cover, .c-interview, .c-pricing, .c-social, .c-finalcta {
+        grid-column: 1 / 13; grid-row: auto; min-height: 0;
+      }
+      .c-hero { min-height: 300px; }
+      /* Collapse the cinematic wireframe — title, description, CTA only */
+      .cine { grid-template-columns: 1fr; gap: 0; }
+      .cine__media { display: none; }
+      .hero__h { font-size: 30px; }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .card, .arrow, .btn, .cta-solid { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip">Skip to content</a>
+
+  <!-- ============================ NAV ============================ -->
+  <nav class="nav" aria-label="Primary">
+    <div class="nav-inner">
+      <a href="/" class="brand" aria-label="ResumeTailored home">
+        <span class="brand__name">ResumeTailored</span>
+        <span class="brand__sub">Private Career &amp; People Office</span>
+      </a>
+      <div class="nav-links">
+        <a href="/pro-tools">Membership</a>
+        <a href="/ai-resume-tailor">Tailor My Resume</a>
+        <a href="/for-employers">For Employers</a>
+        <a href="/resume-examples">Examples</a>
+        <a href="/blog">Journal</a>
+      </div>
+      <div class="nav-actions">
+        <button type="button" class="btn btn-ghost btn-lang" id="langToggleBtn" onclick="toggleLang()" title="Switch language / 切换语言">中文</button>
+        <button type="button" class="btn btn-ghost btn-desktoponly" onclick="openLogin()">Login</button>
+        <a href="/dashboard" class="btn btn-desktoponly" style="border-color:var(--line-hover);">Begin free →</a>
+        <button class="hamburger" aria-label="Open menu" aria-expanded="false" onclick="openDrawer()">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile drawer -->
+  <div class="drawer" id="drawer" onclick="if(event.target===this)closeDrawer()">
+    <div class="drawer__panel" role="dialog" aria-label="Menu">
+      <button class="drawer__close" aria-label="Close menu" onclick="closeDrawer()">&times;</button>
+      <a href="/pro-tools">Membership</a>
+      <a href="/ai-resume-tailor">Tailor My Resume</a>
+      <a href="/for-employers">For Employers</a>
+      <a href="/resume-examples">Examples</a>
+      <a href="/blog">Journal</a>
+      <div class="drawer__row">
+        <button type="button" class="btn btn-ghost btn-lang" onclick="closeDrawer();toggleLang()">中文</button>
+        <button type="button" class="btn btn-ghost" onclick="closeDrawer();openLogin()">Login</button>
+      </div>
+      <a href="/dashboard" class="btn" style="margin-top:10px;border-color:var(--line-hover);justify-content:center;">Begin free →</a>
+    </div>
+  </div>
+
+  <!-- Login chooser (mirrors the existing openLoginChooser modal) -->
+  <div id="loginChooser" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(8,20,34,.66);align-items:center;justify-content:center;padding:22px;" onclick="if(event.target===this)closeLogin()">
+    <div role="dialog" aria-label="Log in" style="background:var(--bg);border:1px solid var(--line-2);border-radius:20px;max-width:400px;width:100%;padding:30px 26px;position:relative;font-family:'Inter',sans-serif;">
+      <button onclick="closeLogin()" aria-label="Close" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:26px;color:var(--ink-faint);cursor:pointer;line-height:1;">&times;</button>
+      <h2 class="serif" style="font-weight:600;font-size:25px;letter-spacing:-.02em;margin:0 0 4px;color:var(--ink);">Log in</h2>
+      <p style="color:var(--ink-faint);font-size:14px;margin:0 0 20px;">Are you logging in as a Job Seeker or an Employer?</p>
+      <a href="/login?redirect=/dashboard" style="display:flex;align-items:center;gap:14px;background:var(--surf-recess);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px;">
+        <span style="font-size:24px;" aria-hidden="true">👤</span>
+        <span><span style="display:block;font-weight:700;color:var(--ink);font-size:16px;">Job Seeker</span><span style="display:block;color:var(--ink-faint);font-size:13px;">Tailor resumes, cover letters &amp; more</span></span>
+      </a>
+      <a href="/login?redirect=/employer" style="display:flex;align-items:center;gap:14px;background:var(--surf-recess);border:1px solid var(--line);border-radius:14px;padding:16px;">
+        <span style="font-size:24px;" aria-hidden="true">💼</span>
+        <span><span style="display:block;font-weight:700;color:var(--ink);font-size:16px;">Employer</span><span style="display:block;color:var(--ink-faint);font-size:13px;">Post jobs &amp; hire candidates</span></span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ============================ GRID ============================ -->
+  <main id="main">
+    <section class="bento-wrap" aria-label="ResumeTailored overview">
+      <div class="bento">
+
+        <!-- HERO -->
+        <article class="card card--navy c-hero reveal" aria-labelledby="hero-h">
+          <svg class="hero__arc" viewBox="0 0 300 300" fill="none" aria-hidden="true" focusable="false">
+            <circle cx="150" cy="150" r="148" stroke="#c9a227" stroke-width="1"/>
+            <circle cx="150" cy="150" r="118" stroke="#c9a227" stroke-width="1"/>
+            <path d="M2 150 A148 148 0 0 1 150 2" stroke="#c9a227" stroke-width="1.5"/>
+          </svg>
+          <span class="label">Career Intelligence, Privately Delivered</span>
+          <h1 class="hero__h" id="hero-h">Your next move, <em>properly considered.</em></h1>
+          <p class="hero__body">A private digital office for ambitious candidates and exacting employers — resume intelligence, cinematic presentation, and recruiting operations composed into one quiet workspace.</p>
+          <div class="hero__cta-row">
+            <a class="cta-solid" href="/dashboard">Begin — it's free <span class="arrow" aria-hidden="true">→</span></a>
+            <span class="hero__meta"><span class="star">★★★★★</span> · Anthropic Claude · 100+ templates · No card required</span>
+          </div>
+        </article>
+
+        <!-- CANDIDATES -->
+        <a class="card card--teal c-candidates reveal" href="/ai-resume-tailor" aria-labelledby="cand-h">
+          <div class="card__top">
+            <span class="label">For Candidates · 01</span>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </div>
+          <h2 class="door__h" id="cand-h">Tailor My Resume</h2>
+          <p class="door__body">Translate the role, position your experience, and present your work with quiet confidence.</p>
+          <div class="door__foot"><span class="meta">Free to begin</span></div>
+        </a>
+
+        <!-- EMPLOYERS -->
+        <a class="card card--recess c-employers reveal" href="/for-employers" aria-labelledby="emp-h">
+          <div class="card__top">
+            <span class="label">For Employers · 02</span>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </div>
+          <h2 class="door__h" id="emp-h">Recruiting Studio</h2>
+          <p class="door__body">Screen, schedule, and hire from one composed, discreet command center.</p>
+          <div class="door__foot"><span class="meta">From $49/mo</span></div>
+        </a>
+
+        <!-- CINEMATIC SHOWCASE -->
+        <article class="card card--navy c-cinematic reveal" aria-labelledby="cine-h">
+          <div class="cine">
+            <div class="cine__text">
+              <span class="label">Editorial Web Studio</span>
+              <h2 class="cine__h" id="cine-h">Your career, published like a private folio.</h2>
+              <p class="cine__body">A watermark-free personal page, indexable and yours — built from your tailored resume.</p>
+              <a class="cine__cta" href="/web-studio"><span class="label">Build your site</span> <span class="arrow" aria-hidden="true">→</span></a>
+            </div>
+            <div class="cine__media" aria-hidden="true">
+              <div class="wire">
+                <div class="wire__bar">
+                  <span class="wire__dot"></span><span class="wire__dot"></span><span class="wire__dot"></span>
+                  <span class="wire__url"></span>
+                </div>
+                <div class="wire__cols">
+                  <div class="wire__side">
+                    <span class="wire__ph wire__avatar"></span>
+                    <span class="wire__ph wire__line wire__line--mid"></span>
+                    <span class="wire__ph wire__line wire__line--short"></span>
+                    <span class="wire__ph wire__line wire__line--short"></span>
+                  </div>
+                  <div class="wire__side">
+                    <span class="wire__ph wire__line wire__line--mid"></span>
+                    <span class="wire__ph wire__block"></span>
+                    <span class="wire__ph wire__line"></span>
+                    <span class="wire__ph wire__line wire__line--mid"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- AI RESUME -->
+        <a class="card card--recess c-ai reveal" href="/ai-resume-tailor" aria-labelledby="ai-h">
+          <div class="card__top">
+            <svg class="fic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </div>
+          <h3 class="feat__h" id="ai-h">AI Resume Tailoring</h3>
+          <p class="feat__body">Rewritten for each posting in the role's own language — never fabricated.</p>
+        </a>
+
+        <!-- COVER LETTER -->
+        <a class="card card--navy c-cover reveal" href="/ai-cover-letter-generator" aria-labelledby="cov-h">
+          <div class="card__top">
+            <svg class="fic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </div>
+          <h3 class="feat__h" id="cov-h">Cover Letters</h3>
+          <p class="feat__body">A matching letter with every tailoring — composed, not templated.</p>
+        </a>
+
+        <!-- INTERVIEW PREP -->
+        <a class="card card--teal c-interview reveal" href="/interview-coach" aria-labelledby="int-h">
+          <div class="card__top">
+            <svg class="fic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 12h5"/></svg>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </div>
+          <h3 class="feat__h" id="int-h">Interview Prep</h3>
+          <p class="feat__body">Rehearse the conversation before it happens, with structured guidance.</p>
+        </a>
+
+        <!-- PRICING -->
+        <a class="card card--navy c-pricing reveal" href="/pro-tools" aria-labelledby="price-h">
+          <div class="card__top">
+            <span class="price__big" id="price-h">Pro</span>
+            <span class="arrow" aria-hidden="true">↗</span>
+          </div>
+          <div class="price__amt">$19 <span>/ month</span></div>
+          <p class="price__note">Free to begin · Lifetime $129</p>
+        </a>
+
+        <!-- SOCIAL PROOF -->
+        <article class="card card--recess c-social reveal card--hoverable" aria-label="Customer rating">
+          <div class="stars" aria-hidden="true">★★★★★</div>
+          <p class="quote">"It read like a partner had reviewed my resume — not a template."</p>
+          <p class="attrib">Rated 4.9 / 5 · 312 reviews</p>
+        </article>
+
+        <!-- FINAL CTA (the one filled card) -->
+        <a class="card card--filled c-finalcta reveal" href="/dashboard" aria-labelledby="final-h">
+          <span class="label">Ready When You Are</span>
+          <h3 class="final__h" id="final-h">Step inside the office.</h3>
+          <span class="final__link">Get started free <span class="arrow" aria-hidden="true">→</span></span>
+        </a>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================ SCRIPTS ============================ -->
+  <!-- Site-wide i18n. Provides window.applyLang; our toggleLang chains into it,
+       so 中文 uses the real translator (no stub). Fails open if unavailable. -->
+  <script src="/site-i18n.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    var LANG_KEY = 'rt_lang';
+
+    // Language toggle — flips rt_lang and defers to site-i18n.js's window.applyLang.
+    window.toggleLang = function () {
+      var cur = 'en';
+      try { cur = localStorage.getItem(LANG_KEY) || 'en'; } catch (e) {}
+      var next = cur === 'en' ? 'zh' : 'en';
+      try { localStorage.setItem(LANG_KEY, next); } catch (e) {}
+      var b = document.getElementById('langToggleBtn'); if (b) b.textContent = next === 'zh' ? 'EN' : '中文';
+      if (typeof window.applyLang === 'function') { try { window.applyLang(next); } catch (e) {} }
+    };
+    // Reflect saved preference on load.
+    try { if ((localStorage.getItem(LANG_KEY) || 'en') === 'zh') { var b = document.getElementById('langToggleBtn'); if (b) b.textContent = 'EN'; } } catch (e) {}
+
+    // Login + drawer helpers (openLogin preserved as the public entry point).
+    window.openLogin  = function () { document.getElementById('loginChooser').style.display = 'flex'; document.body.style.overflow = 'hidden'; };
+    window.closeLogin = function () { document.getElementById('loginChooser').style.display = 'none'; document.body.style.overflow = ''; };
+    window.openDrawer  = function () { var d = document.getElementById('drawer'); d.classList.add('open'); document.querySelector('.hamburger').setAttribute('aria-expanded', 'true'); };
+    window.closeDrawer = function () { document.getElementById('drawer').classList.remove('open'); document.querySelector('.hamburger').setAttribute('aria-expanded', 'false'); };
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeLogin(); closeDrawer(); } });
+
+    // Scroll entrance — staggered fade-up, respects reduced motion.
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var cards = [].slice.call(document.querySelectorAll('.reveal'));
+    if (reduce || !('IntersectionObserver' in window)) {
+      cards.forEach(function (c) { c.classList.add('is-in'); });
+    } else {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (!en.isIntersecting) return;
+          var el = en.target;
+          el.style.transitionDelay = ((cards.indexOf(el) % 6) * 60) + 'ms';
+          el.classList.add('is-in');
+          io.unobserve(el);
+        });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+      cards.forEach(function (c) { io.observe(c); });
+    }
+  })();
+  </script>
+</body>
+</html>
