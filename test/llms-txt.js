@@ -64,8 +64,8 @@ check('every link line is annotated with a description, not a bare link',
   (platform.match(/^- \[[^\]]+\]\([^)]+\)$/gm) || []).length === 0);
 check('does not advertise the pre-2026 capped free tier',
   !/1 (full )?(resume )?tailoring.{0,20}(per day|\/day)/i.test(platform));
-check('reflects the current $19.99 Pro price, not the old $19',
-  platform.includes('$19.99') && !/\$19\/month|\$19\/mo\b/.test(platform));
+check('reflects the current $19.00 Pro price served site-wide, not a stale $19.99',
+  platform.includes('$19.00') && !platform.includes('$19.99'));
 check('reflects the $129 lifetime plan', platform.includes('$129'));
 
 // ── 3. robots.txt references it ───────────────────────────────────────────
