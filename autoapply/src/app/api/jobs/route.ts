@@ -22,6 +22,7 @@ export async function GET() {
       coverLetter: true,
       appliedAt: true,
       createdAt: true,
+      sourceQueueId: true,
     },
   });
   return NextResponse.json({ jobs });

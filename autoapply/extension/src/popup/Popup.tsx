@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getSettings, saveSettings } from "../lib/storage";
+import { fetchQueueCount } from "../lib/api";
 
 const wrap: React.CSSProperties = {
   fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -20,11 +21,18 @@ export function Popup() {
   const [apiBase, setApiBase] = useState("http://localhost:3000");
   const [token, setToken] = useState("");
   const [saved, setSaved] = useState(false);
+  const [queueCount, setQueueCount] = useState<number | null>(null);
 
   useEffect(() => {
     getSettings().then((s) => {
       setApiBase(s.apiBase);
       setToken(s.token ?? "");
+      // Show how many jobs are waiting in the ResumeTailored queue.
+      if (s.token) {
+        fetchQueueCount(s.apiBase, s.token)
+          .then((c) => setQueueCount(c.count))
+          .catch(() => setQueueCount(null));
+      }
     });
   }, []);
 
@@ -50,6 +58,13 @@ export function Popup() {
       <p style={{ fontSize: 11, color: "#64748b", marginTop: -6, marginBottom: 12 }}>
         Generate this on the dashboard → Profile → Browser extension.
       </p>
+
+      {queueCount != null && (
+        <div style={{ fontSize: 12, color: "#065f46", background: "#ecfdf5", border: "1px solid #a7f3d0",
+          borderRadius: 8, padding: "8px 10px", marginBottom: 12 }}>
+          ⚡ {queueCount} job{queueCount === 1 ? "" : "s"} in your ResumeTailored queue.
+        </div>
+      )}
 
       <button style={button} onClick={save}>{saved ? "Saved ✓" : "Save"}</button>
 

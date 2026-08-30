@@ -47,6 +47,7 @@
     ['Decoder Key', '/decoder-key', '解码密钥'],
     ['Interview Coach', '/interview-coach', '面试教练'],
     ['Career Hub', '/career-hub', '职业中心'],
+    ['Job Finder', '/job-finder', '职位搜索'],
     ['AutoApply', '/tools/autoapply', '自动申请']
   ];
   var EMPLOYER_LINKS = [

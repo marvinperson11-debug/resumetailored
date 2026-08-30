@@ -77,6 +77,33 @@ extension ID it prints into the dashboard's `EXTENSION_ORIGINS`
 (`chrome-extension://<id>`) and restart the dashboard. Open the popup, set the
 dashboard URL and paste your extension token.
 
+### 3. Database — first-time / upgrade
+
+The schema is managed with Prisma. Two supported paths:
+
+```bash
+# Production / CI (safe, versioned): applies prisma/migrations in order.
+npm run db:migrate        # = prisma migrate deploy
+
+# Local quick dev (no migration history): pushes the schema straight to the DB.
+npm run db:push           # = prisma db push
+```
+
+**Upgrading an existing database** (adds the apply-queue bridge's
+`JobApplication.sourceQueueId` column):
+
+- If you use migrations: `npm run db:migrate` applies
+  `prisma/migrations/…_add_source_queue_id` (idempotent — `ADD COLUMN IF NOT
+  EXISTS`).
+- If your existing DB was created with `db push` (no migration history) and you
+  want to adopt migrations, baseline the initial migration once, then deploy:
+  ```bash
+  npx prisma migrate resolve --applied 0_init
+  npm run db:migrate
+  ```
+- Or simply run `npm run db:push` again — it adds the new nullable column
+  non-destructively.
+
 ## API routes
 
 | Method | Route | Purpose | Auth |
@@ -128,10 +155,99 @@ Main-app endpoints (all require the main app's signed-in session; email-keyed):
 
 `status ∈ { queued, auto_filled, submitted, manual_needed, archived }`.
 
-**TODO (this app ↔ main app):** this standalone Next.js app + extension still use
-their own Prisma-backed job list. To make them one system, this app should read
-and write the main app's `/api/apply-queue` (server-to-server with the user's
-session, or a dedicated service token) instead of its local `Job` table, and the
-extension should update item `status` there as it fills/needs-manual/submits.
-Until then, the main app's queue is authoritative and this app's list is a
-separate view; keep them from diverging by treating `/api/apply-queue` as canonical.
+### How the two apps are wired together
+
+The main app's queue is the **source of truth**. This app reads from it, imports
+those jobs so its Score/Prepare/Apply flows can run on them, and writes status
+changes back — so the queue stays in sync across the website, this dashboard, and
+the extension.
+
+**Auth hand-off (the bridge).** The two apps share **no session store** — the
+main app uses its own bcrypt sessions, this app uses NextAuth (Google). What they
+*do* share is the user's **email**. So this app authenticates to the main app as a
+trusted first-party **service**: every call sends `x-rt-service-token: <shared
+secret>` and `x-rt-user-email: <the signed-in user's email>`. The main app's
+`/api/apply-queue*` routes accept this in `applyQueueEmail()` (server.js) when its
+`RT_SERVICE_TOKEN` is set and matches (constant-time compare); otherwise they fall
+back to a normal browser session. The secret lives only on this app's server
+(`RT_SERVICE_TOKEN` / `RT_MAIN_APP_URL` env) — it is **never** sent to the browser
+or the extension, which talk only to this app's proxy routes.
+
+**What this app added:**
+
+- `src/lib/queue-sync.js` — pure status maps + payload normalization (unit-tested
+  in `test/queue-sync.test.mjs`).
+- `src/lib/main-app-queue.ts` — server client: `fetchMainQueue`, `mainQueueCount`,
+  `addToMainQueue`, `updateMainStatus`. No-ops when the bridge env is unset.
+- `src/lib/api-identity.ts` — resolves the acting email from the NextAuth session
+  **or** a bearer ExtensionToken (so the extension can use the proxy too).
+- Proxy routes (secret stays server-side):
+  - `GET /api/apply-queue` — the user's live main-app queue.
+  - `POST /api/apply-queue` — add a job to the main queue.
+  - `PATCH /api/apply-queue/:id` — write a status change back.
+  - `GET /api/apply-queue/count` — `{ count, queued }` (dashboard banner + popup).
+  - `POST /api/apply-queue/import` — pull the main queue into local
+    `JobApplication` rows so Score/Prepare/Apply work; idempotent, matches on
+    `(userId, jobUrl)` and records `sourceQueueId`.
+- **Status write-back:** when a local job (that has a `sourceQueueId`) advances,
+  `syncStatusToMain()` PATCHes the main queue — from `prepare` (→ PREPARED) and
+  from the extension's "Sync status" (→ APPLIED). Best-effort: a failure is logged,
+  never blocks the local action.
+- **Extension:** `fetchQueueCount` / `addToQueue` (extension/src/lib/api.ts) call
+  this app's proxy with the bearer ExtensionToken; the popup shows the queue count.
+
+**Status mapping** (the local enum is coarser than the main one):
+
+| local (this app) | → main (write-back) | main → local (read/import) |
+| --- | --- | --- |
+| `NEW` | `queued` | `queued`, `manual_needed` → `NEW` |
+| `PREPARED` | `auto_filled` | `auto_filled` → `PREPARED` |
+| `APPLIED` | `submitted` | `submitted`, `archived` → `APPLIED` |
+
+Anything unmapped writes back as `manual_needed` (the spec's fallback).
+
+**Config.** Set `RT_MAIN_APP_URL` + `RT_SERVICE_TOKEN` here and the **same**
+`RT_SERVICE_TOKEN` on the main app (see both `.env.example`s). Leave them unset and
+the bridge disables cleanly — this app falls back to its own local job list, the
+banner shows nothing synced, and no calls are made to the main app. The
+`sourceQueueId` column is added to `JobApplication` (run `prisma db push` or a
+migration after pulling).
+
+### Deploying the bridge (checklist)
+
+- [ ] Set `RT_SERVICE_TOKEN` on the **main app** (Railway env). It logs
+      `[AutoApply Bridge] RT_SERVICE_TOKEN set …` at boot when present, or
+      `RT_SERVICE_TOKEN not set — … session-only mode` when missing.
+- [ ] Set `RT_SERVICE_TOKEN` **+** `RT_MAIN_APP_URL` on the **standalone app**
+      (Vercel/Railway env). It logs `[AutoApply Bridge] configured → <url>` at
+      boot (see `src/instrumentation.ts`), or a warning naming the missing vars.
+- [ ] **Verify the two `RT_SERVICE_TOKEN` values match exactly.**
+- [ ] Run `npm run db:migrate` (or `npm run db:push`) in the standalone app to
+      add `JobApplication.sourceQueueId`.
+- [ ] Run the smoke test (below) → all steps PASS.
+- [ ] Open the AutoApply dashboard → the header shows a green **● Synced** badge
+      (not **● Bridge offline** / **● Bridge not configured**).
+
+### Smoke test
+
+`scripts/smoke-test-autoapply-bridge.js` (in the repo root) drives the whole
+bridge against a **running** main app: it creates a test user, adds a job, reads
+it back as the standalone service, writes status back (auto_filled → submitted),
+and cleans up. It points at running instances (it does not boot them).
+
+```bash
+# from the repo root, with the main app running:
+node scripts/smoke-test-autoapply-bridge.js \
+  --main-url http://localhost:3000 \
+  --service-token "$RT_SERVICE_TOKEN"
+
+# add the real standalone-proxy checks (import) too:
+node scripts/smoke-test-autoapply-bridge.js \
+  --main-url https://resumetailored.com --service-token "$RT_SERVICE_TOKEN" \
+  --standalone-url https://autoapply.example.com --extension-token aa_xxx
+```
+
+Exit code 0 = all executed steps passed. The `import` step is skipped unless
+`--standalone-url` **and** `--extension-token` are given (the standalone proxy is
+auth-gated); the service-bridge read/write steps prove the same server-to-server
+calls the import uses.

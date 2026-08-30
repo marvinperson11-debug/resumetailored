@@ -59,7 +59,9 @@ check('apply_queue table is created', /CREATE TABLE IF NOT EXISTS apply_queue/.t
   check('server has ' + m.toUpperCase() + ' /api/apply-queue route', new RegExp('app\\.' + m + "\\('/api/apply-queue").test(srv)));
 check('server has a batch add route', /'\/api\/apply-queue\/batch'/.test(srv));
 check('server has a count route', /'\/api\/apply-queue\/count'/.test(srv));
-check('apply-queue routes require an account (careerEmail gate)', /app\.get\('\/api\/apply-queue'[\s\S]{0,120}careerEmail\(req, res\)/.test(srv));
+check('apply-queue routes require an account (applyQueueEmail gate)', /app\.get\('\/api\/apply-queue'[\s\S]{0,120}applyQueueEmail\(req, res\)/.test(srv));
+// The service-to-service bridge for the standalone AutoApply app.
+check('apply-queue has a service-token bridge (applyQueueEmail)', /function applyQueueEmail\(/.test(srv) && /x-rt-service-token/.test(srv) && /RT_SERVICE_TOKEN/.test(srv));
 
 // ── 4. Cross-linking: shared component + inclusion on every tool page. ────────
 check('related-tools.js component exists', exists('public/related-tools.js'));
@@ -71,8 +73,10 @@ check('component lists the Auto-Applyer', /\/tools\/autoapply/.test(rt));
  '/tools/ats-keyword-extractor', '/linkedin-optimizer', '/job-tracker', '/share-resume-link',
  '/resume-examples', '/cover-letter-examples', '/tools/salary-negotiation', '/tools/resume-ab-tracker',
  '/tools/offer-comparison', '/tools/job-description-decoder', '/tools/weekly-report',
- '/tools/follow-up-generator', '/tools/mock-interview', '/dashboard', '/tools/autoapply'
+ '/tools/follow-up-generator', '/tools/mock-interview', '/job-finder', '/tools/autoapply'
 ].forEach((href) => check('component links ' + href, rt.indexOf('\'' + href + '\'') !== -1 || rt.indexOf('"' + href + '"') !== -1));
+// Job Finder now has its own dedicated SEO landing page.
+check('Job Finder landing page exists', exists('public/job-finder.html'));
 
 // Every tool landing page includes the shared cross-link component.
 const toolPages = [

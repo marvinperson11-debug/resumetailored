@@ -89,6 +89,8 @@ process.on('unhandledRejection', (reason) => {
 if (!process.env.ANTHROPIC_API_KEY) console.error('STARTUP ERROR: ANTHROPIC_API_KEY is not set — AI tailoring will fail for all users.');
 if (!process.env.STRIPE_SECRET_KEY) console.error('STARTUP ERROR: STRIPE_SECRET_KEY is not set — payments will fail.');
 if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID is not set — checkout will fail.');
+if (!process.env.RT_SERVICE_TOKEN) console.warn('[AutoApply Bridge] RT_SERVICE_TOKEN not set — standalone app cannot sync (session-only mode)');
+else console.log('[AutoApply Bridge] RT_SERVICE_TOKEN set — the standalone AutoApply app can sync the apply queue.');
 
 // Normalize a Stripe price id: strip every character that CANNOT appear in one.
 // A price id is "price_" + alphanumerics — no whitespace, no invisible/zero-width
@@ -8276,6 +8278,30 @@ function careerEmail(req, res) {
   if (!email) { res.status(401).json({ error: 'login_required', message: 'Please sign in to use the Career Hub.' }); return null; }
   return email;
 }
+// Auth for the apply-queue routes. Accepts EITHER the normal signed-in session
+// (browser) OR a trusted service-to-service call from a first-party companion
+// app — the standalone AutoApply app (autoapply/) that shares no session store
+// with this app but does share the user's email as the identity. The companion
+// proves itself with a shared secret header and names the target user by email;
+// the raw secret never reaches a browser (the companion holds it server-side).
+// Disabled unless RT_SERVICE_TOKEN is configured. See autoapply/README.md.
+function applyQueueEmail(req, res) {
+  const secret = process.env.RT_SERVICE_TOKEN;
+  if (secret) {
+    const presented = req.get('x-rt-service-token');
+    const claimedEmail = (req.get('x-rt-user-email') || '').trim().toLowerCase();
+    if (presented && claimedEmail) {
+      // Constant-time compare so a wrong token can't be probed by timing.
+      const a = Buffer.from(String(presented));
+      const b = Buffer.from(String(secret));
+      const ok = a.length === b.length && crypto.timingSafeEqual(a, b);
+      if (ok && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(claimedEmail)) return claimedEmail;
+      res.status(401).json({ error: 'bad_service_token', message: 'Invalid AutoApply service credentials.' });
+      return null;
+    }
+  }
+  return careerEmail(req, res);
+}
 // The UI language for this request (drives in-language AI generation + caching).
 function _reqLang(req) {
   const l = (req.query && req.query.lang) || (req.body && req.body.lang) || 'en';
@@ -8822,7 +8848,7 @@ function _applyEnqueue(email, item) {
 }
 
 app.post('/api/apply-queue', (req, res) => {
-  const email = careerEmail(req, res); if (!email) return;
+  const email = applyQueueEmail(req, res); if (!email) return;
   const body = (req.body && (req.body.job || req.body)) || {};
   const r = _applyEnqueue(email, body);
   if (r.invalid) return res.status(400).json({ error: 'bad_request', message: 'A job_url or job_title is required.' });
@@ -8830,7 +8856,7 @@ app.post('/api/apply-queue', (req, res) => {
 });
 
 app.post('/api/apply-queue/batch', (req, res) => {
-  const email = careerEmail(req, res); if (!email) return;
+  const email = applyQueueEmail(req, res); if (!email) return;
   const jobs = (req.body && req.body.jobs) || [];
   if (!Array.isArray(jobs) || !jobs.length) return res.status(400).json({ error: 'bad_request', message: 'Provide a non-empty jobs array.' });
   const items = []; let created = 0;
@@ -8845,7 +8871,7 @@ app.post('/api/apply-queue/batch', (req, res) => {
 });
 
 app.get('/api/apply-queue', (req, res) => {
-  const email = careerEmail(req, res); if (!email) return;
+  const email = applyQueueEmail(req, res); if (!email) return;
   const e = email.toLowerCase();
   const status = (req.query.status || '').toString();
   let rows;
@@ -8859,7 +8885,7 @@ app.get('/api/apply-queue', (req, res) => {
 
 // Lightweight count (used by the AutoApply landing page badge).
 app.get('/api/apply-queue/count', (req, res) => {
-  const email = careerEmail(req, res); if (!email) return;
+  const email = applyQueueEmail(req, res); if (!email) return;
   const e = email.toLowerCase();
   const total = db.prepare('SELECT COUNT(*) c FROM apply_queue WHERE email = ?').get(e).c;
   const queued = db.prepare("SELECT COUNT(*) c FROM apply_queue WHERE email = ? AND status = 'queued'").get(e).c;
@@ -8867,7 +8893,7 @@ app.get('/api/apply-queue/count', (req, res) => {
 });
 
 app.patch('/api/apply-queue/:id', (req, res) => {
-  const email = careerEmail(req, res); if (!email) return;
+  const email = applyQueueEmail(req, res); if (!email) return;
   const e = email.toLowerCase();
   const id = parseInt(req.params.id, 10);
   const row = db.prepare('SELECT * FROM apply_queue WHERE id = ? AND email = ?').get(id, e);
@@ -8889,7 +8915,7 @@ app.patch('/api/apply-queue/:id', (req, res) => {
 });
 
 app.delete('/api/apply-queue/:id', (req, res) => {
-  const email = careerEmail(req, res); if (!email) return;
+  const email = applyQueueEmail(req, res); if (!email) return;
   db.prepare('DELETE FROM apply_queue WHERE id = ? AND email = ?').run(parseInt(req.params.id, 10), email.toLowerCase());
   res.json({ success: true });
 });

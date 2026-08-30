@@ -67,6 +67,11 @@ model JobApplication {
   // Filled by the extension when the user hits "Sync status"
   appliedAt        DateTime?
 
+  // When this job was imported from the main ResumeTailored app's apply queue
+  // (/api/apply-queue), the main queue item's id — so local status changes can
+  // be written back to keep the two in sync. Null for jobs added locally.
+  sourceQueueId    String?
+
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 

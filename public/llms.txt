@@ -28,7 +28,7 @@
 - [ATS Score Checker](https://resumetailored.com/ats-score-checker): scores how well your resume matches a specific job posting.
 - [Resume Video Maker](https://resumetailored.com/tools/resume-video): turns a resume into a short shareable video, live in the browser.
 - [AutoApply (Auto-Applyer)](https://resumetailored.com/tools/autoapply): auto-fills job applications on LinkedIn Easy Apply, Greenhouse, Lever and Workday — AI scores your fit and tailors your resume, then a browser extension fills the form. Your apply queue syncs across every device you sign in on. You always review and submit.
-- [Job Finder](https://resumetailored.com/dashboard): searches live job postings tailored to your target profession, with one-click Auto-Apply into a cross-device apply queue, save, and resume-gap analysis.
+- [Job Finder](https://resumetailored.com/job-finder): searches live job postings tailored to your target profession, with one-click Auto-Apply into a cross-device apply queue, save, and resume-gap analysis.
 - [Share Resume as a Link](https://resumetailored.com/share-resume-link): turns any resume into a private, unlisted web link that opens instantly — no attachment, no download.
 
 ## Resume examples

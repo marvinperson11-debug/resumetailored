@@ -3,6 +3,7 @@ import { getSessionUserId } from "@/lib/auth";
 import { userIdFromExtensionToken } from "@/lib/extension-auth";
 import { prisma } from "@/lib/prisma";
 import { preflight, withCors } from "@/lib/cors";
+import { syncStatusToMain } from "@/lib/queue-writeback";
 import type { ApplyData, ResumeData, SuggestedAnswer } from "@/lib/types";
 
 type Params = { params: { id: string } };
@@ -76,7 +77,9 @@ export async function POST(req: Request, { params }: Params) {
   const updated = await prisma.jobApplication.update({
     where: { id: job.id },
     data: { status: "APPLIED", appliedAt: new Date() },
-    select: { id: true, status: true, appliedAt: true },
+    select: { id: true, status: true, appliedAt: true, sourceQueueId: true },
   });
+  // Mirror APPLIED → submitted back to the main app's queue if imported.
+  await syncStatusToMain(userId, updated.sourceQueueId, "APPLIED");
   return withCors(NextResponse.json({ job: updated }, { status: 200 }), origin);
 }
