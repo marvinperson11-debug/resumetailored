@@ -27,7 +27,7 @@ Turn any tailored resume into a private web link you can send on LinkedIn or by 
 
 Free exports carry a small footer watermark. That's the only visible difference on the export itself.
 
-## What's still Pro ($19.99/mo or $129 lifetime)
+## What's still Pro ($19.00/mo or $129 lifetime)
 Pro is no longer about unlocking tailoring — that's free for everyone now. Instead, Pro focuses on premium output and extras:
 
 - All 100+ premium templates
@@ -49,7 +49,7 @@ Yes. As of the 2026 update, tailoring your resume and generating cover letters i
 Unlimited resume tailoring and cover letters, the ATS scanner, the LinkedIn optimizer and import, plus 6 ATS-ready templates (3 resume, 3 cover letter). Free exports carry a small footer watermark.
 
 **What's still Pro?**
-Pro ($19.99/month or $129 lifetime) unlocks all 100+ templates, removes the export watermark, and adds the resume video and personal portfolio website.
+Pro ($19.00/month or $129 lifetime) unlocks all 100+ templates, removes the export watermark, and adds the resume video and personal portfolio website.
 
 **Why did you make tailoring free?**
 Charging per tailor punished the exact behaviour that lands interviews — tailoring to every posting. Making it unlimited lets you tailor as many times as your job search needs, and Pro focuses on premium extras instead.

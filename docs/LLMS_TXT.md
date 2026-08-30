@@ -5,7 +5,7 @@
 You already had a `public/llms.txt` from an earlier round — it was in good shape (correct format, real pages) but had gone stale on two facts since the 2026 pricing change:
 
 - Said the free tier was capped at "1 tailoring/day" → now says it's genuinely unlimited.
-- Said Pro was "$19/month" → now says the correct **$19.99/month** (and $129 lifetime), in three places.
+- Said Pro was "$19/month" → now says the correct **$19.00/month** (and $129 lifetime), in three places.
 - Added the required `<!-- Last updated: 2026-08-02 -->` comment at the top.
 - Added a bullet about the personal-website feature (it wasn't mentioned anywhere before).
 

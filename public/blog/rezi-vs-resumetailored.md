@@ -34,7 +34,7 @@ The Claude output includes a specific team structure, a specific feature, specif
 
 | Feature | Rezi | ResumeTailored AI |
 |---------|------|-------------------|
-| Monthly price | $29/mo | **$19.99/mo — over 30% less** |
+| Monthly price | $29/mo | **$19.00/mo — over 30% less** |
 | Lifetime deal | $149 | **$129 — $20 less** |
 | AI model | GPT-4 | **Anthropic Claude** |
 | Free tier | Trial only | **unlimited rewrites + cover letters, no card** |

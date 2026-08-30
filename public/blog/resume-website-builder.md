@@ -29,7 +29,7 @@ It's a **personal website creator** and a **portfolio website tool** in one: you
 **Share-as-link** turns any tailored resume into a private, unlisted page — great for a single application. The **website builder** is the step up: a public, indexable, media-rich personal site for your whole search. If you're hiring rather than job hunting, see our [guide to the Employer Portal](/blog/employer-portal-for-recruiters).
 
 ## What it costs
-Build and preview for free. Publishing a watermark-free site with your own address is part of Pro at **$19.99/month** — the same plan that unlocks the resume video maker and premium templates. See the [pricing page](/#pricing).
+Build and preview for free. Publishing a watermark-free site with your own address is part of Pro at **$19.00/month** — the same plan that unlocks the resume video maker and premium templates. See the [pricing page](/#pricing).
 
 ## The bottom line
 Your resume gets you into the pile. A personal website gets you remembered. [Open your dashboard](/dashboard) and build yours.

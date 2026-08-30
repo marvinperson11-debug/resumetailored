@@ -1255,10 +1255,6 @@ function _sendVersionedHtml(res, filePath) {
     // move out (Phase 3), and it correctly allows Cloudflare's edge-injected
     // analytics beacon + esm.sh, which a dashboard-only override would have
     // regressed. So no per-page CSP is set here.
-    // One canonical public price across legacy SEO pages and freshly-built
-    // ecosystem pages. This avoids stale long-tail copy advertising $19.99
-    // while Stripe and the membership architecture use exactly $19.00.
-    html = html.split('19.99').join('19.00');
     html = _luxuryRepaint(html, filePath);
     const prepared = _injectSiteI18n(_injectSharedPublicNav(_selfHostFonts(_versionAssetRefs(html)), filePath), filePath);
     res.send(_injectGlobalLanguageToggle(prepared));

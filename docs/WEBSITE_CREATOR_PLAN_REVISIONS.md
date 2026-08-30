@@ -8,7 +8,7 @@ Answers to the five items raised before implementation. Where a decision is your
 
 **Why the 250 MB combined cap was wrong:** a persisted resume video is far heavier than an image. Measured against the actual render settings (`remotion/render.js`: h264, 1080×1920, no CRF/bitrate override → Remotion's high-quality default ≈ CRF 18; duration ~18–25s scaling with highlight count), a single clip lands around **5–15 MB typical, ~25 MB worst case**. Two or three of those would eat most of a 250 MB budget before the user adds a single photo.
 
-**Cost basis:** Railway volume storage is roughly **$0.15–0.25 per GB-month** (confirm current Railway pricing at build time). At the Pro price of $19.99/mo, per-user storage cost is negligible; the real exposure is *aggregate* storage from abandoned sites, which the one-site cap + unpublish already bound.
+**Cost basis:** Railway volume storage is roughly **$0.15–0.25 per GB-month** (confirm current Railway pricing at build time). At the Pro price of $19.00/mo, per-user storage cost is negligible; the real exposure is *aggregate* storage from abandoned sites, which the one-site cap + unpublish already bound.
 
 Two concrete options — **pick one:**
 

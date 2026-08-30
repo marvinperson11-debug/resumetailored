@@ -105,7 +105,7 @@ The first paragraph is not bad writing. It is just not about this job. The secon
 | Achievement matching | No — summarizes resume only | Yes — matches your accomplishments to job requirements |
 | Opening hook | Template phrase ("I am writing to...") | Job-specific reference |
 | Generated with resume rewrite | Separate, disconnected step | Simultaneous, same context |
-| Price for cover letter access | Included ($149 lifetime / $29/mo) | Free tier: unlimited; Pro: $19.99/mo |
+| Price for cover letter access | Included ($149 lifetime / $29/mo) | Free tier: unlimited; Pro: $19.00/mo |
 
 ---
 

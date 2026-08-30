@@ -35,7 +35,7 @@
 ### Business model
 
 - **Free tier is unlimited** for the core tools (resume tailoring, cover letters, ATS scans, LinkedIn optimization) — requires a free login and is IP rate-limited. Free exports carry a small footer watermark and are limited to 6 basic templates.
-- **Pro: $19.99/month or $129 lifetime** (Stripe) — removes the watermark, unlocks all 104 templates, resume video, and personal websites.
+- **Pro: $19.00/month or $129 lifetime** (Stripe) — removes the watermark, unlocks all 104 templates, resume video, and personal websites.
 - **Employer Portal** has its own separate plan tiers (see `EMPLOYER_PORTAL_PLAN.md`).
 
 ### Tech stack
@@ -149,7 +149,7 @@ Copy `.env.example` → `.env` for local dev. In production, all vars are set in
 | `STRIPE_SECRET_KEY` | Stripe server-side API |
 | `STRIPE_PUBLISHABLE_KEY` | Stripe client-side key (injected into public pages) |
 | `STRIPE_WEBHOOK_SECRET` | Verifies `/webhook` signatures — **required** or webhooks fail |
-| `STRIPE_PRICE_ID` | Price ID for the $19.99/mo plan (`price_...`) |
+| `STRIPE_PRICE_ID` | Price ID for the $19.00/mo plan (`price_...`) |
 
 ### Common config
 
@@ -237,7 +237,7 @@ Copy `.env.example` → `.env` for local dev. In production, all vars are set in
 | Service | Used for | Key variable(s) | Get a key / dashboard |
 |---|---|---|---|
 | **Anthropic (Claude)** | Resume tailoring, cover letters, all AI tools | `ANTHROPIC_API_KEY` | https://console.anthropic.com |
-| **Stripe** | Subscriptions ($19.99/mo, $129 lifetime), Employer plans, webhooks | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`, `STRIPE_LIFETIME_PRICE_ID`, `STRIPE_EMPLOYER_*` | https://dashboard.stripe.com |
+| **Stripe** | Subscriptions ($19.00/mo, $129 lifetime), Employer plans, webhooks | `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`, `STRIPE_LIFETIME_PRICE_ID`, `STRIPE_EMPLOYER_*` | https://dashboard.stripe.com |
 | **Resend** | Transactional email (resets, support, publish) | `RESEND_API_KEY` | https://resend.com/dashboard |
 | **SMTP (nodemailer)** | Email fallback | `SMTP_*` | Your mail provider |
 | **ElevenLabs** | Premium MP4 voiceover | `ELEVENLABS_API_KEY` | https://elevenlabs.io |
@@ -407,7 +407,7 @@ Copy `.env.example` → `.env` for local dev. In production, all vars are set in
 ### Billing / webhooks
 | Method / Route | Purpose |
 |---|---|
-| POST `/api/subscribe` | Start $19.99/mo Stripe Checkout |
+| POST `/api/subscribe` | Start $19.00/mo Stripe Checkout |
 | POST `/api/subscribe-lifetime` | Start $129 one-time Checkout |
 | POST `/api/employer/subscribe` | Employer plan checkout |
 | POST `/webhook` | Stripe webhook (**`express.raw()` body — do not add `express.json()` before it**) |

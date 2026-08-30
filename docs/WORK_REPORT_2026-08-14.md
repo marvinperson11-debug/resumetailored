@@ -38,7 +38,7 @@ pre-installed Chromium (no external image API).
 | `story-1080x1920.png` | Story / vertical | Product showcase |
 
 - **Brand:** cream `#FAF7F0` + forest green `#1F5C3D`, Fraunces serif + Inter.
-- **Copy:** free & unlimited, powered by Claude, ATS-ready, $19.99/mo (vs a struck-through $29).
+- **Copy:** free & unlimited, powered by Claude, ATS-ready, $19.00/mo (vs a struck-through $29).
 - **Reproducible:** one `.html` per banner + shared `_brand.css`; `node assets/banners/linkedin/shoot.js` re-renders all five.
 - A layering bug (paper-grain washing out the logo) was found and fixed during visual review.
 
