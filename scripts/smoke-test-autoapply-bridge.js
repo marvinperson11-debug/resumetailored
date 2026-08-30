@@ -42,6 +42,10 @@ const SERVICE_TOKEN = flag("service-token", process.env.RT_SERVICE_TOKEN || "");
 const EXT_TOKEN = flag("extension-token", null);
 const EMAIL = String(flag("email", `smoke_${Date.now()}@autoapply-test.local`)).toLowerCase();
 const KEEP = !!flag("keep", false);
+// --no-signup: skip creating a real user (use the service token for the "add"
+// step). Recommended against PRODUCTION so the run leaves ZERO persistent data —
+// the only row it creates (an apply_queue entry) is deleted at the end.
+const NO_SIGNUP = !!flag("no-signup", false);
 
 let pass = 0, fail = 0, skip = 0;
 const results = [];
@@ -87,19 +91,25 @@ async function main() {
     return summarize();
   }
 
-  // 2) Create a test user on the main app (browser path) to add a job "as the user".
+  // 2) Create a test user on the main app (browser path) to add a job "as the
+  //    user". Skipped with --no-signup (recommended for production): the service
+  //    token adds the job instead, so no persistent user is created.
   let bearer = null;
-  try {
-    const pw = `Sm0ke!${Math.random().toString(36).slice(2)}Aa9`;
-    const r = await req(`${MAIN}/api/auth/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: EMAIL, username: "Smoke Test", password: pw }),
-    });
-    bearer = r.json && r.json.token;
-    record("2. create a test user on the main app (signup)", r.status === 200 && !!bearer, `HTTP ${r.status}`);
-  } catch (e) {
-    record("2. create a test user on the main app (signup)", false, e.message);
+  if (NO_SIGNUP) {
+    record("2. create a test user on the main app (signup)", "skip", "--no-signup: using the service token, no user created");
+  } else {
+    try {
+      const pw = `Sm0ke!${Math.random().toString(36).slice(2)}Aa9`;
+      const r = await req(`${MAIN}/api/auth/signup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: EMAIL, username: "Smoke Test", password: pw }),
+      });
+      bearer = r.json && r.json.token;
+      record("2. create a test user on the main app (signup)", r.status === 200 && !!bearer, `HTTP ${r.status}`);
+    } catch (e) {
+      record("2. create a test user on the main app (signup)", false, e.message);
+    }
   }
 
   // 3) Add a job to the main queue as the user (browser session bearer). Falls
