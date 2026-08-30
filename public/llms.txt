@@ -1,7 +1,7 @@
-<!-- Last updated: 2026-08-02 -->
+<!-- Last updated: 2026-08-30 -->
 # ResumeTailored AI
 
-> ResumeTailored AI is a SaaS tool that uses Claude AI to tailor resumes and generate cover letters for any job posting. It rewrites your resume with the right keywords, reorders your bullet points for relevance, and produces a custom cover letter — in under 60 seconds. The free tier is genuinely unlimited — unlimited resume tailoring, cover letters, ATS scans and LinkedIn optimization with a free signed-in account. Pro plan at $19.99/month or $129 lifetime.
+> ResumeTailored AI is a SaaS tool that uses Claude AI to tailor resumes and generate cover letters for any job posting. It rewrites your resume with the right keywords, reorders your bullet points for relevance, and produces a custom cover letter — in under 60 seconds. The free tier is genuinely unlimited — unlimited resume tailoring, cover letters, ATS scans and LinkedIn optimization with a free signed-in account. Pro plan at $19.00/month or $129 lifetime.
 
 ## Why it's different
 
@@ -17,7 +17,7 @@
 ## Pricing
 
 - Free: unlimited resume tailoring, cover letters, ATS scans and LinkedIn optimization — sign in, no credit card. Exports carry a small watermark and only 6 basic templates are available.
-- Pro: $19.99/month — every template, watermark-free exports, resume video, and a personal website.
+- Pro: $19.00/month — every template, watermark-free exports, resume video, and a personal website.
 - Lifetime: $129 one-time — same as Pro, paid once.
 
 ## Free tools (no sign-up)
@@ -48,7 +48,7 @@
 ## Compare to alternatives
 
 - [Best Teal Alternative](https://resumetailored.com/alternatives/teal): why ResumeTailored's free tier rewrites your resume (Teal only rewrites on a paid plan) and adds a cover letter.
-- [Best Jobscan Alternative](https://resumetailored.com/alternatives/jobscan): Jobscan scores keywords; ResumeTailored actually rewrites the resume to fix the gaps — at $19.99/mo vs ~$30/mo.
+- [Best Jobscan Alternative](https://resumetailored.com/alternatives/jobscan): Jobscan scores keywords; ResumeTailored actually rewrites the resume to fix the gaps — at $19.00/mo vs ~$30/mo.
 - [Best Rezi Alternative](https://resumetailored.com/alternatives/rezi): Claude-written resumes and cover letters vs Rezi's GPT-based output.
 - [Best Kickresume Alternative](https://resumetailored.com/alternatives/kickresume): single-column, ATS-safe output and stronger AI writing.
 - [Enhancv Alternative](https://resumetailored.com/enhancv-alternative), [Resume.io Alternative](https://resumetailored.com/resume-io-alternative), [Zety Alternative](https://resumetailored.com/zety-alternative).
@@ -63,28 +63,28 @@
 
 ## Blog
 
-- [How to Beat ATS Filters and Get Your Resume Seen in 2026](https://resumetailored.com/blog/how-to-beat-ats-filters.md): 75% of resumes are filtered by ATS before a human sees them. Complete guide to optimizing your resume to pass ATS software every time.
-- [How to Tailor Your Resume with AI (Step-by-Step)](https://resumetailored.com/blog/how-to-tailor-resume-with-ai.md): the exact AI-assisted workflow to tailor any resume to a job description without fabricating experience.
-- [How to Tailor Your Resume to a Job Description in 5 Minutes](https://resumetailored.com/blog/tailor-resume-to-job-description.md): the Mirror Method, keyword extraction table, placement priority order, and AI-accelerated workflow.
-- [How to Tailor Your Resume to Any Job Posting (Step-by-Step)](https://resumetailored.com/blog/how-to-tailor-your-resume.md): the 5-step process to tailor your resume quickly and effectively.
-- [Mastering Resume Tailoring to Boost Your Interview Chances](https://resumetailored.com/blog/mastering-resume-tailoring-boost-interview-chances.md): how targeted tailoring raises callback rates, with concrete before/after examples.
-- [Resume Keywords: How to Find, Use, and Place the Right Terms to Pass ATS](https://resumetailored.com/blog/resume-keywords.md): the 3 types of resume keywords, where to place them, and industry-specific keyword lists.
-- [10 Resume Tips That Will Get You More Interviews in 2026](https://resumetailored.com/blog/resume-tips-2026.md): the resume strategies actually working right now — based on what recruiters say they look for.
-- [Best AI Resume Builders of 2026, Compared](https://resumetailored.com/blog/best-ai-resume-builders-2026.md): how the leading AI resume tools stack up on writing quality, ATS output, free tiers, and price.
-- [Unlimited Free Resume Tailoring is Here (2026 Update)](https://resumetailored.com/blog/unlimited-free-resume-tailoring-2026.md): the 2026 pricing change — unlimited free resume tailoring and cover letters, what's free, and what stays Pro.
-- [Best Resume Tools for International Job Seekers](https://resumetailored.com/blog/best-resume-tools-international-job-seekers.md): tools and tactics for non-English and cross-border applications, including bilingual resumes.
-- [AI Resume Rewriter vs. AI Resume Builder: What's the Difference in 2026?](https://resumetailored.com/blog/ai-resume-rewriter-vs-builder.md): most job seekers need a rewriter, not a builder — how to pick the right tool.
-- [Free ATS Resume Scanners Compared](https://resumetailored.com/blog/free-ats-resume-scanners-compared.md): we tested 4 free ATS scanners on their actual free tiers — what you get and which gets you to a submitted application fastest.
-- [Why Claude Writes Better Resumes Than ChatGPT](https://resumetailored.com/blog/why-claude-writes-better-resumes.md): the concrete writing-quality differences that matter for resumes and cover letters.
-- [How to Write a Cover Letter That Actually Gets Read](https://resumetailored.com/blog/cover-letter-tips.md): the exact structure, opening lines, and do's and don'ts that make recruiters stop and read.
-- [How to Write a Cover Letter That Gets Read in 2026](https://resumetailored.com/blog/how-to-write-a-cover-letter.md): the 4-part structure, opening hook formulas, and 3 complete examples.
-- [How to Negotiate Your Salary and Get Paid What You're Worth](https://resumetailored.com/blog/salary-negotiation.md): the exact scripts and strategies to negotiate your salary confidently without losing the offer.
-- [10 LinkedIn Profile Tips to Get More Recruiter Attention in 2026](https://resumetailored.com/blog/linkedin-profile-tips.md): 10 profile optimizations that move you to the top of recruiter search results.
-- [Jobscan vs ResumeTailored AI](https://resumetailored.com/blog/jobscan-vs-resumetailored.md): Jobscan tells you what's wrong; ResumeTailored AI fixes it. Honest comparison of features, pricing, and free tiers.
-- [Teal vs ResumeTailored AI](https://resumetailored.com/blog/teal-vs-resumetailored.md): free-tier and writing-quality comparison of Teal and ResumeTailored.
-- [Rezi vs ResumeTailored AI](https://resumetailored.com/blog/rezi-vs-resumetailored.md): how the two compare on cover letters, AI writing quality, and price.
-- [ResumeTailored vs Canva](https://resumetailored.com/blog/resumetailored-vs-canva.md): why a good-looking Canva resume can still fail ATS, and what to use instead.
-- [Why Rezi Cover Letters Fall Short — and What to Use Instead](https://resumetailored.com/blog/why-rezi-cover-letters-fall-short.md): Rezi's cover letter generator doesn't read the job description — the structural problem, with a side-by-side example.
+- [How to Beat ATS Filters and Get Your Resume Seen in 2026](https://resumetailored.com/blog/how-to-beat-ats-filters): 75% of resumes are filtered by ATS before a human sees them. Complete guide to optimizing your resume to pass ATS software every time.
+- [How to Tailor Your Resume with AI (Step-by-Step)](https://resumetailored.com/blog/how-to-tailor-resume-with-ai): the exact AI-assisted workflow to tailor any resume to a job description without fabricating experience.
+- [How to Tailor Your Resume to a Job Description in 5 Minutes](https://resumetailored.com/blog/tailor-resume-to-job-description): the Mirror Method, keyword extraction table, placement priority order, and AI-accelerated workflow.
+- [How to Tailor Your Resume to Any Job Posting (Step-by-Step)](https://resumetailored.com/blog/how-to-tailor-your-resume): the 5-step process to tailor your resume quickly and effectively.
+- [Mastering Resume Tailoring to Boost Your Interview Chances](https://resumetailored.com/blog/mastering-resume-tailoring-boost-interview-chances): how targeted tailoring raises callback rates, with concrete before/after examples.
+- [Resume Keywords: How to Find, Use, and Place the Right Terms to Pass ATS](https://resumetailored.com/blog/resume-keywords): the 3 types of resume keywords, where to place them, and industry-specific keyword lists.
+- [10 Resume Tips That Will Get You More Interviews in 2026](https://resumetailored.com/blog/resume-tips-2026): the resume strategies actually working right now — based on what recruiters say they look for.
+- [Best AI Resume Builders of 2026, Compared](https://resumetailored.com/blog/best-ai-resume-builders-2026): how the leading AI resume tools stack up on writing quality, ATS output, free tiers, and price.
+- [Unlimited Free Resume Tailoring is Here (2026 Update)](https://resumetailored.com/blog/unlimited-free-resume-tailoring-2026): the 2026 pricing change — unlimited free resume tailoring and cover letters, what's free, and what stays Pro.
+- [Best Resume Tools for International Job Seekers](https://resumetailored.com/blog/best-resume-tools-international-job-seekers): tools and tactics for non-English and cross-border applications, including bilingual resumes.
+- [AI Resume Rewriter vs. AI Resume Builder: What's the Difference in 2026?](https://resumetailored.com/blog/ai-resume-rewriter-vs-builder): most job seekers need a rewriter, not a builder — how to pick the right tool.
+- [Free ATS Resume Scanners Compared](https://resumetailored.com/blog/free-ats-resume-scanners-compared): we tested 4 free ATS scanners on their actual free tiers — what you get and which gets you to a submitted application fastest.
+- [Why Claude Writes Better Resumes Than ChatGPT](https://resumetailored.com/blog/why-claude-writes-better-resumes): the concrete writing-quality differences that matter for resumes and cover letters.
+- [How to Write a Cover Letter That Actually Gets Read](https://resumetailored.com/blog/cover-letter-tips): the exact structure, opening lines, and do's and don'ts that make recruiters stop and read.
+- [How to Write a Cover Letter That Gets Read in 2026](https://resumetailored.com/blog/how-to-write-a-cover-letter): the 4-part structure, opening hook formulas, and 3 complete examples.
+- [How to Negotiate Your Salary and Get Paid What You're Worth](https://resumetailored.com/blog/salary-negotiation): the exact scripts and strategies to negotiate your salary confidently without losing the offer.
+- [10 LinkedIn Profile Tips to Get More Recruiter Attention in 2026](https://resumetailored.com/blog/linkedin-profile-tips): 10 profile optimizations that move you to the top of recruiter search results.
+- [Jobscan vs ResumeTailored AI](https://resumetailored.com/blog/jobscan-vs-resumetailored): Jobscan tells you what's wrong; ResumeTailored AI fixes it. Honest comparison of features, pricing, and free tiers.
+- [Teal vs ResumeTailored AI](https://resumetailored.com/blog/teal-vs-resumetailored): free-tier and writing-quality comparison of Teal and ResumeTailored.
+- [Rezi vs ResumeTailored AI](https://resumetailored.com/blog/rezi-vs-resumetailored): how the two compare on cover letters, AI writing quality, and price.
+- [ResumeTailored vs Canva](https://resumetailored.com/blog/resumetailored-vs-canva): why a good-looking Canva resume can still fail ATS, and what to use instead.
+- [Why Rezi Cover Letters Fall Short — and What to Use Instead](https://resumetailored.com/blog/why-rezi-cover-letters-fall-short): Rezi's cover letter generator doesn't read the job description — the structural problem, with a side-by-side example.
 
 ## Contact
 

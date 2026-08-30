@@ -1049,6 +1049,28 @@ for (const [flat, slug] of Object.entries(ALTERNATIVE_REDIRECTS)) {
 // any stray link there. Must run BEFORE express.static.
 app.get('/yourname', (req, res) => res.redirect(301, '/'));
 
+// Serve the XML sitemap from an explicit, hardened route registered BEFORE the
+// `app.get(/.*/ )` HTML catch-all and `express.static` below. robots.txt points
+// crawlers at /sitemap.xml, so it must always answer with a valid XML response.
+// Keeping it here guarantees the correct `application/xml` content-type and
+// makes the response independent of static-file resolution order (the catch-all
+// regex runs for every GET, including this path) and of any CDN handling of
+// static extensions. If the file is somehow missing from a deploy it falls back
+// to a 404, never an unhandled 500.
+const _sitemapXmlPath = path.join(__dirname, 'public', 'sitemap.xml');
+app.get('/sitemap.xml', (req, res) => {
+  fs.readFile(_sitemapXmlPath, 'utf8', (err, xml) => {
+    if (err) {
+      console.error('[sitemap] failed to read sitemap.xml:', err.message);
+      res.status(404);
+      return res.sendFile(path.join(__dirname, 'public', '404.html'));
+    }
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(xml);
+  });
+});
+
 // ── Cache-busting for CSS/JS referenced by HTML pages ────────────────────────
 // The no-cache headers above are necessary but NOT sufficient: Cloudflare
 // (the CDN in front of Railway) silently overrides Cache-Control for
