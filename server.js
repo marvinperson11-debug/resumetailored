@@ -89,6 +89,8 @@ process.on('unhandledRejection', (reason) => {
 if (!process.env.ANTHROPIC_API_KEY) console.error('STARTUP ERROR: ANTHROPIC_API_KEY is not set — AI tailoring will fail for all users.');
 if (!process.env.STRIPE_SECRET_KEY) console.error('STARTUP ERROR: STRIPE_SECRET_KEY is not set — payments will fail.');
 if (!process.env.STRIPE_PRICE_ID) console.error('STARTUP ERROR: STRIPE_PRICE_ID is not set — checkout will fail.');
+if (!process.env.RT_SERVICE_TOKEN) console.warn('[AutoApply Bridge] RT_SERVICE_TOKEN not set — standalone app cannot sync (session-only mode)');
+else console.log('[AutoApply Bridge] RT_SERVICE_TOKEN set — the standalone AutoApply app can sync the apply queue.');
 
 // Normalize a Stripe price id: strip every character that CANNOT appear in one.
 // A price id is "price_" + alphanumerics — no whitespace, no invisible/zero-width

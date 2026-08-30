@@ -19,7 +19,18 @@ export interface JobRow {
   coverLetter: string | null;
   appliedAt: string | null;
   createdAt: string;
+  sourceQueueId: string | null;
 }
+
+// The bridge health the "Synced / Sync pending / Bridge offline" pill reflects.
+type BridgeState = "synced" | "pending" | "offline" | "unconfigured" | "unknown";
+const bridgePill: Record<BridgeState, { label: string; cls: string } | null> = {
+  synced: { label: "● Synced", cls: "border-emerald-300 bg-emerald-100 text-emerald-800" },
+  pending: { label: "● Sync pending", cls: "border-amber-300 bg-amber-100 text-amber-800" },
+  offline: { label: "● Bridge offline", cls: "border-red-300 bg-red-100 text-red-800" },
+  unconfigured: { label: "● Bridge not configured", cls: "border-slate-300 bg-slate-100 text-slate-700" },
+  unknown: null,
+};
 
 const statusBadge: Record<JobRow["status"], { label: string; variant: "secondary" | "warning" | "success" }> = {
   NEW: { label: "New", variant: "secondary" },
@@ -44,6 +55,9 @@ export function JobQueue() {
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
   const [queueCount, setQueueCount] = useState<number | null>(null);
+  const [bridgeReachable, setBridgeReachable] = useState<null | boolean>(null); // null=unknown
+  const [bridgeConfigured, setBridgeConfigured] = useState<null | boolean>(null);
+  const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/jobs");
@@ -52,17 +66,46 @@ export function JobQueue() {
     setLoading(false);
   }, []);
 
-  // How many jobs are waiting in the main ResumeTailored queue (source of truth).
+  // How many jobs are waiting in the main ResumeTailored queue (source of truth),
+  // and the bridge's health (drives the status pill).
   const loadQueueCount = useCallback(async () => {
     try {
       const res = await fetch("/api/apply-queue/count");
-      const data = await res.json();
-      if (res.ok && data.synced) setQueueCount(data.count ?? 0);
-      else setQueueCount(null);
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 200 && data.synced) {
+        setQueueCount(data.count ?? 0);
+        setBridgeConfigured(true);
+        setBridgeReachable(true);
+        setLastSyncAt(Date.now());
+      } else if (res.status === 200 && data.synced === false) {
+        // 200 with synced:false ⇒ the bridge env isn't set on this server.
+        setQueueCount(null);
+        setBridgeConfigured(false);
+        setBridgeReachable(null);
+      } else {
+        // 401 (signed-out) or 502 (main app unreachable).
+        setQueueCount(null);
+        setBridgeConfigured(res.status === 401 ? null : true);
+        setBridgeReachable(false);
+      }
     } catch {
       setQueueCount(null);
+      setBridgeReachable(false);
     }
   }, []);
+
+  // Derive the pill state from bridge health + whether the local list is behind.
+  const importedCount = jobs.filter((j) => j.sourceQueueId).length;
+  const bridgeState: BridgeState =
+    bridgeConfigured === false
+      ? "unconfigured"
+      : bridgeReachable === false
+      ? "offline"
+      : bridgeReachable === true
+      ? syncing || (queueCount != null && queueCount > importedCount)
+        ? "pending"
+        : "synced"
+      : "unknown";
 
   // Pull the main app's queue into local jobs so Score/Prepare/Apply can run.
   const syncFromMain = useCallback(async () => {
@@ -163,21 +206,38 @@ export function JobQueue() {
   return (
     <div className="space-y-4">
       {/* Synced with the main ResumeTailored queue (the source of truth). */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-        <div className="text-sm text-emerald-800">
-          <span className="font-semibold">✓ Synced with your ResumeTailored queue</span>
-          {queueCount != null && (
-            <span className="ml-2 text-emerald-700">
-              {queueCount} job{queueCount === 1 ? "" : "s"} in your ResumeTailored apply queue.
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          {bridgePill[bridgeState] && (
+            <span
+              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${bridgePill[bridgeState]!.cls}`}
+              title="Sync status with your ResumeTailored apply queue"
+            >
+              {bridgePill[bridgeState]!.label}
             </span>
           )}
-          <span className="ml-1 text-emerald-700">
-            Jobs you add via the ResumeTailored Job Finder show up here.
+          <span className="text-muted-foreground">
+            {bridgeState === "unconfigured"
+              ? "Queue sync isn't configured on this server (set RT_MAIN_APP_URL + RT_SERVICE_TOKEN)."
+              : bridgeState === "offline"
+              ? "Can't reach ResumeTailored right now — showing your local jobs."
+              : (
+                <>
+                  {queueCount != null && (
+                    <b className="text-foreground">
+                      {queueCount} job{queueCount === 1 ? "" : "s"} in your ResumeTailored queue.{" "}
+                    </b>
+                  )}
+                  Jobs you add via the ResumeTailored Job Finder show up here.
+                </>
+              )}
           </span>
         </div>
-        <Button variant="outline" size="sm" disabled={syncing} onClick={syncFromMain}>
-          {syncing ? "Syncing…" : "Sync from ResumeTailored"}
-        </Button>
+        {bridgeState !== "unconfigured" && (
+          <Button variant="outline" size="sm" disabled={syncing} onClick={syncFromMain}>
+            {syncing ? "Syncing…" : "Sync from ResumeTailored"}
+          </Button>
+        )}
       </div>
       {syncMsg && <div className="rounded-md bg-muted px-4 py-2 text-sm text-muted-foreground">{syncMsg}</div>}
 
