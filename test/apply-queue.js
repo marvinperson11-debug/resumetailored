@@ -24,6 +24,7 @@ const check = (name, cond, detail) => {
 
 process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'rt-aaq-'));
 process.env.RT_DISABLE_RATE_LIMIT = '1';
+process.env.RT_SERVICE_TOKEN = 'test-service-secret'; // enables the AutoApply service bridge
 const { app } = require('../server.js');
 const Database = require('better-sqlite3');
 
@@ -35,10 +36,10 @@ db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('devB', 'sync@
 db.prepare('INSERT INTO users (email,username,password_hash) VALUES (?,?,?)').run('other@x.com', 'Oth Er', 'x');
 db.prepare('INSERT INTO sessions (token,email) VALUES (?,?)').run('tokOther', 'other@x.com');
 
-function req(method, urlPath, token, body) {
+function req(method, urlPath, token, body, extraHeaders) {
   return new Promise((resolve, reject) => {
     const payload = body ? JSON.stringify(body) : null;
-    const headers = {};
+    const headers = Object.assign({}, extraHeaders || {});
     if (token) headers.Authorization = 'Bearer ' + token;
     if (payload) { headers['Content-Type'] = 'application/json'; headers['Content-Length'] = Buffer.byteLength(payload); }
     const r = http.request({ host: '127.0.0.1', port: PORT, path: urlPath, method, headers }, (res) => {
@@ -120,6 +121,28 @@ const server = app.listen(0, async () => {
     // ── delete ──────────────────────────────────────────────────────────────────
     await req('DELETE', '/api/apply-queue/' + itemId, 'devA');
     check('DELETE removes the item (visible cross-device)', (await req('GET', '/api/apply-queue/count', 'devB')).json.count === 2);
+
+    // ── SERVICE-TOKEN BRIDGE: the standalone AutoApply app authenticates by a
+    //    shared secret + the user's email (no shared session store) ──────────────
+    const SVC = { 'x-rt-service-token': 'test-service-secret', 'x-rt-user-email': 'sync@x.com' };
+    const svcGet = await req('GET', '/api/apply-queue', null, null, SVC);
+    check('SERVICE: valid token+email reads the same user queue', svcGet.status === 200 && svcGet.json.count === 2, svcGet.body);
+    const svcAdd = await req('POST', '/api/apply-queue', null, { job_url: 'https://jobs.example.com/svc-1', job_title: 'Via Service' }, SVC);
+    check('SERVICE: can add to the user queue', svcAdd.status === 201 && svcAdd.json.item.jobTitle === 'Via Service', svcAdd.body);
+    // The service-added job is visible to the same user's browser session.
+    check('SERVICE: service-added job visible to the browser session', (await req('GET', '/api/apply-queue/count', 'devA')).json.count === 3);
+    // Status write-back via the service bridge.
+    const svcPatch = await req('PATCH', '/api/apply-queue/' + svcAdd.json.item.id, null, { status: 'auto_filled' }, SVC);
+    check('SERVICE: can PATCH status back', svcPatch.status === 200 && svcPatch.json.item.status === 'auto_filled', svcPatch.body);
+    // A wrong secret is rejected; a valid secret without an email header falls
+    // through to normal session auth (which, unauthenticated, is 401).
+    check('SERVICE: wrong token → 401 bad_service_token',
+      (await req('GET', '/api/apply-queue', null, null, { 'x-rt-service-token': 'nope', 'x-rt-user-email': 'sync@x.com' })).json.error === 'bad_service_token');
+    check('SERVICE: token without email header → session 401',
+      (await req('GET', '/api/apply-queue', null, null, { 'x-rt-service-token': 'test-service-secret' })).status === 401);
+    // Isolation still holds: a service call for one user never sees another's.
+    check('SERVICE: scoped to the named email only',
+      (await req('GET', '/api/apply-queue', null, null, { 'x-rt-service-token': 'test-service-secret', 'x-rt-user-email': 'other@x.com' })).json.count === 0);
 
     if (failures) { console.error(`\nFAILED (${failures} failure${failures === 1 ? '' : 's'})`); server.close(() => process.exit(1)); }
     else { console.log('\nALL PASS (0 failures)'); server.close(() => process.exit(0)); }

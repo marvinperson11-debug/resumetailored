@@ -41,6 +41,9 @@ export function JobQueue() {
   const [addOpen, setAddOpen] = useState(false);
   const [prepareId, setPrepareId] = useState<string | null>(null);
   const [extInstalled, setExtInstalled] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState<string | null>(null);
+  const [queueCount, setQueueCount] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/jobs");
@@ -49,10 +52,54 @@ export function JobQueue() {
     setLoading(false);
   }, []);
 
+  // How many jobs are waiting in the main ResumeTailored queue (source of truth).
+  const loadQueueCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/apply-queue/count");
+      const data = await res.json();
+      if (res.ok && data.synced) setQueueCount(data.count ?? 0);
+      else setQueueCount(null);
+    } catch {
+      setQueueCount(null);
+    }
+  }, []);
+
+  // Pull the main app's queue into local jobs so Score/Prepare/Apply can run.
+  const syncFromMain = useCallback(async () => {
+    setSyncing(true);
+    setSyncMsg(null);
+    try {
+      const res = await fetch("/api/apply-queue/import", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setSyncMsg(
+          data.error === "bridge_unconfigured"
+            ? "Queue sync isn't configured on this server yet."
+            : data.message || data.error || "Sync failed."
+        );
+        return;
+      }
+      setSyncMsg(
+        data.imported || data.updated
+          ? `Synced ${data.imported} new and ${data.updated} existing job${
+              data.imported + data.updated === 1 ? "" : "s"
+            } from your ResumeTailored queue.`
+          : "Your ResumeTailored queue is empty — nothing to sync."
+      );
+      await load();
+      await loadQueueCount();
+    } catch {
+      setSyncMsg("Could not reach ResumeTailored.");
+    } finally {
+      setSyncing(false);
+    }
+  }, [load, loadQueueCount]);
+
   useEffect(() => {
     load();
+    loadQueueCount();
     isExtensionInstalled().then(setExtInstalled);
-  }, [load]);
+  }, [load, loadQueueCount]);
 
   const setBusyFor = (id: string, action: string | null) =>
     setBusy((b) => {
@@ -115,6 +162,25 @@ export function JobQueue() {
 
   return (
     <div className="space-y-4">
+      {/* Synced with the main ResumeTailored queue (the source of truth). */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+        <div className="text-sm text-emerald-800">
+          <span className="font-semibold">✓ Synced with your ResumeTailored queue</span>
+          {queueCount != null && (
+            <span className="ml-2 text-emerald-700">
+              {queueCount} job{queueCount === 1 ? "" : "s"} in your ResumeTailored apply queue.
+            </span>
+          )}
+          <span className="ml-1 text-emerald-700">
+            Jobs you add via the ResumeTailored Job Finder show up here.
+          </span>
+        </div>
+        <Button variant="outline" size="sm" disabled={syncing} onClick={syncFromMain}>
+          {syncing ? "Syncing…" : "Sync from ResumeTailored"}
+        </Button>
+      </div>
+      {syncMsg && <div className="rounded-md bg-muted px-4 py-2 text-sm text-muted-foreground">{syncMsg}</div>}
+
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
           {extInstalled ? (

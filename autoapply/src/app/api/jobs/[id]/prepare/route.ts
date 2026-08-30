@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { prepareApplication } from "@/lib/ai";
+import { syncStatusToMain } from "@/lib/queue-writeback";
 import type { ResumeData } from "@/lib/types";
 
 export const maxDuration = 120;
@@ -46,6 +47,9 @@ export async function POST(_req: Request, { params }: Params) {
       status: job.status === "NEW" ? "PREPARED" : job.status,
     },
   });
+
+  // Mirror the status back to the main app's queue if this job came from there.
+  await syncStatusToMain(userId, updated.sourceQueueId, updated.status);
 
   return NextResponse.json({ job: updated });
 }

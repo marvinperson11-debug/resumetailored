@@ -62,3 +62,34 @@ export async function syncApplied(
   });
   if (!res.ok) throw new Error(`sync failed: HTTP ${res.status}`);
 }
+
+// ── Main ResumeTailored apply queue (proxied through the AutoApply app) ───────
+// The extension never talks to the main app directly (no shared cookie, no
+// service secret in the client); it calls the AutoApply app's /api/apply-queue*
+// proxy with its bearer ExtensionToken, and the app forwards to the main app.
+
+export interface QueueCount { count: number; queued: number }
+
+/** How many jobs are in the user's ResumeTailored apply queue. */
+export async function fetchQueueCount(apiBase: string, token: string): Promise<QueueCount> {
+  const res = await fetch(`${apiBase}/api/apply-queue/count`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const d = await res.json();
+  return { count: Number(d.count) || 0, queued: Number(d.queued) || 0 };
+}
+
+/** Add a job to the user's ResumeTailored apply queue (e.g. the current tab). */
+export async function addToQueue(
+  apiBase: string,
+  token: string,
+  job: { jobUrl: string; jobTitle?: string; companyName?: string; jobBoard?: string }
+): Promise<void> {
+  const res = await fetch(`${apiBase}/api/apply-queue`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(job),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+}

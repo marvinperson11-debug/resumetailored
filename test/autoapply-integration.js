@@ -59,7 +59,9 @@ check('apply_queue table is created', /CREATE TABLE IF NOT EXISTS apply_queue/.t
   check('server has ' + m.toUpperCase() + ' /api/apply-queue route', new RegExp('app\\.' + m + "\\('/api/apply-queue").test(srv)));
 check('server has a batch add route', /'\/api\/apply-queue\/batch'/.test(srv));
 check('server has a count route', /'\/api\/apply-queue\/count'/.test(srv));
-check('apply-queue routes require an account (careerEmail gate)', /app\.get\('\/api\/apply-queue'[\s\S]{0,120}careerEmail\(req, res\)/.test(srv));
+check('apply-queue routes require an account (applyQueueEmail gate)', /app\.get\('\/api\/apply-queue'[\s\S]{0,120}applyQueueEmail\(req, res\)/.test(srv));
+// The service-to-service bridge for the standalone AutoApply app.
+check('apply-queue has a service-token bridge (applyQueueEmail)', /function applyQueueEmail\(/.test(srv) && /x-rt-service-token/.test(srv) && /RT_SERVICE_TOKEN/.test(srv));
 
 // ── 4. Cross-linking: shared component + inclusion on every tool page. ────────
 check('related-tools.js component exists', exists('public/related-tools.js'));
