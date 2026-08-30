@@ -168,16 +168,8 @@
       <a href="/dashboard" class="btn btn-primary btn-lg">Back to dashboard &rarr;</a>
     </div>
 
-    <!-- RELATED TOOLS -->
-    <div style="margin-top:48px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.07);">
-      <p style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#2E7D53;margin-bottom:16px;">More Free Tools</p>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <a href="/score" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;color:#94a3b8;transition:all .15s;">&#128200; ATS Score Checker</a>
-        <a href="/tools/ats-keyword-extractor" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;color:#94a3b8;transition:all .15s;">&#128269; ATS Keyword Extractor</a>
-        <a href="/free-ats-resume-checker" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;color:#94a3b8;transition:all .15s;">&#9989; Free ATS Resume Checker</a>
-        <a href="/ai-cover-letter-generator" style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 20px;font-size:14px;font-weight:700;color:#94a3b8;transition:all .15s;">&#9993; AI Cover Letter Generator</a>
-      </div>
-    </div>
+    <!-- RELATED TOOLS (rendered by /related-tools.js) -->
+    <div id="relatedTools"></div>
 
   </div>
 </main>
@@ -213,5 +205,6 @@
   window.addEventListener('message',function(e){if(e.origin!==location.origin||!e.data||e.data.source!=='rt-video-preview')return;if(e.data.type==='loaded')status.textContent='Loaded '+e.data.name+'.';if(e.data.type==='error')status.textContent=e.data.message;});
 })();
 </script>
+<script src="/related-tools.js" defer></script>
 </body>
 </html>

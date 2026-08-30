@@ -504,6 +504,22 @@ db.exec(`
     UNIQUE(email, job_id)
   );
   CREATE INDEX IF NOT EXISTS idx_saved_jobs_email ON saved_jobs(email);
+  CREATE TABLE IF NOT EXISTS apply_queue (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    email        TEXT NOT NULL,
+    job_url      TEXT,
+    job_title    TEXT,
+    company_name TEXT,
+    job_board    TEXT,
+    status       TEXT NOT NULL DEFAULT 'queued',
+    resume_id    TEXT,
+    cover_letter TEXT,
+    form_data    TEXT,
+    created_at   INTEGER NOT NULL,
+    updated_at   INTEGER NOT NULL,
+    UNIQUE(email, job_url)
+  );
+  CREATE INDEX IF NOT EXISTS idx_apply_queue_email ON apply_queue(email);
   CREATE TABLE IF NOT EXISTS scenario_cache (
     cache_key     TEXT PRIMARY KEY,
     profession_id TEXT NOT NULL,
@@ -8752,6 +8768,129 @@ app.get('/api/jobs/saved', (req, res) => {
 app.delete('/api/jobs/saved/:id', (req, res) => {
   const email = careerEmail(req, res); if (!email) return;
   db.prepare('DELETE FROM saved_jobs WHERE id = ? AND email = ?').run(parseInt(req.params.id, 10), email.toLowerCase());
+  res.json({ success: true });
+});
+
+// ─── AutoApply queue: a persistent, cross-device apply queue ─────────────────
+// The queue the Job Finder feeds and the AutoApply tool works through. Unlike
+// the old client-side rt_aa_queue (per-browser localStorage), this is stored
+// server-side keyed by the signed-in account, so it syncs across every device
+// the user logs in on. All routes require an account (careerEmail → 401).
+const APPLY_STATUSES = ['queued', 'auto_filled', 'submitted', 'manual_needed', 'archived'];
+function _applyRowOut(r) {
+  return {
+    id: r.id, jobUrl: r.job_url, jobTitle: r.job_title, companyName: r.company_name,
+    jobBoard: r.job_board, status: r.status, resumeId: r.resume_id, coverLetter: r.cover_letter,
+    formData: (() => { try { return r.form_data ? JSON.parse(r.form_data) : null; } catch (e) { return null; } })(),
+    createdAt: r.created_at, updatedAt: r.updated_at
+  };
+}
+// Infer the job board from a posting URL when the client didn't supply one.
+function _inferJobBoard(url) {
+  const u = String(url || '').toLowerCase();
+  if (!u) return '';
+  if (u.includes('linkedin.')) return 'linkedin';
+  if (u.includes('indeed.')) return 'indeed';
+  if (u.includes('greenhouse.io') || u.includes('boards.greenhouse')) return 'greenhouse';
+  if (u.includes('lever.co')) return 'lever';
+  if (u.includes('myworkday') || u.includes('workday')) return 'workday';
+  if (u.includes('glassdoor.')) return 'glassdoor';
+  if (u.includes('ziprecruiter.')) return 'ziprecruiter';
+  try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; }
+}
+// Insert one item for `email`; returns { row, created }. Dedupes on (email, job_url).
+function _applyEnqueue(email, item) {
+  const e = email.toLowerCase();
+  const now = Date.now();
+  const jobUrl = (item.job_url || item.jobUrl || '').toString().slice(0, 2000);
+  const title = (item.job_title || item.jobTitle || '').toString().slice(0, 300);
+  const company = (item.company_name || item.companyName || '').toString().slice(0, 300);
+  let board = (item.job_board || item.jobBoard || '').toString().slice(0, 60);
+  if (!board) board = _inferJobBoard(jobUrl);
+  const resumeId = item.resume_id != null ? String(item.resume_id).slice(0, 100) : (item.resumeId != null ? String(item.resumeId).slice(0, 100) : null);
+  if (!jobUrl && !title) return { row: null, created: false, invalid: true };
+  // Dedupe: a non-empty job_url already queued for this user is a no-op.
+  if (jobUrl) {
+    const existing = db.prepare('SELECT * FROM apply_queue WHERE email = ? AND job_url = ?').get(e, jobUrl);
+    if (existing) return { row: existing, created: false };
+  }
+  const info = db.prepare(
+    'INSERT INTO apply_queue (email, job_url, job_title, company_name, job_board, status, resume_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)'
+  ).run(e, jobUrl, title, company, board, 'queued', resumeId, now, now);
+  const row = db.prepare('SELECT * FROM apply_queue WHERE id = ?').get(info.lastInsertRowid);
+  return { row, created: true };
+}
+
+app.post('/api/apply-queue', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const body = (req.body && (req.body.job || req.body)) || {};
+  const r = _applyEnqueue(email, body);
+  if (r.invalid) return res.status(400).json({ error: 'bad_request', message: 'A job_url or job_title is required.' });
+  res.status(r.created ? 201 : 200).json({ success: true, created: r.created, item: _applyRowOut(r.row) });
+});
+
+app.post('/api/apply-queue/batch', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const jobs = (req.body && req.body.jobs) || [];
+  if (!Array.isArray(jobs) || !jobs.length) return res.status(400).json({ error: 'bad_request', message: 'Provide a non-empty jobs array.' });
+  const items = []; let created = 0;
+  const tx = db.transaction((list) => {
+    for (const j of list.slice(0, 100)) {
+      const r = _applyEnqueue(email, j || {});
+      if (r.row) { items.push(_applyRowOut(r.row)); if (r.created) created++; }
+    }
+  });
+  tx(jobs);
+  res.status(201).json({ success: true, created, count: items.length, items });
+});
+
+app.get('/api/apply-queue', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const status = (req.query.status || '').toString();
+  let rows;
+  if (status && APPLY_STATUSES.includes(status)) {
+    rows = db.prepare('SELECT * FROM apply_queue WHERE email = ? AND status = ? ORDER BY created_at DESC').all(e, status);
+  } else {
+    rows = db.prepare('SELECT * FROM apply_queue WHERE email = ? ORDER BY created_at DESC').all(e);
+  }
+  res.json({ items: rows.map(_applyRowOut), count: rows.length });
+});
+
+// Lightweight count (used by the AutoApply landing page badge).
+app.get('/api/apply-queue/count', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const total = db.prepare('SELECT COUNT(*) c FROM apply_queue WHERE email = ?').get(e).c;
+  const queued = db.prepare("SELECT COUNT(*) c FROM apply_queue WHERE email = ? AND status = 'queued'").get(e).c;
+  res.json({ count: total, queued });
+});
+
+app.patch('/api/apply-queue/:id', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  const e = email.toLowerCase();
+  const id = parseInt(req.params.id, 10);
+  const row = db.prepare('SELECT * FROM apply_queue WHERE id = ? AND email = ?').get(id, e);
+  if (!row) return res.status(404).json({ error: 'not_found' });
+  const b = req.body || {};
+  const sets = [], vals = [];
+  if (b.status !== undefined) {
+    if (!APPLY_STATUSES.includes(b.status)) return res.status(400).json({ error: 'bad_status', message: 'status must be one of: ' + APPLY_STATUSES.join(', ') });
+    sets.push('status = ?'); vals.push(b.status);
+  }
+  if (b.formData !== undefined || b.form_data !== undefined) { sets.push('form_data = ?'); vals.push(JSON.stringify(b.formData !== undefined ? b.formData : b.form_data)); }
+  if (b.coverLetter !== undefined || b.cover_letter !== undefined) { sets.push('cover_letter = ?'); vals.push(String(b.coverLetter !== undefined ? b.coverLetter : b.cover_letter).slice(0, 20000)); }
+  if (b.resumeId !== undefined || b.resume_id !== undefined) { sets.push('resume_id = ?'); vals.push(String(b.resumeId !== undefined ? b.resumeId : b.resume_id).slice(0, 100)); }
+  if (!sets.length) return res.status(400).json({ error: 'bad_request', message: 'Nothing to update.' });
+  sets.push('updated_at = ?'); vals.push(Date.now());
+  vals.push(id, e);
+  db.prepare('UPDATE apply_queue SET ' + sets.join(', ') + ' WHERE id = ? AND email = ?').run(...vals);
+  res.json({ success: true, item: _applyRowOut(db.prepare('SELECT * FROM apply_queue WHERE id = ?').get(id)) });
+});
+
+app.delete('/api/apply-queue/:id', (req, res) => {
+  const email = careerEmail(req, res); if (!email) return;
+  db.prepare('DELETE FROM apply_queue WHERE id = ? AND email = ?').run(parseInt(req.params.id, 10), email.toLowerCase());
   res.json({ success: true });
 });
 // Daily job-alert digest opt-in (stored on the check-in row).
