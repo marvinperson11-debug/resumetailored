@@ -106,3 +106,32 @@ dashboard URL and paste your extension token.
 - Job aggregation/scraping layer (today: manual paste).
 - Résumé file upload to storage + DOCX/PDF export of the tailored resume.
 - More ATS adapters (Ashby, iCIMS, Taleo) and richer multi-entry work/education fill.
+
+## Hand-off with the main ResumeTailored app (apply queue — source of truth)
+
+As of the cross-device apply-queue work, the **main app** (`../server.js`) owns a
+persistent, account-scoped apply queue at **`/api/apply-queue`** — this is now the
+source of truth for "jobs a user wants to apply to". The Job Finder in the main
+app (`public/career-hub.js`) writes to it, and the AutoApply landing page reads
+its count from it.
+
+Main-app endpoints (all require the main app's signed-in session; email-keyed):
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/apply-queue` | add one job (`{ job_url, job_title, company_name, job_board?, resume_id? }`) |
+| `POST` | `/api/apply-queue/batch` | add many (`{ jobs: [...] }`) |
+| `GET` | `/api/apply-queue?status=` | list the user's queue (optionally by status) |
+| `GET` | `/api/apply-queue/count` | `{ count, queued }` |
+| `PATCH` | `/api/apply-queue/:id` | update `status` / `formData` / `coverLetter` / `resumeId` |
+| `DELETE` | `/api/apply-queue/:id` | remove one |
+
+`status ∈ { queued, auto_filled, submitted, manual_needed, archived }`.
+
+**TODO (this app ↔ main app):** this standalone Next.js app + extension still use
+their own Prisma-backed job list. To make them one system, this app should read
+and write the main app's `/api/apply-queue` (server-to-server with the user's
+session, or a dedicated service token) instead of its local `Job` table, and the
+extension should update item `status` there as it fills/needs-manual/submits.
+Until then, the main app's queue is authoritative and this app's list is a
+separate view; keep them from diverging by treating `/api/apply-queue` as canonical.

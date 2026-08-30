@@ -43,10 +43,23 @@ check('llms.txt has a Job Finder entry', /Job Finder/i.test(llms));
 const ch = read('public/career-hub.js');
 check('Job Finder exposes an Auto-Apply action', /autoApply:\s*autoApply/.test(ch) && /function autoApply\(/.test(ch));
 check('search results render an Auto-Apply button', /CareerHub\.autoApply\(/.test(ch));
-check('apply queue is persisted (localStorage)', /rt_aa_queue/.test(ch) && /function aaEnqueue\(/.test(ch));
-check('a "My Apply Queue" panel is rendered', /function renderApplyQueue\(/.test(ch) && /chApplyQueue/.test(ch));
+// The queue is now SERVER-SIDE (cross-device), not per-browser localStorage.
+check('apply queue is server-side via /api/apply-queue', /\/api\/apply-queue/.test(ch) && /function aaEnqueue\(/.test(ch));
+check('the old localStorage queue (rt_aa_queue) is gone', !/rt_aa_queue/.test(ch));
+check('a "My Apply Queue" panel is rendered from the server', /function renderApplyQueue\(/.test(ch) && /chApplyQueue/.test(ch));
+check('queue polls for cross-device sync', /function startQueuePolling\(/.test(ch) && /setInterval/.test(ch));
+check('a not-signed-in user is prompted to sign in', /function promptSignIn\(/.test(ch) && /res\.status === 401/.test(ch));
 check('a setup gate prompts before first queueing', /aaSetupDone\(\)/.test(ch) && /function openAaSetup\(/.test(ch));
 check('removeFromQueue is exported', /removeFromQueue:\s*removeFromQueue/.test(ch));
+
+// ── Server-side apply_queue table + endpoints exist in server.js. ─────────────
+const srv = read('server.js');
+check('apply_queue table is created', /CREATE TABLE IF NOT EXISTS apply_queue/.test(srv));
+['post', 'get', 'patch', 'delete'].forEach((m) =>
+  check('server has ' + m.toUpperCase() + ' /api/apply-queue route', new RegExp('app\\.' + m + "\\('/api/apply-queue").test(srv)));
+check('server has a batch add route', /'\/api\/apply-queue\/batch'/.test(srv));
+check('server has a count route', /'\/api\/apply-queue\/count'/.test(srv));
+check('apply-queue routes require an account (careerEmail gate)', /app\.get\('\/api\/apply-queue'[\s\S]{0,120}careerEmail\(req, res\)/.test(srv));
 
 // ── 4. Cross-linking: shared component + inclusion on every tool page. ────────
 check('related-tools.js component exists', exists('public/related-tools.js'));

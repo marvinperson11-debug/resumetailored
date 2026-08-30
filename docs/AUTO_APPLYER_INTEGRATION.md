@@ -63,9 +63,9 @@ page, a homepage promo card, and a card on `/score`. The genuine gaps and their 
 - CI on PR #421: GitHub Actions **`test` ✅ success**; Netlify deploy preview **✅ ready**
   (redirect-rules ✅, header/pages neutral); no merge conflict; no outstanding review comments.
 
-## 6. Open follow-up (needs a decision)
+## 6. Follow-up — DONE: server-side, cross-device apply queue
 
-The Job Finder apply queue is a **client-side (`localStorage`) hand-off** into the standalone
-AutoApply app — there is no server-side queue table in `server.js`, since the queue's real
-backend is the separate `autoapply/` Next.js app + extension. If a **persistent, server-side
-apply queue** owned by the main app is wanted instead, that's a follow-up.
+The Job Finder apply queue was originally a client-side (`localStorage`) hand-off. It is now a
+**persistent, server-side queue** owned by the main app and keyed by the signed-in account, so
+it syncs across every device. See `docs/APPLY_QUEUE_SERVER_SIDE.md` for the schema, endpoints,
+and verification.

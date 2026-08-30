@@ -81,6 +81,8 @@
     <a class="th-btn th-btn--ghost" href="https://github.com/marvinperson11-debug/resumetailored/tree/main/autoapply" target="_blank" rel="noopener" data-i18n="cta2">Get the extension</a>
   </div>
 
+  <div id="aaQueueStatus" class="aa-safe" style="display:none;margin-top:16px;"></div>
+
   <div class="aa-safe" data-i18n="safe">✅ Free to use. AutoApply accelerates applying by ~90% — it fills forms, it never submits for you. Work-authorization, EEO and legal questions are always left for you to answer.</div>
 
   <div class="th-promo"><h3 data-i18n="promo_h">Part of the ResumeTailored free toolkit</h3><p data-i18n="promo_p">Unlimited resume tailoring, cover letters, ATS scans and more — all free.</p><a class="th-btn" href="/score">Explore all free tools →</a></div>
@@ -120,6 +122,22 @@ window.TH_I18N = {
     safe:'✅ 免费使用。AutoApply 让申请提速约 90% — 它只填表，绝不替你提交。工作许可、平等就业和法律问题始终留给你回答。',
     promo_h:'ResumeTailored 免费工具包的一部分', promo_p:'无限简历定制、求职信、ATS 扫描等 — 全部免费。' }
 };
+</script>
+<script>
+// Show the signed-in user's live apply-queue count (server-side, cross-device).
+(function () {
+  var box = document.getElementById('aaQueueStatus');
+  if (!box || typeof window.thApi !== 'function') return;
+  window.thApi('GET', '/api/apply-queue/count').then(function (res) {
+    if (!res || res.status !== 200 || !res.data) return;
+    var zh = (function () { try { return localStorage.getItem('rt_lang') === 'zh'; } catch (e) { return false; } })();
+    var n = res.data.count || 0, q = res.data.queued || 0;
+    box.textContent = zh
+      ? ('⚡ 你的申请队列中有 ' + n + ' 个职位（' + q + ' 个待申请）。在职位搜索中打开以继续。')
+      : ('⚡ You have ' + n + ' job' + (n === 1 ? '' : 's') + ' in your apply queue (' + q + ' queued). Open the Job Finder to work through them.');
+    box.style.display = '';
+  }).catch(function () {});
+})();
 </script>
 <script src="/site-nav.js" defer></script>
 <script src="/related-tools.js" defer></script>

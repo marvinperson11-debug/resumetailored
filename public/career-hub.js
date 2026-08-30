@@ -128,6 +128,9 @@
     ch_aa_setup_msg: 'AutoApply 会用你的资料自动填写申请表 — 你始终审核并提交。请先完成一次快速设置。',
     ch_aa_setup_go: '设置 AutoApply', ch_aa_setup_later: '暂不',
     ch_aa_setup_done: 'AutoApply 已就绪 — 现在从职位搜索添加职位吧。', ch_queued: '已入队 ✓',
+    ch_aa_signin: '登录以保存你的申请队列。', ch_aa_fail: '无法加入队列。',
+    ch_aa_st_queued: '排队中', ch_aa_st_auto_filled: '已自动填写', ch_aa_st_submitted: '已提交',
+    ch_aa_st_manual_needed: '需你处理', ch_aa_st_archived: '已归档',
     ch_scenario_lab: '情景实验室', ch_scenario_intro: '解决一个真实的{p}问题，一步一步做决定。',
     ch_sc_type: '情景类型', ch_sc_start: '开始情景', ch_sc_free: '免费：每周 1 个情景。',
     ch_st_cs: '客户服务', ch_st_debug: '技术排查', ch_st_doc: '表格/文档错误', ch_st_conflict: '团队冲突', ch_st_safety: '安全/合规',
@@ -668,6 +671,7 @@
     loadAlerts();
     loadJobFeed();
     renderApplyQueue();
+    startQueuePolling();
   }
   async function loadJobFeed() {
     var box = el('chFeedResults'); if (!box) return;
@@ -767,51 +771,84 @@
   // The AutoApply extension fills the application form on the employer's site;
   // this queue is the hand-off point — the Job Finder collects jobs into it and
   // /tools/autoapply (the AutoApply app + browser extension) works through it.
-  // Stored per-browser in localStorage so it survives navigation and is instantly
-  // pre-populated the moment a user clicks Auto-Apply, before any account round-trip.
-  var AA_QUEUE_KEY = 'rt_aa_queue', AA_SETUP_KEY = 'rt_aa_setup';
-  function aaLoad() { try { return JSON.parse(localStorage.getItem(AA_QUEUE_KEY) || '[]') || []; } catch (e) { return []; } }
-  function aaSave(q) { try { localStorage.setItem(AA_QUEUE_KEY, JSON.stringify(q.slice(0, 100))); } catch (e) {} }
+  // The queue is stored SERVER-SIDE per account (`/api/apply-queue`), so it syncs
+  // across every device the user signs in on. `rt_aa_setup` stays local — it's a
+  // one-time UI acknowledgement, not queue data. A not-signed-in user is prompted
+  // to sign in (the API answers 401), never silently dropped.
+  var AA_SETUP_KEY = 'rt_aa_setup';
+  var aaQueueCache = [];
   function aaSetupDone() { try { return localStorage.getItem(AA_SETUP_KEY) === '1'; } catch (e) { return false; } }
   function aaMarkSetup() { try { localStorage.setItem(AA_SETUP_KEY, '1'); } catch (e) {} }
-  function aaKey(job) { return (job.url || '') + '|' + (job.title || '') + '|' + (job.company || ''); }
+  // Open the app's sign-in surface when present; otherwise send the user to /login.
+  function promptSignIn(msg) {
+    toast(msg || t('ch_aa_signin', 'Sign in to save your queue.'), 4000);
+    try {
+      if (typeof window.openLoginChooser === 'function') return window.openLoginChooser();
+      if (typeof window.showAuthModal === 'function') return window.showAuthModal();
+      if (typeof window.openAuth === 'function') return window.openAuth();
+    } catch (e) {}
+  }
   // Click handler for the per-job "Auto-Apply" button. Gates on a one-time setup
-  // step (the AutoApply profile that fills the forms); if not done, prompt for it
-  // and remember the job so it lands in the queue the moment setup completes.
+  // acknowledgement (what AutoApply does + that you always review/submit); if not
+  // done, prompt for it and remember the job so it queues the moment setup completes.
   function autoApply(job) {
     if (!aaSetupDone()) { openAaSetup(job); return; }
     aaEnqueue(job);
   }
-  function aaEnqueue(job) {
-    var q = aaLoad();
-    var k = aaKey(job);
-    if (q.some(function (j) { return aaKey(j) === k; })) { toast(t('ch_aa_dupe', 'That job is already in your queue.')); return false; }
-    q.unshift({ title: job.title || '', company: job.company || '', location: job.location || '',
-      url: job.url || '', snippet: job.descriptionSnippet || '', addedAt: Date.now(), status: 'queued' });
-    aaSave(q);
+  async function aaEnqueue(job) {
+    var res = await api('/api/apply-queue', { method: 'POST', headers: authH(), body: JSON.stringify({
+      job_url: job.url || '', job_title: job.title || '', company_name: job.company || '', job_board: job.jobBoard || ''
+    }) });
+    if (res.status === 401) { promptSignIn(t('ch_aa_signin', 'Sign in to save your queue.')); return false; }
+    if (!res.ok) { if (!handleGate(res)) toast(res.data.message || t('ch_aa_fail', 'Could not add to your queue.')); return false; }
     ga('autoapply_queue_add', { profession: profile && profile.id });
-    toast(t('ch_aa_added', 'Added to your Auto-Apply queue.')); vibrate(15);
+    toast(res.data.created ? t('ch_aa_added', 'Added to your Auto-Apply queue.') : t('ch_aa_dupe', 'That job is already in your queue.')); vibrate(15);
     renderApplyQueue();
     return true;
   }
-  function removeFromQueue(idx) { var q = aaLoad(); q.splice(idx, 1); aaSave(q); renderApplyQueue(); }
-  // The "My Apply Queue" panel, rendered into the Job Finder aside.
-  function renderApplyQueue() {
+  async function removeFromQueue(id) {
+    await api('/api/apply-queue/' + id, { method: 'DELETE', headers: authH() });
+    renderApplyQueue();
+  }
+  // The "My Apply Queue" panel, rendered into the Job Finder aside from the server.
+  var aaStatusLabels = { queued: 'Queued', auto_filled: 'Auto-filled', submitted: 'Submitted', manual_needed: 'Needs you', archived: 'Archived' };
+  async function renderApplyQueue() {
     var box = el('chApplyQueue'); if (!box) return;
-    var q = aaLoad();
+    var res = await api('/api/apply-queue');
+    if (res.status === 401) {
+      box.innerHTML = '<h3 style="font-size:14px;margin-top:0;">⚡ ' + t('ch_aa_queue', 'My Apply Queue') + '</h3>' +
+        '<span class="ch-note">' + t('ch_aa_signin', 'Sign in to save your queue.') + '</span>';
+      return;
+    }
+    var q = (res.ok && res.data.items) || [];
+    aaQueueCache = q;
     var head = '<h3 style="font-size:14px;margin-top:0;">⚡ ' + t('ch_aa_queue', 'My Apply Queue') + ' (' + q.length + ')</h3>';
     if (!q.length) { box.innerHTML = head + '<span class="ch-note">' + t('ch_aa_empty', 'Your queue is empty — click Auto-Apply on a job to add it.') + '</span>'; return; }
     box.innerHTML = head +
-      q.map(function (j, i) {
+      q.map(function (j) {
+        var st = t('ch_aa_st_' + j.status, aaStatusLabels[j.status] || j.status);
         return '<div style="font-size:13px;padding:8px 0;border-bottom:1px solid var(--ch-line);">' +
-          '<div style="font-weight:700;">' + esc(j.title) +
-          ' <a style="color:#dc2626;cursor:pointer;float:right;" title="' + t('ch_aa_remove', 'Remove') + '" onclick="CareerHub.removeFromQueue(' + i + ')">✕</a></div>' +
-          '<div class="ch-note" style="margin:2px 0 6px;">' + esc(j.company) + (j.location ? ' · ' + esc(j.location) : '') + '</div>' +
-          (j.url ? '<a class="ch-btn ch-btn-sm" href="' + esc(j.url) + '" target="_blank" rel="noopener">' + t('ch_aa_open', 'Open in AutoApply') + ' ↗</a>' : '') +
+          '<div style="font-weight:700;">' + esc(j.jobTitle || '(untitled)') +
+          ' <a style="color:#dc2626;cursor:pointer;float:right;" title="' + t('ch_aa_remove', 'Remove') + '" onclick="CareerHub.removeFromQueue(' + j.id + ')">✕</a></div>' +
+          '<div class="ch-note" style="margin:2px 0 6px;">' + esc(j.companyName || '') + (j.jobBoard ? ' · ' + esc(j.jobBoard) : '') + ' · ' + esc(st) + '</div>' +
+          (j.jobUrl ? '<a class="ch-btn ch-btn-sm" href="' + esc(j.jobUrl) + '" target="_blank" rel="noopener">' + t('ch_aa_open', 'Open in AutoApply') + ' ↗</a>' : '') +
           '</div>';
       }).join('') +
       '<a class="ch-btn ch-btn-sm ch-btn-ghost" style="margin-top:10px;display:inline-block;" href="/tools/autoapply" target="_blank" rel="noopener">' + t('ch_aa_run', 'Run AutoApply') + '</a>';
   }
+  // Cross-device sync: while the Job Finder is open, poll the queue so a job added
+  // on another device appears here without a manual refresh. Cleared when the tab
+  // closes or the user navigates to another Hub tool (onTab).
+  var aaPollTimer = null;
+  function startQueuePolling() {
+    stopQueuePolling();
+    aaPollTimer = setInterval(function () {
+      var panel = el('panel-jobfinder');
+      if (!el('chApplyQueue') || !panel || !panel.classList.contains('active')) { stopQueuePolling(); return; }
+      renderApplyQueue();
+    }, 12000);
+  }
+  function stopQueuePolling() { if (aaPollTimer) { clearInterval(aaPollTimer); aaPollTimer = null; } }
   // First-run setup gate. Reuses the picker overlay's dimmed-modal styling via a
   // lightweight injected dialog so it matches the rest of the Hub.
   var aaPendingJob = null;
