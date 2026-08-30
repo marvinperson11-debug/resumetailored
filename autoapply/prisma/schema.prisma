@@ -1,0 +1,128 @@
+// AutoApply — Prisma schema
+// PostgreSQL + NextAuth (Google OAuth) + the app's own job/application models.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Application models
+// ─────────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+
+  // Structured resume parsed from an uploaded PDF (personal_info,
+  // work_experience[], education[], skills[], preferred_salary, start_date...).
+  resumeData    Json?
+  // Job preferences: { role, location, workMode, minSalary }
+  preferences   Json?
+
+  jobs          JobApplication[]
+  accounts      Account[]
+  sessions      Session[]
+  extensionTokens ExtensionToken[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum ApplicationStatus {
+  NEW
+  PREPARED
+  APPLIED
+}
+
+model JobApplication {
+  id               String            @id @default(cuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  companyName      String
+  roleTitle        String
+  jobUrl           String
+  jobDescription   String            @db.Text
+
+  status           ApplicationStatus @default(NEW)
+
+  // AI match scoring
+  matchScore       Int?
+  matchSummary     String?           @db.Text
+  matchBreakdown   Json?             // { skills, experience, domain } sub-scores
+
+  // AI "Prepare application" output
+  tailoredResume   Json?             // optimized bullets / structured resume
+  coverLetter      String?           @db.Text
+  suggestedAnswers Json?             // [{ question, answer }] for custom fields
+
+  // Filled by the extension when the user hits "Sync status"
+  appliedAt        DateTime?
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@index([userId, status])
+}
+
+// Long-lived bearer token the browser extension uses to read apply-data
+// without a browser cookie (the employer's tab is a different origin).
+model ExtensionToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Only the SHA-256 hash of the token is stored.
+  tokenHash String   @unique
+  label     String?
+  lastUsedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// NextAuth adapter models
+// ─────────────────────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
