@@ -765,7 +765,7 @@
     }
     @media (max-width: 480px) {
       .hero { padding: 64px 0 48px; }
-      .section { padding: 56px 0; }
+      .section { padding: 44px 0; }
       .hero-sub { font-size: 15px; }
       .hero h1 { font-size: 40px; }
     }
@@ -846,6 +846,30 @@
     .tier-modal-body { padding: 28px; }
     @media (max-width: 900px) {
       .tiers-grid { grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; }
+    }
+    /* Mobile (≤680px): the three Career-Levels cards took ~1500px stacked. Turn
+       the grid into a swipeable, scroll-snapping carousel so the section fits in
+       roughly one card height, and tighten section padding so the page doesn't
+       feel endless on a phone. Each card still opens its full sample on tap
+       (openTierModal), and the "View Full Sample" pill is shown (no hover on
+       touch). */
+    @media (max-width: 680px) {
+      .section { padding: 44px 0; }
+      .tiers-grid {
+        display: flex; grid-template-columns: none;
+        flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+        gap: 16px; max-width: none; margin: 0;
+        padding-bottom: 6px; scrollbar-width: none;
+      }
+      .tiers-grid::-webkit-scrollbar { display: none; }
+      .tiers-grid > .tier-card { flex: 0 0 82%; scroll-snap-align: center; }
+      /* Touch has no hover — surface the "View Full Sample" affordance without
+         hiding the preview (anchored pill, transparent backdrop). */
+      .tier-preview-frame .tier-overlay {
+        opacity: 1; background: transparent;
+        align-items: flex-end; padding-bottom: 10px;
+      }
     }
 
     /* ── Offscreen containment (performance) ──
@@ -1205,23 +1229,11 @@
   </div>
 </section>
 
-<section class="club-price-architecture" id="ecosystem-pricing">
-  <div class="club-price-architecture__inner">
-    <div class="club-kicker" data-i18n="eco_price_kicker">Membership</div><h2 data-i18n="eco_price_h">Clear terms. No theatre.</h2>
-    <div class="club-price-columns">
-      <div class="club-price-group"><h3>ResumeTailored</h3>
-        <article class="club-plan"><h4 data-i18n="eco_pl_free">Free</h4><strong>$0</strong><p data-i18n="eco_pl_free_p">Core resume tools, Decoder Key, and a basic interview checklist.</p><a href="/dashboard" data-i18n="eco_pl_free_cta">Begin complimentary →</a></article>
-        <article class="club-plan"><h4 data-i18n="eco_pl_pro">Pro</h4><strong>$19.00/mo</strong><p data-i18n="eco_pl_pro_p">Job Seeker Decoder Key, Resume Video, and Web Studio.</p><button type="button" data-checkout-plan="pro" onclick="void 0" data-i18n="eco_pl_pro_cta">Choose Pro →</button></article>
-        <article class="club-plan"><h4 data-i18n="eco_pl_life">Lifetime Pro</h4><strong>$129</strong><p data-i18n="eco_pl_life_p">The complete Pro membership, retained forever.</p><button type="button" data-checkout-plan="lifetime" onclick="void 0" data-i18n="eco_pl_life_cta">Choose Lifetime →</button></article>
-      </div>
-      <div class="club-price-group"><h3 data-i18n="eco_price_g2">The Portal</h3>
-        <article class="club-plan"><h4 data-i18n="eco_pl_portal">Employer Portal</h4><strong>$49/mo</strong><p data-i18n="eco_pl_portal_p">AI candidate screening for three candidates and custom landing pages.</p><button type="button" data-checkout-plan="portal" onclick="void 0" data-i18n="eco_pl_portal_cta">Choose Employer Portal →</button></article>
-        <article class="club-plan"><h4 data-i18n="eco_pl_scale">Scale</h4><strong>$99/mo</strong><p data-i18n="eco_pl_scale_p">Base collaboration platform plus any five operational modules, selected permanently.</p><button type="button" data-checkout-plan="scale" onclick="void 0" data-i18n="eco_pl_scale_cta">Choose Scale →</button></article>
-        <article class="club-plan"><h4 data-i18n="eco_pl_corp">Corporate</h4><strong>$299/mo</strong><p data-i18n="eco_pl_corp_p">The full employer ecosystem, Recruitment Decoder, and white-labeling.</p><button type="button" data-checkout-plan="corporate" onclick="void 0" data-i18n="eco_pl_corp_cta">Choose Corporate →</button></article>
-      </div>
-    </div>
-  </div>
-</section>
+<!-- Ecosystem pricing ("Clear terms. No theatre.") removed: it duplicated the
+     Free / Pro $19.00 / Lifetime $129 pricing already shown in the Career Levels
+     section and the "How we compare to Jobscan & Rezi" table below. The full plan
+     matrix (including the employer Portal/Scale/Corporate tiers) lives on
+     /pricing and /for-employers. -->
 <section class="hero">
   <div class="hero-orb orb-1"></div>
   <div class="hero-orb orb-2"></div>
