@@ -448,12 +448,16 @@
       grid-column:1 / -1;grid-row:auto;
     }
     /* Hero: content-driven on mobile — no forced height, no basement void.
-       Kill the flex-end + eyebrow margin-bottom:auto that push the CTA down on
-       the tall desktop hero; let it stack naturally, dense and compact. */
-    .c-hero{min-height:0;padding:22px;justify-content:flex-start}
-    .c-hero .eyebrow{margin-bottom:0}
-    .c-hero .card-title{font-size:34px;margin:12px 0 12px}
-    .c-hero .card-desc{margin-bottom:18px}
+       Kill flex-end + any margin-bottom:auto on any hero child; a 12px flex gap
+       controls spacing so the card stacks dense and compact from the top. */
+    .c-hero{
+      min-height:0!important;
+      justify-content:flex-start!important;
+      padding:22px;
+      gap:12px;
+    }
+    .c-hero > *{margin:0!important}
+    .c-hero .card-title{font-size:34px}
     .c-door{min-height:190px}
     .c-cta{min-height:170px}
   }
@@ -527,7 +531,7 @@
           <span class="stars" aria-hidden="true">★★★★★</span>
           <span>Anthropic&nbsp;Claude</span>
           <span class="dot" aria-hidden="true">·</span>
-          <span>100+ ATS-ready templates</span>
+          <span>100+ templates</span>
           <span class="dot" aria-hidden="true">·</span>
           <span>No card required</span>
         </div>
