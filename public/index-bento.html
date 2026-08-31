@@ -243,8 +243,12 @@
     overflow:hidden;
     color:var(--cream-muted);
     text-decoration:none;
-    /* Hover: border brightens to 50% gold + translateY(-2px). NO scale. */
-    transition:border-color .2s ease-out,background .2s ease-out,transform .2s ease-out;
+    /* Hover: border brightens to 50% gold + translateY(-2px). NO scale.
+       Entrance rides `opacity`/`translate` on a --reveal-delay custom property
+       (see .reveal) so the stagger never delays the hover `transform`. */
+    transition:border-color .2s ease-out,background .2s ease-out,transform .2s ease-out,
+               opacity .6s ease-out var(--reveal-delay,0ms),
+               translate .6s ease-out var(--reveal-delay,0ms);
     will-change:transform;
   }
   .bento-card--lg{border-radius:var(--radius-lg);padding:34px}
@@ -278,6 +282,9 @@
     position:absolute;top:-42%;right:-24%;width:118%;height:150%;
     pointer-events:none;z-index:0;opacity:.5;
   }
+  /* Stroke driven from the brand token (var() can't resolve in an SVG
+     presentation attribute, so it's set here in CSS instead). */
+  .c-hero__arc circle{stroke:var(--gold)}
   .c-hero > *{position:relative;z-index:1}
   .c-hero .card-title{
     font-size:clamp(30px,3.6vw,50px);margin:20px 0 16px;font-weight:500;
@@ -393,11 +400,21 @@
   .c-cta .cta-link:hover{background:rgba(201,162,39,.14)}
 
   /* ── Scroll entrance: staggered fade-up ──────────────────────────────── */
-  .reveal{opacity:0;transform:translateY(16px);transition:opacity .6s ease-out,transform .6s ease-out}
-  .reveal.in{opacity:1;transform:none}
+  /* Entrance animates the independent `translate` + `opacity` (never `transform`),
+     so it can't collide with hover's `transform`. The stagger delay rides the
+     --reveal-delay custom property, which ONLY the entrance transition reads —
+     so hover is never delayed after the reveal has run. */
+  .reveal{opacity:0;translate:0 16px}
+  .reveal.in{opacity:1;translate:0 0}
+  /* Non-card reveals (e.g. the grid intro) carry their own entrance transition;
+     cards fold the same legs into .bento-card's transition above. */
+  .reveal:not(.bento-card){
+    transition:opacity .6s ease-out var(--reveal-delay,0ms),
+               translate .6s ease-out var(--reveal-delay,0ms);
+  }
 
   @media (prefers-reduced-motion:reduce){
-    .reveal{opacity:1;transform:none;transition:none}
+    .reveal{opacity:1;translate:none;transition:none}
     *{scroll-behavior:auto!important}
     .bento-card,.btn-gold,.card-arrow{transition:none!important}
   }
@@ -503,9 +520,9 @@
       <article class="bento-card bento-card--lg c-hero reveal" aria-labelledby="hero-h">
         <!-- Decorative gold arc — low-opacity SVG, hero card only -->
         <svg class="c-hero__arc" viewBox="0 0 600 600" fill="none" aria-hidden="true" focusable="false">
-          <circle cx="300" cy="300" r="252" stroke="#c9a227" stroke-width="1" stroke-opacity="0.5"/>
-          <circle cx="300" cy="300" r="190" stroke="#c9a227" stroke-width="1" stroke-opacity="0.32"/>
-          <circle cx="300" cy="300" r="128" stroke="#c9a227" stroke-width="1" stroke-opacity="0.18"/>
+          <circle cx="300" cy="300" r="252" stroke-width="1" stroke-opacity="0.5"/>
+          <circle cx="300" cy="300" r="190" stroke-width="1" stroke-opacity="0.32"/>
+          <circle cx="300" cy="300" r="128" stroke-width="1" stroke-opacity="0.18"/>
         </svg>
         <span class="eyebrow eyebrow--plain">The Office</span>
         <h2 class="card-title" id="hero-h">A private office for<br>your <em>ambitions.</em></h2>
@@ -542,7 +559,7 @@
           <h3 class="card-title">Recruiting Studio</h3>
           <p class="card-desc">Screen candidates and run hiring across one composed, discreet command center.</p>
         </div>
-        <span class="c-door__foot">Portal · from $49/mo</span>
+        <span class="c-door__foot">Portal · From $49/mo</span>
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
 
@@ -612,7 +629,7 @@
         <span class="eyebrow">Membership</span>
         <div class="card-body">
           <div class="price-big">Free to begin</div>
-          <p class="price-sub"><b>Pro $19.00</b> / month · Lifetime $129</p>
+          <h3 class="price-sub"><b>Pro $19.00</b> / month · Lifetime $129</h3>
         </div>
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
@@ -653,13 +670,22 @@
 </div>
 
 <script>
-  /* Mobile drawer */
+  /* Mobile drawer — locks body scroll like the login modal, and moves focus to
+     the close button on open / back to the hamburger on close. */
   function mMenu(open){
     var m=document.getElementById('mMenu');
+    var burger=document.querySelector('.hamburger');
+    var wasOpen=m.classList.contains('open');
     m.classList.toggle('open',open);
     m.setAttribute('aria-hidden',open?'false':'true');
-    document.querySelector('.hamburger').setAttribute('aria-expanded',open?'true':'false');
+    if(burger)burger.setAttribute('aria-expanded',open?'true':'false');
     document.body.style.overflow=open?'hidden':'';
+    if(open){
+      var close=m.querySelector('.m-menu__close');
+      if(close)close.focus();
+    } else if(wasOpen && burger){
+      burger.focus();  /* only steal focus back when a drawer was actually open */
+    }
   }
   /* Login chooser */
   function openLogin(open){
@@ -688,7 +714,9 @@
         if(en.isIntersecting){
           var el = en.target;
           var i = items.indexOf(el);
-          el.style.transitionDelay = Math.min(i,8)*60 + 'ms';
+          /* Delay rides a custom property that ONLY the entrance transition
+             reads (see .reveal / .bento-card), so hover is never staggered. */
+          el.style.setProperty('--reveal-delay', Math.min(i,8)*60 + 'ms');
           el.classList.add('in');
           io.unobserve(el);
         }
