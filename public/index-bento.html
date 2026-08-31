@@ -365,12 +365,11 @@
   .c-feature .card-desc{font-size:13px;line-height:1.55}
 
   /* Pricing */
-  .c-price .price-big{
+  .c-price .price-line{
     font-family:var(--serif);color:var(--cream);font-weight:500;
-    font-size:30px;line-height:1;margin:18px 0 4px;letter-spacing:-.01em;
+    font-size:22px;line-height:1.2;margin:18px 0 0;letter-spacing:-.01em;
   }
-  .c-price .price-sub{font-size:13px;color:var(--cream-muted)}
-  .c-price .price-sub b{color:var(--gold);font-weight:700}
+  .c-price .price-line b{color:var(--gold);font-weight:600}
 
   /* Social proof */
   .c-proof .proof-quote{
@@ -443,24 +442,48 @@
     .bento{padding:26px 18px 56px}
     .bento-grid{grid-template-columns:1fr;grid-auto-rows:auto}
     /* Single column — hero remains first & dominant */
-    .c-hero,.c-cand,.c-emp,.c-show,
+    .c-cand,.c-emp,.c-show,
     .c-f1,.c-f2,.c-f3,.c-price,.c-proof,.c-cta{
       grid-column:1 / -1;grid-row:auto;
     }
-    /* Hero: content-driven on mobile — no forced height, no basement void.
-       Kill flex-end + any margin-bottom:auto on any hero child; a 12px flex gap
-       controls spacing so the card stacks dense and compact from the top. */
-    .c-hero{
-      min-height:0!important;
-      justify-content:flex-start!important;
-      padding:22px;
-      gap:12px;
-    }
-    .c-hero > *{margin:0!important}
-    .c-hero .card-title{font-size:34px}
     .c-door{min-height:190px}
     .c-cta{min-height:170px}
   }
+
+  @media (max-width: 680px) {
+  .c-hero {
+    grid-column: 1 / 13 !important;
+    grid-row: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    padding: 22px !important;
+    gap: 12px !important;
+  }
+
+  /* Shrink the decorative arc so it can't create phantom height */
+  .c-hero__arc,
+  .c-hero svg {
+    width: 120px !important;
+    height: 120px !important;
+    top: -15px !important;
+    right: -15px !important;
+    opacity: 0.1 !important;
+  }
+
+  /* Kill every auto margin inside the hero, then re-add only what we need */
+  .c-hero * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .c-hero .eyebrow    { margin-bottom: 8px !important; }
+  .c-hero .card-title { margin-bottom: 10px !important; }
+  .c-hero .card-desc  { margin-bottom: 14px !important; }
+  .c-hero .hero-cta   { margin-bottom: 10px !important; }
+}
+
   @media (max-width:380px){
     .hero-cta{flex-direction:column;align-items:stretch}
     .btn-gold{justify-content:center}
@@ -624,8 +647,7 @@
       <a class="bento-card c-price reveal" href="/pricing#ecosystem-pricing">
         <span class="eyebrow">Membership</span>
         <div class="card-body">
-          <div class="price-big">Free to begin</div>
-          <h3 class="price-sub"><b>Pro $19.00</b> / month · Lifetime $129</h3>
+          <h3 class="price-line">Free to begin · <b>Pro $19.00</b> / month · Lifetime $129</h3>
         </div>
         <span class="card-arrow" aria-hidden="true">↗</span>
       </a>
