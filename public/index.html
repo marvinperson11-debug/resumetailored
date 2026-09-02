@@ -855,6 +855,9 @@
        touch). */
     @media (max-width: 680px) {
       .section { padding: 44px 0; }
+      /* #whats-new carries an inline padding:60px 0; drop it to 44px on mobile to
+         match the rest of the page (inline style needs !important to override). */
+      #whats-new { padding: 44px 0 !important; }
       .tiers-grid {
         display: flex; grid-template-columns: none;
         flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
@@ -2719,6 +2722,26 @@
   .promo-sub{font-size:12px;color:#6b7280;font-weight:600;}
   .promo-cta{display:inline-block;text-align:center;background:linear-gradient(135deg,#2E7D53,#1F5C3D);color:#fff;font-weight:800;font-size:14px;padding:11px 16px;border-radius:10px;text-decoration:none;transition:opacity .15s;}
   .promo-cta:hover{opacity:.9;}
+  /* Employer tiers — compact one-line strip (gold/cream), not full cards */
+  .emp-strip{max-width:1020px;margin:36px auto 0;border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:18px 24px;}
+  .emp-strip__head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px;}
+  .emp-strip__eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent-2);}
+  .emp-strip__note{font-size:12px;color:var(--ink-faint);}
+  .emp-strip__note a{color:var(--accent-2);font-weight:700;text-decoration:none;}
+  .emp-strip__note a:hover{text-decoration:underline;}
+  .emp-row{display:grid;grid-template-columns:180px 84px 1fr auto;align-items:center;gap:16px;padding:12px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--ink-soft);transition:color .15s;}
+  .emp-row:hover{color:var(--ink);}
+  .emp-row__name{font-family:'Fraunces',Georgia,serif;font-size:16px;color:var(--ink);}
+  .emp-row__price{font-weight:800;font-size:16px;color:var(--accent-2);white-space:nowrap;}
+  .emp-row__price small{font-size:11px;font-weight:600;color:var(--ink-faint);}
+  .emp-row__desc{font-size:13px;color:var(--ink-soft);}
+  .emp-row__arrow{color:var(--accent-2);font-weight:700;}
+  @media(max-width:640px){
+    .emp-strip{padding:16px 18px;}
+    .emp-row{grid-template-columns:1fr auto;grid-template-areas:"name price" "desc arrow";column-gap:12px;row-gap:2px;}
+    .emp-row__name{grid-area:name;} .emp-row__price{grid-area:price;text-align:right;}
+    .emp-row__desc{grid-area:desc;} .emp-row__arrow{grid-area:arrow;align-self:center;}
+  }
 </style>
 
 <!-- PRICING -->
@@ -2844,6 +2867,32 @@
         </ul>
         <button class="btn btn-full" style="background:#1F5C3D;color:#fff;border:none;" onclick="openLifetimeModal()">Get Lifetime Access — $129 →</button>
       </div>
+    </div>
+
+    <!-- Employer tiers — compact strip (hiring plans live in full on /for-employers) -->
+    <div class="emp-strip">
+      <div class="emp-strip__head">
+        <span class="emp-strip__eyebrow">For employers</span>
+        <span class="emp-strip__note">Hiring plans · <a href="/for-employers">see full details →</a></span>
+      </div>
+      <a class="emp-row" href="/for-employers">
+        <span class="emp-row__name">Employer Portal</span>
+        <span class="emp-row__price">$49<small>/mo</small></span>
+        <span class="emp-row__desc">AI candidate screening &amp; custom landing pages</span>
+        <span class="emp-row__arrow" aria-hidden="true">→</span>
+      </a>
+      <a class="emp-row" href="/for-employers">
+        <span class="emp-row__name">Scale</span>
+        <span class="emp-row__price">$99<small>/mo</small></span>
+        <span class="emp-row__desc">Collaboration platform plus any five operational modules</span>
+        <span class="emp-row__arrow" aria-hidden="true">→</span>
+      </a>
+      <a class="emp-row" href="/for-employers">
+        <span class="emp-row__name">Corporate</span>
+        <span class="emp-row__price">$299<small>/mo</small></span>
+        <span class="emp-row__desc">The full employer ecosystem, Recruitment Decoder &amp; white-labeling</span>
+        <span class="emp-row__arrow" aria-hidden="true">→</span>
+      </a>
     </div>
   </div>
 </section>
