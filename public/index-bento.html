@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0a1628" />
+  <title>ResumeTailored — Career Intelligence, Privately Delivered</title>
+  <meta name="description" content="A private career & people office for ambitious candidates and exacting employers. Resume intelligence, cover letters, interview prep, and an editorial web studio — powered by Anthropic Claude. Free to begin · Pro $19.00/month." />
+  <link rel="canonical" href="https://resumetailored.com/" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <!-- Preserve existing brand fonts: Fraunces (display serif) + Inter (UI sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+  /* ============================================================================
+     ResumeTailored — Bento homepage
+     Palette is LOCKED to the existing brand tokens. No new colors, no gradients,
+     no drop shadows. Depth comes only from: 1px gold hairline borders, surface
+     opacity, spacing, border weight, and typographic hierarchy.
+
+       Deep Navy   #0a1628   page background          (--navy)
+       Deeper Navy #081422   deepest recessed band    (--navy-deep)
+       Navy Card   #0d1e30   primary card surface     (--surface)
+       Dark Teal   #1a4d3a   secondary card surface   (--teal)   (brand emerald)
+       Champagne   #c9a227   accents · labels · CTAs  (--gold)
+       Warm Cream  #f5f1e8   headings · key text      (--cream)
+       Muted Cream rgba(245,241,232,.64)  body copy   (--cream-muted)
+       Border Gold rgba(201,162,39,.22)   hairlines    (--line)
+     ==========================================================================*/
+
+  :root{
+    --navy:#0a1628;
+    --navy-deep:#081422;
+    --surface:#0d1e30;
+    --teal:#1a4d3a;
+    --gold:#c9a227;
+    --cream:#f5f1e8;
+    --cream-muted:rgba(245,241,232,.64);
+    --cream-faint:rgba(245,241,232,.42);
+
+    --line:rgba(201,162,39,.22);      /* resting hairline            */
+    --line-strong:rgba(201,162,39,.34);
+    --line-hover:rgba(201,162,39,.50); /* hover: border to 50% gold   */
+
+    /* Card surface tints — alternate to build depth without gradients/shadow.
+       Slightly different opacities of the same two brand surfaces.            */
+    --card-a:rgba(13,30,48,.72);      /* navy card                    */
+    --card-b:rgba(26,77,58,.20);      /* teal-tinted card             */
+    --card-deep:rgba(8,20,34,.66);    /* recessed navy card           */
+
+    --serif:'Fraunces',Georgia,'Times New Roman',serif;
+    --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+
+    --radius-lg:16px;   /* large cards */
+    --radius-sm:12px;   /* small cards */
+    --gap:20px;         /* desktop grid gap */
+  }
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{background:var(--navy)}
+  body{
+    font-family:var(--sans);
+    background:var(--navy);
+    color:var(--cream-muted);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    min-height:100vh;
+  }
+  a{color:inherit;text-decoration:none}
+  ::selection{background:rgba(201,162,39,.28);color:var(--cream)}
+
+  /* Keyboard focus: 2px solid gold outline everywhere (accessibility). */
+  a:focus-visible,button:focus-visible,.bento-card:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:3px;
+    border-radius:4px;
+  }
+
+  /* ── Shared label / title / body type scale ──────────────────────────── */
+  .eyebrow{
+    font-family:var(--sans);
+    font-size:12px;font-weight:700;
+    letter-spacing:.18em;text-transform:uppercase;
+    color:var(--gold);
+    display:inline-flex;align-items:center;gap:12px;
+  }
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--gold);opacity:.9}
+  .eyebrow--plain::before{display:none}
+
+  .card-title{
+    font-family:var(--serif);
+    color:var(--cream);
+    font-weight:500;
+    letter-spacing:-.01em;
+    line-height:1.08;
+  }
+  .card-title em{font-style:italic;font-weight:500;color:var(--cream)}
+  .card-desc{color:var(--cream-muted);font-size:14.5px;line-height:1.6;max-width:52ch}
+
+  /* ============================================================================
+     NAV — preserved: brand lockup, primary links, 中文 lang toggle, Login,
+     hamburger. Restyled onto the navy/gold palette; same actions & order.
+     ==========================================================================*/
+  .nav{
+    position:sticky;top:0;z-index:100;
+    background:rgba(10,22,40,.86);
+    -webkit-backdrop-filter:saturate(140%) blur(10px);
+    backdrop-filter:saturate(140%) blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav__inner{
+    max-width:1320px;margin:0 auto;padding:0 28px;height:72px;
+    display:flex;align-items:center;gap:28px;
+  }
+  .brand{
+    display:flex;flex-direction:column;gap:2px;
+    font-family:var(--serif);color:var(--cream);
+    font-size:22px;font-weight:600;letter-spacing:-.01em;line-height:1;
+  }
+  .brand small{
+    font-family:var(--sans);font-size:10px;font-weight:700;
+    letter-spacing:.22em;text-transform:uppercase;color:var(--gold);
+  }
+  .nav__links{display:flex;align-items:center;gap:24px;margin-left:auto}
+  .nav__links a{
+    position:relative;font-size:13px;font-weight:600;letter-spacing:.02em;
+    color:var(--cream-muted);transition:color .18s;
+  }
+  .nav__links a::after{
+    content:"";position:absolute;left:0;right:100%;bottom:-7px;height:1px;
+    background:var(--gold);transition:right .2s ease;
+  }
+  .nav__links a:hover{color:var(--cream)}
+  .nav__links a:hover::after{right:0}
+  .nav__actions{display:flex;align-items:center;gap:10px}
+  .lang-toggle{
+    border:1px solid var(--line-strong);background:transparent;color:var(--cream);
+    padding:8px 13px;font:700 12px var(--sans);letter-spacing:.03em;cursor:pointer;
+    border-radius:6px;transition:border-color .18s,background .18s,color .18s;
+  }
+  .lang-toggle:hover{border-color:var(--gold);background:var(--teal);color:#fff}
+  .nav__login{
+    background:transparent;color:var(--cream);border:1px solid var(--gold);
+    border-radius:6px;padding:8px 18px;font:700 12px var(--sans);letter-spacing:.03em;
+    cursor:pointer;white-space:nowrap;transition:background .18s,color .18s;
+  }
+  .nav__login:hover{background:var(--teal);color:#fff}
+  .hamburger{
+    display:none;flex-direction:column;gap:5px;background:none;border:none;
+    cursor:pointer;padding:6px;margin-left:auto;
+  }
+  .hamburger span{display:block;width:22px;height:2px;background:var(--gold);border-radius:2px}
+
+  /* Mobile drawer */
+  .m-menu{
+    display:none;position:fixed;inset:0;z-index:200;
+    background:rgba(8,20,34,.97);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+    flex-direction:column;padding:26px 24px;
+  }
+  .m-menu.open{display:flex}
+  .m-menu__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+  .m-menu__head span{font:700 11px var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+  .m-menu__close{background:none;border:none;color:var(--cream);font-size:30px;cursor:pointer;line-height:1}
+  .m-menu a{
+    font-family:var(--serif);font-size:24px;font-weight:500;color:var(--cream);
+    padding:14px 0;border-bottom:1px solid var(--line);
+  }
+  .m-menu a:last-of-type{border-bottom:none}
+
+  /* ============================================================================
+     BENTO GRID
+     ────────────────────────────────────────────────────────────────────────
+     BENTO MAP (desktop · 12 columns · 4 implicit rows · gap 20px)
+
+     col →  1   2   3   4   5   6   7   8   9   10  11  12
+     ┌───────────────────────────┬───────────┬───────────┐
+   R1│                           │ CANDIDATES│ EMPLOYERS │
+     │        HERO  (6×2)         │   (3×2)   │   (3×2)   │
+   R2│                           │           │           │
+     ├───────────────────────────┴───────────┴───────────┤
+   R3│              CINEMATIC SHOWCASE  (12×1)            │
+     ├─────┬─────┬─────┬─────┬─────┬───────────────┬─────┤
+   R4│ AI  │COVER│INTVW│PRICE│PROOF│      CTA       ...   │
+     │ RES │LTR  │PREP │     │     │                       │
+     │(2×1)│(2×1)│(2×1)│(2×1)│(2×1)│     (2×1)             │
+     └─────┴─────┴─────┴─────┴─────┴───────────────┴─────┘
+
+       Card                 grid-column        grid-row
+       ─────────────────────────────────────────────────
+       Hero                 1 / span 6         1 / span 2
+       For Candidates       7 / span 3         1 / span 2
+       For Employers        10 / span 3        1 / span 2
+       Cinematic Showcase   1 / span 12        3
+       Feature · AI Resume  1 / span 2         4
+       Feature · Cover Ltr  3 / span 2         4
+       Feature · Interview  5 / span 2         4
+       Pricing              7 / span 2         4
+       Social proof         9 / span 2         4
+       Final CTA            11 / span 2        4
+
+     NOTE ON SPANS: the brief's literal spans (hero 6×2, 2 audience 3×1,
+     showcase 12×1, 3 features 2×1, pricing/proof/cta 2×1) sum to 42 grid
+     cells, which cannot tile a 12-col grid without a 6-cell hole. Promoting
+     the two audience cards to 3×2 (tall "doors" flanking the 2-row hero)
+     yields 48 cells — a flawless 4-row grid — and reads more premium, so the
+     hero band is a self-contained 12×2 unit.
+
+     Tablet (≤1000px): 6 columns. Hero 6×2, audience 3×2 each (side by side),
+                       showcase 6×1, feature/utility cards 3×1 (two per row).
+     Mobile (≤680px):  1 column. Hero stays first and visually dominant.
+     ==========================================================================*/
+  .bento{
+    max-width:1320px;margin:0 auto;padding:40px 28px 72px;
+  }
+
+  .bento-grid{
+    display:grid;
+    grid-template-columns:repeat(12,1fr);
+    grid-auto-rows:minmax(150px,auto);
+    gap:var(--gap);
+  }
+
+  /* Base card ------------------------------------------------------------ */
+  .bento-card{
+    position:relative;display:flex;flex-direction:column;
+    border:1px solid var(--line);
+    border-radius:var(--radius-sm);
+    background:var(--card-a);
+    padding:26px;
+    overflow:hidden;
+    color:var(--cream-muted);
+    text-decoration:none;
+    /* Hover: border brightens to 50% gold + translateY(-2px). NO scale.
+       Entrance rides `opacity`/`translate` on a --reveal-delay custom property
+       (see .reveal) so the stagger never delays the hover `transform`. */
+    transition:border-color .2s ease-out,background .2s ease-out,transform .2s ease-out,
+               opacity .6s ease-out var(--reveal-delay,0ms),
+               translate .6s ease-out var(--reveal-delay,0ms);
+    will-change:transform;
+  }
+  .bento-card--lg{border-radius:var(--radius-lg);padding:34px}
+  a.bento-card:hover,.bento-card--interactive:hover{
+    border-color:var(--line-hover);
+    transform:translateY(-2px);
+  }
+  a.bento-card:hover{background:var(--card-b)}
+
+  /* Surface variants — alternate depth (no gradients, no shadows) */
+  .surf-teal{background:var(--card-b)}
+  .surf-deep{background:var(--card-deep)}
+
+  .bento-card .eyebrow{margin-bottom:auto}
+  .card-body{margin-top:22px}
+  .card-arrow{
+    position:absolute;right:22px;bottom:22px;font-size:22px;color:var(--gold);
+    transition:transform .2s ease-out;line-height:1;
+  }
+  a.bento-card:hover .card-arrow{transform:translate(3px,-3px)}
+
+  /* ── HERO card (1 / span6, row1 / span2) ─────────────────────────────── */
+  .c-hero{
+    grid-column:1 / span 6;grid-row:1 / span 2;
+    justify-content:flex-end;
+    background:var(--card-deep);
+    padding:44px;
+  }
+  /* Decorative gold arc — low-opacity SVG, INSIDE the hero card only. */
+  .c-hero__arc{
+    position:absolute;top:-42%;right:-24%;width:118%;height:150%;
+    pointer-events:none;z-index:0;opacity:.5;
+  }
+  /* Stroke driven from the brand token (var() can't resolve in an SVG
+     presentation attribute, so it's set here in CSS instead). */
+  .c-hero__arc circle{stroke:var(--gold)}
+  .c-hero > *{position:relative;z-index:1}
+  .c-hero .card-title{
+    font-size:clamp(30px,3.6vw,50px);margin:20px 0 16px;font-weight:500;
+    max-width:15ch;
+  }
+  .c-hero .card-title em{color:var(--gold)}
+  .c-hero .card-desc{font-size:15.5px;max-width:44ch;margin-bottom:28px}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .btn-gold{
+    display:inline-flex;align-items:center;gap:9px;
+    font:700 14px var(--sans);letter-spacing:.01em;
+    color:var(--cream);background:transparent;
+    border:1px solid var(--gold);border-radius:9px;
+    padding:13px 24px;cursor:pointer;
+    transition:background .2s ease-out,transform .2s ease-out;
+  }
+  /* Button hover: gold border fills with 10% gold background. */
+  .btn-gold:hover{background:rgba(201,162,39,.10);transform:translateY(-1px)}
+  .btn-quiet{
+    display:inline-flex;align-items:center;gap:8px;
+    font:600 13px var(--sans);color:var(--cream-muted);
+    padding:13px 6px;transition:color .18s;
+  }
+  .btn-quiet:hover{color:var(--gold)}
+  .hero-meta{
+    margin-top:24px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+    font-size:12.5px;color:var(--cream-faint);
+  }
+  .hero-meta .dot{color:var(--line-strong)}
+  .hero-meta .stars{color:var(--gold);letter-spacing:2px}
+
+  /* ── Audience "door" cards ───────────────────────────────────────────── */
+  .c-cand{grid-column:7 / span 3;grid-row:1 / span 2;background:var(--card-b)}
+  .c-emp{grid-column:10 / span 3;grid-row:1 / span 2}
+  .c-door .card-title{font-size:clamp(26px,2.4vw,34px);margin:26px 0 10px}
+  .c-door .card-desc{font-size:14px;max-width:30ch}
+  .c-door__foot{
+    margin-top:auto;padding-top:22px;font-size:11px;font-weight:700;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--gold);
+  }
+
+  /* ── Cinematic showcase (full width) ─────────────────────────────────── */
+  .c-show{
+    grid-column:1 / span 12;grid-row:3;
+    flex-direction:row;align-items:center;gap:40px;
+    background:var(--card-deep);min-height:200px;
+    border-radius:var(--radius-lg);padding:38px 40px;
+  }
+  .c-show__copy{flex:1 1 auto;max-width:52ch}
+  .c-show .card-title{font-size:clamp(24px,2.6vw,36px);margin:18px 0 12px}
+  .c-show__visual{
+    flex:0 0 42%;align-self:stretch;min-height:170px;position:relative;
+    border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:var(--navy-deep);
+  }
+  /* Editorial "web studio preview" built from hairlines only — no imagery,
+     no gradient, no shadow. Reads as a private site rendering in the office. */
+  .studio-frame{position:absolute;inset:0;padding:20px}
+  .studio-bar{display:flex;gap:6px;margin-bottom:16px}
+  .studio-bar i{width:9px;height:9px;border-radius:50%;border:1px solid var(--line-strong);display:block}
+  .studio-line{height:8px;border-radius:3px;background:rgba(245,241,232,.10);margin-bottom:9px}
+  .studio-line.w-gold{background:rgba(201,162,39,.55);height:11px;width:52%;margin-bottom:14px}
+  .studio-line.w-70{width:70%}.studio-line.w-90{width:90%}.studio-line.w-50{width:50%}
+  .studio-line.w-40{width:40%}
+  .studio-cols{display:flex;gap:12px;margin-top:16px}
+  .studio-cols>div{flex:1}
+  .studio-chip{
+    display:inline-block;font:700 9px var(--sans);letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gold);border:1px solid var(--line-strong);border-radius:20px;padding:4px 10px;
+  }
+
+  /* ── Row-4 utility cards (features + pricing + proof + cta) ───────────── */
+  .c-f1{grid-column:1 / span 2;grid-row:4}
+  .c-f2{grid-column:3 / span 2;grid-row:4;background:var(--card-b)}
+  .c-f3{grid-column:5 / span 2;grid-row:4}
+  .c-price{grid-column:7 / span 2;grid-row:4;background:var(--card-b)}
+  .c-proof{grid-column:9 / span 2;grid-row:4}
+  .c-cta{grid-column:11 / span 2;grid-row:4;background:var(--teal);border-color:var(--line-strong)}
+
+  .c-feature .feat-ic{
+    width:38px;height:38px;border:1px solid var(--line-strong);border-radius:9px;
+    display:flex;align-items:center;justify-content:center;color:var(--gold);
+    font-size:17px;margin-bottom:auto;
+  }
+  .c-feature .card-title{font-size:19px;margin:20px 0 7px}
+  .c-feature .card-desc{font-size:13px;line-height:1.55}
+
+  /* Pricing */
+  .c-price .price-line{
+    font-family:var(--serif);color:var(--cream);font-weight:500;
+    font-size:22px;line-height:1.2;margin:18px 0 0;letter-spacing:-.01em;
+  }
+  .c-price .price-line b{color:var(--gold);font-weight:600}
+
+  /* Social proof */
+  .c-proof .proof-quote{
+    font-family:var(--serif);font-style:italic;font-weight:500;color:var(--cream);
+    font-size:16px;line-height:1.4;margin:16px 0 12px;
+  }
+  .c-proof .proof-who{font-size:12px;color:var(--cream-faint);letter-spacing:.02em}
+  .c-proof .stars{color:var(--gold);letter-spacing:2px;font-size:12px}
+
+  /* Final CTA */
+  .c-cta{justify-content:flex-end}
+  .c-cta .card-title{font-size:22px;color:#fff;margin:20px 0 14px}
+  .c-cta .eyebrow{color:var(--gold)}
+  .c-cta .cta-link{
+    display:inline-flex;align-items:center;gap:9px;
+    font:700 13px var(--sans);color:#fff;
+    border:1px solid var(--gold);border-radius:8px;padding:11px 18px;width:fit-content;
+    transition:background .2s ease-out;
+  }
+  .c-cta .cta-link:hover{background:rgba(201,162,39,.14)}
+
+  /* ── Scroll entrance: staggered fade-up ──────────────────────────────── */
+  /* Entrance animates the independent `translate` + `opacity` (never `transform`),
+     so it can't collide with hover's `transform`. The stagger delay rides the
+     --reveal-delay custom property, which ONLY the entrance transition reads —
+     so hover is never delayed after the reveal has run. */
+  .reveal{opacity:0;translate:0 16px}
+  .reveal.in{opacity:1;translate:0 0}
+  /* Non-card reveals (e.g. the grid intro) carry their own entrance transition;
+     cards fold the same legs into .bento-card's transition above. */
+  .reveal:not(.bento-card){
+    transition:opacity .6s ease-out var(--reveal-delay,0ms),
+               translate .6s ease-out var(--reveal-delay,0ms);
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1;translate:none;transition:none}
+    *{scroll-behavior:auto!important}
+    .bento-card,.btn-gold,.card-arrow{transition:none!important}
+  }
+
+  /* ============================================================================
+     RESPONSIVE — 12-col → 6-col tablet → 1-col mobile
+     ==========================================================================*/
+  @media (max-width:1000px){
+    :root{--gap:16px}
+    .nav__links{display:none}
+    .nav__actions{margin-left:auto}
+    .hamburger{display:flex;margin-left:0}
+    .bento-grid{grid-template-columns:repeat(6,1fr)}
+
+    .c-hero{grid-column:1 / span 6;grid-row:1 / span 2;padding:36px}
+    .c-cand{grid-column:1 / span 3;grid-row:3}
+    .c-emp{grid-column:4 / span 3;grid-row:3}
+    .c-show{grid-column:1 / span 6;grid-row:4}
+    /* utility cards: two per row, 3 cols each */
+    .c-f1{grid-column:1 / span 3;grid-row:5}
+    .c-f2{grid-column:4 / span 3;grid-row:5}
+    .c-f3{grid-column:1 / span 3;grid-row:6}
+    .c-price{grid-column:4 / span 3;grid-row:6}
+    .c-proof{grid-column:1 / span 3;grid-row:7}
+    .c-cta{grid-column:4 / span 3;grid-row:7}
+    .c-show{flex-direction:column;align-items:stretch}
+    .c-show__visual{flex-basis:auto;width:100%;min-height:180px}
+  }
+
+  @media (max-width:680px){
+    :root{--gap:12px}
+    .nav__inner{height:64px;padding:0 18px}
+    .bento{padding:26px 18px 56px}
+    .bento-grid{grid-template-columns:1fr;grid-auto-rows:auto}
+    /* Single column — hero remains first & dominant */
+    .c-cand,.c-emp,.c-show,
+    .c-f1,.c-f2,.c-f3,.c-price,.c-proof,.c-cta{
+      grid-column:1 / -1;grid-row:auto;
+    }
+    .c-door{min-height:190px}
+    .c-cta{min-height:170px}
+  }
+
+  @media (max-width: 680px) {
+  .c-hero {
+    grid-column: 1 / 13 !important;
+    grid-row: auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    justify-content: flex-start !important;
+    align-items: flex-start !important;
+    padding: 22px !important;
+    gap: 12px !important;
+  }
+
+  /* Shrink the decorative arc so it can't create phantom height */
+  .c-hero__arc,
+  .c-hero svg {
+    width: 120px !important;
+    height: 120px !important;
+    top: -15px !important;
+    right: -15px !important;
+    opacity: 0.1 !important;
+  }
+
+  /* Kill every auto margin inside the hero, then re-add only what we need */
+  .c-hero * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  .c-hero .eyebrow    { margin-bottom: 8px !important; }
+  .c-hero .card-title { margin-bottom: 10px !important; }
+  .c-hero .card-desc  { margin-bottom: 14px !important; }
+  .c-hero .hero-cta   { margin-bottom: 10px !important; }
+}
+
+  @media (max-width:380px){
+    .hero-cta{flex-direction:column;align-items:stretch}
+    .btn-gold{justify-content:center}
+  }
+  </style>
+</head>
+
+<body>
+
+<!-- ── NAV (preserved: brand, links, 中文 toggle, Login, hamburger) ── -->
+<header class="nav">
+  <div class="nav__inner">
+    <a class="brand" href="/">ResumeTailored <small>Private career &amp; people office</small></a>
+    <nav class="nav__links" aria-label="Primary navigation">
+      <a href="/pricing#ecosystem-pricing">Membership</a>
+      <a href="/ai-resume-tailor">Tailor My Resume</a>
+      <a href="/for-employers">For Employers</a>
+      <a href="/resume-examples">Examples</a>
+      <a href="/blog">Journal</a>
+    </nav>
+    <div class="nav__actions">
+      <button class="lang-toggle" type="button" onclick="toggleLang()" title="Switch language / 切换语言">中文</button>
+      <button class="nav__login" type="button" onclick="openLogin()">Login</button>
+    </div>
+    <button class="hamburger" type="button" aria-label="Open menu" aria-controls="mMenu" aria-expanded="false" onclick="mMenu(true)">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<!-- Mobile drawer -->
+<div class="m-menu" id="mMenu" aria-hidden="true">
+  <div class="m-menu__head">
+    <span>Explore the office</span>
+    <button class="m-menu__close" type="button" aria-label="Close menu" onclick="mMenu(false)">&times;</button>
+  </div>
+  <a href="/ai-resume-tailor">Tailor My Resume</a>
+  <a href="/ai-cover-letter-generator">Cover Letter</a>
+  <a href="/interview-coach">Interview Coach</a>
+  <a href="/web-studio">Web Studio</a>
+  <a href="/for-employers">For Employers</a>
+  <a href="/pricing#ecosystem-pricing">Membership</a>
+  <button class="lang-toggle" type="button" style="margin-top:18px;align-self:flex-start" onclick="mMenu(false);toggleLang()">中文 / EN</button>
+</div>
+
+<main id="main">
+  <section class="bento" aria-labelledby="bento-title">
+
+    <!-- ── BENTO GRID ── -->
+    <div class="bento-grid">
+
+      <!-- HERO · 6 × 2 -->
+      <article class="bento-card bento-card--lg c-hero reveal" aria-labelledby="bento-title">
+        <!-- Decorative gold arc — low-opacity SVG, hero card only -->
+        <svg class="c-hero__arc" viewBox="0 0 600 600" fill="none" aria-hidden="true" focusable="false">
+          <circle cx="300" cy="300" r="252" stroke-width="1" stroke-opacity="0.5"/>
+          <circle cx="300" cy="300" r="190" stroke-width="1" stroke-opacity="0.32"/>
+          <circle cx="300" cy="300" r="128" stroke-width="1" stroke-opacity="0.18"/>
+        </svg>
+        <span class="eyebrow">Career intelligence, privately delivered</span>
+        <h1 class="card-title" id="bento-title">Your next move, <em>properly considered.</em></h1>
+        <p class="card-desc">A private digital office for ambitious candidates and exacting employers — combining resume intelligence, cinematic presentation, and an editorial web studio.</p>
+        <div class="hero-cta">
+          <a class="btn-gold" href="/dashboard">Begin — it's free <span aria-hidden="true">→</span></a>
+          <a class="btn-quiet" href="/how-it-works">See how it works</a>
+        </div>
+        <div class="hero-meta">
+          <span class="stars" aria-hidden="true">★★★★★</span>
+          <span>Anthropic&nbsp;Claude</span>
+          <span class="dot" aria-hidden="true">·</span>
+          <span>100+ templates</span>
+          <span class="dot" aria-hidden="true">·</span>
+          <span>No card required</span>
+        </div>
+      </article>
+
+      <!-- FOR CANDIDATES · 3 × 2 -->
+      <a class="bento-card c-cand c-door reveal" href="/ai-resume-tailor">
+        <span class="eyebrow">For candidates · 01</span>
+        <div>
+          <h3 class="card-title">Tailor My Resume</h3>
+          <p class="card-desc">Translate the role, position your experience, and present your work with quiet confidence.</p>
+        </div>
+        <span class="c-door__foot">Free to begin</span>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </a>
+
+      <!-- FOR EMPLOYERS · 3 × 2 -->
+      <a class="bento-card c-emp c-door reveal" href="/for-employers">
+        <span class="eyebrow">For employers · 02</span>
+        <div>
+          <h3 class="card-title">Recruiting Studio</h3>
+          <p class="card-desc">Screen candidates and run hiring across one composed, discreet command center.</p>
+        </div>
+        <span class="c-door__foot">Portal · From $49/mo</span>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </a>
+
+      <!-- CINEMATIC SHOWCASE · 12 × 1 -->
+      <a class="bento-card c-show reveal" href="/web-studio">
+        <div class="c-show__copy">
+          <span class="eyebrow">Editorial web studio</span>
+          <h3 class="card-title">Your career, published like a private folio.</h3>
+          <p class="card-desc">A focused website studio turns a tailored resume into a quietly persuasive personal page — watermark-free, indexable, yours. Present your work the way the work deserves.</p>
+          <span class="btn-quiet" style="padding-left:0">Open the studio <span aria-hidden="true">→</span></span>
+        </div>
+        <div class="c-show__visual" aria-hidden="true">
+          <div class="studio-frame">
+            <div class="studio-bar"><i></i><i></i><i></i></div>
+            <span class="studio-chip">Personal Site</span>
+            <div class="studio-line w-gold" style="margin-top:14px"></div>
+            <div class="studio-line w-90"></div>
+            <div class="studio-line w-70"></div>
+            <div class="studio-cols">
+              <div>
+                <div class="studio-line w-50"></div>
+                <div class="studio-line w-90"></div>
+                <div class="studio-line w-40"></div>
+              </div>
+              <div>
+                <div class="studio-line w-40"></div>
+                <div class="studio-line w-70"></div>
+                <div class="studio-line w-90"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- FEATURE · AI Resume · 2 × 1 -->
+      <a class="bento-card c-feature c-f1 reveal" href="/ai-resume-tailor">
+        <span class="feat-ic" aria-hidden="true">✎</span>
+        <div class="card-body">
+          <h3 class="card-title">AI Resume Tailoring</h3>
+          <p class="card-desc">Rewritten for each posting in the role's own language — never fabricated.</p>
+        </div>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </a>
+
+      <!-- FEATURE · Cover Letter · 2 × 1 -->
+      <a class="bento-card c-feature c-f2 reveal" href="/ai-cover-letter-generator">
+        <span class="feat-ic" aria-hidden="true">✍</span>
+        <div class="card-body">
+          <h3 class="card-title">Cover Letters</h3>
+          <p class="card-desc">A matching letter with every tailoring — composed, not templated.</p>
+        </div>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </a>
+
+      <!-- FEATURE · Interview Prep · 2 × 1 -->
+      <a class="bento-card c-feature c-f3 reveal" href="/interview-coach">
+        <span class="feat-ic" aria-hidden="true">◆</span>
+        <div class="card-body">
+          <h3 class="card-title">Interview Prep</h3>
+          <p class="card-desc">Rehearse the conversation before it happens, with structured guidance.</p>
+        </div>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </a>
+
+      <!-- PRICING · 2 × 1 -->
+      <a class="bento-card c-price reveal" href="/pricing#ecosystem-pricing">
+        <span class="eyebrow">Membership</span>
+        <div class="card-body">
+          <h3 class="price-line">Free to begin · <b>Pro $19.00</b> / month · Lifetime $129</h3>
+        </div>
+        <span class="card-arrow" aria-hidden="true">↗</span>
+      </a>
+
+      <!-- SOCIAL PROOF · 2 × 1 -->
+      <article class="bento-card c-proof surf-deep reveal">
+        <span class="stars" aria-hidden="true">★★★★★</span>
+        <p class="proof-quote">"It read like a partner had reviewed my resume — not a template."</p>
+        <p class="proof-who">Rated 4.9 / 5 · 312 reviews</p>
+      </article>
+
+      <!-- FINAL CTA · 2 × 1 -->
+      <article class="bento-card c-cta reveal">
+        <span class="eyebrow eyebrow--plain">Ready when you are</span>
+        <h3 class="card-title">Step inside the office.</h3>
+        <a class="cta-link" href="/dashboard">Get started free <span aria-hidden="true">→</span></a>
+      </article>
+
+    </div><!-- /.bento-grid -->
+  </section>
+</main>
+
+<!-- Login chooser (job seeker / employer) -->
+<div id="loginChooser" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(8,20,34,.72);align-items:center;justify-content:center;padding:22px" onclick="if(event.target===this)openLogin(false)">
+  <div style="background:#0d1e30;border:1px solid rgba(201,162,39,.28);border-radius:16px;max-width:400px;width:100%;padding:30px 26px;position:relative;font-family:'Inter',sans-serif">
+    <button onclick="openLogin(false)" aria-label="Close" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:26px;color:#9eb2aa;cursor:pointer;line-height:1">&times;</button>
+    <h2 style="font-family:'Fraunces',serif;font-weight:600;font-size:25px;letter-spacing:-.02em;margin:0 0 4px;color:#f5f1e8">Log in</h2>
+    <p style="color:#9eb2aa;font-size:14px;margin:0 0 20px">Are you a Job Seeker or an Employer?</p>
+    <a href="/login?redirect=/dashboard" style="display:flex;align-items:center;gap:14px;background:#0a1628;border:1px solid rgba(201,162,39,.3);border-radius:12px;padding:16px;margin-bottom:12px">
+      <span style="font-size:24px">👤</span>
+      <span><span style="display:block;font-weight:800;color:#f5f1e8;font-size:15px">Job Seeker</span><span style="display:block;color:#9eb2aa;font-size:13px">Tailor resumes, cover letters &amp; more</span></span>
+    </a>
+    <a href="/login?redirect=/employer" style="display:flex;align-items:center;gap:14px;background:#0a1628;border:1px solid rgba(201,162,39,.3);border-radius:12px;padding:16px">
+      <span style="font-size:24px">💼</span>
+      <span><span style="display:block;font-weight:800;color:#f5f1e8;font-size:15px">Employer</span><span style="display:block;color:#9eb2aa;font-size:13px">Post jobs &amp; hire candidates</span></span>
+    </a>
+  </div>
+</div>
+
+<script>
+  /* Mobile drawer — locks body scroll like the login modal, and moves focus to
+     the close button on open / back to the hamburger on close. */
+  function mMenu(open){
+    var m=document.getElementById('mMenu');
+    var burger=document.querySelector('.hamburger');
+    var wasOpen=m.classList.contains('open');
+    m.classList.toggle('open',open);
+    m.setAttribute('aria-hidden',open?'false':'true');
+    if(burger)burger.setAttribute('aria-expanded',open?'true':'false');
+    document.body.style.overflow=open?'hidden':'';
+    if(open){
+      var close=m.querySelector('.m-menu__close');
+      if(close)close.focus();
+    } else if(wasOpen && burger){
+      burger.focus();  /* only steal focus back when a drawer was actually open */
+    }
+  }
+  /* Login chooser */
+  function openLogin(open){
+    if(open===undefined)open=true;
+    document.getElementById('loginChooser').style.display=open?'flex':'none';
+    document.body.style.overflow=open?'hidden':'';
+  }
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'){mMenu(false);openLogin(false);} });
+
+  /* Language toggle — integrates with the site-wide toggleLang() when present;
+     standalone it is a no-op stub so the button never errors. */
+  if(typeof window.toggleLang!=='function'){
+    window.toggleLang=function(){ /* site-nav.js / index.html provides the real impl */ };
+  }
+
+  /* Scroll entrance: staggered fade-up (60ms stagger), respects reduced-motion */
+  (function(){
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var items = Array.prototype.slice.call(document.querySelectorAll('.reveal'));
+    if(reduce || !('IntersectionObserver' in window)){
+      items.forEach(function(el){ el.classList.add('in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if(en.isIntersecting){
+          var el = en.target;
+          var i = items.indexOf(el);
+          /* Delay rides a custom property that ONLY the entrance transition
+             reads (see .reveal / .bento-card), so hover is never staggered. */
+          el.style.setProperty('--reveal-delay', Math.min(i,8)*60 + 'ms');
+          el.classList.add('in');
+          io.unobserve(el);
+        }
+      });
+    },{ rootMargin:'0px 0px -8% 0px', threshold:0.08 });
+    items.forEach(function(el){ io.observe(el); });
+  })();
+</script>
+
+</body>
+</html>
