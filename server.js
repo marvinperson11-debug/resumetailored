@@ -156,13 +156,15 @@ function _isAIProviderUnavailable(err) {
 
 // ─── Email helper ─────────────────────────────────────────────────────────────
 // Priority: Resend (RESEND_API_KEY) → SMTP (SMTP_USER + SMTP_PASS) → console log
-async function sendEmail({ to, subject, html, replyTo, headers = {} }) {
+async function sendEmail({ to, subject, html, replyTo, headers = {}, from } = {}) {
   const resendKey  = process.env.RESEND_API_KEY;
   const smtpUser   = process.env.SMTP_USER;
   const smtpPass   = process.env.SMTP_PASS;
   // The authenticated SMTP user may differ from the visible From address.
   // Keep the public sender on the verified domain for authentication alignment.
-  const fromAddr   = process.env.EMAIL_FROM || 'support@resumetailored.com';
+  // `from` overrides the default per-send (owner alerts use a distinct sender —
+  // see notifyOwner); it must still be on the verified domain so DKIM/DMARC align.
+  const fromAddr   = from || process.env.EMAIL_FROM || 'support@resumetailored.com';
   const fromName   = process.env.EMAIL_FROM_NAME || 'ResumeTailored AI';
   const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
   // Always set a Reply-To so replies don't bounce back to the sending domain
@@ -206,8 +208,22 @@ async function sendEmail({ to, subject, html, replyTo, headers = {} }) {
 function notifyOwner(subject, html) {
   if (process.env.OWNER_ALERTS === 'off') return;
   const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
+  // Send owner alerts from a DISTINCT sender, not the default support@ address.
+  // If OWNER_EMAIL is a Gmail account that has support@resumetailored.com set up
+  // as a "Send mail as" alias, Gmail treats any mail From that alias as
+  // self-sent and silently drops it from the inbox (accepted at SMTP, stored
+  // nowhere — not even Spam/Trash). Sending alerts from a different verified
+  // address the account does NOT own as an alias keeps them out of that trap.
+  // Still on the verified domain, so DKIM/SPF/DMARC alignment is unchanged.
+  // Default: an `alerts@` local-part on the SAME verified domain the app already
+  // sends from (so DKIM/SPF/DMARC keep aligning), which is distinct from the
+  // support@ address used everywhere else. Override the whole thing with
+  // OWNER_ALERT_FROM.
+  const baseFrom = process.env.EMAIL_FROM || 'support@resumetailored.com';
+  const senderDomain = baseFrom.includes('@') ? baseFrom.split('@').pop() : 'resumetailored.com';
+  const alertFrom = process.env.OWNER_ALERT_FROM || `alerts@${senderDomain}`;
   const stamp = `<p style="color:#888;font-size:12px;">Time: ${new Date().toUTCString()}</p>`;
-  sendEmail({ to: ownerEmail, subject, html: html + stamp })
+  sendEmail({ to: ownerEmail, subject, html: html + stamp, from: alertFrom })
     .catch(err => console.error('[Alert] Owner notification failed:', err.message));
 }
 
