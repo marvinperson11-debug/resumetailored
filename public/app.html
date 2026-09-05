@@ -4149,6 +4149,21 @@ Aaliyah Washington`
       return sigName ? base + '\n\n' + sigName : base;
     }
 
+    // Best-effort owner alert for browser-side downloads (PDF/TXT). The DOCX
+    // path notifies from the server; PDF/TXT never touch it, so ping the server
+    // here. Fire-and-forget: a failure must never block or break the download.
+    function _notifyDownload(format) {
+      try {
+        const filename = (document.getElementById('outputTitle').textContent || 'tailored-resume');
+        fetch('/api/notify-download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ format: format, filename: filename }),
+          keepalive: true
+        }).catch(function(){});
+      } catch (e) {}
+    }
+
     function downloadTxt() {
       let text = getOutputText();
       if (!text) return;
@@ -4160,6 +4175,7 @@ Aaliyah Washington`
       a.download = (document.getElementById('outputTitle').textContent || 'resume') + '.txt';
       a.click();
       URL.revokeObjectURL(a.href);
+      _notifyDownload('txt');
     }
 
     async function downloadDocx() {
@@ -4824,6 +4840,7 @@ Aaliyah Washington`
 </body>
 </html>`);
       win.document.close();
+      _notifyDownload('pdf');
     }
 
     function startPro() {
