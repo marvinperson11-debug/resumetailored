@@ -10,7 +10,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // === ResumeTailored design system (the only palette in use) ===
+        // === Resume Tailored design system (the only palette in use) ===
         navy: "#0A1628",
         teal: "#1A2F2F",
         gold: "#C9A96E",

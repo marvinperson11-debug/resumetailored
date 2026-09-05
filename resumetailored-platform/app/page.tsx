@@ -2,10 +2,10 @@ import Link from "next/link";
 
 export default function LandingPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-navy px-6 py-24 text-center">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-navy px-6 py-12 text-center">
       <div className="mx-auto flex max-w-2xl flex-col items-center gap-8">
         <span className="text-xs font-medium uppercase tracking-[0.32em] text-gold">
-          ResumeTailored
+          Resume Tailored
         </span>
 
         <h1 className="font-serif text-4xl font-medium leading-tight text-cream sm:text-5xl md:text-6xl">

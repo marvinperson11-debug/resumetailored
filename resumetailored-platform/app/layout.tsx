@@ -16,7 +16,7 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "ResumeTailored — A private office for your ambitions",
+  title: "Resume Tailored — A private office for your ambitions",
   description:
     "A private office for your ambitions. Hiring for employers, tailored careers for candidates.",
 };

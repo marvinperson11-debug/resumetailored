@@ -52,7 +52,7 @@ export function EmployerSidebar() {
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center border-b border-border-gold px-6">
         <span className="font-serif text-lg font-medium text-cream">
-          ResumeTailored
+          Resume Tailored
         </span>
       </div>
 
