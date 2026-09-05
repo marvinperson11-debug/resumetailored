@@ -3746,12 +3746,14 @@ async function handleTemplatedDocx(req, res) {
   res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
   res.send(buffer);
 
-  const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
-  sendEmail({
-    to: ownerEmail,
-    subject: `[ResumeTailored] Download: ${safeName}.docx`,
-    html: `<p>A user just downloaded <strong>${safeName}.docx</strong>.</p><p>Time: ${new Date().toUTCString()}</p>`
-  }).catch(err => console.error('[Alert] Download email failed:', err.message));
+  // Route through notifyOwner so the download alert uses the same distinct
+  // alerts@ sender as every other owner alert (notifyOwner stamps the time and
+  // honours OWNER_ALERTS=off). Previously this sent via sendEmail from the
+  // default support@ address, which Gmail self-suppressed like the others.
+  notifyOwner(
+    `[ResumeTailored] Download: ${safeName}.docx`,
+    `<p>A user just downloaded <strong>${safeName}.docx</strong>.</p>`
+  );
 }
 
 // ─── Share resume as a public link ────────────────────────────────────────────
@@ -6331,12 +6333,33 @@ app.post('/api/download-docx', async (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
   res.send(buffer);
 
-  const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
-  sendEmail({
-    to: ownerEmail,
-    subject: `[ResumeTailored] Download: ${safeName}.docx`,
-    html: `<p>A user just downloaded <strong>${safeName}.docx</strong>.</p><p>Time: ${new Date().toUTCString()}</p>`
-  }).catch(err => console.error('[Alert] Download email failed:', err.message));
+  // Route through notifyOwner so the download alert uses the same distinct
+  // alerts@ sender as every other owner alert (notifyOwner stamps the time and
+  // honours OWNER_ALERTS=off). Previously this sent via sendEmail from the
+  // default support@ address, which Gmail self-suppressed like the others.
+  notifyOwner(
+    `[ResumeTailored] Download: ${safeName}.docx`,
+    `<p>A user just downloaded <strong>${safeName}.docx</strong>.</p>`
+  );
+});
+
+// ─── API: owner alert for client-side downloads (PDF / TXT) ───────────────────
+// PDF and TXT exports are produced entirely in the browser (window.print / a
+// Blob), so they never hit /api/download-docx and used to fire no owner alert
+// at all. The client pings this after such a download so the owner still gets
+// notified. Best-effort and rate-limited so it can't be used to flood the
+// inbox; it only ever emails the owner (no user-supplied recipient).
+const downloadNotifyLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, skip: () => RATE_LIMIT_OFF, message: { error: 'rate_limited', message: 'Too many requests — please wait a minute.' } });
+app.post('/api/notify-download', downloadNotifyLimiter, (req, res) => {
+  const fmtRaw = String(req.body && req.body.format || '').toLowerCase();
+  const format = (fmtRaw === 'pdf' || fmtRaw === 'txt') ? fmtRaw : 'file';
+  const safeName = String(req.body && req.body.filename || 'tailored-resume')
+    .replace(/[^a-z0-9-_\s]/gi, '_').slice(0, 80) || 'tailored-resume';
+  notifyOwner(
+    `[ResumeTailored] Download: ${safeName}.${format}`,
+    `<p>A user just downloaded <strong>${_escHtml(safeName)}.${format}</strong>.</p>`
+  );
+  res.json({ ok: true });
 });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
