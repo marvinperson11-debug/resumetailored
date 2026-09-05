@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 /*
- * shadcn/ui theme tokens (slate base color, CSS variables).
- * The app runs in dark mode; the design system paints navy/cream on top.
+ * shadcn/ui theme tokens (slate base). The app runs dark; the glassmorphism
+ * + living-gradient system paints charcoal/violet/teal/gold on top.
  */
 @layer base {
   :root {
@@ -32,19 +32,100 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
   html,
   body {
-    background-color: #0a1628; /* Deep Navy */
-    color: #f5f0e8; /* Warm Cream */
+    background-color: #0b0f19; /* deep charcoal base */
+    color: #ffffff;
   }
 
   body {
     font-family: var(--font-inter), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/*
+ * Living gradient — a fixed mesh of violet → teal → gold blobs on charcoal
+ * that drifts on a slow 20s loop. Sits behind everything; glass surfaces
+ * (backdrop-blur) let it show through.
+ */
+.gradient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background-color: #0b0f19;
+}
+
+.gradient-bg::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background:
+    radial-gradient(38% 38% at 22% 28%, rgba(139, 92, 246, 0.55), transparent 62%),
+    radial-gradient(42% 42% at 76% 30%, rgba(20, 184, 166, 0.45), transparent 62%),
+    radial-gradient(46% 46% at 55% 82%, rgba(245, 158, 11, 0.40), transparent 62%),
+    radial-gradient(40% 40% at 85% 78%, rgba(139, 92, 246, 0.35), transparent 62%);
+  filter: blur(64px);
+  animation: mesh-drift 20s ease-in-out infinite;
+}
+
+@keyframes mesh-drift {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    transform: translate3d(4%, -3%, 0) rotate(4deg) scale(1.05);
+  }
+  66% {
+    transform: translate3d(-3%, 4%, 0) rotate(-4deg) scale(1.03);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+}
+
+/* Glassmorphism surfaces. */
+@layer components {
+  .glass {
+    background-color: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1rem;
+  }
+
+  .glass-hover {
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+  .glass-hover:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.24);
+  }
+}
+
+/* Staggered fade-in-up for landing elements. */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fade-up 0.8s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gradient-bg::before {
+    animation: none;
+  }
+  .fade-up {
+    animation: none;
   }
 }

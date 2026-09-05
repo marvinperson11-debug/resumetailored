@@ -10,13 +10,17 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // === Resume Tailored design system (the only palette in use) ===
-        navy: "#0A1628",
-        teal: "#1A2F2F",
-        gold: "#C9A96E",
-        cream: "#F5F0E8",
-        "muted-cream": "rgba(245, 240, 232, 0.65)",
-        "border-gold": "rgba(201, 169, 110, 0.22)",
+        // === Resume Tailored — glassmorphism + living-gradient palette ===
+        // Token names are kept stable across the app; values map to the new
+        // charcoal / violet / teal / gold system.
+        navy: "#0B0F19", // deep charcoal base
+        charcoal: "#0B0F19",
+        violet: "#8B5CF6", // primary accent
+        teal: "#14B8A6", // secondary accent (success, active sidebar)
+        gold: "#F59E0B", // amber, part of the living gradient
+        cream: "#FFFFFF", // headlines
+        "muted-cream": "rgba(255, 255, 255, 0.7)", // body copy
+        "border-gold": "rgba(255, 255, 255, 0.12)", // glass hairline border
 
         // === shadcn/ui semantic tokens (slate base) ===
         border: "hsl(var(--border))",

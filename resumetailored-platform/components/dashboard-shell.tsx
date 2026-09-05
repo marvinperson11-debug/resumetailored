@@ -15,9 +15,9 @@ export function DashboardShell({ sidebar, title, children }: DashboardShellProps
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-navy">
-      {/* Fixed sidebar (desktop) */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] border-r border-border-gold bg-teal lg:block">
+    <div className="min-h-screen">
+      {/* Fixed sidebar (desktop) — charcoal, lets the top bar/content float */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] border-r border-border-gold bg-navy lg:block">
         {sidebar}
       </aside>
 
@@ -29,7 +29,7 @@ export function DashboardShell({ sidebar, title, children }: DashboardShellProps
             onClick={() => setDrawerOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute inset-y-0 left-0 w-[260px] border-r border-border-gold bg-teal">
+          <div className="absolute inset-y-0 left-0 w-[260px] border-r border-border-gold bg-navy">
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
@@ -46,7 +46,7 @@ export function DashboardShell({ sidebar, title, children }: DashboardShellProps
       {/* Main column, offset by the sidebar width on desktop */}
       <div className="lg:pl-[260px]">
         {/* Top bar */}
-        <header className="flex h-16 items-center justify-between border-b border-border-gold bg-navy px-4 sm:px-6">
+        <header className="flex h-16 items-center justify-between border-b border-border-gold bg-white/5 px-4 backdrop-blur-xl sm:px-6">
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
@@ -58,7 +58,7 @@ export function DashboardShell({ sidebar, title, children }: DashboardShellProps
 
           <button
             type="button"
-            className="flex items-center gap-1.5 text-sm font-medium text-cream transition-colors hover:text-gold"
+            className="flex items-center gap-1.5 text-sm font-medium text-cream transition-colors hover:text-violet"
           >
             <span>{title}</span>
             <ChevronDown className="h-4 w-4 text-muted-cream" />
