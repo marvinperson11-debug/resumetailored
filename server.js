@@ -156,7 +156,7 @@ function _isAIProviderUnavailable(err) {
 
 // ─── Email helper ─────────────────────────────────────────────────────────────
 // Priority: Resend (RESEND_API_KEY) → SMTP (SMTP_USER + SMTP_PASS) → console log
-async function sendEmail({ to, subject, html, replyTo, headers = {}, from } = {}) {
+async function sendEmail({ to, subject, html, text, replyTo, headers = {}, from } = {}) {
   const resendKey  = process.env.RESEND_API_KEY;
   const smtpUser   = process.env.SMTP_USER;
   const smtpPass   = process.env.SMTP_PASS;
@@ -174,7 +174,9 @@ async function sendEmail({ to, subject, html, replyTo, headers = {}, from } = {}
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
-      body: JSON.stringify({ from: `${fromName} <${fromAddr}>`, to, subject, html, reply_to: effectiveReplyTo, headers })
+      // A plain-text alternative alongside the HTML improves inbox placement —
+      // many spam filters penalise HTML-only mail. Only included when provided.
+      body: JSON.stringify(Object.assign({ from: `${fromName} <${fromAddr}>`, to, subject, html, reply_to: effectiveReplyTo, headers }, text ? { text } : {}))
     });
     if (r.ok) { console.log(`[Resend] Email sent to ${to}`); return; }
     const err = await r.json().catch(() => ({}));
@@ -189,7 +191,7 @@ async function sendEmail({ to, subject, html, replyTo, headers = {}, from } = {}
       secure: process.env.SMTP_SECURE === 'true',
       auth: { user: smtpUser, pass: smtpPass }
     });
-    await transporter.sendMail({ from: `${fromName} <${fromAddr}>`, to, subject, html, replyTo: effectiveReplyTo, headers });
+    await transporter.sendMail(Object.assign({ from: `${fromName} <${fromAddr}>`, to, subject, html, replyTo: effectiveReplyTo, headers }, text ? { text } : {}));
     console.log(`[SMTP] Email sent to ${to}`);
     return;
   }
@@ -1324,6 +1326,31 @@ function _welcomeEmailHtml(username, unsubscribeUrl) {
     .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, _escHtml(unsubscribeUrl));
 }
 
+// Plain-text counterpart to the welcome HTML. Sent as the multipart text
+// alternative — better inbox placement (filters distrust HTML-only mail) and a
+// clean fallback for text-only clients. Not HTML-escaped: it is plain text.
+function _welcomeEmailText(username, unsubscribeUrl) {
+  return [
+    `Welcome aboard, ${username}.`,
+    '',
+    'Your ResumeTailored office is open. Thanks for joining.',
+    '',
+    'Everything is ready whenever you are:',
+    '- AI Resume Tailor — match your resume to a job\'s language and priorities.',
+    '- Cover Letter Generator — a personalized letter for each application.',
+    '- Career Hub — practical job-search tools, check-ins, and resources.',
+    '',
+    'Go to your dashboard: https://resumetailored.com/dashboard',
+    '',
+    'Questions? Just reply, or email support@resumetailored.com.',
+    '',
+    '—',
+    'You\'re receiving this because you created a ResumeTailored account.',
+    `Unsubscribe from product emails: ${unsubscribeUrl}`,
+    'Privacy: https://resumetailored.com/privacy',
+  ].join('\n');
+}
+
 function _subscriptionEndedEmailHtml() {
   const appUrl = String(process.env.PUBLIC_APP_URL || process.env.PUBLIC_ORIGIN || 'https://resumetailored.com').replace(/\/$/, '');
   return fs.readFileSync(path.join(__dirname, 'emails', 'subscription-ended.html'), 'utf8')
@@ -1764,6 +1791,7 @@ app.post('/api/auth/signup', authRateLimiter, authLockoutGuard, async (req, res)
       to: key,
       subject: 'Welcome to ResumeTailored AI — You\'re in!',
       html: _welcomeEmailHtml(cleanUsername, unsubscribeUrl),
+      text: _welcomeEmailText(cleanUsername, unsubscribeUrl),
       headers: {
         'List-Unsubscribe': `<${unsubscribeUrl}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click'
