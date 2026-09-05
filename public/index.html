@@ -3215,9 +3215,14 @@
     btn.disabled = true;
     btn.textContent = 'Sending...';
     try {
+      // Echo the double-submit CSRF token when signed in: the /api CSRF guard
+      // rejects cookie-authenticated POSTs without it (403), which broke this
+      // form for logged-in visitors. Logged-out visitors have no rt_csrf cookie
+      // and the guard skips them, so this stays optional.
+      const _csrf = (document.cookie.match(/(?:^|;\s*)rt_csrf=([^;]+)/) || [])[1] || '';
       const r = await fetch('/api/contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: Object.assign({ 'Content-Type': 'application/json' }, _csrf ? { 'X-CSRF-Token': _csrf } : {}),
         body: JSON.stringify({ name, email, subject, message })
       });
       if (r.ok) {
