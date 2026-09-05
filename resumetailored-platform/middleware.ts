@@ -8,11 +8,12 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
 ]);
 
-// Everything under these prefixes requires an authenticated session.
+// DEMO BUILD: /employer and /candidate are intentionally public so the UI can
+// be clicked through on a preview URL where the live Clerk key (bound to
+// clerk.resumetailored.com) cannot complete a sign-in. Flip this back to
+// include "/employer(.*)" and "/candidate(.*)" before shipping to production.
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
-  "/employer(.*)",
-  "/candidate(.*)",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
