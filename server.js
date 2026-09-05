@@ -1319,11 +1319,99 @@ function _resolveHtmlFile(reqPath) {
 
 // Email-client HTML is deliberately table-based: Outlook desktop does not
 // reliably support flex/grid and several mobile clients ignore gradients.
+// ─── Shared email layout ──────────────────────────────────────────────────────
+// ONE branded shell for every outgoing email so they all look identical — the
+// navy / gold "Private Career & People Office" look. Callers pass only their
+// content (heading, body HTML, optional CTA + footer note); the header, footer,
+// palette and responsive rules live here so nothing can drift between emails.
+// `bodyHtml` and `footerNoteHtml` are trusted HTML the CALLER assembles (escape
+// any user-supplied values before passing them in). Palette mirrors the site:
+// navy #071724, gold #c9a227, cream #f7f1e6, paper #fffdf8, ink #132028.
+function _emailShell({ title, preheader = '', heading, subheading = '', bodyHtml = '', ctaText = '', ctaUrl = '', footerNoteHtml = '' } = {}) {
+  const cta = (ctaText && ctaUrl)
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:30px 0 22px;">
+         <a class="cta" href="${ctaUrl}" style="display:inline-block;min-height:24px;background:#c9a227;color:#071724;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:.3px;line-height:24px;padding:14px 34px;border-radius:4px;">${ctaText}</a>
+       </td></tr></table>`
+    : '';
+  const footerNote = footerNoteHtml
+    || `You're receiving this because of activity on your ResumeTailored account.`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>${_escHtml(title || 'ResumeTailored')}</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; }
+    table { border-collapse:collapse !important; }
+    a { color:#9a7b1e; }
+    @media only screen and (max-width:620px) {
+      .shell { width:100% !important; }
+      .pad { padding-left:22px !important; padding-right:22px !important; }
+      .headline { font-size:27px !important; }
+      .cta { display:block !important; width:auto !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f7f1e6;font-family:Arial,Helvetica,sans-serif;color:#132028;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${_escHtml(preheader)}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background:#f7f1e6;">
+    <tr><td align="center" style="padding:28px 12px;">
+      <table role="presentation" class="shell" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#fffdf8;border:1px solid #e6dcc6;border-radius:4px;overflow:hidden;">
+
+        <tr><td class="pad" style="background:#071724;padding:36px 40px 30px;">
+          <p style="margin:0 0 2px;font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;letter-spacing:.3px;color:#f7f1e6;">ResumeTailored</p>
+          <p style="margin:0 0 22px;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#c9a227;">Private Career &amp; People Office</p>
+          <div style="height:1px;background:#c9a227;opacity:.55;line-height:1px;font-size:0;">&nbsp;</div>
+          <h1 class="headline" style="margin:24px 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:31px;line-height:1.18;font-weight:700;color:#ffffff;">${heading}</h1>
+          ${subheading ? `<p style="margin:0;font-size:15px;line-height:1.55;color:#cdd6d3;">${subheading}</p>` : ''}
+        </td></tr>
+
+        <tr><td class="pad" style="padding:34px 40px 8px;">
+          ${bodyHtml}
+          ${cta}
+        </td></tr>
+
+        <tr><td class="pad" style="padding:22px 40px;background:#071724;text-align:center;">
+          <p style="margin:0 0 8px;font-size:12px;line-height:1.5;color:#8fa0a6;">${footerNote}</p>
+          <p style="margin:0;font-size:12px;line-height:1.5;color:#8fa0a6;">Questions? Email <a href="mailto:support@resumetailored.com" style="color:#c9a227;text-decoration:underline;">support@resumetailored.com</a></p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+}
+
 function _welcomeEmailHtml(username, unsubscribeUrl) {
-  const tplPath = path.join(__dirname, 'emails', 'welcome.html');
-  return fs.readFileSync(tplPath, 'utf8')
-    .replace(/\{\{USERNAME\}\}/g, _escHtml(username))
-    .replace(/\{\{UNSUBSCRIBE_URL\}\}/g, _escHtml(unsubscribeUrl));
+  const u = _escHtml(username);
+  const unsub = _escHtml(unsubscribeUrl);
+  const feature = (t, d) => `<tr><td style="padding:16px 18px;background:#f7f1e6;border-left:3px solid #c9a227;">
+      <p style="margin:0 0 3px;font-family:Georgia,'Times New Roman',serif;font-size:16px;font-weight:700;color:#132028;">${t}</p>
+      <p style="margin:0;font-size:14px;line-height:1.55;color:#667078;">${d}</p></td></tr>`;
+  const bodyHtml = `<p style="margin:0 0 26px;font-size:16px;line-height:1.7;color:#3a4750;">Thanks for joining. Everything below is ready whenever you are — tailor a resume to a specific role, write a focused cover letter, or explore the Career Hub.</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        ${feature('AI Resume Tailor', "Match your resume to a job's language and priorities in seconds.")}
+        <tr><td height="12" style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+        ${feature('Cover Letter Generator', 'Create a personalized letter for each application.')}
+        <tr><td height="12" style="height:12px;font-size:0;line-height:0;">&nbsp;</td></tr>
+        ${feature('Career Hub', 'Practical job-search tools, check-ins, and career resources.')}
+      </table>`;
+  const footerNoteHtml = `You're receiving this because you created a ResumeTailored account.<br>
+      <a href="${unsub}" style="color:#c9a227;text-decoration:underline;">Unsubscribe from product emails</a> &middot; <a href="https://resumetailored.com/privacy" style="color:#c9a227;text-decoration:underline;">Privacy</a>`;
+  return _emailShell({
+    title: 'Welcome to ResumeTailored',
+    preheader: 'Your ResumeTailored office is open — tailor a resume, write a cover letter, and land the interview.',
+    heading: `Welcome aboard, ${u}.`,
+    subheading: "Your office is open. Let's land that next role.",
+    bodyHtml,
+    ctaText: 'Enter Your Office &rarr;',
+    ctaUrl: 'https://resumetailored.com/dashboard',
+    footerNoteHtml,
+  });
 }
 
 // Plain-text counterpart to the welcome HTML. Sent as the multipart text
@@ -1353,9 +1441,39 @@ function _welcomeEmailText(username, unsubscribeUrl) {
 
 function _subscriptionEndedEmailHtml() {
   const appUrl = String(process.env.PUBLIC_APP_URL || process.env.PUBLIC_ORIGIN || 'https://resumetailored.com').replace(/\/$/, '');
+  // Kept as a file (like publish-success.html) so the e2e "template is
+  // locatable" check holds; its markup mirrors _emailShell for visual parity.
   return fs.readFileSync(path.join(__dirname, 'emails', 'subscription-ended.html'), 'utf8')
     .replace(/\{\{DASHBOARD_URL\}\}/g, `${appUrl}/dashboard`)
     .replace(/\{\{PRICING_URL\}\}/g, `${appUrl}/pricing`);
+}
+
+// User-facing confirmation that an account (and all its data) was deleted. Sent
+// fire-and-forget from the delete-account route — see DELETE /api/account.
+function _accountDeletedEmailHtml() {
+  return _emailShell({
+    title: 'Your ResumeTailored account was deleted',
+    preheader: 'Your ResumeTailored account and all associated data have been deleted.',
+    heading: 'Your account has been deleted',
+    subheading: 'This is your confirmation.',
+    bodyHtml: `<p style="margin:0 0 20px;font-size:16px;line-height:1.7;color:#3a4750;">Your ResumeTailored account and all associated data — saved resumes, cover letters, sites and settings — have been permanently deleted, as you requested. There's nothing left to remove.</p>
+      <p style="margin:0;font-size:14px;line-height:1.65;color:#667078;">If you didn't request this, or you believe it was a mistake, reply to this email right away and we'll help. You're always welcome to create a new account whenever you'd like to come back.</p>`,
+    ctaText: 'Start a New Account &rarr;',
+    ctaUrl: 'https://resumetailored.com/dashboard',
+    footerNoteHtml: 'This is a one-time confirmation that your account was deleted. There is nothing to unsubscribe from.',
+  });
+}
+
+function _accountDeletedEmailText() {
+  return [
+    'Your ResumeTailored account has been deleted',
+    '',
+    'Your account and all associated data — saved resumes, cover letters, sites and settings — have been permanently deleted, as you requested.',
+    '',
+    "If you didn't request this, reply to this email right away and we'll help.",
+    '',
+    'Start a new account any time: https://resumetailored.com/dashboard',
+  ].join('\n');
 }
 
 function _sendSubscriptionEndedEmail(email) {
@@ -2076,6 +2194,9 @@ app.delete('/api/user/me', async (req, res) => {
   // an orphaned actor_email causes no structural issue.
   writeAuditLog(req, key, 'user.account_deleted', { meta: { stripeWarnings } });
   notifyOwner(`[ResumeTailored] Account deleted: ${SC.escapeHtml(key)}`, `<p>${SC.escapeHtml(key)} deleted their account and all associated data.</p>${stripeWarnings.length ? `<p style="color:#b91c1c;">${stripeWarnings.map(SC.escapeHtml).join('<br>')}</p>` : ''}`);
+  // Branded confirmation to the user — fire-and-forget, never blocks the response.
+  sendEmail({ to: key, subject: 'Your ResumeTailored account has been deleted', html: _accountDeletedEmailHtml(), text: _accountDeletedEmailText() })
+    .catch(err => console.error('[Email] account-deleted confirmation failed:', err.message));
   res.json({ success: true, warnings: stripeWarnings });
 });
 
@@ -3119,37 +3240,29 @@ app.post('/api/auth/forgot-password', authRateLimiter, async (req, res) => {
   console.log(`[PASSWORD RESET] Link for ${key}: ${resetUrl}`);
 
   const ownerEmail = process.env.OWNER_EMAIL || 'support@resumetailored.com';
-  const resetEmailHtml = `
-    <div style="font-family:'Inter',Arial,sans-serif;max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;overflow:hidden;">
-      <div style="background:#2563eb;padding:28px 32px;">
-        <div style="display:inline-flex;align-items:center;gap:10px;">
-          <div style="width:36px;height:36px;background:rgba(255,255,255,0.2);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;color:#fff;">R</div>
-          <span style="font-size:18px;font-weight:800;color:#fff;">ResumeTailored <span style="background:rgba(255,255,255,0.25);padding:2px 7px;border-radius:5px;font-size:11px;">AI</span></span>
-        </div>
-      </div>
-      <div style="padding:36px 32px;">
-        <div style="font-size:36px;text-align:center;margin-bottom:16px;">🔐</div>
-        <h2 style="font-size:22px;font-weight:800;color:#111827;text-align:center;margin:0 0 12px;">Reset Your Password</h2>
-        <p style="font-size:15px;color:#6b7280;line-height:1.7;text-align:center;margin:0 0 28px;">
-          We received a request to reset the password for <strong style="color:#111827;">${key}</strong>.<br/>
-          This link expires in <strong style="color:#2563eb;">1 hour</strong>.
-        </p>
-        <div style="text-align:center;margin-bottom:28px;">
-          <a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#fff;font-weight:700;font-size:16px;padding:14px 36px;border-radius:10px;text-decoration:none;">Reset My Password →</a>
-        </div>
-        <p style="font-size:13px;color:#9ca3af;text-align:center;line-height:1.6;margin:0;">
-          If you didn't request this, you can safely ignore this email.<br/>
-          Link not working? <a href="${resetUrl}" style="color:#2563eb;word-break:break-all;">${resetUrl}</a>
-        </p>
-      </div>
-      <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:16px 32px;text-align:center;">
-        <span style="font-size:12px;color:#9ca3af;">© ResumeTailored AI · <a href="https://resumetailored.com" style="color:#2563eb;text-decoration:none;">resumetailored.com</a></span>
-      </div>
-    </div>
-  `;
+  const resetEmailHtml = _emailShell({
+    title: 'Reset your ResumeTailored password',
+    preheader: 'Reset your ResumeTailored password — this link expires in 1 hour.',
+    heading: 'Reset your password',
+    subheading: 'We received a request to reset your password.',
+    bodyHtml: `<p style="margin:0 0 22px;font-size:16px;line-height:1.7;color:#3a4750;">A password reset was requested for <strong style="color:#132028;">${_escHtml(key)}</strong>. This link expires in <strong>1 hour</strong>.</p>
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#667078;">If you didn't request this, you can safely ignore this email — your password won't change.<br>
+      Button not working? Paste this link into your browser:<br><a href="${resetUrl}" style="color:#9a7b1e;word-break:break-all;">${resetUrl}</a></p>`,
+    ctaText: 'Reset My Password &rarr;',
+    ctaUrl: resetUrl,
+    footerNoteHtml: 'This is a transactional security email sent because a password reset was requested for your account.',
+  });
+  const resetEmailText = [
+    'Reset your ResumeTailored password',
+    '',
+    `A password reset was requested for ${key}. This link expires in 1 hour:`,
+    resetUrl,
+    '',
+    "If you didn't request this, you can safely ignore this email — your password won't change.",
+  ].join('\n');
 
   try {
-    await sendEmail({ to: key, subject: 'Reset your ResumeTailored AI password', html: resetEmailHtml });
+    await sendEmail({ to: key, subject: 'Reset your ResumeTailored AI password', html: resetEmailHtml, text: resetEmailText });
   } catch (err) {
     console.error('[Email] Failed to send reset email to user:', err.message);
   }
