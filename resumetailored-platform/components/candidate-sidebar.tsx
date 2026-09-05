@@ -56,7 +56,7 @@ const navItems: NavItem[] = [
 
 function ProBadge() {
   return (
-    <span className="ml-auto rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-bold leading-none text-navy">
+    <span className="ml-auto rounded-full bg-violet px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
       PRO
     </span>
   );
@@ -89,11 +89,11 @@ export function CandidateSidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md border border-gold px-4 py-3 text-sm font-semibold text-gold transition-all duration-200 hover:scale-[1.01] hover:bg-gold/15",
-                  isActive ? "bg-gold/20" : "bg-gold/10"
+                  "flex items-center gap-3 rounded-xl border border-violet px-4 py-3 text-sm font-semibold text-white shadow-[0_0_22px_rgba(139,92,246,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/25",
+                  isActive ? "bg-violet/25" : "bg-violet/15"
                 )}
               >
-                <Icon className="h-[18px] w-[18px] shrink-0" />
+                <Icon className="h-[18px] w-[18px] shrink-0 text-violet" />
                 <span className="flex-1">{item.label}</span>
                 <Star className="h-3.5 w-3.5 shrink-0 fill-gold text-gold" />
               </Link>
@@ -107,8 +107,8 @@ export function CandidateSidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-md px-4 py-3 text-sm transition-all duration-200",
                 isActive
-                  ? "border-l-2 border-gold bg-gold/5 font-medium text-gold"
-                  : "border-l-2 border-transparent text-muted-cream hover:bg-cream/5"
+                  ? "border-l-2 border-teal bg-violet/10 font-medium text-teal shadow-[0_0_22px_rgba(139,92,246,0.28)]"
+                  : "border-l-2 border-transparent text-muted-cream hover:bg-white/5"
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />

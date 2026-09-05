@@ -71,8 +71,8 @@ export function EmployerSidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-md px-4 py-3 text-sm transition-all duration-200",
                 isActive
-                  ? "border-l-2 border-gold bg-gold/5 font-medium text-gold"
-                  : "border-l-2 border-transparent text-muted-cream hover:bg-cream/5"
+                  ? "border-l-2 border-teal bg-violet/10 font-medium text-teal shadow-[0_0_22px_rgba(139,92,246,0.28)]"
+                  : "border-l-2 border-transparent text-muted-cream hover:bg-white/5"
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
