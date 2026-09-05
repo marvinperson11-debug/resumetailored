@@ -36,22 +36,22 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard/candidate", icon: LayoutDashboard },
-  { label: "Tailor My Resume", href: "/dashboard/candidate/tailor", icon: Sparkles, hero: true },
-  { label: "My Resumes", href: "/dashboard/candidate/resumes", icon: FileText },
-  { label: "Cover Letters", href: "/dashboard/candidate/cover-letters", icon: PenTool },
-  { label: "ATS Scanner", href: "/dashboard/candidate/ats-scanner", icon: ScanLine },
-  { label: "LinkedIn Optimizer", href: "/dashboard/candidate/linkedin-optimizer", icon: Contact },
-  { label: "Job Matches", href: "/dashboard/candidate/matches", icon: Zap },
-  { label: "Applications", href: "/dashboard/candidate/applications", icon: Send },
-  { label: "Shareable Links", href: "/dashboard/candidate/shareable-links", icon: LinkIcon },
-  { label: "Resume Video", href: "/dashboard/candidate/resume-video", icon: Video, pro: true },
-  { label: "Personal Website", href: "/dashboard/candidate/personal-website", icon: Globe, pro: true },
-  { label: "Career Hub", href: "/dashboard/candidate/career-hub", icon: Briefcase, pro: true },
-  { label: "Templates", href: "/dashboard/candidate/templates", icon: Layout },
-  { label: "Interview Prep", href: "/dashboard/candidate/interview-prep", icon: MessageSquare },
-  { label: "Profile", href: "/dashboard/candidate/profile", icon: User },
-  { label: "Settings", href: "/dashboard/candidate/settings", icon: Settings },
+  { label: "Dashboard", href: "/candidate", icon: LayoutDashboard },
+  { label: "Tailor My Resume", href: "/candidate/tailor", icon: Sparkles, hero: true },
+  { label: "My Resumes", href: "/candidate/resumes", icon: FileText },
+  { label: "Cover Letters", href: "/candidate/cover-letters", icon: PenTool },
+  { label: "ATS Scanner", href: "/candidate/ats-scanner", icon: ScanLine },
+  { label: "LinkedIn Optimizer", href: "/candidate/linkedin-optimizer", icon: Contact },
+  { label: "Job Matches", href: "/candidate/matches", icon: Zap },
+  { label: "Applications", href: "/candidate/applications", icon: Send },
+  { label: "Shareable Links", href: "/candidate/shareable-links", icon: LinkIcon },
+  { label: "Resume Video", href: "/candidate/resume-video", icon: Video, pro: true },
+  { label: "Personal Website", href: "/candidate/personal-website", icon: Globe, pro: true },
+  { label: "Career Hub", href: "/candidate/career-hub", icon: Briefcase, pro: true },
+  { label: "Templates", href: "/candidate/templates", icon: Layout },
+  { label: "Interview Prep", href: "/candidate/interview-prep", icon: MessageSquare },
+  { label: "Profile", href: "/candidate/profile", icon: User },
+  { label: "Settings", href: "/candidate/settings", icon: Settings },
 ];
 
 function ProBadge() {
@@ -76,8 +76,8 @@ export function CandidateSidebar() {
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
         {navItems.map((item) => {
           const isActive =
-            item.href === "/dashboard/candidate"
-              ? pathname === "/dashboard/candidate"
+            item.href === "/candidate"
+              ? pathname === "/candidate"
               : pathname.startsWith(item.href);
           const Icon = item.icon;
 

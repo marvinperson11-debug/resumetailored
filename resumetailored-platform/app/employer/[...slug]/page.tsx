@@ -24,5 +24,5 @@ export default function EmployerSectionPage({
 }) {
   const key = params.slug[params.slug.length - 1];
   const feature = LABELS[key] ?? titleFromSlug(params.slug);
-  return <FeaturePlaceholder feature={feature} backHref="/dashboard/employer" />;
+  return <FeaturePlaceholder feature={feature} backHref="/employer" />;
 }

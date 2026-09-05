@@ -24,14 +24,14 @@ export default function LandingPage() {
           style={{ animationDelay: "0.6s" }}
         >
           <Link
-            href="/dashboard/employer"
+            href="/employer"
             className="rounded-xl bg-violet px-6 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(139,92,246,0.45)]"
           >
             For Employers — Start Hiring
           </Link>
 
           <Link
-            href="/dashboard/candidate"
+            href="/candidate"
             className="glass glass-hover rounded-xl px-6 py-3 text-sm font-semibold text-white"
           >
             For Candidates — Tailor My Resume
