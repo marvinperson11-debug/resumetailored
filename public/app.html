@@ -213,6 +213,7 @@
         <button class="btn btn-outline" id="loginNavBtn" onclick="showAuthModal('login')" style="font-size:13px;padding:8px 14px;display:none;">Log In</button>
         <button onclick="toggleLang()" id="langToggleBtn" style="background:#fff;border:1.5px solid #c9a227;border-radius:7px;padding:6px 12px;font-size:12px;font-weight:700;color:#0a1628;cursor:pointer;font-family:inherit;transition:all .15s;" title="Switch language / 切换语言">中文</button>
         <button class="btn btn-outline" id="logoutBtn" onclick="doLogout()" style="display:none;font-size:13px;padding:8px 14px;" data-i18n="nav_logout">Log Out</button>
+        <button id="deleteAccountBtn" onclick="deleteMyAccount()" style="display:none;background:none;border:none;font-size:12px;padding:8px 6px;color:#9ca3af;cursor:pointer;font-family:inherit;text-decoration:underline;" title="Permanently delete your account" data-i18n="nav_delete_account">Delete Account</button>
       </div>
     </div>
   </nav>
@@ -1491,6 +1492,7 @@
       var creationComplete = false; try { creationComplete = localStorage.getItem('rt_creation_complete') === '1'; } catch (_) {}
       document.getElementById('loginNavBtn').style.display = creationComplete ? 'inline-flex' : 'none';
       document.getElementById('logoutBtn').style.display = 'none';
+      var _delBtn = document.getElementById('deleteAccountBtn'); if (_delBtn) _delBtn.style.display = 'none';
       document.getElementById('navUsername').style.display = 'none';
     }
 
@@ -1502,6 +1504,7 @@
       navUsername.style.display = 'inline';
       document.getElementById('loginNavBtn').style.display = 'none';
       document.getElementById('logoutBtn').style.display = 'inline-flex';
+      var _delBtn = document.getElementById('deleteAccountBtn'); if (_delBtn) _delBtn.style.display = 'inline-flex';
     }
 
     function showDownloadGate(downloadFn) {
@@ -1724,6 +1727,33 @@
       updateNavForGuest();
       isSubscriberFlag = false;
       checkStatus();
+    }
+
+    // Permanently delete the signed-in account. Backend (DELETE /api/user/me)
+    // re-verifies the password, cancels any Stripe subscription, wipes all the
+    // user's data, and emails a confirmation. Destructive + irreversible, so
+    // it's double-gated: a confirm() then a password prompt.
+    async function deleteMyAccount() {
+      if (!isLoggedIn) return;
+      if (!confirm('Permanently delete your account and ALL your data — saved resumes, cover letters, and sites? This cannot be undone.')) return;
+      var password = prompt('For your security, re-enter your account password to confirm deletion:');
+      if (!password) return;
+      try {
+        var r = await fetch('/api/user/me', { method: 'DELETE', headers: authHeaders(), body: JSON.stringify({ password: password }) });
+        var data = await r.json().catch(function(){ return {}; });
+        if (r.ok) {
+          localStorage.removeItem('rt_token');
+          localStorage.removeItem('rt_email');
+          localStorage.removeItem('rt_username');
+          var note = (data.warnings && data.warnings.length) ? ('\n\nNote: ' + data.warnings.join(' ')) : '';
+          alert('Your account has been deleted. A confirmation has been emailed to you.' + note);
+          window.location.href = '/';
+        } else {
+          alert(data.error || 'Could not delete your account. Please try again.');
+        }
+      } catch (e) {
+        alert('Something went wrong. Please try again.');
+      }
     }
 
     // ── Tab switching ──────────────────────────────────────────────────────────
