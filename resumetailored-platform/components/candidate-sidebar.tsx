@@ -36,27 +36,27 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard/candidate", icon: LayoutDashboard },
-  { label: "Tailor My Resume", href: "/dashboard/candidate/tailor", icon: Sparkles, hero: true },
-  { label: "My Resumes", href: "/dashboard/candidate/resumes", icon: FileText },
-  { label: "Cover Letters", href: "/dashboard/candidate/cover-letters", icon: PenTool },
-  { label: "ATS Scanner", href: "/dashboard/candidate/ats-scanner", icon: ScanLine },
-  { label: "LinkedIn Optimizer", href: "/dashboard/candidate/linkedin-optimizer", icon: Contact },
-  { label: "Job Matches", href: "/dashboard/candidate/matches", icon: Zap },
-  { label: "Applications", href: "/dashboard/candidate/applications", icon: Send },
-  { label: "Shareable Links", href: "/dashboard/candidate/shareable-links", icon: LinkIcon },
-  { label: "Resume Video", href: "/dashboard/candidate/resume-video", icon: Video, pro: true },
-  { label: "Personal Website", href: "/dashboard/candidate/personal-website", icon: Globe, pro: true },
-  { label: "Career Hub", href: "/dashboard/candidate/career-hub", icon: Briefcase, pro: true },
-  { label: "Templates", href: "/dashboard/candidate/templates", icon: Layout },
-  { label: "Interview Prep", href: "/dashboard/candidate/interview-prep", icon: MessageSquare },
-  { label: "Profile", href: "/dashboard/candidate/profile", icon: User },
-  { label: "Settings", href: "/dashboard/candidate/settings", icon: Settings },
+  { label: "Dashboard", href: "/candidate", icon: LayoutDashboard },
+  { label: "Tailor My Resume", href: "/candidate/tailor", icon: Sparkles, hero: true },
+  { label: "My Resumes", href: "/candidate/resumes", icon: FileText },
+  { label: "Cover Letters", href: "/candidate/cover-letters", icon: PenTool },
+  { label: "ATS Scanner", href: "/candidate/ats-scanner", icon: ScanLine },
+  { label: "LinkedIn Optimizer", href: "/candidate/linkedin-optimizer", icon: Contact },
+  { label: "Job Matches", href: "/candidate/matches", icon: Zap },
+  { label: "Applications", href: "/candidate/applications", icon: Send },
+  { label: "Shareable Links", href: "/candidate/shareable-links", icon: LinkIcon },
+  { label: "Resume Video", href: "/candidate/resume-video", icon: Video, pro: true },
+  { label: "Personal Website", href: "/candidate/personal-website", icon: Globe, pro: true },
+  { label: "Career Hub", href: "/candidate/career-hub", icon: Briefcase, pro: true },
+  { label: "Templates", href: "/candidate/templates", icon: Layout },
+  { label: "Interview Prep", href: "/candidate/interview-prep", icon: MessageSquare },
+  { label: "Profile", href: "/candidate/profile", icon: User },
+  { label: "Settings", href: "/candidate/settings", icon: Settings },
 ];
 
 function ProBadge() {
   return (
-    <span className="ml-auto rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-bold leading-none text-navy">
+    <span className="ml-auto rounded-full bg-violet px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
       PRO
     </span>
   );
@@ -76,8 +76,8 @@ export function CandidateSidebar() {
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
         {navItems.map((item) => {
           const isActive =
-            item.href === "/dashboard/candidate"
-              ? pathname === "/dashboard/candidate"
+            item.href === "/candidate"
+              ? pathname === "/candidate"
               : pathname.startsWith(item.href);
           const Icon = item.icon;
 
@@ -89,11 +89,11 @@ export function CandidateSidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-md border border-gold px-4 py-3 text-sm font-semibold text-gold transition-all duration-200 hover:scale-[1.01] hover:bg-gold/15",
-                  isActive ? "bg-gold/20" : "bg-gold/10"
+                  "flex items-center gap-3 rounded-xl border border-violet px-4 py-3 text-sm font-semibold text-white shadow-[0_0_22px_rgba(139,92,246,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/25",
+                  isActive ? "bg-violet/25" : "bg-violet/15"
                 )}
               >
-                <Icon className="h-[18px] w-[18px] shrink-0" />
+                <Icon className="h-[18px] w-[18px] shrink-0 text-violet" />
                 <span className="flex-1">{item.label}</span>
                 <Star className="h-3.5 w-3.5 shrink-0 fill-gold text-gold" />
               </Link>
@@ -107,8 +107,8 @@ export function CandidateSidebar() {
               className={cn(
                 "flex items-center gap-3 rounded-md px-4 py-3 text-sm transition-all duration-200",
                 isActive
-                  ? "border-l-2 border-gold bg-gold/5 font-medium text-gold"
-                  : "border-l-2 border-transparent text-muted-cream hover:bg-cream/5"
+                  ? "border-l-2 border-teal bg-violet/10 font-medium text-teal shadow-[0_0_22px_rgba(139,92,246,0.28)]"
+                  : "border-l-2 border-transparent text-muted-cream hover:bg-white/5"
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />

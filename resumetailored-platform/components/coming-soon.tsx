@@ -14,16 +14,16 @@ export function FeaturePlaceholder({
 }) {
   return (
     <div className="mx-auto flex min-h-[70vh] max-w-3xl items-center justify-center">
-      <div className="w-full rounded-lg border border-border-gold bg-teal px-8 py-14 text-center">
-        <h1 className="font-serif text-3xl font-medium text-cream sm:text-4xl">
+      <div className="glass w-full px-8 py-14 text-center">
+        <h1 className="font-serif text-3xl font-medium text-white sm:text-4xl">
           {feature} — Coming Soon
         </h1>
-        <p className="mx-auto mt-4 max-w-md text-base text-muted-cream">
+        <p className="mx-auto mt-4 max-w-md text-base text-white/70">
           We&rsquo;re building this for you. Check back next week.
         </p>
         <Link
           href={backHref}
-          className="mt-8 inline-block rounded-md bg-gold px-6 py-3 text-sm font-semibold text-navy transition-all duration-200 hover:scale-[1.01] hover:bg-[#d4b884]"
+          className="mt-8 inline-block rounded-xl bg-violet px-6 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(139,92,246,0.45)]"
         >
           Go Back to Dashboard
         </Link>

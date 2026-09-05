@@ -26,5 +26,5 @@ export default function CandidateSectionPage({
 }) {
   const key = params.slug[params.slug.length - 1];
   const feature = LABELS[key] ?? titleFromSlug(params.slug);
-  return <FeaturePlaceholder feature={feature} backHref="/dashboard/candidate" />;
+  return <FeaturePlaceholder feature={feature} backHref="/candidate" />;
 }

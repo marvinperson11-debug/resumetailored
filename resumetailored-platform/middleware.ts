@@ -1,11 +1,22 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-// DEMO BUILD: no routes are gated, so the full /dashboard/* experience is
-// clickable on a preview URL where the live Clerk key (bound to
-// clerk.resumetailored.com) cannot complete a sign-in. Before shipping to
-// production, restore auth here by protecting /dashboard(.*) and redirecting
-// unauthenticated users.
-export default clerkMiddleware();
+// Production auth: everything under these prefixes requires a signed-in user.
+const isProtectedRoute = createRouteMatcher([
+  "/dashboard(.*)",
+  "/employer(.*)",
+  "/candidate(.*)",
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  if (isProtectedRoute(req)) {
+    const { userId } = await auth();
+    if (!userId) {
+      // Unauthenticated visitors are sent back to the public landing page.
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+  }
+});
 
 export const config = {
   matcher: [

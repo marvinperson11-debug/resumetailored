@@ -30,11 +30,11 @@ export default function RootLayout({
     <ClerkProvider
       appearance={{
         variables: {
-          colorPrimary: "#C9A96E",
-          colorBackground: "#1A2F2F",
-          colorText: "#F5F0E8",
-          colorInputBackground: "#0A1628",
-          colorInputText: "#F5F0E8",
+          colorPrimary: "#8B5CF6",
+          colorBackground: "#0B0F19",
+          colorText: "#FFFFFF",
+          colorInputBackground: "#0B0F19",
+          colorInputText: "#FFFFFF",
         },
       }}
     >
@@ -42,6 +42,8 @@ export default function RootLayout({
         <body
           className={`${inter.variable} ${playfair.variable} bg-navy text-cream font-sans antialiased`}
         >
+          {/* Living gradient — fixed behind all content, shows through glass. */}
+          <div className="gradient-bg" aria-hidden="true" />
           {children}
         </body>
       </html>
