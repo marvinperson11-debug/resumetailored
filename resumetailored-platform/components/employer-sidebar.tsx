@@ -6,6 +6,10 @@ import {
   LayoutDashboard,
   Briefcase,
   Users,
+  Search,
+  Star,
+  Mail,
+  Calendar,
   Clock,
   DollarSign,
   BarChart3,
@@ -25,16 +29,20 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/employer", icon: LayoutDashboard },
-  { label: "Hire", href: "/employer/hire", icon: Briefcase },
-  { label: "People", href: "/employer/people", icon: Users },
-  { label: "Time", href: "/employer/time", icon: Clock },
-  { label: "Payroll", href: "/employer/payroll", icon: DollarSign },
-  { label: "Reports", href: "/employer/reports", icon: BarChart3 },
-  { label: "Career Site", href: "/employer/career-site", icon: Globe },
-  { label: "Documents", href: "/employer/documents", icon: FolderOpen },
-  { label: "Compliance", href: "/employer/compliance", icon: ShieldCheck },
-  { label: "Settings", href: "/employer/settings", icon: Settings },
+  { label: "Dashboard", href: "/dashboard/employer", icon: LayoutDashboard },
+  { label: "Hire", href: "/dashboard/employer/hire", icon: Briefcase },
+  { label: "People", href: "/dashboard/employer/people", icon: Users },
+  { label: "Candidate Search", href: "/dashboard/employer/candidates", icon: Search },
+  { label: "Shortlists", href: "/dashboard/employer/shortlists", icon: Star },
+  { label: "Messages", href: "/dashboard/employer/messages", icon: Mail },
+  { label: "Interview Scheduler", href: "/dashboard/employer/scheduler", icon: Calendar },
+  { label: "Time", href: "/dashboard/employer/time", icon: Clock },
+  { label: "Payroll", href: "/dashboard/employer/payroll", icon: DollarSign },
+  { label: "Reports", href: "/dashboard/employer/reports", icon: BarChart3 },
+  { label: "Career Site Builder", href: "/dashboard/employer/career-site", icon: Globe },
+  { label: "Documents", href: "/dashboard/employer/documents", icon: FolderOpen },
+  { label: "Compliance", href: "/dashboard/employer/compliance", icon: ShieldCheck },
+  { label: "Settings", href: "/dashboard/employer/settings", icon: Settings },
 ];
 
 export function EmployerSidebar() {
@@ -51,8 +59,8 @@ export function EmployerSidebar() {
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
         {navItems.map((item) => {
           const isActive =
-            item.href === "/employer"
-              ? pathname === "/employer"
+            item.href === "/dashboard/employer"
+              ? pathname === "/dashboard/employer"
               : pathname.startsWith(item.href);
           const Icon = item.icon;
 

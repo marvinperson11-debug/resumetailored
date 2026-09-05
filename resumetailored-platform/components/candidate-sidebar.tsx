@@ -6,10 +6,17 @@ import {
   LayoutDashboard,
   Sparkles,
   FileText,
+  PenTool,
+  ScanLine,
+  Contact,
   Zap,
   Send,
+  Link as LinkIcon,
+  Video,
+  Globe,
+  Briefcase,
+  Layout,
   MessageSquare,
-  TrendingUp,
   User,
   Settings,
   Star,
@@ -24,19 +31,36 @@ interface NavItem {
   icon: LucideIcon;
   /** Hero item — always gold-tinted so it reads as the primary action. */
   hero?: boolean;
+  /** Show a small gold "PRO" pill to the right. */
+  pro?: boolean;
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/candidate", icon: LayoutDashboard },
-  { label: "Tailor My Resume", href: "/candidate/tailor", icon: Sparkles, hero: true },
-  { label: "My Resumes", href: "/candidate/resumes", icon: FileText },
-  { label: "Job Matches", href: "/candidate/matches", icon: Zap },
-  { label: "Applications", href: "/candidate/applications", icon: Send },
-  { label: "Interview Prep", href: "/candidate/interview-prep", icon: MessageSquare },
-  { label: "Salary Insights", href: "/candidate/salary-insights", icon: TrendingUp },
-  { label: "Profile", href: "/candidate/profile", icon: User },
-  { label: "Settings", href: "/candidate/settings", icon: Settings },
+  { label: "Dashboard", href: "/dashboard/candidate", icon: LayoutDashboard },
+  { label: "Tailor My Resume", href: "/dashboard/candidate/tailor", icon: Sparkles, hero: true },
+  { label: "My Resumes", href: "/dashboard/candidate/resumes", icon: FileText },
+  { label: "Cover Letters", href: "/dashboard/candidate/cover-letters", icon: PenTool },
+  { label: "ATS Scanner", href: "/dashboard/candidate/ats-scanner", icon: ScanLine },
+  { label: "LinkedIn Optimizer", href: "/dashboard/candidate/linkedin-optimizer", icon: Contact },
+  { label: "Job Matches", href: "/dashboard/candidate/matches", icon: Zap },
+  { label: "Applications", href: "/dashboard/candidate/applications", icon: Send },
+  { label: "Shareable Links", href: "/dashboard/candidate/shareable-links", icon: LinkIcon },
+  { label: "Resume Video", href: "/dashboard/candidate/resume-video", icon: Video, pro: true },
+  { label: "Personal Website", href: "/dashboard/candidate/personal-website", icon: Globe, pro: true },
+  { label: "Career Hub", href: "/dashboard/candidate/career-hub", icon: Briefcase, pro: true },
+  { label: "Templates", href: "/dashboard/candidate/templates", icon: Layout },
+  { label: "Interview Prep", href: "/dashboard/candidate/interview-prep", icon: MessageSquare },
+  { label: "Profile", href: "/dashboard/candidate/profile", icon: User },
+  { label: "Settings", href: "/dashboard/candidate/settings", icon: Settings },
 ];
+
+function ProBadge() {
+  return (
+    <span className="ml-auto rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-bold leading-none text-navy">
+      PRO
+    </span>
+  );
+}
 
 export function CandidateSidebar() {
   const pathname = usePathname();
@@ -52,8 +76,8 @@ export function CandidateSidebar() {
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
         {navItems.map((item) => {
           const isActive =
-            item.href === "/candidate"
-              ? pathname === "/candidate"
+            item.href === "/dashboard/candidate"
+              ? pathname === "/dashboard/candidate"
               : pathname.startsWith(item.href);
           const Icon = item.icon;
 
@@ -88,7 +112,8 @@ export function CandidateSidebar() {
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
-              <span>{item.label}</span>
+              <span className={cn(!item.pro && "flex-1")}>{item.label}</span>
+              {item.pro && <ProBadge />}
             </Link>
           );
         })}

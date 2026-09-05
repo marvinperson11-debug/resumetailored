@@ -18,14 +18,14 @@ export default function LandingPage() {
 
         <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row">
           <Link
-            href="/employer"
+            href="/dashboard/employer"
             className="rounded-md bg-gold px-6 py-3 text-sm font-semibold text-navy transition-all duration-200 hover:scale-[1.01] hover:bg-[#d4b884]"
           >
             For Employers — Start Hiring
           </Link>
 
           <Link
-            href="/candidate"
+            href="/dashboard/candidate"
             className="rounded-md border border-gold bg-transparent px-6 py-3 text-sm font-semibold text-gold transition-all duration-200 hover:scale-[1.01] hover:bg-gold/10"
           >
             For Candidates — Tailor My Resume
