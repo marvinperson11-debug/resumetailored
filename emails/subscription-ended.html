@@ -1,3 +1,9 @@
+<!--
+  Subscription-ended notice. Sent by server.js's _subscriptionEndedEmailHtml(),
+  which reads this file and substitutes {{DASHBOARD_URL}} and {{PRICING_URL}}.
+  Markup mirrors _emailShell() in server.js (navy #071724 / gold #c9a227 / cream)
+  so every ResumeTailored email looks identical.
+-->
 <!doctype html>
 <html lang="en">
 <head>
@@ -9,41 +15,54 @@
     body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
     table, td { mso-table-lspace:0pt; mso-table-rspace:0pt; }
     table { border-collapse:collapse !important; }
+    a { color:#9a7b1e; }
     @media only screen and (max-width:620px) {
       .shell { width:100% !important; }
-      .pad { padding-left:20px !important; padding-right:20px !important; }
-      .headline { font-size:25px !important; }
+      .pad { padding-left:22px !important; padding-right:22px !important; }
+      .headline { font-size:27px !important; }
       .cta { display:block !important; width:auto !important; }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Your Pro subscription has ended. Your free ResumeTailored AI account remains available.</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background:#f3f4f6;">
-    <tr><td align="center" style="padding:24px 12px;">
-      <table role="presentation" class="shell" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#ffffff;border:1px solid #e5e7eb;">
-        <tr><td class="pad" style="background:#1d4ed8;padding:32px;color:#ffffff;">
-          <p style="margin:0 0 18px;font-size:20px;font-weight:700;line-height:1.3;">ResumeTailored AI</p>
-          <h1 class="headline" style="margin:0 0 8px;font-size:29px;line-height:1.2;color:#ffffff;">Your Pro access has ended</h1>
-          <p style="margin:0;font-size:16px;line-height:1.5;color:#dbeafe;">Your account has been moved to the free tier.</p>
+<body style="margin:0;padding:0;background:#f7f1e6;font-family:Arial,Helvetica,sans-serif;color:#132028;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">Your Pro subscription has ended. Your free ResumeTailored account remains available.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background:#f7f1e6;">
+    <tr><td align="center" style="padding:28px 12px;">
+      <table role="presentation" class="shell" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background:#fffdf8;border:1px solid #e6dcc6;border-radius:4px;overflow:hidden;">
+
+        <!-- Header -->
+        <tr><td class="pad" style="background:#071724;padding:36px 40px 30px;">
+          <p style="margin:0 0 2px;font-family:Georgia,'Times New Roman',serif;font-size:22px;font-weight:700;letter-spacing:.3px;color:#f7f1e6;">ResumeTailored</p>
+          <p style="margin:0 0 22px;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#c9a227;">Private Career &amp; People Office</p>
+          <div style="height:1px;background:#c9a227;opacity:.55;line-height:1px;font-size:0;">&nbsp;</div>
+          <h1 class="headline" style="margin:24px 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:31px;line-height:1.18;font-weight:700;color:#ffffff;">Your Pro access has ended</h1>
+          <p style="margin:0;font-size:15px;line-height:1.55;color:#cdd6d3;">Your account has been moved to the free tier.</p>
         </td></tr>
-        <tr><td class="pad" style="padding:32px;">
-          <p style="margin:0 0 20px;font-size:16px;line-height:1.65;color:#374151;">Your monthly ResumeTailored Pro subscription was canceled or could not be renewed. Pro features are no longer available, but your account and saved work remain in place.</p>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr><td style="padding:18px;background:#f9fafb;border:1px solid #e5e7eb;">
-              <p style="margin:0 0 6px;font-size:15px;font-weight:700;color:#111827;">You can keep using the free tools</p>
-              <p style="margin:0;font-size:14px;line-height:1.6;color:#6b7280;">Continue tailoring resumes, writing cover letters, and using the free Career Hub features from your dashboard.</p>
-            </td></tr>
-          </table>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:28px 0 16px;">
-            <a class="cta" href="{{DASHBOARD_URL}}" style="display:inline-block;min-height:24px;background:#1d4ed8;color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;line-height:24px;padding:12px 28px;border-radius:8px;">Go to My Dashboard</a>
+
+        <!-- Body -->
+        <tr><td class="pad" style="padding:34px 40px 8px;">
+          <p style="margin:0 0 24px;font-size:16px;line-height:1.7;color:#3a4750;">Your monthly ResumeTailored Pro subscription was canceled or could not be renewed. Pro features are no longer available, but your account and saved work remain in place.</p>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td style="padding:16px 18px;background:#f7f1e6;border-left:3px solid #c9a227;">
+              <p style="margin:0 0 3px;font-family:Georgia,'Times New Roman',serif;font-size:16px;font-weight:700;color:#132028;">You can keep using the free tools</p>
+              <p style="margin:0;font-size:14px;line-height:1.55;color:#667078;">Continue tailoring resumes, writing cover letters, and using the free Career Hub features from your dashboard.</p>
+            </td>
+          </tr></table>
+
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" style="padding:30px 0 22px;">
+            <a class="cta" href="{{DASHBOARD_URL}}" style="display:inline-block;min-height:24px;background:#c9a227;color:#071724;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:.3px;line-height:24px;padding:14px 34px;border-radius:4px;">Go to My Dashboard</a>
           </td></tr></table>
-          <p style="margin:0;text-align:center;font-size:14px;line-height:1.6;color:#6b7280;">Want Pro access again? <a href="{{PRICING_URL}}" style="color:#1d4ed8;font-weight:700;">View plans</a>.</p>
+
+          <p style="margin:0;text-align:center;font-size:14px;line-height:1.6;color:#667078;">Want Pro access again? <a href="{{PRICING_URL}}" style="color:#9a7b1e;font-weight:700;">View plans</a>.</p>
         </td></tr>
-        <tr><td class="pad" style="padding:20px 32px;background:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
-          <p style="margin:0 0 8px;font-size:12px;line-height:1.5;color:#6b7280;">This transactional notice was sent because your subscription status changed.</p>
-          <p style="margin:0;font-size:12px;line-height:1.5;color:#6b7280;">Questions? <a href="mailto:support@resumetailored.com" style="color:#4b5563;text-decoration:underline;">support@resumetailored.com</a></p>
+
+        <!-- Footer -->
+        <tr><td class="pad" style="padding:22px 40px;background:#071724;text-align:center;">
+          <p style="margin:0 0 8px;font-size:12px;line-height:1.5;color:#8fa0a6;">This transactional notice was sent because your subscription status changed.</p>
+          <p style="margin:0;font-size:12px;line-height:1.5;color:#8fa0a6;">Questions? Email <a href="mailto:support@resumetailored.com" style="color:#c9a227;text-decoration:underline;">support@resumetailored.com</a></p>
         </td></tr>
+
       </table>
     </td></tr>
   </table>
