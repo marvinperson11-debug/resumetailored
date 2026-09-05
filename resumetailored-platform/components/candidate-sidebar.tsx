@@ -4,11 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  FileText,
   Sparkles,
+  FileText,
+  Zap,
   Send,
+  MessageSquare,
+  TrendingUp,
   User,
   Settings,
+  Star,
   Crown,
   type LucideIcon,
 } from "lucide-react";
@@ -18,13 +22,18 @@ interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  /** Hero item — always gold-tinted so it reads as the primary action. */
+  hero?: boolean;
 }
 
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/candidate", icon: LayoutDashboard },
+  { label: "Tailor My Resume", href: "/candidate/tailor", icon: Sparkles, hero: true },
   { label: "My Resumes", href: "/candidate/resumes", icon: FileText },
-  { label: "Job Matches", href: "/candidate/matches", icon: Sparkles },
+  { label: "Job Matches", href: "/candidate/matches", icon: Zap },
   { label: "Applications", href: "/candidate/applications", icon: Send },
+  { label: "Interview Prep", href: "/candidate/interview-prep", icon: MessageSquare },
+  { label: "Salary Insights", href: "/candidate/salary-insights", icon: TrendingUp },
   { label: "Profile", href: "/candidate/profile", icon: User },
   { label: "Settings", href: "/candidate/settings", icon: Settings },
 ];
@@ -34,19 +43,38 @@ export function CandidateSidebar() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center border-b border-border-gold px-6">
+      <div className="flex h-16 shrink-0 items-center border-b border-border-gold px-6">
         <span className="font-serif text-lg font-medium text-cream">
           ResumeTailored
         </span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-6">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
         {navItems.map((item) => {
           const isActive =
             item.href === "/candidate"
               ? pathname === "/candidate"
               : pathname.startsWith(item.href);
           const Icon = item.icon;
+
+          if (item.hero) {
+            // Hero action: persistent gold tint + border + trailing star so it
+            // stands out as the product's main feature, active or not.
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-md border border-gold px-4 py-3 text-sm font-semibold text-gold transition-all duration-200 hover:scale-[1.01] hover:bg-gold/15",
+                  isActive ? "bg-gold/20" : "bg-gold/10"
+                )}
+              >
+                <Icon className="h-[18px] w-[18px] shrink-0" />
+                <span className="flex-1">{item.label}</span>
+                <Star className="h-3.5 w-3.5 shrink-0 fill-gold text-gold" />
+              </Link>
+            );
+          }
 
           return (
             <Link
@@ -66,7 +94,7 @@ export function CandidateSidebar() {
         })}
       </nav>
 
-      <div className="flex items-center gap-2 border-t border-border-gold px-6 py-4">
+      <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
         <Crown className="h-4 w-4 text-gold" />
         <span className="text-xs font-medium text-gold">Portal · $19/mo</span>
       </div>

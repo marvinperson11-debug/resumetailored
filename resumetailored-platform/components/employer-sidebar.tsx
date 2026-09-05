@@ -9,6 +9,9 @@ import {
   Clock,
   DollarSign,
   BarChart3,
+  Globe,
+  FolderOpen,
+  ShieldCheck,
   Settings,
   Crown,
   type LucideIcon,
@@ -28,6 +31,9 @@ const navItems: NavItem[] = [
   { label: "Time", href: "/employer/time", icon: Clock },
   { label: "Payroll", href: "/employer/payroll", icon: DollarSign },
   { label: "Reports", href: "/employer/reports", icon: BarChart3 },
+  { label: "Career Site", href: "/employer/career-site", icon: Globe },
+  { label: "Documents", href: "/employer/documents", icon: FolderOpen },
+  { label: "Compliance", href: "/employer/compliance", icon: ShieldCheck },
   { label: "Settings", href: "/employer/settings", icon: Settings },
 ];
 
@@ -36,13 +42,13 @@ export function EmployerSidebar() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center border-b border-border-gold px-6">
+      <div className="flex h-16 shrink-0 items-center border-b border-border-gold px-6">
         <span className="font-serif text-lg font-medium text-cream">
           ResumeTailored
         </span>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-3 py-6">
+      <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
         {navItems.map((item) => {
           const isActive =
             item.href === "/employer"
@@ -68,7 +74,7 @@ export function EmployerSidebar() {
         })}
       </nav>
 
-      <div className="flex items-center gap-2 border-t border-border-gold px-6 py-4">
+      <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
         <Crown className="h-4 w-4 text-gold" />
         <span className="text-xs font-medium text-gold">Portal · $49/mo</span>
       </div>
