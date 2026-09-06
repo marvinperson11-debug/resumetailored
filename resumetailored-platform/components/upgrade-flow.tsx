@@ -63,7 +63,7 @@ function UpgradeFlowInner() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const startCheckout = useCallback(async () => {
+  const startCheckout = useCallback(async (plan: "pro" | "lifetime") => {
     setLoading(true);
     setError(null);
     try {
@@ -71,7 +71,7 @@ function UpgradeFlowInner() {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ returnUrl }),
+        body: JSON.stringify({ plan, returnUrl }),
       });
       const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
       if (!res.ok || !data.url) {

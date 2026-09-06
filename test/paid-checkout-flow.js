@@ -14,8 +14,13 @@ const success = read('public/success.html');
 const checkout = read('public/paid-checkout.js');
 const ecosystem = read('public/luxury-ecosystem.js');
 
-for (const plan of ['pro', 'lifetime', 'portal', 'scale', 'corporate']) {
-  check(`${plan} has a direct checkout trigger`, index.includes(`data-checkout-plan="${plan}"`) || corporate.includes(`data-checkout-plan="${plan}"`) || (plan === 'pro' && /RTCheckout\.start\('pro'\)/.test(index)) || (plan === 'lifetime' && /RTCheckout\.start\('lifetime'\)/.test(index)));
+// Consumer Pro/lifetime no longer check out on the marketing site — the
+// homepage's Pro CTAs redirect to the app's sign-up-first upgrade flow
+// (openCheckoutModal/openLifetimeModal → app?upgrade=pro). Employer plans still
+// check out on-site via data-checkout-plan.
+check('homepage Pro CTAs route to the app upgrade flow', /app\.resumetailored\.com\?upgrade=pro/.test(index) && !/data-checkout-plan="(pro|lifetime)"/.test(index));
+for (const plan of ['portal', 'scale', 'corporate']) {
+  check(`${plan} has a direct checkout trigger`, index.includes(`data-checkout-plan="${plan}"`) || corporate.includes(`data-checkout-plan="${plan}"`));
 }
 check('shared checkout client supports all five paid plans', /pro: 1, lifetime: 1, portal: 1, scale: 1, corporate: 1/.test(checkout));
 check('checkout failures stay on-page in a graceful alert', /role', 'alert'/.test(checkout) && /Checkout was cancelled/.test(checkout));

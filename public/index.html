@@ -1035,7 +1035,6 @@
   <link rel="stylesheet" href="/site-fx.css" media="print" onload="this.media='all'"/>
   <noscript><link rel="stylesheet" href="/site-fx.css"/></noscript>
   <link rel="stylesheet" href="/luxury-ecosystem.css"/>
-  <script src="/paid-checkout.js" defer></script>
 <style>
   /* Item 2 — card-based layout: give each step/feature/tool its own distinct
      navy card with spacing and a subtle gold hairline, instead of a flat wall. */
@@ -1125,8 +1124,8 @@
     <a href="/" class="logo">ResumeTailored <span class="badge-ai">AI</span></a>
     <div class="nav-links">
       <a href="/how-it-works" data-i18n="nav_how">How It Works</a>
-      <a href="/pro-tools" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
-      <a href="/pro-tools" style="color:#1F5C3D;font-weight:700;" data-i18n="nav_pro_tools">Pro Tools</a>
+      <a href="https://app.resumetailored.com" class="nav-shine" style="color:#34d399;" data-i18n="nav_free_tools">Free Tools</a>
+      <a href="https://app.resumetailored.com?upgrade=pro" style="color:#1F5C3D;font-weight:700;" data-i18n="nav_pro_tools">Pro Tools</a>
       <a href="/resume-examples">Resume Examples</a>
       <a href="/blog" data-i18n="nav_blog">Blog</a>
       <a href="https://app.resumetailored.com" style="color:#0f172a;font-weight:700;white-space:nowrap;">For Employers</a>
@@ -2428,20 +2427,6 @@
   </div>
 </div>
 
-<!-- Checkout Modal -->
-<div class="modal-overlay" id="checkoutModal" onclick="closeCheckoutModal(event)">
-  <div class="modal-box">
-    <h3>🚀 Start Your Pro Subscription</h3>
-    <p>Enter your email to go to secure Stripe checkout. $19.00/month — cancel anytime, no questions asked.</p>
-    <input type="email" id="checkoutEmail" class="checkout-input" placeholder="your@email.com"
-           onkeydown="if(event.key==='Enter') submitCheckout()" />
-    <div id="checkoutError" class="checkout-error"></div>
-    <div class="modal-actions">
-      <button id="checkoutBtn" class="btn btn-primary btn-lg" onclick="submitCheckout()">Start Pro — $19.00/mo →</button>
-      <button class="btn btn-ghost" onclick="closeCheckoutModal()">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <!-- RESUME TIERS -->
 <section class="section" id="tiers">
@@ -2971,19 +2956,6 @@
 </section>
 
 <!-- LIFETIME MODAL -->
-<div class="modal-overlay" id="lifetimeModal" onclick="closeLifetimeModal(event)">
-  <div class="modal-box">
-    <h3 style="margin-bottom:4px;">Pro Lifetime Access</h3>
-    <p style="font-size:13px;color:#2E7D53;font-weight:700;margin-bottom:4px;">⚡ One-time $129 · Never pay again</p>
-    <p>Enter your email to get permanent Pro access — every feature, every template, all future updates. Cheaper than Rezi's $149 lifetime.</p>
-    <input type="email" id="lifetimeEmail" class="checkout-input" placeholder="your@email.com" onkeydown="if(event.key==='Enter')submitLifetime()" />
-    <div id="lifetimeError" class="checkout-error"></div>
-    <div class="modal-actions">
-      <button id="lifetimeBtn" class="btn btn-full btn-lg" style="background:#1F5C3D;color:#fff;border:none;" onclick="submitLifetime()">Get Lifetime Access — $129 →</button>
-      <button class="btn btn-ghost btn-full" onclick="closeLifetimeModal()">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <!-- CONTACT MODAL -->
 <div class="modal-overlay" id="contactModal" onclick="closeContactModal(event)">
@@ -3251,86 +3223,16 @@
     }
   }
 
+  // The marketing site NEVER initiates Stripe checkout. Every consumer Pro CTA
+  // sends the visitor to the dashboard app, which signs them in first and then
+  // handles the upgrade (?upgrade=pro). These stay as small shims so the many
+  // existing onclick="openCheckoutModal()" / openLifetimeModal() call sites keep
+  // working without touching each one.
   function openCheckoutModal() {
-    window.RTCheckout.start('pro');
+    window.location.assign('https://app.resumetailored.com?upgrade=pro');
   }
-
-  function closeCheckoutModal(e) {
-    if (!e || e.target === document.getElementById('checkoutModal')) {
-      document.getElementById('checkoutModal').classList.remove('open');
-    }
-  }
-
   function openLifetimeModal() {
-    window.RTCheckout.start('lifetime');
-  }
-  function closeLifetimeModal(e) {
-    if (!e || e.target === document.getElementById('lifetimeModal')) {
-      document.getElementById('lifetimeModal').classList.remove('open');
-    }
-  }
-  async function submitLifetime() {
-    const email = document.getElementById('lifetimeEmail').value.trim();
-    const errEl = document.getElementById('lifetimeError');
-    const btn = document.getElementById('lifetimeBtn');
-    errEl.textContent = '';
-    if (!email || !email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
-    btn.textContent = 'Starting checkout…';
-    btn.disabled = true;
-    try {
-      const res = await fetch('/api/subscribe-lifetime', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        errEl.textContent = data.error || 'Could not start checkout. Please try again.';
-        btn.textContent = 'Get Lifetime Access — $129 →';
-        btn.disabled = false;
-      }
-    } catch {
-      errEl.textContent = 'Network error. Please try again.';
-      btn.textContent = 'Get Lifetime Access — $129 →';
-      btn.disabled = false;
-    }
-  }
-
-  async function submitCheckout() {
-    const email = document.getElementById('checkoutEmail').value.trim();
-    const errEl = document.getElementById('checkoutError');
-    const btn = document.getElementById('checkoutBtn');
-    errEl.textContent = '';
-
-    if (!email || !email.includes('@')) {
-      errEl.textContent = 'Please enter a valid email address.';
-      return;
-    }
-
-    btn.textContent = 'Starting checkout…';
-    btn.disabled = true;
-
-    try {
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        errEl.textContent = data.error || 'Could not start checkout. Please try again.';
-        btn.textContent = 'Start Pro — $19.00/mo →';
-        btn.disabled = false;
-      }
-    } catch {
-      errEl.textContent = 'Network error. Please try again.';
-      btn.textContent = 'Start Pro — $19.00/mo →';
-      btn.disabled = false;
-    }
+    window.location.assign('https://app.resumetailored.com?upgrade=pro');
   }
 
   // ── Bilingual i18n (English / Simplified Chinese) ──────────────────────────
@@ -3643,9 +3545,6 @@
     ['#proModal .btn-primary', null, 'Upgrade to Pro — $19.00/mo →', '升级专业版 — ¥19.00/月 →'],
     ['#proModal .btn-ghost', null, 'Try Free Templates First', '先试用免费模板'],
     // ── Checkout Modal ──────────────────────────────────────────────────────
-    ['#checkoutModal h3', null, '🚀 Start Your Pro Subscription', '🚀 开始你的专业版订阅'],
-    ['#checkoutModal > .modal-box > p', null, 'Enter your email to go to secure Stripe checkout. $19.00/month — cancel anytime, no questions asked.', '输入邮箱前往安全的Stripe结账页面。¥19.00/月——随时取消，无需解释。'],
-    ['#checkoutBtn', null, 'Start Pro — $19.00/mo →', '开始专业版 — ¥19.00/月 →'],
     // ── Career Levels ───────────────────────────────────────────────────────
     ['.section-eyebrow', 3, 'Career Levels', '职业级别'],
     ['.section-title', 4, 'Every career stage, <span>perfectly tailored</span>', '每个职业阶段，<span>精准定制</span>'],
@@ -3748,11 +3647,6 @@
     ['.pricing-cards .pricing-card:last-child .plan-price', null, '$129', '¥129'],
     ['.pricing-cards .pricing-card:last-child .btn', null, 'Get Lifetime Access — $129 →', '获取终身访问 — ¥129 →'],
     // ── Lifetime Modal ──────────────────────────────────────────────────────
-    ['#lifetimeModal h3', null, 'Pro Lifetime Access', '专业版终身访问'],
-    ['#lifetimeModal .modal-box > p:first-of-type', null, '⚡ One-time $129 · Never pay again', '⚡ 一次性¥129 · 永不再付费'],
-    ['#lifetimeModal .modal-box > p:last-of-type', null, 'Enter your email to get permanent Pro access — every feature, every template, all future updates. Cheaper than Rezi\'s $149 lifetime.', '输入邮箱获取永久专业版访问——所有功能、所有模板、所有未来更新。比Rezi的$149终身版更实惠。'],
-    ['#lifetimeBtn', null, 'Get Lifetime Access — $129 →', '获取终身访问 — ¥129 →'],
-    ['#lifetimeModal .btn-ghost', null, 'Cancel', '取消'],
     // ── Contact Modal ───────────────────────────────────────────────────────
     ['#contactModal h3', null, 'Contact Us', '联系我们'],
     ['#contactModal .modal-box > p:first-of-type', null, 'We read every message and respond within 24 hours.', '我们阅读每条留言，并在24小时内回复。'],
@@ -3844,12 +3738,6 @@
       var el = document.getElementById(id);
       if (el) el.placeholder = cph[id][0];
     });
-
-    // 5. Checkout modal placeholder
-    var ce = document.getElementById('checkoutEmail');
-    if (ce) ce.placeholder = isZh ? '你的邮箱' : 'your@email.com';
-    var le = document.getElementById('lifetimeEmail');
-    if (le) le.placeholder = isZh ? '你的邮箱' : 'your@email.com';
 
     // 6. Pro modal h3 — preserve dynamic template name span
     var proH3 = document.querySelector('#proModal h3');

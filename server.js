@@ -6765,7 +6765,14 @@ app.get('/api/entitlement', (req, res) => {
   if (auth !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
   const email = String(req.query.email || '').toLowerCase().trim();
   if (!email) return res.status(400).json({ error: 'email_required' });
-  res.json({ email, pro: isSubscriber(email), employerTier: employerTier(email) });
+  const eTier = employerTier(email);
+  const isEmployerAcct = !!eTier && eTier !== 'free';
+  const pro = isSubscriber(email);
+  // The app reads `plan` + `type` to segregate individual Pro from the employer
+  // organization; `pro`/`employerTier` stay for backward compatibility.
+  const plan = isEmployerAcct ? 'employer' : (pro ? 'pro' : 'free');
+  const type = isEmployerAcct ? 'organization' : 'individual';
+  res.json({ email, pro, employerTier: eTier, plan, type, tier: isEmployerAcct ? eTier : undefined });
 });
 
 // ─── API: ATS scan (Claude-powered) ──────────────────────────────────────────
@@ -7918,6 +7925,9 @@ app.post('/api/app-checkout', async (req, res) => {
   if (String(req.headers.authorization || '') !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
   const email = String((req.body && req.body.email) || '').toLowerCase().trim();
   if (!email) return res.status(400).json({ error: 'email_required', message: 'A signed-in email is required to start checkout.' });
+  // The upgrade modal offers monthly Pro or one-time Lifetime; both land the
+  // buyer as individual Pro (the webhook sets type:'individual' either way).
+  const isLifetime = String((req.body && req.body.plan) || 'pro').toLowerCase() === 'lifetime';
   // Only allow bouncing back to the app itself; never an attacker-supplied URL.
   const APP_ORIGIN = 'https://app.resumetailored.com';
   let returnUrl = String((req.body && req.body.returnUrl) || APP_ORIGIN);
@@ -7925,14 +7935,21 @@ app.post('/api/app-checkout', async (req, res) => {
   const sep = returnUrl.includes('?') ? '&' : '?';
   const checkoutBase = {
     payment_method_types: ['card'],
-    mode: 'subscription',
+    mode: isLifetime ? 'payment' : 'subscription',
     customer_email: email,
     success_url: `${returnUrl}${sep}payment=success`,
     cancel_url: `${returnUrl}${sep}payment=cancelled`,
-    metadata: { email, source: 'app' }
+    metadata: { email, source: 'app', ...(isLifetime ? { plan: 'lifetime' } : {}) }
   };
   try {
     let session;
+    if (isLifetime) {
+      session = await stripe.checkout.sessions.create({
+        ...checkoutBase,
+        line_items: [{ price: _configuredPriceId(process.env.STRIPE_LIFETIME_PRICE_ID, STRIPE_PRICE_IDS.lifetime), quantity: 1 }]
+      });
+      return res.json({ url: session.url });
+    }
     try {
       session = await stripe.checkout.sessions.create({
         ...checkoutBase,
@@ -8032,7 +8049,12 @@ function _provisionPaidAccount(email, planLabel, { dashboardPath = '/dashboard',
 // email; if the buyer has no Clerk account yet (a pay-first flow), it simply
 // finds nothing and returns — the new app backfills the flag on first sign-in
 // (it reads the old /api/status subscriber check as the source of truth).
-async function _syncPlanToClerk(email, { plan = 'pro', stripeCustomerId = '' } = {}) {
+// Reflect a paid entitlement onto the buyer's Clerk account. `type` segregates
+// the two account worlds the new app enforces: individual Pro tools vs the
+// employer organization (see ROLE SEGREGATION in the app). Individual Pro/
+// lifetime → {plan:'pro', type:'individual'}; employer → {plan:'employer',
+// type:'organization', tier}; a cancellation → {plan:'free', type:'individual'}.
+async function _syncPlanToClerk(email, { plan = 'pro', type = 'individual', tier = '', stripeCustomerId = '' } = {}) {
   const key = String(email || '').toLowerCase().trim();
   const secret = process.env.CLERK_SECRET_KEY;
   if (!key || !secret) return;
@@ -8044,13 +8066,15 @@ async function _syncPlanToClerk(email, { plan = 'pro', stripeCustomerId = '' } =
     const users = await lookup.json();
     const user = Array.isArray(users) ? users[0] : (users && Array.isArray(users.data) ? users.data[0] : null);
     if (!user || !user.id) { console.log(`[clerk] no account yet for ${key} — will backfill on sign-in`); return; }
+    const public_metadata = { plan, type, subscribedAt: new Date().toISOString(), stripeCustomerId: stripeCustomerId || undefined };
+    if (tier) public_metadata.tier = tier;
     const patch = await fetch(`https://api.clerk.com/v1/users/${user.id}/metadata`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ public_metadata: { plan, subscribedAt: new Date().toISOString(), stripeCustomerId: stripeCustomerId || undefined } })
+      body: JSON.stringify({ public_metadata })
     });
     if (!patch.ok) { console.error('[clerk] metadata patch failed:', patch.status); return; }
-    console.log(`[clerk] set plan=${plan} on ${key}`);
+    console.log(`[clerk] set plan=${plan} type=${type}${tier ? ' tier=' + tier : ''} on ${key}`);
   } catch (e) {
     console.error('[clerk] plan sync failed:', e.message);
   }
@@ -8082,10 +8106,13 @@ function _fulfillCheckoutSession(session, { sendWelcome = true } = {}) {
     db.prepare("INSERT OR REPLACE INTO employer_subscribers (email, customer_id, tier, status) VALUES (?, ?, ?, 'active')").run(email, session.customer, tier);
     const company = (email.split('@')[1] || 'Your company').split('.')[0].replace(/[-_]+/g, ' ');
     db.prepare('INSERT OR IGNORE INTO employer_profiles (email, company_name, website, created_at) VALUES (?,?,?,?)').run(email, company.replace(/\b\w/g, c => c.toUpperCase()), '', Date.now());
+    // Reflect the employer ORGANIZATION role onto Clerk (best-effort). The app
+    // uses type:'organization' to keep employers out of individual Pro tools.
+    _syncPlanToClerk(email, { plan: 'employer', type: 'organization', tier, stripeCustomerId: session.customer || '' });
   } else {
     db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, isLifetime ? `lifetime_${email}` : session.customer);
-    // Reflect Pro onto the buyer's Clerk account (best-effort, never awaited).
-    _syncPlanToClerk(email, { plan: 'pro', stripeCustomerId: session.customer || '' });
+    // Reflect individual Pro onto the buyer's Clerk account (best-effort).
+    _syncPlanToClerk(email, { plan: 'pro', type: 'individual', stripeCustomerId: session.customer || '' });
   }
   const firstFulfillment = session.id
     ? db.prepare('INSERT OR IGNORE INTO checkout_fulfillments (session_id, email, plan, fulfilled_at) VALUES (?,?,?,?)').run(session.id, email, isEmployer ? tier : (isLifetime ? 'lifetime' : 'pro'), Date.now()).changes > 0
@@ -8174,7 +8201,7 @@ app.post('/webhook', (req, res) => {
     if (row && removed.changes) {
       _sendSubscriptionEndedEmail(row.email);
       // Downgrade the buyer's Clerk account back to free (best-effort).
-      _syncPlanToClerk(row.email, { plan: 'free', stripeCustomerId: customerId });
+      _syncPlanToClerk(row.email, { plan: 'free', type: 'individual', stripeCustomerId: customerId });
     }
     console.log(`Removed subscriber with customer_id: ${customerId}`);
     const who = row?.email || employerRow?.email || customerId;

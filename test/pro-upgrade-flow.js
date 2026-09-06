@@ -28,6 +28,17 @@ check('marketing site no longer posts consumer Pro to /api/subscribe',
   !/\/api\/subscribe-lifetime/.test(checkout) && !/'\/api\/subscribe'/.test(checkout));
 check('employer plans still check out on-site', /\/api\/employer\/subscribe/.test(checkout));
 
+// ── Static: the marketing homepage no longer carries consumer checkout code ───
+const home = read('public/index.html');
+check('homepage removed the email checkout modals + submit functions',
+  !/id="checkoutModal"/.test(home) && !/id="lifetimeModal"/.test(home) &&
+  !/function submitCheckout/.test(home) && !/function submitLifetime/.test(home));
+check('homepage Pro CTAs redirect to the app upgrade flow',
+  /openCheckoutModal\(\)\s*\{\s*window\.location\.assign\('https:\/\/app\.resumetailored\.com\?upgrade=pro'\)/.test(home));
+check('homepage nav: Free Tools → app, Pro Tools → app?upgrade=pro',
+  /href="https:\/\/app\.resumetailored\.com"[^>]*data-i18n="nav_free_tools"/.test(home) &&
+  /href="https:\/\/app\.resumetailored\.com\?upgrade=pro"[^>]*data-i18n="nav_pro_tools"/.test(home));
+
 // ── Runtime: /api/app-checkout is a shared-secret endpoint ────────────────────
 const SECRET = 'test-entitlement-secret';
 process.env.ENTITLEMENT_SYNC_SECRET = SECRET;
@@ -68,6 +79,17 @@ const server = app.listen(0, async () => {
     // passed and only the Stripe call remains.
     const authed = await req('POST', '/api/app-checkout', { Authorization: `Bearer ${SECRET}` }, { email: 'buyer@example.com', returnUrl: 'https://evil.example/x' });
     check('authorized request with email passes gating (not 401/400/404)', ![401, 400, 404].includes(authed.status), `HTTP ${authed.status}`);
+
+    const lifetime = await req('POST', '/api/app-checkout', { Authorization: `Bearer ${SECRET}` }, { email: 'buyer@example.com', plan: 'lifetime' });
+    check('lifetime plan passes gating (not 401/400/404)', ![401, 400, 404].includes(lifetime.status), `HTTP ${lifetime.status}`);
+
+    // ── /api/entitlement returns role (plan + type) for the app to segregate ──
+    const entMissing = await req('GET', '/api/entitlement?email=nobody@example.com', { Authorization: `Bearer ${SECRET}` });
+    check('entitlement: unknown email is a free individual',
+      entMissing.status === 200 && entMissing.json && entMissing.json.plan === 'free' && entMissing.json.type === 'individual' && entMissing.json.pro === false,
+      JSON.stringify(entMissing.json));
+    const entNoAuth = await req('GET', '/api/entitlement?email=nobody@example.com', {});
+    check('entitlement: requires the shared secret (401)', entNoAuth.status === 401, `HTTP ${entNoAuth.status}`);
   } catch (e) {
     failures++; console.error('ERROR', e && e.stack ? e.stack : e);
   } finally {

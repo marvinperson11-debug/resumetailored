@@ -64,7 +64,9 @@ const server = app.listen(0, async () => {
       coverRedirect.status === 301 && coverRedirect.headers.location === 'https://app.resumetailored.com',
       `HTTP ${coverRedirect.status} → ${coverRedirect.headers.location}`);
     const videoLanding = await request('GET', '/resume-video');
-    check('/resume-video serves the public explanation page', videoLanding.status === 200 && videoLanding.text.includes('data-checkout-plan="pro"') && !videoLanding.text.includes('studioResume'), `HTTP ${videoLanding.status}`);
+    // The marketing landing no longer initiates Stripe checkout; its Pro CTAs
+    // now send the visitor to the app's sign-up-first upgrade flow.
+    check('/resume-video serves the public explanation page', videoLanding.status === 200 && videoLanding.text.includes('app.resumetailored.com?upgrade=pro') && !videoLanding.text.includes('studioResume'), `HTTP ${videoLanding.status}`);
     const anonStudio = await request('GET', '/video');
     check('anonymous visitors cannot load the video studio', anonStudio.status === 302 && anonStudio.headers.location === '/resume-video', `HTTP ${anonStudio.status}`);
     const freeStudio = await request('GET', '/video', 'tokFree');

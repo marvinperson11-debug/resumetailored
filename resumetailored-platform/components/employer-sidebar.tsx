@@ -45,7 +45,7 @@ const navItems: NavItem[] = [
   { label: "Settings", href: "/employer/settings", icon: Settings },
 ];
 
-export function EmployerSidebar() {
+export function EmployerSidebar({ tierLabel = "Portal" }: { tierLabel?: string }) {
   const pathname = usePathname();
 
   return (
@@ -84,7 +84,7 @@ export function EmployerSidebar() {
 
       <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
         <Crown className="h-4 w-4 text-gold" />
-        <span className="text-xs font-medium text-gold">Portal · $49/mo</span>
+        <span className="text-xs font-medium text-gold">Employer · {tierLabel}</span>
       </div>
     </div>
   );
