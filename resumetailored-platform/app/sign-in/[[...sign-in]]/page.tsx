@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { SignIn, ClerkLoading, ClerkLoaded } from "@clerk/nextjs";
 
 // Clean, single-purpose sign-in. ClerkLoading/ClerkLoaded guarantee the page
 // is never a blank black void: a dark charcoal background + a "Loading sign-in…"
 // state shows until clerk-js mounts the form (or if it is slow to load).
-export default function SignInPage() {
+function SignInInner() {
   const [slow, setSlow] = useState(false);
+  const params = useSearchParams();
+  // Carry a Pro-upgrade intent through auth so the dashboard opens the upgrade
+  // modal right after the user signs in.
+  const dest =
+    params.get("upgrade") === "pro" ? "/candidate?upgrade=pro" : "/candidate";
+
   useEffect(() => {
     const t = setTimeout(() => setSlow(true), 5000);
     return () => clearTimeout(t);
@@ -31,8 +38,20 @@ export default function SignInPage() {
         </div>
       </ClerkLoading>
       <ClerkLoaded>
-        <SignIn fallbackRedirectUrl="/candidate" />
+        <SignIn
+          forceRedirectUrl={dest}
+          fallbackRedirectUrl={dest}
+          signUpForceRedirectUrl={dest}
+        />
       </ClerkLoaded>
     </main>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<main style={{ backgroundColor: "#0B0F19", minHeight: "100vh" }} />}>
+      <SignInInner />
+    </Suspense>
   );
 }
