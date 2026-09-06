@@ -51,11 +51,18 @@ function request(method, urlPath, token, body) {
 const server = app.listen(0, async () => {
   PORT = server.address().port;
   try {
-    const appRoutes = ['/tailor', '/cover-letter', '/website', '/tools', '/app/tailor', '/app/website', '/app/cover-letter'];
+    const appRoutes = ['/tailor', '/website', '/tools', '/app/tailor', '/app/website', '/app/cover-letter'];
     for (const route of appRoutes) {
       const r = await request('GET', route);
       check(`${route} serves the dashboard shell`, r.status === 200 && r.text.includes('DASHBOARD LAYOUT'), `HTTP ${r.status}`);
     }
+    // /cover-letter is now a deprecated route that 301s to the standalone app
+    // (app.resumetailored.com); the canonical in-app path is /app/cover-letter,
+    // asserted above. Keep coverage of the redirect itself.
+    const coverRedirect = await request('GET', '/cover-letter');
+    check('/cover-letter 301s to the standalone app',
+      coverRedirect.status === 301 && coverRedirect.headers.location === 'https://app.resumetailored.com',
+      `HTTP ${coverRedirect.status} → ${coverRedirect.headers.location}`);
     const videoLanding = await request('GET', '/resume-video');
     check('/resume-video serves the public explanation page', videoLanding.status === 200 && videoLanding.text.includes('data-checkout-plan="pro"') && !videoLanding.text.includes('studioResume'), `HTTP ${videoLanding.status}`);
     const anonStudio = await request('GET', '/video');

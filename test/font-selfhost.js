@@ -53,7 +53,10 @@ const server = app.listen(0, async () => {
     check('inter Latin woff2 exists', fs.existsSync(path.join(fontsDir, 'inter-normal-latin.woff2')));
     check('fraunces Latin woff2 exists', fs.existsSync(path.join(fontsDir, 'fraunces-normal-latin.woff2')));
 
-    for (const p of ['/', '/score', '/pro-tools', '/tools/offer-comparison']) {
+    // NB: /score now 301s to the standalone app (deprecated-route redirect), so
+    // it is no longer a self-hosted-font page here; the canonical public pages
+    // below stand in for it.
+    for (const p of ['/', '/pro-tools', '/tools/offer-comparison']) {
       const r = await req(p);
       check(`${p} 200`, r.status === 200);
       // fonts.css is inlined into <head> (render-blocking-free) — assert the
@@ -70,11 +73,13 @@ const server = app.listen(0, async () => {
       check(`${p} drops the gstatic preconnect`, !/fonts\.gstatic\.com/.test(r.body));
     }
 
-    // Dashboard keeps the signature fonts (they are not self-hosted).
-    const d = await req('/dashboard');
-    check('/dashboard keeps signature fonts on the CDN', /fonts\.googleapis\.com\/css2\?family=Dancing\+Script/.test(d.body));
-    check('/dashboard still self-hosts its Inter/Syne (inlined @font-face)', /@font-face[\s\S]{0,400}url\(\/fonts\/inter-normal-latin\.woff2\)/.test(d.body));
-    check('/dashboard leaves the runtime ${sigFont} link intact', d.body.includes('${encodeURIComponent(sigFont)}'));
+    // Dashboard shell keeps the signature fonts (they are not self-hosted).
+    // /dashboard now 301s to the standalone app, so assert against the live
+    // in-app shell path /tailor, which serves the same app.html shell.
+    const d = await req('/tailor');
+    check('/tailor keeps signature fonts on the CDN', /fonts\.googleapis\.com\/css2\?family=Dancing\+Script/.test(d.body));
+    check('/tailor still self-hosts its Inter/Syne (inlined @font-face)', /@font-face[\s\S]{0,400}url\(\/fonts\/inter-normal-latin\.woff2\)/.test(d.body));
+    check('/tailor leaves the runtime ${sigFont} link intact', d.body.includes('${encodeURIComponent(sigFont)}'));
 
     // Assets serve.
     const fc = await req('/fonts.css');

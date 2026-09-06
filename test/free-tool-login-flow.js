@@ -76,7 +76,7 @@ for (const [name, file] of [
   const src = read(file);
   check(`${name} has no automatic login redirect`, !/location\.(?:href|assign)\s*\(?\s*['"]\/login/.test(src));
 }
-check('Cover Letter CTA opens Cover Letter mode', /href="\/cover-letter"[^>]*>Generate Cover Letter Free/.test(read('public/ai-cover-letter-generator.html')));
+check('Cover Letter CTA opens the standalone app', /href="https:\/\/app\.resumetailored\.com"[^>]*>Generate Cover Letter Free/.test(read('public/ai-cover-letter-generator.html')));
 
 // Server free utilities use an anonymous IP-scoped identity instead of auth.
 for (const endpoint of ['job-description-decode', 'follow-up-generate', 'mock-interview']) {
@@ -91,7 +91,10 @@ check('Salary Script uses the anonymous public tool gate', /salary-negotiation'[
 check('Weekly Report does not redirect on page load', !/if\(thRequireLogin\(\)\) load\(\)/.test(read('public/tools/weekly-report.html')));
 check('Tailor API accepts anonymous generation', !/api\/tailor'[\s\S]{0,1800}if \(!email\)[\s\S]{0,120}login_required/.test(server));
 check('Interview Coach practice uses the anonymous public tool gate', /interview-coach\/question'[\s\S]{0,260}toolGate\(req, res/.test(server) && !/icStart[^\n]{0,180}location\.href='\/login'/.test(read('public/interview-coach.html')));
-check('Job Seeker Decoder is explicitly Pro and no longer an anonymous free tool', /app\.post\('\/api\/decoder-key'[\s\S]{0,300}login_required[\s\S]{0,300}pro_required/.test(server) && /Job Seeker Decoder Key · Pro \$19\/month/.test(read('public/tool-landing.html')));
+// The Job Seeker Decoder API stays Pro-gated (login + Pro required), so it is
+// never an anonymous free tool. Its marketing landing is now branded
+// "Complimentary" (a positioning change) and its CTA opens the standalone app.
+check('Job Seeker Decoder API stays Pro-gated behind its complimentary-branded landing', /app\.post\('\/api\/decoder-key'[\s\S]{0,300}login_required[\s\S]{0,300}pro_required/.test(server) && /Job Seeker Decoder Key · Complimentary/.test(read('public/tool-landing.html')));
 check('Employer Decoder has a separate employer-only API and portal workspace', /app\.post\('\/api\/employer\/decoder'/.test(server) && /data-view="decoder"/.test(read('public/employer.html')) && /employerOnly: true/.test(server));
 check('named tools route through explanation pages before their workspaces', /linkedin-optimizer'[\s\S]{0,100}decoder-key'[\s\S]{0,100}interview-coach'[\s\S]{0,100}career-hub'/.test(server) && /\/tools\/decoder-key/.test(server) && /\/tools\/interview-coach/.test(server));
 

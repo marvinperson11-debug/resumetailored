@@ -50,22 +50,26 @@ const server = app.listen(0, async () => {
   PORT = server.address().port;
   try {
     // ── every asset reference in real pages carries the version param ────────
-    const score = await req('GET', '/score');
-    check('/score responds 200', score.status === 200);
-    check('/score versions its theme.css reference', /href="\/theme\.css\?v=[^"]+"/.test(score.body), score.body.match(/href="\/theme\.css[^"]*"/));
+    // NB: /score now 301s to the standalone app (deprecated-route redirect), so
+    // /pro-tools stands in as the versioned public page here.
+    const score = await req('GET', '/pro-tools');
+    check('/pro-tools responds 200', score.status === 200);
+    check('/pro-tools versions its theme.css reference', /href="\/theme\.css\?v=[^"]+"/.test(score.body), score.body.match(/href="\/theme\.css[^"]*"/));
 
-    const dashboard = await req('GET', '/dashboard');
-    check('/dashboard responds 200', dashboard.status === 200);
-    check('/dashboard versions style.css (virtual route, not static-file-backed)', /href="style\.css\?v=[^"]+"/.test(dashboard.body));
-    check('/dashboard versions career-hub.js', /src="\/career-hub\.js\?v=[^"]+"/.test(dashboard.body));
-    check('/dashboard versions career-hub.css', /href="\/career-hub\.css\?v=[^"]+"/.test(dashboard.body));
-    check('/dashboard versions app-theme.css', /href="\/app-theme\.css\?v=[^"]+"/.test(dashboard.body));
-    // /login and /signup now serve the dedicated login page (not the app), still
-    // through the versioning path — its assets must be versioned too.
+    // /dashboard now 301s to the standalone app; /tailor serves the same in-app
+    // shell and is the live path the versioning assertions belong on.
+    const dashboard = await req('GET', '/tailor');
+    check('/tailor responds 200', dashboard.status === 200);
+    check('/tailor versions style.css (virtual route, not static-file-backed)', /href="style\.css\?v=[^"]+"/.test(dashboard.body));
+    check('/tailor versions career-hub.js', /src="\/career-hub\.js\?v=[^"]+"/.test(dashboard.body));
+    check('/tailor versions career-hub.css', /href="\/career-hub\.css\?v=[^"]+"/.test(dashboard.body));
+    check('/tailor versions app-theme.css', /href="\/app-theme\.css\?v=[^"]+"/.test(dashboard.body));
+    // /login still serves the dedicated login page (versioned). /signup is now a
+    // deprecated-route redirect to the standalone app (Clerk sign-up lives there).
     const login = await req('GET', '/login');
     check('/login serves the login page, versioned', /Log in \/ Sign up/.test(login.body) && /src="\/login-redirect\.js\?v=[^"]+"/.test(login.body) && /href="\/theme\.css\?v=[^"]+"/.test(login.body), login.body.slice(0, 100));
     const signup = await req('GET', '/signup');
-    check('/signup serves the login page, versioned', /Log in \/ Sign up/.test(signup.body) && /src="\/login-redirect\.js\?v=[^"]+"/.test(signup.body));
+    check('/signup 301s to the standalone app', signup.status === 301 && signup.headers.location === 'https://app.resumetailored.com', `HTTP ${signup.status} → ${signup.headers.location}`);
 
     const blog = await req('GET', '/blog');
     check('/blog (explicit sendFile-replacement route) versions theme.css', /href="\/theme\.css\?v=[^"]+"/.test(blog.body));
