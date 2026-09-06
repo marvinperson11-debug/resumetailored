@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { SignUp, ClerkLoading, ClerkLoaded } from "@clerk/nextjs";
 
-export default function SignUpPage() {
+function SignUpInner() {
   const [slow, setSlow] = useState(false);
+  const params = useSearchParams();
+  // Carry a Pro-upgrade intent through sign-up so a brand-new account lands on
+  // the dashboard with the upgrade modal open.
+  const dest =
+    params.get("upgrade") === "pro" ? "/candidate?upgrade=pro" : "/candidate";
+
   useEffect(() => {
     const t = setTimeout(() => setSlow(true), 5000);
     return () => clearTimeout(t);
@@ -28,8 +35,20 @@ export default function SignUpPage() {
         </div>
       </ClerkLoading>
       <ClerkLoaded>
-        <SignUp fallbackRedirectUrl="/candidate" />
+        <SignUp
+          forceRedirectUrl={dest}
+          fallbackRedirectUrl={dest}
+          signInForceRedirectUrl={dest}
+        />
       </ClerkLoaded>
     </main>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<main style={{ backgroundColor: "#0B0F19", minHeight: "100vh" }} />}>
+      <SignUpInner />
+    </Suspense>
   );
 }

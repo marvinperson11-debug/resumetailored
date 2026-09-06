@@ -7903,6 +7903,66 @@ app.post('/api/subscribe-lifetime', async (req, res) => {
   }
 });
 
+// ─── API: Create a Pro checkout session ON BEHALF OF the new Clerk app ─────────
+// The new dashboard (app.resumetailored.com) is now the ONLY place a Pro
+// upgrade is initiated: the user signs up / signs in there first, then this
+// server-to-server endpoint (called from the app's own /api/create-checkout-
+// session, never the browser) mints the Stripe session for their known,
+// signed-in email. Guarded by the shared ENTITLEMENT_SYNC_SECRET (unset ⇒ 404).
+// success/cancel bounce back into the app with ?payment=success|cancelled, and
+// the existing checkout.session.completed webhook fulfills + syncs Clerk exactly
+// as it does for any other Pro session.
+app.post('/api/app-checkout', async (req, res) => {
+  const secret = process.env.ENTITLEMENT_SYNC_SECRET;
+  if (!secret) return res.status(404).json({ error: 'not_configured' });
+  if (String(req.headers.authorization || '') !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
+  const email = String((req.body && req.body.email) || '').toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: 'email_required', message: 'A signed-in email is required to start checkout.' });
+  // Only allow bouncing back to the app itself; never an attacker-supplied URL.
+  const APP_ORIGIN = 'https://app.resumetailored.com';
+  let returnUrl = String((req.body && req.body.returnUrl) || APP_ORIGIN);
+  if (!returnUrl.startsWith(APP_ORIGIN)) returnUrl = APP_ORIGIN;
+  const sep = returnUrl.includes('?') ? '&' : '?';
+  const checkoutBase = {
+    payment_method_types: ['card'],
+    mode: 'subscription',
+    customer_email: email,
+    success_url: `${returnUrl}${sep}payment=success`,
+    cancel_url: `${returnUrl}${sep}payment=cancelled`,
+    metadata: { email, source: 'app' }
+  };
+  try {
+    let session;
+    try {
+      session = await stripe.checkout.sessions.create({
+        ...checkoutBase,
+        line_items: [{ price: _configuredPriceId(process.env.STRIPE_PRICE_ID, STRIPE_PRICE_IDS.pro), quantity: 1 }]
+      });
+    } catch (priceErr) {
+      // Same stale-catalog-id fallback as /api/subscribe: an archived/foreign
+      // price id is rejected by Stripe; inline price_data preserves $19/month.
+      if (priceErr?.type !== 'StripeInvalidRequestError') throw priceErr;
+      console.warn('[stripe] Pro catalog price rejected on app-checkout; retrying with inline $19/month price data.');
+      session = await stripe.checkout.sessions.create({
+        ...checkoutBase,
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            unit_amount: 1900,
+            recurring: { interval: 'month' },
+            product_data: { name: 'ResumeTailored Pro' }
+          },
+          quantity: 1
+        }]
+      });
+    }
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('[stripe] app-checkout error:', err);
+    res.status(500).json({ error: 'Could not create checkout session.' });
+  }
+});
+
 // ─── Stripe webhook: activate subscription ────────────────────────────────────
 // After a successful Stripe payment, a guest who checked out by email has a
 // `subscribers` row but no way to LOG IN — no `users` account exists yet. Give

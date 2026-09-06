@@ -27,11 +27,19 @@
     return headers;
   }
 
+  // Consumer Pro upgrades are no longer initiated on the marketing site. The
+  // new flow is sign-up-first: send the visitor to the dashboard app, which
+  // makes them sign in (or sign up) and THEN starts Stripe checkout for their
+  // known Clerk email. Employer plans (portal/scale/corporate) still check out
+  // here — the app has no employer upgrade surface.
+  var APP_UPGRADE_URL = 'https://app.resumetailored.com?upgrade=pro';
+
   async function start(plan, trigger) {
     plan = String(plan || '').toLowerCase();
     if (!labels[plan]) return showError('That plan is not available. Please refresh and try again.');
-    var endpoint = plan === 'pro' ? '/api/subscribe' : plan === 'lifetime' ? '/api/subscribe-lifetime' : '/api/employer/subscribe';
-    var body = plan === 'pro' || plan === 'lifetime' ? {} : { plan: plan };
+    if (plan === 'pro' || plan === 'lifetime') { window.location.assign(APP_UPGRADE_URL); return; }
+    var endpoint = '/api/employer/subscribe';
+    var body = { plan: plan };
     var original = trigger && trigger.textContent;
     if (trigger) { trigger.disabled = true; trigger.setAttribute('aria-busy', 'true'); trigger.textContent = 'Opening secure checkout…'; }
     try {
