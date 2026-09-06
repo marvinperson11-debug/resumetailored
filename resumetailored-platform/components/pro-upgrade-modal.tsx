@@ -20,7 +20,7 @@ export function ProUpgradeModal({
   open: boolean;
   loading: boolean;
   error: string | null;
-  onStart: () => void;
+  onStart: (plan: "pro" | "lifetime") => void;
   onClose: () => void;
 }) {
   if (!open) return null;
@@ -62,8 +62,7 @@ export function ProUpgradeModal({
             Upgrade to Pro
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-cream">
-            <span className="text-cream">$19.00/mo</span> · cancel anytime, no
-            questions asked.
+            Unlock Resume Video, Web Studio, and unlimited tailoring.
           </p>
 
           <ul className="mt-5 space-y-2.5">
@@ -81,24 +80,34 @@ export function ProUpgradeModal({
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={onStart}
-            disabled={loading}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-5 py-3.5 text-sm font-semibold text-white shadow-[0_0_22px_rgba(139,92,246,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/90 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Opening secure checkout…
-              </>
-            ) : (
-              "Start Pro — $19.00/mo →"
-            )}
-          </button>
+          <div className="mt-6 space-y-3">
+            <button
+              type="button"
+              onClick={() => onStart("pro")}
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-5 py-3.5 text-sm font-semibold text-white shadow-[0_0_22px_rgba(139,92,246,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/90 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Opening secure checkout…
+                </>
+              ) : (
+                "Start Pro — $19.00/mo →"
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => onStart("lifetime")}
+              disabled={loading}
+              className="flex w-full items-center justify-center rounded-xl border border-border-gold px-5 py-3 text-sm font-semibold text-cream transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              Pro Lifetime — $129 one-time →
+            </button>
+          </div>
 
           <p className="mt-3 text-center text-xs text-muted-cream">
-            Secure payment by Stripe. You are billed as ResumeTailored.
+            Secure payment by Stripe. Cancel the monthly plan anytime.
           </p>
         </div>
       </div>

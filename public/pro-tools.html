@@ -353,23 +353,16 @@
     document.body.style.overflow = '';
   }));
 
-  /* Pro tools are gated. A logged-OUT visitor who taps a Pro tool card goes
-     straight to Stripe Checkout (the payment-first funnel) instead of into the
-     tool — Stripe collects their email, and after payment the webhook creates
-     their account and emails a set-password link. A signed-in visitor is let
-     through to the tool as before (login = the same rt_token the app uses). */
+  /* Pro tools live in the dashboard app now. Tapping a Pro tool card sends the
+     visitor to the app's sign-up-first upgrade flow (?upgrade=pro) — the app
+     signs them in and handles the Pro upgrade. The marketing site never calls
+     Stripe directly. */
   (function () {
-    var loggedIn = false;
-    try { loggedIn = !!localStorage.getItem('rt_token'); } catch (e) {}
-    if (loggedIn) return;
     document.querySelectorAll('.pt-card[data-checkout="pro"]').forEach(function (card) {
       card.addEventListener('click', function (ev) {
         ev.preventDefault();
         try { if (typeof gtag === 'function') gtag('event', 'pro_tool_checkout_click'); } catch (e) {}
-        fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
-          .then(function (r) { return r.json(); })
-          .then(function (d) { window.location.href = (d && d.url) ? d.url : '/#pricing'; })
-          .catch(function () { window.location.href = '/#pricing'; });
+        window.location.assign('https://app.resumetailored.com?upgrade=pro');
       });
     });
   })();

@@ -62,8 +62,15 @@ function ProBadge() {
   );
 }
 
-export function CandidateSidebar({ isPro = false }: { isPro?: boolean }) {
+interface RoleBadge {
+  plan?: "free" | "pro" | "employer" | "employee";
+  employerName?: string;
+}
+
+export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge }) {
   const pathname = usePathname();
+  const plan = role.plan ?? "free";
+  const proish = plan === "pro" || plan === "employee";
 
   return (
     <div className="flex h-full flex-col">
@@ -120,12 +127,16 @@ export function CandidateSidebar({ isPro = false }: { isPro?: boolean }) {
       </nav>
 
       <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
-        <Crown className={cn("h-4 w-4", isPro ? "text-gold" : "text-muted-cream")} />
-        {isPro ? (
+        <Crown className={cn("h-4 w-4", proish ? "text-gold" : "text-muted-cream")} />
+        {plan === "pro" ? (
           <span className="text-xs font-medium text-gold">Pro · active</span>
+        ) : plan === "employee" ? (
+          <span className="text-xs font-medium text-gold">
+            Pro · via {role.employerName || "your team"}
+          </span>
         ) : (
           <a
-            href="https://resumetailored.com/pro-tools"
+            href="/candidate?upgrade=pro"
             className="text-xs font-medium text-muted-cream transition-colors hover:text-gold"
           >
             Free plan · Upgrade to Pro

@@ -16,7 +16,6 @@
     .video-features{max-width:1180px;margin:0 auto 80px;padding:0 28px;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--video-line);border-left:1px solid var(--video-line)}.video-feature{min-height:190px;padding:28px;border-right:1px solid var(--video-line);border-bottom:1px solid var(--video-line);background:rgba(16,31,51,.55)}.video-feature small{color:var(--video-gold);font-size:10px;letter-spacing:.16em}.video-feature h2{font:500 25px Fraunces,Georgia,serif;margin:30px 0 9px}.video-feature p{margin:0;color:var(--video-muted);font-size:13px;line-height:1.65}
     @media(max-width:820px){.video-hero{grid-template-columns:1fr;padding-top:62px;gap:42px}.video-frame{min-height:430px}.video-features{grid-template-columns:1fr}.video-hero h1{font-size:52px}}
   </style>
-  <script src="/paid-checkout.js" defer></script>
 </head>
 <body>
   <nav class="video-nav"><a class="video-brand" href="/">ResumeTailored</a><a class="video-back" href="/">← Back to Home</a></nav>
@@ -27,10 +26,10 @@
         <h1>Your experience,<br><em>directed with intention.</em></h1>
         <p class="video-lead">Shape your resume into a focused vertical film with structured scenes, editorial pacing, and a voice synced to your story. The complete studio is reserved for Pro members.</p>
         <div class="video-actions">
-          <button class="video-button video-button--gold" type="button" data-checkout-plan="pro" onclick="void 0">Choose Pro Monthly · $19</button>
-          <button class="video-button video-button--quiet" type="button" data-checkout-plan="lifetime" onclick="void 0">Choose Lifetime Pro · $129</button>
+          <button class="video-button video-button--gold" type="button" onclick="location.assign('https://app.resumetailored.com?upgrade=pro')">Choose Pro Monthly · $19</button>
+          <button class="video-button video-button--quiet" type="button" onclick="location.assign('https://app.resumetailored.com?upgrade=pro')">Choose Lifetime Pro · $129</button>
         </div>
-        <p class="video-note">Stripe completes payment securely. Your account is created from your checkout email, then you are sent directly to the studio.</p>
+        <p class="video-note">Create your free account, then upgrade to Pro inside the app to unlock the full studio.</p>
       </div>
       <div class="video-frame" aria-label="Preview of the Resume Video workspace">
         <div class="video-rail"><div class="video-line"></div><div class="video-line"></div><div class="video-line"></div></div>

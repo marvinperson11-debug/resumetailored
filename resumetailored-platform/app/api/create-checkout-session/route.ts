@@ -25,12 +25,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "not_configured" }, { status: 501 });
   }
 
-  const body = await req.json().catch(() => ({} as { returnUrl?: string }));
+  const body = await req.json().catch(() => ({} as { returnUrl?: string; plan?: string }));
   const APP_ORIGIN = "https://app.resumetailored.com";
   const returnUrl =
     typeof body.returnUrl === "string" && body.returnUrl.startsWith(APP_ORIGIN)
       ? body.returnUrl
       : `${APP_ORIGIN}/candidate`;
+  const plan = body.plan === "lifetime" ? "lifetime" : "pro";
 
   try {
     const res = await fetch(`${base}/api/app-checkout`, {
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
         Authorization: `Bearer ${secret}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ email, returnUrl }),
+      body: JSON.stringify({ email, returnUrl, plan }),
       cache: "no-store",
     });
     const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };

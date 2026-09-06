@@ -1848,18 +1848,6 @@
 </div>
 
 <!-- Checkout Modal -->
-<div class="modal-overlay" id="checkoutModal" onclick="closeCheckoutModal(event)">
-  <div class="modal-box">
-    <h3>🚀 开始你的专业版订阅</h3>
-    <p>输入邮箱前往安全的Stripe结账页面。¥19.00/月——随时取消，无需解释。</p>
-    <input type="email" id="checkoutEmail" class="checkout-input" placeholder="你的邮箱" onkeydown="if(event.key==='Enter') submitCheckout()">
-    <div id="checkoutError" class="checkout-error"></div>
-    <div class="modal-actions">
-      <button id="checkoutBtn" class="btn btn-primary btn-lg" onclick="submitCheckout()">开始专业版 — ¥19.00/月 →</button>
-      <button class="btn btn-ghost" onclick="closeCheckoutModal()">Cancel</button>
-    </div>
-  </div>
-</div>
 
 <!-- RESUME TIERS -->
 <section class="section reveal" id="tiers">
@@ -2233,21 +2221,6 @@
   </div>
 </section>
 
-<!-- LIFETIME MODAL -->
-<div class="modal-overlay" id="lifetimeModal" onclick="closeLifetimeModal(event)">
-  <div class="modal-box">
-    <h3 style="margin-bottom:4px;">专业版终身访问</h3>
-    <p style="font-size:13px;color:#5FB088;font-weight:700;margin-bottom:4px;">⚡ 一次性¥129 · 永不再付费</p>
-    <p>输入邮箱获取永久专业版访问——所有功能、所有模板、所有未来更新。比Rezi的$149终身版更实惠。</p>
-    <input type="email" id="lifetimeEmail" class="checkout-input" placeholder="你的邮箱" onkeydown="if(event.key==='Enter')submitLifetime()">
-    <div id="lifetimeError" class="checkout-error"></div>
-    <div class="modal-actions">
-      <button id="lifetimeBtn" class="btn btn-full btn-lg" style="background:linear-gradient(135deg,#2E7D53,#1F5C3D);color:#fff;border:none;" onclick="submitLifetime()">获取终身访问 — ¥129 →</button>
-      <button class="btn btn-ghost btn-full" onclick="closeLifetimeModal()">取消</button>
-    </div>
-  </div>
-</div>
-
 <!-- CONTACT MODAL -->
 <div class="modal-overlay" id="contactModal" onclick="closeContactModal(event)">
   <div class="modal-box" style="max-width:520px;">
@@ -2509,96 +2482,13 @@
     }
   }
 
+  // The marketing site never initiates Stripe checkout. Consumer Pro CTAs send
+  // the visitor to the dashboard app's sign-up-first upgrade flow (?upgrade=pro).
   function openCheckoutModal() {
-    document.getElementById('checkoutError').textContent = '';
-    document.getElementById('checkoutEmail').value = '';
-    document.getElementById('checkoutBtn').textContent = 'Start Pro — $19.00/mo →';
-    document.getElementById('checkoutBtn').disabled = false;
-    document.getElementById('checkoutModal').classList.add('open');
-    setTimeout(() => document.getElementById('checkoutEmail').focus(), 50);
+    window.location.assign('https://app.resumetailored.com?upgrade=pro');
   }
-
-  function closeCheckoutModal(e) {
-    if (!e || e.target === document.getElementById('checkoutModal')) {
-      document.getElementById('checkoutModal').classList.remove('open');
-    }
-  }
-
   function openLifetimeModal() {
-    document.getElementById('lifetimeError').textContent = '';
-    document.getElementById('lifetimeEmail').value = '';
-    document.getElementById('lifetimeBtn').textContent = 'Get Lifetime Access — $129 →';
-    document.getElementById('lifetimeBtn').disabled = false;
-    document.getElementById('lifetimeModal').classList.add('open');
-    setTimeout(() => document.getElementById('lifetimeEmail').focus(), 50);
-  }
-  function closeLifetimeModal(e) {
-    if (!e || e.target === document.getElementById('lifetimeModal')) {
-      document.getElementById('lifetimeModal').classList.remove('open');
-    }
-  }
-  async function submitLifetime() {
-    const email = document.getElementById('lifetimeEmail').value.trim();
-    const errEl = document.getElementById('lifetimeError');
-    const btn = document.getElementById('lifetimeBtn');
-    errEl.textContent = '';
-    if (!email || !email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
-    btn.textContent = 'Starting checkout…';
-    btn.disabled = true;
-    try {
-      const res = await fetch('/api/subscribe-lifetime', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        errEl.textContent = data.error || 'Could not start checkout. Please try again.';
-        btn.textContent = 'Get Lifetime Access — $129 →';
-        btn.disabled = false;
-      }
-    } catch {
-      errEl.textContent = 'Network error. Please try again.';
-      btn.textContent = 'Get Lifetime Access — $129 →';
-      btn.disabled = false;
-    }
-  }
-
-  async function submitCheckout() {
-    const email = document.getElementById('checkoutEmail').value.trim();
-    const errEl = document.getElementById('checkoutError');
-    const btn = document.getElementById('checkoutBtn');
-    errEl.textContent = '';
-
-    if (!email || !email.includes('@')) {
-      errEl.textContent = 'Please enter a valid email address.';
-      return;
-    }
-
-    btn.textContent = 'Starting checkout…';
-    btn.disabled = true;
-
-    try {
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        errEl.textContent = data.error || 'Could not start checkout. Please try again.';
-        btn.textContent = 'Start Pro — $19.00/mo →';
-        btn.disabled = false;
-      }
-    } catch {
-      errEl.textContent = 'Network error. Please try again.';
-      btn.textContent = 'Start Pro — $19.00/mo →';
-      btn.disabled = false;
-    }
+    window.location.assign('https://app.resumetailored.com?upgrade=pro');
   }
 
   // ── Bilingual i18n (English / Simplified Chinese) ──────────────────────────
@@ -2943,12 +2833,6 @@
       var el = document.getElementById(id);
       if (el) el.placeholder = cph[id][0];
     });
-
-    // 5. Checkout modal placeholder
-    var ce = document.getElementById('checkoutEmail');
-    if (ce) ce.placeholder = isZh ? '你的邮箱' : 'your@email.com';
-    var le = document.getElementById('lifetimeEmail');
-    if (le) le.placeholder = isZh ? '你的邮箱' : 'your@email.com';
 
     // 6. Pro modal h3 — preserve dynamic template name span
     var proH3 = document.querySelector('#proModal h3');

@@ -19,7 +19,9 @@ check('transport controls play, pause and seek the player', ['play','pause','see
 check('voice and accent controls update the preview', /send\('voice'/.test(page) && /send\('accent'/.test(page) && /msg\.type === 'voice'/.test(preview) && /msg\.type === 'accent'/.test(preview));
 check('embedded preview removes duplicate form chrome', /body\.is-embedded[\s\S]*\.panel/.test(preview) && /controls=\$\{!embedded\}/.test(preview));
 check('Remotion license warning is acknowledged', /acknowledgeRemotionLicense/.test(preview));
-check('public landing offers direct Pro and Lifetime checkout', /data-checkout-plan="pro"/.test(landing) && /data-checkout-plan="lifetime"/.test(landing));
+// The marketing landing no longer initiates Stripe checkout; both the Pro and
+// Lifetime CTAs send the visitor to the app's sign-up-first upgrade flow.
+check('public landing routes Pro and Lifetime CTAs to the app upgrade flow', (landing.match(/app\.resumetailored\.com\?upgrade=pro/g) || []).length >= 2 && !/data-checkout-plan/.test(landing));
 check('public landing contains no creation interface', !/id="studioResume"|class="studio-workspace"/.test(landing));
 check('studio and preview HTML are protected by subscriber routes', /app\.get\(\['\/video', '\/app\/video'\][\s\S]{0,260}!isSubscriber\(email\)/.test(server) && /app\.get\(\['\/preview', '\/preview\.html'\][\s\S]{0,260}!isSubscriber\(email\)/.test(server));
 check('free dashboard navigation exits to the public explanation page', /name === 'video' && !isSubscriberFlag[\s\S]{0,120}location\.assign\('\/resume-video'\)/.test(fs.readFileSync(path.join(root, 'public', 'app.html'), 'utf8')));
