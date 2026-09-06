@@ -1566,6 +1566,15 @@ app.get('/tools', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'pu
 // an .html file is versioned and sent from here, and express.static below
 // goes back to serving only non-HTML static files (it no longer tries the
 // `.html` extension fallback itself, so it can never race this handler).
+// Deprecated product/auth routes → 301 to the new dashboard app. Registered
+// before the HTML resolver + express.static so it wins over score.html,
+// ai-resume-tailor.html, cancel.html, etc. NOTE: this also 301s /dashboard, so
+// the old app.html tool (and the old-site OAuth callbacks that redirect to
+// /dashboard) are no longer reachable here — the product now lives at
+// app.resumetailored.com (Clerk auth).
+for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score', '/signup', '/cancel.html']) {
+  app.get(_deprecatedRoute, (req, res) => res.redirect(301, 'https://app.resumetailored.com'));
+}
 app.get(/.*/, (req, res, next) => {
   if (req.method !== 'GET') return next();
   const file = _resolveHtmlFile(req.path);
@@ -1620,6 +1629,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 const appHtml = path.join(__dirname, 'public', 'app.html');
 const loginHtml = path.join(__dirname, 'public', 'login.html');
 const landingHtml = path.join(__dirname, 'public', 'index.html');
+const webStudioLandingHtml = path.join(__dirname, 'public', 'web-studio-landing.html');
 app.get('/dashboard',    (req, res) => {
   const email = getSessionEmail(req);
   // A pure paid employer (employer plan, no job-seeker plan) belongs on the
@@ -1629,7 +1639,7 @@ app.get('/dashboard',    (req, res) => {
   }
   return _sendVersionedHtml(res, appHtml);
 });
-app.get('/web-studio',   (req, res) => _sendVersionedHtml(res, appHtml));
+app.get('/web-studio',   (req, res) => _sendVersionedHtml(res, webStudioLandingHtml));
 // /login and /signup serve the dedicated login page (not the app). It reads
 // ?redirect= and sends the user back where they came from after signing in.
 app.get('/login',        (req, res) => _sendVersionedHtml(res, loginHtml));
@@ -1639,8 +1649,7 @@ app.get('/signup',       (req, res) => _sendVersionedHtml(res, loginHtml));
 // correct shell here and let app.html select the tab from the pathname. Keeping
 // these as real 200 responses makes a refresh or pasted URL deterministic.
 for (const route of [
-  '/tailor', '/cover-letter', '/website',
-  '/web-studio',
+  '/tailor', '/website',
   '/app/tailor', '/app/cover-letter', '/app/website',
 ]) {
   app.get(route, (req, res) => _sendVersionedHtml(res, appHtml));
@@ -7816,7 +7825,7 @@ app.post('/api/subscribe', async (req, res) => {
       payment_method_types: ['card'],
       mode: 'subscription',
       ...(email ? { customer_email: email } : {}),
-      success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: 'https://app.resumetailored.com',
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/pricing?checkout=cancelled#ecosystem-pricing`,
       metadata: email ? { email } : {}
     };
@@ -7866,7 +7875,7 @@ app.post('/api/subscribe-lifetime', async (req, res) => {
       mode: 'payment',
       ...(email ? { customer_email: email } : {}),
       line_items: [{ price: lifetimePriceId, quantity: 1 }],
-      success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=lifetime`,
+      success_url: 'https://app.resumetailored.com',
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/pricing?checkout=cancelled#ecosystem-pricing`,
       metadata: { ...(email ? { email } : {}), plan: 'lifetime' }
     });
@@ -9547,7 +9556,7 @@ app.post('/api/employer/subscribe', async (req, res) => {
       mode: 'subscription',
       ...(email ? { customer_email: email } : {}),
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${req.headers.origin || 'http://localhost:3000'}/success.html?session_id={CHECKOUT_SESSION_ID}&plan=employer`,
+      success_url: 'https://app.resumetailored.com',
       cancel_url: `${req.headers.origin || 'http://localhost:3000'}/pricing?checkout=cancelled#ecosystem-pricing`,
       metadata: { ...(email ? { email } : {}), plan: 'employer', employerTier: plan }
     });
