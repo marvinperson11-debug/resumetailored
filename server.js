@@ -1572,7 +1572,7 @@ app.get('/tools', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'pu
 // the old app.html tool (and the old-site OAuth callbacks that redirect to
 // /dashboard) are no longer reachable here — the product now lives at
 // app.resumetailored.com (Clerk auth).
-for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score', '/signup', '/cancel.html']) {
+for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score', '/signup', '/cancel', '/cancel.html']) {
   app.get(_deprecatedRoute, (req, res) => res.redirect(301, 'https://app.resumetailored.com'));
 }
 app.get(/.*/, (req, res, next) => {
