@@ -22,8 +22,15 @@ const navMenuRoutes = ['/ai-resume-tailor','/ai-cover-letter-generator','/free-a
 // Homepage hamburger — Tailor now opens the app, so its on-site route is gone.
 const homeMenuRoutes = ['/ai-cover-letter-generator','/free-ats-resume-checker','/linkedin-optimizer','/resume-video','/web-studio','/decoder-key','/interview-coach','/career-hub'];
 
-check('homepage Tailor My Resume door opens the standalone app', /class="ecosystem-door" href="https:\/\/app\.resumetailored\.com" data-context="job-seeker"/.test(index));
-check('homepage Employers door opens the standalone app', /class="ecosystem-door" href="https:\/\/app\.resumetailored\.com" data-context="employer"/.test(index));
+// The two hero ecosystem doors are NAVIGATION, not CTAs: they open the
+// relevant LANDING page first (candidates -> /how-it-works, organizations ->
+// /for-employers), and the app CTAs live inside those landing pages. This is
+// the deliberate "homepage card -> landing page -> app" funnel; the door must
+// not shortcut straight to app.resumetailored.com. (/ai-resume-tailor is NOT
+// used for the candidate door because that route 301s to the app, which would
+// re-introduce the shortcut this funnel removes.)
+check('homepage Tailor My Resume door opens the candidate landing page', /class="ecosystem-door" href="\/how-it-works" data-context="job-seeker"/.test(index));
+check('homepage Employers door opens the employer landing page', /class="ecosystem-door" href="\/for-employers" data-context="employer"/.test(index));
 // The in-page Back control has been removed — users rely on the browser's
 // native Back button. back-nav.js no longer maps parent routes; it is a
 // teardown/no-op that strips any legacy back controls.
