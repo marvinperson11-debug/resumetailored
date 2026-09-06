@@ -6751,6 +6751,23 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// Server-to-server entitlement check for the new Clerk dashboard
+// (app.resumetailored.com). A pay-first buyer can complete Stripe checkout
+// before ever creating a Clerk account, so the webhook's email→Clerk sync
+// finds no user to flag. On that user's first sign-in the new app calls this
+// with the buyer's email to backfill their Pro flag from the subscriber DB
+// (the source of truth). Guarded by a shared bearer secret so it is never a
+// public email→subscription oracle; unset ⇒ 404 (feature off).
+app.get('/api/entitlement', (req, res) => {
+  const secret = process.env.ENTITLEMENT_SYNC_SECRET;
+  if (!secret) return res.status(404).json({ error: 'not_configured' });
+  const auth = String(req.headers.authorization || '');
+  if (auth !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
+  const email = String(req.query.email || '').toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: 'email_required' });
+  res.json({ email, pro: isSubscriber(email), employerTier: employerTier(email) });
+});
+
 // ─── API: ATS scan (Claude-powered) ──────────────────────────────────────────
 // ─── API: Fetch job posting from URL ─────────────────────────────────────────
 const ALLOWED_JOB_DOMAINS = new Set([
@@ -7947,6 +7964,38 @@ function _provisionPaidAccount(email, planLabel, { dashboardPath = '/dashboard',
   }
 }
 
+// Reflect a paid entitlement onto the buyer's Clerk account so the new
+// dashboard app (app.resumetailored.com, Clerk-based) can gate Pro off
+// `user.publicMetadata.plan`. Fire-and-forget and fully defensive: it no-ops
+// when CLERK_SECRET_KEY is unset and NEVER throws, so it can never break the
+// Stripe payment recording that runs before it. Looks the Clerk user up by
+// email; if the buyer has no Clerk account yet (a pay-first flow), it simply
+// finds nothing and returns — the new app backfills the flag on first sign-in
+// (it reads the old /api/status subscriber check as the source of truth).
+async function _syncPlanToClerk(email, { plan = 'pro', stripeCustomerId = '' } = {}) {
+  const key = String(email || '').toLowerCase().trim();
+  const secret = process.env.CLERK_SECRET_KEY;
+  if (!key || !secret) return;
+  try {
+    const lookup = await fetch(`https://api.clerk.com/v1/users?email_address=${encodeURIComponent(key)}`, {
+      headers: { Authorization: `Bearer ${secret}` }
+    });
+    if (!lookup.ok) { console.error('[clerk] user lookup failed:', lookup.status); return; }
+    const users = await lookup.json();
+    const user = Array.isArray(users) ? users[0] : (users && Array.isArray(users.data) ? users.data[0] : null);
+    if (!user || !user.id) { console.log(`[clerk] no account yet for ${key} — will backfill on sign-in`); return; }
+    const patch = await fetch(`https://api.clerk.com/v1/users/${user.id}/metadata`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ public_metadata: { plan, subscribedAt: new Date().toISOString(), stripeCustomerId: stripeCustomerId || undefined } })
+    });
+    if (!patch.ok) { console.error('[clerk] metadata patch failed:', patch.status); return; }
+    console.log(`[clerk] set plan=${plan} on ${key}`);
+  } catch (e) {
+    console.error('[clerk] plan sync failed:', e.message);
+  }
+}
+
 function _checkoutEmail(session) {
   return String(session && (session.metadata?.email || session.customer_details?.email || session.customer_email) || '').toLowerCase().trim();
 }
@@ -7975,6 +8024,8 @@ function _fulfillCheckoutSession(session, { sendWelcome = true } = {}) {
     db.prepare('INSERT OR IGNORE INTO employer_profiles (email, company_name, website, created_at) VALUES (?,?,?,?)').run(email, company.replace(/\b\w/g, c => c.toUpperCase()), '', Date.now());
   } else {
     db.prepare('INSERT OR REPLACE INTO subscribers (email, customer_id) VALUES (?, ?)').run(email, isLifetime ? `lifetime_${email}` : session.customer);
+    // Reflect Pro onto the buyer's Clerk account (best-effort, never awaited).
+    _syncPlanToClerk(email, { plan: 'pro', stripeCustomerId: session.customer || '' });
   }
   const firstFulfillment = session.id
     ? db.prepare('INSERT OR IGNORE INTO checkout_fulfillments (session_id, email, plan, fulfilled_at) VALUES (?,?,?,?)').run(session.id, email, isEmployer ? tier : (isLifetime ? 'lifetime' : 'pro'), Date.now()).changes > 0
@@ -8060,7 +8111,11 @@ app.post('/webhook', (req, res) => {
     const employerRow = db.prepare('SELECT email FROM employer_subscribers WHERE customer_id = ?').get(customerId);
     const removed = db.prepare('DELETE FROM subscribers WHERE customer_id = ?').run(customerId);
     db.prepare('DELETE FROM employer_subscribers WHERE customer_id = ?').run(customerId);
-    if (row && removed.changes) _sendSubscriptionEndedEmail(row.email);
+    if (row && removed.changes) {
+      _sendSubscriptionEndedEmail(row.email);
+      // Downgrade the buyer's Clerk account back to free (best-effort).
+      _syncPlanToClerk(row.email, { plan: 'free', stripeCustomerId: customerId });
+    }
     console.log(`Removed subscriber with customer_id: ${customerId}`);
     const who = row?.email || employerRow?.email || customerId;
     const label = employerRow ? ' (Pro Employer)' : '';

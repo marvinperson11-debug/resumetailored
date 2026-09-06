@@ -38,7 +38,9 @@ let PORT;
 const server = app.listen(0, async () => {
   PORT = server.address().port;
   try {
-    const html = await get('/dashboard');
+    // /dashboard now 301s to the standalone app; /tailor serves the same
+    // app.html shell and is the live path for these inline-script assertions.
+    const html = await get('/tailor');
 
     // The browser parses the first inline <script> up to the first following
     // </script>. Extract exactly that and confirm it is valid JS.

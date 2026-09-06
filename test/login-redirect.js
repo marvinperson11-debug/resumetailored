@@ -54,7 +54,7 @@ function req(method, urlPath, body) {
     const r = http.request({ host: '127.0.0.1', port: PORT, path: urlPath, method, headers }, (res) => {
       let b = ''; res.setEncoding('utf8');
       res.on('data', c => { b += c; });
-      res.on('end', () => { let j = null; try { j = JSON.parse(b); } catch (e) {} resolve({ status: res.statusCode, json: j, body: b }); });
+      res.on('end', () => { let j = null; try { j = JSON.parse(b); } catch (e) {} resolve({ status: res.statusCode, json: j, body: b, headers: res.headers }); });
     });
     r.on('error', reject);
     if (payload) r.write(payload);
@@ -70,8 +70,10 @@ const server = app.listen(0, async () => {
     check('/login responds 200', login.status === 200, String(login.status));
     check('/login serves the dedicated login page (not the app)',
       /Log in \/ Sign up/.test(login.body) && /login-redirect\.js/.test(login.body) && !/id="jtDashRoot"/.test(login.body), login.body.slice(0, 120));
+    // /signup is now a deprecated-route redirect to the standalone app, where
+    // Clerk sign-up lives; the old-site login page remains at /login.
     const signupPage = await req('GET', '/signup');
-    check('/signup also serves the login page', signupPage.status === 200 && /Log in \/ Sign up/.test(signupPage.body));
+    check('/signup 301s to the standalone app', signupPage.status === 301 && signupPage.headers.location === 'https://app.resumetailored.com', `HTTP ${signupPage.status} → ${signupPage.headers.location}`);
 
     // Email signup + login still return a session (what the page stores).
     const su = await req('POST', '/api/auth/signup', { email: 'red@x.com', username: 'Red', password: 'Sup3r-Secret-Pw-9!' });

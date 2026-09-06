@@ -12,23 +12,34 @@ const back = read('public/back-nav.js');
 const style = read('public/style.css');
 const siteNav = read('public/site-nav.js');
 const publicFiles = ['public/index.html', 'public/app.html', 'public/decoder-key.html', 'public/corporate.html', 'public/portal.html', 'public/js/i18n-data.js'];
-const menuRoutes = ['/ai-resume-tailor','/ai-cover-letter-generator','/free-ats-resume-checker','/linkedin-optimizer','/resume-video','/web-studio','/decoder-key','/interview-coach','/career-hub'];
+// The homepage (index.html) migrated its product CTAs to the standalone app
+// (app.resumetailored.com); the shared site-nav.js — injected on the OTHER
+// public pages — still uses the on-site routes, which 301 to the app. So the
+// homepage and the shared toolbar are asserted against their own real state.
+const APP = 'https://app.resumetailored.com';
+// Shared toolbar / hamburger (site-nav.js) — full on-site tool directory.
+const navMenuRoutes = ['/ai-resume-tailor','/ai-cover-letter-generator','/free-ats-resume-checker','/linkedin-optimizer','/resume-video','/web-studio','/decoder-key','/interview-coach','/career-hub'];
+// Homepage hamburger — Tailor now opens the app, so its on-site route is gone.
+const homeMenuRoutes = ['/ai-cover-letter-generator','/free-ats-resume-checker','/linkedin-optimizer','/resume-video','/web-studio','/decoder-key','/interview-coach','/career-hub'];
 
-check('homepage Tailor My Resume door opens its explanation page', /class="ecosystem-door" href="\/ai-resume-tailor" data-context="job-seeker"/.test(index));
-check('homepage Employers door opens the employer entry', /class="ecosystem-door" href="\/for-employers" data-context="employer"/.test(index));
+check('homepage Tailor My Resume door opens the standalone app', /class="ecosystem-door" href="https:\/\/app\.resumetailored\.com" data-context="job-seeker"/.test(index));
+check('homepage Employers door opens the standalone app', /class="ecosystem-door" href="https:\/\/app\.resumetailored\.com" data-context="employer"/.test(index));
 // The in-page Back control has been removed — users rely on the browser's
 // native Back button. back-nav.js no longer maps parent routes; it is a
 // teardown/no-op that strips any legacy back controls.
 check('back-nav.js no longer maps static parent routes (back button removed)', !/STATIC_PARENTS/.test(back) && !/'\/decoder-key'\s*:/.test(back) && /function removeBackControls\(/.test(back));
-const desktopLinks = [['Membership','/pricing#ecosystem-pricing'],['Tailor My Resume','/ai-resume-tailor'],['For Employer','/for-employers']];
+// Homepage toolbar: Tailor + For Employer now open the app; Membership unchanged.
+const homeDesktopLinks = [['Membership','/pricing#ecosystem-pricing'],['Tailor My Resume', APP],['For Employer', APP]];
+// Shared toolbar (site-nav.js): still the on-site routes (they 301 to the app).
+const navDesktopLinks = [['Membership','/pricing#ecosystem-pricing'],['Tailor My Resume','/ai-resume-tailor'],['For Employer','/for-employers']];
 // The club-nav links now carry a data-i18n attribute (so the toggle translates
 // them), so match href + visible label tolerantly rather than as an exact tag.
-check('homepage desktop toolbar contains exactly the three requested destinations', desktopLinks.every(([name, route]) => new RegExp(`<a href="${route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>${name}</a>`).test(index)) && /club-nav__links[\s\S]{0,500}/.test(index));
-check('shared desktop toolbar contains exactly the three requested destinations', desktopLinks.every(([name, route]) => siteNav.includes(`['${name}', '${route}'`)) && /var PRIMARY_LINKS = \[[\s\S]*?\];/.exec(siteNav)[0].match(/^\s*\[/gm).length === 3);
+check('homepage desktop toolbar contains exactly the three requested destinations', homeDesktopLinks.every(([name, route]) => new RegExp(`<a href="${route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>${name}</a>`).test(index)) && /club-nav__links[\s\S]{0,500}/.test(index));
+check('shared desktop toolbar contains exactly the three requested destinations', navDesktopLinks.every(([name, route]) => siteNav.includes(`['${name}', '${route}'`)) && /var PRIMARY_LINKS = \[[\s\S]*?\];/.exec(siteNav)[0].match(/^\s*\[/gm).length === 3);
 check('public HTML responses receive the shared toolbar while dashboards retain their own nav', /function _injectSharedPublicNav/.test(read('server.js')) && /ownNavPages = new Set\(\['app\.html', 'employer\.html', 'portal\.html'\]\)/.test(read('server.js')));
 check('pillar pages still load back-nav.js (now the back-control teardown)', ['public/decoder-key.html','public/corporate.html','public/portal.html'].every(file => read(file).includes('/back-nav.js')) && read('public/tools/resume-video.html').includes('/site-nav.js'));
-check('homepage hamburger contains the complete tool directory', menuRoutes.every(route => index.includes(`href="${route}"`)));
-check('shared hamburger contains the complete tool directory', menuRoutes.every(route => siteNav.includes(`'${route}'`)));
+check('homepage hamburger contains the complete tool directory', homeMenuRoutes.every(route => index.includes(`href="${route}"`)) && index.includes(`href="${APP}"`));
+check('shared hamburger contains the complete tool directory', navMenuRoutes.every(route => siteNav.includes(`'${route}'`)));
 // 中文 has been MOVED OUT of the hamburger and onto the always-visible top-nav
 // actions cluster (beside Login + the hamburger), on both the homepage's
 // club-nav and the shared site-nav. Account creation still lives in the hamburger.

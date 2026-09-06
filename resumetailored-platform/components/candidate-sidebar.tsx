@@ -62,7 +62,7 @@ function ProBadge() {
   );
 }
 
-export function CandidateSidebar() {
+export function CandidateSidebar({ isPro = false }: { isPro?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -120,8 +120,17 @@ export function CandidateSidebar() {
       </nav>
 
       <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
-        <Crown className="h-4 w-4 text-gold" />
-        <span className="text-xs font-medium text-gold">Portal · $19/mo</span>
+        <Crown className={cn("h-4 w-4", isPro ? "text-gold" : "text-muted-cream")} />
+        {isPro ? (
+          <span className="text-xs font-medium text-gold">Pro · active</span>
+        ) : (
+          <a
+            href="https://resumetailored.com/pro-tools"
+            className="text-xs font-medium text-muted-cream transition-colors hover:text-gold"
+          >
+            Free plan · Upgrade to Pro
+          </a>
+        )}
       </div>
     </div>
   );
