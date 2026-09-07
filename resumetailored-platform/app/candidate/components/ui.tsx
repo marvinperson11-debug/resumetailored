@@ -1,7 +1,13 @@
 "use client";
 
 import { Loader2, type LucideIcon } from "lucide-react";
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from "react";
 import { cn } from "@/lib/utils";
 
 export function Label({ children }: { children: ReactNode }) {
@@ -29,6 +35,24 @@ export function TextInput({ className, ...props }: InputHTMLAttributes<HTMLInput
       )}
       {...props}
     />
+  );
+}
+
+export function Select({
+  className,
+  children,
+  ...props
+}: SelectHTMLAttributes<HTMLSelectElement> & { children: ReactNode }) {
+  return (
+    <select
+      className={cn(
+        "w-full rounded-xl border border-border-gold bg-white/5 px-3 py-2.5 text-sm text-cream outline-none transition-colors focus:border-violet focus:ring-1 focus:ring-violet [&>option]:bg-navy [&>option]:text-cream",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </select>
   );
 }
 

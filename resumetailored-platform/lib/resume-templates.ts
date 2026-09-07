@@ -37,14 +37,52 @@ export interface Template {
 
 export type Mode = "resume" | "cover_letter" | "both";
 
+// Body-font selector options (FIX 7 #3). Keys are what the UI/persistence store;
+// values are full CSS font stacks with safe fallbacks.
 export const FONT_MAP: Record<string, string> = {
-  arial: "Arial,sans-serif",
-  calibri: "Calibri,'Gill Sans',sans-serif",
+  arial: "Arial,'Helvetica Neue',Helvetica,sans-serif",
+  helvetica: "'Helvetica Neue',Helvetica,Arial,sans-serif",
+  calibri: "Calibri,'Gill Sans','Segoe UI',sans-serif",
   times: "'Times New Roman',Georgia,serif",
+  georgia: "Georgia,'Times New Roman',serif",
+  garamond: "Garamond,'EB Garamond','Times New Roman',serif",
+  cambria: "Cambria,Georgia,'Times New Roman',serif",
 };
+
+// Human labels for the body-font dropdown, in display order.
+export const BODY_FONTS: { key: string; label: string }[] = [
+  { key: "arial", label: "Arial" },
+  { key: "times", label: "Times New Roman" },
+  { key: "calibri", label: "Calibri" },
+  { key: "georgia", label: "Georgia" },
+  { key: "helvetica", label: "Helvetica" },
+  { key: "garamond", label: "Garamond" },
+  { key: "cambria", label: "Cambria" },
+];
+
+// Signature-font selector options (FIX 7 #4): the body fonts plus two cursive
+// script faces (loaded from Google Fonts in the preview + print window).
+export const SIG_FONT_MAP: Record<string, string> = {
+  ...FONT_MAP,
+  dancing: "'Dancing Script','Segoe Script',cursive",
+  greatvibes: "'Great Vibes','Segoe Script',cursive",
+};
+
+export const SIG_FONTS: { key: string; label: string }[] = [
+  { key: "dancing", label: "Dancing Script" },
+  { key: "greatvibes", label: "Great Vibes" },
+  ...BODY_FONTS,
+];
 
 export function escHtml(s: unknown): string {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Circular photo `<img>` for template headers (FIX 7 #1). `photo` is a data URL. */
+function photoHtml(photo: string | undefined, size: number, opts: { ring?: string } = {}): string {
+  if (!photo) return "";
+  const ring = opts.ring ? `box-shadow:0 0 0 3px ${opts.ring};` : "";
+  return `<img src="${escHtml(photo)}" alt="" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover;display:block;${ring}${PCA}" />`;
 }
 
 // ─── Template catalog (single source of truth: 56 resume + 48 cover) ──────────
@@ -308,7 +346,7 @@ function groupedSectionHtml(lines: string[], c: Colors, printMode: boolean, head
 
 const SIDE_KEYS = ["SKILL", "CERTIF", "LICENSE", "LICENS", "EDUCAT", "LANGUAGE", "AWARD", "COMPETENC", "TOOL", "TECHNOLOG", "PROFICIEN"];
 
-function renderSidebarOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean): string {
+function renderSidebarOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string): string {
   const { name, contact, sections } = parsed;
   const _np = name.trim().split(/\s+/).filter((w) => w && !/^(jr|sr|ii|iii|iv|v)\.?$/i.test(w));
   const initials = (((_np[0] || name.trim() || "?")[0] || "?") + (_np.length > 1 ? _np[_np.length - 1][0] || "" : "")).toUpperCase();
@@ -343,9 +381,11 @@ function renderSidebarOutput(parsed: ParsedResume, c: Colors, font: string, prin
     return `<div style="margin-bottom:20px;">${body}</div>`;
   };
   const mainHtml = mainSecs.map((sec) => sideMainSec(sec)).join("");
-  const avatarHtml = `<div style="width:62px;height:62px;border-radius:50%;margin:0 auto 14px;background:linear-gradient(135deg,${c.a},${c.p});display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;letter-spacing:.5px;color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.4);${PCA}">${escHtml(
-    initials
-  )}</div>`;
+  const avatarHtml = photo
+    ? `<div style="margin:0 auto 14px;width:62px;">${photoHtml(photo, 62, { ring: "rgba(255,255,255,.4)" })}</div>`
+    : `<div style="width:62px;height:62px;border-radius:50%;margin:0 auto 14px;background:linear-gradient(135deg,${c.a},${c.p});display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;letter-spacing:.5px;color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.4);${PCA}">${escHtml(
+        initials
+      )}</div>`;
   const outerStyle = printMode
     ? `font-family:${font};color:#222;display:table;table-layout:fixed;width:100%;`
     : `font-family:${font};background:#fff;color:#222;display:flex;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
@@ -360,7 +400,7 @@ function renderSidebarOutput(parsed: ParsedResume, c: Colors, font: string, prin
     .join("")}</div></div>${sidebarHtml}</div><div style="${rColStyle}">${mainHtml}</div></div>`;
 }
 
-function renderModernOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean): string {
+function renderModernOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string): string {
   const { name, contact, sections } = parsed;
   const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
   const modernHdr = (sec: { title: string }) =>
@@ -376,20 +416,22 @@ function renderModernOutput(parsed: ParsedResume, c: Colors, font: string, print
   const outerStyle = printMode
     ? `font-family:${font};color:#222;`
     : `font-family:${font};background:#fff;color:#222;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
-  return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;${PCA}"><div style="font-size:26px;font-weight:900;letter-spacing:-0.5px;line-height:1.2;">${escHtml(
+  const modernPhoto = photo ? `<div style="flex-shrink:0;">${photoHtml(photo, 74, { ring: "rgba(255,255,255,.35)" })}</div>` : "";
+  return `<div style="${outerStyle}"><div style="background:${c.p};padding:24px 44px;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:20px;${PCA}"><div style="min-width:0;"><div style="font-size:26px;font-weight:900;letter-spacing:-0.5px;line-height:1.2;">${escHtml(
     name
   )}</div><div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;display:flex;flex-wrap:wrap;gap:12px;">${contactParts
     .map((s) => `<span>${escHtml(s)}</span>`)
-    .join("")}</div></div><div style="padding:20px 44px 28px;">${sectionsHtml}</div></div>`;
+    .join("")}</div></div>${modernPhoto}</div><div style="padding:20px 44px 28px;">${sectionsHtml}</div></div>`;
 }
 
-function renderTwoColOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean): string {
+function renderTwoColOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string): string {
   const { name, contact, sections } = parsed;
   const sideSecs: typeof sections = [],
     mainSecs: typeof sections = [];
   for (const sec of sections) (SIDE_KEYS.some((k) => sec.title.toUpperCase().includes(k)) ? sideSecs : mainSecs).push(sec);
   const contactLines = contact.split(/\s*\|\s*/).filter(Boolean);
-  const leftHtml = `<div style="font-size:17px;font-weight:900;color:${c.p};margin-bottom:5px;line-height:1.2;">${escHtml(
+  const twoColPhoto = photo ? `<div style="margin-bottom:12px;">${photoHtml(photo, 84, { ring: `${c.a}55` })}</div>` : "";
+  const leftHtml = `${twoColPhoto}<div style="font-size:17px;font-weight:900;color:${c.p};margin-bottom:5px;line-height:1.2;">${escHtml(
     name
   )}</div><div style="margin-bottom:16px;">${contactLines
     .map((l) => `<div style="font-size:10.5px;color:#555;line-height:1.7;">${escHtml(l)}</div>`)
@@ -429,7 +471,7 @@ function renderTwoColOutput(parsed: ParsedResume, c: Colors, font: string, print
   return `<div style="${outerStyle}"><div style="${lStyle2}">${leftHtml}</div><div style="${rStyle2}">${rightHtml}</div></div>`;
 }
 
-function renderBannerOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean): string {
+function renderBannerOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string): string {
   const { name, contact, sections } = parsed;
   const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
   const contactHtml = contactParts.map((s, i) => `${i > 0 ? `<span style="color:${c.a};margin:0 8px;">·</span>` : ""}${escHtml(s)}`).join("");
@@ -446,9 +488,10 @@ function renderBannerOutput(parsed: ParsedResume, c: Colors, font: string, print
   const outerStyle = printMode
     ? `font-family:${font};color:#222;`
     : `font-family:${font};background:#fff;color:#222;overflow:hidden;box-shadow:0 2px 4px rgba(0,0,0,0.06),0 12px 40px rgba(0,0,0,0.12);`;
-  return `<div style="${outerStyle}"><div style="padding:26px 44px 18px;border-left:5px solid ${c.p};${PCA}"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(
+  const bannerPhoto = photo ? `<div style="flex-shrink:0;">${photoHtml(photo, 76, { ring: `${c.a}55` })}</div>` : "";
+  return `<div style="${outerStyle}"><div style="padding:26px 44px 18px;border-left:5px solid ${c.p};display:flex;align-items:center;justify-content:space-between;gap:20px;${PCA}"><div style="min-width:0;"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(
     name
-  )}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${PCA}"></div></div><div style="padding:18px 44px 32px;">${sectionsHtml}</div></div>`;
+  )}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${PCA}"></div></div>${bannerPhoto}</div><div style="padding:18px 44px 32px;">${sectionsHtml}</div></div>`;
 }
 
 // ─── Cover letters ────────────────────────────────────────────────────────────
@@ -723,9 +766,26 @@ function renderCoverOutput(text: string, c: Colors, font: string, printMode: boo
 
 // ─── Top-level renderer (faithful port of renderAIOutput) ─────────────────────
 export interface RenderOptions {
-  docFont?: string; // key into FONT_MAP (arial|calibri|times); default derives from tpl.serif
+  docFont?: string; // body-font key into FONT_MAP; default derives from tpl.serif
   printMode?: boolean; // strip on-screen card chrome for print/PDF
   coverMeta?: CoverMeta; // company/role hints for cover letters
+  photo?: string; // data URL — rendered into the template header (FIX 7 #1)
+  signature?: string; // typed signature text, rendered in sigFont (FIX 7 #2)
+  sigFont?: string; // key into SIG_FONT_MAP for the signature
+}
+
+/**
+ * Signature sign-off block appended to the document (FIX 7 #2/#4). For cover
+ * letters it reads as a "Sincerely," close; for resumes it's a simple signed
+ * line. Rendered in the chosen signature font so cursive faces come through.
+ */
+function signatureFooter(signature: string, sigFontKey: string | undefined, c: Colors, isCover: boolean, printMode: boolean): string {
+  const f = (sigFontKey && SIG_FONT_MAP[sigFontKey]) || "'Dancing Script','Segoe Script',cursive";
+  const pad = printMode ? "6px 48px 22px" : "6px 64px 40px";
+  const close = isCover ? `<div style="font-size:13.5px;color:#333;margin-bottom:6px;">Sincerely,</div>` : "";
+  return `<div style="padding:${pad};${PBI}">${close}<div style="font-family:${f};font-size:30px;line-height:1.1;color:${c.p};">${escHtml(
+    signature
+  )}</div><div style="width:180px;border-bottom:1px solid #cbd5e1;margin-top:4px;"></div></div>`;
 }
 
 export function renderAIOutput(text: string, tplId: string, mode: Mode, opts: RenderOptions = {}): string {
@@ -734,15 +794,17 @@ export function renderAIOutput(text: string, tplId: string, mode: Mode, opts: Re
   const tpl = findTemplate(cat, tplId);
   const c = tpl.c;
   const font = (opts.docFont && FONT_MAP[opts.docFont]) || (tpl.serif ? "Georgia,'Times New Roman',serif" : "Arial,sans-serif");
+  const sig = opts.signature && opts.signature.trim() ? signatureFooter(opts.signature.trim(), opts.sigFont, c, cat === "cover", printMode) : "";
+  const withSig = (html: string) => (sig ? `<div style="font-family:${font};">${html}${sig}</div>` : html);
 
-  if (tpl.layout === "cModern") return renderCoverModernOutput(text, c, font, printMode);
-  if (cat === "cover") return renderCoverOutput(text, c, font, printMode, tpl, opts.coverMeta || {});
+  if (tpl.layout === "cModern") return withSig(renderCoverModernOutput(text, c, font, printMode));
+  if (cat === "cover") return withSig(renderCoverOutput(text, c, font, printMode, tpl, opts.coverMeta || {}));
 
   const parsed = parseAIOutput(text);
-  if (tpl.layout === "rSidebar") return renderSidebarOutput(parsed, c, font, printMode);
-  if (tpl.layout === "rModern") return renderModernOutput(parsed, c, font, printMode);
-  if (tpl.layout === "rTwoCol") return renderTwoColOutput(parsed, c, font, printMode);
-  if (tpl.layout === "rBanner") return renderBannerOutput(parsed, c, font, printMode);
+  if (tpl.layout === "rSidebar") return withSig(renderSidebarOutput(parsed, c, font, printMode, opts.photo));
+  if (tpl.layout === "rModern") return withSig(renderModernOutput(parsed, c, font, printMode, opts.photo));
+  if (tpl.layout === "rTwoCol") return withSig(renderTwoColOutput(parsed, c, font, printMode, opts.photo));
+  if (tpl.layout === "rBanner") return withSig(renderBannerOutput(parsed, c, font, printMode, opts.photo));
 
   // Linear layout (Classic, Executive, Minimal)
   const lines = text.split("\n");
@@ -817,7 +879,14 @@ export function renderAIOutput(text: string, tplId: string, mode: Mode, opts: Re
   }
   closeGrp();
   html = html.replace(/\x00/g, "");
+  // Photo (FIX 7 #1): a circular headshot above the name. Centered for the
+  // centered/minimal headers, left-aligned for the left-bar (Executive) header.
+  if (opts.photo) {
+    const align = tpl.style === "left-bar" ? "left" : "center";
+    const mx = align === "center" ? "margin:0 auto 14px;" : "margin:0 0 14px;";
+    html = `<div style="text-align:${align};${PBI}"><div style="display:inline-block;${mx}">${photoHtml(opts.photo, 92, { ring: `${c.a}55` })}</div></div>` + html;
+  }
   const bg = tpl.style === "minimal" ? "#fafafa" : "#fff";
-  if (printMode) return `<div style="font-family:${font};background:${bg};color:#222;padding:0 0 28px 0;">${html}</div>`;
-  return `<div style="font-family:${font};background:${bg};padding:52px 64px;color:#222;border-radius:4px;border:none;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 8px 32px rgba(0,0,0,0.1);">${html}</div>`;
+  if (printMode) return withSig(`<div style="font-family:${font};background:${bg};color:#222;padding:0 0 28px 0;">${html}</div>`);
+  return withSig(`<div style="font-family:${font};background:${bg};padding:52px 64px;color:#222;border-radius:4px;border:none;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 8px 32px rgba(0,0,0,0.1);">${html}</div>`);
 }

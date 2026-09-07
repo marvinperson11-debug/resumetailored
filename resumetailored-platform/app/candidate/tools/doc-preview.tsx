@@ -17,6 +17,9 @@ export function DocPreview({
   mode,
   docFont,
   coverMeta,
+  photo,
+  signature,
+  sigFont,
   placeholder,
 }: {
   text: string;
@@ -24,6 +27,9 @@ export function DocPreview({
   mode: Exclude<Mode, "both">;
   docFont?: string;
   coverMeta?: CoverMeta;
+  photo?: string;
+  signature?: string;
+  sigFont?: string;
   placeholder?: string;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -31,7 +37,7 @@ export function DocPreview({
   const [scale, setScale] = useState(1);
   const [innerH, setInnerH] = useState(0);
 
-  const html = text.trim() ? renderAIOutput(text, tplId, mode, { docFont, coverMeta }) : "";
+  const html = text.trim() ? renderAIOutput(text, tplId, mode, { docFont, coverMeta, photo, signature, sigFont }) : "";
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -50,7 +56,7 @@ export function DocPreview({
   // height. Re-measure whenever the rendered HTML changes.
   useLayoutEffect(() => {
     if (innerRef.current) setInnerH(innerRef.current.scrollHeight);
-  }, [html, scale]);
+  }, [html, scale, photo, signature]);
 
   return (
     <div ref={wrapRef} className="w-full">

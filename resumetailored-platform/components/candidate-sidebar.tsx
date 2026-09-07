@@ -24,23 +24,29 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTools, type ToolId } from "@/app/candidate/components/tools-context";
 
 interface NavItem {
   label: string;
-  href: string;
   icon: LucideIcon;
-  /** Hero item — always gold-tinted so it reads as the primary action. */
+  /** Navigation target. Omit when the item opens a tool modal instead. */
+  href?: string;
+  /** Opens a tool modal instead of navigating. "resume" opens the AI Resume Builder. */
+  opens?: ToolId;
+  /** Hero item — always violet-tinted so it reads as the primary action. */
   hero?: boolean;
-  /** Show a small gold "PRO" pill to the right. */
+  /** Show a small "PRO" pill to the right. */
   pro?: boolean;
 }
 
+// Built tools open in a modal (FIX 3); everything else navigates. "Build My
+// Resume" is the hero action and opens the AI Resume Builder (FIX 3 / naming).
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/candidate", icon: LayoutDashboard },
-  { label: "Tailor My Resume", href: "/candidate/tailor", icon: Sparkles, hero: true },
+  { label: "Build My Resume", opens: "resume", icon: Sparkles, hero: true },
   { label: "My Resumes", href: "/candidate/resumes", icon: FileText },
-  { label: "Cover Letters", href: "/candidate/cover-letters", icon: PenTool },
-  { label: "ATS Scanner", href: "/candidate/ats-scanner", icon: ScanLine },
+  { label: "Cover Letters", opens: "cover", icon: PenTool },
+  { label: "ATS Scanner", opens: "ats", icon: ScanLine },
   { label: "LinkedIn Optimizer", href: "/candidate/linkedin-optimizer", icon: Contact },
   { label: "Job Matches", href: "/candidate/matches", icon: Zap },
   { label: "Applications", href: "/candidate/applications", icon: Send },
@@ -69,59 +75,69 @@ interface RoleBadge {
 
 export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge }) {
   const pathname = usePathname();
+  const { openResume, openTool } = useTools();
   const plan = role.plan ?? "free";
   const proish = plan === "pro" || plan === "employee";
+
+  const activate = (item: NavItem) => {
+    if (item.opens === "resume") openResume();
+    else if (item.opens) openTool(item.opens);
+  };
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center border-b border-border-gold px-6">
-        <span className="font-serif text-lg font-medium text-cream">
-          Resume Tailored
-        </span>
+        <span className="font-serif text-lg font-medium text-cream">ResumeTailored</span>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
         {navItems.map((item) => {
-          const isActive =
-            item.href === "/candidate"
-              ? pathname === "/candidate"
-              : pathname.startsWith(item.href);
           const Icon = item.icon;
+          const isActive = item.href
+            ? item.href === "/candidate"
+              ? pathname === "/candidate"
+              : pathname.startsWith(item.href)
+            : false;
 
           if (item.hero) {
-            // Hero action: persistent gold tint + border + trailing star so it
-            // stands out as the product's main feature, active or not.
+            // Hero action: persistent violet tint + border + trailing star so it
+            // stands out as the product's main feature. Opens the builder modal.
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl border border-violet px-4 py-3 text-sm font-semibold text-white shadow-[0_0_22px_rgba(139,92,246,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/25",
-                  isActive ? "bg-violet/25" : "bg-violet/15"
-                )}
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => activate(item)}
+                className="flex w-full items-center gap-3 rounded-xl border border-violet bg-violet/15 px-4 py-3 text-sm font-semibold text-white shadow-[0_0_22px_rgba(139,92,246,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/25"
               >
                 <Icon className="h-[18px] w-[18px] shrink-0 text-violet" />
-                <span className="flex-1">{item.label}</span>
+                <span className="flex-1 text-left">{item.label}</span>
                 <Star className="h-3.5 w-3.5 shrink-0 fill-gold text-gold" />
-              </Link>
+              </button>
             );
           }
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-4 py-3 text-sm transition-all duration-200",
-                isActive
-                  ? "border-l-2 border-teal bg-violet/10 font-medium text-teal shadow-[0_0_22px_rgba(139,92,246,0.28)]"
-                  : "border-l-2 border-transparent text-muted-cream hover:bg-white/5"
-              )}
-            >
+          const className = cn(
+            "flex w-full items-center gap-3 rounded-md px-4 py-3 text-sm transition-all duration-200 text-left",
+            isActive
+              ? "border-l-2 border-teal bg-violet/10 font-medium text-teal shadow-[0_0_22px_rgba(139,92,246,0.28)]"
+              : "border-l-2 border-transparent text-muted-cream hover:bg-white/5"
+          );
+          const inner = (
+            <>
               <Icon className="h-[18px] w-[18px] shrink-0" />
               <span className={cn(!item.pro && "flex-1")}>{item.label}</span>
               {item.pro && <ProBadge />}
+            </>
+          );
+
+          return item.href ? (
+            <Link key={item.label} href={item.href} className={className}>
+              {inner}
             </Link>
+          ) : (
+            <button key={item.label} type="button" onClick={() => activate(item)} className={className}>
+              {inner}
+            </button>
           );
         })}
       </nav>
@@ -131,9 +147,7 @@ export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge
         {plan === "pro" ? (
           <span className="text-xs font-medium text-gold">Pro · active</span>
         ) : plan === "employee" ? (
-          <span className="text-xs font-medium text-gold">
-            Pro · via {role.employerName || "your team"}
-          </span>
+          <span className="text-xs font-medium text-gold">Pro · via {role.employerName || "your team"}</span>
         ) : (
           <a
             href="/candidate?upgrade=pro"

@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Menu, X, ChevronDown } from "lucide-react";
-import { UserButton } from "@clerk/nextjs";
+import { ProfileButton } from "./profile-button";
 
 interface DashboardShellProps {
   sidebar: ReactNode;
@@ -65,10 +65,7 @@ export function DashboardShell({ sidebar, title, children }: DashboardShellProps
           </button>
 
           <div className="flex items-center">
-            <UserButton
-              afterSignOutUrl="/"
-              appearance={{ elements: { avatarBox: "h-8 w-8" } }}
-            />
+            <ProfileButton />
           </div>
         </header>
 
