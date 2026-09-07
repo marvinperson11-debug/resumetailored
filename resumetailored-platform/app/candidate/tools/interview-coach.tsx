@@ -134,30 +134,50 @@ export function InterviewCoachTool({ onClose, isPro }: { onClose: () => void; is
         ) : (
           <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
             <div className="min-h-0 space-y-4 overflow-y-auto border-b border-border-gold p-4 lg:border-b-0 lg:border-r">
+              {/* Selected question shown prominently at the top. */}
               <div>
                 <Label>Question</Label>
-                <select
-                  className="w-full rounded-xl border border-border-gold bg-white/5 px-3 py-2.5 text-sm text-cream outline-none focus:border-violet [&>option]:bg-navy"
-                  value={selected ? questions.indexOf(selected) : -1}
-                  onChange={(e) => {
-                    setSelected(questions[Number(e.target.value)] || null);
-                    setFeedback(null);
-                  }}
-                >
-                  <option value={-1} disabled>
-                    Pick a question…
-                  </option>
-                  {questions.map((q, i) => (
-                    <option key={i} value={i}>
-                      {q.question.slice(0, 70)}
+                {selected ? (
+                  <div className="rounded-xl border border-violet/40 bg-violet/10 p-3.5">
+                    <span className={cn("mb-1.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", selected.type === "technical" ? "bg-teal/15 text-teal" : "bg-violet/20 text-violet")}>
+                      {selected.type}
+                    </span>
+                    <p className="text-sm text-white/90">{selected.question}</p>
+                  </div>
+                ) : (
+                  <p className="rounded-xl border border-dashed border-border-gold px-3 py-3 text-sm text-white/50">
+                    Pick a question below (or tap “Practice this →” on the Questions tab).
+                  </p>
+                )}
+                {questions.length > 1 && (
+                  <select
+                    className="mt-2 w-full rounded-xl border border-border-gold bg-white/5 px-3 py-2 text-xs text-cream outline-none focus:border-violet [&>option]:bg-navy"
+                    value={selected ? questions.indexOf(selected) : -1}
+                    onChange={(e) => {
+                      setSelected(questions[Number(e.target.value)] || null);
+                      setFeedback(null);
+                    }}
+                  >
+                    <option value={-1} disabled>
+                      Switch question…
                     </option>
-                  ))}
-                </select>
+                    {questions.map((q, i) => (
+                      <option key={i} value={i}>
+                        {q.question.slice(0, 70)}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div>
                 <Label>Your answer</Label>
-                <TextArea rows={10} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer as you'd say it in the room…" />
+                <TextArea rows={8} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Type your answer as you'd say it in the room…" />
               </div>
+              {/* Inline action so the flow never depends on the footer. */}
+              <PrimaryButton onClick={getFeedback} loading={scoring} disabled={!selected || answer.trim().length < 5} className="w-full">
+                <MessageSquare className="h-4 w-4" /> Get feedback
+              </PrimaryButton>
+              {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
             </div>
             <div className="min-h-0 overflow-y-auto bg-navy/40 p-5">
               {feedback ? (

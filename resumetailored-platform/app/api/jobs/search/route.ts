@@ -36,6 +36,14 @@ export async function POST(req: Request) {
     maxDaysOld?: number;
     page?: number;
   };
+  const queryStr = (body.query || "").toString().trim().slice(0, 120);
+  const where = (body.location || "").toString().trim().slice(0, 80);
+  // Empty keyword is allowed (returns all jobs, optionally scoped to a
+  // location) — but require at least one of keyword / location.
+  if (!queryStr && !where) {
+    return NextResponse.json({ error: "need_input", message: "Enter a keyword, location, or both to search." }, { status: 400 });
+  }
+
   const pro = await isPro();
   const perPage = pro ? 50 : 10;
   const page = Math.max(1, Math.min(Number(body.page) || 1, 20));
@@ -45,9 +53,8 @@ export async function POST(req: Request) {
     app_key: appKey,
     results_per_page: String(perPage),
     "content-type": "application/json",
-    what: (body.query || "").toString().slice(0, 120) || "jobs",
   });
-  const where = (body.location || "").toString().slice(0, 80);
+  if (queryStr) params.set("what", queryStr); // omit entirely when blank → all jobs
   if (where) params.set("where", where);
   // Advanced filters are Pro-only.
   if (pro) {

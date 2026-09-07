@@ -38,8 +38,8 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
   }, [loadSaved]);
 
   async function search() {
-    if (!query.trim()) {
-      setError("Enter a job title or keyword.");
+    if (!query.trim() && !location.trim()) {
+      setError("Enter a keyword, location, or both to search.");
       return;
     }
     setLoading(true);
