@@ -3,7 +3,7 @@
 import { TOOLS, useTools, type ToolId } from "./tools-context";
 import { ToolModal } from "./tool-modal";
 import { ComingSoonBody } from "./ui";
-import { ResumeTailorTool } from "../tools/resume-tailor";
+import { ResumeBuilderTool } from "../tools/resume-tailor";
 import { AtsScannerTool } from "../tools/ats-scanner";
 import { CoverLetterTool } from "../tools/cover-letter";
 
@@ -26,7 +26,7 @@ export function ToolHost() {
   const { activeTool, isPro, closeTool } = useTools();
   if (!activeTool) return null;
 
-  if (activeTool === "resume") return <ResumeTailorTool onClose={closeTool} isPro={isPro} />;
+  if (activeTool === "resume") return <ResumeBuilderTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "ats") return <AtsScannerTool onClose={closeTool} />;
   if (activeTool === "cover") return <CoverLetterTool onClose={closeTool} isPro={isPro} />;
 

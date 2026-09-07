@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import type { ResumeDraftContent } from "@/lib/draft-types";
 import {
   Sparkles,
   ScanLine,
@@ -56,6 +57,14 @@ interface ToolsContextValue {
   isPro: boolean;
   openTool: (id: ToolId) => void;
   closeTool: () => void;
+  /** Draft to seed the AI Resume Builder with (set by "My Resumes" → Reopen). */
+  pendingDraft: ResumeDraftContent | null;
+  /** Id of the draft being reopened, so autosave updates the same row. */
+  pendingDraftId: string | null;
+  /** Open the AI Resume Builder, optionally restoring a saved draft (+ its id). */
+  openResume: (draft?: ResumeDraftContent, id?: string) => void;
+  /** Called by the builder once it has consumed the pending draft. */
+  clearPendingDraft: () => void;
 }
 
 const ToolsContext = createContext<ToolsContextValue | null>(null);
@@ -69,6 +78,8 @@ export function useTools(): ToolsContextValue {
 export function ToolsProvider({ isPro, children }: { isPro: boolean; children: ReactNode }) {
   const router = useRouter();
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
+  const [pendingDraft, setPendingDraft] = useState<ResumeDraftContent | null>(null);
+  const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
 
   const openTool = useCallback(
     (id: ToolId) => {
@@ -84,6 +95,17 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
     },
     [isPro, router]
   );
+
+  const openResume = useCallback((draft?: ResumeDraftContent, id?: string) => {
+    setPendingDraft(draft ?? null);
+    setPendingDraftId(id ?? null);
+    setActiveTool("resume");
+  }, []);
+
+  const clearPendingDraft = useCallback(() => {
+    setPendingDraft(null);
+    setPendingDraftId(null);
+  }, []);
 
   const closeTool = useCallback(() => setActiveTool(null), []);
 
@@ -106,5 +128,11 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
     };
   }, [activeTool]);
 
-  return <ToolsContext.Provider value={{ activeTool, isPro, openTool, closeTool }}>{children}</ToolsContext.Provider>;
+  return (
+    <ToolsContext.Provider
+      value={{ activeTool, isPro, openTool, closeTool, pendingDraft, pendingDraftId, openResume, clearPendingDraft }}
+    >
+      {children}
+    </ToolsContext.Provider>
+  );
 }

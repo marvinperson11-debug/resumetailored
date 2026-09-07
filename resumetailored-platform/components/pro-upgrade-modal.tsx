@@ -62,7 +62,7 @@ export function ProUpgradeModal({
             Upgrade to Pro
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-muted-cream">
-            Unlock Resume Video, Web Studio, and unlimited tailoring.
+            Unlock Resume Video, Web Studio, and unlimited resume building.
           </p>
 
           <ul className="mt-5 space-y-2.5">

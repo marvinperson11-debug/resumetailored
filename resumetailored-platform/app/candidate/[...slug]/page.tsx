@@ -4,7 +4,7 @@ import { getAccess, canUseIndividualPro } from "@/lib/plan";
 
 // Exact display names for candidate tools, so slugs render with correct casing.
 const LABELS: Record<string, string> = {
-  tailor: "Tailor My Resume",
+  tailor: "AI Resume Builder",
   resumes: "My Resumes",
   "cover-letters": "Cover Letters",
   "ats-scanner": "ATS Scanner",

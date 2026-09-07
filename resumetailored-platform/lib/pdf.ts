@@ -19,14 +19,17 @@ export function downloadPdf(opts: {
   isPro?: boolean;
   docFont?: string;
   coverMeta?: CoverMeta;
+  photo?: string;
+  signature?: string;
+  sigFont?: string;
 }): boolean {
-  const { text, tplId, mode, title = "Resume", isPro = false, docFont, coverMeta } = opts;
+  const { text, tplId, mode, title = "Resume", isPro = false, docFont, coverMeta, photo, signature, sigFont } = opts;
   if (!text || !text.trim()) return false;
 
   const cat = mode === "cover_letter" ? "cover" : "resume";
   const tpl = findTemplate(cat, tplId);
   const font = tpl.serif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
-  const printContent = renderAIOutput(text, tplId, mode, { printMode: true, docFont, coverMeta });
+  const printContent = renderAIOutput(text, tplId, mode, { printMode: true, docFont, coverMeta, photo, signature, sigFont });
 
   const win = window.open("", "_blank");
   if (!win) return false;
@@ -45,6 +48,9 @@ export function downloadPdf(opts: {
 <head>
   <meta charset="UTF-8">
   <title>${safeTitle}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     @page { size: letter; margin: ${isCoverBanner ? "0" : "0.5in"}; }
