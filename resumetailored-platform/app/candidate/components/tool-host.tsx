@@ -11,12 +11,11 @@ import { InterviewCoachTool } from "../tools/interview-coach";
 import { JobFinderTool } from "../tools/job-finder";
 import { CareerHubTool } from "../tools/career-hub";
 import { DecoderKeyTool } from "../tools/decoder-key";
+import { ResumeVideoTool } from "../tools/resume-video";
+import { PersonalWebsiteTool } from "../tools/personal-website";
 
-// Phase 3 (Pro) tools still show a "coming soon" body.
-const SOON_NOTES: Partial<Record<ToolId, string>> = {
-  video: "Turn your resume into a shareable highlight video. Coming in Phase 3.",
-  studio: "Publish a personal portfolio website. Coming in Phase 3.",
-};
+// All tools are built now; nothing is a "coming soon" placeholder.
+const SOON_NOTES: Partial<Record<ToolId, string>> = {};
 
 /**
  * Renders the currently-open tool as a centered modal. Phase-1 tools (Resume,
@@ -35,6 +34,8 @@ export function ToolHost() {
   if (activeTool === "jobs") return <JobFinderTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "career") return <CareerHubTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "decoder") return <DecoderKeyTool onClose={closeTool} />;
+  if (activeTool === "video") return <ResumeVideoTool onClose={closeTool} isPro={isPro} />;
+  if (activeTool === "studio") return <PersonalWebsiteTool onClose={closeTool} isPro={isPro} />;
 
   const meta = TOOLS.find((t) => t.id === activeTool)!;
   return (

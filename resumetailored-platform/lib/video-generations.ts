@@ -1,0 +1,38 @@
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+/** Best-effort persistence for Resume Video generations (video_generations). */
+let cached: SupabaseClient | null = null;
+function db(): SupabaseClient | null {
+  if (cached) return cached;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return null;
+  cached = createClient(url, key, { auth: { persistSession: false } });
+  return cached;
+}
+
+export async function saveVideoGeneration(
+  userId: string,
+  v: { title?: string; script?: string; videoUrl?: string; template?: string }
+): Promise<number | null> {
+  const c = db();
+  if (!c || !userId) return null;
+  try {
+    const { data } = await c
+      .from("video_generations")
+      .insert({
+        user_id: userId,
+        title: (v.title || "Untitled video").slice(0, 200),
+        script: v.script ?? null,
+        video_url: v.videoUrl ?? null,
+        template: v.template ?? null,
+      })
+      .select("id")
+      .single();
+    const id = (data as { id?: number } | null)?.id;
+    return typeof id === "number" ? id : null;
+  } catch {
+    /* best-effort */
+    return null;
+  }
+}

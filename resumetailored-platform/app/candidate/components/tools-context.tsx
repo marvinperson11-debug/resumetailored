@@ -48,8 +48,10 @@ export const TOOLS: ToolMeta[] = [
   { id: "jobs", label: "Job Finder", icon: Briefcase, kind: "tool" },
   { id: "career", label: "Career", icon: Compass, kind: "tool" },
   { id: "decoder", label: "Decoder", icon: FileSearch, kind: "tool" },
-  { id: "video", label: "Video", icon: Video, kind: "pro" },
-  { id: "studio", label: "Studio", icon: Globe, kind: "pro" },
+  // Built now; open for everyone — the Pro gate is on the actions inside
+  // (voiceover / publish), not on opening the tool.
+  { id: "video", label: "Resume Video", icon: Video, kind: "tool" },
+  { id: "studio", label: "Personal Website", icon: Globe, kind: "tool" },
 ];
 
 interface ToolsContextValue {
