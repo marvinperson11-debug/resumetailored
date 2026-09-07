@@ -16,7 +16,7 @@ import {
   Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { findTemplate, BODY_FONTS, SIG_FONTS } from "@/lib/resume-templates";
+import { findTemplate, BODY_FONTS, SIG_FONTS, FONT_MAP, SIG_FONT_MAP } from "@/lib/resume-templates";
 import { downloadPdf, downloadTxt } from "@/lib/pdf";
 import { analyzeSkillGap } from "@/lib/skills-gap";
 import { emptyDraftContent, type ResumeDraftContent } from "@/lib/draft-types";
@@ -104,6 +104,10 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
 
   const tpl = findTemplate("resume", tplId);
   const gap = useMemo(() => analyzeSkillGap(resumeText, jobText), [resumeText, jobText]);
+  // Resolve the selected fonts to real CSS stacks so the live sample updates the
+  // instant a dropdown changes (no build required).
+  const bodyCss = (docFont && FONT_MAP[docFont]) || (tpl.serif ? "Georgia,'Times New Roman',serif" : "Arial,sans-serif");
+  const sigCss = (sigFont && SIG_FONT_MAP[sigFont]) || "'Dancing Script','Segoe Script',cursive";
 
   // Latest content snapshot for autosave (avoids stale-closure in the interval).
   const contentRef = useRef<ResumeDraftContent>(seed);
@@ -397,6 +401,18 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                         </option>
                       ))}
                     </Select>
+                  </div>
+                </div>
+
+                {/* Live font sample — updates instantly as you change either
+                    dropdown, without needing to build first. */}
+                <div className="rounded-xl border border-border-gold bg-white/5 p-3">
+                  <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-cream">Live font preview</div>
+                  <div className="text-sm leading-relaxed text-cream" style={{ fontFamily: bodyCss }}>
+                    The quick brown fox jumps — body font sample
+                  </div>
+                  <div className="mt-1 text-3xl leading-tight text-cream" style={{ fontFamily: sigCss }}>
+                    {signature.trim() || "Your signature"}
                   </div>
                 </div>
 
