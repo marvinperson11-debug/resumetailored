@@ -1620,6 +1620,20 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
+// Rendered resume-video MP4s (produced by POST /api/resume-video-render for the
+// new Clerk app's Resume Video Pro tool) are written here and served publicly so
+// the app can hand the user a real downloadable URL. Files are pruned on a TTL
+// (see _pruneRenderedVideos) so the directory never grows without bound; the
+// dir lives under DATA_DIR so a mounted Volume keeps links alive across deploys.
+const renderedVideoDir = path.join(dataDir, 'videos');
+if (!fs.existsSync(renderedVideoDir)) fs.mkdirSync(renderedVideoDir, { recursive: true });
+app.use('/videos', express.static(renderedVideoDir, {
+  setHeaders: (res) => {
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+  },
+}));
+
 // Clean URL aliases — /dashboard, /login, /signup all serve app.html. These
 // are VIRTUAL routes (no same-named file on disk), so the _resolveHtmlFile
 // catch-all above never matches them — they need _sendVersionedHtml called
@@ -7648,6 +7662,169 @@ app.get('/api/resume-video/file/:jobId', (req, res) => {
   res.download(job.outPath, 'resume-video.mp4', (err) => {
     if (err && !res.headersSent) console.error('Video send error:', err.message);
   });
+});
+
+// ─── Server-to-server MP4 render for the Clerk app (app.resumetailored.com) ───
+// The new Next.js dashboard can't run Remotion/headless Chromium itself (it's
+// built with `next build`, no browser stack), so its Resume Video Pro tool
+// proxies here to reuse THIS site's working renderer. Guarded by the shared
+// ENTITLEMENT_SYNC_SECRET (the same secret the entitlement / app-checkout
+// endpoints use) via an `x-shared-secret` header — unset ⇒ 404 (feature off).
+// The app has already enforced sign-in + Pro before calling, so this endpoint
+// trusts the shared secret rather than re-checking a subscriber email (the app
+// passes a Clerk userId, not necessarily a subscriber-table email).
+//
+// Body: { script, style, photoUrl, audioUrl, title, userId, resume?, name?, voice? }
+//   - `script`  the app's spoken script (used as the render source when no
+//               `resume` is supplied — falls back to parseResume's tolerant
+//               parsing so scenes still populate).
+//   - `resume`  optional full résumé text; preferred over `script` because
+//               parseResume derives far better name/title/highlights/skills
+//               from it (the app sends it so the MP4 matches the resume).
+//   - `style`   accent colour: a hex string, or a known style key
+//               (professional/creative/minimal/warm) mapped to a hex.
+//   - `photoUrl` optional candidate photo (small image data URL).
+//   - `audioUrl` optional pre-made voiceover (the app's ElevenLabs MP3, as a
+//               data:audio/... URL) — muxed verbatim so the MP4 uses the exact
+//               voice the Pro user already generated, spending no extra credit.
+//   - `title`   used only to label the saved generation (not shown in-frame).
+// Returns { success: true, videoUrl } — a public URL under /videos.
+
+// Accent presets for the app's style keys, so a caller can send either a raw
+// hex or a friendly name. Mirrors VIDEO_TEMPLATES accents in the app's video-ai.
+const _VIDEO_STYLE_ACCENTS = {
+  professional: '#6366F1',
+  creative: '#EC4899',
+  minimal: '#0EA5E9',
+  warm: '#F59E0B',
+};
+function _resolveVideoAccent(style, accentColor) {
+  for (const v of [accentColor, style]) {
+    if (typeof v === 'string') {
+      const t = v.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(t)) return t;
+      if (_VIDEO_STYLE_ACCENTS[t.toLowerCase()]) return _VIDEO_STYLE_ACCENTS[t.toLowerCase()];
+    }
+  }
+  return undefined;
+}
+
+// Prune rendered MP4s older than the TTL so /videos never grows without bound.
+// Best-effort: any error is swallowed (a stuck file just lingers one more cycle).
+const RENDERED_VIDEO_TTL_MS = 24 * 60 * 60 * 1000; // 24h — long enough to download/share
+function _pruneRenderedVideos() {
+  try {
+    const now = Date.now();
+    for (const f of fs.readdirSync(renderedVideoDir)) {
+      if (!f.endsWith('.mp4')) continue;
+      const p = path.join(renderedVideoDir, f);
+      try {
+        const st = fs.statSync(p);
+        if (now - st.mtimeMs > RENDERED_VIDEO_TTL_MS) fs.unlink(p, () => {});
+      } catch (_) { /* ignore a file that vanished mid-scan */ }
+    }
+  } catch (_) { /* dir missing / unreadable — nothing to prune */ }
+}
+
+app.post('/api/resume-video-render', async (req, res) => {
+  const secret = process.env.ENTITLEMENT_SYNC_SECRET;
+  if (!secret) return res.status(404).json({ error: 'not_configured' });
+  if (String(req.headers['x-shared-secret'] || '') !== secret) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+
+  const { script, resume, style, accentColor, photoUrl, audioUrl, name } = req.body || {};
+  const sourceText = (typeof resume === 'string' && resume.trim().length >= 40) ? resume
+    : (typeof script === 'string' ? script : '');
+  if (!sourceText || sourceText.trim().length < 10) {
+    return res.status(400).json({ error: 'bad_request', message: 'A script or resume is required to render.' });
+  }
+
+  if (videoRenderBusy()) {
+    return res.status(429).json({ error: 'busy', message: 'A video is already rendering. Please try again in a moment.' });
+  }
+
+  let renderModule, parseModule;
+  try {
+    renderModule = require('./remotion/render');
+    parseModule = require('./remotion/parseResume');
+  } catch (e) {
+    console.error('Remotion not available:', e.message);
+    return res.status(501).json({ error: 'render_unavailable', message: 'Video rendering is not available on this server.' });
+  }
+
+  const id = uuidv4();
+  const outPath = path.join(renderedVideoDir, `${id}.mp4`);
+  let tmpAudioPath = null;
+  videoRenderStartedAt = Date.now(); // hold the single-render lock for this render
+  try {
+    const props = parseModule.parseResume(sourceText, {
+      accentColor: _resolveVideoAccent(style, accentColor),
+    });
+    if (typeof name === 'string' && name.trim().length >= 2 && /[A-Za-z]/.test(name)) {
+      props.name = name.trim().slice(0, 60);
+    }
+    if (typeof photoUrl === 'string' &&
+        /^data:image\/(png|jpe?g|webp);base64,/i.test(photoUrl) &&
+        photoUrl.length < 800000) {
+      props.photoUrl = photoUrl;
+    }
+
+    // Quiet background music bed (best-effort).
+    try {
+      const music = require('./remotion/music').backgroundMusic();
+      if (music && music.src) props.musicSrc = music.src;
+    } catch (_) { /* no music */ }
+
+    // Mux the app's pre-made ElevenLabs MP3 when provided, so the MP4 carries the
+    // exact voiceover the Pro user already generated (no extra credit spent).
+    // Best-effort: a data URL we can't parse just yields a silent video.
+    if (typeof audioUrl === 'string' && /^data:audio\//i.test(audioUrl)) {
+      try {
+        const b64 = audioUrl.slice(audioUrl.indexOf(',') + 1);
+        const buf = Buffer.from(b64, 'base64');
+        if (buf.length > 0 && buf.length < 20 * 1024 * 1024) {
+          tmpAudioPath = path.join(os.tmpdir(), `resume-video-audio-${id}.mp3`);
+          fs.writeFileSync(tmpAudioPath, buf);
+          props.audioSrc = audioUrl; // Remotion <Audio> accepts the data URL directly
+          const secs = await _probeVideoDurationSeconds(tmpAudioPath);
+          if (secs && secs > 0) {
+            const { FPS } = require('./remotion/data');
+            props.audioDurationInFrames = Math.ceil(secs * FPS);
+          }
+        }
+      } catch (e) {
+        console.error('Provided audio unusable, rendering silent:', e.message);
+        delete props.audioSrc;
+        delete props.audioDurationInFrames;
+      }
+    }
+
+    try {
+      await withTimeout(renderModule.renderResumeVideo(props, outPath), MAX_RENDER_MS, 'Video render');
+    } catch (err) {
+      // If a render with audio fails, retry once silent so the caller still gets a video.
+      if (props.audioSrc) {
+        console.error('Render with audio failed, retrying silent:', err?.message || err);
+        delete props.audioSrc;
+        delete props.audioDurationInFrames;
+        await withTimeout(renderModule.renderResumeVideo(props, outPath), MAX_RENDER_MS, 'Video render (silent retry)');
+      } else {
+        throw err;
+      }
+    }
+
+    const origin = `${req.protocol}://${req.get('host')}`;
+    res.json({ success: true, videoUrl: `${origin}/videos/${id}.mp4` });
+  } catch (err) {
+    console.error('Resume video render error:', err?.message || err);
+    fs.unlink(outPath, () => {});
+    res.status(500).json({ error: 'render_failed', message: String(err?.message || err).slice(0, 200) });
+  } finally {
+    if (tmpAudioPath) fs.unlink(tmpAudioPath, () => {});
+    videoRenderStartedAt = 0; // release the single-render lock
+    _pruneRenderedVideos();
+  }
 });
 
 // ─── API: Translate resume Chinese → English ──────────────────────────────────

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Video, Sparkles, Play, Pause, Download, Volume2, Lock } from "lucide-react";
+import { Video, Sparkles, Play, Pause, Download, Volume2, Lock, Film, Copy, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, Select, PrimaryButton, SecondaryButton, UpgradeNote } from "../components/ui";
@@ -22,6 +22,11 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   const [error, setError] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
+  // Full-video (MP4) render — additional to the MP3 voiceover flow above.
+  const [mp4Url, setMp4Url] = useState<string | null>(null);
+  const [mp4Loading, setMp4Loading] = useState(false);
+  const [mp4Error, setMp4Error] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     fetch("/api/resumes", { cache: "no-store" })
@@ -50,6 +55,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       if (!res.ok || !data.script) throw new Error(data.message || data.error || "Could not generate the script.");
       setScript(data.script);
       setAudio(null);
+      setMp4Url(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -122,6 +128,60 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
     a.click();
   }
 
+  // Render a real, downloadable MP4 by proxying to the legacy site's Remotion
+  // renderer. Pro-only; free users are routed to the upgrade flow. The MP3
+  // voiceover flow above is untouched — this is additional.
+  async function handleGenerateMp4() {
+    if (!isPro) {
+      router.push("/candidate?upgrade=pro");
+      return;
+    }
+    if (!script.trim()) {
+      setMp4Error("Generate or write a script first.");
+      return;
+    }
+    setMp4Loading(true);
+    setMp4Error(null);
+    setMp4Url(null);
+    try {
+      const res = await fetch("/api/resume-video/mp4", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          script,
+          resume: resumeText,
+          style: tpl.accent, // accent hex — the legacy renderer accepts a hex or a style key
+          audioUrl: audio || undefined, // reuse the ElevenLabs MP3 if one was generated
+          title: "Resume video",
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { success?: boolean; videoUrl?: string; error?: string; message?: string };
+      if (res.status === 402 || data.error === "pro_required") {
+        router.push("/candidate?upgrade=pro");
+        return;
+      }
+      if (!res.ok || !data.success || !data.videoUrl) {
+        throw new Error(data.message || data.error || "The video could not be rendered.");
+      }
+      setMp4Url(data.videoUrl);
+    } catch (e) {
+      setMp4Error(e instanceof Error ? e.message : "Something went wrong rendering the video.");
+    } finally {
+      setMp4Loading(false);
+    }
+  }
+
+  async function copyMp4Link() {
+    if (!mp4Url) return;
+    try {
+      await navigator.clipboard.writeText(mp4Url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* clipboard blocked — the link is still visible in the button */
+    }
+  }
+
   const footer = (
     <>
       <span className="mr-auto hidden text-xs text-white/45 sm:block">{isPro ? "Pro · full generation" : "Free · script + preview"}</span>
@@ -177,7 +237,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
           {script && (
             <div>
               <Label>Script (editable)</Label>
-              <TextArea rows={8} value={script} onChange={(e) => { setScript(e.target.value); setAudio(null); }} className="font-mono text-[13px]" />
+              <TextArea rows={8} value={script} onChange={(e) => { setScript(e.target.value); setAudio(null); setMp4Url(null); }} className="font-mono text-[13px]" />
             </div>
           )}
           {!isPro && script && <UpgradeNote>Pro generates the AI voiceover and lets you download the video.</UpgradeNote>}
@@ -208,6 +268,68 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
                 )}
               </div>
               {audio && <audio ref={audioRef} src={audio} onEnded={() => setPlaying(false)} className="w-full" controls />}
+
+              {/* Full video (MP4) — real downloadable file, rendered server-side. */}
+              <div className="rounded-xl border border-white/10 bg-navy/60 p-4">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet to-indigo-500">
+                    <Film className="h-4 w-4 text-white" />
+                  </span>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white">Full Video (MP4)</h4>
+                    <p className="text-[11px] text-white/50">
+                      {isPro
+                        ? "Render a shareable MP4 — your captions, style, and voiceover muxed into one file."
+                        : "Pro renders a real, downloadable MP4 you can post to LinkedIn, Shorts, or Reels."}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleGenerateMp4}
+                  disabled={mp4Loading}
+                  className={cn(
+                    "mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all",
+                    "bg-gradient-to-r from-violet to-indigo-500 hover:shadow-[0_0_22px_rgba(139,92,246,0.4)]",
+                    mp4Loading && "cursor-not-allowed opacity-70"
+                  )}
+                >
+                  {mp4Loading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Rendering… (this can take a minute)</>
+                  ) : isPro ? (
+                    <><Film className="h-4 w-4" /> {mp4Url ? "Re-render MP4" : "Generate MP4"}</>
+                  ) : (
+                    <><Lock className="h-4 w-4" /> Generate MP4</>
+                  )}
+                </button>
+
+                {mp4Error && (
+                  <p className="mt-2 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{mp4Error}</p>
+                )}
+
+                {mp4Url && (
+                  <div className="mt-3 space-y-2">
+                    <video src={mp4Url} controls className="w-full rounded-lg border border-white/10 bg-black" />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={mp4Url}
+                        download="resume-video.mp4"
+                        className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/15"
+                      >
+                        <Download className="h-4 w-4" /> Download MP4
+                      </a>
+                      <button
+                        type="button"
+                        onClick={copyMp4Link}
+                        className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/5"
+                      >
+                        {copied ? <><Check className="h-4 w-4 text-teal" /> Copied</> : <><Copy className="h-4 w-4" /> Copy Link</>}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <div className="flex h-full min-h-[300px] items-center justify-center rounded-xl border border-dashed border-border-gold p-8 text-center text-sm text-white/45">

@@ -14,18 +14,25 @@ function db(): SupabaseClient | null {
 export async function saveVideoGeneration(
   userId: string,
   v: { title?: string; script?: string; videoUrl?: string; template?: string }
-): Promise<void> {
+): Promise<number | null> {
   const c = db();
-  if (!c || !userId) return;
+  if (!c || !userId) return null;
   try {
-    await c.from("video_generations").insert({
-      user_id: userId,
-      title: (v.title || "Untitled video").slice(0, 200),
-      script: v.script ?? null,
-      video_url: v.videoUrl ?? null,
-      template: v.template ?? null,
-    });
+    const { data } = await c
+      .from("video_generations")
+      .insert({
+        user_id: userId,
+        title: (v.title || "Untitled video").slice(0, 200),
+        script: v.script ?? null,
+        video_url: v.videoUrl ?? null,
+        template: v.template ?? null,
+      })
+      .select("id")
+      .single();
+    const id = (data as { id?: number } | null)?.id;
+    return typeof id === "number" ? id : null;
   } catch {
     /* best-effort */
+    return null;
   }
 }
