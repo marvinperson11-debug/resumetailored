@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { ScanLine, Check, X, Lightbulb, Crown } from "lucide-react";
+import { ScanLine, Check, X, Lightbulb } from "lucide-react";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, PrimaryButton } from "../components/ui";
 import type { AtsResult } from "@/lib/ai";
@@ -14,14 +13,12 @@ const VERDICT_TONE: Record<string, string> = {
   "Weak Match": "text-red-400",
 };
 
-export function AtsScannerTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
-  const router = useRouter();
+export function AtsScannerTool({ onClose }: { onClose: () => void }) {
   const [resumeText, setResumeText] = useState("");
   const [jobText, setJobText] = useState("");
   const [result, setResult] = useState<AtsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [limitReached, setLimitReached] = useState(false);
 
   async function scan() {
     if (!resumeText.trim() || !jobText.trim()) {
@@ -30,7 +27,6 @@ export function AtsScannerTool({ onClose, isPro }: { onClose: () => void; isPro:
     }
     setLoading(true);
     setError(null);
-    setLimitReached(false);
     try {
       const res = await fetch("/api/ats-scan", {
         method: "POST",
@@ -38,10 +34,6 @@ export function AtsScannerTool({ onClose, isPro }: { onClose: () => void; isPro:
         body: JSON.stringify({ resume: resumeText, jobPosting: jobText }),
       });
       const data = (await res.json().catch(() => ({}))) as AtsResult & { error?: string; message?: string };
-      if (res.status === 402) {
-        setLimitReached(true);
-        return;
-      }
       if (!res.ok || typeof data.score !== "number") {
         throw new Error(data.message || data.error || "Analysis failed. Please try again.");
       }
@@ -55,7 +47,7 @@ export function AtsScannerTool({ onClose, isPro }: { onClose: () => void; isPro:
 
   const footer = (
     <>
-      {!isPro && <span className="mr-auto hidden text-xs text-white/45 sm:block">Free: 1 scan/day · Pro: unlimited</span>}
+      <span className="mr-auto hidden text-xs text-white/45 sm:block">Free &amp; unlimited</span>
       <PrimaryButton onClick={scan} loading={loading}>
         <ScanLine className="h-4 w-4" /> {result ? "Scan Again" : "Scan Resume"}
       </PrimaryButton>
@@ -80,22 +72,7 @@ export function AtsScannerTool({ onClose, isPro }: { onClose: () => void; isPro:
 
         {/* Right: results */}
         <div className="min-h-0 overflow-y-auto bg-navy/40 p-5">
-          {limitReached ? (
-            <div className="flex h-full min-h-[300px] flex-col items-center justify-center text-center">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/15">
-                <Crown className="h-5 w-5 text-gold" />
-              </div>
-              <h3 className="font-serif text-xl font-medium text-cream">You&rsquo;ve used today&rsquo;s free scan</h3>
-              <p className="mt-2 max-w-xs text-sm text-white/60">Upgrade to Pro for unlimited ATS scans, every template, and watermark-free exports.</p>
-              <button
-                type="button"
-                onClick={() => router.push("/candidate?upgrade=pro")}
-                className="mt-6 rounded-xl bg-violet px-5 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(139,92,246,0.35)] transition-all hover:-translate-y-0.5"
-              >
-                Upgrade to Pro — $19/mo →
-              </button>
-            </div>
-          ) : result ? (
+          {result ? (
             <div className="space-y-6">
               <ScoreGauge score={result.score} verdict={result.verdict} />
               <KeywordList title="Matched keywords" tone="match" items={result.matched} />

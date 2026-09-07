@@ -3,6 +3,7 @@
 import { useUser } from "@clerk/nextjs";
 import { FileText, ScanLine, PenTool, Sparkles, ArrowRight, type LucideIcon } from "lucide-react";
 import { useTools, type ToolId } from "./tools-context";
+import type { GenerationStats } from "@/lib/generations";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -10,13 +11,6 @@ function greeting(): string {
   if (h < 18) return "Good afternoon";
   return "Good evening";
 }
-
-const STATS = [
-  { label: "Resumes tailored", value: "0", icon: FileText },
-  { label: "ATS scans today", value: "0", icon: ScanLine },
-  { label: "Cover letters", value: "0", icon: PenTool },
-  { label: "Templates unlocked", value: "6", icon: Sparkles },
-];
 
 const QUICK: { id: ToolId; label: string; icon: LucideIcon; desc: string }[] = [
   { id: "resume", label: "Tailor Resume", icon: Sparkles, desc: "Rewrite your resume for any job" },
@@ -29,10 +23,17 @@ const QUICK: { id: ToolId; label: string; icon: LucideIcon; desc: string }[] = [
  * stats, a primary "Start with Resume Tailor" CTA, and quick actions — all of
  * which open the relevant tool in a modal.
  */
-export function DashboardHome() {
+export function DashboardHome({ stats }: { stats: GenerationStats }) {
   const { user } = useUser();
-  const { openTool } = useTools();
+  const { openTool, isPro } = useTools();
   const firstName = user?.firstName || (user?.fullName || "").split(" ")[0] || "there";
+
+  const statCards = [
+    { label: "Resumes tailored", value: String(stats.resumes), icon: FileText },
+    { label: "ATS scans today", value: String(stats.atsToday), icon: ScanLine },
+    { label: "Cover letters", value: String(stats.coverLetters), icon: PenTool },
+    { label: "Templates unlocked", value: isPro ? "104" : "6", icon: Sparkles },
+  ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-28">
@@ -53,7 +54,7 @@ export function DashboardHome() {
       </section>
 
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {STATS.map((s) => {
+        {statCards.map((s) => {
           const Icon = s.icon;
           return (
             <div key={s.label} className="glass p-5">

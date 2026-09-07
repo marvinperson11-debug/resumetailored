@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { getAnthropic, buildTailorPrompts, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
+import { recordGeneration } from "@/lib/generations";
 import type { Mode } from "@/lib/resume-templates";
 
 export const runtime = "nodejs";
@@ -49,6 +50,8 @@ export async function POST(req: Request) {
     });
     const block = message.content[0];
     const text = block && block.type === "text" ? block.text : "";
+    // Persist for the dashboard (both = a resume + a cover letter in one call).
+    await recordGeneration(user.id, mode === "cover_letter" ? "cover_letter" : "resume", { text, mode });
     return NextResponse.json({ result: text });
   } catch (err) {
     const e = err as { status?: number; message?: string };

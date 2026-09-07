@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
 import { getAnthropic, buildTailorPrompts, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
+import { recordGeneration } from "@/lib/generations";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -41,6 +42,7 @@ export async function POST(req: Request) {
     });
     const block = message.content[0];
     const text = block && block.type === "text" ? block.text : "";
+    await recordGeneration(user.id, "cover_letter", { text });
     return NextResponse.json({ result: text });
   } catch (err) {
     const e = err as { status?: number; message?: string };

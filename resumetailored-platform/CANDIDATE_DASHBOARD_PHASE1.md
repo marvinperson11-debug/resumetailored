@@ -1,5 +1,28 @@
 # Candidate Dashboard — Phase 1 build notes, decisions & open questions
 
+> **Update (decisions applied):** Per your call — direct Anthropic (kept),
+> client-side PDF (kept), app design tokens (kept), flat file layout (kept).
+> **Two fixes landed:**
+> 1. **ATS is now unlimited for free users** — the per-day gate is gone
+>    (`app/api/ats-scan/route.ts`; `lib/usage.ts` deleted; the tool footer now
+>    reads "Free & unlimited").
+> 2. **Supabase persistence added** — every tailored resume / cover letter / ATS
+>    scan is written to a `generations` table (`lib/generations.ts`), and the
+>    dashboard stat cards now read live counts from it (`app/candidate/page.tsx`
+>    is a server component that fetches per-user stats).
+>
+> **One manual setup step before/after merge (Railway):**
+> - Run the migration `supabase/migrations/0001_generations.sql` on your Supabase
+>   project (creates the `generations` table; RLS on, no public policy).
+> - Add **`SUPABASE_SERVICE_ROLE_KEY`** to the web service env (server-only). It's
+>   how the server writes rows and reads stats. Without it, persistence is a
+>   silent no-op and the stat cards show zeros — nothing else breaks.
+>
+> Everything else below is the original Phase-1 record.
+
+---
+
+
 **Where it was built:** the Next.js app (`resumetailored-platform/`), on branch
 `claude/candidate-dashboard-tool-dock-c4k29d`. Nothing was added to the old
 static site (`public/…`). The old site's logic/prompts/templates were *read* and

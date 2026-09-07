@@ -27,7 +27,7 @@ export function ToolHost() {
   if (!activeTool) return null;
 
   if (activeTool === "resume") return <ResumeTailorTool onClose={closeTool} isPro={isPro} />;
-  if (activeTool === "ats") return <AtsScannerTool onClose={closeTool} isPro={isPro} />;
+  if (activeTool === "ats") return <AtsScannerTool onClose={closeTool} />;
   if (activeTool === "cover") return <CoverLetterTool onClose={closeTool} isPro={isPro} />;
 
   const meta = TOOLS.find((t) => t.id === activeTool)!;
