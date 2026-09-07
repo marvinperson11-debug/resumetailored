@@ -6,21 +6,22 @@ import { ComingSoonBody } from "./ui";
 import { ResumeBuilderTool } from "../tools/resume-tailor";
 import { AtsScannerTool } from "../tools/ats-scanner";
 import { CoverLetterTool } from "../tools/cover-letter";
+import { LinkedInOptimizerTool } from "../tools/linkedin-optimizer";
+import { InterviewCoachTool } from "../tools/interview-coach";
+import { JobFinderTool } from "../tools/job-finder";
+import { CareerHubTool } from "../tools/career-hub";
+import { DecoderKeyTool } from "../tools/decoder-key";
 
+// Phase 3 (Pro) tools still show a "coming soon" body.
 const SOON_NOTES: Partial<Record<ToolId, string>> = {
-  linkedin: "Optimize and import your LinkedIn profile. Coming in Phase 2.",
-  interview: "Practice interview questions with instant AI feedback. Coming in Phase 2.",
-  jobs: "Search and save roles matched to your profile. Coming in Phase 2.",
-  career: "Your profession-first Career Hub — quizzes, gap analysis, and more. Coming in Phase 2.",
-  decoder: "Decode any job posting into what they're really asking for. Coming in Phase 2.",
   video: "Turn your resume into a shareable highlight video. Coming in Phase 3.",
   studio: "Publish a personal portfolio website. Coming in Phase 3.",
 };
 
 /**
  * Renders the currently-open tool as a centered modal. Phase-1 tools (Resume,
- * ATS, Cover Letter) are fully built; the rest show a "coming soon" body inside
- * the same modal shell so the dock feels complete.
+ * ATS, Cover Letter) and Phase-2 tools (LinkedIn, Interview, Jobs, Career,
+ * Decoder) are fully built; the Pro Phase-3 tools show a "coming soon" body.
  */
 export function ToolHost() {
   const { activeTool, isPro, closeTool } = useTools();
@@ -29,6 +30,11 @@ export function ToolHost() {
   if (activeTool === "resume") return <ResumeBuilderTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "ats") return <AtsScannerTool onClose={closeTool} />;
   if (activeTool === "cover") return <CoverLetterTool onClose={closeTool} isPro={isPro} />;
+  if (activeTool === "linkedin") return <LinkedInOptimizerTool onClose={closeTool} isPro={isPro} />;
+  if (activeTool === "interview") return <InterviewCoachTool onClose={closeTool} isPro={isPro} />;
+  if (activeTool === "jobs") return <JobFinderTool onClose={closeTool} isPro={isPro} />;
+  if (activeTool === "career") return <CareerHubTool onClose={closeTool} isPro={isPro} />;
+  if (activeTool === "decoder") return <DecoderKeyTool onClose={closeTool} />;
 
   const meta = TOOLS.find((t) => t.id === activeTool)!;
   return (

@@ -91,6 +91,19 @@ export function SecondaryButton({ children, className, ...props }: ButtonHTMLAtt
   );
 }
 
+/** Small gold upgrade prompt for Pro-gated sections inside a tool. */
+export function UpgradeNote({ children }: { children: ReactNode }) {
+  return (
+    <a
+      href="/candidate?upgrade=pro"
+      className="flex items-center justify-between gap-3 rounded-xl border border-gold/40 bg-gold/10 px-3.5 py-3 text-sm text-cream transition-colors hover:bg-gold/15"
+    >
+      <span className="text-white/80">{children}</span>
+      <span className="shrink-0 rounded-full bg-gold px-2.5 py-1 text-xs font-bold text-navy">Upgrade</span>
+    </a>
+  );
+}
+
 /** In-modal placeholder for Phase 2/3 tools. */
 export function ComingSoonBody({ feature, icon: Icon, note }: { feature: string; icon?: LucideIcon; note?: string }) {
   return (
