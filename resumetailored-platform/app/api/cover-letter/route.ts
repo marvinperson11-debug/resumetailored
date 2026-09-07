@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, buildTailorPrompts, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { recordGeneration } from "@/lib/generations";
 
@@ -13,8 +13,8 @@ export const maxDuration = 60;
  * surface. `resume` here is the candidate's background/highlights text.
  */
 export async function POST(req: Request) {
-  const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string; jobPosting?: string };
   const { resume, jobPosting } = body;
@@ -42,7 +42,7 @@ export async function POST(req: Request) {
     });
     const block = message.content[0];
     const text = block && block.type === "text" ? block.text : "";
-    await recordGeneration(user.id, "cover_letter", { text });
+    await recordGeneration(userId, "cover_letter", { text });
     return NextResponse.json({ result: text });
   } catch (err) {
     const e = err as { status?: number; message?: string };

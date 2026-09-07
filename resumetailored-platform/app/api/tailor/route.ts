@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, buildTailorPrompts, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { recordGeneration } from "@/lib/generations";
 import type { Mode } from "@/lib/resume-templates";
@@ -14,8 +14,8 @@ export const maxDuration = 60;
  * Tailoring itself is free + unlimited for signed-in users.
  */
 export async function POST(req: Request) {
-  const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string; jobPosting?: string; mode?: Mode };
   const { resume, jobPosting, mode } = body;
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     const block = message.content[0];
     const text = block && block.type === "text" ? block.text : "";
     // Persist for the dashboard (both = a resume + a cover letter in one call).
-    await recordGeneration(user.id, mode === "cover_letter" ? "cover_letter" : "resume", { text, mode });
+    await recordGeneration(userId, mode === "cover_letter" ? "cover_letter" : "resume", { text, mode });
     return NextResponse.json({ result: text });
   } catch (err) {
     const e = err as { status?: number; message?: string };

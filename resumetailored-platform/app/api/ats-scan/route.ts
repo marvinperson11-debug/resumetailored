@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, buildAtsPrompt, localAtsFallback, isProviderUnavailable, CLAUDE_MODEL, type AtsResult } from "@/lib/ai";
 import { recordGeneration } from "@/lib/generations";
 
@@ -14,8 +14,8 @@ export const maxDuration = 60;
  * Pro-only tools, Resume Video and Web Studio, are gated).
  */
 export async function POST(req: Request) {
-  const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string; jobPosting?: string };
   const { resume, jobPosting } = body;
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   if (!anthropic) {
     // No key configured → still return a useful (deterministic) result.
     const result = localAtsFallback(resume, jobPosting);
-    await recordGeneration(user.id, "ats", result);
+    await recordGeneration(userId, "ats", result);
     return NextResponse.json(result);
   }
 
@@ -42,14 +42,14 @@ export async function POST(req: Request) {
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error("No JSON in response");
     const result = JSON.parse(jsonMatch[0]) as AtsResult;
-    await recordGeneration(user.id, "ats", result);
+    await recordGeneration(userId, "ats", result);
     return NextResponse.json(result);
   } catch (err) {
     const e = err as { message?: string };
     console.error("ATS scan error:", e?.message || err);
     if (isProviderUnavailable(err)) {
       const result = localAtsFallback(resume, jobPosting);
-      await recordGeneration(user.id, "ats", result);
+      await recordGeneration(userId, "ats", result);
       return NextResponse.json(result);
     }
     return NextResponse.json({ error: "Analysis failed. Please try again." }, { status: 500 });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { getAnthropic, CLAUDE_MODEL } from "@/lib/ai";
 
 export const runtime = "nodejs";
@@ -84,8 +84,8 @@ function stripHtml(html: string): string {
 }
 
 export async function POST(req: Request) {
-  const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
 
   const body = (await req.json().catch(() => ({}))) as { url?: string };
   const url = body.url;

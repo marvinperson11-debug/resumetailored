@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 // Import pdf-parse's internal module directly: the package's index.js runs a
 // debug block on import (reading a bundled test PDF) that crashes in a bundled
 // server. The lib entry skips it. (Ported behavior from the old site.)
@@ -31,8 +31,8 @@ function magicOk(ext: string, buf: Buffer): boolean {
  * Ported from the old site's `/api/extract-text`.
  */
 export async function POST(req: Request) {
-  const user = await currentUser();
-  if (!user) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Your session expired. Please refresh and sign in again." }, { status: 401 });
 
   let file: File | null = null;
   try {
