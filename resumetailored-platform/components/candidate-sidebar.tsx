@@ -53,7 +53,7 @@ const navItems: NavItem[] = [
   { label: "Job Finder", opens: "jobs", icon: Zap },
   { label: "Career Hub", opens: "career", icon: Briefcase },
   { label: "Decoder", opens: "decoder", icon: FileSearch },
-  { label: "Applications", href: "/candidate/applications", icon: Send },
+  { label: "Application Tracker", href: "/candidate/applications", icon: Send },
   { label: "Shareable Links", href: "/candidate/shareable-links", icon: LinkIcon },
   { label: "Resume Video", href: "/candidate/resume-video", icon: Video, pro: true },
   { label: "Personal Website", href: "/candidate/personal-website", icon: Globe, pro: true },

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ScanLine, Check, X, Lightbulb } from "lucide-react";
+import { useRef, useState } from "react";
+import { ScanLine, Check, X, Lightbulb, Upload, Loader2 } from "lucide-react";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, PrimaryButton } from "../components/ui";
 import type { AtsResult } from "@/lib/ai";
@@ -19,6 +19,34 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
   const [result, setResult] = useState<AtsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadNote, setUploadNote] = useState<string | null>(null);
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadNote("That file is too large (max 10MB).");
+      return;
+    }
+    setUploading(true);
+    setUploadNote(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/extract-text", { method: "POST", body: fd });
+      const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
+      if (!res.ok || !data.text) throw new Error(data.error || "Could not read that file.");
+      setResumeText(data.text);
+      setUploadNote(`Imported “${file.name}”. Review the text before scanning.`);
+    } catch (err) {
+      setUploadNote(err instanceof Error ? err.message : "Could not read that file.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function scan() {
     if (!resumeText.trim() || !jobText.trim()) {
@@ -60,8 +88,20 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
         {/* Left: form */}
         <div className="min-h-0 space-y-4 overflow-y-auto border-b border-border-gold p-4 lg:border-b-0 lg:border-r">
           <div>
-            <Label>Your resume</Label>
-            <TextArea rows={10} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder="Paste your resume text…" />
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <Label>Your resume</Label>
+              <input ref={fileRef} type="file" accept=".txt,.pdf,.docx,.doc,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange={onFile} />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8 disabled:opacity-50"
+              >
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Upload resume
+              </button>
+            </div>
+            <TextArea rows={10} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder="Upload a .pdf, .docx, or .txt above — or paste your resume text…" />
+            {uploadNote && <p className="mt-1.5 text-xs text-white/55">{uploadNote}</p>}
           </div>
           <div>
             <Label>Job description</Label>
