@@ -36,11 +36,22 @@ export function downloadPdf(opts: {
 
   const isCoverBanner = ["cModern", "cBold", "cSplit", "rModern", "rSidebar"].includes(tpl.layout);
   const isSidebar = tpl.layout === "rSidebar";
-  const bodyBg = isSidebar
+  const isTwoCol = tpl.layout === "rTwoCol";
+  // "Banded" layouts have a full-height left column (a colored sidebar, or the
+  // two-column divider). In print, an element's background does NOT stretch to
+  // fill each page fragment, so a long resume showed the band only where the
+  // text reached. Fix: paint the band as a FIXED page background — a fixed
+  // background in paged media is repainted on every page, so the band reaches
+  // the bottom of every page regardless of where the content ends. Banded
+  // layouts print full-bleed (margin 0) so the band's x-offsets line up with
+  // the column. Covers all 8 sidebar color variants (shared rSidebar layout).
+  const pageBand = isSidebar
     ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
-    : tpl.layout === "cClean"
-    ? tpl.c.l
-    : "#fff";
+    : isTwoCol
+    ? `linear-gradient(to right, #fff 218px, ${tpl.c.a}55 218px, ${tpl.c.a}55 220px, #fff 220px)`
+    : null;
+  const fullBleed = isCoverBanner || isTwoCol;
+  const bodyBg = tpl.layout === "cClean" ? tpl.c.l : "#fff";
 
   const safeTitle = title.replace(/</g, "&lt;");
   win.document.write(`<!DOCTYPE html>
@@ -53,10 +64,10 @@ export function downloadPdf(opts: {
   <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Great+Vibes&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    @page { size: letter; margin: ${isCoverBanner ? "0" : "0.5in"}; }
+    @page { size: letter; margin: ${fullBleed ? "0" : "0.5in"}; }
     .rt-watermark { position: fixed; bottom: 6px; left: 0; right: 0; text-align: center; font-size: 8px; color: #9aa3af; letter-spacing: .3px; font-family: Arial, sans-serif; }
-    html { background: ${isSidebar ? bodyBg : "#fff"}; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    body { font-family: ${font}; color: #222; background: ${isSidebar ? "transparent" : bodyBg}; overflow-wrap: anywhere; word-break: normal; hyphens: none; }
+    html { background: ${pageBand || "#fff"}; ${pageBand ? "background-attachment: fixed; background-repeat: no-repeat; background-size: 100% 100%;" : ""} -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    body { font-family: ${font}; color: #222; background: ${pageBand ? "transparent" : bodyBg}; overflow-wrap: anywhere; word-break: normal; hyphens: none; }
     .page { width: 100%; min-width: 0; }
     p, li { page-break-inside: avoid; break-inside: avoid; overflow-wrap: anywhere; }
     div { overflow-wrap: anywhere; word-break: normal; hyphens: none; min-width: 0; }
