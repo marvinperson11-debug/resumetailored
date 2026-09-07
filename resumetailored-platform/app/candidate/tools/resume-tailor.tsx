@@ -13,6 +13,7 @@ import {
   Check,
   Target,
   Loader2,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { findTemplate, BODY_FONTS, SIG_FONTS } from "@/lib/resume-templates";
@@ -91,6 +92,9 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
 
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const resumeFileRef = useRef<HTMLInputElement>(null);
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [uploadNote, setUploadNote] = useState<string | null>(null);
 
   // Consume the pending draft exactly once on open.
   useEffect(() => {
@@ -150,6 +154,31 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       void persist(contentRef.current);
     };
   }, [persist]);
+
+  async function onResumeFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadNote("That file is too large (max 10MB).");
+      return;
+    }
+    setResumeUploading(true);
+    setUploadNote(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/extract-text", { method: "POST", body: fd });
+      const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
+      if (!res.ok || !data.text) throw new Error(data.error || "Could not read that file.");
+      setResumeText(data.text);
+      setUploadNote(`Imported “${file.name}”. Review the text below before building.`);
+    } catch (err) {
+      setUploadNote(err instanceof Error ? err.message : "Could not read that file.");
+    } finally {
+      setResumeUploading(false);
+    }
+  }
 
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -263,13 +292,32 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
             {view === "content" && (
               <div className="space-y-4">
                 <div>
-                  <Label>Your current resume</Label>
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <Label>Your current resume</Label>
+                    <input
+                      ref={resumeFileRef}
+                      type="file"
+                      accept=".txt,.pdf,.docx,.doc,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      hidden
+                      onChange={onResumeFile}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => resumeFileRef.current?.click()}
+                      disabled={resumeUploading}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8 disabled:opacity-50"
+                    >
+                      {resumeUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                      Upload file
+                    </button>
+                  </div>
                   <TextArea
                     rows={7}
                     value={resumeText}
                     onChange={(e) => setResumeText(e.target.value)}
-                    placeholder="Paste your existing resume text here…"
+                    placeholder="Upload a .pdf, .docx, or .txt above — or paste your resume text here…"
                   />
+                  {uploadNote && <p className="mt-1.5 text-xs text-white/55">{uploadNote}</p>}
                 </div>
 
                 <div>
