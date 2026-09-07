@@ -11,20 +11,29 @@ const server = read('server.js');
 const index = read('public/index.html');
 const corporate = read('public/corporate.html');
 const success = read('public/success.html');
-const checkout = read('public/paid-checkout.js');
 const ecosystem = read('public/luxury-ecosystem.js');
 
-// Consumer Pro/lifetime no longer check out on the marketing site — the
-// homepage's Pro CTAs redirect to the app's sign-up-first upgrade flow
-// (openCheckoutModal/openLifetimeModal → app?upgrade=pro). Employer plans still
-// check out on-site via data-checkout-plan.
-check('homepage Pro CTAs route to the app upgrade flow', /app\.resumetailored\.com\?upgrade=pro/.test(index) && !/data-checkout-plan="(pro|lifetime)"/.test(index));
-for (const plan of ['portal', 'scale', 'corporate']) {
-  check(`${plan} has a direct checkout trigger`, index.includes(`data-checkout-plan="${plan}"`) || corporate.includes(`data-checkout-plan="${plan}"`));
-}
-check('shared checkout client supports all five paid plans', /pro: 1, lifetime: 1, portal: 1, scale: 1, corporate: 1/.test(checkout));
-check('checkout failures stay on-page in a graceful alert', /role', 'alert'/.test(checkout) && /Checkout was cancelled/.test(checkout));
-check('checkout echoes the readable CSRF cookie when available', /rt_csrf=/.test(checkout) && /X-CSRF-Token/.test(checkout) && /headers:\s*checkoutHeaders\(\)/.test(checkout));
+// No landing page initiates Stripe checkout any more. Every Pro/lifetime/
+// employer CTA links straight to the dashboard app; the on-site
+// paid-checkout.js client and all data-checkout-plan hooks have been removed.
+check('homepage Pro CTAs route to the app upgrade flow', /app\.resumetailored\.com\?upgrade=pro/.test(index) && !/data-checkout-plan/.test(index));
+check('paid-checkout.js has been removed from the repo', !fs.existsSync(path.join(root, 'public/paid-checkout.js')));
+// Walk every public HTML file: none may load paid-checkout.js or carry a
+// data-checkout-plan hook — the site-wide "no on-site Stripe checkout" invariant.
+(function () {
+  const offenders = [];
+  (function walk(dir) {
+    for (const name of fs.readdirSync(dir)) {
+      const full = path.join(dir, name);
+      if (fs.statSync(full).isDirectory()) walk(full);
+      else if (name.endsWith('.html')) {
+        const html = fs.readFileSync(full, 'utf8');
+        if (/paid-checkout\.js/.test(html) || /data-checkout-plan/.test(html)) offenders.push(path.relative(root, full));
+      }
+    }
+  })(path.join(root, 'public'));
+  check('no public HTML loads paid-checkout.js or uses data-checkout-plan', offenders.length === 0, offenders.join(', '));
+})();
 check('guest-friendly checkout starts cannot be blocked by stale session CSRF', /p === '\/api\/subscribe'[\s\S]{0,180}p === '\/api\/subscribe-lifetime'[\s\S]{0,180}p === '\/api\/employer\/subscribe'[\s\S]{0,80}return next\(\)/.test(server));
 check('Corporate pricing uses the standard logo and hamburger-only header', /class="club-nav cp-header"[\s\S]{0,350}class="club-mobile cp-menu-trigger"/.test(corporate) && !/class="club-nav cp-header"[\s\S]{0,500}Open the Portal/.test(corporate));
 check('monthly checkout accepts guest email collection', /app\.post\('\/api\/subscribe'[\s\S]{0,900}email is OPTIONAL/.test(server));

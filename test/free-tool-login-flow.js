@@ -58,7 +58,7 @@ const ab = read('public/tools/resume-ab-tracker.html');
 check('A/B Test Tracker no longer redirects on page load', !/if\s*\(thRequireLogin\(\)\)\s*load\(\)/.test(ab));
 check('A/B Test Tracker renders a public empty workspace on 401', /res\.status===401\)\{ render\(\[\]\); return; \}/.test(ab));
 check('tool-hub pending state restores dynamic Offer fields', /offerCount/.test(hub) && /while \(document\.querySelectorAll\('\[data-offer\]'\)/.test(hub));
-check('tool-hub upgrades route to direct checkout or pricing', /RTCheckout/.test(hub) && /pricing#ecosystem-pricing/.test(hub));
+check('tool-hub upgrades route to the app upgrade flow', /app\.resumetailored\.com\?upgrade=pro/.test(hub) && !/RTCheckout/.test(hub));
 
 // Job Tracker is browsable anonymously; only Add Application links to login.
 check('Job Tracker always asks the API instead of trusting local markers', !/if \(!token\(\) && !localStorage\.getItem\('rt_email'\)\)/.test(tracker));
