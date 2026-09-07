@@ -2721,25 +2721,11 @@
     }
 
     // ── Subscribe ──────────────────────────────────────────────────────────────
-    async function subscribe() {
-      const email = getStoredEmail();
-      if (!email) { showToast('Please log in to subscribe.'); return; }
-
-      try {
-        const res = await fetch('/api/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
-        });
-        const data = await res.json();
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          showToast(data.error || 'Could not start checkout. Please try again.');
-        }
-      } catch(err) {
-        showToast('Connection error. Please try again.');
-      }
+    function subscribe() {
+      // app.html never charges money. Hand off to the dashboard app's
+      // sign-up-first upgrade flow (?upgrade=pro), which signs the user in and
+      // handles the Pro upgrade there.
+      window.location.assign('https://app.resumetailored.com?upgrade=pro');
     }
 
     function copyResult() {
@@ -4900,24 +4886,10 @@ Aaliyah Washington`
       });
     }
 
-    async function doModalSubscribe() {
-      const email = document.getElementById('subscribeEmail').value.trim();
-      const errEl = document.getElementById('subscribeError');
-      errEl.textContent = '';
-      if (!email || !email.includes('@')) { errEl.textContent = 'Please enter a valid email address.'; return; }
-      const btn = document.getElementById('subscribeBtn');
-      btn.disabled = true;
-      btn.textContent = 'Redirecting to checkout…';
-      try {
-        const res = await fetch('/api/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email })
-        });
-        const data = await res.json();
-        if (data.url) { window.location.href = data.url; }
-        else { errEl.textContent = data.error || 'Could not start checkout. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19.00/mo →'; }
-      } catch { errEl.textContent = 'Connection error. Please try again.'; btn.disabled = false; btn.textContent = 'Subscribe — $19.00/mo →'; }
+    function doModalSubscribe() {
+      // app.html never charges money. Hand off to the dashboard app's
+      // sign-up-first upgrade flow (?upgrade=pro) instead of opening Stripe here.
+      window.location.assign('https://app.resumetailored.com?upgrade=pro');
     }
 
     function showToast(msg, ms) {
