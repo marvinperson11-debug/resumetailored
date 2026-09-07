@@ -17,6 +17,6 @@
   // New luxury headers own a real dropdown. Keep the legacy inline-link toggle
   // only for older pages that have not adopted that menu yet.
   if(mobile&&!document.getElementById('clubMobileMenu'))mobile.addEventListener('click',function(){var links=document.querySelector('.club-nav__links');if(!links)return;var open=links.classList.toggle('is-open');links.style.display=open?'flex':'';mobile.setAttribute('aria-expanded',String(open));});
-  // Paid-plan buttons are owned exclusively by paid-checkout.js. Keeping a
-  // second handler here used to race Stripe and send employer plans to /login.
+  // No paid-plan checkout handler here (or anywhere on the marketing site):
+  // every Pro/employer CTA links straight to the dashboard app.
 })();

@@ -61,8 +61,9 @@
   };
   window.thCloseUpgrade = function () { var m = document.getElementById('thUpgradeModal'); if (m) m.classList.remove('show'); };
   window.thStartPro = async function () {
-    if (window.RTCheckout) window.RTCheckout.start('pro');
-    else location.href = '/pricing#ecosystem-pricing';
+    // The site never initiates Stripe checkout; hand off to the dashboard app's
+    // sign-up-first upgrade flow.
+    location.href = 'https://app.resumetailored.com?upgrade=pro';
   };
 
   // ── copy / download ───────────────────────────────────────────────────────

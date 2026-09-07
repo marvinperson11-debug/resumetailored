@@ -374,11 +374,14 @@ const server = app.listen(0, async () => {
     const empStatus = await req('GET', '/api/employer/status', 'tokFree');
     check('access: an employer-account holder gets full access', empStatus.json.access === 'full', empStatus.body);
 
-    // The public employer landing page is served and has the onboarding CTA.
+    // The public employer landing page is served. Its employer CTAs route to the
+    // app (sign-up-first) rather than initiating Stripe checkout on the marketing
+    // site, and the contextual free-quota CTA is preserved. No data-checkout-plan
+    // trigger should remain on this landing page.
     const landing = await new Promise((resolve) => {
       http.get({ host: '127.0.0.1', port: PORT, path: '/for-employers' }, (r) => { let b = ''; r.on('data', d => b += d); r.on('end', () => resolve({ status: r.statusCode, body: b })); });
     });
-    check('/for-employers landing offers paid checkout and the contextual free quota', landing.status === 200 && /data-checkout-plan="portal"/.test(landing.body) && /free employer quota/.test(landing.body), String(landing.status));
+    check('/for-employers landing routes employer CTAs to the app and keeps the free quota, with no on-site Stripe checkout', landing.status === 200 && /href="https:\/\/app\.resumetailored\.com"/.test(landing.body) && /free employer quota/.test(landing.body) && !/data-checkout-plan/.test(landing.body), String(landing.status));
 
   } catch (err) {
     failures++;

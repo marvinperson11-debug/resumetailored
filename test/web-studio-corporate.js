@@ -22,7 +22,7 @@ for (const route of ['personal-site', 'personal-site/autogen', 'personal-site/pr
 }
 check('site media upload has Pro gate', /app\.post\('\/api\/site-media'[\s\S]{0,700}hasWebStudioAccess\(email\)/.test(server));
 check('locked users see the Pro teaser instead of a login redirect', /if \(!webStudioAccessFlag\) \{ showTab\('website'\); return; \}/.test(app));
-check('teaser exposes direct Pro checkout', /Available in Pro/.test(app) && /data-checkout-plan="pro"/.test(app));
+check('teaser routes Pro upgrade to the app (no on-site checkout)', /Available in Pro/.test(app) && /onclick="startPro\(\)"/.test(app) && !/data-checkout-plan/.test(app));
 check('locked tab never initializes the editor', /name === 'website' && webStudioAccessFlag && typeof loadWebsiteCreator/.test(app) && /async function loadWebsiteCreator\(opts\) \{\s*if \(!webStudioAccessFlag\) return;/.test(app));
 check('luxury palette uses exact brand colors', ['#0a1628', '#1a4d3a', '#c9a227'].every(color => css.includes(color)));
 check('teaser uses a navy scrim and gold border', /ws-corporate-teaser::before/.test(css) && /border:1px solid var\(--ws-gold\)/.test(css));

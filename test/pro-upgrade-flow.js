@@ -19,22 +19,19 @@ const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 let failures = 0;
 const check = (name, ok, detail) => { if (ok) console.log('PASS ', name); else { failures++; console.error('FAIL ', name, detail ? '— ' + detail : ''); } };
 
-// ── Static: paid-checkout.js re-routes consumer Pro/lifetime to the app ───────
-const checkout = read('public/paid-checkout.js');
-check('consumer Pro/lifetime CTAs redirect to the app with ?upgrade=pro',
-  /app\.resumetailored\.com\?upgrade=pro/.test(checkout) &&
-  /plan === 'pro' \|\| plan === 'lifetime'\) \{ window\.location\.assign/.test(checkout));
-check('marketing site no longer posts consumer Pro to /api/subscribe',
-  !/\/api\/subscribe-lifetime/.test(checkout) && !/'\/api\/subscribe'/.test(checkout));
-check('employer plans still check out on-site', /\/api\/employer\/subscribe/.test(checkout));
+// ── Static: the marketing site never initiates Stripe checkout ────────────────
+// The on-site paid-checkout.js client has been removed entirely; every Pro,
+// lifetime, and employer CTA now links straight to the dashboard app.
+check('paid-checkout.js has been removed from the repo', !fs.existsSync(path.join(root, 'public/paid-checkout.js')));
 
 // ── Static: the marketing homepage no longer carries consumer checkout code ───
 const home = read('public/index.html');
-check('homepage removed the email checkout modals + submit functions',
+check('homepage removed the email checkout modals + submit/checkout functions',
   !/id="checkoutModal"/.test(home) && !/id="lifetimeModal"/.test(home) &&
-  !/function submitCheckout/.test(home) && !/function submitLifetime/.test(home));
-check('homepage Pro CTAs redirect to the app upgrade flow',
-  /openCheckoutModal\(\)\s*\{\s*window\.location\.assign\('https:\/\/app\.resumetailored\.com\?upgrade=pro'\)/.test(home));
+  !/function submitCheckout/.test(home) && !/function submitLifetime/.test(home) &&
+  !/function openCheckoutModal/.test(home) && !/openCheckoutModal\(\)/.test(home));
+check('homepage Pro CTAs link directly to the app upgrade flow',
+  home.includes("location.href='https://app.resumetailored.com?upgrade=pro'"));
 check('homepage nav: Free Tools → app, Pro Tools → app?upgrade=pro',
   /href="https:\/\/app\.resumetailored\.com"[^>]*data-i18n="nav_free_tools"/.test(home) &&
   /href="https:\/\/app\.resumetailored\.com\?upgrade=pro"[^>]*data-i18n="nav_pro_tools"/.test(home));
