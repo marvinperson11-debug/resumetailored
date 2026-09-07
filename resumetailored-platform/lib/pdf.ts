@@ -79,6 +79,43 @@ export function downloadPdf(opts: {
   return true;
 }
 
+/**
+ * Word (.docx) export (FIX 3). Posts the current content to the server, which
+ * builds the document with the `docx` library, and downloads the returned blob.
+ * Returns an error message string on failure, or null on success.
+ */
+export async function downloadDocx(opts: {
+  text: string;
+  tplId: string;
+  mode: Exclude<Mode, "both">;
+  title?: string;
+  photo?: string;
+  signature?: string;
+  docFont?: string;
+}): Promise<string | null> {
+  if (!opts.text || !opts.text.trim()) return "Nothing to export yet.";
+  try {
+    const res = await fetch("/api/download-docx", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(opts),
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
+      return data.message || data.error || "Word export failed. Please try again.";
+    }
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (opts.title || "resume").replace(/[^a-z0-9-_ ]/gi, "_") + ".docx";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    return null;
+  } catch {
+    return "Word export failed. Please try again.";
+  }
+}
+
 export function downloadTxt(text: string, filename: string, isPro: boolean) {
   let out = text;
   if (!isPro) out += "\n\n—\n" + WATERMARK;

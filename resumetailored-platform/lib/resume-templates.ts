@@ -346,7 +346,7 @@ function groupedSectionHtml(lines: string[], c: Colors, printMode: boolean, head
 
 const SIDE_KEYS = ["SKILL", "CERTIF", "LICENSE", "LICENS", "EDUCAT", "LANGUAGE", "AWARD", "COMPETENC", "TOOL", "TECHNOLOG", "PROFICIEN"];
 
-function renderSidebarOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string): string {
+function renderSidebarOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string, sig = ""): string {
   const { name, contact, sections } = parsed;
   const _np = name.trim().split(/\s+/).filter((w) => w && !/^(jr|sr|ii|iii|iv|v)\.?$/i.test(w));
   const initials = (((_np[0] || name.trim() || "?")[0] || "?") + (_np.length > 1 ? _np[_np.length - 1][0] || "" : "")).toUpperCase();
@@ -397,10 +397,10 @@ function renderSidebarOutput(parsed: ParsedResume, c: Colors, font: string, prin
     name
   )}</div></div><div style="margin-bottom:16px;"><div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:${c.a};margin-bottom:8px;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">Contact</div><div style="font-size:11px;color:rgba(255,255,255,.85);line-height:1.9;">${contactLines
     .map((l) => `<div>${escHtml(l)}</div>`)
-    .join("")}</div></div>${sidebarHtml}</div><div style="${rColStyle}">${mainHtml}</div></div>`;
+    .join("")}</div></div>${sidebarHtml}</div><div style="${rColStyle}">${mainHtml}${sig}</div></div>`;
 }
 
-function renderModernOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string): string {
+function renderModernOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string, sig = ""): string {
   const { name, contact, sections } = parsed;
   const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
   const modernHdr = (sec: { title: string }) =>
@@ -421,10 +421,10 @@ function renderModernOutput(parsed: ParsedResume, c: Colors, font: string, print
     name
   )}</div><div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;display:flex;flex-wrap:wrap;gap:12px;">${contactParts
     .map((s) => `<span>${escHtml(s)}</span>`)
-    .join("")}</div></div>${modernPhoto}</div><div style="padding:20px 44px 28px;">${sectionsHtml}</div></div>`;
+    .join("")}</div></div>${modernPhoto}</div><div style="padding:20px 44px 28px;">${sectionsHtml}${sig}</div></div>`;
 }
 
-function renderTwoColOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string): string {
+function renderTwoColOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string, sig = ""): string {
   const { name, contact, sections } = parsed;
   const sideSecs: typeof sections = [],
     mainSecs: typeof sections = [];
@@ -468,10 +468,13 @@ function renderTwoColOutput(parsed: ParsedResume, c: Colors, font: string, print
     ? `display:table-cell;width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;vertical-align:top;${PCA}`
     : `width:220px;padding:32px 18px 32px 24px;border-right:2px solid ${c.a}35;flex-shrink:0;${PCA}`;
   const rStyle2 = printMode ? `display:table-cell;padding:32px 28px;vertical-align:top;` : `flex:1;padding:32px 28px;min-width:0;`;
-  return `<div style="${outerStyle}"><div style="${lStyle2}">${leftHtml}</div><div style="${rStyle2}">${rightHtml}</div></div>`;
+  const table = `<div style="${outerStyle}"><div style="${lStyle2}">${leftHtml}</div><div style="${rStyle2}">${rightHtml}</div></div>`;
+  // Signature spans the FULL width below both columns (FIX 1).
+  if (!sig) return table;
+  return `<div style="font-family:${font};">${table}<div style="padding:0 28px 8px;">${sig}</div></div>`;
 }
 
-function renderBannerOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string): string {
+function renderBannerOutput(parsed: ParsedResume, c: Colors, font: string, printMode: boolean, photo?: string, sig = ""): string {
   const { name, contact, sections } = parsed;
   const contactParts = contact.split(/\s*\|\s*/).filter(Boolean);
   const contactHtml = contactParts.map((s, i) => `${i > 0 ? `<span style="color:${c.a};margin:0 8px;">·</span>` : ""}${escHtml(s)}`).join("");
@@ -491,7 +494,7 @@ function renderBannerOutput(parsed: ParsedResume, c: Colors, font: string, print
   const bannerPhoto = photo ? `<div style="flex-shrink:0;">${photoHtml(photo, 76, { ring: `${c.a}55` })}</div>` : "";
   return `<div style="${outerStyle}"><div style="padding:26px 44px 18px;border-left:5px solid ${c.p};display:flex;align-items:center;justify-content:space-between;gap:20px;${PCA}"><div style="min-width:0;"><div style="font-size:28px;font-weight:900;color:${c.p};letter-spacing:-0.5px;">${escHtml(
     name
-  )}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${PCA}"></div></div>${bannerPhoto}</div><div style="padding:18px 44px 32px;">${sectionsHtml}</div></div>`;
+  )}</div><div style="font-size:11.5px;color:#666;margin-top:7px;">${contactHtml}</div><div style="height:2px;background:linear-gradient(to right,${c.p},${c.a},transparent);margin-top:14px;border-radius:1px;${PCA}"></div></div>${bannerPhoto}</div><div style="padding:18px 44px 32px;">${sectionsHtml}${sig}</div></div>`;
 }
 
 // ─── Cover letters ────────────────────────────────────────────────────────────
@@ -564,7 +567,7 @@ function parseCoverOutput(text: string, meta: CoverMeta = {}) {
   };
 }
 
-function renderCoverModernOutput(text: string, c: Colors, font: string, printMode: boolean): string {
+function renderCoverModernOutput(text: string, c: Colors, font: string, printMode: boolean, sig = ""): string {
   const lines = text.split("\n");
   let name = "";
   const contactLines: string[] = [];
@@ -629,10 +632,10 @@ function renderCoverModernOutput(text: string, c: Colors, font: string, printMod
     contactLines.length
       ? `<div style="font-size:11.5px;color:rgba(255,255,255,.78);margin-top:6px;">${escHtml(contactLines.join(" | "))}</div>`
       : ""
-  }</div><div style="${bodyPad}">${bodyHtml}</div></div>`;
+  }</div><div style="${bodyPad}">${bodyHtml}${sig}</div></div>`;
 }
 
-function renderCoverOutput(text: string, c: Colors, font: string, printMode: boolean, tpl: Template, meta: CoverMeta): string {
+function renderCoverOutput(text: string, c: Colors, font: string, printMode: boolean, tpl: Template, meta: CoverMeta, sig = ""): string {
   const p = parseCoverOutput(text, meta);
   const cardWrap = printMode
     ? `font-family:${font};color:#222;`
@@ -658,6 +661,7 @@ function renderCoverOutput(text: string, c: Colors, font: string, printMode: boo
       }
       <div style="font-size:14.5px;font-weight:700;color:${c.p};margin-bottom:22px;">Dear Hiring Manager,</div>
       ${bodyParas}
+      ${sig}
     </div>`;
   }
 
@@ -688,6 +692,7 @@ function renderCoverOutput(text: string, c: Colors, font: string, printMode: boo
       <div style="${boldBody}">
         <div style="font-size:14.5px;font-weight:800;color:${c.p};margin-bottom:22px;">Dear Hiring Manager,</div>
         ${boldBodyParas}
+        ${sig}
       </div>
     </div>`;
   }
@@ -708,6 +713,7 @@ function renderCoverOutput(text: string, c: Colors, font: string, printMode: boo
       ${roleLine.length ? `<div style="font-size:13.5px;color:#555;margin-bottom:26px;">${escHtml(roleLine.join(" — "))}</div>` : '<div style="margin-bottom:26px;"></div>'}
       <div style="font-size:14.5px;font-weight:700;color:${c.p};border-bottom:1px solid ${c.a};padding-bottom:7px;margin-bottom:22px;">Dear Hiring Manager,</div>
       ${bodyParas}
+      ${sig}
     </div>`;
   }
 
@@ -733,6 +739,7 @@ function renderCoverOutput(text: string, c: Colors, font: string, printMode: boo
       <div style="${splitBody}">
         <div style="font-size:14.5px;font-weight:700;color:${c.p};margin-bottom:22px;">Dear Hiring Manager,</div>
         ${bodyParas}
+        ${sig}
       </div>
     </div>`;
   }
@@ -758,10 +765,11 @@ function renderCoverOutput(text: string, c: Colors, font: string, printMode: boo
       <div style="font-size:11.5px;color:${c.p};text-transform:uppercase;letter-spacing:1.5px;margin-bottom:26px;opacity:0.7;">${p.date}</div>
       ${roleLine.length ? `<div style="font-size:16px;font-weight:700;color:${c.p};margin-bottom:26px;">Re: ${escHtml(roleLine.join(" — "))}</div>` : ""}
       ${cleanBodyParas}
+      ${sig}
     </div>`;
   }
 
-  return renderCoverModernOutput(text, c, font, printMode);
+  return renderCoverModernOutput(text, c, font, printMode, sig);
 }
 
 // ─── Top-level renderer (faithful port of renderAIOutput) ─────────────────────
@@ -775,17 +783,20 @@ export interface RenderOptions {
 }
 
 /**
- * Signature sign-off block appended to the document (FIX 7 #2/#4). For cover
- * letters it reads as a "Sincerely," close; for resumes it's a simple signed
- * line. Rendered in the chosen signature font so cursive faces come through.
+ * Signature sign-off block (FIX 7 #2). Returns just the inner block — the top
+ * margin gives it space, and it carries NO horizontal padding so each layout can
+ * drop it into the right container (the main column on a sidebar, full width
+ * below a two-column grid, the content area otherwise) and it inherits that
+ * container's padding. This is what keeps the signature flowing with the
+ * document instead of floating over a template (FIX 1). For cover letters it
+ * reads as a "Sincerely," close.
  */
-function signatureFooter(signature: string, sigFontKey: string | undefined, c: Colors, isCover: boolean, printMode: boolean): string {
+function sigBlock(signature: string, sigFontKey: string | undefined, color: string, isCover: boolean): string {
   const f = (sigFontKey && SIG_FONT_MAP[sigFontKey]) || "'Dancing Script','Segoe Script',cursive";
-  const pad = printMode ? "6px 48px 22px" : "6px 64px 40px";
   const close = isCover ? `<div style="font-size:13.5px;color:#333;margin-bottom:6px;">Sincerely,</div>` : "";
-  return `<div style="padding:${pad};${PBI}">${close}<div style="font-family:${f};font-size:30px;line-height:1.1;color:${c.p};">${escHtml(
+  return `<div style="margin-top:26px;${PBI}">${close}<div style="font-family:${f};font-size:30px;line-height:1.1;color:${color};">${escHtml(
     signature
-  )}</div><div style="width:180px;border-bottom:1px solid #cbd5e1;margin-top:4px;"></div></div>`;
+  )}</div><div style="width:180px;border-bottom:1px solid #cbd5e1;margin-top:5px;"></div></div>`;
 }
 
 export function renderAIOutput(text: string, tplId: string, mode: Mode, opts: RenderOptions = {}): string {
@@ -794,17 +805,16 @@ export function renderAIOutput(text: string, tplId: string, mode: Mode, opts: Re
   const tpl = findTemplate(cat, tplId);
   const c = tpl.c;
   const font = (opts.docFont && FONT_MAP[opts.docFont]) || (tpl.serif ? "Georgia,'Times New Roman',serif" : "Arial,sans-serif");
-  const sig = opts.signature && opts.signature.trim() ? signatureFooter(opts.signature.trim(), opts.sigFont, c, cat === "cover", printMode) : "";
-  const withSig = (html: string) => (sig ? `<div style="font-family:${font};">${html}${sig}</div>` : html);
+  const sig = opts.signature && opts.signature.trim() ? sigBlock(opts.signature.trim(), opts.sigFont, c.p, cat === "cover") : "";
 
-  if (tpl.layout === "cModern") return withSig(renderCoverModernOutput(text, c, font, printMode));
-  if (cat === "cover") return withSig(renderCoverOutput(text, c, font, printMode, tpl, opts.coverMeta || {}));
+  if (tpl.layout === "cModern") return renderCoverModernOutput(text, c, font, printMode, sig);
+  if (cat === "cover") return renderCoverOutput(text, c, font, printMode, tpl, opts.coverMeta || {}, sig);
 
   const parsed = parseAIOutput(text);
-  if (tpl.layout === "rSidebar") return withSig(renderSidebarOutput(parsed, c, font, printMode, opts.photo));
-  if (tpl.layout === "rModern") return withSig(renderModernOutput(parsed, c, font, printMode, opts.photo));
-  if (tpl.layout === "rTwoCol") return withSig(renderTwoColOutput(parsed, c, font, printMode, opts.photo));
-  if (tpl.layout === "rBanner") return withSig(renderBannerOutput(parsed, c, font, printMode, opts.photo));
+  if (tpl.layout === "rSidebar") return renderSidebarOutput(parsed, c, font, printMode, opts.photo, sig);
+  if (tpl.layout === "rModern") return renderModernOutput(parsed, c, font, printMode, opts.photo, sig);
+  if (tpl.layout === "rTwoCol") return renderTwoColOutput(parsed, c, font, printMode, opts.photo, sig);
+  if (tpl.layout === "rBanner") return renderBannerOutput(parsed, c, font, printMode, opts.photo, sig);
 
   // Linear layout (Classic, Executive, Minimal)
   const lines = text.split("\n");
@@ -886,7 +896,8 @@ export function renderAIOutput(text: string, tplId: string, mode: Mode, opts: Re
     const mx = align === "center" ? "margin:0 auto 14px;" : "margin:0 0 14px;";
     html = `<div style="text-align:${align};${PBI}"><div style="display:inline-block;${mx}">${photoHtml(opts.photo, 92, { ring: `${c.a}55` })}</div></div>` + html;
   }
+  if (sig) html += sig; // flows at the bottom of the content, inside the card
   const bg = tpl.style === "minimal" ? "#fafafa" : "#fff";
-  if (printMode) return withSig(`<div style="font-family:${font};background:${bg};color:#222;padding:0 0 28px 0;">${html}</div>`);
-  return withSig(`<div style="font-family:${font};background:${bg};padding:52px 64px;color:#222;border-radius:4px;border:none;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 8px 32px rgba(0,0,0,0.1);">${html}</div>`);
+  if (printMode) return `<div style="font-family:${font};background:${bg};color:#222;padding:0 0 28px 0;">${html}</div>`;
+  return `<div style="font-family:${font};background:${bg};padding:52px 64px;color:#222;border-radius:4px;border:none;box-shadow:0 1px 3px rgba(0,0,0,0.06),0 8px 32px rgba(0,0,0,0.1);">${html}</div>`;
 }

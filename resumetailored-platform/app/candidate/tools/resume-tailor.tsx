@@ -14,10 +14,14 @@ import {
   Target,
   Loader2,
   Upload,
+  Pencil,
+  Eye,
+  RotateCcw,
+  FileDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { findTemplate, BODY_FONTS, SIG_FONTS, FONT_MAP, SIG_FONT_MAP } from "@/lib/resume-templates";
-import { downloadPdf, downloadTxt } from "@/lib/pdf";
+import { downloadPdf, downloadTxt, downloadDocx } from "@/lib/pdf";
 import { analyzeSkillGap } from "@/lib/skills-gap";
 import { emptyDraftContent, type ResumeDraftContent } from "@/lib/draft-types";
 import { ToolModal } from "../components/tool-modal";
@@ -77,6 +81,9 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const [jobText, setJobText] = useState(seed.jobText);
   const [tplId, setTplId] = useState(seed.tplId || "r1");
   const [result, setResult] = useState(seed.result);
+  const [originalResult, setOriginalResult] = useState(seed.result); // the last AI output, for "Reset to AI version"
+  const [editing, setEditing] = useState(false);
+  const [docxBusy, setDocxBusy] = useState(false);
   const [photo, setPhoto] = useState(seed.photo || "");
   const [signature, setSignature] = useState(seed.signature || "");
   const [docFont, setDocFont] = useState(seed.docFont || "");
@@ -236,6 +243,8 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       }
       const built = data.result.trim();
       setResult(built);
+      setOriginalResult(built); // baseline for "Reset to AI version"
+      setEditing(false);
       // Save on build (FIX 7 #6).
       void persist({ ...currentContent(), result: built });
     } catch (e) {
@@ -243,6 +252,14 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     } finally {
       setLoading(false);
     }
+  }
+
+  async function exportDocx() {
+    setDocxBusy(true);
+    setError(null);
+    const err = await downloadDocx({ text: result, tplId, mode: "resume", title: "Resume", photo, signature, docFont });
+    if (err) setError(err);
+    setDocxBusy(false);
   }
 
   const footer = (
@@ -273,6 +290,9 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
             }
           >
             <Download className="h-4 w-4" /> PDF
+          </SecondaryButton>
+          <SecondaryButton onClick={exportDocx} disabled={docxBusy}>
+            {docxBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />} .docx
           </SecondaryButton>
         </>
       )}
@@ -428,18 +448,62 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           </div>
         </div>
 
-        {/* Right: live preview */}
-        <div className="min-h-0 overflow-y-auto bg-navy/40 p-4">
-          <DocPreview
-            text={result}
-            tplId={tplId}
-            mode="resume"
-            docFont={docFont}
-            photo={photo}
-            signature={signature}
-            sigFont={sigFont}
-            placeholder="Paste your resume and a job posting, then tap “Build My Resume” to see it in this template."
-          />
+        {/* Right: live preview + inline editor */}
+        <div className="flex min-h-0 flex-col bg-navy/40">
+          {result && (
+            <div className="flex items-center justify-between gap-2 border-b border-border-gold px-4 py-2">
+              <button
+                type="button"
+                onClick={() => setEditing((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8"
+              >
+                {editing ? <Eye className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+                {editing ? "Preview" : "Edit text"}
+              </button>
+              {result !== originalResult && originalResult && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResult(originalResult);
+                    setEditing(false);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-white/60 transition-colors hover:text-gold"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" /> Reset to AI version
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+            {editing && result ? (
+              <textarea
+                value={result}
+                onChange={(e) => setResult(e.target.value)}
+                spellCheck
+                className="h-full min-h-[360px] w-full resize-none rounded-xl border border-violet/50 bg-white/95 p-4 font-mono text-[13px] leading-relaxed text-navy outline-none focus:border-violet focus:ring-1 focus:ring-violet"
+              />
+            ) : (
+              <DocPreview
+                text={result}
+                tplId={tplId}
+                mode="resume"
+                docFont={docFont}
+                photo={photo}
+                signature={signature}
+                sigFont={sigFont}
+                placeholder="Paste your resume and a job posting, then tap “Build My Resume” to see it in this template."
+              />
+            )}
+          </div>
+
+          {/* FIX 4: download disclaimer — subtle, below the preview and above
+              the download buttons in the footer. */}
+          <p className="border-t border-border-gold px-4 py-2.5 text-[11px] leading-snug text-white/40">
+            {editing
+              ? "Editing the text — your changes flow into the template, the preview, and every download."
+              : "PDF and Word downloads may look slightly different from the on-screen preview due to browser rendering vs. document engine differences. For best results, review your download before sending."}
+          </p>
         </div>
       </div>
     </ToolModal>
