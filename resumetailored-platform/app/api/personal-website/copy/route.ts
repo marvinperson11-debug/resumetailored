@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { isPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildSiteCopyPrompt, type SiteSection } from "@/lib/site-templates";
@@ -14,11 +15,15 @@ interface SiteCopy {
   sections: SiteSection[];
 }
 
-/** Generate personal-website copy from a resume. Available to all signed-in
- *  users (Pro gates only Publish). */
+/** Generate personal-website copy from a resume. Personal Website is a Pro-only
+ *  tool, so this is Pro-gated (belt-and-suspenders behind the UI gate). */
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
+
+  if (!(await isPro())) {
+    return NextResponse.json({ error: "pro_required", message: "Personal Website is a Pro feature." }, { status: 402 });
+  }
 
   const body = (await req.json().catch(() => ({}))) as { resume?: string };
   const resume = (body.resume || "").trim();
