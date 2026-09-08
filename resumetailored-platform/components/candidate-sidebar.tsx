@@ -22,6 +22,7 @@ import {
   Settings,
   Star,
   Crown,
+  Lock,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,8 @@ interface NavItem {
   hero?: boolean;
   /** Show a small "PRO" pill to the right. */
   pro?: boolean;
+  /** Fully Pro-gated: free users see a lock and clicking opens the upgrade flow. */
+  locked?: boolean;
 }
 
 // Built tools open in a modal (FIX 3); everything else navigates. "Build My
@@ -55,7 +58,7 @@ const navItems: NavItem[] = [
   { label: "Decoder", opens: "decoder", icon: FileSearch },
   { label: "Application Tracker", href: "/candidate/applications", icon: Send },
   { label: "Shareable Links", href: "/candidate/shareable-links", icon: LinkIcon },
-  { label: "Resume Video", opens: "video", icon: Video, pro: true },
+  { label: "Resume Video", opens: "video", icon: Video, pro: true, locked: true },
   { label: "Personal Website", opens: "studio", icon: Globe, pro: true },
   { label: "Templates", href: "/candidate/templates", icon: Layout },
   { label: "Profile", href: "/candidate/profile", icon: User },
@@ -128,7 +131,12 @@ export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge
             <>
               <Icon className="h-[18px] w-[18px] shrink-0" />
               <span className={cn(!item.pro && "flex-1")}>{item.label}</span>
-              {item.pro && <ProBadge />}
+              {item.pro &&
+                (item.locked && !proish ? (
+                  <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-cream" />
+                ) : (
+                  <ProBadge />
+                ))}
             </>
           );
 

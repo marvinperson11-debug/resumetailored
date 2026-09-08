@@ -48,9 +48,11 @@ export const TOOLS: ToolMeta[] = [
   { id: "jobs", label: "Job Finder", icon: Briefcase, kind: "tool" },
   { id: "career", label: "Career", icon: Compass, kind: "tool" },
   { id: "decoder", label: "Decoder", icon: FileSearch, kind: "tool" },
-  // Built now; open for everyone — the Pro gate is on the actions inside
-  // (voiceover / publish), not on opening the tool.
-  { id: "video", label: "Resume Video", icon: Video, kind: "tool" },
+  // Resume Video is a fully Pro-only tool: free users can't open it at all
+  // (openTool redirects them to the upgrade flow). The in-tool voiceover/MP4
+  // gates remain as secondary server-side checks.
+  { id: "video", label: "Resume Video", icon: Video, kind: "pro" },
+  // Personal Website opens for everyone; its Pro gate is on Publish.
   { id: "studio", label: "Personal Website", icon: Globe, kind: "tool" },
 ];
 

@@ -5,8 +5,16 @@ import { useRouter } from "next/navigation";
 import { Video, Sparkles, Play, Pause, Download, Volume2, Lock, Film, Copy, Check, Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ToolModal } from "../components/tool-modal";
-import { Label, TextArea, Select, PrimaryButton, SecondaryButton, UpgradeNote } from "../components/ui";
-import { VIDEO_TEMPLATES, VIDEO_VOICES, parseScriptScenes } from "@/lib/video-ai";
+import { Label, TextArea, TextInput, Select, PrimaryButton, SecondaryButton } from "../components/ui";
+import {
+  VIDEO_TEMPLATES,
+  VIDEO_VOICES,
+  parseScriptScenes,
+  GREETING_OPTIONS,
+  CLOSING_OPTIONS,
+  DEFAULT_GREETING,
+  DEFAULT_CLOSING,
+} from "@/lib/video-ai";
 import type { ResumeDraft } from "@/lib/draft-types";
 
 export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
@@ -15,6 +23,10 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   const [resumeText, setResumeText] = useState("");
   const [template, setTemplate] = useState("professional");
   const [voice, setVoice] = useState("rachel");
+  // Personalization (Pro): who the video is for + greeting/closing style.
+  const [toWhom, setToWhom] = useState("");
+  const [greeting, setGreeting] = useState(DEFAULT_GREETING);
+  const [closing, setClosing] = useState(DEFAULT_CLOSING);
   const [script, setScript] = useState("");
   const [loading, setLoading] = useState(false);
   const [voicing, setVoicing] = useState(false);
@@ -32,12 +44,22 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   const [uploading, setUploading] = useState(false);
   const [uploadNote, setUploadNote] = useState<string | null>(null);
 
+  // Resume Video is Pro-only. openTool already blocks free users, but if one
+  // somehow lands here (direct state, stale bundle) send them to the upgrade flow.
   useEffect(() => {
+    if (!isPro) {
+      router.push("/candidate?upgrade=pro");
+      onClose();
+    }
+  }, [isPro, router, onClose]);
+
+  useEffect(() => {
+    if (!isPro) return;
     fetch("/api/resumes", { cache: "no-store" })
       .then((r) => r.json())
       .then((d: { drafts?: ResumeDraft[] }) => setResumes(d.drafts || []))
       .catch(() => {});
-  }, []);
+  }, [isPro]);
 
   const tpl = VIDEO_TEMPLATES.find((t) => t.id === template) || VIDEO_TEMPLATES[0];
   const scenes = parseScriptScenes(script);
@@ -82,8 +104,18 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       const res = await fetch("/api/resume-video/script", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume: resumeText, template }),
+        body: JSON.stringify({
+          resume: resumeText,
+          template,
+          to: toWhom.trim(),
+          greeting: greeting.trim() || DEFAULT_GREETING,
+          closing: closing.trim() || DEFAULT_CLOSING,
+        }),
       });
+      if (res.status === 402) {
+        router.push("/candidate?upgrade=pro");
+        return;
+      }
       const data = (await res.json().catch(() => ({}))) as { script?: string; error?: string; message?: string };
       if (!res.ok || !data.script) throw new Error(data.message || data.error || "Could not generate the script.");
       setScript(data.script);
@@ -215,15 +247,19 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
     }
   }
 
+  // Pro-only tool. The effect above redirects free users; render nothing for the
+  // frame before that navigation lands so the form never flashes.
+  if (!isPro) return null;
+
   const footer = (
     <>
-      <span className="mr-auto hidden text-xs text-white/45 sm:block">{isPro ? "Pro · full generation" : "Free · script + preview"}</span>
+      <span className="mr-auto hidden text-xs text-white/45 sm:block">Pro · full generation</span>
       <PrimaryButton onClick={genScript} loading={loading}>
         <Sparkles className="h-4 w-4" /> {script ? "Regenerate script" : "Generate script"}
       </PrimaryButton>
       {script && (
-        <PrimaryButton onClick={genVoiceover} loading={voicing} className={cn(!isPro && "bg-gold text-navy hover:shadow-none")}>
-          {isPro ? <Video className="h-4 w-4" /> : <Lock className="h-4 w-4" />} Generate voiceover
+        <PrimaryButton onClick={genVoiceover} loading={voicing}>
+          <Video className="h-4 w-4" /> Generate voiceover
         </PrimaryButton>
       )}
     </>
@@ -279,13 +315,48 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
               </Select>
             </div>
           </div>
+
+          {/* Personalize — who the video is for + greeting/closing style. */}
+          <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3.5 w-3.5 text-violet" />
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-cream">Personalize</h4>
+            </div>
+            <div>
+              <Label>Who is this video for? (optional)</Label>
+              <TextInput
+                value={toWhom}
+                onChange={(e) => setToWhom(e.target.value)}
+                placeholder="e.g. Hiring Manager, Sarah Johnson, Team at Google"
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <Label>How do you want to start?</Label>
+                <TextInput list="rv-greetings" value={greeting} onChange={(e) => setGreeting(e.target.value)} placeholder={DEFAULT_GREETING} />
+                <datalist id="rv-greetings">
+                  {GREETING_OPTIONS.map((o) => <option key={o} value={o} />)}
+                </datalist>
+              </div>
+              <div>
+                <Label>How do you want to close?</Label>
+                <TextInput list="rv-closings" value={closing} onChange={(e) => setClosing(e.target.value)} placeholder={DEFAULT_CLOSING} />
+                <datalist id="rv-closings">
+                  {CLOSING_OPTIONS.map((o) => <option key={o} value={o} />)}
+                </datalist>
+              </div>
+            </div>
+            <p className="text-[11px] text-white/45">
+              Used at the open and close of your script — pick a preset or type your own.
+            </p>
+          </div>
+
           {script && (
             <div>
               <Label>Script (editable)</Label>
               <TextArea rows={8} value={script} onChange={(e) => { setScript(e.target.value); setAudio(null); setMp4Url(null); }} className="font-mono text-[13px]" />
             </div>
           )}
-          {!isPro && script && <UpgradeNote>Pro generates the AI voiceover and lets you download the video.</UpgradeNote>}
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
         </div>
 

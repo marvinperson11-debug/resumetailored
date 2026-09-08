@@ -35,7 +35,47 @@ export function voiceIdForKey(key: string | undefined): string {
   return VIDEO_VOICES.find((v) => v.key === key)?.id || VIDEO_VOICES[0].id;
 }
 
-export function buildVideoScriptPrompt(resume: string, template: string): { system: string; user: string } {
+/** Preset greeting openers offered in the Personalize section (custom text allowed too). */
+export const GREETING_OPTIONS = [
+  "Hello",
+  "Hi",
+  "Dear",
+  "Good morning",
+  "Good afternoon",
+  "Greetings",
+  "Hey",
+  "To whom it may concern",
+];
+
+/** Preset closings offered in the Personalize section (custom text allowed too). */
+export const CLOSING_OPTIONS = [
+  "Thank you for your time",
+  "Have a great day",
+  "Best regards",
+  "Looking forward to hearing from you",
+  "Sincerely",
+  "Talk soon",
+  "Cheers",
+];
+
+export const DEFAULT_GREETING = "Hello";
+export const DEFAULT_CLOSING = "Thank you for your time";
+
+/** Optional personalization the Pro user sets in the modal. */
+export interface VideoScriptOptions {
+  /** Who the video is addressed to, e.g. "Sarah Johnson" or "Team at Google". Empty ⇒ generic opener. */
+  to?: string;
+  /** Greeting word/phrase, e.g. "Hello". */
+  greeting?: string;
+  /** Closing line, e.g. "Thank you for your time". */
+  closing?: string;
+}
+
+export function buildVideoScriptPrompt(
+  resume: string,
+  template: string,
+  opts: VideoScriptOptions = {}
+): { system: string; user: string } {
   const tone =
     template === "creative"
       ? "energetic and bold"
@@ -44,18 +84,25 @@ export function buildVideoScriptPrompt(resume: string, template: string): { syst
       : template === "warm"
       ? "warm, friendly, and human"
       : "polished and professional";
+
+  const greeting = (opts.greeting || DEFAULT_GREETING).trim().slice(0, 60) || DEFAULT_GREETING;
+  const to = (opts.to || "").trim().slice(0, 80);
+  const closing = (opts.closing || DEFAULT_CLOSING).trim().slice(0, 140) || DEFAULT_CLOSING;
+  // "Hello Sarah," when addressed, otherwise just "Hello,".
+  const opener = to ? `${greeting} ${to},` : `${greeting},`;
+
   return {
     system:
       "You write short spoken scripts for 30–45 second first-person video resumes. The script is read aloud by one voice, so write natural, punchy spoken English — no headers, no stage directions, no markdown. It must sound like a confident person introducing themselves, not a document read aloud.",
     user: `Write a ${tone} first-person video-resume script (~90–120 words, ~35 seconds spoken) from the resume below.
 
 Structure it as 4 short spoken beats, one per line, in this exact labeled form (keep the labels — the app splits on them):
-HOOK: one sentence — name + who they are + a confident hook
+HOOK: begin the sentence EXACTLY with "${opener}" then the person's name and a confident one-line hook — for example "${opener} I'm Jordan Lee, a ..."
 PROOF: one or two sentences — the single most impressive, quantified achievement
 STRENGTHS: one sentence — the skills/qualities that make them a strong hire
-CLOSE: one sentence — what they're looking for + a warm sign-off
+CLOSE: one sentence — what they're looking for — and END it with EXACTLY this sign-off: "${closing}."
 
-Rules: first person ("I"), spoken cadence, real specifics from the resume (never invented), no buzzword soup, no "I am a results-driven professional".
+Rules: first person ("I"), spoken cadence, real specifics from the resume (never invented), no buzzword soup, no "I am a results-driven professional". Do not repeat the greeting or the closing anywhere except where instructed above.
 
 RESUME:
 ${resume.slice(0, 6000)}`,
