@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Video, Sparkles, Play, Pause, Download, Volume2, Lock, Film, Copy, Check, Loader2 } from "lucide-react";
+import { Video, Sparkles, Play, Pause, Download, Volume2, Lock, Film, Copy, Check, Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, Select, PrimaryButton, SecondaryButton, UpgradeNote } from "../components/ui";
@@ -27,6 +27,10 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
   const [mp4Loading, setMp4Loading] = useState(false);
   const [mp4Error, setMp4Error] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Upload a resume file (PDF/DOCX/TXT) → extracted text fills the field.
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadNote, setUploadNote] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/resumes", { cache: "no-store" })
@@ -37,6 +41,35 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
 
   const tpl = VIDEO_TEMPLATES.find((t) => t.id === template) || VIDEO_TEMPLATES[0];
   const scenes = parseScriptScenes(script);
+
+  // Read an uploaded PDF/DOCX/TXT into the resume field via the shared extractor.
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadNote("That file is too large (max 10MB).");
+      return;
+    }
+    setUploading(true);
+    setUploadNote(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/extract-text", { method: "POST", body: fd });
+      const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
+      if (!res.ok || !data.text) throw new Error(data.error || "Could not read that file.");
+      setResumeText(data.text);
+      setScript("");
+      setAudio(null);
+      setMp4Url(null);
+      setUploadNote(`Imported “${file.name}”. Review the text before generating.`);
+    } catch (err) {
+      setUploadNote(err instanceof Error ? err.message : "Could not read that file.");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function genScript() {
     if (resumeText.trim().length < 40) {
@@ -217,8 +250,20 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
             </div>
           )}
           <div>
-            <Label>Resume text</Label>
-            <TextArea rows={7} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder="Paste your resume, or pick a saved one above…" />
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <Label>Resume text</Label>
+              <input ref={fileRef} type="file" accept=".txt,.pdf,.docx,.doc,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange={onFile} />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8 disabled:opacity-50"
+              >
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Upload resume
+              </button>
+            </div>
+            <TextArea rows={7} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder="Upload a .pdf, .docx, or .txt above, paste your resume, or pick a saved one…" />
+            {uploadNote && <p className="mt-1.5 text-xs text-white/55">{uploadNote}</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
