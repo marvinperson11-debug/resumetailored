@@ -52,8 +52,10 @@ export const TOOLS: ToolMeta[] = [
   // (openTool redirects them to the upgrade flow). The in-tool voiceover/MP4
   // gates remain as secondary server-side checks.
   { id: "video", label: "Resume Video", icon: Video, kind: "pro" },
-  // Personal Website opens for everyone; its Pro gate is on Publish.
-  { id: "studio", label: "Personal Website", icon: Globe, kind: "tool" },
+  // Personal Website (Web Studio) is a fully Pro-only tool — free users can't
+  // open it (openTool redirects to upgrade). The free "share-as-link" resume
+  // page is a separate, unaffected feature.
+  { id: "studio", label: "Personal Website", icon: Globe, kind: "pro" },
 ];
 
 interface ToolsContextValue {

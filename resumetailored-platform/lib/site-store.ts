@@ -49,6 +49,19 @@ export async function publishSite(
   }
 }
 
+/** The user's own published site (for the tool's "Update" state + prefill). */
+export async function getUserSite(userId: string): Promise<{ slug: string; data: Record<string, unknown> } | null> {
+  const c = db();
+  if (!c || !userId) return null;
+  try {
+    const { data, error } = await c.from("personal_sites").select("slug, data").eq("user_id", userId).maybeSingle();
+    if (error || !data) return null;
+    return { slug: data.slug, data: data.data || {} };
+  } catch {
+    return null;
+  }
+}
+
 /** Public read for the /site/<slug> page. */
 export async function getSiteBySlug(slug: string): Promise<StoredSite | null> {
   const c = db();
