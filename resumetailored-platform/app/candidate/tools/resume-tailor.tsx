@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { findTemplate, BODY_FONTS, SIG_FONTS, FONT_MAP, SIG_FONT_MAP } from "@/lib/resume-templates";
-import { downloadPdf, downloadTxt, downloadDocx } from "@/lib/pdf";
+import { downloadPdf, downloadTxt } from "@/lib/pdf";
+import { downloadDocx } from "@/lib/docx";
 import { analyzeSkillGap } from "@/lib/skills-gap";
 import { emptyDraftContent, type ResumeDraftContent } from "@/lib/draft-types";
 import { ToolModal } from "../components/tool-modal";
@@ -254,10 +255,12 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     }
   }
 
-  async function exportDocx() {
+  function exportDocx() {
     setDocxBusy(true);
     setError(null);
-    const err = await downloadDocx({ text: result, tplId, mode: "resume", title: "Resume", photo, signature, docFont });
+    // Client-side generation is synchronous; the brief busy flag just guards
+    // against a double-click while the blob is built + the download fires.
+    const err = downloadDocx({ text: result, tplId, mode: "resume", title: "Resume", photo, signature, docFont });
     if (err) setError(err);
     setDocxBusy(false);
   }

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { getUserSite } from "@/lib/site-store";
 
 export const runtime = "nodejs";
@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 export async function GET(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in" }, { status: 401 });
-  if (!(await isPro())) return NextResponse.json({ error: "pro_required" }, { status: 402 });
+  if (!(await isIndividualPro())) return NextResponse.json({ error: "pro_required" }, { status: 402 });
 
   const site = await getUserSite(userId);
   if (!site) return NextResponse.json({ site: null });

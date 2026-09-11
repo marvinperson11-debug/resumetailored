@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { extractJson } from "@/lib/tools-ai";
 import { buildSiteCopyPrompt, type SiteSection } from "@/lib/site-templates";
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
 
-  if (!(await isPro())) {
+  if (!(await isIndividualPro())) {
     return NextResponse.json({ error: "pro_required", message: "Personal Website is a Pro feature." }, { status: 402 });
   }
 

@@ -14,7 +14,6 @@
     "@supabase/supabase-js": "^2.115.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "docx": "^9.7.1",
     "lucide-react": "^1.41.0",
     "mammoth": "^1.8.0",
     "next": "14.2.35",

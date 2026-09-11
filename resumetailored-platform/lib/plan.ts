@@ -128,3 +128,11 @@ export function resolveEmployerId(a: Access, userId: string | null): string | nu
 export async function isPro(): Promise<boolean> {
   return (await getAccess()).plan === "pro";
 }
+
+/** Server-side gate for the individual Pro tools (Resume Video, Personal
+ *  Website): true for a Pro subscriber OR an employer's employee — mirroring
+ *  `canUseIndividualPro`, so the API entitlement matches what the candidate UI
+ *  shows. Use this (not `isPro`) for whole-tool Pro API gates. */
+export async function isIndividualPro(): Promise<boolean> {
+  return canUseIndividualPro(await getAccess());
+}
