@@ -53,7 +53,7 @@ const navItems: NavItem[] = [
   { label: "ATS Scanner", opens: "ats", icon: ScanLine },
   { label: "LinkedIn Optimizer", opens: "linkedin", icon: Contact, pro: true },
   { label: "Interview Coach", opens: "interview", icon: MessageSquare, pro: true },
-  { label: "Job Finder", opens: "jobs", icon: Zap },
+  { label: "Job Finder", opens: "jobs", icon: Zap, pro: true },
   { label: "Career Hub", opens: "career", icon: Briefcase },
   { label: "Decoder", opens: "decoder", icon: FileSearch },
   { label: "Application Tracker", href: "/candidate/applications", icon: Send },
