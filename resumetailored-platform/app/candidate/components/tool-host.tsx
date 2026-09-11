@@ -33,7 +33,7 @@ export function ToolHost() {
   if (activeTool === "interview") return <InterviewCoachTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "jobs") return <JobFinderTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "career") return <CareerHubTool onClose={closeTool} isPro={isPro} />;
-  if (activeTool === "decoder") return <DecoderKeyTool onClose={closeTool} />;
+  if (activeTool === "decoder") return <DecoderKeyTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "video") return <ResumeVideoTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "studio") return <PersonalWebsiteTool onClose={closeTool} isPro={isPro} />;
 
