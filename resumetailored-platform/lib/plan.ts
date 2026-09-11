@@ -28,6 +28,8 @@ export interface Access {
   plan: Plan;
   type: AccountType;
   tier?: string;
+  /** For an employee account: the employer (organization) they belong to. */
+  employerId?: string;
   employerName?: string;
 }
 
@@ -37,6 +39,7 @@ function normalize(meta: {
   plan?: string;
   type?: string;
   tier?: string;
+  employerId?: string;
   employerName?: string;
 }): Access | null {
   const plan = meta.plan;
@@ -47,6 +50,7 @@ function normalize(meta: {
         (meta.type as AccountType) ||
         (plan === "employer" ? "organization" : plan === "employee" ? "employee" : "individual"),
       tier: meta.tier,
+      employerId: meta.employerId,
       employerName: meta.employerName,
     };
   }
@@ -104,6 +108,20 @@ export function canUseIndividualPro(a: Access): boolean {
 /** Employer Portal (team, candidates, job posting). */
 export function isEmployer(a: Access): boolean {
   return a.plan === "employer";
+}
+
+/** Anyone who belongs to a company workspace: the employer owner, or one of
+ *  their invited employees. Both reach /employer (scoped to the same data). */
+export function canUseEmployerPortal(a: Access): boolean {
+  return a.plan === "employer" || (a.plan === "employee" && !!a.employerId);
+}
+
+/** The company workspace id for a request: the employer's own id, or (for an
+ *  employee) the employer they were invited into. `null` if neither applies. */
+export function resolveEmployerId(a: Access, userId: string | null): string | null {
+  if (a.plan === "employer" && userId) return userId;
+  if (a.plan === "employee" && a.employerId) return a.employerId;
+  return null;
 }
 
 /** Legacy helper — true only for an individual Pro subscriber. */
