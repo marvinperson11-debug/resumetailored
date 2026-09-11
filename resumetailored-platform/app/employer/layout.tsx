@@ -1,28 +1,43 @@
 import type { ReactNode } from "react";
-import { DashboardShell } from "@/components/dashboard-shell";
-import { EmployerSidebar } from "@/components/employer-sidebar";
+import { auth } from "@clerk/nextjs/server";
 import { LockedFeature } from "@/components/locked-feature";
-import { getAccess, isEmployer } from "@/lib/plan";
+import { getAccess, canUseEmployerPortal, resolveEmployerId } from "@/lib/plan";
+import { getEmployerProfile } from "@/lib/employer-store";
+import { EmployerTopNav } from "./components/employer-top-nav";
+import { OnboardingModal } from "./components/onboarding-modal";
 
+export const dynamic = "force-dynamic";
+
+/**
+ * Employer Portal shell — a top navigation bar + full-width content area (a
+ * deliberately different layout from the candidate sidebar). Only employer
+ * (organization) accounts and their invited employees reach it; everyone else
+ * gets the access gate. First-run employers see the onboarding modal until a
+ * company profile exists.
+ */
 export default async function EmployerLayout({ children }: { children: ReactNode }) {
+  const { userId } = await auth();
   const access = await getAccess();
-  const tierLabel = access.tier
-    ? access.tier.charAt(0).toUpperCase() + access.tier.slice(1)
-    : "Portal";
 
-  // Strict role segregation: only employer (organization) accounts reach the
-  // Employer Portal. Individuals (free/pro/employee) are blocked.
-  if (!isEmployer(access)) {
+  if (!canUseEmployerPortal(access)) {
     return (
-      <DashboardShell sidebar={<EmployerSidebar />} title="Employer Portal">
+      <main className="min-h-screen bg-navy px-4 py-10">
         <LockedFeature feature="Employer Portal" variant="employer" />
-      </DashboardShell>
+      </main>
     );
   }
 
+  const employerId = resolveEmployerId(access, userId)!;
+  const profile = await getEmployerProfile(employerId);
+  // Employees join an already-onboarded company, so never block them on setup.
+  const needsOnboarding = access.plan === "employer" && !profile;
+  const company = profile?.companyName || "Your company";
+
   return (
-    <DashboardShell sidebar={<EmployerSidebar tierLabel={tierLabel} />} title="Employer Portal">
-      {children}
-    </DashboardShell>
+    <div className="min-h-screen bg-navy">
+      <EmployerTopNav company={company} />
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+      {needsOnboarding && <OnboardingModal />}
+    </div>
   );
 }

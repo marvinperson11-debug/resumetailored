@@ -10,10 +10,17 @@ import { SignIn, ClerkLoading, ClerkLoaded } from "@clerk/nextjs";
 function SignInInner() {
   const [slow, setSlow] = useState(false);
   const params = useSearchParams();
-  // Carry a Pro-upgrade intent through auth so the dashboard opens the upgrade
-  // modal right after the user signs in.
-  const dest =
-    params.get("upgrade") === "pro" ? "/candidate?upgrade=pro" : "/candidate";
+  // Post-auth destination:
+  //  - an internal ?redirect_url (used by the /join invite flow) wins,
+  //  - a Pro-upgrade intent goes straight to the candidate dashboard's modal,
+  //  - otherwise land on "/" so the server routes by ROLE (employer → /employer).
+  const redirectUrl = params.get("redirect_url");
+  const safeRedirect = redirectUrl && /^\/(?!\/)/.test(redirectUrl) ? redirectUrl : null;
+  const dest = safeRedirect
+    ? safeRedirect
+    : params.get("upgrade") === "pro"
+      ? "/candidate?upgrade=pro"
+      : "/";
 
   useEffect(() => {
     const t = setTimeout(() => setSlow(true), 5000);
