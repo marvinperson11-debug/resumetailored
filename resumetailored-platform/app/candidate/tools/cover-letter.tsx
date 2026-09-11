@@ -1,23 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PenTool, LayoutGrid, FileText, Download, FileType } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { findTemplate, type CoverMeta } from "@/lib/resume-templates";
 import { downloadPdf, downloadTxt } from "@/lib/pdf";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, TextInput, PrimaryButton, SecondaryButton } from "../components/ui";
+import { useTools } from "../components/tools-context";
 import { TemplatePicker } from "./template-picker";
 import { DocPreview } from "./doc-preview";
 
 export function CoverLetterTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
+  const { pendingCoverTpl, clearPendingCoverTpl } = useTools();
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
   const [highlights, setHighlights] = useState("");
   const [jobText, setJobText] = useState("");
-  const [tplId, setTplId] = useState("c1");
+  // Honor a template pre-selected from the Templates gallery, else default Formal.
+  const [tplId, setTplId] = useState(pendingCoverTpl || "c1");
+
+  // Consume the pending template exactly once on open.
+  useEffect(() => {
+    if (pendingCoverTpl) clearPendingCoverTpl();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

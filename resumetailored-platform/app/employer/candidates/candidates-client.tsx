@@ -337,7 +337,7 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
           </Field>
           <button
             type="button"
-            onClick={() => alert("Calendar scheduling is coming soon — paste a Calendly/Google link in your message for now.")}
+            onClick={() => alert("Add your Calendly or Google Calendar booking link in a message to this candidate — use “Send a message” above and paste your scheduling link.")}
             className="flex w-full items-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm text-cream hover:bg-white/[0.08]"
           >
             <CalendarClock className="h-4 w-4 text-violet" /> Schedule interview

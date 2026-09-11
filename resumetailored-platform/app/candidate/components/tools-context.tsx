@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import type { ResumeDraftContent } from "@/lib/draft-types";
+import { emptyDraftContent, type ResumeDraftContent } from "@/lib/draft-types";
 import {
   Sparkles,
   ScanLine,
@@ -71,6 +71,13 @@ interface ToolsContextValue {
   openResume: (draft?: ResumeDraftContent, id?: string) => void;
   /** Called by the builder once it has consumed the pending draft. */
   clearPendingDraft: () => void;
+  /** A cover-letter template id to pre-select when the Cover Letter tool opens
+   *  (set by the Templates gallery's "Use this template"). */
+  pendingCoverTpl: string | null;
+  /** Called by the Cover Letter tool once it has consumed the pending template. */
+  clearPendingCoverTpl: () => void;
+  /** Open a builder with a template pre-selected (from the Templates gallery). */
+  openTemplate: (cat: "resume" | "cover", tplId: string) => void;
 }
 
 const ToolsContext = createContext<ToolsContextValue | null>(null);
@@ -86,6 +93,7 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
   const [pendingDraft, setPendingDraft] = useState<ResumeDraftContent | null>(null);
   const [pendingDraftId, setPendingDraftId] = useState<string | null>(null);
+  const [pendingCoverTpl, setPendingCoverTpl] = useState<string | null>(null);
 
   const openTool = useCallback(
     (id: ToolId) => {
@@ -113,6 +121,22 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
     setPendingDraftId(null);
   }, []);
 
+  const clearPendingCoverTpl = useCallback(() => setPendingCoverTpl(null), []);
+
+  const openTemplate = useCallback(
+    (cat: "resume" | "cover", tplId: string) => {
+      if (cat === "resume") {
+        setPendingDraft({ ...emptyDraftContent(), tplId });
+        setPendingDraftId(null);
+        setActiveTool("resume");
+      } else {
+        setPendingCoverTpl(tplId);
+        setActiveTool("cover");
+      }
+    },
+    []
+  );
+
   const closeTool = useCallback(() => setActiveTool(null), []);
 
   // Close on Escape.
@@ -136,7 +160,7 @@ export function ToolsProvider({ isPro, children }: { isPro: boolean; children: R
 
   return (
     <ToolsContext.Provider
-      value={{ activeTool, isPro, openTool, closeTool, pendingDraft, pendingDraftId, openResume, clearPendingDraft }}
+      value={{ activeTool, isPro, openTool, closeTool, pendingDraft, pendingDraftId, openResume, clearPendingDraft, pendingCoverTpl, clearPendingCoverTpl, openTemplate }}
     >
       {children}
     </ToolsContext.Provider>
