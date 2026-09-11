@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { saveVideoGeneration } from "@/lib/video-generations";
 
 export const runtime = "nodejs";
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
   }
 
-  if (!(await isPro())) {
+  if (!(await isIndividualPro())) {
     return NextResponse.json(
       { error: "pro_required", message: "Downloadable MP4 video is a Pro feature." },
       { status: 402 }

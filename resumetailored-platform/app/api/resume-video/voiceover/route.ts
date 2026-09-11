@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { isPro } from "@/lib/plan";
+import { isIndividualPro } from "@/lib/plan";
 import { voiceIdForKey, scriptToSpeech } from "@/lib/video-ai";
 import { saveVideoGeneration } from "@/lib/video-generations";
 
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: "not_signed_in", message: "Please sign in." }, { status: 401 });
 
-  if (!(await isPro())) {
+  if (!(await isIndividualPro())) {
     return NextResponse.json({ error: "pro_required", message: "AI voiceover is a Pro feature." }, { status: 402 });
   }
 
