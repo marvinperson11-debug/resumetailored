@@ -52,7 +52,7 @@ const navItems: NavItem[] = [
   { label: "Cover Letters", opens: "cover", icon: PenTool },
   { label: "ATS Scanner", opens: "ats", icon: ScanLine },
   { label: "LinkedIn Optimizer", opens: "linkedin", icon: Contact, pro: true },
-  { label: "Interview Coach", opens: "interview", icon: MessageSquare },
+  { label: "Interview Coach", opens: "interview", icon: MessageSquare, pro: true },
   { label: "Job Finder", opens: "jobs", icon: Zap },
   { label: "Career Hub", opens: "career", icon: Briefcase },
   { label: "Decoder", opens: "decoder", icon: FileSearch },
