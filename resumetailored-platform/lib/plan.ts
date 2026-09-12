@@ -81,7 +81,17 @@ export async function getAccess(): Promise<Access> {
 
     const res = await fetch(`${base}/api/entitlement?email=${encodeURIComponent(email)}`, {
       headers: { Authorization: `Bearer ${secret}` },
-      cache: "no-store",
+      // Cache per-email at the data layer so repeat loads don't re-hit the
+      // legacy endpoint on every navigation. This matters most for FREE users:
+      // their result isn't persisted to Clerk metadata (see below), so without
+      // this they'd pay the network round-trip on every page. A real purchase
+      // flips Clerk publicMetadata via the resumetailored.com webhook, which is
+      // read ABOVE (fromMeta) before this fetch — so caching here can never
+      // strand an upgrade.
+      next: { revalidate: 300 },
+      // Never let the legacy endpoint block first paint. Cap it at 1.5s and
+      // fail open to FREE (the safe default); a later navigation resolves it.
+      signal: AbortSignal.timeout(1500),
     });
     if (!res.ok) return FREE;
     const data = (await res.json()) as { plan?: string; type?: string; tier?: string };
