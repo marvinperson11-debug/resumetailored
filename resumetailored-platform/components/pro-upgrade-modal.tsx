@@ -85,7 +85,7 @@ export function ProUpgradeModal({
               type="button"
               onClick={() => onStart("pro")}
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-5 py-3.5 text-sm font-semibold text-white shadow-[0_0_22px_rgba(139,92,246,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/90 disabled:cursor-not-allowed disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet px-5 py-3.5 text-sm font-semibold text-white shadow-[0_0_22px_rgba(194,135,11,0.4)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/90 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {loading ? (
                 <>
