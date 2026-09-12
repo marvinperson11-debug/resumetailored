@@ -42,6 +42,7 @@ export async function POST(req: Request) {
     niceToHaves: arr(b.niceToHaves),
     deadline: b.deadline ? String(b.deadline) : null,
     status: isJobStatus(b.status) ? b.status : "draft",
+    publicListed: !!b.publicListed,
   });
   if (!job) return NextResponse.json({ error: "Could not create the job. Is the database configured?" }, { status: 500 });
   return NextResponse.json({ job });

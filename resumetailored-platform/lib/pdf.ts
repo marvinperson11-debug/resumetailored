@@ -22,14 +22,19 @@ export function downloadPdf(opts: {
   photo?: string;
   signature?: string;
   sigFont?: string;
+  accentColor?: string;
 }): boolean {
-  const { text, tplId, mode, title = "Resume", isPro = false, docFont, coverMeta, photo, signature, sigFont } = opts;
+  const { text, tplId, mode, title = "Resume", isPro = false, docFont, coverMeta, photo, signature, sigFont, accentColor } = opts;
   if (!text || !text.trim()) return false;
 
   const cat = mode === "cover_letter" ? "cover" : "resume";
   const tpl = findTemplate(cat, tplId);
+  // Honor a custom accent colour for the print-only band colours too.
+  const validAccent = accentColor && /^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : null;
+  const cP = validAccent || tpl.c.p;
+  const cA = validAccent || tpl.c.a;
   const font = tpl.serif ? "Georgia,'Times New Roman',serif" : "'Helvetica Neue',Arial,sans-serif";
-  const printContent = renderAIOutput(text, tplId, mode, { printMode: true, docFont, coverMeta, photo, signature, sigFont });
+  const printContent = renderAIOutput(text, tplId, mode, { printMode: true, docFont, coverMeta, photo, signature, sigFont, accentColor });
 
   const win = window.open("", "_blank");
   if (!win) return false;
@@ -46,12 +51,12 @@ export function downloadPdf(opts: {
   // layouts print full-bleed (margin 0) so the band's x-offsets line up with
   // the column. Covers all 8 sidebar color variants (shared rSidebar layout).
   const pageBand = isSidebar
-    ? `linear-gradient(to right, ${tpl.c.p} 215px, #fff 215px)`
+    ? `linear-gradient(to right, ${cP} 215px, #fff 215px)`
     : isTwoCol
-    ? `linear-gradient(to right, #fff 218px, ${tpl.c.a}55 218px, ${tpl.c.a}55 220px, #fff 220px)`
+    ? `linear-gradient(to right, #fff 218px, ${cA}55 218px, ${cA}55 220px, #fff 220px)`
     : null;
   const fullBleed = isCoverBanner || isTwoCol;
-  const bodyBg = tpl.layout === "cClean" ? tpl.c.l : "#fff";
+  const bodyBg = tpl.layout === "cClean" ? (validAccent ? "#fff" : tpl.c.l) : "#fff";
 
   const safeTitle = title.replace(/</g, "&lt;");
   win.document.write(`<!DOCTYPE html>

@@ -26,18 +26,33 @@ function slugify(name: string): string {
   return `${base}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-/** Create or update the user's single published site. Returns its slug/url. */
+const RESERVED = new Set(["api", "site", "jobs", "candidate", "employer", "admin", "www", "app", "sign-in", "sign-up", "join"]);
+function cleanSlug(s: string): string {
+  return (s || "").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
+}
+
+/** Create or update the user's single published site. Returns its slug/url.
+ *  `desiredSlug` lets the user pick a custom /site/<slug>; it's honored only
+ *  when valid and not already taken by another user. */
 export async function publishSite(
   userId: string,
   html: string,
   data: Record<string, unknown>,
-  name: string
+  name: string,
+  desiredSlug?: string
 ): Promise<{ slug: string } | null> {
   const c = db();
   if (!c || !userId) return null;
   try {
     const existing = await c.from("personal_sites").select("slug").eq("user_id", userId).maybeSingle();
-    const slug = existing.data?.slug || slugify(name);
+    let slug = existing.data?.slug || slugify(name);
+
+    const wanted = cleanSlug(desiredSlug || "");
+    if (wanted && wanted.length >= 3 && wanted !== slug && !RESERVED.has(wanted)) {
+      const taken = await c.from("personal_sites").select("user_id").eq("slug", wanted).maybeSingle();
+      if (!taken.data || taken.data.user_id === userId) slug = wanted;
+    }
+
     const { error } = await c.from("personal_sites").upsert(
       { slug, user_id: userId, html, data, published: true, updated_at: new Date().toISOString() },
       { onConflict: "user_id" }
@@ -49,14 +64,27 @@ export async function publishSite(
   }
 }
 
+/** Increment the public view counter for a slug (best-effort, fire-and-forget). */
+export async function incrementSiteViews(slug: string): Promise<void> {
+  const c = db();
+  if (!c || !slug) return;
+  try {
+    const { data } = await c.from("personal_sites").select("views").eq("slug", slug).maybeSingle();
+    const next = ((data?.views as number) || 0) + 1;
+    await c.from("personal_sites").update({ views: next }).eq("slug", slug);
+  } catch {
+    /* best-effort */
+  }
+}
+
 /** The user's own published site (for the tool's "Update" state + prefill). */
-export async function getUserSite(userId: string): Promise<{ slug: string; data: Record<string, unknown> } | null> {
+export async function getUserSite(userId: string): Promise<{ slug: string; data: Record<string, unknown>; views: number } | null> {
   const c = db();
   if (!c || !userId) return null;
   try {
-    const { data, error } = await c.from("personal_sites").select("slug, data").eq("user_id", userId).maybeSingle();
+    const { data, error } = await c.from("personal_sites").select("slug, data, views").eq("user_id", userId).maybeSingle();
     if (error || !data) return null;
-    return { slug: data.slug, data: data.data || {} };
+    return { slug: data.slug, data: data.data || {}, views: (data.views as number) || 0 };
   } catch {
     return null;
   }

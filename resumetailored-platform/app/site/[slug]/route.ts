@@ -1,4 +1,4 @@
-import { getSiteBySlug } from "@/lib/site-store";
+import { getSiteBySlug, incrementSiteViews } from "@/lib/site-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +20,8 @@ export async function GET(_req: Request, { params }: { params: { slug: string } 
       { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } }
     );
   }
+  // Count the visit (best-effort, non-blocking).
+  incrementSiteViews(params.slug).catch(() => {});
   return new Response(site.html, {
     status: 200,
     headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=60" },

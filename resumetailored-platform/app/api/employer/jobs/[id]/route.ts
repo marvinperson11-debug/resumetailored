@@ -40,6 +40,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (b.niceToHaves !== undefined) patch.niceToHaves = arr(b.niceToHaves);
   if (b.deadline !== undefined) patch.deadline = b.deadline ? String(b.deadline) : null;
   if (b.status !== undefined && isJobStatus(b.status)) patch.status = b.status;
+  if (b.publicListed !== undefined) patch.publicListed = !!b.publicListed;
 
   const ok = await updateJob(employerId, id, patch);
   if (!ok) return NextResponse.json({ error: "Could not update the job." }, { status: 500 });

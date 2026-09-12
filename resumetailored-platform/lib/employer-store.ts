@@ -115,6 +115,7 @@ function mapJob(r: Record<string, unknown>, applicantCount?: number): JobPosting
     niceToHaves: strList(r.nice_to_haves),
     deadline: (r.deadline as string) ?? null,
     status: (r.status as JobStatus) || "draft",
+    publicListed: !!r.public_listed,
     applicantCount,
     createdAt: (r.created_at as string) || "",
     updatedAt: (r.updated_at as string) || "",
@@ -122,7 +123,7 @@ function mapJob(r: Record<string, unknown>, applicantCount?: number): JobPosting
 }
 
 const JOB_COLS =
-  "id, title, department, location, remote_type, employment_type, salary_min, salary_max, salary_currency, description, requirements, nice_to_haves, deadline, status, created_at, updated_at";
+  "id, title, department, location, remote_type, employment_type, salary_min, salary_max, salary_currency, description, requirements, nice_to_haves, deadline, status, public_listed, created_at, updated_at";
 
 export async function listJobs(employerId: string): Promise<JobPosting[]> {
   const c = db();
@@ -169,6 +170,7 @@ type JobInput = Partial<{
   niceToHaves: string[];
   deadline: string | null;
   status: JobStatus;
+  publicListed: boolean;
 }>;
 
 function jobRow(v: JobInput): Record<string, unknown> {
@@ -186,6 +188,7 @@ function jobRow(v: JobInput): Record<string, unknown> {
   if (v.niceToHaves !== undefined) row.nice_to_haves = v.niceToHaves.map((s) => s.slice(0, 300)).slice(0, 40);
   if (v.deadline !== undefined) row.deadline = v.deadline || null;
   if (v.status !== undefined) row.status = v.status;
+  if (v.publicListed !== undefined) row.public_listed = v.publicListed;
   return row;
 }
 
@@ -249,6 +252,107 @@ export async function duplicateJob(employerId: string, id: number): Promise<JobP
     deadline: job.deadline,
     status: "draft",
   });
+}
+
+// ── Public job board (Feature E) ──────────────────────────────────────────────
+export interface PublicJobFilters {
+  q?: string;
+  location?: string;
+  employmentType?: string;
+  remoteType?: string;
+  minSalary?: number;
+}
+
+async function companyNameMap(c: SupabaseClient, employerIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (!employerIds.length) return map;
+  try {
+    const { data } = await c.from("employer_profiles").select("user_id, company_name").in("user_id", Array.from(new Set(employerIds)));
+    for (const r of data || []) map.set(r.user_id as string, (r.company_name as string) || "");
+  } catch {
+    /* ignore */
+  }
+  return map;
+}
+
+/** Active + public-listed jobs across all employers, newest first, filtered. */
+export async function listPublicJobs(f: PublicJobFilters = {}): Promise<JobPosting[]> {
+  const c = db();
+  if (!c) return [];
+  try {
+    let q = c
+      .from("job_postings")
+      .select(JOB_COLS + ", employer_id")
+      .eq("public_listed", true)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    if (f.employmentType) q = q.eq("employment_type", f.employmentType);
+    if (f.remoteType) q = q.eq("remote_type", f.remoteType);
+    if (typeof f.minSalary === "number") q = q.gte("salary_max", f.minSalary);
+    const { data, error } = await q;
+    if (error || !data) return [];
+    const rows = data as unknown as Record<string, unknown>[];
+    const names = await companyNameMap(c, rows.map((r) => r.employer_id as string));
+    let jobs = rows.map((r) => ({ ...mapJob(r), company: names.get(r.employer_id as string) || "" }));
+    // Free-text filter (title/description/company) + location, in JS.
+    const qq = (f.q || "").toLowerCase().trim();
+    const loc = (f.location || "").toLowerCase().trim();
+    if (qq) jobs = jobs.filter((j) => `${j.title} ${j.description} ${j.company} ${j.department}`.toLowerCase().includes(qq));
+    if (loc) jobs = jobs.filter((j) => j.location.toLowerCase().includes(loc) || j.remoteType === "remote");
+    return jobs;
+  } catch {
+    return [];
+  }
+}
+
+/** One active + public job by id, with company name (for the public detail page). */
+export async function getPublicJob(id: number): Promise<JobPosting | null> {
+  const c = db();
+  if (!c || !Number.isFinite(id)) return null;
+  try {
+    const { data } = await c
+      .from("job_postings")
+      .select(JOB_COLS + ", employer_id")
+      .eq("id", id)
+      .eq("public_listed", true)
+      .eq("status", "active")
+      .maybeSingle();
+    if (!data) return null;
+    const row = data as unknown as Record<string, unknown>;
+    const names = await companyNameMap(c, [row.employer_id as string]);
+    return { ...mapJob(row), company: names.get(row.employer_id as string) || "" };
+  } catch {
+    return null;
+  }
+}
+
+/** Create an applicant from the public board — only if the job is public+active.
+ *  Returns the employer_id (for notification) or null. */
+export async function createPublicApplicant(
+  jobId: number,
+  v: { name: string; email: string; resumeText?: string; coverLetter?: string; matchScore?: number; matchAnalysis?: MatchAnalysis }
+): Promise<{ employerId: string } | null> {
+  const c = db();
+  if (!c || !Number.isFinite(jobId) || !v.name.trim() || !v.email.trim()) return null;
+  try {
+    const { data: job } = await c.from("job_postings").select("id, employer_id").eq("id", jobId).eq("public_listed", true).eq("status", "active").maybeSingle();
+    if (!job) return null;
+    const { error } = await c.from("applicants").insert({
+      job_id: jobId,
+      name: v.name.slice(0, 200),
+      email: v.email.slice(0, 200),
+      resume_text: v.resumeText?.slice(0, 20000) || null,
+      cover_letter: v.coverLetter?.slice(0, 12000) || null,
+      match_score: typeof v.matchScore === "number" ? v.matchScore : null,
+      match_analysis: v.matchAnalysis ?? null,
+      status: "new",
+    });
+    if (error) return null;
+    return { employerId: job.employer_id as string };
+  } catch {
+    return null;
+  }
 }
 
 // ── Applicants ────────────────────────────────────────────────────────────────

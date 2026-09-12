@@ -18,6 +18,7 @@ import {
   Eye,
   RotateCcw,
   FileDown,
+  Contact,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { findTemplate, BODY_FONTS, SIG_FONTS, FONT_MAP, SIG_FONT_MAP } from "@/lib/resume-templates";
@@ -28,6 +29,8 @@ import { emptyDraftContent, type ResumeDraftContent } from "@/lib/draft-types";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, TextInput, Select, PrimaryButton, SecondaryButton } from "../components/ui";
 import { useTools } from "../components/tools-context";
+import { LinkedInImportModal } from "../components/linkedin-import-modal";
+import { toResumeText } from "@/lib/linkedin-import";
 import { TemplatePicker } from "./template-picker";
 import { DocPreview } from "./doc-preview";
 
@@ -64,6 +67,18 @@ async function fileToPhotoDataUrl(file: File): Promise<string> {
   }
 }
 
+// Preset accent colours for the Theme picker (Feature D).
+const ACCENT_PRESETS: { hex: string; label: string }[] = [
+  { hex: "#1e3a5f", label: "Navy" },
+  { hex: "#8b5cf6", label: "Violet" },
+  { hex: "#14b8a6", label: "Teal" },
+  { hex: "#f59e0b", label: "Gold" },
+  { hex: "#f43f5e", label: "Rose" },
+  { hex: "#10b981", label: "Emerald" },
+  { hex: "#64748b", label: "Slate" },
+  { hex: "#ff7f50", label: "Coral" },
+];
+
 function deriveTitle(jobText: string): string {
   const firstLine = jobText.split("\n").map((l) => l.trim()).find(Boolean);
   if (firstLine) return firstLine.slice(0, 80);
@@ -89,6 +104,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const [signature, setSignature] = useState(seed.signature || "");
   const [docFont, setDocFont] = useState(seed.docFont || "");
   const [sigFont, setSigFont] = useState(seed.sigFont || "dancing");
+  const [accentColor, setAccentColor] = useState(seed.accentColor || "");
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -103,6 +119,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
   const resumeFileRef = useRef<HTMLInputElement>(null);
   const [resumeUploading, setResumeUploading] = useState(false);
   const [uploadNote, setUploadNote] = useState<string | null>(null);
+  const [linkedinOpen, setLinkedinOpen] = useState(false);
 
   // Consume the pending draft exactly once on open.
   useEffect(() => {
@@ -128,6 +145,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     sigFont,
     signature,
     photo,
+    accentColor,
   });
   contentRef.current = currentContent();
   const lastSavedRef = useRef<string>("");
@@ -260,7 +278,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     setError(null);
     // Client-side generation is synchronous; the brief busy flag just guards
     // against a double-click while the blob is built + the download fires.
-    const err = downloadDocx({ text: result, tplId, mode: "resume", title: "Resume", photo, signature, docFont });
+    const err = downloadDocx({ text: result, tplId, mode: "resume", title: "Resume", photo, signature, docFont, accentColor });
     if (err) setError(err);
     setDocxBusy(false);
   }
@@ -289,7 +307,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           </SecondaryButton>
           <SecondaryButton
             onClick={() =>
-              downloadPdf({ text: result, tplId, mode: "resume", title: "Resume", isPro, docFont, photo, signature, sigFont })
+              downloadPdf({ text: result, tplId, mode: "resume", title: "Resume", isPro, docFont, photo, signature, sigFont, accentColor })
             }
           >
             <Download className="h-4 w-4" /> PDF
@@ -328,15 +346,24 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                       hidden
                       onChange={onResumeFile}
                     />
-                    <button
-                      type="button"
-                      onClick={() => resumeFileRef.current?.click()}
-                      disabled={resumeUploading}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8 disabled:opacity-50"
-                    >
-                      {resumeUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                      Upload file
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setLinkedinOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8"
+                      >
+                        <Contact className="h-3.5 w-3.5 text-[#0A66C2]" /> LinkedIn
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => resumeFileRef.current?.click()}
+                        disabled={resumeUploading}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8 disabled:opacity-50"
+                      >
+                        {resumeUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                        Upload file
+                      </button>
+                    </div>
                   </div>
                   <TextArea
                     rows={7}
@@ -427,6 +454,56 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                   </div>
                 </div>
 
+                {/* Theme colour — presets + custom picker. Applies to section
+                    headers, accent lines, skill pills and borders; flows into
+                    the preview, PDF and DOCX exports. */}
+                <div>
+                  <Label>Theme colour</Label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setAccentColor("")}
+                      title="Template default"
+                      className={cn(
+                        "flex h-7 items-center rounded-full border px-2.5 text-[11px] font-medium transition-colors",
+                        !accentColor ? "border-violet bg-violet/15 text-white" : "border-border-gold text-muted-cream hover:bg-white/5"
+                      )}
+                    >
+                      Default
+                    </button>
+                    {ACCENT_PRESETS.map((c) => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        onClick={() => setAccentColor(c.hex)}
+                        title={c.label}
+                        aria-label={c.label}
+                        className={cn(
+                          "h-7 w-7 rounded-full border-2 transition-transform hover:scale-110",
+                          accentColor.toLowerCase() === c.hex.toLowerCase() ? "border-white ring-2 ring-violet" : "border-white/20"
+                        )}
+                        style={{ backgroundColor: c.hex }}
+                      />
+                    ))}
+                    <label
+                      className="flex h-7 cursor-pointer items-center gap-1.5 rounded-full border border-border-gold px-2.5 text-[11px] font-medium text-muted-cream hover:bg-white/5"
+                      title="Custom colour"
+                    >
+                      <span
+                        className="h-3.5 w-3.5 rounded-full border border-white/30"
+                        style={{ background: accentColor || "conic-gradient(red,orange,yellow,green,blue,violet,red)" }}
+                      />
+                      Custom
+                      <input
+                        type="color"
+                        value={/^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : "#8b5cf6"}
+                        onChange={(e) => setAccentColor(e.target.value)}
+                        className="h-0 w-0 opacity-0"
+                      />
+                    </label>
+                  </div>
+                </div>
+
                 {/* Live font sample — updates instantly as you change either
                     dropdown, without needing to build first. */}
                 <div className="rounded-xl border border-border-gold bg-white/5 p-3">
@@ -495,6 +572,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                 photo={photo}
                 signature={signature}
                 sigFont={sigFont}
+                accentColor={accentColor}
                 placeholder="Paste your resume and a job posting, then tap “Build My Resume” to see it in this template."
               />
             )}
@@ -509,6 +587,19 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           </p>
         </div>
       </div>
+
+      {linkedinOpen && (
+        <LinkedInImportModal
+          onClose={() => setLinkedinOpen(false)}
+          onApply={(p) => {
+            const text = toResumeText(p);
+            if (text) setResumeText(text);
+            setLinkedinOpen(false);
+            setView("content");
+            setUploadNote("Imported from LinkedIn. Review the text below before building.");
+          }}
+        />
+      )}
     </ToolModal>
   );
 }

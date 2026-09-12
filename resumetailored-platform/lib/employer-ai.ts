@@ -69,6 +69,8 @@ export interface JobPosting {
   niceToHaves: string[];
   deadline: string | null;
   status: JobStatus;
+  publicListed?: boolean;
+  company?: string; // employer's company name (joined for the public board)
   applicantCount?: number;
   createdAt: string;
   updatedAt: string;

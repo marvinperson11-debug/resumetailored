@@ -204,6 +204,7 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
   const [requirements, setRequirements] = useState<string[]>(job?.requirements?.length ? job.requirements : [""]);
   const [niceToHaves, setNiceToHaves] = useState<string[]>(job?.niceToHaves?.length ? job.niceToHaves : [""]);
   const [deadline, setDeadline] = useState(job?.deadline || "");
+  const [publicListed, setPublicListed] = useState(!!job?.publicListed);
   const [saving, setSaving] = useState<null | JobStatus>(null);
   const [assisting, setAssisting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -252,6 +253,7 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
       niceToHaves: niceToHaves.map((s) => s.trim()).filter(Boolean),
       deadline: deadline || null,
       status,
+      publicListed,
     };
     try {
       const res = job
@@ -335,6 +337,14 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
         <Field label="Application deadline" hint="Optional">
           <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
         </Field>
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-gold bg-white/[0.03] p-3">
+          <input type="checkbox" checked={publicListed} onChange={(e) => setPublicListed(e.target.checked)} className="mt-0.5 h-4 w-4 accent-violet" />
+          <span className="text-sm text-cream">
+            List on the public job board
+            <span className="mt-0.5 block text-xs text-white/50">When on, this role appears on the public /jobs page (only while its status is Active) and candidates can apply directly.</span>
+          </span>
+        </label>
 
         {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
       </div>

@@ -14,6 +14,7 @@ export interface ResumeDraftContent {
   sigFont?: string;
   signature?: string;
   photo?: string; // data URL (kept small — capped client-side)
+  accentColor?: string; // custom accent hex (#rrggbb); overrides the template's color
 }
 
 /** One saved resume, as returned by the drafts API and shown in "My Resumes". */
@@ -25,5 +26,5 @@ export interface ResumeDraft {
 }
 
 export function emptyDraftContent(): ResumeDraftContent {
-  return { resumeText: "", jobText: "", result: "", tplId: "r1", docFont: "", sigFont: "dancing", signature: "", photo: "" };
+  return { resumeText: "", jobText: "", result: "", tplId: "r1", docFont: "", sigFont: "dancing", signature: "", photo: "", accentColor: "" };
 }

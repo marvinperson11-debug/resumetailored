@@ -4,14 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Globe, Sparkles, Loader2, Download, ImagePlus, X, ExternalLink, Copy, Check,
-  Monitor, Smartphone, Film,
+  Monitor, Smartphone, Film, ChevronUp, ChevronDown, Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, TextInput, Select, PrimaryButton, SecondaryButton } from "../components/ui";
 import {
   generateSiteHtml, SITE_TEMPLATES, SITE_THEMES, HEADING_FONTS, BODY_FONTS, SIZE_SCALES,
-  type SiteData, type SiteSection,
+  BG_PATTERNS, GOOGLE_FONTS,
+  type SiteData, type SiteSection, type BgPattern,
 } from "@/lib/site-templates";
 import type { ResumeDraft } from "@/lib/draft-types";
 
@@ -51,6 +52,20 @@ export function PersonalWebsiteTool({ onClose, isPro }: { onClose: () => void; i
   const [bodyFont, setBodyFont] = useState<"sans" | "serif">("sans");
   const [sizeScale, setSizeScale] = useState<"compact" | "normal" | "spacious">("normal");
   const [sections, setSections] = useState<EditSection[]>([]);
+  // Feature A — extra customization.
+  const [bgPattern, setBgPattern] = useState<BgPattern>("solid");
+  const [animate, setAnimate] = useState(false);
+  const [favicon, setFavicon] = useState("");
+  const [gHeadingFont, setGHeadingFont] = useState("");
+  const [gBodyFont, setGBodyFont] = useState("");
+  const [customCss, setCustomCss] = useState("");
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDesc, setSeoDesc] = useState("");
+  const [ogImage, setOgImage] = useState("");
+  const [slug, setSlug] = useState("");
+  const [views, setViews] = useState<number | null>(null);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const faviconRef = useRef<HTMLInputElement>(null);
   // Resume video integration.
   const [videos, setVideos] = useState<VideoRow[]>([]);
   const [includeVideo, setIncludeVideo] = useState(false);
@@ -84,10 +99,12 @@ export function PersonalWebsiteTool({ onClose, isPro }: { onClose: () => void; i
     // Prefill from an existing published site → enables "Update" mode.
     fetch("/api/personal-website/mine", { cache: "no-store" })
       .then((r) => r.json())
-      .then((d: { site?: { slug: string; url: string; config?: Partial<SiteData> } | null }) => {
+      .then((d: { site?: { slug: string; url: string; views?: number; config?: Partial<SiteData> } | null }) => {
         if (!d.site) return;
         setAlreadyPublished(true);
         setPublishedUrl(d.site.url);
+        if (d.site.slug) setSlug(d.site.slug);
+        if (typeof d.site.views === "number") setViews(d.site.views);
         const c = d.site.config;
         if (!c) return;
         if (c.name) setName(c.name);
@@ -105,6 +122,15 @@ export function PersonalWebsiteTool({ onClose, isPro }: { onClose: () => void; i
         if (c.typography?.body) setBodyFont(c.typography.body);
         if (c.typography?.scale) setSizeScale(c.typography.scale);
         if (c.videoUrl) setIncludeVideo(true);
+        if (c.bgPattern) setBgPattern(c.bgPattern);
+        if (typeof c.animate === "boolean") setAnimate(c.animate);
+        if (c.favicon) setFavicon(c.favicon);
+        if (c.googleHeadingFont) setGHeadingFont(c.googleHeadingFont);
+        if (c.googleBodyFont) setGBodyFont(c.googleBodyFont);
+        if (c.customCss) setCustomCss(c.customCss);
+        if (c.seo?.title) setSeoTitle(c.seo.title);
+        if (c.seo?.description) setSeoDesc(c.seo.description);
+        if (c.seo?.ogImage) setOgImage(c.seo.ogImage);
         if (Array.isArray(c.sections)) setSections(c.sections.map((s) => ({ title: s.title, items: s.items, include: true })));
       })
       .catch(() => {});
@@ -123,8 +149,15 @@ export function PersonalWebsiteTool({ onClose, isPro }: { onClose: () => void; i
       typography: { heading: headingFont, body: bodyFont, scale: sizeScale },
       videoUrl: selectedVideoUrl || undefined,
       sections: sections.filter((s) => s.include).map((s) => ({ title: s.title, items: s.items })),
+      bgPattern,
+      animate,
+      favicon: favicon || undefined,
+      googleHeadingFont: gHeadingFont || undefined,
+      googleBodyFont: gBodyFont || undefined,
+      customCss: customCss || undefined,
+      seo: { title: seoTitle || undefined, description: seoDesc || undefined, ogImage: ogImage || undefined },
     }),
-    [name, headline, about, email, location, photo, template, theme, linkedin, github, portfolio, headingFont, bodyFont, sizeScale, selectedVideoUrl, sections]
+    [name, headline, about, email, location, photo, template, theme, linkedin, github, portfolio, headingFont, bodyFont, sizeScale, selectedVideoUrl, sections, bgPattern, animate, favicon, gHeadingFont, gBodyFont, customCss, seoTitle, seoDesc, ogImage]
   );
   const html = useMemo(() => generateSiteHtml(data), [data]);
 
@@ -165,6 +198,22 @@ export function PersonalWebsiteTool({ onClose, isPro }: { onClose: () => void; i
     if (file.size > 8 * 1024 * 1024) { setError("Image too large (max 8MB)."); return; }
     setPhoto(await toPhoto(file));
   }
+  async function onFavicon(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 1024 * 1024) { setError("Favicon too large (max 1MB)."); return; }
+    setFavicon(await toPhoto(file));
+  }
+  function moveSection(i: number, dir: -1 | 1) {
+    setSections((cur) => {
+      const j = i + dir;
+      if (j < 0 || j >= cur.length) return cur;
+      const next = [...cur];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  }
 
   function downloadHtml() {
     const blob = new Blob([html], { type: "text/html" });
@@ -182,7 +231,7 @@ export function PersonalWebsiteTool({ onClose, isPro }: { onClose: () => void; i
     try {
       const res = await fetch("/api/personal-website/publish", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data }),
+        body: JSON.stringify({ data, slug: slug.trim() || undefined }),
       });
       if (res.status === 402) { router.push("/candidate?upgrade=pro"); return; }
       const d = (await res.json().catch(() => ({}))) as { url?: string; error?: string; message?: string };
@@ -331,21 +380,102 @@ export function PersonalWebsiteTool({ onClose, isPro }: { onClose: () => void; i
             <TextArea className="mt-2" rows={3} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder="…or paste resume text here for AI copy" />
           </div>
 
-          {/* Sections */}
+          {/* Sections — show/hide (eye), reorder (▲▼), edit */}
           {sections.length > 0 && (
             <div className="space-y-3">
-              <Label>Sections</Label>
+              <Label>Sections — reorder &amp; show/hide</Label>
               {sections.map((s, i) => (
                 <div key={i} className="rounded-xl border border-border-gold bg-white/5 p-3">
                   <div className="mb-2 flex items-center gap-2">
-                    <input type="checkbox" checked={s.include} onChange={(e) => setSections((cur) => cur.map((x, j) => (j === i ? { ...x, include: e.target.checked } : x)))} className="h-4 w-4 accent-violet" />
-                    <input value={s.title} onChange={(e) => setSections((cur) => cur.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} className="flex-1 bg-transparent text-sm font-semibold text-cream outline-none" />
+                    <button type="button" title={s.include ? "Hide" : "Show"} onClick={() => setSections((cur) => cur.map((x, j) => (j === i ? { ...x, include: !x.include } : x)))} className={cn("rounded p-1", s.include ? "text-violet" : "text-white/30")}>
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    <input value={s.title} onChange={(e) => setSections((cur) => cur.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} className={cn("flex-1 bg-transparent text-sm font-semibold outline-none", s.include ? "text-cream" : "text-white/40 line-through")} />
+                    <button type="button" title="Move up" disabled={i === 0} onClick={() => moveSection(i, -1)} className="rounded p-1 text-muted-cream hover:text-cream disabled:opacity-30"><ChevronUp className="h-4 w-4" /></button>
+                    <button type="button" title="Move down" disabled={i === sections.length - 1} onClick={() => moveSection(i, 1)} className="rounded p-1 text-muted-cream hover:text-cream disabled:opacity-30"><ChevronDown className="h-4 w-4" /></button>
                   </div>
                   <TextArea rows={3} value={s.items.join("\n")} onChange={(e) => setSections((cur) => cur.map((x, j) => (j === i ? { ...x, items: e.target.value.split("\n").filter(Boolean) } : x)))} className="text-xs" />
                 </div>
               ))}
             </div>
           )}
+
+          {/* Background + effects */}
+          <div>
+            <Label>Background</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {BG_PATTERNS.map((p) => (
+                <button key={p.id} type="button" onClick={() => setBgPattern(p.id)} className={cn("rounded-full border px-2.5 py-1 text-xs transition-colors", bgPattern === p.id ? "border-violet bg-violet/20 text-white" : "border-border-gold text-muted-cream hover:bg-white/5")}>{p.label}</button>
+              ))}
+            </div>
+            <label className="mt-2.5 flex cursor-pointer items-center gap-2 text-sm text-cream">
+              <input type="checkbox" checked={animate} onChange={(e) => setAnimate(e.target.checked)} className="h-4 w-4 accent-violet" />
+              Animate — subtle fade-in on scroll
+            </label>
+          </div>
+
+          {/* Google Fonts + favicon */}
+          <div>
+            <Label>Google Fonts &amp; favicon</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Select value={gHeadingFont} onChange={(e) => setGHeadingFont(e.target.value)} aria-label="Heading Google Font">
+                <option value="">Heading: default</option>
+                {GOOGLE_FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+              </Select>
+              <Select value={gBodyFont} onChange={(e) => setGBodyFont(e.target.value)} aria-label="Body Google Font">
+                <option value="">Body: default</option>
+                {GOOGLE_FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+              </Select>
+            </div>
+            <input ref={faviconRef} type="file" accept="image/*" hidden onChange={onFavicon} />
+            <div className="mt-2 flex items-center gap-2">
+              {favicon ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={favicon} alt="" className="h-6 w-6 rounded" />
+                  <button type="button" onClick={() => setFavicon("")} className="text-xs text-white/50 hover:text-red-300">Remove favicon</button>
+                </>
+              ) : (
+                <button type="button" onClick={() => faviconRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border-gold px-3 py-2 text-xs text-muted-cream hover:bg-white/5"><ImagePlus className="h-3.5 w-3.5" /> Upload favicon</button>
+              )}
+            </div>
+          </div>
+
+          {/* Advanced: slug, SEO, custom CSS */}
+          <div className="rounded-xl border border-white/10 bg-white/[0.03]">
+            <button type="button" onClick={() => setAdvancedOpen((o) => !o)} className="flex w-full items-center justify-between p-3 text-sm font-semibold text-cream">
+              <span>Advanced — URL, SEO &amp; custom CSS</span>
+              <ChevronDown className={cn("h-4 w-4 transition-transform", advancedOpen && "rotate-180")} />
+            </button>
+            {advancedOpen && (
+              <div className="space-y-3 border-t border-white/10 p-3">
+                <div>
+                  <Label>Custom URL slug</Label>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-white/40">/site/</span>
+                    <TextInput value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="your-name" />
+                  </div>
+                  <p className="mt-1 text-[11px] text-white/40">3–30 characters, letters/numbers/hyphens. Taken names fall back to a random suffix.</p>
+                </div>
+                <div>
+                  <Label>SEO page title</Label>
+                  <TextInput value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder="Defaults to your name + headline" />
+                </div>
+                <div>
+                  <Label>Meta description</Label>
+                  <TextArea rows={2} value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} placeholder="Defaults to your About text" />
+                </div>
+                <div>
+                  <Label>OG image URL</Label>
+                  <TextInput value={ogImage} onChange={(e) => setOgImage(e.target.value)} placeholder="https://… (shown when the link is shared)" />
+                </div>
+                <div>
+                  <Label>Custom CSS</Label>
+                  <TextArea rows={4} value={customCss} onChange={(e) => setCustomCss(e.target.value)} placeholder=".hero{ letter-spacing:-.03em }" className="font-mono text-xs" />
+                </div>
+              </div>
+            )}
+          </div>
 
           {publishedUrl && (
             <div className="rounded-xl border border-teal/40 bg-teal/10 p-3">
@@ -355,6 +485,9 @@ export function PersonalWebsiteTool({ onClose, isPro }: { onClose: () => void; i
                 <button type="button" onClick={() => { navigator.clipboard?.writeText(publishedUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="rounded-lg border border-border-gold px-2 py-1.5 text-cream hover:bg-white/8">{copied ? <Check className="h-3.5 w-3.5 text-teal" /> : <Copy className="h-3.5 w-3.5" />}</button>
                 <a href={publishedUrl} target="_blank" rel="noopener noreferrer" className="rounded-lg border border-border-gold px-2 py-1.5 text-cream hover:bg-white/8"><ExternalLink className="h-3.5 w-3.5" /></a>
               </div>
+              {views !== null && (
+                <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-white/60"><Eye className="h-3.5 w-3.5" /> Views: <span className="font-semibold text-cream">{views.toLocaleString()}</span></p>
+              )}
             </div>
           )}
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
@@ -412,6 +545,48 @@ function TemplateThumb({ id, accent }: { id: string; accent: string }) {
         <div className="h-1 w-16 rounded" style={{ background: accent }} />
         <div className="mt-1 h-1 w-full rounded bg-neutral-200" />
         <div className="h-1 w-3/4 rounded bg-neutral-200" />
+      </div>
+    );
+  }
+  if (id === "executive") {
+    return (
+      <div className={base} style={{ background: "linear-gradient(180deg,#14171f,#0b0d12)", borderBottom: `2px solid ${accent}` }}>
+        <div className="h-2.5 w-12 rounded bg-white/85" />
+        <div className="h-1 w-16 rounded" style={{ background: accent }} />
+        <div className="mt-1 h-1 w-full rounded bg-white/15" />
+        <div className="h-1 w-2/3 rounded bg-white/15" />
+      </div>
+    );
+  }
+  if (id === "developer") {
+    return (
+      <div className={base} style={{ background: "#0d1117", fontFamily: "monospace" }}>
+        <div className="flex gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[#ff5f56]" /><span className="h-1.5 w-1.5 rounded-full bg-[#ffbd2e]" /><span className="h-1.5 w-1.5 rounded-full bg-[#27c93f]" /></div>
+        <div className="mt-1 h-1.5 w-14 rounded bg-[#7ee787]" />
+        <div className="h-1 w-full rounded bg-white/10" />
+        <div className="h-1 w-3/4 rounded bg-white/10" />
+      </div>
+    );
+  }
+  if (id === "designer") {
+    return (
+      <div className={cn(base, "bg-white")}>
+        <div className="h-2 w-10 rounded bg-neutral-800" />
+        <div className="mt-0.5 grid grid-cols-2 gap-1">
+          <div className="h-4 rounded" style={{ background: `${accent}33` }} /><div className="h-4 rounded" style={{ background: `${accent}22` }} />
+          <div className="h-4 rounded" style={{ background: `${accent}22` }} /><div className="h-4 rounded" style={{ background: `${accent}33` }} />
+        </div>
+      </div>
+    );
+  }
+  if (id === "startup") {
+    return (
+      <div className={base} style={{ background: `radial-gradient(120% 120% at 50% 0%, ${accent}33, #fff)` }}>
+        <div className="mx-auto h-3 w-16 rounded bg-neutral-900" />
+        <div className="mx-auto h-1 w-12 rounded" style={{ background: accent }} />
+        <div className="mt-1 grid grid-cols-3 gap-1">
+          <div className="h-3 rounded bg-white/70" /><div className="h-3 rounded bg-white/70" /><div className="h-3 rounded bg-white/70" />
+        </div>
       </div>
     );
   }
