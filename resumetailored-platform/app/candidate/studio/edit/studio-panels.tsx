@@ -4,14 +4,15 @@ import { useRef, useState } from "react";
 import {
   Eye, EyeOff, GripVertical, Trash2, Copy, ChevronUp, ChevronDown, X, ExternalLink,
   Check, Loader2, Type, Image as ImageIcon, Video, Square, Minus, MoveVertical, Share2, Download,
-  AlignLeft, AlignCenter, AlignRight, Globe, Layers,
+  AlignLeft, AlignCenter, AlignRight, AlignJustify, Globe, Layers,
+  Brush, Star, Quote, Hash, MessageSquareQuote, LayoutGrid, Music, Code2, Mic, Square as StopIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   type StudioSite, type StudioSection, type StudioElement, type SectionType, type ElementType,
-  type BgType, FONT_CHOICES, SECTION_CHOICES, PATTERNS,
+  type BgType, FONT_CHOICES, SECTION_CHOICES, PATTERNS, ANIM_CHOICES,
 } from "@/lib/studio-types";
-import { type Selection, type StudioActions, findSection, findElement, imageToDataUrl } from "./studio-shared";
+import { type Selection, type StudioActions, findSection, findElement, imageToDataUrl, fileToDataUrl } from "./studio-shared";
 
 // ── Small reusable dark-panel controls ─────────────────────────────────────────
 
@@ -90,6 +91,56 @@ function ImagePicker({ onPick, label = "Upload" }: { onPick: (dataUrl: string) =
     </>
   );
 }
+/** Upload any media file (video/audio) to a data URL, with a size guard. */
+function ImagePickerAny({ onPick, label, accept }: { onPick: (dataUrl: string) => void; label: string; accept: string }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [err, setErr] = useState("");
+  return (
+    <>
+      <input ref={ref} type="file" accept={accept} hidden onChange={async (e) => { const f = e.target.files?.[0]; e.target.value = ""; if (!f) return; const d = await fileToDataUrl(f); if (d) { setErr(""); onPick(d); } else setErr("File too large (max 6 MB) — paste a hosted URL instead."); }} />
+      <button type="button" onClick={() => ref.current?.click()} className="w-full rounded-lg border border-dashed border-white/20 px-3 py-2 text-xs text-white/70 hover:bg-white/5">{label}</button>
+      {err && <p className="mt-1 text-[11px] text-amber-300">{err}</p>}
+    </>
+  );
+}
+/** Audio source: URL field + upload + in-browser recording (MediaRecorder). */
+function AudioSource({ el, onSet }: { el: StudioElement; onSet: (url: string) => void }) {
+  const [recording, setRecording] = useState(false);
+  const [err, setErr] = useState("");
+  const recRef = useRef<MediaRecorder | null>(null);
+  const chunks = useRef<Blob[]>([]);
+  async function toggleRecord() {
+    if (recording) { recRef.current?.stop(); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      chunks.current = [];
+      mr.ondataavailable = (e) => { if (e.data.size) chunks.current.push(e.data); };
+      mr.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunks.current, { type: mr.mimeType || "audio/webm" });
+        if (blob.size > 6_000_000) { setErr("Recording too long (max ~6 MB)."); return; }
+        const d = await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(blob); });
+        onSet(d);
+      };
+      mr.start();
+      recRef.current = mr;
+      setRecording(true);
+      mr.addEventListener("stop", () => setRecording(false));
+    } catch { setErr("Microphone unavailable — upload a file or paste a URL instead."); }
+  }
+  return (
+    <div className="space-y-2">
+      <Field label="Audio URL"><TextField value={el.content} onChange={onSet} placeholder="https://… .mp3" /></Field>
+      <ImagePickerAny accept="audio/*" onPick={onSet} label="Upload MP3 / audio file" />
+      <button type="button" onClick={toggleRecord} className={cn("flex w-full items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium", recording ? "border-red-500/50 bg-red-500/10 text-red-300" : "border-white/20 text-white/70 hover:bg-white/5")}>
+        {recording ? <><StopIcon size={13} /> Stop recording</> : <><Mic size={13} /> Record voiceover</>}
+      </button>
+      {el.content && <audio controls src={el.content} className="w-full" style={{ height: 34 }} />}
+      {err && <p className="text-[11px] text-amber-300">{err}</p>}
+    </div>
+  );
+}
 
 const px = (v: string | undefined, def: number) => { const n = parseInt(String(v ?? ""), 10); return Number.isFinite(n) ? n : def; };
 const num = (v: string | undefined, def: number) => { const n = parseFloat(String(v ?? "")); return Number.isFinite(n) ? n : def; };
@@ -97,6 +148,7 @@ const alignOpts = [
   { value: "left" as const, icon: <AlignLeft size={14} /> },
   { value: "center" as const, icon: <AlignCenter size={14} /> },
   { value: "right" as const, icon: <AlignRight size={14} /> },
+  { value: "justify" as const, icon: <AlignJustify size={14} /> },
 ];
 
 // ── Left: Section Navigator (reorder + show/hide) ──────────────────────────────
@@ -202,6 +254,24 @@ function PagePanel({ site, actions }: PanelProps) {
         <Field label="Background color"><ColorField value={t.bgColor} onChange={(v) => actions.patchTheme({ bgColor: v })} /></Field>
         <div className="my-1 border-t border-white/10" />
         <Toggle checked={site.animate !== false} onChange={(v) => actions.patchSite({ animate: v })} label="Fade-in on scroll" />
+
+        {/* Background music (global, loops across the whole site) */}
+        <details className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+          <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-cream"><Music size={14} className="text-violet" /> Background music</summary>
+          <div className="mt-3 space-y-3">
+            <Field label="Music URL"><TextField value={site.music?.url || ""} onChange={(v) => actions.patchSite({ music: { url: v, autoplay: site.music?.autoplay ?? false, loop: site.music?.loop ?? true, volume: site.music?.volume ?? 0.6 } })} placeholder="https://… .mp3" /></Field>
+            <ImagePickerAny accept="audio/*" label="Upload MP3" onPick={(d) => actions.patchSite({ music: { url: d, autoplay: site.music?.autoplay ?? false, loop: site.music?.loop ?? true, volume: site.music?.volume ?? 0.6 } })} />
+            {site.music?.url && (
+              <>
+                <Toggle checked={site.music.autoplay} onChange={(v) => actions.patchSite({ music: { ...site.music!, autoplay: v } })} label="Auto-play (muted; visitor taps to unmute)" />
+                <Toggle checked={site.music.loop !== false} onChange={(v) => actions.patchSite({ music: { ...site.music!, loop: v } })} label="Loop" />
+                <Field label={`Volume — ${Math.round((site.music.volume ?? 0.6) * 100)}%`}><Slider value={Math.round((site.music.volume ?? 0.6) * 100)} onChange={(v) => actions.patchSite({ music: { ...site.music!, volume: v / 100 } })} min={0} max={100} suffix="%" /></Field>
+                <button type="button" onClick={() => actions.patchSite({ music: undefined })} className="text-xs text-white/50 hover:text-red-300">Remove music</button>
+              </>
+            )}
+          </div>
+        </details>
+
         <Field label="Custom CSS (advanced)"><TextAreaField value={site.customCss || ""} onChange={(v) => actions.patchSite({ customCss: v })} rows={4} mono placeholder=".rt-sec h1{ letter-spacing:-.02em }" /></Field>
         <p className="text-[11px] text-white/35">Tip: click any section or element on the page to edit just that piece.</p>
       </div>
@@ -291,6 +361,47 @@ function SectionPanel({ section, actions }: PanelProps & { section: StudioSectio
   );
 }
 
+// ── Shared "paint-brush" style & effects block (any element) ──
+function StyleEffects({ el, setStyle, setProps }: { el: StudioElement; setStyle: (s: Record<string, string>) => void; setProps: (p: Record<string, string | number | boolean>) => void }) {
+  const borderStyle = String(el.styles.borderStyle || "none");
+  const shadowOn = !!el.styles.boxShadow && el.styles.boxShadow !== "none";
+  const shadowI = Number(el.props.shadowI ?? 3);
+  const applyShadow = (on: boolean, i: number) => {
+    if (!on) { setStyle({ boxShadow: "none" }); return; }
+    setStyle({ boxShadow: `0 ${Math.round(i * 2)}px ${Math.round(i * 7)}px rgba(0,0,0,${(0.04 + i * 0.03).toFixed(3)})` });
+    setProps({ shadowI: i });
+  };
+  return (
+    <details className="rounded-xl border border-white/10 bg-white/[0.03] p-3" id="rt-style-block">
+      <summary className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-cream"><Brush size={14} className="text-violet" /> Style &amp; effects</summary>
+      <div className="mt-3 space-y-3">
+        <Field label="Border"><Seg value={borderStyle} onChange={(v) => setStyle({ borderStyle: v, ...(v !== "none" ? { borderWidth: el.styles.borderWidth || "1px", borderColor: el.styles.borderColor || "#e5e5e5" } : {}) })} options={[{ value: "none", label: "None" }, { value: "solid", label: "Solid" }, { value: "dashed", label: "Dashed" }, { value: "dotted", label: "Dotted" }]} /></Field>
+        {borderStyle !== "none" && (
+          <>
+            <Field label={`Border width — ${px(el.styles.borderWidth, 1)}px`}><Slider value={px(el.styles.borderWidth, 1)} onChange={(v) => setStyle({ borderWidth: `${v}px` })} min={1} max={12} suffix="px" /></Field>
+            <Field label="Border color"><ColorField value={String(el.styles.borderColor || "#e5e5e5")} onChange={(v) => setStyle({ borderColor: v })} /></Field>
+          </>
+        )}
+        <Field label={`Corner radius — ${px(el.styles.borderRadius, 0)}px`}><Slider value={px(el.styles.borderRadius, 0)} onChange={(v) => setStyle({ borderRadius: `${v}px` })} min={0} max={60} suffix="px" /></Field>
+        <Toggle checked={shadowOn} onChange={(v) => applyShadow(v, shadowI)} label="Box shadow" />
+        {shadowOn && <Field label={`Shadow intensity — ${shadowI}`}><Slider value={shadowI} onChange={(v) => applyShadow(true, v)} min={1} max={10} /></Field>}
+        <Field label={`Padding — ${px(el.styles.padding, 0)}px`}><Slider value={px(el.styles.padding, 0)} onChange={(v) => setStyle({ padding: `${v}px` })} min={0} max={80} suffix="px" /></Field>
+        <Field label={`Margin — ${px(el.styles.margin, 0)}px`}><Slider value={px(el.styles.margin, 0)} onChange={(v) => setStyle({ margin: `${v}px` })} min={0} max={80} suffix="px" /></Field>
+        <Field label="Background">
+          <div className="flex items-center gap-2">
+            <ColorField value={String(el.styles.background || "").startsWith("#") ? String(el.styles.background) : "#ffffff"} onChange={(v) => setStyle({ background: v })} />
+            <button type="button" onClick={() => setStyle({ background: "" })} className="shrink-0 rounded-md border border-white/12 px-2 py-1.5 text-xs text-white/60 hover:bg-white/5">Clear</button>
+          </div>
+        </Field>
+        <div className="border-t border-white/10 pt-3" />
+        <Field label="Animation on scroll"><SelectField value={String(el.props.anim || "")} onChange={(v) => setProps({ anim: v })} options={[{ value: "", label: "Default (fade)" }, ...ANIM_CHOICES.map((a) => ({ value: a.value, label: a.label }))]} /></Field>
+        <Field label={`Delay — ${Number(el.props.animDelay) || 0}ms`}><Slider value={Number(el.props.animDelay) || 0} onChange={(v) => setProps({ animDelay: v })} min={0} max={1500} step={50} suffix="ms" /></Field>
+        <Field label={`Duration — ${Number(el.props.animDuration) || 600}ms`}><Slider value={Number(el.props.animDuration) || 600} onChange={(v) => setProps({ animDuration: v })} min={150} max={2000} step={50} suffix="ms" /></Field>
+      </div>
+    </details>
+  );
+}
+
 // ── Element panel (per type) ──
 function ElementPanel({ section, element: el, actions, videos }: PanelProps & { section: StudioSection; element: StudioElement }) {
   const sid = section.id, eid = el.id;
@@ -300,6 +411,7 @@ function ElementPanel({ section, element: el, actions, videos }: PanelProps & { 
   const typeLabel: Record<ElementType, string> = {
     heading: "Heading", text: "Text", image: "Image", video: "Video", button: "Button",
     divider: "Divider", spacer: "Spacer", social: "Social links", "resume-download": "Résumé download",
+    icon: "Icon", quote: "Quote", stat: "Stat counter", testimonial: "Testimonial", gallery: "Gallery", audio: "Audio", embed: "Embed",
   };
   const typeIcon: Record<string, React.ReactNode> = {
     heading: <Type size={15} className="text-violet" />, text: <Type size={15} className="text-violet" />,
@@ -307,19 +419,25 @@ function ElementPanel({ section, element: el, actions, videos }: PanelProps & { 
     button: <Square size={15} className="text-violet" />, divider: <Minus size={15} className="text-violet" />,
     spacer: <MoveVertical size={15} className="text-violet" />, social: <Share2 size={15} className="text-violet" />,
     "resume-download": <Download size={15} className="text-violet" />,
+    icon: <Star size={15} className="text-violet" />, quote: <Quote size={15} className="text-violet" />,
+    stat: <Hash size={15} className="text-violet" />, testimonial: <MessageSquareQuote size={15} className="text-violet" />,
+    gallery: <LayoutGrid size={15} className="text-violet" />, audio: <Music size={15} className="text-violet" />, embed: <Code2 size={15} className="text-violet" />,
   };
 
   return (
     <div className="flex h-full flex-col">
       <PanelHead icon={typeIcon[el.type]} title={typeLabel[el.type]} />
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
-        {(el.type === "heading" || el.type === "text") && (
+        {(el.type === "heading" || el.type === "text" || el.type === "quote" || el.type === "icon") && (
           <>
+            {el.type === "icon" && <p className="text-[11px] text-white/40">Click the icon on the canvas to type any emoji or glyph.</p>}
             {el.type === "heading" && (
               <Field label="Level"><Seg value={String(el.props.level || 2)} onChange={(v) => setProps({ level: Number(v) })} options={[{ value: "1", label: "H1" }, { value: "2", label: "H2" }, { value: "3", label: "H3" }]} /></Field>
             )}
+            {el.type === "quote" && <Field label="Attribution (optional)"><TextField value={String(el.props.cite || "")} onChange={(v) => setProps({ cite: v })} placeholder="Person, Company" /></Field>}
             <Field label="Font"><SelectField value={String(el.styles.fontFamily || "")} onChange={(v) => setStyle({ fontFamily: v })} options={[{ value: "", label: "Theme default" }, ...FONT_CHOICES.map((f) => ({ value: f.stack, label: f.name }))]} /></Field>
-            <Field label={`Font size — ${px(el.styles.fontSize, 17)}px`}><Slider value={px(el.styles.fontSize, 17)} onChange={(v) => setStyle({ fontSize: `${v}px` })} min={10} max={90} suffix="px" /></Field>
+            <Field label={`Font size — ${px(el.styles.fontSize, 17)}px`}><Slider value={px(el.styles.fontSize, 17)} onChange={(v) => setStyle({ fontSize: `${v}px` })} min={10} max={140} suffix="px" /></Field>
+            <Field label="Font weight"><SelectField value={String(el.styles.fontWeight || "")} onChange={(v) => setStyle({ fontWeight: v })} options={[{ value: "", label: "Default" }, { value: "300", label: "Light" }, { value: "400", label: "Normal" }, { value: "600", label: "Semibold" }, { value: "700", label: "Bold" }, { value: "900", label: "Black" }]} /></Field>
             <Field label="Color"><ColorField value={String(el.styles.color || "").startsWith("#") ? String(el.styles.color) : "#1a1a1a"} onChange={(v) => setStyle({ color: v })} /></Field>
             <Field label="Alignment"><Seg value={String(el.styles.textAlign || "left")} onChange={(v) => setStyle({ textAlign: v })} options={alignOpts} /></Field>
             <Field label={`Line height — ${num(el.styles.lineHeight, el.type === "heading" ? 1.12 : 1.65)}`}><Slider value={num(el.styles.lineHeight, el.type === "heading" ? 1.12 : 1.65)} onChange={(v) => setStyle({ lineHeight: String(v) })} min={0.9} max={2.4} step={0.05} /></Field>
@@ -338,13 +456,13 @@ function ElementPanel({ section, element: el, actions, videos }: PanelProps & { 
             <Field label="Fit"><Seg value={String(el.props.fit || "cover")} onChange={(v) => setProps({ fit: v })} options={[{ value: "cover", label: "Cover" }, { value: "contain", label: "Contain" }, { value: "original", label: "Original" }]} /></Field>
             <Field label="On click"><SelectField value={String(el.props.behavior || "none")} onChange={(v) => setProps({ behavior: v })} options={[{ value: "none", label: "Nothing" }, { value: "link", label: "Open link" }]} /></Field>
             {el.props.behavior === "link" && <Field label="Link URL"><TextField value={String(el.props.url || "")} onChange={(v) => setProps({ url: v })} placeholder="https://…" /></Field>}
-            <ElementActionsRow section={section} element={el} actions={actions} />
           </>
         )}
 
         {el.type === "video" && (
           <>
             <Field label="Video URL (mp4 · YouTube · Vimeo)"><TextField value={el.content} onChange={(v) => actions.setElementContent(sid, eid, v)} placeholder="https://youtu.be/…" /></Field>
+            <Field label="Upload a video file"><ImagePickerAny accept="video/*" onPick={(d) => actions.setElementContent(sid, eid, d)} label="Upload video (kept small — URL recommended)" /></Field>
             {videos.length > 0 && (
               <Field label="…or use my Résumé Video">
                 <SelectField value="" onChange={(v) => { if (v) actions.setElementContent(sid, eid, v); }} options={[{ value: "", label: "Choose a saved video…" }, ...videos.map((vv) => ({ value: vv.videoUrl, label: vv.title }))]} />
@@ -355,7 +473,6 @@ function ElementPanel({ section, element: el, actions, videos }: PanelProps & { 
             <Toggle checked={el.props.loop === true} onChange={(v) => setProps({ loop: v })} label="Loop" />
             <Field label="Poster image URL"><TextField value={String(el.props.poster || "")} onChange={(v) => setProps({ poster: v })} placeholder="https://…" /></Field>
             <Field label="Alignment"><Seg value={String(el.styles.textAlign || "left")} onChange={(v) => setStyle({ textAlign: v })} options={alignOpts} /></Field>
-            <ElementActionsRow section={section} element={el} actions={actions} />
           </>
         )}
 
@@ -366,7 +483,6 @@ function ElementPanel({ section, element: el, actions, videos }: PanelProps & { 
             <Field label="Style"><Seg value={String(el.props.variant || "solid")} onChange={(v) => setProps({ variant: v })} options={[{ value: "solid", label: "Solid" }, { value: "outline", label: "Outline" }, { value: "ghost", label: "Ghost" }]} /></Field>
             <Field label={`Corner radius — ${px(String(el.props.radius), 10)}px`}><Slider value={px(String(el.props.radius), 10)} onChange={(v) => setProps({ radius: v })} min={0} max={40} suffix="px" /></Field>
             <Field label="Alignment"><Seg value={String(el.styles.textAlign || "left")} onChange={(v) => setStyle({ textAlign: v })} options={alignOpts} /></Field>
-            <ElementActionsRow section={section} element={el} actions={actions} />
           </>
         )}
 
@@ -377,7 +493,50 @@ function ElementPanel({ section, element: el, actions, videos }: PanelProps & { 
             ))}
             <Field label="email"><TextField value={String(el.props.email || "")} onChange={(v) => setProps({ email: v })} placeholder="you@example.com" /></Field>
             <Field label="Alignment"><Seg value={String(el.styles.textAlign || "left")} onChange={(v) => setStyle({ textAlign: v })} options={alignOpts} /></Field>
-            <ElementActionsRow section={section} element={el} actions={actions} />
+          </>
+        )}
+
+        {el.type === "stat" && (
+          <>
+            <Field label="Value"><TextField value={String(el.props.value || "")} onChange={(v) => setProps({ value: v })} placeholder="200+" /></Field>
+            <Field label="Label"><TextField value={String(el.props.label || "")} onChange={(v) => setProps({ label: v })} placeholder="Projects shipped" /></Field>
+            <Field label="Alignment"><Seg value={String(el.styles.textAlign || "center")} onChange={(v) => setStyle({ textAlign: v })} options={alignOpts} /></Field>
+          </>
+        )}
+
+        {el.type === "testimonial" && (
+          <>
+            <Field label="Quote"><TextAreaField value={String(el.props.quote || "")} onChange={(v) => setProps({ quote: v })} rows={3} /></Field>
+            <Field label="Author"><TextField value={String(el.props.author || "")} onChange={(v) => setProps({ author: v })} /></Field>
+            <Field label="Role / company"><TextField value={String(el.props.role || "")} onChange={(v) => setProps({ role: v })} /></Field>
+            <Field label="Avatar"><ImagePicker onPick={(d) => setProps({ avatar: d })} label={el.props.avatar ? "Replace avatar" : "Upload avatar"} /></Field>
+          </>
+        )}
+
+        {el.type === "gallery" && (
+          <>
+            <Field label="Add images"><ImagePicker onPick={(d) => actions.setElementContent(sid, eid, (el.content ? el.content + "\n" : "") + d)} label="Upload image to gallery" /></Field>
+            <Field label="Image URLs (one per line)"><TextAreaField value={el.content} onChange={(v) => actions.setElementContent(sid, eid, v)} rows={4} placeholder={"https://…\nhttps://…"} /></Field>
+            <Field label={`Columns — ${Number(el.props.columns) || 3}`}><Slider value={Number(el.props.columns) || 3} onChange={(v) => setProps({ columns: v })} min={1} max={6} /></Field>
+            <Field label={`Gap — ${Number(el.props.gap ?? 12)}px`}><Slider value={Number(el.props.gap ?? 12)} onChange={(v) => setProps({ gap: v })} min={0} max={40} suffix="px" /></Field>
+            <Field label={`Corner radius — ${Number(el.props.radius ?? 12)}px`}><Slider value={Number(el.props.radius ?? 12)} onChange={(v) => setProps({ radius: v })} min={0} max={40} suffix="px" /></Field>
+          </>
+        )}
+
+        {el.type === "audio" && (
+          <>
+            <AudioSource el={el} onSet={(url) => actions.setElementContent(sid, eid, url)} />
+            <Field label="Label (optional)"><TextField value={String(el.props.label || "")} onChange={(v) => setProps({ label: v })} placeholder="Listen to my intro" /></Field>
+            <Toggle checked={el.props.autoplay === true} onChange={(v) => setProps({ autoplay: v })} label="Auto-play (muted) when the site opens" />
+            <Toggle checked={el.props.loop === true} onChange={(v) => setProps({ loop: v })} label="Loop" />
+          </>
+        )}
+
+        {el.type === "embed" && (
+          <>
+            <Field label="Embed URL (iframe src)"><TextField value={el.content} onChange={(v) => actions.setElementContent(sid, eid, v)} placeholder="https://…" /></Field>
+            <Field label={`Height — ${Number(el.props.height) || 360}px`}><Slider value={Number(el.props.height) || 360} onChange={(v) => setProps({ height: v })} min={120} max={900} step={20} suffix="px" /></Field>
+            <p className="text-[11px] text-white/40">Any https page: a map, form, calendar, playlist, etc.</p>
           </>
         )}
 
@@ -385,16 +544,15 @@ function ElementPanel({ section, element: el, actions, videos }: PanelProps & { 
           <>
             <Field label="Color"><ColorField value={String(el.styles.background || "").startsWith("#") ? String(el.styles.background) : "#888888"} onChange={(v) => setStyle({ background: v, opacity: "1" })} /></Field>
             <Field label={`Thickness — ${px(el.styles.height, 1)}px`}><Slider value={px(el.styles.height, 1)} onChange={(v) => setStyle({ height: `${v}px` })} min={1} max={12} suffix="px" /></Field>
-            <ElementActionsRow section={section} element={el} actions={actions} />
           </>
         )}
 
         {el.type === "spacer" && (
-          <>
-            <Field label={`Height — ${Number(el.props.height) || 40}px`}><Slider value={Number(el.props.height) || 40} onChange={(v) => setProps({ height: v })} min={4} max={240} suffix="px" /></Field>
-            <ElementActionsRow section={section} element={el} actions={actions} />
-          </>
+          <Field label={`Height — ${Number(el.props.height) || 40}px`}><Slider value={Number(el.props.height) || 40} onChange={(v) => setProps({ height: v })} min={4} max={240} suffix="px" /></Field>
         )}
+
+        {el.type !== "spacer" && <StyleEffects el={el} setStyle={setStyle} setProps={setProps} />}
+        <ElementActionsRow section={section} element={el} actions={actions} />
       </div>
     </div>
   );
@@ -407,6 +565,8 @@ export function AddMenu({ onAddSection, onAddElement, onClose }: { onAddSection:
     { type: "heading", label: "Heading" }, { type: "text", label: "Text" }, { type: "image", label: "Image" },
     { type: "video", label: "Video" }, { type: "button", label: "Button" }, { type: "divider", label: "Divider" },
     { type: "spacer", label: "Spacer" }, { type: "social", label: "Social links" }, { type: "resume-download", label: "Résumé download" },
+    { type: "icon", label: "Icon" }, { type: "quote", label: "Quote" }, { type: "stat", label: "Stat counter" },
+    { type: "testimonial", label: "Testimonial" }, { type: "gallery", label: "Gallery grid" }, { type: "audio", label: "Audio / voiceover" }, { type: "embed", label: "Embed (iframe)" },
   ];
   return (
     <>

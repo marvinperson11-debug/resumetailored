@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Undo2, Redo2, Monitor, Tablet, Smartphone, Globe, ArrowLeft, Plus, PanelLeftClose,
-  PanelLeftOpen, PanelRightClose, PanelRightOpen, Loader2, Check, Download,
+  PanelLeftOpen, PanelRightClose, PanelRightOpen, Loader2, Check, Download, Eye, Brush, ExternalLink, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -50,6 +50,8 @@ export function StudioEditor() {
   const [rightOpen, setRightOpen] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [paintTick, setPaintTick] = useState(0);
   const [videos, setVideos] = useState<{ id: number; title: string; videoUrl: string }[]>([]);
 
   // Publish state
@@ -215,6 +217,14 @@ export function StudioEditor() {
       [elements[i], elements[j]] = [elements[j], elements[i]];
       return { ...sec, elements };
     })),
+    reorderElement: (secId, elId, toIndex) => commit((s) => withSection(s, secId, (sec) => {
+      const from = sec.elements.findIndex((e) => e.id === elId);
+      if (from < 0) return sec;
+      const elements = [...sec.elements];
+      const [moved] = elements.splice(from, 1);
+      elements.splice(Math.max(0, Math.min(toIndex, elements.length)), 0, moved);
+      return { ...sec, elements };
+    })),
   }), [commit, selection]);
 
   // ── Autosave (localStorage + server draft), debounced ──
@@ -252,6 +262,17 @@ export function StudioEditor() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, redo]);
+
+  // Paint-brush: open the right panel and expand the selected element's style block.
+  const openPaint = useCallback(() => {
+    setRightOpen(true);
+    setPaintTick((t) => t + 1);
+  }, []);
+  useEffect(() => {
+    if (!paintTick) return;
+    const id = window.setTimeout(() => { document.getElementById("rt-style-block")?.setAttribute("open", ""); }, 30);
+    return () => window.clearTimeout(id);
+  }, [paintTick]);
 
   const beginEdit = useCallback((secId: string, elId: string) => { setSelection({ kind: "element", sectionId: secId, elementId: elId }); setEditingId(elId); }, []);
   const endEdit = useCallback(() => setEditingId(null), []);
@@ -336,7 +357,9 @@ export function StudioEditor() {
         <span className="hidden items-center gap-1 text-xs text-white/40 sm:flex">
           {saveState === "saving" ? <><Loader2 size={12} className="animate-spin" /> Saving…</> : saveState === "saved" ? <><Check size={12} className="text-teal" /> Saved</> : null}
         </span>
+        <button type="button" onClick={openPaint} title="Style selected element" className={cn("flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/8 hover:text-cream", selection.kind === "element" ? "text-violet" : "text-white/40")}><Brush size={16} /></button>
         <button type="button" onClick={downloadHtml} title="Download HTML" className="flex h-9 w-9 items-center justify-center rounded-lg text-white/60 hover:bg-white/8 hover:text-cream"><Download size={16} /></button>
+        <button type="button" onClick={() => setPreviewOpen(true)} title="Preview" className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-2 text-sm font-medium text-cream hover:bg-white/8"><Eye size={15} /> <span className="hidden sm:inline">Preview</span></button>
         <button type="button" onClick={() => setPublishOpen(true)} className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet to-[#6d28d9] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_18px_rgba(139,92,246,0.4)] hover:-translate-y-0.5 transition-transform">
           <Globe size={15} /> {alreadyPublished ? "Update" : "Publish"}
         </button>
@@ -409,6 +432,42 @@ export function StudioEditor() {
           actions={actions}
         />
       )}
+      {previewOpen && <PreviewModal site={site} device={device} onClose={() => setPreviewOpen(false)} />}
+    </div>
+  );
+}
+
+/** Full-screen preview of the ACTUAL rendered HTML (not the editor view). */
+function PreviewModal({ site, device, onClose }: { site: StudioSite; device: Device; onClose: () => void }) {
+  const html = useMemo(() => renderStudioSite(site), [site]);
+  const [dev, setDev] = useState<Device>(device);
+  const frameW = dev === "mobile" ? 390 : dev === "tablet" ? 768 : 0; // 0 = full width
+  function openTab() {
+    const blob = new Blob([html], { type: "text/html" });
+    window.open(URL.createObjectURL(blob), "_blank", "noopener");
+  }
+  const devBtn = (d: Device, Icon: typeof Monitor) => (
+    <button type="button" onClick={() => setDev(d)} className={cn("flex h-8 w-9 items-center justify-center rounded-md", dev === d ? "bg-violet text-white" : "text-white/50 hover:bg-white/10")}><Icon size={16} /></button>
+  );
+  return (
+    <div className="fixed inset-0 z-[170] flex flex-col bg-[#0b0f19]">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/10 px-4">
+        <span className="font-serif text-cream">Preview</span>
+        <span className="text-xs text-white/40">This is exactly how your published site will look.</span>
+        <div className="mx-auto flex items-center gap-0.5 rounded-lg border border-white/10 bg-white/5 p-0.5">
+          {devBtn("desktop", Monitor)}{devBtn("tablet", Tablet)}{devBtn("mobile", Smartphone)}
+        </div>
+        <button type="button" onClick={openTab} className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-2 text-sm text-cream hover:bg-white/8"><ExternalLink size={15} /> <span className="hidden sm:inline">New tab</span></button>
+        <button type="button" onClick={onClose} className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-2 text-sm font-medium text-cream hover:bg-white/15"><X size={15} /> Exit preview</button>
+      </header>
+      <div className="flex min-h-0 flex-1 items-start justify-center overflow-auto bg-[#171a24] p-4">
+        <iframe
+          title="Site preview"
+          srcDoc={html}
+          style={frameW ? { width: frameW, height: "100%", background: "#fff", borderRadius: 14, boxShadow: "0 10px 50px rgba(0,0,0,.4)" } : { width: "100%", height: "100%", background: "#fff" }}
+          className="border-0"
+        />
+      </div>
     </div>
   );
 }

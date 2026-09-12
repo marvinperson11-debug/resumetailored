@@ -176,8 +176,8 @@ function ElementView(p: ElProps) {
     actions.setElementContent(sec.id, el.id, url);
   }
 
-  // ── text / heading ──
-  if (el.type === "heading" || el.type === "text") {
+  // ── text / heading / quote / icon (all inline-editable) ──
+  if (el.type === "heading" || el.type === "text" || el.type === "quote" || el.type === "icon") {
     const tag = el.type === "heading" ? (`h${Math.min(3, Math.max(1, Number(el.props.level) || 2))}` as "h1" | "h2" | "h3") : "p";
     return (
       <div style={wrapStyle}>
@@ -295,6 +295,77 @@ function ElementView(p: ElProps) {
             <span key={label} style={{ fontWeight: 600, borderBottom: "1px solid currentColor", paddingBottom: 1 }}>{label}</span>
           )) : <span style={{ opacity: 0.5, fontSize: 13 }}>Add your social links →</span>}
         </div>
+      </div>
+    );
+  }
+
+  // ── stat counter ──
+  if (el.type === "stat") {
+    return (
+      <div style={{ ...wrapStyle, display: "inline-block", minWidth: 150, margin: 6, padding: "20px 22px", borderRadius: 18, background: "color-mix(in srgb,var(--primary) 6%,transparent)", border: "1px solid color-mix(in srgb,var(--primary) 16%,transparent)", textAlign: (el.styles.textAlign as React.CSSProperties["textAlign"]) || "center" }} onClick={selectMe}>
+        <span style={{ display: "block", fontFamily: "var(--heading-font)", fontWeight: 800, fontSize: 44, lineHeight: 1, color: "var(--primary)" }}>{String(el.props.value || "")}</span>
+        <span style={{ display: "block", marginTop: 8, fontSize: 14, opacity: 0.7 }}>{String(el.props.label || "")}</span>
+      </div>
+    );
+  }
+
+  // ── testimonial card ──
+  if (el.type === "testimonial") {
+    const avatar = safeUrl(el.props.avatar);
+    return (
+      <figure style={{ ...wrapStyle, margin: 0, padding: 26, borderRadius: 20, background: "color-mix(in srgb,var(--ink) 4%,transparent)", border: "1px solid color-mix(in srgb,var(--ink) 10%,transparent)" }} onClick={selectMe}>
+        <blockquote style={{ margin: "0 0 16px", fontSize: 19, lineHeight: 1.5, fontFamily: "var(--heading-font)" }}>&ldquo;{String(el.props.quote || "")}&rdquo;</blockquote>
+        <figcaption style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 14, opacity: 0.85 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {avatar && <img src={avatar} alt="" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover" }} />}
+          <span><strong>{String(el.props.author || "")}</strong>{el.props.role ? <><br />{String(el.props.role)}</> : null}</span>
+        </figcaption>
+      </figure>
+    );
+  }
+
+  // ── gallery grid ──
+  if (el.type === "gallery") {
+    const urls = String(el.content || "").split(/\n+/).map((s) => safeUrl(s.trim())).filter(Boolean);
+    const cols = Math.min(6, Math.max(1, Number(el.props.columns) || 3));
+    const gap = Number(el.props.gap ?? 12);
+    const radius = Number(el.props.radius ?? 12);
+    return (
+      <div style={{ ...wrapStyle, display: "grid", gridTemplateColumns: `repeat(${cols},1fr)`, gap }} onClick={selectMe}>
+        {(urls.length ? urls : Array.from({ length: cols }).map(() => "")).map((u, i) =>
+          u ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={u} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", borderRadius: radius }} />
+          ) : (
+            <div key={i} style={{ aspectRatio: "1/1", borderRadius: radius, background: "color-mix(in srgb,var(--primary) 12%,transparent)", border: "1px dashed color-mix(in srgb,var(--ink) 25%,transparent)" }} />
+          )
+        )}
+      </div>
+    );
+  }
+
+  // ── audio player ──
+  if (el.type === "audio") {
+    const src = safeUrl(el.content);
+    return (
+      <div style={{ ...wrapStyle, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", margin: "10px 0", padding: "14px 16px", borderRadius: 14, background: "color-mix(in srgb,var(--primary) 7%,transparent)", border: "1px solid color-mix(in srgb,var(--primary) 20%,transparent)" }} onClick={selectMe}>
+        {el.props.label ? <span style={{ fontWeight: 600 }}>{String(el.props.label)}</span> : null}
+        {src ? <audio controls src={src} style={{ flex: 1, minWidth: 200, height: 36 }} /> : <span style={{ opacity: 0.5, fontSize: 13 }}>Select this block, then add an audio URL or record →</span>}
+      </div>
+    );
+  }
+
+  // ── embed (iframe) ──
+  if (el.type === "embed") {
+    const src = safeUrl(el.content);
+    const h = Math.max(80, Number(el.props.height) || 360);
+    return (
+      <div style={{ ...wrapStyle }} onClick={selectMe}>
+        {src ? (
+          <iframe title="embed" src={src} style={{ width: "100%", height: h, border: 0, borderRadius: 12 }} sandbox="allow-scripts allow-same-origin allow-popups allow-forms" />
+        ) : (
+          <div style={{ width: "100%", height: h, border: "2px dashed rgba(128,128,128,.5)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.7, fontSize: 13 }}>Select this block, then paste an embed URL →</div>
+        )}
       </div>
     );
   }

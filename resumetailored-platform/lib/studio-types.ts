@@ -21,7 +21,8 @@ export type SectionType =
 
 export type ElementType =
   | "heading" | "text" | "image" | "video" | "button"
-  | "divider" | "spacer" | "social" | "resume-download";
+  | "divider" | "spacer" | "social" | "resume-download"
+  | "icon" | "quote" | "stat" | "testimonial" | "gallery" | "audio" | "embed";
 
 export type BgType = "solid" | "gradient" | "pattern" | "image" | "video";
 export type SectionLayout = "full" | "contained" | "split";
@@ -73,7 +74,20 @@ export interface StudioSite {
   sections: StudioSection[];
   customCss?: string;
   animate?: boolean; // fade-in on scroll
+  /** Site-wide background music (global, loops across sections). */
+  music?: { url: string; autoplay: boolean; loop: boolean; volume: number };
 }
+
+/** Per-element scroll-reveal animation. Stored on `props.anim` (+ delay/duration). */
+export type AnimType = "none" | "fade" | "slide-up" | "slide-left" | "slide-right" | "scale";
+export const ANIM_CHOICES: { value: AnimType; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "fade", label: "Fade in" },
+  { value: "slide-up", label: "Slide up" },
+  { value: "slide-left", label: "Slide left" },
+  { value: "slide-right", label: "Slide right" },
+  { value: "scale", label: "Scale in" },
+];
 
 /** A stored personal site can hold either the legacy flat SiteData or a v2
  *  StudioSite. This guard lets the renderer/routes tell them apart. */
@@ -299,6 +313,19 @@ export function elementStyle(el: StudioElement): StyleMap {
       base.opacity = ".18";
       base.margin = "20px 0";
       break;
+    case "quote":
+      base.fontFamily = "var(--heading-font)";
+      base.fontStyle = "italic";
+      base.lineHeight = "1.4";
+      base.color = "var(--ink)";
+      base.borderLeft = "4px solid var(--primary)";
+      base.padding = "6px 0 6px 20px";
+      base.margin = "10px 0";
+      break;
+    case "icon":
+      base.lineHeight = "1";
+      base.margin = "0 0 8px";
+      break;
   }
   return { ...base, ...(el.styles || {}) };
 }
@@ -316,6 +343,13 @@ export function makeElement(type: ElementType, overrides: Partial<StudioElement>
     spacer: { content: "", styles: {}, props: { height: 40 } },
     social: { content: "", styles: { textAlign: "left" }, props: { linkedin: "", github: "", twitter: "", website: "", email: "" } },
     "resume-download": { content: "Download résumé", styles: { textAlign: "left" }, props: { url: "" } },
+    icon: { content: "★", styles: { fontSize: "44px", textAlign: "left", color: "var(--primary)" }, props: {} },
+    quote: { content: "&ldquo;A short, memorable quote.&rdquo;", styles: { fontSize: "24px", textAlign: "left" }, props: { cite: "" } },
+    stat: { content: "", styles: { textAlign: "center" }, props: { value: "200+", label: "Happy clients" } },
+    testimonial: { content: "", styles: {}, props: { quote: "They were fantastic to work with — a real professional.", author: "Alex Morgan", role: "Director, Acme", avatar: "" } },
+    gallery: { content: "", styles: {}, props: { columns: 3, radius: "12", gap: "12" } }, // content = newline-separated image URLs
+    audio: { content: "", styles: {}, props: { autoplay: false, loop: false, label: "Listen" } },
+    embed: { content: "", styles: {}, props: { height: 360 } }, // content = iframe src URL
   };
   const d = defaults[type];
   return { id: newId(type), type, content: d.content, styles: { ...d.styles }, props: { ...d.props }, ...overrides };
@@ -447,20 +481,49 @@ export function templateSite(templateId: string, prefill?: ResumePrefill): Studi
   const theme = { ...THEMES[id] };
   const dark = id === "executive" || id === "developer";
 
-  const hero = makeSection("hero", { background: heroBackground(id) });
-  // Light text on a dark/gradient hero.
-  if (dark || id === "creative" || id === "executive") {
+  const lightOnDark = dark || id === "creative" || id === "executive";
+
+  const hero = makeSection("hero", { background: heroBackground(id), padding: { top: 120, bottom: 120 } });
+  if (lightOnDark) {
     for (const el of hero.elements) {
       if (el.type === "heading" || el.type === "text") el.styles.color = "#ffffff";
     }
   }
-  const about = makeSection("about");
-  const experience = makeSection("experience");
-  const skills = makeSection("skills");
-  const projects = makeSection("projects", id === "designer" || id === "portfolio" ? { layout: "full" } : {});
-  const contact = makeSection("contact");
+  // A subtle two-tone rhythm: alternate a faint tinted panel behind some sections.
+  const tint: SectionBackground = dark
+    ? { type: "solid", value: "color-mix(in srgb,var(--primary) 8%,var(--bg))" }
+    : { type: "solid", value: "color-mix(in srgb,var(--primary) 5%,#ffffff)" };
+  const plain: SectionBackground = { type: "solid", value: "var(--bg)" };
 
-  const sections = [hero, about, experience, skills, projects, contact];
+  const about = makeSection("about", { background: plain });
+  const experience = makeSection("experience", { background: tint });
+  const skills = makeSection("skills", { background: plain });
+  const projects = makeSection("projects", { background: tint, layout: id === "designer" || id === "portfolio" || id === "startup" ? "full" : "contained" });
+
+  // Startup templates lead with a metric row; designer/portfolio show a gallery.
+  const stats = makeSection("custom", { name: "Highlights", background: plain, layout: "split",
+    elements: [
+      makeElement("stat", { props: { value: "8+", label: "Years experience" } }),
+      makeElement("stat", { props: { value: "40+", label: "Projects shipped" } }),
+      makeElement("stat", { props: { value: "12", label: "Awards & mentions" } }),
+    ] });
+  const gallery = makeSection("gallery", { background: tint, layout: "full",
+    elements: [
+      makeElement("heading", { content: "Selected work", styles: { fontSize: "13px", letterSpacing: ".14em", textTransform: "uppercase", color: "var(--primary)" }, props: { level: 2 } }),
+      makeElement("gallery", { props: { columns: 3, radius: "14", gap: "14" } }),
+    ] });
+  const testimonials = makeSection("testimonials", { name: "Testimonials", background: plain, layout: "split",
+    elements: [
+      makeElement("testimonial", { props: { quote: "One of the most talented people I've worked with — delivers, every time.", author: "Jordan Lee", role: "VP Product, Northwind", avatar: "" } }),
+      makeElement("testimonial", { props: { quote: "Sharp, reliable and genuinely great to collaborate with.", author: "Sam Rivera", role: "Founder, Bright Labs", avatar: "" } }),
+    ] });
+  const contact = makeSection("contact", { background: lightOnDark ? plain : tint });
+
+  const sections: StudioSection[] = [hero];
+  if (id === "startup") sections.push(stats);
+  sections.push(about, experience, skills);
+  if (id === "designer" || id === "portfolio") sections.push(gallery);
+  sections.push(projects, testimonials, contact);
 
   // Prefill from a résumé (best effort).
   if (prefill) {
