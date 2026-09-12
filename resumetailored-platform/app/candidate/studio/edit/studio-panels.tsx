@@ -40,7 +40,7 @@ function SelectField({ value, onChange, options }: { value: string; onChange: (v
   );
 }
 function ColorField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const hex = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#8B5CF6";
+  const hex = /^#[0-9a-fA-F]{6}$/.test(value) ? value : "#C2870B";
   return (
     <div className="flex items-center gap-2">
       <input type="color" value={hex} onChange={(e) => onChange(e.target.value)} className="h-8 w-9 shrink-0 cursor-pointer rounded border border-white/12 bg-transparent" />
@@ -287,7 +287,7 @@ function BackgroundEditor({ section, actions }: { section: StudioSection; action
     "linear-gradient(135deg,var(--primary),#0b0b12)",
     "linear-gradient(180deg,#14171f,#0b0d12)",
     "radial-gradient(120% 120% at 50% 0%,color-mix(in srgb,var(--primary) 22%,#fff),#fff)",
-    "linear-gradient(120deg,#8B5CF6,#14B8A6)",
+    "linear-gradient(120deg,#C2870B,#14B8A6)",
     "linear-gradient(120deg,#F59E0B,#E11D48)",
   ];
   const setType = (type: BgType) => {
@@ -645,7 +645,7 @@ export function PublishPanel({
           )}
         </div>
         <div className="border-t border-white/10 p-5">
-          <button type="button" onClick={onPublish} disabled={publishing} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet to-[#6d28d9] px-5 py-3 text-sm font-semibold text-white shadow-[0_0_22px_rgba(139,92,246,0.4)] disabled:opacity-60">
+          <button type="button" onClick={onPublish} disabled={publishing} className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet to-[#9a6a08] px-5 py-3 text-sm font-semibold text-white shadow-[0_0_22px_rgba(194,135,11,0.4)] disabled:opacity-60">
             {publishing ? <Loader2 size={16} className="animate-spin" /> : <Globe size={16} />}
             {alreadyPublished ? "Update published site" : "Publish now"}
           </button>

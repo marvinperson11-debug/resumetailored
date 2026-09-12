@@ -15,7 +15,7 @@ const config: Config = {
         // charcoal / violet / teal / gold system.
         navy: "#0B0F19", // deep charcoal base
         charcoal: "#0B0F19",
-        violet: "#8B5CF6", // primary accent
+        violet: "#C2870B", // primary accent (gold rebrand)
         teal: "#14B8A6", // secondary accent (success, active sidebar)
         gold: "#F59E0B", // amber, part of the living gradient
         cream: "#FFFFFF", // headlines

@@ -360,7 +360,7 @@ export function StudioEditor() {
         <button type="button" onClick={openPaint} title="Style selected element" className={cn("flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/8 hover:text-cream", selection.kind === "element" ? "text-violet" : "text-white/40")}><Brush size={16} /></button>
         <button type="button" onClick={downloadHtml} title="Download HTML" className="flex h-9 w-9 items-center justify-center rounded-lg text-white/60 hover:bg-white/8 hover:text-cream"><Download size={16} /></button>
         <button type="button" onClick={() => setPreviewOpen(true)} title="Preview" className="flex items-center gap-1.5 rounded-lg border border-white/12 px-3 py-2 text-sm font-medium text-cream hover:bg-white/8"><Eye size={15} /> <span className="hidden sm:inline">Preview</span></button>
-        <button type="button" onClick={() => setPublishOpen(true)} className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet to-[#6d28d9] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_18px_rgba(139,92,246,0.4)] hover:-translate-y-0.5 transition-transform">
+        <button type="button" onClick={() => setPublishOpen(true)} className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet to-[#9a6a08] px-4 py-2 text-sm font-semibold text-white shadow-[0_0_18px_rgba(194,135,11,0.4)] hover:-translate-y-0.5 transition-transform">
           <Globe size={15} /> {alreadyPublished ? "Update" : "Publish"}
         </button>
       </header>
@@ -411,7 +411,7 @@ export function StudioEditor() {
       <button
         type="button"
         onClick={() => setAddOpen(true)}
-        className="fixed bottom-6 left-1/2 z-[120] flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-violet text-white shadow-[0_8px_30px_rgba(139,92,246,0.5)] transition-transform hover:scale-105"
+        className="fixed bottom-6 left-1/2 z-[120] flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full bg-violet text-white shadow-[0_8px_30px_rgba(194,135,11,0.5)] transition-transform hover:scale-105"
         title="Add section or element"
       >
         <Plus size={22} />

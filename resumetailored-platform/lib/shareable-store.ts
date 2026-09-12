@@ -39,7 +39,7 @@ export interface ShareTheme {
 
 /** The 5 basic themes free users can pick from. */
 export const SHARE_THEMES: ShareTheme[] = [
-  { id: "aurora", label: "Aurora", bg: "#0b0f19", panel: "#141a2b", text: "#e9ebf5", muted: "#9aa3c0", accent: "#8B5CF6", font: "'Inter',system-ui,sans-serif", googleFont: "Inter" },
+  { id: "aurora", label: "Aurora", bg: "#0b0f19", panel: "#141a2b", text: "#e9ebf5", muted: "#9aa3c0", accent: "#C2870B", font: "'Inter',system-ui,sans-serif", googleFont: "Inter" },
   { id: "cream", label: "Cream", bg: "#faf7f0", panel: "#ffffff", text: "#20242e", muted: "#6b7280", accent: "#C2870B", font: "'Playfair Display',Georgia,serif", googleFont: "Playfair Display" },
   { id: "mint", label: "Mint", bg: "#f1faf6", panel: "#ffffff", text: "#12241c", muted: "#5b6b62", accent: "#059669", font: "'Poppins',sans-serif", googleFont: "Poppins" },
   { id: "rose", label: "Rose", bg: "#fff5f7", panel: "#ffffff", text: "#2a1620", muted: "#7a5b64", accent: "#E11D48", font: "'DM Sans',sans-serif", googleFont: "DM Sans" },
