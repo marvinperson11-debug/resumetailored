@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
+import { ClerkProvider, ClerkLoading } from "@clerk/nextjs";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { LoadingScreen } from "@/components/loading-screen";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -27,6 +28,10 @@ export default async function RootLayout({
 
   return (
     <ClerkProvider
+      // Sensible post-auth defaults so a redirect resolves fast (the auth pages
+      // still override per-flow). Reduces the redirect round-trips after login.
+      signInFallbackRedirectUrl="/"
+      signUpFallbackRedirectUrl="/"
       appearance={{
         variables: {
           colorPrimary: "#C2870B", // gold rebrand
@@ -41,6 +46,13 @@ export default async function RootLayout({
         <body className={`${inter.variable} ${playfair.variable} bg-navy text-cream font-sans antialiased`}>
           {/* Living gradient — fixed behind all content, shows through glass. */}
           <div className="gradient-bg" aria-hidden="true" />
+          {/* Branded loader while clerk-js initializes — replaces the "blank
+              gradient" wait with the RT loading screen on every route, all
+              devices. It vanishes the moment Clerk is ready; the page content
+              (server-rendered underneath) is then already there. */}
+          <ClerkLoading>
+            <LoadingScreen />
+          </ClerkLoading>
           <NextIntlClientProvider locale={locale} messages={messages}>
             {children}
           </NextIntlClientProvider>

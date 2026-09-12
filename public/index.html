@@ -5,6 +5,10 @@
   <meta name="msvalidate.01" content="AC21F15D4CB63E6BB0F0683A9B21EABF" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#FAF7F0" />
+  <!-- Warm up the app origin so the post-login jump to the dashboard resolves
+       DNS/TLS ahead of the click (the primary CTAs point at app.resumetailored.com). -->
+  <link rel="preconnect" href="https://app.resumetailored.com" crossorigin />
+  <link rel="dns-prefetch" href="https://app.resumetailored.com" />
   <title>ResumeTailored AI — AI Resume Tailor &amp; Cover Letter Generator</title>
   <meta name="description" content="Free AI resume builder and resume tailor. Paste your resume and any job posting — our AI rewrites it with the right keywords in 60 seconds. Pass ATS filters and land more interviews. No credit card needed." />
   <meta name="keywords" content="ai resume tailor, free resume tailor, AI resume builder, free AI resume builder, resume scanner, resume optimizer, ATS resume, cover letter generator, resume rewriter, job application AI, resume tailoring tool, free ATS resume checker, jobscan alternative, rezi alternative, tailor resume to job description, AI resume rewriter, ATS resume rewriter" />
