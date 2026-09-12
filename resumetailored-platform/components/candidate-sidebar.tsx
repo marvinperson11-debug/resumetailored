@@ -25,6 +25,7 @@ import {
   Lock,
   type LucideIcon,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useTools, type ToolId } from "@/app/candidate/components/tools-context";
 
@@ -45,30 +46,32 @@ interface NavItem {
 
 // Built tools open in a modal (FIX 3); everything else navigates. "Build My
 // Resume" is the hero action and opens the AI Resume Builder (FIX 3 / naming).
+// `label` is an i18n key under the "nav" namespace, resolved at render.
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/candidate", icon: LayoutDashboard },
-  { label: "Build My Resume", opens: "resume", icon: Sparkles, hero: true },
-  { label: "My Resumes", href: "/candidate/resumes", icon: FileText },
-  { label: "Cover Letters", opens: "cover", icon: PenTool },
-  { label: "ATS Scanner", opens: "ats", icon: ScanLine },
-  { label: "LinkedIn Optimizer", opens: "linkedin", icon: Contact, pro: true },
-  { label: "Interview Coach", opens: "interview", icon: MessageSquare, pro: true },
-  { label: "Job Finder", opens: "jobs", icon: Zap, pro: true },
-  { label: "Career Hub", opens: "career", icon: Briefcase, pro: true },
-  { label: "Decoder", opens: "decoder", icon: FileSearch, pro: true },
-  { label: "Application Tracker", href: "/candidate/applications", icon: Send },
-  { label: "Shareable Links", href: "/candidate/shareable-links", icon: LinkIcon },
-  { label: "Resume Video", opens: "video", icon: Video, pro: true, locked: true },
-  { label: "Personal Website", href: "/candidate/studio", icon: Globe, pro: true, locked: true },
-  { label: "Templates", href: "/candidate/templates", icon: Layout },
-  { label: "Profile", href: "/candidate/profile", icon: User },
-  { label: "Settings", href: "/candidate/settings", icon: Settings },
+  { label: "dashboard", href: "/candidate", icon: LayoutDashboard },
+  { label: "buildResume", opens: "resume", icon: Sparkles, hero: true },
+  { label: "myResumes", href: "/candidate/resumes", icon: FileText },
+  { label: "coverLetters", opens: "cover", icon: PenTool },
+  { label: "atsScanner", opens: "ats", icon: ScanLine },
+  { label: "linkedin", opens: "linkedin", icon: Contact, pro: true },
+  { label: "interview", opens: "interview", icon: MessageSquare, pro: true },
+  { label: "jobs", opens: "jobs", icon: Zap, pro: true },
+  { label: "career", opens: "career", icon: Briefcase, pro: true },
+  { label: "decoder", opens: "decoder", icon: FileSearch, pro: true },
+  { label: "applications", href: "/candidate/applications", icon: Send },
+  { label: "shareable", href: "/candidate/shareable-links", icon: LinkIcon },
+  { label: "resumeVideo", opens: "video", icon: Video, pro: true, locked: true },
+  { label: "personalWebsite", href: "/candidate/studio", icon: Globe, pro: true, locked: true },
+  { label: "templates", href: "/candidate/templates", icon: Layout },
+  { label: "profile", href: "/candidate/profile", icon: User },
+  { label: "settings", href: "/candidate/settings", icon: Settings },
 ];
 
 function ProBadge() {
+  const tp = useTranslations("plan");
   return (
     <span className="ml-auto rounded-full bg-violet px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
-      PRO
+      {tp("pro")}
     </span>
   );
 }
@@ -81,6 +84,8 @@ interface RoleBadge {
 export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge }) {
   const pathname = usePathname();
   const { openResume, openTool } = useTools();
+  const t = useTranslations("nav");
+  const tp = useTranslations("plan");
   const plan = role.plan ?? "free";
   const proish = plan === "pro" || plan === "employee";
 
@@ -115,7 +120,7 @@ export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge
                 className="flex w-full items-center gap-3 rounded-xl border border-violet bg-violet/15 px-4 py-3 text-sm font-semibold text-white shadow-[0_0_22px_rgba(194,135,11,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/25"
               >
                 <Icon className="h-[18px] w-[18px] shrink-0 text-violet" />
-                <span className="flex-1 text-left">{item.label}</span>
+                <span className="flex-1 text-left">{t(item.label)}</span>
                 <Star className="h-3.5 w-3.5 shrink-0 fill-gold text-gold" />
               </button>
             );
@@ -130,7 +135,7 @@ export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge
           const inner = (
             <>
               <Icon className="h-[18px] w-[18px] shrink-0" />
-              <span className={cn(!item.pro && "flex-1")}>{item.label}</span>
+              <span className={cn(!item.pro && "flex-1")}>{t(item.label)}</span>
               {item.pro &&
                 (item.locked && !proish ? (
                   <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-cream" />
@@ -155,15 +160,12 @@ export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge
       <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
         <Crown className={cn("h-4 w-4", proish ? "text-gold" : "text-muted-cream")} />
         {plan === "pro" ? (
-          <span className="text-xs font-medium text-gold">Pro · active</span>
+          <span className="text-xs font-medium text-gold">{tp("proActive")}</span>
         ) : plan === "employee" ? (
-          <span className="text-xs font-medium text-gold">Pro · via {role.employerName || "your team"}</span>
+          <span className="text-xs font-medium text-gold">{tp("proVia", { name: role.employerName || "your team" })}</span>
         ) : (
-          <a
-            href="/candidate?upgrade=pro"
-            className="text-xs font-medium text-muted-cream transition-colors hover:text-gold"
-          >
-            Free plan · Upgrade to Pro
+          <a href="/candidate?upgrade=pro" className="text-xs font-medium text-muted-cream transition-colors hover:text-gold">
+            {tp("freeUpgrade")}
           </a>
         )}
       </div>

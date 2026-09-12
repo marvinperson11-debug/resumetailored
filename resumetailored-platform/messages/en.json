@@ -1,0 +1,40 @@
+{
+  "app": { "name": "ResumeTailored", "office": "My Career Office" },
+  "nav": {
+    "dashboard": "Dashboard",
+    "buildResume": "Build My Resume",
+    "myResumes": "My Resumes",
+    "coverLetters": "Cover Letters",
+    "atsScanner": "ATS Scanner",
+    "linkedin": "LinkedIn Optimizer",
+    "interview": "Interview Coach",
+    "jobs": "Job Finder",
+    "career": "Career Hub",
+    "decoder": "Decoder",
+    "applications": "Application Tracker",
+    "shareable": "Shareable Links",
+    "resumeVideo": "Resume Video",
+    "personalWebsite": "Personal Website",
+    "templates": "Templates",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "topbar": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "language": "Language",
+    "signOut": "Sign out",
+    "candidateView": "Candidate View",
+    "employerView": "Employer View",
+    "admin": "Admin",
+    "menu": "Menu"
+  },
+  "plan": {
+    "proActive": "Pro · active",
+    "proVia": "Pro · via {name}",
+    "freeUpgrade": "Free plan · Upgrade to Pro",
+    "pro": "PRO"
+  },
+  "lang": { "label": "Language", "en": "English", "zh": "中文" },
+  "employer": { "candidates": "Candidates", "jobs": "Jobs", "team": "Team", "settings": "Settings" }
+}

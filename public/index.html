@@ -56,6 +56,9 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Speed up the hop to the app (sign-up / dashboard live at app.resumetailored.com). -->
+  <link rel="preconnect" href="https://app.resumetailored.com" />
+  <link rel="dns-prefetch" href="https://app.resumetailored.com" />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,400;1,9..144,500;1,9..144,600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <!-- JSON-LD -->
   <script type="application/ld+json">
@@ -1074,7 +1077,7 @@
       <a href="https://app.resumetailored.com" data-i18n="eco_nav_tailor">Tailor My Resume</a>
       <a href="https://app.resumetailored.com" data-i18n="eco_nav_employer">For Employer</a>
     </nav>
-    <div class="club-nav__actions"><button class="club-nav__lang" type="button" data-club-lang-top onclick="toggleLang()">中文</button><button class="club-nav__login" type="button" onclick="window.location.href='https://app.resumetailored.com'">Login</button></div>
+    <div class="club-nav__actions"><button class="club-nav__lang" type="button" data-club-lang-top onclick="toggleLang()">中文</button></div>
     <button class="club-mobile" type="button" data-club-mobile aria-controls="clubMobileMenu" aria-label="Open navigation" aria-expanded="false">☰</button>
   </div>
 </header>
@@ -1135,7 +1138,6 @@
          toggle never jumps between pages. -->
     <div class="nav-actions">
       <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">中文</button>
-      <button type="button" data-nav="login" class="btn btn-ghost" style="background:none;cursor:pointer;font:inherit;" onclick="window.location.href='https://app.resumetailored.com'">Login</button>
       <a href="https://app.resumetailored.com" class="btn btn-primary" data-i18n="nav_cta">Tailor My Resume Free →</a>
     </div>
     <div class="nav-mobile-actions">

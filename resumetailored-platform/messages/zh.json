@@ -1,0 +1,40 @@
+{
+  "app": { "name": "ResumeTailored", "office": "我的职业办公室" },
+  "nav": {
+    "dashboard": "仪表盘",
+    "buildResume": "生成我的简历",
+    "myResumes": "我的简历",
+    "coverLetters": "求职信",
+    "atsScanner": "ATS 扫描器",
+    "linkedin": "领英优化",
+    "interview": "面试教练",
+    "jobs": "职位搜索",
+    "career": "职业中心",
+    "decoder": "职位解码器",
+    "applications": "申请追踪",
+    "shareable": "分享链接",
+    "resumeVideo": "简历视频",
+    "personalWebsite": "个人网站",
+    "templates": "模板",
+    "profile": "个人资料",
+    "settings": "设置"
+  },
+  "topbar": {
+    "profile": "个人资料",
+    "settings": "设置",
+    "language": "语言",
+    "signOut": "退出登录",
+    "candidateView": "求职者视图",
+    "employerView": "雇主视图",
+    "admin": "管理员",
+    "menu": "菜单"
+  },
+  "plan": {
+    "proActive": "Pro · 已激活",
+    "proVia": "Pro · 来自 {name}",
+    "freeUpgrade": "免费版 · 升级到 Pro",
+    "pro": "PRO"
+  },
+  "lang": { "label": "语言", "en": "English", "zh": "中文" },
+  "employer": { "candidates": "候选人", "jobs": "职位", "team": "团队", "settings": "设置" }
+}

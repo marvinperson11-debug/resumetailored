@@ -1,4 +1,5 @@
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
+import { isAdminId } from "./admin";
 
 /**
  * Role-based access control.
@@ -31,6 +32,8 @@ export interface Access {
   /** For an employee account: the employer (organization) they belong to. */
   employerId?: string;
   employerName?: string;
+  /** The hardcoded admin: bypasses all role checks and is Pro everywhere. */
+  isAdmin?: boolean;
 }
 
 const FREE: Access = { plan: "free", type: "individual" };
@@ -61,6 +64,11 @@ export async function getAccess(): Promise<Access> {
   try {
     const user = await currentUser();
     if (!user) return FREE;
+
+    // Admin bypass — Pro + both portals, regardless of stored metadata.
+    if (isAdminId(user.id)) {
+      return { plan: "pro", type: "individual", isAdmin: true };
+    }
 
     const fromMeta = normalize((user.publicMetadata ?? {}) as Record<string, string>);
     if (fromMeta) return fromMeta;
@@ -103,17 +111,18 @@ export async function getAccess(): Promise<Access> {
 // ── Role predicates ──────────────────────────────────────────────────────────
 /** Individual Pro tools (Resume Video, Web Studio): Pro or an employer's employee. */
 export function canUseIndividualPro(a: Access): boolean {
-  return a.plan === "pro" || a.plan === "employee";
+  return a.plan === "pro" || a.plan === "employee" || !!a.isAdmin;
 }
 /** Employer Portal (team, candidates, job posting). */
 export function isEmployer(a: Access): boolean {
-  return a.plan === "employer";
+  return a.plan === "employer" || !!a.isAdmin;
 }
 
 /** Anyone who belongs to a company workspace: the employer owner, or one of
- *  their invited employees. Both reach /employer (scoped to the same data). */
+ *  their invited employees. Both reach /employer (scoped to the same data).
+ *  The admin passes too (sees their own workspace via resolveEmployerId). */
 export function canUseEmployerPortal(a: Access): boolean {
-  return a.plan === "employer" || (a.plan === "employee" && !!a.employerId);
+  return a.plan === "employer" || (a.plan === "employee" && !!a.employerId) || !!a.isAdmin;
 }
 
 /** The company workspace id for a request: the employer's own id, or (for an
@@ -121,6 +130,7 @@ export function canUseEmployerPortal(a: Access): boolean {
 export function resolveEmployerId(a: Access, userId: string | null): string | null {
   if (a.plan === "employer" && userId) return userId;
   if (a.plan === "employee" && a.employerId) return a.employerId;
+  if (a.isAdmin && userId) return userId; // admin previews their own employer workspace
   return null;
 }
 
