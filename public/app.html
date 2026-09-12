@@ -69,14 +69,10 @@
           <div style="display:flex;align-items:center;gap:10px;margin:16px 0;color:#918A7E;font-size:12px;font-weight:700;">
             <span style="flex:1;height:1px;background:#E7DFD1;"></span>OR<span style="flex:1;height:1px;background:#E7DFD1;"></span>
           </div>
-          <button class="btn btn-full oauth-google" id="googleLoginBtn" onclick="startGoogleLogin()" style="display:none;align-items:center;justify-content:center;gap:10px;background:#fff;color:#3c4043;border:1px solid #dadce0;font-weight:700;margin-bottom:10px;">
-            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink:0;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-            <span data-i18n="google_login_btn">Continue with Google</span>
-          </button>
           <button class="btn btn-full" id="linkedinLoginBtn" onclick="startLinkedInLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#0a66c2;color:#fff;border:none;font-weight:700;">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="display:block;flex-shrink:0;"><path fill="#fff" d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.76-2.05 4.02 0 4.76 2.65 4.76 6.1V21h-4v-5.5c0-1.31-.02-3-1.83-3-1.83 0-2.11 1.43-2.11 2.9V21H9z"/></svg> <span data-i18n="li_login_btn">Continue with LinkedIn</span>
           </button>
-          <p style="font-size:11px;color:#918A7E;text-align:center;margin-top:8px;line-height:1.5;">New here? Google or LinkedIn creates your free account automatically.</p>
+          <p style="font-size:11px;color:#918A7E;text-align:center;margin-top:8px;line-height:1.5;">New here? LinkedIn creates your free account automatically.</p>
         </div>
         <div class="auth-switch">New to ResumeTailored? <a onclick="switchAuthTab('signup')">Create a free account →</a></div>
       </div>
@@ -93,10 +89,6 @@
           <div style="display:flex;align-items:center;gap:10px;margin:16px 0;color:#918A7E;font-size:12px;font-weight:700;">
             <span style="flex:1;height:1px;background:#E7DFD1;"></span>OR SIGN UP WITH<span style="flex:1;height:1px;background:#E7DFD1;"></span>
           </div>
-          <button class="btn btn-full oauth-google" id="googleSignupBtn" onclick="startGoogleLogin()" style="display:none;align-items:center;justify-content:center;gap:10px;background:#fff;color:#3c4043;border:1px solid #dadce0;font-weight:700;margin-bottom:10px;">
-            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink:0;"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-            <span data-i18n="google_signup_btn">Sign up with Google</span>
-          </button>
           <button class="btn btn-full" id="linkedinSignupBtn" onclick="startLinkedInLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#0a66c2;color:#fff;border:none;font-weight:700;">
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" style="display:block;flex-shrink:0;"><path fill="#fff" d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.76-2.05 4.02 0 4.76 2.65 4.76 6.1V21h-4v-5.5c0-1.31-.02-3-1.83-3-1.83 0-2.11 1.43-2.11 2.9V21H9z"/></svg> Sign up with LinkedIn
           </button>
@@ -4924,26 +4916,13 @@ Aaliyah Washington`
           const rb = document.getElementById('linkedinImportBtn');
           if (rb) rb.style.display = 'none';
           // No LinkedIn OAuth configured → hide the LinkedIn sign-in buttons on
-          // the auth modal (leave the Google button and divider in place).
+          // the auth modal.
           ['linkedinLoginBtn', 'linkedinSignupBtn'].forEach(function (id) {
             var b = document.getElementById(id); if (b) b.style.display = 'none';
           });
         }
       } catch (_) {}
     }
-    // Show the Google buttons only when Google OAuth is configured server-side.
-    async function initGoogleLogin() {
-      try {
-        const r = await fetch('/api/auth/google/status');
-        const d = await r.json();
-        if (d && d.enabled) {
-          ['googleLoginBtn', 'googleSignupBtn'].forEach(function (id) {
-            var b = document.getElementById(id); if (b) b.style.display = 'flex';
-          });
-        }
-      } catch (_) {}
-    }
-    function startGoogleLogin() { window.location.href = '/api/auth/google'; }
     // `target` decides which field the imported profile lands in after the
     // OAuth round-trip: 'resume' (the builder) or 'linkedin' (the optimizer).
     // We stash it because LinkedIn OAuth is a full-page redirect.
@@ -5073,35 +5052,6 @@ Aaliyah Washington`
       } catch (_) { showToast('Could not complete LinkedIn sign-in.'); }
       return true;
     }
-    // Google sign-in return — same one-time session handoff as LinkedIn.
-    async function handleGoogleLoginReturn() {
-      const q = new URLSearchParams(window.location.search);
-      const gerr = q.get('google_error');
-      if (gerr) {
-        showToast(gerr === 'not_configured'
-          ? 'Google sign-in isn\'t connected yet — set GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET in your server env.'
-          : 'Google sign-in failed: ' + gerr.replace(/_/g, ' '), 7000);
-        history.replaceState(null, '', window.location.pathname);
-        return true;
-      }
-      const handoff = q.get('google_login');
-      if (!handoff) return false;
-      history.replaceState(null, '', window.location.pathname);
-      try {
-        const r = await fetch('/api/auth/google/session?token=' + encodeURIComponent(handoff));
-        if (!r.ok) { showToast('Google sign-in link expired — please try again.'); return true; }
-        const data = await r.json();
-        if (!data.token) { showToast('Google sign-in failed — please try again.'); return true; }
-        // Session now lives in the httpOnly rt_session cookie the server just
-        // set — no token in localStorage (Phase 2). Keep email/username for UI.
-        localStorage.setItem('rt_email', data.email);
-        localStorage.setItem('rt_username', data.username);
-        if (_consumePostLogin()) return true;
-        hideAuthModal();
-        showToast('Signed in with Google. Welcome!');
-      } catch (_) { showToast('Could not complete Google sign-in.'); }
-      return true;
-    }
     // On return from LinkedIn, pull the one-time draft and prefill the builder.
     async function handleLinkedInReturn() {
       const q = new URLSearchParams(window.location.search);
@@ -5181,13 +5131,9 @@ Aaliyah Washington`
     authReadyPromise = checkAuth();
     authReadyPromise.then(function (ok) { if (ok) restoreAnonymousCreation(); });
     initLinkedInImport();
-    initGoogleLogin();
-    // A Google or LinkedIn *login* return takes priority; only try a LinkedIn
-    // *import* return if neither login round-trip handled the URL.
-    handleGoogleLoginReturn().then(wasGoogle => {
-      if (wasGoogle) return;
-      handleLinkedInLoginReturn().then(wasLogin => { if (!wasLogin) handleLinkedInReturn(); });
-    });
+    // A LinkedIn *login* return takes priority; only try a LinkedIn *import*
+    // return if the login round-trip didn't handle the URL.
+    handleLinkedInLoginReturn().then(wasLogin => { if (!wasLogin) handleLinkedInReturn(); });
     // Init template picker after DOM is ready (template functions are hoisted)
     setTimeout(renderTplPicker, 0);
     // "Back to Editor" from the publish-success page: reopen the specific site
