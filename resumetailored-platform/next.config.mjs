@@ -1,3 +1,8 @@
+import createNextIntlPlugin from "next-intl/plugin";
+
+// Cookie-based locale (no i18n routing) — the request config reads `rt_locale`.
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
@@ -7,4 +12,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

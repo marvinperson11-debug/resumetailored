@@ -35,7 +35,7 @@ export default async function EmployerLayout({ children }: { children: ReactNode
 
   return (
     <div className="min-h-screen bg-navy">
-      <EmployerTopNav company={company} />
+      <EmployerTopNav company={company} isAdmin={access.isAdmin} />
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
       {needsOnboarding && <OnboardingModal />}
     </div>

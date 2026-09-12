@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getTranslations } from "next-intl/server";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { CandidateSidebar } from "@/components/candidate-sidebar";
 import { UpgradeFlow } from "@/components/upgrade-flow";
@@ -9,6 +10,7 @@ import { ToolHost } from "./components/tool-host";
 export default async function CandidateLayout({ children }: { children: ReactNode }) {
   const access = await getAccess();
   const isPro = canUseIndividualPro(access);
+  const t = await getTranslations("app");
   return (
     <ToolsProvider isPro={isPro}>
       {/* Cursive script faces for the signature feature (live preview). The PDF
@@ -21,7 +23,8 @@ export default async function CandidateLayout({ children }: { children: ReactNod
       />
       <DashboardShell
         sidebar={<CandidateSidebar role={{ plan: access.plan, employerName: access.employerName }} />}
-        title="My Career Office"
+        title={t("office")}
+        isAdmin={access.isAdmin}
       >
         {children}
         <UpgradeFlow />

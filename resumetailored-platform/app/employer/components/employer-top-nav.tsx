@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, Briefcase, Users, UserCog, Settings, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfileButton } from "@/components/profile-button";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { AdminViewToggle } from "@/components/admin-view-toggle";
 
 const NAV = [
   { label: "Dashboard", href: "/employer", icon: LayoutDashboard, exact: true },
@@ -17,7 +19,7 @@ const NAV = [
 
 /** Corporate top navigation bar: logo left, section links center, company +
  *  avatar right. Collapses to a hamburger sheet under lg. */
-export function EmployerTopNav({ company }: { company: string }) {
+export function EmployerTopNav({ company, isAdmin }: { company: string; isAdmin?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const active = (href: string, exact?: boolean) => (exact ? pathname === href : pathname === href || pathname.startsWith(href + "/"));
@@ -27,8 +29,9 @@ export function EmployerTopNav({ company }: { company: string }) {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6">
         {/* Left: logo */}
         <Link href="/employer" className="flex shrink-0 items-center gap-2">
-          <span className="font-serif text-lg font-medium text-cream">ResumeTailored</span>
-          <span className="hidden rounded bg-violet/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet sm:inline">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold/15 text-sm font-extrabold tracking-tight text-gold">RT</span>
+          <span className="hidden font-serif text-lg font-medium text-cream sm:inline">ResumeTailored</span>
+          <span className="hidden rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gold sm:inline">
             Employer
           </span>
         </Link>
@@ -54,8 +57,10 @@ export function EmployerTopNav({ company }: { company: string }) {
           })}
         </nav>
 
-        {/* Right: company + avatar */}
+        {/* Right: language + (admin) view toggle + company + avatar */}
         <div className="flex items-center gap-3">
+          {isAdmin && <AdminViewToggle />}
+          <LanguageSwitcher className="hidden sm:flex" />
           <span className="hidden max-w-[160px] truncate text-sm font-medium text-white/80 md:inline">{company}</span>
           <ProfileButton />
           <button type="button" onClick={() => setOpen((v) => !v)} aria-label="Menu" className="text-muted-cream lg:hidden">
