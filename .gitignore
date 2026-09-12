@@ -13,3 +13,6 @@ piper-voices/
 !.claude/skills/**/data/
 !.claude/skills/**/data/**
 __pycache__/
+
+# Local-only code audit export for external review (never commit)
+DASHBOARD_CODE_AUDIT.md
