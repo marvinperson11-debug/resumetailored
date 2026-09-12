@@ -15,5 +15,5 @@ export async function GET(req: Request) {
   const site = await getUserSite(userId);
   if (!site) return NextResponse.json({ site: null });
   const origin = new URL(req.url).origin;
-  return NextResponse.json({ site: { slug: site.slug, url: `${origin}/site/${site.slug}`, config: site.data, views: site.views } });
+  return NextResponse.json({ site: { slug: site.slug, url: `${origin}/site/${site.slug}`, config: site.data, views: site.views, published: site.published } });
 }

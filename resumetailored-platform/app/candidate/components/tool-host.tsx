@@ -12,7 +12,6 @@ import { JobFinderTool } from "../tools/job-finder";
 import { CareerHubTool } from "../tools/career-hub";
 import { DecoderKeyTool } from "../tools/decoder-key";
 import { ResumeVideoTool } from "../tools/resume-video";
-import { PersonalWebsiteTool } from "../tools/personal-website";
 
 // All tools are built now; nothing is a "coming soon" placeholder.
 const SOON_NOTES: Partial<Record<ToolId, string>> = {};
@@ -35,7 +34,6 @@ export function ToolHost() {
   if (activeTool === "career") return <CareerHubTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "decoder") return <DecoderKeyTool onClose={closeTool} isPro={isPro} />;
   if (activeTool === "video") return <ResumeVideoTool onClose={closeTool} isPro={isPro} />;
-  if (activeTool === "studio") return <PersonalWebsiteTool onClose={closeTool} isPro={isPro} />;
 
   const meta = TOOLS.find((t) => t.id === activeTool)!;
   return (
