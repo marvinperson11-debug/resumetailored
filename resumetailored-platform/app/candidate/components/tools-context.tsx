@@ -13,7 +13,6 @@ import {
   Compass,
   FileSearch,
   Video,
-  Globe,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,8 +25,7 @@ export type ToolId =
   | "jobs"
   | "career"
   | "decoder"
-  | "video"
-  | "studio";
+  | "video";
 
 export type ToolKind = "tool" | "soon" | "pro";
 
@@ -52,10 +50,8 @@ export const TOOLS: ToolMeta[] = [
   // (openTool redirects them to the upgrade flow). The in-tool voiceover/MP4
   // gates remain as secondary server-side checks.
   { id: "video", label: "Resume Video", icon: Video, kind: "pro" },
-  // Personal Website (Web Studio) is a fully Pro-only tool — free users can't
-  // open it (openTool redirects to upgrade). The free "share-as-link" resume
-  // page is a separate, unaffected feature.
-  { id: "studio", label: "Personal Website", icon: Globe, kind: "pro" },
+  // Personal Website (Web Studio) is now a full-screen route (/candidate/studio),
+  // not a modal tool — the sidebar navigates there directly.
 ];
 
 interface ToolsContextValue {

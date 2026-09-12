@@ -64,6 +64,32 @@ export async function publishSite(
   }
 }
 
+/** Save the working draft without changing publish state. Creates an
+ *  unpublished row for a first-time user (so /site/<slug> stays 404 until they
+ *  explicitly publish) and updates in place afterwards, preserving `published`
+ *  and `slug`. Used by the Web Studio editor's autosave. */
+export async function saveSiteDraft(
+  userId: string,
+  html: string,
+  data: Record<string, unknown>
+): Promise<boolean> {
+  const c = db();
+  if (!c || !userId) return false;
+  try {
+    const existing = await c.from("personal_sites").select("slug").eq("user_id", userId).maybeSingle();
+    const now = new Date().toISOString();
+    if (existing.data?.slug) {
+      const { error } = await c.from("personal_sites").update({ html, data, updated_at: now }).eq("user_id", userId);
+      return !error;
+    }
+    const slug = slugify(String((data as { title?: string }).title || "site"));
+    const { error } = await c.from("personal_sites").insert({ slug, user_id: userId, html, data, published: false, updated_at: now });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
 /** Increment the public view counter for a slug (best-effort, fire-and-forget). */
 export async function incrementSiteViews(slug: string): Promise<void> {
   const c = db();
@@ -78,13 +104,13 @@ export async function incrementSiteViews(slug: string): Promise<void> {
 }
 
 /** The user's own published site (for the tool's "Update" state + prefill). */
-export async function getUserSite(userId: string): Promise<{ slug: string; data: Record<string, unknown>; views: number } | null> {
+export async function getUserSite(userId: string): Promise<{ slug: string; data: Record<string, unknown>; views: number; published: boolean } | null> {
   const c = db();
   if (!c || !userId) return null;
   try {
-    const { data, error } = await c.from("personal_sites").select("slug, data, views").eq("user_id", userId).maybeSingle();
+    const { data, error } = await c.from("personal_sites").select("slug, data, views, published").eq("user_id", userId).maybeSingle();
     if (error || !data) return null;
-    return { slug: data.slug, data: data.data || {}, views: (data.views as number) || 0 };
+    return { slug: data.slug, data: data.data || {}, views: (data.views as number) || 0, published: data.published !== false };
   } catch {
     return null;
   }

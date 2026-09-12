@@ -59,7 +59,7 @@ const navItems: NavItem[] = [
   { label: "Application Tracker", href: "/candidate/applications", icon: Send },
   { label: "Shareable Links", href: "/candidate/shareable-links", icon: LinkIcon },
   { label: "Resume Video", opens: "video", icon: Video, pro: true, locked: true },
-  { label: "Personal Website", opens: "studio", icon: Globe, pro: true, locked: true },
+  { label: "Personal Website", href: "/candidate/studio", icon: Globe, pro: true, locked: true },
   { label: "Templates", href: "/candidate/templates", icon: Layout },
   { label: "Profile", href: "/candidate/profile", icon: User },
   { label: "Settings", href: "/candidate/settings", icon: Settings },

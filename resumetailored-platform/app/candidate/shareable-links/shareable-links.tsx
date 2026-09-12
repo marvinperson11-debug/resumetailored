@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Link2, Copy, Check, ExternalLink, Globe, Loader2 } from "lucide-react";
 import { useTools } from "../components/tools-context";
 
@@ -11,7 +12,9 @@ import { useTools } from "../components/tools-context";
  * empty state that opens the builder. Uses the existing /api/personal-website/mine.
  */
 export function ShareableLinks() {
-  const { openTool, isPro } = useTools();
+  const { isPro } = useTools();
+  const router = useRouter();
+  const openStudio = () => router.push(isPro ? "/candidate/studio" : "/candidate?upgrade=pro");
   const [loading, setLoading] = useState(true);
   const [url, setUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -67,7 +70,7 @@ export function ShareableLinks() {
               </a>
             </div>
           </div>
-          <button type="button" onClick={() => openTool("studio")} className="mt-4 text-xs font-medium text-violet hover:text-violet/80">
+          <button type="button" onClick={openStudio} className="mt-4 text-xs font-medium text-violet hover:text-violet/80">
             Edit or unpublish in the Personal Website builder →
           </button>
         </div>
@@ -82,7 +85,7 @@ export function ShareableLinks() {
           </p>
           <button
             type="button"
-            onClick={() => openTool("studio")}
+            onClick={openStudio}
             className="mt-5 inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet/90"
           >
             <Globe className="h-4 w-4" /> {isPro ? "Create your public site" : "Get a public site with Pro"}
