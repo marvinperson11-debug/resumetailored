@@ -206,8 +206,7 @@
         li_howto_open: 'Open my LinkedIn profile →',
         li_howto_upload: 'I have the PDF — upload it',
         li_login_btn: 'Continue with LinkedIn',
-        auth_tab_subscribe: 'Subscribe', auth_tab_login: 'Sign In', auth_tab_signup: 'Create Account',
-        google_login_btn: 'Continue with Google', google_signup_btn: 'Sign up with Google'
+        auth_tab_subscribe: 'Subscribe', auth_tab_login: 'Sign In', auth_tab_signup: 'Create Account'
       },
       zh: {
         nav_go_pro: '升级专业版 — ¥19.00/月', nav_logout: '退出登录',
@@ -412,7 +411,6 @@
         li_howto_open: '打开我的 LinkedIn 资料 →',
         li_howto_upload: '我已有 PDF——上传',
         li_login_btn: '使用 LinkedIn 继续',
-        auth_tab_subscribe: '订阅', auth_tab_login: '登录', auth_tab_signup: '创建账户',
-        google_login_btn: '使用 Google 继续', google_signup_btn: '使用 Google 注册'
+        auth_tab_subscribe: '订阅', auth_tab_login: '登录', auth_tab_signup: '创建账户'
       }
     };
