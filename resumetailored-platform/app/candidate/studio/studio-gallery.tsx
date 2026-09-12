@@ -105,7 +105,7 @@ export function StudioGallery({ hasPublished }: { hasPublished: boolean }) {
               key={t.id}
               type="button"
               onClick={() => choose(t.id)}
-              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#12141d] text-left shadow-lg transition-all duration-200 hover:-translate-y-1 hover:border-violet/60 hover:shadow-[0_18px_50px_rgba(139,92,246,0.35)]"
+              className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#12141d] text-left shadow-lg transition-all duration-200 hover:-translate-y-1 hover:border-violet/60 hover:shadow-[0_18px_50px_rgba(194,135,11,0.35)]"
             >
               <div className="relative">
                 <PreviewFrame html={previews[t.id]} />

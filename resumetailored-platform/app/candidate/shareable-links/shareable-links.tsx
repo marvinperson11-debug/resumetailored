@@ -209,7 +209,7 @@ export function ShareableLinks() {
         {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
 
         <div className="flex items-center gap-3">
-          <button type="button" onClick={save} disabled={saving || uAvail === "taken" || uAvail === "invalid"} className="inline-flex items-center gap-2 rounded-xl bg-violet px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_18px_rgba(139,92,246,0.32)] disabled:opacity-60">
+          <button type="button" onClick={save} disabled={saving || uAvail === "taken" || uAvail === "invalid"} className="inline-flex items-center gap-2 rounded-xl bg-violet px-5 py-2.5 text-sm font-semibold text-white shadow-[0_0_18px_rgba(194,135,11,0.32)] disabled:opacity-60">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : saved ? <Check className="h-4 w-4" /> : null}
             {saved ? "Saved" : publicUrl ? "Update link" : "Create my link"}
           </button>

@@ -87,7 +87,7 @@ function SectionView({ section, site, selection, editingId, onSelect, onBeginTex
   const wrap: React.CSSProperties = {
     ...(style as React.CSSProperties),
     ...(section.visible ? {} : { opacity: 0.4 }),
-    outline: selected ? "2px solid #8B5CF6" : "none",
+    outline: selected ? "2px solid #C2870B" : "none",
     outlineOffset: -2,
     cursor: "pointer",
   };
@@ -163,7 +163,7 @@ function ElementView(p: ElProps) {
 
   const wrapStyle: React.CSSProperties = {
     position: "relative",
-    outline: selected && !editing ? "2px solid #8B5CF6" : "none",
+    outline: selected && !editing ? "2px solid #C2870B" : "none",
     outlineOffset: 2,
     borderRadius: 4,
   };
@@ -277,7 +277,7 @@ function ElementView(p: ElProps) {
   // ── spacer ──
   if (el.type === "spacer") {
     return (
-      <div style={{ ...wrapStyle, height: Number(el.props.height) || 40, background: selected ? "rgba(139,92,246,.08)" : "transparent" }} onClick={selectMe} />
+      <div style={{ ...wrapStyle, height: Number(el.props.height) || 40, background: selected ? "rgba(194,135,11,.08)" : "transparent" }} onClick={selectMe} />
     );
   }
 
@@ -438,7 +438,7 @@ function EditableText({
       {editing && <FloatingToolbar target={ref.current} isHeading={tag !== "p"} onDone={commit} onSetLevel={onSetLevel} />}
       <Tag
         ref={setRef}
-        style={{ ...style, outline: editing ? "2px solid #8B5CF6" : "none", outlineOffset: 2, cursor: "text" }}
+        style={{ ...style, outline: editing ? "2px solid #C2870B" : "none", outlineOffset: 2, cursor: "text" }}
         contentEditable={editing}
         suppressContentEditableWarning
         onClick={onClick}

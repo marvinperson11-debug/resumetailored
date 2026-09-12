@@ -452,15 +452,20 @@ export const STUDIO_TEMPLATES: TemplateMeta[] = [
 
 export const GALLERY_FILTERS = ["All", "Portfolio", "Resume", "Creative", "Minimal", "Executive", "Developer", "Designer", "Startup"];
 
+// Gold-first defaults: every template starts on the brand gold accent
+// (#C2870B primary / #F59E0B secondary). Layout, background and typography stay
+// distinct per template; users can still recolor via the theme/color pickers.
+const GOLD_PRIMARY = "#C2870B";
+const GOLD_SECONDARY = "#F59E0B";
 const THEMES: Record<string, StudioTheme> = {
-  portfolio: { primaryColor: "#8B5CF6", secondaryColor: "#14B8A6", textColor: "#1a1a1a", bgColor: "#ffffff", headingFont: "Poppins", bodyFont: "Inter" },
-  resume: { primaryColor: "#1E3A8A", secondaryColor: "#475569", textColor: "#1a1a1a", bgColor: "#ffffff", headingFont: "System Sans", bodyFont: "System Sans" },
-  creative: { primaryColor: "#E11D48", secondaryColor: "#F59E0B", textColor: "#1a1a1a", bgColor: "#ffffff", headingFont: "Space Grotesk", bodyFont: "DM Sans" },
-  minimal: { primaryColor: "#111111", secondaryColor: "#777777", textColor: "#1a1a1a", bgColor: "#ffffff", headingFont: "Playfair Display", bodyFont: "Lora" },
-  executive: { primaryColor: "#C2870B", secondaryColor: "#8B5CF6", textColor: "#e8eaed", bgColor: "#0f1218", headingFont: "Playfair Display", bodyFont: "Inter" },
-  developer: { primaryColor: "#7ee787", secondaryColor: "#58a6ff", textColor: "#e8eaed", bgColor: "#0d1117", headingFont: "JetBrains Mono", bodyFont: "JetBrains Mono" },
-  designer: { primaryColor: "#8B5CF6", secondaryColor: "#14B8A6", textColor: "#1a1a1a", bgColor: "#faf9fb", headingFont: "Montserrat", bodyFont: "Work Sans" },
-  startup: { primaryColor: "#059669", secondaryColor: "#8B5CF6", textColor: "#111111", bgColor: "#ffffff", headingFont: "Manrope", bodyFont: "Manrope" },
+  portfolio: { primaryColor: GOLD_PRIMARY, secondaryColor: GOLD_SECONDARY, textColor: "#1a1a1a", bgColor: "#ffffff", headingFont: "Poppins", bodyFont: "Inter" },
+  resume: { primaryColor: GOLD_PRIMARY, secondaryColor: GOLD_SECONDARY, textColor: "#1a1a1a", bgColor: "#ffffff", headingFont: "System Sans", bodyFont: "System Sans" },
+  creative: { primaryColor: GOLD_PRIMARY, secondaryColor: GOLD_SECONDARY, textColor: "#1a1a1a", bgColor: "#ffffff", headingFont: "Space Grotesk", bodyFont: "DM Sans" },
+  minimal: { primaryColor: GOLD_PRIMARY, secondaryColor: GOLD_SECONDARY, textColor: "#1a1a1a", bgColor: "#fffdf7", headingFont: "Playfair Display", bodyFont: "Lora" },
+  executive: { primaryColor: GOLD_PRIMARY, secondaryColor: GOLD_SECONDARY, textColor: "#e8eaed", bgColor: "#0f1218", headingFont: "Playfair Display", bodyFont: "Inter" },
+  developer: { primaryColor: GOLD_PRIMARY, secondaryColor: GOLD_SECONDARY, textColor: "#e8eaed", bgColor: "#0d1117", headingFont: "JetBrains Mono", bodyFont: "JetBrains Mono" },
+  designer: { primaryColor: GOLD_PRIMARY, secondaryColor: GOLD_SECONDARY, textColor: "#1a1a1a", bgColor: "#faf9f5", headingFont: "Montserrat", bodyFont: "Work Sans" },
+  startup: { primaryColor: GOLD_PRIMARY, secondaryColor: GOLD_SECONDARY, textColor: "#111111", bgColor: "#ffffff", headingFont: "Manrope", bodyFont: "Manrope" },
 };
 
 /** Optional per-template hero treatment so templates look distinct out of the box. */

@@ -112,7 +112,7 @@ export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge
                 key={item.label}
                 type="button"
                 onClick={() => activate(item)}
-                className="flex w-full items-center gap-3 rounded-xl border border-violet bg-violet/15 px-4 py-3 text-sm font-semibold text-white shadow-[0_0_22px_rgba(139,92,246,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/25"
+                className="flex w-full items-center gap-3 rounded-xl border border-violet bg-violet/15 px-4 py-3 text-sm font-semibold text-white shadow-[0_0_22px_rgba(194,135,11,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-violet/25"
               >
                 <Icon className="h-[18px] w-[18px] shrink-0 text-violet" />
                 <span className="flex-1 text-left">{item.label}</span>
@@ -124,7 +124,7 @@ export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge
           const className = cn(
             "flex w-full items-center gap-3 rounded-md px-4 py-3 text-sm transition-all duration-200 text-left",
             isActive
-              ? "border-l-2 border-teal bg-violet/10 font-medium text-teal shadow-[0_0_22px_rgba(139,92,246,0.28)]"
+              ? "border-l-2 border-violet bg-violet/10 font-medium text-violet shadow-[0_0_22px_rgba(194,135,11,0.28)]"
               : "border-l-2 border-transparent text-muted-cream hover:bg-white/5"
           );
           const inner = (
