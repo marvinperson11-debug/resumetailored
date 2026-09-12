@@ -28,6 +28,7 @@ import {
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useTools, type ToolId } from "@/app/candidate/components/tools-context";
+import { SignOutButton } from "@/components/sign-out-button";
 
 interface NavItem {
   label: string;
@@ -156,6 +157,10 @@ export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge
           );
         })}
       </nav>
+
+      <div className="shrink-0 border-t border-border-gold px-3 py-3">
+        <SignOutButton className="flex w-full items-center gap-3 rounded-md border-l-2 border-transparent px-4 py-2.5 text-sm text-muted-cream transition-all duration-200 hover:bg-white/5 hover:text-cream" />
+      </div>
 
       <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
         <Crown className={cn("h-4 w-4", proish ? "text-gold" : "text-muted-cream")} />
