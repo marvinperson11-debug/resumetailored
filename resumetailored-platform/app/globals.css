@@ -86,6 +86,20 @@
   }
 }
 
+/* Reduce-motion preference (Settings → Appearance): stops the living-gradient
+ * drift and near-zeroes all animation/transition. Applied by toggling
+ * `rt-reduce-motion` on <html> (persisted in localStorage). */
+html.rt-reduce-motion .gradient-bg::before {
+  animation: none !important;
+}
+html.rt-reduce-motion *,
+html.rt-reduce-motion *::before,
+html.rt-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
 /* Glassmorphism surfaces. */
 @layer components {
   .glass {
