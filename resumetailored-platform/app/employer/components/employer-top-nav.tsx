@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { ProfileButton } from "@/components/profile-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { AdminViewToggle } from "@/components/admin-view-toggle";
+import { SignOutButton } from "@/components/sign-out-button";
 
 const NAV = [
   { label: "Dashboard", href: "/employer", icon: LayoutDashboard, exact: true },
@@ -62,6 +63,7 @@ export function EmployerTopNav({ company, isAdmin }: { company: string; isAdmin?
           {isAdmin && <AdminViewToggle />}
           <LanguageSwitcher className="hidden sm:flex" />
           <span className="hidden max-w-[160px] truncate text-sm font-medium text-white/80 md:inline">{company}</span>
+          <SignOutButton className="hidden items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-cream transition-colors hover:bg-white/5 hover:text-cream sm:flex" />
           <ProfileButton />
           <button type="button" onClick={() => setOpen((v) => !v)} aria-label="Menu" className="text-muted-cream lg:hidden">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -90,6 +92,7 @@ export function EmployerTopNav({ company, isAdmin }: { company: string; isAdmin?
               </Link>
             );
           })}
+          <SignOutButton className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-cream transition-colors hover:bg-white/5 hover:text-cream sm:hidden" />
         </nav>
       )}
     </header>
