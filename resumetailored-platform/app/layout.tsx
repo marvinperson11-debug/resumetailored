@@ -43,6 +43,13 @@ export default async function RootLayout({
       }}
     >
       <html lang={locale} className="dark">
+        <head>
+          {/* Resolve the Clerk Frontend API host early so clerk-js starts its
+              DNS/TLS handshake immediately instead of after the bundle parses —
+              trims the auth-init wait that used to show the blank gradient. */}
+          <link rel="preconnect" href="https://clerk.resumetailored.com" crossOrigin="anonymous" />
+          <link rel="dns-prefetch" href="https://clerk.resumetailored.com" />
+        </head>
         <body className={`${inter.variable} ${playfair.variable} bg-navy text-cream font-sans antialiased`}>
           {/* Living gradient — fixed behind all content, shows through glass. */}
           <div className="gradient-bg" aria-hidden="true" />
