@@ -38,7 +38,7 @@ export default async function ShareablePage({ params }: { params: { username: st
       <main style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, background: "#0b0f19", color: "#e8eaf2", fontFamily: "system-ui,sans-serif", textAlign: "center", padding: 32 }}>
         <h1 style={{ margin: 0, fontSize: 28 }}>Profile not found</h1>
         <p style={{ color: "#9aa3c0", maxWidth: "34ch", margin: 0 }}>This link doesn&rsquo;t exist yet.</p>
-        <a href="/join" style={{ marginTop: 8, background: "#8B5CF6", color: "#fff", textDecoration: "none", padding: "11px 20px", borderRadius: 12, fontWeight: 700 }}>Create your free link →</a>
+        <a href="/join" style={{ marginTop: 8, background: "#C2870B", color: "#fff", textDecoration: "none", padding: "11px 20px", borderRadius: 12, fontWeight: 700 }}>Create your free link →</a>
       </main>
     );
   }

@@ -31,7 +31,7 @@ export function QuickAction({ label }: { label: string }) {
   return (
     <button
       type="button"
-      className="rounded-xl bg-violet px-5 py-2.5 text-sm font-medium text-white shadow-[0_0_18px_rgba(139,92,246,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_26px_rgba(139,92,246,0.42)]"
+      className="rounded-xl bg-violet px-5 py-2.5 text-sm font-medium text-white shadow-[0_0_18px_rgba(194,135,11,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_0_26px_rgba(194,135,11,0.42)]"
     >
       {label}
     </button>
