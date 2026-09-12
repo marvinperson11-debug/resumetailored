@@ -43,9 +43,23 @@ export interface StudioActions {
   deleteElement: (secId: string, elId: string) => void;
   duplicateElement: (secId: string, elId: string) => void;
   moveElement: (secId: string, elId: string, dir: -1 | 1) => void;
+  reorderElement: (secId: string, elId: string, toIndex: number) => void;
 }
 
 export const DEVICE_WIDTH: Record<Device, number> = { desktop: 1200, tablet: 768, mobile: 390 };
+
+/** Read any file to a data URL (no downscale). Guarded so we don't bloat the
+ *  site JSON — large media should be a hosted URL instead. Returns null if the
+ *  file is over `maxBytes` (default 6 MB). */
+export async function fileToDataUrl(file: File, maxBytes = 6_000_000): Promise<string | null> {
+  if (file.size > maxBytes) return null;
+  return new Promise<string>((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result as string);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
 
 /** Downscale an image file to a compact JPEG data URL (kept small for the JSON). */
 export async function imageToDataUrl(file: File, max = 1200): Promise<string> {
