@@ -780,6 +780,18 @@ export interface RenderOptions {
   photo?: string; // data URL — rendered into the template header (FIX 7 #1)
   signature?: string; // typed signature text, rendered in sigFont (FIX 7 #2)
   sigFont?: string; // key into SIG_FONT_MAP for the signature
+  accentColor?: string; // custom accent hex (#rrggbb) — overrides the template's palette
+}
+
+/** Mix a hex colour toward white by `t` (0..1). Used to derive the light tint
+ *  when a custom accent colour overrides a template's palette. */
+export function lightenHex(hex: string, t: number): string {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex);
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const mix = (x: number) => Math.round(x + (255 - x) * t);
+  return `#${[mix(r), mix(g), mix(b)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
 }
 
 /**
@@ -803,7 +815,12 @@ export function renderAIOutput(text: string, tplId: string, mode: Mode, opts: Re
   const printMode = !!opts.printMode;
   const cat: "resume" | "cover" = mode === "cover_letter" ? "cover" : "resume";
   const tpl = findTemplate(cat, tplId);
-  const c = tpl.c;
+  // A custom accent colour overrides the template's whole palette (primary +
+  // accent take the chosen colour; the light tint is derived from it).
+  const c =
+    opts.accentColor && /^#[0-9a-fA-F]{6}$/.test(opts.accentColor)
+      ? { p: opts.accentColor, a: opts.accentColor, l: lightenHex(opts.accentColor, 0.9) }
+      : tpl.c;
   const font = (opts.docFont && FONT_MAP[opts.docFont]) || (tpl.serif ? "Georgia,'Times New Roman',serif" : "Arial,sans-serif");
   const sig = opts.signature && opts.signature.trim() ? sigBlock(opts.signature.trim(), opts.sigFont, c.p, cat === "cover") : "";
 

@@ -4,12 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Briefcase, Search, Bookmark, BookmarkCheck, ExternalLink, Trash2, Lock, MapPin,
-  Check, X, Wand2, Copy, ChevronDown, Loader2, FileText, Send,
+  Check, X, Wand2, Copy, ChevronDown, Loader2, FileText, Send, Download, Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, TextInput, Select, PrimaryButton } from "../components/ui";
 import { parseSalary, salaryInsight } from "@/lib/jobs-ai";
+import { zipTextFiles } from "@/lib/zip";
 import type { JobResult } from "@/app/api/jobs/search/route";
 import type { ResumeDraft } from "@/lib/draft-types";
 
@@ -77,6 +78,28 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
 
   function copy(text: string, key: string) {
     navigator.clipboard?.writeText(text).then(() => { setCopiedKey(key); setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1500); });
+  }
+  function downloadText(text: string, filename: string) {
+    const blob = new Blob([text], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  function downloadPackageZip() {
+    if (!pkg) return;
+    const base = (selected ? `${selected.company}-${selected.title}` : "application").replace(/[^a-z0-9-_ ]/gi, "_").slice(0, 60);
+    const files = [
+      { name: "resume.txt", content: pkg.resume },
+      { name: "cover-letter.txt", content: pkg.coverLetter },
+      ...(pkg.linkedInMessage ? [{ name: "linkedin-message.txt", content: pkg.linkedInMessage }] : []),
+    ];
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(zipTextFiles(files));
+    a.download = `${base}-apply-package.zip`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
   function toggleType(id: string) {
     setTypes((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -356,12 +379,18 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
                     )}
 
                     {/* Generated outputs */}
-                    {coverLetter && <OutputCard title="Cover letter" text={coverLetter} onCopy={() => copy(coverLetter, "cl")} copied={copiedKey === "cl"} />}
+                    {coverLetter && <OutputCard title="Cover letter" text={coverLetter} onCopy={() => copy(coverLetter, "cl")} copied={copiedKey === "cl"} onDownload={() => downloadText(coverLetter, "cover-letter.txt")} />}
                     {pkg && (
                       <div className="mt-4 space-y-3">
-                        <OutputCard title="Tailored resume" text={pkg.resume} onCopy={() => copy(pkg.resume, "pr")} copied={copiedKey === "pr"} />
-                        <OutputCard title="Cover letter" text={pkg.coverLetter} onCopy={() => copy(pkg.coverLetter, "pc")} copied={copiedKey === "pc"} />
-                        {pkg.linkedInMessage && <OutputCard title="LinkedIn message" text={pkg.linkedInMessage} onCopy={() => copy(pkg.linkedInMessage, "pl")} copied={copiedKey === "pl"} />}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">Apply package</span>
+                          <button type="button" onClick={downloadPackageZip} className="inline-flex items-center gap-1.5 rounded-lg bg-violet px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet/90">
+                            <Package className="h-3.5 w-3.5" /> Download all (.zip)
+                          </button>
+                        </div>
+                        <OutputCard title="Tailored resume" text={pkg.resume} onCopy={() => copy(pkg.resume, "pr")} copied={copiedKey === "pr"} onDownload={() => downloadText(pkg.resume, "resume.txt")} />
+                        <OutputCard title="Cover letter" text={pkg.coverLetter} onCopy={() => copy(pkg.coverLetter, "pc")} copied={copiedKey === "pc"} onDownload={() => downloadText(pkg.coverLetter, "cover-letter.txt")} />
+                        {pkg.linkedInMessage && <OutputCard title="LinkedIn message" text={pkg.linkedInMessage} onCopy={() => copy(pkg.linkedInMessage, "pl")} copied={copiedKey === "pl"} onDownload={() => downloadText(pkg.linkedInMessage, "linkedin-message.txt")} />}
                       </div>
                     )}
                   </div>
@@ -401,12 +430,15 @@ function jobToJD(job: JobResult): string {
   ].filter(Boolean).join("\n\n");
 }
 
-function OutputCard({ title, text, onCopy, copied }: { title: string; text: string; onCopy: () => void; copied: boolean }) {
+function OutputCard({ title, text, onCopy, copied, onDownload }: { title: string; text: string; onCopy: () => void; copied: boolean; onDownload?: () => void }) {
   return (
     <div className="mt-4 rounded-xl border border-border-gold bg-white/5 p-3">
       <div className="mb-1.5 flex items-center justify-between">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{title}</span>
-        <button type="button" onClick={onCopy} className="inline-flex items-center gap-1 text-[11px] text-white/60 hover:text-cream">{copied ? <Check className="h-3.5 w-3.5 text-teal" /> : <Copy className="h-3.5 w-3.5" />} Copy</button>
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={onCopy} className="inline-flex items-center gap-1 text-[11px] text-white/60 hover:text-cream">{copied ? <Check className="h-3.5 w-3.5 text-teal" /> : <Copy className="h-3.5 w-3.5" />} Copy</button>
+          {onDownload && <button type="button" onClick={onDownload} className="inline-flex items-center gap-1 text-[11px] text-white/60 hover:text-cream"><Download className="h-3.5 w-3.5" /> Download</button>}
+        </div>
       </div>
       <p className="max-h-56 overflow-y-auto whitespace-pre-wrap text-sm text-white/80">{text}</p>
     </div>

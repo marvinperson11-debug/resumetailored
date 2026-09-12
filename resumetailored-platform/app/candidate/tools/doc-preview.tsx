@@ -20,6 +20,7 @@ export function DocPreview({
   photo,
   signature,
   sigFont,
+  accentColor,
   placeholder,
 }: {
   text: string;
@@ -30,6 +31,7 @@ export function DocPreview({
   photo?: string;
   signature?: string;
   sigFont?: string;
+  accentColor?: string;
   placeholder?: string;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -37,7 +39,7 @@ export function DocPreview({
   const [scale, setScale] = useState(1);
   const [innerH, setInnerH] = useState(0);
 
-  const html = text.trim() ? renderAIOutput(text, tplId, mode, { docFont, coverMeta, photo, signature, sigFont }) : "";
+  const html = text.trim() ? renderAIOutput(text, tplId, mode, { docFont, coverMeta, photo, signature, sigFont, accentColor }) : "";
 
   useEffect(() => {
     const el = wrapRef.current;

@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Camera, Check, ExternalLink, Loader2, User as UserIcon } from "lucide-react";
+import { Camera, Check, ExternalLink, Loader2, User as UserIcon, Contact } from "lucide-react";
 import type { UserProfile } from "@/lib/profile-store";
+import { LinkedInImportModal } from "../components/linkedin-import-modal";
 
 const card = "rounded-2xl border border-border-gold bg-white/[0.03] p-6";
 const labelCls = "mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-cream";
@@ -27,6 +28,7 @@ export function ProfileClient({ initial }: { initial: UserProfile }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [siteUrl, setSiteUrl] = useState<string | null>(null);
+  const [linkedinOpen, setLinkedinOpen] = useState(false);
 
   // Seed the Clerk-backed name fields once the user loads.
   useEffect(() => {
@@ -93,9 +95,18 @@ export function ProfileClient({ initial }: { initial: UserProfile }) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="font-serif text-2xl font-medium text-cream">Profile</h1>
-        <p className="mt-1 text-sm text-white/60">Your details — used to pre-fill your resumes, cover letters, and personal site.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-serif text-2xl font-medium text-cream">Profile</h1>
+          <p className="mt-1 text-sm text-white/60">Your details — used to pre-fill your resumes, cover letters, and personal site.</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setLinkedinOpen(true)}
+          className="inline-flex items-center gap-2 rounded-lg border border-border-gold px-3 py-2 text-sm font-medium text-cream transition-colors hover:bg-white/8"
+        >
+          <Contact className="h-4 w-4 text-[#0A66C2]" /> Import from LinkedIn
+        </button>
       </div>
 
       {/* Photo + name */}
@@ -205,6 +216,23 @@ export function ProfileClient({ initial }: { initial: UserProfile }) {
           </span>
         )}
       </div>
+
+      {linkedinOpen && (
+        <LinkedInImportModal
+          onClose={() => setLinkedinOpen(false)}
+          onApply={(p) => {
+            if (p.name) {
+              const parts = p.name.trim().split(/\s+/);
+              setFirstName(parts[0] || "");
+              setLastName(parts.slice(1).join(" "));
+            }
+            if (p.location) setLocation(p.location);
+            const nextBio = p.summary || p.headline;
+            if (nextBio) setBio(nextBio);
+            setLinkedinOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

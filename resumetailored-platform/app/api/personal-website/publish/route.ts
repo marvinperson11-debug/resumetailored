@@ -18,13 +18,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "pro_required", message: "Publishing a personal website is a Pro feature." }, { status: 402 });
   }
 
-  const body = (await req.json().catch(() => ({}))) as { data?: SiteData };
+  const body = (await req.json().catch(() => ({}))) as { data?: SiteData; slug?: string };
   const data = body.data;
   if (!data || !data.name?.trim()) return NextResponse.json({ error: "Add at least your name before publishing." }, { status: 400 });
   if (data.photo && data.photo.length > 3_000_000) return NextResponse.json({ error: "Photo is too large — use a smaller image." }, { status: 413 });
 
   const html = generateSiteHtml(data);
-  const res = await publishSite(userId, html, data as unknown as Record<string, unknown>, data.name);
+  const res = await publishSite(userId, html, data as unknown as Record<string, unknown>, data.name, body.slug);
   if (!res) return NextResponse.json({ error: "Could not publish (is the personal_sites table set up?)." }, { status: 500 });
 
   const origin = new URL(req.url).origin;

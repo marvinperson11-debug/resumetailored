@@ -96,11 +96,12 @@ function decodePhoto(dataUrl?: string): Photo | null {
 }
 
 /** Build word/document.xml from the parsed resume. */
-function buildDocumentXml(text: string, tplId: string, opts: { photo: Photo | null; signature?: string; docFont?: string }): string {
+function buildDocumentXml(text: string, tplId: string, opts: { photo: Photo | null; signature?: string; docFont?: string; accentColor?: string }): string {
   const tpl = findTemplate("resume", tplId);
   const font = WORD_FONT[opts.docFont || ""] || (tpl.serif ? "Georgia" : "Arial");
-  const primary = hex(tpl.c.p);
-  const accent = hex(tpl.c.a);
+  const custom = opts.accentColor && /^#[0-9a-fA-F]{6}$/.test(opts.accentColor) ? opts.accentColor : null;
+  const primary = hex(custom || tpl.c.p);
+  const accent = hex(custom || tpl.c.a);
   const parsed = parseAIOutput(text);
   const body: string[] = [];
 
@@ -264,12 +265,13 @@ export function downloadDocx(opts: {
   photo?: string;
   signature?: string;
   docFont?: string;
+  accentColor?: string;
 }): string | null {
   if (!opts.text || !opts.text.trim()) return "Nothing to export yet.";
   try {
     const enc = new TextEncoder();
     const photo = decodePhoto(opts.photo);
-    const documentXml = buildDocumentXml(opts.text, opts.tplId, { photo, signature: opts.signature, docFont: opts.docFont });
+    const documentXml = buildDocumentXml(opts.text, opts.tplId, { photo, signature: opts.signature, docFont: opts.docFont, accentColor: opts.accentColor });
 
     const contentTypes =
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
