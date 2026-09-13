@@ -5,15 +5,12 @@ import { Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ProfileButton } from "./profile-button";
 import { LanguageSwitcher } from "./language-switcher";
-import { AdminViewToggle } from "./admin-view-toggle";
 
 interface DashboardShellProps {
   sidebar: ReactNode;
   /** Label shown in the top bar (company name or the career-office label). */
   title: string;
   children: ReactNode;
-  /** The hardcoded admin sees a Candidate/Employer view toggle. */
-  isAdmin?: boolean;
 }
 
 /** Gold "RT" monogram used in the top bar. */
@@ -26,7 +23,7 @@ function RTLogo() {
   );
 }
 
-export function DashboardShell({ sidebar, title, children, isAdmin }: DashboardShellProps) {
+export function DashboardShell({ sidebar, title, children }: DashboardShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const t = useTranslations("topbar");
 
@@ -67,7 +64,6 @@ export function DashboardShell({ sidebar, title, children, isAdmin }: DashboardS
           </div>
 
           <div className="flex items-center gap-3">
-            {isAdmin && <AdminViewToggle />}
             <ProfileButton />
           </div>
         </header>
