@@ -177,6 +177,50 @@ export interface Interview {
   createdAt: string;
 }
 
+// ── Career Site Builder (feature #11) ─────────────────────────────────────────
+export interface Testimonial {
+  quote: string;
+  author: string;
+  role?: string;
+}
+
+export interface CareerSite {
+  id: number;
+  companyName: string;
+  slug: string;
+  logoUrl: string;
+  bannerUrl: string;
+  brandColor: string;
+  aboutText: string;
+  missionText: string;
+  valuesText: string;
+  showAbout: boolean;
+  showBenefits: boolean;
+  showTeam: boolean;
+  showTestimonials: boolean;
+  showContact: boolean;
+  benefits: string[];
+  testimonials: Testimonial[];
+  contactEmail: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A public-safe job shown on a careers page (no internal fields). */
+export interface PublicCareerJob {
+  id: number;
+  title: string;
+  department: string;
+  location: string;
+  remoteType: RemoteType | "";
+  employmentType: EmploymentType | "";
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryCurrency: string;
+  description: string;
+  requirements: string[];
+}
+
 // ── Match scoring ─────────────────────────────────────────────────────────────
 export interface MatchAnalysis {
   score: number; // 0-100

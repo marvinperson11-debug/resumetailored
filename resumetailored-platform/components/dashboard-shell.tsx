@@ -1,19 +1,17 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ProfileButton } from "./profile-button";
 import { LanguageSwitcher } from "./language-switcher";
-import { AdminViewToggle } from "./admin-view-toggle";
 
 interface DashboardShellProps {
   sidebar: ReactNode;
   /** Label shown in the top bar (company name or the career-office label). */
   title: string;
   children: ReactNode;
-  /** The hardcoded admin sees a Candidate/Employer view toggle. */
-  isAdmin?: boolean;
 }
 
 /** Gold "RT" monogram used in the top bar. */
@@ -26,9 +24,16 @@ function RTLogo() {
   );
 }
 
-export function DashboardShell({ sidebar, title, children, isAdmin }: DashboardShellProps) {
+export function DashboardShell({ sidebar, title, children }: DashboardShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const pathname = usePathname();
   const t = useTranslations("topbar");
+  const touchStartX = useRef<number | null>(null);
+
+  // Close the mobile drawer whenever navigation happens.
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen">
@@ -41,7 +46,19 @@ export function DashboardShell({ sidebar, title, children, isAdmin }: DashboardS
       {drawerOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-navy/70" onClick={() => setDrawerOpen(false)} aria-hidden="true" />
-          <div className="absolute inset-y-0 left-0 w-[260px] border-r border-border-gold bg-navy">
+          <div
+            className="absolute inset-y-0 left-0 w-[260px] max-w-[85vw] border-r border-border-gold bg-navy"
+            onTouchStart={(e) => {
+              touchStartX.current = e.touches[0]?.clientX ?? null;
+            }}
+            onTouchEnd={(e) => {
+              const start = touchStartX.current;
+              const end = e.changedTouches[0]?.clientX ?? null;
+              // A left swipe (moved left by more than 50px) closes the drawer.
+              if (start !== null && end !== null && end - start < -50) setDrawerOpen(false);
+              touchStartX.current = null;
+            }}
+          >
             <button type="button" onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="absolute right-3 top-4 z-10 text-muted-cream transition-colors hover:text-cream">
               <X className="h-5 w-5" />
             </button>
@@ -67,7 +84,6 @@ export function DashboardShell({ sidebar, title, children, isAdmin }: DashboardS
           </div>
 
           <div className="flex items-center gap-3">
-            {isAdmin && <AdminViewToggle />}
             <ProfileButton />
           </div>
         </header>

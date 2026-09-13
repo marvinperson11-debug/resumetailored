@@ -29,6 +29,7 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { useTools, type ToolId } from "@/app/candidate/components/tools-context";
 import { SignOutButton } from "@/components/sign-out-button";
+import { AdminViewToggle } from "@/components/admin-view-toggle";
 
 interface NavItem {
   label: string;
@@ -82,7 +83,7 @@ interface RoleBadge {
   employerName?: string;
 }
 
-export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge }) {
+export function CandidateSidebar({ role = { plan: "free" }, isAdmin }: { role?: RoleBadge; isAdmin?: boolean }) {
   const pathname = usePathname();
   const { openResume, openTool } = useTools();
   const t = useTranslations("nav");
@@ -157,6 +158,12 @@ export function CandidateSidebar({ role = { plan: "free" } }: { role?: RoleBadge
           );
         })}
       </nav>
+
+      {isAdmin && (
+        <div className="shrink-0 border-t border-border-gold px-3 py-3">
+          <AdminViewToggle />
+        </div>
+      )}
 
       <div className="shrink-0 border-t border-border-gold px-3 py-3">
         <SignOutButton className="flex w-full items-center gap-3 rounded-md border-l-2 border-transparent px-4 py-2.5 text-sm text-muted-cream transition-all duration-200 hover:bg-white/5 hover:text-cream" />
