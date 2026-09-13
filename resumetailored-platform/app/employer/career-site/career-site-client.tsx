@@ -1,12 +1,112 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Globe, Plus, X, Check, Copy, ExternalLink } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Globe, Plus, X, Check, Copy, ExternalLink, Upload, ImageIcon } from "lucide-react";
 import { Panel, PageHeader, Btn, Field, Input, Area } from "../components/ui";
 import { CareerSiteView } from "@/app/careers/[slug]/career-site-view";
 import type { CareerSite, Testimonial, PublicCareerJob, JobPosting } from "@/lib/employer-ai";
 
 type Toggle = "showAbout" | "showBenefits" | "showTeam" | "showTestimonials" | "showContact";
+type ImgMode = "upload" | "url";
+
+const ALLOWED = ["image/png", "image/jpeg", "image/webp"];
+const MAX_BYTES = 2 * 1024 * 1024;
+
+/** Logo/banner field with an Upload | URL toggle. Uploads happen on Save. */
+function ImageField({
+  label,
+  helper,
+  mode,
+  onMode,
+  url,
+  onUrl,
+  file,
+  onFile,
+  previewUrl,
+  onError,
+}: {
+  label: string;
+  helper: string;
+  mode: ImgMode;
+  onMode: (m: ImgMode) => void;
+  url: string;
+  onUrl: (v: string) => void;
+  file: File | null;
+  onFile: (f: File | null) => void;
+  previewUrl: string;
+  onError: (msg: string | null) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const seg = (active: boolean) =>
+    `rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${active ? "bg-violet text-white" : "text-muted-cream hover:text-cream"}`;
+
+  function pick(f: File | null) {
+    onError(null);
+    if (!f) return;
+    if (!ALLOWED.includes(f.type)) return onError(`${label}: please choose a PNG, JPEG, or WebP image.`);
+    if (f.size > MAX_BYTES) return onError(`${label}: image is too large — keep it under 2 MB.`);
+    onFile(f);
+  }
+
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{label}</span>
+        <div className="flex items-center gap-0.5 rounded-lg border border-border-gold bg-white/[0.03] p-0.5">
+          <button type="button" className={seg(mode === "upload")} onClick={() => onMode("upload")}>
+            Upload
+          </button>
+          <button type="button" className={seg(mode === "url")} onClick={() => onMode("url")}>
+            URL
+          </button>
+        </div>
+      </div>
+
+      {mode === "upload" ? (
+        <div className="rounded-lg border border-border-gold bg-white/[0.03] p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border-gold bg-white/5">
+              {previewUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={previewUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <ImageIcon className="h-5 w-5 text-white/35" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => pick(e.target.files?.[0] || null)}
+              />
+              <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-cream hover:bg-white/[0.08]"
+              >
+                <Upload className="h-3.5 w-3.5" /> {file || previewUrl ? "Replace image" : "Choose image"}
+              </button>
+              {file && (
+                <span className="ml-2 text-xs text-white/55">
+                  {file.name}{" "}
+                  <button type="button" onClick={() => onFile(null)} className="text-white/40 hover:text-cream">
+                    (remove)
+                  </button>
+                </span>
+              )}
+              <p className="mt-1 text-[11px] text-white/40">Uploaded images are served from our CDN.</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <Input value={url} onChange={(e) => onUrl(e.target.value)} placeholder="https://…" />
+      )}
+      <span className="mt-1 block text-xs text-white/40">{helper}</span>
+    </div>
+  );
+}
 
 export function CareerSiteClient() {
   const [loading, setLoading] = useState(true);
@@ -22,6 +122,10 @@ export function CareerSiteClient() {
   const [companyName, setCompanyName] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
   const [bannerUrl, setBannerUrl] = useState("");
+  const [logoMode, setLogoMode] = useState<ImgMode>("url");
+  const [bannerMode, setBannerMode] = useState<ImgMode>("url");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [brandColor, setBrandColor] = useState("#F59E0B");
   const [aboutText, setAboutText] = useState("");
   const [missionText, setMissionText] = useState("");
@@ -97,13 +201,21 @@ export function CareerSiteClient() {
     })();
   }, [applyFromSite]);
 
+  // Object URLs so a freshly-picked (not-yet-uploaded) file previews live.
+  const logoObjUrl = useMemo(() => (logoFile ? URL.createObjectURL(logoFile) : ""), [logoFile]);
+  const bannerObjUrl = useMemo(() => (bannerFile ? URL.createObjectURL(bannerFile) : ""), [bannerFile]);
+  useEffect(() => () => { if (logoObjUrl) URL.revokeObjectURL(logoObjUrl); }, [logoObjUrl]);
+  useEffect(() => () => { if (bannerObjUrl) URL.revokeObjectURL(bannerObjUrl); }, [bannerObjUrl]);
+  const effLogo = logoMode === "upload" && logoObjUrl ? logoObjUrl : logoUrl;
+  const effBanner = bannerMode === "upload" && bannerObjUrl ? bannerObjUrl : bannerUrl;
+
   const previewSite: CareerSite = useMemo(
     () => ({
       id: 0,
       companyName,
       slug,
-      logoUrl,
-      bannerUrl,
+      logoUrl: effLogo,
+      bannerUrl: effBanner,
       brandColor,
       aboutText,
       missionText,
@@ -115,7 +227,7 @@ export function CareerSiteClient() {
       createdAt: "",
       updatedAt: "",
     }),
-    [companyName, slug, logoUrl, bannerUrl, brandColor, aboutText, missionText, valuesText, contactEmail, toggles, benefits, testimonials]
+    [companyName, slug, effLogo, effBanner, brandColor, aboutText, missionText, valuesText, contactEmail, toggles, benefits, testimonials]
   );
 
   const publicUrl = origin && slug ? `${origin}/careers/${slug}` : slug ? `/careers/${slug}` : "";
@@ -125,13 +237,27 @@ export function CareerSiteClient() {
     setError(null);
     setSaved(false);
     try {
+      // Upload any freshly-picked files first, then persist the resolved URLs.
+      const uploadOne = async (f: File, label: string): Promise<string> => {
+        const fd = new FormData();
+        fd.append("file", f);
+        const r = await fetch("/api/employer/career-site/upload", { method: "POST", body: fd });
+        const d = (await r.json().catch(() => ({}))) as { url?: string; error?: string };
+        if (!r.ok || !d.url) throw new Error(d.error || `Could not upload ${label}.`);
+        return d.url;
+      };
+      let nextLogo = logoUrl;
+      let nextBanner = bannerUrl;
+      if (logoMode === "upload" && logoFile) nextLogo = await uploadOne(logoFile, "logo");
+      if (bannerMode === "upload" && bannerFile) nextBanner = await uploadOne(bannerFile, "banner");
+
       const res = await fetch("/api/employer/career-site", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           companyName,
-          logoUrl,
-          bannerUrl,
+          logoUrl: nextLogo,
+          bannerUrl: nextBanner,
           brandColor,
           aboutText,
           missionText,
@@ -145,6 +271,8 @@ export function CareerSiteClient() {
       const d = (await res.json().catch(() => ({}))) as { site?: CareerSite; error?: string };
       if (!res.ok || !d.site) throw new Error(d.error || "Could not save.");
       applyFromSite(d.site);
+      setLogoFile(null);
+      setBannerFile(null);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
@@ -216,12 +344,30 @@ export function CareerSiteClient() {
               <Field label="Company name">
                 <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Acme Inc." />
               </Field>
-              <Field label="Logo URL" hint="Square image works best">
-                <Input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…/logo.png" />
-              </Field>
-              <Field label="Banner URL" hint="Wide image shown behind the header">
-                <Input value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} placeholder="https://…/banner.jpg" />
-              </Field>
+              <ImageField
+                label="Logo"
+                helper="Tip: a square PNG under 1 MB works best for logos."
+                mode={logoMode}
+                onMode={setLogoMode}
+                url={logoUrl}
+                onUrl={setLogoUrl}
+                file={logoFile}
+                onFile={setLogoFile}
+                previewUrl={effLogo}
+                onError={setError}
+              />
+              <ImageField
+                label="Banner"
+                helper="Tip: a wide banner image at least 1200px wide works best."
+                mode={bannerMode}
+                onMode={setBannerMode}
+                url={bannerUrl}
+                onUrl={setBannerUrl}
+                file={bannerFile}
+                onFile={setBannerFile}
+                previewUrl={effBanner}
+                onError={setError}
+              />
               <Field label="Brand color">
                 <div className="flex items-center gap-3">
                   <input

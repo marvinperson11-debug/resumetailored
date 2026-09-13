@@ -164,3 +164,28 @@ create policy career_sites_owner on public.career_sites
   for all
   using (employer_id = auth.uid()::text)
   with check (employer_id = auth.uid()::text);
+
+-- Career site logo/banner uploads (Phase 1B). A public bucket — these are
+-- public career-page assets. The server uploads with the service-role key
+-- (bypasses RLS); these storage policies are defense-in-depth for direct
+-- client access and confine each employer to their own {clerkUserId}/ folder.
+-- All idempotent (on conflict do nothing / drop policy if exists).
+insert into storage.buckets (id, name, public)
+values ('career-site-assets', 'career-site-assets', true)
+on conflict (id) do nothing;
+
+drop policy if exists career_assets_insert on storage.objects;
+create policy career_assets_insert on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'career-site-assets' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists career_assets_update on storage.objects;
+create policy career_assets_update on storage.objects
+  for update to authenticated
+  using (bucket_id = 'career-site-assets' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'career-site-assets' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists career_assets_delete on storage.objects;
+create policy career_assets_delete on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'career-site-assets' and (storage.foldername(name))[1] = auth.uid()::text);
