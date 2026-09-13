@@ -8,7 +8,7 @@ export async function sendEmail(opts: { to: string; subject: string; html: strin
   const key = process.env.RESEND_API_KEY;
   if (!key || !opts.to) return false;
   try {
-    const from = process.env.RESEND_FROM || "ResumeTailored <onboarding@resend.dev>";
+    const from = process.env.RESEND_FROM || "ResumeTailored <noreply@resumetailored.com>";
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },

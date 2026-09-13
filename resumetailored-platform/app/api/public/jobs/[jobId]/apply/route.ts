@@ -4,6 +4,8 @@ import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import mammoth from "mammoth";
 import { getPublicJob, createPublicApplicant } from "@/lib/employer-store";
 import { localMatchFallback } from "@/lib/employer-ai";
+import { sendEmail, resolveUserEmail, escapeHtml } from "@/lib/email";
+import { appUrl } from "@/lib/subdomain";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -75,30 +77,11 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
 }
 
 async function notifyEmployer(employerId: string, jobTitle: string, applicantName: string): Promise<void> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return; // placeholder — no email provider configured
-  try {
-    const { clerkClient } = await import("@clerk/nextjs/server");
-    const client = await clerkClient();
-    const user = await client.users.getUser(employerId);
-    const to = user?.emailAddresses?.[0]?.emailAddress;
-    if (!to) return;
-    const from = process.env.RESEND_FROM || "ResumeTailored <onboarding@resend.dev>";
-    await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to,
-        subject: `New applicant for ${jobTitle}`,
-        html: `<div style="font-family:system-ui,sans-serif"><p><strong>${escapeHtml(applicantName)}</strong> applied for <strong>${escapeHtml(jobTitle)}</strong> via your public job board.</p><p>Review them in your <a href="https://resumetailored.com/employer/candidates">Candidates dashboard</a>.</p></div>`,
-      }),
-    });
-  } catch {
-    /* best-effort */
-  }
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] || ch);
+  const to = await resolveUserEmail(employerId);
+  if (!to) return;
+  await sendEmail({
+    to,
+    subject: `New applicant for ${jobTitle}`,
+    html: `<div style="font-family:system-ui,sans-serif"><p><strong>${escapeHtml(applicantName)}</strong> applied for <strong>${escapeHtml(jobTitle)}</strong> via your public job board.</p><p>Review them in your <a href="${appUrl("/employer/candidates")}">Candidates dashboard</a>.</p></div>`,
+  });
 }
