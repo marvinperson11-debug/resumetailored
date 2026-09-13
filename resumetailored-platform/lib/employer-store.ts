@@ -194,18 +194,23 @@ function jobRow(v: JobInput): Record<string, unknown> {
 
 export async function createJob(employerId: string, v: JobInput): Promise<JobPosting | null> {
   const c = db();
-  if (!c || !employerId || !v.title?.trim() || !v.description?.trim()) return null;
-  try {
-    const { data, error } = await c
-      .from("job_postings")
-      .insert({ employer_id: employerId, ...jobRow(v) })
-      .select(JOB_COLS)
-      .single();
-    if (error || !data) return null;
-    return mapJob(data, 0);
-  } catch {
-    return null;
+  if (!c) {
+    // DB client not configured (missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).
+    throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
   }
+  if (!employerId || !v.title?.trim() || !v.description?.trim()) return null;
+  // DEBUG: surface the real Supabase error instead of swallowing it to null.
+  const { data, error } = await c
+    .from("job_postings")
+    .insert({ employer_id: employerId, ...jobRow(v) })
+    .select(JOB_COLS)
+    .single();
+  if (error) {
+    console.error("[createJob] supabase error:", JSON.stringify(error), error);
+    throw new Error(`${error.message || "insert failed"}${error.details ? ` | details: ${error.details}` : ""}${error.hint ? ` | hint: ${error.hint}` : ""}${error.code ? ` | code: ${error.code}` : ""}`);
+  }
+  if (!data) throw new Error("job insert returned no row");
+  return mapJob(data, 0);
 }
 
 export async function updateJob(employerId: string, id: number, v: JobInput): Promise<boolean> {
@@ -237,7 +242,8 @@ export async function deleteJob(employerId: string, id: number): Promise<boolean
 export async function duplicateJob(employerId: string, id: number): Promise<JobPosting | null> {
   const job = await getJob(employerId, id);
   if (!job) return null;
-  return createJob(employerId, {
+  try {
+    return await createJob(employerId, {
     title: `${job.title} (copy)`,
     department: job.department,
     location: job.location,
@@ -249,9 +255,13 @@ export async function duplicateJob(employerId: string, id: number): Promise<JobP
     description: job.description,
     requirements: job.requirements,
     niceToHaves: job.niceToHaves,
-    deadline: job.deadline,
-    status: "draft",
-  });
+      deadline: job.deadline,
+      status: "draft",
+    });
+  } catch (e) {
+    console.error("[duplicateJob] createJob failed:", e);
+    return null;
+  }
 }
 
 // ── Public job board (Feature E) ──────────────────────────────────────────────

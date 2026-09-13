@@ -15,10 +15,17 @@ export async function GET() {
 /** POST — create a shortlist. Body: { name, description? }. */
 export async function POST(req: Request) {
   const employerId = await requireEmployerId();
-  if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const b = (await req.json().catch(() => ({}))) as { name?: string; description?: string };
+  // DEBUG (temporary): surface auth + payload + the real error to logs and the client.
+  console.error("[shortlists POST] userId:", employerId, "payload:", JSON.stringify(b));
+  if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!(b.name || "").trim()) return NextResponse.json({ error: "Give the shortlist a name." }, { status: 400 });
-  const shortlist = await createShortlist(employerId, b.name || "", b.description || "");
-  if (!shortlist) return NextResponse.json({ error: "Could not create the shortlist." }, { status: 500 });
-  return NextResponse.json({ shortlist });
+  try {
+    const shortlist = await createShortlist(employerId, b.name || "", b.description || "");
+    if (!shortlist) return NextResponse.json({ error: "Could not create the shortlist (createShortlist returned null)." }, { status: 500 });
+    return NextResponse.json({ shortlist });
+  } catch (error) {
+    console.error("[shortlists POST] error:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+  }
 }
