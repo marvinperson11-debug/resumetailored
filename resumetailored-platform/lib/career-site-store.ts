@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { CareerSite, Testimonial, PublicCareerJob, RemoteType, EmploymentType } from "./employer-ai";
+import { isValidSlug } from "./subdomain";
 
 /**
  * Career Site Builder persistence — one `career_sites` row per employer, served
@@ -112,7 +113,22 @@ export async function getCareerSite(employerId: string, companyName = ""): Promi
   }
 }
 
+/** True if `slug` is a valid, non-reserved slug that no OTHER employer holds
+ *  (the caller may keep their own current slug). */
+export async function isSlugAvailable(employerId: string, slug: string): Promise<boolean> {
+  if (!isValidSlug(slug)) return false;
+  const c = db();
+  if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
+  try {
+    const { data } = await c.from("career_sites").select("employer_id").eq("slug", slug).maybeSingle();
+    return !data || data.employer_id === employerId;
+  } catch {
+    return false;
+  }
+}
+
 export interface CareerSiteInput {
+  slug?: string;
   companyName?: string;
   logoUrl?: string;
   bannerUrl?: string;
@@ -132,6 +148,8 @@ export interface CareerSiteInput {
 
 function toRow(v: CareerSiteInput): Record<string, unknown> {
   const row: Record<string, unknown> = {};
+  // Slug is validated + availability-checked by the route before it reaches here.
+  if (v.slug !== undefined && isValidSlug(v.slug)) row.slug = v.slug;
   if (v.companyName !== undefined) row.company_name = String(v.companyName).slice(0, 200);
   if (v.logoUrl !== undefined) row.logo_url = String(v.logoUrl).slice(0, 2000) || null;
   if (v.bannerUrl !== undefined) row.banner_url = String(v.bannerUrl).slice(0, 2000) || null;
