@@ -68,7 +68,63 @@ create index if not exists interviews_employer_time_idx
 create index if not exists interviews_applicant_idx
   on public.interviews (applicant_id, scheduled_at desc);
 
-alter table public.messages enable row level security;
+-- ── Column fixes ─────────────────────────────────────────────────────────────
+-- The code selects/writes these columns; some live tables predate them. Both
+-- guards are no-ops on a fresh database (the columns already exist above / in
+-- 0012) and heal an existing database, so this migration is safe to re-run.
+alter table public.job_postings add column if not exists public_listed boolean default false;
+alter table public.shortlists add column if not exists updated_at timestamp with time zone default now();
+
+-- ── Row level security ───────────────────────────────────────────────────────
+-- The server writes everything with the service-role key (which bypasses RLS),
+-- scoping each query by employer_id itself. These policies are defense-in-depth
+-- for any direct (anon/authenticated) access. `employer_id` is the Clerk user
+-- id (TEXT, e.g. user_3Iy2u…), NOT a uuid, so auth.uid() is cast with ::text.
+-- Postgres has no CREATE POLICY IF NOT EXISTS, so each policy is dropped first,
+-- which keeps this migration idempotent.
+alter table public.job_postings enable row level security;
 alter table public.shortlists enable row level security;
 alter table public.shortlist_members enable row level security;
+alter table public.messages enable row level security;
 alter table public.interviews enable row level security;
+
+drop policy if exists job_postings_owner on public.job_postings;
+create policy job_postings_owner on public.job_postings
+  for all
+  using (employer_id = auth.uid()::text)
+  with check (employer_id = auth.uid()::text);
+
+drop policy if exists shortlists_owner on public.shortlists;
+create policy shortlists_owner on public.shortlists
+  for all
+  using (employer_id = auth.uid()::text)
+  with check (employer_id = auth.uid()::text);
+
+-- shortlist_members has no employer_id — authorize via its parent shortlist.
+drop policy if exists shortlist_members_owner on public.shortlist_members;
+create policy shortlist_members_owner on public.shortlist_members
+  for all
+  using (
+    exists (
+      select 1 from public.shortlists s
+      where s.id = shortlist_members.shortlist_id and s.employer_id = auth.uid()::text
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.shortlists s
+      where s.id = shortlist_members.shortlist_id and s.employer_id = auth.uid()::text
+    )
+  );
+
+drop policy if exists messages_owner on public.messages;
+create policy messages_owner on public.messages
+  for all
+  using (employer_id = auth.uid()::text)
+  with check (employer_id = auth.uid()::text);
+
+drop policy if exists interviews_owner on public.interviews;
+create policy interviews_owner on public.interviews
+  for all
+  using (employer_id = auth.uid()::text)
+  with check (employer_id = auth.uid()::text);
