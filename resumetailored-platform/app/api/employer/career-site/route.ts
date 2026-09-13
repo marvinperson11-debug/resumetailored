@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireEmployerId } from "@/lib/employer-auth";
 import { getEmployerProfile } from "@/lib/employer-store";
-import { getCareerSite, updateCareerSite, type CareerSiteInput } from "@/lib/career-site-store";
+import { getCareerSite, updateCareerSite, isSlugAvailable, type CareerSiteInput } from "@/lib/career-site-store";
+import { isValidSlug, normalizeSlug } from "@/lib/subdomain";
 import type { Testimonial } from "@/lib/employer-ai";
 
 export const runtime = "nodejs";
@@ -29,6 +30,17 @@ export async function PATCH(req: Request) {
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
   const patch: CareerSiteInput = {};
+  // Slug edits change the primary subdomain — validate format + availability.
+  if (b.slug !== undefined) {
+    const slug = normalizeSlug(String(b.slug));
+    if (!isValidSlug(slug)) {
+      return NextResponse.json({ error: "That address isn’t valid — use letters, numbers, and hyphens (and not a reserved word)." }, { status: 400 });
+    }
+    if (!(await isSlugAvailable(employerId, slug))) {
+      return NextResponse.json({ error: "That address is already taken. Please choose another." }, { status: 409 });
+    }
+    patch.slug = slug;
+  }
   if (b.companyName !== undefined) patch.companyName = String(b.companyName);
   if (b.logoUrl !== undefined) patch.logoUrl = String(b.logoUrl);
   if (b.bannerUrl !== undefined) patch.bannerUrl = String(b.bannerUrl);
