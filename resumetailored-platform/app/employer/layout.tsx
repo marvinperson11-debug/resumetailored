@@ -34,9 +34,11 @@ export default async function EmployerLayout({ children }: { children: ReactNode
   // Employees join an already-onboarded company, so never block them on setup.
   const needsOnboarding = access.plan === "employer" && !profile;
   const company = profile?.companyName || "Your company";
+  // Tier NAME only for the sidebar badge — Portal / Scale / Corporate.
+  const planLabel = access.tier === "scale" ? "Scale" : access.tier === "corporate" ? "Corporate" : "Portal";
 
   return (
-    <DashboardShell sidebar={<EmployerSidebar company={company} isAdmin={access.isAdmin} />} title={company}>
+    <DashboardShell sidebar={<EmployerSidebar company={company} isAdmin={access.isAdmin} planLabel={planLabel} />} title={company}>
       {children}
       {needsOnboarding && <OnboardingModal />}
     </DashboardShell>
