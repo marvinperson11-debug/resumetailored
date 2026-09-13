@@ -21,29 +21,36 @@ export async function GET() {
 /** POST a new job posting (draft or published). */
 export async function POST(req: Request) {
   const employerId = await requireEmployerId();
-  if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  // DEBUG (temporary): surface auth + payload + the real error to logs and the client.
+  console.error("[jobs POST] userId:", employerId, "payload:", JSON.stringify(b));
+  if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const title = String(b.title || "").trim();
   const description = String(b.description || "").trim();
   if (title.length < 2) return NextResponse.json({ error: "Job title is required." }, { status: 400 });
   if (description.length < 10) return NextResponse.json({ error: "A job description is required." }, { status: 400 });
 
-  const job = await createJob(employerId, {
-    title,
-    description,
-    department: String(b.department || "").trim(),
-    location: String(b.location || "").trim(),
-    remoteType: clean(b.remoteType, REMOTE_TYPES),
-    employmentType: clean(b.employmentType, EMPLOYMENT_TYPES),
-    salaryMin: numOrNull(b.salaryMin),
-    salaryMax: numOrNull(b.salaryMax),
-    salaryCurrency: String(b.salaryCurrency || "USD").trim() || "USD",
-    requirements: arr(b.requirements),
-    niceToHaves: arr(b.niceToHaves),
-    deadline: b.deadline ? String(b.deadline) : null,
-    status: isJobStatus(b.status) ? b.status : "draft",
-    publicListed: !!b.publicListed,
-  });
-  if (!job) return NextResponse.json({ error: "Could not create the job. Is the database configured?" }, { status: 500 });
-  return NextResponse.json({ job });
+  try {
+    const job = await createJob(employerId, {
+      title,
+      description,
+      department: String(b.department || "").trim(),
+      location: String(b.location || "").trim(),
+      remoteType: clean(b.remoteType, REMOTE_TYPES),
+      employmentType: clean(b.employmentType, EMPLOYMENT_TYPES),
+      salaryMin: numOrNull(b.salaryMin),
+      salaryMax: numOrNull(b.salaryMax),
+      salaryCurrency: String(b.salaryCurrency || "USD").trim() || "USD",
+      requirements: arr(b.requirements),
+      niceToHaves: arr(b.niceToHaves),
+      deadline: b.deadline ? String(b.deadline) : null,
+      status: isJobStatus(b.status) ? b.status : "draft",
+      publicListed: !!b.publicListed,
+    });
+    if (!job) return NextResponse.json({ error: "Could not create the job (createJob returned null)." }, { status: 500 });
+    return NextResponse.json({ job });
+  } catch (error) {
+    console.error("[jobs POST] error:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+  }
 }
