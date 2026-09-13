@@ -101,6 +101,82 @@ export interface TeamMember {
   createdAt: string;
 }
 
+// ── Phase 1A: Messages, Shortlists, Interviews ────────────────────────────────
+export const MESSAGE_SENDERS = ["employer", "candidate"] as const;
+export type MessageSender = (typeof MESSAGE_SENDERS)[number];
+
+export interface MessageAttachment {
+  name: string;
+  url: string;
+  kind?: "pdf" | "image" | "file";
+}
+
+export interface Message {
+  id: number;
+  applicantId: number;
+  sender: MessageSender;
+  content: string;
+  attachments: MessageAttachment[];
+  read: boolean;
+  createdAt: string;
+}
+
+/** One entry in the messages inbox — the latest message per candidate. */
+export interface Conversation {
+  applicantId: number;
+  name: string;
+  email: string;
+  jobTitle?: string;
+  lastMessage: string;
+  lastSender: MessageSender;
+  lastAt: string;
+  unread: number; // unread inbound (candidate) messages
+}
+
+/** Canned employer message templates for the composer dropdown. */
+export const MESSAGE_TEMPLATES: { label: string; body: string }[] = [
+  { label: "Thanks for applying", body: "Thanks for applying — we'll review your application and get back to you soon." },
+  { label: "Schedule an interview", body: "We'd like to schedule an interview with you. What times work best for you this week?" },
+  { label: "Moving forward with others", body: "Thank you for your interest. We've decided to move forward with another candidate, but we truly appreciate the time you took to apply." },
+  { label: "Extend an offer", body: "Congratulations — we'd like to extend an offer to you! We'll follow up shortly with the details." },
+];
+
+export interface Shortlist {
+  id: number;
+  name: string;
+  description: string;
+  memberCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const INTERVIEW_MODES = ["video", "phone", "onsite"] as const;
+export type InterviewMode = (typeof INTERVIEW_MODES)[number];
+export const isInterviewMode = (v: unknown): v is InterviewMode =>
+  (INTERVIEW_MODES as readonly string[]).includes(String(v));
+
+export const INTERVIEW_STATUSES = ["scheduled", "completed", "cancelled"] as const;
+export type InterviewStatus = (typeof INTERVIEW_STATUSES)[number];
+export const isInterviewStatus = (v: unknown): v is InterviewStatus =>
+  (INTERVIEW_STATUSES as readonly string[]).includes(String(v));
+
+export interface Interview {
+  id: number;
+  applicantId: number;
+  applicantName?: string;
+  jobId: number | null;
+  jobTitle?: string;
+  title: string;
+  scheduledAt: string;
+  durationMin: number;
+  mode: InterviewMode;
+  location: string;
+  interviewer: string;
+  notes: string;
+  status: InterviewStatus;
+  createdAt: string;
+}
+
 // ── Match scoring ─────────────────────────────────────────────────────────────
 export interface MatchAnalysis {
   score: number; // 0-100
