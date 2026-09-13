@@ -175,6 +175,70 @@ export async function updateCareerSite(employerId: string, patch: CareerSiteInpu
   }
 }
 
+// ── Logo / banner uploads (Supabase Storage) ─────────────────────────────────
+const ASSET_BUCKET = "career-site-assets";
+export const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const MAX_ASSET_BYTES = 2 * 1024 * 1024; // 2 MB
+
+const EXT_BY_TYPE: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+function sanitizeFilename(name: string): string {
+  const base = (name || "image").toLowerCase().replace(/\.[a-z0-9]+$/i, "");
+  return base.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "image";
+}
+
+/** Upload a logo/banner into the employer's own folder and return its public
+ *  URL. Confined to {employerId}/… so a caller can only write their own space. */
+export async function uploadCareerAsset(
+  employerId: string,
+  file: { data: ArrayBuffer; contentType: string; filename: string }
+): Promise<{ url: string } | null> {
+  const c = db();
+  if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
+  if (!employerId) return null;
+  const ext = EXT_BY_TYPE[file.contentType] || "img";
+  const path = `${employerId}/${Date.now()}-${sanitizeFilename(file.filename)}.${ext}`;
+  try {
+    const { error } = await c.storage
+      .from(ASSET_BUCKET)
+      .upload(path, file.data, { contentType: file.contentType, upsert: false, cacheControl: "31536000" });
+    if (error) {
+      console.error("[uploadCareerAsset]", error);
+      return null;
+    }
+    const { data } = c.storage.from(ASSET_BUCKET).getPublicUrl(path);
+    return { url: data.publicUrl };
+  } catch (e) {
+    console.error("[uploadCareerAsset]", e);
+    return null;
+  }
+}
+
+/** Delete a previously uploaded asset — only within the caller's own folder. */
+export async function deleteCareerAsset(employerId: string, path: string): Promise<boolean> {
+  const c = db();
+  if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
+  if (!employerId || !path || !path.startsWith(`${employerId}/`)) return false;
+  try {
+    const { error } = await c.storage.from(ASSET_BUCKET).remove([path]);
+    if (error) {
+      console.error("[deleteCareerAsset]", error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("[deleteCareerAsset]", e);
+    return false;
+  }
+}
+
+/** Extract the storage object path from a public URL for this bucket, or "". */
+export function assetPathFromUrl(url: string): string {
+  const marker = `/${ASSET_BUCKET}/`;
+  const i = url.indexOf(marker);
+  return i === -1 ? "" : decodeURIComponent(url.slice(i + marker.length));
+}
+
 function mapPublicJob(r: Record<string, unknown>): PublicCareerJob {
   return {
     id: r.id as number,
