@@ -17,16 +17,16 @@ export function AdminViewToggle({ className }: { className?: string }) {
   const onEmployer = pathname.startsWith("/employer");
   const cls = (active: boolean) =>
     cn(
-      "flex-1 rounded-md px-2 py-1.5 text-center text-xs font-semibold transition-colors",
-      active ? "bg-gold text-navy shadow-[0_0_12px_rgba(194,135,11,0.35)]" : "text-muted-cream hover:text-cream"
+      "flex-1 whitespace-nowrap rounded-md px-2 py-1.5 text-center text-xs font-semibold transition-colors",
+      active ? "bg-gold text-navy shadow-[0_0_12px_rgba(194,135,11,0.35)]" : "bg-white/5 text-muted-cream hover:text-cream"
     );
   return (
-    <div className={cn("flex items-center gap-0.5 rounded-lg border border-gold/30 bg-gold/5 p-0.5", className)} title={t("admin")}>
+    <div className={cn("flex items-center gap-1 rounded-lg border border-gold/30 bg-gold/5 p-0.5", className)} title={t("admin")}>
       <Link href="/candidate" className={cls(!onEmployer)}>
-        👤&nbsp;{t("candidateView")}
+        👤 Candidate
       </Link>
       <Link href="/employer" className={cls(onEmployer)}>
-        🏢&nbsp;{t("employerView")}
+        🏢 Employer
       </Link>
     </div>
   );

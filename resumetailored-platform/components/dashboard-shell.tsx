@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ProfileButton } from "./profile-button";
@@ -25,7 +26,13 @@ function RTLogo() {
 
 export function DashboardShell({ sidebar, title, children }: DashboardShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const pathname = usePathname();
   const t = useTranslations("topbar");
+
+  // Close the mobile drawer whenever navigation happens.
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen">
