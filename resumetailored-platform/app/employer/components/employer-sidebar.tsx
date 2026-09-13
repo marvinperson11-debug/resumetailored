@@ -17,7 +17,7 @@ export interface EmployerNavItem {
 /** Single source of truth for the employer nav. */
 export const EMPLOYER_NAV: EmployerNavItem[] = [
   { label: "Dashboard", href: "/employer", icon: LayoutDashboard, exact: true },
-  { label: "Jobs", href: "/employer/jobs", icon: Briefcase },
+  { label: "Hire", href: "/employer/jobs", icon: Briefcase },
   { label: "Candidates", href: "/employer/candidates", icon: Users },
   { label: "Messages", href: "/employer/messages", icon: MessageSquare },
   { label: "Shortlists", href: "/employer/shortlists", icon: Star },
@@ -38,7 +38,7 @@ export function isEmployerNavActive(pathname: string, href: string, exact?: bool
  * by `DashboardShell` in both the persistent desktop rail and the mobile
  * slide-out drawer, so the two portals look and behave identically.
  */
-export function EmployerSidebar({ company, isAdmin }: { company: string; isAdmin?: boolean }) {
+export function EmployerSidebar({ company, isAdmin, planLabel = "Portal" }: { company: string; isAdmin?: boolean; planLabel?: string }) {
   const pathname = usePathname();
 
   return (
@@ -84,7 +84,7 @@ export function EmployerSidebar({ company, isAdmin }: { company: string; isAdmin
 
       <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
         <Building2 className="h-4 w-4 text-gold" />
-        <span className="text-xs font-medium text-gold">Employer Portal</span>
+        <span className="text-xs font-medium text-gold">{planLabel}</span>
       </div>
     </div>
   );
