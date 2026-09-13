@@ -11,6 +11,19 @@ export const ROOT_DOMAIN = "resumetailored.com";
  *  (never through a tenant subdomain, so no Worker round-trip / loop). */
 export const APP_ORIGIN = `https://app.${ROOT_DOMAIN}`;
 
+/**
+ * The canonical public base URL for building outbound/shareable links. Behind a
+ * proxy (Railway/Cloudflare) the request Host header is the internal
+ * `localhost:8080`, so `new URL(req.url).origin` produces unreachable links like
+ * `https://localhost:8080/site/x`. NEVER construct a public link from the raw
+ * Host header — route it through here instead. Override with NEXT_PUBLIC_APP_URL.
+ */
+export function appUrl(path = ""): string {
+  const base = (process.env.NEXT_PUBLIC_APP_URL || APP_ORIGIN).replace(/\/+$/, "");
+  if (!path) return base;
+  return base + (path.startsWith("/") ? path : "/" + path);
+}
+
 /** Hosts/labels that must never map to a career site — apex tooling + product
  *  areas. `www`/`app` route normally; the rest are reserved so a slug can't
  *  shadow them. */

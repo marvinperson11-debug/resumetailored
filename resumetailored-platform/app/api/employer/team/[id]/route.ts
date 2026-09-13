@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { employerContext } from "@/lib/employer-auth";
 import { updateMember, removeMember } from "@/lib/employer-store";
 import { isTeamRole } from "@/lib/employer-ai";
+import { appUrl } from "@/lib/subdomain";
 
 export const runtime = "nodejs";
 
@@ -21,8 +22,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const token = randomUUID();
     const ok = await updateMember(ctx.employerId, id, { inviteToken: token });
     if (!ok) return NextResponse.json({ error: "Could not resend." }, { status: 500 });
-    const origin = new URL(req.url).origin;
-    return NextResponse.json({ ok: true, link: `${origin}/join?token=${token}&company=${encodeURIComponent(ctx.employerId)}` });
+    return NextResponse.json({ ok: true, link: appUrl(`/join?token=${token}&company=${encodeURIComponent(ctx.employerId)}`) });
   }
 
   if (!isTeamRole(b.role) || b.role === "owner") return NextResponse.json({ error: "bad role" }, { status: 400 });

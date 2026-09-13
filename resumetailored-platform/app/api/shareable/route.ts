@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { getMyProfile, upsertProfile, usernameAvailable, cleanUsername, type ShareableProfile } from "@/lib/shareable-store";
+import { appUrl } from "@/lib/subdomain";
 
 export const runtime = "nodejs";
 
@@ -19,10 +20,9 @@ export async function GET(req: Request) {
   }
 
   const profile = await getMyProfile(userId);
-  const origin = url.origin;
   return NextResponse.json({
     profile,
-    url: profile ? `${origin}/u/${profile.username}` : null,
+    url: profile ? appUrl(`/u/${profile.username}`) : null,
   });
 }
 
@@ -43,6 +43,5 @@ export async function PUT(req: Request) {
       : "Could not save (is the shareable_profiles table set up?).";
     return NextResponse.json({ error: res.error, message }, { status });
   }
-  const origin = new URL(req.url).origin;
-  return NextResponse.json({ profile: res.profile, url: `${origin}/u/${res.profile.username}` });
+  return NextResponse.json({ profile: res.profile, url: appUrl(`/u/${res.profile.username}`) });
 }

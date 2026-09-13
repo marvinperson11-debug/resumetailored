@@ -5,6 +5,7 @@ import { generateSiteHtml, type SiteData } from "@/lib/site-templates";
 import { renderStudioSite } from "@/lib/studio-render";
 import { isStudioSite, type StudioSite } from "@/lib/studio-types";
 import { publishSite } from "@/lib/site-store";
+import { appUrl } from "@/lib/subdomain";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -55,6 +56,5 @@ export async function POST(req: Request) {
       : NextResponse.json({ error: "That address isn’t valid — 3–30 characters: letters, numbers, and hyphens." }, { status: 400 });
   }
 
-  const origin = new URL(req.url).origin;
-  return NextResponse.json({ slug: res.slug, url: `${origin}/site/${res.slug}` });
+  return NextResponse.json({ slug: res.slug, url: appUrl(`/site/${res.slug}`) });
 }
