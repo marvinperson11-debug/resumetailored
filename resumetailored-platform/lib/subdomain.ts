@@ -7,6 +7,10 @@
 
 export const ROOT_DOMAIN = "resumetailored.com";
 
+/** The canonical app origin — used by middleware to call internal APIs directly
+ *  (never through a tenant subdomain, so no Worker round-trip / loop). */
+export const APP_ORIGIN = `https://app.${ROOT_DOMAIN}`;
+
 /** Hosts/labels that must never map to a career site — apex tooling + product
  *  areas. `www`/`app` route normally; the rest are reserved so a slug can't
  *  shadow them. */

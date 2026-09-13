@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { CareerSite, Testimonial, PublicCareerJob, RemoteType, EmploymentType } from "./employer-ai";
 import { isValidSlug } from "./subdomain";
+import { isSlugTaken } from "./tenant-resolve";
 
 /**
  * Career Site Builder persistence — one `career_sites` row per employer, served
@@ -113,18 +114,11 @@ export async function getCareerSite(employerId: string, companyName = ""): Promi
   }
 }
 
-/** True if `slug` is a valid, non-reserved slug that no OTHER employer holds
- *  (the caller may keep their own current slug). */
+/** True if `slug` is valid, non-reserved, and unclaimed across the SHARED
+ *  namespace (career sites + personal sites) — the caller keeps their own slug. */
 export async function isSlugAvailable(employerId: string, slug: string): Promise<boolean> {
   if (!isValidSlug(slug)) return false;
-  const c = db();
-  if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
-  try {
-    const { data } = await c.from("career_sites").select("employer_id").eq("slug", slug).maybeSingle();
-    return !data || data.employer_id === employerId;
-  } catch {
-    return false;
-  }
+  return !(await isSlugTaken(slug, { careerEmployerId: employerId }));
 }
 
 export interface CareerSiteInput {

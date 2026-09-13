@@ -1,6 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { careerSubdomainFromHost } from "@/lib/subdomain";
+import { careerSubdomainFromHost, APP_ORIGIN } from "@/lib/subdomain";
 
 // Production auth: everything under these prefixes requires a signed-in user.
 const isProtectedRoute = createRouteMatcher([
@@ -23,8 +23,27 @@ export default clerkMiddleware(async (auth, req) => {
     req.headers.get("x-original-host") || req.headers.get("x-forwarded-host") || req.headers.get("host")
   );
   if (sub && req.nextUrl.pathname === "/") {
+    // Slugs share one namespace across employer career sites and candidate
+    // personal sites. Ask the internal resolver which one owns this label, then
+    // rewrite to /careers/{slug} or /site/{slug}. The resolver is called on the
+    // canonical app origin (never the subdomain) so there's no Worker loop; it
+    // lives at /api/tenant-resolve, which is never a root path and so is never
+    // rewritten. On any failure or an unknown slug, fall back to /careers/{slug}
+    // (which renders the friendly careers "not found" page).
+    let type: "career" | "site" = "career";
+    try {
+      const r = await fetch(`${APP_ORIGIN}/api/tenant-resolve?label=${encodeURIComponent(sub)}`, {
+        signal: AbortSignal.timeout(2500),
+      });
+      if (r.ok) {
+        const d = (await r.json()) as { type?: string };
+        if (d.type === "site") type = "site";
+      }
+    } catch {
+      /* fall back to careers */
+    }
     const url = req.nextUrl.clone();
-    url.pathname = `/careers/${sub}`;
+    url.pathname = type === "site" ? `/site/${sub}` : `/careers/${sub}`;
     return NextResponse.rewrite(url);
   }
 

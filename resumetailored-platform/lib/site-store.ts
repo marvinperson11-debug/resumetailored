@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { isSlugTaken } from "./tenant-resolve";
 
 /**
  * Published personal sites (personal_sites). One published site per user
@@ -27,8 +28,22 @@ function slugify(name: string): string {
 }
 
 const RESERVED = new Set(["api", "site", "jobs", "candidate", "employer", "admin", "www", "app", "sign-in", "sign-up", "join"]);
-function cleanSlug(s: string): string {
+export function cleanSiteSlug(s: string): string {
   return (s || "").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30);
+}
+const cleanSlug = cleanSiteSlug;
+/** Format-only check for a candidate personal-site slug (3–30, alnum+hyphen,
+ *  not reserved). Cross-namespace availability is checked separately. */
+export function isValidSiteSlug(s: string): boolean {
+  return s.length >= 3 && s.length <= 30 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(s) && !RESERVED.has(s);
+}
+
+/** Shared-namespace availability for a candidate: valid format AND not claimed
+ *  by any career site or another user's personal site. */
+export async function personalSlugAvailable(userId: string, slug: string): Promise<boolean> {
+  const clean = cleanSlug(slug);
+  if (!isValidSiteSlug(clean)) return false;
+  return !(await isSlugTaken(clean, { personalUserId: userId }));
 }
 
 /** Create or update the user's single published site. Returns its slug/url.
@@ -40,17 +55,21 @@ export async function publishSite(
   data: Record<string, unknown>,
   name: string,
   desiredSlug?: string
-): Promise<{ slug: string } | null> {
+): Promise<{ slug: string } | { error: "taken" | "invalid" } | null> {
   const c = db();
   if (!c || !userId) return null;
   try {
     const existing = await c.from("personal_sites").select("slug").eq("user_id", userId).maybeSingle();
     let slug = existing.data?.slug || slugify(name);
 
+    // A custom address is honored only when it's valid AND free across the
+    // shared namespace (career sites + personal sites); otherwise reject clearly
+    // rather than silently substituting a different address.
     const wanted = cleanSlug(desiredSlug || "");
-    if (wanted && wanted.length >= 3 && wanted !== slug && !RESERVED.has(wanted)) {
-      const taken = await c.from("personal_sites").select("user_id").eq("slug", wanted).maybeSingle();
-      if (!taken.data || taken.data.user_id === userId) slug = wanted;
+    if (wanted && wanted !== slug) {
+      if (!isValidSiteSlug(wanted)) return { error: "invalid" };
+      if (await isSlugTaken(wanted, { personalUserId: userId })) return { error: "taken" };
+      slug = wanted;
     }
 
     const { error } = await c.from("personal_sites").upsert(
