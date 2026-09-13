@@ -49,6 +49,11 @@ export async function POST(req: Request) {
 
   const res = await publishSite(userId, html, stored, name, body.slug);
   if (!res) return NextResponse.json({ error: "Could not publish (is the personal_sites table set up?)." }, { status: 500 });
+  if ("error" in res) {
+    return res.error === "taken"
+      ? NextResponse.json({ error: "That address is taken. Please choose another." }, { status: 409 })
+      : NextResponse.json({ error: "That address isn’t valid — 3–30 characters: letters, numbers, and hyphens." }, { status: 400 });
+  }
 
   const origin = new URL(req.url).origin;
   return NextResponse.json({ slug: res.slug, url: `${origin}/site/${res.slug}` });

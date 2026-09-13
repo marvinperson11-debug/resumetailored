@@ -60,7 +60,28 @@ export function StudioEditor() {
   const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
   const [alreadyPublished, setAlreadyPublished] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+
+  // Debounced shared-namespace availability check for the custom address.
+  useEffect(() => {
+    const s = slug.trim();
+    if (!s) {
+      setSlugStatus("idle");
+      return;
+    }
+    setSlugStatus("checking");
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/personal-website/slug-available?slug=${encodeURIComponent(s)}`, { cache: "no-store" });
+        const d = (await r.json().catch(() => ({}))) as { valid?: boolean; available?: boolean };
+        setSlugStatus(d.valid && d.available ? "available" : d.valid ? "taken" : "invalid");
+      } catch {
+        setSlugStatus("idle");
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [slug]);
 
   // ── Load: new-from-gallery → localStorage draft → published site → default ──
   useEffect(() => {
@@ -280,6 +301,10 @@ export function StudioEditor() {
 
   async function publish() {
     if (!site) return;
+    if (slug.trim() && (slugStatus === "taken" || slugStatus === "invalid")) {
+      setPublishError(slugStatus === "taken" ? "That address is taken. Please choose another." : "That address isn’t valid — 3–30 characters: letters, numbers, and hyphens.");
+      return;
+    }
     setPublishing(true);
     setPublishError(null);
     try {
@@ -423,6 +448,7 @@ export function StudioEditor() {
           site={site}
           slug={slug}
           setSlug={setSlug}
+          slugStatus={slugStatus}
           publishing={publishing}
           publishedUrl={publishedUrl}
           alreadyPublished={alreadyPublished}

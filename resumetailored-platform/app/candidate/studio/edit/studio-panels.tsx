@@ -8,6 +8,7 @@ import {
   Brush, Star, Quote, Hash, MessageSquareQuote, LayoutGrid, Music, Code2, Mic, Square as StopIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ROOT_DOMAIN } from "@/lib/subdomain";
 import {
   type StudioSite, type StudioSection, type StudioElement, type SectionType, type ElementType,
   type BgType, FONT_CHOICES, SECTION_CHOICES, PATTERNS, ANIM_CHOICES,
@@ -596,11 +597,12 @@ export function AddMenu({ onAddSection, onAddElement, onClose }: { onAddSection:
 // ── Publish slide-out ──────────────────────────────────────────────────────────
 
 export function PublishPanel({
-  site, slug, setSlug, publishing, publishedUrl, alreadyPublished, error, onPublish, onClose, actions,
+  site, slug, setSlug, slugStatus = "idle", publishing, publishedUrl, alreadyPublished, error, onPublish, onClose, actions,
 }: {
   site: StudioSite;
   slug: string;
   setSlug: (v: string) => void;
+  slugStatus?: "idle" | "checking" | "available" | "taken" | "invalid";
   publishing: boolean;
   publishedUrl: string | null;
   alreadyPublished: boolean;
@@ -610,7 +612,9 @@ export function PublishPanel({
   actions: StudioActions;
 }) {
   const [copied, setCopied] = useState(false);
-  const preview = `app.resumetailored.com/site/${slug || "your-name"}`;
+  const shown = slug || "your-name";
+  const subdomainUrl = `${shown}.${ROOT_DOMAIN}`;
+  const pathUrl = `app.${ROOT_DOMAIN}/site/${shown}`;
   return (
     <>
       <div className="fixed inset-0 z-[160] bg-black/40" onClick={onClose} />
@@ -621,12 +625,19 @@ export function PublishPanel({
         </div>
         <div className="flex-1 space-y-4 overflow-y-auto p-5">
           <Field label="Your site URL">
-            <div className="flex items-center gap-1 rounded-lg border border-white/12 bg-white/5 px-2.5 py-2 text-sm text-white/50">
-              <span className="truncate">{preview}</span>
+            <div className="rounded-lg border border-white/12 bg-white/5 px-2.5 py-2">
+              <span className="block truncate text-sm text-cream">{subdomainUrl}</span>
+              <span className="mt-0.5 block truncate text-[11px] text-white/35">Also at {pathUrl}</span>
             </div>
           </Field>
           <Field label="Custom address"><TextField value={slug} onChange={(v) => setSlug(v.toLowerCase().replace(/[^a-z0-9-]/g, ""))} placeholder="your-name" /></Field>
-          <p className="-mt-2 text-[11px] text-white/35">3–30 characters — letters, numbers, hyphens. A taken name gets a short random suffix.</p>
+          <div className="-mt-2 text-[11px]">
+            {slugStatus === "checking" && <span className="text-white/45">Checking availability…</span>}
+            {slugStatus === "available" && <span className="text-teal">✓ {subdomainUrl} is available</span>}
+            {slugStatus === "taken" && <span className="text-red-300">That address is taken.</span>}
+            {slugStatus === "invalid" && <span className="text-red-300">3–30 characters — letters, numbers, hyphens.</span>}
+            {slugStatus === "idle" && <span className="text-white/35">3–30 characters — letters, numbers, hyphens.</span>}
+          </div>
           <div className="my-1 border-t border-white/10" />
           <Field label="SEO title"><TextField value={site.title} onChange={(v) => actions.patchSite({ title: v })} /></Field>
           <Field label="Meta description"><TextAreaField value={site.metaDescription} onChange={(v) => actions.patchSite({ metaDescription: v })} rows={2} /></Field>
