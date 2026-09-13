@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Users, Plus, Sparkles, Check, X, Mail, CalendarClock, Star, Ban } from "lucide-react";
+import Link from "next/link";
+import { Users, Plus, Sparkles, Check, X, Mail, MessageSquare, CalendarClock, Star, Ban } from "lucide-react";
 import {
   APPLICANT_STATUSES,
   type Applicant,
@@ -320,7 +321,21 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
 
         {/* Actions */}
         <section className="space-y-3 border-t border-border-gold pt-4">
-          <Field label="Send a message">
+          <div className="grid grid-cols-2 gap-2">
+            <Link
+              href={`/employer/messages?applicantId=${applicant.id}`}
+              className="flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm font-semibold text-cream hover:bg-white/[0.08]"
+            >
+              <MessageSquare className="h-4 w-4 text-violet" /> Message
+            </Link>
+            <Link
+              href={`/employer/scheduler?applicantId=${applicant.id}`}
+              className="flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm font-semibold text-cream hover:bg-white/[0.08]"
+            >
+              <CalendarClock className="h-4 w-4 text-violet" /> Schedule
+            </Link>
+          </div>
+          <Field label="Send an email">
             <div className="flex gap-2">
               <Picker value={msgTemplate} onChange={(e) => setMsgTemplate(e.target.value)}>
                 <option value="">Blank email…</option>
@@ -335,13 +350,6 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
               </Btn>
             </div>
           </Field>
-          <button
-            type="button"
-            onClick={() => alert("Add your Calendly or Google Calendar booking link in a message to this candidate — use “Send a message” above and paste your scheduling link.")}
-            className="flex w-full items-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm text-cream hover:bg-white/[0.08]"
-          >
-            <CalendarClock className="h-4 w-4 text-violet" /> Schedule interview
-          </button>
           <div className="flex gap-2">
             <Btn onClick={() => updateStatus("shortlisted")} className="flex-1">
               <Star className="h-4 w-4" /> Shortlist

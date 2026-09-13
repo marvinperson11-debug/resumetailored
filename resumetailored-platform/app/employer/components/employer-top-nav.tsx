@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, UserCog, Settings, Menu, X } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, MessageSquare, Star, CalendarClock, UserCog, Settings, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ProfileButton } from "@/components/profile-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -14,6 +14,9 @@ const NAV = [
   { label: "Dashboard", href: "/employer", icon: LayoutDashboard, exact: true },
   { label: "Jobs", href: "/employer/jobs", icon: Briefcase },
   { label: "Candidates", href: "/employer/candidates", icon: Users },
+  { label: "Messages", href: "/employer/messages", icon: MessageSquare },
+  { label: "Shortlists", href: "/employer/shortlists", icon: Star },
+  { label: "Scheduler", href: "/employer/scheduler", icon: CalendarClock },
   { label: "Team", href: "/employer/team", icon: UserCog },
   { label: "Settings", href: "/employer/settings", icon: Settings },
 ];
