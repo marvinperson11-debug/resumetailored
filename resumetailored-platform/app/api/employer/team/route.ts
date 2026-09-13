@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { employerContext } from "@/lib/employer-auth";
 import { listTeam, inviteMember, getEmployerProfile } from "@/lib/employer-store";
 import { isTeamRole } from "@/lib/employer-ai";
+import { appUrl } from "@/lib/subdomain";
 
 export const runtime = "nodejs";
 
@@ -30,8 +31,7 @@ export async function POST(req: Request) {
   const member = await inviteMember(ctx.employerId, email, role, token);
   if (!member) return NextResponse.json({ error: "Could not create the invite." }, { status: 500 });
 
-  const origin = new URL(req.url).origin;
-  const link = `${origin}/join?token=${token}&company=${encodeURIComponent(ctx.employerId)}`;
+  const link = appUrl(`/join?token=${token}&company=${encodeURIComponent(ctx.employerId)}`);
   const emailed = await sendInviteEmail(email, link, ctx.employerId);
   return NextResponse.json({ member, link, emailed });
 }
