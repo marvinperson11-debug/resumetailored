@@ -4,6 +4,7 @@ import { employerContext } from "@/lib/employer-auth";
 import { listTeam, inviteMember, getEmployerProfile } from "@/lib/employer-store";
 import { isTeamRole } from "@/lib/employer-ai";
 import { appUrl } from "@/lib/subdomain";
+import { sendEmail, escapeHtml } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -36,35 +37,19 @@ export async function POST(req: Request) {
   return NextResponse.json({ member, link, emailed });
 }
 
-/** Fire-and-forget invite email via Resend when configured; false otherwise. */
+/** Fire-and-forget invite email via Resend (through the shared sender) when
+ *  configured; false otherwise. */
 async function sendInviteEmail(to: string, link: string, employerId: string): Promise<boolean> {
-  const key = process.env.RESEND_API_KEY;
-  if (!key) return false;
-  const from = process.env.RESEND_FROM || "ResumeTailored <onboarding@resend.dev>";
   const profile = await getEmployerProfile(employerId);
   const company = profile?.companyName || "a team";
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to,
-        subject: `You're invited to join ${company} on ResumeTailored`,
-        html: `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
-          <h2 style="color:#0B0F19">You've been invited to ${escapeHtml(company)}</h2>
-          <p style="color:#334155;line-height:1.6">Join the hiring team on ResumeTailored to review candidates and manage roles.</p>
-          <p><a href="${link}" style="display:inline-block;background:#8B5CF6;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Accept invite</a></p>
-          <p style="color:#94a3b8;font-size:12px">Or paste this link into your browser:<br>${link}</p>
-        </div>`,
-      }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] || ch);
+  return sendEmail({
+    to,
+    subject: `You're invited to join ${company} on ResumeTailored`,
+    html: `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
+        <h2 style="color:#0B0F19">You've been invited to ${escapeHtml(company)}</h2>
+        <p style="color:#334155;line-height:1.6">Join the hiring team on ResumeTailored to review candidates and manage roles.</p>
+        <p><a href="${link}" style="display:inline-block;background:#8B5CF6;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Accept invite</a></p>
+        <p style="color:#94a3b8;font-size:12px">Or paste this link into your browser:<br>${link}</p>
+      </div>`,
+  });
 }
