@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireEmployerId } from "@/lib/employer-auth";
 import { listInterviews, createInterview, type InterviewInput } from "@/lib/employer-collab-store";
+import { notifyCandidateOfInterview } from "@/lib/employer-notify";
 import { isInterviewMode, isInterviewStatus } from "@/lib/employer-ai";
 
 export const runtime = "nodejs";
@@ -45,5 +46,7 @@ export async function POST(req: Request) {
     notes: b.notes || "",
   });
   if (!interview) return NextResponse.json({ error: "Could not schedule (is this candidate yours?)." }, { status: 400 });
+  // Best-effort: email the candidate a confirmation.
+  notifyCandidateOfInterview(employerId, interview, "scheduled").catch(() => {});
   return NextResponse.json({ interview });
 }

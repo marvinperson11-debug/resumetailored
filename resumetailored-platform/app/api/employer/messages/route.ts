@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireEmployerId } from "@/lib/employer-auth";
 import { listConversations, getThread, sendMessage } from "@/lib/employer-collab-store";
+import { notifyCandidateOfMessage } from "@/lib/employer-notify";
 import type { MessageAttachment } from "@/lib/employer-ai";
 
 export const runtime = "nodejs";
@@ -37,5 +38,7 @@ export async function POST(req: Request) {
 
   const message = await sendMessage(employerId, applicantId, b.content || "", b.attachments || []);
   if (!message) return NextResponse.json({ error: "Could not send the message (is this candidate yours?)." }, { status: 400 });
+  // Best-effort: email the candidate (they have no in-app inbox yet).
+  notifyCandidateOfMessage(employerId, applicantId, message).catch(() => {});
   return NextResponse.json({ message });
 }
