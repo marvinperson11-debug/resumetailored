@@ -128,3 +128,39 @@ create policy interviews_owner on public.interviews
   for all
   using (employer_id = auth.uid()::text)
   with check (employer_id = auth.uid()::text);
+
+-- ── Career Site Builder (feature #11) ────────────────────────────────────────
+-- One public careers page per employer, served at /careers/:slug. Same
+-- service-role + employer_id-scoped pattern as the tables above.
+create table if not exists public.career_sites (
+  id bigint generated always as identity primary key,
+  employer_id text not null,
+  company_name text,
+  slug text unique,
+  logo_url text,
+  banner_url text,
+  brand_color text default '#F59E0B',
+  about_text text,
+  mission_text text,
+  values_text text,
+  show_about boolean default true,
+  show_benefits boolean default true,
+  show_team boolean default false,
+  show_testimonials boolean default false,
+  show_contact boolean default true,
+  benefits jsonb default '[]'::jsonb,
+  testimonials jsonb default '[]'::jsonb,
+  contact_email text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists career_sites_employer_idx on public.career_sites (employer_id);
+create index if not exists career_sites_slug_idx on public.career_sites (slug);
+
+alter table public.career_sites enable row level security;
+
+drop policy if exists career_sites_owner on public.career_sites;
+create policy career_sites_owner on public.career_sites
+  for all
+  using (employer_id = auth.uid()::text)
+  with check (employer_id = auth.uid()::text);
