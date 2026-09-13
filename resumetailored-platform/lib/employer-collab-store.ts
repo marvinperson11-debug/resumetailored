@@ -422,6 +422,19 @@ export async function listInterviews(
   }
 }
 
+export async function getInterview(employerId: string, id: number): Promise<Interview | null> {
+  const c = db();
+  if (!c || !employerId || !Number.isFinite(id)) return null;
+  try {
+    const { data } = await c.from("interviews").select(INT_COLS).eq("employer_id", employerId).eq("id", id).maybeSingle();
+    if (!data) return null;
+    const info = await applicantInfoMap(c, [data.applicant_id as number]);
+    return mapInterview(data, info.get(data.applicant_id as number));
+  } catch {
+    return null;
+  }
+}
+
 export interface InterviewInput {
   applicantId: number;
   jobId?: number | null;

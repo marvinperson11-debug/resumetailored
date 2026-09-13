@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireEmployerId } from "@/lib/employer-auth";
-import { updateInterview, deleteInterview, type InterviewInput } from "@/lib/employer-collab-store";
+import { updateInterview, deleteInterview, getInterview, type InterviewInput } from "@/lib/employer-collab-store";
+import { notifyCandidateOfInterview } from "@/lib/employer-notify";
 import { isInterviewMode, isInterviewStatus, type InterviewStatus } from "@/lib/employer-ai";
 
 export const runtime = "nodejs";
@@ -36,6 +37,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const ok = await updateInterview(employerId, id, patch);
   if (!ok) return NextResponse.json({ error: "Could not update the interview." }, { status: 400 });
+  // Best-effort: email the candidate when the interview is cancelled or moved.
+  if (patch.status === "cancelled" || patch.scheduledAt !== undefined) {
+    getInterview(employerId, id)
+      .then((iv) => {
+        if (iv) return notifyCandidateOfInterview(employerId, iv, patch.status === "cancelled" ? "cancelled" : "rescheduled");
+      })
+      .catch(() => {});
+  }
   return NextResponse.json({ ok: true });
 }
 
