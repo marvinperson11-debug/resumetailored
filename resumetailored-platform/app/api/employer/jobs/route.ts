@@ -22,8 +22,7 @@ export async function GET() {
 export async function POST(req: Request) {
   const employerId = await requireEmployerId();
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  // DEBUG (temporary): surface auth + payload + the real error to logs and the client.
-  console.error("[jobs POST] userId:", employerId, "payload:", JSON.stringify(b));
+  console.log("[jobs POST] userId:", employerId, "title:", String(b.title || "").slice(0, 80));
   if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const title = String(b.title || "").trim();
   const description = String(b.description || "").trim();
@@ -47,10 +46,10 @@ export async function POST(req: Request) {
       status: isJobStatus(b.status) ? b.status : "draft",
       publicListed: !!b.publicListed,
     });
-    if (!job) return NextResponse.json({ error: "Could not create the job (createJob returned null)." }, { status: 500 });
+    if (!job) return NextResponse.json({ error: "Could not create the job. Please try again." }, { status: 500 });
     return NextResponse.json({ job });
   } catch (error) {
     console.error("[jobs POST] error:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : String(error) }, { status: 500 });
+    return NextResponse.json({ error: "Could not create the job. Please try again." }, { status: 500 });
   }
 }

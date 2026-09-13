@@ -194,23 +194,25 @@ function jobRow(v: JobInput): Record<string, unknown> {
 
 export async function createJob(employerId: string, v: JobInput): Promise<JobPosting | null> {
   const c = db();
-  if (!c) {
-    // DB client not configured (missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).
-    throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
-  }
+  // Permanent guard: a missing Supabase config is a deploy problem, not a
+  // per-request failure — surface it loudly rather than looking like "no data".
+  if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
   if (!employerId || !v.title?.trim() || !v.description?.trim()) return null;
-  // DEBUG: surface the real Supabase error instead of swallowing it to null.
-  const { data, error } = await c
-    .from("job_postings")
-    .insert({ employer_id: employerId, ...jobRow(v) })
-    .select(JOB_COLS)
-    .single();
-  if (error) {
-    console.error("[createJob] supabase error:", JSON.stringify(error), error);
-    throw new Error(`${error.message || "insert failed"}${error.details ? ` | details: ${error.details}` : ""}${error.hint ? ` | hint: ${error.hint}` : ""}${error.code ? ` | code: ${error.code}` : ""}`);
+  try {
+    const { data, error } = await c
+      .from("job_postings")
+      .insert({ employer_id: employerId, ...jobRow(v) })
+      .select(JOB_COLS)
+      .single();
+    if (error || !data) {
+      console.error("[createJob]", error);
+      return null;
+    }
+    return mapJob(data, 0);
+  } catch (e) {
+    console.error("[createJob]", e);
+    return null;
   }
-  if (!data) throw new Error("job insert returned no row");
-  return mapJob(data, 0);
 }
 
 export async function updateJob(employerId: string, id: number, v: JobInput): Promise<boolean> {

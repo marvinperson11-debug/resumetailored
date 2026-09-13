@@ -260,23 +260,25 @@ export async function listShortlists(employerId: string): Promise<Shortlist[]> {
 
 export async function createShortlist(employerId: string, name: string, description = ""): Promise<Shortlist | null> {
   const c = db();
-  if (!c) {
-    // DB client not configured (missing NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY).
-    throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
-  }
+  // Permanent guard: a missing Supabase config is a deploy problem, not a
+  // per-request failure — surface it loudly rather than looking like "no data".
+  if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
   if (!employerId || !name.trim()) return null;
-  // DEBUG: surface the real Supabase error instead of swallowing it to null.
-  const { data, error } = await c
-    .from("shortlists")
-    .insert({ employer_id: employerId, name: name.trim().slice(0, 120), description: description.trim().slice(0, 1000) || null })
-    .select("id, name, description, created_at, updated_at")
-    .single();
-  if (error) {
-    console.error("[createShortlist] supabase error:", JSON.stringify(error), error);
-    throw new Error(`${error.message || "insert failed"}${error.details ? ` | details: ${error.details}` : ""}${error.hint ? ` | hint: ${error.hint}` : ""}${error.code ? ` | code: ${error.code}` : ""}`);
+  try {
+    const { data, error } = await c
+      .from("shortlists")
+      .insert({ employer_id: employerId, name: name.trim().slice(0, 120), description: description.trim().slice(0, 1000) || null })
+      .select("id, name, description, created_at, updated_at")
+      .single();
+    if (error || !data) {
+      console.error("[createShortlist]", error);
+      return null;
+    }
+    return mapShortlist(data, 0);
+  } catch (e) {
+    console.error("[createShortlist]", e);
+    return null;
   }
-  if (!data) throw new Error("shortlist insert returned no row");
-  return mapShortlist(data, 0);
 }
 
 export async function updateShortlist(
