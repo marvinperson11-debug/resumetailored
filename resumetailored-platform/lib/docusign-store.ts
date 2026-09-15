@@ -1,10 +1,11 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { DocusignEnvelope, DocusignConnection, DocusignStatus, OfferTerms, DocType } from "./employer-ai";
-import { isDocusignStatus, isDocusignTerminal, isDocType } from "./employer-ai";
+import type { DocusignEnvelope, DocusignConnection, DocusignStatus, OfferTerms, DocType, EsignTemplate, EditableDocType } from "./employer-ai";
+import { isDocusignStatus, isDocusignTerminal, isDocType, EDITABLE_DOC_TYPES } from "./employer-ai";
 import {
   encryptToken,
   decryptToken,
   refreshAccessToken,
+  DEFAULT_TEMPLATES,
   type DocusignAccountInfo,
 } from "./docusign";
 
@@ -422,4 +423,123 @@ export async function downloadEsignDocumentBase64(employerId: string, path: stri
     console.error("[downloadEsignDocumentBase64]", e);
     return null;
   }
+}
+
+// ── Editable document templates (esign_templates) ─────────────────────────────
+function mapTemplate(r: Record<string, unknown>): EsignTemplate {
+  const docType = (r.doc_type as EditableDocType) || "offer";
+  const def = DEFAULT_TEMPLATES[docType];
+  return {
+    docType,
+    name: (r.name as string) || def?.name || docType,
+    subject: (r.subject as string) ?? def?.subject ?? "",
+    bodyHtml: (r.body_html as string) ?? def?.body ?? "",
+    updatedAt: (r.updated_at as string) || "",
+  };
+}
+
+/** A default (unsaved) template row for a type, from the built-in defaults. */
+function defaultTemplate(docType: EditableDocType): EsignTemplate {
+  const def = DEFAULT_TEMPLATES[docType];
+  return { docType, name: def.name, subject: def.subject, bodyHtml: def.body, updatedAt: "" };
+}
+
+/**
+ * List an employer's editable templates for every editable doc type, seeding
+ * any missing row with the built-in default (so "first use" persists a copy the
+ * employer can then edit or reset). Falls back to in-memory defaults if the DB
+ * is unavailable.
+ */
+export async function listTemplates(employerId: string): Promise<EsignTemplate[]> {
+  const c = db();
+  if (!c || !employerId) return EDITABLE_DOC_TYPES.map(defaultTemplate);
+  try {
+    const { data } = await c
+      .from("esign_templates")
+      .select("doc_type, name, subject, body_html, updated_at")
+      .eq("employer_id", employerId);
+    const byType = new Map<string, Record<string, unknown>>();
+    for (const r of data || []) byType.set(r.doc_type as string, r);
+
+    const missing = EDITABLE_DOC_TYPES.filter((t) => !byType.has(t));
+    if (missing.length) {
+      const rows = missing.map((t) => ({
+        employer_id: employerId,
+        doc_type: t,
+        name: DEFAULT_TEMPLATES[t].name,
+        subject: DEFAULT_TEMPLATES[t].subject,
+        body_html: DEFAULT_TEMPLATES[t].body,
+        updated_at: new Date().toISOString(),
+      }));
+      const { data: seeded } = await c
+        .from("esign_templates")
+        .upsert(rows, { onConflict: "employer_id,doc_type" })
+        .select("doc_type, name, subject, body_html, updated_at");
+      for (const r of seeded || []) byType.set(r.doc_type as string, r);
+    }
+    return EDITABLE_DOC_TYPES.map((t) => (byType.has(t) ? mapTemplate(byType.get(t)!) : defaultTemplate(t)));
+  } catch (e) {
+    console.error("[listTemplates]", e);
+    return EDITABLE_DOC_TYPES.map(defaultTemplate);
+  }
+}
+
+/** The template used to render a send. Saved row if present, else the built-in
+ *  default (no write). */
+export async function getTemplateForSend(employerId: string, docType: EditableDocType): Promise<EsignTemplate> {
+  const c = db();
+  if (!c || !employerId) return defaultTemplate(docType);
+  try {
+    const { data } = await c
+      .from("esign_templates")
+      .select("doc_type, name, subject, body_html, updated_at")
+      .eq("employer_id", employerId)
+      .eq("doc_type", docType)
+      .maybeSingle();
+    return data ? mapTemplate(data) : defaultTemplate(docType);
+  } catch (e) {
+    console.error("[getTemplateForSend]", e);
+    return defaultTemplate(docType);
+  }
+}
+
+/** Save (upsert) an employer's template for one type. */
+export async function saveTemplate(
+  employerId: string,
+  docType: EditableDocType,
+  v: { name?: string; subject: string; bodyHtml: string }
+): Promise<EsignTemplate | null> {
+  const c = db();
+  if (!c || !employerId) return null;
+  try {
+    const { data, error } = await c
+      .from("esign_templates")
+      .upsert(
+        {
+          employer_id: employerId,
+          doc_type: docType,
+          name: v.name || DEFAULT_TEMPLATES[docType].name,
+          subject: v.subject,
+          body_html: v.bodyHtml,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "employer_id,doc_type" }
+      )
+      .select("doc_type, name, subject, body_html, updated_at")
+      .single();
+    if (error || !data) {
+      console.error("[saveTemplate]", error);
+      return null;
+    }
+    return mapTemplate(data);
+  } catch (e) {
+    console.error("[saveTemplate]", e);
+    return null;
+  }
+}
+
+/** Reset a type back to its built-in default (writes the default values). */
+export async function resetTemplate(employerId: string, docType: EditableDocType): Promise<EsignTemplate | null> {
+  const def = DEFAULT_TEMPLATES[docType];
+  return saveTemplate(employerId, docType, { name: def.name, subject: def.subject, bodyHtml: def.body });
 }

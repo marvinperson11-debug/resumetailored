@@ -6,17 +6,20 @@ import { CheckCircle2, FileSignature } from "lucide-react";
 import { Modal, Field, Input, Area, Picker, Btn } from "./ui";
 import { DOC_TYPES, DOC_TYPE_LABELS, type DocType } from "@/lib/employer-ai";
 
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
 /**
  * "Send document" modal — sends any document type for e-signature via DocuSign.
- * offer/agreement/nda are generated server-side from the fields below; custom is
- * an employer-uploaded PDF (uploaded first, then referenced by path). Reused from
- * the candidate drawer and the shortlist views.
+ * offer/agreement/nda render from the employer's editable template; writeup is
+ * the employee write-up form (signer entered manually, not an applicant); custom
+ * is an employer-uploaded PDF. Reused from the candidate drawer, shortlist rows,
+ * and the E-Signatures page (standalone / write-up).
  */
 export function SendDocumentModal({
   applicantId,
   shortlistMemberId,
-  candidateName,
-  candidateEmail,
+  candidateName = "",
+  candidateEmail = "",
   defaultPosition,
   defaultDocType = "offer",
   onClose,
@@ -24,14 +27,16 @@ export function SendDocumentModal({
 }: {
   applicantId?: number;
   shortlistMemberId?: number;
-  candidateName: string;
-  candidateEmail: string;
+  candidateName?: string;
+  candidateEmail?: string;
   defaultPosition?: string;
   defaultDocType?: DocType;
   onClose: () => void;
   onSent?: () => void;
 }) {
   const [docType, setDocType] = useState<DocType>(defaultDocType);
+  const [signerName, setSignerName] = useState(candidateName);
+  const [signerEmail, setSignerEmail] = useState(candidateEmail);
   const [position, setPosition] = useState(defaultPosition || "");
   const [salary, setSalary] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -40,13 +45,25 @@ export function SendDocumentModal({
   const [documentName, setDocumentName] = useState("");
   const [documentPath, setDocumentPath] = useState("");
   const [uploading, setUploading] = useState(false);
+  // Writeup fields
+  const [wIncidentDate, setWIncidentDate] = useState("");
+  const [wPolicy, setWPolicy] = useState("");
+  const [wDescription, setWDescription] = useState("");
+  const [wCorrective, setWCorrective] = useState("");
+  const [wNotes, setWNotes] = useState("");
+
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notConnected, setNotConnected] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const missingEmail = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(candidateEmail || "");
   const showOfferFields = docType === "offer" || docType === "agreement";
+  const isWriteup = docType === "writeup";
+  // Bound to an applicant only for the hiring doc types; writeup + no-applicant
+  // opens editable signer inputs.
+  const manualSigner = !applicantId || isWriteup;
+  const effectiveEmail = manualSigner ? signerEmail : candidateEmail;
+  const missingEmail = !EMAIL_RE.test((effectiveEmail || "").trim());
 
   async function onPdf(file: File | undefined) {
     if (!file) return;
@@ -57,9 +74,8 @@ export function SendDocumentModal({
       fd.append("file", file);
       const res = await fetch("/api/employer/docusign/upload", { method: "POST", body: fd });
       const d = (await res.json().catch(() => ({}))) as { path?: string; name?: string; error?: string };
-      if (!res.ok || !d.path) {
-        setError(d.error || "Upload failed.");
-      } else {
+      if (!res.ok || !d.path) setError(d.error || "Upload failed.");
+      else {
         setDocumentPath(d.path);
         if (!documentName) setDocumentName(d.name || "Document");
       }
@@ -73,19 +89,12 @@ export function SendDocumentModal({
   async function submit() {
     setError(null);
     setNotConnected(false);
-    if (showOfferFields && !position.trim()) {
-      setError("Enter the position title.");
-      return;
-    }
+    if (manualSigner && !signerName.trim()) return setError(isWriteup ? "Enter the employee's name." : "Enter the recipient's name.");
+    if (showOfferFields && !position.trim()) return setError("Enter the position title.");
+    if (isWriteup && !wDescription.trim()) return setError("Describe the incident.");
     if (docType === "custom") {
-      if (!documentName.trim()) {
-        setError("Give the document a name.");
-        return;
-      }
-      if (!documentPath) {
-        setError("Upload a PDF to send.");
-        return;
-      }
+      if (!documentName.trim()) return setError("Give the document a name.");
+      if (!documentPath) return setError("Upload a PDF to send.");
     }
     setSending(true);
     try {
@@ -96,15 +105,26 @@ export function SendDocumentModal({
           docType,
           documentName: documentName.trim(),
           documentPath: documentPath || undefined,
-          applicantId,
+          applicantId: isWriteup ? undefined : applicantId,
           shortlistMemberId,
-          candidateName,
-          candidateEmail,
+          candidateName: manualSigner ? signerName.trim() : candidateName,
+          candidateEmail: manualSigner ? signerEmail.trim() : candidateEmail,
           position: position.trim(),
           salary: salary.trim(),
           startDate: startDate.trim(),
           extraTerms: extraTerms.trim(),
           message: message.trim(),
+          writeup: isWriteup
+            ? {
+                employeeName: signerName.trim(),
+                employeeEmail: signerEmail.trim(),
+                dateOfIncident: wIncidentDate.trim(),
+                policyViolated: wPolicy.trim(),
+                description: wDescription.trim(),
+                correctiveAction: wCorrective.trim(),
+                additionalNotes: wNotes.trim(),
+              }
+            : undefined,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string; code?: string };
@@ -129,8 +149,8 @@ export function SendDocumentModal({
           <CheckCircle2 className="mb-3 h-12 w-12 text-teal" />
           <h3 className="font-serif text-lg text-cream">Sent for signature</h3>
           <p className="mt-1.5 max-w-sm text-sm text-white/60">
-            {candidateName || "The recipient"} will receive an email from DocuSign to review and sign. Track its status
-            on the E-Signatures page.
+            {signerName || candidateName || "The recipient"} will receive an email from DocuSign to review and sign.
+            Track its status on the E-Signatures page.
           </p>
           <div className="mt-5 flex gap-2">
             <Link
@@ -144,17 +164,6 @@ export function SendDocumentModal({
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm">
-            <div className="text-cream">{candidateName || "Recipient"}</div>
-            <div className={missingEmail ? "text-red-300" : "text-white/55"}>{candidateEmail || "No email on file"}</div>
-          </div>
-
-          {missingEmail && (
-            <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
-              This recipient has no email address, so DocuSign can&apos;t reach them. Add their email first.
-            </p>
-          )}
-
           <Field label="Document type">
             <Picker value={docType} onChange={(e) => setDocType(e.target.value as DocType)}>
               {DOC_TYPES.map((t) => (
@@ -164,6 +173,29 @@ export function SendDocumentModal({
               ))}
             </Picker>
           </Field>
+
+          {/* Signer: read-only card when bound to an applicant, editable otherwise. */}
+          {manualSigner ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label={isWriteup ? "Employee name" : "Recipient name"}>
+                <Input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Jordan Lee" />
+              </Field>
+              <Field label={isWriteup ? "Employee email" : "Recipient email"}>
+                <Input value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} placeholder="jordan@email.com" />
+              </Field>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm">
+              <div className="text-cream">{candidateName || "Recipient"}</div>
+              <div className={missingEmail ? "text-red-300" : "text-white/55"}>{candidateEmail || "No email on file"}</div>
+            </div>
+          )}
+
+          {missingEmail && (
+            <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+              A valid signer email is required so DocuSign can reach them.
+            </p>
+          )}
 
           {docType === "custom" ? (
             <>
@@ -183,9 +215,29 @@ export function SendDocumentModal({
                 </p>
               </Field>
             </>
+          ) : isWriteup ? (
+            <>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <Field label="Date of incident">
+                  <Input value={wIncidentDate} onChange={(e) => setWIncidentDate(e.target.value)} placeholder="March 3, 2026" />
+                </Field>
+                <Field label="Policy violated">
+                  <Input value={wPolicy} onChange={(e) => setWPolicy(e.target.value)} placeholder="Attendance policy §4.2" />
+                </Field>
+              </div>
+              <Field label="Description of incident">
+                <Area rows={3} value={wDescription} onChange={(e) => setWDescription(e.target.value)} placeholder="What happened…" />
+              </Field>
+              <Field label="Corrective action">
+                <Area rows={2} value={wCorrective} onChange={(e) => setWCorrective(e.target.value)} placeholder="Expected change + timeline…" />
+              </Field>
+              <Field label="Additional notes" hint="Optional">
+                <Area rows={2} value={wNotes} onChange={(e) => setWNotes(e.target.value)} />
+              </Field>
+            </>
           ) : docType === "nda" ? (
             <p className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-xs text-white/55">
-              A standard mutual non-disclosure agreement will be generated and sent for signature.
+              Your NDA template will be generated and sent for signature. Edit its wording on the Templates tab.
             </p>
           ) : (
             <>
@@ -200,8 +252,8 @@ export function SendDocumentModal({
                   <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} placeholder="March 3, 2026" />
                 </Field>
               </div>
-              <Field label="Additional terms" hint="Bonus, equity, benefits, conditions — appears in the document.">
-                <Area rows={3} value={extraTerms} onChange={(e) => setExtraTerms(e.target.value)} placeholder="e.g. 15% annual bonus target, 20 days PTO, remote-friendly." />
+              <Field label="Additional terms" hint="Bonus, equity, benefits, conditions — appended to the document.">
+                <Area rows={2} value={extraTerms} onChange={(e) => setExtraTerms(e.target.value)} placeholder="e.g. 15% annual bonus target, 20 days PTO." />
               </Field>
             </>
           )}
