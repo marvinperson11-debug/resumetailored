@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Star, Plus, Trash2, Pencil, UserPlus, X, Mail, MessageSquare, Search } from "lucide-react";
+import { Star, Plus, Trash2, Pencil, UserPlus, X, Mail, MessageSquare, Search, FileSignature } from "lucide-react";
 import Link from "next/link";
 import { type Shortlist, type Applicant, type ApplicantStatus } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Badge, EmptyState, Modal, Drawer, ScoreChip } from "../components/ui";
+import { SendOfferModal } from "../components/send-offer-modal";
 
 const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   new: "sky",
@@ -169,6 +170,7 @@ function ShortlistForm({ existing, onClose, onSaved }: { existing?: Shortlist; o
 // ── Shortlist detail drawer ─────────────────────────────────────────────────
 function ShortlistDrawer({ shortlist, onClose, onChanged }: { shortlist: Shortlist; onClose: () => void; onChanged: () => void }) {
   const [members, setMembers] = useState<Applicant[]>([]);
+  const [offerFor, setOfferFor] = useState<Applicant | null>(null);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
 
@@ -229,6 +231,9 @@ function ShortlistDrawer({ shortlist, onClose, onChanged }: { shortlist: Shortli
                 <Link href={`/employer/messages?applicantId=${m.id}`} className="text-white/45 hover:text-cream" aria-label="Message" title="Message">
                   <MessageSquare className="h-4 w-4" />
                 </Link>
+                <button type="button" onClick={() => setOfferFor(m)} className="text-white/45 hover:text-violet" aria-label="Send offer" title="Send offer">
+                  <FileSignature className="h-4 w-4" />
+                </button>
                 <a href={`mailto:${m.email}`} className="text-white/45 hover:text-cream" aria-label="Email" title="Email">
                   <Mail className="h-4 w-4" />
                 </a>
@@ -250,6 +255,15 @@ function ShortlistDrawer({ shortlist, onClose, onChanged }: { shortlist: Shortli
             await load();
             onChanged();
           }}
+        />
+      )}
+      {offerFor && (
+        <SendOfferModal
+          applicantId={offerFor.id}
+          candidateName={offerFor.name}
+          candidateEmail={offerFor.email}
+          defaultPosition={offerFor.jobTitle}
+          onClose={() => setOfferFor(null)}
         />
       )}
     </Drawer>

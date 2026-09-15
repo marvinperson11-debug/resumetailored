@@ -177,6 +177,58 @@ export interface Interview {
   createdAt: string;
 }
 
+// ── Phase 1B: DocuSign offer letters (feature #10) ───────────────────────────
+export const DOCUSIGN_STATUSES = [
+  "sent",
+  "delivered",
+  "viewed",
+  "signed",
+  "declined",
+  "completed",
+  "voided",
+] as const;
+export type DocusignStatus = (typeof DOCUSIGN_STATUSES)[number];
+export const isDocusignStatus = (v: unknown): v is DocusignStatus =>
+  (DOCUSIGN_STATUSES as readonly string[]).includes(String(v));
+
+/** Terminal statuses — no further polling / webhook change is expected. */
+export const DOCUSIGN_TERMINAL_STATUSES: readonly DocusignStatus[] = ["completed", "declined", "voided"];
+export const isDocusignTerminal = (s: DocusignStatus): boolean =>
+  (DOCUSIGN_TERMINAL_STATUSES as readonly string[]).includes(s);
+
+/** The structured offer terms the offer letter is generated from. */
+export interface OfferTerms {
+  position: string;
+  salary: string;
+  startDate: string;
+  /** Free-text extra terms (bonus, equity, benefits, conditions). */
+  extraTerms?: string;
+}
+
+export interface DocusignEnvelope {
+  id: number;
+  applicantId: number | null;
+  shortlistMemberId: number | null;
+  envelopeId: string;
+  subject: string;
+  message: string;
+  status: DocusignStatus;
+  offer: OfferTerms;
+  candidateName: string;
+  candidateEmail: string;
+  sentBy: string;
+  sentAt: string;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+/** The DocuSign account an employer has connected (for the status page). */
+export interface DocusignConnection {
+  connected: boolean;
+  accountName: string;
+  accountEmail: string;
+}
+
 // ── Career Site Builder (feature #11) ─────────────────────────────────────────
 export interface Testimonial {
   quote: string;
