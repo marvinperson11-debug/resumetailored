@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { FileSignature, RefreshCw, CheckCircle2, Link2, Download, AlertTriangle } from "lucide-react";
 import { Panel, PageHeader, Btn, Badge, EmptyState } from "../components/ui";
-import type { DocusignConnection, DocusignEnvelope, DocusignStatus } from "@/lib/employer-ai";
+import type { DocusignConnection, DocusignEnvelope, DocusignStatus, DocType } from "@/lib/employer-ai";
+import { DOC_TYPE_LABELS } from "@/lib/employer-ai";
 
 interface Usage {
   used: number;
@@ -16,6 +17,13 @@ interface StatusResponse {
   connection: DocusignConnection;
   usage: Usage;
 }
+
+const DOC_TYPE_TONE: Record<DocType, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
+  offer: "teal",
+  agreement: "violet",
+  nda: "gold",
+  custom: "sky",
+};
 
 const STATUS_TONE: Record<DocusignStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   sent: "sky",
@@ -103,8 +111,8 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
   return (
     <div>
       <PageHeader
-        title="Offer Letters"
-        subtitle="Send offer letters for e-signature with DocuSign and track their status."
+        title="E-Signatures"
+        subtitle="Send offer letters, agreements, NDAs, or any document for e-signature with DocuSign and track their status."
         action={
           <Btn variant="ghost" onClick={refresh} loading={refreshing}>
             <RefreshCw className="h-4 w-4" /> Refresh
@@ -198,16 +206,17 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
       ) : envelopes.length === 0 ? (
         <EmptyState
           icon={FileSignature}
-          title="No offers sent yet"
-          body="Send an offer letter from a candidate's profile or a shortlist. It'll appear here with its live signing status."
+          title="No documents sent yet"
+          body="Send an offer letter, agreement, NDA, or custom document from a candidate's profile or a shortlist. It'll appear here with its live signing status."
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border-gold">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
-                <th className="px-4 py-3 font-semibold">Candidate</th>
-                <th className="px-4 py-3 font-semibold">Position</th>
+                <th className="px-4 py-3 font-semibold">Recipient</th>
+                <th className="px-4 py-3 font-semibold">Type</th>
+                <th className="px-4 py-3 font-semibold">Document</th>
                 <th className="px-4 py-3 font-semibold">Sent</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold text-right">Certificate</th>
@@ -220,7 +229,10 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
                     <div className="font-medium text-cream">{e.candidateName || "—"}</div>
                     <div className="text-xs text-white/45">{e.candidateEmail}</div>
                   </td>
-                  <td className="px-4 py-3 text-white/75">{e.offer.position || "—"}</td>
+                  <td className="px-4 py-3">
+                    <Badge tone={DOC_TYPE_TONE[e.docType]}>{DOC_TYPE_LABELS[e.docType]}</Badge>
+                  </td>
+                  <td className="px-4 py-3 text-white/75">{e.docType === "custom" ? e.documentName || "Document" : e.offer.position || "—"}</td>
                   <td className="px-4 py-3 text-white/55">{fmtDate(e.sentAt)}</td>
                   <td className="px-4 py-3">
                     <Badge tone={STATUS_TONE[e.status]}>{e.status}</Badge>

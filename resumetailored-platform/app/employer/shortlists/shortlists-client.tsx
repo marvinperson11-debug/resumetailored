@@ -5,13 +5,14 @@ import { Star, Plus, Trash2, Pencil, UserPlus, X, Mail, MessageSquare, Search, F
 import Link from "next/link";
 import { type Shortlist, type Applicant, type ApplicantStatus } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Badge, EmptyState, Modal, Drawer, ScoreChip } from "../components/ui";
-import { SendOfferModal } from "../components/send-offer-modal";
+import { SendDocumentModal } from "../components/send-document-modal";
 
 const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   new: "sky",
   reviewed: "neutral",
   shortlisted: "violet",
   interviewed: "gold",
+  "offer extended": "gold",
   hired: "teal",
   rejected: "red",
 };
@@ -258,7 +259,7 @@ function ShortlistDrawer({ shortlist, onClose, onChanged }: { shortlist: Shortli
         />
       )}
       {offerFor && (
-        <SendOfferModal
+        <SendDocumentModal
           applicantId={offerFor.id}
           candidateName={offerFor.name}
           candidateEmail={offerFor.email}

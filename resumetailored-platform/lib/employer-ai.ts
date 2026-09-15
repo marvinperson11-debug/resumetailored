@@ -37,7 +37,7 @@ export type RemoteType = (typeof REMOTE_TYPES)[number];
 export const EMPLOYMENT_TYPES = ["full-time", "part-time", "contract", "internship"] as const;
 export type EmploymentType = (typeof EMPLOYMENT_TYPES)[number];
 
-export const APPLICANT_STATUSES = ["new", "reviewed", "shortlisted", "interviewed", "hired", "rejected"] as const;
+export const APPLICANT_STATUSES = ["new", "reviewed", "shortlisted", "interviewed", "offer extended", "hired", "rejected"] as const;
 export type ApplicantStatus = (typeof APPLICANT_STATUSES)[number];
 export const isApplicantStatus = (v: unknown): v is ApplicantStatus =>
   (APPLICANT_STATUSES as readonly string[]).includes(String(v));
@@ -205,8 +205,23 @@ export interface OfferTerms {
   extraTerms?: string;
 }
 
+/** The kind of document sent for signature. `offer`/`agreement`/`nda` are
+ *  generated server-side from the offer terms; `custom` is an uploaded PDF. */
+export const DOC_TYPES = ["offer", "agreement", "nda", "custom"] as const;
+export type DocType = (typeof DOC_TYPES)[number];
+export const isDocType = (v: unknown): v is DocType => (DOC_TYPES as readonly string[]).includes(String(v));
+
+export const DOC_TYPE_LABELS: Record<DocType, string> = {
+  offer: "Offer letter",
+  agreement: "Employment agreement",
+  nda: "NDA",
+  custom: "Custom document",
+};
+
 export interface DocusignEnvelope {
   id: number;
+  docType: DocType;
+  documentName: string;
   applicantId: number | null;
   shortlistMemberId: number | null;
   envelopeId: string;

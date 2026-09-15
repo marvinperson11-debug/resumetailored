@@ -22,7 +22,7 @@ export const EMPLOYER_NAV: EmployerNavItem[] = [
   { label: "Messages", href: "/employer/messages", icon: MessageSquare },
   { label: "Shortlists", href: "/employer/shortlists", icon: Star },
   { label: "Scheduler", href: "/employer/scheduler", icon: CalendarClock },
-  { label: "Offer Letters", href: "/employer/docusign", icon: FileSignature },
+  { label: "E-Signatures", href: "/employer/docusign", icon: FileSignature },
   { label: "Career Site", href: "/employer/career-site", icon: Globe },
   { label: "Team", href: "/employer/team", icon: UserCog },
   { label: "Settings", href: "/employer/settings", icon: Settings },

@@ -32,14 +32,28 @@ function db(): SupabaseClient | null {
 // ── Ownership helpers ─────────────────────────────────────────────────────────
 /** True when the applicant's job belongs to this employer. */
 async function ownsApplicant(c: SupabaseClient, employerId: string, applicantId: number): Promise<boolean> {
-  const { data } = await c.from("applicants").select("job_id").eq("id", applicantId).maybeSingle();
-  if (!data) return false;
-  const { data: job } = await c
+  // The applicants table has no employer_id — ownership is applicant → job →
+  // employer (job_id is NOT NULL, so a manually-added applicant always has one).
+  const { data, error } = await c.from("applicants").select("job_id").eq("id", applicantId).maybeSingle();
+  if (error) {
+    console.error("[ownsApplicant] applicant lookup failed", { applicantId, error });
+    return false;
+  }
+  if (!data) {
+    console.error("[ownsApplicant] no applicant row", { applicantId });
+    return false;
+  }
+  const { data: job, error: jobErr } = await c
     .from("job_postings")
     .select("id")
     .eq("id", data.job_id as number)
     .eq("employer_id", employerId)
     .maybeSingle();
+  if (jobErr) {
+    console.error("[ownsApplicant] job lookup failed", { applicantId, jobId: data.job_id, employerId, error: jobErr });
+    return false;
+  }
+  if (!job) console.error("[ownsApplicant] applicant's job not owned by employer", { applicantId, jobId: data.job_id, employerId });
   return !!job;
 }
 
@@ -470,18 +484,33 @@ function interviewRow(v: Partial<InterviewInput> & { status?: InterviewStatus })
 
 export async function createInterview(employerId: string, v: InterviewInput): Promise<Interview | null> {
   const c = db();
-  if (!c || !employerId || !v.title?.trim() || !v.scheduledAt || !Number.isFinite(v.applicantId)) return null;
+  if (!c || !employerId || !v.title?.trim() || !v.scheduledAt || !Number.isFinite(v.applicantId)) {
+    console.error("[createInterview] missing prerequisites", {
+      hasClient: !!c,
+      employerId,
+      hasTitle: !!v.title?.trim(),
+      scheduledAt: v.scheduledAt,
+      applicantId: v.applicantId,
+    });
+    return null;
+  }
   try {
-    if (!(await ownsApplicant(c, employerId, v.applicantId))) return null;
+    if (!(await ownsApplicant(c, employerId, v.applicantId))) return null; // ownsApplicant logs why
     const { data, error } = await c
       .from("interviews")
       .insert({ employer_id: employerId, applicant_id: v.applicantId, mode: v.mode || "video", duration_min: v.durationMin ?? 30, ...interviewRow(v) })
       .select(INT_COLS)
       .single();
-    if (error || !data) return null;
+    if (error || !data) {
+      // Surface the real cause (e.g. a missing column on a live `interviews`
+      // table) instead of the generic client message. Healed by migration 0016.
+      console.error("[createInterview] insert failed", { employerId, applicantId: v.applicantId, error });
+      return null;
+    }
     const info = await applicantInfoMap(c, [v.applicantId]);
     return mapInterview(data, info.get(v.applicantId));
-  } catch {
+  } catch (e) {
+    console.error("[createInterview] threw", { employerId, applicantId: v.applicantId, error: e });
     return null;
   }
 }

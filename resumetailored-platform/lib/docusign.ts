@@ -28,7 +28,7 @@
  */
 import crypto from "crypto";
 import { appUrl } from "./subdomain";
-import type { OfferTerms } from "./employer-ai";
+import type { OfferTerms, DocType } from "./employer-ai";
 import { escapeHtml } from "./email";
 
 const DEFAULT_AUTH_SERVER = "https://account-d.docusign.com";
@@ -371,6 +371,159 @@ export function renderOfferLetterHtml(args: {
   </div>
 </body>
 </html>`;
+}
+
+// ── Generalized documents (E-Signatures) ──────────────────────────────────────
+/** Shared page chrome + signature block for a generated document. `title` is the
+ *  heading; `bodyHtml` is the pre-escaped inner content. Anchor markers `/sig1/`
+ *  and `/date1/` are white-on-white so DocuSign can locate them invisibly. */
+function renderDocShell(args: { title: string; companyName: string; candidateName: string; bodyHtml: string; message?: string; senderName?: string }): string {
+  const { title, companyName, candidateName, bodyHtml, message, senderName } = args;
+  const company = escapeHtml(companyName || "the company");
+  const name = escapeHtml(candidateName || "Signer");
+  const signer = escapeHtml(senderName || companyName || "The Team");
+  const note = (message || "").trim();
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  return `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8" />
+<style>
+  body { font-family: Georgia, "Times New Roman", serif; color:#111; line-height:1.6; margin:0; padding:48px 56px; font-size:14px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .muted { color:#666; font-size:12px; }
+  .section { margin:20px 0; }
+  .anchor { color:#ffffff; }
+  .sigline { margin-top:8px; border-top:1px solid #333; width:280px; padding-top:4px; color:#555; font-size:12px; }
+  p { margin:10px 0; }
+</style>
+</head>
+<body>
+  <h1>${company}</h1>
+  <div class="muted">${escapeHtml(title)} &middot; ${escapeHtml(today)}</div>
+  <div class="section">${bodyHtml}</div>
+  ${note ? `<div class="section">${escapeHtml(note)}</div>` : ""}
+  <div class="section">Sincerely,<br />${signer}<br />${company}</div>
+  <div class="section" style="margin-top:40px">
+    <div style="font-weight:600;margin-bottom:24px">Accepted and agreed:</div>
+    <span class="anchor">/sig1/</span>
+    <div class="sigline">Signature (${name})</div>
+    <div style="margin-top:24px"><span class="anchor">/date1/</span><div class="sigline">Date</div></div>
+  </div>
+</body>
+</html>`;
+}
+
+/** Employment agreement body, generated from the offer terms. */
+export function renderAgreementHtml(args: { offer: OfferTerms; candidateName: string; companyName: string; message?: string; senderName?: string }): string {
+  const { offer, candidateName, companyName } = args;
+  const position = escapeHtml(offer.position || "the role");
+  const salary = escapeHtml(offer.salary || "");
+  const startDate = escapeHtml(offer.startDate || "");
+  const extra = (offer.extraTerms || "").trim();
+  const company = escapeHtml(companyName || "the Company");
+  const body = `
+    <p>This Employment Agreement is entered into between ${company} (the "Company") and ${escapeHtml(
+      candidateName || "the Employee"
+    )} (the "Employee").</p>
+    <p><strong>1. Position.</strong> The Employee is employed as <strong>${position}</strong> and agrees to perform the duties reasonably associated with that role.</p>
+    ${startDate ? `<p><strong>2. Start date.</strong> Employment begins on ${startDate}.</p>` : ""}
+    ${salary ? `<p><strong>3. Compensation.</strong> The Employee will be paid ${salary}, subject to standard withholdings and the Company's payroll schedule.</p>` : ""}
+    ${extra ? `<p><strong>4. Additional terms.</strong> ${escapeHtml(extra)}</p>` : ""}
+    <p><strong>At-will employment.</strong> Unless otherwise required by law or a separate written agreement, employment is at-will and may be terminated by either party at any time.</p>
+    <p>By signing below, the Employee accepts the terms of this Agreement.</p>`;
+  return renderDocShell({ title: "Employment Agreement", companyName, candidateName, bodyHtml: body, message: args.message, senderName: args.senderName });
+}
+
+/** Standard mutual-confidentiality NDA body. */
+export function renderNdaHtml(args: { candidateName: string; companyName: string; message?: string; senderName?: string }): string {
+  const { candidateName, companyName } = args;
+  const company = escapeHtml(companyName || "the Company");
+  const body = `
+    <p>This Non-Disclosure Agreement ("Agreement") is entered into between ${company} (the "Company") and ${escapeHtml(
+      candidateName || "the Recipient"
+    )} (the "Recipient").</p>
+    <p><strong>1. Confidential Information.</strong> "Confidential Information" means any non-public information disclosed by the Company, whether oral, written, or electronic, including business plans, customer data, product information, and trade secrets.</p>
+    <p><strong>2. Obligations.</strong> The Recipient agrees to keep Confidential Information strictly confidential, to use it solely for the purpose of the parties' discussions or engagement, and not to disclose it to any third party without the Company's prior written consent.</p>
+    <p><strong>3. Term.</strong> These obligations survive for three (3) years from the date of disclosure.</p>
+    <p><strong>4. Return of materials.</strong> Upon request, the Recipient will return or destroy all materials containing Confidential Information.</p>
+    <p>By signing below, the Recipient agrees to the terms of this Agreement.</p>`;
+  return renderDocShell({ title: "Non-Disclosure Agreement", companyName, candidateName, bodyHtml: body, message: args.message, senderName: args.senderName });
+}
+
+/** Anchor-based signer tabs (generated HTML docs carry `/sig1/` + `/date1/`). */
+function anchorSignerTabs(): Record<string, unknown> {
+  return {
+    signHereTabs: [{ anchorString: "/sig1/", anchorUnits: "pixels", anchorXOffset: "5", anchorYOffset: "-6" }],
+    dateSignedTabs: [{ anchorString: "/date1/", anchorUnits: "pixels", anchorXOffset: "5", anchorYOffset: "-6" }],
+  };
+}
+
+/** Fixed-position signer tabs for an uploaded PDF (no anchor text in it). Placed
+ *  near the bottom-left of page 1 — a sensible default auto-placement. */
+function fixedSignerTabs(): Record<string, unknown> {
+  return {
+    signHereTabs: [{ documentId: "1", pageNumber: "1", xPosition: "72", yPosition: "650" }],
+    dateSignedTabs: [{ documentId: "1", pageNumber: "1", xPosition: "330", yPosition: "650" }],
+  };
+}
+
+/**
+ * Build an envelopeDefinition for ANY document type. `offer`/`agreement`/`nda`
+ * are generated server-side as HTML (with invisible anchor markers) from the
+ * offer terms; `custom` sends the employer-uploaded PDF (base64) with
+ * auto-placed fixed-position signature + date tabs. Pure e-signature — no
+ * payments.
+ */
+export function buildDocumentDefinition(args: {
+  docType: DocType;
+  offer: OfferTerms;
+  candidateName: string;
+  candidateEmail: string;
+  companyName: string;
+  subject: string;
+  message: string;
+  senderName?: string;
+  customPdfBase64?: string;
+  documentName?: string;
+}): Record<string, unknown> {
+  const { docType, offer, candidateName, candidateEmail, companyName, subject, message, senderName, customPdfBase64, documentName } = args;
+
+  let documentEntry: Record<string, unknown>;
+  let tabs: Record<string, unknown>;
+
+  if (docType === "custom") {
+    documentEntry = {
+      documentId: "1",
+      name: (documentName || "Document").slice(0, 100),
+      fileExtension: "pdf",
+      documentBase64: customPdfBase64 || "",
+    };
+    tabs = fixedSignerTabs();
+  } else {
+    const html =
+      docType === "agreement"
+        ? renderAgreementHtml({ offer, candidateName, companyName, message, senderName })
+        : docType === "nda"
+          ? renderNdaHtml({ candidateName, companyName, message, senderName })
+          : renderOfferLetterHtml({ offer, candidateName, companyName, message, senderName });
+    documentEntry = {
+      documentId: "1",
+      name: docType === "agreement" ? "Employment Agreement" : docType === "nda" ? "NDA" : "Offer Letter",
+      fileExtension: "html",
+      documentBase64: Buffer.from(html, "utf8").toString("base64"),
+    };
+    tabs = anchorSignerTabs();
+  }
+
+  return {
+    emailSubject: subject || `Document to sign from ${companyName || "us"}`,
+    emailBlurb: message || "",
+    status: "sent",
+    documents: [documentEntry],
+    recipients: {
+      signers: [{ email: candidateEmail, name: candidateName, recipientId: "1", routingOrder: "1", tabs }],
+    },
+  };
 }
 
 /** Create (and send) an envelope. Returns the DocuSign envelope id + status. */
