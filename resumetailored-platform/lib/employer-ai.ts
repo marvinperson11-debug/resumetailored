@@ -207,7 +207,7 @@ export interface OfferTerms {
 
 /** The kind of document sent for signature. `offer`/`agreement`/`nda` are
  *  generated server-side from the offer terms; `custom` is an uploaded PDF. */
-export const DOC_TYPES = ["offer", "agreement", "nda", "custom"] as const;
+export const DOC_TYPES = ["offer", "agreement", "nda", "writeup", "custom"] as const;
 export type DocType = (typeof DOC_TYPES)[number];
 export const isDocType = (v: unknown): v is DocType => (DOC_TYPES as readonly string[]).includes(String(v));
 
@@ -215,8 +215,35 @@ export const DOC_TYPE_LABELS: Record<DocType, string> = {
   offer: "Offer letter",
   agreement: "Employment agreement",
   nda: "NDA",
+  writeup: "Employee write-up",
   custom: "Custom document",
 };
+
+/** The doc types whose letter text is employer-editable (esign_templates). */
+export const EDITABLE_DOC_TYPES = ["offer", "agreement", "nda"] as const;
+export type EditableDocType = (typeof EDITABLE_DOC_TYPES)[number];
+export const isEditableDocType = (v: unknown): v is EditableDocType =>
+  (EDITABLE_DOC_TYPES as readonly string[]).includes(String(v));
+
+/** An employer's editable template for one generated document type. */
+export interface EsignTemplate {
+  docType: EditableDocType;
+  name: string;
+  subject: string;
+  bodyHtml: string;
+  updatedAt: string;
+}
+
+/** Fields for the employee write-up / disciplinary form. */
+export interface WriteupFields {
+  employeeName: string;
+  employeeEmail: string;
+  dateOfIncident: string;
+  policyViolated: string;
+  description: string;
+  correctiveAction: string;
+  additionalNotes: string;
+}
 
 export interface DocusignEnvelope {
   id: number;

@@ -28,7 +28,7 @@
  */
 import crypto from "crypto";
 import { appUrl } from "./subdomain";
-import type { OfferTerms, DocType } from "./employer-ai";
+import type { OfferTerms, EditableDocType, WriteupFields } from "./employer-ai";
 import { escapeHtml } from "./email";
 
 const DEFAULT_AUTH_SERVER = "https://account-d.docusign.com";
@@ -223,94 +223,96 @@ export interface CreateEnvelopeResult {
   status: string;
 }
 
-/**
- * Build the envelopeDefinition for an offer letter: a clean HTML document (which
- * DocuSign renders to PDF) with a SignHere + DateSigned tab anchored to markers
- * embedded in the document. Pure e-signature — no payments, no money movement.
- */
-export function buildOfferLetterDefinition(args: {
+// ── Document templates + rendering (E-Signatures) ─────────────────────────────
+// Generated document types (offer/agreement/nda) render from an employer-editable
+// template: HTML text with merge-field tokens. {{signature_block}} marks where the
+// SignHere + DateSigned anchors go. Values are HTML-escaped on substitution; the
+// template body itself is authored by the employer (their own account, their own
+// signer) and passed through. Custom PDFs bypass templates entirely.
+
+/** The merge tokens available in the template editor. */
+export const MERGE_FIELDS: { token: string; label: string }[] = [
+  { token: "{{candidate_name}}", label: "Candidate name" },
+  { token: "{{position}}", label: "Position" },
+  { token: "{{salary}}", label: "Salary" },
+  { token: "{{start_date}}", label: "Start date" },
+  { token: "{{company_name}}", label: "Company name" },
+  { token: "{{message}}", label: "Personal message" },
+  { token: "{{signature_block}}", label: "Signature block (required)" },
+];
+
+export const SIGNATURE_BLOCK_TOKEN = "{{signature_block}}";
+
+/** Values that fill the merge tokens for a generated document. */
+export interface MergeValues {
+  candidate_name: string;
+  position: string;
+  salary: string;
+  start_date: string;
+  company_name: string;
+  message: string;
+}
+
+export function offerToMergeValues(args: {
   offer: OfferTerms;
   candidateName: string;
-  candidateEmail: string;
   companyName: string;
-  subject: string;
   message: string;
-  senderName?: string;
-}): Record<string, unknown> {
-  const { offer, candidateName, candidateEmail, companyName, subject, message, senderName } = args;
-  const html = renderOfferLetterHtml({ offer, candidateName, companyName, message, senderName });
-  const documentBase64 = Buffer.from(html, "utf8").toString("base64");
-
+}): MergeValues {
   return {
-    emailSubject: subject || `Your offer from ${companyName || "us"}`,
-    emailBlurb: message || "",
-    status: "sent", // send immediately
-    documents: [
-      {
-        documentId: "1",
-        name: "Offer Letter",
-        fileExtension: "html",
-        documentBase64,
-      },
-    ],
-    recipients: {
-      signers: [
-        {
-          email: candidateEmail,
-          name: candidateName,
-          recipientId: "1",
-          routingOrder: "1",
-          tabs: {
-            signHereTabs: [
-              {
-                anchorString: "/sig1/",
-                anchorUnits: "pixels",
-                anchorXOffset: "5",
-                anchorYOffset: "-6",
-              },
-            ],
-            dateSignedTabs: [
-              {
-                anchorString: "/date1/",
-                anchorUnits: "pixels",
-                anchorXOffset: "5",
-                anchorYOffset: "-6",
-              },
-            ],
-          },
-        },
-      ],
-    },
+    candidate_name: args.candidateName || "",
+    position: args.offer.position || "",
+    salary: args.offer.salary || "",
+    start_date: args.offer.startDate || "",
+    company_name: args.companyName || "",
+    message: args.message || "",
+    // extraTerms isn't a first-class token; append it to the message so nothing
+    // the employer typed is silently dropped when a template omits it.
+    ...(args.offer.extraTerms?.trim()
+      ? { message: [args.message, args.offer.extraTerms].filter(Boolean).join("\n\n") }
+      : {}),
   };
 }
 
-/** The offer-letter document body. Anchor markers `/sig1/` and `/date1/` are
- *  rendered in white so they're invisible but still locatable by DocuSign. */
-export function renderOfferLetterHtml(args: {
-  offer: OfferTerms;
-  candidateName: string;
-  companyName: string;
-  message?: string;
-  senderName?: string;
-}): string {
-  const { offer, candidateName, companyName, message, senderName } = args;
-  const company = escapeHtml(companyName || "the company");
-  const name = escapeHtml(candidateName || "Candidate");
-  const position = escapeHtml(offer.position || "");
-  const salary = escapeHtml(offer.salary || "");
-  const startDate = escapeHtml(offer.startDate || "");
-  const extra = (offer.extraTerms || "").trim();
-  const note = (message || "").trim();
-  const signer = escapeHtml(senderName || companyName || "The Hiring Team");
+const MERGE_KEYS: (keyof MergeValues)[] = [
+  "candidate_name",
+  "position",
+  "salary",
+  "start_date",
+  "company_name",
+  "message",
+];
+
+/** The signature area (invisible `/sig1/` + `/date1/` anchors DocuSign locates). */
+export function renderSignatureBlock(signerName: string): string {
+  const name = escapeHtml(signerName || "Signer");
+  return `<div class="section" style="margin-top:40px">
+    <div style="font-weight:600;margin-bottom:24px">Accepted and agreed:</div>
+    <span class="anchor">/sig1/</span>
+    <div class="sigline">Signature (${name})</div>
+    <div style="margin-top:24px"><span class="anchor">/date1/</span><div class="sigline">Date</div></div>
+  </div>`;
+}
+
+/** Substitute merge tokens into subject text (raw values — subject is plain text). */
+export function renderTemplateSubject(subject: string, values: MergeValues): string {
+  let out = subject || "";
+  for (const k of MERGE_KEYS) out = out.split(`{{${k}}}`).join(values[k] || "");
+  return out.trim();
+}
+
+/** Substitute merge tokens into the body (values HTML-escaped), expand the
+ *  signature block, and return the inner HTML (unwrapped). */
+export function renderTemplateBody(bodyHtml: string, values: MergeValues): string {
+  let out = bodyHtml || "";
+  for (const k of MERGE_KEYS) out = out.split(`{{${k}}}`).join(escapeHtml(values[k] || ""));
+  out = out.split(SIGNATURE_BLOCK_TOKEN).join(renderSignatureBlock(values.candidate_name));
+  return out;
+}
+
+/** Wrap inner document HTML in the print-styled page shell (fonts + anchor CSS). */
+export function wrapDocumentHtml(innerHtml: string): string {
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-
-  const row = (label: string, value: string) =>
-    value
-      ? `<tr><td style="padding:6px 16px 6px 0;color:#555;font-weight:600;white-space:nowrap;vertical-align:top">${escapeHtml(
-          label
-        )}</td><td style="padding:6px 0;color:#111">${value}</td></tr>`
-      : "";
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -318,138 +320,132 @@ export function renderOfferLetterHtml(args: {
 <style>
   body { font-family: Georgia, "Times New Roman", serif; color:#111; line-height:1.6; margin:0; padding:48px 56px; font-size:14px; }
   h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:16px; margin:20px 0 6px; }
   .muted { color:#666; font-size:12px; }
-  .section { margin:22px 0; }
+  .section { margin:18px 0; }
   table.terms { border-collapse:collapse; margin:8px 0; }
   .terms-box { border:1px solid #e5e5e5; border-radius:8px; padding:12px 18px; background:#fafafa; }
-  /* Anchor markers: white on white so they're invisible on the page but still
-     present in the PDF text layer for DocuSign's anchorString matching. */
+  /* Anchor markers: white on white — invisible on the page, present in the PDF
+     text layer for DocuSign's anchorString matching. */
   .anchor { color:#ffffff; }
   .sigline { margin-top:8px; border-top:1px solid #333; width:280px; padding-top:4px; color:#555; font-size:12px; }
-  .extra { white-space:pre-wrap; }
-</style>
-</head>
-<body>
-  <h1>${company}</h1>
-  <div class="muted">Offer of Employment &middot; ${escapeHtml(today)}</div>
-
-  <div class="section">Dear ${name},</div>
-
-  <div class="section">
-    We are delighted to offer you the position of <strong>${position || "the role"}</strong> at ${company}.
-    We were impressed by your background and believe you will be a valuable addition to our team. The key
-    terms of your offer are set out below.
-  </div>
-
-  <div class="section terms-box">
-    <table class="terms">
-      ${row("Position", position)}
-      ${row("Annual salary", salary)}
-      ${row("Start date", startDate)}
-    </table>
-    ${extra ? `<div style="margin-top:10px"><div style="color:#555;font-weight:600;margin-bottom:4px">Additional terms</div><div class="extra">${escapeHtml(extra)}</div></div>` : ""}
-  </div>
-
-  ${note ? `<div class="section">${escapeHtml(note)}</div>` : ""}
-
-  <div class="section">
-    This offer is contingent upon the terms above and any standard pre-employment conditions. To accept,
-    please sign and date below. We look forward to welcoming you aboard.
-  </div>
-
-  <div class="section">
-    Sincerely,<br />
-    ${signer}<br />
-    ${company}
-  </div>
-
-  <div class="section" style="margin-top:40px">
-    <div style="font-weight:600;margin-bottom:24px">Accepted and agreed:</div>
-    <span class="anchor">/sig1/</span>
-    <div class="sigline">Signature (${name})</div>
-    <div style="margin-top:24px"><span class="anchor">/date1/</span><div class="sigline">Date</div></div>
-  </div>
-</body>
-</html>`;
-}
-
-// ── Generalized documents (E-Signatures) ──────────────────────────────────────
-/** Shared page chrome + signature block for a generated document. `title` is the
- *  heading; `bodyHtml` is the pre-escaped inner content. Anchor markers `/sig1/`
- *  and `/date1/` are white-on-white so DocuSign can locate them invisibly. */
-function renderDocShell(args: { title: string; companyName: string; candidateName: string; bodyHtml: string; message?: string; senderName?: string }): string {
-  const { title, companyName, candidateName, bodyHtml, message, senderName } = args;
-  const company = escapeHtml(companyName || "the company");
-  const name = escapeHtml(candidateName || "Signer");
-  const signer = escapeHtml(senderName || companyName || "The Team");
-  const note = (message || "").trim();
-  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  return `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8" />
-<style>
-  body { font-family: Georgia, "Times New Roman", serif; color:#111; line-height:1.6; margin:0; padding:48px 56px; font-size:14px; }
-  h1 { font-size:22px; margin:0 0 4px; }
-  .muted { color:#666; font-size:12px; }
-  .section { margin:20px 0; }
-  .anchor { color:#ffffff; }
-  .sigline { margin-top:8px; border-top:1px solid #333; width:280px; padding-top:4px; color:#555; font-size:12px; }
+  .extra, .field-val { white-space:pre-wrap; }
   p { margin:10px 0; }
 </style>
 </head>
 <body>
-  <h1>${company}</h1>
-  <div class="muted">${escapeHtml(title)} &middot; ${escapeHtml(today)}</div>
-  <div class="section">${bodyHtml}</div>
-  ${note ? `<div class="section">${escapeHtml(note)}</div>` : ""}
-  <div class="section">Sincerely,<br />${signer}<br />${company}</div>
-  <div class="section" style="margin-top:40px">
-    <div style="font-weight:600;margin-bottom:24px">Accepted and agreed:</div>
-    <span class="anchor">/sig1/</span>
-    <div class="sigline">Signature (${name})</div>
-    <div style="margin-top:24px"><span class="anchor">/date1/</span><div class="sigline">Date</div></div>
-  </div>
+  <div class="muted" style="text-align:right">${escapeHtml(today)}</div>
+  ${innerHtml}
 </body>
 </html>`;
 }
 
-/** Employment agreement body, generated from the offer terms. */
-export function renderAgreementHtml(args: { offer: OfferTerms; candidateName: string; companyName: string; message?: string; senderName?: string }): string {
-  const { offer, candidateName, companyName } = args;
-  const position = escapeHtml(offer.position || "the role");
-  const salary = escapeHtml(offer.salary || "");
-  const startDate = escapeHtml(offer.startDate || "");
-  const extra = (offer.extraTerms || "").trim();
-  const company = escapeHtml(companyName || "the Company");
-  const body = `
-    <p>This Employment Agreement is entered into between ${company} (the "Company") and ${escapeHtml(
-      candidateName || "the Employee"
-    )} (the "Employee").</p>
-    <p><strong>1. Position.</strong> The Employee is employed as <strong>${position}</strong> and agrees to perform the duties reasonably associated with that role.</p>
-    ${startDate ? `<p><strong>2. Start date.</strong> Employment begins on ${startDate}.</p>` : ""}
-    ${salary ? `<p><strong>3. Compensation.</strong> The Employee will be paid ${salary}, subject to standard withholdings and the Company's payroll schedule.</p>` : ""}
-    ${extra ? `<p><strong>4. Additional terms.</strong> ${escapeHtml(extra)}</p>` : ""}
-    <p><strong>At-will employment.</strong> Unless otherwise required by law or a separate written agreement, employment is at-will and may be terminated by either party at any time.</p>
-    <p>By signing below, the Employee accepts the terms of this Agreement.</p>`;
-  return renderDocShell({ title: "Employment Agreement", companyName, candidateName, bodyHtml: body, message: args.message, senderName: args.senderName });
+/** Full generated-document HTML from an editable template + values. */
+export function applyTemplate(bodyHtml: string, values: MergeValues): string {
+  return wrapDocumentHtml(renderTemplateBody(bodyHtml, values));
 }
 
-/** Standard mutual-confidentiality NDA body. */
-export function renderNdaHtml(args: { candidateName: string; companyName: string; message?: string; senderName?: string }): string {
-  const { candidateName, companyName } = args;
+// ── Default templates (seeded per employer on first use) ──────────────────────
+export const DEFAULT_TEMPLATES: Record<EditableDocType, { name: string; subject: string; body: string }> = {
+  offer: {
+    name: "Offer letter",
+    subject: "Your offer from {{company_name}}",
+    body: `<h1>{{company_name}}</h1>
+<div class="muted">Offer of Employment</div>
+
+<p class="section">Dear {{candidate_name}},</p>
+
+<p class="section">We are delighted to offer you the position of <strong>{{position}}</strong> at {{company_name}}. We were impressed by your background and believe you will be a valuable addition to our team. The key terms of your offer are set out below.</p>
+
+<div class="section terms-box">
+  <table class="terms">
+    <tr><td style="padding:6px 16px 6px 0;color:#555;font-weight:600">Position</td><td style="padding:6px 0">{{position}}</td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#555;font-weight:600">Annual salary</td><td style="padding:6px 0">{{salary}}</td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#555;font-weight:600">Start date</td><td style="padding:6px 0">{{start_date}}</td></tr>
+  </table>
+</div>
+
+<p class="section field-val">{{message}}</p>
+
+<p class="section">This offer is contingent upon the terms above and any standard pre-employment conditions. To accept, please sign and date below. We look forward to welcoming you aboard.</p>
+
+<p class="section">Sincerely,<br />{{company_name}}</p>
+
+{{signature_block}}`,
+  },
+  agreement: {
+    name: "Employment agreement",
+    subject: "Employment agreement from {{company_name}}",
+    body: `<h1>{{company_name}}</h1>
+<div class="muted">Employment Agreement</div>
+
+<p class="section">This Employment Agreement is entered into between {{company_name}} (the "Company") and {{candidate_name}} (the "Employee").</p>
+
+<p><strong>1. Position.</strong> The Employee is employed as <strong>{{position}}</strong> and agrees to perform the duties reasonably associated with that role.</p>
+<p><strong>2. Start date.</strong> Employment begins on {{start_date}}.</p>
+<p><strong>3. Compensation.</strong> The Employee will be paid {{salary}}, subject to standard withholdings and the Company's payroll schedule.</p>
+<p><strong>4. At-will employment.</strong> Unless otherwise required by law or a separate written agreement, employment is at-will and may be terminated by either party at any time.</p>
+
+<p class="section field-val">{{message}}</p>
+
+<p class="section">By signing below, the Employee accepts the terms of this Agreement.</p>
+
+{{signature_block}}`,
+  },
+  nda: {
+    name: "NDA",
+    subject: "Non-disclosure agreement from {{company_name}}",
+    body: `<h1>{{company_name}}</h1>
+<div class="muted">Non-Disclosure Agreement</div>
+
+<p class="section">This Non-Disclosure Agreement ("Agreement") is entered into between {{company_name}} (the "Company") and {{candidate_name}} (the "Recipient").</p>
+
+<p><strong>1. Confidential Information.</strong> "Confidential Information" means any non-public information disclosed by the Company, whether oral, written, or electronic, including business plans, customer data, product information, and trade secrets.</p>
+<p><strong>2. Obligations.</strong> The Recipient agrees to keep Confidential Information strictly confidential, to use it solely for the purpose of the parties' discussions or engagement, and not to disclose it to any third party without the Company's prior written consent.</p>
+<p><strong>3. Term.</strong> These obligations survive for three (3) years from the date of disclosure.</p>
+<p><strong>4. Return of materials.</strong> Upon request, the Recipient will return or destroy all materials containing Confidential Information.</p>
+
+<p class="section field-val">{{message}}</p>
+
+<p class="section">By signing below, the Recipient agrees to the terms of this Agreement.</p>
+
+{{signature_block}}`,
+  },
+};
+
+/** Employee write-up / disciplinary form — a built-in (non-editable) generated
+ *  document. Signer is the employee (entered manually). */
+export function renderWriteupHtml(args: { fields: WriteupFields; companyName: string; message?: string }): string {
+  const { fields, companyName, message } = args;
   const company = escapeHtml(companyName || "the Company");
-  const body = `
-    <p>This Non-Disclosure Agreement ("Agreement") is entered into between ${company} (the "Company") and ${escapeHtml(
-      candidateName || "the Recipient"
-    )} (the "Recipient").</p>
-    <p><strong>1. Confidential Information.</strong> "Confidential Information" means any non-public information disclosed by the Company, whether oral, written, or electronic, including business plans, customer data, product information, and trade secrets.</p>
-    <p><strong>2. Obligations.</strong> The Recipient agrees to keep Confidential Information strictly confidential, to use it solely for the purpose of the parties' discussions or engagement, and not to disclose it to any third party without the Company's prior written consent.</p>
-    <p><strong>3. Term.</strong> These obligations survive for three (3) years from the date of disclosure.</p>
-    <p><strong>4. Return of materials.</strong> Upon request, the Recipient will return or destroy all materials containing Confidential Information.</p>
-    <p>By signing below, the Recipient agrees to the terms of this Agreement.</p>`;
-  return renderDocShell({ title: "Non-Disclosure Agreement", companyName, candidateName, bodyHtml: body, message: args.message, senderName: args.senderName });
+  const f = (v: string) => `<div class="field-val">${escapeHtml(v || "—")}</div>`;
+  const inner = `<h1>${company}</h1>
+<div class="muted">Employee Write-Up / Corrective Action Form</div>
+
+<div class="section">
+  <table class="terms">
+    <tr><td style="padding:6px 16px 6px 0;color:#555;font-weight:600">Employee</td><td style="padding:6px 0">${escapeHtml(fields.employeeName || "—")}</td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#555;font-weight:600">Date of incident</td><td style="padding:6px 0">${escapeHtml(fields.dateOfIncident || "—")}</td></tr>
+    <tr><td style="padding:6px 16px 6px 0;color:#555;font-weight:600">Policy violated</td><td style="padding:6px 0">${escapeHtml(fields.policyViolated || "—")}</td></tr>
+  </table>
+</div>
+
+<h2>Description of incident</h2>
+${f(fields.description)}
+
+<h2>Corrective action</h2>
+${f(fields.correctiveAction)}
+
+${fields.additionalNotes?.trim() ? `<h2>Additional notes</h2>${f(fields.additionalNotes)}` : ""}
+${message?.trim() ? `<div class="section field-val">${escapeHtml(message)}</div>` : ""}
+
+<p class="section">By signing below, the employee acknowledges receipt of this write-up. A signature indicates receipt, not necessarily agreement.</p>
+
+${renderSignatureBlock(fields.employeeName)}`;
+  return wrapDocumentHtml(inner);
 }
 
+// ── Envelope assembly ─────────────────────────────────────────────────────────
 /** Anchor-based signer tabs (generated HTML docs carry `/sig1/` + `/date1/`). */
 function anchorSignerTabs(): Record<string, unknown> {
   return {
@@ -468,60 +464,31 @@ function fixedSignerTabs(): Record<string, unknown> {
 }
 
 /**
- * Build an envelopeDefinition for ANY document type. `offer`/`agreement`/`nda`
- * are generated server-side as HTML (with invisible anchor markers) from the
- * offer terms; `custom` sends the employer-uploaded PDF (base64) with
- * auto-placed fixed-position signature + date tabs. Pure e-signature — no
- * payments.
+ * Assemble an envelopeDefinition for one document + one signer. Pass
+ * `documentHtml` for a generated document (anchor tabs) or `customPdfBase64` for
+ * an uploaded PDF (fixed-position tabs). Pure e-signature — no payments.
  */
-export function buildDocumentDefinition(args: {
-  docType: DocType;
-  offer: OfferTerms;
-  candidateName: string;
-  candidateEmail: string;
-  companyName: string;
+export function buildEnvelope(args: {
+  documentHtml?: string;
+  customPdfBase64?: string;
+  documentName: string;
   subject: string;
   message: string;
-  senderName?: string;
-  customPdfBase64?: string;
-  documentName?: string;
+  signerName: string;
+  signerEmail: string;
 }): Record<string, unknown> {
-  const { docType, offer, candidateName, candidateEmail, companyName, subject, message, senderName, customPdfBase64, documentName } = args;
-
-  let documentEntry: Record<string, unknown>;
-  let tabs: Record<string, unknown>;
-
-  if (docType === "custom") {
-    documentEntry = {
-      documentId: "1",
-      name: (documentName || "Document").slice(0, 100),
-      fileExtension: "pdf",
-      documentBase64: customPdfBase64 || "",
-    };
-    tabs = fixedSignerTabs();
-  } else {
-    const html =
-      docType === "agreement"
-        ? renderAgreementHtml({ offer, candidateName, companyName, message, senderName })
-        : docType === "nda"
-          ? renderNdaHtml({ candidateName, companyName, message, senderName })
-          : renderOfferLetterHtml({ offer, candidateName, companyName, message, senderName });
-    documentEntry = {
-      documentId: "1",
-      name: docType === "agreement" ? "Employment Agreement" : docType === "nda" ? "NDA" : "Offer Letter",
-      fileExtension: "html",
-      documentBase64: Buffer.from(html, "utf8").toString("base64"),
-    };
-    tabs = anchorSignerTabs();
-  }
-
+  const { documentHtml, customPdfBase64, documentName, subject, message, signerName, signerEmail } = args;
+  const isPdf = !documentHtml && !!customPdfBase64;
+  const documentEntry = isPdf
+    ? { documentId: "1", name: (documentName || "Document").slice(0, 100), fileExtension: "pdf", documentBase64: customPdfBase64 }
+    : { documentId: "1", name: (documentName || "Document").slice(0, 100), fileExtension: "html", documentBase64: Buffer.from(documentHtml || "", "utf8").toString("base64") };
   return {
-    emailSubject: subject || `Document to sign from ${companyName || "us"}`,
+    emailSubject: (subject || "Document to sign").slice(0, 100),
     emailBlurb: message || "",
     status: "sent",
     documents: [documentEntry],
     recipients: {
-      signers: [{ email: candidateEmail, name: candidateName, recipientId: "1", routingOrder: "1", tabs }],
+      signers: [{ email: signerEmail, name: signerName, recipientId: "1", routingOrder: "1", tabs: isPdf ? fixedSignerTabs() : anchorSignerTabs() }],
     },
   };
 }
