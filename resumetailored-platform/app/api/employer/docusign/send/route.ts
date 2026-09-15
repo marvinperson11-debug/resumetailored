@@ -5,22 +5,26 @@ import {
   getValidAccessToken,
   monthlySendCount,
   createEnvelopeRecord,
+  advanceApplicantOnSend,
+  downloadEsignDocumentBase64,
 } from "@/lib/docusign-store";
 import {
   isDocusignConfigured,
-  buildOfferLetterDefinition,
+  buildDocumentDefinition,
   createEnvelope,
   normalizeEnvelopeStatus,
 } from "@/lib/docusign";
 import { checkSendAllowance } from "@/lib/employer-plan";
-import type { DocusignStatus, OfferTerms } from "@/lib/employer-ai";
+import { isDocType, DOC_TYPE_LABELS, type DocusignStatus, type DocType, type OfferTerms } from "@/lib/employer-ai";
 
 export const runtime = "nodejs";
 
 /**
- * Send an offer letter for e-signature. Builds a clean offer-letter document
- * server-side from the offer terms, creates a DocuSign envelope addressed to the
- * candidate, and records it. Enforces the tier's monthly send cap first.
+ * Send a document for e-signature. Supports four document types:
+ *  - offer / agreement / nda → generated server-side from the offer terms
+ *  - custom → an employer-uploaded PDF (referenced by its storage path)
+ * Creates a DocuSign envelope addressed to the candidate and records it.
+ * Enforces the tier's monthly send cap first.
  */
 export async function POST(req: Request) {
   const ctx = await employerContext();
@@ -31,6 +35,9 @@ export async function POST(req: Request) {
   }
 
   const b = (await req.json().catch(() => ({}))) as {
+    docType?: string;
+    documentName?: string;
+    documentPath?: string; // custom: storage path from the upload route
     applicantId?: number;
     shortlistMemberId?: number;
     candidateName?: string;
@@ -43,6 +50,8 @@ export async function POST(req: Request) {
     message?: string;
   };
 
+  const docType: DocType = isDocType(b.docType) ? b.docType : "offer";
+
   // Resolve the candidate: prefer the applicant record, fall back to the body.
   let candidateName = (b.candidateName || "").trim();
   let candidateEmail = (b.candidateEmail || "").trim();
@@ -54,10 +63,10 @@ export async function POST(req: Request) {
     candidateName = candidateName || applicant.name;
     candidateEmail = candidateEmail || applicant.email;
   }
-  candidateName = candidateName || "Candidate";
+  candidateName = candidateName || "Recipient";
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(candidateEmail)) {
     return NextResponse.json(
-      { error: "This candidate has no email on file. Add their email address before sending an offer." },
+      { error: "This candidate has no email on file. Add their email address before sending a document." },
       { status: 400 }
     );
   }
@@ -68,7 +77,18 @@ export async function POST(req: Request) {
     startDate: (b.startDate || "").trim(),
     extraTerms: (b.extraTerms || "").trim(),
   };
-  if (!offer.position) return NextResponse.json({ error: "A position title is required." }, { status: 400 });
+
+  // Type-specific requirements.
+  let customPdfBase64: string | undefined;
+  const documentName = (b.documentName || "").trim();
+  if (docType === "custom") {
+    if (!b.documentPath) return NextResponse.json({ error: "Upload a PDF to send." }, { status: 400 });
+    if (!documentName) return NextResponse.json({ error: "Give the document a name." }, { status: 400 });
+    customPdfBase64 = (await downloadEsignDocumentBase64(ctx.employerId, b.documentPath)) || undefined;
+    if (!customPdfBase64) return NextResponse.json({ error: "Couldn't read the uploaded document. Please re-upload." }, { status: 400 });
+  } else if ((docType === "offer" || docType === "agreement") && !offer.position) {
+    return NextResponse.json({ error: "A position title is required." }, { status: 400 });
+  }
 
   // Enforce the monthly send cap BEFORE creating the envelope.
   const used = await monthlySendCount(ctx.employerId);
@@ -88,10 +108,16 @@ export async function POST(req: Request) {
 
   const profile = await getEmployerProfile(ctx.employerId);
   const companyName = profile?.companyName || "";
-  const subject = (b.subject || "").trim() || `Your offer${companyName ? ` from ${companyName}` : ""}`;
+  const typeLabel = DOC_TYPE_LABELS[docType];
+  const defaultSubject =
+    docType === "custom"
+      ? `${documentName || "A document"} to sign${companyName ? ` from ${companyName}` : ""}`
+      : `${typeLabel}${companyName ? ` from ${companyName}` : ""}`;
+  const subject = (b.subject || "").trim() || defaultSubject;
   const message = (b.message || "").trim();
 
-  const definition = buildOfferLetterDefinition({
+  const definition = buildDocumentDefinition({
+    docType,
     offer,
     candidateName,
     candidateEmail,
@@ -99,6 +125,8 @@ export async function POST(req: Request) {
     subject,
     message,
     senderName: companyName,
+    customPdfBase64,
+    documentName,
   });
 
   const result = await createEnvelope(
@@ -111,6 +139,8 @@ export async function POST(req: Request) {
 
   const status = (normalizeEnvelopeStatus(result.status) || "sent") as DocusignStatus;
   const envelope = await createEnvelopeRecord(ctx.employerId, {
+    docType,
+    documentName: docType === "custom" ? documentName : "",
     applicantId,
     shortlistMemberId: b.shortlistMemberId && Number.isFinite(b.shortlistMemberId) ? b.shortlistMemberId : null,
     envelopeId: result.envelopeId,
@@ -122,6 +152,9 @@ export async function POST(req: Request) {
     candidateEmail,
     sentBy: ctx.userId,
   });
+
+  // Status sync: sending an offer advances the applicant to "offer extended".
+  await advanceApplicantOnSend(applicantId, docType);
 
   return NextResponse.json({ envelope, envelopeId: result.envelopeId, status });
 }

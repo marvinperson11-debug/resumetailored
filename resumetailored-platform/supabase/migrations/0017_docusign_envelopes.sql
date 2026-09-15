@@ -67,6 +67,16 @@ alter table public.docusign_envelopes add column if not exists candidate_name te
 alter table public.docusign_envelopes add column if not exists candidate_email text;
 alter table public.docusign_envelopes add column if not exists shortlist_member_id bigint;
 
+-- E-Signatures generalization: any document type, not just offer letters.
+-- 'offer' = generated offer letter, 'agreement' = employment agreement,
+-- 'nda' = NDA, 'custom' = an employer-uploaded PDF. `document_name` labels a
+-- custom upload. Idempotent add + (re)constrain.
+alter table public.docusign_envelopes add column if not exists doc_type text not null default 'offer';
+alter table public.docusign_envelopes add column if not exists document_name text;
+alter table public.docusign_envelopes drop constraint if exists docusign_envelopes_doc_type_check;
+alter table public.docusign_envelopes add constraint docusign_envelopes_doc_type_check
+  check (doc_type in ('offer', 'agreement', 'nda', 'custom'));
+
 alter table public.docusign_envelopes enable row level security;
 
 drop policy if exists docusign_envelopes_owner on public.docusign_envelopes;
@@ -74,3 +84,27 @@ create policy docusign_envelopes_owner on public.docusign_envelopes
   for all
   using (employer_id = auth.uid()::text)
   with check (employer_id = auth.uid()::text);
+
+-- ── Custom-document uploads (E-Signatures: "Custom" type) ─────────────────────
+-- A PRIVATE bucket holding employer-uploaded PDFs to send for signature. The
+-- server uploads + reads with the service-role key (bypasses RLS); these
+-- policies confine any direct authenticated access to the employer's own
+-- {clerkUserId}/ folder. All idempotent.
+insert into storage.buckets (id, name, public)
+values ('esign-documents', 'esign-documents', false)
+on conflict (id) do nothing;
+
+drop policy if exists esign_documents_insert on storage.objects;
+create policy esign_documents_insert on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'esign-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists esign_documents_select on storage.objects;
+create policy esign_documents_select on storage.objects
+  for select to authenticated
+  using (bucket_id = 'esign-documents' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists esign_documents_delete on storage.objects;
+create policy esign_documents_delete on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'esign-documents' and (storage.foldername(name))[1] = auth.uid()::text);

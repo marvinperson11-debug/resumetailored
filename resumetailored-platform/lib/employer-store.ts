@@ -727,3 +727,33 @@ export async function getDashboard(employerId: string): Promise<{ stats: Employe
     return { stats: empty, activity: [] };
   }
 }
+
+// ── Applicant resume/cover-letter file uploads (Add-applicant form) ────────────
+const APPLICANT_BUCKET = "applicant-resumes";
+
+/** Store an uploaded applicant resume/cover file in the employer's own folder of
+ *  the private applicant-resumes bucket. Best-effort — returns the storage path
+ *  or null; text extraction is what actually populates the form, so a failed
+ *  archive upload never blocks adding the candidate. */
+export async function uploadApplicantFile(
+  employerId: string,
+  file: { data: ArrayBuffer | Uint8Array; contentType: string; filename: string; kind: "resume" | "cover" }
+): Promise<{ path: string } | null> {
+  const c = db();
+  if (!c || !employerId) return null;
+  const safe = (file.filename || "file").toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "file";
+  const path = `${employerId}/${file.kind}/${Date.now()}-${safe}`;
+  try {
+    const { error } = await c.storage
+      .from(APPLICANT_BUCKET)
+      .upload(path, file.data, { contentType: file.contentType || "application/octet-stream", upsert: false });
+    if (error) {
+      console.error("[uploadApplicantFile]", error);
+      return null;
+    }
+    return { path };
+  } catch (e) {
+    console.error("[uploadApplicantFile]", e);
+    return null;
+  }
+}

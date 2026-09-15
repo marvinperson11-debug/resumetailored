@@ -75,6 +75,29 @@ create index if not exists interviews_applicant_idx
 alter table public.job_postings add column if not exists public_listed boolean default false;
 alter table public.shortlists add column if not exists updated_at timestamp with time zone default now();
 
+-- Interview scheduling bug fix: a live `interviews` table created by an earlier
+-- form of this migration could be missing one of the columns the insert/select
+-- touches, which made every schedule attempt fail with a generic "could not
+-- schedule" (the real Postgres error was swallowed). These heal such a table;
+-- all are no-ops on a fresh DB (the columns already exist above).
+alter table public.interviews add column if not exists job_id bigint;
+alter table public.interviews add column if not exists duration_min int not null default 30;
+alter table public.interviews add column if not exists mode text not null default 'video';
+alter table public.interviews add column if not exists location text;
+alter table public.interviews add column if not exists interviewer text;
+alter table public.interviews add column if not exists notes text;
+alter table public.interviews add column if not exists status text not null default 'scheduled';
+alter table public.interviews add column if not exists updated_at timestamptz not null default now();
+
+-- Applicant status vocabulary (feature: DocuSign status sync). Add
+-- 'offer extended' (set when an offer letter is sent) to the existing set —
+-- 'hired' already exists (set when the offer completes). The 0012 CHECK
+-- constraint is auto-named `applicants_status_check`; drop and recreate it so
+-- the new value is allowed. Idempotent: drop-if-exists then create.
+alter table public.applicants drop constraint if exists applicants_status_check;
+alter table public.applicants add constraint applicants_status_check
+  check (status in ('new', 'reviewed', 'shortlisted', 'interviewed', 'offer extended', 'hired', 'rejected'));
+
 -- ── Row level security ───────────────────────────────────────────────────────
 -- The server writes everything with the service-role key (which bypasses RLS),
 -- scoping each query by employer_id itself. These policies are defense-in-depth
@@ -189,3 +212,27 @@ drop policy if exists career_assets_delete on storage.objects;
 create policy career_assets_delete on storage.objects
   for delete to authenticated
   using (bucket_id = 'career-site-assets' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ── Applicant resume/cover-letter uploads (Add-applicant form) ────────────────
+-- A PRIVATE bucket: uploaded resumes/cover letters are candidate PII, never
+-- public. The server uploads + reads with the service-role key (bypasses RLS);
+-- these policies confine any direct authenticated access to the employer's own
+-- {clerkUserId}/ folder. All idempotent.
+insert into storage.buckets (id, name, public)
+values ('applicant-resumes', 'applicant-resumes', false)
+on conflict (id) do nothing;
+
+drop policy if exists applicant_resumes_insert on storage.objects;
+create policy applicant_resumes_insert on storage.objects
+  for insert to authenticated
+  with check (bucket_id = 'applicant-resumes' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists applicant_resumes_select on storage.objects;
+create policy applicant_resumes_select on storage.objects
+  for select to authenticated
+  using (bucket_id = 'applicant-resumes' and (storage.foldername(name))[1] = auth.uid()::text);
+
+drop policy if exists applicant_resumes_delete on storage.objects;
+create policy applicant_resumes_delete on storage.objects
+  for delete to authenticated
+  using (bucket_id = 'applicant-resumes' and (storage.foldername(name))[1] = auth.uid()::text);

@@ -11,13 +11,14 @@ import {
   type MatchAnalysis,
 } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, ScoreChip } from "../components/ui";
-import { SendOfferModal } from "../components/send-offer-modal";
+import { SendDocumentModal } from "../components/send-document-modal";
 
 const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   new: "sky",
   reviewed: "neutral",
   shortlisted: "violet",
   interviewed: "gold",
+  "offer extended": "gold",
   hired: "teal",
   rejected: "red",
 };
@@ -229,6 +230,33 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
           </a>
         </div>
 
+        {/* Pinned action row — always visible at the top, no scrolling needed. */}
+        <section className="space-y-2 rounded-xl border border-border-gold bg-white/[0.03] p-3">
+          <Btn onClick={() => setShowOffer(true)} className="w-full">
+            <FileSignature className="h-4 w-4" /> Send document
+          </Btn>
+          <div className="grid grid-cols-2 gap-2">
+            <Btn onClick={() => updateStatus("shortlisted")}>
+              <Star className="h-4 w-4" /> Shortlist
+            </Btn>
+            <Btn variant="danger" onClick={() => updateStatus("rejected")}>
+              <Ban className="h-4 w-4" /> Reject
+            </Btn>
+            <Link
+              href={`/employer/messages?applicantId=${applicant.id}`}
+              className="flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm font-semibold text-cream hover:bg-white/[0.08]"
+            >
+              <MessageSquare className="h-4 w-4 text-violet" /> Message
+            </Link>
+            <Link
+              href={`/employer/scheduler?applicantId=${applicant.id}`}
+              className="flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm font-semibold text-cream hover:bg-white/[0.08]"
+            >
+              <CalendarClock className="h-4 w-4 text-violet" /> Schedule
+            </Link>
+          </div>
+        </section>
+
         {/* Match analysis */}
         <section>
           <div className="mb-2 flex items-center justify-between">
@@ -322,21 +350,8 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
         </section>
 
         {/* Actions */}
+        {/* Email composer lives with the details below the pinned actions. */}
         <section className="space-y-3 border-t border-border-gold pt-4">
-          <div className="grid grid-cols-2 gap-2">
-            <Link
-              href={`/employer/messages?applicantId=${applicant.id}`}
-              className="flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm font-semibold text-cream hover:bg-white/[0.08]"
-            >
-              <MessageSquare className="h-4 w-4 text-violet" /> Message
-            </Link>
-            <Link
-              href={`/employer/scheduler?applicantId=${applicant.id}`}
-              className="flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm font-semibold text-cream hover:bg-white/[0.08]"
-            >
-              <CalendarClock className="h-4 w-4 text-violet" /> Schedule
-            </Link>
-          </div>
           <Field label="Send an email">
             <div className="flex gap-2">
               <Picker value={msgTemplate} onChange={(e) => setMsgTemplate(e.target.value)}>
@@ -352,21 +367,10 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
               </Btn>
             </div>
           </Field>
-          <Btn onClick={() => setShowOffer(true)} className="w-full">
-            <FileSignature className="h-4 w-4" /> Send offer letter
-          </Btn>
-          <div className="flex gap-2">
-            <Btn onClick={() => updateStatus("shortlisted")} className="flex-1">
-              <Star className="h-4 w-4" /> Shortlist
-            </Btn>
-            <Btn variant="danger" onClick={() => updateStatus("rejected")} className="flex-1">
-              <Ban className="h-4 w-4" /> Reject
-            </Btn>
-          </div>
         </section>
       </div>
       {showOffer && (
-        <SendOfferModal
+        <SendDocumentModal
           applicantId={applicant.id}
           candidateName={applicant.name}
           candidateEmail={applicant.email}
@@ -376,6 +380,112 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
         />
       )}
     </Drawer>
+  );
+}
+
+// ── Reusable resume/cover source field: paste · upload · generate ─────────────
+function DocSourceField({
+  label,
+  kind,
+  value,
+  onChange,
+  name,
+  jobId,
+  rows,
+  hint,
+}: {
+  label: string;
+  kind: "resume" | "cover";
+  value: string;
+  onChange: (v: string) => void;
+  name: string;
+  jobId: number | "";
+  rows: number;
+  hint?: string;
+}) {
+  const [mode, setMode] = useState<"paste" | "upload">("paste");
+  const [busy, setBusy] = useState<false | "upload" | "ai">(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function onFile(file: File | undefined) {
+    if (!file) return;
+    setBusy("upload");
+    setErr(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("kind", kind);
+      const res = await fetch("/api/employer/candidates/extract", { method: "POST", body: fd });
+      const d = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
+      if (!res.ok || !d.text) setErr(d.error || "Could not read that file.");
+      else onChange(d.text);
+    } catch {
+      setErr("Upload failed. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function generate() {
+    setBusy("ai");
+    setErr(null);
+    try {
+      const res = await fetch("/api/employer/candidates/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, name, jobId: jobId || undefined }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
+      if (!res.ok || !d.text) setErr(d.error || "Could not generate a draft.");
+      else onChange(d.text);
+    } catch {
+      setErr("Generation failed. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const seg = (m: "paste" | "upload", text: string) => (
+    <button
+      type="button"
+      onClick={() => setMode(m)}
+      className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+        mode === m ? "bg-violet text-white" : "border border-border-gold bg-white/[0.03] text-muted-cream hover:bg-white/[0.08]"
+      }`}
+    >
+      {text}
+    </button>
+  );
+
+  return (
+    <Field label={label} hint={hint}>
+      <div className="mb-2 flex items-center gap-2">
+        {seg("paste", "Paste text")}
+        {seg("upload", "Upload file")}
+        <button
+          type="button"
+          onClick={generate}
+          disabled={!!busy}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-violet/40 bg-violet/10 px-2.5 py-1 text-xs font-semibold text-violet hover:bg-violet/20 disabled:opacity-50"
+        >
+          <Sparkles className="h-3.5 w-3.5" /> {busy === "ai" ? "Generating…" : "Generate with AI"}
+        </button>
+      </div>
+      {mode === "upload" && (
+        <div className="mb-2">
+          <input
+            type="file"
+            accept=".pdf,.docx,.txt"
+            disabled={busy === "upload"}
+            onChange={(e) => onFile(e.target.files?.[0])}
+            className="block w-full text-xs text-muted-cream file:mr-3 file:rounded-md file:border-0 file:bg-violet/20 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-violet hover:file:bg-violet/30"
+          />
+          <p className="mt-1 text-[11px] text-white/40">{busy === "upload" ? "Reading file…" : "PDF, DOCX, or TXT · max 5MB — extracted text appears below, editable."}</p>
+        </div>
+      )}
+      <Area rows={rows} value={value} onChange={(e) => onChange(e.target.value)} placeholder={kind === "resume" ? "Paste the candidate's resume…" : "Paste the cover letter…"} />
+      {err && <p className="mt-1 text-xs text-red-300">{err}</p>}
+    </Field>
   );
 }
 
@@ -429,12 +539,26 @@ function AddApplicant({ jobs, defaultJobId, onClose, onSaved }: { jobs: JobPosti
             <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jordan@email.com" />
           </Field>
         </div>
-        <Field label="Resume text" hint="Paste the resume so AI scoring can run">
-          <Area rows={5} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder="Paste the candidate's resume…" />
-        </Field>
-        <Field label="Cover letter" hint="Optional">
-          <Area rows={3} value={coverLetter} onChange={(e) => setCoverLetter(e.target.value)} />
-        </Field>
+        <DocSourceField
+          label="Resume"
+          kind="resume"
+          value={resumeText}
+          onChange={setResumeText}
+          name={name}
+          jobId={jobId}
+          rows={5}
+          hint="Paste, upload a file, or generate — so AI scoring can run"
+        />
+        <DocSourceField
+          label="Cover letter"
+          kind="cover"
+          value={coverLetter}
+          onChange={setCoverLetter}
+          name={name}
+          jobId={jobId}
+          rows={3}
+          hint="Optional"
+        />
         {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
         <div className="flex justify-end">
           <Btn onClick={submit} loading={saving}>

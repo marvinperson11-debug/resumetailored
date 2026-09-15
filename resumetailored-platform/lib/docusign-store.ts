@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { DocusignEnvelope, DocusignConnection, DocusignStatus, OfferTerms } from "./employer-ai";
-import { isDocusignStatus, isDocusignTerminal } from "./employer-ai";
+import type { DocusignEnvelope, DocusignConnection, DocusignStatus, OfferTerms, DocType } from "./employer-ai";
+import { isDocusignStatus, isDocusignTerminal, isDocType } from "./employer-ai";
 import {
   encryptToken,
   decryptToken,
@@ -183,7 +183,7 @@ export async function monthlySendCount(employerId: string): Promise<number> {
 
 // ── Envelopes ─────────────────────────────────────────────────────────────────
 const ENV_COLS =
-  "id, applicant_id, shortlist_member_id, envelope_id, subject, message, status, offer, candidate_name, candidate_email, sent_by, sent_at, completed_at, created_at";
+  "id, doc_type, document_name, applicant_id, shortlist_member_id, envelope_id, subject, message, status, offer, candidate_name, candidate_email, sent_by, sent_at, completed_at, created_at";
 
 function mapOffer(v: unknown): OfferTerms {
   const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
@@ -199,6 +199,8 @@ function mapEnvelope(r: Record<string, unknown>): DocusignEnvelope {
   const status = isDocusignStatus(r.status) ? r.status : "sent";
   return {
     id: r.id as number,
+    docType: isDocType(r.doc_type) ? r.doc_type : "offer",
+    documentName: (r.document_name as string) || "",
     applicantId: (r.applicant_id as number) ?? null,
     shortlistMemberId: (r.shortlist_member_id as number) ?? null,
     envelopeId: (r.envelope_id as string) || "",
@@ -218,6 +220,8 @@ function mapEnvelope(r: Record<string, unknown>): DocusignEnvelope {
 export async function createEnvelopeRecord(
   employerId: string,
   v: {
+    docType: DocType;
+    documentName?: string;
     applicantId: number | null;
     shortlistMemberId?: number | null;
     envelopeId: string;
@@ -237,6 +241,8 @@ export async function createEnvelopeRecord(
       .from("docusign_envelopes")
       .insert({
         employer_id: employerId,
+        doc_type: v.docType,
+        document_name: v.documentName || null,
         applicant_id: v.applicantId,
         shortlist_member_id: v.shortlistMemberId ?? null,
         envelope_id: v.envelopeId,
@@ -250,10 +256,48 @@ export async function createEnvelopeRecord(
       })
       .select(ENV_COLS)
       .single();
-    if (error || !data) return null;
+    if (error || !data) {
+      console.error("[createEnvelopeRecord] insert failed", { employerId, error });
+      return null;
+    }
     return mapEnvelope(data);
-  } catch {
+  } catch (e) {
+    console.error("[createEnvelopeRecord] threw", { employerId, error: e });
     return null;
+  }
+}
+
+// ── Applicant status sync (offer letters) ─────────────────────────────────────
+/** When an OFFER is sent, advance the applicant to "offer extended" — but never
+ *  downgrade someone already "hired". Only for doc_type 'offer'. Best-effort. */
+export async function advanceApplicantOnSend(applicantId: number | null, docType: DocType): Promise<void> {
+  const c = db();
+  if (!c || docType !== "offer" || !applicantId) return;
+  try {
+    await c.from("applicants").update({ status: "offer extended" }).eq("id", applicantId).neq("status", "hired");
+  } catch (e) {
+    console.error("[advanceApplicantOnSend] failed", { applicantId, error: e });
+  }
+}
+
+/** When an OFFER envelope completes, mark its applicant "hired". Reads the
+ *  envelope's own applicant_id + doc_type, so it works from the webhook path
+ *  (no employer scope). Best-effort. */
+async function markHiredIfCompletedOffer(c: SupabaseClient, envelopeId: string): Promise<void> {
+  try {
+    const { data } = await c
+      .from("docusign_envelopes")
+      .select("applicant_id, doc_type")
+      .eq("envelope_id", envelopeId)
+      .maybeSingle();
+    if (!data) return;
+    const docType = (data.doc_type as string) || "offer";
+    const applicantId = data.applicant_id as number | null;
+    if (docType === "offer" && applicantId) {
+      await c.from("applicants").update({ status: "hired" }).eq("id", applicantId);
+    }
+  } catch (e) {
+    console.error("[markHiredIfCompletedOffer] failed", { envelopeId, error: e });
   }
 }
 
@@ -298,6 +342,7 @@ async function applyStatus(c: SupabaseClient, envelopeId: string, status: Docusi
   const patch: Record<string, unknown> = { status };
   if (status === "completed") patch.completed_at = new Date().toISOString();
   await c.from("docusign_envelopes").update(patch).eq("envelope_id", envelopeId);
+  if (status === "completed") await markHiredIfCompletedOffer(c, envelopeId);
 }
 
 /** Update by envelope id (webhook path — the envelope id is globally unique, so
@@ -321,8 +366,60 @@ export async function updateStatusOwned(employerId: string, envelopeId: string, 
     const patch: Record<string, unknown> = { status };
     if (status === "completed") patch.completed_at = new Date().toISOString();
     await c.from("docusign_envelopes").update(patch).eq("employer_id", employerId).eq("envelope_id", envelopeId);
+    if (status === "completed") await markHiredIfCompletedOffer(c, envelopeId);
     return true;
   } catch {
     return false;
+  }
+}
+
+// ── Custom-document storage (esign-documents private bucket) ───────────────────
+const ESIGN_BUCKET = "esign-documents";
+export const MAX_ESIGN_PDF_BYTES = 10 * 1024 * 1024; // 10 MB
+
+function sanitizeDocFilename(name: string): string {
+  const base = (name || "document").toLowerCase().replace(/\.[a-z0-9]+$/i, "");
+  return base.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "document";
+}
+
+/** Upload a PDF into the employer's own folder; returns its storage path. */
+export async function uploadEsignDocument(
+  employerId: string,
+  file: { data: ArrayBuffer | Uint8Array; filename: string }
+): Promise<{ path: string } | null> {
+  const c = db();
+  if (!c || !employerId) return null;
+  const path = `${employerId}/${Date.now()}-${sanitizeDocFilename(file.filename)}.pdf`;
+  try {
+    const { error } = await c.storage
+      .from(ESIGN_BUCKET)
+      .upload(path, file.data, { contentType: "application/pdf", upsert: false });
+    if (error) {
+      console.error("[uploadEsignDocument]", error);
+      return null;
+    }
+    return { path };
+  } catch (e) {
+    console.error("[uploadEsignDocument]", e);
+    return null;
+  }
+}
+
+/** Download a previously uploaded PDF as base64 — only within the caller's own
+ *  folder (path must start with `${employerId}/`). */
+export async function downloadEsignDocumentBase64(employerId: string, path: string): Promise<string | null> {
+  const c = db();
+  if (!c || !employerId || !path || !path.startsWith(`${employerId}/`)) return null;
+  try {
+    const { data, error } = await c.storage.from(ESIGN_BUCKET).download(path);
+    if (error || !data) {
+      console.error("[downloadEsignDocumentBase64]", error);
+      return null;
+    }
+    const buf = Buffer.from(await data.arrayBuffer());
+    return buf.length ? buf.toString("base64") : null;
+  } catch (e) {
+    console.error("[downloadEsignDocumentBase64]", e);
+    return null;
   }
 }
