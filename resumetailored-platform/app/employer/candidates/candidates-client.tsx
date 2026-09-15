@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, Plus, Sparkles, Check, X, Mail, MessageSquare, CalendarClock, Star, Ban } from "lucide-react";
+import { Users, Plus, Sparkles, Check, X, Mail, MessageSquare, CalendarClock, Star, Ban, FileSignature } from "lucide-react";
 import {
   APPLICANT_STATUSES,
   type Applicant,
@@ -11,6 +11,7 @@ import {
   type MatchAnalysis,
 } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, ScoreChip } from "../components/ui";
+import { SendOfferModal } from "../components/send-offer-modal";
 
 const STATUS_TONE: Record<ApplicantStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   new: "sky",
@@ -175,6 +176,7 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
   const [savingNote, setSavingNote] = useState(false);
   const [msgTemplate, setMsgTemplate] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showOffer, setShowOffer] = useState(false);
 
   async function score() {
     setScoring(true);
@@ -350,6 +352,9 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
               </Btn>
             </div>
           </Field>
+          <Btn onClick={() => setShowOffer(true)} className="w-full">
+            <FileSignature className="h-4 w-4" /> Send offer letter
+          </Btn>
           <div className="flex gap-2">
             <Btn onClick={() => updateStatus("shortlisted")} className="flex-1">
               <Star className="h-4 w-4" /> Shortlist
@@ -360,6 +365,16 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
           </div>
         </section>
       </div>
+      {showOffer && (
+        <SendOfferModal
+          applicantId={applicant.id}
+          candidateName={applicant.name}
+          candidateEmail={applicant.email}
+          defaultPosition={applicant.jobTitle}
+          onClose={() => setShowOffer(false)}
+          onSent={onChanged}
+        />
+      )}
     </Drawer>
   );
 }
