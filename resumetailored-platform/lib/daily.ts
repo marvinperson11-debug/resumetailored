@@ -14,6 +14,11 @@
 import crypto from "crypto";
 
 const DAILY_API = "https://api.daily.co/v1";
+// Control-plane calls (rooms, webhooks, recording metadata) use a short timeout
+// so a slow/blocked Railway→api.daily.co egress can't hang a request past the
+// Cloudflare→origin window (which surfaces as a 502 host error). Media downloads
+// keep their own longer timeouts.
+const DAILY_TIMEOUT_MS = 8000;
 
 export function dailyApiKey(): string {
   return process.env.DAILY_API_KEY || "";
@@ -55,7 +60,7 @@ export async function createRoom(args: {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ name: `rt-${args.interviewId}`, privacy: "public", properties }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(DAILY_TIMEOUT_MS),
     });
     if (!res.ok) {
       console.error("[daily.createRoom]", res.status, await res.text().catch(() => ""));
@@ -77,7 +82,7 @@ export async function deleteRoom(name: string): Promise<void> {
     await fetch(`${DAILY_API}/rooms/${encodeURIComponent(name)}`, {
       method: "DELETE",
       headers: authHeaders(),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(DAILY_TIMEOUT_MS),
     });
   } catch (e) {
     console.error("[daily.deleteRoom]", e);
@@ -96,7 +101,7 @@ export async function getRecording(recordingId: string): Promise<DailyRecording 
   try {
     const res = await fetch(`${DAILY_API}/recordings/${encodeURIComponent(recordingId)}`, {
       headers: authHeaders(),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(DAILY_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     const d = (await res.json()) as { id?: string; room_name?: string; mtgSessionId?: string; session_id?: string };
@@ -117,7 +122,7 @@ export async function getRecordingDownloadLink(recordingId: string): Promise<str
   try {
     const res = await fetch(`${DAILY_API}/recordings/${encodeURIComponent(recordingId)}/access-link`, {
       headers: authHeaders(),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(DAILY_TIMEOUT_MS),
     });
     if (!res.ok) return null;
     const d = (await res.json()) as { download_link?: string; link?: string };
@@ -138,7 +143,7 @@ export async function getTranscriptText(sessionId: string): Promise<string | nul
   try {
     const listRes = await fetch(`${DAILY_API}/transcript?mtgSessionId=${encodeURIComponent(sessionId)}`, {
       headers: authHeaders(),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(DAILY_TIMEOUT_MS),
     });
     if (!listRes.ok) return null;
     const list = (await listRes.json()) as { data?: { transcriptId?: string; id?: string }[] };
@@ -148,7 +153,7 @@ export async function getTranscriptText(sessionId: string): Promise<string | nul
 
     const linkRes = await fetch(`${DAILY_API}/transcript/${encodeURIComponent(transcriptId)}/access-link`, {
       headers: authHeaders(),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(DAILY_TIMEOUT_MS),
     });
     if (!linkRes.ok) return null;
     const link = (await linkRes.json()) as { link?: string };
@@ -227,7 +232,7 @@ function mapWebhook(w: Record<string, unknown>): DailyWebhook {
 export async function listWebhooks(): Promise<DailyWebhook[] | null> {
   if (!isDailyConfigured()) return null;
   try {
-    const res = await fetch(`${DAILY_API}/webhooks`, { headers: authHeaders(), signal: AbortSignal.timeout(15000) });
+    const res = await fetch(`${DAILY_API}/webhooks`, { headers: authHeaders(), signal: AbortSignal.timeout(DAILY_TIMEOUT_MS) });
     if (!res.ok) {
       console.error("[daily.listWebhooks]", res.status, await res.text().catch(() => ""));
       return null;
@@ -254,7 +259,7 @@ export async function createWebhook(
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({ url, eventTypes, ...(hmac ? { hmac } : {}) }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(DAILY_TIMEOUT_MS),
     });
     const d = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
