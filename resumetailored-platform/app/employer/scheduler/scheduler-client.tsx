@@ -1,27 +1,46 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CalendarClock, Plus, Video, Phone, MapPin, Check, X, Pencil, Trash2, ExternalLink } from "lucide-react";
+import { CalendarClock, Plus, Video, Phone, MapPin, Check, X, Pencil, Trash2, Download, FileText, Circle, Sparkles } from "lucide-react";
 import {
   INTERVIEW_MODES,
+  RECOMMENDATION_LABELS,
   type Interview,
   type InterviewMode,
   type InterviewStatus,
+  type InterviewRecommendation,
   type Applicant,
 } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal } from "../components/ui";
 import { cn } from "@/lib/utils";
 
+export interface SchedulerGating {
+  tier: string;
+  canRecord: boolean;
+  canSummary: boolean;
+  videoUsed: number;
+  videoLimit: number | null; // null = unlimited
+  videoRemaining: number | null;
+  videoAllowed: boolean;
+}
+
 const MODE_ICON = { video: Video, phone: Phone, onsite: MapPin } as const;
 const MODE_LABEL = { video: "Video call", phone: "Phone", onsite: "On-site" } as const;
 const STATUS_TONE: Record<InterviewStatus, "sky" | "teal" | "neutral"> = { scheduled: "sky", completed: "teal", cancelled: "neutral" };
+const REC_TONE: Record<InterviewRecommendation, "teal" | "sky" | "gold" | "red"> = {
+  strong_yes: "teal",
+  yes: "sky",
+  mixed: "gold",
+  no: "red",
+};
 
-export function SchedulerClient({ initialApplicantId }: { initialApplicantId?: number }) {
+export function SchedulerClient({ initialApplicantId, gating }: { initialApplicantId?: number; gating: SchedulerGating }) {
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"upcoming" | "past" | "all">("upcoming");
   const [scheduling, setScheduling] = useState(!!initialApplicantId);
   const [editing, setEditing] = useState<Interview | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,6 +92,25 @@ export function SchedulerClient({ initialApplicantId }: { initialApplicantId?: n
         }
       />
 
+      {notice && (
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-gold">
+          <span>{notice}</span>
+          <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss" className="shrink-0 text-gold/70 hover:text-gold">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {gating.videoLimit !== null && (
+        <p className="mb-4 text-xs text-white/45">
+          Video interviews this month: <span className="text-white/70">{gating.videoUsed}</span>
+          {" / "}
+          {gating.videoLimit} ({gating.tier} plan)
+          {!gating.canRecord && " · recording is a Portal+ feature"}
+          {gating.canRecord && !gating.canSummary && " · AI summaries are a Scale+ feature"}
+        </p>
+      )}
+
       <div className="mb-4 flex gap-1 text-sm">
         {(["upcoming", "past", "all"] as const).map((v) => (
           <button
@@ -109,6 +147,7 @@ export function SchedulerClient({ initialApplicantId }: { initialApplicantId?: n
               key={i.id}
               interview={i}
               onEdit={() => setEditing(i)}
+              hasSummaryTier={gating.canSummary}
               onComplete={() => patch(i.id, { status: "completed" })}
               onCancel={() => patch(i.id, { status: "cancelled" })}
               onReopen={() => patch(i.id, { status: "scheduled" })}
@@ -121,15 +160,26 @@ export function SchedulerClient({ initialApplicantId }: { initialApplicantId?: n
       {scheduling && (
         <InterviewForm
           initialApplicantId={initialApplicantId}
+          gating={gating}
           onClose={() => setScheduling(false)}
-          onSaved={async () => {
+          onSaved={async (warning) => {
             setScheduling(false);
+            setNotice(warning || null);
             await load();
           }}
         />
       )}
       {editing && (
-        <InterviewForm existing={editing} onClose={() => setEditing(null)} onSaved={async () => { setEditing(null); await load(); }} />
+        <InterviewForm
+          existing={editing}
+          gating={gating}
+          onClose={() => setEditing(null)}
+          onSaved={async (warning) => {
+            setEditing(null);
+            setNotice(warning || null);
+            await load();
+          }}
+        />
       )}
     </div>
   );
@@ -142,6 +192,7 @@ function InterviewCard({
   onCancel,
   onReopen,
   onDelete,
+  hasSummaryTier,
 }: {
   interview: Interview;
   onEdit: () => void;
@@ -149,11 +200,14 @@ function InterviewCard({
   onCancel: () => void;
   onReopen: () => void;
   onDelete: () => void;
+  hasSummaryTier: boolean;
 }) {
   const Icon = MODE_ICON[i.mode];
-  const isLink = i.mode === "video" && /^https?:\/\//i.test(i.location);
+  const joinUrl = i.roomUrl || (i.mode === "video" && /^https?:\/\//i.test(i.location) ? i.location : "");
+  const isLink = !!joinUrl;
   return (
-    <Panel className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <Panel className="space-y-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       {/* Date block */}
       <div className="flex w-full shrink-0 items-center gap-3 sm:w-40">
         <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-lg bg-violet/15 text-violet">
@@ -180,15 +234,13 @@ function InterviewCard({
           <span className="inline-flex items-center gap-1">
             <Icon className="h-3.5 w-3.5" /> {MODE_LABEL[i.mode]}
           </span>
-          {i.location &&
-            (isLink ? (
-              <a href={i.location} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-violet hover:underline">
-                Join link <ExternalLink className="h-3 w-3" />
-              </a>
-            ) : (
-              <span className="truncate">{i.location}</span>
-            ))}
+          {!isLink && i.location && <span className="truncate">{i.location}</span>}
           {i.interviewer && <span>with {i.interviewer}</span>}
+          {i.recordEnabled && i.status === "scheduled" && (
+            <span className="inline-flex items-center gap-1 text-red-300">
+              <Circle className="h-2.5 w-2.5 fill-current" /> Recording on
+            </span>
+          )}
         </div>
         {i.notes && <p className="mt-2 text-xs text-white/45">{i.notes}</p>}
       </div>
@@ -217,20 +269,110 @@ function InterviewCard({
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
+      </div>
+
+      {/* Video: join + recording/transcript links */}
+      {(isLink || i.recordingUrl || i.transcriptUrl) && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border-gold pt-3">
+          {isLink && i.status === "scheduled" && (
+            <a
+              href={joinUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-violet px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet/90"
+            >
+              <Video className="h-3.5 w-3.5" /> Join
+            </a>
+          )}
+          {i.recordingUrl && (
+            <a
+              href={`/api/employer/interviews/${i.id}/recording?type=recording`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-cream hover:bg-white/[0.08]"
+            >
+              <Download className="h-3.5 w-3.5 text-violet" /> Recording
+            </a>
+          )}
+          {i.transcriptUrl && (
+            <a
+              href={`/api/employer/interviews/${i.id}/recording?type=transcript`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-cream hover:bg-white/[0.08]"
+            >
+              <FileText className="h-3.5 w-3.5 text-violet" /> Transcript
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* AI summary (Scale+) */}
+      {i.aiSummary ? (
+        <div className="rounded-xl border border-border-gold bg-white/[0.03] p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-violet" />
+            <span className="text-sm font-semibold text-cream">AI interview summary</span>
+            <Badge tone={REC_TONE[i.aiSummary.recommendation]}>{RECOMMENDATION_LABELS[i.aiSummary.recommendation]}</Badge>
+          </div>
+          {i.aiSummary.overview && <p className="mb-3 text-sm text-white/75">{i.aiSummary.overview}</p>}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <SummaryList title="Strengths" tone="text-teal" items={i.aiSummary.strengths} />
+            <SummaryList title="Concerns" tone="text-red-300" items={i.aiSummary.concerns} />
+          </div>
+          {i.aiSummary.followUps.length > 0 && (
+            <div className="mt-3">
+              <div className="mb-1 text-[11px] font-semibold uppercase text-muted-cream">Recommended follow-ups</div>
+              <ul className="space-y-0.5">
+                {i.aiSummary.followUps.map((s, idx) => (
+                  <li key={idx} className="text-xs text-white/70">• {s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      ) : (
+        i.status === "completed" &&
+        i.recordEnabled &&
+        !hasSummaryTier && (
+          <p className="rounded-lg border border-dashed border-border-gold px-3 py-2 text-xs text-white/45">
+            🔒 AI interview summaries are a Scale-plan feature.
+          </p>
+        )
+      )}
     </Panel>
+  );
+}
+
+function SummaryList({ title, tone, items }: { title: string; tone: string; items: string[] }) {
+  return (
+    <div>
+      <div className={cn("mb-1 text-[11px] font-semibold uppercase", tone)}>{title}</div>
+      {items.length ? (
+        <ul className="space-y-0.5">
+          {items.map((s, i) => (
+            <li key={i} className="text-xs text-white/70">• {s}</li>
+          ))}
+        </ul>
+      ) : (
+        <span className="text-xs text-white/35">—</span>
+      )}
+    </div>
   );
 }
 
 function InterviewForm({
   existing,
   initialApplicantId,
+  gating,
   onClose,
   onSaved,
 }: {
   existing?: Interview;
   initialApplicantId?: number;
+  gating: SchedulerGating;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (warning?: string) => void;
 }) {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [applicantId, setApplicantId] = useState<number | "">(existing?.applicantId ?? initialApplicantId ?? "");
@@ -241,6 +383,7 @@ function InterviewForm({
   const [location, setLocation] = useState(existing?.location || "");
   const [interviewer, setInterviewer] = useState(existing?.interviewer || "");
   const [notes, setNotes] = useState(existing?.notes || "");
+  const [recordEnabled, setRecordEnabled] = useState(existing?.recordEnabled ?? false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -270,6 +413,7 @@ function InterviewForm({
       location,
       interviewer,
       notes,
+      recordEnabled: mode === "video" && gating.canRecord ? recordEnabled : false,
     };
     try {
       const res = await fetch(existing ? `/api/employer/interviews/${existing.id}` : "/api/employer/interviews", {
@@ -277,9 +421,9 @@ function InterviewForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      const d = (await res.json().catch(() => ({}))) as { error?: string; warning?: string };
       if (!res.ok) throw new Error(d.error || "Could not save.");
-      onSaved();
+      onSaved(d.warning);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       setSaving(false);
@@ -337,13 +481,48 @@ function InterviewForm({
             <Input value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder="Who's running it?" />
           </Field>
         </div>
-        <Field label={mode === "onsite" ? "Location / address" : mode === "video" ? "Meeting link" : "Phone number"} hint="Optional">
+        <Field
+          label={mode === "onsite" ? "Location / address" : mode === "video" ? "Meeting link" : "Phone number"}
+          hint={mode === "video" ? "Optional — leave blank and we'll auto-generate a video room link" : "Optional"}
+        >
           <Input
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder={mode === "video" ? "https://meet.google.com/…" : mode === "onsite" ? "123 Main St, Suite 200" : "+1 555 000 0000"}
+            placeholder={mode === "video" ? "Auto-generated — or paste your own link" : mode === "onsite" ? "123 Main St, Suite 200" : "+1 555 000 0000"}
           />
         </Field>
+
+        {mode === "video" && !existing && (
+          <div className="rounded-lg border border-border-gold bg-white/[0.03] p-3">
+            {gating.videoLimit === 0 && !gating.videoAllowed ? (
+              <p className="text-xs text-gold">
+                🔒 Video interviews are a Pro feature. Upgrade to Portal to host video interviews with auto-generated join
+                links, recording, and transcripts.
+              </p>
+            ) : (
+              <>
+                <label className={cn("flex items-center gap-2 text-sm", !gating.canRecord && "opacity-60")}>
+                  <input
+                    type="checkbox"
+                    checked={recordEnabled}
+                    disabled={!gating.canRecord}
+                    onChange={(e) => setRecordEnabled(e.target.checked)}
+                    className="h-4 w-4 accent-violet"
+                  />
+                  <span className="text-cream">Record interview</span>
+                </label>
+                <p className="mt-1 text-[11px] text-white/45">
+                  {gating.canRecord
+                    ? gating.canSummary
+                      ? "Records the call and generates a transcript + AI summary when it ends."
+                      : "Records the call and generates a transcript. AI summaries are a Scale-plan feature."
+                    : "🔒 Recording + transcription are available on Portal and above."}
+                </p>
+              </>
+            )}
+          </div>
+        )}
+
         <Field label="Notes" hint="Optional — visible only to your team">
           <Area rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </Field>

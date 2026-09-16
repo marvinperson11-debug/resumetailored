@@ -8,8 +8,10 @@ import type {
   Interview,
   InterviewMode,
   InterviewStatus,
+  InterviewSummary,
   Applicant,
 } from "./employer-ai";
+import { normalizeInterviewSummary } from "./employer-ai";
 
 /**
  * Employer Portal Phase 1A persistence — messages, shortlists, and interviews.
@@ -403,7 +405,12 @@ export async function removeShortlistMember(employerId: string, shortlistId: num
 
 // ── Interviews ────────────────────────────────────────────────────────────────
 const INT_COLS =
-  "id, applicant_id, job_id, title, scheduled_at, duration_min, mode, location, interviewer, notes, status, created_at";
+  "id, applicant_id, job_id, title, scheduled_at, duration_min, mode, location, interviewer, notes, status, room_url, room_name, recording_url, transcript_url, ai_summary, record_enabled, created_at";
+
+function mapSummary(v: unknown): InterviewSummary | null {
+  if (!v || typeof v !== "object") return null;
+  return normalizeInterviewSummary(v);
+}
 
 function mapInterview(r: Record<string, unknown>, info?: ApplicantInfo): Interview {
   return {
@@ -420,6 +427,12 @@ function mapInterview(r: Record<string, unknown>, info?: ApplicantInfo): Intervi
     interviewer: (r.interviewer as string) || "",
     notes: (r.notes as string) || "",
     status: (r.status as InterviewStatus) || "scheduled",
+    roomUrl: (r.room_url as string) || "",
+    roomName: (r.room_name as string) || "",
+    recordEnabled: !!r.record_enabled,
+    recordingUrl: (r.recording_url as string) || "",
+    transcriptUrl: (r.transcript_url as string) || "",
+    aiSummary: mapSummary(r.ai_summary),
     createdAt: (r.created_at as string) || "",
   };
 }
@@ -466,6 +479,7 @@ export interface InterviewInput {
   location?: string;
   interviewer?: string;
   notes?: string;
+  recordEnabled?: boolean;
 }
 
 function interviewRow(v: Partial<InterviewInput> & { status?: InterviewStatus }): Record<string, unknown> {
@@ -479,6 +493,7 @@ function interviewRow(v: Partial<InterviewInput> & { status?: InterviewStatus })
   if (v.interviewer !== undefined) row.interviewer = v.interviewer.trim().slice(0, 200) || null;
   if (v.notes !== undefined) row.notes = v.notes.trim().slice(0, 4000) || null;
   if (v.status !== undefined) row.status = v.status;
+  if (v.recordEnabled !== undefined) row.record_enabled = !!v.recordEnabled;
   return row;
 }
 
@@ -541,5 +556,151 @@ export async function deleteInterview(employerId: string, id: number): Promise<b
     return !error;
   } catch {
     return false;
+  }
+}
+
+// ── Video interviews (Daily.co) ───────────────────────────────────────────────
+/** Attach the created Daily room to an interview (owner-scoped). */
+export async function setInterviewRoom(
+  employerId: string,
+  id: number,
+  v: { roomUrl: string; roomName: string; recordEnabled?: boolean; location?: string }
+): Promise<boolean> {
+  const c = db();
+  if (!c || !employerId) return false;
+  try {
+    const patch: Record<string, unknown> = { room_url: v.roomUrl, room_name: v.roomName, updated_at: new Date().toISOString() };
+    if (v.recordEnabled !== undefined) patch.record_enabled = !!v.recordEnabled;
+    if (v.location !== undefined) patch.location = v.location;
+    const { error } = await c.from("interviews").update(patch).eq("employer_id", employerId).eq("id", id);
+    return !error;
+  } catch (e) {
+    console.error("[setInterviewRoom]", e);
+    return false;
+  }
+}
+
+/** Count video interviews this employer scheduled in the current calendar month (UTC). */
+export async function monthlyVideoCount(employerId: string): Promise<number> {
+  const c = db();
+  if (!c || !employerId) return 0;
+  try {
+    const now = new Date();
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+    const { count } = await c
+      .from("interviews")
+      .select("id", { count: "exact", head: true })
+      .eq("employer_id", employerId)
+      .eq("mode", "video")
+      .gte("created_at", monthStart);
+    return count || 0;
+  } catch {
+    return 0;
+  }
+}
+
+export interface InterviewOwner {
+  id: number;
+  employerId: string;
+  applicantId: number;
+  jobId: number | null;
+  jobTitle: string;
+  title: string;
+  roomName: string;
+  recordEnabled: boolean;
+}
+
+/** Unscoped lookup for the Daily webhook (no employer context). Returns the row
+ *  owner + minimal fields needed to store media + build a summary. */
+export async function getInterviewOwner(id: number): Promise<InterviewOwner | null> {
+  const c = db();
+  if (!c || !Number.isFinite(id)) return null;
+  try {
+    const { data } = await c
+      .from("interviews")
+      .select("id, employer_id, applicant_id, job_id, title, room_name, record_enabled")
+      .eq("id", id)
+      .maybeSingle();
+    if (!data) return null;
+    const jobId = (data.job_id as number) ?? null;
+    let jobTitle = "";
+    if (jobId != null) {
+      const { data: job } = await c.from("job_postings").select("title").eq("id", jobId).maybeSingle();
+      jobTitle = (job?.title as string) || "";
+    }
+    return {
+      id: data.id as number,
+      employerId: (data.employer_id as string) || "",
+      applicantId: data.applicant_id as number,
+      jobId,
+      jobTitle,
+      title: (data.title as string) || "",
+      roomName: (data.room_name as string) || "",
+      recordEnabled: !!data.record_enabled,
+    };
+  } catch (e) {
+    console.error("[getInterviewOwner]", e);
+    return null;
+  }
+}
+
+/** Update recording/transcript/summary/status for an interview by id (webhook). */
+export async function updateInterviewMedia(
+  id: number,
+  patch: { recordingUrl?: string; transcriptUrl?: string; aiSummary?: InterviewSummary; status?: InterviewStatus }
+): Promise<boolean> {
+  const c = db();
+  if (!c || !Number.isFinite(id)) return false;
+  try {
+    const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (patch.recordingUrl !== undefined) row.recording_url = patch.recordingUrl;
+    if (patch.transcriptUrl !== undefined) row.transcript_url = patch.transcriptUrl;
+    if (patch.aiSummary !== undefined) row.ai_summary = patch.aiSummary;
+    if (patch.status !== undefined) row.status = patch.status;
+    const { error } = await c.from("interviews").update(row).eq("id", id);
+    return !error;
+  } catch (e) {
+    console.error("[updateInterviewMedia]", e);
+    return false;
+  }
+}
+
+// ── Recording storage (interview-recordings private bucket) ────────────────────
+const REC_BUCKET = "interview-recordings";
+
+/** Upload a recording/transcript file to {employerId}/{interviewId}/ and return
+ *  its storage path (not a public URL — the bucket is private). */
+export async function uploadInterviewMedia(
+  employerId: string,
+  interviewId: number,
+  file: { data: ArrayBuffer | Uint8Array; contentType: string; filename: string }
+): Promise<string | null> {
+  const c = db();
+  if (!c || !employerId) return null;
+  const safe = (file.filename || "file").toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "file";
+  const path = `${employerId}/${interviewId}/${Date.now()}-${safe}`;
+  try {
+    const { error } = await c.storage.from(REC_BUCKET).upload(path, file.data, { contentType: file.contentType, upsert: false });
+    if (error) {
+      console.error("[uploadInterviewMedia]", error);
+      return null;
+    }
+    return path;
+  } catch (e) {
+    console.error("[uploadInterviewMedia]", e);
+    return null;
+  }
+}
+
+/** A short-lived signed URL for a stored recording/transcript (owner download). */
+export async function signInterviewMedia(employerId: string, path: string, secs = 3600): Promise<string | null> {
+  const c = db();
+  if (!c || !employerId || !path || !path.startsWith(`${employerId}/`)) return null;
+  try {
+    const { data } = await c.storage.from(REC_BUCKET).createSignedUrl(path, secs);
+    return data?.signedUrl || null;
+  } catch (e) {
+    console.error("[signInterviewMedia]", e);
+    return null;
   }
 }
