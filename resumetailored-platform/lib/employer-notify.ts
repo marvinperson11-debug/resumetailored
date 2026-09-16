@@ -84,19 +84,32 @@ export async function notifyCandidateOfInterview(
     return;
   }
 
-  const locationRow = interview.location
-    ? `<tr><td style="padding:4px 12px 4px 0;color:#888">${interview.mode === "onsite" ? "Location" : interview.mode === "video" ? "Join link" : "Phone"}</td><td style="padding:4px 0">${
-        /^https?:\/\//i.test(interview.location) ? `<a href="${escapeHtml(interview.location)}">${escapeHtml(interview.location)}</a>` : escapeHtml(interview.location)
-      }</td></tr>`
-    : "";
+  // Prefer the auto-generated Daily room; fall back to a manual URL in location.
+  const joinLink = interview.roomUrl || (interview.mode === "video" && /^https?:\/\//i.test(interview.location) ? interview.location : "");
+  const locationRow =
+    !joinLink && interview.location
+      ? `<tr><td style="padding:4px 12px 4px 0;color:#888">${interview.mode === "onsite" ? "Location" : "Phone"}</td><td style="padding:4px 0">${
+          /^https?:\/\//i.test(interview.location) ? `<a href="${escapeHtml(interview.location)}">${escapeHtml(interview.location)}</a>` : escapeHtml(interview.location)
+        }</td></tr>`
+      : "";
   const interviewerRow = interview.interviewer
     ? `<tr><td style="padding:4px 12px 4px 0;color:#888">Interviewer</td><td style="padding:4px 0">${escapeHtml(interview.interviewer)}</td></tr>`
     : "";
+  const joinBlock = joinLink
+    ? `<div style="margin:20px 0">
+<a href="${escapeHtml(joinLink)}" style="display:inline-block;background:#7c5cff;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Join the video interview</a>
+<p style="font-size:13px;color:#666;margin:8px 0 0">No account needed — just open this link at the scheduled time:<br/><a href="${escapeHtml(joinLink)}">${escapeHtml(joinLink)}</a></p>
+</div>`
+    : "";
+  // "Your interview for {position}" per the video-interview spec.
+  const subject = interview.jobTitle
+    ? `Your interview for ${interview.jobTitle}${kind === "rescheduled" ? " (rescheduled)" : ""}`
+    : `${kind === "rescheduled" ? "Interview rescheduled" : "Interview scheduled"} — ${interview.title}`;
 
   await sendEmail({
     to: ctx.to,
     replyTo: ctx.replyTo,
-    subject: `${kind === "rescheduled" ? "Interview rescheduled" : "Interview scheduled"} — ${interview.title}`,
+    subject,
     html: emailShell(
       `<p>Hi ${firstName},</p>
 <p>${company} has ${kind === "rescheduled" ? "rescheduled your interview" : "scheduled an interview with you"}:</p>
@@ -107,7 +120,41 @@ export async function notifyCandidateOfInterview(
 ${locationRow}
 ${interviewerRow}
 </table>
+${joinBlock}
 <p style="font-size:13px;color:#666">Need to change something? Just reply to this email.</p>`
+    ),
+  });
+}
+
+/** Email the scheduling user (interviewer/host) a confirmation with the join
+ *  link + host note. Best-effort. */
+export async function notifyInterviewerOfInterview(employerId: string, userId: string, interview: Interview): Promise<void> {
+  const to = await resolveUserEmail(userId);
+  if (!to) return;
+  const profile = await getEmployerProfile(employerId);
+  const company = escapeHtml(profile?.companyName || "your company");
+  const title = escapeHtml(interview.title);
+  const candidate = escapeHtml(interview.applicantName || "the candidate");
+  const joinLink = interview.roomUrl || (interview.mode === "video" && /^https?:\/\//i.test(interview.location) ? interview.location : "");
+  const joinBlock = joinLink
+    ? `<div style="margin:20px 0">
+<a href="${escapeHtml(joinLink)}" style="display:inline-block;background:#7c5cff;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Open interview room (host)</a>
+<p style="font-size:13px;color:#666;margin:8px 0 0">You're the host. The same link was sent to ${candidate}.<br/><a href="${escapeHtml(joinLink)}">${escapeHtml(joinLink)}</a></p>
+</div>`
+    : "";
+  await sendEmail({
+    to,
+    subject: `Interview scheduled — ${interview.title} with ${interview.applicantName || "candidate"}`,
+    html: emailShell(
+      `<p>Your interview is scheduled:</p>
+<table style="margin:16px 0;font-size:14px">
+<tr><td style="padding:4px 12px 4px 0;color:#888">What</td><td style="padding:4px 0"><strong>${title}</strong></td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#888">Candidate</td><td style="padding:4px 0">${candidate}</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#888">When</td><td style="padding:4px 0">${fmtWhen(interview.scheduledAt)} (${interview.durationMin} min)</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#888">Type</td><td style="padding:4px 0">${MODE_LABEL[interview.mode]}</td></tr>
+</table>
+${joinBlock}
+<p style="font-size:13px;color:#666">Manage this interview in ${company}'s Scheduler.</p>`
     ),
   });
 }

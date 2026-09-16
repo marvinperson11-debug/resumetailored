@@ -160,6 +160,26 @@ export type InterviewStatus = (typeof INTERVIEW_STATUSES)[number];
 export const isInterviewStatus = (v: unknown): v is InterviewStatus =>
   (INTERVIEW_STATUSES as readonly string[]).includes(String(v));
 
+/** AI-generated post-interview summary (Scale+ tiers), from the transcript. */
+export const INTERVIEW_RECOMMENDATIONS = ["strong_yes", "yes", "mixed", "no"] as const;
+export type InterviewRecommendation = (typeof INTERVIEW_RECOMMENDATIONS)[number];
+export const isRecommendation = (v: unknown): v is InterviewRecommendation =>
+  (INTERVIEW_RECOMMENDATIONS as readonly string[]).includes(String(v));
+export const RECOMMENDATION_LABELS: Record<InterviewRecommendation, string> = {
+  strong_yes: "Strong yes",
+  yes: "Yes",
+  mixed: "Mixed",
+  no: "No",
+};
+
+export interface InterviewSummary {
+  strengths: string[];
+  concerns: string[];
+  followUps: string[];
+  recommendation: InterviewRecommendation;
+  overview: string;
+}
+
 export interface Interview {
   id: number;
   applicantId: number;
@@ -174,6 +194,14 @@ export interface Interview {
   interviewer: string;
   notes: string;
   status: InterviewStatus;
+  /** Daily.co video room (video mode). */
+  roomUrl: string;
+  roomName: string;
+  recordEnabled: boolean;
+  /** Filled by the Daily webhook once a recording is processed. */
+  recordingUrl: string;
+  transcriptUrl: string;
+  aiSummary: InterviewSummary | null;
   createdAt: string;
 }
 
@@ -441,5 +469,45 @@ Structure the output as:
 - A brief, welcoming closing line encouraging a range of candidates to apply.
 
 Keep it inclusive and specific. Do not fabricate compensation, perks, or company facts not present in the notes.`,
+  };
+}
+
+// ── Interview AI summary (Video Interviews) ───────────────────────────────────
+export function buildInterviewSummaryPrompt(args: {
+  transcript: string;
+  jobTitle?: string;
+  candidateName?: string;
+}): { system: string; user: string } {
+  const { transcript, jobTitle, candidateName } = args;
+  return {
+    system:
+      "You are an experienced interviewer summarizing a job interview from its transcript. Be fair, specific, and grounded ONLY in what the transcript shows — never invent details. Output ONLY valid JSON, no markdown.",
+    user: `Summarize this interview transcript${jobTitle ? ` for the ${jobTitle} role` : ""}${
+      candidateName ? ` with candidate ${candidateName}` : ""
+    }. Return ONLY:
+{
+  "overview": "2-3 sentence neutral summary of how the interview went",
+  "strengths": ["specific strengths the candidate demonstrated"],
+  "concerns": ["specific concerns or gaps raised"],
+  "followUps": ["recommended follow-up questions or next steps"],
+  "recommendation": "one of: strong_yes | yes | mixed | no"
+}
+
+TRANSCRIPT:
+${transcript.slice(0, 40000)}`,
+  };
+}
+
+/** Coerce arbitrary LLM JSON into a safe InterviewSummary. */
+export function normalizeInterviewSummary(raw: unknown): InterviewSummary {
+  const o = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const list = (v: unknown): string[] =>
+    Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean).slice(0, 12) : [];
+  return {
+    overview: String(o.overview || "").slice(0, 2000),
+    strengths: list(o.strengths),
+    concerns: list(o.concerns),
+    followUps: list(o.followUps || o.follow_ups),
+    recommendation: isRecommendation(o.recommendation) ? o.recommendation : "mixed",
   };
 }

@@ -3,6 +3,7 @@ import { requireEmployerId } from "@/lib/employer-auth";
 import { updateInterview, deleteInterview, getInterview, type InterviewInput } from "@/lib/employer-collab-store";
 import { notifyCandidateOfInterview } from "@/lib/employer-notify";
 import { isInterviewMode, isInterviewStatus, type InterviewStatus } from "@/lib/employer-ai";
+import { deleteRoom } from "@/lib/daily";
 
 export const runtime = "nodejs";
 
@@ -37,11 +38,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const ok = await updateInterview(employerId, id, patch);
   if (!ok) return NextResponse.json({ error: "Could not update the interview." }, { status: 400 });
-  // Best-effort: email the candidate when the interview is cancelled or moved.
+  // Best-effort: email the candidate when the interview is cancelled or moved,
+  // and free the Daily room on cancel.
   if (patch.status === "cancelled" || patch.scheduledAt !== undefined) {
     getInterview(employerId, id)
       .then((iv) => {
-        if (iv) return notifyCandidateOfInterview(employerId, iv, patch.status === "cancelled" ? "cancelled" : "rescheduled");
+        if (!iv) return;
+        if (patch.status === "cancelled" && iv.roomName) deleteRoom(iv.roomName).catch(() => {});
+        return notifyCandidateOfInterview(employerId, iv, patch.status === "cancelled" ? "cancelled" : "rescheduled");
       })
       .catch(() => {});
   }
@@ -54,6 +58,9 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const id = Number(params.id);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "bad id" }, { status: 400 });
+  // Free the Daily room before deleting the row (best-effort).
+  const existing = await getInterview(employerId, id);
+  if (existing?.roomName) deleteRoom(existing.roomName).catch(() => {});
   const ok = await deleteInterview(employerId, id);
   return NextResponse.json({ ok });
 }
