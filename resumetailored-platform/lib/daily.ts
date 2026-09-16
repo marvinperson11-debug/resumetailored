@@ -200,3 +200,68 @@ export function interviewIdFromRoomName(roomName: string | null | undefined): nu
   const m = /^rt-(\d+)$/.exec(String(roomName || ""));
   return m ? Number(m[1]) : null;
 }
+
+// ── Webhook registration (admin one-time setup) ───────────────────────────────
+// Daily's webhook endpoints are managed through the REST API (`/v1/webhooks`),
+// not a dashboard Settings page on most accounts — hence the admin route that
+// calls these.
+export interface DailyWebhook {
+  uuid: string;
+  url: string;
+  hmac?: string;
+  state?: string;
+  eventTypes?: string[];
+}
+
+function mapWebhook(w: Record<string, unknown>): DailyWebhook {
+  return {
+    uuid: String(w.uuid || w.id || ""),
+    url: String(w.url || ""),
+    hmac: w.hmac ? String(w.hmac) : undefined,
+    state: w.state ? String(w.state) : undefined,
+    eventTypes: (w.eventTypes as string[]) || (w.event_types as string[]) || undefined,
+  };
+}
+
+/** List the Daily account's configured webhooks. `null` on failure. */
+export async function listWebhooks(): Promise<DailyWebhook[] | null> {
+  if (!isDailyConfigured()) return null;
+  try {
+    const res = await fetch(`${DAILY_API}/webhooks`, { headers: authHeaders(), signal: AbortSignal.timeout(15000) });
+    if (!res.ok) {
+      console.error("[daily.listWebhooks]", res.status, await res.text().catch(() => ""));
+      return null;
+    }
+    const d = (await res.json()) as unknown;
+    const arr = Array.isArray(d) ? d : ((d as { data?: unknown[] }).data ?? []);
+    return (arr as Record<string, unknown>[]).map(mapWebhook);
+  } catch (e) {
+    console.error("[daily.listWebhooks]", e);
+    return null;
+  }
+}
+
+/** Register a webhook endpoint. When `hmac` is given, Daily signs deliveries
+ *  with it (so our verifier can use the same shared secret). */
+export async function createWebhook(
+  url: string,
+  eventTypes: string[],
+  hmac?: string
+): Promise<DailyWebhook | { error: string }> {
+  if (!isDailyConfigured()) return { error: "DAILY_API_KEY is not set." };
+  try {
+    const res = await fetch(`${DAILY_API}/webhooks`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ url, eventTypes, ...(hmac ? { hmac } : {}) }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const d = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      return { error: String(d.info || d.error || `Daily returned ${res.status}`) };
+    }
+    return mapWebhook(d);
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Daily request failed" };
+  }
+}
