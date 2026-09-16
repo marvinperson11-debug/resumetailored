@@ -10,6 +10,7 @@ Branch `claude/daily-webhook-register` → **draft PR [#500](https://github.com/
 
 - **`POST /api/employer/daily/register-webhook`** — registers `https://app.resumetailored.com/api/daily/webhook` for the `recording.ready-to-download` event. **Idempotent:** it lists the account's existing webhooks first and only creates ours if missing (`status: "exists"` otherwise).
 - **`GET /api/employer/daily/register-webhook`** — read-only status check (is it registered? how many webhooks exist?), changes nothing.
+- **`GET /api/employer/daily/register-webhook?do=1`** — registers if missing (idempotent), for when you have no browser console (e.g. iPad). Just open the URL.
 - Admin-only (`access.isAdmin`); `503` if `DAILY_API_KEY` is unset.
 - `lib/daily.ts` gained `listWebhooks()` + `createWebhook()`.
 
@@ -19,14 +20,9 @@ Both endpoints need your signed-in **admin** session cookie (they're gated to th
 1. Set **`DAILY_API_KEY`** in Railway (and, if you want signature verification from the first delivery, **`DAILY_WEBHOOK_SECRET`** too), then deploy.
 2. Optional dry run — open in the admin browser:
    `https://app.resumetailored.com/api/employer/daily/register-webhook` (GET) → shows `{ url, registered, count }`.
-3. Register — POST the same URL. Easiest from the browser console while logged in:
-   ```js
-   fetch('/api/employer/daily/register-webhook', { method: 'POST' }).then(r => r.json()).then(console.log)
-   ```
-   or with curl if you copy your session cookie:
-   ```
-   curl -X POST https://app.resumetailored.com/api/employer/daily/register-webhook -H "Cookie: <admin session cookie>"
-   ```
+3. Register — **just open this URL in the admin browser (works on iPad, no console needed):**
+   `https://app.resumetailored.com/api/employer/daily/register-webhook?do=1`
+   It registers if missing and returns the JSON either way. (POST to the same path, or a browser-console `fetch(..., {method:'POST'})`, do the same thing.)
 4. Response:
    - `{ status: "created", url, uuid, hmacSecret? , note }` on first run.
    - `{ status: "exists", url, uuid }` on any subsequent run.

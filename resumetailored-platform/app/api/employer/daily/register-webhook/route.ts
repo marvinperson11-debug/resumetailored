@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { appUrl } from "@/lib/subdomain";
 import { isDailyConfigured, listWebhooks, createWebhook } from "@/lib/daily";
@@ -18,12 +18,18 @@ function webhookUrl(): string {
  * (`recording.ready-to-download` → /api/daily/webhook). Daily manages webhooks
  * via its REST API, not a dashboard page — so this route creates the endpoint
  * with our key. Safe to call repeatedly: it checks the account's existing
- * webhooks and only adds ours when missing. GET reports current state without
- * changing anything.
+ * webhooks and only adds ours when missing.
+ *
+ * - `GET`            → read-only status (nothing changes).
+ * - `GET ?do=1`      → register if missing (for a browser with no console —
+ *                      just open the URL), otherwise report it exists.
+ * - `POST`           → same registration as `GET ?do=1`.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const guard = await requireAdmin();
   if (guard) return guard;
+  if (req.nextUrl.searchParams.get("do") === "1") return register();
+
   const url = webhookUrl();
   const existing = await listWebhooks();
   if (existing === null) return NextResponse.json({ error: "Couldn't list Daily webhooks." }, { status: 502 });
@@ -33,13 +39,18 @@ export async function GET() {
     registered: !!match,
     webhook: match || null,
     count: existing.length,
+    hint: match ? undefined : "Open this URL with ?do=1 to register it.",
   });
 }
 
 export async function POST() {
   const guard = await requireAdmin();
   if (guard) return guard;
+  return register();
+}
 
+/** Register the webhook if missing; idempotent. Shared by POST and GET?do=1. */
+async function register(): Promise<NextResponse> {
   const url = webhookUrl();
   const existing = await listWebhooks();
   if (existing === null) return NextResponse.json({ error: "Couldn't list Daily webhooks (check DAILY_API_KEY)." }, { status: 502 });
