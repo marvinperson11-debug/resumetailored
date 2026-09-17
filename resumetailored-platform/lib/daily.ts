@@ -241,7 +241,10 @@ export async function listWebhooks(): Promise<DailyWebhook[] | null> {
     const arr = Array.isArray(d) ? d : ((d as { data?: unknown[] }).data ?? []);
     return (arr as Record<string, unknown>[]).map(mapWebhook);
   } catch (e) {
-    console.error("[daily.listWebhooks]", e);
+    const err = e as { name?: string; message?: string; cause?: { code?: string } };
+    // Same classification as createWebhook — AbortError (our 8s timeout) vs
+    // DNS (ENOTFOUND/EAI_AGAIN) vs egress (ECONNREFUSED/ETIMEDOUT/UND_ERR_*).
+    console.error("[daily.listWebhooks] threw", err?.name, err?.cause?.code, err?.message);
     return null;
   }
 }
@@ -263,10 +266,20 @@ export async function createWebhook(
     });
     const d = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) {
-      return { error: String(d.info || d.error || `Daily returned ${res.status}`) };
+      const detail = String(d.info || d.error || `Daily returned ${res.status}`);
+      // Log the Daily-side reason so a 5xx here is diagnosable (plan-gated?
+      // bad event type? auth?) — the route returns it too, but the server log
+      // is the record when the response is masked by an upstream proxy.
+      console.error("[daily.createWebhook] non-ok", res.status, detail, JSON.stringify(d).slice(0, 500));
+      return { error: `${detail} (HTTP ${res.status})` };
     }
     return mapWebhook(d);
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Daily request failed" };
+    const err = e as { name?: string; message?: string; cause?: { code?: string } };
+    // Classify the transport failure: AbortError = our timeout fired;
+    // ENOTFOUND/EAI_AGAIN = DNS; ECONNREFUSED/ETIMEDOUT/UND_ERR_* = egress.
+    console.error("[daily.createWebhook] threw", err?.name, err?.cause?.code, err?.message);
+    const code = err?.cause?.code ? ` ${err.cause.code}` : "";
+    return { error: `${err?.name || "Error"}${code}: ${err?.message || "Daily request failed"}` };
   }
 }

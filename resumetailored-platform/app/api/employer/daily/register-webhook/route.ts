@@ -4,8 +4,10 @@ import { appUrl } from "@/lib/subdomain";
 import { isDailyConfigured, listWebhooks, createWebhook } from "@/lib/daily";
 
 export const runtime = "nodejs";
-// Never let this route hang: cap the whole handler well under the Cloudflare→
-// origin window so a slow dependency returns JSON, not a 502 host error.
+// maxDuration is a Vercel serverless directive and a no-op under `next start`
+// on Railway (this app's runtime), so it can't be relied on to bound the
+// handler. Every dependency call is bounded by its own AbortSignal timeout
+// instead (Daily control-plane = 8s in lib/daily.ts).
 export const maxDuration = 20;
 
 const WEBHOOK_PATH = "/api/daily/webhook";
@@ -20,17 +22,23 @@ function webhookUrl(): string {
  * Admin-only, idempotent one-time setup: register the Daily Connect webhook
  * (`recording.ready-to-download` → /api/daily/webhook). Daily manages webhooks
  * via its REST API, not a dashboard page — so this route creates the endpoint
- * with our key. Safe to call repeatedly: it checks the account's existing
- * webhooks and only adds ours when missing.
+ * with our key. Safe to call repeatedly.
  *
  * - `GET`            → read-only status (nothing changes).
- * - `GET ?do=1`      → register if missing (for a browser with no console —
- *                      just open the URL), otherwise report it exists.
+ * - `GET ?do=1`      → register if missing (open the URL — no console needed).
  * - `POST`           → same registration as `GET ?do=1`.
  *
- * Every branch returns JSON — the whole body is wrapped so a thrown error or a
- * hung Daily call becomes a JSON 5xx instead of a crashed worker (Cloudflare
- * 502 host error).
+ * IMPORTANT — why operational failures return HTTP 200:
+ * This deployment sits behind a Cloudflare layer that rewrites ANY origin 5xx
+ * into an opaque branded "502 host error" page, so a JSON 502/503 body never
+ * reaches the operator's browser (that is why earlier hardening looked like it
+ * "did nothing" — it returned correct JSON that Cloudflare then masked). So all
+ * EXPECTED operational outcomes here — registered / exists / created / not
+ * configured / Daily unreachable / Daily rejected — return 200 with `ok:false`
+ * and a `code`, and the failing reason is ALSO logged server-side. Only real
+ * auth rejection stays a 403 (4xx passes through Cloudflare untouched). A
+ * genuinely unexpected throw returns 200 `ok:false code:internal` too, so it is
+ * visible rather than swallowed.
  */
 export async function GET(req: NextRequest) {
   return safe(async () => {
@@ -43,6 +51,7 @@ export async function GET(req: NextRequest) {
     if (existing === null) return dailyUnreachable();
     const match = existing.find((w) => w.url === url);
     return NextResponse.json({
+      ok: true,
       url,
       registered: !!match,
       webhook: match || null,
@@ -68,24 +77,27 @@ async function register(): Promise<NextResponse> {
 
   const match = existing.find((w) => w.url === url);
   if (match) {
-    return NextResponse.json({ status: "exists", url, uuid: match.uuid, eventTypes: match.eventTypes });
+    return NextResponse.json({ ok: true, status: "exists", url, uuid: match.uuid, eventTypes: match.eventTypes });
   }
 
-  // If DAILY_WEBHOOK_SECRET is set, register with it so Daily signs deliveries
-  // with our known secret (verification then works with no extra copy step).
   const hmac = process.env.DAILY_WEBHOOK_SECRET || undefined;
   const created = await createWebhook(url, EVENT_TYPES, hmac);
   if ("error" in created) {
-    return NextResponse.json({ error: `Couldn't register the webhook: ${created.error}`, code: "daily_error" }, { status: 502 });
+    // The Daily-side reason is logged in lib/daily.ts; surface it to the
+    // operator too. 200 so Cloudflare doesn't mask it (see the doc comment).
+    console.error("[register-webhook] createWebhook failed:", created.error);
+    return NextResponse.json(
+      { ok: false, code: "daily_error", error: `Couldn't register the webhook: ${created.error}`, url },
+      { status: 200 }
+    );
   }
 
   return NextResponse.json({
+    ok: true,
     status: "created",
     url,
     uuid: created.uuid,
     eventTypes: created.eventTypes || EVENT_TYPES,
-    // Surface the hmac secret so the operator can set DAILY_WEBHOOK_SECRET to it
-    // (only when we didn't already supply one).
     hmacSecret: hmac ? undefined : created.hmac,
     note: hmac
       ? "Registered and signed with your existing DAILY_WEBHOOK_SECRET — signature verification is active."
@@ -95,41 +107,53 @@ async function register(): Promise<NextResponse> {
   });
 }
 
-/** Clear, app-owned JSON for a Daily control-plane timeout/failure — never a
- *  bare 502 that could be mistaken for a Cloudflare host error. */
+/** Daily control-plane timed out or was unreachable (listWebhooks → null). The
+ *  transport reason (AbortError / DNS / egress) is logged in lib/daily.ts.
+ *  200 so the message reaches the operator through the Cloudflare layer. */
 function dailyUnreachable(): NextResponse {
   return NextResponse.json(
     {
-      error: "Couldn't reach the Daily API (timed out or blocked). Check DAILY_API_KEY and Railway egress to api.daily.co, then retry.",
+      ok: false,
       code: "daily_unreachable",
+      error: "Couldn't reach the Daily API (timed out or blocked). Check DAILY_API_KEY and Railway egress to api.daily.co; the server log shows the transport error (AbortError = timeout, ENOTFOUND = DNS, ECONNREFUSED/ETIMEDOUT = egress).",
     },
-    { status: 503 }
+    { status: 200 }
   );
 }
 
 async function requireAdmin(): Promise<NextResponse | null> {
-  // Resolve auth defensively — if Clerk is unreachable/misconfigured, treat the
-  // caller as unauthenticated (403) rather than letting the throw bubble up.
+  // Resolve auth defensively — a Clerk throw becomes 403 (4xx passes through
+  // Cloudflare), never an unhandled rejection.
   let ctx: Awaited<ReturnType<typeof employerContext>> = null;
   try {
     ctx = await employerContext();
   } catch (e) {
     console.error("[register-webhook] auth resolution failed", e);
-    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+    return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
   }
-  if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (!ctx.access.isAdmin) return NextResponse.json({ error: "Admin only." }, { status: 403 });
-  if (!isDailyConfigured()) return NextResponse.json({ error: "DAILY_API_KEY is not set on this deployment." }, { status: 503 });
+  if (!ctx) return NextResponse.json({ ok: false, error: "forbidden" }, { status: 403 });
+  if (!ctx.access.isAdmin) return NextResponse.json({ ok: false, error: "Admin only." }, { status: 403 });
+  // Not-configured is an operational state, not auth — return 200 so it is
+  // visible through Cloudflare rather than masked as a 502.
+  if (!isDailyConfigured())
+    return NextResponse.json(
+      { ok: false, code: "not_configured", error: "DAILY_API_KEY is not set on this deployment." },
+      { status: 200 }
+    );
   return null;
 }
 
-/** Run a handler, turning any thrown error into a JSON 500 (never a crashed
- *  worker / host-level 502). */
+/** Run a handler; turn any thrown error into a VISIBLE 200 `ok:false` (a 5xx
+ *  would be masked by the Cloudflare layer) and log it. */
 async function safe(fn: () => Promise<NextResponse>): Promise<NextResponse> {
   try {
     return await fn();
   } catch (e) {
-    console.error("[register-webhook] handler threw", e);
-    return NextResponse.json({ error: "Internal error while registering the webhook.", code: "internal" }, { status: 500 });
+    const err = e as { name?: string; message?: string };
+    console.error("[register-webhook] handler threw", err?.name, err?.message, e);
+    return NextResponse.json(
+      { ok: false, code: "internal", error: `Internal error: ${err?.name || "Error"}: ${err?.message || "unknown"}` },
+      { status: 200 }
+    );
   }
 }
