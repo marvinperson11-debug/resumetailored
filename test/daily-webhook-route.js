@@ -96,6 +96,18 @@ check('the underlying Daily failure is logged for diagnosis',
   /console\.error\(["']\[register-webhook\] createWebhook failed/.test(route),
   'createWebhook/listWebhooks must log status+transport error (DNS/timeout/HTTP)');
 
+// ── 5. hmac is base64-encoded for Daily, and verify uses the same trimmed
+//       secret as the key — one scheme, both sides. Daily rejects a plain
+//       (non-base64) hmac with HTTP 400. ───────────────────────────────────────
+check('createWebhook base64-encodes the trimmed secret before sending to Daily',
+  /Buffer\.from\(\s*hmac\.trim\(\)\s*,\s*["']utf8["']\s*\)\.toString\(\s*["']base64["']\s*\)/.test(daily),
+  'Daily requires a valid base64 hmac; send base64(trimmedSecret)');
+
+check('verifyDailySignature trims the secret and uses it as the HMAC key',
+  /const\s+key\s*=\s*\(secret\s*\|\|\s*["']["']\)\.trim\(\)/.test(daily) &&
+  /createHmac\(\s*["']sha256["']\s*,\s*key\s*\)/.test(daily),
+  'verify key must be the trimmed secret (= the decoded bytes of the base64 hmac)');
+
 // ── 4. The ?do=1 GET path (iPad, no console) is present ──────────────────────
 check('GET ?do=1 registers (iPad-friendly path is in the shipped source)',
   /searchParams\.get\(["']do["']\)\s*===\s*["']1["']/.test(route) &&

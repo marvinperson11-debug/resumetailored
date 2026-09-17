@@ -184,14 +184,20 @@ export async function downloadToBuffer(url: string): Promise<Buffer | null> {
 
 /**
  * Verify a Daily webhook signature. Daily signs `${timestamp}.${rawBody}` with
- * HMAC-SHA256 (base64) using the webhook's hmac secret. When no secret is
- * configured we accept (the endpoint still validates payload shape).
+ * HMAC-SHA256 (base64) using the webhook's hmac secret — where the key is the
+ * DECODED bytes of the base64 `hmac` we registered. We register
+ * base64(trimmed DAILY_WEBHOOK_SECRET) (see createWebhook), so those decoded
+ * bytes are exactly the trimmed secret's utf8 bytes — i.e. the HMAC key here is
+ * the trimmed secret used directly. One scheme, both sides. The trim also drops
+ * any trailing newline that crept into the env value. No secret ⇒ accept (the
+ * endpoint still validates payload shape).
  */
 export function verifyDailySignature(rawBody: string, timestamp: string | null, signature: string | null, secret: string): boolean {
-  if (!secret) return true; // not configured → accept
+  const key = (secret || "").trim();
+  if (!key) return true; // not configured → accept
   if (!timestamp || !signature) return false;
   try {
-    const expected = crypto.createHmac("sha256", secret).update(`${timestamp}.${rawBody}`, "utf8").digest("base64");
+    const expected = crypto.createHmac("sha256", key).update(`${timestamp}.${rawBody}`, "utf8").digest("base64");
     const a = Buffer.from(expected);
     const b = Buffer.from(signature);
     return a.length === b.length && crypto.timingSafeEqual(a, b);
@@ -250,18 +256,27 @@ export async function listWebhooks(): Promise<DailyWebhook[] | null> {
 }
 
 /** Register a webhook endpoint. When `hmac` is given, Daily signs deliveries
- *  with it (so our verifier can use the same shared secret). */
+ *  with it (so our verifier can use the same shared secret).
+ *
+ *  Daily requires the `hmac` field to be a VALID BASE64 STRING (it decodes it to
+ *  the signing-key bytes), and rejects a plain string with HTTP 400
+ *  ("\"hmac\" must be a valid base64 string"). So we base64-encode the trimmed
+ *  secret here — the operator's DAILY_WEBHOOK_SECRET can be any string. The
+ *  matching decode/verify side is verifyDailySignature (which uses the trimmed
+ *  secret directly as the key = the decoded bytes). The trim also drops any
+ *  trailing newline that crept into the env value. */
 export async function createWebhook(
   url: string,
   eventTypes: string[],
   hmac?: string
 ): Promise<DailyWebhook | { error: string }> {
   if (!isDailyConfigured()) return { error: "DAILY_API_KEY is not set." };
+  const hmacB64 = hmac ? Buffer.from(hmac.trim(), "utf8").toString("base64") : undefined;
   try {
     const res = await fetch(`${DAILY_API}/webhooks`, {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({ url, eventTypes, ...(hmac ? { hmac } : {}) }),
+      body: JSON.stringify({ url, eventTypes, ...(hmacB64 ? { hmac: hmacB64 } : {}) }),
       signal: AbortSignal.timeout(DAILY_TIMEOUT_MS),
     });
     const d = (await res.json().catch(() => ({}))) as Record<string, unknown>;
