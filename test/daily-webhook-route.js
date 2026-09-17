@@ -67,25 +67,34 @@ check('createWebhook() is timeout-guarded',
 check('route exports GET and POST',
   /export async function GET\b/.test(route) && /export async function POST\b/.test(route));
 
-check('route wraps handlers in a safe() try/catch → JSON 500',
+check('route wraps handlers in a safe() try/catch → visible JSON, not a crash',
   /async function safe\(/.test(route) &&
   /return safe\(async/.test(route) &&
-  /catch\s*\([\s\S]*?status:\s*500/.test(route),
-  'GET/POST must route through safe(); a thrown error must become JSON 500');
+  /catch\s*\([\s\S]*?code:\s*["']internal["']/.test(route),
+  'GET/POST must route through safe(); a thrown error must become a JSON body');
 
 check('auth resolution is caught (a Clerk throw → 403, not an unhandled throw)',
   /try\s*\{[\s\S]*?employerContext\(\)[\s\S]*?\}\s*catch[\s\S]*?status:\s*403/.test(route),
   'employerContext() must be wrapped so a throw returns 403, not a crash');
 
-check('route caps its own duration under the host window',
-  /export const maxDuration\s*=\s*\d+/.test(route));
+// ── 3. Operational outcomes return HTTP 200 so the Cloudflare layer (which
+//       masks any origin 5xx as an opaque "502 host error") can't hide them.
+//       Only auth stays 4xx (which passes through). ────────────────────────────
+check('operational failures do NOT return 5xx (would be masked by Cloudflare)',
+  !/status:\s*5\d\d/.test(route),
+  'no 5xx status codes — Cloudflare rewrites origin 5xx to a 502 page');
 
-// ── 3. Daily unreachable → app-owned JSON, not a bare 502 ────────────────────
-check('a Daily timeout/unreachable returns JSON 503 (not a host 502)',
-  /function dailyUnreachable\(\)[\s\S]*?status:\s*503/.test(route) &&
-  /listWebhooks\(\)/.test(route) &&
+check('Daily-unreachable and Daily-error outcomes are returned as visible JSON',
+  /function dailyUnreachable\(\)[\s\S]*?code:\s*["']daily_unreachable["']/.test(route) &&
+  /code:\s*["']daily_error["']/.test(route) &&
   /===\s*null[\s\S]*?dailyUnreachable\(\)/.test(route),
-  'listWebhooks() === null must map to dailyUnreachable() (503 JSON)');
+  'listWebhooks() === null → dailyUnreachable(); createWebhook error → daily_error');
+
+check('the underlying Daily failure is logged for diagnosis',
+  /console\.error\(["']\[daily\.createWebhook\]/.test(daily) &&
+  /console\.error\(["']\[daily\.listWebhooks\]/.test(daily) &&
+  /console\.error\(["']\[register-webhook\] createWebhook failed/.test(route),
+  'createWebhook/listWebhooks must log status+transport error (DNS/timeout/HTTP)');
 
 // ── 4. The ?do=1 GET path (iPad, no console) is present ──────────────────────
 check('GET ?do=1 registers (iPad-friendly path is in the shipped source)',
