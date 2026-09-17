@@ -205,6 +205,10 @@ function InterviewCard({
   const Icon = MODE_ICON[i.mode];
   const joinUrl = i.roomUrl || (i.mode === "video" && /^https?:\/\//i.test(i.location) ? i.location : "");
   const isLink = !!joinUrl;
+  // Join is available for any non-terminal interview that has a room — not only
+  // status === "scheduled". A room-backed row must always offer Join, even if the
+  // status is an unexpected value (e.g. a drifted 'pending').
+  const isActive = i.status !== "completed" && i.status !== "cancelled";
   return (
     <Panel className="space-y-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -274,7 +278,7 @@ function InterviewCard({
       {/* Video: join + recording/transcript links */}
       {(isLink || i.recordingUrl || i.transcriptUrl) && (
         <div className="flex flex-wrap items-center gap-2 border-t border-border-gold pt-3">
-          {isLink && i.status === "scheduled" && (
+          {isLink && isActive && (
             <a
               href={joinUrl}
               target="_blank"
