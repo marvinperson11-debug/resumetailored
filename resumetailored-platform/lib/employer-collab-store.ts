@@ -513,7 +513,11 @@ export async function createInterview(employerId: string, v: InterviewInput): Pr
     if (!(await ownsApplicant(c, employerId, v.applicantId))) return null; // ownsApplicant logs why
     const { data, error } = await c
       .from("interviews")
-      .insert({ employer_id: employerId, applicant_id: v.applicantId, mode: v.mode || "video", duration_min: v.durationMin ?? 30, ...interviewRow(v) })
+      // Set status explicitly rather than trusting the DB column default: a
+      // drifted live `interviews` table defaults status to 'pending' (an
+      // out-of-vocabulary value the UI treats as not-scheduled, so the Join
+      // button never renders). interviewRow(v) still wins if a caller passes one.
+      .insert({ employer_id: employerId, applicant_id: v.applicantId, mode: v.mode || "video", duration_min: v.durationMin ?? 30, status: "scheduled", ...interviewRow(v) })
       .select(INT_COLS)
       .single();
     if (error || !data) {
