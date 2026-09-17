@@ -546,8 +546,13 @@ export async function updateInterview(
   row.updated_at = new Date().toISOString();
   try {
     const { error } = await c.from("interviews").update(row).eq("employer_id", employerId).eq("id", id);
+    // Supabase returns the DB error rather than throwing — log it so a silent
+    // update failure (e.g. a live table missing the `updated_at` column) is
+    // diagnosable instead of surfacing to the UI as "nothing happened".
+    if (error) console.error("[updateInterview] update failed", { employerId, id, cols: Object.keys(row), error });
     return !error;
-  } catch {
+  } catch (e) {
+    console.error("[updateInterview] threw", { employerId, id, error: e });
     return false;
   }
 }
@@ -577,9 +582,13 @@ export async function setInterviewRoom(
     if (v.recordEnabled !== undefined) patch.record_enabled = !!v.recordEnabled;
     if (v.location !== undefined) patch.location = v.location;
     const { error } = await c.from("interviews").update(patch).eq("employer_id", employerId).eq("id", id);
+    // Log the returned DB error too (not just thrown ones): if this fails
+    // silently the room never persists (room_url stays null) and the row shows
+    // no Join even though the Daily room was created.
+    if (error) console.error("[setInterviewRoom] update failed", { employerId, id, cols: Object.keys(patch), error });
     return !error;
   } catch (e) {
-    console.error("[setInterviewRoom]", e);
+    console.error("[setInterviewRoom] threw", { employerId, id, error: e });
     return false;
   }
 }

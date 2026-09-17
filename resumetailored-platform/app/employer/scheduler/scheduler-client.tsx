@@ -72,11 +72,26 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
     });
 
   async function patch(id: number, body: Record<string, unknown>) {
-    await fetch(`/api/employer/interviews/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    // Surface failures instead of silently reloading (a failed PATCH used to
+    // look like "the page refreshed but nothing changed").
+    try {
+      const res = await fetch(`/api/employer/interviews/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!res.ok) {
+        const d = (await res.json().catch(() => ({}))) as { error?: string };
+        setNotice(d.error || "Couldn't update the interview. Please try again.");
+      }
+    } catch {
+      setNotice("Couldn't update the interview (network error).");
+    }
     load();
   }
   async function del(id: number) {
-    await fetch(`/api/employer/interviews/${id}`, { method: "DELETE" });
+    try {
+      const res = await fetch(`/api/employer/interviews/${id}`, { method: "DELETE" });
+      if (!res.ok) setNotice("Couldn't delete the interview. Please try again.");
+    } catch {
+      setNotice("Couldn't delete the interview (network error).");
+    }
     load();
   }
 
