@@ -2,10 +2,8 @@ import { NextResponse } from "next/server";
 import {
   verifyDailySignature,
   interviewIdFromRoomName,
-  getRecordingDownloadLink,
   getRecording,
   getTranscriptText,
-  downloadToBuffer,
 } from "@/lib/daily";
 import {
   getInterviewOwner,
@@ -20,6 +18,11 @@ import { canUseAiSummaryForTier } from "@/lib/employer-plan";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
+
+/** Only small assets go to Supabase Storage (50MB per-object hard limit). The
+ *  video never does — it stays in Daily's cloud. Transcript/audio must be under
+ *  this to be archived; anything larger is skipped rather than 413'ing. */
+const MAX_SUPABASE_ASSET_BYTES = 10 * 1024 * 1024;
 
 /**
  * Daily.co Connect webhook. On `recording.ready-to-download`, archive the
@@ -57,35 +60,31 @@ export async function POST(req: Request) {
   if (!owner || !owner.employerId) return NextResponse.json({ ok: true, note: "interview not found" });
 
   try {
-    let recordingUrl: string | undefined;
     let transcriptUrl: string | undefined;
 
-    // Recording → private bucket.
-    if (recordingId) {
-      const dl = await getRecordingDownloadLink(recordingId);
-      if (dl) {
-        const buf = await downloadToBuffer(dl);
-        if (buf) {
-          const path = await uploadInterviewMedia(owner.employerId, interviewId, {
-            data: buf,
-            contentType: "video/mp4",
-            filename: "recording.mp4",
-          });
-          if (path) recordingUrl = path;
-        }
-      }
-    }
+    // The VIDEO stays in Daily's cloud storage — a 2-min interview is ~100MB+,
+    // far over Supabase Storage's 50MB per-object limit (uploading it 413'd and
+    // the interview never completed). We store only Daily's recording id; the
+    // download route fetches a fresh signed URL from Daily on demand.
+    const dailyRecordingId = recordingId || undefined;
 
-    // Transcript (best-effort; requires transcription enabled on the Daily domain).
+    // Transcript (best-effort; requires transcription enabled on the Daily
+    // domain). Small text, safe to archive — but still size-guarded so no large
+    // asset can 413 the way the video did.
     const rec = recordingId ? await getRecording(recordingId) : null;
     const transcript = rec?.sessionId ? await getTranscriptText(rec.sessionId) : null;
     if (transcript) {
-      const path = await uploadInterviewMedia(owner.employerId, interviewId, {
-        data: Buffer.from(transcript, "utf8"),
-        contentType: "text/plain",
-        filename: "transcript.txt",
-      });
-      if (path) transcriptUrl = path;
+      const buf = Buffer.from(transcript, "utf8");
+      if (buf.length <= MAX_SUPABASE_ASSET_BYTES) {
+        const path = await uploadInterviewMedia(owner.employerId, interviewId, {
+          data: buf,
+          contentType: "text/plain",
+          filename: "transcript.txt",
+        });
+        if (path) transcriptUrl = path;
+      } else {
+        console.error("[daily webhook] transcript too large for Supabase; skipping upload", { interviewId, bytes: buf.length });
+      }
     }
 
     // AI summary (Scale+ tiers) from the transcript.
@@ -110,7 +109,9 @@ export async function POST(req: Request) {
       }
     }
 
-    await updateInterviewMedia(interviewId, { recordingUrl, transcriptUrl, aiSummary, status: "completed" });
+    // Video alone completes the interview — transcript is best-effort and may be
+    // absent (transcription not enabled on the domain).
+    await updateInterviewMedia(interviewId, { recordingId: dailyRecordingId, transcriptUrl, aiSummary, status: "completed" });
   } catch (e) {
     console.error("[daily webhook] processing failed", e);
     // Still 200 so Daily doesn't hammer retries; the manual-complete fallback remains.

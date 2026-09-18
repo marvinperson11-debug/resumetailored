@@ -295,7 +295,7 @@ function InterviewCard({
       </div>
 
       {/* Video: join + recording/transcript links */}
-      {(isLink || i.recordingUrl || i.transcriptUrl) && (
+      {(isLink || i.recordingId || i.recordingUrl || i.transcriptUrl) && (
         <div className="flex flex-wrap items-center gap-2 border-t border-border-gold pt-3">
           {isLink && isActive && (
             <a
@@ -307,9 +307,11 @@ function InterviewCard({
               <Video className="h-3.5 w-3.5" /> Join
             </a>
           )}
-          {i.recordingUrl && (
+          {(i.recordingId || i.recordingUrl) && (
             <a
-              href={`/api/employer/interviews/${i.id}/recording?type=recording`}
+              // Daily-cloud recordings (recordingId) resolve to a fresh URL via
+              // recording-download; legacy Supabase ones fall through the same route.
+              href={i.recordingId ? `/api/employer/interviews/${i.id}/recording-download` : `/api/employer/interviews/${i.id}/recording?type=recording`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-cream hover:bg-white/[0.08]"
