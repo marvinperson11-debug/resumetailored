@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { employerContext } from "@/lib/employer-auth";
 import { getApplicant, getEmployerProfile } from "@/lib/employer-store";
 import {
@@ -8,7 +9,9 @@ import {
   advanceApplicantOnSend,
   downloadEsignDocumentBase64,
   getTemplateForSend,
+  getEnvelopeByEnvelopeId,
 } from "@/lib/docusign-store";
+import { notifySignerOfDocRequest } from "@/lib/esign-delivery";
 import {
   isDocusignConfigured,
   buildEnvelope,
@@ -63,7 +66,17 @@ export async function POST(req: Request) {
     subject?: string;
     message?: string;
     writeup?: Partial<WriteupFields>;
+    requestedDocs?: string[];
   };
+
+  // Documents to request from the signer (named upload slots). Deduped + capped.
+  const requestedDocs = Array.from(
+    new Set(
+      (Array.isArray(b.requestedDocs) ? b.requestedDocs : [])
+        .map((n) => String(n || "").trim())
+        .filter(Boolean)
+    )
+  ).slice(0, 20);
 
   const docType: DocType = isDocType(b.docType) ? b.docType : "offer";
 
@@ -178,6 +191,7 @@ export async function POST(req: Request) {
   }
 
   const status = (normalizeEnvelopeStatus(result.status) || "sent") as DocusignStatus;
+  const signToken = crypto.randomUUID();
   const envelope = await createEnvelopeRecord(ctx.employerId, {
     docType,
     documentName: docType === "custom" || docType === "writeup" ? documentName : "",
@@ -191,10 +205,21 @@ export async function POST(req: Request) {
     candidateName: signerName,
     candidateEmail: signerEmail,
     sentBy: ctx.userId,
+    signToken,
+    requestedDocs: requestedDocs.map((name) => ({ name, uploaded: false })),
   });
 
   // Status sync: only an offer advances the applicant (writeup/custom/nda do not).
   await advanceApplicantOnSend(applicantId, docType);
+
+  // If the employer requested documents, email the signer the upload link now
+  // (the DocuSign signing email can't carry it — the envelope id isn't known
+  // until after the send). Fire-and-forget so the response stays snappy.
+  if (requestedDocs.length) {
+    void getEnvelopeByEnvelopeId(result.envelopeId).then((lookup) => {
+      if (lookup) return notifySignerOfDocRequest(lookup, requestedDocs);
+    });
+  }
 
   return NextResponse.json({ envelope, envelopeId: result.envelopeId, status });
 }

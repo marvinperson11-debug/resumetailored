@@ -1,5 +1,16 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { DocusignEnvelope, DocusignConnection, DocusignStatus, OfferTerms, DocType, EsignTemplate, EditableDocType } from "./employer-ai";
+import type {
+  DocusignEnvelope,
+  DocusignConnection,
+  DocusignStatus,
+  OfferTerms,
+  DocType,
+  EsignTemplate,
+  EditableDocType,
+  RequestedDoc,
+  EnvelopeAttachment,
+  AttachmentKind,
+} from "./employer-ai";
 import { isDocusignStatus, isDocusignTerminal, isDocType, EDITABLE_DOC_TYPES } from "./employer-ai";
 import {
   encryptToken,
@@ -184,7 +195,7 @@ export async function monthlySendCount(employerId: string): Promise<number> {
 
 // ── Envelopes ─────────────────────────────────────────────────────────────────
 const ENV_COLS =
-  "id, doc_type, document_name, applicant_id, shortlist_member_id, envelope_id, subject, message, status, offer, candidate_name, candidate_email, sent_by, sent_at, completed_at, created_at";
+  "id, doc_type, document_name, applicant_id, shortlist_member_id, envelope_id, subject, message, status, offer, candidate_name, candidate_email, sent_by, sent_at, completed_at, created_at, requested_docs, attachments, sign_token";
 
 function mapOffer(v: unknown): OfferTerms {
   const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
@@ -194,6 +205,35 @@ function mapOffer(v: unknown): OfferTerms {
     startDate: String(o.startDate || o.start_date || ""),
     extraTerms: o.extraTerms || o.extra_terms ? String(o.extraTerms || o.extra_terms) : "",
   };
+}
+
+function mapRequestedDocs(v: unknown): RequestedDoc[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((r) => {
+      const o = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
+      return { name: String(o.name || "").trim(), uploaded: !!o.uploaded };
+    })
+    .filter((r) => r.name);
+}
+
+function mapAttachments(v: unknown): EnvelopeAttachment[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((r) => {
+      const o = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
+      const kind: AttachmentKind = o.kind === "requested" ? "requested" : "other";
+      const by: "signer" | "employer" = o.by === "employer" ? "employer" : "signer";
+      return {
+        name: String(o.name || "").trim(),
+        url: String(o.url || ""),
+        note: String(o.note || ""),
+        uploadedAt: String(o.uploaded_at || o.uploadedAt || ""),
+        kind,
+        by,
+      };
+    })
+    .filter((a) => a.url);
 }
 
 function mapEnvelope(r: Record<string, unknown>): DocusignEnvelope {
@@ -215,6 +255,9 @@ function mapEnvelope(r: Record<string, unknown>): DocusignEnvelope {
     sentAt: (r.sent_at as string) || "",
     completedAt: (r.completed_at as string) || null,
     createdAt: (r.created_at as string) || "",
+    requestedDocs: mapRequestedDocs(r.requested_docs),
+    attachments: mapAttachments(r.attachments),
+    signToken: (r.sign_token as string) || "",
   };
 }
 
@@ -233,6 +276,8 @@ export async function createEnvelopeRecord(
     candidateName: string;
     candidateEmail: string;
     sentBy: string;
+    signToken: string;
+    requestedDocs?: RequestedDoc[];
   }
 ): Promise<DocusignEnvelope | null> {
   const c = db();
@@ -254,6 +299,8 @@ export async function createEnvelopeRecord(
         candidate_name: v.candidateName,
         candidate_email: v.candidateEmail,
         sent_by: v.sentBy,
+        sign_token: v.signToken,
+        requested_docs: (v.requestedDocs || []).map((d) => ({ name: d.name, uploaded: false })),
       })
       .select(ENV_COLS)
       .single();
@@ -422,6 +469,250 @@ export async function downloadEsignDocumentBase64(employerId: string, path: stri
   } catch (e) {
     console.error("[downloadEsignDocumentBase64]", e);
     return null;
+  }
+}
+
+// ── Envelope attachments (envelope-attachments private bucket) ────────────────
+const ENVELOPE_ATTACH_BUCKET = "envelope-attachments";
+export const MAX_ENVELOPE_ATTACH_BYTES = 10 * 1024 * 1024; // 10 MB per file
+export const MAX_ENVELOPE_ATTACHMENTS = 40; // hard ceiling of files stored per envelope
+
+/** Allowed signer/employer attachment types (extension → mime for storage). */
+export const ENVELOPE_ATTACH_EXT: Record<string, string> = {
+  pdf: "application/pdf",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+};
+
+function sanitizeAttachName(name: string): string {
+  const dot = name.lastIndexOf(".");
+  const base = (dot > 0 ? name.slice(0, dot) : name).toLowerCase();
+  return base.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "file";
+}
+
+/** The file extension (lowercased, no dot) if it's an allowed attachment type. */
+export function attachmentExt(filename: string, mime?: string): string | null {
+  const dot = filename.lastIndexOf(".");
+  const ext = dot >= 0 ? filename.slice(dot + 1).toLowerCase() : "";
+  if (ext && ENVELOPE_ATTACH_EXT[ext]) return ext;
+  // Fall back to mime when the name has no usable extension.
+  const byMime = Object.entries(ENVELOPE_ATTACH_EXT).find(([, m]) => m === mime);
+  return byMime ? byMime[0] : null;
+}
+
+/** Upload an attachment into `{employerId}/{envelopeId}/…`; returns its path. */
+export async function uploadEnvelopeAttachment(
+  employerId: string,
+  envelopeId: string,
+  file: { data: Buffer | Uint8Array; filename: string; ext: string }
+): Promise<{ path: string } | null> {
+  const c = db();
+  if (!c || !employerId || !envelopeId) return null;
+  const contentType = ENVELOPE_ATTACH_EXT[file.ext] || "application/octet-stream";
+  const path = `${employerId}/${envelopeId}/${Date.now()}-${sanitizeAttachName(file.filename)}.${file.ext}`;
+  try {
+    const { error } = await c.storage.from(ENVELOPE_ATTACH_BUCKET).upload(path, file.data, { contentType, upsert: false });
+    if (error) {
+      console.error("[uploadEnvelopeAttachment]", error);
+      return null;
+    }
+    return { path };
+  } catch (e) {
+    console.error("[uploadEnvelopeAttachment]", e);
+    return null;
+  }
+}
+
+/** Download an attachment's bytes — only within the employer's own folder. */
+export async function downloadEnvelopeAttachment(
+  employerId: string,
+  path: string
+): Promise<{ bytes: Buffer; contentType: string } | null> {
+  const c = db();
+  if (!c || !employerId || !path || !path.startsWith(`${employerId}/`)) return null;
+  try {
+    const { data, error } = await c.storage.from(ENVELOPE_ATTACH_BUCKET).download(path);
+    if (error || !data) {
+      console.error("[downloadEnvelopeAttachment]", error);
+      return null;
+    }
+    const bytes = Buffer.from(await data.arrayBuffer());
+    if (!bytes.length) return null;
+    const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
+    return { bytes, contentType: ENVELOPE_ATTACH_EXT[ext] || "application/octet-stream" };
+  } catch (e) {
+    console.error("[downloadEnvelopeAttachment]", e);
+    return null;
+  }
+}
+
+/** A minimal envelope row including employer_id — for the login-less signer page
+ *  and the webhook completion path, which don't have an employer scope. */
+export interface EnvelopeLookup {
+  id: number;
+  employerId: string;
+  envelopeId: string;
+  status: DocusignStatus;
+  candidateName: string;
+  candidateEmail: string;
+  documentName: string;
+  subject: string;
+  requestedDocs: RequestedDoc[];
+  attachments: EnvelopeAttachment[];
+  signToken: string;
+  signedDocsEmailedAt: string | null;
+}
+
+const LOOKUP_COLS =
+  "id, employer_id, envelope_id, status, candidate_name, candidate_email, document_name, subject, requested_docs, attachments, sign_token, signed_docs_emailed_at";
+
+function mapLookup(r: Record<string, unknown>): EnvelopeLookup {
+  return {
+    id: r.id as number,
+    employerId: (r.employer_id as string) || "",
+    envelopeId: (r.envelope_id as string) || "",
+    status: isDocusignStatus(r.status) ? r.status : "sent",
+    candidateName: (r.candidate_name as string) || "",
+    candidateEmail: (r.candidate_email as string) || "",
+    documentName: (r.document_name as string) || "",
+    subject: (r.subject as string) || "",
+    requestedDocs: mapRequestedDocs(r.requested_docs),
+    attachments: mapAttachments(r.attachments),
+    signToken: (r.sign_token as string) || "",
+    signedDocsEmailedAt: (r.signed_docs_emailed_at as string) || null,
+  };
+}
+
+/** Resolve an envelope by its DocuSign envelope id + signer token (login-less).
+ *  Returns null when the token doesn't match — the signer page's only auth. */
+export async function getEnvelopeBySignToken(envelopeId: string, token: string): Promise<EnvelopeLookup | null> {
+  const c = db();
+  if (!c || !envelopeId || !token) return null;
+  try {
+    const { data } = await c
+      .from("docusign_envelopes")
+      .select(LOOKUP_COLS)
+      .eq("envelope_id", envelopeId)
+      .eq("sign_token", token)
+      .maybeSingle();
+    return data ? mapLookup(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Resolve an envelope by its DocuSign envelope id alone (webhook path). */
+export async function getEnvelopeByEnvelopeId(envelopeId: string): Promise<EnvelopeLookup | null> {
+  const c = db();
+  if (!c || !envelopeId) return null;
+  try {
+    const { data } = await c.from("docusign_envelopes").select(LOOKUP_COLS).eq("envelope_id", envelopeId).maybeSingle();
+    return data ? mapLookup(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Owner-scoped lookup by DB id, returning the full lookup shape (employer_id). */
+export async function getEnvelopeLookupOwned(employerId: string, id: number): Promise<EnvelopeLookup | null> {
+  const c = db();
+  if (!c || !employerId) return null;
+  try {
+    const { data } = await c
+      .from("docusign_envelopes")
+      .select(LOOKUP_COLS)
+      .eq("employer_id", employerId)
+      .eq("id", id)
+      .maybeSingle();
+    return data ? mapLookup(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Append an attachment to an envelope (read-modify-write on the jsonb array).
+ * When `requestedName` is given, the matching requested-doc slot is also marked
+ * uploaded. Scoped by DB id; caller supplies the current row (avoids a re-read).
+ */
+export async function appendAttachment(
+  id: number,
+  current: { requestedDocs: RequestedDoc[]; attachments: EnvelopeAttachment[] },
+  attachment: EnvelopeAttachment,
+  requestedName?: string
+): Promise<boolean> {
+  const c = db();
+  if (!c || !id) return false;
+  const attachments = [...current.attachments, attachment];
+  let requestedDocs = current.requestedDocs;
+  if (requestedName) {
+    const target = requestedName.trim().toLowerCase();
+    requestedDocs = current.requestedDocs.map((d) =>
+      d.name.trim().toLowerCase() === target ? { ...d, uploaded: true } : d
+    );
+  }
+  try {
+    const { error } = await c
+      .from("docusign_envelopes")
+      .update({
+        attachments,
+        requested_docs: requestedDocs.map((d) => ({ name: d.name, uploaded: d.uploaded })),
+      })
+      .eq("id", id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** Add named document requests to an existing envelope (dedup by name). */
+export async function addRequestedDocs(
+  employerId: string,
+  id: number,
+  names: string[]
+): Promise<DocusignEnvelope | null> {
+  const c = db();
+  if (!c || !employerId || !id) return null;
+  const existing = await getEnvelopeRecord(employerId, id);
+  if (!existing) return null;
+  const have = new Set(existing.requestedDocs.map((d) => d.name.trim().toLowerCase()));
+  const additions = names
+    .map((n) => n.trim())
+    .filter((n) => n && !have.has(n.toLowerCase()));
+  if (!additions.length) return existing;
+  const merged = [
+    ...existing.requestedDocs.map((d) => ({ name: d.name, uploaded: d.uploaded })),
+    ...additions.map((name) => ({ name, uploaded: false })),
+  ];
+  try {
+    const { data, error } = await c
+      .from("docusign_envelopes")
+      .update({ requested_docs: merged })
+      .eq("employer_id", employerId)
+      .eq("id", id)
+      .select(ENV_COLS)
+      .single();
+    if (error || !data) return null;
+    return mapEnvelope(data);
+  } catch {
+    return null;
+  }
+}
+
+/** Stamp the completion-email idempotency guard so it is sent only once. */
+export async function markSignedDocsEmailed(envelopeId: string): Promise<void> {
+  const c = db();
+  if (!c || !envelopeId) return;
+  try {
+    await c
+      .from("docusign_envelopes")
+      .update({ signed_docs_emailed_at: new Date().toISOString() })
+      .eq("envelope_id", envelopeId);
+  } catch {
+    /* best-effort */
   }
 }
 

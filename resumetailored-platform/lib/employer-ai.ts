@@ -276,6 +276,28 @@ export interface WriteupFields {
   additionalNotes: string;
 }
 
+/** A document the employer asked the signer to upload (a "please upload" slot). */
+export interface RequestedDoc {
+  name: string;
+  uploaded: boolean;
+}
+
+/** The kind of attachment: a file that fills a named request, or a free-form
+ *  ("Other documents") upload / an employer-attached file. */
+export type AttachmentKind = "requested" | "other";
+
+/** A file attached to an envelope from either side. `url` is the private storage
+ *  path (never a public URL) — it is served only through an authenticated API. */
+export interface EnvelopeAttachment {
+  name: string;
+  url: string;
+  note: string;
+  uploadedAt: string;
+  kind: AttachmentKind;
+  /** Who uploaded it. Absent on legacy rows ⇒ treated as the signer. */
+  by?: "signer" | "employer";
+}
+
 export interface DocusignEnvelope {
   id: number;
   docType: DocType;
@@ -293,6 +315,12 @@ export interface DocusignEnvelope {
   sentAt: string;
   completedAt: string | null;
   createdAt: string;
+  /** Documents the employer asked the signer to upload. */
+  requestedDocs: RequestedDoc[];
+  /** Files attached to this envelope (signer uploads + employer files). */
+  attachments: EnvelopeAttachment[];
+  /** The signer's login-less upload-page token. Present only for the owner. */
+  signToken: string;
 }
 
 /** The DocuSign account an employer has connected (for the status page). */

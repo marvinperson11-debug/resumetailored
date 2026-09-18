@@ -476,15 +476,20 @@ export function buildEnvelope(args: {
   message: string;
   signerName: string;
   signerEmail: string;
+  /** Appended to the signing email only (not the document) — e.g. an "after you
+   *  sign, please upload these documents here: <link>" note. */
+  emailNote?: string;
 }): Record<string, unknown> {
-  const { documentHtml, customPdfBase64, documentName, subject, message, signerName, signerEmail } = args;
+  const { documentHtml, customPdfBase64, documentName, subject, message, signerName, signerEmail, emailNote } = args;
   const isPdf = !documentHtml && !!customPdfBase64;
   const documentEntry = isPdf
     ? { documentId: "1", name: (documentName || "Document").slice(0, 100), fileExtension: "pdf", documentBase64: customPdfBase64 }
     : { documentId: "1", name: (documentName || "Document").slice(0, 100), fileExtension: "html", documentBase64: Buffer.from(documentHtml || "", "utf8").toString("base64") };
+  const emailBlurb = [message || "", emailNote || ""].filter(Boolean).join("\n\n");
   return {
     emailSubject: (subject || "Document to sign").slice(0, 100),
-    emailBlurb: message || "",
+    // DocuSign caps emailBlurb at 10000 chars.
+    emailBlurb: emailBlurb.slice(0, 10000),
     status: "sent",
     documents: [documentEntry],
     recipients: {
@@ -546,6 +551,29 @@ export async function getCertificate(args: EnvelopeArgs, envelopeId: string): Pr
       {
         headers: { Authorization: `Bearer ${args.accessToken}`, Accept: "application/pdf" },
         signal: AbortSignal.timeout(30000),
+      }
+    );
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    return buf.length ? buf : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Download the completed documents combined into a single PDF, with the
+ * certificate of completion appended (`?certificate=true`). This is what the
+ * signer receives on completion ("Your signed documents"). Returns the PDF
+ * bytes, or null on any failure (best-effort — the caller logs and moves on).
+ */
+export async function getCombinedDocuments(args: EnvelopeArgs, envelopeId: string): Promise<Buffer | null> {
+  try {
+    const res = await fetch(
+      `${accountApi(args.baseUri, args.accountId)}/envelopes/${encodeURIComponent(envelopeId)}/documents/combined?certificate=true`,
+      {
+        headers: { Authorization: `Bearer ${args.accessToken}`, Accept: "application/pdf" },
+        signal: AbortSignal.timeout(45000),
       }
     );
     if (!res.ok) return null;
