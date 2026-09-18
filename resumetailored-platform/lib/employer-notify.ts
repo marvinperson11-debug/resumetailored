@@ -1,6 +1,7 @@
 import { getApplicant, getEmployerProfile } from "./employer-store";
 import { getCareerSiteCompanyName } from "./career-site-store";
 import { sendEmail, resolveUserEmail, escapeHtml, emailShell } from "./email";
+import { employerSignatureHtml } from "./employer-signature";
 import type { Message, Interview, InterviewMode } from "./employer-ai";
 
 /**
@@ -28,7 +29,10 @@ function fmtWhen(iso: string): string {
   })} UTC`;
 }
 
-async function context(employerId: string, applicantId: number): Promise<{ to: string; name: string; company: string; replyTo?: string; fromName?: string } | null> {
+async function context(
+  employerId: string,
+  applicantId: number
+): Promise<{ to: string; name: string; company: string; replyTo?: string; fromName?: string; signature: string } | null> {
   const applicant = await getApplicant(employerId, applicantId);
   if (!applicant?.email) return null;
   const profile = await getEmployerProfile(employerId);
@@ -37,7 +41,9 @@ async function context(employerId: string, applicantId: number): Promise<{ to: s
   // falling back to employer_profiles, else undefined → default "ResumeTailored".
   // Sender address is unchanged (noreply@resumetailored.com).
   const fromName = (await getCareerSiteCompanyName(employerId)) || profile?.companyName || undefined;
-  return { to: applicant.email, name: applicant.name || "there", company: profile?.companyName || "a recruiter", replyTo, fromName };
+  // Branded signature block ("" when unconfigured / on any error → default footer).
+  const signature = await employerSignatureHtml(employerId);
+  return { to: applicant.email, name: applicant.name || "there", company: profile?.companyName || "a recruiter", replyTo, fromName, signature };
 }
 
 /** Email the candidate an employer's new message (they have no in-app inbox). */
@@ -59,7 +65,8 @@ export async function notifyCandidateOfMessage(employerId: string, applicantId: 
 <p>You have a new message from <strong>${escapeHtml(ctx.company)}</strong>:</p>
 <blockquote style="margin:16px 0;padding:12px 16px;background:#f6f6f8;border-left:3px solid #7c5cff;border-radius:6px">${body || "(no text)"}</blockquote>
 ${attachNote}
-<p style="font-size:13px;color:#666">Reply to this email to respond.</p>`
+<p style="font-size:13px;color:#666">Reply to this email to respond.</p>`,
+      ctx.signature
     ),
   });
 }
@@ -85,7 +92,8 @@ export async function notifyCandidateOfInterview(
       html: emailShell(
         `<p>Hi ${firstName},</p>
 <p>Your interview <strong>${title}</strong> with ${company}, scheduled for ${fmtWhen(interview.scheduledAt)}, has been <strong>cancelled</strong>.</p>
-<p style="font-size:13px;color:#666">Reply to this email with any questions.</p>`
+<p style="font-size:13px;color:#666">Reply to this email with any questions.</p>`,
+        ctx.signature
       ),
     });
     return;
@@ -129,7 +137,8 @@ ${locationRow}
 ${interviewerRow}
 </table>
 ${joinBlock}
-<p style="font-size:13px;color:#666">Need to change something? Just reply to this email.</p>`
+<p style="font-size:13px;color:#666">Need to change something? Just reply to this email.</p>`,
+      ctx.signature
     ),
   });
 }
@@ -140,6 +149,7 @@ export async function notifyInterviewerOfInterview(employerId: string, userId: s
   const to = await resolveUserEmail(userId);
   if (!to) return;
   const profile = await getEmployerProfile(employerId);
+  const signature = await employerSignatureHtml(employerId);
   const company = escapeHtml(profile?.companyName || "your company");
   const title = escapeHtml(interview.title);
   const candidate = escapeHtml(interview.applicantName || "the candidate");
@@ -162,7 +172,8 @@ export async function notifyInterviewerOfInterview(employerId: string, userId: s
 <tr><td style="padding:4px 12px 4px 0;color:#888">Type</td><td style="padding:4px 0">${MODE_LABEL[interview.mode]}</td></tr>
 </table>
 ${joinBlock}
-<p style="font-size:13px;color:#666">Manage this interview in ${company}'s Scheduler.</p>`
+<p style="font-size:13px;color:#666">Manage this interview in ${company}'s Scheduler.</p>`,
+      signature
     ),
   });
 }

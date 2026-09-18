@@ -47,11 +47,27 @@ export type TeamRole = (typeof TEAM_ROLES)[number];
 export const isTeamRole = (v: unknown): v is TeamRole => (TEAM_ROLES as readonly string[]).includes(String(v));
 
 // ── Data shapes (mirror the DB rows, camelCased) ──────────────────────────────
+/**
+ * Branded email signature appended to every employer-triggered email. All
+ * fields optional; a signature with no meaningful content renders as nothing
+ * (callers keep today's default footer). `logoUrl` is the PUBLIC url of the
+ * uploaded logo/photo (public read is required so email clients can load it).
+ */
+export interface EmailSignature {
+  displayName?: string;
+  title?: string;
+  phone?: string;
+  address?: string;
+  footer?: string;
+  logoUrl?: string;
+}
+
 export interface EmployerProfile {
   companyName: string;
   companyWebsite: string;
   industry: string;
   companySize: string;
+  emailSignature?: EmailSignature | null;
 }
 
 export interface JobPosting {
