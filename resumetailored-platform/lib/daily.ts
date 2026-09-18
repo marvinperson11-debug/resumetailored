@@ -55,22 +55,70 @@ export async function createRoom(args: {
     max_participants: 2,
   };
   if (args.enableRecording) properties.enable_recording = "cloud";
+  const reqBody = { name: `rt-${args.interviewId}`, privacy: "public", properties };
+  // Log exactly what we send so recording config is auditable at schedule time.
+  console.log("[daily.createRoom] request", JSON.stringify(reqBody));
   try {
     const res = await fetch(`${DAILY_API}/rooms`, {
       method: "POST",
       headers: authHeaders(),
-      body: JSON.stringify({ name: `rt-${args.interviewId}`, privacy: "public", properties }),
+      body: JSON.stringify(reqBody),
       signal: AbortSignal.timeout(DAILY_TIMEOUT_MS),
     });
     if (!res.ok) {
       console.error("[daily.createRoom]", res.status, await res.text().catch(() => ""));
       return null;
     }
-    const d = (await res.json()) as { url?: string; name?: string };
+    const d = (await res.json()) as { url?: string; name?: string; config?: Record<string, unknown> };
+    // Log what Daily accepted — `config.enable_recording` confirms recording is
+    // permitted on the room (note: this only PERMITS recording; auto-start needs
+    // a meeting token with start_cloud_recording — see createMeetingToken).
+    console.log("[daily.createRoom] response", JSON.stringify({ name: d.name, url: d.url, config: d.config }));
     if (!d.url || !d.name) return null;
     return { url: d.url, name: d.name };
   } catch (e) {
     console.error("[daily.createRoom]", e);
+    return null;
+  }
+}
+
+/**
+ * Mint a Daily meeting token for a room. When `startCloudRecording` is set (and
+ * the room has enable_recording:'cloud'), cloud recording AUTO-STARTS the moment
+ * this token's holder joins — which is the only reliable way to record a
+ * server-created room that has no interactive "Record" click. `is_owner` gives
+ * the holder recording control in the prebuilt UI. Returns null on any failure
+ * so the caller can fall back to the plain (un-recorded) room URL.
+ */
+export async function createMeetingToken(args: {
+  roomName: string;
+  expUnix: number;
+  isOwner?: boolean;
+  startCloudRecording?: boolean;
+}): Promise<string | null> {
+  if (!isDailyConfigured() || !args.roomName) return null;
+  const properties: Record<string, unknown> = { room_name: args.roomName, exp: args.expUnix };
+  if (args.isOwner) properties.is_owner = true;
+  if (args.startCloudRecording) {
+    // Both are required: the token must also carry enable_recording:'cloud'.
+    properties.enable_recording = "cloud";
+    properties.start_cloud_recording = true;
+  }
+  try {
+    const res = await fetch(`${DAILY_API}/meeting-tokens`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ properties }),
+      signal: AbortSignal.timeout(DAILY_TIMEOUT_MS),
+    });
+    const d = (await res.json().catch(() => ({}))) as { token?: string; error?: string; info?: string };
+    if (!res.ok || !d.token) {
+      console.error("[daily.createMeetingToken] non-ok", res.status, d.info || d.error || "");
+      return null;
+    }
+    return d.token;
+  } catch (e) {
+    console.error("[daily.createMeetingToken] threw", e);
     return null;
   }
 }
