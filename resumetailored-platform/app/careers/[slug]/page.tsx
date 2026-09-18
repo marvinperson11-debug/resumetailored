@@ -28,7 +28,7 @@ export default async function CareersPage({ params }: { params: { slug: string }
   if (!data) notFound();
   return (
     <div style={{ minHeight: "100vh", background: "#ffffff" }}>
-      <CareerSiteView site={data.site} jobs={data.jobs} />
+      <CareerSiteView site={data.site} jobs={data.jobs} industry={data.industry} bio={data.bio} />
     </div>
   );
 }

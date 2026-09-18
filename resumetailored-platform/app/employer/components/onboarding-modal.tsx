@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Building2 } from "lucide-react";
-import { INDUSTRIES, COMPANY_SIZES } from "@/lib/employer-ai";
+import { INDUSTRIES } from "@/lib/employer-ai";
 import { Btn, Field, Input, Picker } from "./ui";
 
 /**
@@ -17,7 +17,6 @@ export function OnboardingModal() {
   const [companyName, setCompanyName] = useState("");
   const [companyWebsite, setCompanyWebsite] = useState("");
   const [industry, setIndustry] = useState("");
-  const [companySize, setCompanySize] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +31,7 @@ export function OnboardingModal() {
       const res = await fetch("/api/employer/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyName, companyWebsite, industry, companySize }),
+        body: JSON.stringify({ companyName, companyWebsite, industry }),
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(d.error || "Could not complete setup.");
@@ -63,28 +62,16 @@ export function OnboardingModal() {
           <Field label="Company website" hint="Optional">
             <Input value={companyWebsite} onChange={(e) => setCompanyWebsite(e.target.value)} placeholder="https://acme.com" />
           </Field>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Industry">
-              <Picker value={industry} onChange={(e) => setIndustry(e.target.value)}>
-                <option value="">Select…</option>
-                {INDUSTRIES.map((i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
-              </Picker>
-            </Field>
-            <Field label="Company size">
-              <Picker value={companySize} onChange={(e) => setCompanySize(e.target.value)}>
-                <option value="">Select…</option>
-                {COMPANY_SIZES.map((s) => (
-                  <option key={s} value={s}>
-                    {s} employees
-                  </option>
-                ))}
-              </Picker>
-            </Field>
-          </div>
+          <Field label="Industry">
+            <Picker value={industry} onChange={(e) => setIndustry(e.target.value)}>
+              <option value="">Select…</option>
+              {INDUSTRIES.map((i) => (
+                <option key={i} value={i}>
+                  {i}
+                </option>
+              ))}
+            </Picker>
+          </Field>
 
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
 

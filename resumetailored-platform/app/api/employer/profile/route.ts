@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     companyName?: string;
     companyWebsite?: string;
     industry?: string;
-    companySize?: string;
+    companyBio?: string;
   };
   const companyName = (body.companyName || "").trim();
   if (companyName.length < 2) return NextResponse.json({ error: "Company name is required." }, { status: 400 });
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
     companyName,
     companyWebsite: (body.companyWebsite || "").trim(),
     industry: (body.industry || "").trim(),
-    companySize: (body.companySize || "").trim(),
+    companyBio: (body.companyBio || "").trim(),
   });
   if (!ok) return NextResponse.json({ error: "Could not save. Is the database configured?" }, { status: 500 });
   const profile = await getEmployerProfile(employerId);
