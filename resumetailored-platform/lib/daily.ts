@@ -78,7 +78,9 @@ export async function createRoom(args: {
     // Log what Daily accepted — `config.enable_recording` confirms recording is
     // permitted on the room (note: this only PERMITS recording; auto-start needs
     // a meeting token with start_cloud_recording — see createMeetingToken).
-    console.log("[daily.createRoom] response", JSON.stringify({ name: d.name, url: d.url, config: d.config }));
+    // Surface enable_screenshare explicitly (as well as the full config) so the
+    // log confirms screen sharing is on for newly created rooms at a glance.
+    console.log("[daily.createRoom] response", JSON.stringify({ name: d.name, url: d.url, enable_screenshare: d.config?.enable_screenshare, config: d.config }));
     if (!d.url || !d.name) return null;
     return { url: d.url, name: d.name };
   } catch (e) {

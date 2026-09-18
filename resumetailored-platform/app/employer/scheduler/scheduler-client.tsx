@@ -72,12 +72,13 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
     };
   }, [load]);
 
-  const now = Date.now();
   const shown = interviews
     .filter((i) => {
-      const t = new Date(i.scheduledAt).getTime();
-      if (view === "upcoming") return i.status !== "cancelled" && t >= now - 60 * 60 * 1000;
-      if (view === "past") return t < now - 60 * 60 * 1000 || i.status !== "scheduled";
+      // Status-based, date-agnostic: an interview run early and completed belongs
+      // in Past immediately (e.g. scheduled Sat, done Fri), and one not yet held
+      // stays in Upcoming regardless of the clock.
+      if (view === "upcoming") return i.status === "scheduled";
+      if (view === "past") return i.status === "completed" || i.status === "cancelled";
       return true;
     })
     .sort((a, b) => {
