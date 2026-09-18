@@ -220,6 +220,10 @@ function InterviewCard({
   const Icon = MODE_ICON[i.mode];
   const joinUrl = i.roomUrl || (i.mode === "video" && /^https?:\/\//i.test(i.location) ? i.location : "");
   const isLink = !!joinUrl;
+  // For our own Daily rooms, the host joins through the server join route, which
+  // mints an owner token that auto-starts cloud recording (a plain room URL
+  // never starts recording). A manual meeting link is opened directly.
+  const joinHref = i.roomUrl ? `/api/employer/interviews/${i.id}/join` : joinUrl;
   // Join is available for any non-terminal interview that has a room — not only
   // status === "scheduled". A room-backed row must always offer Join, even if the
   // status is an unexpected value (e.g. a drifted 'pending').
@@ -295,7 +299,7 @@ function InterviewCard({
         <div className="flex flex-wrap items-center gap-2 border-t border-border-gold pt-3">
           {isLink && isActive && (
             <a
-              href={joinUrl}
+              href={joinHref}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-lg bg-violet px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet/90"
