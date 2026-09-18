@@ -46,7 +46,7 @@ export async function createRoom(args: {
   interviewId: number;
   expUnix: number;
   enableRecording: boolean;
-}): Promise<DailyRoom | null> {
+}): Promise<(DailyRoom & { recordingEnabled: boolean }) | null> {
   if (!isDailyConfigured()) return null;
   const properties: Record<string, unknown> = {
     exp: args.expUnix,
@@ -80,9 +80,10 @@ export async function createRoom(args: {
     // a meeting token with start_cloud_recording — see createMeetingToken).
     // Surface enable_screenshare explicitly (as well as the full config) so the
     // log confirms screen sharing is on for newly created rooms at a glance.
-    console.log("[daily.createRoom] response", JSON.stringify({ name: d.name, url: d.url, enable_screenshare: d.config?.enable_screenshare, config: d.config }));
+    const recordingEnabled = d.config?.enable_recording === "cloud";
+    console.log("[daily.createRoom] response", JSON.stringify({ name: d.name, url: d.url, enable_recording: d.config?.enable_recording, recordingEnabled, requestedRecording: args.enableRecording, enable_screenshare: d.config?.enable_screenshare, config: d.config }));
     if (!d.url || !d.name) return null;
-    return { url: d.url, name: d.name };
+    return { url: d.url, name: d.name, recordingEnabled };
   } catch (e) {
     console.error("[daily.createRoom]", e);
     return null;
