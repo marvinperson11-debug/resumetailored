@@ -8,8 +8,6 @@ import {
   Link2,
   Download,
   AlertTriangle,
-  FilePlus2,
-  FileText,
   UploadCloud,
   Paperclip,
   ChevronDown,
@@ -18,22 +16,10 @@ import {
   Check,
   Circle,
 } from "lucide-react";
-import { Panel, PageHeader, Btn, Badge, EmptyState, Field, Input, Area } from "../components/ui";
-import type { DocusignConnection, DocusignEnvelope, DocusignStatus, DocType, EsignTemplate, EditableDocType } from "@/lib/employer-ai";
-import { DOC_TYPE_LABELS, EDITABLE_DOC_TYPES } from "@/lib/employer-ai";
+import { Panel, PageHeader, Btn, Badge, EmptyState, Input } from "../components/ui";
+import type { DocusignConnection, DocusignEnvelope, DocusignStatus, DocType } from "@/lib/employer-ai";
+import { DOC_TYPE_LABELS } from "@/lib/employer-ai";
 import { SendDocumentModal } from "../components/send-document-modal";
-
-// Kept in sync with MERGE_FIELDS in lib/docusign.ts (that module is server-only —
-// it imports node:crypto — so the list is duplicated here rather than imported).
-const MERGE_FIELDS: { token: string; label: string }[] = [
-  { token: "{{candidate_name}}", label: "Candidate name" },
-  { token: "{{position}}", label: "Position" },
-  { token: "{{salary}}", label: "Salary" },
-  { token: "{{start_date}}", label: "Start date" },
-  { token: "{{company_name}}", label: "Company name" },
-  { token: "{{message}}", label: "Personal message" },
-  { token: "{{signature_block}}", label: "Signature block (required)" },
-];
 
 interface Usage {
   used: number;
@@ -80,8 +66,6 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
-  const [tab, setTab] = useState<"documents" | "templates">("documents");
-  const [showWriteup, setShowWriteup] = useState(false);
   const [showSend, setShowSend] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [banner, setBanner] = useState<{ tone: "ok" | "err"; text: string } | null>(
@@ -149,43 +133,16 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
         subtitle="Send offer letters, agreements, NDAs, or any document for e-signature with DocuSign and track their status."
         action={
           <div className="flex items-center gap-2">
-            {tab === "documents" && (
-              <>
-                <Btn onClick={() => setShowSend(true)}>
-                  <UploadCloud className="h-4 w-4" /> Upload &amp; send for signature
-                </Btn>
-                <Btn variant="ghost" onClick={() => setShowWriteup(true)}>
-                  <FilePlus2 className="h-4 w-4" /> New write-up
-                </Btn>
-                <Btn variant="ghost" onClick={refresh} loading={refreshing}>
-                  <RefreshCw className="h-4 w-4" /> Refresh
-                </Btn>
-              </>
-            )}
+            <Btn onClick={() => setShowSend(true)}>
+              <UploadCloud className="h-4 w-4" /> Upload &amp; send for signature
+            </Btn>
+            <Btn variant="ghost" onClick={refresh} loading={refreshing}>
+              <RefreshCw className="h-4 w-4" /> Refresh
+            </Btn>
           </div>
         }
       />
 
-      {/* Tab switcher */}
-      <div className="mb-5 flex gap-1 border-b border-border-gold">
-        {(["documents", "templates"] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setTab(t)}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${
-              tab === t ? "border-violet text-violet" : "border-transparent text-muted-cream hover:text-cream"
-            }`}
-          >
-            {t === "documents" ? "Documents" : "Templates"}
-          </button>
-        ))}
-      </div>
-
-      {tab === "templates" ? (
-        <TemplatesTab />
-      ) : (
-        <>
       {banner && (
         <div
           className={`mb-5 flex items-start gap-2 rounded-xl border px-4 py-3 text-sm ${
@@ -364,8 +321,6 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
           </table>
         </div>
       )}
-        </>
-      )}
 
       {showSend && (
         <SendDocumentModal
@@ -373,19 +328,6 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
           onClose={() => setShowSend(false)}
           onSent={() => {
             setShowSend(false);
-            setTab("documents");
-            void refresh();
-          }}
-        />
-      )}
-
-      {showWriteup && (
-        <SendDocumentModal
-          defaultDocType="writeup"
-          onClose={() => setShowWriteup(false)}
-          onSent={() => {
-            setShowWriteup(false);
-            setTab("documents");
             void refresh();
           }}
         />
@@ -576,161 +518,4 @@ function fmtDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-// ── Templates editor ──────────────────────────────────────────────────────────
-function TemplatesTab() {
-  const [templates, setTemplates] = useState<EsignTemplate[]>([]);
-  const [active, setActive] = useState<EditableDocType>("offer");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [resetting, setResetting] = useState(false);
-  const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
-
-  const applyActive = useCallback((list: EsignTemplate[], type: EditableDocType) => {
-    const t = list.find((x) => x.docType === type);
-    setSubject(t?.subject || "");
-    setBody(t?.bodyHtml || "");
-  }, []);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/employer/docusign/templates", { cache: "no-store" });
-      const d = (await res.json().catch(() => ({}))) as { templates?: EsignTemplate[] };
-      const list = d.templates || [];
-      setTemplates(list);
-      applyActive(list, active);
-    } finally {
-      setLoading(false);
-    }
-  }, [active, applyActive]);
-
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function switchTo(type: EditableDocType) {
-    setActive(type);
-    setMsg(null);
-    applyActive(templates, type);
-  }
-
-  function insertToken(token: string) {
-    setBody((b) => (b ? `${b}\n${token}` : token));
-  }
-
-  async function save() {
-    setSaving(true);
-    setMsg(null);
-    try {
-      const res = await fetch("/api/employer/docusign/templates", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ docType: active, subject, bodyHtml: body }),
-      });
-      const d = (await res.json().catch(() => ({}))) as { template?: EsignTemplate; error?: string };
-      if (!res.ok || !d.template) {
-        setMsg({ tone: "err", text: d.error || "Could not save the template." });
-        return;
-      }
-      setTemplates((prev) => prev.map((t) => (t.docType === active ? d.template! : t)));
-      setMsg({ tone: "ok", text: "Template saved." });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function reset() {
-    if (!confirm("Reset this template to the built-in default? Your edits will be replaced.")) return;
-    setResetting(true);
-    setMsg(null);
-    try {
-      const res = await fetch("/api/employer/docusign/templates", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ docType: active, reset: true }),
-      });
-      const d = (await res.json().catch(() => ({}))) as { template?: EsignTemplate; error?: string };
-      if (!res.ok || !d.template) {
-        setMsg({ tone: "err", text: d.error || "Could not reset the template." });
-        return;
-      }
-      setTemplates((prev) => prev.map((t) => (t.docType === active ? d.template! : t)));
-      setSubject(d.template.subject);
-      setBody(d.template.bodyHtml);
-      setMsg({ tone: "ok", text: "Reset to default." });
-    } finally {
-      setResetting(false);
-    }
-  }
-
-  if (loading) return <Panel className="text-sm text-white/50">Loading templates…</Panel>;
-
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-white/55">
-        Edit the wording of each generated document. Use the merge tokens below — they&apos;re filled in when you send.
-        The <code className="text-violet">{"{{signature_block}}"}</code> token marks where the signature + date fields go
-        and can&apos;t be removed.
-      </p>
-
-      <div className="flex flex-wrap gap-1">
-        {EDITABLE_DOC_TYPES.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => switchTo(t)}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-              active === t ? "bg-violet text-white" : "border border-border-gold bg-white/[0.03] text-muted-cream hover:bg-white/[0.08]"
-            }`}
-          >
-            <FileText className="h-3.5 w-3.5" /> {DOC_TYPE_LABELS[t]}
-          </button>
-        ))}
-      </div>
-
-      <Panel className="space-y-4">
-        <Field label="Email subject">
-          <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Your offer from {{company_name}}" />
-        </Field>
-
-        <div>
-          <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">Insert merge field:</span>
-            {MERGE_FIELDS.map((f) => (
-              <button
-                key={f.token}
-                type="button"
-                onClick={() => insertToken(f.token)}
-                title={f.label}
-                className="rounded border border-border-gold bg-white/[0.03] px-2 py-0.5 font-mono text-[11px] text-violet hover:bg-white/[0.08]"
-              >
-                {f.token}
-              </button>
-            ))}
-          </div>
-          <Field label="Document body (HTML)">
-            <Area rows={16} value={body} onChange={(e) => setBody(e.target.value)} className="font-mono text-xs" />
-          </Field>
-        </div>
-
-        {msg && (
-          <p className={`text-xs ${msg.tone === "ok" ? "text-teal" : "text-red-300"}`}>{msg.text}</p>
-        )}
-
-        <div className="flex justify-end gap-2 border-t border-border-gold pt-4">
-          <Btn variant="ghost" onClick={reset} loading={resetting}>
-            Reset to default
-          </Btn>
-          <Btn onClick={save} loading={saving}>
-            Save template
-          </Btn>
-        </div>
-      </Panel>
-    </div>
-  );
 }

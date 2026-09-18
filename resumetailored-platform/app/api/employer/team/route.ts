@@ -5,6 +5,7 @@ import { listTeam, inviteMember, getEmployerProfile } from "@/lib/employer-store
 import { isTeamRole } from "@/lib/employer-ai";
 import { appUrl } from "@/lib/subdomain";
 import { sendEmail, escapeHtml } from "@/lib/email";
+import { employerSignatureHtml } from "@/lib/employer-signature";
 
 export const runtime = "nodejs";
 
@@ -42,6 +43,8 @@ export async function POST(req: Request) {
 async function sendInviteEmail(to: string, link: string, employerId: string): Promise<boolean> {
   const profile = await getEmployerProfile(employerId);
   const company = profile?.companyName || "a team";
+  // Branded employer signature ("" when unconfigured / on any error).
+  const signature = await employerSignatureHtml(employerId);
   return sendEmail({
     to,
     subject: `You're invited to join ${company} on ResumeTailored`,
@@ -50,6 +53,7 @@ async function sendInviteEmail(to: string, link: string, employerId: string): Pr
         <p style="color:#334155;line-height:1.6">Join the hiring team on ResumeTailored to review candidates and manage roles.</p>
         <p><a href="${link}" style="display:inline-block;background:#8B5CF6;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Accept invite</a></p>
         <p style="color:#94a3b8;font-size:12px">Or paste this link into your browser:<br>${link}</p>
+        ${signature}
       </div>`,
   });
 }

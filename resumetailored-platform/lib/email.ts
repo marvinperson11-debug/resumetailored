@@ -73,10 +73,14 @@ export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch] || ch);
 }
 
-/** A small branded wrapper so every notification looks consistent in the inbox. */
-export function emailShell(bodyHtml: string): string {
+/** A small branded wrapper so every notification looks consistent in the inbox.
+ *  `signatureHtml` (optional) is the employer's branded signature block, rendered
+ *  just above the default footer; pass "" (or omit) to keep the default footer
+ *  alone. It is inserted as-is, so callers must pass already-escaped HTML. */
+export function emailShell(bodyHtml: string, signatureHtml = ""): string {
   return `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a;line-height:1.5">
 ${bodyHtml}
+${signatureHtml || ""}
 <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
 <p style="font-size:12px;color:#888">Sent via ResumeTailored. Reply to this email to respond directly.</p>
 </div>`;

@@ -8,6 +8,7 @@
  */
 import { getEmployerProfile } from "./employer-store";
 import { sendEmail, resolveUserEmail, escapeHtml, emailShell, type EmailAttachment } from "./email";
+import { employerSignatureHtml } from "./employer-signature";
 import { appUrl } from "./subdomain";
 import { getValidAccessToken, getEnvelopeByEnvelopeId, markSignedDocsEmailed, type EnvelopeLookup } from "./docusign-store";
 import { getCombinedDocuments } from "./docusign";
@@ -17,10 +18,11 @@ export function signUploadUrl(envelopeId: string, token: string): string {
   return appUrl(`/sign/${encodeURIComponent(envelopeId)}?key=${encodeURIComponent(token)}`);
 }
 
-async function employerContext(employerId: string): Promise<{ company: string; replyTo?: string }> {
+async function employerContext(employerId: string): Promise<{ company: string; replyTo?: string; signature: string }> {
   const profile = await getEmployerProfile(employerId).catch(() => null);
   const replyTo = (await resolveUserEmail(employerId).catch(() => null)) || undefined;
-  return { company: profile?.companyName || "", replyTo };
+  const signature = await employerSignatureHtml(employerId);
+  return { company: profile?.companyName || "", replyTo, signature };
 }
 
 function uploadCta(url: string, label = "Upload documents"): string {
@@ -49,7 +51,7 @@ export async function deliverSignedDocuments(envelopeId: string): Promise<void> 
     if (!env || env.signedDocsEmailedAt) return; // already delivered (or unknown)
     if (!env.candidateEmail) return;
 
-    const { company, replyTo } = await employerContext(env.employerId);
+    const { company, replyTo, signature } = await employerContext(env.employerId);
 
     // Best-effort document download — a failure degrades to a link-only email.
     let attachments: EmailAttachment[] | undefined;
@@ -88,7 +90,8 @@ export async function deliverSignedDocuments(envelopeId: string): Promise<void> 
 <p>Thank you — the document you signed with ${companyLabel} is now complete.</p>
 ${attachNote}
 ${requestBlock}
-<p style="font-size:13px;color:#666">Keep this email for your records.</p>`
+<p style="font-size:13px;color:#666">Keep this email for your records.</p>`,
+        signature
       ),
     });
 
@@ -106,7 +109,7 @@ ${requestBlock}
 export async function notifySignerOfUpload(env: EnvelopeLookup, filename: string, requestName?: string): Promise<void> {
   try {
     if (!env.candidateEmail) return;
-    const { company, replyTo } = await employerContext(env.employerId);
+    const { company, replyTo, signature } = await employerContext(env.employerId);
     const firstName = escapeHtml((env.candidateName || "there").split(" ")[0]);
     const forWhat = requestName
       ? `for the requested document <strong>${escapeHtml(requestName)}</strong>`
@@ -122,7 +125,8 @@ export async function notifySignerOfUpload(env: EnvelopeLookup, filename: string
 <p>We&apos;ve received <strong>${escapeHtml(filename)}</strong> ${forWhat}. Thank you!</p>
 ${pendingList(env)}
 <p>Need to send more? You can upload additional documents any time using the same link:</p>
-${uploadCta(url, "Upload more documents")}`
+${uploadCta(url, "Upload more documents")}`,
+        signature
       ),
     });
   } catch (e) {
@@ -135,6 +139,7 @@ export async function notifyEmployerOfUpload(env: EnvelopeLookup, filename: stri
   try {
     const to = await resolveUserEmail(env.employerId).catch(() => null);
     if (!to) return;
+    const signature = await employerSignatureHtml(env.employerId);
     const signer = escapeHtml(env.candidateName || env.candidateEmail || "a signer");
     const forWhat = requestName ? ` (${escapeHtml(requestName)})` : "";
     await sendEmail({
@@ -145,7 +150,8 @@ export async function notifyEmployerOfUpload(env: EnvelopeLookup, filename: stri
           env.documentName || env.subject || "e-signature"
         )}</strong>.</p>
 <p>File: <strong>${escapeHtml(filename)}</strong></p>
-<p>Open the E-Signatures page in your ResumeTailored employer dashboard to view and download it.</p>`
+<p>Open the E-Signatures page in your ResumeTailored employer dashboard to view and download it.</p>`,
+        signature
       ),
     });
   } catch (e) {
@@ -158,7 +164,7 @@ export async function notifyEmployerOfUpload(env: EnvelopeLookup, filename: stri
 export async function notifySignerOfDocRequest(env: EnvelopeLookup, addedNames: string[]): Promise<void> {
   try {
     if (!env.candidateEmail || !addedNames.length) return;
-    const { company, replyTo } = await employerContext(env.employerId);
+    const { company, replyTo, signature } = await employerContext(env.employerId);
     const firstName = escapeHtml((env.candidateName || "there").split(" ")[0]);
     const companyLabel = company ? escapeHtml(company) : "The sender";
     const url = signUploadUrl(env.envelopeId, env.signToken);
@@ -171,7 +177,8 @@ export async function notifySignerOfDocRequest(env: EnvelopeLookup, addedNames: 
         `<p>Hi ${firstName},</p>
 <p>${companyLabel} has requested the following document${addedNames.length > 1 ? "s" : ""} from you:</p>
 <ul style="margin:0 0 8px;padding-left:20px;color:#333">${addedNames.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>
-${uploadCta(url)}`
+${uploadCta(url)}`,
+        signature
       ),
     });
   } catch (e) {

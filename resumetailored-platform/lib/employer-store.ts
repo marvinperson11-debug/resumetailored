@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   type EmployerProfile,
+  type EmailSignature,
   type JobPosting,
   type Applicant,
   type TeamMember,
@@ -39,7 +40,7 @@ export async function getEmployerProfile(employerId: string): Promise<EmployerPr
   try {
     const { data } = await c
       .from("employer_profiles")
-      .select("company_name, company_website, industry, company_size")
+      .select("company_name, company_website, industry, company_size, email_signature")
       .eq("user_id", employerId)
       .maybeSingle();
     if (!data) return null;
@@ -48,8 +49,82 @@ export async function getEmployerProfile(employerId: string): Promise<EmployerPr
       companyWebsite: (data.company_website as string) || "",
       industry: (data.industry as string) || "",
       companySize: (data.company_size as string) || "",
+      emailSignature: mapSignature(data.email_signature),
     };
   } catch {
+    return null;
+  }
+}
+
+/** Coerce the stored email_signature jsonb into a clean EmailSignature (or null
+ *  when unset/malformed). Only known string fields survive, each trimmed. */
+function mapSignature(v: unknown): EmailSignature | null {
+  if (!v || typeof v !== "object") return null;
+  const r = v as Record<string, unknown>;
+  const s = (k: string): string | undefined => {
+    const val = typeof r[k] === "string" ? (r[k] as string).trim() : "";
+    return val ? val : undefined;
+  };
+  const sig: EmailSignature = {
+    displayName: s("displayName"),
+    title: s("title"),
+    phone: s("phone"),
+    address: s("address"),
+    footer: s("footer"),
+    logoUrl: s("logoUrl"),
+  };
+  return Object.values(sig).some(Boolean) ? sig : null;
+}
+
+/** Save (or clear) the employer's email signature. `null` clears it. Only the
+ *  known fields are persisted; empty strings are dropped so an all-empty save
+ *  stores null (= not configured). */
+export async function saveEmployerSignature(employerId: string, sig: EmailSignature | null): Promise<boolean> {
+  const c = db();
+  if (!c || !employerId) return false;
+  const cleaned = sig ? mapSignature(sig) : null;
+  try {
+    const { error } = await c
+      .from("employer_profiles")
+      .update({ email_signature: cleaned, updated_at: new Date().toISOString() })
+      .eq("user_id", employerId);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+// ── Email-signature logo/photo upload (public bucket) ──────────────────────────
+const EMAIL_ASSET_BUCKET = "employer-email-assets";
+export const EMAIL_ASSET_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const EMAIL_ASSET_MAX_BYTES = 2 * 1024 * 1024; // 2 MB
+const EMAIL_ASSET_EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+/** Upload an email-signature logo/photo into the employer's own folder of the
+ *  PUBLIC bucket and return its public URL (email clients need an unauthenticated
+ *  URL). Confined to {employerId}/… so a caller can only write their own space. */
+export async function uploadEmailSignatureAsset(
+  employerId: string,
+  file: { data: ArrayBuffer | Uint8Array; contentType: string; filename: string }
+): Promise<{ url: string } | null> {
+  const c = db();
+  if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");
+  if (!employerId) return null;
+  const ext = EMAIL_ASSET_EXT[file.contentType] || "img";
+  const base = (file.filename || "logo").toLowerCase().replace(/\.[a-z0-9]+$/i, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || "logo";
+  const path = `${employerId}/${Date.now()}-${base}.${ext}`;
+  try {
+    const { error } = await c.storage
+      .from(EMAIL_ASSET_BUCKET)
+      .upload(path, file.data, { contentType: file.contentType, upsert: false, cacheControl: "31536000" });
+    if (error) {
+      console.error("[uploadEmailSignatureAsset]", error);
+      return null;
+    }
+    const { data } = c.storage.from(EMAIL_ASSET_BUCKET).getPublicUrl(path);
+    return { url: data.publicUrl };
+  } catch (e) {
+    console.error("[uploadEmailSignatureAsset]", e);
     return null;
   }
 }
