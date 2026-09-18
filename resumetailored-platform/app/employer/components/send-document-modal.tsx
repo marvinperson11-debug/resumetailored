@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, FileSignature } from "lucide-react";
+import { CheckCircle2, FileSignature, Plus, X } from "lucide-react";
 import { Modal, Field, Input, Area, Picker, Btn } from "./ui";
 import { DOC_TYPES, DOC_TYPE_LABELS, type DocType } from "@/lib/employer-ai";
 
@@ -45,6 +45,9 @@ export function SendDocumentModal({
   const [documentName, setDocumentName] = useState("");
   const [documentPath, setDocumentPath] = useState("");
   const [uploading, setUploading] = useState(false);
+  // Documents to request back from the signer (named upload slots).
+  const [requestedDocs, setRequestedDocs] = useState<string[]>([]);
+  const [reqInput, setReqInput] = useState("");
   // Writeup fields
   const [wIncidentDate, setWIncidentDate] = useState("");
   const [wPolicy, setWPolicy] = useState("");
@@ -86,6 +89,18 @@ export function SendDocumentModal({
     }
   }
 
+  function addRequest(raw?: string) {
+    const v = (raw ?? reqInput).trim();
+    if (!v) return;
+    setRequestedDocs((prev) =>
+      prev.some((p) => p.toLowerCase() === v.toLowerCase()) || prev.length >= 20 ? prev : [...prev, v]
+    );
+    setReqInput("");
+  }
+  function removeRequest(name: string) {
+    setRequestedDocs((prev) => prev.filter((p) => p !== name));
+  }
+
   async function submit() {
     setError(null);
     setNotConnected(false);
@@ -114,6 +129,7 @@ export function SendDocumentModal({
           startDate: startDate.trim(),
           extraTerms: extraTerms.trim(),
           message: message.trim(),
+          requestedDocs,
           writeup: isWriteup
             ? {
                 employeeName: signerName.trim(),
@@ -150,6 +166,9 @@ export function SendDocumentModal({
           <h3 className="font-serif text-lg text-cream">Sent for signature</h3>
           <p className="mt-1.5 max-w-sm text-sm text-white/60">
             {signerName || candidateName || "The recipient"} will receive an email from DocuSign to review and sign.
+            {requestedDocs.length > 0
+              ? " They'll also get a secure link to upload the documents you requested."
+              : ""}{" "}
             Track its status on the E-Signatures page.
           </p>
           <div className="mt-5 flex gap-2">
@@ -260,6 +279,44 @@ export function SendDocumentModal({
 
           <Field label="Personal message" hint="A short note included in the email + document.">
             <Area rows={2} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="We're thrilled to have you join the team!" />
+          </Field>
+
+          {/* Request documents back from the signer (optional) */}
+          <Field
+            label="Request documents from signer"
+            hint="Optional — each becomes an upload slot on the signer's page. A free-form “Other documents” slot is always available to them too."
+          >
+            <div className="flex gap-2">
+              <Input
+                value={reqInput}
+                onChange={(e) => setReqInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addRequest();
+                  }
+                }}
+                placeholder="e.g. Photo ID, Signed W-4, Certification"
+              />
+              <Btn variant="ghost" onClick={() => addRequest()} disabled={!reqInput.trim()}>
+                <Plus className="h-4 w-4" /> Add
+              </Btn>
+            </div>
+            {requestedDocs.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {requestedDocs.map((r) => (
+                  <span
+                    key={r}
+                    className="inline-flex items-center gap-1 rounded-md border border-border-gold bg-white/[0.04] px-2 py-1 text-xs text-cream"
+                  >
+                    {r}
+                    <button type="button" onClick={() => removeRequest(r)} className="text-white/45 hover:text-red-300" aria-label={`Remove ${r}`}>
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </Field>
 
           {error && (

@@ -7,6 +7,7 @@ import {
   updateStatusOwned,
 } from "@/lib/docusign-store";
 import { getEnvelope, normalizeEnvelopeStatus } from "@/lib/docusign";
+import { deliverSignedDocuments } from "@/lib/esign-delivery";
 
 export const runtime = "nodejs";
 
@@ -41,6 +42,9 @@ async function pollStatuses(employerId: string): Promise<void> {
     const next = normalizeEnvelopeStatus(remote.status);
     if (next && next !== env.status) {
       await updateStatusOwned(employerId, env.envelopeId, next);
+      // Deliver the signed documents when the poll is the first to see completion
+      // (webhook not configured). Idempotent, so a later webhook won't double-send.
+      if (next === "completed") await deliverSignedDocuments(env.envelopeId);
     }
   }
 }

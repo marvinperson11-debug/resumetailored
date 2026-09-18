@@ -16,7 +16,21 @@ export function fromWithName(baseFrom: string, name?: string): string {
   return `"${clean}" <${addr}>`;
 }
 
-export async function sendEmail(opts: { to: string; subject: string; html: string; replyTo?: string; fromName?: string }): Promise<boolean> {
+/** A file attachment for a transactional email. `content` is base64-encoded. */
+export interface EmailAttachment {
+  filename: string;
+  content: string;
+  contentType?: string;
+}
+
+export async function sendEmail(opts: {
+  to: string;
+  subject: string;
+  html: string;
+  replyTo?: string;
+  fromName?: string;
+  attachments?: EmailAttachment[];
+}): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key || !opts.to) return false;
   try {
@@ -31,6 +45,9 @@ export async function sendEmail(opts: { to: string; subject: string; html: strin
         subject: opts.subject,
         html: opts.html,
         ...(opts.replyTo ? { reply_to: opts.replyTo } : {}),
+        ...(opts.attachments?.length
+          ? { attachments: opts.attachments.map((a) => ({ filename: a.filename, content: a.content, ...(a.contentType ? { content_type: a.contentType } : {}) })) }
+          : {}),
       }),
     });
     return res.ok;

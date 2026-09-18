@@ -1,7 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { FileSignature, RefreshCw, CheckCircle2, Link2, Download, AlertTriangle, FilePlus2, FileText } from "lucide-react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import {
+  FileSignature,
+  RefreshCw,
+  CheckCircle2,
+  Link2,
+  Download,
+  AlertTriangle,
+  FilePlus2,
+  FileText,
+  UploadCloud,
+  Paperclip,
+  ChevronDown,
+  Plus,
+  Copy,
+  Check,
+  Circle,
+} from "lucide-react";
 import { Panel, PageHeader, Btn, Badge, EmptyState, Field, Input, Area } from "../components/ui";
 import type { DocusignConnection, DocusignEnvelope, DocusignStatus, DocType, EsignTemplate, EditableDocType } from "@/lib/employer-ai";
 import { DOC_TYPE_LABELS, EDITABLE_DOC_TYPES } from "@/lib/employer-ai";
@@ -66,6 +82,8 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
   const [disconnecting, setDisconnecting] = useState(false);
   const [tab, setTab] = useState<"documents" | "templates">("documents");
   const [showWriteup, setShowWriteup] = useState(false);
+  const [showSend, setShowSend] = useState(false);
+  const [expanded, setExpanded] = useState<number | null>(null);
   const [banner, setBanner] = useState<{ tone: "ok" | "err"; text: string } | null>(
     connected
       ? { tone: "ok", text: "DocuSign connected. You can now send offer letters for signature." }
@@ -133,6 +151,9 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
           <div className="flex items-center gap-2">
             {tab === "documents" && (
               <>
+                <Btn onClick={() => setShowSend(true)}>
+                  <UploadCloud className="h-4 w-4" /> Upload &amp; send for signature
+                </Btn>
                 <Btn variant="ghost" onClick={() => setShowWriteup(true)}>
                   <FilePlus2 className="h-4 w-4" /> New write-up
                 </Btn>
@@ -252,7 +273,12 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
         <EmptyState
           icon={FileSignature}
           title="No documents sent yet"
-          body="Send an offer letter, agreement, NDA, or custom document from a candidate's profile or a shortlist. It'll appear here with its live signing status."
+          body="Upload any PDF — a tax form, an agreement, an IRS letter — and send it for signature in one step. Or send an offer letter, agreement, or NDA from a candidate's profile. It'll appear here with its live signing status."
+          action={
+            <Btn onClick={() => setShowSend(true)}>
+              <UploadCloud className="h-4 w-4" /> Upload &amp; send for signature
+            </Btn>
+          }
         />
       ) : (
         <div className="overflow-hidden rounded-xl border border-border-gold">
@@ -264,45 +290,93 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
                 <th className="px-4 py-3 font-semibold">Document</th>
                 <th className="px-4 py-3 font-semibold">Sent</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Files</th>
                 <th className="px-4 py-3 font-semibold text-right">Certificate</th>
               </tr>
             </thead>
             <tbody>
-              {envelopes.map((e) => (
-                <tr key={e.id} className="border-b border-border-gold/60 last:border-0 hover:bg-white/[0.02]">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-cream">{e.candidateName || "—"}</div>
-                    <div className="text-xs text-white/45">{e.candidateEmail}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge tone={DOC_TYPE_TONE[e.docType]}>{DOC_TYPE_LABELS[e.docType]}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-white/75">{e.docType === "custom" ? e.documentName || "Document" : e.offer.position || "—"}</td>
-                  <td className="px-4 py-3 text-white/55">{fmtDate(e.sentAt)}</td>
-                  <td className="px-4 py-3">
-                    <Badge tone={STATUS_TONE[e.status]}>{e.status}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {e.status === "completed" || e.status === "signed" ? (
-                      <a
-                        href={`/api/employer/docusign/envelopes/${e.id}/certificate`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
-                      >
-                        <Download className="h-3.5 w-3.5" /> Download
-                      </a>
-                    ) : (
-                      <span className="text-xs text-white/30">—</span>
+              {envelopes.map((e) => {
+                const isOpen = expanded === e.id;
+                const pendingReq = e.requestedDocs.filter((d) => !d.uploaded).length;
+                return (
+                  <Fragment key={e.id}>
+                    <tr
+                      onClick={() => setExpanded(isOpen ? null : e.id)}
+                      className="cursor-pointer border-b border-border-gold/60 last:border-0 hover:bg-white/[0.02]"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <ChevronDown className={`h-4 w-4 shrink-0 text-white/40 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                          <div>
+                            <div className="font-medium text-cream">{e.candidateName || "—"}</div>
+                            <div className="text-xs text-white/45">{e.candidateEmail}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge tone={DOC_TYPE_TONE[e.docType]}>{DOC_TYPE_LABELS[e.docType]}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-white/75">{e.docType === "custom" ? e.documentName || "Document" : e.offer.position || "—"}</td>
+                      <td className="px-4 py-3 text-white/55">{fmtDate(e.sentAt)}</td>
+                      <td className="px-4 py-3">
+                        <Badge tone={STATUS_TONE[e.status]}>{e.status}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        {e.attachments.length > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-teal/15 px-2 py-0.5 text-xs font-semibold text-teal">
+                            <Paperclip className="h-3 w-3" /> {e.attachments.length}
+                          </span>
+                        ) : pendingReq > 0 ? (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-gold/15 px-2 py-0.5 text-xs font-semibold text-gold">
+                            {pendingReq} requested
+                          </span>
+                        ) : (
+                          <span className="text-xs text-white/30">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {e.status === "completed" || e.status === "signed" ? (
+                          <a
+                            href={`/api/employer/docusign/envelopes/${e.id}/certificate`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(ev) => ev.stopPropagation()}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
+                          >
+                            <Download className="h-3.5 w-3.5" /> Download
+                          </a>
+                        ) : (
+                          <span className="text-xs text-white/30">—</span>
+                        )}
+                      </td>
+                    </tr>
+                    {isOpen && (
+                      <tr className="border-b border-border-gold/60 last:border-0 bg-white/[0.015]">
+                        <td colSpan={7} className="px-4 py-4">
+                          <EnvelopeDetail envelope={e} onChanged={() => void loadEnvelopes(false)} />
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                </tr>
-              ))}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
         </>
+      )}
+
+      {showSend && (
+        <SendDocumentModal
+          defaultDocType="custom"
+          onClose={() => setShowSend(false)}
+          onSent={() => {
+            setShowSend(false);
+            setTab("documents");
+            void refresh();
+          }}
+        />
       )}
 
       {showWriteup && (
@@ -315,6 +389,183 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
             void refresh();
           }}
         />
+      )}
+    </div>
+  );
+}
+
+// ── Envelope detail (expanded row): requested-docs checklist, attachments,
+//    employer upload, and "request more documents" ─────────────────────────────
+function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; onChanged: () => void }) {
+  const [reqInput, setReqInput] = useState("");
+  const [addingReq, setAddingReq] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const employerFiles = envelope.attachments.filter((a) => a.by === "employer");
+
+  const signLink =
+    envelope.signToken && typeof window !== "undefined"
+      ? `${window.location.origin}/sign/${encodeURIComponent(envelope.envelopeId)}?key=${encodeURIComponent(envelope.signToken)}`
+      : "";
+
+  async function addRequest() {
+    const name = reqInput.trim();
+    if (!name) return;
+    setAddingReq(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/employer/docusign/envelopes/${envelope.id}/request-docs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ names: [name], notify: true }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setMsg({ tone: "err", text: d.error || "Couldn't add the request." });
+        return;
+      }
+      setReqInput("");
+      setMsg({ tone: "ok", text: "Request added — the signer was emailed an upload link." });
+      onChanged();
+    } finally {
+      setAddingReq(false);
+    }
+  }
+
+  async function uploadOwn(file: File | undefined) {
+    if (!file) return;
+    setUploading(true);
+    setMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/employer/docusign/envelopes/${envelope.id}/attachments`, { method: "POST", body: fd });
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setMsg({ tone: "err", text: d.error || "Upload failed." });
+        return;
+      }
+      setMsg({ tone: "ok", text: "File attached to this envelope." });
+      onChanged();
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  function copyLink() {
+    if (!signLink) return;
+    void navigator.clipboard?.writeText(signLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  }
+
+  const dl = (path: string, download = true) =>
+    `/api/employer/docusign/envelopes/${envelope.id}/attachment?path=${encodeURIComponent(path)}${download ? "&download=1" : ""}`;
+
+  return (
+    <div className="grid gap-5 md:grid-cols-2">
+      {/* Requested documents checklist */}
+      <div>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">Requested documents</h3>
+        {envelope.requestedDocs.length === 0 ? (
+          <p className="text-xs text-white/40">No documents requested from the signer.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {envelope.requestedDocs.map((d) => (
+              <li key={d.name} className="flex items-center gap-2 text-sm">
+                {d.uploaded ? (
+                  <CheckCircle2 className="h-4 w-4 text-teal" />
+                ) : (
+                  <Circle className="h-4 w-4 text-white/30" />
+                )}
+                <span className={d.uploaded ? "text-cream" : "text-white/60"}>{d.name}</span>
+                {d.uploaded && <span className="text-[11px] font-semibold text-teal">received</span>}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Request more documents (after send) */}
+        <div className="mt-3 flex gap-2">
+          <Input
+            value={reqInput}
+            onChange={(e) => setReqInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void addRequest();
+              }
+            }}
+            placeholder="Request another document…"
+          />
+          <Btn variant="ghost" onClick={() => void addRequest()} loading={addingReq} disabled={!reqInput.trim()}>
+            <Plus className="h-4 w-4" /> Request
+          </Btn>
+        </div>
+      </div>
+
+      {/* Attachments + employer upload */}
+      <div>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">All attachments</h3>
+        {envelope.attachments.length === 0 ? (
+          <p className="text-xs text-white/40">No files uploaded yet.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {envelope.attachments.map((a, i) => (
+              <li key={`${a.url}-${i}`} className="flex items-center justify-between gap-2 rounded-lg bg-white/[0.03] px-3 py-2 text-sm">
+                <span className="flex min-w-0 items-center gap-2">
+                  <Paperclip className="h-3.5 w-3.5 shrink-0 text-white/40" />
+                  <span className="truncate text-cream">{a.name}</span>
+                  <span className="shrink-0 text-[11px] text-white/40">{a.by === "employer" ? "you" : "signer"}</span>
+                </span>
+                <a href={dl(a.url)} className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-violet hover:underline">
+                  <Download className="h-3.5 w-3.5" /> Download
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="mt-3">
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,application/pdf,image/jpeg,image/png"
+            className="hidden"
+            onChange={(e) => void uploadOwn(e.target.files?.[0])}
+          />
+          <Btn variant="ghost" onClick={() => fileRef.current?.click()} loading={uploading}>
+            <UploadCloud className="h-4 w-4" /> Attach a file
+          </Btn>
+        </div>
+        {employerFiles.length > 0 && (
+          <p className="mt-1 text-[11px] text-white/35">Files you attach are private to your team — the signer never sees them.</p>
+        )}
+
+        {/* Signer upload link */}
+        {signLink && (
+          <div className="mt-4">
+            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-cream">Signer upload link</h3>
+            <div className="flex items-center gap-2">
+              <code className="min-w-0 flex-1 truncate rounded-lg border border-border-gold bg-white/[0.04] px-2 py-1.5 text-[11px] text-white/70">
+                {signLink}
+              </code>
+              <Btn variant="ghost" onClick={copyLink}>
+                {copied ? <Check className="h-4 w-4 text-teal" /> : <Copy className="h-4 w-4" />}
+                {copied ? "Copied" : "Copy"}
+              </Btn>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {msg && (
+        <p className={`md:col-span-2 text-xs ${msg.tone === "ok" ? "text-teal" : "text-red-300"}`}>{msg.text}</p>
       )}
     </div>
   );
