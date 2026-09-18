@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, FileSignature, Plus, X } from "lucide-react";
 import { Modal, Field, Input, Area, Picker, Btn } from "./ui";
-import { DOC_TYPES, DOC_TYPE_LABELS, type DocType } from "@/lib/employer-ai";
+import { DOC_TYPES, DOC_TYPE_LABELS, type DocType, type Applicant } from "@/lib/employer-ai";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -37,6 +37,10 @@ export function SendDocumentModal({
   const [docType, setDocType] = useState<DocType>(defaultDocType);
   const [signerName, setSignerName] = useState(candidateName);
   const [signerEmail, setSignerEmail] = useState(candidateEmail);
+  // Recipient picker (standalone, non-writeup sends): the employer's applicants,
+  // same source as the Schedule-interview form. "manual" reveals free-text fields.
+  const [applicants, setApplicants] = useState<Applicant[]>([]);
+  const [pickId, setPickId] = useState<number | "manual" | "">("");
   const [position, setPosition] = useState(defaultPosition || "");
   const [salary, setSalary] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -67,6 +71,46 @@ export function SendDocumentModal({
   const manualSigner = !applicantId || isWriteup;
   const effectiveEmail = manualSigner ? signerEmail : candidateEmail;
   const missingEmail = !EMAIL_RE.test((effectiveEmail || "").trim());
+  // Show the applicant picker for standalone, non-writeup sends (no bound
+  // applicant). Write-ups + employee docs keep the manual free-text path.
+  const showPicker = !applicantId && !isWriteup;
+  const enterManually = pickId === "manual";
+  const chosenApplicantId = typeof pickId === "number" ? pickId : applicantId;
+
+  // Load the employer's applicants once for the picker (skip when bound).
+  useEffect(() => {
+    if (applicantId) return;
+    let cancelled = false;
+    fetch("/api/employer/candidates", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { applicants: [] }))
+      .then((d: { applicants?: Applicant[] }) => {
+        if (!cancelled) setApplicants(d.applicants || []);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [applicantId]);
+
+  function onPick(value: string) {
+    if (value === "manual") {
+      setPickId("manual");
+      setSignerName("");
+      setSignerEmail("");
+      return;
+    }
+    if (!value) {
+      setPickId("");
+      setSignerName("");
+      setSignerEmail("");
+      return;
+    }
+    const id = Number(value);
+    const a = applicants.find((x) => x.id === id);
+    setPickId(id);
+    setSignerName(a?.name || "");
+    setSignerEmail(a?.email || "");
+  }
 
   async function onPdf(file: File | undefined) {
     if (!file) return;
@@ -104,6 +148,7 @@ export function SendDocumentModal({
   async function submit() {
     setError(null);
     setNotConnected(false);
+    if (showPicker && pickId === "") return setError("Choose a recipient.");
     if (manualSigner && !signerName.trim()) return setError(isWriteup ? "Enter the employee's name." : "Enter the recipient's name.");
     if (showOfferFields && !position.trim()) return setError("Enter the position title.");
     if (isWriteup && !wDescription.trim()) return setError("Describe the incident.");
@@ -120,7 +165,7 @@ export function SendDocumentModal({
           docType,
           documentName: documentName.trim(),
           documentPath: documentPath || undefined,
-          applicantId: isWriteup ? undefined : applicantId,
+          applicantId: isWriteup ? undefined : chosenApplicantId,
           shortlistMemberId,
           candidateName: manualSigner ? signerName.trim() : candidateName,
           candidateEmail: manualSigner ? signerEmail.trim() : candidateEmail,
@@ -193,24 +238,57 @@ export function SendDocumentModal({
             </Picker>
           </Field>
 
-          {/* Signer: read-only card when bound to an applicant, editable otherwise. */}
-          {manualSigner ? (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Field label={isWriteup ? "Employee name" : "Recipient name"}>
-                <Input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Jordan Lee" />
-              </Field>
-              <Field label={isWriteup ? "Employee email" : "Recipient email"}>
-                <Input value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} placeholder="jordan@email.com" />
-              </Field>
-            </div>
-          ) : (
+          {/* Signer: bound-applicant card, employee free-text (write-ups), or the
+              applicant picker (standalone sends) with a manual escape hatch. */}
+          {applicantId && !isWriteup ? (
             <div className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm">
               <div className="text-cream">{candidateName || "Recipient"}</div>
               <div className={missingEmail ? "text-red-300" : "text-white/55"}>{candidateEmail || "No email on file"}</div>
             </div>
+          ) : isWriteup ? (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="Employee name">
+                <Input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Jordan Lee" />
+              </Field>
+              <Field label="Employee email">
+                <Input value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} placeholder="jordan@email.com" />
+              </Field>
+            </div>
+          ) : (
+            <>
+              <Field label="Recipient" hint="Pick a candidate to auto-fill their name and email.">
+                <Picker value={pickId === "" ? "" : String(pickId)} onChange={(e) => onPick(e.target.value)}>
+                  <option value="">Pick a candidate…</option>
+                  {applicants.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                      {a.jobTitle ? ` — ${a.jobTitle}` : ""}
+                    </option>
+                  ))}
+                  <option value="manual">Someone else (enter manually)</option>
+                </Picker>
+              </Field>
+              {enterManually ? (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Field label="Recipient name">
+                    <Input value={signerName} onChange={(e) => setSignerName(e.target.value)} placeholder="Jordan Lee" />
+                  </Field>
+                  <Field label="Recipient email">
+                    <Input value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} placeholder="jordan@email.com" />
+                  </Field>
+                </div>
+              ) : (
+                typeof pickId === "number" && (
+                  <div className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm">
+                    <div className="text-cream">{signerName || "Recipient"}</div>
+                    <div className={missingEmail ? "text-red-300" : "text-white/55"}>{signerEmail || "No email on file"}</div>
+                  </div>
+                )
+              )}
+            </>
           )}
 
-          {missingEmail && (
+          {missingEmail && (pickId !== "" || applicantId || isWriteup) && (
             <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">
               A valid signer email is required so DocuSign can reach them.
             </p>
