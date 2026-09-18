@@ -26,14 +26,23 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const iv = await getInterview(employerId, id);
   if (!iv || !iv.roomUrl) return NextResponse.redirect(new URL("/employer/scheduler", _req.url));
 
+  console.log("[interviews/join] host join", JSON.stringify({ id, recordEnabled: iv.recordEnabled, hasRoom: !!iv.roomName }));
   let target = iv.roomUrl;
   if (iv.recordEnabled && iv.roomName) {
     // Token valid comfortably past the meeting end.
     const base = new Date(iv.scheduledAt).getTime() || Date.now();
     const expUnix = Math.floor((base + (iv.durationMin || 30) * 60_000 + 6 * 60 * 60_000) / 1000);
     const token = await createMeetingToken({ roomName: iv.roomName, expUnix, isOwner: true, startCloudRecording: true });
-    if (token) target = `${iv.roomUrl}?t=${encodeURIComponent(token)}`;
-    else console.error("[interviews/join] token mint failed; joining without auto-record", { id });
+    if (token) {
+      target = `${iv.roomUrl}?t=${encodeURIComponent(token)}`;
+      console.log("[interviews/join] auto-record token attached", JSON.stringify({ id }));
+    } else {
+      // A SILENT fallback here is exactly what produces a "no recording" session
+      // — surface it loudly so Railway logs show why recording didn't start.
+      console.error("[interviews/join] token mint FAILED — joining WITHOUT auto-record (no recording will be produced)", { id });
+    }
+  } else {
+    console.log("[interviews/join] no auto-record (recording disabled or no room)", JSON.stringify({ id }));
   }
   return NextResponse.redirect(target);
 }
