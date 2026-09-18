@@ -200,6 +200,9 @@ export interface Interview {
   recordEnabled: boolean;
   /** Filled by the Daily webhook once a recording is processed. */
   recordingUrl: string;
+  /** Daily's cloud recording id — the video stays in Daily storage (too large
+   *  for Supabase); the download route fetches a fresh URL from Daily on demand. */
+  recordingId: string;
   transcriptUrl: string;
   aiSummary: InterviewSummary | null;
   createdAt: string;

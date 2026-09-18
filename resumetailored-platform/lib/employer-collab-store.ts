@@ -405,7 +405,7 @@ export async function removeShortlistMember(employerId: string, shortlistId: num
 
 // ── Interviews ────────────────────────────────────────────────────────────────
 const INT_COLS =
-  "id, applicant_id, job_id, title, scheduled_at, duration_min, mode, location, interviewer, notes, status, room_url, room_name, recording_url, transcript_url, ai_summary, record_enabled, created_at";
+  "id, applicant_id, job_id, title, scheduled_at, duration_min, mode, location, interviewer, notes, status, room_url, room_name, recording_url, recording_id, transcript_url, ai_summary, record_enabled, created_at";
 
 function mapSummary(v: unknown): InterviewSummary | null {
   if (!v || typeof v !== "object") return null;
@@ -431,6 +431,7 @@ function mapInterview(r: Record<string, unknown>, info?: ApplicantInfo): Intervi
     roomName: (r.room_name as string) || "",
     recordEnabled: !!r.record_enabled,
     recordingUrl: (r.recording_url as string) || "",
+    recordingId: (r.recording_id as string) || "",
     transcriptUrl: (r.transcript_url as string) || "",
     aiSummary: mapSummary(r.ai_summary),
     createdAt: (r.created_at as string) || "",
@@ -660,13 +661,14 @@ export async function getInterviewOwner(id: number): Promise<InterviewOwner | nu
 /** Update recording/transcript/summary/status for an interview by id (webhook). */
 export async function updateInterviewMedia(
   id: number,
-  patch: { recordingUrl?: string; transcriptUrl?: string; aiSummary?: InterviewSummary; status?: InterviewStatus }
+  patch: { recordingUrl?: string; recordingId?: string; transcriptUrl?: string; aiSummary?: InterviewSummary; status?: InterviewStatus }
 ): Promise<boolean> {
   const c = db();
   if (!c || !Number.isFinite(id)) return false;
   try {
     const row: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (patch.recordingUrl !== undefined) row.recording_url = patch.recordingUrl;
+    if (patch.recordingId !== undefined) row.recording_id = patch.recordingId;
     if (patch.transcriptUrl !== undefined) row.transcript_url = patch.transcriptUrl;
     if (patch.aiSummary !== undefined) row.ai_summary = patch.aiSummary;
     if (patch.status !== undefined) row.status = patch.status;
