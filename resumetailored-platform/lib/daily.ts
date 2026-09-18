@@ -53,6 +53,11 @@ export async function createRoom(args: {
     eject_at_room_exp: true,
     enable_prejoin_ui: true,
     max_participants: 2,
+    // Screen sharing for presenting docs/slides or a browser tab. The prebuilt
+    // UI shows the Share button when this is on; sharing a Chrome tab "with
+    // audio" (to play a short video to the candidate) is a browser-side option
+    // in that share dialog — no extra room property needed.
+    enable_screenshare: true,
   };
   if (args.enableRecording) properties.enable_recording = "cloud";
   const reqBody = { name: `rt-${args.interviewId}`, privacy: "public", properties };
@@ -98,12 +103,16 @@ export async function createMeetingToken(args: {
 }): Promise<string | null> {
   if (!isDailyConfigured() || !args.roomName) return null;
   const properties: Record<string, unknown> = { room_name: args.roomName, exp: args.expUnix };
-  if (args.isOwner) properties.is_owner = true;
+  if (args.isOwner) {
+    properties.is_owner = true;
+    properties.enable_screenshare = true; // host can present / share a tab
+  }
   if (args.startCloudRecording) {
     // Both are required: the token must also carry enable_recording:'cloud'.
     properties.enable_recording = "cloud";
     properties.start_cloud_recording = true;
   }
+  console.log("[daily.createMeetingToken] request", JSON.stringify({ room_name: args.roomName, is_owner: !!args.isOwner, start_cloud_recording: !!args.startCloudRecording }));
   try {
     const res = await fetch(`${DAILY_API}/meeting-tokens`, {
       method: "POST",
@@ -116,6 +125,7 @@ export async function createMeetingToken(args: {
       console.error("[daily.createMeetingToken] non-ok", res.status, d.info || d.error || "");
       return null;
     }
+    console.log("[daily.createMeetingToken] minted", JSON.stringify({ room_name: args.roomName, start_cloud_recording: !!args.startCloudRecording }));
     return d.token;
   } catch (e) {
     console.error("[daily.createMeetingToken] threw", e);

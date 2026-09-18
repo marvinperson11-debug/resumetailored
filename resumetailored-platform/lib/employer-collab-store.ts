@@ -673,7 +673,25 @@ export async function updateInterviewMedia(
     if (patch.aiSummary !== undefined) row.ai_summary = patch.aiSummary;
     if (patch.status !== undefined) row.status = patch.status;
     const { error } = await c.from("interviews").update(row).eq("id", id);
-    return !error;
+    if (!error) return true;
+    // Log the real cause (a returned error, not a throw) instead of failing
+    // silently — a silent failure here is why an interview stayed 'scheduled'.
+    console.error("[updateInterviewMedia] update failed", { id, cols: Object.keys(row), error });
+    // Resilience: if recording_id is the offender (its column not applied yet,
+    // migration 0022), retry WITHOUT it so status/transcript still persist and
+    // the interview auto-completes. The recording is still downloadable later
+    // once the column exists; completing now is what matters.
+    if ("recording_id" in row) {
+      const { recording_id: _drop, ...rest } = row;
+      void _drop;
+      const { error: retryErr } = await c.from("interviews").update(rest).eq("id", id);
+      if (!retryErr) {
+        console.error("[updateInterviewMedia] retried without recording_id — status persisted (apply migration 0022)", { id });
+        return true;
+      }
+      console.error("[updateInterviewMedia] retry without recording_id also failed", { id, error: retryErr });
+    }
+    return false;
   } catch (e) {
     console.error("[updateInterviewMedia]", e);
     return false;

@@ -54,10 +54,15 @@ export async function POST(req: Request) {
   const recordingId = String(payload.recording_id || payload.recordingId || payload.id || "");
   const roomName = String(payload.room_name || payload.roomName || "");
   const interviewId = interviewIdFromRoomName(roomName);
+  // Log delivery + payload so the whole path is verifiable from Railway.
+  console.log("[daily webhook] received", JSON.stringify({ type, roomName, recordingId, interviewId, payload }).slice(0, 800));
   if (!interviewId) return NextResponse.json({ ok: true, note: "no interview for room" });
 
   const owner = await getInterviewOwner(interviewId);
-  if (!owner || !owner.employerId) return NextResponse.json({ ok: true, note: "interview not found" });
+  if (!owner || !owner.employerId) {
+    console.error("[daily webhook] no owner for interview", { interviewId, roomName });
+    return NextResponse.json({ ok: true, note: "interview not found" });
+  }
 
   try {
     let transcriptUrl: string | undefined;
@@ -111,7 +116,8 @@ export async function POST(req: Request) {
 
     // Video alone completes the interview — transcript is best-effort and may be
     // absent (transcription not enabled on the domain).
-    await updateInterviewMedia(interviewId, { recordingId: dailyRecordingId, transcriptUrl, aiSummary, status: "completed" });
+    const updated = await updateInterviewMedia(interviewId, { recordingId: dailyRecordingId, transcriptUrl, aiSummary, status: "completed" });
+    console.log("[daily webhook] interview updated", JSON.stringify({ interviewId, recordingId: dailyRecordingId, hasTranscript: !!transcriptUrl, status: "completed", updated }));
   } catch (e) {
     console.error("[daily webhook] processing failed", e);
     // Still 200 so Daily doesn't hammer retries; the manual-complete fallback remains.

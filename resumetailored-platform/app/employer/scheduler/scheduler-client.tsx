@@ -57,6 +57,21 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
     load();
   }, [load]);
 
+  // Auto-complete arrives server-side via the Daily webhook, so re-fetch when the
+  // tab regains focus (e.g. after finishing a call in the Daily window) to show
+  // the fresh 'completed' status without a manual page reload. Cheap + no-store.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [load]);
+
   const now = Date.now();
   const shown = interviews
     .filter((i) => {
