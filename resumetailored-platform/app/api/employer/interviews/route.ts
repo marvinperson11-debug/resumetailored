@@ -59,6 +59,9 @@ export async function POST(req: Request) {
     }
   }
   const recordEnabled = mode === "video" && !!b.recordEnabled && !!allowance?.canRecord;
+  // Trace exactly what the toggle sent vs. what we resolved, so a dropped
+  // Record flag is diagnosable end-to-end ([daily.createRoom] shows the rest).
+  console.log("[interviews POST] record decision", JSON.stringify({ mode, bodyRecordEnabled: !!b.recordEnabled, canRecord: !!allowance?.canRecord, recordEnabled }));
 
   const interview = await createInterview(employerId, {
     applicantId,
@@ -84,6 +87,12 @@ export async function POST(req: Request) {
     if (room) {
       await setInterviewRoom(employerId, interview.id, { roomUrl: room.url, roomName: room.name, location: room.url });
       finalInterview = (await getInterview(employerId, interview.id)) || { ...interview, roomUrl: room.url, roomName: room.name, location: room.url };
+      // Guard: recording was requested but Daily didn't accept it — surface it
+      // now instead of silently handing over a non-recordable room.
+      if (recordEnabled && !room.recordingEnabled) {
+        console.error("[interviews POST] recording requested but room created WITHOUT enable_recording", { interviewId: interview.id });
+        warning = "The interview was scheduled, but recording could not be enabled on the video room. Delete and reschedule, or contact support — the call will not be recorded.";
+      }
     } else {
       warning = "The interview was scheduled, but we couldn't create a video room automatically. Add a meeting link manually, or edit the interview to retry.";
     }

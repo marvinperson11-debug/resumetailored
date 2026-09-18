@@ -454,7 +454,10 @@ function InterviewForm({
       location,
       interviewer,
       notes,
-      recordEnabled: mode === "video" && gating.canRecord ? recordEnabled : false,
+      // Send the raw toggle value; the server re-checks tier with fresh access
+      // and enforces canRecord there. Don't AND with the page-load gating.canRecord
+      // here — a stale/transient page-load value must not silently drop recording.
+      recordEnabled: mode === "video" ? recordEnabled : false,
     };
     try {
       const res = await fetch(existing ? `/api/employer/interviews/${existing.id}` : "/api/employer/interviews", {
