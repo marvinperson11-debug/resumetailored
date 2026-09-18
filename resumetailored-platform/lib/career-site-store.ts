@@ -281,9 +281,26 @@ function mapPublicJob(r: Record<string, unknown>): PublicCareerJob {
   };
 }
 
-/** Public read by slug — no auth. Returns the site config + that employer's
- *  active, public-listed jobs (public-safe fields only), or null if no site. */
-export async function getPublicCareerSite(slug: string): Promise<{ site: CareerSite; jobs: PublicCareerJob[] } | null> {
+/** The employer's company-profile fields surfaced on the public career page. */
+async function getPublicCompanyProfile(c: SupabaseClient, employerId: string): Promise<{ industry: string; bio: string }> {
+  const empty = { industry: "", bio: "" };
+  try {
+    // company_bio (0025) is newer than industry (0012) — tolerate its absence.
+    const full = await c.from("employer_profiles").select("industry, company_bio").eq("user_id", employerId).maybeSingle();
+    if (!full.error) return { industry: (full.data?.industry as string) || "", bio: (full.data?.company_bio as string) || "" };
+    const base = await c.from("employer_profiles").select("industry").eq("user_id", employerId).maybeSingle();
+    return { industry: (base.data?.industry as string) || "", bio: "" };
+  } catch {
+    return empty;
+  }
+}
+
+/** Public read by slug — no auth. Returns the site config, the employer's public
+ *  company-profile fields (industry + bio), and that employer's active,
+ *  public-listed jobs (public-safe fields only), or null if no site. */
+export async function getPublicCareerSite(
+  slug: string
+): Promise<{ site: CareerSite; jobs: PublicCareerJob[]; industry: string; bio: string } | null> {
   const c = db();
   if (!c || !slug) return null;
   try {
@@ -292,16 +309,19 @@ export async function getPublicCareerSite(slug: string): Promise<{ site: CareerS
     const row = data as unknown as Record<string, unknown>;
     const site = mapSite(row);
     const employerId = row.employer_id as string;
-    const { data: jobRows } = await c
-      .from("job_postings")
-      .select("id, title, department, location, remote_type, employment_type, salary_min, salary_max, salary_currency, description, requirements")
-      .eq("employer_id", employerId)
-      .eq("status", "active")
-      .eq("public_listed", true)
-      .order("created_at", { ascending: false })
-      .limit(200);
+    const [{ data: jobRows }, profile] = await Promise.all([
+      c
+        .from("job_postings")
+        .select("id, title, department, location, remote_type, employment_type, salary_min, salary_max, salary_currency, description, requirements")
+        .eq("employer_id", employerId)
+        .eq("status", "active")
+        .eq("public_listed", true)
+        .order("created_at", { ascending: false })
+        .limit(200),
+      getPublicCompanyProfile(c, employerId),
+    ]);
     const jobs = (jobRows || []).map(mapPublicJob);
-    return { site, jobs };
+    return { site, jobs, industry: profile.industry, bio: profile.bio };
   } catch (e) {
     console.error("[getPublicCareerSite]", e);
     return null;

@@ -39,6 +39,11 @@ export default async function PublicJobDetail({ params }: { params: { jobId: str
           {job.employmentType && <span>{job.employmentType}</span>}
         </div>
         {sal && <p className="mt-2 text-sm font-semibold text-teal">{sal}</p>}
+        {job.companySlug && (
+          <Link href={`/careers/${job.companySlug}`} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-violet hover:underline">
+            <Building2 className="h-4 w-4" /> About {job.company || "the company"}
+          </Link>
+        )}
 
         <section className="mt-6">
           <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">Job description</h2>

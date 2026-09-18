@@ -22,15 +22,23 @@ export function CareerSiteView({
   jobs,
   applyBase = "/jobs",
   preview = false,
+  industry = "",
+  bio = "",
 }: {
   site: CareerSite;
   jobs: PublicCareerJob[];
   applyBase?: string;
   preview?: boolean;
+  /** Employer company-profile fields (from employer_profiles), surfaced here. */
+  industry?: string;
+  bio?: string;
 }) {
   const brand = /^#[0-9a-fA-F]{6}$/.test(site.brandColor) ? site.brandColor : "#F59E0B";
   const company = site.companyName || "Company";
   const rootStyle = { ["--brand" as string]: brand } as CSSProperties;
+  // The About section shows the company bio (profile) first, then the career-site
+  // "about" text — both under one heading, so there's no duplicate "About …".
+  const showAboutBlock = !!bio || (site.showAbout && !!site.aboutText);
 
   return (
     <div style={rootStyle} className="cs-root">
@@ -52,7 +60,10 @@ export function CareerSiteView({
                 {company.slice(0, 1).toUpperCase()}
               </span>
             )}
-            <span className="cs-company">{company}</span>
+            <div className="cs-brandtext">
+              <span className="cs-company">{company}</span>
+              {industry && <span className="cs-industry">{industry}</span>}
+            </div>
           </div>
         </div>
       </header>
@@ -70,21 +81,22 @@ export function CareerSiteView({
           </a>
         </section>
 
-        {site.showAbout && (site.aboutText || site.missionText || site.valuesText) && (
+        {(showAboutBlock || (site.showAbout && (site.missionText || site.valuesText))) && (
           <section className="cs-section">
-            {site.aboutText && (
+            {showAboutBlock && (
               <div className="cs-block">
                 <h2 className="cs-h2">About {company}</h2>
-                <p className="cs-body">{site.aboutText}</p>
+                {bio && <p className="cs-body">{bio}</p>}
+                {site.showAbout && site.aboutText && <p className="cs-body" style={bio ? { marginTop: 12 } : undefined}>{site.aboutText}</p>}
               </div>
             )}
-            {site.missionText && (
+            {site.showAbout && site.missionText && (
               <div className="cs-block">
                 <h2 className="cs-h2">Our mission</h2>
                 <p className="cs-body">{site.missionText}</p>
               </div>
             )}
-            {site.valuesText && (
+            {site.showAbout && site.valuesText && (
               <div className="cs-block">
                 <h2 className="cs-h2">Our values</h2>
                 <p className="cs-body">{site.valuesText}</p>
@@ -195,7 +207,9 @@ const cssText = `
 .cs-brandrow{display:flex;align-items:center;gap:12px;margin-top:-32px;position:relative;}
 .cs-logo{width:64px;height:64px;border-radius:14px;object-fit:cover;background:#fff;border:3px solid #fff;box-shadow:0 4px 16px rgba(0,0,0,.15);}
 .cs-logo--mono{display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:#fff;background:var(--brand);}
-.cs-company{font-size:22px;font-weight:700;padding-top:20px;}
+.cs-brandtext{display:flex;flex-direction:column;padding-top:20px;}
+.cs-company{font-size:22px;font-weight:700;line-height:1.2;}
+.cs-industry{font-size:14px;color:#6b7280;font-weight:500;margin-top:2px;}
 .cs-main{max-width:900px;margin:0 auto;padding:24px 20px 8px;}
 .cs-hero{padding:24px 0 8px;}
 .cs-h1{font-size:34px;font-weight:800;margin:0 0 8px;letter-spacing:-.02em;}

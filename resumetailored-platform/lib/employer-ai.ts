@@ -25,8 +25,6 @@ export const INDUSTRIES = [
   "Other",
 ] as const;
 
-export const COMPANY_SIZES = ["1-10", "11-50", "51-200", "201-500", "500+"] as const;
-
 export const JOB_STATUSES = ["draft", "active", "paused", "closed"] as const;
 export type JobStatus = (typeof JOB_STATUSES)[number];
 export const isJobStatus = (v: unknown): v is JobStatus => (JOB_STATUSES as readonly string[]).includes(String(v));
@@ -66,7 +64,8 @@ export interface EmployerProfile {
   companyName: string;
   companyWebsite: string;
   industry: string;
-  companySize: string;
+  /** Multi-line company bio, surfaced on the public career page. */
+  companyBio: string;
   emailSignature?: EmailSignature | null;
 }
 
@@ -87,6 +86,7 @@ export interface JobPosting {
   status: JobStatus;
   publicListed?: boolean;
   company?: string; // employer's company name (joined for the public board)
+  companySlug?: string; // employer's career-site slug (for an "About {company}" link)
   applicantCount?: number;
   createdAt: string;
   updatedAt: string;

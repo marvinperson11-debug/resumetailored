@@ -34,23 +34,35 @@ const strList = (v: unknown): string[] =>
   Array.isArray(v) ? v.map((x) => String(x)).filter(Boolean) : [];
 
 // ── Profile ───────────────────────────────────────────────────────────────────
+// Base columns exist since 0012; email_signature (0024) and company_bio (0025)
+// are newer. The full select is tried first, but if it errors — e.g. a deploy
+// landed before a migration was hand-applied — we fall back to the base columns.
+// This is critical: a null profile makes the employer layout show the BLOCKING
+// onboarding modal over every page, so a schema lag must never null out an
+// existing profile.
+const PROFILE_BASE_COLS = "company_name, company_website, industry";
+const PROFILE_FULL_COLS = `${PROFILE_BASE_COLS}, company_bio, email_signature`;
+
+function mapProfile(data: Record<string, unknown>): EmployerProfile {
+  return {
+    companyName: (data.company_name as string) || "",
+    companyWebsite: (data.company_website as string) || "",
+    industry: (data.industry as string) || "",
+    companyBio: (data.company_bio as string) || "",
+    emailSignature: mapSignature(data.email_signature),
+  };
+}
+
 export async function getEmployerProfile(employerId: string): Promise<EmployerProfile | null> {
   const c = db();
   if (!c || !employerId) return null;
   try {
-    const { data } = await c
-      .from("employer_profiles")
-      .select("company_name, company_website, industry, company_size, email_signature")
-      .eq("user_id", employerId)
-      .maybeSingle();
-    if (!data) return null;
-    return {
-      companyName: (data.company_name as string) || "",
-      companyWebsite: (data.company_website as string) || "",
-      industry: (data.industry as string) || "",
-      companySize: (data.company_size as string) || "",
-      emailSignature: mapSignature(data.email_signature),
-    };
+    const full = await c.from("employer_profiles").select(PROFILE_FULL_COLS).eq("user_id", employerId).maybeSingle();
+    if (!full.error) return full.data ? mapProfile(full.data) : null;
+    // Newer column missing (migration not yet applied) — fall back to base cols.
+    const base = await c.from("employer_profiles").select(PROFILE_BASE_COLS).eq("user_id", employerId).maybeSingle();
+    if (base.error || !base.data) return null;
+    return mapProfile(base.data);
   } catch {
     return null;
   }
@@ -139,7 +151,7 @@ export async function saveEmployerProfile(employerId: string, p: EmployerProfile
         company_name: p.companyName.slice(0, 200),
         company_website: p.companyWebsite?.slice(0, 400) || null,
         industry: p.industry || null,
-        company_size: p.companySize || null,
+        company_bio: p.companyBio?.slice(0, 3000) || null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }
@@ -407,8 +419,17 @@ export async function getPublicJob(id: number): Promise<JobPosting | null> {
       .maybeSingle();
     if (!data) return null;
     const row = data as unknown as Record<string, unknown>;
-    const names = await companyNameMap(c, [row.employer_id as string]);
-    return { ...mapJob(row), company: names.get(row.employer_id as string) || "" };
+    const employerId = row.employer_id as string;
+    const names = await companyNameMap(c, [employerId]);
+    // Career-site slug (if any) so the public job page can link "About {company}".
+    let companySlug = "";
+    try {
+      const { data: cs } = await c.from("career_sites").select("slug").eq("employer_id", employerId).maybeSingle();
+      companySlug = (cs?.slug as string) || "";
+    } catch {
+      /* no career site — no link */
+    }
+    return { ...mapJob(row), company: names.get(employerId) || "", companySlug };
   } catch {
     return null;
   }

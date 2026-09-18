@@ -2,17 +2,42 @@
 
 import { useRef, useState } from "react";
 import { Check, UploadCloud, Trash2 } from "lucide-react";
-import { INDUSTRIES, COMPANY_SIZES, type EmployerProfile, type EmailSignature } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Picker } from "../components/ui";
+import { INDUSTRIES, type EmployerProfile, type EmailSignature } from "@/lib/employer-ai";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker } from "../components/ui";
 
-export function SettingsClient({ initial, canManage, tier }: { initial: EmployerProfile; canManage: boolean; tier: string | null }) {
+const MANUAL = "__manual__";
+
+export function SettingsClient({
+  initial,
+  canManage,
+  tier,
+  knownNames,
+}: {
+  initial: EmployerProfile;
+  canManage: boolean;
+  tier: string | null;
+  knownNames: string[];
+}) {
   const [companyName, setCompanyName] = useState(initial.companyName);
   const [companyWebsite, setCompanyWebsite] = useState(initial.companyWebsite);
   const [industry, setIndustry] = useState(initial.industry);
-  const [companySize, setCompanySize] = useState(initial.companySize);
+  const [companyBio, setCompanyBio] = useState(initial.companyBio);
+  // Company-name picker: choose a known name or type a new one. Start in manual
+  // mode when there are no known names, or the saved name isn't among them.
+  const [nameManual, setNameManual] = useState(knownNames.length === 0 || (!!companyName && !knownNames.includes(companyName)));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function onPickName(value: string) {
+    if (value === MANUAL) {
+      setNameManual(true);
+      setCompanyName("");
+    } else {
+      setNameManual(false);
+      setCompanyName(value);
+    }
+  }
 
   async function save() {
     if (companyName.trim().length < 2) return setError("Company name is required.");
@@ -23,7 +48,7 @@ export function SettingsClient({ initial, canManage, tier }: { initial: Employer
       const res = await fetch("/api/employer/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ companyName, companyWebsite, industry, companySize }),
+        body: JSON.stringify({ companyName, companyWebsite, industry, companyBio }),
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) throw new Error(d.error || "Could not save.");
@@ -43,34 +68,44 @@ export function SettingsClient({ initial, canManage, tier }: { initial: Employer
       <Panel>
         <h2 className="mb-4 text-sm font-semibold text-cream">Company profile</h2>
         <div className="space-y-4">
-          <Field label="Company name">
-            <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} disabled={!canManage} />
+          <Field label="Company name" hint={knownNames.length > 0 ? "Pick a saved name or type a new one" : undefined}>
+            {knownNames.length > 0 && (
+              <Picker value={nameManual ? MANUAL : companyName} onChange={(e) => onPickName(e.target.value)} disabled={!canManage}>
+                {!companyName && !nameManual && <option value="">Select…</option>}
+                {knownNames.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+                <option value={MANUAL}>Type a new name…</option>
+              </Picker>
+            )}
+            {(nameManual || knownNames.length === 0) && (
+              <Input
+                className={knownNames.length > 0 ? "mt-2" : undefined}
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                disabled={!canManage}
+                placeholder="Acme Inc."
+              />
+            )}
           </Field>
           <Field label="Company website" hint="Optional">
             <Input value={companyWebsite} onChange={(e) => setCompanyWebsite(e.target.value)} disabled={!canManage} placeholder="https://…" />
           </Field>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Industry">
-              <Picker value={industry} onChange={(e) => setIndustry(e.target.value)} disabled={!canManage}>
-                <option value="">Select…</option>
-                {INDUSTRIES.map((i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
-              </Picker>
-            </Field>
-            <Field label="Company size">
-              <Picker value={companySize} onChange={(e) => setCompanySize(e.target.value)} disabled={!canManage}>
-                <option value="">Select…</option>
-                {COMPANY_SIZES.map((s) => (
-                  <option key={s} value={s}>
-                    {s} employees
-                  </option>
-                ))}
-              </Picker>
-            </Field>
-          </div>
+          <Field label="Industry">
+            <Picker value={industry} onChange={(e) => setIndustry(e.target.value)} disabled={!canManage}>
+              <option value="">Select…</option>
+              {INDUSTRIES.map((i) => (
+                <option key={i} value={i}>
+                  {i}
+                </option>
+              ))}
+            </Picker>
+          </Field>
+          <Field label="Company bio" hint="Shown on your public career page">
+            <Area rows={5} value={companyBio} onChange={(e) => setCompanyBio(e.target.value)} disabled={!canManage} placeholder="Tell candidates what your company does and what it's like to work there." />
+          </Field>
 
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
 
