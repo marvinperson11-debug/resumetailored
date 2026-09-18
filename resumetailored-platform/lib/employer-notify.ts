@@ -1,4 +1,5 @@
 import { getApplicant, getEmployerProfile } from "./employer-store";
+import { getCareerSiteCompanyName } from "./career-site-store";
 import { sendEmail, resolveUserEmail, escapeHtml, emailShell } from "./email";
 import type { Message, Interview, InterviewMode } from "./employer-ai";
 
@@ -27,12 +28,16 @@ function fmtWhen(iso: string): string {
   })} UTC`;
 }
 
-async function context(employerId: string, applicantId: number): Promise<{ to: string; name: string; company: string; replyTo?: string } | null> {
+async function context(employerId: string, applicantId: number): Promise<{ to: string; name: string; company: string; replyTo?: string; fromName?: string } | null> {
   const applicant = await getApplicant(employerId, applicantId);
   if (!applicant?.email) return null;
   const profile = await getEmployerProfile(employerId);
   const replyTo = (await resolveUserEmail(employerId)) || undefined;
-  return { to: applicant.email, name: applicant.name || "there", company: profile?.companyName || "a recruiter", replyTo };
+  // From display name = the employer's business name (career_sites.company_name),
+  // falling back to employer_profiles, else undefined → default "ResumeTailored".
+  // Sender address is unchanged (noreply@resumetailored.com).
+  const fromName = (await getCareerSiteCompanyName(employerId)) || profile?.companyName || undefined;
+  return { to: applicant.email, name: applicant.name || "there", company: profile?.companyName || "a recruiter", replyTo, fromName };
 }
 
 /** Email the candidate an employer's new message (they have no in-app inbox). */
@@ -47,6 +52,7 @@ export async function notifyCandidateOfMessage(employerId: string, applicantId: 
   await sendEmail({
     to: ctx.to,
     replyTo: ctx.replyTo,
+    fromName: ctx.fromName,
     subject: `New message from ${ctx.company}`,
     html: emailShell(
       `<p>Hi ${firstName},</p>
@@ -74,6 +80,7 @@ export async function notifyCandidateOfInterview(
     await sendEmail({
       to: ctx.to,
       replyTo: ctx.replyTo,
+      fromName: ctx.fromName,
       subject: `Interview cancelled — ${interview.title}`,
       html: emailShell(
         `<p>Hi ${firstName},</p>
@@ -109,6 +116,7 @@ export async function notifyCandidateOfInterview(
   await sendEmail({
     to: ctx.to,
     replyTo: ctx.replyTo,
+    fromName: ctx.fromName,
     subject,
     html: emailShell(
       `<p>Hi ${firstName},</p>

@@ -89,6 +89,20 @@ async function uniqueSlug(c: SupabaseClient, base: string): Promise<string> {
 }
 
 /** Get this employer's career site, creating a default row on first access. */
+/** Read-only lookup of an employer's career-site company name (no row creation).
+ *  Empty string when there's no career site yet or none is set. Used to brand
+ *  employer-triggered candidate emails with the business name. */
+export async function getCareerSiteCompanyName(employerId: string): Promise<string> {
+  const c = db();
+  if (!c || !employerId) return "";
+  try {
+    const { data } = await c.from("career_sites").select("company_name").eq("employer_id", employerId).maybeSingle();
+    return (data?.company_name as string) || "";
+  } catch {
+    return "";
+  }
+}
+
 export async function getCareerSite(employerId: string, companyName = ""): Promise<CareerSite | null> {
   const c = db();
   if (!c) throw new Error("Supabase client not configured (check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY).");

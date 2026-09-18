@@ -138,15 +138,19 @@ export function EmptyState({ icon: Icon, title, body, action }: { icon: LucideIc
 /** Centered modal dialog. */
 export function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-navy/70 p-4 backdrop-blur-sm sm:p-8">
-      <div className={cn("w-full rounded-2xl border border-border-gold bg-navy shadow-2xl", wide ? "max-w-3xl" : "max-w-lg")}>
-        <div className="flex items-center justify-between border-b border-border-gold px-5 py-4">
+    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-navy/70 p-4 backdrop-blur-sm sm:items-center sm:p-8">
+      {/* Cap the card to the (dynamic) viewport height and scroll the BODY
+          internally, so on mobile the whole form is reachable and the last
+          fields (Record toggle / Schedule button) never sit under the browser
+          chrome. dvh tracks the collapsing address bar; the header stays put. */}
+      <div className={cn("flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-border-gold bg-navy shadow-2xl sm:max-h-[calc(100dvh-4rem)]", wide ? "max-w-3xl" : "max-w-lg")}>
+        <div className="flex shrink-0 items-center justify-between border-b border-border-gold px-5 py-4">
           <h2 className="font-serif text-lg font-medium text-cream">{title}</h2>
           <button type="button" onClick={onClose} aria-label="Close" className="text-muted-cream transition-colors hover:text-cream">
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-5">{children}</div>
       </div>
     </div>
   );

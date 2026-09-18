@@ -13,11 +13,11 @@ export default async function EmployerHome() {
     ? await getDashboard(employerId)
     : { stats: { activeJobs: 0, totalApplicants: 0, newThisWeek: 0, teamCount: 0 }, activity: [] };
 
-  const cards: { label: string; value: number; icon: LucideIcon }[] = [
-    { label: "Active job postings", value: stats.activeJobs, icon: Briefcase },
-    { label: "Total applicants", value: stats.totalApplicants, icon: Users },
-    { label: "New this week", value: stats.newThisWeek, icon: TrendingUp },
-    { label: "Team members", value: stats.teamCount, icon: UserCog },
+  const cards: { label: string; value: number; icon: LucideIcon; href: string }[] = [
+    { label: "Active job postings", value: stats.activeJobs, icon: Briefcase, href: "/employer/jobs" },
+    { label: "Total applicants", value: stats.totalApplicants, icon: Users, href: "/employer/candidates" },
+    { label: "New this week", value: stats.newThisWeek, icon: TrendingUp, href: "/employer/candidates" },
+    { label: "Team members", value: stats.teamCount, icon: UserCog, href: "/employer/team" },
   ];
 
   return (
@@ -32,15 +32,20 @@ export default async function EmployerHome() {
         {cards.map((c) => {
           const Icon = c.icon;
           return (
-            <Panel key={c.label} className="flex items-center gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet/15">
+            // Tappable stat card → its section. Same Panel styling + hover/press.
+            <Link
+              key={c.label}
+              href={c.href}
+              className="group flex items-center gap-4 rounded-xl border border-border-gold bg-white/[0.04] p-5 transition-colors hover:border-violet/40 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet/50 active:scale-[0.99]"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-violet/15 transition-colors group-hover:bg-violet/25">
                 <Icon className="h-5 w-5 text-violet" />
               </div>
               <div>
                 <div className="text-2xl font-bold text-cream">{c.value}</div>
                 <div className="text-xs text-white/60">{c.label}</div>
               </div>
-            </Panel>
+            </Link>
           );
         })}
       </section>

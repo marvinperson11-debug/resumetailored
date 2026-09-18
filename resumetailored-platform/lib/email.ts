@@ -4,11 +4,24 @@
  * never throws) when `RESEND_API_KEY` is unset or the request fails, so callers
  * can fire-and-forget. No provider configured ⇒ email is simply skipped.
  */
-export async function sendEmail(opts: { to: string; subject: string; html: string; replyTo?: string }): Promise<boolean> {
+/** Swap the display name on a "Name <addr>" (or bare "addr") From string,
+ *  keeping the address. Used to send employer-triggered candidate emails under
+ *  the employer's business name while the address stays noreply@resumetailored.com.
+ *  The name is quoted and stripped of header-breaking characters. */
+export function fromWithName(baseFrom: string, name?: string): string {
+  const clean = (name || "").replace(/[\r\n"<>]+/g, " ").trim().slice(0, 78);
+  if (!clean) return baseFrom;
+  const m = /<([^>]+)>/.exec(baseFrom);
+  const addr = (m ? m[1] : baseFrom).trim();
+  return `"${clean}" <${addr}>`;
+}
+
+export async function sendEmail(opts: { to: string; subject: string; html: string; replyTo?: string; fromName?: string }): Promise<boolean> {
   const key = process.env.RESEND_API_KEY;
   if (!key || !opts.to) return false;
   try {
-    const from = process.env.RESEND_FROM || "ResumeTailored <noreply@resumetailored.com>";
+    const baseFrom = process.env.RESEND_FROM || "ResumeTailored <noreply@resumetailored.com>";
+    const from = fromWithName(baseFrom, opts.fromName);
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
