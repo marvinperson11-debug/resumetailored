@@ -62,6 +62,20 @@ clearly intended. Which of these did you mean?
 
 Let me know and I'll follow up on the same branch/PR.
 
+### Decision (2026-09-18)
+
+**Option 1 chosen.** The recipient picker belongs in the send form only; the
+after-send "Request documents" flow correctly reuses the envelope's existing
+signer, so nothing changes there. This PR ships as-is.
+
+**Follow-up (not in this PR):** a **request-only document collection flow** — ask
+a candidate or employee to upload documents *without* sending anything to sign
+(HR onboarding: I-9 support docs, certifications, direct-deposit forms, etc.).
+This would reuse the same applicant picker to choose the recipient, mint a
+`sign_token`-style upload link, and reuse the existing signer upload page +
+per-upload/employer-notification emails — but without a DocuSign envelope or
+signature step. Tracked as a future enhancement; deliberately out of scope here.
+
 ---
 
 ## Verify
