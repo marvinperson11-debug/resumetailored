@@ -35,6 +35,7 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [note, setNote] = useState("");
+  const [pendingFree, setPendingFree] = useState<File | null>(null);
   const freeInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -195,35 +196,98 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
             Add anything else the sender needs. PDF, JPG, PNG or Word · max 10&nbsp;MB each · up to {MAX_TOTAL} files.
           </p>
           <input
-            type="text"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional note (what is this?)"
-            className="mx-auto mt-3 block w-full max-w-sm rounded-lg border border-border-gold bg-white/[0.04] px-3 py-2 text-sm text-cream placeholder:text-white/35 focus:border-violet focus:outline-none"
+            ref={freeInputRef}
+            type="file"
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,application/pdf,image/jpeg,image/png"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (freeInputRef.current) freeInputRef.current.value = "";
+              if (!f) return;
+              const bad = validate(f);
+              if (bad) {
+                setError(bad);
+                return;
+              }
+              // If the sender is still waiting on named documents, offer to tag
+              // this file to one of them — otherwise it lands as "Other" and the
+              // slot stays "missing" ("I uploaded it but it still says missing").
+              if (pending.length > 0) {
+                setError(null);
+                setFlash(null);
+                setPendingFree(f);
+              } else {
+                void upload(f, undefined, "__free");
+              }
+            }}
           />
-          <div className="mt-3">
-            <input
-              ref={freeInputRef}
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,application/pdf,image/jpeg,image/png"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void upload(f, undefined, "__free");
-                if (freeInputRef.current) freeInputRef.current.value = "";
-              }}
-            />
-            <button
-              type="button"
-              disabled={busy !== null || atLimit}
-              onClick={() => freeInputRef.current?.click()}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet/90 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {busy === "__free" ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-              Upload a file
-            </button>
-          </div>
-          {atLimit && <p className="mt-2 text-xs text-gold">You&apos;ve reached the {MAX_TOTAL}-file limit for this link.</p>}
+          {pendingFree ? (
+            <div className="mt-3 rounded-xl border border-violet/40 bg-violet/[0.08] p-4 text-left">
+              <p className="text-sm text-cream">
+                Is <strong>“{pendingFree.name}”</strong> one of the documents{" "}
+                {data.company ? <>{data.company}</> : "the sender"} requested?
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {pending.map((d) => (
+                  <button
+                    key={d.name}
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={() => {
+                      const f = pendingFree;
+                      setPendingFree(null);
+                      void upload(f, d.name, d.name);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-violet px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-violet/90 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Yes — it&apos;s my {d.name}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => {
+                    const f = pendingFree;
+                    setPendingFree(null);
+                    void upload(f, undefined, "__free");
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-cream transition-colors hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  No — it&apos;s something else
+                </button>
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => setPendingFree(null)}
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-cream transition-colors hover:text-cream disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <input
+                type="text"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Optional note (what is this?)"
+                className="mx-auto mt-3 block w-full max-w-sm rounded-lg border border-border-gold bg-white/[0.04] px-3 py-2 text-sm text-cream placeholder:text-white/35 focus:border-violet focus:outline-none"
+              />
+              <div className="mt-3">
+                <button
+                  type="button"
+                  disabled={busy !== null || atLimit}
+                  onClick={() => freeInputRef.current?.click()}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet/90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {busy === "__free" ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+                  Upload a file
+                </button>
+              </div>
+              {atLimit && <p className="mt-2 text-xs text-gold">You&apos;ve reached the {MAX_TOTAL}-file limit for this link.</p>}
+            </>
+          )}
         </div>
       </div>
 

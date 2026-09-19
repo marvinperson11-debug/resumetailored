@@ -702,6 +702,48 @@ export async function addRequestedDocs(
   }
 }
 
+/**
+ * Employer: manually mark a requested-doc slot satisfied, optionally tagging an
+ * existing attachment (by its storage path/url) as the fulfilling "requested"
+ * file. Owner-scoped. Returns the updated envelope, or null if not found / the
+ * named slot doesn't exist.
+ */
+export async function markRequestSatisfied(
+  employerId: string,
+  id: number,
+  name: string,
+  attachmentUrl?: string
+): Promise<DocusignEnvelope | null> {
+  const c = db();
+  if (!c || !employerId || !id) return null;
+  const existing = await getEnvelopeRecord(employerId, id);
+  if (!existing) return null;
+  const target = name.trim().toLowerCase();
+  if (!existing.requestedDocs.some((d) => d.name.trim().toLowerCase() === target)) return null;
+
+  const requested = existing.requestedDocs.map((d) =>
+    d.name.trim().toLowerCase() === target ? { name: d.name, uploaded: true } : { name: d.name, uploaded: d.uploaded }
+  );
+  const attachments = (attachmentUrl
+    ? existing.attachments.map((a) => (a.url === attachmentUrl ? { ...a, kind: "requested" as const } : a))
+    : existing.attachments
+  ).map((a) => ({ name: a.name, url: a.url, note: a.note, uploaded_at: a.uploadedAt, kind: a.kind, by: a.by }));
+
+  try {
+    const { data, error } = await c
+      .from("docusign_envelopes")
+      .update({ requested_docs: requested, attachments })
+      .eq("employer_id", employerId)
+      .eq("id", id)
+      .select(ENV_COLS)
+      .single();
+    if (error || !data) return null;
+    return mapEnvelope(data);
+  } catch {
+    return null;
+  }
+}
+
 /** Stamp the completion-email idempotency guard so it is sent only once. */
 export async function markSignedDocsEmailed(envelopeId: string): Promise<void> {
   const c = db();
