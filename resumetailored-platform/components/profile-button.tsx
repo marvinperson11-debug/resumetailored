@@ -24,7 +24,35 @@ export function ProfileButton() {
   };
 
   return (
-    <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: "h-8 w-8" } }}>
+    <UserButton
+      afterSignOutUrl="/"
+      appearance={{
+        // Dark-theme the popover so menu items aren't ghosted against the card.
+        // `variables` set readable near-white text on the app's navy background;
+        // the element classes add visible hover/pressed states. Applies wherever
+        // ProfileButton is used (employer + candidate shells).
+        variables: {
+          colorBackground: "#0B0F19",
+          colorText: "#F8FAFC",
+          colorTextSecondary: "#A9AEB8",
+          colorPrimary: "#8B5CF6",
+          colorInputBackground: "#0B0F19",
+          colorInputText: "#F8FAFC",
+        },
+        elements: {
+          avatarBox: "h-8 w-8",
+          userButtonPopoverCard: "bg-navy border border-border-gold text-cream",
+          userButtonPopoverMain: "bg-navy",
+          userButtonPopoverActionButton: "text-cream hover:bg-white/10 active:bg-white/[0.14]",
+          userButtonPopoverActionButtonText: "text-cream",
+          userButtonPopoverActionButtonIcon: "text-muted-cream",
+          userButtonPopoverCustomItemButton: "text-cream hover:bg-white/10 active:bg-white/[0.14]",
+          userButtonPopoverCustomItemButtonText: "text-cream",
+          userButtonPopoverCustomItemButtonIcon: "text-muted-cream",
+          userButtonPopoverFooter: "bg-navy border-t border-border-gold",
+        },
+      }}
+    >
       <UserButton.MenuItems>
         <UserButton.Action label={t("profile")} labelIcon={<User className="h-4 w-4" />} onClick={() => router.push("/candidate/profile")} />
         <UserButton.Action label={t("settings")} labelIcon={<Settings className="h-4 w-4" />} onClick={() => router.push("/candidate/settings")} />
