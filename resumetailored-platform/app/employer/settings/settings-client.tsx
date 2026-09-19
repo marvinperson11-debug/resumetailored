@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, UploadCloud, Trash2 } from "lucide-react";
 import { INDUSTRIES, type EmployerProfile, type EmailSignature } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker } from "../components/ui";
@@ -12,12 +12,20 @@ export function SettingsClient({
   canManage,
   tier,
   knownNames,
+  gate,
 }: {
   initial: EmployerProfile;
   canManage: boolean;
   tier: string | null;
   knownNames: string[];
+  gate?: { plan: string; isAdmin: boolean };
 }) {
+  // Log the editability decision once so it's verifiable from the console.
+  useEffect(() => {
+    console.log("[settings] editability gate", { canManage, plan: gate?.plan, isAdmin: gate?.isAdmin });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [companyName, setCompanyName] = useState(initial.companyName);
   const [companyWebsite, setCompanyWebsite] = useState(initial.companyWebsite);
   const [industry, setIndustry] = useState(initial.industry);
