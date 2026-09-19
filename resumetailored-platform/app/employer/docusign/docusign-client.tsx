@@ -259,11 +259,13 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
                   <Fragment key={e.id}>
                     <tr
                       onClick={() => setExpanded(isOpen ? null : e.id)}
-                      className="cursor-pointer border-b border-border-gold/60 last:border-0 hover:bg-white/[0.02]"
+                      title={isOpen ? "Hide details" : "Show details"}
+                      aria-expanded={isOpen}
+                      className={`group cursor-pointer border-b border-border-gold/60 last:border-0 transition-colors hover:bg-white/[0.06] ${isOpen ? "bg-white/[0.04]" : ""}`}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <ChevronDown className={`h-4 w-4 shrink-0 text-white/40 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                          <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180 text-violet" : "text-white/40 group-hover:text-violet"}`} />
                           <div>
                             <div className="font-medium text-cream">{e.candidateName || "—"}</div>
                             <div className="text-xs text-white/45">{e.candidateEmail}</div>
@@ -273,7 +275,7 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
                       <td className="px-4 py-3">
                         <Badge tone={DOC_TYPE_TONE[e.docType]}>{DOC_TYPE_LABELS[e.docType]}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-white/75">{e.docType === "custom" ? e.documentName || "Document" : e.offer.position || "—"}</td>
+                      <td className="px-4 py-3 text-white/75">{e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType]}</td>
                       <td className="px-4 py-3 text-white/55">{fmtDate(e.sentAt)}</td>
                       <td className="px-4 py-3">
                         <Badge tone={STATUS_TONE[e.status]}>{e.status}</Badge>
@@ -344,9 +346,12 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [pickByReq, setPickByReq] = useState<Record<string, string>>({});
+  const [markingReq, setMarkingReq] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const employerFiles = envelope.attachments.filter((a) => a.by === "employer");
+  const isDone = envelope.status === "completed" || envelope.status === "signed";
 
   const signLink =
     envelope.signToken && typeof window !== "undefined"
@@ -398,6 +403,27 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
     }
   }
 
+  async function markSatisfied(name: string) {
+    setMarkingReq(name);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/employer/docusign/envelopes/${envelope.id}/mark-request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, attachmentUrl: pickByReq[name] || undefined }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setMsg({ tone: "err", text: d.error || "Couldn't update the request." });
+        return;
+      }
+      setMsg({ tone: "ok", text: `Marked “${name}” as received.` });
+      onChanged();
+    } finally {
+      setMarkingReq(null);
+    }
+  }
+
   function copyLink() {
     if (!signLink) return;
     void navigator.clipboard?.writeText(signLink).then(() => {
@@ -410,23 +436,70 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
     `/api/employer/docusign/envelopes/${envelope.id}/attachment?path=${encodeURIComponent(path)}${download ? "&download=1" : ""}`;
 
   return (
-    <div className="grid gap-5 md:grid-cols-2">
+    <div className="space-y-5">
+      {/* Prominent signed-document download for completed/signed envelopes */}
+      {isDone && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-teal/30 bg-teal/[0.06] px-4 py-3">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-teal" />
+          <span className="mr-auto text-sm text-cream">This document is complete.</span>
+          <a
+            href={`/api/employer/docusign/envelopes/${envelope.id}/documents`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet/90"
+          >
+            <Download className="h-4 w-4" /> Download signed documents
+          </a>
+          <a
+            href={`/api/employer/docusign/envelopes/${envelope.id}/certificate`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-4 py-2 text-sm font-semibold text-cream transition-colors hover:bg-white/[0.08]"
+          >
+            <Download className="h-4 w-4" /> Certificate
+          </a>
+        </div>
+      )}
+
+      <div className="grid gap-5 md:grid-cols-2">
       {/* Requested documents checklist */}
       <div>
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">Requested documents</h3>
         {envelope.requestedDocs.length === 0 ? (
           <p className="text-xs text-white/40">No documents requested from the signer.</p>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="space-y-2">
             {envelope.requestedDocs.map((d) => (
-              <li key={d.name} className="flex items-center gap-2 text-sm">
-                {d.uploaded ? (
-                  <CheckCircle2 className="h-4 w-4 text-teal" />
-                ) : (
-                  <Circle className="h-4 w-4 text-white/30" />
+              <li key={d.name} className="text-sm">
+                <div className="flex items-center gap-2">
+                  {d.uploaded ? (
+                    <CheckCircle2 className="h-4 w-4 text-teal" />
+                  ) : (
+                    <Circle className="h-4 w-4 text-white/30" />
+                  )}
+                  <span className={d.uploaded ? "text-cream" : "text-white/60"}>{d.name}</span>
+                  {d.uploaded && <span className="text-[11px] font-semibold text-teal">received</span>}
+                </div>
+                {/* Manually satisfy a pending slot with an existing attachment. */}
+                {!d.uploaded && envelope.attachments.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 pl-6">
+                    <select
+                      value={pickByReq[d.name] || ""}
+                      onChange={(e) => setPickByReq((m) => ({ ...m, [d.name]: e.target.value }))}
+                      className="min-w-0 flex-1 rounded-lg border border-border-gold bg-white/5 px-2 py-1.5 text-xs text-cream outline-none focus:border-violet [&>option]:bg-navy [&>option]:text-cream"
+                    >
+                      <option value="">Mark received with an uploaded file…</option>
+                      {envelope.attachments.map((a, i) => (
+                        <option key={`${a.url}-${i}`} value={a.url}>
+                          {a.name} ({a.by === "employer" ? "you" : "signer"})
+                        </option>
+                      ))}
+                    </select>
+                    <Btn variant="ghost" onClick={() => void markSatisfied(d.name)} loading={markingReq === d.name} disabled={!pickByReq[d.name]}>
+                      <Check className="h-4 w-4" /> Mark received
+                    </Btn>
+                  </div>
                 )}
-                <span className={d.uploaded ? "text-cream" : "text-white/60"}>{d.name}</span>
-                {d.uploaded && <span className="text-[11px] font-semibold text-teal">received</span>}
               </li>
             ))}
           </ul>
@@ -509,6 +582,7 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
       {msg && (
         <p className={`md:col-span-2 text-xs ${msg.tone === "ok" ? "text-teal" : "text-red-300"}`}>{msg.text}</p>
       )}
+      </div>
     </div>
   );
 }
