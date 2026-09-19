@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
+import { isEmployer } from "@/lib/plan";
 import { uploadEmailSignatureAsset, EMAIL_ASSET_ALLOWED_TYPES, EMAIL_ASSET_MAX_BYTES } from "@/lib/employer-store";
 
 export const runtime = "nodejs";
@@ -11,7 +12,8 @@ export const maxDuration = 30;
 export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (ctx.access.plan !== "employer") return NextResponse.json({ error: "Only the account owner can edit the signature." }, { status: 403 });
+  // Owner (plan "employer") OR platform admin — matches the Settings page gate.
+  if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can edit the signature." }, { status: 403 });
 
   let form: FormData;
   try {
