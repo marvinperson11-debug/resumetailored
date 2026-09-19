@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
+import { isEmployer } from "@/lib/plan";
 import { getEmployerProfile, saveEmployerSignature } from "@/lib/employer-store";
 import type { EmailSignature } from "@/lib/employer-ai";
 
@@ -19,7 +20,10 @@ const str = (v: unknown, max: number): string => (typeof v === "string" ? v.trim
 export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
-  if (ctx.access.plan !== "employer") return NextResponse.json({ error: "Only the account owner can edit the signature." }, { status: 403 });
+  // Editable by the workspace owner (plan "employer") OR the platform admin —
+  // the same rule the Settings page uses. `plan === "employer"` alone locked the
+  // admin (who resolves to plan "pro" + isAdmin) out of saving.
+  if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can edit the signature." }, { status: 403 });
 
   const b = (await req.json().catch(() => ({}))) as Partial<EmailSignature> & { clear?: boolean };
   if (b.clear) {
