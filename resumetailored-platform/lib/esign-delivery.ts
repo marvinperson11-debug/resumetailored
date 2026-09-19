@@ -25,6 +25,49 @@ async function employerContext(employerId: string): Promise<{ company: string; r
   return { company: profile?.companyName || "", replyTo, signature };
 }
 
+/**
+ * "Send a copy" — forward the combined signed PDF + certificate to any recipient
+ * via Resend, with the employer's email signature. Not a DocuSign step and no
+ * signature is required from the recipient. Returns true when the email is
+ * accepted. `pdf` is the already-downloaded combined document.
+ */
+export async function sendSignedCopy(args: {
+  employerId: string;
+  toName: string;
+  toEmail: string;
+  documentLabel: string;
+  signerName: string;
+  pdf: Buffer;
+}): Promise<boolean> {
+  try {
+    if (!args.toEmail) return false;
+    const { company, replyTo, signature } = await employerContext(args.employerId);
+    const first = escapeHtml((args.toName || "there").split(" ")[0]);
+    const doc = escapeHtml(args.documentLabel || "a signed document");
+    const from = company ? escapeHtml(company) : "the sender";
+    const attachments: EmailAttachment[] = [
+      { filename: "signed-documents.pdf", content: args.pdf.toString("base64"), contentType: "application/pdf" },
+    ];
+    return await sendEmail({
+      to: args.toEmail,
+      replyTo,
+      fromName: company || undefined,
+      subject: `Copy of signed documents${company ? ` — ${company}` : ""}`,
+      attachments,
+      html: emailShell(
+        `<p>Hi ${first},</p>
+<p>${from} has shared a copy of a completed, signed document${args.signerName ? ` (signed by ${escapeHtml(args.signerName)})` : ""}: <strong>${doc}</strong>.</p>
+<p>The signed documents and the certificate of completion are attached to this email as a single PDF.</p>
+<p style="font-size:13px;color:#666">This is a copy for your records — no signature is required.</p>`,
+        signature
+      ),
+    });
+  } catch (e) {
+    console.error("[sendSignedCopy] failed", e);
+    return false;
+  }
+}
+
 function uploadCta(url: string, label = "Upload documents"): string {
   return `<div style="margin:20px 0">
 <a href="${escapeHtml(url)}" style="display:inline-block;background:#7c5cff;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">${escapeHtml(label)}</a>

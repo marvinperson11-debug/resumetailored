@@ -195,7 +195,22 @@ export async function monthlySendCount(employerId: string): Promise<number> {
 
 // ── Envelopes ─────────────────────────────────────────────────────────────────
 const ENV_COLS =
-  "id, doc_type, document_name, applicant_id, shortlist_member_id, envelope_id, subject, message, status, offer, candidate_name, candidate_email, sent_by, sent_at, completed_at, created_at, requested_docs, attachments, sign_token";
+  "id, doc_type, document_name, applicant_id, shortlist_member_id, envelope_id, subject, message, status, offer, candidate_name, candidate_email, sent_by, sent_at, completed_at, created_at, requested_docs, attachments, sign_token, copies_sent";
+
+/** Coerce the stored copies_sent jsonb into a clean list. */
+function mapCopiesSent(v: unknown): { name: string; email: string; sentAt: string }[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .map((r) => {
+      const o = (r && typeof r === "object" ? r : {}) as Record<string, unknown>;
+      return {
+        name: String(o.name || "").trim(),
+        email: String(o.email || "").trim(),
+        sentAt: String(o.sentAt || o.sent_at || ""),
+      };
+    })
+    .filter((c) => c.email);
+}
 
 function mapOffer(v: unknown): OfferTerms {
   const o = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
@@ -258,6 +273,7 @@ function mapEnvelope(r: Record<string, unknown>): DocusignEnvelope {
     requestedDocs: mapRequestedDocs(r.requested_docs),
     attachments: mapAttachments(r.attachments),
     signToken: (r.sign_token as string) || "",
+    copiesSent: mapCopiesSent(r.copies_sent),
   };
 }
 
@@ -376,6 +392,36 @@ export async function getEnvelopeRecord(employerId: string, id: number): Promise
       .eq("id", id)
       .maybeSingle();
     return data ? mapEnvelope(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Record a "send a copy" forward on the envelope (owner-scoped). Returns the
+ *  updated envelope, or null if not found. */
+export async function appendCopySent(
+  employerId: string,
+  id: number,
+  entry: { name: string; email: string }
+): Promise<DocusignEnvelope | null> {
+  const c = db();
+  if (!c || !employerId || !id) return null;
+  const existing = await getEnvelopeRecord(employerId, id);
+  if (!existing) return null;
+  const copies = [
+    ...existing.copiesSent.map((x) => ({ name: x.name, email: x.email, sentAt: x.sentAt })),
+    { name: entry.name, email: entry.email, sentAt: new Date().toISOString() },
+  ].slice(-50);
+  try {
+    const { data, error } = await c
+      .from("docusign_envelopes")
+      .update({ copies_sent: copies })
+      .eq("employer_id", employerId)
+      .eq("id", id)
+      .select(ENV_COLS)
+      .single();
+    if (error || !data) return null;
+    return mapEnvelope(data);
   } catch {
     return null;
   }

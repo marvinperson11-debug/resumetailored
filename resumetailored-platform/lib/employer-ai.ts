@@ -337,6 +337,8 @@ export interface DocusignEnvelope {
   attachments: EnvelopeAttachment[];
   /** The signer's login-less upload-page token. Present only for the owner. */
   signToken: string;
+  /** Log of "send a copy" forwards of the completed document. */
+  copiesSent: { name: string; email: string; sentAt: string }[];
 }
 
 /** The DocuSign account an employer has connected (for the status page). */
