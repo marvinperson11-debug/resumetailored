@@ -17,6 +17,7 @@ import {
   Circle,
   FolderOpen,
   ArrowLeft,
+  Send,
 } from "lucide-react";
 import { Panel, PageHeader, Btn, Badge, EmptyState, Input } from "../components/ui";
 import type { DocusignConnection, DocusignEnvelope, DocusignStatus } from "@/lib/employer-ai";
@@ -242,7 +243,7 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
 
       {/* Envelopes / Documents */}
       {view === "documents" ? (
-        <DocumentsView envelopes={envelopes} loading={loading} />
+        <DocumentsView envelopes={envelopes} loading={loading} onChanged={() => void loadEnvelopes(false)} />
       ) : loading ? (
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
@@ -358,6 +359,80 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
         />
       )}
     </div>
+  );
+}
+
+// ── Send-a-copy control: forward the completed signed PDF + certificate to any
+//    name/email (plain email, no DocuSign step). Reused in the detail + the
+//    Documents view rows. ────────────────────────────────────────────────────────
+function SendCopyControl({ envelopeId, onSent }: { envelopeId: number; onSent?: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+
+  async function send() {
+    if (!email.trim()) return;
+    setSending(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`/api/employer/docusign/envelopes/${envelopeId}/send-copy`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setMsg({ tone: "err", text: d.error || "Couldn't send the copy." });
+        return;
+      }
+      setMsg({ tone: "ok", text: `Copy sent to ${email.trim()}.` });
+      setName("");
+      setEmail("");
+      setOpen(false);
+      onSent?.();
+    } finally {
+      setSending(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <span className="inline-flex flex-col items-start gap-0.5">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
+        >
+          <Send className="h-3.5 w-3.5" /> Send copy
+        </button>
+        {msg && <span className={`text-[11px] ${msg.tone === "ok" ? "text-teal" : "text-red-300"}`}>{msg.text}</span>}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Name"
+        className="w-28 rounded-lg border border-border-gold bg-white/5 px-2 py-1.5 text-xs text-cream placeholder:text-white/35 outline-none focus:border-violet"
+      />
+      <input
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="email@company.com"
+        className="w-48 rounded-lg border border-border-gold bg-white/5 px-2 py-1.5 text-xs text-cream placeholder:text-white/35 outline-none focus:border-violet"
+      />
+      <Btn variant="ghost" onClick={() => void send()} loading={sending} disabled={!email.trim()}>
+        <Send className="h-4 w-4" /> Send
+      </Btn>
+      <button type="button" onClick={() => { setOpen(false); setMsg(null); }} className="text-xs text-muted-cream hover:text-cream">
+        Cancel
+      </button>
+      {msg?.tone === "err" && <span className="text-[11px] text-red-300">{msg.text}</span>}
+    </span>
   );
 }
 
@@ -481,6 +556,24 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
           >
             <Download className="h-4 w-4" /> Certificate
           </a>
+        </div>
+      )}
+
+      {/* Send a copy (forward) of the completed document + a record of who got one */}
+      {isDone && (
+        <div className="rounded-xl border border-border-gold bg-white/[0.02] px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-auto text-xs font-semibold uppercase tracking-wide text-muted-cream">Send a copy</span>
+            <SendCopyControl envelopeId={envelope.id} onSent={onChanged} />
+          </div>
+          <p className="mt-1 text-[11px] text-white/40">
+            Emails the combined signed PDF + certificate to anyone — no signature needed from them.
+          </p>
+          {envelope.copiesSent.length > 0 && (
+            <p className="mt-2 text-[11px] text-white/45">
+              Copies sent: {envelope.copiesSent.map((c) => `${c.email} (${fmtDate(c.sentAt)})`).join(", ")}
+            </p>
+          )}
         </div>
       )}
 
@@ -613,7 +706,7 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
 // ── Documents view: one flat, downloadable list of everything received/done ────
 //    across all envelopes — completed signed PDFs + every uploaded/attached file.
 //    Aggregated client-side from the already-loaded envelopes (no new endpoint).
-function DocumentsView({ envelopes, loading }: { envelopes: DocusignEnvelope[]; loading: boolean }) {
+function DocumentsView({ envelopes, loading, onChanged }: { envelopes: DocusignEnvelope[]; loading: boolean; onChanged: () => void }) {
   type Row = {
     key: string;
     name: string;
@@ -623,6 +716,7 @@ function DocumentsView({ envelopes, loading }: { envelopes: DocusignEnvelope[]; 
     href: string;
     kind: "signed" | "signer" | "employer";
     status: DocusignStatus | null; // null → a "received"/"attached" tag
+    envId?: number; // set on signed rows → enables "Send copy"
   };
   const rows: Row[] = [];
   for (const e of envelopes) {
@@ -638,6 +732,7 @@ function DocumentsView({ envelopes, loading }: { envelopes: DocusignEnvelope[]; 
         href: `/api/employer/docusign/envelopes/${e.id}/documents`,
         kind: "signed",
         status: e.status,
+        envId: e.id,
       });
     }
     for (const a of e.attachments) {
@@ -711,14 +806,17 @@ function DocumentsView({ envelopes, loading }: { envelopes: DocusignEnvelope[]; 
                 )}
               </td>
               <td className="px-4 py-3 text-right">
-                <a
-                  href={r.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
-                >
-                  <Download className="h-3.5 w-3.5" /> Download
-                </a>
+                <div className="inline-flex flex-wrap items-center justify-end gap-3">
+                  <a
+                    href={r.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
+                  >
+                    <Download className="h-3.5 w-3.5" /> Download
+                  </a>
+                  {r.envId !== undefined && <SendCopyControl envelopeId={r.envId} onSent={onChanged} />}
+                </div>
               </td>
             </tr>
           ))}
