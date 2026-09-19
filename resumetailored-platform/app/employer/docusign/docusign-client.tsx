@@ -15,9 +15,11 @@ import {
   Copy,
   Check,
   Circle,
+  FolderOpen,
+  ArrowLeft,
 } from "lucide-react";
 import { Panel, PageHeader, Btn, Badge, EmptyState, Input } from "../components/ui";
-import type { DocusignConnection, DocusignEnvelope, DocusignStatus, DocType } from "@/lib/employer-ai";
+import type { DocusignConnection, DocusignEnvelope, DocusignStatus } from "@/lib/employer-ai";
 import { DOC_TYPE_LABELS } from "@/lib/employer-ai";
 import { SendDocumentModal } from "../components/send-document-modal";
 
@@ -33,14 +35,6 @@ interface StatusResponse {
   usage: Usage;
 }
 
-const DOC_TYPE_TONE: Record<DocType, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
-  offer: "teal",
-  agreement: "violet",
-  nda: "gold",
-  writeup: "red",
-  custom: "sky",
-};
-
 const STATUS_TONE: Record<DocusignStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   sent: "sky",
   delivered: "sky",
@@ -51,6 +45,17 @@ const STATUS_TONE: Record<DocusignStatus, "neutral" | "sky" | "violet" | "gold" 
   voided: "red",
 };
 
+/**
+ * The type badge (Offer / NDA / Agreement / Custom) is tinted by envelope status,
+ * mirroring the status pill's meaning: amber while waiting (sent/delivered/
+ * viewed), green once signed/completed, red when declined/voided.
+ */
+function typeBadgeTone(status: DocusignStatus): "gold" | "teal" | "red" {
+  if (status === "completed" || status === "signed") return "teal";
+  if (status === "declined" || status === "voided") return "red";
+  return "gold";
+}
+
 const ERROR_COPY: Record<string, string> = {
   not_configured: "DocuSign isn't configured on this deployment yet. Add the DocuSign credentials to connect.",
   consent_denied: "DocuSign consent was cancelled. You can try connecting again.",
@@ -60,7 +65,7 @@ const ERROR_COPY: Record<string, string> = {
   save_failed: "We couldn't save the connection. Please try again.",
 };
 
-export function DocusignClient({ connected, error }: { connected: boolean; error?: string }) {
+export function DocusignClient({ connected, error, isAdmin = false }: { connected: boolean; error?: string; isAdmin?: boolean }) {
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [envelopes, setEnvelopes] = useState<DocusignEnvelope[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,6 +73,7 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
   const [disconnecting, setDisconnecting] = useState(false);
   const [showSend, setShowSend] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [view, setView] = useState<"list" | "documents">("list");
   const [banner, setBanner] = useState<{ tone: "ok" | "err"; text: string } | null>(
     connected
       ? { tone: "ok", text: "DocuSign connected. You can now send offer letters for signature." }
@@ -133,12 +139,23 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
         subtitle="Send offer letters, agreements, NDAs, or any document for e-signature with DocuSign and track their status."
         action={
           <div className="flex items-center gap-2">
-            <Btn onClick={() => setShowSend(true)}>
-              <UploadCloud className="h-4 w-4" /> Upload &amp; send for signature
-            </Btn>
-            <Btn variant="ghost" onClick={refresh} loading={refreshing}>
-              <RefreshCw className="h-4 w-4" /> Refresh
-            </Btn>
+            {view === "documents" ? (
+              <Btn variant="ghost" onClick={() => setView("list")}>
+                <ArrowLeft className="h-4 w-4" /> Back to sent list
+              </Btn>
+            ) : (
+              <>
+                <Btn onClick={() => setShowSend(true)}>
+                  <UploadCloud className="h-4 w-4" /> Upload &amp; send for signature
+                </Btn>
+                <Btn variant="ghost" onClick={() => setView("documents")}>
+                  <FolderOpen className="h-4 w-4" /> View documents
+                </Btn>
+                <Btn variant="ghost" onClick={refresh} loading={refreshing}>
+                  <RefreshCw className="h-4 w-4" /> Refresh
+                </Btn>
+              </>
+            )}
           </div>
         }
       />
@@ -156,7 +173,10 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
         </div>
       )}
 
-      {/* Connection status */}
+      {/* Connection status — platform admin only. Regular employers send through
+          the platform's DocuSign account and never connect/disconnect their own;
+          exposing Disconnect here would break signing for everyone. */}
+      {isAdmin && view === "list" && (
       <Panel className="mb-6">
         {loading ? (
           <div className="h-16 animate-pulse rounded-lg bg-white/5" />
@@ -218,9 +238,12 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
           </div>
         )}
       </Panel>
+      )}
 
-      {/* Envelopes */}
-      {loading ? (
+      {/* Envelopes / Documents */}
+      {view === "documents" ? (
+        <DocumentsView envelopes={envelopes} loading={loading} />
+      ) : loading ? (
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-xl bg-white/5" />
@@ -273,7 +296,7 @@ export function DocusignClient({ connected, error }: { connected: boolean; error
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge tone={DOC_TYPE_TONE[e.docType]}>{DOC_TYPE_LABELS[e.docType]}</Badge>
+                        <Badge tone={typeBadgeTone(e.status)}>{DOC_TYPE_LABELS[e.docType]}</Badge>
                       </td>
                       <td className="px-4 py-3 text-white/75">{e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType]}</td>
                       <td className="px-4 py-3 text-white/55">{fmtDate(e.sentAt)}</td>
@@ -583,6 +606,124 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
         <p className={`md:col-span-2 text-xs ${msg.tone === "ok" ? "text-teal" : "text-red-300"}`}>{msg.text}</p>
       )}
       </div>
+    </div>
+  );
+}
+
+// ── Documents view: one flat, downloadable list of everything received/done ────
+//    across all envelopes — completed signed PDFs + every uploaded/attached file.
+//    Aggregated client-side from the already-loaded envelopes (no new endpoint).
+function DocumentsView({ envelopes, loading }: { envelopes: DocusignEnvelope[]; loading: boolean }) {
+  type Row = {
+    key: string;
+    name: string;
+    label: string;
+    signer: string;
+    date: string;
+    href: string;
+    kind: "signed" | "signer" | "employer";
+    status: DocusignStatus | null; // null → a "received"/"attached" tag
+  };
+  const rows: Row[] = [];
+  for (const e of envelopes) {
+    const label = e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType];
+    const signer = e.candidateName || e.candidateEmail || "—";
+    if (e.status === "completed" || e.status === "signed") {
+      rows.push({
+        key: `env-${e.id}`,
+        name: "Signed documents (PDF)",
+        label,
+        signer,
+        date: e.sentAt,
+        href: `/api/employer/docusign/envelopes/${e.id}/documents`,
+        kind: "signed",
+        status: e.status,
+      });
+    }
+    for (const a of e.attachments) {
+      rows.push({
+        key: `att-${e.id}-${a.url}`,
+        name: a.name,
+        label,
+        signer,
+        date: a.uploadedAt || e.sentAt,
+        href: `/api/employer/docusign/envelopes/${e.id}/attachment?path=${encodeURIComponent(a.url)}&download=1`,
+        kind: a.by === "employer" ? "employer" : "signer",
+        status: null,
+      });
+    }
+  }
+  rows.sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  if (loading) {
+    return (
+      <div className="space-y-2">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-14 animate-pulse rounded-xl bg-white/5" />
+        ))}
+      </div>
+    );
+  }
+  if (rows.length === 0) {
+    return (
+      <EmptyState
+        icon={FolderOpen}
+        title="No documents yet"
+        body="Completed signed PDFs and any files uploaded by signers or attached by your team will appear here, ready to download."
+      />
+    );
+  }
+  return (
+    <div className="overflow-hidden rounded-xl border border-border-gold">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
+            <th className="px-4 py-3 font-semibold">Document</th>
+            <th className="px-4 py-3 font-semibold">Envelope</th>
+            <th className="px-4 py-3 font-semibold">Date</th>
+            <th className="px-4 py-3 font-semibold">Status</th>
+            <th className="px-4 py-3 font-semibold text-right">Download</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key} className="border-b border-border-gold/60 last:border-0 hover:bg-white/[0.02]">
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-2">
+                  {r.kind === "signed" ? (
+                    <FileSignature className="h-4 w-4 shrink-0 text-teal" />
+                  ) : (
+                    <Paperclip className="h-4 w-4 shrink-0 text-white/40" />
+                  )}
+                  <span className="truncate text-cream">{r.name}</span>
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                <div className="text-cream">{r.label}</div>
+                <div className="text-xs text-white/45">{r.signer}</div>
+              </td>
+              <td className="px-4 py-3 text-white/55">{fmtDate(r.date)}</td>
+              <td className="px-4 py-3">
+                {r.status ? (
+                  <Badge tone={STATUS_TONE[r.status]}>{r.status}</Badge>
+                ) : (
+                  <Badge tone={r.kind === "employer" ? "neutral" : "teal"}>{r.kind === "employer" ? "attached" : "received"}</Badge>
+                )}
+              </td>
+              <td className="px-4 py-3 text-right">
+                <a
+                  href={r.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
+                >
+                  <Download className="h-3.5 w-3.5" /> Download
+                </a>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
