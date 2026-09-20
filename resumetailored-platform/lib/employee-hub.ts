@@ -35,11 +35,15 @@ export interface Employee {
   name: string;
   email: string;
   role: string;
+  phone: string;
   startDate: string; // YYYY-MM-DD, or ""
   status: EmployeeStatus;
   /** Clerk user id once the employee has accepted their portal invite, else "". */
   clerkUserId: string;
   inviteStatus: InviteStatus;
+  /** The 6-digit acceptance code while an invite is pending; "" once accepted or
+   *  never invited. Owner-only — never sent to the employee's own portal APIs. */
+  inviteCode: string;
   invitedAt: string | null;
   linkedAt: string | null;
   createdAt: string;
