@@ -40,13 +40,20 @@ export async function listLibrary(opts: { category?: string; q?: string } = {}):
   const c = db();
   if (!c) return [];
   try {
+    const q = (opts.q || "").trim().toLowerCase();
+    // A search query matches across ALL items (title + category + provider),
+    // regardless of the active category filter — the category chip only narrows
+    // when the box is empty. This is why "forklift" must find the item even when
+    // a different vertical is selected.
     let query = c.from("training_library_items").select(COLS).order("category", { ascending: true }).order("title", { ascending: true });
-    if (opts.category && opts.category !== "all") query = query.eq("category", opts.category);
-    const { data, error } = await query.limit(500);
+    if (!q && opts.category && opts.category !== "all") query = query.eq("category", opts.category);
+    const { data, error } = await query.limit(1000);
     if (error || !data) return [];
     let items = data.map(mapItem);
-    const q = (opts.q || "").trim().toLowerCase();
-    if (q) items = items.filter((i) => i.title.toLowerCase().includes(q) || i.provider.toLowerCase().includes(q) || i.category.toLowerCase().includes(q));
+    if (q)
+      items = items.filter(
+        (i) => i.title.toLowerCase().includes(q) || i.provider.toLowerCase().includes(q) || i.category.toLowerCase().includes(q)
+      );
     return items;
   } catch {
     return [];
@@ -71,32 +78,40 @@ export async function getLibraryItem(id: number): Promise<TrainingLibraryItem | 
 }
 
 /**
- * Idempotently seed the library from `LIBRARY_SEED` (app code, not SQL). Upserts
- * on the `source_url` unique key with `ignoreDuplicates`, so existing rows are
- * left untouched and re-running is safe. Requires the `source_url` unique index
- * from migration 0030. Returns before/after counts so the caller can report how
- * many rows were added.
+ * Idempotently seed/refresh the library from `LIBRARY_SEED` (app code, not SQL).
+ * Upserts on the `source_url` unique key (from migration 0030): NEW items are
+ * inserted and EXISTING items are refreshed in place (so the industry-vertical
+ * re-categorization applies on re-run). Rows are de-duplicated by `source_url`
+ * first, because a batch upsert cannot touch the same conflict key twice.
+ * Returns before/after/inserted counts so the caller can report what changed.
  */
-export async function seedLibrary(): Promise<{ ok: boolean; before: number; after: number; inserted: number; error?: string }> {
+export async function seedLibrary(): Promise<{ ok: boolean; before: number; after: number; inserted: number; total: number; error?: string }> {
   const c = db();
-  if (!c) return { ok: false, before: 0, after: 0, inserted: 0, error: "Supabase service-role client is not configured." };
+  if (!c) return { ok: false, before: 0, after: 0, inserted: 0, total: 0, error: "Supabase service-role client is not configured." };
   const { LIBRARY_SEED } = await import("./training-library-seed");
   try {
     const before = (await c.from("training_library_items").select("id", { count: "exact", head: true })).count || 0;
-    const rows = LIBRARY_SEED.map((i) => ({
-      category: i.category,
-      title: i.title,
-      kind: i.kind,
-      provider: i.provider,
-      embed_url: i.embedUrl ?? null,
-      body_html: i.bodyHtml ?? null,
-      source_url: i.sourceUrl,
-    }));
-    const { error } = await c.from("training_library_items").upsert(rows, { onConflict: "source_url", ignoreDuplicates: true });
-    if (error) return { ok: false, before, after: before, inserted: 0, error: error.message };
+    // De-dupe on source_url (last one wins) so the upsert never hits the same key twice.
+    const byUrl = new Map<string, ReturnType<typeof toRow>>();
+    for (const i of LIBRARY_SEED) byUrl.set(i.sourceUrl, toRow(i));
+    const rows = Array.from(byUrl.values());
+    const { error } = await c.from("training_library_items").upsert(rows, { onConflict: "source_url" });
+    if (error) return { ok: false, before, after: before, inserted: 0, total: rows.length, error: error.message };
     const after = (await c.from("training_library_items").select("id", { count: "exact", head: true })).count || 0;
-    return { ok: true, before, after, inserted: after - before };
+    return { ok: true, before, after, inserted: after - before, total: rows.length };
   } catch (e) {
-    return { ok: false, before: 0, after: 0, inserted: 0, error: e instanceof Error ? e.message : "unknown" };
+    return { ok: false, before: 0, after: 0, inserted: 0, total: 0, error: e instanceof Error ? e.message : "unknown" };
   }
+}
+
+function toRow(i: import("./training-library-seed").LibrarySeedItem) {
+  return {
+    category: i.category,
+    title: i.title,
+    kind: i.kind,
+    provider: i.provider,
+    embed_url: i.embedUrl ?? null,
+    body_html: i.bodyHtml ?? null,
+    source_url: i.sourceUrl,
+  };
 }
