@@ -69,3 +69,34 @@ export async function getLibraryItem(id: number): Promise<TrainingLibraryItem | 
     return null;
   }
 }
+
+/**
+ * Idempotently seed the library from `LIBRARY_SEED` (app code, not SQL). Upserts
+ * on the `source_url` unique key with `ignoreDuplicates`, so existing rows are
+ * left untouched and re-running is safe. Requires the `source_url` unique index
+ * from migration 0030. Returns before/after counts so the caller can report how
+ * many rows were added.
+ */
+export async function seedLibrary(): Promise<{ ok: boolean; before: number; after: number; inserted: number; error?: string }> {
+  const c = db();
+  if (!c) return { ok: false, before: 0, after: 0, inserted: 0, error: "Supabase service-role client is not configured." };
+  const { LIBRARY_SEED } = await import("./training-library-seed");
+  try {
+    const before = (await c.from("training_library_items").select("id", { count: "exact", head: true })).count || 0;
+    const rows = LIBRARY_SEED.map((i) => ({
+      category: i.category,
+      title: i.title,
+      kind: i.kind,
+      provider: i.provider,
+      embed_url: i.embedUrl ?? null,
+      body_html: i.bodyHtml ?? null,
+      source_url: i.sourceUrl,
+    }));
+    const { error } = await c.from("training_library_items").upsert(rows, { onConflict: "source_url", ignoreDuplicates: true });
+    if (error) return { ok: false, before, after: before, inserted: 0, error: error.message };
+    const after = (await c.from("training_library_items").select("id", { count: "exact", head: true })).count || 0;
+    return { ok: true, before, after, inserted: after - before };
+  } catch (e) {
+    return { ok: false, before: 0, after: 0, inserted: 0, error: e instanceof Error ? e.message : "unknown" };
+  }
+}
