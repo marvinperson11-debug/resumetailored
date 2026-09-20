@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyWebhookSignature, parseWebhookPayload } from "@/lib/docusign";
 import { updateStatusByEnvelopeId } from "@/lib/docusign-store";
 import { deliverSignedDocuments } from "@/lib/esign-delivery";
+import { markAckSignedByEnvelope } from "@/lib/training-store";
 
 export const runtime = "nodejs";
 
@@ -37,9 +38,13 @@ export async function POST(req: Request) {
   const parsed = parseWebhookPayload(body);
   if (parsed) {
     await updateStatusByEnvelopeId(parsed.envelopeId, parsed.status);
-    // On completion, email the signer the signed documents + certificate. Fully
-    // best-effort (idempotent, never throws) so it can't block the status update.
-    if (parsed.status === "completed") await deliverSignedDocuments(parsed.envelopeId);
+    // On completion, email the signer the signed documents + certificate, and
+    // flip any training acknowledgment tied to this envelope to "signed". Both
+    // fully best-effort (idempotent, never throw) so they can't block the update.
+    if (parsed.status === "completed") {
+      await deliverSignedDocuments(parsed.envelopeId);
+      await markAckSignedByEnvelope(parsed.envelopeId);
+    }
   }
 
   // Always 200 on a validated request so DocuSign doesn't retry unnecessarily.

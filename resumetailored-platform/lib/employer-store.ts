@@ -761,7 +761,7 @@ export interface EmployerStats {
 }
 
 export interface ActivityEntry {
-  kind: "applicant" | "expiring" | "team";
+  kind: "applicant" | "expiring" | "team" | "training";
   text: string;
   meta?: string;
   date: string;
@@ -815,6 +815,49 @@ export async function getDashboard(employerId: string): Promise<{ stats: Employe
     const team = await listTeam(employerId);
     for (const m of team.filter((t) => t.status === "active" && t.role !== "owner").slice(-3)) {
       activity.push({ kind: "team", text: `Team member joined`, meta: m.email, date: m.createdAt });
+    }
+
+    // Training & acknowledgment activity (signed recently / overdue). Best-effort
+    // — a fresh workspace with no Employee Hub tables/rows simply contributes
+    // nothing here.
+    try {
+      const { data: ackRows } = await c
+        .from("acknowledgments")
+        .select("status, acknowledged_at, due_at, training_doc_id, employee_id")
+        .eq("employer_id", employerId)
+        .limit(2000);
+      if (ackRows && ackRows.length) {
+        const [{ data: docRows }, { data: empRows }] = await Promise.all([
+          c.from("training_docs").select("id, title").eq("employer_id", employerId),
+          c.from("employees").select("id, name").eq("employer_id", employerId),
+        ]);
+        const docTitle = new Map((docRows || []).map((d) => [d.id as number, (d.title as string) || "a document"] as const));
+        const empName = new Map((empRows || []).map((e) => [e.id as number, (e.name as string) || "an employee"] as const));
+        const nowIso = new Date().toISOString();
+        const signed = ackRows
+          .filter((r) => r.status === "signed" && r.acknowledged_at)
+          .sort((a, b) => ((a.acknowledged_at as string) < (b.acknowledged_at as string) ? 1 : -1))
+          .slice(0, 4);
+        for (const r of signed) {
+          activity.push({
+            kind: "training",
+            text: `Training signed: ${docTitle.get(r.training_doc_id as number)}`,
+            meta: empName.get(r.employee_id as number),
+            date: (r.acknowledged_at as string) || "",
+          });
+        }
+        const overdue = ackRows.filter((r) => r.status === "pending" && r.due_at && (r.due_at as string) < nowIso).slice(0, 4);
+        for (const r of overdue) {
+          activity.push({
+            kind: "training",
+            text: `Training overdue: ${docTitle.get(r.training_doc_id as number)}`,
+            meta: `${empName.get(r.employee_id as number)} · due ${(r.due_at as string).slice(0, 10)}`,
+            date: (r.due_at as string) || "",
+          });
+        }
+      }
+    } catch {
+      /* Employee Hub tables not yet applied — skip. */
     }
 
     activity.sort((a, b) => (a.date < b.date ? 1 : -1));
