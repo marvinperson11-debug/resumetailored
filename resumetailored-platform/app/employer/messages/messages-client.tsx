@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 type FilterTab = "all" | "unread" | "sent";
 const MAX_ATTACH_BYTES = 1_500_000; // ~1.5MB per file (stored inline as a data URL)
 
-export function MessagesClient({ initialApplicantId }: { initialApplicantId?: number }) {
+export function MessagesClient({ initialApplicantId, hideHeader }: { initialApplicantId?: number; hideHeader?: boolean }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<FilterTab>("all");
@@ -88,7 +88,7 @@ export function MessagesClient({ initialApplicantId }: { initialApplicantId?: nu
 
   return (
     <div>
-      <PageHeader title="Messages" subtitle="In-app conversations with your candidates." />
+      {!hideHeader && <PageHeader title="Messages" subtitle="In-app conversations with your candidates." />}
 
       <Panel className="overflow-hidden p-0">
         <div className="grid min-h-[560px] grid-cols-1 md:grid-cols-[320px_1fr]">
