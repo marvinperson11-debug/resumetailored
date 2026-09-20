@@ -33,6 +33,13 @@ export interface Access {
   /** For an employee account: the employer (organization) they belong to. */
   employerId?: string;
   employerName?: string;
+  /** True for a *workforce* employee invited via the Employees directory — they
+   *  get the scoped /employee portal, NOT the employer portal. A plain
+   *  `plan:"employee"` (a recruiter invited via /join) is not staff and still
+   *  reaches /employer. */
+  staff?: boolean;
+  /** The `employees` row id a staff account is bound to. */
+  employeeId?: number;
   /** The hardcoded admin: bypasses all role checks and is Pro everywhere.
    *  Cleared while a plan preview is active so gates evaluate the previewed plan. */
   isAdmin?: boolean;
@@ -88,9 +95,13 @@ function normalize(meta: {
   tier?: string;
   employerId?: string;
   employerName?: string;
+  staff?: boolean | string;
+  employeeId?: number | string;
 }): Access | null {
   const plan = meta.plan;
   if (plan === "pro" || plan === "free" || plan === "employer" || plan === "employee") {
+    const staff = meta.staff === true || meta.staff === "true";
+    const employeeId = Number(meta.employeeId);
     return {
       plan,
       type:
@@ -99,6 +110,8 @@ function normalize(meta: {
       tier: meta.tier,
       employerId: meta.employerId,
       employerName: meta.employerName,
+      ...(staff ? { staff: true } : {}),
+      ...(Number.isFinite(employeeId) && employeeId > 0 ? { employeeId } : {}),
     };
   }
   return null;
@@ -177,11 +190,20 @@ export function isEmployer(a: Access): boolean {
   return a.plan === "employer" || !!a.isAdmin;
 }
 
-/** Anyone who belongs to a company workspace: the employer owner, or one of
- *  their invited employees. Both reach /employer (scoped to the same data).
- *  The admin passes too (sees their own workspace via resolveEmployerId). */
+/** Anyone who belongs to a company workspace as staff-with-portal-access: the
+ *  employer owner, or a recruiter invited via /join (plan:"employee", NOT
+ *  workforce staff). Both reach /employer (scoped to the same data). A workforce
+ *  employee (`staff:true`) is deliberately excluded — they get the scoped
+ *  /employee portal instead, never the full employer portal. The admin passes
+ *  too (sees their own workspace via resolveEmployerId). */
 export function canUseEmployerPortal(a: Access): boolean {
-  return a.plan === "employer" || (a.plan === "employee" && !!a.employerId) || !!a.isAdmin;
+  return a.plan === "employer" || (a.plan === "employee" && !!a.employerId && !a.staff) || !!a.isAdmin;
+}
+
+/** A workforce employee invited via the Employees directory: reaches the scoped
+ *  /employee portal (My documents, Messages, Time off, My training, Library). */
+export function isStaffEmployee(a: Access): boolean {
+  return a.plan === "employee" && !!a.staff && !!a.employerId && !!a.employeeId;
 }
 
 /** The company workspace id for a request: the employer's own id, or (for an

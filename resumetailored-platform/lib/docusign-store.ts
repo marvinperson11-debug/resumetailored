@@ -381,6 +381,28 @@ export async function listEnvelopes(employerId: string): Promise<DocusignEnvelop
   }
 }
 
+/** Envelopes where a given person is the signer (matched on candidate_email,
+ *  case-insensitive), scoped to one employer. Powers an employee's "My
+ *  documents" view — offers, agreements, write-ups and any custom document sent
+ *  to them for signature. */
+export async function listEnvelopesForEmail(employerId: string, email: string): Promise<DocusignEnvelope[]> {
+  const c = db();
+  const addr = (email || "").trim().toLowerCase();
+  if (!c || !employerId || !addr) return [];
+  try {
+    const { data } = await c
+      .from("docusign_envelopes")
+      .select(ENV_COLS)
+      .eq("employer_id", employerId)
+      .ilike("candidate_email", addr)
+      .order("sent_at", { ascending: false })
+      .limit(500);
+    return (data || []).map(mapEnvelope);
+  } catch {
+    return [];
+  }
+}
+
 export async function getEnvelopeRecord(employerId: string, id: number): Promise<DocusignEnvelope | null> {
   const c = db();
   if (!c || !employerId) return null;

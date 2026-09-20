@@ -20,11 +20,16 @@ async function resolveLabel(
 }
 
 // Production auth: everything under these prefixes requires a signed-in user.
+// /employee/accept is intentionally excluded — it handles its own signed-out
+// case by redirecting to sign-in with the invite token preserved, so it must not
+// be bounced to the landing page first.
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/employer(.*)",
   "/candidate(.*)",
+  "/employee(.*)",
 ]);
+const isPublicEmployeeRoute = createRouteMatcher(["/employee/accept"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // Career-site subdomains: {slug}.resumetailored.com → render /careers/{slug}
@@ -72,7 +77,7 @@ export default clerkMiddleware(async (auth, req) => {
     }
   }
 
-  if (isProtectedRoute(req)) {
+  if (isProtectedRoute(req) && !isPublicEmployeeRoute(req)) {
     const { userId } = await auth();
     if (!userId) {
       // Unauthenticated visitors are sent back to the public landing page.

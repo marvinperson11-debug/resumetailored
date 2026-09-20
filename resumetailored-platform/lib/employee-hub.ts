@@ -17,6 +17,19 @@ export const EMPLOYEE_STATUS_LABELS: Record<EmployeeStatus, string> = {
   offboarded: "Offboarded",
 };
 
+// Invite lifecycle: an employee row exists first (added by the employer), then
+// may be invited to the /employee portal (Resend email → Clerk signup → linked).
+export const INVITE_STATUSES = ["none", "invited", "accepted"] as const;
+export type InviteStatus = (typeof INVITE_STATUSES)[number];
+export const isInviteStatus = (v: unknown): v is InviteStatus =>
+  (INVITE_STATUSES as readonly string[]).includes(String(v));
+
+export const INVITE_STATUS_LABELS: Record<InviteStatus, string> = {
+  none: "Not invited",
+  invited: "Invited",
+  accepted: "Portal active",
+};
+
 export interface Employee {
   id: number;
   name: string;
@@ -24,8 +37,45 @@ export interface Employee {
   role: string;
   startDate: string; // YYYY-MM-DD, or ""
   status: EmployeeStatus;
+  /** Clerk user id once the employee has accepted their portal invite, else "". */
+  clerkUserId: string;
+  inviteStatus: InviteStatus;
+  invitedAt: string | null;
+  linkedAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// ── Employee ↔ employer direct messages ──────────────────────────────────────
+export type MessageSender = "employer" | "employee";
+
+export interface EmployeeMessage {
+  id: number;
+  employeeId: number;
+  sender: MessageSender;
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+/** A message thread as shown in the employer's Messages area: the employee plus
+ *  their last message and the employer's unread count. */
+export interface EmployeeThread {
+  employee: Pick<Employee, "id" | "name" | "email" | "role" | "inviteStatus">;
+  lastMessage: string;
+  lastSender: MessageSender | null;
+  lastAt: string;
+  unread: number; // messages FROM the employee the employer hasn't read
+}
+
+// ── Announcements ─────────────────────────────────────────────────────────────
+export interface Announcement {
+  id: number;
+  title: string;
+  body: string;
+  pinned: boolean;
+  active: boolean;
+  createdAt: string;
 }
 
 // ── B. Training documents ────────────────────────────────────────────────────

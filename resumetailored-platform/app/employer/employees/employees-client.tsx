@@ -1,16 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck } from "lucide-react";
+import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff } from "lucide-react";
 import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
+  INVITE_STATUS_LABELS,
   DOC_KINDS,
   DOC_KIND_LABELS,
   complianceState,
   COMPLIANCE_TONE,
   type Employee,
   type EmployeeStatus,
+  type InviteStatus,
+  type Announcement,
   type TrainingDoc,
   type Acknowledgment,
   type DocKind,
@@ -20,10 +23,12 @@ import {
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer } from "../components/ui";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
+const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "neutral", invited: "gold", accepted: "teal" };
 
-type Tab = "directory" | "training" | "library";
+type Tab = "directory" | "announcements" | "training" | "library";
 const TAB_META: Record<Tab, { label: string; icon: typeof UserCheck }> = {
   directory: { label: "Directory", icon: UserCheck },
+  announcements: { label: "Announcements", icon: Megaphone },
   training: { label: "Training", icon: GraduationCap },
   library: { label: "Library", icon: BookOpen },
 };
@@ -75,6 +80,7 @@ export function EmployeesClient({ canManage }: { canManage: boolean }) {
         })}
       </div>
       {tab === "directory" && <Directory canManage={canManage} />}
+      {tab === "announcements" && <Announcements canManage={canManage} />}
       {tab === "training" && <Training canManage={canManage} preset={preset} presetNonce={presetNonce} />}
       {tab === "library" && <Library canManage={canManage} onUseInTraining={useInTraining} />}
     </div>
@@ -130,6 +136,7 @@ function Directory({ canManage }: { canManage: boolean }) {
                 <th className="px-4 py-3 font-semibold">Email</th>
                 <th className="px-4 py-3 font-semibold">Start</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Portal</th>
               </tr>
             </thead>
             <tbody>
@@ -145,6 +152,9 @@ function Directory({ canManage }: { canManage: boolean }) {
                   <td className="px-4 py-3 text-white/60">{e.startDate || "—"}</td>
                   <td className="px-4 py-3">
                     <Badge tone={STATUS_TONE[e.status]}>{EMPLOYEE_STATUS_LABELS[e.status]}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge tone={INVITE_TONE[e.inviteStatus]}>{INVITE_STATUS_LABELS[e.inviteStatus]}</Badge>
                   </td>
                 </tr>
               ))}
@@ -247,6 +257,9 @@ function EmployeeDrawer({
   const [status, setStatus] = useState<EmployeeStatus>(employee.status);
   const [checklist, setChecklist] = useState<{ ack: Acknowledgment; doc: TrainingDoc }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [inviteStatus, setInviteStatus] = useState<InviteStatus>(employee.inviteStatus);
+  const [inviting, setInviting] = useState(false);
+  const [inviteMsg, setInviteMsg] = useState("");
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
@@ -275,6 +288,24 @@ function EmployeeDrawer({
     onClose();
   }
 
+  async function invite() {
+    setInviting(true);
+    setInviteMsg("");
+    try {
+      const res = await fetch(`/api/employer/employees/${employee.id}/invite`, { method: "POST" });
+      const d = (await res.json().catch(() => ({}))) as { error?: string; emailed?: boolean; link?: string };
+      if (!res.ok) {
+        setInviteMsg(d.error || "Could not send the invite.");
+      } else {
+        setInviteStatus("invited");
+        setInviteMsg(d.emailed ? "Invite emailed." : "Invite created — email isn't configured, share this link:");
+        onChanged();
+      }
+    } finally {
+      setInviting(false);
+    }
+  }
+
   return (
     <Drawer title={employee.name} onClose={onClose}>
       <div className="space-y-6">
@@ -294,6 +325,31 @@ function EmployeeDrawer({
               ))}
             </Picker>
           </Field>
+        )}
+
+        {canManage && (
+          <section className="rounded-lg border border-border-gold bg-white/[0.03] p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-cream">
+                <Mail className="h-4 w-4 text-violet" /> Employee portal
+              </div>
+              <Badge tone={INVITE_TONE[inviteStatus]}>{INVITE_STATUS_LABELS[inviteStatus]}</Badge>
+            </div>
+            <p className="mt-1 text-xs text-white/45">
+              {inviteStatus === "accepted"
+                ? "This employee has an active portal login."
+                : "Invite them to view their documents, message you, and see announcements."}
+            </p>
+            {inviteStatus !== "accepted" && (
+              <div className="mt-2">
+                <Btn onClick={invite} loading={inviting} disabled={!employee.email}>
+                  <Send className="h-4 w-4" /> {inviteStatus === "invited" ? "Resend invite" : "Invite to portal"}
+                </Btn>
+                {!employee.email && <p className="mt-1 text-xs text-gold">Add an email to this employee first.</p>}
+              </div>
+            )}
+            {inviteMsg && <p className="mt-2 text-xs text-white/60">{inviteMsg}</p>}
+          </section>
         )}
 
         <section>
@@ -343,6 +399,125 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between gap-4">
       <span className="text-white/45">{label}</span>
       <span className="text-right text-cream">{value}</span>
+    </div>
+  );
+}
+
+/* ─────────────────────── Announcements (Phase 1) ────────────────────────── */
+function Announcements({ canManage }: { canManage: boolean }) {
+  const [items, setItems] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [pinned, setPinned] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/employer/announcements").then((r) => r.json()).catch(() => ({}));
+    setItems(res.announcements || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function post() {
+    if (!title.trim() || saving) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/employer/announcements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, body, pinned }),
+      });
+      if (res.ok) {
+        setTitle("");
+        setBody("");
+        setPinned(true);
+        await load();
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function patch(id: number, patch: Partial<Pick<Announcement, "pinned" | "active">>) {
+    await fetch(`/api/employer/announcements/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    await load();
+  }
+
+  async function remove(id: number) {
+    if (!confirm("Delete this announcement?")) return;
+    await fetch(`/api/employer/announcements/${id}`, { method: "DELETE" });
+    await load();
+  }
+
+  return (
+    <div className="space-y-6">
+      {canManage && (
+        <Panel>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream">
+            <Megaphone className="h-4 w-4 text-violet" /> New announcement
+          </h3>
+          <div className="space-y-3">
+            <Field label="Title">
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Office closed Friday" maxLength={200} />
+            </Field>
+            <Field label="Message" hint="Optional. Shown on every invited employee's portal home.">
+              <Area value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={8000} />
+            </Field>
+            <label className="flex items-center gap-2 text-sm text-white/70">
+              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="accent-violet" />
+              Pin to the top of the portal home
+            </label>
+            <Btn onClick={post} loading={saving} disabled={!title.trim()}>
+              <Send className="h-4 w-4" /> Post announcement
+            </Btn>
+          </div>
+        </Panel>
+      )}
+
+      {loading ? (
+        <Panel className="text-sm text-white/55">Loading…</Panel>
+      ) : items.length === 0 ? (
+        <EmptyState icon={Megaphone} title="No announcements" body="Post a note here and it appears on every invited employee's portal home." />
+      ) : (
+        <div className="space-y-3">
+          {items.map((a) => (
+            <Panel key={a.id} className={a.active ? "" : "opacity-60"}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    {a.pinned && <Pin className="h-3.5 w-3.5 text-gold" />}
+                    <span className="font-medium text-cream">{a.title}</span>
+                    {!a.active && <Badge tone="neutral">Retired</Badge>}
+                  </div>
+                  {a.body && <p className="mt-1 whitespace-pre-wrap text-sm text-white/70">{a.body}</p>}
+                  <div className="mt-1 text-xs text-white/40">{new Date(a.createdAt).toLocaleString()}</div>
+                </div>
+                {canManage && (
+                  <div className="flex shrink-0 gap-1">
+                    <button onClick={() => patch(a.id, { pinned: !a.pinned })} title={a.pinned ? "Unpin" : "Pin"} className="rounded-md p-1.5 text-white/60 hover:bg-white/5 hover:text-cream">
+                      {a.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                    </button>
+                    <button onClick={() => patch(a.id, { active: !a.active })} className="rounded-md px-2 py-1 text-xs text-white/60 hover:bg-white/5 hover:text-cream">
+                      {a.active ? "Retire" : "Restore"}
+                    </button>
+                    <button onClick={() => remove(a.id)} title="Delete" className="rounded-md p-1.5 text-red-300/80 hover:bg-red-500/10">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </Panel>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

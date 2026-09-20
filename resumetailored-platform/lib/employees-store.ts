@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { isEmployeeStatus, type Employee, type EmployeeStatus } from "./employee-hub";
+import { isEmployeeStatus, isInviteStatus, type Employee, type EmployeeStatus, type InviteStatus } from "./employee-hub";
 
 /**
  * Employees persistence — one `employees` row per person on the employer's
@@ -18,7 +18,8 @@ function db(): SupabaseClient | null {
   return cached;
 }
 
-const COLS = "id, name, email, role, start_date, status, created_at, updated_at";
+const COLS =
+  "id, name, email, role, start_date, status, clerk_user_id, invite_status, invited_at, linked_at, created_at, updated_at";
 
 function mapEmployee(r: Record<string, unknown>): Employee {
   return {
@@ -28,6 +29,10 @@ function mapEmployee(r: Record<string, unknown>): Employee {
     role: (r.role as string) || "",
     startDate: (r.start_date as string) || "",
     status: (isEmployeeStatus(r.status) ? r.status : "active") as EmployeeStatus,
+    clerkUserId: (r.clerk_user_id as string) || "",
+    inviteStatus: (isInviteStatus(r.invite_status) ? r.invite_status : "none") as InviteStatus,
+    invitedAt: (r.invited_at as string) || null,
+    linkedAt: (r.linked_at as string) || null,
     createdAt: (r.created_at as string) || "",
     updatedAt: (r.updated_at as string) || "",
   };
@@ -139,4 +144,75 @@ export async function deleteEmployee(employerId: string, id: number): Promise<bo
 export async function listRoles(employerId: string): Promise<string[]> {
   const employees = await listEmployees(employerId);
   return Array.from(new Set(employees.map((e) => e.role).filter(Boolean))).sort();
+}
+
+// ── Portal invite + Clerk link ────────────────────────────────────────────────
+
+/** Stamp an employee with a fresh invite token and set status → invited.
+ *  Returns the updated row (with the token) so the route can build the link. */
+export async function setInviteToken(employerId: string, id: number, token: string): Promise<Employee | null> {
+  const c = db();
+  if (!c || !employerId || !id) return null;
+  try {
+    const { data, error } = await c
+      .from("employees")
+      .update({ invite_token: token, invite_status: "invited", invited_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("employer_id", employerId)
+      .eq("id", id)
+      .select(COLS)
+      .single();
+    if (error || !data) return null;
+    return mapEmployee(data);
+  } catch {
+    return null;
+  }
+}
+
+/** Resolve an invite token to its employee row (any employer). Used by the
+ *  acceptance page, which then verifies the signed-in user before linking. */
+export async function getEmployeeByInviteToken(token: string): Promise<(Employee & { employerId: string }) | null> {
+  const c = db();
+  if (!c || !token) return null;
+  try {
+    const { data } = await c.from("employees").select(`${COLS}, employer_id`).eq("invite_token", token).maybeSingle();
+    if (!data) return null;
+    return { ...mapEmployee(data), employerId: (data.employer_id as string) || "" };
+  } catch {
+    return null;
+  }
+}
+
+/** Complete an invite: bind the Clerk user id, mark accepted, clear the token.
+ *  Idempotent — re-linking the same user is a harmless no-op update. */
+export async function linkClerkUser(employerId: string, id: number, clerkUserId: string): Promise<boolean> {
+  const c = db();
+  if (!c || !employerId || !id || !clerkUserId) return false;
+  try {
+    const { error } = await c
+      .from("employees")
+      .update({ clerk_user_id: clerkUserId, invite_status: "accepted", invite_token: null, linked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("employer_id", employerId)
+      .eq("id", id);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** The employee row bound to a Clerk account, or null. Powers the /employee
+ *  portal's "who am I" resolution (employer scoping still applied by caller). */
+export async function getEmployeeByClerkUserId(employerId: string, clerkUserId: string): Promise<Employee | null> {
+  const c = db();
+  if (!c || !employerId || !clerkUserId) return null;
+  try {
+    const { data } = await c
+      .from("employees")
+      .select(COLS)
+      .eq("employer_id", employerId)
+      .eq("clerk_user_id", clerkUserId)
+      .maybeSingle();
+    return data ? mapEmployee(data) : null;
+  } catch {
+    return null;
+  }
 }
