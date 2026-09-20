@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, MessageSquare, Star, CalendarClock, Globe, UserCog, Settings, Building2, FileSignature, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, MessageSquare, Star, CalendarClock, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminViewToggle } from "@/components/admin-view-toggle";
+import { PlanPreviewSwitcher } from "@/components/plan-preview-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export interface EmployerNavItem {
@@ -23,6 +24,7 @@ export const EMPLOYER_NAV: EmployerNavItem[] = [
   { label: "Shortlists", href: "/employer/shortlists", icon: Star },
   { label: "Scheduler", href: "/employer/scheduler", icon: CalendarClock },
   { label: "E-Signatures", href: "/employer/docusign", icon: FileSignature },
+  { label: "Documents", href: "/employer/documents", icon: FolderOpen },
   { label: "Career Site", href: "/employer/career-site", icon: Globe },
   { label: "Team", href: "/employer/team", icon: UserCog },
   { label: "Settings", href: "/employer/settings", icon: Settings },
@@ -73,10 +75,11 @@ export function EmployerSidebar({ company, isAdmin, planLabel = "Portal" }: { co
         })}
       </nav>
 
-      {/* Bottom: admin view toggle (admin only), above Sign out. */}
+      {/* Bottom: admin view toggle + plan-preview switcher (admin only). */}
       {isAdmin && (
         <div className="shrink-0 border-t border-border-gold px-3 py-3">
           <AdminViewToggle />
+          <PlanPreviewSwitcher />
         </div>
       )}
 

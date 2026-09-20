@@ -12,17 +12,14 @@ import {
   Paperclip,
   ChevronDown,
   Plus,
-  Copy,
   Check,
   Circle,
-  FolderOpen,
-  ArrowLeft,
-  Send,
 } from "lucide-react";
 import { Panel, PageHeader, Btn, Badge, EmptyState, Input } from "../components/ui";
 import type { DocusignConnection, DocusignEnvelope, DocusignStatus } from "@/lib/employer-ai";
 import { DOC_TYPE_LABELS } from "@/lib/employer-ai";
 import { SendDocumentModal } from "../components/send-document-modal";
+import { SendCopyControl } from "../components/send-copy-control";
 
 interface Usage {
   used: number;
@@ -74,7 +71,6 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
   const [disconnecting, setDisconnecting] = useState(false);
   const [showSend, setShowSend] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
-  const [view, setView] = useState<"list" | "documents">("list");
   const [banner, setBanner] = useState<{ tone: "ok" | "err"; text: string } | null>(
     connected
       ? { tone: "ok", text: "DocuSign connected. You can now send offer letters for signature." }
@@ -140,23 +136,12 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
         subtitle="Send offer letters, agreements, NDAs, or any document for e-signature with DocuSign and track their status."
         action={
           <div className="flex items-center gap-2">
-            {view === "documents" ? (
-              <Btn variant="ghost" onClick={() => setView("list")}>
-                <ArrowLeft className="h-4 w-4" /> Back to sent list
-              </Btn>
-            ) : (
-              <>
-                <Btn onClick={() => setShowSend(true)}>
-                  <UploadCloud className="h-4 w-4" /> Upload &amp; send for signature
-                </Btn>
-                <Btn variant="ghost" onClick={() => setView("documents")}>
-                  <FolderOpen className="h-4 w-4" /> View documents
-                </Btn>
-                <Btn variant="ghost" onClick={refresh} loading={refreshing}>
-                  <RefreshCw className="h-4 w-4" /> Refresh
-                </Btn>
-              </>
-            )}
+            <Btn onClick={() => setShowSend(true)}>
+              <UploadCloud className="h-4 w-4" /> Upload &amp; send for signature
+            </Btn>
+            <Btn variant="ghost" onClick={refresh} loading={refreshing}>
+              <RefreshCw className="h-4 w-4" /> Refresh
+            </Btn>
           </div>
         }
       />
@@ -177,7 +162,7 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
       {/* Connection status — platform admin only. Regular employers send through
           the platform's DocuSign account and never connect/disconnect their own;
           exposing Disconnect here would break signing for everyone. */}
-      {isAdmin && view === "list" && (
+      {isAdmin && (
       <Panel className="mb-6">
         {loading ? (
           <div className="h-16 animate-pulse rounded-lg bg-white/5" />
@@ -241,10 +226,8 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
       </Panel>
       )}
 
-      {/* Envelopes / Documents */}
-      {view === "documents" ? (
-        <DocumentsView envelopes={envelopes} loading={loading} onChanged={() => void loadEnvelopes(false)} />
-      ) : loading ? (
+      {/* Envelopes */}
+      {loading ? (
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-xl bg-white/5" />
@@ -362,80 +345,6 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
   );
 }
 
-// ── Send-a-copy control: forward the completed signed PDF + certificate to any
-//    name/email (plain email, no DocuSign step). Reused in the detail + the
-//    Documents view rows. ────────────────────────────────────────────────────────
-function SendCopyControl({ envelopeId, onSent }: { envelopeId: number; onSent?: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [sending, setSending] = useState(false);
-  const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
-
-  async function send() {
-    if (!email.trim()) return;
-    setSending(true);
-    setMsg(null);
-    try {
-      const res = await fetch(`/api/employer/docusign/envelopes/${envelopeId}/send-copy`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
-      });
-      const d = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setMsg({ tone: "err", text: d.error || "Couldn't send the copy." });
-        return;
-      }
-      setMsg({ tone: "ok", text: `Copy sent to ${email.trim()}.` });
-      setName("");
-      setEmail("");
-      setOpen(false);
-      onSent?.();
-    } finally {
-      setSending(false);
-    }
-  }
-
-  if (!open) {
-    return (
-      <span className="inline-flex flex-col items-start gap-0.5">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
-        >
-          <Send className="h-3.5 w-3.5" /> Send copy
-        </button>
-        {msg && <span className={`text-[11px] ${msg.tone === "ok" ? "text-teal" : "text-red-300"}`}>{msg.text}</span>}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex flex-wrap items-center gap-2">
-      <input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="Name"
-        className="w-28 rounded-lg border border-border-gold bg-white/5 px-2 py-1.5 text-xs text-cream placeholder:text-white/35 outline-none focus:border-violet"
-      />
-      <input
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="email@company.com"
-        className="w-48 rounded-lg border border-border-gold bg-white/5 px-2 py-1.5 text-xs text-cream placeholder:text-white/35 outline-none focus:border-violet"
-      />
-      <Btn variant="ghost" onClick={() => void send()} loading={sending} disabled={!email.trim()}>
-        <Send className="h-4 w-4" /> Send
-      </Btn>
-      <button type="button" onClick={() => { setOpen(false); setMsg(null); }} className="text-xs text-muted-cream hover:text-cream">
-        Cancel
-      </button>
-      {msg?.tone === "err" && <span className="text-[11px] text-red-300">{msg.text}</span>}
-    </span>
-  );
-}
-
 // ── Envelope detail (expanded row): requested-docs checklist, attachments,
 //    employer upload, and "request more documents" ─────────────────────────────
 function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; onChanged: () => void }) {
@@ -443,18 +352,12 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
   const [addingReq, setAddingReq] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
-  const [copied, setCopied] = useState(false);
   const [pickByReq, setPickByReq] = useState<Record<string, string>>({});
   const [markingReq, setMarkingReq] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const employerFiles = envelope.attachments.filter((a) => a.by === "employer");
   const isDone = envelope.status === "completed" || envelope.status === "signed";
-
-  const signLink =
-    envelope.signToken && typeof window !== "undefined"
-      ? `${window.location.origin}/sign/${encodeURIComponent(envelope.envelopeId)}?key=${encodeURIComponent(envelope.signToken)}`
-      : "";
 
   async function addRequest() {
     const name = reqInput.trim();
@@ -520,14 +423,6 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
     } finally {
       setMarkingReq(null);
     }
-  }
-
-  function copyLink() {
-    if (!signLink) return;
-    void navigator.clipboard?.writeText(signLink).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1800);
-    });
   }
 
   const dl = (path: string, download = true) =>
@@ -677,151 +572,12 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
         {employerFiles.length > 0 && (
           <p className="mt-1 text-[11px] text-white/35">Files you attach are private to your team — the signer never sees them.</p>
         )}
-
-        {/* Signer upload link */}
-        {signLink && (
-          <div className="mt-4">
-            <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-cream">Signer upload link</h3>
-            <div className="flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-lg border border-border-gold bg-white/[0.04] px-2 py-1.5 text-[11px] text-white/70">
-                {signLink}
-              </code>
-              <Btn variant="ghost" onClick={copyLink}>
-                {copied ? <Check className="h-4 w-4 text-teal" /> : <Copy className="h-4 w-4" />}
-                {copied ? "Copied" : "Copy"}
-              </Btn>
-            </div>
-          </div>
-        )}
       </div>
 
       {msg && (
         <p className={`md:col-span-2 text-xs ${msg.tone === "ok" ? "text-teal" : "text-red-300"}`}>{msg.text}</p>
       )}
       </div>
-    </div>
-  );
-}
-
-// ── Documents view: one flat, downloadable list of everything received/done ────
-//    across all envelopes — completed signed PDFs + every uploaded/attached file.
-//    Aggregated client-side from the already-loaded envelopes (no new endpoint).
-function DocumentsView({ envelopes, loading, onChanged }: { envelopes: DocusignEnvelope[]; loading: boolean; onChanged: () => void }) {
-  type Row = {
-    key: string;
-    name: string;
-    label: string;
-    signer: string;
-    date: string;
-    href: string;
-    kind: "signed" | "signer" | "employer";
-    status: DocusignStatus | null; // null → a "received"/"attached" tag
-    envId?: number; // set on signed rows → enables "Send copy"
-  };
-  const rows: Row[] = [];
-  for (const e of envelopes) {
-    const label = e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType];
-    const signer = e.candidateName || e.candidateEmail || "—";
-    if (e.status === "completed" || e.status === "signed") {
-      rows.push({
-        key: `env-${e.id}`,
-        name: "Signed documents (PDF)",
-        label,
-        signer,
-        date: e.sentAt,
-        href: `/api/employer/docusign/envelopes/${e.id}/documents`,
-        kind: "signed",
-        status: e.status,
-        envId: e.id,
-      });
-    }
-    for (const a of e.attachments) {
-      rows.push({
-        key: `att-${e.id}-${a.url}`,
-        name: a.name,
-        label,
-        signer,
-        date: a.uploadedAt || e.sentAt,
-        href: `/api/employer/docusign/envelopes/${e.id}/attachment?path=${encodeURIComponent(a.url)}&download=1`,
-        kind: a.by === "employer" ? "employer" : "signer",
-        status: null,
-      });
-    }
-  }
-  rows.sort((a, b) => (a.date < b.date ? 1 : -1));
-
-  if (loading) {
-    return (
-      <div className="space-y-2">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="h-14 animate-pulse rounded-xl bg-white/5" />
-        ))}
-      </div>
-    );
-  }
-  if (rows.length === 0) {
-    return (
-      <EmptyState
-        icon={FolderOpen}
-        title="No documents yet"
-        body="Completed signed PDFs and any files uploaded by signers or attached by your team will appear here, ready to download."
-      />
-    );
-  }
-  return (
-    <div className="overflow-hidden rounded-xl border border-border-gold">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
-            <th className="px-4 py-3 font-semibold">Document</th>
-            <th className="px-4 py-3 font-semibold">Envelope</th>
-            <th className="px-4 py-3 font-semibold">Date</th>
-            <th className="px-4 py-3 font-semibold">Status</th>
-            <th className="px-4 py-3 font-semibold text-right">Download</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.key} className="border-b border-border-gold/60 last:border-0 hover:bg-white/[0.02]">
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-2">
-                  {r.kind === "signed" ? (
-                    <FileSignature className="h-4 w-4 shrink-0 text-teal" />
-                  ) : (
-                    <Paperclip className="h-4 w-4 shrink-0 text-white/40" />
-                  )}
-                  <span className="truncate text-cream">{r.name}</span>
-                </div>
-              </td>
-              <td className="px-4 py-3">
-                <div className="text-cream">{r.label}</div>
-                <div className="text-xs text-white/45">{r.signer}</div>
-              </td>
-              <td className="px-4 py-3 text-white/55">{fmtDate(r.date)}</td>
-              <td className="px-4 py-3">
-                {r.status ? (
-                  <Badge tone={STATUS_TONE[r.status]}>{r.status}</Badge>
-                ) : (
-                  <Badge tone={r.kind === "employer" ? "neutral" : "teal"}>{r.kind === "employer" ? "attached" : "received"}</Badge>
-                )}
-              </td>
-              <td className="px-4 py-3 text-right">
-                <div className="inline-flex flex-wrap items-center justify-end gap-3">
-                  <a
-                    href={r.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
-                  >
-                    <Download className="h-3.5 w-3.5" /> Download
-                  </a>
-                  {r.envId !== undefined && <SendCopyControl envelopeId={r.envId} onSent={onChanged} />}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { currentUser, clerkClient } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import { isAdminId } from "./admin";
 
 /**
@@ -32,11 +33,54 @@ export interface Access {
   /** For an employee account: the employer (organization) they belong to. */
   employerId?: string;
   employerName?: string;
-  /** The hardcoded admin: bypasses all role checks and is Pro everywhere. */
+  /** The hardcoded admin: bypasses all role checks and is Pro everywhere.
+   *  Cleared while a plan preview is active so gates evaluate the previewed plan. */
   isAdmin?: boolean;
+  /** True whenever the signed-in user is the admin — even while previewing.
+   *  Used to render admin-only UI (view toggle, plan-preview switcher). */
+  realAdmin?: boolean;
+  /** Active admin plan-preview (testing tool). Present ⇒ gates use the previewed
+   *  plan, not the admin bypass. */
+  preview?: { side: "employer" | "candidate"; plan: string; label: string };
 }
 
 const FREE: Access = { plan: "free", type: "individual" };
+
+// ── Admin plan-preview (testing tool) ─────────────────────────────────────────
+export const PLAN_PREVIEW_COOKIE = "rt_plan_preview";
+
+/** Map a preview selection (cookie value `side:plan`) to an effective Access.
+ *  Only ever applied AFTER the isAdmin check, so a non-admin forging the cookie
+ *  gets nothing (no elevation possible). Returns null for an unknown selection. */
+function previewToAccess(side: string, plan: string): Access | null {
+  const base: Pick<Access, "realAdmin" | "preview"> = {
+    realAdmin: true,
+    preview: { side: side as "employer" | "candidate", plan, label: "" },
+  };
+  const label = (l: string): Access["preview"] => ({ side: side as "employer" | "candidate", plan, label: l });
+  if (side === "employer") {
+    if (plan === "free") return { ...base, plan: "free", type: "individual", preview: label("Free") };
+    if (plan === "portal") return { ...base, plan: "employer", type: "organization", tier: "portal", preview: label("Portal") };
+    if (plan === "scale") return { ...base, plan: "employer", type: "organization", tier: "scale", preview: label("Scale") };
+    if (plan === "corporate") return { ...base, plan: "employer", type: "organization", tier: "corporate", preview: label("Corporate") };
+  } else if (side === "candidate") {
+    if (plan === "free") return { ...base, plan: "free", type: "individual", preview: label("Free") };
+    if (plan === "pro") return { ...base, plan: "pro", type: "individual", preview: label("Pro") };
+  }
+  return null;
+}
+
+/** Read the admin plan-preview cookie into an effective Access, or null. */
+function readPlanPreview(): Access | null {
+  try {
+    const raw = cookies().get(PLAN_PREVIEW_COOKIE)?.value || "";
+    const [side, plan] = raw.split(":");
+    if (!side || !plan) return null;
+    return previewToAccess(side.trim(), plan.trim());
+  } catch {
+    return null;
+  }
+}
 
 function normalize(meta: {
   plan?: string;
@@ -65,9 +109,14 @@ export async function getAccess(): Promise<Access> {
     const user = await currentUser();
     if (!user) return FREE;
 
-    // Admin bypass — Pro + both portals, regardless of stored metadata.
+    // Admin bypass — Pro + both portals, regardless of stored metadata. A plan
+    // preview (admin testing tool) is read HERE, after the id check, so it can
+    // never elevate a non-admin: the previewed plan replaces the bypass and
+    // gates then evaluate it honestly (isAdmin is not set while previewing).
     if (isAdminId(user.id)) {
-      return { plan: "pro", type: "individual", isAdmin: true };
+      const preview = readPlanPreview();
+      if (preview) return preview;
+      return { plan: "pro", type: "individual", isAdmin: true, realAdmin: true };
     }
 
     const fromMeta = normalize((user.publicMetadata ?? {}) as Record<string, string>);

@@ -11,10 +11,12 @@ export const maxDuration = 30;
  * certificate of completion appended) for a signed/completed envelope.
  * Owner-scoped: the envelope must belong to the caller's employer.
  */
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: { id: string } }) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
+  // ?download=1 → attachment (save); default → inline (open in the browser viewer).
+  const download = new URL(req.url).searchParams.get("download") === "1";
   const id = Number(params.id);
   if (!Number.isFinite(id) || id <= 0) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
@@ -34,7 +36,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="signed-documents-${id}.pdf"`,
+      "Content-Disposition": `${download ? "attachment" : "inline"}; filename="signed-documents-${id}.pdf"`,
       "Cache-Control": "private, no-store",
     },
   });

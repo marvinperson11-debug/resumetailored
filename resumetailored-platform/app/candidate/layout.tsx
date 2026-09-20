@@ -22,7 +22,7 @@ export default async function CandidateLayout({ children }: { children: ReactNod
         rel="stylesheet"
       />
       <DashboardShell
-        sidebar={<CandidateSidebar role={{ plan: access.plan, employerName: access.employerName }} isAdmin={access.isAdmin} />}
+        sidebar={<CandidateSidebar role={{ plan: access.plan, employerName: access.employerName }} isAdmin={access.realAdmin || access.isAdmin} />}
         title={t("office")}
       >
         {children}

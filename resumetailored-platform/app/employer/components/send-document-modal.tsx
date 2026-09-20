@@ -22,6 +22,7 @@ export function SendDocumentModal({
   candidateEmail = "",
   defaultPosition,
   defaultDocType = "offer",
+  document,
   onClose,
   onSent,
 }: {
@@ -31,10 +32,14 @@ export function SendDocumentModal({
   candidateEmail?: string;
   defaultPosition?: string;
   defaultDocType?: DocType;
+  /** When set, send a composed document (Document Creator) instead of picking a
+   *  type / uploading a PDF. Rendered to PDF server-side via the HTML path. */
+  document?: { id: number; title: string };
   onClose: () => void;
   onSent?: () => void;
 }) {
-  const [docType, setDocType] = useState<DocType>(defaultDocType);
+  const isDoc = !!document;
+  const [docType, setDocType] = useState<DocType>(isDoc ? "custom" : defaultDocType);
   const [signerName, setSignerName] = useState(candidateName);
   const [signerEmail, setSignerEmail] = useState(candidateEmail);
   // Recipient picker (standalone, non-writeup sends): the employer's applicants,
@@ -152,7 +157,7 @@ export function SendDocumentModal({
     if (manualSigner && !signerName.trim()) return setError(isWriteup ? "Enter the employee's name." : "Enter the recipient's name.");
     if (showOfferFields && !position.trim()) return setError("Enter the position title.");
     if (isWriteup && !wDescription.trim()) return setError("Describe the incident.");
-    if (docType === "custom") {
+    if (docType === "custom" && !isDoc) {
       if (!documentName.trim()) return setError("Give the document a name.");
       if (!documentPath) return setError("Upload a PDF to send.");
     }
@@ -163,8 +168,9 @@ export function SendDocumentModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           docType,
-          documentName: documentName.trim(),
+          documentName: isDoc ? document!.title : documentName.trim(),
           documentPath: documentPath || undefined,
+          documentId: isDoc ? document!.id : undefined,
           applicantId: isWriteup ? undefined : chosenApplicantId,
           shortlistMemberId,
           candidateName: manualSigner ? signerName.trim() : candidateName,
@@ -228,15 +234,22 @@ export function SendDocumentModal({
         </div>
       ) : (
         <div className="space-y-4">
-          <Field label="Document type">
-            <Picker value={docType} onChange={(e) => setDocType(e.target.value as DocType)}>
-              {DOC_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {DOC_TYPE_LABELS[t]}
-                </option>
-              ))}
-            </Picker>
-          </Field>
+          {isDoc ? (
+            <div className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2.5 text-sm">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-cream">Document</div>
+              <div className="text-cream">{document!.title}</div>
+            </div>
+          ) : (
+            <Field label="Document type">
+              <Picker value={docType} onChange={(e) => setDocType(e.target.value as DocType)}>
+                {DOC_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {DOC_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </Picker>
+            </Field>
+          )}
 
           {/* Signer: bound-applicant card, employee free-text (write-ups), or the
               applicant picker (standalone sends) with a manual escape hatch. */}
@@ -294,7 +307,7 @@ export function SendDocumentModal({
             </p>
           )}
 
-          {docType === "custom" ? (
+          {isDoc ? null : docType === "custom" ? (
             <>
               <Field label="Document name">
                 <Input value={documentName} onChange={(e) => setDocumentName(e.target.value)} placeholder="Insurance enrollment form" />
