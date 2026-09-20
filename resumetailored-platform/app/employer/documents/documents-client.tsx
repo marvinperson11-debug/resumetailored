@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   FileText,
   Plus,
@@ -11,6 +11,8 @@ import {
   Eye,
   FileSignature,
   Paperclip,
+  ChevronDown,
+  CheckCircle2,
   Bold,
   Italic,
   Underline,
@@ -363,10 +365,20 @@ function DocumentEditor({
   );
 }
 
-// ── Received & signed: aggregated signed PDFs + uploaded/attached files ────────
+// ── Received & signed: ONE ROW PER ENVELOPE, expandable to reveal the signed
+//    documents (PDF + certificate) and EVERY file for that envelope (signer
+//    requested-doc uploads, free uploads, and employer-attached files). No
+//    orphan rows — every file lives under its envelope. Newest first. ──────────
+
+/** The most relevant date for sorting/display: completion, else sent, else created. */
+function envDate(e: DocusignEnvelope): string {
+  return e.completedAt || e.sentAt || e.createdAt || "";
+}
+
 function ReceivedDocuments() {
   const [envelopes, setEnvelopes] = useState<DocusignEnvelope[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -383,50 +395,11 @@ function ReceivedDocuments() {
     void load();
   }, [load]);
 
-  type Row = {
-    key: string;
-    name: string;
-    label: string;
-    signer: string;
-    date: string;
-    downloadHref: string;
-    viewHref?: string;
-    envId?: number;
-    kind: "signed" | "signer" | "employer";
-    status: DocusignStatus | null;
-  };
-  const rows: Row[] = [];
-  for (const e of envelopes) {
-    const label = e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType];
-    const signer = e.candidateName || e.candidateEmail || "—";
-    if (e.status === "completed" || e.status === "signed") {
-      rows.push({
-        key: `env-${e.id}`,
-        name: "Signed documents (PDF + certificate)",
-        label,
-        signer,
-        date: e.sentAt,
-        viewHref: `/api/employer/docusign/envelopes/${e.id}/documents`,
-        downloadHref: `/api/employer/docusign/envelopes/${e.id}/documents?download=1`,
-        envId: e.id,
-        kind: "signed",
-        status: e.status,
-      });
-    }
-    for (const a of e.attachments) {
-      rows.push({
-        key: `att-${e.id}-${a.url}`,
-        name: a.name,
-        label,
-        signer,
-        date: a.uploadedAt || e.sentAt,
-        downloadHref: `/api/employer/docusign/envelopes/${e.id}/attachment?path=${encodeURIComponent(a.url)}&download=1`,
-        kind: a.by === "employer" ? "employer" : "signer",
-        status: null,
-      });
-    }
-  }
-  rows.sort((a, b) => (a.date < b.date ? 1 : -1));
+  // Show an envelope once it has something to receive: a signed document, or at
+  // least one attached file. Pending envelopes with nothing yet stay out.
+  const shown = envelopes
+    .filter((e) => e.status === "completed" || e.status === "signed" || e.attachments.length > 0)
+    .sort((a, b) => (envDate(a) < envDate(b) ? 1 : -1)); // newest first
 
   if (loading) {
     return (
@@ -437,7 +410,7 @@ function ReceivedDocuments() {
       </div>
     );
   }
-  if (rows.length === 0) {
+  if (shown.length === 0) {
     return (
       <EmptyState
         icon={FileText}
@@ -448,61 +421,155 @@ function ReceivedDocuments() {
   }
   return (
     <div className="overflow-x-auto rounded-xl border border-border-gold">
-      {/* Horizontal scroll + progressive column collapse so View/Download/Send
-          copy stay reachable on a 375px phone (Document, Status and Actions are
-          always visible). */}
-      <table className="w-full min-w-[480px] text-sm">
+      {/* Horizontal scroll + progressive column collapse so Recipient and Status
+          (and the expand chevron) stay reachable on a 375px phone; everything
+          else lives in the expanded panel. colSpan on the detail row is clamped
+          by the browser to the number of visible columns. */}
+      <table className="w-full min-w-[440px] text-sm">
         <thead>
           <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
-            <th className="px-4 py-3 font-semibold">Document</th>
-            <th className="hidden px-4 py-3 font-semibold md:table-cell">Envelope</th>
-            <th className="hidden px-4 py-3 font-semibold sm:table-cell">Date</th>
+            <th className="px-4 py-3 font-semibold">Recipient</th>
+            <th className="hidden px-4 py-3 font-semibold sm:table-cell">Document</th>
+            <th className="hidden px-4 py-3 font-semibold md:table-cell">Date</th>
+            <th className="hidden px-4 py-3 font-semibold sm:table-cell">Files</th>
             <th className="px-4 py-3 font-semibold">Status</th>
-            <th className="px-4 py-3 font-semibold text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
-            <tr key={r.key} className="border-b border-border-gold/60 last:border-0 hover:bg-white/[0.02]">
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-2">
-                  {r.kind === "signed" ? (
-                    <FileSignature className="h-4 w-4 shrink-0 text-teal" />
-                  ) : (
-                    <Paperclip className="h-4 w-4 shrink-0 text-white/40" />
-                  )}
-                  <span className="truncate text-cream">{r.name}</span>
-                </div>
-              </td>
-              <td className="hidden px-4 py-3 md:table-cell">
-                <div className="text-cream">{r.label}</div>
-                <div className="text-xs text-white/45">{r.signer}</div>
-              </td>
-              <td className="hidden px-4 py-3 text-white/55 sm:table-cell">{fmtDate(r.date)}</td>
-              <td className="px-4 py-3">
-                {r.status ? (
-                  <Badge tone={STATUS_TONE[r.status]}>{r.status}</Badge>
-                ) : (
-                  <Badge tone={r.kind === "employer" ? "neutral" : "teal"}>{r.kind === "employer" ? "attached" : "received"}</Badge>
+          {shown.map((e) => {
+            const isOpen = expanded === e.id;
+            const label = e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType];
+            const signer = e.candidateName || e.candidateEmail || "—";
+            const fileCount = e.attachments.length;
+            return (
+              <Fragment key={e.id}>
+                <tr
+                  onClick={() => setExpanded(isOpen ? null : e.id)}
+                  title={isOpen ? "Hide details" : "Show details"}
+                  aria-expanded={isOpen}
+                  className={`group cursor-pointer border-b border-border-gold/60 last:border-0 transition-colors hover:bg-white/[0.06] ${isOpen ? "bg-white/[0.04]" : ""}`}
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180 text-violet" : "text-white/40 group-hover:text-violet"}`} />
+                      <div className="min-w-0">
+                        <div className="truncate font-medium text-cream">{signer}</div>
+                        {e.candidateEmail && e.candidateName && (
+                          <div className="truncate text-xs text-white/45">{e.candidateEmail}</div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="hidden px-4 py-3 text-white/75 sm:table-cell">{label}</td>
+                  <td className="hidden px-4 py-3 text-white/55 md:table-cell">{fmtDate(envDate(e))}</td>
+                  <td className="hidden px-4 py-3 sm:table-cell">
+                    {fileCount > 0 ? (
+                      <span className="inline-flex items-center gap-1 rounded-md bg-teal/15 px-2 py-0.5 text-xs font-semibold text-teal">
+                        <Paperclip className="h-3 w-3" /> {fileCount}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-white/30">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge tone={STATUS_TONE[e.status]}>{e.status}</Badge>
+                  </td>
+                </tr>
+                {isOpen && (
+                  <tr className="border-b border-border-gold/60 last:border-0 bg-white/[0.015]">
+                    <td colSpan={5} className="px-4 py-4">
+                      <EnvelopeFiles envelope={e} onChanged={load} />
+                    </td>
+                  </tr>
                 )}
-              </td>
-              <td className="px-4 py-3 text-right">
-                <div className="inline-flex flex-wrap items-center justify-end gap-3">
-                  {r.viewHref && (
-                    <a href={r.viewHref} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline">
-                      <Eye className="h-3.5 w-3.5" /> View
-                    </a>
-                  )}
-                  <a href={r.downloadHref} className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline">
-                    <Download className="h-3.5 w-3.5" /> Download
-                  </a>
-                  {r.envId !== undefined && <SendCopyControl envelopeId={r.envId} onSent={load} />}
-                </div>
-              </td>
-            </tr>
-          ))}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// ── Expanded panel for one envelope: the signed document + every file ─────────
+function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope; onChanged: () => void }) {
+  const isDone = e.status === "completed" || e.status === "signed";
+  const att = (path: string, download = false) =>
+    `/api/employer/docusign/envelopes/${e.id}/attachment?path=${encodeURIComponent(path)}${download ? "&download=1" : ""}`;
+
+  return (
+    <div className="space-y-4">
+      {/* 1) The signed documents (combined PDF + certificate) */}
+      {isDone && (
+        <div className="rounded-xl border border-teal/30 bg-teal/[0.06] px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <FileSignature className="h-4 w-4 shrink-0 text-teal" />
+            <span className="mr-auto text-sm font-medium text-cream">Signed documents (PDF + certificate)</span>
+            <a
+              href={`/api/employer/docusign/envelopes/${e.id}/documents`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
+            >
+              <Eye className="h-3.5 w-3.5" /> View
+            </a>
+            <a
+              href={`/api/employer/docusign/envelopes/${e.id}/documents?download=1`}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
+            >
+              <Download className="h-3.5 w-3.5" /> Download
+            </a>
+            <SendCopyControl envelopeId={e.id} onSent={onChanged} />
+          </div>
+        </div>
+      )}
+
+      {/* 2) EVERY file for this envelope — signer uploads + employer-attached */}
+      <div>
+        <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">
+          All files{e.attachments.length > 0 ? ` (${e.attachments.length})` : ""}
+        </h4>
+        {e.attachments.length === 0 ? (
+          <p className="text-xs text-white/40">No files uploaded for this envelope yet.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {e.attachments.map((a, i) => {
+              const who = a.by === "employer" ? "you" : "signer";
+              return (
+                <li
+                  key={`${a.url}-${i}`}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/[0.03] px-3 py-2 text-sm"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Paperclip className="h-3.5 w-3.5 shrink-0 text-white/40" />
+                    <span className="truncate text-cream">{a.name}</span>
+                    <span className="shrink-0 text-[11px] text-white/40">{who}</span>
+                    {a.kind === "requested" && (
+                      <span className="shrink-0 rounded bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold">requested</span>
+                    )}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-3">
+                    <a href={att(a.url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline">
+                      <Eye className="h-3.5 w-3.5" /> View
+                    </a>
+                    <a href={att(a.url, true)} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline">
+                      <Download className="h-3.5 w-3.5" /> Download
+                    </a>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      {/* Requested docs still outstanding — surfaced so the row isn't misleading. */}
+      {e.requestedDocs.some((d) => !d.uploaded) && (
+        <p className="flex items-center gap-1.5 text-[11px] text-white/45">
+          <CheckCircle2 className="h-3.5 w-3.5 text-white/30" />
+          Awaiting from signer: {e.requestedDocs.filter((d) => !d.uploaded).map((d) => d.name).join(", ")}
+        </p>
+      )}
     </div>
   );
 }
