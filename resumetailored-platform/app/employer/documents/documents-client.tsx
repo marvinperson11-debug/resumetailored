@@ -170,12 +170,12 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
           action={canManage ? <Btn onClick={() => setPicking(true)}><Plus className="h-4 w-4" /> New document</Btn> : undefined}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border-gold">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-border-gold">
+          <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
                 <th className="px-4 py-3 font-semibold">Title</th>
-                <th className="px-4 py-3 font-semibold">Updated</th>
+                <th className="hidden px-4 py-3 font-semibold sm:table-cell">Updated</th>
                 <th className="px-4 py-3 font-semibold text-right">Actions</th>
               </tr>
             </thead>
@@ -188,7 +188,7 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
                       <span className="text-cream">{d.title}</span>
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-white/55">{fmtDate(d.updatedAt)}</td>
+                  <td className="hidden px-4 py-3 text-white/55 sm:table-cell">{fmtDate(d.updatedAt)}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex flex-wrap items-center justify-end gap-3">
                       <button
@@ -447,13 +447,16 @@ function ReceivedDocuments() {
     );
   }
   return (
-    <div className="overflow-hidden rounded-xl border border-border-gold">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-xl border border-border-gold">
+      {/* Horizontal scroll + progressive column collapse so View/Download/Send
+          copy stay reachable on a 375px phone (Document, Status and Actions are
+          always visible). */}
+      <table className="w-full min-w-[480px] text-sm">
         <thead>
           <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
             <th className="px-4 py-3 font-semibold">Document</th>
-            <th className="px-4 py-3 font-semibold">Envelope</th>
-            <th className="px-4 py-3 font-semibold">Date</th>
+            <th className="hidden px-4 py-3 font-semibold md:table-cell">Envelope</th>
+            <th className="hidden px-4 py-3 font-semibold sm:table-cell">Date</th>
             <th className="px-4 py-3 font-semibold">Status</th>
             <th className="px-4 py-3 font-semibold text-right">Actions</th>
           </tr>
@@ -471,11 +474,11 @@ function ReceivedDocuments() {
                   <span className="truncate text-cream">{r.name}</span>
                 </div>
               </td>
-              <td className="px-4 py-3">
+              <td className="hidden px-4 py-3 md:table-cell">
                 <div className="text-cream">{r.label}</div>
                 <div className="text-xs text-white/45">{r.signer}</div>
               </td>
-              <td className="px-4 py-3 text-white/55">{fmtDate(r.date)}</td>
+              <td className="hidden px-4 py-3 text-white/55 sm:table-cell">{fmtDate(r.date)}</td>
               <td className="px-4 py-3">
                 {r.status ? (
                   <Badge tone={STATUS_TONE[r.status]}>{r.status}</Badge>

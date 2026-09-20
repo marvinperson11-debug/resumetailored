@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Link2,
   Download,
+  Eye,
   AlertTriangle,
   UploadCloud,
   Paperclip,
@@ -245,16 +246,21 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
           }
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border-gold">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-border-gold">
+          {/* Horizontal scroll on small screens so the rightmost columns
+              (Files / Certificate / Download) stay reachable on a 375px phone;
+              lower-priority columns also collapse progressively (Recipient,
+              Status and Certificate are always visible). colSpan on the detail
+              row is clamped by the browser to the number of visible columns. */}
+          <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
                 <th className="px-4 py-3 font-semibold">Recipient</th>
-                <th className="px-4 py-3 font-semibold">Type</th>
-                <th className="px-4 py-3 font-semibold">Document</th>
-                <th className="px-4 py-3 font-semibold">Sent</th>
+                <th className="hidden px-4 py-3 font-semibold sm:table-cell">Type</th>
+                <th className="hidden px-4 py-3 font-semibold lg:table-cell">Document</th>
+                <th className="hidden px-4 py-3 font-semibold md:table-cell">Sent</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Files</th>
+                <th className="hidden px-4 py-3 font-semibold sm:table-cell">Files</th>
                 <th className="px-4 py-3 font-semibold text-right">Certificate</th>
               </tr>
             </thead>
@@ -279,15 +285,15 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="hidden px-4 py-3 sm:table-cell">
                         <Badge tone={typeBadgeTone(e.status)}>{DOC_TYPE_LABELS[e.docType]}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-white/75">{e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType]}</td>
-                      <td className="px-4 py-3 text-white/55">{fmtDate(e.sentAt)}</td>
+                      <td className="hidden px-4 py-3 text-white/75 lg:table-cell">{e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType]}</td>
+                      <td className="hidden px-4 py-3 text-white/55 md:table-cell">{fmtDate(e.sentAt)}</td>
                       <td className="px-4 py-3">
                         <Badge tone={STATUS_TONE[e.status]}>{e.status}</Badge>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="hidden px-4 py-3 sm:table-cell">
                         {e.attachments.length > 0 ? (
                           <span className="inline-flex items-center gap-1 rounded-md bg-teal/15 px-2 py-0.5 text-xs font-semibold text-teal">
                             <Paperclip className="h-3 w-3" /> {e.attachments.length}
@@ -435,13 +441,20 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-teal/30 bg-teal/[0.06] px-4 py-3">
           <CheckCircle2 className="h-5 w-5 shrink-0 text-teal" />
           <span className="mr-auto text-sm text-cream">This document is complete.</span>
+          {/* View: the combined signed PDF + certificate, inline in the browser. */}
           <a
             href={`/api/employer/docusign/envelopes/${envelope.id}/documents`}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet/90"
           >
-            <Download className="h-4 w-4" /> Download signed documents
+            <Eye className="h-4 w-4" /> View documents
+          </a>
+          <a
+            href={`/api/employer/docusign/envelopes/${envelope.id}/documents?download=1`}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-4 py-2 text-sm font-semibold text-cream transition-colors hover:bg-white/[0.08]"
+          >
+            <Download className="h-4 w-4" /> Download
           </a>
           <a
             href={`/api/employer/docusign/envelopes/${envelope.id}/certificate`}
