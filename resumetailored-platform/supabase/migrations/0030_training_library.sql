@@ -2,13 +2,13 @@
 --
 -- A curated, read-only library of FREE workplace-training content sourced only
 -- from US-government, public-domain channels (OSHA / NIOSH / CDC / DOL / FEMA /
--- CISA / FDA / USDA). Videos are EMBEDDED (never downloaded) from the agency's
--- own official YouTube channel; docs carry an authored public-domain summary
+-- CISA / FDA / USDA). Videos are EMBEDDED (never downloaded) from the agency
+-- official YouTube channel; docs carry an authored public-domain summary
 -- plus an attribution link to the official source page.
 --
 -- Unlike the per-employer tables in 0029, the library is shared platform content:
 -- RLS is ENABLED but there are NO policies, so it is reachable only through the
--- server's service-role key (the same read path the stores already use). Clients
+-- server service-role key (the same read path the stores already use). Clients
 -- never query it directly.
 --
 -- This migration also links a training_docs row back to the library item it was
@@ -44,7 +44,7 @@ alter table public.training_docs add column if not exists library_item_id bigint
 create index if not exists training_docs_library_idx on public.training_docs (library_item_id);
 
 -- ── Seed (idempotent; each row guarded on its unique source_url) ──────────────
--- Videos — verified on the agency's own official YouTube channel (Sept 2026).
+-- Videos — verified on each agency official YouTube channel (Sept 2026).
 insert into public.training_library_items (category, title, kind, provider, embed_url, source_url)
 select 'Safety — General', 'Protecting My Workers Against Noise Hazards', 'video', 'NIOSH', 'https://www.youtube-nocookie.com/embed/U4us4Ut2J7I', 'https://www.youtube.com/watch?v=U4us4Ut2J7I'
 where not exists (select 1 from public.training_library_items where source_url = 'https://www.youtube.com/watch?v=U4us4Ut2J7I');
