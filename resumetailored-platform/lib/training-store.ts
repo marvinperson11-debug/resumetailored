@@ -29,7 +29,7 @@ function db(): SupabaseClient | null {
 }
 
 const DOC_COLS =
-  "id, title, doc_kind, body_html, source_document_id, pdf_url, assign_to, require_signature, created_at";
+  "id, title, doc_kind, body_html, source_document_id, pdf_url, assign_to, require_signature, library_item_id, created_at";
 const ACK_COLS =
   "id, training_doc_id, employee_id, envelope_id, status, due_at, acknowledged_at, score, attempts, created_at";
 
@@ -43,6 +43,7 @@ function mapDoc(r: Record<string, unknown>): TrainingDoc {
     pdfUrl: (r.pdf_url as string) || null,
     assignTo: (r.assign_to as string) || "all",
     requireSignature: r.require_signature !== false,
+    libraryItemId: (r.library_item_id as number) ?? null,
     createdAt: (r.created_at as string) || "",
   };
 }
@@ -99,6 +100,7 @@ export interface TrainingDocInput {
   pdfUrl?: string | null;
   assignTo?: string;
   requireSignature?: boolean;
+  libraryItemId?: number | null;
 }
 
 export async function createTrainingDoc(employerId: string, v: TrainingDocInput): Promise<TrainingDoc | null> {
@@ -118,6 +120,7 @@ export async function createTrainingDoc(employerId: string, v: TrainingDocInput)
         pdf_url: (v.pdfUrl || "").trim() || null,
         assign_to: (v.assignTo || "all").trim().slice(0, 200) || "all",
         require_signature: v.requireSignature !== false,
+        library_item_id: v.libraryItemId ?? null,
       })
       .select(DOC_COLS)
       .single();

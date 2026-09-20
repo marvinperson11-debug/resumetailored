@@ -12,6 +12,8 @@ import {
   assignees,
 } from "@/lib/training-store";
 import { getDocument, sanitizeDocumentHtml } from "@/lib/documents-store";
+import { getLibraryItem } from "@/lib/training-library";
+import { escapeHtml } from "@/lib/email";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { isDocKind, complianceState, type Employee, type Acknowledgment } from "@/lib/employee-hub";
 import {
@@ -69,6 +71,7 @@ export async function POST(req: Request) {
     docKind?: string;
     bodyHtml?: string;
     sourceDocumentId?: number;
+    libraryItemId?: number;
     pdfUrl?: string;
     assignTo?: string;
     requireSignature?: boolean;
@@ -77,19 +80,32 @@ export async function POST(req: Request) {
   const title = (b.title || "").trim();
   if (!title) return NextResponse.json({ error: "A title is required." }, { status: 400 });
 
-  // Resolve the body: an authored document ("Use in training") wins; otherwise
-  // inline HTML; otherwise a PDF upload URL. Store a self-contained snapshot so
-  // later edits to the source document don't silently change assigned training.
+  // Resolve the body from one of four sources, in priority order: the built-in
+  // Library ("Pick from Library"); an authored document ("Use in training"); an
+  // inline HTML paste; or a PDF upload URL. In every case a self-contained
+  // snapshot is stored so later edits to the source don't change assigned
+  // training. A Library video has no body of its own, so we store an attestation
+  // block (real, signable content) and keep library_item_id for the watch embed.
   let bodyHtml = (b.bodyHtml || "").trim();
   let sourceDocumentId: number | null = null;
-  if (b.sourceDocumentId && Number.isFinite(b.sourceDocumentId)) {
+  let libraryItemId: number | null = null;
+  if (b.libraryItemId && Number.isFinite(b.libraryItemId)) {
+    const item = await getLibraryItem(Number(b.libraryItemId));
+    if (!item) return NextResponse.json({ error: "Library item not found." }, { status: 404 });
+    libraryItemId = item.id;
+    if (item.kind === "video") {
+      bodyHtml = `<p>Watch the training video: <strong>${escapeHtml(item.title)}</strong> (${escapeHtml(item.provider)}).</p><p>By signing you confirm you have watched this video in full. Source: <a href="${escapeHtml(item.sourceUrl)}">${escapeHtml(item.sourceUrl)}</a></p>`;
+    } else {
+      bodyHtml = item.bodyHtml || `<p>${escapeHtml(item.title)} — source: <a href="${escapeHtml(item.sourceUrl)}">${escapeHtml(item.sourceUrl)}</a></p>`;
+    }
+  } else if (b.sourceDocumentId && Number.isFinite(b.sourceDocumentId)) {
     const src = await getDocument(ctx.employerId, Number(b.sourceDocumentId));
     if (!src) return NextResponse.json({ error: "Source document not found." }, { status: 404 });
     bodyHtml = src.bodyHtml;
     sourceDocumentId = src.id;
   }
   const pdfUrl = (b.pdfUrl || "").trim();
-  if (!bodyHtml && !pdfUrl) return NextResponse.json({ error: "Add content: author a document or attach a PDF." }, { status: 400 });
+  if (!bodyHtml && !pdfUrl) return NextResponse.json({ error: "Add content: pick from the Library, author a document, or attach a PDF." }, { status: 400 });
 
   const requireSignature = b.requireSignature !== false;
   const dueAt = (b.dueAt || "").trim() ? new Date(b.dueAt as string).toISOString() : null;
@@ -102,6 +118,7 @@ export async function POST(req: Request) {
     pdfUrl: pdfUrl || null,
     assignTo: (b.assignTo || "all").trim() || "all",
     requireSignature,
+    libraryItemId,
   });
   if (!doc) return NextResponse.json({ error: "Could not create the training item. Is the database configured?" }, { status: 500 });
 

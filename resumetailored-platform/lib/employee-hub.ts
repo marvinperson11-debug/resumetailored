@@ -49,6 +49,24 @@ export interface TrainingDoc {
   pdfUrl: string | null;
   assignTo: string; // "all" or a role name
   requireSignature: boolean;
+  libraryItemId: number | null; // set when created from the built-in Library
+  createdAt: string;
+}
+
+// ── Built-in Training Library (US-government public-domain content) ───────────
+export const LIBRARY_KINDS = ["video", "doc"] as const;
+export type LibraryKind = (typeof LIBRARY_KINDS)[number];
+export const isLibraryKind = (v: unknown): v is LibraryKind => (LIBRARY_KINDS as readonly string[]).includes(String(v));
+
+export interface TrainingLibraryItem {
+  id: number;
+  category: string;
+  title: string;
+  kind: LibraryKind;
+  provider: string; // OSHA / NIOSH / DOL / FEMA / CISA / FDA / USDA / CDC
+  embedUrl: string | null; // official YouTube embed (videos)
+  bodyHtml: string | null; // rendered content (docs)
+  sourceUrl: string; // attribution link to the official source
   createdAt: string;
 }
 

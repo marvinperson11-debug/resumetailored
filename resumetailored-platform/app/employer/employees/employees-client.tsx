@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { UserCheck, GraduationCap, Plus, Send, Trash2, FileText, ShieldCheck } from "lucide-react";
+import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck } from "lucide-react";
 import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
@@ -15,12 +15,18 @@ import {
   type Acknowledgment,
   type DocKind,
   type AckCell,
+  type TrainingLibraryItem,
 } from "@/lib/employee-hub";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer } from "../components/ui";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
 
-type Tab = "directory" | "training";
+type Tab = "directory" | "training" | "library";
+const TAB_META: Record<Tab, { label: string; icon: typeof UserCheck }> = {
+  directory: { label: "Directory", icon: UserCheck },
+  training: { label: "Training", icon: GraduationCap },
+  library: { label: "Library", icon: BookOpen },
+};
 
 interface EmployerDoc {
   id: number;
@@ -34,6 +40,17 @@ interface TrainingRollup {
 
 export function EmployeesClient({ canManage }: { canManage: boolean }) {
   const [tab, setTab] = useState<Tab>("directory");
+  // "Use in training" from the Library switches to the Training tab and opens
+  // the composer prefilled; the nonce lets the same item be re-picked.
+  const [preset, setPreset] = useState<TrainingLibraryItem | null>(null);
+  const [presetNonce, setPresetNonce] = useState(0);
+
+  function useInTraining(item: TrainingLibraryItem) {
+    setPreset(item);
+    setPresetNonce((n) => n + 1);
+    setTab("training");
+  }
+
   return (
     <div>
       <PageHeader
@@ -41,20 +58,25 @@ export function EmployeesClient({ canManage }: { canManage: boolean }) {
         subtitle="Your workforce, training & compliance — no time clock, no payroll."
       />
       <div className="mb-6 inline-flex rounded-lg border border-border-gold bg-white/[0.03] p-1">
-        {(["directory", "training"] as Tab[]).map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
-              tab === t ? "bg-violet text-white" : "text-muted-cream hover:text-cream"
-            }`}
-          >
-            {t === "directory" ? <UserCheck className="h-4 w-4" /> : <GraduationCap className="h-4 w-4" />}
-            {t === "directory" ? "Directory" : "Training"}
-          </button>
-        ))}
+        {(Object.keys(TAB_META) as Tab[]).map((t) => {
+          const Icon = TAB_META[t].icon;
+          return (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
+                tab === t ? "bg-violet text-white" : "text-muted-cream hover:text-cream"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {TAB_META[t].label}
+            </button>
+          );
+        })}
       </div>
-      {tab === "directory" ? <Directory canManage={canManage} /> : <Training canManage={canManage} />}
+      {tab === "directory" && <Directory canManage={canManage} />}
+      {tab === "training" && <Training canManage={canManage} preset={preset} presetNonce={presetNonce} />}
+      {tab === "library" && <Library canManage={canManage} onUseInTraining={useInTraining} />}
     </div>
   );
 }
@@ -326,10 +348,19 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 /* ─────────────────────────── Training (Part B) ──────────────────────────── */
-function Training({ canManage }: { canManage: boolean }) {
+function Training({
+  canManage,
+  preset,
+  presetNonce,
+}: {
+  canManage: boolean;
+  preset?: TrainingLibraryItem | null;
+  presetNonce?: number;
+}) {
   const [rollup, setRollup] = useState<TrainingRollup[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [presetItem, setPresetItem] = useState<TrainingLibraryItem | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
@@ -341,6 +372,13 @@ function Training({ canManage }: { canManage: boolean }) {
   useEffect(() => {
     load();
   }, [load]);
+  // Open the composer prefilled when a Library item is sent over ("Use in training").
+  useEffect(() => {
+    if (presetNonce && preset) {
+      setPresetItem(preset);
+      setCreating(true);
+    }
+  }, [presetNonce, preset]);
 
   return (
     <div>
@@ -389,15 +427,25 @@ function Training({ canManage }: { canManage: boolean }) {
           ))}
         </div>
       )}
-      {creating && <NewTraining onClose={() => setCreating(false)} onSaved={load} />}
+      {creating && (
+        <NewTraining
+          preset={presetItem}
+          onClose={() => {
+            setCreating(false);
+            setPresetItem(null);
+          }}
+          onSaved={load}
+        />
+      )}
       {openId !== null && <ComplianceDrawer docId={openId} canManage={canManage} onClose={() => setOpenId(null)} onChanged={load} />}
     </div>
   );
 }
 
-function NewTraining({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [title, setTitle] = useState("");
-  const [docKind, setDocKind] = useState<DocKind>("policy");
+function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryItem | null; onClose: () => void; onSaved: () => void }) {
+  const [title, setTitle] = useState(preset?.title || "");
+  const [docKind, setDocKind] = useState<DocKind>(preset ? "training" : "policy");
+  const [libraryItem, setLibraryItem] = useState<TrainingLibraryItem | null>(preset ?? null);
   const [docs, setDocs] = useState<EmployerDoc[]>([]);
   const [roles, setRoles] = useState<string[]>([]);
   const [sourceDocumentId, setSourceDocumentId] = useState<string>("");
@@ -420,8 +468,8 @@ function NewTraining({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
       setErr("A title is required.");
       return;
     }
-    if (!sourceDocumentId && !bodyHtml.trim() && !pdfUrl.trim()) {
-      setErr("Add content: pick an authored document, paste content, or add a PDF URL.");
+    if (!libraryItem && !sourceDocumentId && !bodyHtml.trim() && !pdfUrl.trim()) {
+      setErr("Add content: pick from the Library, an authored document, paste content, or add a PDF URL.");
       return;
     }
     setSaving(true);
@@ -432,9 +480,10 @@ function NewTraining({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
       body: JSON.stringify({
         title,
         docKind,
-        sourceDocumentId: sourceDocumentId ? Number(sourceDocumentId) : undefined,
-        bodyHtml: sourceDocumentId ? undefined : bodyHtml,
-        pdfUrl,
+        libraryItemId: libraryItem ? libraryItem.id : undefined,
+        sourceDocumentId: !libraryItem && sourceDocumentId ? Number(sourceDocumentId) : undefined,
+        bodyHtml: libraryItem || sourceDocumentId ? undefined : bodyHtml,
+        pdfUrl: libraryItem ? undefined : pdfUrl,
         assignTo,
         dueAt,
         requireSignature,
@@ -473,25 +522,47 @@ function NewTraining({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
           </Field>
         </div>
 
-        <Field label="Content source" hint="Author a document in the Documents creator and pick it here, or paste content / link a PDF.">
-          <Picker value={sourceDocumentId} onChange={(e) => setSourceDocumentId(e.target.value)}>
-            <option value="">— Paste content or link a PDF below —</option>
-            {docs.map((d) => (
-              <option key={d.id} value={String(d.id)}>
-                Use document: {d.title}
-              </option>
-            ))}
-          </Picker>
-        </Field>
-
-        {!sourceDocumentId && (
+        {libraryItem ? (
+          <div className="rounded-lg border border-violet/40 bg-violet/10 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-sm text-cream">
+                {libraryItem.kind === "video" ? <PlayCircle className="h-4 w-4 text-violet" /> : <FileText className="h-4 w-4 text-violet" />}
+                <span>
+                  From Library: <strong>{libraryItem.title}</strong>
+                </span>
+                <Badge tone="sky">{libraryItem.provider}</Badge>
+              </div>
+              <button onClick={() => setLibraryItem(null)} className="text-xs text-white/60 hover:text-cream">
+                Change
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-white/45">
+              {libraryItem.kind === "video" ? "Employees watch the embedded video, then complete the signature/quiz step." : "The document content is shown to employees to review."}
+            </p>
+          </div>
+        ) : (
           <>
-            <Field label="Content (HTML or plain text)">
-              <Area rows={5} value={bodyHtml} onChange={(e) => setBodyHtml(e.target.value)} placeholder="Paste the SOP / policy text, or leave blank and link a PDF…" />
+            <Field label="Content source" hint="Pick from the built-in Library, author a document in the Documents creator, or paste content / link a PDF.">
+              <Picker value={sourceDocumentId} onChange={(e) => setSourceDocumentId(e.target.value)}>
+                <option value="">— Paste content or link a PDF below —</option>
+                {docs.map((d) => (
+                  <option key={d.id} value={String(d.id)}>
+                    Use document: {d.title}
+                  </option>
+                ))}
+              </Picker>
             </Field>
-            <Field label="…or PDF URL (upload fallback)">
-              <Input value={pdfUrl} onChange={(e) => setPdfUrl(e.target.value)} placeholder="https://…/handbook.pdf" />
-            </Field>
+
+            {!sourceDocumentId && (
+              <>
+                <Field label="Content (HTML or plain text)">
+                  <Area rows={5} value={bodyHtml} onChange={(e) => setBodyHtml(e.target.value)} placeholder="Paste the SOP / policy text, or leave blank and link a PDF…" />
+                </Field>
+                <Field label="…or PDF URL (upload fallback)">
+                  <Input value={pdfUrl} onChange={(e) => setPdfUrl(e.target.value)} placeholder="https://…/handbook.pdf" />
+                </Field>
+              </>
+            )}
           </>
         )}
 
@@ -546,6 +617,7 @@ function ComplianceDrawer({
 }) {
   const [doc, setDoc] = useState<TrainingDoc | null>(null);
   const [grid, setGrid] = useState<AckCell[]>([]);
+  const [libraryItem, setLibraryItem] = useState<TrainingLibraryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
@@ -555,6 +627,7 @@ function ComplianceDrawer({
     const res = await fetch(`/api/employer/training/${docId}`).then((r) => r.json()).catch(() => ({}));
     setDoc(res.doc || null);
     setGrid(res.grid || []);
+    setLibraryItem(res.libraryItem || null);
     setLoading(false);
   }, [docId]);
   useEffect(() => {
@@ -606,7 +679,25 @@ function ComplianceDrawer({
                 <FileText className="h-3.5 w-3.5" /> PDF
               </a>
             )}
+            {libraryItem && <Badge tone="gold">Library · {libraryItem.provider}</Badge>}
           </div>
+
+          {libraryItem?.kind === "video" && libraryItem.embedUrl && (
+            <div>
+              <div className="aspect-video overflow-hidden rounded-xl border border-border-gold bg-black">
+                <iframe
+                  src={libraryItem.embedUrl}
+                  title={libraryItem.title}
+                  className="h-full w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+              <a href={libraryItem.sourceUrl} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs text-white/45 hover:text-cream">
+                <ExternalLink className="h-3 w-3" /> Source: {libraryItem.provider} (official channel)
+              </a>
+            </div>
+          )}
 
           {canManage && (
             <div className="flex items-center gap-2">
@@ -672,5 +763,105 @@ function ComplianceDrawer({
         </div>
       )}
     </Drawer>
+  );
+}
+
+/* ─────────────────────── Built-in Training Library ──────────────────────── */
+function Library({ canManage, onUseInTraining }: { canManage: boolean; onUseInTraining: (item: TrainingLibraryItem) => void }) {
+  const [items, setItems] = useState<TrainingLibraryItem[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [category, setCategory] = useState("all");
+  const [q, setQ] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (category !== "all") params.set("category", category);
+    if (q.trim()) params.set("q", q.trim());
+    const res = await fetch(`/api/employer/training-library?${params}`).then((r) => r.json()).catch(() => ({}));
+    setItems(res.items || []);
+    if (res.categories) setCategories(res.categories);
+    setLoading(false);
+  }, [category, q]);
+  useEffect(() => {
+    const t = setTimeout(load, q ? 250 : 0); // debounce the search box
+    return () => clearTimeout(t);
+  }, [load, q]);
+
+  return (
+    <div>
+      <p className="mb-4 text-sm text-white/55">
+        Free, ready-to-assign workplace training from official US-government sources (OSHA, NIOSH, CDC, DOL, FEMA, CISA, FDA). Videos are embedded from each agency&rsquo;s official channel; every item links its source.
+      </p>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setCategory("all")}
+          className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${category === "all" ? "bg-violet text-white" : "border border-border-gold text-muted-cream hover:bg-white/5"}`}
+        >
+          All
+        </button>
+        {categories.map((c) => (
+          <button
+            key={c}
+            onClick={() => setCategory(c)}
+            className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${category === c ? "bg-violet text-white" : "border border-border-gold text-muted-cream hover:bg-white/5"}`}
+          >
+            {c}
+          </button>
+        ))}
+        <div className="ml-auto w-full sm:w-56">
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search library…" />
+        </div>
+      </div>
+
+      {loading ? (
+        <Panel className="text-sm text-white/55">Loading…</Panel>
+      ) : items.length === 0 ? (
+        <EmptyState icon={BookOpen} title="Nothing here yet" body="No library items match — try another category or clear the search. (The library is seeded by migration 0030.)" />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {items.map((item) => (
+            <Panel key={item.id} className="flex flex-col gap-3">
+              <div className="flex items-center gap-2">
+                {item.kind === "video" ? <PlayCircle className="h-4 w-4 text-violet" /> : <FileText className="h-4 w-4 text-violet" />}
+                <Badge tone="sky">{item.provider}</Badge>
+                <span className="text-xs text-white/45">{item.category}</span>
+              </div>
+              <h3 className="font-medium text-cream">{item.title}</h3>
+
+              {item.kind === "video" && item.embedUrl ? (
+                <div className="aspect-video overflow-hidden rounded-lg border border-border-gold bg-black">
+                  <iframe
+                    src={item.embedUrl}
+                    title={item.title}
+                    className="h-full w-full"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              ) : (
+                <div
+                  className="prose-training max-h-56 overflow-y-auto rounded-lg border border-border-gold bg-white/[0.03] p-3 text-sm text-white/75 [&_h2]:mb-1 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-cream [&_li]:ml-4 [&_li]:list-disc [&_p]:mb-2 [&_ul]:mb-2"
+                  dangerouslySetInnerHTML={{ __html: item.bodyHtml || "" }}
+                />
+              )}
+
+              <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+                <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-white/45 hover:text-cream">
+                  <ExternalLink className="h-3 w-3" /> Source
+                </a>
+                {canManage && (
+                  <Btn onClick={() => onUseInTraining(item)}>
+                    <Plus className="h-4 w-4" /> Use in training
+                  </Btn>
+                )}
+              </div>
+            </Panel>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
