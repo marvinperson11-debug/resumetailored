@@ -341,6 +341,15 @@ export interface DocusignEnvelope {
   copiesSent: { name: string; email: string; sentAt: string }[];
 }
 
+/** A composed in-app document (Document Creator). */
+export interface EmployerDocument {
+  id: number;
+  title: string;
+  bodyHtml: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** The DocuSign account an employer has connected (for the status page). */
 export interface DocusignConnection {
   connected: boolean;

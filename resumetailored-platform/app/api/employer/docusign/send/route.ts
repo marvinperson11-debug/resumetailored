@@ -12,6 +12,7 @@ import {
   getEnvelopeByEnvelopeId,
 } from "@/lib/docusign-store";
 import { notifySignerOfDocRequest } from "@/lib/esign-delivery";
+import { getDocument, sanitizeDocumentHtml } from "@/lib/documents-store";
 import {
   isDocusignConfigured,
   buildEnvelope,
@@ -19,6 +20,8 @@ import {
   renderTemplateSubject,
   offerToMergeValues,
   renderWriteupHtml,
+  renderSignatureBlock,
+  wrapDocumentHtml,
   createEnvelope,
   normalizeEnvelopeStatus,
 } from "@/lib/docusign";
@@ -55,6 +58,7 @@ export async function POST(req: Request) {
     docType?: string;
     documentName?: string;
     documentPath?: string;
+    documentId?: number;
     applicantId?: number;
     shortlistMemberId?: number;
     candidateName?: string;
@@ -110,7 +114,16 @@ export async function POST(req: Request) {
   let documentName = DOC_TYPE_LABELS[docType];
   let subject = "";
 
-  if (docType === "custom") {
+  if (docType === "custom" && b.documentId) {
+    // A composed document from the Document Creator: render its HTML to a
+    // signable document via the existing HTML→PDF envelope path (append the
+    // signature block so DocuSign has a /sig1/ anchor). No PDF upload needed.
+    const doc = await getDocument(ctx.employerId, Number(b.documentId));
+    if (!doc) return NextResponse.json({ error: "Document not found." }, { status: 404 });
+    documentName = (b.documentName || "").trim() || doc.title || "Document";
+    documentHtml = wrapDocumentHtml(`${sanitizeDocumentHtml(doc.bodyHtml)}${renderSignatureBlock(signerName || "Recipient")}`);
+    subject = (b.subject || "").trim() || `${documentName} to sign${companyName ? ` from ${companyName}` : ""}`;
+  } else if (docType === "custom") {
     const name = (b.documentName || "").trim();
     if (!b.documentPath) return NextResponse.json({ error: "Upload a PDF to send." }, { status: 400 });
     if (!name) return NextResponse.json({ error: "Give the document a name." }, { status: 400 });

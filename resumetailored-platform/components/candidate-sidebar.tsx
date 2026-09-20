@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { useTools, type ToolId } from "@/app/candidate/components/tools-context";
 import { SignOutButton } from "@/components/sign-out-button";
 import { AdminViewToggle } from "@/components/admin-view-toggle";
+import { PlanPreviewSwitcher } from "@/components/plan-preview-switcher";
 
 interface NavItem {
   label: string;
@@ -162,6 +163,7 @@ export function CandidateSidebar({ role = { plan: "free" }, isAdmin }: { role?: 
       {isAdmin && (
         <div className="shrink-0 border-t border-border-gold px-3 py-3">
           <AdminViewToggle />
+          <PlanPreviewSwitcher />
         </div>
       )}
 

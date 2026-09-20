@@ -38,7 +38,7 @@ export default async function EmployerLayout({ children }: { children: ReactNode
   const planLabel = access.tier === "scale" ? "Scale" : access.tier === "corporate" ? "Corporate" : "Portal";
 
   return (
-    <DashboardShell sidebar={<EmployerSidebar company={company} isAdmin={access.isAdmin} planLabel={planLabel} />} title={company}>
+    <DashboardShell sidebar={<EmployerSidebar company={company} isAdmin={access.realAdmin || access.isAdmin} planLabel={planLabel} />} title={company}>
       {children}
       {needsOnboarding && <OnboardingModal />}
     </DashboardShell>
