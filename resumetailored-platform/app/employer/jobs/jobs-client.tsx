@@ -204,7 +204,9 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
   const [requirements, setRequirements] = useState<string[]>(job?.requirements?.length ? job.requirements : [""]);
   const [niceToHaves, setNiceToHaves] = useState<string[]>(job?.niceToHaves?.length ? job.niceToHaves : [""]);
   const [deadline, setDeadline] = useState(job?.deadline || "");
-  const [publicListed, setPublicListed] = useState(!!job?.publicListed);
+  // Public by default: a new job is listed unless the employer opts out. Editing
+  // an existing job keeps whatever it was saved with (no mass-flip).
+  const [publicListed, setPublicListed] = useState(job ? !!job.publicListed : true);
   const [saving, setSaving] = useState<null | JobStatus>(null);
   const [assisting, setAssisting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -339,10 +341,10 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
         </Field>
 
         <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-gold bg-white/[0.03] p-3">
-          <input type="checkbox" checked={publicListed} onChange={(e) => setPublicListed(e.target.checked)} className="mt-0.5 h-4 w-4 accent-violet" />
+          <input type="checkbox" checked={!publicListed} onChange={(e) => setPublicListed(!e.target.checked)} className="mt-0.5 h-4 w-4 accent-violet" />
           <span className="text-sm text-cream">
-            List on the public job board
-            <span className="mt-0.5 block text-xs text-white/50">When on, this role appears on the public /jobs page (only while its status is Active) and candidates can apply directly.</span>
+            Hide this job from the public careers page and /jobs
+            <span className="mt-0.5 block text-xs text-white/50">Active jobs are public by default — they appear on your careers page and the /jobs board where candidates can apply directly. Check this to keep this role off both, even while Active. Draft and closed jobs are never public.</span>
           </span>
         </label>
 
