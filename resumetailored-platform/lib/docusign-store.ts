@@ -460,7 +460,17 @@ export async function updateStatusOwned(employerId: string, envelopeId: string, 
     const patch: Record<string, unknown> = { status };
     if (status === "completed") patch.completed_at = new Date().toISOString();
     await c.from("docusign_envelopes").update(patch).eq("employer_id", employerId).eq("envelope_id", envelopeId);
-    if (status === "completed") await markHiredIfCompletedOffer(c, envelopeId);
+    if (status === "completed") {
+      await markHiredIfCompletedOffer(c, envelopeId);
+      // Poll-path fallback for training acknowledgments (the webhook does this
+      // too; dynamic import avoids a load-time cycle). Best-effort.
+      try {
+        const { markAckSignedByEnvelope } = await import("./training-store");
+        await markAckSignedByEnvelope(envelopeId);
+      } catch {
+        /* best-effort */
+      }
+    }
     return true;
   } catch {
     return false;

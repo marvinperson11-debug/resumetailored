@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, Plus, Sparkles, Check, X, Mail, MessageSquare, CalendarClock, Star, Ban, FileSignature } from "lucide-react";
+import { Users, UserCheck, Plus, Sparkles, Check, X, Mail, MessageSquare, CalendarClock, Star, Ban, FileSignature } from "lucide-react";
 import {
   APPLICANT_STATUSES,
   type Applicant,
@@ -178,6 +178,19 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
   const [msgTemplate, setMsgTemplate] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showOffer, setShowOffer] = useState(false);
+  const [empState, setEmpState] = useState<"idle" | "adding" | "added" | "error">("idle");
+
+  // Lifecycle hook: turn a hired candidate into an employee, prefilled from the
+  // applicant record (name/email/role). One-click; safe to run once.
+  async function addAsEmployee() {
+    setEmpState("adding");
+    const res = await fetch("/api/employer/employees", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: applicant.name, email: applicant.email, role: applicant.jobTitle || "", status: "active" }),
+    });
+    setEmpState(res.ok ? "added" : "error");
+  }
 
   async function score() {
     setScoring(true);
@@ -341,6 +354,23 @@ function CandidateDrawer({ applicant, onClose, onChanged }: { applicant: Applica
               ))}
             </Picker>
           </Field>
+          {status === "hired" && (
+            <div className="rounded-lg border border-teal/40 bg-teal/10 p-3">
+              {empState === "added" ? (
+                <p className="flex items-center gap-2 text-sm text-teal">
+                  <UserCheck className="h-4 w-4" /> Added to Employees. Manage training on the Employees page.
+                </p>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-cream">🎉 Hired! Add {applicant.name.split(" ")[0]} to your workforce.</p>
+                  <Btn onClick={addAsEmployee} loading={empState === "adding"}>
+                    <UserCheck className="h-4 w-4" /> Add as employee
+                  </Btn>
+                </div>
+              )}
+              {empState === "error" && <p className="mt-2 text-xs text-red-300">Could not add — they may already be an employee.</p>}
+            </div>
+          )}
           <Field label="Private notes">
             <Area rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes visible only to your team…" />
           </Field>
