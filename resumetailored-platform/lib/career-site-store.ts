@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { CareerSite, Testimonial, PublicCareerJob, RemoteType, EmploymentType } from "./employer-ai";
 import { isValidSlug } from "./subdomain";
-import { isSlugTaken } from "./tenant-resolve";
+import { isSlugTaken, recordSlugAlias } from "./tenant-resolve";
 
 /**
  * Career Site Builder persistence — one `career_sites` row per employer, served
@@ -194,7 +194,12 @@ export async function updateCareerSite(employerId: string, patch: CareerSiteInpu
       console.error("[updateCareerSite]", error);
       return null;
     }
-    return mapSite(data);
+    const updated = mapSite(data);
+    // Slug changed → keep the old address alive with a permanent 301 alias.
+    if (patch.slug && existing.slug && patch.slug !== existing.slug) {
+      await recordSlugAlias(existing.slug, updated.slug, "career", existing.id);
+    }
+    return updated;
   } catch (e) {
     console.error("[updateCareerSite]", e);
     return null;

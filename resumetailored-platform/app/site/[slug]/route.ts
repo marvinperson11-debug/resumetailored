@@ -1,4 +1,5 @@
 import { getSiteBySlug, incrementSiteViews } from "@/lib/site-store";
+import { resolveAlias } from "@/lib/tenant-resolve";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,6 +11,12 @@ export const dynamic = "force-dynamic";
 export async function GET(_req: Request, { params }: { params: { slug: string } }) {
   const site = await getSiteBySlug(params.slug);
   if (!site) {
+    // Backstop for the middleware 301: if this is a renamed (old) slug reached
+    // directly, permanently redirect to the current /site/<slug>.
+    const alias = await resolveAlias((params.slug || "").toLowerCase());
+    if (alias && alias.slug !== params.slug) {
+      return new Response(null, { status: 301, headers: { Location: `/site/${alias.slug}` } });
+    }
     return new Response(
       "<!doctype html><html lang=en><meta charset=utf-8><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>Site not found</title>" +
         "<body style=\"font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;min-height:100vh;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0b0f19;color:#e8e8ea;text-align:center;padding:32px\">" +

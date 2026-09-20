@@ -1,6 +1,23 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { careerSubdomainFromHost, APP_ORIGIN } from "@/lib/subdomain";
+import { careerSubdomainFromHost, APP_ORIGIN, ROOT_DOMAIN } from "@/lib/subdomain";
+
+/** Ask the internal resolver what a tenant label maps to. Returns the current
+ *  tenant kind, and — when `label` is a renamed (old) slug — the current slug it
+ *  now points to plus `aliased: true`. Fails soft to an empty result. */
+async function resolveLabel(
+  label: string
+): Promise<{ type?: string; slug?: string; aliased?: boolean }> {
+  try {
+    const r = await fetch(`${APP_ORIGIN}/api/tenant-resolve?label=${encodeURIComponent(label)}`, {
+      signal: AbortSignal.timeout(2500),
+    });
+    if (r.ok) return (await r.json()) as { type?: string; slug?: string; aliased?: boolean };
+  } catch {
+    /* fall through to empty */
+  }
+  return {};
+}
 
 // Production auth: everything under these prefixes requires a signed-in user.
 const isProtectedRoute = createRouteMatcher([
@@ -30,21 +47,29 @@ export default clerkMiddleware(async (auth, req) => {
     // lives at /api/tenant-resolve, which is never a root path and so is never
     // rewritten. On any failure or an unknown slug, fall back to /careers/{slug}
     // (which renders the friendly careers "not found" page).
-    let type: "career" | "site" = "career";
-    try {
-      const r = await fetch(`${APP_ORIGIN}/api/tenant-resolve?label=${encodeURIComponent(sub)}`, {
-        signal: AbortSignal.timeout(2500),
-      });
-      if (r.ok) {
-        const d = (await r.json()) as { type?: string };
-        if (d.type === "site") type = "site";
-      }
-    } catch {
-      /* fall back to careers */
+    const d = await resolveLabel(sub);
+    // A renamed (old) slug 301-redirects to its current subdomain, path "/".
+    if (d.aliased && d.slug && d.slug !== sub) {
+      return NextResponse.redirect(`https://${d.slug}.${ROOT_DOMAIN}/`, 301);
     }
+    const type: "career" | "site" = d.type === "site" ? "site" : "career";
     const url = req.nextUrl.clone();
     url.pathname = type === "site" ? `/site/${sub}` : `/careers/${sub}`;
     return NextResponse.rewrite(url);
+  }
+
+  // Direct path hits (canonical app origin or a shared link): an old
+  // /careers/{oldslug} or /site/{oldslug} 301-redirects to the current path. A
+  // current slug isn't an alias, so this leaves live pages untouched.
+  const pathAlias = req.nextUrl.pathname.match(/^\/(careers|site)\/([^/]+)\/?$/);
+  if (pathAlias) {
+    const label = decodeURIComponent(pathAlias[2]).toLowerCase();
+    const d = await resolveLabel(label);
+    if (d.aliased && d.slug && d.slug !== label) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/${d.type === "site" ? "site" : "careers"}/${d.slug}`;
+      return NextResponse.redirect(url, 301);
+    }
   }
 
   if (isProtectedRoute(req)) {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { getPublicCareerSite } from "@/lib/career-site-store";
+import { resolveAlias } from "@/lib/tenant-resolve";
 import { careerSubdomainUrl } from "@/lib/subdomain";
 import { CareerSiteView } from "./career-site-view";
 
@@ -25,7 +26,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
 export default async function CareersPage({ params }: { params: { slug: string } }) {
   const data = await getPublicCareerSite(params.slug);
-  if (!data) notFound();
+  if (!data) {
+    // Backstop for the middleware 301: if this is a renamed (old) slug reached
+    // directly, permanently redirect to the current /careers/<slug>.
+    const alias = await resolveAlias((params.slug || "").toLowerCase());
+    if (alias && alias.slug !== params.slug) permanentRedirect(`/careers/${alias.slug}`);
+    notFound();
+  }
   return (
     <div style={{ minHeight: "100vh", background: "#ffffff" }}>
       <CareerSiteView site={data.site} jobs={data.jobs} industry={data.industry} bio={data.bio} />

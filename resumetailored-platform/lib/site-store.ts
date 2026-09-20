@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { isSlugTaken } from "./tenant-resolve";
+import { isSlugTaken, recordSlugAlias } from "./tenant-resolve";
 
 /**
  * Published personal sites (personal_sites). One published site per user
@@ -59,8 +59,10 @@ export async function publishSite(
   const c = db();
   if (!c || !userId) return null;
   try {
-    const existing = await c.from("personal_sites").select("slug").eq("user_id", userId).maybeSingle();
-    let slug = existing.data?.slug || slugify(name);
+    const existing = await c.from("personal_sites").select("slug, id").eq("user_id", userId).maybeSingle();
+    const prevSlug = (existing.data?.slug as string | undefined) || "";
+    const prevId = existing.data?.id as number | undefined;
+    let slug = prevSlug || slugify(name);
 
     // A custom address is honored only when it's valid AND free across the
     // shared namespace (career sites + personal sites); otherwise reject clearly
@@ -77,6 +79,12 @@ export async function publishSite(
       { onConflict: "user_id" }
     );
     if (error) return null;
+    // Slug changed → keep the old address alive with a permanent 301 alias. The
+    // identity id survives the rename (only the slug moves), so it's a stable
+    // redirect target.
+    if (prevSlug && prevId != null && slug !== prevSlug) {
+      await recordSlugAlias(prevSlug, slug, "site", prevId);
+    }
     return { slug };
   } catch {
     return null;
