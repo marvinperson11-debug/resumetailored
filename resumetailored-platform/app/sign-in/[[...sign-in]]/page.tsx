@@ -50,6 +50,15 @@ function SignInInner() {
           fallbackRedirectUrl={dest}
           signUpForceRedirectUrl={dest}
         />
+        {/* Invited workforce employees sign in the same way, then land in their
+            scoped portal. This link points them at it (and their invite email
+            drops them on /employee/accept directly). */}
+        <a
+          href="/employee"
+          className="mt-6 text-sm text-white/50 underline-offset-4 transition-colors hover:text-white/80 hover:underline"
+        >
+          Employee of a company? Go to the Employee portal →
+        </a>
       </ClerkLoaded>
     </main>
   );

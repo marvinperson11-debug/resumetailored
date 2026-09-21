@@ -1548,6 +1548,14 @@ app.get('/employer', (req, res) => {
   }
   return _sendVersionedHtml(res, _employerHtmlPath);
 });
+// The workforce Employee Portal lives entirely in the app (app.resumetailored.com,
+// Clerk auth). Marketing links and invited employees may land on
+// resumetailored.com/employee — 301 them across to the app so the emailed invite
+// link, the homepage "Employee portal" card, and any bookmark all resolve to the
+// real portal. Registered before the HTML resolver + express.static so it wins.
+app.get(['/employee', '/employee/*'], (req, res) =>
+  res.redirect(301, 'https://app.resumetailored.com' + req.originalUrl)
+);
 app.get(['/linkedin-optimizer', '/decoder-key', '/interview-coach', '/career-hub'], (req, res) => _sendVersionedHtml(res, toolLandingHtml));
 app.get('/tools/decoder-key', (req, res) => {
   const email = getSessionEmail(req);

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, FileText, MessageSquare, CalendarClock, GraduationCap, BookOpen, type LucideIcon } from "lucide-react";
+import { Home, FileText, MessageSquare, CalendarClock, CalendarDays, Clock, GraduationCap, BookOpen, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@/components/sign-out-button";
 
@@ -16,9 +16,11 @@ export interface EmployeeNavItem {
 /** Single source of truth for the employee-portal nav. */
 export const EMPLOYEE_NAV: EmployeeNavItem[] = [
   { label: "Home", href: "/employee", icon: Home, exact: true },
+  { label: "My schedule", href: "/employee/schedule", icon: CalendarDays },
+  { label: "My hours", href: "/employee/timesheet", icon: Clock },
+  { label: "Time off", href: "/employee/time-off", icon: CalendarClock },
   { label: "My documents", href: "/employee/documents", icon: FileText },
   { label: "Messages", href: "/employee/messages", icon: MessageSquare },
-  { label: "Time off", href: "/employee/time-off", icon: CalendarClock },
   { label: "My training", href: "/employee/training", icon: GraduationCap },
   { label: "Library", href: "/employee/library", icon: BookOpen },
 ];

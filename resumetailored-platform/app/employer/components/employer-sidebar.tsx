@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, UserCheck, MessageSquare, Star, CalendarClock, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, UserCheck, MessageSquare, Star, CalendarClock, CalendarDays, Clock, Plane, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminViewToggle } from "@/components/admin-view-toggle";
 import { PlanPreviewSwitcher } from "@/components/plan-preview-switcher";
@@ -26,6 +26,9 @@ export const EMPLOYER_NAV: EmployerNavItem[] = [
   { label: "E-Signatures", href: "/employer/docusign", icon: FileSignature },
   { label: "Documents", href: "/employer/documents", icon: FolderOpen },
   { label: "Employees", href: "/employer/employees", icon: UserCheck },
+  { label: "Schedule", href: "/employer/schedule", icon: CalendarDays },
+  { label: "Timesheets", href: "/employer/timesheets", icon: Clock },
+  { label: "Time off", href: "/employer/time-off", icon: Plane },
   { label: "Career Site", href: "/employer/career-site", icon: Globe },
   { label: "Team", href: "/employer/team", icon: UserCog },
   { label: "Settings", href: "/employer/settings", icon: Settings },

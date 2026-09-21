@@ -60,7 +60,7 @@ export function EmployeesClient({ canManage }: { canManage: boolean }) {
     <div>
       <PageHeader
         title="Employees"
-        subtitle="Your workforce, training & compliance — no time clock, no payroll."
+        subtitle="Your workforce, training & compliance. Time clock, schedule & time off live in their own tabs — no payroll."
       />
       <div className="mb-6 inline-flex rounded-lg border border-border-gold bg-white/[0.03] p-1">
         {(Object.keys(TAB_META) as Tab[]).map((t) => {
