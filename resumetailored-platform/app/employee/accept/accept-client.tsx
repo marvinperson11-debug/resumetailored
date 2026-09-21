@@ -69,8 +69,12 @@ export function AcceptClient({ token, email, company, accountExists: accountExis
   }
 
   function done() {
-    router.push("/employee");
-    router.refresh();
+    // Hard navigation (not router.push): forces a fresh server round-trip so the
+    // /employee layout renders with the now-staff session, and leaves no chance
+    // for a lingering client-side auth/task SPA state to strand the new hire on a
+    // Clerk "setup" screen. The account is already bound + staff-tagged server-side.
+    if (typeof window !== "undefined") window.location.assign("/employee");
+    else router.push("/employee");
   }
 
   async function onSubmit(e: React.FormEvent) {

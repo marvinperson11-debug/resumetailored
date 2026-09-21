@@ -83,8 +83,18 @@ export async function POST(req: Request) {
   }
 
   // Bind the employee row to the new account and consume the invite (clears
-  // token + code).
-  await linkClerkUser(invite.employerId, invite.id, userId);
+  // token + code). This MUST succeed before we hand back a sign-in ticket — the
+  // employee has to appear linked/accepted on the employer side, and their
+  // portal access resolves via clerk_user_id, so a redirect on an unbound row
+  // would strand them. Retry once, then fail loudly rather than sign them in.
+  let bound = await linkClerkUser(invite.employerId, invite.id, userId);
+  if (!bound) bound = await linkClerkUser(invite.employerId, invite.id, userId);
+  if (!bound) {
+    return NextResponse.json(
+      { error: "Your account was created but could not be linked. Please contact your employer to resend the invite." },
+      { status: 500 }
+    );
+  }
 
   // One-time ticket the page redeems client-side to open the session.
   try {
