@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { FileText, MessageSquare, Megaphone, Pin } from "lucide-react";
+import { FileText, MessageSquare, Megaphone, Pin, CalendarDays, Clock, CalendarClock } from "lucide-react";
 import { employeeContext } from "@/lib/employee-auth";
 import { listActiveAnnouncements } from "@/lib/announcements-store";
+import { TimeClockWidget } from "./time-clock-widget";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +24,9 @@ export default async function EmployeeHomePage() {
           {ctx.employee.role ? `${ctx.employee.role} · ` : ""}Welcome to your employee portal.
         </p>
       </header>
+
+      {/* Time clock */}
+      <TimeClockWidget />
 
       {/* Announcements */}
       <section className="space-y-3">
@@ -51,6 +55,9 @@ export default async function EmployeeHomePage() {
 
       {/* Quick links */}
       <section className="grid gap-4 sm:grid-cols-2">
+        <QuickCard href="/employee/schedule" icon={CalendarDays} title="My schedule" body="Your published shifts, and set the hours you're available." />
+        <QuickCard href="/employee/timesheet" icon={Clock} title="My hours" body="Your weekly hours and their approval status." />
+        <QuickCard href="/employee/time-off" icon={CalendarClock} title="Time off" body="Request vacation, sick or other days off." />
         <QuickCard href="/employee/documents" icon={FileText} title="My documents" body="Offers, agreements and anything sent to you to sign." />
         <QuickCard href="/employee/messages" icon={MessageSquare} title="Messages" body="Chat directly with your employer." />
       </section>
