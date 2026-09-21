@@ -63,7 +63,7 @@ async function sendInviteEmail(to: string, name: string, link: string, code: str
     subject: `${company} invited you to your employee portal`,
     html: `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px">
         <h2 style="color:#0B0F19">Hi ${escapeHtml(first)}, welcome to ${escapeHtml(company)}</h2>
-        <p style="color:#334155;line-height:1.6">You've been invited to your employee portal. Sign in with <strong>this email address</strong>, then enter the invite code below to finish setting up.</p>
+        <p style="color:#334155;line-height:1.6">You've been invited to your employee portal. Open the link below and enter the 6-digit code to finish setting up — you'll choose a password (or sign in if you already have an account).</p>
         <div style="margin:20px 0;padding:16px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;text-align:center">
           <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#64748b">Your invite code</div>
           <div style="font-size:32px;font-weight:700;letter-spacing:8px;color:#0B0F19;margin-top:4px">${escapeHtml(code)}</div>
