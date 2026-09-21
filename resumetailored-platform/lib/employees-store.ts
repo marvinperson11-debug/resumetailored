@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isEmployeeStatus, isInviteStatus, type Employee, type EmployeeStatus, type InviteStatus } from "./employee-hub";
 
@@ -19,7 +20,7 @@ function db(): SupabaseClient | null {
 }
 
 const COLS =
-  "id, name, email, role, start_date, status, clerk_user_id, invite_status, invited_at, linked_at, created_at, updated_at";
+  "id, name, email, role, phone, start_date, status, clerk_user_id, invite_status, invite_code, invited_at, linked_at, created_at, updated_at";
 
 function mapEmployee(r: Record<string, unknown>): Employee {
   return {
@@ -27,10 +28,12 @@ function mapEmployee(r: Record<string, unknown>): Employee {
     name: (r.name as string) || "",
     email: (r.email as string) || "",
     role: (r.role as string) || "",
+    phone: (r.phone as string) || "",
     startDate: (r.start_date as string) || "",
     status: (isEmployeeStatus(r.status) ? r.status : "active") as EmployeeStatus,
     clerkUserId: (r.clerk_user_id as string) || "",
     inviteStatus: (isInviteStatus(r.invite_status) ? r.invite_status : "none") as InviteStatus,
+    inviteCode: (r.invite_code as string) || "",
     invitedAt: (r.invited_at as string) || null,
     linkedAt: (r.linked_at as string) || null,
     createdAt: (r.created_at as string) || "",
@@ -70,6 +73,7 @@ export interface EmployeeInput {
   name: string;
   email?: string;
   role?: string;
+  phone?: string;
   startDate?: string;
   status?: EmployeeStatus;
 }
@@ -95,6 +99,7 @@ export async function createEmployee(employerId: string, v: EmployeeInput): Prom
         name,
         email: (v.email || "").trim().slice(0, 200) || null,
         role: (v.role || "").trim().slice(0, 200) || null,
+        phone: (v.phone || "").trim().slice(0, 40) || null,
         start_date: normDate(v.startDate),
         status: isEmployeeStatus(v.status) ? v.status : "active",
       })
@@ -118,6 +123,7 @@ export async function updateEmployee(employerId: string, id: number, v: Partial<
   if (v.name !== undefined) row.name = (v.name || "").trim().slice(0, 200);
   if (v.email !== undefined) row.email = (v.email || "").trim().slice(0, 200) || null;
   if (v.role !== undefined) row.role = (v.role || "").trim().slice(0, 200) || null;
+  if (v.phone !== undefined) row.phone = (v.phone || "").trim().slice(0, 40) || null;
   if (v.startDate !== undefined) row.start_date = normDate(v.startDate);
   if (v.status !== undefined && isEmployeeStatus(v.status)) row.status = v.status;
   try {
@@ -148,15 +154,28 @@ export async function listRoles(employerId: string): Promise<string[]> {
 
 // ── Portal invite + Clerk link ────────────────────────────────────────────────
 
-/** Stamp an employee with a fresh invite token and set status → invited.
- *  Returns the updated row (with the token) so the route can build the link. */
-export async function setInviteToken(employerId: string, id: number, token: string): Promise<Employee | null> {
+/** A cryptographically-random 6-digit acceptance code (000000–999999). */
+export function generateInviteCode(): string {
+  // randomInt is uniform over [0, 1_000_000); zero-pad to 6 digits.
+  return String(randomInt(0, 1_000_000)).padStart(6, "0");
+}
+
+/** Stamp an employee with a fresh invite token + 6-digit code and set status →
+ *  invited. Returns the updated row (with the token + code) so the route can
+ *  build the link and show the code. Regenerating just calls this again. */
+export async function setInviteToken(employerId: string, id: number, token: string, code: string): Promise<Employee | null> {
   const c = db();
   if (!c || !employerId || !id) return null;
   try {
     const { data, error } = await c
       .from("employees")
-      .update({ invite_token: token, invite_status: "invited", invited_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({
+        invite_token: token,
+        invite_code: code,
+        invite_status: "invited",
+        invited_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .eq("employer_id", employerId)
       .eq("id", id)
       .select(COLS)
@@ -190,7 +209,7 @@ export async function linkClerkUser(employerId: string, id: number, clerkUserId:
   try {
     const { error } = await c
       .from("employees")
-      .update({ clerk_user_id: clerkUserId, invite_status: "accepted", invite_token: null, linked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({ clerk_user_id: clerkUserId, invite_status: "accepted", invite_token: null, invite_code: null, linked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       .eq("employer_id", employerId)
       .eq("id", id);
     return !error;

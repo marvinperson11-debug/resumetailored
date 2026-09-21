@@ -172,6 +172,7 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
+  const [phone, setPhone] = useState("");
   const [startDate, setStartDate] = useState("");
   const [status, setStatus] = useState<EmployeeStatus>("active");
   const [saving, setSaving] = useState(false);
@@ -187,7 +188,7 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
     const res = await fetch("/api/employer/employees", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, role, startDate, status }),
+      body: JSON.stringify({ name, email, role, phone, startDate, status }),
     });
     setSaving(false);
     if (!res.ok) {
@@ -204,9 +205,14 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
         <Field label="Name">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jordan Lee" />
         </Field>
-        <Field label="Email">
-          <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jordan@company.com" type="email" />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Email">
+            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jordan@company.com" type="email" />
+          </Field>
+          <Field label="Phone" hint="Optional — for SMS later.">
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" type="tel" />
+          </Field>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Role">
             <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Line Cook" list="emp-roles" />
@@ -255,9 +261,11 @@ function EmployeeDrawer({
   onChanged: () => void;
 }) {
   const [status, setStatus] = useState<EmployeeStatus>(employee.status);
+  const [phone, setPhone] = useState(employee.phone);
   const [checklist, setChecklist] = useState<{ ack: Acknowledgment; doc: TrainingDoc }[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteStatus, setInviteStatus] = useState<InviteStatus>(employee.inviteStatus);
+  const [inviteCode, setInviteCode] = useState(employee.inviteCode);
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState("");
 
@@ -281,6 +289,16 @@ function EmployeeDrawer({
     onChanged();
   }
 
+  async function savePhone() {
+    if (phone === employee.phone) return;
+    await fetch(`/api/employer/employees/${employee.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone }),
+    });
+    onChanged();
+  }
+
   async function remove() {
     if (!confirm(`Remove ${employee.name}? Their training records are deleted too.`)) return;
     await fetch(`/api/employer/employees/${employee.id}`, { method: "DELETE" });
@@ -288,17 +306,30 @@ function EmployeeDrawer({
     onClose();
   }
 
-  async function invite() {
+  async function invite(action?: "resend" | "regenerate") {
     setInviting(true);
     setInviteMsg("");
     try {
-      const res = await fetch(`/api/employer/employees/${employee.id}/invite`, { method: "POST" });
-      const d = (await res.json().catch(() => ({}))) as { error?: string; emailed?: boolean; link?: string };
+      const res = await fetch(`/api/employer/employees/${employee.id}/invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(action ? { action } : {}),
+      });
+      const d = (await res.json().catch(() => ({}))) as { error?: string; emailed?: boolean; code?: string };
       if (!res.ok) {
         setInviteMsg(d.error || "Could not send the invite.");
       } else {
         setInviteStatus("invited");
-        setInviteMsg(d.emailed ? "Invite emailed." : "Invite created — email isn't configured, share this link:");
+        if (d.code) setInviteCode(d.code);
+        setInviteMsg(
+          action === "regenerate"
+            ? d.emailed
+              ? "New code generated and emailed."
+              : "New code generated (email isn't configured)."
+            : d.emailed
+              ? "Invite emailed."
+              : "Invite created — email isn't configured. Share the code and link manually."
+        );
         onChanged();
       }
     } finally {
@@ -313,18 +344,24 @@ function EmployeeDrawer({
           <Row label="Email" value={employee.email || "—"} />
           <Row label="Role" value={employee.role || "—"} />
           <Row label="Start date" value={employee.startDate || "—"} />
+          {!canManage && <Row label="Phone" value={employee.phone || "—"} />}
         </section>
 
         {canManage && (
-          <Field label="Status">
-            <Picker value={status} onChange={(e) => saveStatus(e.target.value as EmployeeStatus)}>
-              {EMPLOYEE_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {EMPLOYEE_STATUS_LABELS[s]}
-                </option>
-              ))}
-            </Picker>
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Status">
+              <Picker value={status} onChange={(e) => saveStatus(e.target.value as EmployeeStatus)}>
+                {EMPLOYEE_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {EMPLOYEE_STATUS_LABELS[s]}
+                  </option>
+                ))}
+              </Picker>
+            </Field>
+            <Field label="Phone" hint="Optional — for SMS later.">
+              <Input value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={savePhone} placeholder="(555) 123-4567" type="tel" />
+            </Field>
+          </div>
         )}
 
         {canManage && (
@@ -338,14 +375,38 @@ function EmployeeDrawer({
             <p className="mt-1 text-xs text-white/45">
               {inviteStatus === "accepted"
                 ? "This employee has an active portal login."
-                : "Invite them to view their documents, message you, and see announcements."}
+                : "Invite them to view their documents, message you, and see announcements. The email carries a 6-digit code they enter to finish (SMS delivery coming later)."}
             </p>
+
+            {inviteStatus === "invited" && (
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-cream">
+                <span className="text-white/60">Invite pending</span>
+                {inviteCode && (
+                  <>
+                    <span className="text-white/40">— code</span>
+                    <code className="rounded bg-white/10 px-2 py-0.5 font-mono tracking-widest text-cream">{inviteCode}</code>
+                  </>
+                )}
+              </div>
+            )}
+
             {inviteStatus !== "accepted" && (
-              <div className="mt-2">
-                <Btn onClick={invite} loading={inviting} disabled={!employee.email}>
-                  <Send className="h-4 w-4" /> {inviteStatus === "invited" ? "Resend invite" : "Invite to portal"}
-                </Btn>
-                {!employee.email && <p className="mt-1 text-xs text-gold">Add an email to this employee first.</p>}
+              <div className="mt-2 flex flex-wrap gap-2">
+                {inviteStatus === "invited" ? (
+                  <>
+                    <Btn onClick={() => invite("resend")} loading={inviting} disabled={!employee.email}>
+                      <Send className="h-4 w-4" /> Resend
+                    </Btn>
+                    <Btn variant="ghost" onClick={() => invite("regenerate")} loading={inviting} disabled={!employee.email}>
+                      Regenerate code
+                    </Btn>
+                  </>
+                ) : (
+                  <Btn onClick={() => invite()} loading={inviting} disabled={!employee.email}>
+                    <Send className="h-4 w-4" /> Invite to portal
+                  </Btn>
+                )}
+                {!employee.email && <p className="mt-1 w-full text-xs text-gold">Add an email to this employee first.</p>}
               </div>
             )}
             {inviteMsg && <p className="mt-2 text-xs text-white/60">{inviteMsg}</p>}
