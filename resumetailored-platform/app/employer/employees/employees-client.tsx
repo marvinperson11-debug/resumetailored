@@ -172,7 +172,6 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
-  const [phone, setPhone] = useState("");
   const [startDate, setStartDate] = useState("");
   const [status, setStatus] = useState<EmployeeStatus>("active");
   const [saving, setSaving] = useState(false);
@@ -188,7 +187,7 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
     const res = await fetch("/api/employer/employees", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, role, phone, startDate, status }),
+      body: JSON.stringify({ name, email, role, startDate, status }),
     });
     setSaving(false);
     if (!res.ok) {
@@ -205,14 +204,9 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
         <Field label="Name">
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jordan Lee" />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Email">
-            <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jordan@company.com" type="email" />
-          </Field>
-          <Field label="Phone" hint="Optional — for SMS later.">
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(555) 123-4567" type="tel" />
-          </Field>
-        </div>
+        <Field label="Email">
+          <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jordan@company.com" type="email" />
+        </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Role">
             <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Line Cook" list="emp-roles" />
@@ -261,7 +255,6 @@ function EmployeeDrawer({
   onChanged: () => void;
 }) {
   const [status, setStatus] = useState<EmployeeStatus>(employee.status);
-  const [phone, setPhone] = useState(employee.phone);
   const [checklist, setChecklist] = useState<{ ack: Acknowledgment; doc: TrainingDoc }[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteStatus, setInviteStatus] = useState<InviteStatus>(employee.inviteStatus);
@@ -285,16 +278,6 @@ function EmployeeDrawer({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: next }),
-    });
-    onChanged();
-  }
-
-  async function savePhone() {
-    if (phone === employee.phone) return;
-    await fetch(`/api/employer/employees/${employee.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone }),
     });
     onChanged();
   }
@@ -344,24 +327,18 @@ function EmployeeDrawer({
           <Row label="Email" value={employee.email || "—"} />
           <Row label="Role" value={employee.role || "—"} />
           <Row label="Start date" value={employee.startDate || "—"} />
-          {!canManage && <Row label="Phone" value={employee.phone || "—"} />}
         </section>
 
         {canManage && (
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Status">
-              <Picker value={status} onChange={(e) => saveStatus(e.target.value as EmployeeStatus)}>
-                {EMPLOYEE_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {EMPLOYEE_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </Picker>
-            </Field>
-            <Field label="Phone" hint="Optional — for SMS later.">
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={savePhone} placeholder="(555) 123-4567" type="tel" />
-            </Field>
-          </div>
+          <Field label="Status">
+            <Picker value={status} onChange={(e) => saveStatus(e.target.value as EmployeeStatus)}>
+              {EMPLOYEE_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {EMPLOYEE_STATUS_LABELS[s]}
+                </option>
+              ))}
+            </Picker>
+          </Field>
         )}
 
         {canManage && (
@@ -375,7 +352,7 @@ function EmployeeDrawer({
             <p className="mt-1 text-xs text-white/45">
               {inviteStatus === "accepted"
                 ? "This employee has an active portal login."
-                : "Invite them to view their documents, message you, and see announcements. The email carries a 6-digit code they enter to finish (SMS delivery coming later)."}
+                : "Invite them to view their documents, message you, and see announcements. The email carries a 6-digit code they enter to finish."}
             </p>
 
             {inviteStatus === "invited" && (

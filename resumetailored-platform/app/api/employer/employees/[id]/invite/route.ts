@@ -19,8 +19,8 @@ export const runtime = "nodejs";
  *   - "resend"     → keep the existing code, re-mint the link, re-send the email.
  *   - default      → first invite (new code).
  *
- * Only the employer OWNER may invite — an invited recruiter cannot. SMS delivery
- * is a future PR; the email carries the code for now.
+ * Only the employer OWNER may invite — an invited recruiter cannot. The code is
+ * delivered by email; the stored phone column is unused for now.
  */
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const ctx = await employerContext();
