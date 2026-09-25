@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff } from "lucide-react";
+import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff, ClipboardCheck, ClipboardList } from "lucide-react";
 import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
@@ -20,15 +20,23 @@ import {
   type AckCell,
   type TrainingLibraryItem,
 } from "@/lib/employee-hub";
+import {
+  checklistProgress,
+  normalizeItemLabels,
+  type ChecklistTemplate,
+  type ChecklistTemplateWithItems,
+  type EmployeeChecklistWithItems,
+} from "@/lib/checklist-hub";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer } from "../components/ui";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
 const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "neutral", invited: "gold", accepted: "teal" };
 
-type Tab = "directory" | "announcements" | "training" | "library";
+type Tab = "directory" | "announcements" | "onboarding" | "training" | "library";
 const TAB_META: Record<Tab, { label: string; icon: typeof UserCheck }> = {
   directory: { label: "Directory", icon: UserCheck },
   announcements: { label: "Announcements", icon: Megaphone },
+  onboarding: { label: "Onboarding", icon: ClipboardCheck },
   training: { label: "Training", icon: GraduationCap },
   library: { label: "Library", icon: BookOpen },
 };
@@ -81,6 +89,7 @@ export function EmployeesClient({ canManage }: { canManage: boolean }) {
       </div>
       {tab === "directory" && <Directory canManage={canManage} />}
       {tab === "announcements" && <Announcements canManage={canManage} />}
+      {tab === "onboarding" && <Onboarding canManage={canManage} />}
       {tab === "training" && <Training canManage={canManage} preset={preset} presetNonce={presetNonce} />}
       {tab === "library" && <Library canManage={canManage} onUseInTraining={useInTraining} />}
     </div>
@@ -261,11 +270,16 @@ function EmployeeDrawer({
   const [inviteCode, setInviteCode] = useState(employee.inviteCode);
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState("");
+  const [onboarding, setOnboarding] = useState<EmployeeChecklistWithItems | null>(null);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/employer/employees/${employee.id}`).then((r) => r.json()).catch(() => ({}));
-    setChecklist(res.checklist || []);
+    const [detail, checklistRes] = await Promise.all([
+      fetch(`/api/employer/employees/${employee.id}`).then((r) => r.json()).catch(() => ({})),
+      fetch(`/api/employer/employees/${employee.id}/checklist`).then((r) => r.json()).catch(() => ({})),
+    ]);
+    setChecklist(detail.checklist || []);
+    setOnboarding(checklistRes.checklist || null);
     setLoading(false);
   }, [employee.id]);
   useEffect(() => {
@@ -392,6 +406,22 @@ function EmployeeDrawer({
 
         <section>
           <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
+            <ClipboardCheck className="h-4 w-4 text-violet" /> Onboarding checklist
+          </h3>
+          {loading ? (
+            <p className="text-sm text-white/50">Loading…</p>
+          ) : (
+            <OnboardingChecklist
+              employeeId={employee.id}
+              checklist={onboarding}
+              canManage={canManage}
+              onChanged={loadDetail}
+            />
+          )}
+        </section>
+
+        <section>
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
             <ShieldCheck className="h-4 w-4 text-violet" /> Acknowledgments
           </h3>
           {loading ? (
@@ -429,6 +459,122 @@ function EmployeeDrawer({
         )}
       </div>
     </Drawer>
+  );
+}
+
+function OnboardingChecklist({
+  employeeId,
+  checklist,
+  canManage,
+  onChanged,
+}: {
+  employeeId: number;
+  checklist: EmployeeChecklistWithItems | null;
+  canManage: boolean;
+  onChanged: () => void;
+}) {
+  const [starting, setStarting] = useState(false);
+  const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
+  const [templateId, setTemplateId] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!starting) return;
+    fetch("/api/employer/checklist-templates")
+      .then((r) => r.json())
+      .then((d) => {
+        const list = (d.templates || []) as ChecklistTemplate[];
+        setTemplates(list);
+        if (list.length) setTemplateId(String(list[0].id));
+      })
+      .catch(() => {});
+  }, [starting]);
+
+  async function start() {
+    if (!templateId) return;
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/employer/employees/${employeeId}/checklist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId: Number(templateId) }),
+      });
+      if (r.ok) {
+        setStarting(false);
+        onChanged();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggle(itemId: number, done: boolean) {
+    await fetch(`/api/employer/checklist-items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ done }),
+    });
+    onChanged();
+  }
+
+  if (!checklist) {
+    if (!canManage) return <p className="text-sm text-white/50">No onboarding checklist started yet.</p>;
+    return starting ? (
+      <div className="space-y-2 rounded-lg border border-border-gold bg-white/[0.03] p-3">
+        {templates.length === 0 ? (
+          <p className="text-sm text-white/50">No templates yet — open the Onboarding tab to create the default template.</p>
+        ) : (
+          <>
+            <Picker value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </Picker>
+            <div className="flex gap-2">
+              <Btn onClick={start} loading={busy}>
+                Start checklist
+              </Btn>
+              <Btn variant="ghost" onClick={() => setStarting(false)} disabled={busy}>
+                Cancel
+              </Btn>
+            </div>
+          </>
+        )}
+      </div>
+    ) : (
+      <Btn variant="ghost" onClick={() => setStarting(true)}>
+        <Plus className="h-4 w-4" /> Start onboarding checklist
+      </Btn>
+    );
+  }
+
+  const pct = checklistProgress(checklist.items);
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs text-white/50">
+        <span>{checklist.name}</span>
+        <span>{pct}% complete</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div className="h-full rounded-full bg-violet transition-all" style={{ width: `${pct}%` }} />
+      </div>
+      <ul className="space-y-1.5">
+        {checklist.items.map((it) => (
+          <li key={it.id} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={it.done}
+              disabled={!canManage}
+              onChange={(e) => toggle(it.id, e.target.checked)}
+              className="h-4 w-4 accent-violet disabled:opacity-50"
+            />
+            <span className={it.done ? "text-white/40 line-through" : "text-cream"}>{it.label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -557,6 +703,221 @@ function Announcements({ canManage }: { canManage: boolean }) {
         </div>
       )}
     </div>
+  );
+}
+
+/* ─────────────────────────── Onboarding (Part D) ─────────────────────────── */
+function Onboarding({ canManage }: { canManage: boolean }) {
+  const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [openId, setOpenId] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/employer/checklist-templates").then((r) => r.json()).catch(() => ({}));
+    setTemplates(res.templates || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // First-run: a workspace with no templates yet gets its default seeded
+  // automatically (idempotent code-seed route — same pattern as the Training
+  // Library, never SQL seed data). Safe to re-run; only ever creates once.
+  useEffect(() => {
+    if (loading || templates.length > 0 || !canManage) return;
+    setSeeding(true);
+    fetch("/api/employer/checklist-templates/seed?do=1", { method: "GET" })
+      .then(() => load())
+      .finally(() => setSeeding(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, templates.length, canManage]);
+
+  return (
+    <div>
+      <p className="mb-4 text-sm text-white/55">
+        Onboarding checklists for new hires — ID collected, forms signed, safety training, uniform issued. Edit the default
+        template or create your own, then start one on any employee from their profile.
+      </p>
+      <div className="mb-4 flex justify-end">
+        {canManage && (
+          <Btn onClick={() => setCreating(true)}>
+            <Plus className="h-4 w-4" /> New template
+          </Btn>
+        )}
+      </div>
+      {loading || seeding ? (
+        <Panel className="text-sm text-white/55">Loading…</Panel>
+      ) : templates.length === 0 ? (
+        <EmptyState icon={ClipboardList} title="No templates yet" body="Create a checklist template to get started." />
+      ) : (
+        <div className="space-y-3">
+          {templates.map((t) => (
+            <Panel key={t.id} className="cursor-pointer transition-colors hover:bg-white/[0.06]">
+              <div onClick={() => setOpenId(t.id)} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-cream">{t.name}</span>
+                  {t.isDefault && <Badge tone="violet">Default</Badge>}
+                </div>
+                <span className="text-xs text-white/40">Edit →</span>
+              </div>
+            </Panel>
+          ))}
+        </div>
+      )}
+      {creating && <NewTemplate onClose={() => setCreating(false)} onSaved={load} />}
+      {openId !== null && (
+        <EditTemplate templateId={openId} canManage={canManage} onClose={() => setOpenId(null)} onChanged={load} />
+      )}
+    </div>
+  );
+}
+
+function NewTemplate({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState("");
+  const [itemsText, setItemsText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function submit() {
+    if (!name.trim()) {
+      setErr("A name is required.");
+      return;
+    }
+    setSaving(true);
+    setErr("");
+    const items = normalizeItemLabels(itemsText.split("\n"));
+    const res = await fetch("/api/employer/checklist-templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, items }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      setErr((await res.json().catch(() => ({}))).error || "Could not create the template.");
+      return;
+    }
+    onSaved();
+    onClose();
+  }
+
+  return (
+    <Modal title="New checklist template" onClose={onClose}>
+      <div className="space-y-4">
+        <Field label="Name">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kitchen staff onboarding" />
+        </Field>
+        <Field label="Items" hint="One per line.">
+          <Area rows={6} value={itemsText} onChange={(e) => setItemsText(e.target.value)} placeholder={"ID collected\nW-4 signed\nUniform issued"} />
+        </Field>
+        {err && <p className="text-sm text-red-300">{err}</p>}
+        <div className="flex justify-end gap-2 pt-1">
+          <Btn variant="ghost" onClick={onClose}>
+            Cancel
+          </Btn>
+          <Btn onClick={submit} loading={saving}>
+            Create template
+          </Btn>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function EditTemplate({
+  templateId,
+  canManage,
+  onClose,
+  onChanged,
+}: {
+  templateId: number;
+  canManage: boolean;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const [template, setTemplate] = useState<ChecklistTemplateWithItems | null>(null);
+  const [name, setName] = useState("");
+  const [itemsText, setItemsText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/employer/checklist-templates/${templateId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const t = d.template as ChecklistTemplateWithItems | undefined;
+        if (t) {
+          setTemplate(t);
+          setName(t.name);
+          setItemsText(t.items.map((i) => i.label).join("\n"));
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [templateId]);
+
+  async function save() {
+    setSaving(true);
+    setErr("");
+    const items = normalizeItemLabels(itemsText.split("\n"));
+    const res = await fetch(`/api/employer/checklist-templates/${templateId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, items }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      setErr((await res.json().catch(() => ({}))).error || "Could not save.");
+      return;
+    }
+    onChanged();
+    onClose();
+  }
+
+  async function remove() {
+    if (!confirm(`Delete "${template?.name}"? Checklists already started from it are unaffected.`)) return;
+    await fetch(`/api/employer/checklist-templates/${templateId}`, { method: "DELETE" });
+    onChanged();
+    onClose();
+  }
+
+  return (
+    <Modal title="Edit checklist template" onClose={onClose}>
+      {loading ? (
+        <p className="text-sm text-white/50">Loading…</p>
+      ) : !template ? (
+        <p className="text-sm text-white/50">Not found.</p>
+      ) : (
+        <div className="space-y-4">
+          <Field label="Name">
+            <Input value={name} onChange={(e) => setName(e.target.value)} disabled={!canManage} />
+          </Field>
+          <Field label="Items" hint="One per line.">
+            <Area rows={8} value={itemsText} onChange={(e) => setItemsText(e.target.value)} disabled={!canManage} />
+          </Field>
+          {err && <p className="text-sm text-red-300">{err}</p>}
+          {canManage && (
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <Btn variant="danger" onClick={remove}>
+                <Trash2 className="h-4 w-4" /> Delete
+              </Btn>
+              <div className="flex gap-2">
+                <Btn variant="ghost" onClick={onClose}>
+                  Cancel
+                </Btn>
+                <Btn onClick={save} loading={saving}>
+                  Save
+                </Btn>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </Modal>
   );
 }
 

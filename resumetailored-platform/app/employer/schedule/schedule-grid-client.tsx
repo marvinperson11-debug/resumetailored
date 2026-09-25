@@ -13,6 +13,7 @@ import {
   availabilityDayLabel,
   DOW_LABELS,
   TIME_OFF_KIND_LABELS,
+  parseISODate,
   type Shift,
   type AvailabilitySlot,
   type TimeOffRequest,
@@ -47,6 +48,9 @@ export function ScheduleGridClient() {
   // A single editor target: adding a new shift on (employeeId, date), or editing
   // an existing one. Published weeks stay fully editable through this.
   const [editor, setEditor] = useState<{ employeeId: number; date: string; shift?: Shift } | null>(null);
+  // Tapping a time-off badge opens its own editor (date range + withdraw)
+  // without leaving the grid.
+  const [timeOffEditor, setTimeOffEditor] = useState<{ request: TimeOffRequest; employeeName: string } | null>(null);
 
   const load = useCallback(async (w: string) => {
     setLoading(true);
@@ -135,6 +139,7 @@ export function ScheduleGridClient() {
               timeOff={data.timeOff.filter((t) => t.employeeId === emp.id)}
               onAdd={(date) => setEditor({ employeeId: emp.id, date })}
               onEdit={(shift) => setEditor({ employeeId: emp.id, date: shift.shiftDate, shift })}
+              onEditTimeOff={(request) => setTimeOffEditor({ request, employeeName: emp.name })}
             />
           ))}
         </div>
@@ -152,6 +157,18 @@ export function ScheduleGridClient() {
           }}
         />
       )}
+
+      {timeOffEditor && (
+        <TimeOffEditModal
+          request={timeOffEditor.request}
+          employeeName={timeOffEditor.employeeName}
+          onClose={() => setTimeOffEditor(null)}
+          onSaved={() => {
+            setTimeOffEditor(null);
+            load(week);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -164,6 +181,7 @@ function EmployeeRow({
   timeOff,
   onAdd,
   onEdit,
+  onEditTimeOff,
 }: {
   emp: Emp;
   days: string[];
@@ -172,6 +190,7 @@ function EmployeeRow({
   timeOff: TimeOffRequest[];
   onAdd: (date: string) => void;
   onEdit: (shift: Shift) => void;
+  onEditTimeOff: (request: TimeOffRequest) => void;
 }) {
   const weekHours = shifts.reduce((a, s) => a + shiftHours(s), 0);
 
@@ -200,9 +219,14 @@ function EmployeeRow({
               </div>
 
               {off && (
-                <div className="mb-1 flex items-center gap-1 rounded bg-gold/15 px-1.5 py-1 text-[10px] font-medium text-gold">
-                  <Plane className="h-3 w-3" /> {TIME_OFF_KIND_LABELS[off.kind]}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => onEditTimeOff(off)}
+                  className="mb-1 flex w-full items-center gap-1 rounded bg-gold/15 px-1.5 py-1 text-left text-[10px] font-medium text-gold transition hover:brightness-110"
+                  title={`${TIME_OFF_KIND_LABELS[off.kind]} — tap to change dates or withdraw`}
+                >
+                  <Plane className="h-3 w-3 shrink-0" /> <span className="truncate">{TIME_OFF_KIND_LABELS[off.kind]}</span>
+                </button>
               )}
 
               {avail.length > 0 && (
@@ -374,6 +398,106 @@ function ShiftModal({
             </Btn>
             <Btn onClick={save} loading={saving} disabled={deleting}>
               {editing ? "Save shift" : (<><Plus className="h-4 w-4" /> Add shift</>)}
+            </Btn>
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function TimeOffEditModal({
+  request,
+  employeeName,
+  onClose,
+  onSaved,
+}: {
+  request: TimeOffRequest;
+  employeeName: string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [startDate, setStartDate] = useState(request.startDate);
+  const [endDate, setEndDate] = useState(request.endDate);
+  const [saving, setSaving] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function save() {
+    if (!parseISODate(startDate) || !parseISODate(endDate)) {
+      setErr("Enter valid dates.");
+      return;
+    }
+    if (endDate < startDate) {
+      setErr("The end date can't be before the start date.");
+      return;
+    }
+    setSaving(true);
+    setErr("");
+    try {
+      const r = await fetch(`/api/employer/time-off/${request.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startDate, endDate }),
+      });
+      const d = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) setErr(d.error || "Could not save the dates.");
+      else onSaved();
+    } catch {
+      setErr("Network error.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function withdraw() {
+    setWithdrawing(true);
+    setErr("");
+    try {
+      const r = await fetch(`/api/employer/time-off/${request.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "declined", note: "Withdrawn from the schedule." }),
+      });
+      if (!r.ok) {
+        setErr("Could not withdraw the request.");
+        setWithdrawing(false);
+      } else {
+        onSaved();
+      }
+    } catch {
+      setErr("Network error.");
+      setWithdrawing(false);
+    }
+  }
+
+  return (
+    <Modal title={`${TIME_OFF_KIND_LABELS[request.kind]} — ${employeeName}`} onClose={onClose}>
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Start">
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </Field>
+          <Field label="End">
+            <Input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
+          </Field>
+        </div>
+        {request.reason && <p className="text-sm text-white/55">{request.reason}</p>}
+        <div className="flex items-start gap-2 text-xs text-white/40">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> This request is approved and live on the schedule — changes apply
+          right away.
+        </div>
+        {err && <p className="text-sm text-red-300">{err}</p>}
+        <div className="flex items-center justify-between gap-2">
+          <Btn variant="danger" onClick={withdraw} loading={withdrawing} disabled={saving}>
+            <Trash2 className="h-4 w-4" /> Withdraw
+          </Btn>
+          <div className="flex gap-2">
+            <Btn variant="ghost" onClick={onClose} disabled={saving || withdrawing}>
+              Cancel
+            </Btn>
+            <Btn onClick={save} loading={saving} disabled={withdrawing}>
+              Save dates
             </Btn>
           </div>
         </div>
