@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isLibraryKind, type TrainingLibraryItem, type LibraryKind } from "./employee-hub";
+import { escapeHtml } from "./email";
 
 /**
  * Built-in Training Library — shared, read-only platform content sourced from
@@ -64,6 +65,18 @@ export async function listLibrary(opts: { category?: string; q?: string } = {}):
 export async function listLibraryCategories(): Promise<string[]> {
   const items = await listLibrary();
   return Array.from(new Set(items.map((i) => i.category))).sort();
+}
+
+/** The self-contained body snapshot stored on a training_doc created from a
+ *  Library item — a video gets an attestation block (real, completable
+ *  content); a doc uses its own body, or falls back to a source link. Shared
+ *  by the employer's "New training item" flow and an employee's own
+ *  self-assign-from-Library flow, so both produce identical content. */
+export function libraryItemBodyHtml(item: TrainingLibraryItem): string {
+  if (item.kind === "video") {
+    return `<p>Watch the training video: <strong>${escapeHtml(item.title)}</strong> (${escapeHtml(item.provider)}).</p><p>By completing this training you confirm you have watched this video in full. Source: <a href="${escapeHtml(item.sourceUrl)}">${escapeHtml(item.sourceUrl)}</a></p>`;
+  }
+  return item.bodyHtml || `<p>${escapeHtml(item.title)} — source: <a href="${escapeHtml(item.sourceUrl)}">${escapeHtml(item.sourceUrl)}</a></p>`;
 }
 
 export async function getLibraryItem(id: number): Promise<TrainingLibraryItem | null> {

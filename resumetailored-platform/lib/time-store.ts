@@ -603,6 +603,34 @@ export async function listApprovedTimeOffForWeek(employerId: string, weekStart: 
   }
 }
 
+/** Edit a request's date range (employer-side correction, e.g. from the
+ *  schedule grid). Leaves status/kind/reason untouched. */
+export async function updateTimeOffDates(
+  employerId: string,
+  id: number,
+  input: { startDate: string; endDate: string }
+): Promise<TimeOffRequest | null> {
+  const c = db();
+  if (!c || !employerId || !id) return null;
+  try {
+    const { data, error } = await c
+      .from("time_off_requests")
+      .update({
+        start_date: input.startDate,
+        end_date: input.endDate,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("employer_id", employerId)
+      .eq("id", id)
+      .select(TIME_OFF_COLS)
+      .single();
+    if (error || !data) return null;
+    return mapTimeOff(data);
+  } catch {
+    return null;
+  }
+}
+
 /** The employer approves/declines a request. */
 export async function setTimeOffStatus(
   employerId: string,

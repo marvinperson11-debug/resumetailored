@@ -8,8 +8,10 @@ import {
   type AckStatus,
   type Employee,
   type AckCell,
+  type TrainingLibraryItem,
 } from "./employee-hub";
 import { listEmployees } from "./employees-store";
+import { libraryItemBodyHtml } from "./training-library";
 
 /**
  * Training documents + acknowledgments persistence. Service-role, employer_id
@@ -195,6 +197,98 @@ export async function ensureAcknowledgments(
   }
 }
 
+/** The (doc, employee) acknowledgment, or null — used by the employee's own
+ *  training detail/complete/quiz routes to confirm the doc is actually theirs
+ *  before showing content or accepting a completion. */
+export async function getAcknowledgmentByDocAndEmployee(employerId: string, docId: number, employeeId: number): Promise<Acknowledgment | null> {
+  const c = db();
+  if (!c || !employerId || !docId || !employeeId) return null;
+  try {
+    const { data } = await c
+      .from("acknowledgments")
+      .select(ACK_COLS)
+      .eq("employer_id", employerId)
+      .eq("training_doc_id", docId)
+      .eq("employee_id", employeeId)
+      .maybeSingle();
+    return data ? mapAck(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * An employee assigns themself a Library item from their own Library tab
+ * ("Take this training") — no employer action involved. Reuses an existing
+ * self-assigned training_doc for that (employee, library item) pair rather
+ * than creating a duplicate on every click; `assign_to` carries a `self:`
+ * sentinel so this doc is never picked up by the employer's role-based
+ * `assignees()` and never appears assigned to anyone else.
+ */
+export async function selfAssignFromLibrary(
+  employerId: string,
+  employeeId: number,
+  item: TrainingLibraryItem
+): Promise<{ doc: TrainingDoc; ack: Acknowledgment } | null> {
+  const c = db();
+  if (!c || !employerId || !employeeId) return null;
+  const assignTo = `self:${employeeId}`;
+  try {
+    const { data: existing } = await c
+      .from("training_docs")
+      .select(DOC_COLS)
+      .eq("employer_id", employerId)
+      .eq("library_item_id", item.id)
+      .eq("assign_to", assignTo)
+      .maybeSingle();
+
+    let doc: TrainingDoc | null = existing ? mapDoc(existing) : null;
+    if (!doc) {
+      doc = await createTrainingDoc(employerId, {
+        title: item.title,
+        docKind: "training",
+        bodyHtml: libraryItemBodyHtml(item),
+        assignTo,
+        requireSignature: false,
+        libraryItemId: item.id,
+      });
+      if (!doc) return null;
+    }
+
+    await c
+      .from("acknowledgments")
+      .upsert({ employer_id: employerId, training_doc_id: doc.id, employee_id: employeeId, status: "pending" }, { onConflict: "training_doc_id,employee_id", ignoreDuplicates: true });
+    const ack = await getAcknowledgmentByDocAndEmployee(employerId, doc.id, employeeId);
+    if (!ack) return null;
+    return { doc, ack };
+  } catch (e) {
+    console.error("[selfAssignFromLibrary]", e);
+    return null;
+  }
+}
+
+/** The employee marks a (no-quiz) training complete themselves — in-house,
+ *  no DocuSign. Only flips a `pending` row that is actually theirs. */
+export async function employeeMarkComplete(employerId: string, employeeId: number, docId: number): Promise<Acknowledgment | null> {
+  const c = db();
+  if (!c || !employerId || !employeeId || !docId) return null;
+  try {
+    const { data, error } = await c
+      .from("acknowledgments")
+      .update({ status: "signed", acknowledged_at: new Date().toISOString() })
+      .eq("employer_id", employerId)
+      .eq("training_doc_id", docId)
+      .eq("employee_id", employeeId)
+      .eq("status", "pending")
+      .select(ACK_COLS)
+      .single();
+    if (error || !data) return null;
+    return mapAck(data);
+  } catch {
+    return null;
+  }
+}
+
 export async function getAcknowledgment(employerId: string, id: number): Promise<Acknowledgment | null> {
   const c = db();
   if (!c || !employerId || !id) return null;
@@ -240,17 +334,6 @@ export async function listAllAcknowledgments(employerId: string): Promise<Acknow
 }
 
 /** Attach an e-sign envelope to an acknowledgment (set at send time). */
-export async function setAckEnvelope(employerId: string, ackId: number, envelopeId: string): Promise<boolean> {
-  const c = db();
-  if (!c || !employerId || !ackId) return false;
-  try {
-    const { error } = await c.from("acknowledgments").update({ envelope_id: envelopeId }).eq("employer_id", employerId).eq("id", ackId);
-    return !error;
-  } catch {
-    return false;
-  }
-}
-
 /**
  * The DocuSign webhook calls this when an envelope completes. It flips the
  * matching acknowledgment (matched by envelope_id, across all employers — the

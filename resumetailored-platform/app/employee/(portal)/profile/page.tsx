@@ -2,6 +2,7 @@ import { employeeContext } from "@/lib/employee-auth";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { EMPLOYEE_STATUS_LABELS } from "@/lib/employee-hub";
 import { ManageAccountButton } from "./profile-client";
+import { MyCertifications } from "./certs-client";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,8 @@ export default async function EmployeeProfilePage() {
           Your role and start date are managed by your employer. To correct them, message your employer from the Messages tab.
         </p>
       </div>
+
+      <MyCertifications />
 
       <div className="rounded-2xl border border-border-gold bg-white/[0.03] p-6">
         <h2 className="mb-1 text-sm font-semibold text-cream">Account</h2>

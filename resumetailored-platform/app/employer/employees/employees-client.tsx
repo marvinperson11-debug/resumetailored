@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff } from "lucide-react";
+import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff, ClipboardCheck, ClipboardList } from "lucide-react";
 import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
@@ -20,15 +20,24 @@ import {
   type AckCell,
   type TrainingLibraryItem,
 } from "@/lib/employee-hub";
+import {
+  checklistProgress,
+  normalizeItemLabels,
+  type ChecklistTemplate,
+  type ChecklistTemplateWithItems,
+  type EmployeeChecklistWithItems,
+} from "@/lib/checklist-hub";
+import { certStatus, hasExpiringCert, CERT_STATUS_TONE, CERT_STATUS_LABELS, type EmployeeCert } from "@/lib/cert-hub";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer } from "../components/ui";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
 const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "neutral", invited: "gold", accepted: "teal" };
 
-type Tab = "directory" | "announcements" | "training" | "library";
+type Tab = "directory" | "announcements" | "onboarding" | "training" | "library";
 const TAB_META: Record<Tab, { label: string; icon: typeof UserCheck }> = {
   directory: { label: "Directory", icon: UserCheck },
   announcements: { label: "Announcements", icon: Megaphone },
+  onboarding: { label: "Onboarding", icon: ClipboardCheck },
   training: { label: "Training", icon: GraduationCap },
   library: { label: "Library", icon: BookOpen },
 };
@@ -41,6 +50,12 @@ interface TrainingRollup {
   doc: TrainingDoc;
   assigned: number;
   counts: { signed: number; waived: number; pending: number; overdue: number };
+  hasQuiz: boolean;
+}
+interface QuizQuestionDraft {
+  q: string;
+  choices: string[];
+  correctIndex: number;
 }
 
 export function EmployeesClient({ canManage }: { canManage: boolean }) {
@@ -81,6 +96,7 @@ export function EmployeesClient({ canManage }: { canManage: boolean }) {
       </div>
       {tab === "directory" && <Directory canManage={canManage} />}
       {tab === "announcements" && <Announcements canManage={canManage} />}
+      {tab === "onboarding" && <Onboarding canManage={canManage} />}
       {tab === "training" && <Training canManage={canManage} preset={preset} presetNonce={presetNonce} />}
       {tab === "library" && <Library canManage={canManage} onUseInTraining={useInTraining} />}
     </div>
@@ -94,12 +110,24 @@ function Directory({ canManage }: { canManage: boolean }) {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [openId, setOpenId] = useState<number | null>(null);
+  const [expiringIds, setExpiringIds] = useState<Set<number>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/employer/employees").then((r) => r.json()).catch(() => ({}));
-    setEmployees(res.employees || []);
-    setRoles(res.roles || []);
+    const [empRes, certRes] = await Promise.all([
+      fetch("/api/employer/employees").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/employer/certs").then((r) => r.json()).catch(() => ({})),
+    ]);
+    setEmployees(empRes.employees || []);
+    setRoles(empRes.roles || []);
+    const certs = (certRes.certs || []) as EmployeeCert[];
+    const byEmployee = new Map<number, EmployeeCert[]>();
+    for (const c of certs) byEmployee.set(c.employeeId, [...(byEmployee.get(c.employeeId) || []), c]);
+    const flagged = new Set<number>();
+    byEmployee.forEach((list, id) => {
+      if (hasExpiringCert(list)) flagged.add(id);
+    });
+    setExpiringIds(flagged);
     setLoading(false);
   }, []);
   useEffect(() => {
@@ -146,7 +174,14 @@ function Directory({ canManage }: { canManage: boolean }) {
                   onClick={() => setOpenId(e.id)}
                   className="cursor-pointer border-b border-border-gold/50 transition-colors last:border-0 hover:bg-white/[0.03]"
                 >
-                  <td className="px-4 py-3 font-medium text-cream">{e.name}</td>
+                  <td className="px-4 py-3 font-medium text-cream">
+                    <span className="inline-flex items-center gap-1.5">
+                      {expiringIds.has(e.id) && (
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-red-400" title="A certification is expiring or expired" />
+                      )}
+                      {e.name}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-white/70">{e.role || "—"}</td>
                   <td className="px-4 py-3 text-white/60">{e.email || "—"}</td>
                   <td className="px-4 py-3 text-white/60">{e.startDate || "—"}</td>
@@ -261,11 +296,19 @@ function EmployeeDrawer({
   const [inviteCode, setInviteCode] = useState(employee.inviteCode);
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState("");
+  const [onboarding, setOnboarding] = useState<EmployeeChecklistWithItems | null>(null);
+  const [certs, setCerts] = useState<EmployeeCert[]>([]);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/employer/employees/${employee.id}`).then((r) => r.json()).catch(() => ({}));
-    setChecklist(res.checklist || []);
+    const [detail, checklistRes, certsRes] = await Promise.all([
+      fetch(`/api/employer/employees/${employee.id}`).then((r) => r.json()).catch(() => ({})),
+      fetch(`/api/employer/employees/${employee.id}/checklist`).then((r) => r.json()).catch(() => ({})),
+      fetch(`/api/employer/employees/${employee.id}/certs`).then((r) => r.json()).catch(() => ({})),
+    ]);
+    setChecklist(detail.checklist || []);
+    setOnboarding(checklistRes.checklist || null);
+    setCerts(certsRes.certs || []);
     setLoading(false);
   }, [employee.id]);
   useEffect(() => {
@@ -392,6 +435,33 @@ function EmployeeDrawer({
 
         <section>
           <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
+            <ClipboardCheck className="h-4 w-4 text-violet" /> Onboarding checklist
+          </h3>
+          {loading ? (
+            <p className="text-sm text-white/50">Loading…</p>
+          ) : (
+            <OnboardingChecklist
+              employeeId={employee.id}
+              checklist={onboarding}
+              canManage={canManage}
+              onChanged={loadDetail}
+            />
+          )}
+        </section>
+
+        <section>
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
+            <ShieldCheck className="h-4 w-4 text-violet" /> Certifications
+          </h3>
+          {loading ? (
+            <p className="text-sm text-white/50">Loading…</p>
+          ) : (
+            <Certifications employeeId={employee.id} certs={certs} canManage={canManage} onChanged={loadDetail} />
+          )}
+        </section>
+
+        <section>
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
             <ShieldCheck className="h-4 w-4 text-violet" /> Acknowledgments
           </h3>
           {loading ? (
@@ -429,6 +499,252 @@ function EmployeeDrawer({
         )}
       </div>
     </Drawer>
+  );
+}
+
+function OnboardingChecklist({
+  employeeId,
+  checklist,
+  canManage,
+  onChanged,
+}: {
+  employeeId: number;
+  checklist: EmployeeChecklistWithItems | null;
+  canManage: boolean;
+  onChanged: () => void;
+}) {
+  const [starting, setStarting] = useState(false);
+  const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
+  const [templateId, setTemplateId] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!starting) return;
+    fetch("/api/employer/checklist-templates")
+      .then((r) => r.json())
+      .then((d) => {
+        const list = (d.templates || []) as ChecklistTemplate[];
+        setTemplates(list);
+        if (list.length) setTemplateId(String(list[0].id));
+      })
+      .catch(() => {});
+  }, [starting]);
+
+  async function start() {
+    if (!templateId) return;
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/employer/employees/${employeeId}/checklist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ templateId: Number(templateId) }),
+      });
+      if (r.ok) {
+        setStarting(false);
+        onChanged();
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggle(itemId: number, done: boolean) {
+    await fetch(`/api/employer/checklist-items/${itemId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ done }),
+    });
+    onChanged();
+  }
+
+  if (!checklist) {
+    if (!canManage) return <p className="text-sm text-white/50">No onboarding checklist started yet.</p>;
+    return starting ? (
+      <div className="space-y-2 rounded-lg border border-border-gold bg-white/[0.03] p-3">
+        {templates.length === 0 ? (
+          <p className="text-sm text-white/50">No templates yet — open the Onboarding tab to create the default template.</p>
+        ) : (
+          <>
+            <Picker value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </Picker>
+            <div className="flex gap-2">
+              <Btn onClick={start} loading={busy}>
+                Start checklist
+              </Btn>
+              <Btn variant="ghost" onClick={() => setStarting(false)} disabled={busy}>
+                Cancel
+              </Btn>
+            </div>
+          </>
+        )}
+      </div>
+    ) : (
+      <Btn variant="ghost" onClick={() => setStarting(true)}>
+        <Plus className="h-4 w-4" /> Start onboarding checklist
+      </Btn>
+    );
+  }
+
+  const pct = checklistProgress(checklist.items);
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs text-white/50">
+        <span>{checklist.name}</span>
+        <span>{pct}% complete</span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+        <div className="h-full rounded-full bg-violet transition-all" style={{ width: `${pct}%` }} />
+      </div>
+      <ul className="space-y-1.5">
+        {checklist.items.map((it) => (
+          <li key={it.id} className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={it.done}
+              disabled={!canManage}
+              onChange={(e) => toggle(it.id, e.target.checked)}
+              className="h-4 w-4 accent-violet disabled:opacity-50"
+            />
+            <span className={it.done ? "text-white/40 line-through" : "text-cream"}>{it.label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function Certifications({
+  employeeId,
+  certs,
+  canManage,
+  onChanged,
+}: {
+  employeeId: number;
+  certs: EmployeeCert[];
+  canManage: boolean;
+  onChanged: () => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [issuedDate, setIssuedDate] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function submit() {
+    if (!name.trim()) {
+      setErr("A name is required.");
+      return;
+    }
+    setSaving(true);
+    setErr("");
+    try {
+      const res = await fetch(`/api/employer/employees/${employeeId}/certs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, issuedDate: issuedDate || undefined, expiryDate: expiryDate || undefined }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { cert?: EmployeeCert; error?: string };
+      if (!res.ok || !d.cert) {
+        setErr(d.error || "Could not add the certification.");
+        return;
+      }
+      if (file) {
+        const form = new FormData();
+        form.append("file", file);
+        await fetch(`/api/employer/certs/${d.cert.id}/file`, { method: "POST", body: form });
+      }
+      setName("");
+      setIssuedDate("");
+      setExpiryDate("");
+      setFile(null);
+      setAdding(false);
+      onChanged();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove(id: number) {
+    if (!confirm("Delete this certification?")) return;
+    await fetch(`/api/employer/certs/${id}`, { method: "DELETE" });
+    onChanged();
+  }
+
+  return (
+    <div className="space-y-2">
+      {certs.length === 0 && !adding ? (
+        <p className="text-sm text-white/50">No certifications on file.</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {certs.map((c) => {
+            const status = certStatus(c);
+            return (
+              <li key={c.id} className="flex items-center justify-between gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm">
+                <div className="min-w-0">
+                  <div className="truncate text-cream">{c.name}</div>
+                  <div className="text-xs text-white/45">
+                    {c.expiryDate ? `Expires ${c.expiryDate}` : "No expiry set"}
+                    {c.fileUrl && (
+                      <>
+                        {" · "}
+                        <a href={`/api/employer/certs/${c.id}/file`} target="_blank" rel="noreferrer" className="text-violet hover:underline">
+                          File
+                        </a>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge tone={CERT_STATUS_TONE[status]}>{CERT_STATUS_LABELS[status]}</Badge>
+                  {canManage && (
+                    <button onClick={() => remove(c.id)} title="Delete" className="rounded-md p-1 text-red-300/80 hover:bg-red-500/10">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {canManage &&
+        (adding ? (
+          <div className="space-y-2 rounded-lg border border-border-gold bg-white/[0.03] p-3">
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Forklift certification" />
+            <div className="grid grid-cols-2 gap-2">
+              <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} />
+              <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+            </div>
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="block w-full text-xs text-white/60 file:mr-2 file:rounded file:border-0 file:bg-violet/20 file:px-2 file:py-1 file:text-violet"
+            />
+            {err && <p className="text-sm text-red-300">{err}</p>}
+            <div className="flex gap-2">
+              <Btn onClick={submit} loading={saving}>
+                Add
+              </Btn>
+              <Btn variant="ghost" onClick={() => setAdding(false)} disabled={saving}>
+                Cancel
+              </Btn>
+            </div>
+          </div>
+        ) : (
+          <Btn variant="ghost" onClick={() => setAdding(true)}>
+            <Plus className="h-4 w-4" /> Add certification
+          </Btn>
+        ))}
+    </div>
   );
 }
 
@@ -560,6 +876,221 @@ function Announcements({ canManage }: { canManage: boolean }) {
   );
 }
 
+/* ─────────────────────────── Onboarding (Part D) ─────────────────────────── */
+function Onboarding({ canManage }: { canManage: boolean }) {
+  const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [openId, setOpenId] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/employer/checklist-templates").then((r) => r.json()).catch(() => ({}));
+    setTemplates(res.templates || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // First-run: a workspace with no templates yet gets its default seeded
+  // automatically (idempotent code-seed route — same pattern as the Training
+  // Library, never SQL seed data). Safe to re-run; only ever creates once.
+  useEffect(() => {
+    if (loading || templates.length > 0 || !canManage) return;
+    setSeeding(true);
+    fetch("/api/employer/checklist-templates/seed?do=1", { method: "GET" })
+      .then(() => load())
+      .finally(() => setSeeding(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, templates.length, canManage]);
+
+  return (
+    <div>
+      <p className="mb-4 text-sm text-white/55">
+        Onboarding checklists for new hires — ID collected, forms signed, safety training, uniform issued. Edit the default
+        template or create your own, then start one on any employee from their profile.
+      </p>
+      <div className="mb-4 flex justify-end">
+        {canManage && (
+          <Btn onClick={() => setCreating(true)}>
+            <Plus className="h-4 w-4" /> New template
+          </Btn>
+        )}
+      </div>
+      {loading || seeding ? (
+        <Panel className="text-sm text-white/55">Loading…</Panel>
+      ) : templates.length === 0 ? (
+        <EmptyState icon={ClipboardList} title="No templates yet" body="Create a checklist template to get started." />
+      ) : (
+        <div className="space-y-3">
+          {templates.map((t) => (
+            <Panel key={t.id} className="cursor-pointer transition-colors hover:bg-white/[0.06]">
+              <div onClick={() => setOpenId(t.id)} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-cream">{t.name}</span>
+                  {t.isDefault && <Badge tone="violet">Default</Badge>}
+                </div>
+                <span className="text-xs text-white/40">Edit →</span>
+              </div>
+            </Panel>
+          ))}
+        </div>
+      )}
+      {creating && <NewTemplate onClose={() => setCreating(false)} onSaved={load} />}
+      {openId !== null && (
+        <EditTemplate templateId={openId} canManage={canManage} onClose={() => setOpenId(null)} onChanged={load} />
+      )}
+    </div>
+  );
+}
+
+function NewTemplate({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const [name, setName] = useState("");
+  const [itemsText, setItemsText] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function submit() {
+    if (!name.trim()) {
+      setErr("A name is required.");
+      return;
+    }
+    setSaving(true);
+    setErr("");
+    const items = normalizeItemLabels(itemsText.split("\n"));
+    const res = await fetch("/api/employer/checklist-templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, items }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      setErr((await res.json().catch(() => ({}))).error || "Could not create the template.");
+      return;
+    }
+    onSaved();
+    onClose();
+  }
+
+  return (
+    <Modal title="New checklist template" onClose={onClose}>
+      <div className="space-y-4">
+        <Field label="Name">
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kitchen staff onboarding" />
+        </Field>
+        <Field label="Items" hint="One per line.">
+          <Area rows={6} value={itemsText} onChange={(e) => setItemsText(e.target.value)} placeholder={"ID collected\nW-4 signed\nUniform issued"} />
+        </Field>
+        {err && <p className="text-sm text-red-300">{err}</p>}
+        <div className="flex justify-end gap-2 pt-1">
+          <Btn variant="ghost" onClick={onClose}>
+            Cancel
+          </Btn>
+          <Btn onClick={submit} loading={saving}>
+            Create template
+          </Btn>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function EditTemplate({
+  templateId,
+  canManage,
+  onClose,
+  onChanged,
+}: {
+  templateId: number;
+  canManage: boolean;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  const [template, setTemplate] = useState<ChecklistTemplateWithItems | null>(null);
+  const [name, setName] = useState("");
+  const [itemsText, setItemsText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/employer/checklist-templates/${templateId}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const t = d.template as ChecklistTemplateWithItems | undefined;
+        if (t) {
+          setTemplate(t);
+          setName(t.name);
+          setItemsText(t.items.map((i) => i.label).join("\n"));
+        }
+      })
+      .finally(() => setLoading(false));
+  }, [templateId]);
+
+  async function save() {
+    setSaving(true);
+    setErr("");
+    const items = normalizeItemLabels(itemsText.split("\n"));
+    const res = await fetch(`/api/employer/checklist-templates/${templateId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, items }),
+    });
+    setSaving(false);
+    if (!res.ok) {
+      setErr((await res.json().catch(() => ({}))).error || "Could not save.");
+      return;
+    }
+    onChanged();
+    onClose();
+  }
+
+  async function remove() {
+    if (!confirm(`Delete "${template?.name}"? Checklists already started from it are unaffected.`)) return;
+    await fetch(`/api/employer/checklist-templates/${templateId}`, { method: "DELETE" });
+    onChanged();
+    onClose();
+  }
+
+  return (
+    <Modal title="Edit checklist template" onClose={onClose}>
+      {loading ? (
+        <p className="text-sm text-white/50">Loading…</p>
+      ) : !template ? (
+        <p className="text-sm text-white/50">Not found.</p>
+      ) : (
+        <div className="space-y-4">
+          <Field label="Name">
+            <Input value={name} onChange={(e) => setName(e.target.value)} disabled={!canManage} />
+          </Field>
+          <Field label="Items" hint="One per line.">
+            <Area rows={8} value={itemsText} onChange={(e) => setItemsText(e.target.value)} disabled={!canManage} />
+          </Field>
+          {err && <p className="text-sm text-red-300">{err}</p>}
+          {canManage && (
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <Btn variant="danger" onClick={remove}>
+                <Trash2 className="h-4 w-4" /> Delete
+              </Btn>
+              <div className="flex gap-2">
+                <Btn variant="ghost" onClick={onClose}>
+                  Cancel
+                </Btn>
+                <Btn onClick={save} loading={saving}>
+                  Save
+                </Btn>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 /* ─────────────────────────── Training (Part B) ──────────────────────────── */
 function Training({
   canManage,
@@ -626,11 +1157,11 @@ function Training({
                   </div>
                   <div className="mt-1 text-xs text-white/45">
                     Assigned to {r.doc.assignTo === "all" ? "everyone" : r.doc.assignTo} · {r.assigned} employee{r.assigned === 1 ? "" : "s"}
-                    {r.doc.requireSignature ? " · signature required" : ""}
+                    {r.hasQuiz ? " · quiz attached" : ""}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {r.counts.signed > 0 && <Badge tone="teal">{r.counts.signed} signed</Badge>}
+                  {r.counts.signed > 0 && <Badge tone="teal">{r.counts.signed} completed</Badge>}
                   {r.counts.pending > 0 && <Badge tone="gold">{r.counts.pending} pending</Badge>}
                   {r.counts.overdue > 0 && <Badge tone="red">{r.counts.overdue} overdue</Badge>}
                   {r.counts.waived > 0 && <Badge tone="neutral">{r.counts.waived} waived</Badge>}
@@ -666,7 +1197,9 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
   const [pdfUrl, setPdfUrl] = useState("");
   const [assignTo, setAssignTo] = useState("all");
   const [dueAt, setDueAt] = useState("");
-  const [requireSignature, setRequireSignature] = useState(true);
+  const [withQuiz, setWithQuiz] = useState(false);
+  const [questions, setQuestions] = useState<QuizQuestionDraft[]>([]);
+  const [passThreshold, setPassThreshold] = useState(80);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [notice, setNotice] = useState("");
@@ -685,6 +1218,11 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
       setErr("Add content: pick from the Library, an authored document, paste content, or add a PDF URL.");
       return;
     }
+    const cleanQuestions = withQuiz ? questions.filter((q) => q.q.trim() && q.choices.filter((c) => c.trim()).length >= 2) : [];
+    if (withQuiz && cleanQuestions.length === 0) {
+      setErr("Add at least one complete question (text + 2 choices), or turn the quiz off.");
+      return;
+    }
     setSaving(true);
     setErr("");
     const res = await fetch("/api/employer/training", {
@@ -699,7 +1237,9 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
         pdfUrl: libraryItem ? undefined : pdfUrl,
         assignTo,
         dueAt,
-        requireSignature,
+        quiz: cleanQuestions.length
+          ? { questions: cleanQuestions.map((q) => ({ q: q.q, choices: q.choices.filter((c) => c.trim()), correctIndex: q.correctIndex })), passThreshold }
+          : undefined,
       }),
     });
     setSaving(false);
@@ -708,8 +1248,8 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
       setErr(data.error || "Could not create training item.");
       return;
     }
-    if (data.sendWarning) {
-      setNotice(`Assigned to ${data.assigned}. ${data.sent ? `${data.sent} signing request(s) sent. ` : ""}${data.sendWarning}`);
+    if (data.emailWarning) {
+      setNotice(`Assigned to ${data.assigned}. ${data.emailed ? `${data.emailed} email(s) sent. ` : ""}${data.emailWarning}`);
       onSaved();
       return; // keep the modal open so the warning is read; owner closes it
     }
@@ -750,7 +1290,7 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
               </button>
             </div>
             <p className="mt-1 text-xs text-white/45">
-              {libraryItem.kind === "video" ? "Employees watch the embedded video, then complete the signature/quiz step." : "The document content is shown to employees to review."}
+              {libraryItem.kind === "video" ? "Employees watch the embedded video, then mark it complete (or pass the quiz, if you add one below)." : "The document content is shown to employees to review, then they mark it complete."}
             </p>
           </div>
         ) : (
@@ -795,10 +1335,39 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
           </Field>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-cream">
-          <input type="checkbox" checked={requireSignature} onChange={(e) => setRequireSignature(e.target.checked)} className="h-4 w-4 accent-violet" />
-          Require e-signature (sends each assignee a signing request)
-        </label>
+        <div className="rounded-lg border border-border-gold bg-white/[0.03] p-3">
+          <label className="flex items-center gap-2 text-sm text-cream">
+            <input type="checkbox" checked={withQuiz} onChange={(e) => setWithQuiz(e.target.checked)} className="h-4 w-4 accent-violet" />
+            Add a quiz — the employee takes it after the content to complete this training
+          </label>
+          {withQuiz && (
+            <div className="mt-3 space-y-3">
+              {questions.map((q, qi) => (
+                <QuizQuestionRow
+                  key={qi}
+                  question={q}
+                  onChange={(next) => setQuestions((qs) => qs.map((x, i) => (i === qi ? next : x)))}
+                  onRemove={() => setQuestions((qs) => qs.filter((_, i) => i !== qi))}
+                />
+              ))}
+              <Btn
+                variant="ghost"
+                onClick={() => setQuestions((qs) => [...qs, { q: "", choices: ["", ""], correctIndex: 0 }])}
+              >
+                <Plus className="h-4 w-4" /> Add question
+              </Btn>
+              <Field label="Pass threshold (%)">
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={passThreshold}
+                  onChange={(e) => setPassThreshold(Math.min(100, Math.max(1, Number(e.target.value) || 80)))}
+                />
+              </Field>
+            </div>
+          )}
+        </div>
 
         {err && <p className="text-sm text-red-300">{err}</p>}
         {notice && <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-gold">{notice}</p>}
@@ -814,6 +1383,65 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
         </div>
       </div>
     </Modal>
+  );
+}
+
+function QuizQuestionRow({
+  question,
+  onChange,
+  onRemove,
+}: {
+  question: QuizQuestionDraft;
+  onChange: (next: QuizQuestionDraft) => void;
+  onRemove: () => void;
+}) {
+  function setChoice(i: number, value: string) {
+    const choices = question.choices.map((c, idx) => (idx === i ? value : c));
+    onChange({ ...question, choices });
+  }
+  function addChoice() {
+    if (question.choices.length >= 8) return;
+    onChange({ ...question, choices: [...question.choices, ""] });
+  }
+  function removeChoice(i: number) {
+    if (question.choices.length <= 2) return;
+    const choices = question.choices.filter((_, idx) => idx !== i);
+    onChange({ ...question, choices, correctIndex: Math.min(question.correctIndex, choices.length - 1) });
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border-gold bg-white/[0.02] p-3">
+      <div className="flex items-center gap-2">
+        <Input value={question.q} onChange={(e) => onChange({ ...question, q: e.target.value })} placeholder="Question text" />
+        <button onClick={onRemove} title="Remove question" className="shrink-0 rounded-md p-1.5 text-red-300/80 hover:bg-red-500/10">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {question.choices.map((c, ci) => (
+          <div key={ci} className="flex items-center gap-2">
+            <input
+              type="radio"
+              checked={question.correctIndex === ci}
+              onChange={() => onChange({ ...question, correctIndex: ci })}
+              className="accent-violet"
+              title="Mark as the correct answer"
+            />
+            <Input value={c} onChange={(e) => setChoice(ci, e.target.value)} placeholder={`Choice ${ci + 1}`} className="flex-1" />
+            {question.choices.length > 2 && (
+              <button onClick={() => removeChoice(ci)} title="Remove choice" className="shrink-0 text-white/40 hover:text-red-300">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      {question.choices.length < 8 && (
+        <button onClick={addChoice} className="text-xs text-violet hover:underline">
+          + Add choice
+        </button>
+      )}
+    </div>
   );
 }
 

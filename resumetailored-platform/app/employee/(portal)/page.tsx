@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { FileText, MessageSquare, Megaphone, Pin, CalendarDays, Clock, CalendarClock } from "lucide-react";
+import { FileText, MessageSquare, Megaphone, Pin, CalendarDays, Clock, CalendarClock, ClipboardCheck } from "lucide-react";
 import { employeeContext } from "@/lib/employee-auth";
 import { listActiveAnnouncements } from "@/lib/announcements-store";
+import { getLatestEmployeeChecklist } from "@/lib/checklist-store";
+import { checklistProgress } from "@/lib/checklist-hub";
 import { TimeClockWidget } from "./time-clock-widget";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +15,10 @@ export default async function EmployeeHomePage() {
   const ctx = await employeeContext();
   if (!ctx) return null;
 
-  const announcements = await listActiveAnnouncements(ctx.employerId);
+  const [announcements, checklist] = await Promise.all([
+    listActiveAnnouncements(ctx.employerId),
+    getLatestEmployeeChecklist(ctx.employerId, ctx.employeeId),
+  ]);
   const first = ctx.employee.name.trim().split(/\s+/)[0] || "there";
 
   return (
@@ -27,6 +32,33 @@ export default async function EmployeeHomePage() {
 
       {/* Time clock */}
       <TimeClockWidget />
+
+      {/* Onboarding checklist — read-only here; the employer checks off items. */}
+      {checklist && (
+        <section className="glass px-5 py-5">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-white/70">
+              <ClipboardCheck className="h-4 w-4 text-violet" /> {checklist.name}
+            </div>
+            <span className="text-xs text-white/40">{checklistProgress(checklist.items)}% complete</span>
+          </div>
+          <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div className="h-full rounded-full bg-violet transition-all" style={{ width: `${checklistProgress(checklist.items)}%` }} />
+          </div>
+          <ul className="space-y-1.5">
+            {checklist.items.map((it) => (
+              <li key={it.id} className="flex items-center gap-2 text-sm">
+                <span
+                  className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${it.done ? "border-violet bg-violet" : "border-white/25"}`}
+                >
+                  {it.done && <span className="h-1.5 w-1.5 rounded-sm bg-white" />}
+                </span>
+                <span className={it.done ? "text-white/40 line-through" : "text-white/80"}>{it.label}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Announcements */}
       <section className="space-y-3">
