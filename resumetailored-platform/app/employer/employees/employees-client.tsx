@@ -50,6 +50,12 @@ interface TrainingRollup {
   doc: TrainingDoc;
   assigned: number;
   counts: { signed: number; waived: number; pending: number; overdue: number };
+  hasQuiz: boolean;
+}
+interface QuizQuestionDraft {
+  q: string;
+  choices: string[];
+  correctIndex: number;
 }
 
 export function EmployeesClient({ canManage }: { canManage: boolean }) {
@@ -1151,11 +1157,11 @@ function Training({
                   </div>
                   <div className="mt-1 text-xs text-white/45">
                     Assigned to {r.doc.assignTo === "all" ? "everyone" : r.doc.assignTo} · {r.assigned} employee{r.assigned === 1 ? "" : "s"}
-                    {r.doc.requireSignature ? " · signature required" : ""}
+                    {r.hasQuiz ? " · quiz attached" : ""}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {r.counts.signed > 0 && <Badge tone="teal">{r.counts.signed} signed</Badge>}
+                  {r.counts.signed > 0 && <Badge tone="teal">{r.counts.signed} completed</Badge>}
                   {r.counts.pending > 0 && <Badge tone="gold">{r.counts.pending} pending</Badge>}
                   {r.counts.overdue > 0 && <Badge tone="red">{r.counts.overdue} overdue</Badge>}
                   {r.counts.waived > 0 && <Badge tone="neutral">{r.counts.waived} waived</Badge>}
@@ -1191,7 +1197,9 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
   const [pdfUrl, setPdfUrl] = useState("");
   const [assignTo, setAssignTo] = useState("all");
   const [dueAt, setDueAt] = useState("");
-  const [requireSignature, setRequireSignature] = useState(true);
+  const [withQuiz, setWithQuiz] = useState(false);
+  const [questions, setQuestions] = useState<QuizQuestionDraft[]>([]);
+  const [passThreshold, setPassThreshold] = useState(80);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
   const [notice, setNotice] = useState("");
@@ -1210,6 +1218,11 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
       setErr("Add content: pick from the Library, an authored document, paste content, or add a PDF URL.");
       return;
     }
+    const cleanQuestions = withQuiz ? questions.filter((q) => q.q.trim() && q.choices.filter((c) => c.trim()).length >= 2) : [];
+    if (withQuiz && cleanQuestions.length === 0) {
+      setErr("Add at least one complete question (text + 2 choices), or turn the quiz off.");
+      return;
+    }
     setSaving(true);
     setErr("");
     const res = await fetch("/api/employer/training", {
@@ -1224,7 +1237,9 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
         pdfUrl: libraryItem ? undefined : pdfUrl,
         assignTo,
         dueAt,
-        requireSignature,
+        quiz: cleanQuestions.length
+          ? { questions: cleanQuestions.map((q) => ({ q: q.q, choices: q.choices.filter((c) => c.trim()), correctIndex: q.correctIndex })), passThreshold }
+          : undefined,
       }),
     });
     setSaving(false);
@@ -1233,8 +1248,8 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
       setErr(data.error || "Could not create training item.");
       return;
     }
-    if (data.sendWarning) {
-      setNotice(`Assigned to ${data.assigned}. ${data.sent ? `${data.sent} signing request(s) sent. ` : ""}${data.sendWarning}`);
+    if (data.emailWarning) {
+      setNotice(`Assigned to ${data.assigned}. ${data.emailed ? `${data.emailed} email(s) sent. ` : ""}${data.emailWarning}`);
       onSaved();
       return; // keep the modal open so the warning is read; owner closes it
     }
@@ -1275,7 +1290,7 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
               </button>
             </div>
             <p className="mt-1 text-xs text-white/45">
-              {libraryItem.kind === "video" ? "Employees watch the embedded video, then complete the signature/quiz step." : "The document content is shown to employees to review."}
+              {libraryItem.kind === "video" ? "Employees watch the embedded video, then mark it complete (or pass the quiz, if you add one below)." : "The document content is shown to employees to review, then they mark it complete."}
             </p>
           </div>
         ) : (
@@ -1320,10 +1335,39 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
           </Field>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-cream">
-          <input type="checkbox" checked={requireSignature} onChange={(e) => setRequireSignature(e.target.checked)} className="h-4 w-4 accent-violet" />
-          Require e-signature (sends each assignee a signing request)
-        </label>
+        <div className="rounded-lg border border-border-gold bg-white/[0.03] p-3">
+          <label className="flex items-center gap-2 text-sm text-cream">
+            <input type="checkbox" checked={withQuiz} onChange={(e) => setWithQuiz(e.target.checked)} className="h-4 w-4 accent-violet" />
+            Add a quiz — the employee takes it after the content to complete this training
+          </label>
+          {withQuiz && (
+            <div className="mt-3 space-y-3">
+              {questions.map((q, qi) => (
+                <QuizQuestionRow
+                  key={qi}
+                  question={q}
+                  onChange={(next) => setQuestions((qs) => qs.map((x, i) => (i === qi ? next : x)))}
+                  onRemove={() => setQuestions((qs) => qs.filter((_, i) => i !== qi))}
+                />
+              ))}
+              <Btn
+                variant="ghost"
+                onClick={() => setQuestions((qs) => [...qs, { q: "", choices: ["", ""], correctIndex: 0 }])}
+              >
+                <Plus className="h-4 w-4" /> Add question
+              </Btn>
+              <Field label="Pass threshold (%)">
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={passThreshold}
+                  onChange={(e) => setPassThreshold(Math.min(100, Math.max(1, Number(e.target.value) || 80)))}
+                />
+              </Field>
+            </div>
+          )}
+        </div>
 
         {err && <p className="text-sm text-red-300">{err}</p>}
         {notice && <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-gold">{notice}</p>}
@@ -1339,6 +1383,65 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
         </div>
       </div>
     </Modal>
+  );
+}
+
+function QuizQuestionRow({
+  question,
+  onChange,
+  onRemove,
+}: {
+  question: QuizQuestionDraft;
+  onChange: (next: QuizQuestionDraft) => void;
+  onRemove: () => void;
+}) {
+  function setChoice(i: number, value: string) {
+    const choices = question.choices.map((c, idx) => (idx === i ? value : c));
+    onChange({ ...question, choices });
+  }
+  function addChoice() {
+    if (question.choices.length >= 8) return;
+    onChange({ ...question, choices: [...question.choices, ""] });
+  }
+  function removeChoice(i: number) {
+    if (question.choices.length <= 2) return;
+    const choices = question.choices.filter((_, idx) => idx !== i);
+    onChange({ ...question, choices, correctIndex: Math.min(question.correctIndex, choices.length - 1) });
+  }
+
+  return (
+    <div className="space-y-2 rounded-lg border border-border-gold bg-white/[0.02] p-3">
+      <div className="flex items-center gap-2">
+        <Input value={question.q} onChange={(e) => onChange({ ...question, q: e.target.value })} placeholder="Question text" />
+        <button onClick={onRemove} title="Remove question" className="shrink-0 rounded-md p-1.5 text-red-300/80 hover:bg-red-500/10">
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="space-y-1.5">
+        {question.choices.map((c, ci) => (
+          <div key={ci} className="flex items-center gap-2">
+            <input
+              type="radio"
+              checked={question.correctIndex === ci}
+              onChange={() => onChange({ ...question, correctIndex: ci })}
+              className="accent-violet"
+              title="Mark as the correct answer"
+            />
+            <Input value={c} onChange={(e) => setChoice(ci, e.target.value)} placeholder={`Choice ${ci + 1}`} className="flex-1" />
+            {question.choices.length > 2 && (
+              <button onClick={() => removeChoice(ci)} title="Remove choice" className="shrink-0 text-white/40 hover:text-red-300">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      {question.choices.length < 8 && (
+        <button onClick={addChoice} className="text-xs text-violet hover:underline">
+          + Add choice
+        </button>
+      )}
+    </div>
   );
 }
 

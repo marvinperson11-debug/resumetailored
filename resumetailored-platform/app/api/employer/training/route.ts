@@ -1,37 +1,19 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
 import { employerContext } from "@/lib/employer-auth";
 import { isEmployer } from "@/lib/plan";
 import { listEmployees } from "@/lib/employees-store";
-import {
-  listTrainingDocs,
-  createTrainingDoc,
-  ensureAcknowledgments,
-  setAckEnvelope,
-  listAllAcknowledgments,
-  assignees,
-} from "@/lib/training-store";
+import { listTrainingDocs, createTrainingDoc, ensureAcknowledgments, listAllAcknowledgments, assignees } from "@/lib/training-store";
 import { getDocument, sanitizeDocumentHtml } from "@/lib/documents-store";
-import { getLibraryItem } from "@/lib/training-library";
-import { escapeHtml } from "@/lib/email";
-import { getEmployerProfile } from "@/lib/employer-store";
-import { isDocKind, complianceState, type Employee, type Acknowledgment } from "@/lib/employee-hub";
-import {
-  isDocusignConfigured,
-  buildEnvelope,
-  wrapDocumentHtml,
-  renderSignatureBlock,
-  createEnvelope,
-  normalizeEnvelopeStatus,
-} from "@/lib/docusign";
-import { getValidAccessToken, monthlySendCount, createEnvelopeRecord } from "@/lib/docusign-store";
-import { checkSendAllowance } from "@/lib/employer-plan";
-import type { DocusignStatus } from "@/lib/employer-ai";
+import { getLibraryItem, libraryItemBodyHtml } from "@/lib/training-library";
+import { upsertQuiz, docIdsWithQuiz } from "@/lib/quiz-store";
+import { sendEmail, emailShell, escapeHtml } from "@/lib/email";
+import { isDocKind, complianceState, type Acknowledgment } from "@/lib/employee-hub";
 
 export const runtime = "nodejs";
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
-/** GET training docs with a per-doc compliance rollup (counts by state). */
+/** GET training docs with a per-doc compliance rollup (counts by state) and
+ *  whether each has a quiz attached. */
 export async function GET() {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
@@ -40,6 +22,7 @@ export async function GET() {
     listAllAcknowledgments(ctx.employerId),
     listEmployees(ctx.employerId),
   ]);
+  const quizDocIds = await docIdsWithQuiz(ctx.employerId, docs.map((d) => d.id));
   const byDoc = new Map<number, Acknowledgment[]>();
   for (const a of acks) {
     const arr = byDoc.get(a.trainingDocId) || [];
@@ -50,16 +33,19 @@ export async function GET() {
     const list = byDoc.get(doc.id) || [];
     const counts = { signed: 0, waived: 0, pending: 0, overdue: 0 };
     for (const a of list) counts[complianceState(a)]++;
-    return { doc, assigned: assignees(doc, employees).length, counts };
+    return { doc, assigned: assignees(doc, employees).length, counts, hasQuiz: quizDocIds.has(doc.id) };
   });
   return NextResponse.json({ training: rollup });
 }
 
 /**
- * POST create a training doc, assign it (creating pending acknowledgments for
- * the assignees), and — when require_signature — send each assignee the signing
- * request via the existing DocuSign path (doc_type 'custom'). The doc is created
- * and assigned even when DocuSign isn't connected; `sendWarning` says so.
+ * POST create a training doc and assign it (creating pending acknowledgments
+ * for the assignees). In-house only — no DocuSign: each assignee gets a plain
+ * Resend "new training assigned" email pointing at their portal, where they
+ * watch/read the content and complete it themselves (directly, or by passing
+ * an attached quiz). The doc is created and assigned even when Resend isn't
+ * configured; `emailWarning` says so. (Write-ups/agreements keep the DocuSign
+ * flow — that's the separate Documents tab, untouched by this route.)
  */
 export async function POST(req: Request) {
   const ctx = await employerContext();
@@ -74,8 +60,8 @@ export async function POST(req: Request) {
     libraryItemId?: number;
     pdfUrl?: string;
     assignTo?: string;
-    requireSignature?: boolean;
     dueAt?: string;
+    quiz?: { questions?: unknown; passThreshold?: unknown };
   };
   const title = (b.title || "").trim();
   if (!title) return NextResponse.json({ error: "A title is required." }, { status: 400 });
@@ -84,8 +70,7 @@ export async function POST(req: Request) {
   // Library ("Pick from Library"); an authored document ("Use in training"); an
   // inline HTML paste; or a PDF upload URL. In every case a self-contained
   // snapshot is stored so later edits to the source don't change assigned
-  // training. A Library video has no body of its own, so we store an attestation
-  // block (real, signable content) and keep library_item_id for the watch embed.
+  // training.
   let bodyHtml = (b.bodyHtml || "").trim();
   let sourceDocumentId: number | null = null;
   let libraryItemId: number | null = null;
@@ -93,11 +78,7 @@ export async function POST(req: Request) {
     const item = await getLibraryItem(Number(b.libraryItemId));
     if (!item) return NextResponse.json({ error: "Library item not found." }, { status: 404 });
     libraryItemId = item.id;
-    if (item.kind === "video") {
-      bodyHtml = `<p>Watch the training video: <strong>${escapeHtml(item.title)}</strong> (${escapeHtml(item.provider)}).</p><p>By signing you confirm you have watched this video in full. Source: <a href="${escapeHtml(item.sourceUrl)}">${escapeHtml(item.sourceUrl)}</a></p>`;
-    } else {
-      bodyHtml = item.bodyHtml || `<p>${escapeHtml(item.title)} — source: <a href="${escapeHtml(item.sourceUrl)}">${escapeHtml(item.sourceUrl)}</a></p>`;
-    }
+    bodyHtml = libraryItemBodyHtml(item);
   } else if (b.sourceDocumentId && Number.isFinite(b.sourceDocumentId)) {
     const src = await getDocument(ctx.employerId, Number(b.sourceDocumentId));
     if (!src) return NextResponse.json({ error: "Source document not found." }, { status: 404 });
@@ -107,7 +88,6 @@ export async function POST(req: Request) {
   const pdfUrl = (b.pdfUrl || "").trim();
   if (!bodyHtml && !pdfUrl) return NextResponse.json({ error: "Add content: pick from the Library, author a document, or attach a PDF." }, { status: 400 });
 
-  const requireSignature = b.requireSignature !== false;
   const dueAt = (b.dueAt || "").trim() ? new Date(b.dueAt as string).toISOString() : null;
 
   const doc = await createTrainingDoc(ctx.employerId, {
@@ -117,102 +97,51 @@ export async function POST(req: Request) {
     sourceDocumentId,
     pdfUrl: pdfUrl || null,
     assignTo: (b.assignTo || "all").trim() || "all",
-    requireSignature,
+    requireSignature: false,
     libraryItemId,
   });
   if (!doc) return NextResponse.json({ error: "Could not create the training item. Is the database configured?" }, { status: 500 });
 
+  let hasQuiz = false;
+  if (b.quiz && Array.isArray(b.quiz.questions) && b.quiz.questions.length > 0) {
+    const quiz = await upsertQuiz(ctx.employerId, doc.id, b.quiz.questions, b.quiz.passThreshold);
+    hasQuiz = !!quiz;
+  }
+
   const employees = await listEmployees(ctx.employerId);
   const acks = await ensureAcknowledgments(ctx.employerId, doc, employees, dueAt);
 
-  // Fire the e-sign requests when a signature is required and DocuSign is ready.
-  let sent = 0;
-  let sendWarning: string | null = null;
-  if (requireSignature && doc.bodyHtml) {
-    const result = await sendSigningRequests(ctx.employerId, ctx.userId, doc.bodyHtml, doc.title, employees, acks, ctx.access);
-    sent = result.sent;
-    sendWarning = result.warning;
-  } else if (requireSignature && !doc.bodyHtml) {
-    sendWarning = "A PDF-only item can't be sent for e-signature automatically — mark it acknowledged manually or attach it to a signing request.";
-  }
+  const { emailed, emailWarning } = await notifyAssignees(employees, acks, doc.title, hasQuiz);
 
-  return NextResponse.json({ doc, assigned: acks.length, sent, sendWarning });
+  return NextResponse.json({ doc, assigned: acks.length, emailed, emailWarning, hasQuiz });
 }
 
-/** Build + send a per-assignee DocuSign envelope for a training doc, linking
- *  each envelope to its acknowledgment. Best-effort; returns a warning string
- *  when nothing could be sent (not configured / not connected / no cap left). */
-async function sendSigningRequests(
-  employerId: string,
-  userId: string,
-  bodyHtml: string,
-  docTitle: string,
-  employees: Employee[],
+/** Plain "you've been assigned training" email per pending assignee — no
+ *  DocuSign, no signing request. Best-effort; a missing/unconfigured Resend
+ *  key just means 0 emailed (the doc is still assigned and visible in-portal). */
+async function notifyAssignees(
+  employees: Awaited<ReturnType<typeof listEmployees>>,
   acks: Acknowledgment[],
-  access: Parameters<typeof checkSendAllowance>[0]
-): Promise<{ sent: number; warning: string | null }> {
-  if (!isDocusignConfigured()) return { sent: 0, warning: "DocuSign isn't configured on this deployment — mark items acknowledged manually." };
-  const token = await getValidAccessToken(employerId);
-  if (!token) return { sent: 0, warning: "Connect your DocuSign account to send signing requests. The item is assigned and pending." };
-
+  docTitle: string,
+  hasQuiz: boolean
+): Promise<{ emailed: number; emailWarning: string | null }> {
   const empById = new Map(employees.map((e) => [e.id, e] as const));
-  const profile = await getEmployerProfile(employerId);
-  const companyName = profile?.companyName || "";
-
-  let used = await monthlySendCount(employerId);
-  let sent = 0;
-  let capHit = false;
-
+  let emailed = 0;
   for (const ack of acks) {
-    if (ack.status !== "pending" || ack.envelopeId) continue; // already handled
+    if (ack.status !== "pending") continue;
     const employee = empById.get(ack.employeeId);
     if (!employee || !EMAIL_RE.test(employee.email)) continue;
-
-    const allowance = checkSendAllowance(access, used);
-    if (!allowance.allowed) {
-      capHit = true;
-      break;
-    }
-
-    const documentHtml = wrapDocumentHtml(`${bodyHtml}${renderSignatureBlock(employee.name || "Recipient")}`);
-    const subject = `${docTitle} to acknowledge${companyName ? ` from ${companyName}` : ""}`;
-    const definition = buildEnvelope({
-      documentHtml,
-      documentName: docTitle,
-      subject,
-      message: "Please review and sign to acknowledge this document.",
-      signerName: employee.name || "Recipient",
-      signerEmail: employee.email,
+    const ok = await sendEmail({
+      to: employee.email,
+      subject: `New training assigned: ${docTitle}`,
+      html: emailShell(
+        `<p>Hi ${escapeHtml(employee.name || "there")},</p>
+<p>You've been assigned a new training item: <strong>${escapeHtml(docTitle)}</strong>.</p>
+<p>Open your employee portal → My training to review it${hasQuiz ? " and take the short quiz" : " and mark it complete"}.</p>`
+      ),
     });
-    const result = await createEnvelope(
-      { baseUri: token.baseUri, accountId: token.accountId, accessToken: token.accessToken },
-      definition
-    );
-    if ("error" in result) continue;
-
-    const status = (normalizeEnvelopeStatus(result.status) || "sent") as DocusignStatus;
-    await createEnvelopeRecord(employerId, {
-      docType: "custom",
-      documentName: docTitle,
-      applicantId: null,
-      shortlistMemberId: null,
-      envelopeId: result.envelopeId,
-      subject,
-      message: "",
-      status,
-      offer: { position: "", salary: "", startDate: "", extraTerms: "" },
-      candidateName: employee.name || "Recipient",
-      candidateEmail: employee.email,
-      sentBy: userId,
-      signToken: crypto.randomUUID(),
-      requestedDocs: [],
-    });
-    await setAckEnvelope(employerId, ack.id, result.envelopeId);
-    used++;
-    sent++;
+    if (ok) emailed++;
   }
-
-  if (sent === 0 && capHit) return { sent, warning: "Your monthly e-signature send limit is reached — items are assigned and pending." };
-  if (capHit) return { sent, warning: "Some signing requests weren't sent — monthly e-signature limit reached." };
-  return { sent, warning: null };
+  const warning = emailed === 0 && acks.some((a) => a.status === "pending") ? "Assigned, but no emails were sent — is RESEND_API_KEY configured?" : null;
+  return { emailed, emailWarning: warning };
 }
