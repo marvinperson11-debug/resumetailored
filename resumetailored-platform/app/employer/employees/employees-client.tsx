@@ -27,6 +27,7 @@ import {
   type ChecklistTemplateWithItems,
   type EmployeeChecklistWithItems,
 } from "@/lib/checklist-hub";
+import { certStatus, hasExpiringCert, CERT_STATUS_TONE, CERT_STATUS_LABELS, type EmployeeCert } from "@/lib/cert-hub";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer } from "../components/ui";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
@@ -103,12 +104,24 @@ function Directory({ canManage }: { canManage: boolean }) {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [openId, setOpenId] = useState<number | null>(null);
+  const [expiringIds, setExpiringIds] = useState<Set<number>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch("/api/employer/employees").then((r) => r.json()).catch(() => ({}));
-    setEmployees(res.employees || []);
-    setRoles(res.roles || []);
+    const [empRes, certRes] = await Promise.all([
+      fetch("/api/employer/employees").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/employer/certs").then((r) => r.json()).catch(() => ({})),
+    ]);
+    setEmployees(empRes.employees || []);
+    setRoles(empRes.roles || []);
+    const certs = (certRes.certs || []) as EmployeeCert[];
+    const byEmployee = new Map<number, EmployeeCert[]>();
+    for (const c of certs) byEmployee.set(c.employeeId, [...(byEmployee.get(c.employeeId) || []), c]);
+    const flagged = new Set<number>();
+    byEmployee.forEach((list, id) => {
+      if (hasExpiringCert(list)) flagged.add(id);
+    });
+    setExpiringIds(flagged);
     setLoading(false);
   }, []);
   useEffect(() => {
@@ -155,7 +168,14 @@ function Directory({ canManage }: { canManage: boolean }) {
                   onClick={() => setOpenId(e.id)}
                   className="cursor-pointer border-b border-border-gold/50 transition-colors last:border-0 hover:bg-white/[0.03]"
                 >
-                  <td className="px-4 py-3 font-medium text-cream">{e.name}</td>
+                  <td className="px-4 py-3 font-medium text-cream">
+                    <span className="inline-flex items-center gap-1.5">
+                      {expiringIds.has(e.id) && (
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-red-400" title="A certification is expiring or expired" />
+                      )}
+                      {e.name}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-white/70">{e.role || "—"}</td>
                   <td className="px-4 py-3 text-white/60">{e.email || "—"}</td>
                   <td className="px-4 py-3 text-white/60">{e.startDate || "—"}</td>
@@ -271,15 +291,18 @@ function EmployeeDrawer({
   const [inviting, setInviting] = useState(false);
   const [inviteMsg, setInviteMsg] = useState("");
   const [onboarding, setOnboarding] = useState<EmployeeChecklistWithItems | null>(null);
+  const [certs, setCerts] = useState<EmployeeCert[]>([]);
 
   const loadDetail = useCallback(async () => {
     setLoading(true);
-    const [detail, checklistRes] = await Promise.all([
+    const [detail, checklistRes, certsRes] = await Promise.all([
       fetch(`/api/employer/employees/${employee.id}`).then((r) => r.json()).catch(() => ({})),
       fetch(`/api/employer/employees/${employee.id}/checklist`).then((r) => r.json()).catch(() => ({})),
+      fetch(`/api/employer/employees/${employee.id}/certs`).then((r) => r.json()).catch(() => ({})),
     ]);
     setChecklist(detail.checklist || []);
     setOnboarding(checklistRes.checklist || null);
+    setCerts(certsRes.certs || []);
     setLoading(false);
   }, [employee.id]);
   useEffect(() => {
@@ -417,6 +440,17 @@ function EmployeeDrawer({
               canManage={canManage}
               onChanged={loadDetail}
             />
+          )}
+        </section>
+
+        <section>
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
+            <ShieldCheck className="h-4 w-4 text-violet" /> Certifications
+          </h3>
+          {loading ? (
+            <p className="text-sm text-white/50">Loading…</p>
+          ) : (
+            <Certifications employeeId={employee.id} certs={certs} canManage={canManage} onChanged={loadDetail} />
           )}
         </section>
 
@@ -574,6 +608,136 @@ function OnboardingChecklist({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function Certifications({
+  employeeId,
+  certs,
+  canManage,
+  onChanged,
+}: {
+  employeeId: number;
+  certs: EmployeeCert[];
+  canManage: boolean;
+  onChanged: () => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState("");
+  const [issuedDate, setIssuedDate] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function submit() {
+    if (!name.trim()) {
+      setErr("A name is required.");
+      return;
+    }
+    setSaving(true);
+    setErr("");
+    try {
+      const res = await fetch(`/api/employer/employees/${employeeId}/certs`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, issuedDate: issuedDate || undefined, expiryDate: expiryDate || undefined }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { cert?: EmployeeCert; error?: string };
+      if (!res.ok || !d.cert) {
+        setErr(d.error || "Could not add the certification.");
+        return;
+      }
+      if (file) {
+        const form = new FormData();
+        form.append("file", file);
+        await fetch(`/api/employer/certs/${d.cert.id}/file`, { method: "POST", body: form });
+      }
+      setName("");
+      setIssuedDate("");
+      setExpiryDate("");
+      setFile(null);
+      setAdding(false);
+      onChanged();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove(id: number) {
+    if (!confirm("Delete this certification?")) return;
+    await fetch(`/api/employer/certs/${id}`, { method: "DELETE" });
+    onChanged();
+  }
+
+  return (
+    <div className="space-y-2">
+      {certs.length === 0 && !adding ? (
+        <p className="text-sm text-white/50">No certifications on file.</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {certs.map((c) => {
+            const status = certStatus(c);
+            return (
+              <li key={c.id} className="flex items-center justify-between gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm">
+                <div className="min-w-0">
+                  <div className="truncate text-cream">{c.name}</div>
+                  <div className="text-xs text-white/45">
+                    {c.expiryDate ? `Expires ${c.expiryDate}` : "No expiry set"}
+                    {c.fileUrl && (
+                      <>
+                        {" · "}
+                        <a href={`/api/employer/certs/${c.id}/file`} target="_blank" rel="noreferrer" className="text-violet hover:underline">
+                          File
+                        </a>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Badge tone={CERT_STATUS_TONE[status]}>{CERT_STATUS_LABELS[status]}</Badge>
+                  {canManage && (
+                    <button onClick={() => remove(c.id)} title="Delete" className="rounded-md p-1 text-red-300/80 hover:bg-red-500/10">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {canManage &&
+        (adding ? (
+          <div className="space-y-2 rounded-lg border border-border-gold bg-white/[0.03] p-3">
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Forklift certification" />
+            <div className="grid grid-cols-2 gap-2">
+              <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} />
+              <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+            </div>
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="block w-full text-xs text-white/60 file:mr-2 file:rounded file:border-0 file:bg-violet/20 file:px-2 file:py-1 file:text-violet"
+            />
+            {err && <p className="text-sm text-red-300">{err}</p>}
+            <div className="flex gap-2">
+              <Btn onClick={submit} loading={saving}>
+                Add
+              </Btn>
+              <Btn variant="ghost" onClick={() => setAdding(false)} disabled={saving}>
+                Cancel
+              </Btn>
+            </div>
+          </div>
+        ) : (
+          <Btn variant="ghost" onClick={() => setAdding(true)}>
+            <Plus className="h-4 w-4" /> Add certification
+          </Btn>
+        ))}
     </div>
   );
 }

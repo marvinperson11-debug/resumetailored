@@ -13,6 +13,9 @@ const nextConfig = {
     // instead of the whole library. Big first-load win for lucide-react (used
     // across every sidebar/nav) and recharts (employer dashboards only).
     optimizePackageImports: ["lucide-react", "recharts"],
+    // Enables instrumentation.ts's register() — the in-process daily cert
+    // reminder scheduler (gated by CERT_CRON=on; see instrumentation.ts).
+    instrumentationHook: true,
   },
 };
 
