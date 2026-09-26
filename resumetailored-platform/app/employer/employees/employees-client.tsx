@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff, ClipboardCheck, ClipboardList } from "lucide-react";
+import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff, ClipboardCheck, ClipboardList, Rss, Flag, PartyPopper, MessageCircle, CheckCircle2, Circle, BarChart3 } from "lucide-react";
 import {
   EMPLOYEE_STATUSES,
   EMPLOYEE_STATUS_LABELS,
@@ -28,14 +28,18 @@ import {
   type EmployeeChecklistWithItems,
 } from "@/lib/checklist-hub";
 import { certStatus, hasExpiringCert, CERT_STATUS_TONE, CERT_STATUS_LABELS, type EmployeeCert } from "@/lib/cert-hub";
+import { FEED_KIND_LABELS, type FeedPost, type FeedComment, type FeedPostKind } from "@/lib/feed-hub";
+import { SKILL_LEVEL_COLORS, SKILL_LEVEL_LABELS, MAX_SKILL_LEVEL, type Skill, type EmployeeSkill } from "@/lib/skills-hub";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer } from "../components/ui";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
 const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "neutral", invited: "gold", accepted: "teal" };
 
-export type Tab = "directory" | "announcements" | "onboarding" | "training" | "library";
+export type Tab = "directory" | "feed" | "skills" | "announcements" | "onboarding" | "training" | "library";
 const TAB_META: Record<Tab, { label: string; icon: typeof UserCheck }> = {
   directory: { label: "Directory", icon: UserCheck },
+  feed: { label: "Feed", icon: Rss },
+  skills: { label: "Skills", icon: BarChart3 },
   announcements: { label: "Announcements", icon: Megaphone },
   onboarding: { label: "Onboarding", icon: ClipboardCheck },
   training: { label: "Training", icon: GraduationCap },
@@ -103,6 +107,8 @@ export function EmployeesClient({
         })}
       </div>
       {tab === "directory" && <Directory canManage={canManage} />}
+      {tab === "feed" && <Feed canManage={canManage} />}
+      {tab === "skills" && <SkillsMatrix canManage={canManage} />}
       {tab === "announcements" && <Announcements canManage={canManage} />}
       {tab === "onboarding" && <Onboarding canManage={canManage} />}
       {tab === "training" && <Training canManage={canManage} preset={preset} presetNonce={presetNonce} initialDocId={initialDocId} />}
@@ -879,6 +885,340 @@ function Announcements({ canManage }: { canManage: boolean }) {
             </Panel>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────── Feed ──────────────────────────────────── */
+const FEED_KIND_ICON: Record<FeedPostKind, typeof Rss> = { post: Rss, issue: Flag, win: PartyPopper };
+const FEED_KIND_TONE: Record<FeedPostKind, "violet" | "red" | "teal"> = { post: "violet", issue: "red", win: "teal" };
+
+function Feed({ canManage }: { canManage: boolean }) {
+  const [posts, setPosts] = useState<FeedPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [kind, setKind] = useState<FeedPostKind>("post");
+  const [body, setBody] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [openId, setOpenId] = useState<number | null>(null);
+  const [comments, setComments] = useState<Record<number, FeedComment[]>>({});
+  const [reply, setReply] = useState("");
+  const [replying, setReplying] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/employer/feed").then((r) => r.json()).catch(() => ({}));
+    setPosts(res.posts || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function post() {
+    if (!body.trim() || posting) return;
+    setPosting(true);
+    try {
+      const res = await fetch("/api/employer/feed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind, body }),
+      });
+      if (res.ok) {
+        setBody("");
+        setKind("post");
+        await load();
+      }
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  async function toggle(id: number, patch: Partial<Pick<FeedPost, "pinned" | "resolved">>) {
+    await fetch(`/api/employer/feed/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    });
+    await load();
+  }
+
+  async function loadComments(postId: number) {
+    const res = await fetch(`/api/employer/feed/${postId}/comments`).then((r) => r.json()).catch(() => ({}));
+    setComments((c) => ({ ...c, [postId]: res.comments || [] }));
+  }
+
+  async function openThread(post: FeedPost) {
+    const next = openId === post.id ? null : post.id;
+    setOpenId(next);
+    if (next && !comments[post.id]) await loadComments(post.id);
+  }
+
+  async function sendReply(postId: number) {
+    if (!reply.trim() || replying) return;
+    setReplying(true);
+    try {
+      const res = await fetch(`/api/employer/feed/${postId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: reply }),
+      });
+      if (res.ok) {
+        setReply("");
+        await loadComments(postId);
+        await load(); // comment count on the card
+      }
+    } finally {
+      setReplying(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {canManage && (
+        <Panel>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream">
+            <Rss className="h-4 w-4 text-violet" /> Post to the team feed
+          </h3>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              {(Object.keys(FEED_KIND_LABELS) as FeedPostKind[]).map((k) => {
+                const Icon = FEED_KIND_ICON[k];
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setKind(k)}
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                      kind === k ? "border-violet bg-violet/15 text-violet" : "border-border-gold text-muted-cream hover:bg-white/5"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" /> {FEED_KIND_LABELS[k]}
+                  </button>
+                );
+              })}
+            </div>
+            <Area value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={4000} placeholder="Share an update, flag something, or celebrate a win…" />
+            <Btn onClick={post} loading={posting} disabled={!body.trim()}>
+              <Send className="h-4 w-4" /> Post
+            </Btn>
+          </div>
+        </Panel>
+      )}
+
+      {loading ? (
+        <Panel className="text-sm text-white/55">Loading…</Panel>
+      ) : posts.length === 0 ? (
+        <EmptyState icon={Rss} title="No posts yet" body="Updates, issues and wins from both sides of the team show up here." />
+      ) : (
+        <div className="space-y-3">
+          {posts.map((p) => {
+            const Icon = FEED_KIND_ICON[p.kind];
+            const tone = FEED_KIND_TONE[p.kind];
+            return (
+              <Panel key={p.id} className={p.resolved ? "opacity-70" : ""}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {p.pinned && <Pin className="h-3.5 w-3.5 shrink-0 text-gold" />}
+                      <Badge tone={tone}>
+                        <span className="inline-flex items-center gap-1">
+                          <Icon className="h-3 w-3" /> {FEED_KIND_LABELS[p.kind]}
+                        </span>
+                      </Badge>
+                      <span className="font-medium text-cream">{p.authorName}</span>
+                      <span className="text-xs text-white/40">{p.authorKind === "employee" ? "employee" : "employer"}</span>
+                      {p.resolved && <Badge tone="teal">Resolved</Badge>}
+                    </div>
+                    <p className="mt-1.5 whitespace-pre-wrap text-sm text-white/80">{p.body}</p>
+                    <div className="mt-1.5 text-xs text-white/40">{new Date(p.createdAt).toLocaleString()}</div>
+                  </div>
+                  {canManage && (
+                    <div className="flex shrink-0 gap-1">
+                      <button onClick={() => toggle(p.id, { pinned: !p.pinned })} title={p.pinned ? "Unpin" : "Pin"} className="rounded-md p-1.5 text-white/60 hover:bg-white/5 hover:text-cream">
+                        {p.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-3 flex items-center gap-3 border-t border-border-gold/50 pt-3">
+                  <button onClick={() => openThread(p)} className="inline-flex items-center gap-1.5 text-xs font-medium text-violet hover:underline">
+                    <MessageCircle className="h-3.5 w-3.5" /> {p.commentCount} {p.commentCount === 1 ? "comment" : "comments"}
+                  </button>
+                  {/* Any employer-side viewer may resolve — the API's "employer or
+                      original poster" split is enforced per-route (this route has
+                      no per-post restriction on the employer side). */}
+                  <button onClick={() => toggle(p.id, { resolved: !p.resolved })} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-cream hover:text-cream">
+                    {p.resolved ? <Circle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    {p.resolved ? "Reopen" : "Mark resolved"}
+                  </button>
+                </div>
+
+                {openId === p.id && (
+                  <div className="mt-3 space-y-2 border-t border-border-gold/50 pt-3">
+                    {(comments[p.id] || []).map((c) => (
+                      <div key={c.id} className="rounded-lg bg-white/[0.03] px-3 py-2">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="font-medium text-cream">{c.authorName}</span>
+                          <span className="text-white/35">{new Date(c.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p className="mt-0.5 whitespace-pre-wrap text-sm text-white/75">{c.body}</p>
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <Input value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Reply…" maxLength={2000} onKeyDown={(e) => e.key === "Enter" && sendReply(p.id)} />
+                      <Btn variant="ghost" onClick={() => sendReply(p.id)} loading={replying} disabled={!reply.trim()}>
+                        <Send className="h-4 w-4" />
+                      </Btn>
+                    </div>
+                  </div>
+                )}
+              </Panel>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────── Skills Matrix ─────────────────────────────── */
+function SkillsMatrix({ canManage }: { canManage: boolean }) {
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [cells, setCells] = useState<EmployeeSkill[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [newSkill, setNewSkill] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<{ employeeId: number; skillId: number } | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [empRes, skillRes] = await Promise.all([
+      fetch("/api/employer/employees").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/employer/skills").then((r) => r.json()).catch(() => ({})),
+    ]);
+    setEmployees((empRes.employees || []).filter((e: Employee) => e.status !== "offboarded"));
+    setSkills(skillRes.skills || []);
+    setCells(skillRes.cells || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function addSkill() {
+    if (!newSkill.trim() || adding) return;
+    setAdding(true);
+    try {
+      const res = await fetch("/api/employer/skills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newSkill }),
+      });
+      if (res.ok) {
+        setNewSkill("");
+        await load();
+      }
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  async function setLevel(employeeId: number, skillId: number, level: number | null) {
+    setCells((prev) => {
+      const rest = prev.filter((c) => !(c.employeeId === employeeId && c.skillId === skillId));
+      return level === null ? rest : [...rest, { employeeId, skillId, level, updatedAt: new Date().toISOString() }];
+    });
+    setEditing(null);
+    await fetch(`/api/employer/employees/${employeeId}/skills`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ skillId, level }),
+    });
+  }
+
+  if (loading) return <Panel className="text-sm text-white/55">Loading…</Panel>;
+
+  return (
+    <div className="space-y-6">
+      {canManage && (
+        <Panel>
+          <h3 className="mb-3 text-sm font-semibold text-cream">Add a skill</h3>
+          <div className="flex gap-2">
+            <Input value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="e.g. Forklift operation" maxLength={100} onKeyDown={(e) => e.key === "Enter" && addSkill()} />
+            <Btn onClick={addSkill} loading={adding} disabled={!newSkill.trim()}>
+              <Plus className="h-4 w-4" /> Add
+            </Btn>
+          </div>
+        </Panel>
+      )}
+
+      {employees.length === 0 || skills.length === 0 ? (
+        <EmptyState
+          icon={BarChart3}
+          title="Nothing to show yet"
+          body={skills.length === 0 ? "Add your first skill above to start the matrix." : "Add employees to the directory to rate them here."}
+        />
+      ) : (
+        <Panel className="overflow-x-auto p-0">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-border-gold text-xs uppercase tracking-wide text-white/45">
+                <th className="sticky left-0 bg-navy px-4 py-3 font-semibold">Employee</th>
+                {skills.map((s) => (
+                  <th key={s.id} className="whitespace-nowrap px-3 py-3 text-center font-semibold">
+                    {s.name}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {employees.map((e) => (
+                <tr key={e.id} className="border-b border-border-gold/50 last:border-0">
+                  <td className="sticky left-0 whitespace-nowrap bg-navy px-4 py-2.5 font-medium text-cream">{e.name}</td>
+                  {skills.map((s) => {
+                    const cell = cells.find((c) => c.employeeId === e.id && c.skillId === s.id);
+                    const isEditing = editing?.employeeId === e.id && editing?.skillId === s.id;
+                    return (
+                      <td key={s.id} className="relative px-3 py-2.5 text-center">
+                        <button
+                          type="button"
+                          disabled={!canManage}
+                          onClick={() => canManage && setEditing(isEditing ? null : { employeeId: e.id, skillId: s.id })}
+                          title={cell ? SKILL_LEVEL_LABELS[cell.level] : "Not rated"}
+                          className={`mx-auto flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold transition-colors ${
+                            cell ? SKILL_LEVEL_COLORS[cell.level] : "bg-white/5 text-white/25"
+                          } ${canManage ? "cursor-pointer hover:ring-1 hover:ring-violet" : "cursor-default"}`}
+                        >
+                          {cell ? cell.level : "–"}
+                        </button>
+                        {isEditing && (
+                          <div className="absolute left-1/2 top-full z-10 mt-1 flex -translate-x-1/2 gap-1 rounded-lg border border-border-gold bg-navy p-1.5 shadow-xl">
+                            {Array.from({ length: MAX_SKILL_LEVEL }, (_, i) => i + 1).map((lvl) => (
+                              <button
+                                key={lvl}
+                                onClick={() => setLevel(e.id, s.id, lvl)}
+                                title={SKILL_LEVEL_LABELS[lvl]}
+                                className={`flex h-6 w-6 items-center justify-center rounded text-xs font-bold ${SKILL_LEVEL_COLORS[lvl]}`}
+                              >
+                                {lvl}
+                              </button>
+                            ))}
+                            <button onClick={() => setLevel(e.id, s.id, null)} title="Clear" className="flex h-6 w-6 items-center justify-center rounded bg-white/5 text-white/50 hover:text-cream">
+                              ×
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
       )}
     </div>
   );

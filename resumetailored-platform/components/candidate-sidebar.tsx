@@ -22,7 +22,6 @@ import {
   Settings,
   Star,
   Crown,
-  Lock,
   type LucideIcon,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -41,10 +40,11 @@ interface NavItem {
   opens?: ToolId;
   /** Hero item — always violet-tinted so it reads as the primary action. */
   hero?: boolean;
-  /** Show a small "PRO" pill to the right. */
+  /** Show a small "PRO" pill to the right — one consistent badge for every
+   *  gated feature, whether it's fully locked (Resume Video, Personal Website:
+   *  clicking opens the upgrade flow) or freemium (Interview, Career, Decoder:
+   *  opens with Pro-gated sections inside). */
   pro?: boolean;
-  /** Fully Pro-gated: free users see a lock and clicking opens the upgrade flow. */
-  locked?: boolean;
 }
 
 // Built tools open in a modal (FIX 3); everything else navigates. "Build My
@@ -56,15 +56,15 @@ const navItems: NavItem[] = [
   { label: "myResumes", href: "/candidate/resumes", icon: FileText },
   { label: "coverLetters", opens: "cover", icon: PenTool },
   { label: "atsScanner", opens: "ats", icon: ScanLine },
-  { label: "linkedin", opens: "linkedin", icon: Contact, pro: true },
+  { label: "linkedin", opens: "linkedin", icon: Contact },
   { label: "interview", opens: "interview", icon: MessageSquare, pro: true },
-  { label: "jobs", opens: "jobs", icon: Zap, pro: true },
+  { label: "jobs", opens: "jobs", icon: Zap },
   { label: "career", opens: "career", icon: Briefcase, pro: true },
   { label: "decoder", opens: "decoder", icon: FileSearch, pro: true },
   { label: "applications", href: "/candidate/applications", icon: Send },
   { label: "shareable", href: "/candidate/shareable-links", icon: LinkIcon },
-  { label: "resumeVideo", opens: "video", icon: Video, pro: true, locked: true },
-  { label: "personalWebsite", href: "/candidate/studio", icon: Globe, pro: true, locked: true },
+  { label: "resumeVideo", opens: "video", icon: Video, pro: true },
+  { label: "personalWebsite", href: "/candidate/studio", icon: Globe, pro: true },
   { label: "templates", href: "/candidate/templates", icon: Layout },
   { label: "profile", href: "/candidate/profile", icon: User },
   { label: "settings", href: "/candidate/settings", icon: Settings },
@@ -142,12 +142,7 @@ export function CandidateSidebar({ role = { plan: "free" }, isAdmin }: { role?: 
             <>
               <Icon className="h-[18px] w-[18px] shrink-0" />
               <span className={cn(!item.pro && "flex-1")}>{t(item.label)}</span>
-              {item.pro &&
-                (item.locked && !proish ? (
-                  <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-muted-cream" />
-                ) : (
-                  <ProBadge />
-                ))}
+              {item.pro && <ProBadge />}
             </>
           );
 

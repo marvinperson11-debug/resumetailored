@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, UserCheck, MessageSquare, Star, CalendarClock, CalendarDays, Clock, Plane, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, UserCheck, MessageSquare, Star, CalendarClock, CalendarDays, Clock, Plane, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, Lock, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminViewToggle } from "@/components/admin-view-toggle";
 import { PlanPreviewSwitcher } from "@/components/plan-preview-switcher";
@@ -46,7 +46,20 @@ export function isEmployerNavActive(pathname: string, href: string, exact?: bool
  * by `DashboardShell` in both the persistent desktop rail and the mobile
  * slide-out drawer, so the two portals look and behave identically.
  */
-export function EmployerSidebar({ company, isAdmin, planLabel = "Portal" }: { company: string; isAdmin?: boolean; planLabel?: string }) {
+export function EmployerSidebar({
+  company,
+  isAdmin,
+  planLabel = "Portal",
+  lockedHrefs = [],
+}: {
+  company: string;
+  isAdmin?: boolean;
+  planLabel?: string;
+  /** Nav hrefs whose feature isn't available at the current (or previewed)
+   *  tier — rendered with a small lock badge instead of blocking the link
+   *  entirely, since the page itself shows the real upgrade prompt. */
+  lockedHrefs?: string[];
+}) {
   const pathname = usePathname();
 
   return (
@@ -61,6 +74,7 @@ export function EmployerSidebar({ company, isAdmin, planLabel = "Portal" }: { co
         {EMPLOYER_NAV.map((n) => {
           const Icon = n.icon;
           const isActive = isEmployerNavActive(pathname, n.href, n.exact);
+          const locked = lockedHrefs.includes(n.href);
           return (
             <Link
               key={n.href}
@@ -74,6 +88,7 @@ export function EmployerSidebar({ company, isAdmin, planLabel = "Portal" }: { co
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
               <span className="flex-1">{n.label}</span>
+              {locked && <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-gold" aria-label="Upgrade required" />}
             </Link>
           );
         })}

@@ -19,6 +19,8 @@ export const NOTIFICATION_TYPES = [
   "schedule_published",
   "cert_expiring",
   "invite_accepted",
+  "feed_post",
+  "feed_comment",
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 

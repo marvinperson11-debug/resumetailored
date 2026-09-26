@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, FileText, MessageSquare, CalendarClock, CalendarDays, Clock, GraduationCap, BookOpen, Sparkles, type LucideIcon } from "lucide-react";
+import { Home, FileText, MessageSquare, CalendarClock, CalendarDays, Clock, GraduationCap, BookOpen, Rss, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@/components/sign-out-button";
 
@@ -16,6 +16,7 @@ export interface EmployeeNavItem {
 /** Single source of truth for the employee-portal nav. */
 export const EMPLOYEE_NAV: EmployeeNavItem[] = [
   { label: "Home", href: "/employee", icon: Home, exact: true },
+  { label: "Feed", href: "/employee/feed", icon: Rss },
   { label: "My schedule", href: "/employee/schedule", icon: CalendarDays },
   { label: "My hours", href: "/employee/timesheet", icon: Clock },
   { label: "Time off", href: "/employee/time-off", icon: CalendarClock },
@@ -71,21 +72,6 @@ export function EmployeeSidebar({ company, name }: { company: string; name?: str
             </Link>
           );
         })}
-
-        {/* A workforce employee's login also works for the free candidate
-            tools (resume tailoring, cover letters, ATS scan, …) — same
-            account, a separate area. Purely a navigational door: nothing
-            about staff access is gated on the candidate side, and using
-            these tools never notifies the employer. */}
-        <div className="mt-3 border-t border-border-gold pt-3">
-          <Link
-            href="/candidate"
-            className="flex w-full items-center gap-3 rounded-md border-l-2 border-transparent px-4 py-3 text-sm text-muted-cream transition-all duration-200 hover:bg-white/5"
-          >
-            <Sparkles className="h-[18px] w-[18px] shrink-0" />
-            <span className="flex-1">Career &amp; resume tools</span>
-          </Link>
-        </div>
       </nav>
 
       <div className="shrink-0 border-t border-border-gold px-3 py-3">
