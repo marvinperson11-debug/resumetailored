@@ -11,10 +11,10 @@ const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "
 /** Employer's employee-message inbox: a thread list on the left, the open thread
  *  on the right (single column with back-nav on mobile). Fresh component,
  *  deliberately separate from the candidate MessagesClient. */
-export function EmployeeThreads() {
+export function EmployeeThreads({ initialEmployeeId }: { initialEmployeeId?: number } = {}) {
   const [threads, setThreads] = useState<EmployeeThread[]>([]);
   const [loading, setLoading] = useState(true);
-  const [openId, setOpenId] = useState<number | null>(null);
+  const [openId, setOpenId] = useState<number | null>(initialEmployeeId ?? null);
 
   const load = useCallback(async () => {
     setLoading(true);

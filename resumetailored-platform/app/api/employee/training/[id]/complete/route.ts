@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { employeeContext } from "@/lib/employee-auth";
-import { employeeMarkComplete } from "@/lib/training-store";
+import { employeeMarkComplete, getTrainingDoc } from "@/lib/training-store";
 import { getQuizForDoc } from "@/lib/quiz-store";
+import { logActivityForEmployer } from "@/lib/notifications-store";
 
 export const runtime = "nodejs";
 
@@ -19,5 +20,13 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
 
   const ack = await employeeMarkComplete(ctx.employerId, ctx.employeeId, docId);
   if (!ack) return NextResponse.json({ error: "Could not mark this complete." }, { status: 400 });
+
+  const doc = await getTrainingDoc(ctx.employerId, docId);
+  logActivityForEmployer(ctx.employerId, {
+    eventType: "training_completed",
+    title: `${ctx.employee.name || "An employee"} completed training: ${doc?.title || "Untitled"}`,
+    link: `/employer/employees?tab=training&doc=${docId}`,
+  }).catch(() => {});
+
   return NextResponse.json({ ack });
 }

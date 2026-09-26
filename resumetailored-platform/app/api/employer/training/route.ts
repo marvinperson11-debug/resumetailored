@@ -7,6 +7,7 @@ import { getDocument, sanitizeDocumentHtml } from "@/lib/documents-store";
 import { getLibraryItem, libraryItemBodyHtml } from "@/lib/training-library";
 import { upsertQuiz, docIdsWithQuiz } from "@/lib/quiz-store";
 import { sendEmail, emailShell, escapeHtml } from "@/lib/email";
+import { logActivityForEmployee } from "@/lib/notifications-store";
 import { isDocKind, complianceState, type Acknowledgment } from "@/lib/employee-hub";
 
 export const runtime = "nodejs";
@@ -111,7 +112,7 @@ export async function POST(req: Request) {
   const employees = await listEmployees(ctx.employerId);
   const acks = await ensureAcknowledgments(ctx.employerId, doc, employees, dueAt);
 
-  const { emailed, emailWarning } = await notifyAssignees(employees, acks, doc.title, hasQuiz);
+  const { emailed, emailWarning } = await notifyAssignees(ctx.employerId, doc.id, employees, acks, doc.title, hasQuiz);
 
   return NextResponse.json({ doc, assigned: acks.length, emailed, emailWarning, hasQuiz });
 }
@@ -120,6 +121,8 @@ export async function POST(req: Request) {
  *  DocuSign, no signing request. Best-effort; a missing/unconfigured Resend
  *  key just means 0 emailed (the doc is still assigned and visible in-portal). */
 async function notifyAssignees(
+  employerId: string,
+  docId: number,
   employees: Awaited<ReturnType<typeof listEmployees>>,
   acks: Acknowledgment[],
   docTitle: string,
@@ -130,7 +133,15 @@ async function notifyAssignees(
   for (const ack of acks) {
     if (ack.status !== "pending") continue;
     const employee = empById.get(ack.employeeId);
-    if (!employee || !EMAIL_RE.test(employee.email)) continue;
+    if (!employee) continue;
+
+    logActivityForEmployee(employerId, employee.id, {
+      eventType: "training_assigned",
+      title: `New training assigned: ${docTitle}`,
+      link: `/employee/training?open=${docId}`,
+    }).catch(() => {});
+
+    if (!EMAIL_RE.test(employee.email)) continue;
     const ok = await sendEmail({
       to: employee.email,
       subject: `New training assigned: ${docTitle}`,

@@ -11,6 +11,9 @@ interface DashboardShellProps {
   sidebar: ReactNode;
   /** Label shown in the top bar (company name or the career-office label). */
   title: string;
+  /** The notification bell — passed only by the employer and employee
+   *  layouts; the candidate shell omits it, so nothing renders there. */
+  bell?: ReactNode;
   children: ReactNode;
 }
 
@@ -24,7 +27,7 @@ function RTLogo() {
   );
 }
 
-export function DashboardShell({ sidebar, title, children }: DashboardShellProps) {
+export function DashboardShell({ sidebar, title, bell, children }: DashboardShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
   const t = useTranslations("topbar");
@@ -83,7 +86,8 @@ export function DashboardShell({ sidebar, title, children }: DashboardShellProps
             <LanguageSwitcher />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {bell}
             <ProfileButton />
           </div>
         </header>

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SignUp, ClerkLoading, ClerkLoaded } from "@clerk/nextjs";
+import { InstallAppButton } from "@/components/pwa/install-app-button";
 
 function SignUpInner() {
   const [slow, setSlow] = useState(false);
@@ -45,6 +46,10 @@ function SignUpInner() {
           forceRedirectUrl={dest}
           fallbackRedirectUrl={dest}
           signInForceRedirectUrl={dest}
+        />
+        <InstallAppButton
+          label="Download the app"
+          className="mt-6 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
         />
       </ClerkLoaded>
     </main>

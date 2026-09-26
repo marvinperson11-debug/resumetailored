@@ -5,6 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlanPreviewBanner } from "@/components/plan-preview-banner";
+import { PWAProvider } from "@/components/pwa/pwa-context";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
@@ -62,8 +63,10 @@ export default async function RootLayout({
             <LoadingScreen />
           </ClerkLoading>
           <NextIntlClientProvider locale={locale} messages={messages}>
-            <PlanPreviewBanner />
-            {children}
+            <PWAProvider>
+              <PlanPreviewBanner />
+              {children}
+            </PWAProvider>
           </NextIntlClientProvider>
         </body>
       </html>

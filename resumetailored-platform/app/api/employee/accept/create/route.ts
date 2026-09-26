@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { getEmployeeByInviteToken, linkClerkUser } from "@/lib/employees-store";
 import { getEmployerProfile } from "@/lib/employer-store";
+import { logActivityForEmployer } from "@/lib/notifications-store";
 
 export const runtime = "nodejs";
 
@@ -95,6 +96,12 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+
+  logActivityForEmployer(invite.employerId, {
+    eventType: "invite_accepted",
+    title: `${invite.name || "An employee"} accepted their portal invite`,
+    link: "/employer/employees",
+  }).catch(() => {});
 
   // One-time ticket the page redeems client-side to open the session.
   try {

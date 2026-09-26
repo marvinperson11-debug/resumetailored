@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { canUseEmployerPortal } from "@/lib/plan";
 import { setTimeOffStatus, updateTimeOffDates } from "@/lib/time-store";
-import { isTimeOffStatus, parseISODate } from "@/lib/time-hub";
+import { isTimeOffStatus, parseISODate, timeOffRangeLabel } from "@/lib/time-hub";
+import { logActivityForEmployee } from "@/lib/notifications-store";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   const request = await setTimeOffStatus(ctx.employerId, id, b.status, b.note || "", ctx.userId);
   if (!request) return NextResponse.json({ error: "Could not update the request." }, { status: 400 });
+
+  if (b.status === "approved" || b.status === "declined") {
+    logActivityForEmployee(ctx.employerId, request.employeeId, {
+      eventType: "time_off_decided",
+      title: `Your time off (${timeOffRangeLabel(request)}) was ${b.status}`,
+      link: "/employee/time-off",
+    }).catch(() => {});
+  }
+
   return NextResponse.json({ request });
 }
 

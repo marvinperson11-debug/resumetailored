@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { getEmployeeByInviteToken, getEmployeeByClerkUserId, linkClerkUser } from "@/lib/employees-store";
 import { getEmployerProfile } from "@/lib/employer-store";
+import { logActivityForEmployer } from "@/lib/notifications-store";
 
 export const runtime = "nodejs";
 
@@ -44,6 +45,11 @@ export async function POST(req: Request) {
   if (!existing) {
     const linked = await linkClerkUser(invite.employerId, invite.id, userId);
     if (!linked) return NextResponse.json({ error: "Could not link your account. Please try again." }, { status: 500 });
+    logActivityForEmployer(invite.employerId, {
+      eventType: "invite_accepted",
+      title: `${invite.name || "An employee"} accepted their portal invite`,
+      link: "/employer/employees",
+    }).catch(() => {});
   }
 
   const profile = await getEmployerProfile(invite.employerId);

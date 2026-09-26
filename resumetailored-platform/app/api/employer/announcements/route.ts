@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { listAnnouncements, createAnnouncement } from "@/lib/announcements-store";
+import { listEmployees } from "@/lib/employees-store";
+import { logActivityForEmployees } from "@/lib/notifications-store";
 
 export const runtime = "nodejs";
 
@@ -24,5 +26,14 @@ export async function POST(req: Request) {
     createdBy: ctx.userId,
   });
   if (!created) return NextResponse.json({ error: "Give the announcement a title." }, { status: 400 });
+
+  const employees = await listEmployees(ctx.employerId);
+  const active = employees.filter((e) => e.status !== "offboarded");
+  logActivityForEmployees(ctx.employerId, active.map((e) => e.id), {
+    eventType: "announcement_posted",
+    title: `New announcement: ${created.title}`,
+    link: "/employee",
+  }).catch(() => {});
+
   return NextResponse.json({ announcement: created });
 }

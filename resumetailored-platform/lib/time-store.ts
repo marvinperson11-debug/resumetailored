@@ -241,6 +241,32 @@ export async function setReview(
   }
 }
 
+/** The employee flags a week ready for review — an explicit signal so the
+ *  employer's bell has something to fire on, distinct from "hours happen to
+ *  exist for this week." Never resets an already-approved week; resubmitting
+ *  after a decline (or before any review exists) sets it back to pending. */
+export async function submitTimesheet(employerId: string, employeeId: number, weekStart: string): Promise<TimesheetReview | null> {
+  const c = db();
+  if (!c || !employerId || !employeeId || !weekStart) return null;
+  const existing = await getReview(employerId, employeeId, weekStart);
+  if (existing && existing.status === "approved") return existing;
+  try {
+    const { data, error } = await c
+      .from("timesheet_reviews")
+      .upsert(
+        { employer_id: employerId, employee_id: employeeId, week_start: weekStart, status: "pending", updated_at: new Date().toISOString() },
+        { onConflict: "employer_id,employee_id,week_start" }
+      )
+      .select(REVIEW_COLS)
+      .single();
+    if (error || !data) return null;
+    return mapReview(data);
+  } catch (e) {
+    console.error("[submitTimesheet]", e);
+    return null;
+  }
+}
+
 /* ───────────────────────────────── Shifts ───────────────────────────────── */
 
 const SHIFT_COLS = "id, employee_id, shift_date, start_time, end_time, note, published";
@@ -357,21 +383,28 @@ export async function updateShift(
   }
 }
 
-/** Delete a shift. */
-export async function deleteShift(employerId: string, id: number): Promise<boolean> {
+/** Delete a shift, returning the row as it was just before deletion (so the
+ *  caller can tell whether it was live/published, and who to notify). */
+export async function deleteShift(employerId: string, id: number): Promise<Shift | null> {
   const c = db();
-  if (!c || !employerId || !id) return false;
+  if (!c || !employerId || !id) return null;
   try {
-    const { error } = await c.from("shifts").delete().eq("employer_id", employerId).eq("id", id);
-    return !error;
+    const { data, error } = await c.from("shifts").delete().eq("employer_id", employerId).eq("id", id).select(SHIFT_COLS).maybeSingle();
+    if (error) return null;
+    return data ? mapShift(data) : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
 /** Publish every shift in a week (draft → visible to employees). Returns the
  *  number of newly-published shifts, or null on failure. */
-export async function publishWeek(employerId: string, weekStart: string): Promise<number | null> {
+export interface PublishResult {
+  count: number;
+  employeeIds: number[];
+}
+
+export async function publishWeek(employerId: string, weekStart: string): Promise<PublishResult | null> {
   const c = db();
   if (!c || !employerId || !weekStart) return null;
   const endExclusive = addDays(weekStart, 7);
@@ -383,9 +416,10 @@ export async function publishWeek(employerId: string, weekStart: string): Promis
       .eq("published", false)
       .gte("shift_date", weekStart)
       .lt("shift_date", endExclusive)
-      .select("id");
+      .select("id, employee_id");
     if (error) return null;
-    return (data || []).length;
+    const rows = data || [];
+    return { count: rows.length, employeeIds: Array.from(new Set(rows.map((r) => r.employee_id as number))) };
   } catch {
     return null;
   }

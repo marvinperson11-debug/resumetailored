@@ -3,7 +3,8 @@ import { employerContext } from "@/lib/employer-auth";
 import { canUseEmployerPortal } from "@/lib/plan";
 import { getEmployee } from "@/lib/employees-store";
 import { setReview } from "@/lib/time-store";
-import { isReviewStatus, weekStartISO } from "@/lib/time-hub";
+import { isReviewStatus, weekStartISO, weekLabel } from "@/lib/time-hub";
+import { logActivityForEmployee } from "@/lib/notifications-store";
 
 export const runtime = "nodejs";
 
@@ -25,5 +26,14 @@ export async function POST(req: Request) {
   const weekStart = weekStartISO(b.weekStart || undefined);
   const review = await setReview(ctx.employerId, employeeId, weekStart, b.status, b.note || "", ctx.userId);
   if (!review) return NextResponse.json({ error: "Could not save the review." }, { status: 500 });
+
+  if (b.status === "approved" || b.status === "declined") {
+    logActivityForEmployee(ctx.employerId, employeeId, {
+      eventType: "timesheet_decided",
+      title: `Your timesheet for ${weekLabel(weekStart)} was ${b.status}`,
+      link: "/employee/timesheet",
+    }).catch(() => {});
+  }
+
   return NextResponse.json({ review });
 }

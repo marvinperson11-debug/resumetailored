@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { NotificationBell } from "@/components/notification-bell";
 import { employeeContext } from "@/lib/employee-auth";
 import { getAccess, isStaffEmployee } from "@/lib/plan";
 import { getEmployerProfile } from "@/lib/employer-store";
@@ -39,7 +40,11 @@ export default async function EmployeeLayout({ children }: { children: ReactNode
   const company = profile?.companyName || ctx.access.employerName || "Your workplace";
 
   return (
-    <DashboardShell sidebar={<EmployeeSidebar company={company} name={ctx.employee.name} />} title={company}>
+    <DashboardShell
+      sidebar={<EmployeeSidebar company={company} name={ctx.employee.name} />}
+      title={company}
+      bell={<NotificationBell basePath="/api/employee" />}
+    >
       {children}
     </DashboardShell>
   );

@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SignIn, ClerkLoading, ClerkLoaded } from "@clerk/nextjs";
+import { InstallAppButton } from "@/components/pwa/install-app-button";
 
 // Clean, single-purpose sign-in. ClerkLoading/ClerkLoaded guarantee the page
 // is never a blank black void: a dark charcoal background + a "Loading sign-in…"
@@ -59,6 +60,10 @@ function SignInInner() {
         >
           Employee of a company? Go to the Employee portal →
         </a>
+        <InstallAppButton
+          label="Download the app"
+          className="mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
+        />
       </ClerkLoaded>
     </main>
   );

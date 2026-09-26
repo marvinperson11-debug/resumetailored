@@ -33,7 +33,7 @@ import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
 const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "neutral", invited: "gold", accepted: "teal" };
 
-type Tab = "directory" | "announcements" | "onboarding" | "training" | "library";
+export type Tab = "directory" | "announcements" | "onboarding" | "training" | "library";
 const TAB_META: Record<Tab, { label: string; icon: typeof UserCheck }> = {
   directory: { label: "Directory", icon: UserCheck },
   announcements: { label: "Announcements", icon: Megaphone },
@@ -58,8 +58,16 @@ interface QuizQuestionDraft {
   correctIndex: number;
 }
 
-export function EmployeesClient({ canManage }: { canManage: boolean }) {
-  const [tab, setTab] = useState<Tab>("directory");
+export function EmployeesClient({
+  canManage,
+  initialTab,
+  initialDocId,
+}: {
+  canManage: boolean;
+  initialTab?: Tab;
+  initialDocId?: number;
+}) {
+  const [tab, setTab] = useState<Tab>(initialTab ?? "directory");
   // "Use in training" from the Library switches to the Training tab and opens
   // the composer prefilled; the nonce lets the same item be re-picked.
   const [preset, setPreset] = useState<TrainingLibraryItem | null>(null);
@@ -97,7 +105,7 @@ export function EmployeesClient({ canManage }: { canManage: boolean }) {
       {tab === "directory" && <Directory canManage={canManage} />}
       {tab === "announcements" && <Announcements canManage={canManage} />}
       {tab === "onboarding" && <Onboarding canManage={canManage} />}
-      {tab === "training" && <Training canManage={canManage} preset={preset} presetNonce={presetNonce} />}
+      {tab === "training" && <Training canManage={canManage} preset={preset} presetNonce={presetNonce} initialDocId={initialDocId} />}
       {tab === "library" && <Library canManage={canManage} onUseInTraining={useInTraining} />}
     </div>
   );
@@ -1096,16 +1104,18 @@ function Training({
   canManage,
   preset,
   presetNonce,
+  initialDocId,
 }: {
   canManage: boolean;
   preset?: TrainingLibraryItem | null;
   presetNonce?: number;
+  initialDocId?: number;
 }) {
   const [rollup, setRollup] = useState<TrainingRollup[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [presetItem, setPresetItem] = useState<TrainingLibraryItem | null>(null);
-  const [openId, setOpenId] = useState<number | null>(null);
+  const [openId, setOpenId] = useState<number | null>(initialDocId ?? null);
 
   const load = useCallback(async () => {
     setLoading(true);

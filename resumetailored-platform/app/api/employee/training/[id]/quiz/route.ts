@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { employeeContext } from "@/lib/employee-auth";
-import { getAcknowledgmentByDocAndEmployee, recordQuizAttempt } from "@/lib/training-store";
+import { getAcknowledgmentByDocAndEmployee, recordQuizAttempt, getTrainingDoc } from "@/lib/training-store";
 import { getQuizForDoc } from "@/lib/quiz-store";
 import { scoreQuiz } from "@/lib/quiz-hub";
+import { logActivityForEmployer } from "@/lib/notifications-store";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,15 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const result = scoreQuiz(quiz.questions, answers, quiz.passThreshold);
   const updated = await recordQuizAttempt(ctx.employerId, ack.id, result.score, result.passed);
   if (!updated) return NextResponse.json({ error: "Could not record your attempt." }, { status: 500 });
+
+  if (result.passed && ack.status === "pending") {
+    const doc = await getTrainingDoc(ctx.employerId, docId);
+    logActivityForEmployer(ctx.employerId, {
+      eventType: "training_completed",
+      title: `${ctx.employee.name || "An employee"} completed training: ${doc?.title || "Untitled"} (${result.score}%)`,
+      link: `/employer/employees?tab=training&doc=${docId}`,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({
     score: result.score,
