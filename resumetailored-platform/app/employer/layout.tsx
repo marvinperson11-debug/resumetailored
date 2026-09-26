@@ -4,6 +4,7 @@ import { LockedFeature } from "@/components/locked-feature";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationBell } from "@/components/notification-bell";
 import { getAccess, canUseEmployerPortal, resolveEmployerId } from "@/lib/plan";
+import { videoMonthlyLimit } from "@/lib/employer-plan";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { EmployerSidebar } from "./components/employer-sidebar";
 import { OnboardingModal } from "./components/onboarding-modal";
@@ -37,10 +38,21 @@ export default async function EmployerLayout({ children }: { children: ReactNode
   const company = profile?.companyName || "Your company";
   // Tier NAME only for the sidebar badge — Portal / Scale / Corporate.
   const planLabel = access.tier === "scale" ? "Scale" : access.tier === "corporate" ? "Corporate" : "Portal";
+  // Nav items whose whole feature is unavailable at this tier get a lock badge
+  // in the sidebar — currently just Scheduler (video interviews are 0 on Free).
+  // The real admin bypass (isAdmin, no active preview) never shows locks.
+  const lockedHrefs = !access.isAdmin && videoMonthlyLimit(access) === 0 ? ["/employer/scheduler"] : [];
 
   return (
     <DashboardShell
-      sidebar={<EmployerSidebar company={company} isAdmin={access.realAdmin || access.isAdmin} planLabel={planLabel} />}
+      sidebar={
+        <EmployerSidebar
+          company={company}
+          isAdmin={access.realAdmin || access.isAdmin}
+          planLabel={planLabel}
+          lockedHrefs={lockedHrefs}
+        />
+      }
       title={company}
       bell={<NotificationBell basePath="/api/employer" />}
     >

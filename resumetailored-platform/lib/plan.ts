@@ -66,7 +66,12 @@ function previewToAccess(side: string, plan: string): Access | null {
   };
   const label = (l: string): Access["preview"] => ({ side: side as "employer" | "candidate", plan, label: l });
   if (side === "employer") {
-    if (plan === "free") return { ...base, plan: "free", type: "individual", preview: label("Free") };
+    // "Free" is a real employer tier (see lib/employer-plan.ts), not the
+    // individual free role — it must stay `plan:"employer"` so
+    // canUseEmployerPortal still admits it and the portal renders with its
+    // real tier-based feature gates (video interviews, DocuSign caps, …)
+    // instead of bouncing to the full LockedFeature page.
+    if (plan === "free") return { ...base, plan: "employer", type: "organization", tier: "free", preview: label("Free") };
     if (plan === "portal") return { ...base, plan: "employer", type: "organization", tier: "portal", preview: label("Portal") };
     if (plan === "scale") return { ...base, plan: "employer", type: "organization", tier: "scale", preview: label("Scale") };
     if (plan === "corporate") return { ...base, plan: "employer", type: "organization", tier: "corporate", preview: label("Corporate") };

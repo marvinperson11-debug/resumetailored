@@ -3,6 +3,7 @@ import { getEmployerProfile } from "@/lib/employer-store";
 import { EMPLOYEE_STATUS_LABELS } from "@/lib/employee-hub";
 import { ManageAccountButton } from "./profile-client";
 import { MyCertifications } from "./certs-client";
+import { MySkills } from "./skills-client";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,8 @@ export default async function EmployeeProfilePage() {
       </div>
 
       <MyCertifications />
+
+      <MySkills />
 
       <div className="rounded-2xl border border-border-gold bg-white/[0.03] p-6">
         <h2 className="mb-1 text-sm font-semibold text-cream">Account</h2>

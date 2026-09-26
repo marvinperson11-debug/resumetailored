@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell, GraduationCap, MessageSquare, Megaphone, CalendarClock, Clock, CalendarDays, ShieldAlert, UserCheck, type LucideIcon } from "lucide-react";
+import { Bell, GraduationCap, MessageSquare, Megaphone, CalendarClock, Clock, CalendarDays, ShieldAlert, UserCheck, Rss, type LucideIcon } from "lucide-react";
 
 interface NotificationItem {
   id: number;
@@ -26,6 +26,8 @@ const ICONS: Record<string, LucideIcon> = {
   schedule_published: CalendarDays,
   cert_expiring: ShieldAlert,
   invite_accepted: UserCheck,
+  feed_post: Rss,
+  feed_comment: Rss,
 };
 
 function timeAgo(iso: string): string {
