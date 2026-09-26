@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { auth } from "@clerk/nextjs/server";
 import { LockedFeature } from "@/components/locked-feature";
 import { DashboardShell } from "@/components/dashboard-shell";
+import { NotificationBell } from "@/components/notification-bell";
 import { getAccess, canUseEmployerPortal, resolveEmployerId } from "@/lib/plan";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { EmployerSidebar } from "./components/employer-sidebar";
@@ -38,7 +39,11 @@ export default async function EmployerLayout({ children }: { children: ReactNode
   const planLabel = access.tier === "scale" ? "Scale" : access.tier === "corporate" ? "Corporate" : "Portal";
 
   return (
-    <DashboardShell sidebar={<EmployerSidebar company={company} isAdmin={access.realAdmin || access.isAdmin} planLabel={planLabel} />} title={company}>
+    <DashboardShell
+      sidebar={<EmployerSidebar company={company} isAdmin={access.realAdmin || access.isAdmin} planLabel={planLabel} />}
+      title={company}
+      bell={<NotificationBell basePath="/api/employer" />}
+    >
       {children}
       {needsOnboarding && <OnboardingModal />}
     </DashboardShell>

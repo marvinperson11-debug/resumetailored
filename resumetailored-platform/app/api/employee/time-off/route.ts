@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { employeeContext } from "@/lib/employee-auth";
 import { listTimeOffForEmployee, createTimeOff } from "@/lib/time-store";
-import { isTimeOffKind, parseISODate } from "@/lib/time-hub";
+import { isTimeOffKind, parseISODate, timeOffRangeLabel } from "@/lib/time-hub";
+import { logActivityForEmployer } from "@/lib/notifications-store";
 
 export const runtime = "nodejs";
 
@@ -32,5 +33,12 @@ export async function POST(req: Request) {
     reason: b.reason,
   });
   if (!request) return NextResponse.json({ error: "Could not submit your request." }, { status: 500 });
+
+  logActivityForEmployer(ctx.employerId, {
+    eventType: "time_off_requested",
+    title: `${ctx.employee.name || "An employee"} requested time off (${timeOffRangeLabel(request)})`,
+    link: "/employer/time-off",
+  }).catch(() => {});
+
   return NextResponse.json({ request });
 }

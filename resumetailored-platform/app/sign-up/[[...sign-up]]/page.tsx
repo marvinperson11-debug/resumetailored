@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { SignUp, ClerkLoading, ClerkLoaded } from "@clerk/nextjs";
+import { InstallAppButton } from "@/components/pwa/install-app-button";
 
 function SignUpInner() {
   const [slow, setSlow] = useState(false);
@@ -45,6 +46,21 @@ function SignUpInner() {
           forceRedirectUrl={dest}
           fallbackRedirectUrl={dest}
           signInForceRedirectUrl={dest}
+        />
+        {/* Pre-empts the confusing dead end where a workforce employee tries
+            to sign up here with their work email, Clerk blocks the
+            duplicate, and there's no obvious next step — the same login
+            already works for both. */}
+        <p className="mt-6 max-w-xs text-center text-xs text-white/40">
+          Already part of a team on ResumeTailored?{" "}
+          <a href="/sign-in" className="text-white/60 underline-offset-4 hover:text-white/85 hover:underline">
+            Sign in instead
+          </a>{" "}
+          — your work login also works for these personal resume tools.
+        </p>
+        <InstallAppButton
+          label="Download the app"
+          className="mt-6 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"
         />
       </ClerkLoaded>
     </main>

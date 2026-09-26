@@ -14,8 +14,16 @@ type Mode = "candidates" | "employees";
  * the complex candidate client stays untouched. Opening a candidate thread from
  * elsewhere (?applicantId=) still lands on the Candidates tab by default.
  */
-export function MessagesTabs({ initialApplicantId }: { initialApplicantId?: number }) {
-  const [mode, setMode] = useState<Mode>("candidates");
+export function MessagesTabs({
+  initialApplicantId,
+  initialMode,
+  initialEmployeeId,
+}: {
+  initialApplicantId?: number;
+  initialMode?: Mode;
+  initialEmployeeId?: number;
+}) {
+  const [mode, setMode] = useState<Mode>(initialMode ?? "candidates");
 
   return (
     <div>
@@ -45,7 +53,7 @@ export function MessagesTabs({ initialApplicantId }: { initialApplicantId?: numb
         <MessagesClient initialApplicantId={initialApplicantId} hideHeader />
       </div>
       <div className={mode === "employees" ? "" : "hidden"}>
-        <EmployeeThreads />
+        <EmployeeThreads initialEmployeeId={initialEmployeeId} />
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import { listCertsForReminderScan, markCertReminded, type CertWithEmployee } fro
 import { reminderWindowsDue } from "./cert-hub";
 import { sendEmail, emailShell, escapeHtml, resolveUserEmail } from "./email";
 import { getEmployerProfile } from "./employer-store";
+import { logActivityForEmployer, logActivityForEmployee } from "./notifications-store";
 
 /**
  * Daily scan: emails BOTH the employee and the employer 30 and 7 days before
@@ -28,6 +29,17 @@ async function sendCertReminder(cert: CertWithEmployee, which: "30" | "7"): Prom
   const expiry = cert.expiryDate || "";
   const profile = await getEmployerProfile(cert.employerId).catch(() => null);
   const companyName = profile?.companyName || "your employer";
+
+  logActivityForEmployee(cert.employerId, cert.employeeId, {
+    eventType: "cert_expiring",
+    title: `Your "${cert.name}" certification expires in ${daysLabel}`,
+    link: "/employee/profile",
+  }).catch(() => {});
+  logActivityForEmployer(cert.employerId, {
+    eventType: "cert_expiring",
+    title: `${cert.employeeName || "An employee"}'s "${cert.name}" certification expires in ${daysLabel}`,
+    link: "/employer/employees",
+  }).catch(() => {});
 
   if (cert.employeeEmail) {
     await sendEmail({

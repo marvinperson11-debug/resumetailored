@@ -82,6 +82,9 @@ function ProBadge() {
 interface RoleBadge {
   plan?: "free" | "pro" | "employer" | "employee";
   employerName?: string;
+  /** A workforce employee borrowing their portal login for these free/Pro
+   *  candidate tools — shows a way back to their actual portal. */
+  staff?: boolean;
 }
 
 export function CandidateSidebar({ role = { plan: "free" }, isAdmin }: { role?: RoleBadge; isAdmin?: boolean }) {
@@ -164,6 +167,17 @@ export function CandidateSidebar({ role = { plan: "free" }, isAdmin }: { role?: 
         <div className="shrink-0 border-t border-border-gold px-3 py-3">
           <AdminViewToggle />
           <PlanPreviewSwitcher />
+        </div>
+      )}
+
+      {role.staff && (
+        <div className="shrink-0 border-t border-border-gold px-3 py-3">
+          <Link
+            href="/employee"
+            className="flex w-full items-center gap-3 rounded-md border-l-2 border-transparent px-4 py-2.5 text-sm text-muted-cream transition-all duration-200 hover:bg-white/5 hover:text-cream"
+          >
+            ← Back to employee portal
+          </Link>
         </div>
       )}
 

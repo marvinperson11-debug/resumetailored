@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { getEmployee } from "@/lib/employees-store";
 import { listThread, postMessage, markThreadRead } from "@/lib/employee-messages-store";
+import { logActivityForEmployee } from "@/lib/notifications-store";
 
 export const runtime = "nodejs";
 
@@ -37,5 +38,13 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   const b = (await req.json().catch(() => ({}))) as { body?: string };
   const msg = await postMessage(ctx.employerId, employeeId, "employer", b.body || "");
   if (!msg) return NextResponse.json({ error: "Message is empty or could not be sent." }, { status: 400 });
+
+  logActivityForEmployee(ctx.employerId, employeeId, {
+    eventType: "message_received",
+    title: "New message from your employer",
+    body: (b.body || "").slice(0, 140),
+    link: "/employee/messages",
+  }).catch(() => {});
+
   return NextResponse.json({ message: msg });
 }

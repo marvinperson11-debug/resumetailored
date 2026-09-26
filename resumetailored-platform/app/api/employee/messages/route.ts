@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { employeeContext } from "@/lib/employee-auth";
 import { listThread, postMessage, markThreadRead } from "@/lib/employee-messages-store";
+import { logActivityForEmployer } from "@/lib/notifications-store";
 
 export const runtime = "nodejs";
 
@@ -20,5 +21,13 @@ export async function POST(req: Request) {
   const b = (await req.json().catch(() => ({}))) as { body?: string };
   const msg = await postMessage(ctx.employerId, ctx.employeeId, "employee", b.body || "");
   if (!msg) return NextResponse.json({ error: "Message is empty or could not be sent." }, { status: 400 });
+
+  logActivityForEmployer(ctx.employerId, {
+    eventType: "message_received",
+    title: `New message from ${ctx.employee.name || "an employee"}`,
+    body: (b.body || "").slice(0, 140),
+    link: `/employer/messages?view=employees&employeeId=${ctx.employeeId}`,
+  }).catch(() => {});
+
   return NextResponse.json({ message: msg });
 }

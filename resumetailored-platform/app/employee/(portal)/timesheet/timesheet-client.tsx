@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Clock, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Clock, Loader2, ChevronLeft, ChevronRight, Send } from "lucide-react";
 import {
   weekStartISO,
   addDaysISO,
@@ -28,6 +28,7 @@ export function EmployeeTimesheetClient() {
   const [week, setWeek] = useState(() => weekStartISO());
   const [data, setData] = useState<WeekTimesheet | null>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async (w: string) => {
     setLoading(true);
@@ -43,6 +44,20 @@ export function EmployeeTimesheetClient() {
   useEffect(() => {
     load(week);
   }, [week, load]);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      await fetch("/api/employee/timesheet/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ week }),
+      });
+      await load(week);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   const isCurrent = week === weekStartISO();
   const status = data?.review?.status ?? "pending";
@@ -113,6 +128,16 @@ export function EmployeeTimesheetClient() {
               <span className="text-white/40">Note from your employer: </span>
               {data.review.note}
             </div>
+          )}
+
+          {status !== "approved" && (data?.entries || []).length > 0 && (
+            <button
+              onClick={submit}
+              disabled={submitting}
+              className="inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet/90 disabled:opacity-50"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} Submit for approval
+            </button>
           )}
 
           {/* Per-day breakdown */}
