@@ -222,6 +222,7 @@
     menu.innerHTML =
       '<button class="snav-mclose" aria-label="Close menu">&times;</button>' +
       menuLinks.map(function (l, i) { return '<a href="' + l[1] + '" data-snav-mi="' + i + '">' + l[0] + '</a>'; }).join('') +
+      '<a href="https://app.resumetailored.com" data-snav-download>Download the app</a>' +
       '<a href="' + (employerSide ? '/employer' : '/signup') + '" class="snav-maccount" data-snav-account>' + (employerSide ? 'Recruiter Account' : 'Create Account') + '</a>';
     document.body.appendChild(menu);
 
@@ -287,6 +288,7 @@
           : (zh ? UI.login.zh : UI.login.en);
         var ct = root.querySelector('[data-snav-cta]'); if (ct) ct.textContent = zh ? UI.cta.zh : UI.cta.en;
         var account = root.querySelector('[data-snav-account]'); if (account) account.textContent = employerSide ? (zh ? '招聘人员账户' : 'Recruiter Account') : (zh ? '创建账户' : 'Create Account');
+        var download = root.querySelector('[data-snav-download]'); if (download) download.textContent = zh ? '下载应用' : 'Download the app';
       });
       var t1 = document.getElementById('langToggleBtn');
       var t2 = document.getElementById('langToggleBtnMobile');
