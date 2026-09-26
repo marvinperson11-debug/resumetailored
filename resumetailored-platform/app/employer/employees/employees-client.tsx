@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff, ClipboardCheck, ClipboardList, Rss, Flag, PartyPopper, MessageCircle, CheckCircle2, Circle, BarChart3 } from "lucide-react";
 import {
   EMPLOYEE_STATUSES,
@@ -77,6 +77,24 @@ export function EmployeesClient({
   const [preset, setPreset] = useState<TrainingLibraryItem | null>(null);
   const [presetNonce, setPresetNonce] = useState(0);
 
+  // The tab row (7 tabs) overflows a phone width and used to clip "Library"
+  // outright. It's now horizontally scrollable; these track whether there's
+  // more to scroll to so the edge fades only show when they mean something.
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const updateScrollHints = useCallback(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+  useEffect(() => {
+    updateScrollHints();
+    window.addEventListener("resize", updateScrollHints);
+    return () => window.removeEventListener("resize", updateScrollHints);
+  }, [updateScrollHints]);
+
   function useInTraining(item: TrainingLibraryItem) {
     setPreset(item);
     setPresetNonce((n) => n + 1);
@@ -89,22 +107,34 @@ export function EmployeesClient({
         title="Employees"
         subtitle="Your workforce, training & compliance. Time clock, schedule & time off live in their own tabs — no payroll."
       />
-      <div className="mb-6 inline-flex rounded-lg border border-border-gold bg-white/[0.03] p-1">
-        {(Object.keys(TAB_META) as Tab[]).map((t) => {
-          const Icon = TAB_META[t].icon;
-          return (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
-                tab === t ? "bg-violet text-white" : "text-muted-cream hover:text-cream"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {TAB_META[t].label}
-            </button>
-          );
-        })}
+      <div className="relative mb-6">
+        <div
+          ref={tabsRef}
+          onScroll={updateScrollHints}
+          className="flex gap-0 overflow-x-auto rounded-lg border border-border-gold bg-white/[0.03] p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {(Object.keys(TAB_META) as Tab[]).map((t) => {
+            const Icon = TAB_META[t].icon;
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  tab === t ? "bg-violet text-white" : "text-muted-cream hover:text-cream"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {TAB_META[t].label}
+              </button>
+            );
+          })}
+        </div>
+        {canScrollLeft && (
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-6 rounded-l-lg bg-gradient-to-r from-navy to-transparent" />
+        )}
+        {canScrollRight && (
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-6 rounded-r-lg bg-gradient-to-l from-navy to-transparent" />
+        )}
       </div>
       {tab === "directory" && <Directory canManage={canManage} />}
       {tab === "feed" && <Feed canManage={canManage} />}
@@ -1163,10 +1193,16 @@ function SkillsMatrix({ canManage }: { canManage: boolean }) {
         />
       ) : (
         <Panel className="overflow-x-auto p-0">
-          <table className="w-full text-left text-sm">
+          {/* A fixed-ish min-width (name column + one slot per skill) keeps
+              columns from being crushed together on a phone — the horizontal
+              scroll on the Panel above handles the rest, same pattern as the
+              other data tables in this app (candidates, jobs, team). */}
+          <table className="w-full text-left text-sm" style={{ minWidth: `${140 + skills.length * 64}px` }}>
             <thead>
               <tr className="border-b border-border-gold text-xs uppercase tracking-wide text-white/45">
-                <th className="sticky left-0 bg-navy px-4 py-3 font-semibold">Employee</th>
+                <th className="sticky left-0 z-10 min-w-[140px] whitespace-nowrap border-r border-border-gold bg-navy px-4 py-3 font-semibold shadow-[4px_0_6px_-4px_rgba(0,0,0,0.5)]">
+                  Employee
+                </th>
                 {skills.map((s) => (
                   <th key={s.id} className="whitespace-nowrap px-3 py-3 text-center font-semibold">
                     {s.name}
@@ -1177,40 +1213,35 @@ function SkillsMatrix({ canManage }: { canManage: boolean }) {
             <tbody>
               {employees.map((e) => (
                 <tr key={e.id} className="border-b border-border-gold/50 last:border-0">
-                  <td className="sticky left-0 whitespace-nowrap bg-navy px-4 py-2.5 font-medium text-cream">{e.name}</td>
+                  <td className="sticky left-0 z-10 min-w-[140px] whitespace-nowrap border-r border-border-gold bg-navy px-4 py-2.5 font-medium text-cream shadow-[4px_0_6px_-4px_rgba(0,0,0,0.5)]">
+                    {e.name}
+                  </td>
                   {skills.map((s) => {
                     const cell = cells.find((c) => c.employeeId === e.id && c.skillId === s.id);
-                    const isEditing = editing?.employeeId === e.id && editing?.skillId === s.id;
                     return (
-                      <td key={s.id} className="relative px-3 py-2.5 text-center">
+                      <td key={s.id} className="px-1 py-1 text-center">
+                        {/* 44x44 touch target (Apple/WCAG minimum) around the
+                            compact colored chip — the chip alone was 28px,
+                            too small to reliably tap on iPad/phone. Opens a
+                            real Modal instead of an inline popover, which
+                            used to render inside this table's own
+                            overflow-x-auto box and get clipped by its
+                            (spec-implied) overflow-y:auto. */}
                         <button
                           type="button"
                           disabled={!canManage}
-                          onClick={() => canManage && setEditing(isEditing ? null : { employeeId: e.id, skillId: s.id })}
+                          onClick={() => canManage && setEditing({ employeeId: e.id, skillId: s.id })}
                           title={cell ? SKILL_LEVEL_LABELS[cell.level] : "Not rated"}
-                          className={`mx-auto flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold transition-colors ${
-                            cell ? SKILL_LEVEL_COLORS[cell.level] : "bg-white/5 text-white/25"
-                          } ${canManage ? "cursor-pointer hover:ring-1 hover:ring-violet" : "cursor-default"}`}
+                          className={`mx-auto flex h-11 w-11 items-center justify-center ${canManage ? "cursor-pointer" : "cursor-default"}`}
                         >
-                          {cell ? cell.level : "–"}
+                          <span
+                            className={`flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold transition-colors ${
+                              cell ? SKILL_LEVEL_COLORS[cell.level] : "bg-white/5 text-white/25"
+                            }`}
+                          >
+                            {cell ? cell.level : "–"}
+                          </span>
                         </button>
-                        {isEditing && (
-                          <div className="absolute left-1/2 top-full z-10 mt-1 flex -translate-x-1/2 gap-1 rounded-lg border border-border-gold bg-navy p-1.5 shadow-xl">
-                            {Array.from({ length: MAX_SKILL_LEVEL }, (_, i) => i + 1).map((lvl) => (
-                              <button
-                                key={lvl}
-                                onClick={() => setLevel(e.id, s.id, lvl)}
-                                title={SKILL_LEVEL_LABELS[lvl]}
-                                className={`flex h-6 w-6 items-center justify-center rounded text-xs font-bold ${SKILL_LEVEL_COLORS[lvl]}`}
-                              >
-                                {lvl}
-                              </button>
-                            ))}
-                            <button onClick={() => setLevel(e.id, s.id, null)} title="Clear" className="flex h-6 w-6 items-center justify-center rounded bg-white/5 text-white/50 hover:text-cream">
-                              ×
-                            </button>
-                          </div>
-                        )}
                       </td>
                     );
                   })}
@@ -1220,7 +1251,62 @@ function SkillsMatrix({ canManage }: { canManage: boolean }) {
           </table>
         </Panel>
       )}
+
+      {editing && (
+        <SkillLevelModal
+          employeeName={employees.find((e) => e.id === editing.employeeId)?.name || ""}
+          skillName={skills.find((s) => s.id === editing.skillId)?.name || ""}
+          current={cells.find((c) => c.employeeId === editing.employeeId && c.skillId === editing.skillId)?.level ?? null}
+          onPick={(level) => setLevel(editing.employeeId, editing.skillId, level)}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
+  );
+}
+
+function SkillLevelModal({
+  employeeName,
+  skillName,
+  current,
+  onPick,
+  onClose,
+}: {
+  employeeName: string;
+  skillName: string;
+  current: number | null;
+  onPick: (level: number | null) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal title={skillName} onClose={onClose}>
+      <p className="mb-4 text-sm text-white/55">Rate {employeeName || "this employee"}&apos;s level.</p>
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: MAX_SKILL_LEVEL }, (_, i) => i + 1).map((lvl) => (
+          <button
+            key={lvl}
+            type="button"
+            onClick={() => onPick(lvl)}
+            title={SKILL_LEVEL_LABELS[lvl]}
+            className={`flex h-12 w-12 flex-col items-center justify-center rounded-lg text-sm font-bold transition-transform active:scale-95 ${SKILL_LEVEL_COLORS[lvl]} ${
+              current === lvl ? "ring-2 ring-white/70" : ""
+            }`}
+          >
+            {lvl}
+          </button>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-white/40">
+        {Array.from({ length: MAX_SKILL_LEVEL }, (_, i) => i + 1).map((lvl) => (
+          <span key={lvl}>
+            {lvl} = {SKILL_LEVEL_LABELS[lvl]}
+          </span>
+        ))}
+      </div>
+      <Btn variant="ghost" onClick={() => onPick(null)} disabled={current === null} className="mt-4">
+        Clear rating
+      </Btn>
+    </Modal>
   );
 }
 
