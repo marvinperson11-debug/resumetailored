@@ -1,0 +1,72 @@
+{
+  "app": { "name": "ResumeTailored", "office": "मेरा करियर ऑफिस" },
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "buildResume": "मेरा रिज़्यूमे बनाएं",
+    "myResumes": "मेरे रिज़्यूमे",
+    "coverLetters": "कवर लेटर",
+    "atsScanner": "ATS स्कैनर",
+    "linkedin": "लिंक्डइन ऑप्टिमाइज़र",
+    "interview": "इंटरव्यू कोच",
+    "jobs": "जॉब फाइंडर",
+    "career": "करियर हब",
+    "decoder": "डिकोडर",
+    "applications": "एप्लिकेशन ट्रैकर",
+    "shareable": "शेयर करने योग्य लिंक",
+    "resumeVideo": "रिज़्यूमे वीडियो",
+    "personalWebsite": "पर्सनल वेबसाइट",
+    "templates": "टेम्पलेट्स",
+    "profile": "प्रोफ़ाइल",
+    "settings": "सेटिंग्स"
+  },
+  "topbar": {
+    "profile": "प्रोफ़ाइल",
+    "settings": "सेटिंग्स",
+    "language": "भाषा",
+    "signOut": "साइन आउट करें",
+    "candidateView": "उम्मीदवार दृश्य",
+    "employerView": "नियोक्ता दृश्य",
+    "admin": "एडमिन",
+    "menu": "मेनू"
+  },
+  "plan": {
+    "proActive": "Pro · सक्रिय",
+    "proVia": "Pro · {name} के माध्यम से",
+    "freeUpgrade": "फ्री प्लान · Pro में अपग्रेड करें",
+    "pro": "PRO"
+  },
+  "lang": { "label": "भाषा", "en": "English", "zh": "中文", "es": "Español", "hi": "हिन्दी", "fr": "Français" },
+  "employer": { "candidates": "उम्मीदवार", "jobs": "नौकरियां", "team": "टीम", "settings": "सेटिंग्स" },
+  "employerNav": {
+    "badge": "नियोक्ता",
+    "dashboard": "डैशबोर्ड",
+    "hire": "भर्ती करें",
+    "candidates": "उम्मीदवार",
+    "messages": "संदेश",
+    "shortlists": "शॉर्टलिस्ट",
+    "scheduler": "शेड्यूलर",
+    "eSignatures": "ई-सिग्नेचर",
+    "documents": "दस्तावेज़",
+    "office": "ऑफिस",
+    "employees": "कर्मचारी",
+    "schedule": "शेड्यूल",
+    "timesheets": "टाइमशीट",
+    "timeOff": "छुट्टी",
+    "careerSite": "करियर साइट",
+    "team": "टीम",
+    "settings": "सेटिंग्स",
+    "upgradeRequired": "अपग्रेड आवश्यक"
+  },
+  "employeeNav": {
+    "badge": "पोर्टल",
+    "home": "होम",
+    "feed": "फ़ीड",
+    "schedule": "मेरा शेड्यूल",
+    "hours": "मेरे घंटे",
+    "timeOff": "छुट्टी",
+    "documents": "मेरे दस्तावेज़",
+    "messages": "संदेश",
+    "training": "मेरी ट्रेनिंग",
+    "library": "लाइब्रेरी"
+  }
+}

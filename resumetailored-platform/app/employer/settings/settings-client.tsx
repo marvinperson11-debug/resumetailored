@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, UploadCloud, Trash2 } from "lucide-react";
 import { INDUSTRIES, type EmployerProfile, type EmailSignature } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker } from "../components/ui";
+import { LanguageSettingsSection } from "@/components/language-settings-section";
 
 const MANUAL = "__manual__";
 
@@ -146,6 +147,10 @@ export function SettingsClient({
           .
         </p>
       </Panel>
+
+      <div className="mt-4">
+        <LanguageSettingsSection />
+      </div>
     </div>
   );
 }

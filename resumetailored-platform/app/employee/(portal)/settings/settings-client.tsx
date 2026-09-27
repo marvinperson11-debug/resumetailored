@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Check, Loader2, KeyRound, Bell } from "lucide-react";
+import { LanguageSettingsSection } from "@/components/language-settings-section";
 
 const card = "rounded-2xl border border-border-gold bg-white/[0.03] p-6";
 const h2 = "mb-1 flex items-center gap-2 text-sm font-semibold text-cream";
@@ -92,6 +93,9 @@ export function EmployeeSettingsClient({ initial }: { initial: { emailProduct: b
           </p>
         )}
       </div>
+
+      {/* Language */}
+      <LanguageSettingsSection />
 
       {/* Account — change password only */}
       <AccountSection hasUser={!!user} />
