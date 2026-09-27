@@ -77,6 +77,7 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
   const [docs, setDocs] = useState<EmployerDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<{ id?: number; title: string; bodyHtml: string } | null>(null);
+  const [viewing, setViewing] = useState<EmployerDocument | null>(null);
   const [picking, setPicking] = useState(false);
   const [sendDoc, setSendDoc] = useState<{ id: number; title: string } | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -118,6 +119,10 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
         }}
       />
     );
+  }
+
+  if (viewing) {
+    return <DocumentViewer document={viewing} onClose={() => setViewing(null)} />;
   }
 
   return (
@@ -201,11 +206,20 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
                     <div className="inline-flex flex-wrap items-center justify-end gap-3">
                       <button
                         type="button"
-                        onClick={() => setEditing({ id: d.id, title: d.title, bodyHtml: d.bodyHtml })}
-                        className="text-xs font-semibold text-violet hover:underline"
+                        onClick={() => setViewing(d)}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
                       >
-                        {canManage ? "Edit" : "View"}
+                        <Eye className="h-3.5 w-3.5" /> View
                       </button>
+                      {canManage && (
+                        <button
+                          type="button"
+                          onClick={() => setEditing({ id: d.id, title: d.title, bodyHtml: d.bodyHtml })}
+                          className="text-xs font-semibold text-violet hover:underline"
+                        >
+                          Edit
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setSendDoc({ id: d.id, title: d.title })}
@@ -359,14 +373,50 @@ function DocumentEditor({
       {error && <p className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
       <p className="mt-2 text-[11px] text-white/40">Tip: use the toolbar for headings, bold/italic, lists, alignment, and links. A signature line is added automatically when you send.</p>
 
-      <style jsx global>{`
-        .doc-editor h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.5rem; }
-        .doc-editor h2 { font-size: 1.2rem; font-weight: 700; margin: 1rem 0 0.4rem; }
-        .doc-editor p { margin: 0 0 0.6rem; }
-        .doc-editor ul { list-style: disc; padding-left: 1.4rem; margin: 0 0 0.6rem; }
-        .doc-editor ol { list-style: decimal; padding-left: 1.4rem; margin: 0 0 0.6rem; }
-        .doc-editor a { color: #4f46e5; text-decoration: underline; }
-      `}</style>
+      <DocBodyStyles />
+    </div>
+  );
+}
+
+/** Shared typography for a document body — the editable `.doc-editor` div and
+ *  the read-only viewer both render the same sanitized HTML and should look
+ *  identical either way. Declared once (global, since it targets HTML the
+ *  employer composed, not scoped React markup) and reused by both. */
+function DocBodyStyles() {
+  return (
+    <style jsx global>{`
+      .doc-editor h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.5rem; }
+      .doc-editor h2 { font-size: 1.2rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+      .doc-editor p { margin: 0 0 0.6rem; }
+      .doc-editor ul { list-style: disc; padding-left: 1.4rem; margin: 0 0 0.6rem; }
+      .doc-editor ol { list-style: decimal; padding-left: 1.4rem; margin: 0 0 0.6rem; }
+      .doc-editor a { color: #4f46e5; text-decoration: underline; }
+    `}</style>
+  );
+}
+
+// ── Document Viewer: read-only — HTML docs render the body, chart docs show
+//    the image full-width. No contentEditable, no toolbar, no Save. ───────────
+function DocumentViewer({ document: doc, onClose }: { document: EmployerDocument; onClose: () => void }) {
+  return (
+    <div className="max-w-3xl">
+      <div className="mb-4 flex items-center gap-2">
+        <Btn variant="ghost" onClick={onClose}>
+          <ArrowLeft className="h-4 w-4" /> Back
+        </Btn>
+        <h2 className="ml-2 truncate font-serif text-lg font-medium text-cream">{doc.title}</h2>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-border-gold bg-white">
+        {doc.kind === "chart" && doc.assetUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={doc.assetUrl} alt={doc.title} className="block w-full" />
+        ) : (
+          <div className="doc-editor min-h-[420px] w-full px-6 py-5 text-sm leading-relaxed text-[#1a1a2e]" dangerouslySetInnerHTML={{ __html: doc.bodyHtml || "" }} />
+        )}
+      </div>
+
+      <DocBodyStyles />
     </div>
   );
 }
