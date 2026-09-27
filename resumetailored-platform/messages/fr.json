@@ -1041,5 +1041,24 @@
     "title": "Page carrières introuvable",
     "body": "Cette page carrières n'est pas disponible. L'adresse est peut-être mal orthographiée, ou la page a pu être retirée.",
     "browseAllJobs": "Voir toutes les offres"
+  },
+  "candidateResumes": {
+    "title": "Mes CV",
+    "subtitle": "Chaque CV que vous créez est enregistré ici automatiquement.",
+    "refresh": "Actualiser",
+    "buildNew": "Créer nouveau",
+    "noSavedResumesYet": "Aucun CV enregistré pour l'instant",
+    "buildFirstResumeBody": "Créez votre premier CV et il apparaîtra ici.",
+    "buildMyResume": "Créer mon CV",
+    "untitledResume": "CV sans titre",
+    "updatedOn": "Mis à jour le {date}",
+    "reopen": "Rouvrir",
+    "downloadPdf": "Télécharger le PDF",
+    "buildFirstToEnablePdf": "Créez d'abord ce CV pour activer le PDF",
+    "pdf": "PDF",
+    "deleteResume": "Supprimer le CV",
+    "resumeFallbackTitle": "CV",
+    "errorCouldNotLoad": "Impossible de charger vos CV.",
+    "errorSomethingWentWrong": "Une erreur s'est produite."
   }
 }

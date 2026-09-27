@@ -1041,5 +1041,24 @@
     "title": "未找到该招聘页面",
     "body": "此招聘页面不可用。链接可能有误，或该页面已被下线。",
     "browseAllJobs": "浏览全部职位"
+  },
+  "candidateResumes": {
+    "title": "我的简历",
+    "subtitle": "您构建的每个简历都会自动保存在此处。",
+    "refresh": "刷新",
+    "buildNew": "新建",
+    "noSavedResumesYet": "暂无已保存的简历",
+    "buildFirstResumeBody": "创建您的第一份简历，它将显示在此处。",
+    "buildMyResume": "构建我的简历",
+    "untitledResume": "未命名简历",
+    "updatedOn": "更新于 {date}",
+    "reopen": "重新打开",
+    "downloadPdf": "下载 PDF",
+    "buildFirstToEnablePdf": "请先构建此简历以启用 PDF",
+    "pdf": "PDF",
+    "deleteResume": "删除简历",
+    "resumeFallbackTitle": "简历",
+    "errorCouldNotLoad": "无法加载您的简历。",
+    "errorSomethingWentWrong": "出错了。"
   }
 }

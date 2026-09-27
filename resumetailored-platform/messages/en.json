@@ -1041,5 +1041,24 @@
     "title": "Careers page not found",
     "body": "This careers page isn't available. The address may be misspelled, or the page may have been taken down.",
     "browseAllJobs": "Browse all jobs"
+  },
+  "candidateResumes": {
+    "title": "My Resumes",
+    "subtitle": "Every resume you build is saved here automatically.",
+    "refresh": "Refresh",
+    "buildNew": "Build new",
+    "noSavedResumesYet": "No saved resumes yet",
+    "buildFirstResumeBody": "Build your first resume and it'll appear here.",
+    "buildMyResume": "Build My Resume",
+    "untitledResume": "Untitled resume",
+    "updatedOn": "Updated {date}",
+    "reopen": "Reopen",
+    "downloadPdf": "Download PDF",
+    "buildFirstToEnablePdf": "Build this resume first to enable PDF",
+    "pdf": "PDF",
+    "deleteResume": "Delete resume",
+    "resumeFallbackTitle": "Resume",
+    "errorCouldNotLoad": "Could not load your resumes.",
+    "errorSomethingWentWrong": "Something went wrong."
   }
 }

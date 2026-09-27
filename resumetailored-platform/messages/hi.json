@@ -1041,5 +1041,24 @@
     "title": "करियर पेज नहीं मिला",
     "body": "यह करियर पेज उपलब्ध नहीं है। पता गलत हो सकता है, या पेज हटा दिया गया हो सकता है।",
     "browseAllJobs": "सभी नौकरियां देखें"
+  },
+  "candidateResumes": {
+    "title": "मेरे रेज़्य़ूमे",
+    "subtitle": "आपके द्वारा बनाया गया हर रेज़्य़ूमे यहां स्वतः सहेजा जाता है।",
+    "refresh": "रिफ़्रेश करें",
+    "buildNew": "नया बनाें",
+    "noSavedResumesYet": "अभी तक कोई सहेजा गया रेज़्य़ूमे नहीं",
+    "buildFirstResumeBody": "अपना पहला रेज़्य़ूमे बनाें और यह यहां दिखाई देगा।",
+    "buildMyResume": "मेरा रेज़्य़ूमे बनाें",
+    "untitledResume": "बिना शीर्षक रेज़्य़ूमे",
+    "updatedOn": "{date} को अपडेट किया गया",
+    "reopen": "फ़िर से खोलें",
+    "downloadPdf": "PDF डाउनलोड करें",
+    "buildFirstToEnablePdf": "PDF सक्षम करने के लिे पहले यह रेज़्य़ूमे बनाें",
+    "pdf": "PDF",
+    "deleteResume": "रेज़्य़ूमे हटाें",
+    "resumeFallbackTitle": "रेज़्य़ूमे",
+    "errorCouldNotLoad": "आपके रेज़्य़ूमे लोड नहीं हो सके।",
+    "errorSomethingWentWrong": "कुछ गलत हुआ।"
   }
 }
