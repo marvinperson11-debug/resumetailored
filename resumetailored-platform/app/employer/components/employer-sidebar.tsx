@@ -75,7 +75,14 @@ export function EmployerSidebar({
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
-        {company && <div className="truncate px-4 pb-2 text-xs font-medium text-white/50">{company}</div>}
+        {company && (
+          <div
+            className="line-clamp-2 break-words px-4 pb-2 text-xs font-medium leading-snug text-white/50"
+            title={company}
+          >
+            {company}
+          </div>
+        )}
         {EMPLOYER_NAV.map((n) => {
           const Icon = n.icon;
           const isActive = isEmployerNavActive(pathname, n.href, n.exact);
