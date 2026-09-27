@@ -149,28 +149,77 @@ export function buildChartSvg(config: ChartConfig): string {
   return buildAxisSvg(points, title, config.type === "line", config.xLabel, config.yLabel);
 }
 
+/** A "nice" round number close to `range` — the classic Heckbert algorithm
+ *  used to pick pleasant axis tick steps (1/2/5/10 × a power of 10) instead of
+ *  dividing the max into equal parts and rounding, which collapses small
+ *  values (e.g. a few hours) to all-zero ticks and gives ugly steps (12, 24,
+ *  36…) for larger ones. `round`: true picks the nearest nice value (for a
+ *  step size), false rounds UP (for an envelope around the data). */
+function niceNumber(range: number, round: boolean): number {
+  const exponent = Math.floor(Math.log10(range));
+  const fraction = range / Math.pow(10, exponent);
+  let niceFraction: number;
+  if (round) {
+    if (fraction < 1.5) niceFraction = 1;
+    else if (fraction < 3) niceFraction = 2;
+    else if (fraction < 7) niceFraction = 5;
+    else niceFraction = 10;
+  } else {
+    if (fraction <= 1) niceFraction = 1;
+    else if (fraction <= 2) niceFraction = 2;
+    else if (fraction <= 5) niceFraction = 5;
+    else niceFraction = 10;
+  }
+  return niceFraction * Math.pow(10, exponent);
+}
+
+/** Nice tick values from 0 to a nice max covering `dataMax`, at roughly
+ *  `targetTicks` steps. Works across any magnitude — fractional hours, small
+ *  applicant counts, or 0-100 percentages — so the y-axis never renders a
+ *  column of zeros just because every real value is under 1. */
+function niceTicks(dataMax: number, targetTicks = 4): { max: number; step: number; values: number[] } {
+  if (!(dataMax > 0)) return { max: 1, step: 1, values: [0, 1] };
+  const roughStep = niceNumber(dataMax / targetTicks, true);
+  const max = Math.ceil(dataMax / roughStep) * roughStep;
+  const values: number[] = [];
+  for (let v = 0; v <= max + roughStep / 2; v += roughStep) values.push(Math.round(v * 1000) / 1000);
+  return { max, step: roughStep, values };
+}
+
+/** Tick label formatting: whole-number steps stay plain; a fractional step
+ *  (e.g. 0.5h, or 0.01h for a very light week) shows just enough decimals to
+ *  distinguish its ticks, instead of rounding every one of them to 0. */
+function formatTick(v: number, step: number): string {
+  const decimals = step > 0 && step < 1 ? Math.min(4, Math.ceil(-Math.log10(step))) : 0;
+  return v.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
 function buildAxisSvg(points: ChartPoint[], title: string, isLine: boolean, xLabel?: string, yLabel?: string): string {
-  const margin = { top: 56, right: 28, bottom: xLabel ? 76 : 60, left: yLabel ? 64 : 50 };
+  const margin = { top: 56, right: 28, bottom: xLabel ? 78 : 62, left: yLabel ? 64 : 50 };
   const plotW = SVG_WIDTH - margin.left - margin.right;
   const plotH = SVG_HEIGHT - margin.top - margin.bottom;
-  const maxValue = Math.max(...points.map((p) => p.value), 0) * 1.15 || 1;
+  const dataMax = Math.max(...points.map((p) => p.value), 0);
+  const { max: maxValue, step, values: tickValues } = niceTicks(dataMax);
 
-  const ticks = 4;
   const gridlines: string[] = [];
   const yTickLabels: string[] = [];
-  for (let i = 0; i <= ticks; i++) {
-    const v = (maxValue / ticks) * i;
+  for (const v of tickValues) {
     const y = margin.top + plotH - (v / maxValue) * plotH;
     gridlines.push(`<line x1="${margin.left}" y1="${y.toFixed(1)}" x2="${margin.left + plotW}" y2="${y.toFixed(1)}" stroke="#ffffff1a" stroke-width="1"/>`);
-    yTickLabels.push(`<text x="${margin.left - 10}" y="${(y + 4).toFixed(1)}" fill="#ffffff99" font-family="sans-serif" font-size="10" text-anchor="end">${Math.round(v).toLocaleString()}</text>`);
+    yTickLabels.push(`<text x="${margin.left - 10}" y="${(y + 4).toFixed(1)}" fill="#ffffff99" font-family="sans-serif" font-size="10" text-anchor="end">${formatTick(v, step)}</text>`);
   }
 
+  // Rotated labels anchor at their END (not middle) so the text reads
+  // diagonally up-and-left from each tick instead of spilling outward past
+  // the plot edges — the previous middle-anchored rotation clipped against
+  // the SVG boundary for the first/last categories and for longer names.
   const slot = plotW / points.length;
+  const labelY = margin.top + plotH + 14;
   const xLabels = points
     .map((p, i) => {
       const cx = margin.left + slot * i + slot / 2;
-      const label = escapeXml(p.label.length > 12 ? p.label.slice(0, 11) + "…" : p.label);
-      return `<text x="${cx.toFixed(1)}" y="${margin.top + plotH + 18}" fill="#ffffff99" font-family="sans-serif" font-size="10" text-anchor="middle" transform="rotate(20 ${cx.toFixed(1)} ${margin.top + plotH + 18})">${label}</text>`;
+      const label = escapeXml(p.label.length > 10 ? p.label.slice(0, 9) + "…" : p.label);
+      return `<text x="${cx.toFixed(1)}" y="${labelY}" fill="#ffffff99" font-family="sans-serif" font-size="10" text-anchor="end" transform="rotate(-30 ${cx.toFixed(1)} ${labelY})">${label}</text>`;
     })
     .join("");
 
@@ -185,7 +234,9 @@ function buildAxisSvg(points: ChartPoint[], title: string, isLine: boolean, xLab
     const dots = coords.map((c) => `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3.5" fill="${PALETTE[0]}"/>`).join("");
     series = `<path d="${path}" fill="none" stroke="${PALETTE[0]}" stroke-width="2.5"/>${dots}`;
   } else {
-    const barW = slot * 0.6;
+    // Capped so a chart with only one or two categories doesn't draw a bar
+    // that spans (most of) the whole plot width — still centered in its slot.
+    const barW = Math.min(slot * 0.6, 64);
     series = points
       .map((p, i) => {
         const x = margin.left + slot * i + (slot - barW) / 2;
