@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { CheckCircle2, UploadCloud, FileText, AlertTriangle, Loader2, ShieldCheck } from "lucide-react";
 
 interface RequestedDoc {
@@ -28,6 +29,7 @@ interface SignData {
 const MAX_TOTAL = 10; // "up to 10 files"
 
 export function SignClient({ envelopeId, token }: { envelopeId: string; token: string }) {
+  const t = useTranslations("publicSign");
   const [data, setData] = useState<SignData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -66,8 +68,8 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
     const maxBytes = data?.limits.maxBytes ?? 10 * 1024 * 1024;
     const allowed = data?.limits.allowedExt ?? ["pdf", "jpg", "jpeg", "png", "doc", "docx"];
     const ext = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
-    if (!allowed.includes(ext)) return "Please upload a PDF, image (JPG/PNG), or Word document.";
-    if (file.size > maxBytes) return "That file is too large (max 10 MB).";
+    if (!allowed.includes(ext)) return t("errorInvalidFileType");
+    if (file.size > maxBytes) return t("errorFileTooLarge");
     return null;
   }
 
@@ -91,14 +93,14 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
       });
       const d = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!res.ok || !d.ok) {
-        setError(d.error || "Upload failed. Please try again.");
+        setError(d.error || t("errorUploadFailed"));
         return;
       }
-      setFlash(`Received “${file.name}”. A confirmation has been emailed to you.`);
+      setFlash(t("receivedFile", { name: file.name }));
       if (!requestName) setNote("");
       await load();
     } catch {
-      setError("Network error — please try again.");
+      setError(t("errorNetwork"));
     } finally {
       setBusy(null);
     }
@@ -117,11 +119,8 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
       <Shell>
         <div className="flex flex-col items-center py-10 text-center">
           <AlertTriangle className="mb-3 h-10 w-10 text-gold" />
-          <h1 className="font-serif text-xl text-cream">This link isn&apos;t valid</h1>
-          <p className="mt-2 max-w-sm text-sm text-muted-cream">
-            The upload link may have expired or been mistyped. Please use the most recent link from your email, or ask
-            the sender to resend it.
-          </p>
+          <h1 className="font-serif text-xl text-cream">{t("linkNotValidTitle")}</h1>
+          <p className="mt-2 max-w-sm text-sm text-muted-cream">{t("linkNotValidBody")}</p>
         </div>
       </Shell>
     );
@@ -133,15 +132,14 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
   return (
     <Shell>
       <div className="mb-6 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-teal">
-        <ShieldCheck className="h-4 w-4" /> Secure document upload
+        <ShieldCheck className="h-4 w-4" /> {t("secureDocumentUpload")}
       </div>
       <h1 className="font-serif text-2xl text-cream">
-        {firstName ? `Hi ${firstName},` : "Upload your documents"}
+        {firstName ? t("hiFirstName", { name: firstName }) : t("uploadYourDocuments")}
       </h1>
       <p className="mt-2 text-sm text-muted-cream">
-        {data.company ? <strong className="text-cream">{data.company}</strong> : "The sender"} asked you to upload a few
-        documents related to <span className="text-cream">{data.documentName}</span>. You can return to this page any
-        time using the same link.
+        {data.company ? <strong className="text-cream">{data.company}</strong> : t("theSender")} {t("askedToUpload")}{" "}
+        <span className="text-cream">{data.documentName}</span>. {t("returnAnyTime")}
       </p>
 
       {flash && (
@@ -158,7 +156,7 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
       {/* Requested document slots */}
       {data.requestedDocs.length > 0 && (
         <div className="mt-6">
-          <h2 className="mb-2 text-sm font-semibold text-cream">Requested documents</h2>
+          <h2 className="mb-2 text-sm font-semibold text-cream">{t("requestedDocuments")}</h2>
           <div className="space-y-2">
             {data.requestedDocs.map((d) => (
               <div
@@ -171,11 +169,11 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
                 </div>
                 {d.uploaded ? (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-teal">
-                    <CheckCircle2 className="h-4 w-4" /> Uploaded
+                    <CheckCircle2 className="h-4 w-4" /> {t("uploaded")}
                   </span>
                 ) : (
                   <SlotUpload
-                    label="Choose file"
+                    label={t("chooseFile")}
                     disabled={busy !== null || atLimit}
                     busy={busy === d.name}
                     onPick={(f) => upload(f, d.name, d.name)}
@@ -189,12 +187,10 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
 
       {/* Free-form upload area */}
       <div className="mt-6">
-        <h2 className="mb-2 text-sm font-semibold text-cream">Other documents</h2>
+        <h2 className="mb-2 text-sm font-semibold text-cream">{t("otherDocuments")}</h2>
         <div className="rounded-xl border border-dashed border-border-gold bg-white/[0.02] p-5 text-center">
           <UploadCloud className="mx-auto mb-2 h-8 w-8 text-muted-cream" />
-          <p className="text-sm text-muted-cream">
-            Add anything else the sender needs. PDF, JPG, PNG or Word · max 10&nbsp;MB each · up to {MAX_TOTAL} files.
-          </p>
+          <p className="text-sm text-muted-cream">{t("addAnythingElse", { max: MAX_TOTAL })}</p>
           <input
             ref={freeInputRef}
             type="file"
@@ -224,8 +220,7 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
           {pendingFree ? (
             <div className="mt-3 rounded-xl border border-violet/40 bg-violet/[0.08] p-4 text-left">
               <p className="text-sm text-cream">
-                Is <strong>“{pendingFree.name}”</strong> one of the documents{" "}
-                {data.company ? <>{data.company}</> : "the sender"} requested?
+                {t("isThisOneOf", { fileName: pendingFree.name, company: data.company || t("theSenderLower") })}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {pending.map((d) => (
@@ -240,7 +235,7 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
                     }}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-violet px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-violet/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Yes — it&apos;s my {d.name}
+                    {t("yesItsMy", { name: d.name })}
                   </button>
                 ))}
                 <button
@@ -253,7 +248,7 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
                   }}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-cream transition-colors hover:bg-white/[0.1] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  No — it&apos;s something else
+                  {t("noItsSomethingElse")}
                 </button>
                 <button
                   type="button"
@@ -261,7 +256,7 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
                   onClick={() => setPendingFree(null)}
                   className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-muted-cream transition-colors hover:text-cream disabled:opacity-50"
                 >
-                  Cancel
+                  {t("cancel")}
                 </button>
               </div>
             </div>
@@ -271,7 +266,7 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="Optional note (what is this?)"
+                placeholder={t("optionalNotePlaceholder")}
                 className="mx-auto mt-3 block w-full max-w-sm rounded-lg border border-border-gold bg-white/[0.04] px-3 py-2 text-sm text-cream placeholder:text-white/35 focus:border-violet focus:outline-none"
               />
               <div className="mt-3">
@@ -282,10 +277,10 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet/90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {busy === "__free" ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-                  Upload a file
+                  {t("uploadAFile")}
                 </button>
               </div>
-              {atLimit && <p className="mt-2 text-xs text-gold">You&apos;ve reached the {MAX_TOTAL}-file limit for this link.</p>}
+              {atLimit && <p className="mt-2 text-xs text-gold">{t("reachedFileLimit", { max: MAX_TOTAL })}</p>}
             </>
           )}
         </div>
@@ -294,7 +289,7 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
       {/* What they've uploaded */}
       {data.uploaded.length > 0 && (
         <div className="mt-6">
-          <h2 className="mb-2 text-sm font-semibold text-cream">Your uploads ({data.uploaded.length})</h2>
+          <h2 className="mb-2 text-sm font-semibold text-cream">{t("yourUploads", { count: data.uploaded.length })}</h2>
           <ul className="space-y-1.5">
             {data.uploaded.map((u, i) => (
               <li key={`${u.name}-${i}`} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 text-sm">
@@ -309,13 +304,11 @@ export function SignClient({ envelopeId, token }: { envelopeId: string; token: s
 
       {pending.length === 0 && data.requestedDocs.length > 0 && (
         <p className="mt-6 rounded-xl border border-teal/30 bg-teal/[0.06] px-4 py-3 text-sm text-teal">
-          All requested documents received — thank you! You can still upload more above if needed.
+          {t("allDocsReceived")}
         </p>
       )}
 
-      <p className="mt-8 text-center text-xs text-white/35">
-        Uploaded securely via ResumeTailored. Only the sender can access these files.
-      </p>
+      <p className="mt-8 text-center text-xs text-white/35">{t("uploadedSecurely")}</p>
     </Shell>
   );
 }
