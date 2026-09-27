@@ -24,12 +24,24 @@ import {
   Heading1,
   Heading2,
   BarChart3,
+  Table,
+  FileBarChart,
+  FileDown,
 } from "lucide-react";
 import { Panel, PageHeader, Btn, Badge, EmptyState, Input } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
 import { SendCopyControl } from "../components/send-copy-control";
-import { DOC_TYPE_LABELS, type DocusignEnvelope, type DocusignStatus, type EmployerDocument } from "@/lib/employer-ai";
+import { DOC_TYPE_LABELS, type DocusignEnvelope, type DocusignStatus, type EmployerDocument, type EmployerDocumentKind } from "@/lib/employer-ai";
 import { DOCUMENT_TEMPLATES } from "@/lib/document-templates";
+import { downloadDocumentPdf } from "@/lib/pdf";
+
+const KIND_ICON: Record<EmployerDocumentKind, typeof FileText> = {
+  html: FileText,
+  chart: BarChart3,
+  spreadsheet: Table,
+  report: FileBarChart,
+};
+const KIND_BADGE: Partial<Record<EmployerDocumentKind, string>> = { chart: "Chart", spreadsheet: "Spreadsheet", report: "Report" };
 
 const STATUS_TONE: Record<DocusignStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   sent: "sky",
@@ -188,17 +200,16 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
               </tr>
             </thead>
             <tbody>
-              {docs.map((d) => (
+              {docs.map((d) => {
+                const Icon = KIND_ICON[d.kind];
+                const badgeLabel = KIND_BADGE[d.kind];
+                return (
                 <tr key={d.id} className="border-b border-border-gold/60 last:border-0 hover:bg-white/[0.02]">
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-2">
-                      {d.kind === "chart" ? (
-                        <BarChart3 className="h-4 w-4 shrink-0 text-teal" />
-                      ) : (
-                        <FileText className="h-4 w-4 shrink-0 text-violet" />
-                      )}
+                      <Icon className={`h-4 w-4 shrink-0 ${d.kind === "html" ? "text-violet" : "text-teal"}`} />
                       <span className="text-cream">{d.title}</span>
-                      {d.kind === "chart" && <Badge tone="teal">Chart</Badge>}
+                      {badgeLabel && <Badge tone="teal">{badgeLabel}</Badge>}
                     </span>
                   </td>
                   <td className="hidden px-4 py-3 text-white/55 sm:table-cell">{fmtDate(d.updatedAt)}</td>
@@ -240,7 +251,8 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -398,6 +410,7 @@ function DocBodyStyles() {
 // ── Document Viewer: read-only — HTML docs render the body, chart docs show
 //    the image full-width. No contentEditable, no toolbar, no Save. ───────────
 function DocumentViewer({ document: doc, onClose }: { document: EmployerDocument; onClose: () => void }) {
+  const isChartImage = doc.kind === "chart" && !!doc.assetUrl;
   return (
     <div className="max-w-3xl">
       <div className="mb-4 flex items-center gap-2">
@@ -405,6 +418,11 @@ function DocumentViewer({ document: doc, onClose }: { document: EmployerDocument
           <ArrowLeft className="h-4 w-4" /> Back
         </Btn>
         <h2 className="ml-2 truncate font-serif text-lg font-medium text-cream">{doc.title}</h2>
+        {!isChartImage && (
+          <Btn variant="ghost" className="ml-auto" onClick={() => downloadDocumentPdf(doc.title, doc.bodyHtml)}>
+            <FileDown className="h-4 w-4" /> Export PDF
+          </Btn>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border-gold bg-white">

@@ -1,30 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { Calculator, BarChart3 } from "lucide-react";
+import { Calculator, BarChart3, Table, FileBarChart } from "lucide-react";
 import { PageHeader } from "../components/ui";
 import { CalculatorsTab } from "./calculators-client";
 import { ChartsTab } from "./charts-client";
+import { SpreadsheetTab } from "./spreadsheet-client";
+import { ReportTab } from "./report-client";
 
-export type OfficeTab = "calculators" | "charts";
+export type OfficeTab = "calculators" | "charts" | "spreadsheet" | "report";
 const TAB_META: Record<OfficeTab, { label: string; icon: typeof Calculator }> = {
   calculators: { label: "Calculators", icon: Calculator },
   charts: { label: "Charts", icon: BarChart3 },
+  spreadsheet: { label: "Spreadsheet Creator", icon: Table },
+  report: { label: "Report Writer", icon: FileBarChart },
 };
 
 /**
  * Office suite home. Plain business-tool names on purpose (no "AI" in the
  * names — the copy inside a tool may mention AI assistance where it applies,
  * but the product surface reads like ordinary office software). Calculators
- * is on every tier; Charts is Scale+ (and Spreadsheet Creator / Report Writer
- * / Presentation Builder will join it here in later phases — not built yet).
+ * is on every tier; Charts, Spreadsheet Creator, and Report Writer are Scale+
+ * (Presentation Builder will join them here in a later phase — not built yet).
  */
 export function OfficeClient({
   canCharts,
+  canSpreadsheet,
+  canReport,
   canManage,
   initialTab,
 }: {
   canCharts: boolean;
+  canSpreadsheet: boolean;
+  canReport: boolean;
   canManage: boolean;
   initialTab?: OfficeTab;
 }) {
@@ -52,6 +60,8 @@ export function OfficeClient({
       </div>
       {tab === "calculators" && <CalculatorsTab />}
       {tab === "charts" && <ChartsTab canCharts={canCharts} canManage={canManage} />}
+      {tab === "spreadsheet" && <SpreadsheetTab canSpreadsheet={canSpreadsheet} canManage={canManage} />}
+      {tab === "report" && <ReportTab canReport={canReport} canManage={canManage} />}
     </div>
   );
 }

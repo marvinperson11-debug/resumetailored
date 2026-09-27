@@ -99,6 +99,45 @@ export function downloadPdf(opts: {
 // fully client-side generator (no server round-trip). Import `downloadDocx`
 // from there.
 
+/**
+ * Generic PDF export for a Documents Creator document (any kind whose body is
+ * already plain HTML — composed docs, the Spreadsheet Creator's saved table,
+ * the Report Writer's generated report). Same browser-print approach as
+ * `downloadPdf` above, minus the resume-template machinery: it prints the
+ * sanitized `body_html` as-is, since that's exactly what the viewer already
+ * renders.
+ */
+export function downloadDocumentPdf(title: string, bodyHtml: string): boolean {
+  const win = window.open("", "_blank");
+  if (!win) return false;
+  const safeTitle = (title || "Document").replace(/</g, "&lt;");
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${safeTitle}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    @page { size: letter; margin: 0.75in; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #1a1a2e; margin: 0; }
+    h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.5rem; }
+    h2 { font-size: 1.2rem; font-weight: 700; margin: 1rem 0 0.4rem; }
+    p { margin: 0 0 0.6rem; line-height: 1.5; }
+    ul, ol { margin: 0 0 0.6rem; padding-left: 1.4rem; }
+    table { border-collapse: collapse; width: 100%; }
+    p, li, tr { page-break-inside: avoid; break-inside: avoid; }
+    a { color: #4f46e5; }
+  </style>
+</head>
+<body>
+  ${bodyHtml}
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); };<\/script>
+</body>
+</html>`);
+  win.document.close();
+  return true;
+}
+
 export function downloadTxt(text: string, filename: string, isPro: boolean) {
   let out = text;
   if (!isPro) out += "\n\n—\n" + WATERMARK;
