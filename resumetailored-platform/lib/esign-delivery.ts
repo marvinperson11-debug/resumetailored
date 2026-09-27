@@ -12,6 +12,8 @@ import { employerSignatureHtml } from "./employer-signature";
 import { appUrl } from "./subdomain";
 import { getValidAccessToken, getEnvelopeByEnvelopeId, markSignedDocsEmailed, type EnvelopeLookup } from "./docusign-store";
 import { getCombinedDocuments } from "./docusign";
+import { getRecipientLocale } from "./locale-pref";
+import { uploadNotifyEmployerCopy } from "./email-i18n";
 
 /** The login-less signer upload page: /sign/{envelopeId}?key={token}. */
 export function signUploadUrl(envelopeId: string, token: string): string {
@@ -177,23 +179,26 @@ ${uploadCta(url, "Upload more documents")}`,
   }
 }
 
-/** D8 — notify the employer that a requested document arrived from the signer. */
+/** D8 — notify the employer that a requested document arrived from the signer.
+ *  Localized per the employer's saved Settings language preference — they're
+ *  always a Clerk account. */
 export async function notifyEmployerOfUpload(env: EnvelopeLookup, filename: string, requestName?: string): Promise<void> {
   try {
     const to = await resolveUserEmail(env.employerId).catch(() => null);
     if (!to) return;
     const signature = await employerSignatureHtml(env.employerId);
+    const locale = await getRecipientLocale(env.employerId);
+    const copy = uploadNotifyEmployerCopy(locale);
     const signer = escapeHtml(env.candidateName || env.candidateEmail || "a signer");
-    const forWhat = requestName ? ` (${escapeHtml(requestName)})` : "";
+    const forWhat = requestName ? copy.forWhatWithRequest(escapeHtml(requestName)) : copy.forWhatDefault;
+    const documentName = escapeHtml(env.documentName || env.subject || "e-signature");
     await sendEmail({
       to,
-      subject: `New document from ${env.candidateName || "signer"}: ${filename}`,
+      subject: copy.subject(env.candidateName || "signer", filename),
       html: emailShell(
-        `<p><strong>${signer}</strong> uploaded a document${forWhat} on the envelope <strong>${escapeHtml(
-          env.documentName || env.subject || "e-signature"
-        )}</strong>.</p>
-<p>File: <strong>${escapeHtml(filename)}</strong></p>
-<p>Open the E-Signatures page in your ResumeTailored employer dashboard to view and download it.</p>`,
+        `<p>${copy.uploadedLine(signer, forWhat, documentName)}</p>
+<p>${copy.fileLabel(escapeHtml(filename))}</p>
+<p>${escapeHtml(copy.openNote)}</p>`,
         signature
       ),
     });

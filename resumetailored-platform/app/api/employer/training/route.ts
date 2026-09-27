@@ -9,6 +9,8 @@ import { upsertQuiz, docIdsWithQuiz } from "@/lib/quiz-store";
 import { sendEmail, emailShell, escapeHtml } from "@/lib/email";
 import { logActivityForEmployee } from "@/lib/notifications-store";
 import { isDocKind, complianceState, type Acknowledgment } from "@/lib/employee-hub";
+import { getRecipientLocale } from "@/lib/locale-pref";
+import { newTrainingAssignedCopy } from "@/lib/email-i18n";
 
 export const runtime = "nodejs";
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -142,13 +144,16 @@ async function notifyAssignees(
     }).catch(() => {});
 
     if (!EMAIL_RE.test(employee.email)) continue;
+    const locale = await getRecipientLocale(employee.clerkUserId || null);
+    const copy = newTrainingAssignedCopy(locale);
+    const firstName = escapeHtml((employee.name || "there").split(" ")[0] || employee.name || "there");
     const ok = await sendEmail({
       to: employee.email,
-      subject: `New training assigned: ${docTitle}`,
+      subject: copy.subject(docTitle),
       html: emailShell(
-        `<p>Hi ${escapeHtml(employee.name || "there")},</p>
-<p>You've been assigned a new training item: <strong>${escapeHtml(docTitle)}</strong>.</p>
-<p>Open your employee portal → My training to review it${hasQuiz ? " and take the short quiz" : " and mark it complete"}.</p>`
+        `<p>${escapeHtml(copy.greeting(firstName))}</p>
+<p>${copy.assignedLine(escapeHtml(docTitle))}</p>
+<p>${escapeHtml(hasQuiz ? copy.openNoteQuiz : copy.openNotePlain)}</p>`
       ),
     });
     if (ok) emailed++;
