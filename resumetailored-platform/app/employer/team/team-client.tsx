@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { UserPlus, Copy, Check, RefreshCw, Trash2 } from "lucide-react";
 import { TEAM_ROLES, type TeamMember, type TeamRole } from "@/lib/employer-ai";
 import { Panel, PageHeader, Btn, Field, Input, Picker, Badge, EmptyState, Modal } from "../components/ui";
@@ -13,6 +14,7 @@ const ROLE_TONE: Record<TeamRole, "gold" | "violet" | "teal" | "neutral"> = {
 };
 
 export function TeamClient({ canManage, openInvite }: { canManage: boolean; openInvite: boolean }) {
+  const t = useTranslations("employerTeam");
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviting, setInviting] = useState(false);
@@ -62,7 +64,7 @@ export function TeamClient({ canManage, openInvite }: { canManage: boolean; open
     }
   }
   async function remove(id: number) {
-    if (!confirm("Remove this team member?")) return;
+    if (!confirm(t("confirmRemove"))) return;
     setBusyId(id);
     try {
       await fetch(`/api/employer/team/${id}`, { method: "DELETE" });
@@ -75,31 +77,31 @@ export function TeamClient({ canManage, openInvite }: { canManage: boolean; open
   return (
     <div>
       <PageHeader
-        title="Team"
-        subtitle="Invite recruiters and teammates, and manage their access."
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           canManage ? (
             <Btn onClick={() => setInviting(true)}>
-              <UserPlus className="h-4 w-4" /> Invite team member
+              <UserPlus className="h-4 w-4" /> {t("inviteTeamMember")}
             </Btn>
           ) : undefined
         }
       />
 
       {loading ? (
-        <Panel className="text-sm text-white/50">Loading team…</Panel>
+        <Panel className="text-sm text-white/50">{t("loadingTeam")}</Panel>
       ) : team.length === 0 ? (
-        <EmptyState icon={UserPlus} title="No team members yet" body="Invite recruiters or hiring managers to collaborate on candidates." />
+        <EmptyState icon={UserPlus} title={t("emptyStateTitle")} body={t("emptyStateBody")} />
       ) : (
         <Panel className="overflow-x-auto p-0">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-border-gold text-left text-xs uppercase tracking-wide text-white/45">
-                <th className="px-4 py-3 font-semibold">Member</th>
-                <th className="px-4 py-3 font-semibold">Role</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Added</th>
-                {canManage && <th className="px-4 py-3 text-right font-semibold">Actions</th>}
+                <th className="px-4 py-3 font-semibold">{t("colMember")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colRole")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colStatus")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colAdded")}</th>
+                {canManage && <th className="px-4 py-3 text-right font-semibold">{t("colActions")}</th>}
               </tr>
             </thead>
             <tbody>
@@ -113,28 +115,28 @@ export function TeamClient({ canManage, openInvite }: { canManage: boolean; open
                       <Picker value={m.role} onChange={(e) => changeRole(m.id, e.target.value as TeamRole)} disabled={busyId === m.id} className="w-32">
                         {TEAM_ROLES.filter((r) => r !== "owner").map((r) => (
                           <option key={r} value={r}>
-                            {r}
+                            {t(`role.${r}`)}
                           </option>
                         ))}
                       </Picker>
                     ) : (
-                      <Badge tone={ROLE_TONE[m.role]}>{m.role}</Badge>
+                      <Badge tone={ROLE_TONE[m.role]}>{t(`role.${m.role}`)}</Badge>
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge tone={m.status === "active" ? "teal" : "gold"}>{m.status === "active" ? "active" : "pending invite"}</Badge>
+                    <Badge tone={m.status === "active" ? "teal" : "gold"}>{m.status === "active" ? t("active") : t("pendingInvite")}</Badge>
                   </td>
                   <td className="px-4 py-3 text-white/60">{fmtDate(m.createdAt)}</td>
                   {canManage && (
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         {m.status === "pending" && (
-                          <button type="button" title="Resend invite (copies link)" onClick={() => resend(m.id)} disabled={busyId === m.id} className="rounded-md p-1.5 text-muted-cream hover:bg-white/8 hover:text-cream disabled:opacity-40">
+                          <button type="button" title={t("resendInviteTitle")} onClick={() => resend(m.id)} disabled={busyId === m.id} className="rounded-md p-1.5 text-muted-cream hover:bg-white/8 hover:text-cream disabled:opacity-40">
                             {copied === m.id ? <Check className="h-4 w-4 text-teal" /> : <RefreshCw className="h-4 w-4" />}
                           </button>
                         )}
                         {m.role !== "owner" && (
-                          <button type="button" title="Remove" onClick={() => remove(m.id)} disabled={busyId === m.id} className="rounded-md p-1.5 text-red-300 hover:bg-red-500/15 disabled:opacity-40">
+                          <button type="button" title={t("remove")} onClick={() => remove(m.id)} disabled={busyId === m.id} className="rounded-md p-1.5 text-red-300 hover:bg-red-500/15 disabled:opacity-40">
                             <Trash2 className="h-4 w-4" />
                           </button>
                         )}
@@ -154,6 +156,7 @@ export function TeamClient({ canManage, openInvite }: { canManage: boolean; open
 }
 
 function InviteModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("employerTeam");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<TeamRole>("recruiter");
   const [saving, setSaving] = useState(false);
@@ -162,29 +165,29 @@ function InviteModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   const [copied, setCopied] = useState(false);
 
   async function submit() {
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError("Enter a valid email.");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError(t("errorInvalidEmail"));
     setSaving(true);
     setError(null);
     try {
       const res = await fetch("/api/employer/team", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, role }) });
       const d = (await res.json().catch(() => ({}))) as { link?: string; emailed?: boolean; error?: string };
-      if (!res.ok || !d.link) throw new Error(d.error || "Could not send the invite.");
+      if (!res.ok || !d.link) throw new Error(d.error || t("errorCouldNotSendInvite"));
       setResult({ link: d.link, emailed: !!d.emailed });
       onSaved();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <Modal title="Invite team member" onClose={onClose}>
+    <Modal title={t("inviteTeamMember")} onClose={onClose}>
       {result ? (
         <div className="space-y-4">
           <p className="text-sm text-white/75">
-            {result.emailed ? "Invite email sent. " : "Invite created. "}
-            Share this link with your teammate:
+            {result.emailed ? t("inviteEmailSent") : t("inviteCreated")}
+            {" "}{t("shareThisLink")}
           </p>
           <div className="flex gap-2">
             <Input readOnly value={result.link} onFocus={(e) => e.currentTarget.select()} />
@@ -197,23 +200,23 @@ function InviteModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
                 setTimeout(() => setCopied(false), 2000);
               }}
             >
-              {copied ? <Check className="h-4 w-4 text-teal" /> : <Copy className="h-4 w-4" />} {copied ? "Copied" : "Copy"}
+              {copied ? <Check className="h-4 w-4 text-teal" /> : <Copy className="h-4 w-4" />} {copied ? t("copied") : t("copy")}
             </Btn>
           </div>
           <div className="flex justify-end">
-            <Btn onClick={onClose}>Done</Btn>
+            <Btn onClick={onClose}>{t("done")}</Btn>
           </div>
         </div>
       ) : (
         <div className="space-y-4">
-          <Field label="Email">
+          <Field label={t("fieldEmail")}>
             <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="teammate@company.com" autoFocus />
           </Field>
-          <Field label="Role">
+          <Field label={t("fieldRole")}>
             <Picker value={role} onChange={(e) => setRole(e.target.value as TeamRole)}>
               {TEAM_ROLES.filter((r) => r !== "owner").map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {t(`role.${r}`)}
                 </option>
               ))}
             </Picker>
@@ -221,7 +224,7 @@ function InviteModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
           <div className="flex justify-end">
             <Btn onClick={submit} loading={saving}>
-              Send invite
+              {t("sendInvite")}
             </Btn>
           </div>
         </div>

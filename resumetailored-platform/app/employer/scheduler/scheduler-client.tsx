@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { CalendarClock, Plus, Video, Phone, MapPin, Check, X, Pencil, Trash2, Download, FileText, Circle, Sparkles } from "lucide-react";
 import {
   INTERVIEW_MODES,
-  RECOMMENDATION_LABELS,
   type Interview,
   type InterviewMode,
   type InterviewStatus,
@@ -25,7 +25,6 @@ export interface SchedulerGating {
 }
 
 const MODE_ICON = { video: Video, phone: Phone, onsite: MapPin } as const;
-const MODE_LABEL = { video: "Video call", phone: "Phone", onsite: "On-site" } as const;
 const STATUS_TONE: Record<InterviewStatus, "sky" | "teal" | "neutral"> = { scheduled: "sky", completed: "teal", cancelled: "neutral" };
 const REC_TONE: Record<InterviewRecommendation, "teal" | "sky" | "gold" | "red"> = {
   strong_yes: "teal",
@@ -35,6 +34,7 @@ const REC_TONE: Record<InterviewRecommendation, "teal" | "sky" | "gold" | "red">
 };
 
 export function SchedulerClient({ initialApplicantId, gating }: { initialApplicantId?: number; gating: SchedulerGating }) {
+  const t = useTranslations("employerScheduler");
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"upcoming" | "past" | "all">("upcoming");
@@ -94,19 +94,19 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
       const res = await fetch(`/api/employer/interviews/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!res.ok) {
         const d = (await res.json().catch(() => ({}))) as { error?: string };
-        setNotice(d.error || "Couldn't update the interview. Please try again.");
+        setNotice(d.error || t("errorCouldNotUpdate"));
       }
     } catch {
-      setNotice("Couldn't update the interview (network error).");
+      setNotice(t("errorCouldNotUpdateNetwork"));
     }
     load();
   }
   async function del(id: number) {
     try {
       const res = await fetch(`/api/employer/interviews/${id}`, { method: "DELETE" });
-      if (!res.ok) setNotice("Couldn't delete the interview. Please try again.");
+      if (!res.ok) setNotice(t("errorCouldNotDelete"));
     } catch {
-      setNotice("Couldn't delete the interview (network error).");
+      setNotice(t("errorCouldNotDeleteNetwork"));
     }
     load();
   }
@@ -114,11 +114,11 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
   return (
     <div>
       <PageHeader
-        title="Interview Scheduler"
-        subtitle="Plan and track interviews with your candidates."
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           <Btn onClick={() => setScheduling(true)}>
-            <Plus className="h-4 w-4" /> Schedule interview
+            <Plus className="h-4 w-4" /> {t("scheduleInterview")}
           </Btn>
         }
       />
@@ -126,7 +126,7 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
       {notice && (
         <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3 text-sm text-gold">
           <span>{notice}</span>
-          <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss" className="shrink-0 text-gold/70 hover:text-gold">
+          <button type="button" onClick={() => setNotice(null)} aria-label={t("dismiss")} className="shrink-0 text-gold/70 hover:text-gold">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -134,11 +134,11 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
 
       {gating.videoLimit !== null && (
         <p className="mb-4 text-xs text-white/45">
-          Video interviews this month: <span className="text-white/70">{gating.videoUsed}</span>
+          {t("videoInterviewsThisMonth")} <span className="text-white/70">{gating.videoUsed}</span>
           {" / "}
-          {gating.videoLimit} ({gating.tier} plan)
-          {!gating.canRecord && " · recording is a Portal+ feature"}
-          {gating.canRecord && !gating.canSummary && " · AI summaries are a Scale+ feature"}
+          {t("videoLimitPlan", { limit: gating.videoLimit, tier: gating.tier })}
+          {!gating.canRecord && t("recordingIsPortalPlus")}
+          {gating.canRecord && !gating.canSummary && t("summariesAreScalePlus")}
         </p>
       )}
 
@@ -149,25 +149,25 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
             type="button"
             onClick={() => setView(v)}
             className={cn(
-              "rounded-lg px-3 py-1.5 font-semibold capitalize transition-colors",
+              "rounded-lg px-3 py-1.5 font-semibold transition-colors",
               view === v ? "bg-violet/20 text-cream" : "text-white/55 hover:bg-white/5"
             )}
           >
-            {v}
+            {t(`view.${v}`)}
           </button>
         ))}
       </div>
 
       {loading ? (
-        <Panel className="text-sm text-white/50">Loading interviews…</Panel>
+        <Panel className="text-sm text-white/50">{t("loadingInterviews")}</Panel>
       ) : shown.length === 0 ? (
         <EmptyState
           icon={CalendarClock}
-          title={view === "upcoming" ? "No upcoming interviews" : "No interviews"}
-          body="Schedule an interview with a candidate to see it here."
+          title={view === "upcoming" ? t("noUpcomingInterviews") : t("noInterviews")}
+          body={t("emptyStateBody")}
           action={
             <Btn onClick={() => setScheduling(true)}>
-              <Plus className="h-4 w-4" /> Schedule interview
+              <Plus className="h-4 w-4" /> {t("scheduleInterview")}
             </Btn>
           }
         />
@@ -233,6 +233,7 @@ function InterviewCard({
   onDelete: () => void;
   hasSummaryTier: boolean;
 }) {
+  const t = useTranslations("employerScheduler");
   const Icon = MODE_ICON[i.mode];
   const joinUrl = i.roomUrl || (i.mode === "video" && /^https?:\/\//i.test(i.location) ? i.location : "");
   const isLink = !!joinUrl;
@@ -255,7 +256,7 @@ function InterviewCard({
         </div>
         <div className="text-sm">
           <div className="font-semibold text-cream">{fmtTime(i.scheduledAt)}</div>
-          <div className="text-xs text-white/45">{i.durationMin} min</div>
+          <div className="text-xs text-white/45">{t("durationMinutes", { count: i.durationMin })}</div>
         </div>
       </div>
 
@@ -263,21 +264,21 @@ function InterviewCard({
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium text-cream">{i.title}</span>
-          <Badge tone={STATUS_TONE[i.status]}>{i.status}</Badge>
+          <Badge tone={STATUS_TONE[i.status]}>{t(`interviewStatus.${i.status}`)}</Badge>
         </div>
         <div className="mt-0.5 text-sm text-white/60">
-          {i.applicantName || "Candidate"}
+          {i.applicantName || t("candidateFallback")}
           {i.jobTitle ? ` · ${i.jobTitle}` : ""}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/50">
           <span className="inline-flex items-center gap-1">
-            <Icon className="h-3.5 w-3.5" /> {MODE_LABEL[i.mode]}
+            <Icon className="h-3.5 w-3.5" /> {t(`modeLabel.${i.mode}`)}
           </span>
           {!isLink && i.location && <span className="truncate">{i.location}</span>}
-          {i.interviewer && <span>with {i.interviewer}</span>}
+          {i.interviewer && <span>{t("withInterviewer", { name: i.interviewer })}</span>}
           {i.recordEnabled && i.status === "scheduled" && (
             <span className="inline-flex items-center gap-1 text-red-300">
-              <Circle className="h-2.5 w-2.5 fill-current" /> Recording on
+              <Circle className="h-2.5 w-2.5 fill-current" /> {t("recordingOn")}
             </span>
           )}
         </div>
@@ -288,23 +289,23 @@ function InterviewCard({
       <div className="flex shrink-0 items-center gap-1">
         {i.status === "scheduled" && (
           <>
-            <button type="button" onClick={onComplete} className="rounded-md p-2 text-white/45 hover:bg-white/5 hover:text-teal" aria-label="Mark completed" title="Mark completed">
+            <button type="button" onClick={onComplete} className="rounded-md p-2 text-white/45 hover:bg-white/5 hover:text-teal" aria-label={t("markCompleted")} title={t("markCompleted")}>
               <Check className="h-4 w-4" />
             </button>
-            <button type="button" onClick={onCancel} className="rounded-md p-2 text-white/45 hover:bg-white/5 hover:text-red-300" aria-label="Cancel" title="Cancel">
+            <button type="button" onClick={onCancel} className="rounded-md p-2 text-white/45 hover:bg-white/5 hover:text-red-300" aria-label={t("cancel")} title={t("cancel")}>
               <X className="h-4 w-4" />
             </button>
-            <button type="button" onClick={onEdit} className="rounded-md p-2 text-white/45 hover:bg-white/5 hover:text-cream" aria-label="Edit" title="Edit / reschedule">
+            <button type="button" onClick={onEdit} className="rounded-md p-2 text-white/45 hover:bg-white/5 hover:text-cream" aria-label={t("edit")} title={t("editReschedule")}>
               <Pencil className="h-4 w-4" />
             </button>
           </>
         )}
         {i.status !== "scheduled" && (
           <button type="button" onClick={onReopen} className="rounded-md px-2 py-1 text-xs font-semibold text-violet hover:underline">
-            Reopen
+            {t("reopen")}
           </button>
         )}
-        <button type="button" onClick={onDelete} className="rounded-md p-2 text-white/45 hover:bg-white/5 hover:text-red-300" aria-label="Delete" title="Delete">
+        <button type="button" onClick={onDelete} className="rounded-md p-2 text-white/45 hover:bg-white/5 hover:text-red-300" aria-label={t("delete")} title={t("delete")}>
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
@@ -320,7 +321,7 @@ function InterviewCard({
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-lg bg-violet px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet/90"
             >
-              <Video className="h-3.5 w-3.5" /> Join
+              <Video className="h-3.5 w-3.5" /> {t("join")}
             </a>
           )}
           {(i.recordingId || i.recordingUrl) && (
@@ -332,7 +333,7 @@ function InterviewCard({
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-cream hover:bg-white/[0.08]"
             >
-              <Download className="h-3.5 w-3.5 text-violet" /> Recording
+              <Download className="h-3.5 w-3.5 text-violet" /> {t("recording")}
             </a>
           )}
           {i.transcriptUrl && (
@@ -342,7 +343,7 @@ function InterviewCard({
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-cream hover:bg-white/[0.08]"
             >
-              <FileText className="h-3.5 w-3.5 text-violet" /> Transcript
+              <FileText className="h-3.5 w-3.5 text-violet" /> {t("transcript")}
             </a>
           )}
         </div>
@@ -353,17 +354,17 @@ function InterviewCard({
         <div className="rounded-xl border border-border-gold bg-white/[0.03] p-4">
           <div className="mb-2 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-violet" />
-            <span className="text-sm font-semibold text-cream">AI interview summary</span>
-            <Badge tone={REC_TONE[i.aiSummary.recommendation]}>{RECOMMENDATION_LABELS[i.aiSummary.recommendation]}</Badge>
+            <span className="text-sm font-semibold text-cream">{t("aiInterviewSummary")}</span>
+            <Badge tone={REC_TONE[i.aiSummary.recommendation]}>{t(`recommendation.${i.aiSummary.recommendation}`)}</Badge>
           </div>
           {i.aiSummary.overview && <p className="mb-3 text-sm text-white/75">{i.aiSummary.overview}</p>}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <SummaryList title="Strengths" tone="text-teal" items={i.aiSummary.strengths} />
-            <SummaryList title="Concerns" tone="text-red-300" items={i.aiSummary.concerns} />
+            <SummaryList title={t("strengths")} tone="text-teal" items={i.aiSummary.strengths} />
+            <SummaryList title={t("concerns")} tone="text-red-300" items={i.aiSummary.concerns} />
           </div>
           {i.aiSummary.followUps.length > 0 && (
             <div className="mt-3">
-              <div className="mb-1 text-[11px] font-semibold uppercase text-muted-cream">Recommended follow-ups</div>
+              <div className="mb-1 text-[11px] font-semibold uppercase text-muted-cream">{t("recommendedFollowUps")}</div>
               <ul className="space-y-0.5">
                 {i.aiSummary.followUps.map((s, idx) => (
                   <li key={idx} className="text-xs text-white/70">• {s}</li>
@@ -377,7 +378,7 @@ function InterviewCard({
         i.recordEnabled &&
         !hasSummaryTier && (
           <p className="rounded-lg border border-dashed border-border-gold px-3 py-2 text-xs text-white/45">
-            🔒 AI interview summaries are a Scale-plan feature.
+            {t("summariesAreScalePlanFeature")}
           </p>
         )
       )}
@@ -415,6 +416,7 @@ function InterviewForm({
   onClose: () => void;
   onSaved: (warning?: string) => void;
 }) {
+  const t = useTranslations("employerScheduler");
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [applicantId, setApplicantId] = useState<number | "">(existing?.applicantId ?? initialApplicantId ?? "");
   const [title, setTitle] = useState(existing?.title || "");
@@ -439,9 +441,9 @@ function InterviewForm({
   const selectedApplicant = applicants.find((a) => a.id === applicantId);
 
   async function submit() {
-    if (!applicantId) return setError("Pick a candidate.");
-    if (!title.trim()) return setError("Give the interview a title.");
-    if (!when || !Number.isFinite(new Date(when).getTime())) return setError("Pick a date and time.");
+    if (!applicantId) return setError(t("errorPickCandidate"));
+    if (!title.trim()) return setError(t("errorNeedTitle"));
+    if (!when || !Number.isFinite(new Date(when).getTime())) return setError(t("errorPickDateTime"));
     setSaving(true);
     setError(null);
     const body = {
@@ -466,16 +468,16 @@ function InterviewForm({
         body: JSON.stringify(body),
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string; warning?: string };
-      if (!res.ok) throw new Error(d.error || "Could not save.");
+      if (!res.ok) throw new Error(d.error || t("errorCouldNotSave"));
       onSaved(d.warning);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
       setSaving(false);
     }
   }
 
   return (
-    <Modal title={existing ? "Edit interview" : "Schedule interview"} onClose={onClose} wide>
+    <Modal title={existing ? t("editInterview") : t("scheduleInterview")} onClose={onClose} wide>
       <div className="space-y-4">
         {existing ? (
           <div className="rounded-lg border border-border-gold bg-white/[0.03] px-3 py-2 text-sm text-white/70">
@@ -483,9 +485,9 @@ function InterviewForm({
             {existing.jobTitle ? ` · ${existing.jobTitle}` : ""}
           </div>
         ) : (
-          <Field label="Candidate">
+          <Field label={t("fieldCandidate")}>
             <Picker value={applicantId} onChange={(e) => setApplicantId(e.target.value ? Number(e.target.value) : "")}>
-              <option value="">Pick a candidate…</option>
+              <option value="">{t("pickCandidateEllipsis")}</option>
               {applicants.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name} {a.jobTitle ? `— ${a.jobTitle}` : ""}
@@ -494,45 +496,45 @@ function InterviewForm({
             </Picker>
           </Field>
         )}
-        <Field label="Title">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Technical screen, Final round…" />
+        <Field label={t("fieldTitle")}>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("placeholderTitle")} />
         </Field>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Date & time">
+          <Field label={t("fieldDateTime")}>
             <Input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
           </Field>
-          <Field label="Duration">
+          <Field label={t("fieldDuration")}>
             <Picker value={durationMin} onChange={(e) => setDurationMin(Number(e.target.value))}>
               {[15, 30, 45, 60, 90, 120].map((d) => (
                 <option key={d} value={d}>
-                  {d} minutes
+                  {t("durationMinutes", { count: d })}
                 </option>
               ))}
             </Picker>
           </Field>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Type">
+          <Field label={t("fieldType")}>
             <Picker value={mode} onChange={(e) => setMode(e.target.value as InterviewMode)}>
               {INTERVIEW_MODES.map((m) => (
                 <option key={m} value={m}>
-                  {MODE_LABEL[m]}
+                  {t(`modeLabel.${m}`)}
                 </option>
               ))}
             </Picker>
           </Field>
-          <Field label="Interviewer" hint="Optional">
-            <Input value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder="Who's running it?" />
+          <Field label={t("fieldInterviewer")} hint={t("optional")}>
+            <Input value={interviewer} onChange={(e) => setInterviewer(e.target.value)} placeholder={t("placeholderInterviewer")} />
           </Field>
         </div>
         <Field
-          label={mode === "onsite" ? "Location / address" : mode === "video" ? "Meeting link" : "Phone number"}
-          hint={mode === "video" ? "Optional — leave blank and we'll auto-generate a video room link" : "Optional"}
+          label={mode === "onsite" ? t("fieldLocationAddress") : mode === "video" ? t("fieldMeetingLink") : t("fieldPhoneNumber")}
+          hint={mode === "video" ? t("hintMeetingLink") : t("optional")}
         >
           <Input
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder={mode === "video" ? "Auto-generated — or paste your own link" : mode === "onsite" ? "123 Main St, Suite 200" : "+1 555 000 0000"}
+            placeholder={mode === "video" ? t("placeholderMeetingLink") : mode === "onsite" ? t("placeholderAddress") : "+1 555 000 0000"}
           />
         </Field>
 
@@ -540,8 +542,7 @@ function InterviewForm({
           <div className="rounded-lg border border-border-gold bg-white/[0.03] p-3">
             {gating.videoLimit === 0 && !gating.videoAllowed ? (
               <p className="text-xs text-gold">
-                🔒 Video interviews are a Pro feature. Upgrade to Portal to host video interviews with auto-generated join
-                links, recording, and transcripts.
+                {t("videoInterviewsAreProFeature")}
               </p>
             ) : (
               <>
@@ -553,27 +554,27 @@ function InterviewForm({
                     onChange={(e) => setRecordEnabled(e.target.checked)}
                     className="h-4 w-4 accent-violet"
                   />
-                  <span className="text-cream">Record interview</span>
+                  <span className="text-cream">{t("recordInterview")}</span>
                 </label>
                 <p className="mt-1 text-[11px] text-white/45">
                   {gating.canRecord
                     ? gating.canSummary
-                      ? "Records the call and generates a transcript + AI summary when it ends."
-                      : "Records the call and generates a transcript. AI summaries are a Scale-plan feature."
-                    : "🔒 Recording + transcription are available on Portal and above."}
+                      ? t("recordHintFull")
+                      : t("recordHintNoSummary")
+                    : t("recordHintNotAllowed")}
                 </p>
               </>
             )}
           </div>
         )}
 
-        <Field label="Notes" hint="Optional — visible only to your team">
+        <Field label={t("fieldNotes")} hint={t("hintNotes")}>
           <Area rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </Field>
         {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
         <div className="flex justify-end">
           <Btn onClick={submit} loading={saving}>
-            {existing ? "Save changes" : "Schedule"}
+            {existing ? t("saveChanges") : t("schedule")}
           </Btn>
         </div>
       </div>
