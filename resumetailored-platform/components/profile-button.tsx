@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { UserButton, useClerk } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { Camera, User, Settings, Languages, Download } from "lucide-react";
 import { setLocaleCookie } from "./language-switcher";
 import { usePWA } from "./pwa/pwa-context";
 import { InstallHelpCard } from "./pwa/install-app-button";
+import { LOCALES, type Locale } from "@/i18n/locales";
 
 /**
  * Top-right avatar dropdown. Wraps Clerk's <UserButton> (which provides account
@@ -15,12 +16,15 @@ import { InstallHelpCard } from "./pwa/install-app-button";
  * Upload photo (opens Clerk's account-profile page, where photo upload is
  * native), Profile, Settings, Install app (candidate + employer + employee
  * shells all share this one component, so one menu item covers all three),
- * and a Language submenu (English / 中文).
+ * and a Language submenu (one action per locale in LOCALES — see
+ * language-switcher.tsx for the primary, dropdown version of the same
+ * cookie + router.refresh() switch).
  */
 export function ProfileButton() {
   const { openUserProfile } = useClerk();
   const router = useRouter();
   const pathname = usePathname();
+  const locale = useLocale() as Locale;
   const t = useTranslations("topbar");
   const tl = useTranslations("lang");
   const { canInstall, isIOS, isStandalone, promptInstall } = usePWA();
@@ -82,8 +86,14 @@ export function ProfileButton() {
           <UserButton.Action label={t("profile")} labelIcon={<User className="h-4 w-4" />} onClick={() => router.push(profileHref)} />
           <UserButton.Action label={t("settings")} labelIcon={<Settings className="h-4 w-4" />} onClick={() => router.push(settingsHref)} />
           {!isStandalone && <UserButton.Action label="Install app" labelIcon={<Download className="h-4 w-4" />} onClick={installApp} />}
-          <UserButton.Action label={`${t("language")}: ${tl("en")}`} labelIcon={<Languages className="h-4 w-4" />} onClick={() => setLang("en")} />
-          <UserButton.Action label={`${t("language")}: ${tl("zh")}`} labelIcon={<Languages className="h-4 w-4" />} onClick={() => setLang("zh")} />
+          {LOCALES.map((code) => (
+            <UserButton.Action
+              key={code}
+              label={`${t("language")}: ${tl(code)}${locale === code ? " ✓" : ""}`}
+              labelIcon={<Languages className="h-4 w-4" />}
+              onClick={() => setLang(code)}
+            />
+          ))}
           <UserButton.Action label="Upload photo" labelIcon={<Camera className="h-4 w-4" />} onClick={() => openUserProfile()} />
         </UserButton.MenuItems>
       </UserButton>

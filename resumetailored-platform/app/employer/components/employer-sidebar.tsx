@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { LayoutDashboard, Briefcase, Users, UserCheck, MessageSquare, Star, CalendarClock, CalendarDays, Clock, Plane, Globe, UserCog, Settings, Building2, FileSignature, FolderOpen, Calculator, Lock, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AdminViewToggle } from "@/components/admin-view-toggle";
@@ -9,6 +10,8 @@ import { PlanPreviewSwitcher } from "@/components/plan-preview-switcher";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export interface EmployerNavItem {
+  /** An i18n key under the "employerNav" namespace, resolved at render —
+   *  same convention as CandidateSidebar's `navItems`. */
   label: string;
   href: string;
   icon: LucideIcon;
@@ -17,22 +20,22 @@ export interface EmployerNavItem {
 
 /** Single source of truth for the employer nav. */
 export const EMPLOYER_NAV: EmployerNavItem[] = [
-  { label: "Dashboard", href: "/employer", icon: LayoutDashboard, exact: true },
-  { label: "Hire", href: "/employer/jobs", icon: Briefcase },
-  { label: "Candidates", href: "/employer/candidates", icon: Users },
-  { label: "Messages", href: "/employer/messages", icon: MessageSquare },
-  { label: "Shortlists", href: "/employer/shortlists", icon: Star },
-  { label: "Scheduler", href: "/employer/scheduler", icon: CalendarClock },
-  { label: "E-Signatures", href: "/employer/docusign", icon: FileSignature },
-  { label: "Documents", href: "/employer/documents", icon: FolderOpen },
-  { label: "Office", href: "/employer/office", icon: Calculator },
-  { label: "Employees", href: "/employer/employees", icon: UserCheck },
-  { label: "Schedule", href: "/employer/schedule", icon: CalendarDays },
-  { label: "Timesheets", href: "/employer/timesheets", icon: Clock },
-  { label: "Time off", href: "/employer/time-off", icon: Plane },
-  { label: "Career Site", href: "/employer/career-site", icon: Globe },
-  { label: "Team", href: "/employer/team", icon: UserCog },
-  { label: "Settings", href: "/employer/settings", icon: Settings },
+  { label: "dashboard", href: "/employer", icon: LayoutDashboard, exact: true },
+  { label: "hire", href: "/employer/jobs", icon: Briefcase },
+  { label: "candidates", href: "/employer/candidates", icon: Users },
+  { label: "messages", href: "/employer/messages", icon: MessageSquare },
+  { label: "shortlists", href: "/employer/shortlists", icon: Star },
+  { label: "scheduler", href: "/employer/scheduler", icon: CalendarClock },
+  { label: "eSignatures", href: "/employer/docusign", icon: FileSignature },
+  { label: "documents", href: "/employer/documents", icon: FolderOpen },
+  { label: "office", href: "/employer/office", icon: Calculator },
+  { label: "employees", href: "/employer/employees", icon: UserCheck },
+  { label: "schedule", href: "/employer/schedule", icon: CalendarDays },
+  { label: "timesheets", href: "/employer/timesheets", icon: Clock },
+  { label: "timeOff", href: "/employer/time-off", icon: Plane },
+  { label: "careerSite", href: "/employer/career-site", icon: Globe },
+  { label: "team", href: "/employer/team", icon: UserCog },
+  { label: "settings", href: "/employer/settings", icon: Settings },
 ];
 
 export function isEmployerNavActive(pathname: string, href: string, exact?: boolean): boolean {
@@ -62,12 +65,13 @@ export function EmployerSidebar({
   lockedHrefs?: string[];
 }) {
   const pathname = usePathname();
+  const t = useTranslations("employerNav");
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center gap-2 border-b border-border-gold px-6">
         <span className="font-serif text-lg font-medium text-cream">ResumeTailored</span>
-        <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gold">Employer</span>
+        <span className="rounded bg-gold/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gold">{t("badge")}</span>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
@@ -88,8 +92,8 @@ export function EmployerSidebar({
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
-              <span className="flex-1">{n.label}</span>
-              {locked && <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-gold" aria-label="Upgrade required" />}
+              <span className="flex-1">{t(n.label)}</span>
+              {locked && <Lock className="ml-auto h-3.5 w-3.5 shrink-0 text-gold" aria-label={t("upgradeRequired")} />}
             </Link>
           );
         })}

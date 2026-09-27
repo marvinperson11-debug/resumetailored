@@ -35,6 +35,38 @@
     "freeUpgrade": "免费版 · 升级到 Pro",
     "pro": "PRO"
   },
-  "lang": { "label": "语言", "en": "English", "zh": "中文" },
-  "employer": { "candidates": "候选人", "jobs": "职位", "team": "团队", "settings": "设置" }
+  "lang": { "label": "语言", "en": "English", "zh": "中文", "es": "Español", "hi": "हिन्दी", "fr": "Français" },
+  "employer": { "candidates": "候选人", "jobs": "职位", "team": "团队", "settings": "设置" },
+  "employerNav": {
+    "badge": "雇主",
+    "dashboard": "仪表盘",
+    "hire": "招聘",
+    "candidates": "候选人",
+    "messages": "消息",
+    "shortlists": "候选人清单",
+    "scheduler": "面试安排",
+    "eSignatures": "电子签名",
+    "documents": "文档",
+    "office": "办公套件",
+    "employees": "员工",
+    "schedule": "排班",
+    "timesheets": "工时表",
+    "timeOff": "请假",
+    "careerSite": "招聘官网",
+    "team": "团队",
+    "settings": "设置",
+    "upgradeRequired": "需要升级"
+  },
+  "employeeNav": {
+    "badge": "员工门户",
+    "home": "首页",
+    "feed": "动态",
+    "schedule": "我的排班",
+    "hours": "我的工时",
+    "timeOff": "请假",
+    "documents": "我的文档",
+    "messages": "消息",
+    "training": "我的培训",
+    "library": "资料库"
+  }
 }

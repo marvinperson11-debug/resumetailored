@@ -1,0 +1,72 @@
+{
+  "app": { "name": "ResumeTailored", "office": "Mon bureau de carrière" },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "buildResume": "Créer mon CV",
+    "myResumes": "Mes CV",
+    "coverLetters": "Lettres de motivation",
+    "atsScanner": "Scanner ATS",
+    "linkedin": "Optimiseur LinkedIn",
+    "interview": "Coach d'entretien",
+    "jobs": "Recherche d'emploi",
+    "career": "Espace carrière",
+    "decoder": "Décodeur",
+    "applications": "Suivi des candidatures",
+    "shareable": "Liens partageables",
+    "resumeVideo": "Vidéo de CV",
+    "personalWebsite": "Site web personnel",
+    "templates": "Modèles",
+    "profile": "Profil",
+    "settings": "Paramètres"
+  },
+  "topbar": {
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "language": "Langue",
+    "signOut": "Se déconnecter",
+    "candidateView": "Vue candidat",
+    "employerView": "Vue employeur",
+    "admin": "Admin",
+    "menu": "Menu"
+  },
+  "plan": {
+    "proActive": "Pro · actif",
+    "proVia": "Pro · via {name}",
+    "freeUpgrade": "Plan gratuit · Passer à Pro",
+    "pro": "PRO"
+  },
+  "lang": { "label": "Langue", "en": "English", "zh": "中文", "es": "Español", "hi": "हिन्दी", "fr": "Français" },
+  "employer": { "candidates": "Candidats", "jobs": "Offres", "team": "Équipe", "settings": "Paramètres" },
+  "employerNav": {
+    "badge": "Employeur",
+    "dashboard": "Tableau de bord",
+    "hire": "Recruter",
+    "candidates": "Candidats",
+    "messages": "Messages",
+    "shortlists": "Listes restreintes",
+    "scheduler": "Planificateur",
+    "eSignatures": "Signatures électroniques",
+    "documents": "Documents",
+    "office": "Bureau",
+    "employees": "Employés",
+    "schedule": "Planning",
+    "timesheets": "Feuilles de temps",
+    "timeOff": "Congés",
+    "careerSite": "Site carrière",
+    "team": "Équipe",
+    "settings": "Paramètres",
+    "upgradeRequired": "Mise à niveau requise"
+  },
+  "employeeNav": {
+    "badge": "Portail",
+    "home": "Accueil",
+    "feed": "Actualités",
+    "schedule": "Mon planning",
+    "hours": "Mes heures",
+    "timeOff": "Congés",
+    "documents": "Mes documents",
+    "messages": "Messages",
+    "training": "Ma formation",
+    "library": "Bibliothèque"
+  }
+}

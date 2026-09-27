@@ -35,6 +35,38 @@
     "freeUpgrade": "Free plan · Upgrade to Pro",
     "pro": "PRO"
   },
-  "lang": { "label": "Language", "en": "English", "zh": "中文" },
-  "employer": { "candidates": "Candidates", "jobs": "Jobs", "team": "Team", "settings": "Settings" }
+  "lang": { "label": "Language", "en": "English", "zh": "中文", "es": "Español", "hi": "हिन्दी", "fr": "Français" },
+  "employer": { "candidates": "Candidates", "jobs": "Jobs", "team": "Team", "settings": "Settings" },
+  "employerNav": {
+    "badge": "Employer",
+    "dashboard": "Dashboard",
+    "hire": "Hire",
+    "candidates": "Candidates",
+    "messages": "Messages",
+    "shortlists": "Shortlists",
+    "scheduler": "Scheduler",
+    "eSignatures": "E-Signatures",
+    "documents": "Documents",
+    "office": "Office",
+    "employees": "Employees",
+    "schedule": "Schedule",
+    "timesheets": "Timesheets",
+    "timeOff": "Time off",
+    "careerSite": "Career Site",
+    "team": "Team",
+    "settings": "Settings",
+    "upgradeRequired": "Upgrade required"
+  },
+  "employeeNav": {
+    "badge": "Portal",
+    "home": "Home",
+    "feed": "Feed",
+    "schedule": "My schedule",
+    "hours": "My hours",
+    "timeOff": "Time off",
+    "documents": "My documents",
+    "messages": "Messages",
+    "training": "My training",
+    "library": "Library"
+  }
 }

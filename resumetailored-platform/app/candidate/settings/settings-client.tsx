@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { Crown, Check, Loader2, KeyRound, Trash2, Bell, Eye, Sparkles, Link2 } from "lucide-react";
 import type { UserProfile } from "@/lib/profile-store";
+import { LanguageSettingsSection } from "@/components/language-settings-section";
 
 const card = "rounded-2xl border border-border-gold bg-white/[0.03] p-6";
 const h2 = "mb-1 flex items-center gap-2 text-sm font-semibold text-cream";
@@ -116,6 +117,9 @@ export function SettingsClient({ initial, planLabel, isProPlan }: { initial: Use
           <Toggle label="Reduce motion" hint="Turns off the animated background and transitions." on={reduceMotion} onChange={setMotion} />
         </div>
       </div>
+
+      {/* Language */}
+      <LanguageSettingsSection />
 
       {/* Privacy */}
       <div className={card}>

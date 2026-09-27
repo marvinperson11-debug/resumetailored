@@ -1,0 +1,72 @@
+{
+  "app": { "name": "ResumeTailored", "office": "Mi Oficina Profesional" },
+  "nav": {
+    "dashboard": "Panel",
+    "buildResume": "Crear mi currículum",
+    "myResumes": "Mis currículums",
+    "coverLetters": "Cartas de presentación",
+    "atsScanner": "Escáner ATS",
+    "linkedin": "Optimizador de LinkedIn",
+    "interview": "Entrenador de entrevistas",
+    "jobs": "Buscador de empleo",
+    "career": "Centro de carrera",
+    "decoder": "Decodificador",
+    "applications": "Seguimiento de solicitudes",
+    "shareable": "Enlaces para compartir",
+    "resumeVideo": "Video de currículum",
+    "personalWebsite": "Sitio web personal",
+    "templates": "Plantillas",
+    "profile": "Perfil",
+    "settings": "Configuración"
+  },
+  "topbar": {
+    "profile": "Perfil",
+    "settings": "Configuración",
+    "language": "Idioma",
+    "signOut": "Cerrar sesión",
+    "candidateView": "Vista de candidato",
+    "employerView": "Vista de empleador",
+    "admin": "Administrador",
+    "menu": "Menú"
+  },
+  "plan": {
+    "proActive": "Pro · activo",
+    "proVia": "Pro · vía {name}",
+    "freeUpgrade": "Plan gratuito · Mejorar a Pro",
+    "pro": "PRO"
+  },
+  "lang": { "label": "Idioma", "en": "English", "zh": "中文", "es": "Español", "hi": "हिन्दी", "fr": "Français" },
+  "employer": { "candidates": "Candidatos", "jobs": "Empleos", "team": "Equipo", "settings": "Configuración" },
+  "employerNav": {
+    "badge": "Empleador",
+    "dashboard": "Panel",
+    "hire": "Contratar",
+    "candidates": "Candidatos",
+    "messages": "Mensajes",
+    "shortlists": "Listas cortas",
+    "scheduler": "Programador",
+    "eSignatures": "Firmas electrónicas",
+    "documents": "Documentos",
+    "office": "Oficina",
+    "employees": "Empleados",
+    "schedule": "Horario",
+    "timesheets": "Registros de horas",
+    "timeOff": "Tiempo libre",
+    "careerSite": "Sitio de empleo",
+    "team": "Equipo",
+    "settings": "Configuración",
+    "upgradeRequired": "Requiere actualización"
+  },
+  "employeeNav": {
+    "badge": "Portal",
+    "home": "Inicio",
+    "feed": "Novedades",
+    "schedule": "Mi horario",
+    "hours": "Mis horas",
+    "timeOff": "Tiempo libre",
+    "documents": "Mis documentos",
+    "messages": "Mensajes",
+    "training": "Mi capacitación",
+    "library": "Biblioteca"
+  }
+}
