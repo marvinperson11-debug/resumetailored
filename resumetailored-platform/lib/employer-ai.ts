@@ -149,12 +149,14 @@ export interface Conversation {
   unread: number; // unread inbound (candidate) messages
 }
 
-/** Canned employer message templates for the composer dropdown. */
-export const MESSAGE_TEMPLATES: { label: string; body: string }[] = [
-  { label: "Thanks for applying", body: "Thanks for applying — we'll review your application and get back to you soon." },
-  { label: "Schedule an interview", body: "We'd like to schedule an interview with you. What times work best for you this week?" },
-  { label: "Moving forward with others", body: "Thank you for your interest. We've decided to move forward with another candidate, but we truly appreciate the time you took to apply." },
-  { label: "Extend an offer", body: "Congratulations — we'd like to extend an offer to you! We'll follow up shortly with the details." },
+/** Canned employer message templates for the composer dropdown. `id` is a
+ *  stable key for the client's translated label/body lookup (t(`templates.${id}.label`));
+ *  `label`/`body` are the English fallback/source strings. */
+export const MESSAGE_TEMPLATES: { id: string; label: string; body: string }[] = [
+  { id: "thanksForApplying", label: "Thanks for applying", body: "Thanks for applying — we'll review your application and get back to you soon." },
+  { id: "scheduleInterview", label: "Schedule an interview", body: "We'd like to schedule an interview with you. What times work best for you this week?" },
+  { id: "movingForwardWithOthers", label: "Moving forward with others", body: "Thank you for your interest. We've decided to move forward with another candidate, but we truly appreciate the time you took to apply." },
+  { id: "extendOffer", label: "Extend an offer", body: "Congratulations — we'd like to extend an offer to you! We'll follow up shortly with the details." },
 ];
 
 export interface Shortlist {
