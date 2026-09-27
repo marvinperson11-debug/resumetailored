@@ -1041,5 +1041,24 @@
     "title": "Página de empleo no encontrada",
     "body": "Esta página de empleo no está disponible. La dirección puede estar mal escrita o la página puede haber sido retirada.",
     "browseAllJobs": "Ver todos los empleos"
+  },
+  "candidateResumes": {
+    "title": "Mis Currículums",
+    "subtitle": "Cada currículum que creas se guarda aquí automáticamente.",
+    "refresh": "Actualizar",
+    "buildNew": "Crear nuevo",
+    "noSavedResumesYet": "Aún no hay currículums guardados",
+    "buildFirstResumeBody": "Crea tu primer currículum y aparecerá aquí.",
+    "buildMyResume": "Crear mi currículum",
+    "untitledResume": "Currículum sin título",
+    "updatedOn": "Actualizado el {date}",
+    "reopen": "Reabrir",
+    "downloadPdf": "Descargar PDF",
+    "buildFirstToEnablePdf": "Crea este currículum primero para habilitar el PDF",
+    "pdf": "PDF",
+    "deleteResume": "Eliminar currículum",
+    "resumeFallbackTitle": "Currículum",
+    "errorCouldNotLoad": "No se pudieron cargar tus currículums.",
+    "errorSomethingWentWrong": "Algo salió mal."
   }
 }
