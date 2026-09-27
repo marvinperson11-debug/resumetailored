@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link2, Loader2 } from "lucide-react";
 import { TextInput, SecondaryButton } from "../components/ui";
 
@@ -9,7 +10,8 @@ import { TextInput, SecondaryButton } from "../components/ui";
  * a JD or a URL (Interview Coach, Decoder Key, Career Hub). Posts to the shared
  * /api/fetch-job-url scraper and hands the extracted text back via onImport.
  */
-export function JdImport({ onImport, label = "Import job posting from URL" }: { onImport: (text: string) => void; label?: string }) {
+export function JdImport({ onImport, label }: { onImport: (text: string) => void; label?: string }) {
+  const t = useTranslations("candidateTools.jdImport");
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,11 +27,11 @@ export function JdImport({ onImport, label = "Import job posting from URL" }: { 
         body: JSON.stringify({ url: url.trim() }),
       });
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
-      if (!res.ok || !data.text) throw new Error(data.error || "Could not import that URL.");
+      if (!res.ok || !data.text) throw new Error(data.error || t("error"));
       onImport(data.text);
       setUrl("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not import that URL.");
+      setError(e instanceof Error ? e.message : t("error"));
     } finally {
       setLoading(false);
     }
@@ -37,11 +39,11 @@ export function JdImport({ onImport, label = "Import job posting from URL" }: { 
 
   return (
     <div>
-      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-cream">{label}</span>
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-cream">{label ?? t("defaultLabel")}</span>
       <div className="flex gap-2">
-        <TextInput value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && go()} placeholder="https://…  (LinkedIn, Indeed, Greenhouse, …)" />
+        <TextInput value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && go()} placeholder={t("placeholder")} />
         <SecondaryButton onClick={go} disabled={loading || !url.trim()} className="shrink-0">
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />} Import
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />} {t("import")}
         </SecondaryButton>
       </div>
       {error && <p className="mt-1.5 text-xs text-red-300">{error}</p>}

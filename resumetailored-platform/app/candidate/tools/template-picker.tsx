@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Check, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { OUT_TPLS, freeFirst, isAtsSafe, type Template } from "@/lib/resume-templates";
@@ -24,6 +25,7 @@ export function TemplatePicker({
   onSelect: (id: string) => void;
   isPro: boolean;
 }) {
+  const t = useTranslations("candidateTools.templatePicker");
   const router = useRouter();
   const list = useMemo(() => freeFirst(OUT_TPLS[cat]), [cat]);
 
@@ -38,9 +40,7 @@ export function TemplatePicker({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-xs text-white/50">
-          {list.length} templates · {list.filter((t) => t.free).length} free
-        </p>
+        <p className="text-xs text-white/50">{t("count", { total: list.length, free: list.filter((tpl) => tpl.free).length })}</p>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {list.map((tpl) => {

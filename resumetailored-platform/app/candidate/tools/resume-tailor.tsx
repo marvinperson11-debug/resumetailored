@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Sparkles,
   LayoutGrid,
@@ -68,15 +69,15 @@ async function fileToPhotoDataUrl(file: File): Promise<string> {
 }
 
 // Preset accent colours for the Theme picker (Feature D).
-const ACCENT_PRESETS: { hex: string; label: string }[] = [
-  { hex: "#1e3a5f", label: "Navy" },
-  { hex: "#8b5cf6", label: "Violet" },
-  { hex: "#14b8a6", label: "Teal" },
-  { hex: "#f59e0b", label: "Gold" },
-  { hex: "#f43f5e", label: "Rose" },
-  { hex: "#10b981", label: "Emerald" },
-  { hex: "#64748b", label: "Slate" },
-  { hex: "#ff7f50", label: "Coral" },
+const ACCENT_PRESETS: { hex: string; id: string }[] = [
+  { hex: "#1e3a5f", id: "navy" },
+  { hex: "#8b5cf6", id: "violet" },
+  { hex: "#14b8a6", id: "teal" },
+  { hex: "#f59e0b", id: "gold" },
+  { hex: "#f43f5e", id: "rose" },
+  { hex: "#10b981", id: "emerald" },
+  { hex: "#64748b", id: "slate" },
+  { hex: "#ff7f50", id: "coral" },
 ];
 
 function deriveTitle(jobText: string): string {
@@ -87,6 +88,7 @@ function deriveTitle(jobText: string): string {
 }
 
 export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
+  const t = useTranslations("candidateTools.resumeTailor");
   const { pendingDraft, pendingDraftId, clearPendingDraft } = useTools();
 
   // Stable draft id for this editing session (reused across autosaves).
@@ -174,8 +176,8 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
 
   // Autosave every 30s (FIX 7 #6).
   useEffect(() => {
-    const t = setInterval(() => void persist(contentRef.current), 30000);
-    return () => clearInterval(t);
+    const interval = setInterval(() => void persist(contentRef.current), 30000);
+    return () => clearInterval(interval);
   }, [persist]);
 
   // Flush a save when the modal closes so work is never lost on exit.
@@ -190,7 +192,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     e.target.value = "";
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      setUploadNote("That file is too large (max 10MB).");
+      setUploadNote(t("errorFileTooLarge"));
       return;
     }
     setResumeUploading(true);
@@ -200,11 +202,11 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       fd.append("file", file);
       const res = await fetch("/api/extract-text", { method: "POST", body: fd });
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
-      if (!res.ok || !data.text) throw new Error(data.error || "Could not read that file.");
+      if (!res.ok || !data.text) throw new Error(data.error || t("errorCouldNotReadFile"));
       setResumeText(data.text);
-      setUploadNote(`Imported “${file.name}”. Review the text below before building.`);
+      setUploadNote(t("importedFile", { file: file.name }));
     } catch (err) {
-      setUploadNote(err instanceof Error ? err.message : "Could not read that file.");
+      setUploadNote(err instanceof Error ? err.message : t("errorCouldNotReadFile"));
     } finally {
       setResumeUploading(false);
     }
@@ -215,7 +217,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     e.target.value = "";
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      setError("That image is too large (max 10MB).");
+      setError(t("errorImageTooLarge"));
       return;
     }
     setPhoto(await fileToPhotoDataUrl(file));
@@ -232,11 +234,11 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
         body: JSON.stringify({ url: jobUrl.trim() }),
       });
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
-      if (!res.ok || !data.text) throw new Error(data.error || "Could not import that URL.");
+      if (!res.ok || !data.text) throw new Error(data.error || t("errorCouldNotImportUrl"));
       setJobText(data.text);
       setJobUrl("");
     } catch (e) {
-      setUrlError(e instanceof Error ? e.message : "Could not import that URL.");
+      setUrlError(e instanceof Error ? e.message : t("errorCouldNotImportUrl"));
     } finally {
       setUrlLoading(false);
     }
@@ -244,7 +246,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
 
   async function build() {
     if (!resumeText.trim() || !jobText.trim()) {
-      setError("Paste both your resume and the job posting.");
+      setError(t("errorPasteBoth"));
       setView("content");
       return;
     }
@@ -258,7 +260,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       });
       const data = (await res.json().catch(() => ({}))) as { result?: string; error?: string; message?: string };
       if (!res.ok || !data.result) {
-        throw new Error(data.message || data.error || "Build failed. Please try again.");
+        throw new Error(data.message || data.error || t("errorBuildFailed"));
       }
       const built = data.result.trim();
       setResult(built);
@@ -267,7 +269,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
       // Save on build (FIX 7 #6).
       void persist({ ...currentContent(), result: built });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setLoading(false);
     }
@@ -287,16 +289,16 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     <>
       <span className="mr-auto hidden items-center gap-3 text-xs text-white/45 sm:flex">
         <span>
-          Template: <span className="text-cream">{tpl.name}</span>
+          {t("template")}: <span className="text-cream">{tpl.name}</span>
         </span>
         {saveState === "saving" && (
           <span className="flex items-center gap-1 text-white/40">
-            <Loader2 className="h-3 w-3 animate-spin" /> Saving…
+            <Loader2 className="h-3 w-3 animate-spin" /> {t("saving")}
           </span>
         )}
         {saveState === "saved" && (
           <span className="flex items-center gap-1 text-teal">
-            <Check className="h-3 w-3" /> Saved
+            <Check className="h-3 w-3" /> {t("saved")}
           </span>
         )}
       </span>
@@ -318,27 +320,27 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
         </>
       )}
       <PrimaryButton onClick={build} loading={loading}>
-        <Sparkles className="h-4 w-4" /> {result ? "Rebuild" : "Build My Resume"}
+        <Sparkles className="h-4 w-4" /> {result ? t("rebuild") : t("buildMyResume")}
       </PrimaryButton>
     </>
   );
 
   return (
-    <ToolModal title="AI Resume Builder" icon={Sparkles} onClose={onClose} footer={footer}>
+    <ToolModal title={t("title")} icon={Sparkles} onClose={onClose} footer={footer}>
       <div className="grid h-full grid-cols-1 lg:grid-cols-2">
         {/* Left: form / gap / templates */}
         <div className="flex min-h-0 flex-col border-b border-border-gold lg:border-b-0 lg:border-r">
           <div className="flex gap-1 border-b border-border-gold p-2">
-            <SegTab active={view === "content"} onClick={() => setView("content")} icon={FileText} label="Content" />
-            <SegTab active={view === "gap"} onClick={() => setView("gap")} icon={Target} label="Skills gap" />
-            <SegTab active={view === "templates"} onClick={() => setView("templates")} icon={LayoutGrid} label="Templates" />
+            <SegTab active={view === "content"} onClick={() => setView("content")} icon={FileText} label={t("tabContent")} />
+            <SegTab active={view === "gap"} onClick={() => setView("gap")} icon={Target} label={t("tabSkillsGap")} />
+            <SegTab active={view === "templates"} onClick={() => setView("templates")} icon={LayoutGrid} label={t("tabTemplates")} />
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
             {view === "content" && (
               <div className="space-y-4">
                 <div>
                   <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <Label>Your current resume</Label>
+                    <Label>{t("yourCurrentResume")}</Label>
                     <input
                       ref={resumeFileRef}
                       type="file"
@@ -361,7 +363,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                         className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8 disabled:opacity-50"
                       >
                         {resumeUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                        Upload file
+                        {t("uploadFile")}
                       </button>
                     </div>
                   </div>
@@ -369,41 +371,41 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                     rows={7}
                     value={resumeText}
                     onChange={(e) => setResumeText(e.target.value)}
-                    placeholder="Upload a .pdf, .docx, or .txt above — or paste your resume text here…"
+                    placeholder={t("resumeTextPlaceholder")}
                   />
                   {uploadNote && <p className="mt-1.5 text-xs text-white/55">{uploadNote}</p>}
                 </div>
 
                 <div>
-                  <Label>Import job posting from URL</Label>
+                  <Label>{t("importJobFromUrl")}</Label>
                   <div className="flex gap-2">
                     <TextInput
                       value={jobUrl}
                       onChange={(e) => setJobUrl(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && importUrl()}
-                      placeholder="https://…  (LinkedIn, Indeed, Greenhouse, …)"
+                      placeholder={t("jobUrlPlaceholder")}
                     />
                     <SecondaryButton onClick={importUrl} disabled={urlLoading || !jobUrl.trim()} className="shrink-0">
-                      {urlLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />} Import
+                      {urlLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />} {t("import")}
                     </SecondaryButton>
                   </div>
                   {urlError && <p className="mt-1.5 text-xs text-red-300">{urlError}</p>}
                 </div>
 
                 <div>
-                  <Label>Job posting</Label>
+                  <Label>{t("jobPosting")}</Label>
                   <TextArea
                     rows={7}
                     value={jobText}
                     onChange={(e) => setJobText(e.target.value)}
-                    placeholder="Paste the full job description, or import it from a URL above…"
+                    placeholder={t("jobPostingPlaceholder")}
                   />
                 </div>
 
                 {/* Photo + signature + fonts */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Photo</Label>
+                    <Label>{t("photo")}</Label>
                     <input ref={photoInputRef} type="file" accept="image/*" hidden onChange={onPhoto} />
                     {photo ? (
                       <div className="flex items-center gap-2">
@@ -414,7 +416,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                           onClick={() => setPhoto("")}
                           className="inline-flex items-center gap-1 rounded-lg border border-border-gold px-2.5 py-2 text-xs text-cream hover:bg-white/8"
                         >
-                          <X className="h-3.5 w-3.5" /> Remove
+                          <X className="h-3.5 w-3.5" /> {t("remove")}
                         </button>
                       </div>
                     ) : (
@@ -423,18 +425,18 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                         onClick={() => photoInputRef.current?.click()}
                         className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border-gold px-3 py-2.5 text-xs text-muted-cream hover:bg-white/5"
                       >
-                        <ImagePlus className="h-4 w-4" /> Upload photo
+                        <ImagePlus className="h-4 w-4" /> {t("uploadPhoto")}
                       </button>
                     )}
                   </div>
                   <div>
-                    <Label>Signature</Label>
-                    <TextInput value={signature} onChange={(e) => setSignature(e.target.value)} placeholder="Your name" />
+                    <Label>{t("signature")}</Label>
+                    <TextInput value={signature} onChange={(e) => setSignature(e.target.value)} placeholder={t("yourName")} />
                   </div>
                   <div>
-                    <Label>Body font</Label>
+                    <Label>{t("bodyFont")}</Label>
                     <Select value={docFont} onChange={(e) => setDocFont(e.target.value)}>
-                      <option value="">Template default</option>
+                      <option value="">{t("templateDefault")}</option>
                       {BODY_FONTS.map((f) => (
                         <option key={f.key} value={f.key}>
                           {f.label}
@@ -443,7 +445,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                     </Select>
                   </div>
                   <div>
-                    <Label>Signature font</Label>
+                    <Label>{t("signatureFont")}</Label>
                     <Select value={sigFont} onChange={(e) => setSigFont(e.target.value)}>
                       {SIG_FONTS.map((f) => (
                         <option key={f.key} value={f.key}>
@@ -458,26 +460,26 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                     headers, accent lines, skill pills and borders; flows into
                     the preview, PDF and DOCX exports. */}
                 <div>
-                  <Label>Theme colour</Label>
+                  <Label>{t("themeColour")}</Label>
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => setAccentColor("")}
-                      title="Template default"
+                      title={t("templateDefault")}
                       className={cn(
                         "flex h-7 items-center rounded-full border px-2.5 text-[11px] font-medium transition-colors",
                         !accentColor ? "border-violet bg-violet/15 text-white" : "border-border-gold text-muted-cream hover:bg-white/5"
                       )}
                     >
-                      Default
+                      {t("default")}
                     </button>
                     {ACCENT_PRESETS.map((c) => (
                       <button
                         key={c.hex}
                         type="button"
                         onClick={() => setAccentColor(c.hex)}
-                        title={c.label}
-                        aria-label={c.label}
+                        title={t(`accentColors.${c.id}` as "accentColors.navy")}
+                        aria-label={t(`accentColors.${c.id}` as "accentColors.navy")}
                         className={cn(
                           "h-7 w-7 rounded-full border-2 transition-transform hover:scale-110",
                           accentColor.toLowerCase() === c.hex.toLowerCase() ? "border-white ring-2 ring-violet" : "border-white/20"
@@ -487,13 +489,13 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                     ))}
                     <label
                       className="flex h-7 cursor-pointer items-center gap-1.5 rounded-full border border-border-gold px-2.5 text-[11px] font-medium text-muted-cream hover:bg-white/5"
-                      title="Custom colour"
+                      title={t("customColour")}
                     >
                       <span
                         className="h-3.5 w-3.5 rounded-full border border-white/30"
                         style={{ background: accentColor || "conic-gradient(red,orange,yellow,green,blue,violet,red)" }}
                       />
-                      Custom
+                      {t("custom")}
                       <input
                         type="color"
                         value={/^#[0-9a-fA-F]{6}$/.test(accentColor) ? accentColor : "#8b5cf6"}
@@ -507,12 +509,12 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                 {/* Live font sample — updates instantly as you change either
                     dropdown, without needing to build first. */}
                 <div className="rounded-xl border border-border-gold bg-white/5 p-3">
-                  <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-cream">Live font preview</div>
+                  <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-cream">{t("liveFontPreview")}</div>
                   <div className="text-sm leading-relaxed text-cream" style={{ fontFamily: bodyCss }}>
-                    The quick brown fox jumps — body font sample
+                    {t("bodyFontSample")}
                   </div>
                   <div className="mt-1 text-3xl leading-tight text-cream" style={{ fontFamily: sigCss }}>
-                    {signature.trim() || "Your signature"}
+                    {signature.trim() || t("yourSignature")}
                   </div>
                 </div>
 
@@ -538,7 +540,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8"
               >
                 {editing ? <Eye className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-                {editing ? "Preview" : "Edit text"}
+                {editing ? t("preview") : t("editText")}
               </button>
               {result !== originalResult && originalResult && (
                 <button
@@ -549,7 +551,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                   }}
                   className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-white/60 transition-colors hover:text-gold"
                 >
-                  <RotateCcw className="h-3.5 w-3.5" /> Reset to AI version
+                  <RotateCcw className="h-3.5 w-3.5" /> {t("resetToAiVersion")}
                 </button>
               )}
             </div>
@@ -573,7 +575,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
                 signature={signature}
                 sigFont={sigFont}
                 accentColor={accentColor}
-                placeholder="Paste your resume and a job posting, then tap “Build My Resume” to see it in this template."
+                placeholder={t("docPreviewPlaceholder")}
               />
             )}
           </div>
@@ -581,9 +583,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           {/* FIX 4: download disclaimer — subtle, below the preview and above
               the download buttons in the footer. */}
           <p className="border-t border-border-gold px-4 py-2.5 text-[11px] leading-snug text-white/40">
-            {editing
-              ? "Editing the text — your changes flow into the template, the preview, and every download."
-              : "PDF and Word downloads may look slightly different from the on-screen preview due to browser rendering vs. document engine differences. For best results, review your download before sending."}
+            {editing ? t("editingNote") : t("downloadDisclaimer")}
           </p>
         </div>
       </div>
@@ -596,7 +596,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
             if (text) setResumeText(text);
             setLinkedinOpen(false);
             setView("content");
-            setUploadNote("Imported from LinkedIn. Review the text below before building.");
+            setUploadNote(t("importedFromLinkedin"));
           }}
         />
       )}
@@ -605,21 +605,21 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
 }
 
 function SkillsGap({ gap, hasJob }: { gap: { present: string[]; missing: string[] }; hasJob: boolean }) {
+  const t = useTranslations("candidateTools.resumeTailor");
   if (!hasJob) {
     return (
       <div className="flex h-full min-h-[240px] items-center justify-center rounded-xl border border-dashed border-border-gold p-6 text-center text-sm text-white/45">
-        Paste or import a job posting to see which of its keywords your resume already covers.
+        {t("gapNoJobYet")}
       </div>
     );
   }
   return (
     <div className="space-y-5">
       <p className="text-xs text-white/55">
-        Keywords from the job posting, checked against your resume. Weave the missing ones in where they truthfully apply
-        before you build.
+        {t("gapIntro")}
       </p>
-      <ChipRow title="In your resume" tone="present" items={gap.present} empty="No overlap yet — start from the missing list." />
-      <ChipRow title="Missing" tone="missing" items={gap.missing} empty="Nice — your resume covers the top keywords." />
+      <ChipRow title={t("gapInYourResume")} tone="present" items={gap.present} empty={t("gapNoOverlap")} />
+      <ChipRow title={t("gapMissing")} tone="missing" items={gap.missing} empty={t("gapCoversTop")} />
     </div>
   );
 }
