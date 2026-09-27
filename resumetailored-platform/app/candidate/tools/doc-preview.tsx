@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { renderAIOutput, type Mode, type CoverMeta } from "@/lib/resume-templates";
 
 const PAGE_W = 794; // A4 width in px, the template's own coordinate space
@@ -34,6 +35,7 @@ export function DocPreview({
   accentColor?: string;
   placeholder?: string;
 }) {
+  const t = useTranslations("candidateTools.docPreview");
   const wrapRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
@@ -72,7 +74,7 @@ export function DocPreview({
         </div>
       ) : (
         <div className="flex min-h-[320px] items-center justify-center rounded-xl border border-dashed border-border-gold bg-white/5 p-8 text-center text-sm text-white/45">
-          {placeholder || "Your live preview will appear here."}
+          {placeholder || t("placeholder")}
         </div>
       )}
     </div>

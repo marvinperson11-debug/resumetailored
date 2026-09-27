@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Video, Sparkles, Play, Pause, Download, Volume2, Lock, Film, Copy, Check, Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ToolModal } from "../components/tool-modal";
@@ -18,6 +19,7 @@ import {
 import type { ResumeDraft } from "@/lib/draft-types";
 
 export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
+  const t = useTranslations("candidateTools.resumeVideo");
   const router = useRouter();
   const [resumes, setResumes] = useState<ResumeDraft[]>([]);
   const [resumeText, setResumeText] = useState("");
@@ -70,7 +72,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
     e.target.value = "";
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      setUploadNote("That file is too large (max 10MB).");
+      setUploadNote(t("errorFileTooLarge"));
       return;
     }
     setUploading(true);
@@ -80,14 +82,14 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       fd.append("file", file);
       const res = await fetch("/api/extract-text", { method: "POST", body: fd });
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
-      if (!res.ok || !data.text) throw new Error(data.error || "Could not read that file.");
+      if (!res.ok || !data.text) throw new Error(data.error || t("errorCouldNotReadFile"));
       setResumeText(data.text);
       setScript("");
       setAudio(null);
       setMp4Url(null);
-      setUploadNote(`Imported “${file.name}”. Review the text before generating.`);
+      setUploadNote(t("importedFile", { file: file.name }));
     } catch (err) {
-      setUploadNote(err instanceof Error ? err.message : "Could not read that file.");
+      setUploadNote(err instanceof Error ? err.message : t("errorCouldNotReadFile"));
     } finally {
       setUploading(false);
     }
@@ -95,7 +97,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
 
   async function genScript() {
     if (resumeText.trim().length < 40) {
-      setError("Paste your resume or pick a saved one first.");
+      setError(t("errorPasteResumeFirst"));
       return;
     }
     setLoading(true);
@@ -117,12 +119,12 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
         return;
       }
       const data = (await res.json().catch(() => ({}))) as { script?: string; error?: string; message?: string };
-      if (!res.ok || !data.script) throw new Error(data.message || data.error || "Could not generate the script.");
+      if (!res.ok || !data.script) throw new Error(data.message || data.error || t("errorCouldNotGenerateScript"));
       setScript(data.script);
       setAudio(null);
       setMp4Url(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setLoading(false);
     }
@@ -134,7 +136,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       return;
     }
     if (!script.trim()) {
-      setError("Generate or write a script first.");
+      setError(t("errorGenerateScriptFirst"));
       return;
     }
     setVoicing(true);
@@ -150,10 +152,10 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
         router.push("/candidate?upgrade=pro");
         return;
       }
-      if (!res.ok || !data.audio) throw new Error(data.message || data.error || "Voice generation failed.");
+      if (!res.ok || !data.audio) throw new Error(data.message || data.error || t("errorVoiceGenerationFailed"));
       setAudio(data.audio);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setVoicing(false);
     }
@@ -202,7 +204,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
       return;
     }
     if (!script.trim()) {
-      setMp4Error("Generate or write a script first.");
+      setMp4Error(t("errorGenerateScriptFirst"));
       return;
     }
     setMp4Loading(true);
@@ -226,11 +228,11 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
         return;
       }
       if (!res.ok || !data.success || !data.videoUrl) {
-        throw new Error(data.message || data.error || "The video could not be rendered.");
+        throw new Error(data.message || data.error || t("errorVideoRenderFailed"));
       }
       setMp4Url(data.videoUrl);
     } catch (e) {
-      setMp4Error(e instanceof Error ? e.message : "Something went wrong rendering the video.");
+      setMp4Error(e instanceof Error ? e.message : t("errorRenderingGeneric"));
     } finally {
       setMp4Loading(false);
     }
@@ -253,26 +255,26 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
 
   const footer = (
     <>
-      <span className="mr-auto hidden text-xs text-white/45 sm:block">Pro · full generation</span>
+      <span className="mr-auto hidden text-xs text-white/45 sm:block">{t("proFullGeneration")}</span>
       <PrimaryButton onClick={genScript} loading={loading}>
-        <Sparkles className="h-4 w-4" /> {script ? "Regenerate script" : "Generate script"}
+        <Sparkles className="h-4 w-4" /> {script ? t("regenerateScript") : t("generateScript")}
       </PrimaryButton>
       {script && (
         <PrimaryButton onClick={genVoiceover} loading={voicing}>
-          <Video className="h-4 w-4" /> Generate voiceover
+          <Video className="h-4 w-4" /> {t("generateVoiceover")}
         </PrimaryButton>
       )}
     </>
   );
 
   return (
-    <ToolModal title="Resume Video" icon={Video} onClose={onClose} footer={footer}>
+    <ToolModal title={t("title")} icon={Video} onClose={onClose} footer={footer}>
       <div className="grid h-full grid-cols-1 lg:grid-cols-2">
         {/* Left: inputs */}
         <div className="min-h-0 space-y-4 overflow-y-auto border-b border-border-gold p-4 lg:border-b-0 lg:border-r">
           {resumes.length > 0 && (
             <div>
-              <Label>Use a saved resume</Label>
+              <Label>{t("useSavedResume")}</Label>
               <Select
                 value=""
                 onChange={(e) => {
@@ -280,14 +282,14 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
                   if (d) setResumeText(d.content.result || d.content.resumeText || "");
                 }}
               >
-                <option value="">— Pick one (or paste below) —</option>
+                <option value="">{t("pickOnePlaceholder")}</option>
                 {resumes.map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}
               </Select>
             </div>
           )}
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
-              <Label>Resume text</Label>
+              <Label>{t("resumeText")}</Label>
               <input ref={fileRef} type="file" accept=".txt,.pdf,.docx,.doc,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange={onFile} />
               <button
                 type="button"
@@ -295,21 +297,21 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
                 disabled={uploading}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8 disabled:opacity-50"
               >
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Upload resume
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} {t("uploadResume")}
               </button>
             </div>
-            <TextArea rows={7} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder="Upload a .pdf, .docx, or .txt above, paste your resume, or pick a saved one…" />
+            <TextArea rows={7} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder={t("resumeTextPlaceholder")} />
             {uploadNote && <p className="mt-1.5 text-xs text-white/55">{uploadNote}</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Style</Label>
+              <Label>{t("style")}</Label>
               <Select value={template} onChange={(e) => setTemplate(e.target.value)}>
-                {VIDEO_TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                {VIDEO_TEMPLATES.map((vt) => <option key={vt.id} value={vt.id}>{t(`templates.${vt.id}` as "templates.professional")}</option>)}
               </Select>
             </div>
             <div>
-              <Label>Voice</Label>
+              <Label>{t("voice")}</Label>
               <Select value={voice} onChange={(e) => setVoice(e.target.value)}>
                 {VIDEO_VOICES.map((v) => <option key={v.key} value={v.key}>{v.label}</option>)}
               </Select>
@@ -320,26 +322,26 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
           <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.03] p-3.5">
             <div className="flex items-center gap-2">
               <Sparkles className="h-3.5 w-3.5 text-violet" />
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-cream">Personalize</h4>
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("personalize")}</h4>
             </div>
             <div>
-              <Label>Who is this video for? (optional)</Label>
+              <Label>{t("whoIsThisFor")}</Label>
               <TextInput
                 value={toWhom}
                 onChange={(e) => setToWhom(e.target.value)}
-                placeholder="e.g. Hiring Manager, Sarah Johnson, Team at Google"
+                placeholder={t("whoIsThisForPlaceholder")}
               />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <Label>How do you want to start?</Label>
+                <Label>{t("howStart")}</Label>
                 <TextInput list="rv-greetings" value={greeting} onChange={(e) => setGreeting(e.target.value)} placeholder={DEFAULT_GREETING} />
                 <datalist id="rv-greetings">
                   {GREETING_OPTIONS.map((o) => <option key={o} value={o} />)}
                 </datalist>
               </div>
               <div>
-                <Label>How do you want to close?</Label>
+                <Label>{t("howClose")}</Label>
                 <TextInput list="rv-closings" value={closing} onChange={(e) => setClosing(e.target.value)} placeholder={DEFAULT_CLOSING} />
                 <datalist id="rv-closings">
                   {CLOSING_OPTIONS.map((o) => <option key={o} value={o} />)}
@@ -347,13 +349,13 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
               </div>
             </div>
             <p className="text-[11px] text-white/45">
-              Used at the open and close of your script — pick a preset or type your own.
+              {t("personalizeNote")}
             </p>
           </div>
 
           {script && (
             <div>
-              <Label>Script (editable)</Label>
+              <Label>{t("scriptEditable")}</Label>
               <TextArea rows={8} value={script} onChange={(e) => { setScript(e.target.value); setAudio(null); setMp4Url(null); }} className="font-mono text-[13px]" />
             </div>
           )}
@@ -367,7 +369,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
               {/* Animated caption preview in the chosen style. */}
               <div className="overflow-hidden rounded-xl" style={{ background: `linear-gradient(135deg, ${tpl.accent}, #0b0f19)` }}>
                 <div className="flex aspect-video flex-col items-center justify-center gap-3 p-6 text-center">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">{tpl.label} · Resume Video</span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">{t(`templates.${tpl.id}` as "templates.professional")} · {t("title")}</span>
                   {scenes.map((s, i) => (
                     <p key={i} className={cn("leading-snug text-white", i === 0 ? "text-lg font-bold" : "text-sm text-white/85")}>{s.text}</p>
                   ))}
@@ -375,11 +377,11 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                <SecondaryButton onClick={browserPreview}><Volume2 className="h-4 w-4" /> Preview voice (browser)</SecondaryButton>
+                <SecondaryButton onClick={browserPreview}><Volume2 className="h-4 w-4" /> {t("previewVoiceBrowser")}</SecondaryButton>
                 {audio && (
                   <>
-                    <SecondaryButton onClick={togglePlay}>{playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {playing ? "Pause" : "Play voiceover"}</SecondaryButton>
-                    <SecondaryButton onClick={downloadAudio}><Download className="h-4 w-4" /> Download MP3</SecondaryButton>
+                    <SecondaryButton onClick={togglePlay}>{playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />} {playing ? t("pause") : t("playVoiceover")}</SecondaryButton>
+                    <SecondaryButton onClick={downloadAudio}><Download className="h-4 w-4" /> {t("downloadMp3")}</SecondaryButton>
                   </>
                 )}
               </div>
@@ -392,11 +394,9 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
                     <Film className="h-4 w-4 text-white" />
                   </span>
                   <div>
-                    <h4 className="text-sm font-semibold text-white">Full Video (MP4)</h4>
+                    <h4 className="text-sm font-semibold text-white">{t("fullVideoMp4")}</h4>
                     <p className="text-[11px] text-white/50">
-                      {isPro
-                        ? "Render a shareable MP4 — your captions, style, and voiceover muxed into one file."
-                        : "Pro renders a real, downloadable MP4 you can post to LinkedIn, Shorts, or Reels."}
+                      {isPro ? t("fullVideoProNote") : t("fullVideoFreeNote")}
                     </p>
                   </div>
                 </div>
@@ -412,11 +412,11 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
                   )}
                 >
                   {mp4Loading ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Rendering… (this can take a minute)</>
+                    <><Loader2 className="h-4 w-4 animate-spin" /> {t("rendering")}</>
                   ) : isPro ? (
-                    <><Film className="h-4 w-4" /> {mp4Url ? "Re-render MP4" : "Generate MP4"}</>
+                    <><Film className="h-4 w-4" /> {mp4Url ? t("reRenderMp4") : t("generateMp4")}</>
                   ) : (
-                    <><Lock className="h-4 w-4" /> Generate MP4</>
+                    <><Lock className="h-4 w-4" /> {t("generateMp4")}</>
                   )}
                 </button>
 
@@ -433,14 +433,14 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
                         download="resume-video.mp4"
                         className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/15"
                       >
-                        <Download className="h-4 w-4" /> Download MP4
+                        <Download className="h-4 w-4" /> {t("downloadMp4")}
                       </a>
                       <button
                         type="button"
                         onClick={copyMp4Link}
                         className="inline-flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/5"
                       >
-                        {copied ? <><Check className="h-4 w-4 text-teal" /> Copied</> : <><Copy className="h-4 w-4" /> Copy Link</>}
+                        {copied ? <><Check className="h-4 w-4 text-teal" /> {t("copied")}</> : <><Copy className="h-4 w-4" /> {t("copyLink")}</>}
                       </button>
                     </div>
                   </div>
@@ -449,7 +449,7 @@ export function ResumeVideoTool({ onClose, isPro }: { onClose: () => void; isPro
             </>
           ) : (
             <div className="flex h-full min-h-[300px] items-center justify-center rounded-xl border border-dashed border-border-gold p-8 text-center text-sm text-white/45">
-              Generate a script to see your video preview, then (Pro) add an AI voiceover.
+              {t("previewEmptyState")}
             </div>
           )}
         </div>

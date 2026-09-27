@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { ScanLine, Check, X, Lightbulb, Upload, Loader2 } from "lucide-react";
 import { ToolModal } from "../components/tool-modal";
 import { Label, TextArea, PrimaryButton } from "../components/ui";
@@ -13,7 +14,18 @@ const VERDICT_TONE: Record<string, string> = {
   "Weak Match": "text-red-400",
 };
 
+/** The AI backend (lib/ai.ts) always returns one of these 4 literal English
+ *  strings — mapped here to a translated display label, keyed off the raw
+ *  (untranslated) value so matching VERDICT_TONE above still works. */
+const VERDICT_KEY: Record<string, string> = {
+  "Strong Match": "strongMatch",
+  "Good Match": "goodMatch",
+  "Fair Match": "fairMatch",
+  "Weak Match": "weakMatch",
+};
+
 export function AtsScannerTool({ onClose }: { onClose: () => void }) {
+  const t = useTranslations("candidateTools.atsScanner");
   const [resumeText, setResumeText] = useState("");
   const [jobText, setJobText] = useState("");
   const [result, setResult] = useState<AtsResult | null>(null);
@@ -28,7 +40,7 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
     e.target.value = "";
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      setUploadNote("That file is too large (max 10MB).");
+      setUploadNote(t("errorTooLarge"));
       return;
     }
     setUploading(true);
@@ -38,11 +50,11 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
       fd.append("file", file);
       const res = await fetch("/api/extract-text", { method: "POST", body: fd });
       const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
-      if (!res.ok || !data.text) throw new Error(data.error || "Could not read that file.");
+      if (!res.ok || !data.text) throw new Error(data.error || t("errorCouldNotRead"));
       setResumeText(data.text);
-      setUploadNote(`Imported “${file.name}”. Review the text before scanning.`);
+      setUploadNote(t("importedFile", { name: file.name }));
     } catch (err) {
-      setUploadNote(err instanceof Error ? err.message : "Could not read that file.");
+      setUploadNote(err instanceof Error ? err.message : t("errorCouldNotRead"));
     } finally {
       setUploading(false);
     }
@@ -50,7 +62,7 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
 
   async function scan() {
     if (!resumeText.trim() || !jobText.trim()) {
-      setError("Paste both your resume and the job posting.");
+      setError(t("errorMissingBoth"));
       return;
     }
     setLoading(true);
@@ -63,11 +75,11 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
       });
       const data = (await res.json().catch(() => ({}))) as AtsResult & { error?: string; message?: string };
       if (!res.ok || typeof data.score !== "number") {
-        throw new Error(data.message || data.error || "Analysis failed. Please try again.");
+        throw new Error(data.message || data.error || t("errorAnalysisFailed"));
       }
       setResult(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setLoading(false);
     }
@@ -75,21 +87,21 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
 
   const footer = (
     <>
-      <span className="mr-auto hidden text-xs text-white/45 sm:block">Free &amp; unlimited</span>
+      <span className="mr-auto hidden text-xs text-white/45 sm:block">{t("freeUnlimited")}</span>
       <PrimaryButton onClick={scan} loading={loading}>
-        <ScanLine className="h-4 w-4" /> {result ? "Scan Again" : "Scan Resume"}
+        <ScanLine className="h-4 w-4" /> {result ? t("scanAgain") : t("scanResume")}
       </PrimaryButton>
     </>
   );
 
   return (
-    <ToolModal title="ATS Score Checker" icon={ScanLine} onClose={onClose} footer={footer}>
+    <ToolModal title={t("title")} icon={ScanLine} onClose={onClose} footer={footer}>
       <div className="grid h-full grid-cols-1 lg:grid-cols-2">
         {/* Left: form */}
         <div className="min-h-0 space-y-4 overflow-y-auto border-b border-border-gold p-4 lg:border-b-0 lg:border-r">
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-2">
-              <Label>Your resume</Label>
+              <Label>{t("yourResume")}</Label>
               <input ref={fileRef} type="file" accept=".txt,.pdf,.docx,.doc,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden onChange={onFile} />
               <button
                 type="button"
@@ -97,15 +109,15 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
                 disabled={uploading}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-border-gold px-2.5 py-1.5 text-xs font-medium text-cream transition-colors hover:bg-white/8 disabled:opacity-50"
               >
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Upload resume
+                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} {t("uploadResume")}
               </button>
             </div>
-            <TextArea rows={10} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder="Upload a .pdf, .docx, or .txt above — or paste your resume text…" />
+            <TextArea rows={10} value={resumeText} onChange={(e) => setResumeText(e.target.value)} placeholder={t("resumePlaceholder")} />
             {uploadNote && <p className="mt-1.5 text-xs text-white/55">{uploadNote}</p>}
           </div>
           <div>
-            <Label>Job description</Label>
-            <TextArea rows={10} value={jobText} onChange={(e) => setJobText(e.target.value)} placeholder="Paste the job description…" />
+            <Label>{t("jobDescription")}</Label>
+            <TextArea rows={10} value={jobText} onChange={(e) => setJobText(e.target.value)} placeholder={t("jobDescriptionPlaceholder")} />
           </div>
           {error && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
         </div>
@@ -115,12 +127,12 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
           {result ? (
             <div className="space-y-6">
               <ScoreGauge score={result.score} verdict={result.verdict} />
-              <KeywordList title="Matched keywords" tone="match" items={result.matched} />
-              <KeywordList title="Missing keywords" tone="miss" items={result.missing} />
+              <KeywordList title={t("matchedKeywords")} tone="match" items={result.matched} />
+              <KeywordList title={t("missingKeywords")} tone="miss" items={result.missing} />
               {result.suggestions?.length > 0 && (
                 <div>
                   <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-cream">
-                    <Lightbulb className="h-3.5 w-3.5 text-gold" /> Suggestions
+                    <Lightbulb className="h-3.5 w-3.5 text-gold" /> {t("suggestions")}
                   </h4>
                   <ul className="space-y-2">
                     {result.suggestions.map((s, i) => (
@@ -132,12 +144,12 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
                 </div>
               )}
               {result.fallback && (
-                <p className="text-xs text-white/40">Offline estimate (AI unavailable) — keyword overlap only.</p>
+                <p className="text-xs text-white/40">{t("offlineEstimate")}</p>
               )}
             </div>
           ) : (
             <div className="flex h-full min-h-[300px] items-center justify-center rounded-xl border border-dashed border-border-gold p-8 text-center text-sm text-white/45">
-              Your match score, keywords, and rewrite suggestions will appear here.
+              {t("resultsPlaceholder")}
             </div>
           )}
         </div>
@@ -147,7 +159,9 @@ export function AtsScannerTool({ onClose }: { onClose: () => void }) {
 }
 
 function ScoreGauge({ score, verdict }: { score: number; verdict: string }) {
+  const t = useTranslations("candidateTools.atsScanner");
   const tone = VERDICT_TONE[verdict] || "text-cream";
+  const verdictLabel = t(`verdict.${VERDICT_KEY[verdict] || "strongMatch"}` as "verdict.strongMatch");
   const deg = Math.max(0, Math.min(100, score)) * 3.6;
   const color = score >= 60 ? "#14B8A6" : score >= 40 ? "#F59E0B" : "#f87171";
   return (
@@ -162,8 +176,8 @@ function ScoreGauge({ score, verdict }: { score: number; verdict: string }) {
         </div>
       </div>
       <div>
-        <div className={`font-serif text-2xl font-medium ${tone}`}>{verdict}</div>
-        <p className="mt-1 text-sm text-white/55">ATS keyword match against this job.</p>
+        <div className={`font-serif text-2xl font-medium ${tone}`}>{verdictLabel}</div>
+        <p className="mt-1 text-sm text-white/55">{t("keywordMatchNote")}</p>
       </div>
     </div>
   );
