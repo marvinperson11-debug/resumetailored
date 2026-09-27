@@ -34,6 +34,7 @@ const put = db.prepare('INSERT OR IGNORE INTO i18n_cache (hash,lang,src,txt) VAL
 const seed = (en, zh) => put.run(crypto.createHash('sha256').update(en).digest('hex'), 'zh', en, zh);
 seed('Get Started Free', '免费开始');
 seed('Frequently Asked Questions', '常见问题');
+put.run(crypto.createHash('sha256').update('Get Started Free').digest('hex'), 'fr', 'Get Started Free', 'Commencer gratuitement');
 
 function req(method, urlPath, body) {
   return new Promise((resolve, reject) => {
@@ -58,12 +59,18 @@ check('client skips the nav + language toggles', /#snav/.test(client) && /langTo
 check('client translates key attributes too', /placeholder/.test(client) && /aria-label/.test(client) && /'alt'/.test(client));
 check('client restores English from stored originals', /function restoreEn/.test(client) && /__i18nEn/.test(client));
 check('client posts to the batch endpoint', /\/api\/i18n\/translate/.test(client));
-check('client auto-applies zh on load for cross-page persistence', /function boot/.test(client) && /getLang\(\)\s*!==\s*'zh'/.test(client));
+check('client auto-applies the stored non-English language on load, for cross-page persistence', /function boot/.test(client) && /if \(lang === 'en'\) return/.test(client));
+check('client supports all 5 languages (en + zh/es/hi/fr), not just zh', /TARGET_LANGS\s*=\s*\['zh',\s*'es',\s*'hi',\s*'fr'\]/.test(client));
 
 // ── Server injection wiring (source-level) ───────────────────────────────────
 const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-check('server excludes the homepage by RESOLVED path, not basename', /_injectSiteI18n[\s\S]{0,400}path\.resolve\(filePath\) === path\.resolve\(path\.join\(__dirname, 'public', 'index\.html'\)\)/.test(server));
+// The homepage now gets site-i18n.js too (its own translator only covers
+// EN/中文; this generically fills in es/hi/fr). Only the three app shells,
+// matched by basename, are excluded — no more resolved-path homepage check.
+const injectSiteI18nBody = (server.match(/function _injectSiteI18n\(html, filePath\) \{[\s\S]{0,700}?\n\}/) || [''])[0];
+check('server excludes only the three app shells (homepage is no longer excluded)', /ownShells\.has\(path\.basename\(filePath\)\)/.test(injectSiteI18nBody) && !/isHomepage/.test(injectSiteI18nBody));
 check('_injectSiteI18n is wired into the send pipeline', /_injectSiteI18n\(_injectSharedPublicNav\(/.test(server));
+check('server supports 5 languages (I18N_TARGET_LANGS: zh/es/hi/fr)', /I18N_TARGET_LANGS\s*=\s*\{\s*zh:.*es:.*hi:.*fr:/.test(server));
 
 let PORT;
 const srv = app.listen(0, async () => {
@@ -77,19 +84,26 @@ const srv = app.listen(0, async () => {
     const many = await req('POST', '/api/i18n/translate', { lang: 'zh', strings: ['Frequently Asked Questions', 'Get Started Free'] });
     check('endpoint serves multiple cache hits', many.json.translations['Frequently Asked Questions'] === '常见问题' && many.json.translations['Get Started Free'] === '免费开始');
 
-    const fr = await req('POST', '/api/i18n/translate', { lang: 'fr', strings: ['Hello'] });
-    check('unsupported language returns empty (never errors)', fr.status === 200 && Object.keys(fr.json.translations).length === 0);
+    // 'fr' is now a supported target — a cache hit for it (seeded above) proves
+    // the language is actually accepted, not just returning {} for lack of an
+    // API key (which would look identical to "unsupported" from the outside).
+    const fr = await req('POST', '/api/i18n/translate', { lang: 'fr', strings: ['Get Started Free'] });
+    check('fr (a newly-supported language) returns its seeded cache hit', fr.status === 200 && fr.json.translations['Get Started Free'] === 'Commencer gratuitement', fr.body);
+
+    const unsupported = await req('POST', '/api/i18n/translate', { lang: 'de', strings: ['Get Started Free'] });
+    check('a genuinely unsupported language (de) returns empty even for a string cached under other languages', unsupported.status === 200 && Object.keys(unsupported.json.translations).length === 0);
 
     const bad = await req('POST', '/api/i18n/translate', { lang: 'zh', strings: 'not-an-array' });
     check('malformed body returns empty (never errors)', bad.status === 200 && Object.keys(bad.json.translations).length === 0);
 
-    // ── Injection: SEO/blog pages get the translator; homepage + app do not ───
+    // ── Injection: SEO/blog pages and the homepage get the translator; only the
+    // app shell (its own separate system) does not ──────────────────────────
     const seo = await req('GET', '/software-engineer-resume');
     check('an SEO page receives site-i18n.js', /src=["']\/site-i18n\.js/.test(seo.body), 'not injected');
     const blog = await req('GET', '/blog/');
     check('a directory index (blog) receives site-i18n.js', /src=["']\/site-i18n\.js/.test(blog.body));
     const home = await req('GET', '/');
-    check('the homepage does NOT receive site-i18n.js (has its own translator)', !/src=["']\/site-i18n\.js/.test(home.body));
+    check('the homepage now receives site-i18n.js too (its own translator only covers EN/中文; this fills in es/hi/fr)', /src=["']\/site-i18n\.js/.test(home.body));
     const appShell = await req('GET', '/dashboard');
     check('the app shell does NOT receive site-i18n.js', !/src=["']\/site-i18n\.js/.test(appShell.body));
   } catch (e) {

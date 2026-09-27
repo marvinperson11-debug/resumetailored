@@ -1084,7 +1084,7 @@
       <a href="https://app.resumetailored.com" data-i18n="eco_nav_tailor">Tailor My Resume</a>
       <a href="https://app.resumetailored.com" data-i18n="eco_nav_employer">For Employer</a>
     </nav>
-    <div class="club-nav__actions"><button class="club-nav__lang" type="button" data-club-lang-top onclick="toggleLang()">中文</button></div>
+    <div class="club-nav__actions"><button class="club-nav__lang" type="button" data-club-lang-top onclick="toggleLang(this)">EN</button></div>
     <button class="club-mobile" type="button" data-club-mobile aria-controls="clubMobileMenu" aria-label="Open navigation" aria-expanded="false">☰</button>
   </div>
 </header>
@@ -1104,7 +1104,7 @@
     <a href="/job-finder" data-i18n="eco_m_jobfinder">Job Finder</a>
     <a href="/tools/autoapply" data-i18n="eco_m_autoapply">AutoApply</a>
     <a class="club-mobile-menu__account" href="/signup" data-i18n="eco_m_account">Create Account</a>
-    <button class="club-mobile-menu__lang" type="button" data-club-lang onclick="void 0">中文 <span aria-hidden="true">→</span></button>
+    <button class="club-mobile-menu__lang" type="button" data-club-lang onclick="void 0">EN <span aria-hidden="true">→</span></button>
   </nav>
 </div>
 <script>
@@ -1120,7 +1120,11 @@
   trigger.addEventListener('click', function () { setOpen(!menu.classList.contains('open')); });
   menu.querySelector('.club-mobile-menu__close').addEventListener('click', function () { setOpen(false); });
   menu.querySelectorAll('a').forEach(function (link) { link.addEventListener('click', function () { setOpen(false); }); });
-  menu.querySelector('[data-club-lang]').addEventListener('click', function () { setOpen(false); if (typeof toggleLang === 'function') toggleLang(); });
+  // Deliberately does NOT close the drawer first (setOpen(false)) — the picker
+  // floats on top of it, matching site-nav.js's mobile language row, and
+  // closing first would collapse this button's rect to zero just before the
+  // picker reads it for positioning.
+  menu.querySelector('[data-club-lang]').addEventListener('click', function () { if (typeof toggleLang === 'function') toggleLang(this); });
   document.addEventListener('keydown', function (event) { if (event.key === 'Escape') setOpen(false); });
 })();
 </script>
@@ -1144,12 +1148,12 @@
          as the injected nav (site-nav.js) on every other route, so the language
          toggle never jumps between pages. -->
     <div class="nav-actions">
-      <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">中文</button>
+      <button class="btn btn-ghost lang-toggle" onclick="toggleLang(this)" title="Switch language" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtn">EN</button>
       <a href="https://app.resumetailored.com" class="btn btn-ghost" data-nav="login" data-i18n="nav_login">Log In</a>
       <a href="https://app.resumetailored.com" class="btn btn-primary" data-i18n="nav_cta">Tailor My Resume Free →</a>
     </div>
     <div class="nav-mobile-actions">
-      <button class="btn btn-ghost lang-toggle" onclick="toggleLang()" title="Switch language / 切换语言" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtnMobile">中文</button>
+      <button class="btn btn-ghost lang-toggle" onclick="toggleLang(this)" title="Switch language" style="font-size:13px;padding:7px 13px;border-color:#e5e7eb;" id="langToggleBtnMobile">EN</button>
       <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.add('open')" aria-label="Open menu">
         <span></span><span></span><span></span>
       </button>
@@ -1173,7 +1177,7 @@
   <a href="/tools/autoapply">AutoApply</a>
   <a href="https://app.resumetailored.com" data-i18n="nav_download_app">Download the app</a>
   <a href="/signup" class="btn btn-primary btn-lg">Create Account</a>
-  <button type="button" class="btn btn-ghost btn-lg" onclick="document.querySelector('.mobile-menu').classList.remove('open');toggleLang()">中文</button>
+  <button type="button" class="btn btn-ghost btn-lg" onclick="toggleLang(this)">EN</button>
 </div>
 
 <!-- Login chooser: pick which side to sign in to -->
@@ -3037,7 +3041,7 @@
         </span>
         <span style="font-size:10px;color:#4b5563;font-style:italic;" data-i18n="footer_pay_note">International cards &amp; Chinese payment methods</span>
       </div>
-      <button onclick="toggleLang()" id="langToggleBtnFooter" style="background:#fff;border:1px solid #c9a227;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;color:#0a1628;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.background='#1a4d3a';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='#0a1628'" title="Switch language / 切换语言">中文 / EN</button>
+      <button onclick="toggleLang(this)" id="langToggleBtnFooter" style="background:#fff;border:1px solid #c9a227;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;color:#0a1628;cursor:pointer;font-family:inherit;transition:all .15s;" onmouseover="this.style.background='#1a4d3a';this.style.color='#fff'" onmouseout="this.style.background='#fff';this.style.color='#0a1628'" title="Switch language">EN</button>
     </div>
     <span class="footer-copy" data-i18n="footer_copy">© 2026 ResumeTailored AI. All rights reserved.</span>
   </div>
@@ -3525,7 +3529,7 @@
     ['.hub-box', 1, '👥 Community Forum', '👥 社区论坛'],
     ['.hub-box', 2, '📈 Career Check-ins', '📈 职业回顾'],
     ['.hub-box', 3, '🏆 Pro Templates', '🏆 专业模板'],
-    ['.features .feature-row:nth-child(7) .feature-visual-inner > div:last-child', null, '<button type="button" onclick="location.href='https://app.resumetailored.com?upgrade=pro'" style="background:none;border:none;cursor:pointer;font:inherit;font-size:11px;color:#1F5C3D;font-weight:700;text-decoration:underline;padding:0;">Upgrade to Pro to unlock these features →</button>', '<button type="button" onclick="location.href='https://app.resumetailored.com?upgrade=pro'" style="background:none;border:none;cursor:pointer;font:inherit;font-size:11px;color:#1F5C3D;font-weight:700;text-decoration:underline;padding:0;">升级专业版解锁这些功能 →</button>'],
+    ['.features .feature-row:nth-child(7) .feature-visual-inner > div:last-child', null, '<button type="button" onclick="location.href=\'https://app.resumetailored.com?upgrade=pro\'" style="background:none;border:none;cursor:pointer;font:inherit;font-size:11px;color:#1F5C3D;font-weight:700;text-decoration:underline;padding:0;">Upgrade to Pro to unlock these features →</button>', '<button type="button" onclick="location.href=\'https://app.resumetailored.com?upgrade=pro\'" style="background:none;border:none;cursor:pointer;font:inherit;font-size:11px;color:#1F5C3D;font-weight:700;text-decoration:underline;padding:0;">升级专业版解锁这些功能 →</button>'],
     ['.feature-body h3', 7, '30 Seconds vs. 45 Minutes', '30秒 vs. 45分钟'],
     ['.feature-body > p', 7, 'The average job seeker spends 45 minutes tailoring each application manually. At 20 applications a week, that\'s 15 hours of copy-editing. ResumeTailored AI does it in 30 seconds — apply to more jobs, faster, with higher-quality applications.', '普通求职者手动修改每份申请平均需45分钟。每周投递20份就是15小时的编辑工作。ResumeTailored AI只需30秒——用更高质量的申请，更快地投递更多职位。'],
     // ── Job Boards ──────────────────────────────────────────────────────────
@@ -3661,6 +3665,19 @@
     ['#contactBtn', null, 'Send Message →', '发送消息 →'],
     ['#contactModal .btn-ghost', null, 'Cancel', '取消'],
   ];
+
+  // The 5 supported languages, matching site-nav.js's picker (used on every
+  // other page) so the switcher is consistent site-wide. `short` is the
+  // trigger button's label; `name` is shown in the dropdown, always in that
+  // language's own script.
+  var LANGS = [
+    { code: 'en', short: 'EN', name: 'English' },
+    { code: 'zh', short: '中文', name: '中文' },
+    { code: 'es', short: 'ES', name: 'Español' },
+    { code: 'hi', short: 'HI', name: 'हिन्दी' },
+    { code: 'fr', short: 'FR', name: 'Français' }
+  ];
+  var LOCALE_TAG = { en: 'en', zh: 'zh-CN', es: 'es', hi: 'hi', fr: 'fr' };
 
   function applyLang(lang) {
     var isZh = lang === 'zh';
@@ -3808,46 +3825,101 @@
       ccFootnoteEl.innerHTML = (isZh ? 'Jobscan数据：无限次扫描每月$49.95。Rezi求职信质量基于已发布的用户评价。' : 'Jobscan data: $49.95/mo for unlimited scans. Rezi cover letter quality based on published user reviews.') + jLink + rLink;
     }
 
-    // 8. Language toggle buttons
+    // 8. Language switcher trigger buttons — each shows the CURRENT language's
+    // short code (not "the other" language, since picking one now opens a
+    // 5-way dropdown rather than flipping a binary toggle).
+    var langMeta = LANGS.filter(function (l) { return l.code === lang; })[0] || LANGS[0];
     var btn1 = document.getElementById('langToggleBtn');
     var btn2 = document.getElementById('langToggleBtnFooter');
     var btn3 = document.getElementById('langToggleBtnMobile');
     var btnTop = document.querySelector('[data-club-lang-top]');
-    if (btn1) btn1.textContent = isZh ? 'EN' : '中文';
-    if (btn2) btn2.textContent = isZh ? 'EN / 中文' : '中文 / EN';
-    if (btn3) btn3.textContent = isZh ? 'EN / 中文' : '中文 / EN';
-    if (btnTop) btnTop.textContent = isZh ? 'EN' : '中文';
-    document.documentElement.lang = isZh ? 'zh-CN' : 'en';
+    var btnMobileClub = document.querySelector('[data-club-lang]');
+    if (btn1) btn1.textContent = langMeta.short;
+    if (btn2) btn2.textContent = langMeta.short;
+    if (btn3) btn3.textContent = langMeta.short;
+    if (btnTop) btnTop.textContent = langMeta.short;
+    if (btnMobileClub) { var lbl = btnMobileClub.childNodes[0]; if (lbl) lbl.nodeValue = langMeta.short + ' '; }
+    document.documentElement.lang = LOCALE_TAG[lang] || 'en';
     localStorage.setItem('rt_lang', lang);
 
     // Sample cover-letter dates always render as today's date so they never go
     // stale. Runs last so it refills the .js-today spans after any innerHTML
     // rewrites above (feat_cl_date + the template-card previews) wipe them.
-    stampDates(isZh);
+    stampDates(lang);
   }
 
   // Fill every .js-today placeholder with the current date, localized.
-  function stampDates(isZh) {
-    if (isZh === undefined) isZh = (localStorage.getItem('rt_lang') || 'en') === 'zh';
+  function stampDates(lang) {
+    if (lang === undefined) lang = localStorage.getItem('rt_lang') || 'en';
     var d = new Date();
-    var s = isZh
-      ? d.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
-      : d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    var s = d.toLocaleDateString(LOCALE_TAG[lang] || 'en', { year: 'numeric', month: 'long', day: 'numeric' });
     document.querySelectorAll('.js-today').forEach(function(el) { el.textContent = s; });
   }
 
-  function toggleLang() {
+  // ── Shared language-picker dropdown ─────────────────────────────────────
+  // A self-contained copy of site-nav.js's picker (this page doesn't load that
+  // script — it carries its own complete nav — so the dropdown UI + LANGS list
+  // are duplicated here, matching that file's behavior exactly).
+  var langMenuEl = null;
+  function closeLangMenu() {
+    if (langMenuEl) { langMenuEl.parentNode.removeChild(langMenuEl); langMenuEl = null; }
+  }
+  function selectLang(lang) {
+    closeLangMenu();
+    applyLang(lang);
+  }
+  function openLangPicker(anchor) {
+    if (!anchor) return;
+    if (langMenuEl) { closeLangMenu(); return; }
     var current = localStorage.getItem('rt_lang') || 'en';
-    applyLang(current === 'en' ? 'zh' : 'en');
+    var panel = document.createElement('div');
+    panel.setAttribute('role', 'menu');
+    panel.style.cssText = 'position:fixed;z-index:2147483002;min-width:168px;background:#fff;border:1px solid #E7DFD1;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.25);padding:6px;';
+    panel.innerHTML = LANGS.map(function (l) {
+      var current_ = l.code === current;
+      return '<button type="button" class="lang-picker-item" role="menuitem" data-lang="' + l.code + '" style="display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;background:none;border:0;border-radius:8px;padding:9px 10px;font:600 14px/1.2 Inter,sans-serif;color:' + (current_ ? '#1F5C3D' : '#191512') + ';cursor:pointer;" onmouseover="this.style.background=\'#F1EADD\'" onmouseout="this.style.background=\'none\'">' +
+        '<span>' + l.name + '</span><span aria-hidden="true" style="color:#1F5C3D;visibility:' + (current_ ? 'visible' : 'hidden') + ';">&#10003;</span></button>';
+    }).join('');
+    document.body.appendChild(panel);
+    var r = anchor.getBoundingClientRect();
+    // Clamp both axes to the viewport — the anchor can sit near the bottom of
+    // a scrollable mobile menu, where bottom+6 would push the panel off-screen.
+    var estH = LANGS.length * 41 + 12;
+    panel.style.top = Math.max(8, Math.min(r.bottom + 6, window.innerHeight - estH - 8)) + 'px';
+    panel.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 184)) + 'px';
+    langMenuEl = panel;
+    panel.querySelectorAll('.lang-picker-item').forEach(function (btn) {
+      btn.addEventListener('click', function () { selectLang(btn.getAttribute('data-lang')); });
+    });
+    setTimeout(function () {
+      document.addEventListener('click', onOutsideClick);
+      document.addEventListener('keydown', onEscape);
+    }, 0);
+  }
+  function onOutsideClick(e) {
+    if (langMenuEl && !langMenuEl.contains(e.target)) {
+      closeLangMenu();
+      document.removeEventListener('click', onOutsideClick);
+      document.removeEventListener('keydown', onEscape);
+    }
+  }
+  function onEscape(e) {
+    if (e.key === 'Escape') { closeLangMenu(); document.removeEventListener('click', onOutsideClick); document.removeEventListener('keydown', onEscape); }
+  }
+
+  // Every language button on this page opens the same picker, anchored to
+  // whichever button was clicked.
+  function toggleLang(anchorEl) {
+    openLangPicker(anchorEl || document.querySelector('[data-club-lang-top]') || document.getElementById('langToggleBtn'));
   }
 
   // Apply saved language preference on load
   (function() {
     var saved = localStorage.getItem('rt_lang') || 'en';
     if (saved !== 'en') applyLang(saved);
-    // applyLang (via stampDates) covers the zh path; stamp here for the English
-    // default, where applyLang is intentionally skipped.
-    else stampDates(false);
+    // applyLang (via stampDates) covers the non-English path; stamp here for
+    // the English default, where applyLang is intentionally skipped.
+    else stampDates('en');
   })();
 
   // Scroll reveal.

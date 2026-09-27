@@ -1,20 +1,23 @@
 /*
- * site-i18n.js — site-wide full-DOM translator (中文 / English).
+ * site-i18n.js — site-wide full-DOM translator (English + 4 target languages:
+ * 中文 / Español / हिन्दी / Français).
  *
  * The homepage and the app dashboard carry their own exhaustive, hand-authored
  * translators. Every OTHER page (the SEO/role pages, marketing/tool pages, blog,
- * alternatives) had no body translator, so clicking 中文 only translated the nav
- * chrome and left the whole page in English. This fixes that generically:
+ * alternatives) had no body translator, so switching language only translated
+ * the nav chrome and left the whole page in English. This fixes that generically:
  *
- *   • On switch to 中文 it walks the ENTIRE DOM — every visible text node plus
- *     placeholder / title / aria-label / alt / button-value attributes — collects
- *     the unique English strings, sends them to /api/i18n/translate (cross-user
- *     cached on the server, so cost is one-time per unique phrase) and swaps in
- *     the Chinese. Originals are remembered, so switching back to English is
- *     instant and exact.
+ *   • On switch to any non-English language it walks the ENTIRE DOM — every
+ *     visible text node plus placeholder / title / aria-label / alt / button-value
+ *     attributes — collects the unique English strings, sends them to
+ *     /api/i18n/translate (cross-user cached per language on the server, so cost
+ *     is one-time per unique phrase per language) and swaps in the translation.
+ *     Originals are remembered, so switching back to English is instant and exact.
  *   • It CHAINS after a page's own window.applyLang when one exists (e.g. /score,
- *     /pro-tools), so their curated, instant translations still run first and this
- *     only fills in everything they don't cover.
+ *     /pro-tools), so their curated EN/中文 translations still run first for
+ *     those two languages — this pass only fills in what they don't cover, and
+ *     for the other three languages (es/hi/fr) it covers the whole page, since
+ *     those curated translators only ever branch on Chinese.
  *   • The shared nav (#snav / hamburger / role modal) translates itself, so its
  *     subtree is skipped here to avoid double-work.
  *
@@ -27,18 +30,23 @@
   window.__siteI18nLoaded = true;
 
   var LANG_KEY = 'rt_lang';
+  var TARGET_LANGS = ['zh', 'es', 'hi', 'fr']; // non-English targets the server can translate to
+  var LOCALE_TAG = { en: 'en', zh: 'zh-CN', es: 'es', hi: 'hi', fr: 'fr' };
+
   function getLang() {
-    try { var l = localStorage.getItem(LANG_KEY); return l === 'zh' ? 'zh' : 'en'; } catch (e) { return 'en'; }
+    try {
+      var l = localStorage.getItem(LANG_KEY);
+      return TARGET_LANGS.indexOf(l) !== -1 ? l : 'en';
+    } catch (e) { return 'en'; }
   }
 
   // Elements whose subtree must never be touched: scripts/styles, code samples,
   // editable fields' own text, the self-translating nav, and the language toggles
-  // themselves (they show 中文/EN and must not be translated).
+  // themselves (they show language labels and must not be translated).
   var SKIP_SEL = 'script,style,noscript,template,code,pre,textarea,svg,' +
     '#snav,#snavMenu,#snavRole,.snav-lang,#langToggleBtn,#langToggleBtnMobile,#langToggleBtnFooter,' +
     '[data-club-lang],[data-club-lang-top],[data-global-language-toggle],[data-no-i18n],[translate="no"],.notranslate,.js-today';
 
-  var CJK = /[㐀-鿿豈-﫿぀-ヿ]/;
   var HAS_LETTER = /[A-Za-z]/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var URLISH = /^(https?:\/\/|www\.|\/)[^\s]*$/;
@@ -49,16 +57,17 @@
     if (t.length < 2 || t.length > 600) return false;
     if (!HAS_LETTER.test(t)) return false;      // pure numbers / symbols / emoji
     if (EMAIL.test(t) || URLISH.test(t)) return false;
-    // Already substantially Chinese → assume a curated translator handled it.
-    var cjk = (t.match(/[㐀-鿿぀-ヿ]/g) || []).length;
-    if (cjk / t.length > 0.2) return false;
+    // Already substantially non-Latin (CJK/Devanagari) → assume a curated
+    // translator (or an earlier pass) already handled it.
+    var nonLatin = (t.match(/[㐀-鿿぀-ヿ぀-ヿऀ-ॿ]/g) || []).length;
+    if (nonLatin / t.length > 0.2) return false;
     return true;
   }
 
   var ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
 
   // A record of everything we changed, so EN can restore exactly.
-  // { kind:'text', node } with node.__en / node.__zh, or { kind:'attr', el, attr }.
+  // { kind:'text', node } with node.__i18nEn, or { kind:'attr', el, attr }.
   var records = [];
   var seenTextNodes = 'undefined' !== typeof WeakSet ? new WeakSet() : null;
 
@@ -120,19 +129,21 @@
     return { strings: Object.keys(strings), texts: texts, attrs: attrs };
   }
 
-  var cache = {};   // en → zh, filled from the server (persists for the page)
+  // Per-language cache: cache[lang][en] = translated. Persists for the page.
+  var cache = {};
   var busy = false;
 
-  function applyZh(map) {
-    for (var k in map) if (map.hasOwnProperty(k)) cache[k] = map[k];
+  function applyTranslated(lang, map) {
+    var c = cache[lang] || (cache[lang] = {});
+    for (var k in map) if (map.hasOwnProperty(k)) c[k] = map[k];
     records.forEach(function (r) {
       if (r.kind === 'text') {
         var en = r.node.__i18nEn; if (en == null) return;
-        var zh = cache[en.trim()];
-        if (zh) r.node.nodeValue = en.replace(en.trim(), zh);
+        var t = c[en.trim()];
+        if (t) r.node.nodeValue = en.replace(en.trim(), t);
       } else {
         var cur = r.el['__i18nAttr_' + r.attr]; if (cur == null) return;
-        var z = cache[cur.trim()];
+        var z = c[cur.trim()];
         if (z) r.el.setAttribute(r.attr, cur.replace(cur.trim(), z));
       }
     });
@@ -149,13 +160,14 @@
     });
   }
 
-  // Translate the current DOM into Chinese, fetching anything not already cached.
-  function toZh() {
+  // Translate the current DOM into `lang`, fetching anything not already cached.
+  function translateTo(lang) {
     var found = collect();
-    var need = found.strings.filter(function (s) { return !cache[s]; });
-    // Apply whatever is already cached immediately (instant on repeat toggles).
-    applyZh({});
-    if (!need.length || busy) { applyZh({}); return; }
+    var c = cache[lang] || (cache[lang] = {});
+    var need = found.strings.filter(function (s) { return !c[s]; });
+    // Apply whatever is already cached immediately (instant on repeat switches).
+    applyTranslated(lang, {});
+    if (!need.length || busy) { applyTranslated(lang, {}); return; }
     busy = true;
     document.documentElement.setAttribute('data-i18n-busy', '1');
     // Chunk so no single request is huge.
@@ -166,9 +178,9 @@
       fetch('/api/i18n/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lang: 'zh', strings: chunk })
+        body: JSON.stringify({ lang: lang, strings: chunk })
       }).then(function (r) { return r.ok ? r.json() : { translations: {} }; })
-        .then(function (d) { if (d && d.translations) applyZh(d.translations); })
+        .then(function (d) { if (d && d.translations) applyTranslated(lang, d.translations); })
         .catch(function () {})
         .then(function () {
           if (++done === chunks.length) { busy = false; document.documentElement.removeAttribute('data-i18n-busy'); }
@@ -178,26 +190,28 @@
 
   // The generic pass. Called by the chained window.applyLang and on load.
   function genericApply(lang) {
-    if (lang === 'zh') toZh();
-    else restoreEn();
-    try { document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'; } catch (e) {}
+    if (lang === 'en') restoreEn();
+    else translateTo(lang);
+    try { document.documentElement.lang = LOCALE_TAG[lang] || 'en'; } catch (e) {}
   }
 
   // Chain after any existing page translator so curated strings win, then we fill
-  // in the rest. site-nav's toggle calls window.applyLang(next).
+  // in the rest. site-nav's switcher calls window.applyLang(next).
   var pageApply = (typeof window.applyLang === 'function') ? window.applyLang : null;
   window.applyLang = function (lang) {
     if (pageApply) { try { pageApply(lang); } catch (e) {} }
     genericApply(lang);
   };
 
-  // On load, if the stored preference is Chinese, translate the body too. (Pages
-  // with their own translator already self-boot their curated pass; this adds the
-  // generic coverage on top. Run after paint so it never blocks first render.)
+  // On load, if the stored preference is non-English, translate the body too.
+  // (Pages with their own translator already self-boot their curated pass; this
+  // adds the generic coverage on top. Run after paint so it never blocks first
+  // render.)
   function boot() {
-    if (getLang() !== 'zh') return;
+    var lang = getLang();
+    if (lang === 'en') return;
     // Give a page's own boot + the nav a tick to settle, then translate.
-    setTimeout(function () { genericApply('zh'); }, 60);
+    setTimeout(function () { genericApply(lang); }, 60);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
