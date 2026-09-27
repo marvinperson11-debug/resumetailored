@@ -280,7 +280,17 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
     setError(null);
     // Client-side generation is synchronous; the brief busy flag just guards
     // against a double-click while the blob is built + the download fires.
-    const err = downloadDocx({ text: result, tplId, mode: "resume", title: "Resume", photo, signature, docFont, accentColor });
+    const err = downloadDocx({
+      text: result,
+      tplId,
+      mode: "resume",
+      title: t("exportDocTitle"),
+      photo,
+      signature,
+      docFont,
+      accentColor,
+      messages: { emptyText: t("errorNothingToExport"), failed: t("errorDocxFailed") },
+    });
     if (err) setError(err);
     setDocxBusy(false);
   }
@@ -309,7 +319,7 @@ export function ResumeBuilderTool({ onClose, isPro }: { onClose: () => void; isP
           </SecondaryButton>
           <SecondaryButton
             onClick={() =>
-              downloadPdf({ text: result, tplId, mode: "resume", title: "Resume", isPro, docFont, photo, signature, sigFont, accentColor })
+              downloadPdf({ text: result, tplId, mode: "resume", title: t("exportDocTitle"), isPro, docFont, photo, signature, sigFont, accentColor })
             }
           >
             <Download className="h-4 w-4" /> PDF

@@ -1031,7 +1031,15 @@
         "emerald": "Émeraude",
         "slate": "Ardoise",
         "coral": "Corail"
-      }
+      },
+      "exportDocTitle": "CV",
+      "errorNothingToExport": "Rien à exporter pour le moment.",
+      "errorDocxFailed": "L'export Word a échoué. Veuillez réessayer."
     }
+  },
+  "careersNotFound": {
+    "title": "Page carrières introuvable",
+    "body": "Cette page carrières n'est pas disponible. L'adresse est peut-être mal orthographiée, ou la page a pu être retirée.",
+    "browseAllJobs": "Voir toutes les offres"
   }
 }

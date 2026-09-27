@@ -1031,7 +1031,15 @@
         "emerald": "翠绿色",
         "slate": "灰蓝色",
         "coral": "珊瑚色"
-      }
+      },
+      "exportDocTitle": "简历",
+      "errorNothingToExport": "还没有可导出的内容。",
+      "errorDocxFailed": "Word 导出失败，请重试。"
     }
+  },
+  "careersNotFound": {
+    "title": "未找到该招聘页面",
+    "body": "此招聘页面不可用。链接可能有误，或该页面已被下线。",
+    "browseAllJobs": "浏览全部职位"
   }
 }

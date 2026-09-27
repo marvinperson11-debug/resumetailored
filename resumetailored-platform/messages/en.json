@@ -1031,7 +1031,15 @@
         "emerald": "Emerald",
         "slate": "Slate",
         "coral": "Coral"
-      }
+      },
+      "exportDocTitle": "Resume",
+      "errorNothingToExport": "Nothing to export yet.",
+      "errorDocxFailed": "Word export failed. Please try again."
     }
+  },
+  "careersNotFound": {
+    "title": "Careers page not found",
+    "body": "This careers page isn't available. The address may be misspelled, or the page may have been taken down.",
+    "browseAllJobs": "Browse all jobs"
   }
 }
