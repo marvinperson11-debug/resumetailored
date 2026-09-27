@@ -1,12 +1,27 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display } from "next/font/google";
 import { ClerkProvider, ClerkLoading } from "@clerk/nextjs";
+import { enUS, zhCN, esES, hiIN, frFR } from "@clerk/localizations";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
+import { resolveLocale, type Locale } from "@/i18n/locales";
 import { LoadingScreen } from "@/components/loading-screen";
 import { PlanPreviewBanner } from "@/components/plan-preview-banner";
 import { PWAProvider } from "@/components/pwa/pwa-context";
 import "./globals.css";
+
+/** Clerk's own bundled translations for its widgets (sign-in/up, user/org
+ *  profile, the account-switcher, etc.) — separate from next-intl's
+ *  messages/*.json, which cover this app's own UI chrome. Keyed by the same
+ *  Locale the rest of the app resolves, so switching the site language also
+ *  switches every Clerk-rendered form and menu. */
+const CLERK_LOCALIZATIONS: Record<Locale, typeof enUS> = {
+  en: enUS,
+  zh: zhCN,
+  es: esES,
+  hi: hiIN,
+  fr: frFR,
+};
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap" });
@@ -25,7 +40,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const locale = await getLocale();
+  const locale = resolveLocale(await getLocale());
   const messages = await getMessages();
 
   return (
@@ -34,6 +49,7 @@ export default async function RootLayout({
       // still override per-flow). Reduces the redirect round-trips after login.
       signInFallbackRedirectUrl="/"
       signUpFallbackRedirectUrl="/"
+      localization={CLERK_LOCALIZATIONS[locale]}
       appearance={{
         variables: {
           colorPrimary: "#C2870B", // gold rebrand
