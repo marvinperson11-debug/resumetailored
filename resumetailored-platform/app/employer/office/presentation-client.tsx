@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Sparkles, Database, Play, Download, FileText, CheckCircle2 } from "lucide-react";
 import { Panel, Field, Input, Area, Picker, Btn, TierUpgradeNote } from "../components/ui";
 import {
   REPORT_SOURCES,
-  REPORT_SOURCE_LABELS,
   PRESENTATION_SLIDE_COUNTS,
   type ReportSource,
   type PresentationSlideCount,
@@ -25,6 +25,7 @@ const TODAY = isoDaysAgo(0);
 const THIRTY_DAYS_AGO = isoDaysAgo(30);
 
 export function PresentationTab({ canPresentation, canManage }: { canPresentation: boolean; canManage: boolean }) {
+  const t = useTranslations("employerOffice.presentation");
   const [mode, setMode] = useState<Mode>("topic");
   const [topic, setTopic] = useState("");
   const [source, setSource] = useState<ReportSource>("hiring");
@@ -38,7 +39,7 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
   const [presenting, setPresenting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!canPresentation) return <TierUpgradeNote feature="Presentation Builder" />;
+  if (!canPresentation) return <TierUpgradeNote feature={t("presentationBuilderFeature")} />;
 
   async function generate() {
     setGenerating(true);
@@ -53,12 +54,12 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
       });
       const d = (await res.json().catch(() => ({}))) as { deck?: PresentationDeck; error?: string };
       if (!res.ok || !d.deck) {
-        setError(d.error || "Could not generate the presentation.");
+        setError(d.error || t("errorGenerate"));
         return;
       }
       setDeck(d.deck);
     } catch {
-      setError("Network error — please try again.");
+      setError(t("errorNetwork"));
     } finally {
       setGenerating(false);
     }
@@ -77,12 +78,12 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(d.error || "Could not save to Documents.");
+        setError(d.error || t("errorSaveToDocuments"));
         return;
       }
       setSaved(true);
     } catch {
-      setError("Network error — please try again.");
+      setError(t("errorNetwork"));
     } finally {
       setSaving(false);
     }
@@ -92,11 +93,11 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
     <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <div className="space-y-5">
         <Panel>
-          <h3 className="mb-3 text-sm font-semibold text-cream">Build a presentation</h3>
+          <h3 className="mb-3 text-sm font-semibold text-cream">{t("buildAPresentation")}</h3>
           <div className="mb-3 flex gap-1.5">
             {([
-              { m: "topic", label: "Topic", icon: Sparkles },
-              { m: "data", label: "Data source", icon: Database },
+              { m: "topic", label: t("topic"), icon: Sparkles },
+              { m: "data", label: t("dataSource"), icon: Database },
             ] as const).map(({ m, label, icon: Icon }) => (
               <button
                 key={m}
@@ -112,25 +113,25 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
           </div>
 
           {mode === "topic" ? (
-            <Field label="What's the presentation about?">
-              <Area value={topic} onChange={(e) => setTopic(e.target.value)} rows={5} maxLength={500} placeholder="Q3 hiring plan for the leadership team…" />
+            <Field label={t("whatsItAbout")}>
+              <Area value={topic} onChange={(e) => setTopic(e.target.value)} rows={5} maxLength={500} placeholder={t("topicPlaceholder")} />
             </Field>
           ) : (
             <>
-              <Field label="Source">
+              <Field label={t("source")}>
                 <Picker value={source} onChange={(e) => setSource(e.target.value as ReportSource)}>
                   {REPORT_SOURCES.map((s) => (
                     <option key={s} value={s}>
-                      {REPORT_SOURCE_LABELS[s]}
+                      {t(`sources.${s}` as "sources.hiring")}
                     </option>
                   ))}
                 </Picker>
               </Field>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <Field label="From">
+                <Field label={t("from")}>
                   <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} max={end} />
                 </Field>
-                <Field label="To">
+                <Field label={t("to")}>
                   <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} min={start} max={TODAY} />
                 </Field>
               </div>
@@ -138,7 +139,7 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
           )}
 
           <div className="mt-3">
-            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-cream">Slides</span>
+            <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("slides")}</span>
             <div className="flex gap-1.5">
               {PRESENTATION_SLIDE_COUNTS.map((n) => (
                 <button
@@ -156,7 +157,7 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
           </div>
 
           <Btn className="mt-4 w-full" onClick={generate} loading={generating} disabled={mode === "topic" && !topic.trim()}>
-            <Sparkles className="h-4 w-4" /> Generate
+            <Sparkles className="h-4 w-4" /> {t("generate")}
           </Btn>
           {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
         </Panel>
@@ -166,12 +167,12 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
         <Panel>
           {!deck ? (
             <div className="flex h-[300px] items-center justify-center text-center text-sm text-white/45">
-              Describe a topic or pick a data source, then generate a deck to preview here.
+              {t("previewEmptyState")}
             </div>
           ) : (
             <div>
               <h3 className="font-serif text-lg font-medium text-cream">{deck.title}</h3>
-              <p className="mt-1 text-xs text-white/45">{deck.slides.length} slides</p>
+              <p className="mt-1 text-xs text-white/45">{t("slideCount", { n: deck.slides.length })}</p>
 
               <div className="mt-4 space-y-2">
                 {deck.slides.map((s, i) => (
@@ -193,19 +194,19 @@ export function PresentationTab({ canPresentation, canManage }: { canPresentatio
 
               <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border-gold/50 pt-4">
                 <Btn onClick={() => setPresenting(true)}>
-                  <Play className="h-4 w-4" /> Present
+                  <Play className="h-4 w-4" /> {t("present")}
                 </Btn>
                 <Btn variant="ghost" onClick={() => downloadPresentationPdf(deck)}>
-                  <Download className="h-4 w-4" /> Export PDF
+                  <Download className="h-4 w-4" /> {t("exportPdf")}
                 </Btn>
                 {canManage && (
                   <Btn variant="ghost" onClick={saveToDocuments} loading={saving}>
-                    <FileText className="h-4 w-4" /> Save to Documents
+                    <FileText className="h-4 w-4" /> {t("saveToDocuments")}
                   </Btn>
                 )}
                 {saved && (
                   <span className="inline-flex items-center gap-1.5 text-sm text-teal">
-                    <CheckCircle2 className="h-4 w-4" /> Saved to Documents
+                    <CheckCircle2 className="h-4 w-4" /> {t("savedToDocuments")}
                   </span>
                 )}
               </div>

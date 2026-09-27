@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Sparkles, Upload, Download, FileText, CheckCircle2, Plus, Trash2 } from "lucide-react";
 import { Panel, Field, Input, Area, Btn, TierUpgradeNote } from "../components/ui";
 import { SPREADSHEET_PRESETS, type SpreadsheetGrid } from "@/lib/office-hub";
@@ -24,6 +25,7 @@ function removeRow(grid: SpreadsheetGrid, r: number): SpreadsheetGrid {
 }
 
 export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: boolean; canManage: boolean }) {
+  const t = useTranslations("employerOffice.spreadsheet");
   const [mode, setMode] = useState<Mode>("describe");
   const [description, setDescription] = useState("");
   const [grid, setGrid] = useState<SpreadsheetGrid | null>(null);
@@ -35,7 +37,7 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
   const fileRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState("");
 
-  if (!canSpreadsheet) return <TierUpgradeNote feature="Spreadsheet Creator" />;
+  if (!canSpreadsheet) return <TierUpgradeNote feature={t("spreadsheetCreatorFeature")} />;
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -54,12 +56,12 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
       });
       const d = (await res.json().catch(() => ({}))) as { grid?: SpreadsheetGrid; error?: string };
       if (!res.ok || !d.grid) {
-        setError(d.error || "Could not generate the spreadsheet.");
+        setError(d.error || t("errorGenerate"));
         return;
       }
       setGrid(d.grid);
     } catch {
-      setError("Network error — please try again.");
+      setError(t("errorNetwork"));
     } finally {
       setGenerating(false);
     }
@@ -68,7 +70,7 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
   async function generateFromUpload() {
     const file = fileRef.current?.files?.[0];
     if (!file) {
-      setError("Choose a file first.");
+      setError(t("errorChooseFile"));
       return;
     }
     setGenerating(true);
@@ -81,12 +83,12 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
       const res = await fetch("/api/employer/office/spreadsheet-extract", { method: "POST", body: form });
       const d = (await res.json().catch(() => ({}))) as { grid?: SpreadsheetGrid; error?: string };
       if (!res.ok || !d.grid) {
-        setError(d.error || "Could not read that file into a spreadsheet.");
+        setError(d.error || t("errorReadFile"));
         return;
       }
       setGrid(d.grid);
     } catch {
-      setError("Network error — please try again.");
+      setError(t("errorNetwork"));
     } finally {
       setGenerating(false);
     }
@@ -103,18 +105,18 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
         body: JSON.stringify(grid),
       });
       if (!res.ok) {
-        setError("Could not build the .xlsx file.");
+        setError(t("errorBuildXlsx"));
         return;
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${(grid.title || "spreadsheet").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.xlsx`;
+      a.download = `${(grid.title || t("spreadsheetFilenameFallback")).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      setError("Network error — please try again.");
+      setError(t("errorNetwork"));
     } finally {
       setDownloading(false);
     }
@@ -133,12 +135,12 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(d.error || "Could not save to Documents.");
+        setError(d.error || t("errorSaveToDocuments"));
         return;
       }
       setSaved(true);
     } catch {
-      setError("Network error — please try again.");
+      setError(t("errorNetwork"));
     } finally {
       setSaving(false);
     }
@@ -148,11 +150,11 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
     <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <div className="space-y-5">
         <Panel>
-          <h3 className="mb-3 text-sm font-semibold text-cream">Build a spreadsheet</h3>
+          <h3 className="mb-3 text-sm font-semibold text-cream">{t("buildASpreadsheet")}</h3>
           <div className="mb-3 flex gap-1.5">
             {([
-              { m: "describe", label: "Describe it", icon: Sparkles },
-              { m: "upload", label: "Upload sources", icon: Upload },
+              { m: "describe", label: t("describeIt"), icon: Sparkles },
+              { m: "upload", label: t("uploadSources"), icon: Upload },
             ] as const).map(({ m, label, icon: Icon }) => (
               <button
                 key={m}
@@ -177,28 +179,28 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
                     onClick={() => setDescription(p.prompt)}
                     className="rounded-lg border border-border-gold px-2.5 py-1 text-xs font-medium text-muted-cream transition-colors hover:bg-white/5"
                   >
-                    {p.label}
+                    {t(`presets.${p.key}` as "presets.payroll")}
                   </button>
                 ))}
               </div>
-              <Field label="Describe the spreadsheet you want">
+              <Field label={t("describeWhatYouWant")}>
                 <Area
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={6}
                   maxLength={2000}
-                  placeholder="Payroll hours for last week by employee, with totals…"
+                  placeholder={t("describePlaceholder")}
                 />
               </Field>
               <Btn className="mt-3 w-full" onClick={generateFromDescription} loading={generating} disabled={!description.trim()}>
-                <Sparkles className="h-4 w-4" /> Generate
+                <Sparkles className="h-4 w-4" /> {t("generate")}
               </Btn>
             </>
           )}
 
           {mode === "upload" && (
             <>
-              <Field label="CSV, PDF, DOCX, or TXT file" hint="A CSV is parsed directly; other files are read and structured by AI.">
+              <Field label={t("uploadFileLabel")} hint={t("uploadFileHint")}>
                 <input
                   ref={fileRef}
                   type="file"
@@ -208,11 +210,11 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
                 />
                 {fileName && <p className="mt-2 text-xs text-white/45">{fileName}</p>}
               </Field>
-              <Field label="Extra instructions (optional)" hint="e.g. only include active employees">
+              <Field label={t("extraInstructions")} hint={t("extraInstructionsHint")}>
                 <Input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000} />
               </Field>
               <Btn className="mt-3 w-full" onClick={generateFromUpload} loading={generating}>
-                <Upload className="h-4 w-4" /> Structure it
+                <Upload className="h-4 w-4" /> {t("structureIt")}
               </Btn>
             </>
           )}
@@ -224,7 +226,7 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
         <Panel className="overflow-x-auto">
           {!grid ? (
             <div className="flex h-[300px] items-center justify-center text-center text-sm text-white/45">
-              Describe a spreadsheet or upload a source file to see a preview here.
+              {t("previewEmptyState")}
             </div>
           ) : (
             <div>
@@ -263,7 +265,7 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
                           </td>
                         ))}
                         <td className="p-1 text-right">
-                          <button type="button" onClick={() => setGrid(removeRow(grid, r))} title="Delete row" className="text-white/30 hover:text-red-300">
+                          <button type="button" onClick={() => setGrid(removeRow(grid, r))} title={t("deleteRow")} className="text-white/30 hover:text-red-300">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </td>
@@ -273,21 +275,21 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
                 </table>
               </div>
               <Btn variant="ghost" className="mt-2" onClick={() => setGrid(addRow(grid))}>
-                <Plus className="h-4 w-4" /> Add row
+                <Plus className="h-4 w-4" /> {t("addRow")}
               </Btn>
 
               <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border-gold/50 pt-4">
                 <Btn variant="ghost" onClick={downloadXlsx} loading={downloading} disabled={grid.headers.length === 0}>
-                  <Download className="h-4 w-4" /> Download .xlsx
+                  <Download className="h-4 w-4" /> {t("downloadXlsx")}
                 </Btn>
                 {canManage && (
                   <Btn onClick={saveToDocuments} loading={saving} disabled={grid.headers.length === 0}>
-                    <FileText className="h-4 w-4" /> Save to Documents
+                    <FileText className="h-4 w-4" /> {t("saveToDocuments")}
                   </Btn>
                 )}
                 {saved && (
                   <span className="inline-flex items-center gap-1.5 text-sm text-teal">
-                    <CheckCircle2 className="h-4 w-4" /> Saved to Documents
+                    <CheckCircle2 className="h-4 w-4" /> {t("savedToDocuments")}
                   </span>
                 )}
               </div>

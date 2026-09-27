@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Clipboard, Upload, Database, Download, FileText, Loader2, CheckCircle2 } from "lucide-react";
 import { Panel, Field, Input, Picker, Btn, TierUpgradeNote } from "../components/ui";
 import {
@@ -8,7 +9,6 @@ import {
   parseCsvPoints,
   CHART_TYPES,
   CHART_SOURCES,
-  CHART_SOURCE_LABELS,
   type ChartType,
   type ChartSource,
   type ChartPoint,
@@ -40,15 +40,16 @@ const SVG_W = 640;
 const SVG_H = 400;
 
 export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canManage: boolean }) {
+  const t = useTranslations("employerOffice.charts");
   const [mode, setMode] = useState<Mode>("live");
   const [source, setSource] = useState<ChartSource>("timesheet");
   const [csvText, setCsvText] = useState("");
   const [livePoints, setLivePoints] = useState<ChartPoint[]>([]);
   const [loadingLive, setLoadingLive] = useState(false);
   const [type, setType] = useState<ChartType>("bar");
-  const [title, setTitle] = useState("Timesheet hours per employee");
-  const [xLabel, setXLabel] = useState("Employee");
-  const [yLabel, setYLabel] = useState("Hours");
+  const [title, setTitle] = useState(t("sources.timesheet"));
+  const [xLabel, setXLabel] = useState(t("employee"));
+  const [yLabel, setYLabel] = useState(t("hours"));
   const [inserting, setInserting] = useState(false);
   const [inserted, setInserted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,14 +65,14 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
         if (d.error) setError(d.error);
         setLivePoints(d.points || []);
       })
-      .catch(() => setError("Could not load live data."))
+      .catch(() => setError(t("errorLoadLiveData")))
       .finally(() => setLoadingLive(false));
-  }, [mode, source, canCharts]);
+  }, [mode, source, canCharts, t]);
 
   // Title follows the picked live source by default (until the user edits it).
   useEffect(() => {
-    if (mode === "live") setTitle(CHART_SOURCE_LABELS[source]);
-  }, [mode, source]);
+    if (mode === "live") setTitle(t(`sources.${source}` as "sources.timesheet"));
+  }, [mode, source, t]);
 
   const points = mode === "live" ? livePoints : parseCsvPoints(csvText);
 
@@ -80,7 +81,7 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
     [type, title, points, xLabel, yLabel]
   );
 
-  if (!canCharts) return <TierUpgradeNote feature="Charts" />;
+  if (!canCharts) return <TierUpgradeNote feature={t("chartsFeature")} />;
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -95,10 +96,10 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
       const url = await svgToPngDataUrl(svg, SVG_W, SVG_H);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${(title || "chart").replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.png`;
+      a.download = `${(title || t("chartFilenameFallback")).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.png`;
       a.click();
     } catch {
-      setError("Could not render the chart for download.");
+      setError(t("errorRenderForDownload"));
     }
   }
 
@@ -111,16 +112,16 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
       const res = await fetch("/api/employer/office/chart-insert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: title || "Chart", pngDataUrl: url }),
+        body: JSON.stringify({ title: title || t("chartTitleFallback"), pngDataUrl: url }),
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(d.error || "Could not insert the chart.");
+        setError(d.error || t("errorInsertChart"));
         return;
       }
       setInserted(true);
     } catch {
-      setError("Network error — please try again.");
+      setError(t("errorNetwork"));
     } finally {
       setInserting(false);
     }
@@ -130,12 +131,12 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
     <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <div className="space-y-5">
         <Panel>
-          <h3 className="mb-3 text-sm font-semibold text-cream">Data source</h3>
+          <h3 className="mb-3 text-sm font-semibold text-cream">{t("dataSource")}</h3>
           <div className="mb-3 flex gap-1.5">
             {([
-              { m: "live", label: "Live data", icon: Database },
-              { m: "paste", label: "Paste CSV", icon: Clipboard },
-              { m: "upload", label: "Upload CSV", icon: Upload },
+              { m: "live", label: t("modes.live"), icon: Database },
+              { m: "paste", label: t("modes.paste"), icon: Clipboard },
+              { m: "upload", label: t("modes.upload"), icon: Upload },
             ] as const).map(({ m, label, icon: Icon }) => (
               <button
                 key={m}
@@ -151,18 +152,18 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
           </div>
 
           {mode === "live" && (
-            <Field label="Source" hint="Pulled live from your own account data.">
+            <Field label={t("source")} hint={t("sourceHint")}>
               <Picker value={source} onChange={(e) => setSource(e.target.value as ChartSource)}>
                 {CHART_SOURCES.map((s) => (
                   <option key={s} value={s}>
-                    {CHART_SOURCE_LABELS[s]}
+                    {t(`sources.${s}` as "sources.timesheet")}
                   </option>
                 ))}
               </Picker>
             </Field>
           )}
           {mode === "paste" && (
-            <Field label="CSV" hint="Two columns: label,value — one pair per line.">
+            <Field label={t("csv")} hint={t("csvHint")}>
               <textarea
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
@@ -173,7 +174,7 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
             </Field>
           )}
           {mode === "upload" && (
-            <Field label="CSV file">
+            <Field label={t("csvFile")}>
               <input
                 ref={fileRef}
                 type="file"
@@ -181,33 +182,33 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
                 onChange={onFile}
                 className="block w-full text-xs text-white/60 file:mr-2 file:rounded file:border-0 file:bg-violet/20 file:px-2 file:py-1 file:text-violet"
               />
-              {csvText && <p className="mt-2 text-xs text-white/45">{parseCsvPoints(csvText).length} rows parsed.</p>}
+              {csvText && <p className="mt-2 text-xs text-white/45">{t("rowsParsed", { n: parseCsvPoints(csvText).length })}</p>}
             </Field>
           )}
         </Panel>
 
         <Panel>
-          <h3 className="mb-3 text-sm font-semibold text-cream">Chart</h3>
+          <h3 className="mb-3 text-sm font-semibold text-cream">{t("chartHeading")}</h3>
           <div className="mb-3 flex gap-1.5">
-            {CHART_TYPES.map((t) => (
+            {CHART_TYPES.map((ct) => (
               <button
-                key={t}
+                key={ct}
                 type="button"
-                onClick={() => setType(t)}
+                onClick={() => setType(ct)}
                 className={`flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
-                  type === t ? "border-violet bg-violet/15 text-violet" : "border-border-gold text-muted-cream hover:bg-white/5"
+                  type === ct ? "border-violet bg-violet/15 text-violet" : "border-border-gold text-muted-cream hover:bg-white/5"
                 }`}
               >
-                {t}
+                {t(`types.${ct}` as "types.bar")}
               </button>
             ))}
           </div>
           <div className="space-y-3">
-            <Field label="Title"><Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} /></Field>
+            <Field label={t("titleLabel")}><Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} /></Field>
             {type !== "pie" && (
               <div className="grid grid-cols-2 gap-2">
-                <Field label="X axis label"><Input value={xLabel} onChange={(e) => setXLabel(e.target.value)} maxLength={40} /></Field>
-                <Field label="Y axis label"><Input value={yLabel} onChange={(e) => setYLabel(e.target.value)} maxLength={40} /></Field>
+                <Field label={t("xAxisLabel")}><Input value={xLabel} onChange={(e) => setXLabel(e.target.value)} maxLength={40} /></Field>
+                <Field label={t("yAxisLabel")}><Input value={yLabel} onChange={(e) => setYLabel(e.target.value)} maxLength={40} /></Field>
               </div>
             )}
           </div>
@@ -218,7 +219,7 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
         <Panel className="overflow-x-auto">
           {loadingLive ? (
             <div className="flex h-[400px] items-center justify-center text-sm text-white/50">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading data…
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t("loadingData")}
             </div>
           ) : (
             <div className="mx-auto max-w-full" style={{ width: SVG_W }} dangerouslySetInnerHTML={{ __html: svg }} />
@@ -226,16 +227,16 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
           {error && <p className="mt-3 text-sm text-red-300">{error}</p>}
           <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-border-gold/50 pt-4">
             <Btn variant="ghost" onClick={download} disabled={points.length === 0}>
-              <Download className="h-4 w-4" /> Download PNG
+              <Download className="h-4 w-4" /> {t("downloadPng")}
             </Btn>
             {canManage && (
               <Btn onClick={insertIntoDocument} loading={inserting} disabled={points.length === 0}>
-                <FileText className="h-4 w-4" /> Insert into a document
+                <FileText className="h-4 w-4" /> {t("insertIntoDocument")}
               </Btn>
             )}
             {inserted && (
               <span className="inline-flex items-center gap-1.5 text-sm text-teal">
-                <CheckCircle2 className="h-4 w-4" /> Saved to Documents
+                <CheckCircle2 className="h-4 w-4" /> {t("savedToDocuments")}
               </span>
             )}
           </div>

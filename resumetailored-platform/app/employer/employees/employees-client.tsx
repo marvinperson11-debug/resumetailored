@@ -1,13 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { UserCheck, GraduationCap, BookOpen, PlayCircle, ExternalLink, Plus, Send, Trash2, FileText, ShieldCheck, Mail, Megaphone, Pin, PinOff, ClipboardCheck, ClipboardList, Rss, Flag, PartyPopper, MessageCircle, CheckCircle2, Circle, BarChart3 } from "lucide-react";
 import {
   EMPLOYEE_STATUSES,
-  EMPLOYEE_STATUS_LABELS,
-  INVITE_STATUS_LABELS,
   DOC_KINDS,
-  DOC_KIND_LABELS,
   complianceState,
   COMPLIANCE_TONE,
   type Employee,
@@ -27,23 +25,23 @@ import {
   type ChecklistTemplateWithItems,
   type EmployeeChecklistWithItems,
 } from "@/lib/checklist-hub";
-import { certStatus, hasExpiringCert, CERT_STATUS_TONE, CERT_STATUS_LABELS, type EmployeeCert } from "@/lib/cert-hub";
+import { certStatus, hasExpiringCert, CERT_STATUS_TONE, type EmployeeCert } from "@/lib/cert-hub";
 import { FEED_KIND_LABELS, type FeedPost, type FeedComment, type FeedPostKind } from "@/lib/feed-hub";
-import { SKILL_LEVEL_COLORS, SKILL_LEVEL_LABELS, MAX_SKILL_LEVEL, type Skill, type EmployeeSkill } from "@/lib/skills-hub";
+import { SKILL_LEVEL_COLORS, MAX_SKILL_LEVEL, type Skill, type EmployeeSkill } from "@/lib/skills-hub";
 import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer } from "../components/ui";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
 const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "neutral", invited: "gold", accepted: "teal" };
 
 export type Tab = "directory" | "feed" | "skills" | "announcements" | "onboarding" | "training" | "library";
-const TAB_META: Record<Tab, { label: string; icon: typeof UserCheck }> = {
-  directory: { label: "Directory", icon: UserCheck },
-  feed: { label: "Feed", icon: Rss },
-  skills: { label: "Skills", icon: BarChart3 },
-  announcements: { label: "Announcements", icon: Megaphone },
-  onboarding: { label: "Onboarding", icon: ClipboardCheck },
-  training: { label: "Training", icon: GraduationCap },
-  library: { label: "Library", icon: BookOpen },
+const TAB_ICON: Record<Tab, typeof UserCheck> = {
+  directory: UserCheck,
+  feed: Rss,
+  skills: BarChart3,
+  announcements: Megaphone,
+  onboarding: ClipboardCheck,
+  training: GraduationCap,
+  library: BookOpen,
 };
 
 interface EmployerDoc {
@@ -71,6 +69,7 @@ export function EmployeesClient({
   initialTab?: Tab;
   initialDocId?: number;
 }) {
+  const t = useTranslations("employerEmployees");
   const [tab, setTab] = useState<Tab>(initialTab ?? "directory");
   // "Use in training" from the Library switches to the Training tab and opens
   // the composer prefilled; the nonce lets the same item be re-picked.
@@ -104,8 +103,8 @@ export function EmployeesClient({
   return (
     <div>
       <PageHeader
-        title="Employees"
-        subtitle="Your workforce, training & compliance. Time clock, schedule & time off live in their own tabs — no payroll."
+        title={t("title")}
+        subtitle={t("subtitle")}
       />
       <div className="relative mb-6">
         <div
@@ -113,18 +112,18 @@ export function EmployeesClient({
           onScroll={updateScrollHints}
           className="flex gap-0 overflow-x-auto rounded-lg border border-border-gold bg-white/[0.03] p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
         >
-          {(Object.keys(TAB_META) as Tab[]).map((t) => {
-            const Icon = TAB_META[t].icon;
+          {(Object.keys(TAB_ICON) as Tab[]).map((tabId) => {
+            const Icon = TAB_ICON[tabId];
             return (
               <button
-                key={t}
-                onClick={() => setTab(t)}
+                key={tabId}
+                onClick={() => setTab(tabId)}
                 className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
-                  tab === t ? "bg-violet text-white" : "text-muted-cream hover:text-cream"
+                  tab === tabId ? "bg-violet text-white" : "text-muted-cream hover:text-cream"
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                {TAB_META[t].label}
+                {t(`tabs.${tabId}` as "tabs.directory")}
               </button>
             );
           })}
@@ -149,6 +148,7 @@ export function EmployeesClient({
 
 /* ─────────────────────────── Directory (Part A) ─────────────────────────── */
 function Directory({ canManage }: { canManage: boolean }) {
+  const t = useTranslations("employerEmployees");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [roles, setRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,30 +185,30 @@ function Directory({ canManage }: { canManage: boolean }) {
       <div className="mb-4 flex justify-end">
         {canManage && (
           <Btn onClick={() => setAdding(true)}>
-            <Plus className="h-4 w-4" /> Add employee
+            <Plus className="h-4 w-4" /> {t("addEmployee")}
           </Btn>
         )}
       </div>
       {loading ? (
-        <Panel className="text-sm text-white/55">Loading…</Panel>
+        <Panel className="text-sm text-white/55">{t("loading")}</Panel>
       ) : employees.length === 0 ? (
         <EmptyState
           icon={UserCheck}
-          title="No employees yet"
-          body="Add your team here, or turn a hired candidate into an employee from their profile."
-          action={canManage ? <Btn onClick={() => setAdding(true)}><Plus className="h-4 w-4" /> Add employee</Btn> : undefined}
+          title={t("noEmployeesYet")}
+          body={t("noEmployeesBody")}
+          action={canManage ? <Btn onClick={() => setAdding(true)}><Plus className="h-4 w-4" /> {t("addEmployee")}</Btn> : undefined}
         />
       ) : (
         <Panel className="overflow-x-auto p-0">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-border-gold text-xs uppercase tracking-wide text-white/45">
-                <th className="px-4 py-3 font-semibold">Name</th>
-                <th className="px-4 py-3 font-semibold">Role</th>
-                <th className="px-4 py-3 font-semibold">Email</th>
-                <th className="px-4 py-3 font-semibold">Start</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Portal</th>
+                <th className="px-4 py-3 font-semibold">{t("colName")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colRole")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colEmail")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colStart")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colStatus")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colPortal")}</th>
               </tr>
             </thead>
             <tbody>
@@ -221,7 +221,7 @@ function Directory({ canManage }: { canManage: boolean }) {
                   <td className="px-4 py-3 font-medium text-cream">
                     <span className="inline-flex items-center gap-1.5">
                       {expiringIds.has(e.id) && (
-                        <span className="h-2 w-2 shrink-0 rounded-full bg-red-400" title="A certification is expiring or expired" />
+                        <span className="h-2 w-2 shrink-0 rounded-full bg-red-400" title={t("certExpiringTitle")} />
                       )}
                       {e.name}
                     </span>
@@ -230,10 +230,10 @@ function Directory({ canManage }: { canManage: boolean }) {
                   <td className="px-4 py-3 text-white/60">{e.email || "—"}</td>
                   <td className="px-4 py-3 text-white/60">{e.startDate || "—"}</td>
                   <td className="px-4 py-3">
-                    <Badge tone={STATUS_TONE[e.status]}>{EMPLOYEE_STATUS_LABELS[e.status]}</Badge>
+                    <Badge tone={STATUS_TONE[e.status]}>{t(`employeeStatus.${e.status}` as "employeeStatus.active")}</Badge>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge tone={INVITE_TONE[e.inviteStatus]}>{INVITE_STATUS_LABELS[e.inviteStatus]}</Badge>
+                    <Badge tone={INVITE_TONE[e.inviteStatus]}>{t(`inviteStatus.${e.inviteStatus}` as "inviteStatus.none")}</Badge>
                   </td>
                 </tr>
               ))}
@@ -248,6 +248,7 @@ function Directory({ canManage }: { canManage: boolean }) {
 }
 
 function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("employerEmployees");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
@@ -258,7 +259,7 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
 
   async function submit() {
     if (!name.trim()) {
-      setErr("A name is required.");
+      setErr(t("errorNameRequired"));
       return;
     }
     setSaving(true);
@@ -270,7 +271,7 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
     });
     setSaving(false);
     if (!res.ok) {
-      setErr((await res.json().catch(() => ({}))).error || "Could not add employee.");
+      setErr((await res.json().catch(() => ({}))).error || t("errorCouldNotAddEmployee"));
       return;
     }
     onSaved();
@@ -278,16 +279,16 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
   }
 
   return (
-    <Modal title="Add employee" onClose={onClose}>
+    <Modal title={t("addEmployee")} onClose={onClose}>
       <div className="space-y-4">
-        <Field label="Name">
+        <Field label={t("name")}>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jordan Lee" />
         </Field>
-        <Field label="Email">
+        <Field label={t("email")}>
           <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jordan@company.com" type="email" />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Role">
+          <Field label={t("role")}>
             <Input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Line Cook" list="emp-roles" />
             <datalist id="emp-roles">
               {roles.map((r) => (
@@ -295,15 +296,15 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
               ))}
             </datalist>
           </Field>
-          <Field label="Start date">
+          <Field label={t("startDate")}>
             <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} type="date" />
           </Field>
         </div>
-        <Field label="Status">
+        <Field label={t("status")}>
           <Picker value={status} onChange={(e) => setStatus(e.target.value as EmployeeStatus)}>
             {EMPLOYEE_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {EMPLOYEE_STATUS_LABELS[s]}
+                {t(`employeeStatus.${s}` as "employeeStatus.active")}
               </option>
             ))}
           </Picker>
@@ -311,10 +312,10 @@ function AddEmployee({ roles, onClose, onSaved }: { roles: string[]; onClose: ()
         {err && <p className="text-sm text-red-300">{err}</p>}
         <div className="flex justify-end gap-2 pt-1">
           <Btn variant="ghost" onClick={onClose}>
-            Cancel
+            {t("cancel")}
           </Btn>
           <Btn onClick={submit} loading={saving}>
-            Add employee
+            {t("addEmployee")}
           </Btn>
         </div>
       </div>
@@ -333,6 +334,7 @@ function EmployeeDrawer({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const t = useTranslations("employerEmployees");
   const [status, setStatus] = useState<EmployeeStatus>(employee.status);
   const [checklist, setChecklist] = useState<{ ack: Acknowledgment; doc: TrainingDoc }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -370,7 +372,7 @@ function EmployeeDrawer({
   }
 
   async function remove() {
-    if (!confirm(`Remove ${employee.name}? Their training records are deleted too.`)) return;
+    if (!confirm(t("confirmRemoveEmployee", { name: employee.name }))) return;
     await fetch(`/api/employer/employees/${employee.id}`, { method: "DELETE" });
     onChanged();
     onClose();
@@ -387,18 +389,18 @@ function EmployeeDrawer({
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string; emailed?: boolean; code?: string };
       if (!res.ok) {
-        setInviteMsg(d.error || "Could not send the invite.");
+        setInviteMsg(d.error || t("errorCouldNotSendInvite"));
       } else {
         setInviteStatus("invited");
         if (d.code) setInviteCode(d.code);
         setInviteMsg(
           action === "regenerate"
             ? d.emailed
-              ? "New code generated and emailed."
-              : "New code generated (email isn't configured)."
+              ? t("newCodeEmailed")
+              : t("newCodeNoEmail")
             : d.emailed
-              ? "Invite emailed."
-              : "Invite created — email isn't configured. Share the code and link manually."
+              ? t("inviteEmailed")
+              : t("inviteCreatedNoEmail")
         );
         onChanged();
       }
@@ -411,17 +413,17 @@ function EmployeeDrawer({
     <Drawer title={employee.name} onClose={onClose}>
       <div className="space-y-6">
         <section className="space-y-2 text-sm">
-          <Row label="Email" value={employee.email || "—"} />
-          <Row label="Role" value={employee.role || "—"} />
-          <Row label="Start date" value={employee.startDate || "—"} />
+          <Row label={t("email")} value={employee.email || "—"} />
+          <Row label={t("role")} value={employee.role || "—"} />
+          <Row label={t("startDate")} value={employee.startDate || "—"} />
         </section>
 
         {canManage && (
-          <Field label="Status">
+          <Field label={t("status")}>
             <Picker value={status} onChange={(e) => saveStatus(e.target.value as EmployeeStatus)}>
               {EMPLOYEE_STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {EMPLOYEE_STATUS_LABELS[s]}
+                  {t(`employeeStatus.${s}` as "employeeStatus.active")}
                 </option>
               ))}
             </Picker>
@@ -432,22 +434,20 @@ function EmployeeDrawer({
           <section className="rounded-lg border border-border-gold bg-white/[0.03] p-3">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-semibold text-cream">
-                <Mail className="h-4 w-4 text-violet" /> Employee portal
+                <Mail className="h-4 w-4 text-violet" /> {t("employeePortal")}
               </div>
-              <Badge tone={INVITE_TONE[inviteStatus]}>{INVITE_STATUS_LABELS[inviteStatus]}</Badge>
+              <Badge tone={INVITE_TONE[inviteStatus]}>{t(`inviteStatus.${inviteStatus}` as "inviteStatus.none")}</Badge>
             </div>
             <p className="mt-1 text-xs text-white/45">
-              {inviteStatus === "accepted"
-                ? "This employee has an active portal login."
-                : "Invite them to view their documents, message you, and see announcements. The email carries a 6-digit code they enter to finish."}
+              {inviteStatus === "accepted" ? t("portalActiveNote") : t("portalInviteNote")}
             </p>
 
             {inviteStatus === "invited" && (
               <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-cream">
-                <span className="text-white/60">Invite pending</span>
+                <span className="text-white/60">{t("invitePending")}</span>
                 {inviteCode && (
                   <>
-                    <span className="text-white/40">— code</span>
+                    <span className="text-white/40">{t("codeDash")}</span>
                     <code className="rounded bg-white/10 px-2 py-0.5 font-mono tracking-widest text-cream">{inviteCode}</code>
                   </>
                 )}
@@ -459,18 +459,18 @@ function EmployeeDrawer({
                 {inviteStatus === "invited" ? (
                   <>
                     <Btn onClick={() => invite("resend")} loading={inviting} disabled={!employee.email}>
-                      <Send className="h-4 w-4" /> Resend
+                      <Send className="h-4 w-4" /> {t("resend")}
                     </Btn>
                     <Btn variant="ghost" onClick={() => invite("regenerate")} loading={inviting} disabled={!employee.email}>
-                      Regenerate code
+                      {t("regenerateCode")}
                     </Btn>
                   </>
                 ) : (
                   <Btn onClick={() => invite()} loading={inviting} disabled={!employee.email}>
-                    <Send className="h-4 w-4" /> Invite to portal
+                    <Send className="h-4 w-4" /> {t("inviteToPortal")}
                   </Btn>
                 )}
-                {!employee.email && <p className="mt-1 w-full text-xs text-gold">Add an email to this employee first.</p>}
+                {!employee.email && <p className="mt-1 w-full text-xs text-gold">{t("addEmailFirst")}</p>}
               </div>
             )}
             {inviteMsg && <p className="mt-2 text-xs text-white/60">{inviteMsg}</p>}
@@ -479,10 +479,10 @@ function EmployeeDrawer({
 
         <section>
           <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
-            <ClipboardCheck className="h-4 w-4 text-violet" /> Onboarding checklist
+            <ClipboardCheck className="h-4 w-4 text-violet" /> {t("onboardingChecklist")}
           </h3>
           {loading ? (
-            <p className="text-sm text-white/50">Loading…</p>
+            <p className="text-sm text-white/50">{t("loading")}</p>
           ) : (
             <OnboardingChecklist
               employeeId={employee.id}
@@ -495,10 +495,10 @@ function EmployeeDrawer({
 
         <section>
           <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
-            <ShieldCheck className="h-4 w-4 text-violet" /> Certifications
+            <ShieldCheck className="h-4 w-4 text-violet" /> {t("certifications")}
           </h3>
           {loading ? (
-            <p className="text-sm text-white/50">Loading…</p>
+            <p className="text-sm text-white/50">{t("loading")}</p>
           ) : (
             <Certifications employeeId={employee.id} certs={certs} canManage={canManage} onChanged={loadDetail} />
           )}
@@ -506,12 +506,12 @@ function EmployeeDrawer({
 
         <section>
           <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-cream">
-            <ShieldCheck className="h-4 w-4 text-violet" /> Acknowledgments
+            <ShieldCheck className="h-4 w-4 text-violet" /> {t("acknowledgments")}
           </h3>
           {loading ? (
-            <p className="text-sm text-white/50">Loading…</p>
+            <p className="text-sm text-white/50">{t("loading")}</p>
           ) : checklist.length === 0 ? (
-            <p className="text-sm text-white/50">No training assigned yet.</p>
+            <p className="text-sm text-white/50">{t("noTrainingAssignedYet")}</p>
           ) : (
             <ul className="space-y-2">
               {checklist.map(({ ack, doc }) => {
@@ -521,12 +521,12 @@ function EmployeeDrawer({
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium text-cream">{doc.title}</div>
                       <div className="text-xs text-white/45">
-                        {DOC_KIND_LABELS[doc.docKind]}
-                        {ack.dueAt ? ` · due ${ack.dueAt.slice(0, 10)}` : ""}
-                        {typeof ack.score === "number" ? ` · quiz ${ack.score}%` : ""}
+                        {t(`docKind.${doc.docKind}` as "docKind.sop")}
+                        {ack.dueAt ? ` · ${t("dueOn", { date: ack.dueAt.slice(0, 10) })}` : ""}
+                        {typeof ack.score === "number" ? ` · ${t("quizScore", { score: ack.score })}` : ""}
                       </div>
                     </div>
-                    <Badge tone={COMPLIANCE_TONE[state]}>{state}</Badge>
+                    <Badge tone={COMPLIANCE_TONE[state]}>{t(`complianceState.${state}` as "complianceState.signed")}</Badge>
                   </li>
                 );
               })}
@@ -537,7 +537,7 @@ function EmployeeDrawer({
         {canManage && (
           <div className="border-t border-border-gold pt-4">
             <Btn variant="danger" onClick={remove}>
-              <Trash2 className="h-4 w-4" /> Remove employee
+              <Trash2 className="h-4 w-4" /> {t("removeEmployee")}
             </Btn>
           </div>
         )}
@@ -557,6 +557,7 @@ function OnboardingChecklist({
   canManage: boolean;
   onChanged: () => void;
 }) {
+  const t = useTranslations("employerEmployees");
   const [starting, setStarting] = useState(false);
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
   const [templateId, setTemplateId] = useState<string>("");
@@ -602,26 +603,26 @@ function OnboardingChecklist({
   }
 
   if (!checklist) {
-    if (!canManage) return <p className="text-sm text-white/50">No onboarding checklist started yet.</p>;
+    if (!canManage) return <p className="text-sm text-white/50">{t("noChecklistStartedYet")}</p>;
     return starting ? (
       <div className="space-y-2 rounded-lg border border-border-gold bg-white/[0.03] p-3">
         {templates.length === 0 ? (
-          <p className="text-sm text-white/50">No templates yet — open the Onboarding tab to create the default template.</p>
+          <p className="text-sm text-white/50">{t("noTemplatesYet")}</p>
         ) : (
           <>
             <Picker value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
+              {templates.map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>
+                  {tpl.name}
                 </option>
               ))}
             </Picker>
             <div className="flex gap-2">
               <Btn onClick={start} loading={busy}>
-                Start checklist
+                {t("startChecklist")}
               </Btn>
               <Btn variant="ghost" onClick={() => setStarting(false)} disabled={busy}>
-                Cancel
+                {t("cancel")}
               </Btn>
             </div>
           </>
@@ -629,7 +630,7 @@ function OnboardingChecklist({
       </div>
     ) : (
       <Btn variant="ghost" onClick={() => setStarting(true)}>
-        <Plus className="h-4 w-4" /> Start onboarding checklist
+        <Plus className="h-4 w-4" /> {t("startOnboardingChecklist")}
       </Btn>
     );
   }
@@ -639,7 +640,7 @@ function OnboardingChecklist({
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs text-white/50">
         <span>{checklist.name}</span>
-        <span>{pct}% complete</span>
+        <span>{t("percentComplete", { pct })}</span>
       </div>
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10">
         <div className="h-full rounded-full bg-violet transition-all" style={{ width: `${pct}%` }} />
@@ -673,6 +674,7 @@ function Certifications({
   canManage: boolean;
   onChanged: () => void;
 }) {
+  const t = useTranslations("employerEmployees");
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [issuedDate, setIssuedDate] = useState("");
@@ -683,7 +685,7 @@ function Certifications({
 
   async function submit() {
     if (!name.trim()) {
-      setErr("A name is required.");
+      setErr(t("errorNameRequired"));
       return;
     }
     setSaving(true);
@@ -696,7 +698,7 @@ function Certifications({
       });
       const d = (await res.json().catch(() => ({}))) as { cert?: EmployeeCert; error?: string };
       if (!res.ok || !d.cert) {
-        setErr(d.error || "Could not add the certification.");
+        setErr(d.error || t("errorCouldNotAddCert"));
         return;
       }
       if (file) {
@@ -716,7 +718,7 @@ function Certifications({
   }
 
   async function remove(id: number) {
-    if (!confirm("Delete this certification?")) return;
+    if (!confirm(t("confirmDeleteCert"))) return;
     await fetch(`/api/employer/certs/${id}`, { method: "DELETE" });
     onChanged();
   }
@@ -724,7 +726,7 @@ function Certifications({
   return (
     <div className="space-y-2">
       {certs.length === 0 && !adding ? (
-        <p className="text-sm text-white/50">No certifications on file.</p>
+        <p className="text-sm text-white/50">{t("noCertsOnFile")}</p>
       ) : (
         <ul className="space-y-1.5">
           {certs.map((c) => {
@@ -734,21 +736,21 @@ function Certifications({
                 <div className="min-w-0">
                   <div className="truncate text-cream">{c.name}</div>
                   <div className="text-xs text-white/45">
-                    {c.expiryDate ? `Expires ${c.expiryDate}` : "No expiry set"}
+                    {c.expiryDate ? t("expiresOn", { date: c.expiryDate }) : t("noExpirySet")}
                     {c.fileUrl && (
                       <>
                         {" · "}
                         <a href={`/api/employer/certs/${c.id}/file`} target="_blank" rel="noreferrer" className="text-violet hover:underline">
-                          File
+                          {t("file")}
                         </a>
                       </>
                     )}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Badge tone={CERT_STATUS_TONE[status]}>{CERT_STATUS_LABELS[status]}</Badge>
+                  <Badge tone={CERT_STATUS_TONE[status]}>{t(`certStatus.${status}` as "certStatus.ok")}</Badge>
                   {canManage && (
-                    <button onClick={() => remove(c.id)} title="Delete" className="rounded-md p-1 text-red-300/80 hover:bg-red-500/10">
+                    <button onClick={() => remove(c.id)} title={t("delete")} className="rounded-md p-1 text-red-300/80 hover:bg-red-500/10">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
@@ -762,7 +764,7 @@ function Certifications({
       {canManage &&
         (adding ? (
           <div className="space-y-2 rounded-lg border border-border-gold bg-white/[0.03] p-3">
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Forklift certification" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("forkliftCertPlaceholder")} />
             <div className="grid grid-cols-2 gap-2">
               <Input type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} />
               <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
@@ -776,16 +778,16 @@ function Certifications({
             {err && <p className="text-sm text-red-300">{err}</p>}
             <div className="flex gap-2">
               <Btn onClick={submit} loading={saving}>
-                Add
+                {t("add")}
               </Btn>
               <Btn variant="ghost" onClick={() => setAdding(false)} disabled={saving}>
-                Cancel
+                {t("cancel")}
               </Btn>
             </div>
           </div>
         ) : (
           <Btn variant="ghost" onClick={() => setAdding(true)}>
-            <Plus className="h-4 w-4" /> Add certification
+            <Plus className="h-4 w-4" /> {t("addCertification")}
           </Btn>
         ))}
     </div>
@@ -803,6 +805,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 /* ─────────────────────── Announcements (Phase 1) ────────────────────────── */
 function Announcements({ canManage }: { canManage: boolean }) {
+  const t = useTranslations("employerEmployees");
   const [items, setItems] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState("");
@@ -850,7 +853,7 @@ function Announcements({ canManage }: { canManage: boolean }) {
   }
 
   async function remove(id: number) {
-    if (!confirm("Delete this announcement?")) return;
+    if (!confirm(t("confirmDeleteAnnouncement"))) return;
     await fetch(`/api/employer/announcements/${id}`, { method: "DELETE" });
     await load();
   }
@@ -860,30 +863,30 @@ function Announcements({ canManage }: { canManage: boolean }) {
       {canManage && (
         <Panel>
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream">
-            <Megaphone className="h-4 w-4 text-violet" /> New announcement
+            <Megaphone className="h-4 w-4 text-violet" /> {t("newAnnouncement")}
           </h3>
           <div className="space-y-3">
-            <Field label="Title">
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Office closed Friday" maxLength={200} />
+            <Field label={t("titleLabel")}>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("announcementTitlePlaceholder")} maxLength={200} />
             </Field>
-            <Field label="Message" hint="Optional. Shown on every invited employee's portal home.">
+            <Field label={t("message")} hint={t("announcementMessageHint")}>
               <Area value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={8000} />
             </Field>
             <label className="flex items-center gap-2 text-sm text-white/70">
               <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="accent-violet" />
-              Pin to the top of the portal home
+              {t("pinToTop")}
             </label>
             <Btn onClick={post} loading={saving} disabled={!title.trim()}>
-              <Send className="h-4 w-4" /> Post announcement
+              <Send className="h-4 w-4" /> {t("postAnnouncement")}
             </Btn>
           </div>
         </Panel>
       )}
 
       {loading ? (
-        <Panel className="text-sm text-white/55">Loading…</Panel>
+        <Panel className="text-sm text-white/55">{t("loading")}</Panel>
       ) : items.length === 0 ? (
-        <EmptyState icon={Megaphone} title="No announcements" body="Post a note here and it appears on every invited employee's portal home." />
+        <EmptyState icon={Megaphone} title={t("noAnnouncements")} body={t("noAnnouncementsBody")} />
       ) : (
         <div className="space-y-3">
           {items.map((a) => (
@@ -893,20 +896,20 @@ function Announcements({ canManage }: { canManage: boolean }) {
                   <div className="flex items-center gap-2">
                     {a.pinned && <Pin className="h-3.5 w-3.5 text-gold" />}
                     <span className="font-medium text-cream">{a.title}</span>
-                    {!a.active && <Badge tone="neutral">Retired</Badge>}
+                    {!a.active && <Badge tone="neutral">{t("retired")}</Badge>}
                   </div>
                   {a.body && <p className="mt-1 whitespace-pre-wrap text-sm text-white/70">{a.body}</p>}
                   <div className="mt-1 text-xs text-white/40">{new Date(a.createdAt).toLocaleString()}</div>
                 </div>
                 {canManage && (
                   <div className="flex shrink-0 gap-1">
-                    <button onClick={() => patch(a.id, { pinned: !a.pinned })} title={a.pinned ? "Unpin" : "Pin"} className="rounded-md p-1.5 text-white/60 hover:bg-white/5 hover:text-cream">
+                    <button onClick={() => patch(a.id, { pinned: !a.pinned })} title={a.pinned ? t("unpin") : t("pin")} className="rounded-md p-1.5 text-white/60 hover:bg-white/5 hover:text-cream">
                       {a.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                     </button>
                     <button onClick={() => patch(a.id, { active: !a.active })} className="rounded-md px-2 py-1 text-xs text-white/60 hover:bg-white/5 hover:text-cream">
-                      {a.active ? "Retire" : "Restore"}
+                      {a.active ? t("retire") : t("restore")}
                     </button>
-                    <button onClick={() => remove(a.id)} title="Delete" className="rounded-md p-1.5 text-red-300/80 hover:bg-red-500/10">
+                    <button onClick={() => remove(a.id)} title={t("delete")} className="rounded-md p-1.5 text-red-300/80 hover:bg-red-500/10">
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -925,6 +928,7 @@ const FEED_KIND_ICON: Record<FeedPostKind, typeof Rss> = { post: Rss, issue: Fla
 const FEED_KIND_TONE: Record<FeedPostKind, "violet" | "red" | "teal"> = { post: "violet", issue: "red", win: "teal" };
 
 function Feed({ canManage }: { canManage: boolean }) {
+  const t = useTranslations("employerEmployees");
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [kind, setKind] = useState<FeedPostKind>("post");
@@ -1008,7 +1012,7 @@ function Feed({ canManage }: { canManage: boolean }) {
       {canManage && (
         <Panel>
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-cream">
-            <Rss className="h-4 w-4 text-violet" /> Post to the team feed
+            <Rss className="h-4 w-4 text-violet" /> {t("postToTeamFeed")}
           </h3>
           <div className="space-y-3">
             <div className="flex gap-2">
@@ -1023,23 +1027,23 @@ function Feed({ canManage }: { canManage: boolean }) {
                       kind === k ? "border-violet bg-violet/15 text-violet" : "border-border-gold text-muted-cream hover:bg-white/5"
                     }`}
                   >
-                    <Icon className="h-3.5 w-3.5" /> {FEED_KIND_LABELS[k]}
+                    <Icon className="h-3.5 w-3.5" /> {t(`feedKind.${k}` as "feedKind.post")}
                   </button>
                 );
               })}
             </div>
-            <Area value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={4000} placeholder="Share an update, flag something, or celebrate a win…" />
+            <Area value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={4000} placeholder={t("feedPlaceholder")} />
             <Btn onClick={post} loading={posting} disabled={!body.trim()}>
-              <Send className="h-4 w-4" /> Post
+              <Send className="h-4 w-4" /> {t("post")}
             </Btn>
           </div>
         </Panel>
       )}
 
       {loading ? (
-        <Panel className="text-sm text-white/55">Loading…</Panel>
+        <Panel className="text-sm text-white/55">{t("loading")}</Panel>
       ) : posts.length === 0 ? (
-        <EmptyState icon={Rss} title="No posts yet" body="Updates, issues and wins from both sides of the team show up here." />
+        <EmptyState icon={Rss} title={t("noPostsYet")} body={t("noPostsBody")} />
       ) : (
         <div className="space-y-3">
           {posts.map((p) => {
@@ -1053,19 +1057,19 @@ function Feed({ canManage }: { canManage: boolean }) {
                       {p.pinned && <Pin className="h-3.5 w-3.5 shrink-0 text-gold" />}
                       <Badge tone={tone}>
                         <span className="inline-flex items-center gap-1">
-                          <Icon className="h-3 w-3" /> {FEED_KIND_LABELS[p.kind]}
+                          <Icon className="h-3 w-3" /> {t(`feedKind.${p.kind}` as "feedKind.post")}
                         </span>
                       </Badge>
                       <span className="font-medium text-cream">{p.authorName}</span>
-                      <span className="text-xs text-white/40">{p.authorKind === "employee" ? "employee" : "employer"}</span>
-                      {p.resolved && <Badge tone="teal">Resolved</Badge>}
+                      <span className="text-xs text-white/40">{p.authorKind === "employee" ? t("employeeLower") : t("employerLower")}</span>
+                      {p.resolved && <Badge tone="teal">{t("resolved")}</Badge>}
                     </div>
                     <p className="mt-1.5 whitespace-pre-wrap text-sm text-white/80">{p.body}</p>
                     <div className="mt-1.5 text-xs text-white/40">{new Date(p.createdAt).toLocaleString()}</div>
                   </div>
                   {canManage && (
                     <div className="flex shrink-0 gap-1">
-                      <button onClick={() => toggle(p.id, { pinned: !p.pinned })} title={p.pinned ? "Unpin" : "Pin"} className="rounded-md p-1.5 text-white/60 hover:bg-white/5 hover:text-cream">
+                      <button onClick={() => toggle(p.id, { pinned: !p.pinned })} title={p.pinned ? t("unpin") : t("pin")} className="rounded-md p-1.5 text-white/60 hover:bg-white/5 hover:text-cream">
                         {p.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
                       </button>
                     </div>
@@ -1074,14 +1078,14 @@ function Feed({ canManage }: { canManage: boolean }) {
 
                 <div className="mt-3 flex items-center gap-3 border-t border-border-gold/50 pt-3">
                   <button onClick={() => openThread(p)} className="inline-flex items-center gap-1.5 text-xs font-medium text-violet hover:underline">
-                    <MessageCircle className="h-3.5 w-3.5" /> {p.commentCount} {p.commentCount === 1 ? "comment" : "comments"}
+                    <MessageCircle className="h-3.5 w-3.5" /> {t("commentCount", { n: p.commentCount })}
                   </button>
                   {/* Any employer-side viewer may resolve — the API's "employer or
                       original poster" split is enforced per-route (this route has
                       no per-post restriction on the employer side). */}
                   <button onClick={() => toggle(p.id, { resolved: !p.resolved })} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-cream hover:text-cream">
                     {p.resolved ? <Circle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                    {p.resolved ? "Reopen" : "Mark resolved"}
+                    {p.resolved ? t("reopen") : t("markResolved")}
                   </button>
                 </div>
 
@@ -1097,7 +1101,7 @@ function Feed({ canManage }: { canManage: boolean }) {
                       </div>
                     ))}
                     <div className="flex gap-2">
-                      <Input value={reply} onChange={(e) => setReply(e.target.value)} placeholder="Reply…" maxLength={2000} onKeyDown={(e) => e.key === "Enter" && sendReply(p.id)} />
+                      <Input value={reply} onChange={(e) => setReply(e.target.value)} placeholder={t("replyPlaceholder")} maxLength={2000} onKeyDown={(e) => e.key === "Enter" && sendReply(p.id)} />
                       <Btn variant="ghost" onClick={() => sendReply(p.id)} loading={replying} disabled={!reply.trim()}>
                         <Send className="h-4 w-4" />
                       </Btn>
@@ -1115,6 +1119,7 @@ function Feed({ canManage }: { canManage: boolean }) {
 
 /* ─────────────────────────── Skills Matrix ─────────────────────────────── */
 function SkillsMatrix({ canManage }: { canManage: boolean }) {
+  const t = useTranslations("employerEmployees");
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [skills, setSkills] = useState<Skill[]>([]);
   const [cells, setCells] = useState<EmployeeSkill[]>([]);
@@ -1169,17 +1174,17 @@ function SkillsMatrix({ canManage }: { canManage: boolean }) {
     });
   }
 
-  if (loading) return <Panel className="text-sm text-white/55">Loading…</Panel>;
+  if (loading) return <Panel className="text-sm text-white/55">{t("loading")}</Panel>;
 
   return (
     <div className="space-y-6">
       {canManage && (
         <Panel>
-          <h3 className="mb-3 text-sm font-semibold text-cream">Add a skill</h3>
+          <h3 className="mb-3 text-sm font-semibold text-cream">{t("addASkill")}</h3>
           <div className="flex gap-2">
-            <Input value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder="e.g. Forklift operation" maxLength={100} onKeyDown={(e) => e.key === "Enter" && addSkill()} />
+            <Input value={newSkill} onChange={(e) => setNewSkill(e.target.value)} placeholder={t("skillPlaceholder")} maxLength={100} onKeyDown={(e) => e.key === "Enter" && addSkill()} />
             <Btn onClick={addSkill} loading={adding} disabled={!newSkill.trim()}>
-              <Plus className="h-4 w-4" /> Add
+              <Plus className="h-4 w-4" /> {t("add")}
             </Btn>
           </div>
         </Panel>
@@ -1188,8 +1193,8 @@ function SkillsMatrix({ canManage }: { canManage: boolean }) {
       {employees.length === 0 || skills.length === 0 ? (
         <EmptyState
           icon={BarChart3}
-          title="Nothing to show yet"
-          body={skills.length === 0 ? "Add your first skill above to start the matrix." : "Add employees to the directory to rate them here."}
+          title={t("nothingToShowYet")}
+          body={skills.length === 0 ? t("addFirstSkillBody") : t("addEmployeesBody")}
         />
       ) : (
         <Panel className="overflow-x-auto p-0">
@@ -1201,7 +1206,7 @@ function SkillsMatrix({ canManage }: { canManage: boolean }) {
             <thead>
               <tr className="border-b border-border-gold text-xs uppercase tracking-wide text-white/45">
                 <th className="sticky left-0 z-10 min-w-[140px] whitespace-nowrap border-r border-border-gold bg-navy px-4 py-3 font-semibold shadow-[4px_0_6px_-4px_rgba(0,0,0,0.5)]">
-                  Employee
+                  {t("employeeColumn")}
                 </th>
                 {skills.map((s) => (
                   <th key={s.id} className="whitespace-nowrap px-3 py-3 text-center font-semibold">
@@ -1231,7 +1236,7 @@ function SkillsMatrix({ canManage }: { canManage: boolean }) {
                           type="button"
                           disabled={!canManage}
                           onClick={() => canManage && setEditing({ employeeId: e.id, skillId: s.id })}
-                          title={cell ? SKILL_LEVEL_LABELS[cell.level] : "Not rated"}
+                          title={cell ? t(`skillLevel.${cell.level}` as "skillLevel.1") : t("notRated")}
                           className={`mx-auto flex h-11 w-11 items-center justify-center ${canManage ? "cursor-pointer" : "cursor-default"}`}
                         >
                           <span
@@ -1278,16 +1283,17 @@ function SkillLevelModal({
   onPick: (level: number | null) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("employerEmployees");
   return (
     <Modal title={skillName} onClose={onClose}>
-      <p className="mb-4 text-sm text-white/55">Rate {employeeName || "this employee"}&apos;s level.</p>
+      <p className="mb-4 text-sm text-white/55">{t("rateLevel", { name: employeeName || t("thisEmployee") })}</p>
       <div className="flex flex-wrap gap-2">
         {Array.from({ length: MAX_SKILL_LEVEL }, (_, i) => i + 1).map((lvl) => (
           <button
             key={lvl}
             type="button"
             onClick={() => onPick(lvl)}
-            title={SKILL_LEVEL_LABELS[lvl]}
+            title={t(`skillLevel.${lvl}` as "skillLevel.1")}
             className={`flex h-12 w-12 flex-col items-center justify-center rounded-lg text-sm font-bold transition-transform active:scale-95 ${SKILL_LEVEL_COLORS[lvl]} ${
               current === lvl ? "ring-2 ring-white/70" : ""
             }`}
@@ -1299,12 +1305,12 @@ function SkillLevelModal({
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-white/40">
         {Array.from({ length: MAX_SKILL_LEVEL }, (_, i) => i + 1).map((lvl) => (
           <span key={lvl}>
-            {lvl} = {SKILL_LEVEL_LABELS[lvl]}
+            {lvl} = {t(`skillLevel.${lvl}` as "skillLevel.1")}
           </span>
         ))}
       </div>
       <Btn variant="ghost" onClick={() => onPick(null)} disabled={current === null} className="mt-4">
-        Clear rating
+        {t("clearRating")}
       </Btn>
     </Modal>
   );
@@ -1312,6 +1318,7 @@ function SkillLevelModal({
 
 /* ─────────────────────────── Onboarding (Part D) ─────────────────────────── */
 function Onboarding({ canManage }: { canManage: boolean }) {
+  const t = useTranslations("employerEmployees");
   const [templates, setTemplates] = useState<ChecklistTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [seeding, setSeeding] = useState(false);
@@ -1343,30 +1350,29 @@ function Onboarding({ canManage }: { canManage: boolean }) {
   return (
     <div>
       <p className="mb-4 text-sm text-white/55">
-        Onboarding checklists for new hires — ID collected, forms signed, safety training, uniform issued. Edit the default
-        template or create your own, then start one on any employee from their profile.
+        {t("onboardingIntro")}
       </p>
       <div className="mb-4 flex justify-end">
         {canManage && (
           <Btn onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" /> New template
+            <Plus className="h-4 w-4" /> {t("newTemplate")}
           </Btn>
         )}
       </div>
       {loading || seeding ? (
-        <Panel className="text-sm text-white/55">Loading…</Panel>
+        <Panel className="text-sm text-white/55">{t("loading")}</Panel>
       ) : templates.length === 0 ? (
-        <EmptyState icon={ClipboardList} title="No templates yet" body="Create a checklist template to get started." />
+        <EmptyState icon={ClipboardList} title={t("noTemplatesYetTitle")} body={t("noTemplatesYetBody")} />
       ) : (
         <div className="space-y-3">
-          {templates.map((t) => (
-            <Panel key={t.id} className="cursor-pointer transition-colors hover:bg-white/[0.06]">
-              <div onClick={() => setOpenId(t.id)} className="flex items-center justify-between">
+          {templates.map((tpl) => (
+            <Panel key={tpl.id} className="cursor-pointer transition-colors hover:bg-white/[0.06]">
+              <div onClick={() => setOpenId(tpl.id)} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-cream">{t.name}</span>
-                  {t.isDefault && <Badge tone="violet">Default</Badge>}
+                  <span className="font-medium text-cream">{tpl.name}</span>
+                  {tpl.isDefault && <Badge tone="violet">{t("default")}</Badge>}
                 </div>
-                <span className="text-xs text-white/40">Edit →</span>
+                <span className="text-xs text-white/40">{t("editArrow")}</span>
               </div>
             </Panel>
           ))}
@@ -1381,6 +1387,7 @@ function Onboarding({ canManage }: { canManage: boolean }) {
 }
 
 function NewTemplate({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("employerEmployees");
   const [name, setName] = useState("");
   const [itemsText, setItemsText] = useState("");
   const [saving, setSaving] = useState(false);
@@ -1388,7 +1395,7 @@ function NewTemplate({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
 
   async function submit() {
     if (!name.trim()) {
-      setErr("A name is required.");
+      setErr(t("errorNameRequired"));
       return;
     }
     setSaving(true);
@@ -1401,7 +1408,7 @@ function NewTemplate({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
     });
     setSaving(false);
     if (!res.ok) {
-      setErr((await res.json().catch(() => ({}))).error || "Could not create the template.");
+      setErr((await res.json().catch(() => ({}))).error || t("errorCouldNotCreateTemplate"));
       return;
     }
     onSaved();
@@ -1409,21 +1416,21 @@ function NewTemplate({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
   }
 
   return (
-    <Modal title="New checklist template" onClose={onClose}>
+    <Modal title={t("newChecklistTemplate")} onClose={onClose}>
       <div className="space-y-4">
-        <Field label="Name">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kitchen staff onboarding" />
+        <Field label={t("name")}>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("templateNamePlaceholder")} />
         </Field>
-        <Field label="Items" hint="One per line.">
+        <Field label={t("items")} hint={t("onePerLine")}>
           <Area rows={6} value={itemsText} onChange={(e) => setItemsText(e.target.value)} placeholder={"ID collected\nW-4 signed\nUniform issued"} />
         </Field>
         {err && <p className="text-sm text-red-300">{err}</p>}
         <div className="flex justify-end gap-2 pt-1">
           <Btn variant="ghost" onClick={onClose}>
-            Cancel
+            {t("cancel")}
           </Btn>
           <Btn onClick={submit} loading={saving}>
-            Create template
+            {t("createTemplate")}
           </Btn>
         </div>
       </div>
@@ -1442,6 +1449,7 @@ function EditTemplate({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const t = useTranslations("employerEmployees");
   const [template, setTemplate] = useState<ChecklistTemplateWithItems | null>(null);
   const [name, setName] = useState("");
   const [itemsText, setItemsText] = useState("");
@@ -1454,11 +1462,11 @@ function EditTemplate({
     fetch(`/api/employer/checklist-templates/${templateId}`)
       .then((r) => r.json())
       .then((d) => {
-        const t = d.template as ChecklistTemplateWithItems | undefined;
-        if (t) {
-          setTemplate(t);
-          setName(t.name);
-          setItemsText(t.items.map((i) => i.label).join("\n"));
+        const tpl = d.template as ChecklistTemplateWithItems | undefined;
+        if (tpl) {
+          setTemplate(tpl);
+          setName(tpl.name);
+          setItemsText(tpl.items.map((i) => i.label).join("\n"));
         }
       })
       .finally(() => setLoading(false));
@@ -1475,7 +1483,7 @@ function EditTemplate({
     });
     setSaving(false);
     if (!res.ok) {
-      setErr((await res.json().catch(() => ({}))).error || "Could not save.");
+      setErr((await res.json().catch(() => ({}))).error || t("errorCouldNotSave"));
       return;
     }
     onChanged();
@@ -1483,38 +1491,38 @@ function EditTemplate({
   }
 
   async function remove() {
-    if (!confirm(`Delete "${template?.name}"? Checklists already started from it are unaffected.`)) return;
+    if (!confirm(t("confirmDeleteTemplate", { name: template?.name || "" }))) return;
     await fetch(`/api/employer/checklist-templates/${templateId}`, { method: "DELETE" });
     onChanged();
     onClose();
   }
 
   return (
-    <Modal title="Edit checklist template" onClose={onClose}>
+    <Modal title={t("editChecklistTemplate")} onClose={onClose}>
       {loading ? (
-        <p className="text-sm text-white/50">Loading…</p>
+        <p className="text-sm text-white/50">{t("loading")}</p>
       ) : !template ? (
-        <p className="text-sm text-white/50">Not found.</p>
+        <p className="text-sm text-white/50">{t("notFound")}</p>
       ) : (
         <div className="space-y-4">
-          <Field label="Name">
+          <Field label={t("name")}>
             <Input value={name} onChange={(e) => setName(e.target.value)} disabled={!canManage} />
           </Field>
-          <Field label="Items" hint="One per line.">
+          <Field label={t("items")} hint={t("onePerLine")}>
             <Area rows={8} value={itemsText} onChange={(e) => setItemsText(e.target.value)} disabled={!canManage} />
           </Field>
           {err && <p className="text-sm text-red-300">{err}</p>}
           {canManage && (
             <div className="flex items-center justify-between gap-2 pt-1">
               <Btn variant="danger" onClick={remove}>
-                <Trash2 className="h-4 w-4" /> Delete
+                <Trash2 className="h-4 w-4" /> {t("delete")}
               </Btn>
               <div className="flex gap-2">
                 <Btn variant="ghost" onClick={onClose}>
-                  Cancel
+                  {t("cancel")}
                 </Btn>
                 <Btn onClick={save} loading={saving}>
-                  Save
+                  {t("save")}
                 </Btn>
               </div>
             </div>
@@ -1537,6 +1545,7 @@ function Training({
   presetNonce?: number;
   initialDocId?: number;
 }) {
+  const t = useTranslations("employerEmployees");
   const [rollup, setRollup] = useState<TrainingRollup[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -1565,18 +1574,18 @@ function Training({
       <div className="mb-4 flex justify-end">
         {canManage && (
           <Btn onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" /> New training
+            <Plus className="h-4 w-4" /> {t("newTraining")}
           </Btn>
         )}
       </div>
       {loading ? (
-        <Panel className="text-sm text-white/55">Loading…</Panel>
+        <Panel className="text-sm text-white/55">{t("loading")}</Panel>
       ) : rollup.length === 0 ? (
         <EmptyState
           icon={GraduationCap}
-          title="No training items yet"
-          body="Author an SOP, safety doc or policy in the Documents creator, then assign it here — or upload a PDF."
-          action={canManage ? <Btn onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> New training</Btn> : undefined}
+          title={t("noTrainingItemsYet")}
+          body={t("noTrainingItemsBody")}
+          action={canManage ? <Btn onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> {t("newTraining")}</Btn> : undefined}
         />
       ) : (
         <div className="space-y-3">
@@ -1588,19 +1597,19 @@ function Training({
               <div onClick={() => setOpenId(r.doc.id)} className="flex flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <Badge tone="violet">{DOC_KIND_LABELS[r.doc.docKind]}</Badge>
+                    <Badge tone="violet">{t(`docKind.${r.doc.docKind}` as "docKind.sop")}</Badge>
                     <span className="truncate font-medium text-cream">{r.doc.title}</span>
                   </div>
                   <div className="mt-1 text-xs text-white/45">
-                    Assigned to {r.doc.assignTo === "all" ? "everyone" : r.doc.assignTo} · {r.assigned} employee{r.assigned === 1 ? "" : "s"}
-                    {r.hasQuiz ? " · quiz attached" : ""}
+                    {t("assignedToLine", { assignTo: r.doc.assignTo === "all" ? t("everyone") : r.doc.assignTo, count: r.assigned })}
+                    {r.hasQuiz ? ` · ${t("quizAttached")}` : ""}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {r.counts.signed > 0 && <Badge tone="teal">{r.counts.signed} completed</Badge>}
-                  {r.counts.pending > 0 && <Badge tone="gold">{r.counts.pending} pending</Badge>}
-                  {r.counts.overdue > 0 && <Badge tone="red">{r.counts.overdue} overdue</Badge>}
-                  {r.counts.waived > 0 && <Badge tone="neutral">{r.counts.waived} waived</Badge>}
+                  {r.counts.signed > 0 && <Badge tone="teal">{t("nCompleted", { n: r.counts.signed })}</Badge>}
+                  {r.counts.pending > 0 && <Badge tone="gold">{t("nPending", { n: r.counts.pending })}</Badge>}
+                  {r.counts.overdue > 0 && <Badge tone="red">{t("nOverdue", { n: r.counts.overdue })}</Badge>}
+                  {r.counts.waived > 0 && <Badge tone="neutral">{t("nWaived", { n: r.counts.waived })}</Badge>}
                 </div>
               </div>
             </Panel>
@@ -1623,6 +1632,7 @@ function Training({
 }
 
 function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryItem | null; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("employerEmployees");
   const [title, setTitle] = useState(preset?.title || "");
   const [docKind, setDocKind] = useState<DocKind>(preset ? "training" : "policy");
   const [libraryItem, setLibraryItem] = useState<TrainingLibraryItem | null>(preset ?? null);
@@ -1647,16 +1657,16 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
 
   async function submit() {
     if (!title.trim()) {
-      setErr("A title is required.");
+      setErr(t("errorTitleRequired"));
       return;
     }
     if (!libraryItem && !sourceDocumentId && !bodyHtml.trim() && !pdfUrl.trim()) {
-      setErr("Add content: pick from the Library, an authored document, paste content, or add a PDF URL.");
+      setErr(t("errorAddContent"));
       return;
     }
     const cleanQuestions = withQuiz ? questions.filter((q) => q.q.trim() && q.choices.filter((c) => c.trim()).length >= 2) : [];
     if (withQuiz && cleanQuestions.length === 0) {
-      setErr("Add at least one complete question (text + 2 choices), or turn the quiz off.");
+      setErr(t("errorAddQuestion"));
       return;
     }
     setSaving(true);
@@ -1681,11 +1691,11 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
     setSaving(false);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      setErr(data.error || "Could not create training item.");
+      setErr(data.error || t("errorCouldNotCreateTraining"));
       return;
     }
     if (data.emailWarning) {
-      setNotice(`Assigned to ${data.assigned}. ${data.emailed ? `${data.emailed} email(s) sent. ` : ""}${data.emailWarning}`);
+      setNotice(t("assignedNotice", { assigned: data.assigned, emailedPart: data.emailed ? t("emailsSentPart", { n: data.emailed }) : "", warning: data.emailWarning }));
       onSaved();
       return; // keep the modal open so the warning is read; owner closes it
     }
@@ -1694,17 +1704,17 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
   }
 
   return (
-    <Modal title="New training item" onClose={onClose} wide>
+    <Modal title={t("newTrainingItem")} onClose={onClose} wide>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Title">
+          <Field label={t("titleLabel")}>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Kitchen safety SOP" />
           </Field>
-          <Field label="Kind">
+          <Field label={t("kind")}>
             <Picker value={docKind} onChange={(e) => setDocKind(e.target.value as DocKind)}>
               {DOC_KINDS.map((k) => (
                 <option key={k} value={k}>
-                  {DOC_KIND_LABELS[k]}
+                  {t(`docKind.${k}` as "docKind.sop")}
                 </option>
               ))}
             </Picker>
@@ -1717,26 +1727,26 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
               <div className="flex items-center gap-2 text-sm text-cream">
                 {libraryItem.kind === "video" ? <PlayCircle className="h-4 w-4 text-violet" /> : <FileText className="h-4 w-4 text-violet" />}
                 <span>
-                  From Library: <strong>{libraryItem.title}</strong>
+                  {t("fromLibrary")} <strong>{libraryItem.title}</strong>
                 </span>
                 <Badge tone="sky">{libraryItem.provider}</Badge>
               </div>
               <button onClick={() => setLibraryItem(null)} className="text-xs text-white/60 hover:text-cream">
-                Change
+                {t("change")}
               </button>
             </div>
             <p className="mt-1 text-xs text-white/45">
-              {libraryItem.kind === "video" ? "Employees watch the embedded video, then mark it complete (or pass the quiz, if you add one below)." : "The document content is shown to employees to review, then they mark it complete."}
+              {libraryItem.kind === "video" ? t("videoCompleteNote") : t("docCompleteNote")}
             </p>
           </div>
         ) : (
           <>
-            <Field label="Content source" hint="Pick from the built-in Library, author a document in the Documents creator, or paste content / link a PDF.">
+            <Field label={t("contentSource")} hint={t("contentSourceHint")}>
               <Picker value={sourceDocumentId} onChange={(e) => setSourceDocumentId(e.target.value)}>
-                <option value="">— Paste content or link a PDF below —</option>
+                <option value="">{t("pasteOrLinkPdf")}</option>
                 {docs.map((d) => (
                   <option key={d.id} value={String(d.id)}>
-                    Use document: {d.title}
+                    {t("useDocument", { title: d.title })}
                   </option>
                 ))}
               </Picker>
@@ -1744,10 +1754,10 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
 
             {!sourceDocumentId && (
               <>
-                <Field label="Content (HTML or plain text)">
-                  <Area rows={5} value={bodyHtml} onChange={(e) => setBodyHtml(e.target.value)} placeholder="Paste the SOP / policy text, or leave blank and link a PDF…" />
+                <Field label={t("contentHtmlOrText")}>
+                  <Area rows={5} value={bodyHtml} onChange={(e) => setBodyHtml(e.target.value)} placeholder={t("contentPlaceholder")} />
                 </Field>
-                <Field label="…or PDF URL (upload fallback)">
+                <Field label={t("orPdfUrl")}>
                   <Input value={pdfUrl} onChange={(e) => setPdfUrl(e.target.value)} placeholder="https://…/handbook.pdf" />
                 </Field>
               </>
@@ -1756,17 +1766,17 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Assign to">
+          <Field label={t("assignTo")}>
             <Picker value={assignTo} onChange={(e) => setAssignTo(e.target.value)}>
-              <option value="all">Everyone</option>
+              <option value="all">{t("everyone")}</option>
               {roles.map((r) => (
                 <option key={r} value={r}>
-                  Role: {r}
+                  {t("roleOption", { role: r })}
                 </option>
               ))}
             </Picker>
           </Field>
-          <Field label="Due date (optional)">
+          <Field label={t("dueDateOptional")}>
             <Input value={dueAt} onChange={(e) => setDueAt(e.target.value)} type="date" />
           </Field>
         </div>
@@ -1774,7 +1784,7 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
         <div className="rounded-lg border border-border-gold bg-white/[0.03] p-3">
           <label className="flex items-center gap-2 text-sm text-cream">
             <input type="checkbox" checked={withQuiz} onChange={(e) => setWithQuiz(e.target.checked)} className="h-4 w-4 accent-violet" />
-            Add a quiz — the employee takes it after the content to complete this training
+            {t("addQuizLabel")}
           </label>
           {withQuiz && (
             <div className="mt-3 space-y-3">
@@ -1790,9 +1800,9 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
                 variant="ghost"
                 onClick={() => setQuestions((qs) => [...qs, { q: "", choices: ["", ""], correctIndex: 0 }])}
               >
-                <Plus className="h-4 w-4" /> Add question
+                <Plus className="h-4 w-4" /> {t("addQuestion")}
               </Btn>
-              <Field label="Pass threshold (%)">
+              <Field label={t("passThreshold")}>
                 <Input
                   type="number"
                   min={1}
@@ -1809,11 +1819,11 @@ function NewTraining({ preset, onClose, onSaved }: { preset?: TrainingLibraryIte
         {notice && <p className="rounded-lg border border-gold/40 bg-gold/10 px-3 py-2 text-sm text-gold">{notice}</p>}
         <div className="flex justify-end gap-2 pt-1">
           <Btn variant="ghost" onClick={onClose}>
-            {notice ? "Done" : "Cancel"}
+            {notice ? t("done") : t("cancel")}
           </Btn>
           {!notice && (
             <Btn onClick={submit} loading={saving}>
-              <Send className="h-4 w-4" /> Create & assign
+              <Send className="h-4 w-4" /> {t("createAndAssign")}
             </Btn>
           )}
         </div>
@@ -1831,6 +1841,7 @@ function QuizQuestionRow({
   onChange: (next: QuizQuestionDraft) => void;
   onRemove: () => void;
 }) {
+  const t = useTranslations("employerEmployees");
   function setChoice(i: number, value: string) {
     const choices = question.choices.map((c, idx) => (idx === i ? value : c));
     onChange({ ...question, choices });
@@ -1848,8 +1859,8 @@ function QuizQuestionRow({
   return (
     <div className="space-y-2 rounded-lg border border-border-gold bg-white/[0.02] p-3">
       <div className="flex items-center gap-2">
-        <Input value={question.q} onChange={(e) => onChange({ ...question, q: e.target.value })} placeholder="Question text" />
-        <button onClick={onRemove} title="Remove question" className="shrink-0 rounded-md p-1.5 text-red-300/80 hover:bg-red-500/10">
+        <Input value={question.q} onChange={(e) => onChange({ ...question, q: e.target.value })} placeholder={t("questionText")} />
+        <button onClick={onRemove} title={t("removeQuestion")} className="shrink-0 rounded-md p-1.5 text-red-300/80 hover:bg-red-500/10">
           <Trash2 className="h-4 w-4" />
         </button>
       </div>
@@ -1861,11 +1872,11 @@ function QuizQuestionRow({
               checked={question.correctIndex === ci}
               onChange={() => onChange({ ...question, correctIndex: ci })}
               className="accent-violet"
-              title="Mark as the correct answer"
+              title={t("markCorrectAnswer")}
             />
-            <Input value={c} onChange={(e) => setChoice(ci, e.target.value)} placeholder={`Choice ${ci + 1}`} className="flex-1" />
+            <Input value={c} onChange={(e) => setChoice(ci, e.target.value)} placeholder={t("choiceN", { n: ci + 1 })} className="flex-1" />
             {question.choices.length > 2 && (
-              <button onClick={() => removeChoice(ci)} title="Remove choice" className="shrink-0 text-white/40 hover:text-red-300">
+              <button onClick={() => removeChoice(ci)} title={t("removeChoice")} className="shrink-0 text-white/40 hover:text-red-300">
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
             )}
@@ -1874,7 +1885,7 @@ function QuizQuestionRow({
       </div>
       {question.choices.length < 8 && (
         <button onClick={addChoice} className="text-xs text-violet hover:underline">
-          + Add choice
+          {t("addChoice")}
         </button>
       )}
     </div>
@@ -1892,6 +1903,7 @@ function ComplianceDrawer({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const t = useTranslations("employerEmployees");
   const [doc, setDoc] = useState<TrainingDoc | null>(null);
   const [grid, setGrid] = useState<AckCell[]>([]);
   const [libraryItem, setLibraryItem] = useState<TrainingLibraryItem | null>(null);
@@ -1917,7 +1929,7 @@ function ComplianceDrawer({
     const res = await fetch(`/api/employer/training/${docId}/remind`, { method: "POST" });
     const data = await res.json().catch(() => ({}));
     setBusy(false);
-    setMsg(res.ok ? `Reminders sent: ${data.sent}/${data.outstanding} outstanding.` : data.error || "Could not send reminders.");
+    setMsg(res.ok ? t("remindersSent", { sent: data.sent, outstanding: data.outstanding }) : data.error || t("errorCouldNotSendReminders"));
   }
 
   async function remindOne(employeeId: number) {
@@ -1927,7 +1939,7 @@ function ComplianceDrawer({
       body: JSON.stringify({ employeeId }),
     });
     const data = await res.json().catch(() => ({}));
-    setMsg(res.ok ? (data.sent ? "Reminder sent." : "Nothing to remind (already complete or no email).") : "Could not send reminder.");
+    setMsg(res.ok ? (data.sent ? t("reminderSent") : t("nothingToRemind")) : t("errorCouldNotSendReminder"));
   }
 
   async function setAck(ackId: number, status: "signed" | "waived" | "pending") {
@@ -1941,22 +1953,22 @@ function ComplianceDrawer({
   }
 
   return (
-    <Drawer title={doc?.title || "Training"} onClose={onClose}>
+    <Drawer title={doc?.title || t("trainingFallback")} onClose={onClose}>
       {loading ? (
-        <p className="text-sm text-white/50">Loading…</p>
+        <p className="text-sm text-white/50">{t("loading")}</p>
       ) : !doc ? (
-        <p className="text-sm text-white/50">Not found.</p>
+        <p className="text-sm text-white/50">{t("notFound")}</p>
       ) : (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="violet">{DOC_KIND_LABELS[doc.docKind]}</Badge>
-            {doc.requireSignature && <Badge tone="sky">Signature required</Badge>}
+            <Badge tone="violet">{t(`docKind.${doc.docKind}` as "docKind.sop")}</Badge>
+            {doc.requireSignature && <Badge tone="sky">{t("signatureRequired")}</Badge>}
             {doc.pdfUrl && (
               <a href={doc.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-violet hover:underline">
                 <FileText className="h-3.5 w-3.5" /> PDF
               </a>
             )}
-            {libraryItem && <Badge tone="gold">Library · {libraryItem.provider}</Badge>}
+            {libraryItem && <Badge tone="gold">{t("libraryDot", { provider: libraryItem.provider })}</Badge>}
           </div>
 
           {libraryItem?.kind === "video" && libraryItem.embedUrl && (
@@ -1971,7 +1983,7 @@ function ComplianceDrawer({
                 />
               </div>
               <a href={libraryItem.sourceUrl} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs text-white/45 hover:text-cream">
-                <ExternalLink className="h-3 w-3" /> Source: {libraryItem.provider} (official channel)
+                <ExternalLink className="h-3 w-3" /> {t("sourceOfficialChannel", { provider: libraryItem.provider })}
               </a>
             </div>
           )}
@@ -1979,7 +1991,7 @@ function ComplianceDrawer({
           {canManage && (
             <div className="flex items-center gap-2">
               <Btn variant="ghost" onClick={remindAll} loading={busy}>
-                <Send className="h-4 w-4" /> Send reminders (pending & overdue)
+                <Send className="h-4 w-4" /> {t("sendReminders")}
               </Btn>
             </div>
           )}
@@ -1989,9 +2001,9 @@ function ComplianceDrawer({
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-border-gold text-xs uppercase tracking-wide text-white/45">
-                  <th className="px-3 py-2 font-semibold">Employee</th>
-                  <th className="px-3 py-2 font-semibold">State</th>
-                  {canManage && <th className="px-3 py-2 font-semibold">Actions</th>}
+                  <th className="px-3 py-2 font-semibold">{t("employeeColumn")}</th>
+                  <th className="px-3 py-2 font-semibold">{t("stateColumn")}</th>
+                  {canManage && <th className="px-3 py-2 font-semibold">{t("actionsColumn")}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -2003,11 +2015,11 @@ function ComplianceDrawer({
                         <div className="font-medium text-cream">{employee.name}</div>
                         <div className="text-xs text-white/45">
                           {employee.role || "—"}
-                          {ack && typeof ack.score === "number" ? ` · quiz ${ack.score}% (${ack.attempts})` : ""}
+                          {ack && typeof ack.score === "number" ? ` · ${t("quizScoreAttempts", { score: ack.score, attempts: ack.attempts })}` : ""}
                         </div>
                       </td>
                       <td className="px-3 py-2">
-                        <Badge tone={COMPLIANCE_TONE[state]}>{state}</Badge>
+                        <Badge tone={COMPLIANCE_TONE[state]}>{t(`complianceState.${state}` as "complianceState.signed")}</Badge>
                       </td>
                       {canManage && (
                         <td className="px-3 py-2">
@@ -2015,15 +2027,15 @@ function ComplianceDrawer({
                             <div className="flex flex-wrap gap-1.5">
                               {(state === "pending" || state === "overdue") && employee.email && (
                                 <button onClick={() => remindOne(employee.id)} className="rounded border border-border-gold px-2 py-1 text-xs text-cream hover:bg-white/10">
-                                  Remind
+                                  {t("remind")}
                                 </button>
                               )}
                               <button onClick={() => setAck(ack.id, "signed")} className="rounded border border-teal/40 px-2 py-1 text-xs text-teal hover:bg-teal/10">
-                                Mark signed
+                                {t("markSigned")}
                               </button>
                               {state !== "waived" && (
                                 <button onClick={() => setAck(ack.id, "waived")} className="rounded border border-border-gold px-2 py-1 text-xs text-white/60 hover:bg-white/10">
-                                  Waive
+                                  {t("waive")}
                                 </button>
                               )}
                             </div>
@@ -2045,6 +2057,7 @@ function ComplianceDrawer({
 
 /* ─────────────────────── Built-in Training Library ──────────────────────── */
 function Library({ canManage, onUseInTraining }: { canManage: boolean; onUseInTraining: (item: TrainingLibraryItem) => void }) {
+  const t = useTranslations("employerEmployees");
   const [items, setItems] = useState<TrainingLibraryItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [category, setCategory] = useState("all");
@@ -2062,21 +2075,21 @@ function Library({ canManage, onUseInTraining }: { canManage: boolean; onUseInTr
     setLoading(false);
   }, [category, q]);
   useEffect(() => {
-    const t = setTimeout(load, q ? 250 : 0); // debounce the search box
-    return () => clearTimeout(t);
+    const timeout = setTimeout(load, q ? 250 : 0); // debounce the search box
+    return () => clearTimeout(timeout);
   }, [load, q]);
 
   return (
     <div>
       <p className="mb-4 text-sm text-white/55">
-        Free, ready-to-assign workplace training from official US-government sources (OSHA, NIOSH, CDC, DOL, FEMA, CISA, FDA). Videos are embedded from each agency&rsquo;s official channel; every item links its source.
+        {t("libraryIntro")}
       </p>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <button
           onClick={() => setCategory("all")}
           className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${category === "all" ? "bg-violet text-white" : "border border-border-gold text-muted-cream hover:bg-white/5"}`}
         >
-          All
+          {t("allCategories")}
         </button>
         {categories.map((c) => (
           <button
@@ -2088,14 +2101,14 @@ function Library({ canManage, onUseInTraining }: { canManage: boolean; onUseInTr
           </button>
         ))}
         <div className="ml-auto w-full sm:w-56">
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search library…" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("searchLibraryPlaceholder")} />
         </div>
       </div>
 
       {loading ? (
-        <Panel className="text-sm text-white/55">Loading…</Panel>
+        <Panel className="text-sm text-white/55">{t("loading")}</Panel>
       ) : items.length === 0 ? (
-        <EmptyState icon={BookOpen} title="Nothing here yet" body="No library items match — try another category or clear the search. (The library is seeded by migration 0030.)" />
+        <EmptyState icon={BookOpen} title={t("nothingHereYet")} body={t("nothingHereBody")} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {items.map((item) => (
@@ -2127,11 +2140,11 @@ function Library({ canManage, onUseInTraining }: { canManage: boolean; onUseInTr
 
               <div className="mt-auto flex items-center justify-between gap-2 pt-1">
                 <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-white/45 hover:text-cream">
-                  <ExternalLink className="h-3 w-3" /> Source
+                  <ExternalLink className="h-3 w-3" /> {t("source")}
                 </a>
                 {canManage && (
                   <Btn onClick={() => onUseInTraining(item)}>
-                    <Plus className="h-4 w-4" /> Use in training
+                    <Plus className="h-4 w-4" /> {t("useInTraining")}
                   </Btn>
                 )}
               </div>
