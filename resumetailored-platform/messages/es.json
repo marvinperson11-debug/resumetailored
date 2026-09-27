@@ -1041,5 +1041,152 @@
     "title": "Página de empleo no encontrada",
     "body": "Esta página de empleo no está disponible. La dirección puede estar mal escrita o la página puede haber sido retirada.",
     "browseAllJobs": "Ver todos los empleos"
+  },
+  "employeeDocuments": {
+    "title": "Mis documentos",
+    "subtitle": "Documentos que tu empleador te ha enviado para revisar o firmar.",
+    "loading": "Cargando…",
+    "emptyBody": "Aún no hay documentos. Cualquier cosa que tu empleador te envíe para firmar aparecerá aquí.",
+    "docType": {
+      "offer": "Carta de oferta",
+      "agreement": "Contrato",
+      "nda": "NDA",
+      "custom": "Documento"
+    },
+    "sentOn": "Enviado el {date}",
+    "completedOn": "Completado el {date}",
+    "status": {
+      "completed": "completado",
+      "signed": "firmado",
+      "sent": "enviado",
+      "delivered": "entregado",
+      "viewed": "visto",
+      "declined": "rechazado",
+      "voided": "anulado"
+    },
+    "download": "Descargar"
+  },
+  "employeeFeed": {
+    "title": "Feed del equipo",
+    "subtitle": "Actualizaciones, problemas y logros de tu equipo.",
+    "feedKind": {
+      "post": "Publicación",
+      "issue": "Problema",
+      "win": "Logro"
+    },
+    "feedPlaceholder": "Comparte una actualización, señala algo o celebra un logro…",
+    "post": "Publicar",
+    "loading": "Cargando…",
+    "noPostsYet": "Aún no hay publicaciones. Sé el primero en compartir algo.",
+    "resolved": "Resuelto",
+    "commentCount": "{n, plural, one {# comentario} other {# comentarios}}",
+    "reopen": "Reabrir",
+    "markResolved": "Marcar como resuelto",
+    "replyPlaceholder": "Responder…",
+    "roleEmployee": "empleado",
+    "roleEmployer": "empleador"
+  },
+  "employeePortalGate": {
+    "misconfiguredTitle": "No pudimos cargar tu portal",
+    "misconfiguredBody": "Tu cuenta está configurada como miembro del equipo, pero no pudimos encontrar tu registro de empleado. Esto generalmente significa que tu empleador necesita reenviar tu invitación o terminar de agregarte.",
+    "misconfiguredContact": "Por favor contacta a tu empleador para resolver esto.",
+    "backToApp": "Volver a ResumeTailored",
+    "explainTitle": "Portal del empleado",
+    "explainIntroBefore": "Esta área es para",
+    "invitedTeamMembers": "miembros del equipo invitados",
+    "explainIntroAfter": "de empresas que usan ResumeTailored. Si tu empleador te invitó, así es como entrar:",
+    "step1Title": "Abre tu correo de invitación",
+    "step1Body": "Tu empleador te envió una invitación con un enlace y un código de 6 dígitos.",
+    "step2Title": "Inicia sesión con tu correo invitado",
+    "step2Body": "Usa la misma dirección de correo con la que tu empleador te invitó — así es como se relaciona tu cuenta.",
+    "step3Title": "Ingresa tu código de invitación",
+    "step3Body": "Escribe el código de 6 dígitos del correo para terminar de configurar tu portal.",
+    "noInviteNote": "¿No has recibido una invitación? Pide a tu empleador que te envíe una. Este portal no es algo a lo que te inscribas por tu cuenta."
+  },
+  "employeeProfile": {
+    "manageAccount": "Administrar cuenta",
+    "loading": "Cargando…",
+    "mySkills": "Mis habilidades",
+    "noSkillsRated": "Tu empleador aún no ha calificado ninguna habilidad para ti.",
+    "skillLevel": {
+      "1": "Principiante",
+      "2": "Básico",
+      "3": "Competente",
+      "4": "Avanzado",
+      "5": "Experto"
+    }
+  },
+  "employeeCerts": {
+    "add": "Agregar",
+    "cancel": "Cancelar",
+    "confirmRemove": "¿Eliminar esta certificación?",
+    "errorCouldNotAdd": "No se pudo agregar la certificación.",
+    "errorNameRequired": "Se requiere un nombre.",
+    "expiresOn": "Vence el {date}",
+    "loading": "Cargando…",
+    "myCertifications": "Mis certificaciones",
+    "namePlaceholder": "Certificación de montacargas",
+    "noCertsYet": "Aún no hay certificaciones registradas.",
+    "noExpirySet": "Sin fecha de vencimiento",
+    "remove": "Eliminar",
+    "certStatus": {
+      "ok": "Válida",
+      "expiring": "Por vencer",
+      "expired": "Vencida",
+      "no_expiry": "Sin vencimiento"
+    }
+  },
+  "employeeLibrary": {
+    "title": "Biblioteca",
+    "subtitle": "Capacitación laboral gratuita de fuentes oficiales del gobierno de EE. UU. Toma cualquier cosa aquí tú mismo — no necesitas esperar a que te la asignen.",
+    "all": "Todo",
+    "loading": "Cargando…",
+    "nothingMatches": "Nada coincide — prueba otra categoría o borra la búsqueda.",
+    "searchPlaceholder": "Buscar en la biblioteca…",
+    "source": "Fuente",
+    "takeThisTraining": "Tomar esta capacitación"
+  },
+  "employeeMessages": {
+    "title": "Mensajes",
+    "subtitle": "Una línea directa con tu empleador.",
+    "loading": "Cargando…",
+    "noMessagesYet": "Aún no hay mensajes. Saluda 👋",
+    "send": "Enviar",
+    "writeMessagePlaceholder": "Escribe un mensaje…"
+  },
+  "employeeSchedule": {
+    "title": "Mi horario",
+    "subtitle": "Tus turnos publicados y tiempo libre aprobado. Configura tu disponibilidad abajo.",
+    "loading": "Cargando…",
+    "upcoming": "Próximos",
+    "noShiftsYet": "Aún no hay turnos publicados. Tu empleador publicará tu horario aquí.",
+    "dow": {
+      "0": "domingo",
+      "1": "lunes",
+      "2": "martes",
+      "3": "miércoles",
+      "4": "jueves",
+      "5": "viernes",
+      "6": "sábado"
+    },
+    "timeOffLabel": "Tiempo libre — {kind}",
+    "timeOffKind": {
+      "vacation": "Vacaciones",
+      "sick": "Enfermedad",
+      "other": "Otro"
+    },
+    "approvedTimeOffPrefix": "Tiempo libre aprobado:",
+    "myAvailability": "Mi disponibilidad",
+    "availabilityIntro": "Indica a tu empleador cuándo puedes (o no puedes) trabajar. Lo ven mientras crean el horario.",
+    "available": "Disponible",
+    "unavailable": "No disponible",
+    "everyWeekday": "Cada {day}",
+    "remove": "Eliminar",
+    "everyWeek": "Cada semana",
+    "specificDate": "Fecha específica",
+    "notePlaceholder": "Nota (opcional)",
+    "addAvailability": "Agregar disponibilidad",
+    "errorCouldNotSave": "No se pudo guardar.",
+    "errorNetwork": "Error de red."
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { FileText, Download, Loader2 } from "lucide-react";
 
 interface EmployeeDocAttachment {
@@ -20,12 +21,7 @@ interface EmployeeDoc {
   attachments: EmployeeDocAttachment[];
 }
 
-const DOC_TYPE_LABEL: Record<string, string> = {
-  offer: "Offer letter",
-  agreement: "Agreement",
-  nda: "NDA",
-  custom: "Document",
-};
+const DOC_TYPE_KEYS = new Set(["offer", "agreement", "nda", "custom"]);
 
 const STATUS_TONE: Record<string, string> = {
   completed: "bg-teal-500/15 text-teal-300",
@@ -38,6 +34,7 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 export function EmployeeDocumentsClient() {
+  const t = useTranslations("employeeDocuments");
   const [docs, setDocs] = useState<EmployeeDoc[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,18 +49,18 @@ export function EmployeeDocumentsClient() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <header>
-        <h1 className="font-serif text-3xl font-medium text-cream">My documents</h1>
-        <p className="mt-1 text-sm text-white/60">Documents your employer has sent you to review or sign.</p>
+        <h1 className="font-serif text-3xl font-medium text-cream">{t("title")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t("subtitle")}</p>
       </header>
 
       {loading ? (
         <div className="flex items-center gap-2 px-1 py-10 text-sm text-white/50">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t("loading")}
         </div>
       ) : docs.length === 0 ? (
         <div className="glass px-6 py-12 text-center">
           <FileText className="mx-auto h-8 w-8 text-white/30" />
-          <p className="mt-3 text-sm text-white/60">No documents yet. Anything your employer sends you to sign will appear here.</p>
+          <p className="mt-3 text-sm text-white/60">{t("emptyBody")}</p>
         </div>
       ) : (
         <ul className="space-y-3">
@@ -76,12 +73,12 @@ export function EmployeeDocumentsClient() {
                     <span className="truncate font-medium text-cream">{d.documentName}</span>
                   </div>
                   <div className="mt-1 text-xs text-white/40">
-                    {DOC_TYPE_LABEL[d.docType] || "Document"} · Sent {new Date(d.sentAt).toLocaleDateString()}
-                    {d.completedAt ? ` · Completed ${new Date(d.completedAt).toLocaleDateString()}` : ""}
+                    {t(`docType.${DOC_TYPE_KEYS.has(d.docType) ? d.docType : "custom"}`)} · {t("sentOn", { date: new Date(d.sentAt).toLocaleDateString() })}
+                    {d.completedAt ? ` · ${t("completedOn", { date: new Date(d.completedAt).toLocaleDateString() })}` : ""}
                   </div>
                 </div>
                 <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium capitalize ${STATUS_TONE[d.status] || "bg-white/10 text-white/60"}`}>
-                  {d.status}
+                  {STATUS_TONE[d.status] ? t(`status.${d.status}`) : d.status}
                 </span>
               </div>
 
@@ -96,7 +93,7 @@ export function EmployeeDocumentsClient() {
                       className="inline-flex items-center gap-1.5 rounded-lg bg-white/5 px-3 py-1.5 text-xs text-white/80 transition hover:bg-white/10"
                     >
                       <Download className="h-3.5 w-3.5" />
-                      <span className="max-w-[180px] truncate">{a.name || "Download"}</span>
+                      <span className="max-w-[180px] truncate">{a.name || t("download")}</span>
                     </a>
                   ))}
                 </div>

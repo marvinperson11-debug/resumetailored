@@ -1041,5 +1041,152 @@
     "title": "Careers page not found",
     "body": "This careers page isn't available. The address may be misspelled, or the page may have been taken down.",
     "browseAllJobs": "Browse all jobs"
+  },
+  "employeeDocuments": {
+    "title": "My documents",
+    "subtitle": "Documents your employer has sent you to review or sign.",
+    "loading": "Loading…",
+    "emptyBody": "No documents yet. Anything your employer sends you to sign will appear here.",
+    "docType": {
+      "offer": "Offer letter",
+      "agreement": "Agreement",
+      "nda": "NDA",
+      "custom": "Document"
+    },
+    "sentOn": "Sent {date}",
+    "completedOn": "Completed {date}",
+    "status": {
+      "completed": "completed",
+      "signed": "signed",
+      "sent": "sent",
+      "delivered": "delivered",
+      "viewed": "viewed",
+      "declined": "declined",
+      "voided": "voided"
+    },
+    "download": "Download"
+  },
+  "employeeFeed": {
+    "title": "Team feed",
+    "subtitle": "Updates, issues, and wins from your team.",
+    "feedKind": {
+      "post": "Post",
+      "issue": "Issue",
+      "win": "Win"
+    },
+    "feedPlaceholder": "Share an update, flag something, or celebrate a win…",
+    "post": "Post",
+    "loading": "Loading…",
+    "noPostsYet": "No posts yet. Be the first to share something.",
+    "resolved": "Resolved",
+    "commentCount": "{n, plural, one {# comment} other {# comments}}",
+    "reopen": "Reopen",
+    "markResolved": "Mark resolved",
+    "replyPlaceholder": "Reply…",
+    "roleEmployee": "employee",
+    "roleEmployer": "employer"
+  },
+  "employeePortalGate": {
+    "misconfiguredTitle": "We couldn't load your portal",
+    "misconfiguredBody": "Your account is set up as a team member, but we couldn't find your employee record. This usually means your employer needs to re-send your invite or finish adding you.",
+    "misconfiguredContact": "Please contact your employer to sort this out.",
+    "backToApp": "Back to ResumeTailored",
+    "explainTitle": "Employee portal",
+    "explainIntroBefore": "This area is for",
+    "invitedTeamMembers": "invited team members",
+    "explainIntroAfter": "of companies that use ResumeTailored. If your employer invited you, here's how to get in:",
+    "step1Title": "Open your invite email",
+    "step1Body": "Your employer sent you an invite with a link and a 6-digit code.",
+    "step2Title": "Sign in with your invited email",
+    "step2Body": "Use the same email address your employer invited — that's how your account is matched.",
+    "step3Title": "Enter your invite code",
+    "step3Body": "Type the 6-digit code from the email to finish setting up your portal.",
+    "noInviteNote": "Haven't received an invite? Ask your employer to send you one. This portal isn't something you sign up for on your own."
+  },
+  "employeeProfile": {
+    "manageAccount": "Manage account",
+    "loading": "Loading…",
+    "mySkills": "My skills",
+    "noSkillsRated": "Your employer hasn't rated any skills for you yet.",
+    "skillLevel": {
+      "1": "Beginner",
+      "2": "Basic",
+      "3": "Proficient",
+      "4": "Advanced",
+      "5": "Expert"
+    }
+  },
+  "employeeCerts": {
+    "add": "Add",
+    "cancel": "Cancel",
+    "confirmRemove": "Remove this certification?",
+    "errorCouldNotAdd": "Could not add the certification.",
+    "errorNameRequired": "A name is required.",
+    "expiresOn": "Expires {date}",
+    "loading": "Loading…",
+    "myCertifications": "My certifications",
+    "namePlaceholder": "Forklift certification",
+    "noCertsYet": "No certifications on file yet.",
+    "noExpirySet": "No expiry set",
+    "remove": "Remove",
+    "certStatus": {
+      "ok": "Valid",
+      "expiring": "Expiring soon",
+      "expired": "Expired",
+      "no_expiry": "No expiry"
+    }
+  },
+  "employeeLibrary": {
+    "title": "Library",
+    "subtitle": "Free workplace training from official US-government sources. Take anything here yourself — no need to wait to be assigned.",
+    "all": "All",
+    "loading": "Loading…",
+    "nothingMatches": "Nothing matches — try another category or clear the search.",
+    "searchPlaceholder": "Search library…",
+    "source": "Source",
+    "takeThisTraining": "Take this training"
+  },
+  "employeeMessages": {
+    "title": "Messages",
+    "subtitle": "A direct line to your employer.",
+    "loading": "Loading…",
+    "noMessagesYet": "No messages yet. Say hello 👋",
+    "send": "Send",
+    "writeMessagePlaceholder": "Write a message…"
+  },
+  "employeeSchedule": {
+    "title": "My schedule",
+    "subtitle": "Your published shifts and approved time off. Set your availability below.",
+    "loading": "Loading…",
+    "upcoming": "Upcoming",
+    "noShiftsYet": "No published shifts yet. Your employer will post your schedule here.",
+    "dow": {
+      "0": "Sunday",
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday"
+    },
+    "timeOffLabel": "Time off — {kind}",
+    "timeOffKind": {
+      "vacation": "Vacation",
+      "sick": "Sick",
+      "other": "Other"
+    },
+    "approvedTimeOffPrefix": "Approved time off:",
+    "myAvailability": "My availability",
+    "availabilityIntro": "Let your employer know when you can (or can't) work. They see this while building the schedule.",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "everyWeekday": "Every {day}",
+    "remove": "Remove",
+    "everyWeek": "Every week",
+    "specificDate": "Specific date",
+    "notePlaceholder": "Note (optional)",
+    "addAvailability": "Add availability",
+    "errorCouldNotSave": "Could not save.",
+    "errorNetwork": "Network error."
   }
 }
