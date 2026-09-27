@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   FileText,
   Plus,
@@ -32,7 +33,7 @@ import {
 import { Panel, PageHeader, Btn, Badge, EmptyState, Input } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
 import { SendCopyControl } from "../components/send-copy-control";
-import { DOC_TYPE_LABELS, type DocusignEnvelope, type DocusignStatus, type EmployerDocument, type EmployerDocumentKind } from "@/lib/employer-ai";
+import { type DocusignEnvelope, type DocusignStatus, type EmployerDocument, type EmployerDocumentKind } from "@/lib/employer-ai";
 import { DOCUMENT_TEMPLATES } from "@/lib/document-templates";
 import { downloadDocumentPdf } from "@/lib/pdf";
 
@@ -68,21 +69,22 @@ function fmtDate(iso: string): string {
 }
 
 export function DocumentsClient({ canManage }: { canManage: boolean }) {
+  const t = useTranslations("employerDocuments");
   const [tab, setTab] = useState<"mine" | "received">("mine");
   return (
     <div>
-      <PageHeader title="Documents" subtitle="Compose documents to send for signature, and view everything received and signed." />
+      <PageHeader title={t("title")} subtitle={t("subtitle")} />
       <div className="mb-5 flex gap-1 border-b border-border-gold">
-        {(["mine", "received"] as const).map((t) => (
+        {(["mine", "received"] as const).map((tv) => (
           <button
-            key={t}
+            key={tv}
             type="button"
-            onClick={() => setTab(t)}
+            onClick={() => setTab(tv)}
             className={`-mb-px border-b-2 px-4 py-2 text-sm font-semibold transition-colors ${
-              tab === t ? "border-violet text-violet" : "border-transparent text-muted-cream hover:text-cream"
+              tab === tv ? "border-violet text-violet" : "border-transparent text-muted-cream hover:text-cream"
             }`}
           >
-            {t === "mine" ? "My documents" : "Received & signed"}
+            {tv === "mine" ? t("myDocuments") : t("receivedAndSigned")}
           </button>
         ))}
       </div>
@@ -93,6 +95,7 @@ export function DocumentsClient({ canManage }: { canManage: boolean }) {
 
 // ── My documents: list + Document Creator ─────────────────────────────────────
 function MyDocuments({ canManage }: { canManage: boolean }) {
+  const t = useTranslations("employerDocuments");
   const [docs, setDocs] = useState<EmployerDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<{ id?: number; title: string; bodyHtml: string } | null>(null);
@@ -117,7 +120,7 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
   }, [load]);
 
   async function remove(id: number) {
-    if (!confirm("Delete this document? This cannot be undone.")) return;
+    if (!confirm(t("confirmDelete"))) return;
     setBusyId(id);
     try {
       await fetch(`/api/employer/documents/${id}`, { method: "DELETE" });
@@ -149,34 +152,34 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
       {canManage && (
         <div className="mb-4 flex items-center gap-2">
           <Btn onClick={() => setPicking((v) => !v)}>
-            <Plus className="h-4 w-4" /> New document
+            <Plus className="h-4 w-4" /> {t("newDocument")}
           </Btn>
         </div>
       )}
 
       {picking && (
         <Panel className="mb-4">
-          <h3 className="mb-3 text-sm font-semibold text-cream">Start from a template</h3>
+          <h3 className="mb-3 text-sm font-semibold text-cream">{t("startFromTemplate")}</h3>
           <div className="flex flex-wrap gap-2">
             <Btn
               variant="ghost"
               onClick={() => {
                 setPicking(false);
-                setEditing({ title: "Untitled document", bodyHtml: "" });
+                setEditing({ title: t("untitledDocument"), bodyHtml: "" });
               }}
             >
-              <FileText className="h-4 w-4" /> Blank document
+              <FileText className="h-4 w-4" /> {t("blankDocument")}
             </Btn>
-            {DOCUMENT_TEMPLATES.map((t) => (
+            {DOCUMENT_TEMPLATES.map((dt) => (
               <Btn
-                key={t.key}
+                key={dt.key}
                 variant="ghost"
                 onClick={() => {
                   setPicking(false);
-                  setEditing({ title: t.name, bodyHtml: t.body });
+                  setEditing({ title: t(`documentTemplates.${dt.key}`), bodyHtml: dt.body });
                 }}
               >
-                <FileText className="h-4 w-4" /> {t.name}
+                <FileText className="h-4 w-4" /> {t(`documentTemplates.${dt.key}`)}
               </Btn>
             ))}
           </div>
@@ -192,18 +195,18 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
       ) : docs.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="No documents yet"
-          body="Create a document from a template (offer letter, agreement, NDA, write-up) or a blank page, edit the text, then send it for signature."
-          action={canManage ? <Btn onClick={() => setPicking(true)}><Plus className="h-4 w-4" /> New document</Btn> : undefined}
+          title={t("emptyStateTitle")}
+          body={t("emptyStateBody")}
+          action={canManage ? <Btn onClick={() => setPicking(true)}><Plus className="h-4 w-4" /> {t("newDocument")}</Btn> : undefined}
         />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border-gold">
           <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
-                <th className="px-4 py-3 font-semibold">Title</th>
-                <th className="hidden px-4 py-3 font-semibold sm:table-cell">Updated</th>
-                <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                <th className="px-4 py-3 font-semibold">{t("colTitle")}</th>
+                <th className="hidden px-4 py-3 font-semibold sm:table-cell">{t("colUpdated")}</th>
+                <th className="px-4 py-3 font-semibold text-right">{t("colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -216,7 +219,7 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
                     <span className="inline-flex items-center gap-2">
                       <Icon className={`h-4 w-4 shrink-0 ${d.kind === "html" ? "text-violet" : "text-teal"}`} />
                       <span className="text-cream">{d.title}</span>
-                      {badgeLabel && <Badge tone="teal">{badgeLabel}</Badge>}
+                      {badgeLabel && <Badge tone="teal">{t(`kindBadge.${d.kind}`)}</Badge>}
                     </span>
                   </td>
                   <td className="hidden px-4 py-3 text-white/55 sm:table-cell">{fmtDate(d.updatedAt)}</td>
@@ -227,7 +230,7 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
                         onClick={() => setViewing(d)}
                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
                       >
-                        <Eye className="h-3.5 w-3.5" /> View
+                        <Eye className="h-3.5 w-3.5" /> {t("view")}
                       </button>
                       {canManage && (
                         <button
@@ -235,7 +238,7 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
                           onClick={() => setEditing({ id: d.id, title: d.title, bodyHtml: d.bodyHtml })}
                           className="text-xs font-semibold text-violet hover:underline"
                         >
-                          Edit
+                          {t("edit")}
                         </button>
                       )}
                       <button
@@ -243,7 +246,7 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
                         onClick={() => setSendDoc({ id: d.id, title: d.title })}
                         className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
                       >
-                        <FileSignature className="h-3.5 w-3.5" /> Send for signature
+                        <FileSignature className="h-3.5 w-3.5" /> {t("sendForSignature")}
                       </button>
                       {canManage && (
                         <button
@@ -252,7 +255,7 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
                           disabled={busyId === d.id}
                           className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-300 hover:underline disabled:opacity-50"
                         >
-                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                          <Trash2 className="h-3.5 w-3.5" /> {t("delete")}
                         </button>
                       )}
                     </div>
@@ -286,6 +289,7 @@ function DocumentEditor({
   onSaved: () => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("employerDocuments");
   const [title, setTitle] = useState(initial.title);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -306,7 +310,7 @@ function DocumentEditor({
   }
 
   function addLink() {
-    const url = prompt("Link URL (https://…)");
+    const url = prompt(t("linkUrlPrompt"));
     if (url && /^https?:\/\//i.test(url)) cmd("createLink", url);
   }
 
@@ -319,21 +323,21 @@ function DocumentEditor({
         ? await fetch(`/api/employer/documents/${initial.id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: title.trim() || "Untitled document", bodyHtml }),
+            body: JSON.stringify({ title: title.trim() || t("untitledDocument"), bodyHtml }),
           })
         : await fetch("/api/employer/documents", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title: title.trim() || "Untitled document", bodyHtml }),
+            body: JSON.stringify({ title: title.trim() || t("untitledDocument"), bodyHtml }),
           });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setError(d.error || "Could not save the document.");
+        setError(d.error || t("errorCouldNotSaveDoc"));
         return;
       }
       onSaved();
     } catch {
-      setError("Network error — please try again.");
+      setError(t("errorNetwork"));
     } finally {
       setSaving(false);
     }
@@ -355,32 +359,32 @@ function DocumentEditor({
     <div className="max-w-3xl">
       <div className="mb-4 flex items-center gap-2">
         <Btn variant="ghost" onClick={onCancel}>
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" /> {t("back")}
         </Btn>
         <Btn onClick={() => void save()} loading={saving} className="ml-auto">
-          <Save className="h-4 w-4" /> Save
+          <Save className="h-4 w-4" /> {t("save")}
         </Btn>
       </div>
 
-      <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Document title" className="mb-3 text-base font-semibold" />
+      <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("documentTitlePlaceholder")} className="mb-3 text-base font-semibold" />
 
       <div className="overflow-hidden rounded-xl border border-border-gold">
         <div className="flex flex-wrap items-center gap-0.5 border-b border-border-gold bg-white/[0.03] p-1.5">
-          <ToolBtn onClick={() => cmd("formatBlock", "H1")} title="Heading 1"><Heading1 className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("formatBlock", "H2")} title="Heading 2"><Heading2 className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("formatBlock", "P")} title="Paragraph"><FileText className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("formatBlock", "H1")} title={t("heading1")}><Heading1 className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("formatBlock", "H2")} title={t("heading2")}><Heading2 className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("formatBlock", "P")} title={t("paragraph")}><FileText className="h-4 w-4" /></ToolBtn>
           <span className="mx-1 h-5 w-px bg-border-gold" />
-          <ToolBtn onClick={() => cmd("bold")} title="Bold"><Bold className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("italic")} title="Italic"><Italic className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("underline")} title="Underline"><Underline className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("bold")} title={t("bold")}><Bold className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("italic")} title={t("italic")}><Italic className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("underline")} title={t("underline")}><Underline className="h-4 w-4" /></ToolBtn>
           <span className="mx-1 h-5 w-px bg-border-gold" />
-          <ToolBtn onClick={() => cmd("insertUnorderedList")} title="Bullet list"><List className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("insertOrderedList")} title="Numbered list"><ListOrdered className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("insertUnorderedList")} title={t("bulletList")}><List className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("insertOrderedList")} title={t("numberedList")}><ListOrdered className="h-4 w-4" /></ToolBtn>
           <span className="mx-1 h-5 w-px bg-border-gold" />
-          <ToolBtn onClick={() => cmd("justifyLeft")} title="Align left"><AlignLeft className="h-4 w-4" /></ToolBtn>
-          <ToolBtn onClick={() => cmd("justifyCenter")} title="Align center"><AlignCenter className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("justifyLeft")} title={t("alignLeft")}><AlignLeft className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={() => cmd("justifyCenter")} title={t("alignCenter")}><AlignCenter className="h-4 w-4" /></ToolBtn>
           <span className="mx-1 h-5 w-px bg-border-gold" />
-          <ToolBtn onClick={addLink} title="Insert link"><Link2 className="h-4 w-4" /></ToolBtn>
+          <ToolBtn onClick={addLink} title={t("insertLink")}><Link2 className="h-4 w-4" /></ToolBtn>
         </div>
         <div
           ref={bodyRef}
@@ -390,7 +394,7 @@ function DocumentEditor({
         />
       </div>
       {error && <p className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{error}</p>}
-      <p className="mt-2 text-[11px] text-white/40">Tip: use the toolbar for headings, bold/italic, lists, alignment, and links. A signature line is added automatically when you send.</p>
+      <p className="mt-2 text-[11px] text-white/40">{t("editorTip")}</p>
 
       <DocBodyStyles />
     </div>
@@ -417,17 +421,18 @@ function DocBodyStyles() {
 // ── Document Viewer: read-only — HTML docs render the body, chart docs show
 //    the image full-width. No contentEditable, no toolbar, no Save. ───────────
 function DocumentViewer({ document: doc, onClose }: { document: EmployerDocument; onClose: () => void }) {
+  const t = useTranslations("employerDocuments");
   const isChartImage = doc.kind === "chart" && !!doc.assetUrl;
   return (
     <div className="max-w-3xl">
       <div className="mb-4 flex items-center gap-2">
         <Btn variant="ghost" onClick={onClose}>
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" /> {t("back")}
         </Btn>
         <h2 className="ml-2 truncate font-serif text-lg font-medium text-cream">{doc.title}</h2>
         {!isChartImage && (
           <Btn variant="ghost" className="ml-auto" onClick={() => downloadDocumentPdf(doc.title, doc.bodyHtml)}>
-            <FileDown className="h-4 w-4" /> Export PDF
+            <FileDown className="h-4 w-4" /> {t("exportPdf")}
           </Btn>
         )}
       </div>
@@ -457,6 +462,7 @@ function envDate(e: DocusignEnvelope): string {
 }
 
 function ReceivedDocuments() {
+  const t = useTranslations("employerDocuments");
   const [envelopes, setEnvelopes] = useState<DocusignEnvelope[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<number | null>(null);
@@ -495,8 +501,8 @@ function ReceivedDocuments() {
     return (
       <EmptyState
         icon={FileText}
-        title="Nothing received yet"
-        body="Completed signed PDFs and any files uploaded by signers or attached by your team will appear here, ready to view or download."
+        title={t("nothingReceivedYet")}
+        body={t("nothingReceivedBody")}
       />
     );
   }
@@ -509,24 +515,24 @@ function ReceivedDocuments() {
       <table className="w-full min-w-[440px] text-sm">
         <thead>
           <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
-            <th className="px-4 py-3 font-semibold">Recipient</th>
-            <th className="hidden px-4 py-3 font-semibold sm:table-cell">Document</th>
-            <th className="hidden px-4 py-3 font-semibold md:table-cell">Date</th>
-            <th className="hidden px-4 py-3 font-semibold sm:table-cell">Files</th>
-            <th className="px-4 py-3 font-semibold">Status</th>
+            <th className="px-4 py-3 font-semibold">{t("colRecipient")}</th>
+            <th className="hidden px-4 py-3 font-semibold sm:table-cell">{t("colDocument")}</th>
+            <th className="hidden px-4 py-3 font-semibold md:table-cell">{t("colDate")}</th>
+            <th className="hidden px-4 py-3 font-semibold sm:table-cell">{t("colFiles")}</th>
+            <th className="px-4 py-3 font-semibold">{t("colStatus")}</th>
           </tr>
         </thead>
         <tbody>
           {shown.map((e) => {
             const isOpen = expanded === e.id;
-            const label = e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType];
+            const label = e.documentName || e.offer.position || t(`docType.${e.docType}`);
             const signer = e.candidateName || e.candidateEmail || "—";
             const fileCount = e.attachments.length;
             return (
               <Fragment key={e.id}>
                 <tr
                   onClick={() => setExpanded(isOpen ? null : e.id)}
-                  title={isOpen ? "Hide details" : "Show details"}
+                  title={isOpen ? t("hideDetails") : t("showDetails")}
                   aria-expanded={isOpen}
                   className={`group cursor-pointer border-b border-border-gold/60 last:border-0 transition-colors hover:bg-white/[0.06] ${isOpen ? "bg-white/[0.04]" : ""}`}
                 >
@@ -553,7 +559,7 @@ function ReceivedDocuments() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Badge tone={STATUS_TONE[e.status]}>{e.status}</Badge>
+                    <Badge tone={STATUS_TONE[e.status]}>{t(`docusignStatus.${e.status}`)}</Badge>
                   </td>
                 </tr>
                 {isOpen && (
@@ -574,6 +580,7 @@ function ReceivedDocuments() {
 
 // ── Expanded panel for one envelope: the signed document + every file ─────────
 function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope; onChanged: () => void }) {
+  const t = useTranslations("employerDocuments");
   const isDone = e.status === "completed" || e.status === "signed";
   const att = (path: string, download = false) =>
     `/api/employer/docusign/envelopes/${e.id}/attachment?path=${encodeURIComponent(path)}${download ? "&download=1" : ""}`;
@@ -585,20 +592,20 @@ function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope;
         <div className="rounded-xl border border-teal/30 bg-teal/[0.06] px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <FileSignature className="h-4 w-4 shrink-0 text-teal" />
-            <span className="mr-auto text-sm font-medium text-cream">Signed documents (PDF + certificate)</span>
+            <span className="mr-auto text-sm font-medium text-cream">{t("signedDocumentsLabel")}</span>
             <a
               href={`/api/employer/docusign/envelopes/${e.id}/documents`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
             >
-              <Eye className="h-3.5 w-3.5" /> View
+              <Eye className="h-3.5 w-3.5" /> {t("view")}
             </a>
             <a
               href={`/api/employer/docusign/envelopes/${e.id}/documents?download=1`}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
             >
-              <Download className="h-3.5 w-3.5" /> Download
+              <Download className="h-3.5 w-3.5" /> {t("download")}
             </a>
             <SendCopyControl envelopeId={e.id} onSent={onChanged} />
           </div>
@@ -608,14 +615,14 @@ function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope;
       {/* 2) EVERY file for this envelope — signer uploads + employer-attached */}
       <div>
         <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">
-          All files{e.attachments.length > 0 ? ` (${e.attachments.length})` : ""}
+          {e.attachments.length > 0 ? t("allFilesCount", { count: e.attachments.length }) : t("allFiles")}
         </h4>
         {e.attachments.length === 0 ? (
-          <p className="text-xs text-white/40">No files uploaded for this envelope yet.</p>
+          <p className="text-xs text-white/40">{t("noFilesUploadedYet")}</p>
         ) : (
           <ul className="space-y-1.5">
             {e.attachments.map((a, i) => {
-              const who = a.by === "employer" ? "you" : "signer";
+              const who = a.by === "employer" ? t("you") : t("signer");
               return (
                 <li
                   key={`${a.url}-${i}`}
@@ -626,15 +633,15 @@ function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope;
                     <span className="truncate text-cream">{a.name}</span>
                     <span className="shrink-0 text-[11px] text-white/40">{who}</span>
                     {a.kind === "requested" && (
-                      <span className="shrink-0 rounded bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold">requested</span>
+                      <span className="shrink-0 rounded bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold">{t("requested")}</span>
                     )}
                   </span>
                   <span className="flex shrink-0 items-center gap-3">
                     <a href={att(a.url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline">
-                      <Eye className="h-3.5 w-3.5" /> View
+                      <Eye className="h-3.5 w-3.5" /> {t("view")}
                     </a>
                     <a href={att(a.url, true)} className="inline-flex items-center gap-1 text-xs font-semibold text-violet hover:underline">
-                      <Download className="h-3.5 w-3.5" /> Download
+                      <Download className="h-3.5 w-3.5" /> {t("download")}
                     </a>
                   </span>
                 </li>
@@ -648,7 +655,7 @@ function EnvelopeFiles({ envelope: e, onChanged }: { envelope: DocusignEnvelope;
       {e.requestedDocs.some((d) => !d.uploaded) && (
         <p className="flex items-center gap-1.5 text-[11px] text-white/45">
           <CheckCircle2 className="h-3.5 w-3.5 text-white/30" />
-          Awaiting from signer: {e.requestedDocs.filter((d) => !d.uploaded).map((d) => d.name).join(", ")}
+          {t("awaitingFromSigner", { names: e.requestedDocs.filter((d) => !d.uploaded).map((d) => d.name).join(", ") })}
         </p>
       )}
     </div>
