@@ -4,7 +4,7 @@ import { OfficeClient, type OfficeTab } from "./office-client";
 
 export const dynamic = "force-dynamic";
 
-const VALID_TABS: OfficeTab[] = ["calculators", "charts", "spreadsheet", "report"];
+const VALID_TABS: OfficeTab[] = ["calculators", "charts", "spreadsheet", "report", "presentation"];
 
 export default async function OfficePage({ searchParams }: { searchParams: { tab?: string } }) {
   const access = await getAccess();
@@ -15,6 +15,7 @@ export default async function OfficePage({ searchParams }: { searchParams: { tab
       canCharts={canScale}
       canSpreadsheet={canScale}
       canReport={canScale}
+      canPresentation={canScale}
       canManage={isEmployer(access)}
       initialTab={initialTab}
     />

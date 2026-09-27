@@ -345,7 +345,7 @@ export interface DocusignEnvelope {
  *  document created by "Insert into a document" from the Office suite's
  *  Charts tool — its body is an <img> embedding `assetUrl` (the office-assets
  *  bucket PNG), editable and sendable-for-signature like any other document. */
-export type EmployerDocumentKind = "html" | "chart" | "spreadsheet" | "report";
+export type EmployerDocumentKind = "html" | "chart" | "spreadsheet" | "report" | "presentation";
 
 export interface EmployerDocument {
   id: number;

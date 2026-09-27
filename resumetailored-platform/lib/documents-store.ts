@@ -3,10 +3,10 @@ import type { EmployerDocument, EmployerDocumentKind } from "./employer-ai";
 
 /** The full known set of `documents.kind` values. The column itself is
  *  unconstrained text (added in migration 0040 with no CHECK), so adding
- *  "spreadsheet"/"report" (Phase 5) needed no schema change — only this
- *  validated set, so a row can never carry a `kind` the app doesn't know how
- *  to render. */
-const DOCUMENT_KINDS: readonly EmployerDocumentKind[] = ["html", "chart", "spreadsheet", "report"];
+ *  "spreadsheet"/"report" (Phase 5) and "presentation" (Phase 6) needed no
+ *  schema change — only this validated set, so a row can never carry a
+ *  `kind` the app doesn't know how to render. */
+const DOCUMENT_KINDS: readonly EmployerDocumentKind[] = ["html", "chart", "spreadsheet", "report", "presentation"];
 function normalizeDocKind(v: unknown): EmployerDocumentKind {
   return (DOCUMENT_KINDS as readonly string[]).includes(String(v)) ? (v as EmployerDocumentKind) : "html";
 }

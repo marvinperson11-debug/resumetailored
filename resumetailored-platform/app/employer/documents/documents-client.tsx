@@ -27,6 +27,7 @@ import {
   Table,
   FileBarChart,
   FileDown,
+  Presentation,
 } from "lucide-react";
 import { Panel, PageHeader, Btn, Badge, EmptyState, Input } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
@@ -40,8 +41,14 @@ const KIND_ICON: Record<EmployerDocumentKind, typeof FileText> = {
   chart: BarChart3,
   spreadsheet: Table,
   report: FileBarChart,
+  presentation: Presentation,
 };
-const KIND_BADGE: Partial<Record<EmployerDocumentKind, string>> = { chart: "Chart", spreadsheet: "Spreadsheet", report: "Report" };
+const KIND_BADGE: Partial<Record<EmployerDocumentKind, string>> = {
+  chart: "Chart",
+  spreadsheet: "Spreadsheet",
+  report: "Report",
+  presentation: "Presentation",
+};
 
 const STATUS_TONE: Record<DocusignStatus, "neutral" | "sky" | "violet" | "gold" | "teal" | "red"> = {
   sent: "sky",
