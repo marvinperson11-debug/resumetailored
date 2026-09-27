@@ -1041,5 +1041,111 @@
     "title": "Page carrières introuvable",
     "body": "Cette page carrières n'est pas disponible. L'adresse est peut-être mal orthographiée, ou la page a pu être retirée.",
     "browseAllJobs": "Voir toutes les offres"
+  },
+  "notificationBell": {
+    "notifications": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "loading": "Chargement…",
+    "allCaughtUp": "Vous êtes à jour.",
+    "justNow": "à l'instant",
+    "minutesAgo": "il y a {count}m",
+    "hoursAgo": "il y a {count}h",
+    "daysAgo": "il y a {count}j"
+  },
+  "publicJobsBoard": {
+    "jobsBrand": "Emplois",
+    "forEmployers": "Pour les employeurs →",
+    "openRoles": "Postes ouverts",
+    "activePostings": "{count, plural, one {# offre active} other {# offres actives}} d'employeurs qui recrutent actuellement.",
+    "keywordsPlaceholder": "Mots-clés (poste, entreprise)",
+    "locationPlaceholder": "Lieu",
+    "anyType": "Tout type",
+    "anyLocationType": "Tout type de lieu",
+    "anySalary": "Tout salaire",
+    "search": "Rechercher",
+    "noRolesMatch": "Aucun poste ne correspond à votre recherche. Essayez des mots-clés plus larges ou effacez les filtres.",
+    "aCompany": "Une entreprise",
+    "poweredBy": "Propulsé par",
+    "employmentType": {
+      "full-time": "Temps plein",
+      "part-time": "Temps partiel",
+      "contract": "Contrat",
+      "internship": "Stage"
+    },
+    "remoteType": {
+      "remote": "Télétravail",
+      "hybrid": "Hybride",
+      "onsite": "Sur site"
+    }
+  },
+  "publicJobDetail": {
+    "allJobs": "Tous les emplois",
+    "jobsBrand": "Emplois",
+    "aCompany": "Une entreprise",
+    "theCompany": "l'entreprise",
+    "aboutCompany": "À propos de {company}",
+    "jobDescription": "Description du poste",
+    "requirements": "Exigences",
+    "niceToHave": "Atouts appréciés",
+    "applyForThisRole": "Postuler à ce poste",
+    "employmentType": {
+      "full-time": "Temps plein",
+      "part-time": "Temps partiel",
+      "contract": "Contrat",
+      "internship": "Stage"
+    },
+    "remoteType": {
+      "remote": "Télétravail",
+      "hybrid": "Hybride",
+      "onsite": "Sur site"
+    }
+  },
+  "publicJobApply": {
+    "errorNameEmailRequired": "Le nom et l'e-mail sont requis.",
+    "errorCouldNotSubmit": "Impossible d'envoyer votre candidature.",
+    "errorSomethingWentWrong": "Une erreur s'est produite.",
+    "applicationSubmitted": "Candidature envoyée",
+    "applicationSubmittedBody": "Merci — l'équipe de recrutement a votre candidature et vous contactera en cas de correspondance.",
+    "name": "Nom",
+    "email": "E-mail",
+    "phone": "Téléphone",
+    "portfolioLink": "Lien du portfolio",
+    "resumeLabel": "CV (PDF ou DOCX)",
+    "uploadYourResume": "Téléchargez votre CV",
+    "coverLetterOptional": "Lettre de motivation (facultatif)",
+    "coverLetterPlaceholder": "Une courte note sur pourquoi vous êtes fait pour ce poste…",
+    "submitApplication": "Soumettre la candidature"
+  },
+  "careerSite": {
+    "companyFallback": "Entreprise",
+    "logoAlt": "logo de {company}",
+    "careersAt": "Carrières chez {company}",
+    "noOpenRoles": "Aucun poste ouvert pour l'instant — revenez bientôt.",
+    "openRolesCount": "{count, plural, one {# poste ouvert} other {# postes ouverts}}. Trouvez votre place.",
+    "viewOpenPositions": "Voir les postes ouverts",
+    "aboutCompany": "À propos de {company}",
+    "ourMission": "Notre mission",
+    "ourValues": "Nos valeurs",
+    "benefitsAndPerks": "Avantages",
+    "meetTheTeam": "Rencontrez l'équipe",
+    "meetTheTeamBody": "Vous rejoindrez une équipe qui se soucie du travail et des autres.",
+    "whatOurTeamSays": "Ce que dit notre équipe",
+    "openPositions": "Postes ouverts",
+    "noOpenRolesRightNow": "Il n'y a aucun poste ouvert pour l'instant.",
+    "apply": "Postuler →",
+    "getInTouch": "Contactez-nous",
+    "questionsAboutWorking": "Des questions sur le travail chez {company} ?",
+    "poweredBy": "Propulsé par",
+    "employmentType": {
+      "full-time": "Temps plein",
+      "part-time": "Temps partiel",
+      "contract": "Contrat",
+      "internship": "Stage"
+    },
+    "remoteType": {
+      "remote": "Télétravail",
+      "hybrid": "Hybride",
+      "onsite": "Sur site"
+    }
   }
 }

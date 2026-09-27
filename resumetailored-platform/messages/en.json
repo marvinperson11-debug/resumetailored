@@ -1041,5 +1041,111 @@
     "title": "Careers page not found",
     "body": "This careers page isn't available. The address may be misspelled, or the page may have been taken down.",
     "browseAllJobs": "Browse all jobs"
+  },
+  "notificationBell": {
+    "notifications": "Notifications",
+    "markAllRead": "Mark all read",
+    "loading": "Loading…",
+    "allCaughtUp": "You're all caught up.",
+    "justNow": "just now",
+    "minutesAgo": "{count}m ago",
+    "hoursAgo": "{count}h ago",
+    "daysAgo": "{count}d ago"
+  },
+  "publicJobsBoard": {
+    "jobsBrand": "Jobs",
+    "forEmployers": "For employers →",
+    "openRoles": "Open roles",
+    "activePostings": "{count, plural, one {# active posting} other {# active postings}} from employers hiring now.",
+    "keywordsPlaceholder": "Keywords (title, company)",
+    "locationPlaceholder": "Location",
+    "anyType": "Any type",
+    "anyLocationType": "Any location type",
+    "anySalary": "Any salary",
+    "search": "Search",
+    "noRolesMatch": "No roles match your search. Try broader keywords or clear the filters.",
+    "aCompany": "A company",
+    "poweredBy": "Powered by",
+    "employmentType": {
+      "full-time": "Full-time",
+      "part-time": "Part-time",
+      "contract": "Contract",
+      "internship": "Internship"
+    },
+    "remoteType": {
+      "remote": "Remote",
+      "hybrid": "Hybrid",
+      "onsite": "On-site"
+    }
+  },
+  "publicJobDetail": {
+    "allJobs": "All jobs",
+    "jobsBrand": "Jobs",
+    "aCompany": "A company",
+    "theCompany": "the company",
+    "aboutCompany": "About {company}",
+    "jobDescription": "Job description",
+    "requirements": "Requirements",
+    "niceToHave": "Nice to have",
+    "applyForThisRole": "Apply for this role",
+    "employmentType": {
+      "full-time": "Full-time",
+      "part-time": "Part-time",
+      "contract": "Contract",
+      "internship": "Internship"
+    },
+    "remoteType": {
+      "remote": "Remote",
+      "hybrid": "Hybrid",
+      "onsite": "On-site"
+    }
+  },
+  "publicJobApply": {
+    "errorNameEmailRequired": "Name and email are required.",
+    "errorCouldNotSubmit": "Could not submit your application.",
+    "errorSomethingWentWrong": "Something went wrong.",
+    "applicationSubmitted": "Application submitted",
+    "applicationSubmittedBody": "Thanks — the hiring team has your application and will be in touch if it's a match.",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "portfolioLink": "Portfolio link",
+    "resumeLabel": "Resume (PDF or DOCX)",
+    "uploadYourResume": "Upload your resume",
+    "coverLetterOptional": "Cover letter (optional)",
+    "coverLetterPlaceholder": "A short note on why you're a fit…",
+    "submitApplication": "Submit application"
+  },
+  "careerSite": {
+    "companyFallback": "Company",
+    "logoAlt": "{company} logo",
+    "careersAt": "Careers at {company}",
+    "noOpenRoles": "No open roles right now — check back soon.",
+    "openRolesCount": "{count, plural, one {# open role} other {# open roles}}. Find where you fit.",
+    "viewOpenPositions": "View open positions",
+    "aboutCompany": "About {company}",
+    "ourMission": "Our mission",
+    "ourValues": "Our values",
+    "benefitsAndPerks": "Benefits & perks",
+    "meetTheTeam": "Meet the team",
+    "meetTheTeamBody": "You'll be joining a team that cares about the work and each other.",
+    "whatOurTeamSays": "What our team says",
+    "openPositions": "Open positions",
+    "noOpenRolesRightNow": "There are no open roles right now.",
+    "apply": "Apply →",
+    "getInTouch": "Get in touch",
+    "questionsAboutWorking": "Questions about working at {company}?",
+    "poweredBy": "Powered by",
+    "employmentType": {
+      "full-time": "Full-time",
+      "part-time": "Part-time",
+      "contract": "Contract",
+      "internship": "Internship"
+    },
+    "remoteType": {
+      "remote": "Remote",
+      "hybrid": "Hybrid",
+      "onsite": "On-site"
+    }
   }
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Bell, GraduationCap, MessageSquare, Megaphone, CalendarClock, Clock, CalendarDays, ShieldAlert, UserCheck, Rss, type LucideIcon } from "lucide-react";
 
 interface NotificationItem {
@@ -30,15 +31,15 @@ const ICONS: Record<string, LucideIcon> = {
   feed_comment: Rss,
 };
 
-function timeAgo(iso: string): string {
+function timeAgo(iso: string, t: (key: string, values?: Record<string, string | number | boolean | Date | null | undefined>) => string): string {
   const ms = Date.now() - new Date(iso).getTime();
   const min = Math.floor(ms / 60000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
+  if (min < 1) return t("justNow");
+  if (min < 60) return t("minutesAgo", { count: min });
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
+  if (hr < 24) return t("hoursAgo", { count: hr });
   const day = Math.floor(hr / 24);
-  return `${day}d ago`;
+  return t("daysAgo", { count: day });
 }
 
 /**
@@ -49,6 +50,7 @@ function timeAgo(iso: string): string {
  * POST .../notifications/read-all), so one component covers both.
  */
 export function NotificationBell({ basePath }: { basePath: "/api/employer" | "/api/employee" }) {
+  const t = useTranslations("notificationBell");
   const router = useRouter();
   const [items, setItems] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
@@ -103,7 +105,7 @@ export function NotificationBell({ basePath }: { basePath: "/api/employer" | "/a
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        aria-label="Notifications"
+        aria-label={t("notifications")}
         className="relative rounded-lg p-2 text-muted-cream transition-colors hover:bg-white/10 hover:text-cream"
       >
         <Bell className="h-5 w-5" />
@@ -117,18 +119,18 @@ export function NotificationBell({ basePath }: { basePath: "/api/employer" | "/a
       {open && (
         <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[90vw] overflow-hidden rounded-xl border border-border-gold bg-navy shadow-2xl">
           <div className="flex items-center justify-between border-b border-border-gold px-4 py-2.5">
-            <span className="text-sm font-semibold text-cream">Notifications</span>
+            <span className="text-sm font-semibold text-cream">{t("notifications")}</span>
             {unread > 0 && (
               <button onClick={markAllRead} className="text-xs text-violet hover:underline">
-                Mark all read
+                {t("markAllRead")}
               </button>
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">
             {loading && items.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-white/45">Loading…</p>
+              <p className="px-4 py-6 text-center text-sm text-white/45">{t("loading")}</p>
             ) : items.length === 0 ? (
-              <p className="px-4 py-6 text-center text-sm text-white/45">You&apos;re all caught up.</p>
+              <p className="px-4 py-6 text-center text-sm text-white/45">{t("allCaughtUp")}</p>
             ) : (
               items.map((item) => {
                 const Icon = ICONS[item.eventType] || Bell;
@@ -142,7 +144,7 @@ export function NotificationBell({ basePath }: { basePath: "/api/employer" | "/a
                     <span className="min-w-0 flex-1">
                       <span className={`block truncate text-sm ${item.read ? "text-white/65" : "font-medium text-cream"}`}>{item.title}</span>
                       {item.body && <span className="mt-0.5 block truncate text-xs text-white/40">{item.body}</span>}
-                      <span className="mt-0.5 block text-[11px] text-white/35">{timeAgo(item.createdAt)}</span>
+                      <span className="mt-0.5 block text-[11px] text-white/35">{timeAgo(item.createdAt, t)}</span>
                     </span>
                     {!item.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-violet" />}
                   </button>

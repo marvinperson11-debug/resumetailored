@@ -1041,5 +1041,111 @@
     "title": "未找到该招聘页面",
     "body": "此招聘页面不可用。链接可能有误，或该页面已被下线。",
     "browseAllJobs": "浏览全部职位"
+  },
+  "notificationBell": {
+    "notifications": "通知",
+    "markAllRead": "全部标记为已读",
+    "loading": "加载中…",
+    "allCaughtUp": "没有新通知了。",
+    "justNow": "刚刚",
+    "minutesAgo": "{count} 分钟前",
+    "hoursAgo": "{count} 小时前",
+    "daysAgo": "{count} 天前"
+  },
+  "publicJobsBoard": {
+    "jobsBrand": "职位",
+    "forEmployers": "雇主入口 →",
+    "openRoles": "开放职位",
+    "activePostings": "目前有 {count} 个正在招恘的职位。",
+    "keywordsPlaceholder": "关键词（职位、公司）",
+    "locationPlaceholder": "地区",
+    "anyType": "任何类型",
+    "anyLocationType": "任何地区类型",
+    "anySalary": "任何薪资",
+    "search": "搜索",
+    "noRolesMatch": "没有匹配的职位。请尝试更广泛的关键词或清除过滤条件。",
+    "aCompany": "一家公司",
+    "poweredBy": "技术支持：",
+    "employmentType": {
+      "full-time": "全职",
+      "part-time": "兼职",
+      "contract": "合同工",
+      "internship": "实习"
+    },
+    "remoteType": {
+      "remote": "远程",
+      "hybrid": "混合",
+      "onsite": "很地办公"
+    }
+  },
+  "publicJobDetail": {
+    "allJobs": "所有职位",
+    "jobsBrand": "职位",
+    "aCompany": "一家公司",
+    "theCompany": "该公司",
+    "aboutCompany": "关于 {company}",
+    "jobDescription": "职位描述",
+    "requirements": "职位要求",
+    "niceToHave": "加分项",
+    "applyForThisRole": "申请此职位",
+    "employmentType": {
+      "full-time": "全职",
+      "part-time": "兼职",
+      "contract": "合同工",
+      "internship": "实习"
+    },
+    "remoteType": {
+      "remote": "远程",
+      "hybrid": "混合",
+      "onsite": "很地办公"
+    }
+  },
+  "publicJobApply": {
+    "errorNameEmailRequired": "需要姓名和邮箱。",
+    "errorCouldNotSubmit": "无法提交您的申请。",
+    "errorSomethingWentWrong": "出错了。",
+    "applicationSubmitted": "申请已提交",
+    "applicationSubmittedBody": "感谢——招聘团队已收到您的申请，如合适将与您联系。",
+    "name": "姓名",
+    "email": "邮箱",
+    "phone": "电话",
+    "portfolioLink": "作品集链接",
+    "resumeLabel": "简历（PDF 或 DOCX）",
+    "uploadYourResume": "上传您的简历",
+    "coverLetterOptional": "求职信（可选）",
+    "coverLetterPlaceholder": "简要说明您为何合适…",
+    "submitApplication": "提交申请"
+  },
+  "careerSite": {
+    "companyFallback": "公司",
+    "logoAlt": "{company} 标志",
+    "careersAt": "{company} 的职业机会",
+    "noOpenRoles": "暂无开放职位——请稍后再来。",
+    "openRolesCount": "{count} 个开放职位。找到适合您的职位。",
+    "viewOpenPositions": "查看开放职位",
+    "aboutCompany": "关于 {company}",
+    "ourMission": "我们的使命",
+    "ourValues": "我们的价值观",
+    "benefitsAndPerks": "福利与伏利",
+    "meetTheTeam": "了解团队",
+    "meetTheTeamBody": "您将加入一个关心工作与彼此的团队。",
+    "whatOurTeamSays": "团队评论",
+    "openPositions": "开放职位",
+    "noOpenRolesRightNow": "暂无开放职位。",
+    "apply": "申请 →",
+    "getInTouch": "联络我们",
+    "questionsAboutWorking": "对在 {company} 工作有疑问？",
+    "poweredBy": "技术支持：",
+    "employmentType": {
+      "full-time": "全职",
+      "part-time": "兼职",
+      "contract": "合同工",
+      "internship": "实习"
+    },
+    "remoteType": {
+      "remote": "远程",
+      "hybrid": "混合",
+      "onsite": "很地办公"
+    }
   }
 }

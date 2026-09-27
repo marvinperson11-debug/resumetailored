@@ -1041,5 +1041,111 @@
     "title": "Página de empleo no encontrada",
     "body": "Esta página de empleo no está disponible. La dirección puede estar mal escrita o la página puede haber sido retirada.",
     "browseAllJobs": "Ver todos los empleos"
+  },
+  "notificationBell": {
+    "notifications": "Notificaciones",
+    "markAllRead": "Marcar todo como leído",
+    "loading": "Cargando…",
+    "allCaughtUp": "Estás al día.",
+    "justNow": "justo ahora",
+    "minutesAgo": "hace {count}m",
+    "hoursAgo": "hace {count}h",
+    "daysAgo": "hace {count}d"
+  },
+  "publicJobsBoard": {
+    "jobsBrand": "Empleos",
+    "forEmployers": "Para empleadores →",
+    "openRoles": "Ofertas abiertas",
+    "activePostings": "{count, plural, one {# oferta activa} other {# ofertas activas}} de empleadores contratando ahora.",
+    "keywordsPlaceholder": "Palabras clave (puesto, empresa)",
+    "locationPlaceholder": "Ubicación",
+    "anyType": "Cualquier tipo",
+    "anyLocationType": "Cualquier tipo de ubicación",
+    "anySalary": "Cualquier salario",
+    "search": "Buscar",
+    "noRolesMatch": "Ningún puesto coincide con tu búsqueda. Prueba palabras clave más amplias o borra los filtros.",
+    "aCompany": "Una empresa",
+    "poweredBy": "Desarrollado por",
+    "employmentType": {
+      "full-time": "Tiempo completo",
+      "part-time": "Tiempo parcial",
+      "contract": "Contrato",
+      "internship": "Pasantía"
+    },
+    "remoteType": {
+      "remote": "Remoto",
+      "hybrid": "Híbrido",
+      "onsite": "Presencial"
+    }
+  },
+  "publicJobDetail": {
+    "allJobs": "Todos los empleos",
+    "jobsBrand": "Empleos",
+    "aCompany": "Una empresa",
+    "theCompany": "la empresa",
+    "aboutCompany": "Sobre {company}",
+    "jobDescription": "Descripción del puesto",
+    "requirements": "Requisitos",
+    "niceToHave": "Deseable",
+    "applyForThisRole": "Aplicar a este puesto",
+    "employmentType": {
+      "full-time": "Tiempo completo",
+      "part-time": "Tiempo parcial",
+      "contract": "Contrato",
+      "internship": "Pasantía"
+    },
+    "remoteType": {
+      "remote": "Remoto",
+      "hybrid": "Híbrido",
+      "onsite": "Presencial"
+    }
+  },
+  "publicJobApply": {
+    "errorNameEmailRequired": "Se requieren nombre y correo.",
+    "errorCouldNotSubmit": "No se pudo enviar tu solicitud.",
+    "errorSomethingWentWrong": "Algo salió mal.",
+    "applicationSubmitted": "Solicitud enviada",
+    "applicationSubmittedBody": "Gracias — el equipo de contratación tiene tu solicitud y se pondrá en contacto si hay coincidencia.",
+    "name": "Nombre",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "portfolioLink": "Enlace de portafolio",
+    "resumeLabel": "Currículum (PDF o DOCX)",
+    "uploadYourResume": "Sube tu currículum",
+    "coverLetterOptional": "Carta de presentación (opcional)",
+    "coverLetterPlaceholder": "Una breve nota sobre por qué eres ideal…",
+    "submitApplication": "Enviar solicitud"
+  },
+  "careerSite": {
+    "companyFallback": "Empresa",
+    "logoAlt": "logo de {company}",
+    "careersAt": "Carreras en {company}",
+    "noOpenRoles": "No hay puestos abiertos por ahora — vuelve pronto.",
+    "openRolesCount": "{count, plural, one {# puesto abierto} other {# puestos abiertos}}. Encuentra dónde encajas.",
+    "viewOpenPositions": "Ver puestos abiertos",
+    "aboutCompany": "Sobre {company}",
+    "ourMission": "Nuestra misión",
+    "ourValues": "Nuestros valores",
+    "benefitsAndPerks": "Beneficios y ventajas",
+    "meetTheTeam": "Conoce al equipo",
+    "meetTheTeamBody": "Te unirás a un equipo que se preocupa por el trabajo y por los demás.",
+    "whatOurTeamSays": "Lo que dice nuestro equipo",
+    "openPositions": "Puestos abiertos",
+    "noOpenRolesRightNow": "No hay puestos abiertos por ahora.",
+    "apply": "Aplicar →",
+    "getInTouch": "Ponte en contacto",
+    "questionsAboutWorking": "¿Preguntas sobre trabajar en {company}?",
+    "poweredBy": "Desarrollado por",
+    "employmentType": {
+      "full-time": "Tiempo completo",
+      "part-time": "Tiempo parcial",
+      "contract": "Contrato",
+      "internship": "Pasantía"
+    },
+    "remoteType": {
+      "remote": "Remoto",
+      "hybrid": "Híbrido",
+      "onsite": "Presencial"
+    }
   }
 }

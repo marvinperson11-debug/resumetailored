@@ -1041,5 +1041,111 @@
     "title": "करियर पेज नहीं मिला",
     "body": "यह करियर पेज उपलब्ध नहीं है। पता गलत हो सकता है, या पेज हटा दिया गया हो सकता है।",
     "browseAllJobs": "सभी नौकरियां देखें"
+  },
+  "notificationBell": {
+    "notifications": "सूचनाओं",
+    "markAllRead": "सबको पढ़ा हुआ चिह्नित करें",
+    "loading": "लोड हो रहा है…",
+    "allCaughtUp": "आप सभी कुछ देख चुके हैं।",
+    "justNow": "अभी अभी",
+    "minutesAgo": "{count} मिनट पहले",
+    "hoursAgo": "{count} घंटे पहले",
+    "daysAgo": "{count} दिन पहले"
+  },
+  "publicJobsBoard": {
+    "jobsBrand": "नौकरियां",
+    "forEmployers": "नियोक्ताओं के लिे →",
+    "openRoles": "खुली भूंीकांं",
+    "activePostings": "अभी भर्ती कर रहे नियोक्ताओं से {count} सक्रिय पोस्टिंग।",
+    "keywordsPlaceholder": "कीवर्ड (पद, कंपनी)",
+    "locationPlaceholder": "स्थान",
+    "anyType": "कोई भी प्रकार",
+    "anyLocationType": "कोई भी स्थान प्रकार",
+    "anySalary": "कोई भी वेतन",
+    "search": "खोजें",
+    "noRolesMatch": "आपकी खोज से कोई भूंीका मेल नहीं खाता। व्यापक कीवर्ड आज़माें या फ़िल्टर साफ़ करें।",
+    "aCompany": "एक कंपनी",
+    "poweredBy": "संचालित:",
+    "employmentType": {
+      "full-time": "पूर्नकालिक",
+      "part-time": "अंशकालिक",
+      "contract": "अनुबंध",
+      "internship": "इंटर्नशिेंस"
+    },
+    "remoteType": {
+      "remote": "रिमोट",
+      "hybrid": "हाइब्रिड",
+      "onsite": "साइट पर"
+    }
+  },
+  "publicJobDetail": {
+    "allJobs": "सभी नौकरियां",
+    "jobsBrand": "नौकरियां",
+    "aCompany": "एक कंपनी",
+    "theCompany": "कंपनी",
+    "aboutCompany": "{company} के बारे में",
+    "jobDescription": "नौकरी विवरण",
+    "requirements": "आवश्यकताओं",
+    "niceToHave": "विशेष लाभ",
+    "applyForThisRole": "इस भूंीका के लिे आवेदन करें",
+    "employmentType": {
+      "full-time": "पूर्नकालिक",
+      "part-time": "अंशकालिक",
+      "contract": "अनुबंध",
+      "internship": "इंटर्नशिेंस"
+    },
+    "remoteType": {
+      "remote": "रिमोट",
+      "hybrid": "हाइब्रिड",
+      "onsite": "साइट पर"
+    }
+  },
+  "publicJobApply": {
+    "errorNameEmailRequired": "नाम और ईमेल आवश्यक हैं।",
+    "errorCouldNotSubmit": "आपका आवेदन जमा नहीं हो सका।",
+    "errorSomethingWentWrong": "कुछ गलत हुआ।",
+    "applicationSubmitted": "आवेदन जमा किया गया",
+    "applicationSubmittedBody": "धन्यवाद—भर्ती करने वाली टीम के पास आपका आवेदन है और वे संपर्क करेंगे अगर यह सही रहा।",
+    "name": "नाम",
+    "email": "ईमेल",
+    "phone": "फ़ोन",
+    "portfolioLink": "पोर्टज़ोलियो लिंक",
+    "resumeLabel": "रेज़्य़ूमे (PDF या DOCX)",
+    "uploadYourResume": "अपना रेज़्य़ूमे अपलोड करें",
+    "coverLetterOptional": "कवर लेटर (वैकल्लिक)",
+    "coverLetterPlaceholder": "आप क्यों उपयुक्त हैं इस पर एक संक्षिप्त टिप्पणी…",
+    "submitApplication": "आवेदन सबमिट करें"
+  },
+  "careerSite": {
+    "companyFallback": "कंपनी",
+    "logoAlt": "{company} लोगो",
+    "careersAt": "{company} में करियर",
+    "noOpenRoles": "अभी कोई खुली भूंीका नहीं—बाद में पुनः जांच करें।",
+    "openRolesCount": "{count} खुली भूंीकां। अपने अनुकूल भूंीका घूंढ़ें।",
+    "viewOpenPositions": "खुली भूंीकां देखें",
+    "aboutCompany": "{company} के बारे में",
+    "ourMission": "हमारा मिशन",
+    "ourValues": "हमारे मूल्य",
+    "benefitsAndPerks": "लाभ और सुविधाएं",
+    "meetTheTeam": "टीम से मिलें",
+    "meetTheTeamBody": "आप एक एसी टीम से जुड़ेंगे जो कार्य और एक दूसरे की परवाह करती है।",
+    "whatOurTeamSays": "हीमारी टीम क्या कहती है",
+    "openPositions": "खुली भूंीकां",
+    "noOpenRolesRightNow": "अभी कोई खुली भूंीका नहीं।",
+    "apply": "आवेदन करें →",
+    "getInTouch": "संपर्क करें",
+    "questionsAboutWorking": "{company} में काम करने के बारे में सवाल?",
+    "poweredBy": "संचालित:",
+    "employmentType": {
+      "full-time": "पूर्नकालिक",
+      "part-time": "अंशकालिक",
+      "contract": "अनुबंध",
+      "internship": "इंटर्नशिेंस"
+    },
+    "remoteType": {
+      "remote": "रिमोट",
+      "hybrid": "हाइब्रिड",
+      "onsite": "साइट पर"
+    }
   }
 }
