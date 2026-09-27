@@ -1041,5 +1041,67 @@
     "title": "करियर पेज नहीं मिला",
     "body": "यह करियर पेज उपलब्ध नहीं है। पता गलत हो सकता है, या पेज हटा दिया गया हो सकता है।",
     "browseAllJobs": "सभी नौकरियां देखें"
+  },
+  "publicSignIn": {
+    "loadingSignIn": "साइन-इन लोड हो रहा है…",
+    "stillLoading": "अब भी लोड हो रहा है। यदि यह साफ़ न हो, तो कृपया रीफ़्रेश करें या कुछ देर में पुनः प्रयास करें।",
+    "employeeLink": "किसी कंपनी के कर्मचारी? कर्मचारी पोर्टल पर जाओं →",
+    "downloadTheApp": "ऐप डाउनलोड करें"
+  },
+  "publicSignUp": {
+    "loadingSignUp": "साइन-अप लोड हो रहा है…",
+    "stillLoading": "अब भी लोड हो रहा है। यदि यह साफ़ न हो, तो कृपया रीफ़्रेश करें या कुछ देर में पुनः प्रयास करें।",
+    "alreadyPartOfTeam": "क्या आप पहले से ही ResumeTailored पर एक टीम का हिस्सा हैं?",
+    "signInInstead": "इसके बदले साइन इन करें",
+    "alreadyPartOfTeamSuffix": "—आपका वर्क लॉगिन इन व्यक्तिगत रेज़्य़ूमे साधनों के लिे भी कार्य करता है।",
+    "downloadTheApp": "ऐप डाउनलोड करें"
+  },
+  "publicJoin": {
+    "invalidInviteTitle": "अमान्य आमंत्रण",
+    "invalidInviteBody": "इस आमंत्रण लिंक में टोकन नहीं है। अपने व्यवस्थापक से इसे पुनः भेजने के लिे कहें।",
+    "inviteNotFoundTitle": "आमंत्रण नहीं मिला",
+    "inviteNotFoundBody": "इस आमंत्रण का पहले ही उर् लिन किया जा चुका है या वापस ले लिया गया है। अपने व्यवस्थापक से नया आमंत्रण भेजने के लिे कहें।",
+    "goToApp": "ResumeTailored पर जाें"
+  },
+  "publicSign": {
+    "secureDocumentUpload": "सुरक्षित दस्तावेज़ अपलोड",
+    "hiFirstName": "नमस्ते, {name},",
+    "uploadYourDocuments": "अपने दस्तावेज़ अपलोड करें",
+    "theSender": "भेजनेवाला",
+    "theSenderLower": "भेजनेवाले",
+    "askedToUpload": "ने आपसे कुछ दस्तावेज़ अपलोड करने के लिे कहा है, संबंधित",
+    "returnAnyTime": "आप इसी लिंक का उपयोग करके कभी भी इस पेज पर लौट सकते हैं।",
+    "requestedDocuments": "अनुरोधित दस्तावेज़",
+    "uploaded": "अपलोड हो गया",
+    "chooseFile": "फ़ाइल चुनें",
+    "otherDocuments": "अन्य दस्तावेज़",
+    "addAnythingElse": "भेजनेवाले को जो कुछ और चाहिे वह जोड़ें। PDF, JPG, PNG या Word · हर एक अधिकतम 10MB · {max} फ़ाइलों तक।",
+    "isThisOneOf": "क्या “{fileName}” {company} द्वारा अनुरोधित दस्तावेज़ों में से एक है?",
+    "yesItsMy": "हां — यह मेरा {name} है",
+    "noItsSomethingElse": "नहीं — यह कुछ और है",
+    "cancel": "रद्द करें",
+    "optionalNotePlaceholder": "वैकल्लिक टिप्पणी (यह क्या है?)",
+    "uploadAFile": "एक फ़ाइल अपलोड करें",
+    "reachedFileLimit": "आप इस लिंक के लिे {max}-फ़ाइल की सीमा तक पहुंच गए हैं।",
+    "yourUploads": "आपकी अपलोड ({count})",
+    "allDocsReceived": "सभी अनुरोधित दस्तावेज़ प्राप्त हुईं—धन्यवाद! आवश्यकता होने पर आप अभी भी ऐपर अधिक अपलोड कर सकते हैं।",
+    "uploadedSecurely": "ResumeTailored के साथ सुरक्षित रूप से अपलोड किया गया। केवल भेजनेवाला ही इन फ़ाइलों को देख सकता है।",
+    "linkNotValidTitle": "यह लिंक वैध नहीं है",
+    "linkNotValidBody": "अपलोड लिंक समाप्त हो गया हो सकता है या गलत टाइप हो सकता है। कृपया अपने ईमेल के सबसे नए लिंक का उपयोग करें, या भेजनेवाले से इसे पुनः भेजने के लिे कहें।",
+    "errorInvalidFileType": "कृपया PDF, इमेज (JPG/PNG), या Word दस्तावेज़ अपलोड करें।",
+    "errorFileTooLarge": "यह फ़ाइल बहुत बड़ी है (अधिकतम 10 MB)।",
+    "errorUploadFailed": "अपलोड विफ़ल रहा। कृपया पुनः प्रयास करें।",
+    "errorNetwork": "नेटवर्क त्रुटि—कृपया पुनः प्रयास करें।",
+    "receivedFile": "“{name}” प्राप्त हुआ। आपको ईमेल द्वारा पुष्टि भेजी गई है।"
+  },
+  "publicShareable": {
+    "profileNotFoundHeading": "प्रोफ़ाइल नहीं मिला",
+    "linkDoesntExist": "यह लिंक अभी तक अस्तित्व में नहीं है।",
+    "createYourFreeLink": "अपना मुफ़्त लिंक बनाें →",
+    "linkedinLabel": "LinkedIn",
+    "websiteLabel": "वेबसाइट",
+    "buildFullWebsite": "✨ ResumeTailored के साथ एक पूर्न व्यक्तिगत वेबसाइट बनाें",
+    "multipleSectionsBody": "कई सेक्शन, वीडियो, कस्टम डिज़ाइन, अपना स्वयं का डोमेन और बहुत कुछ—मुफ़्त शुरूआत।",
+    "poweredBy": "संचालित:"
   }
 }

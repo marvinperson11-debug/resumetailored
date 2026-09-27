@@ -1041,5 +1041,67 @@
     "title": "Página de empleo no encontrada",
     "body": "Esta página de empleo no está disponible. La dirección puede estar mal escrita o la página puede haber sido retirada.",
     "browseAllJobs": "Ver todos los empleos"
+  },
+  "publicSignIn": {
+    "loadingSignIn": "Cargando inicio de sesión…",
+    "stillLoading": "Aún cargando. Si esto no se resuelve, actualiza la página o intenta de nuevo en breve.",
+    "employeeLink": "¿Empleado de una empresa? Ve al portal del empleado →",
+    "downloadTheApp": "Descargar la app"
+  },
+  "publicSignUp": {
+    "loadingSignUp": "Cargando registro…",
+    "stillLoading": "Aún cargando. Si esto no se resuelve, actualiza la página o intenta de nuevo en breve.",
+    "alreadyPartOfTeam": "¿Ya formas parte de un equipo en ResumeTailored?",
+    "signInInstead": "Inicia sesión en su lugar",
+    "alreadyPartOfTeamSuffix": "— tu inicio de sesión de trabajo también funciona para estas herramientas personales de currículum.",
+    "downloadTheApp": "Descargar la app"
+  },
+  "publicJoin": {
+    "invalidInviteTitle": "Invitación inválida",
+    "invalidInviteBody": "A este enlace de invitación le falta su token. Pide a tu administrador que lo reenvíe.",
+    "inviteNotFoundTitle": "Invitación no encontrada",
+    "inviteNotFoundBody": "Esta invitación puede haber sido usada o retirada. Pide a tu administrador que envíe una nueva.",
+    "goToApp": "Ir a ResumeTailored"
+  },
+  "publicSign": {
+    "secureDocumentUpload": "Carga segura de documentos",
+    "hiFirstName": "Hola, {name},",
+    "uploadYourDocuments": "Sube tus documentos",
+    "theSender": "El remitente",
+    "theSenderLower": "el remitente",
+    "askedToUpload": "te pidió subir algunos documentos relacionados con",
+    "returnAnyTime": "Puedes volver a esta página en cualquier momento usando el mismo enlace.",
+    "requestedDocuments": "Documentos solicitados",
+    "uploaded": "Subido",
+    "chooseFile": "Elegir archivo",
+    "otherDocuments": "Otros documentos",
+    "addAnythingElse": "Agrega cualquier otra cosa que el remitente necesite. PDF, JPG, PNG o Word · máx. 10 MB cada uno · hasta {max} archivos.",
+    "isThisOneOf": "¿Es “{fileName}” uno de los documentos que {company} solicitó?",
+    "yesItsMy": "Sí — es mi {name}",
+    "noItsSomethingElse": "No — es otra cosa",
+    "cancel": "Cancelar",
+    "optionalNotePlaceholder": "Nota opcional (¿qué es esto?)",
+    "uploadAFile": "Subir un archivo",
+    "reachedFileLimit": "Has alcanzado el límite de {max} archivos para este enlace.",
+    "yourUploads": "Tus archivos subidos ({count})",
+    "allDocsReceived": "Todos los documentos solicitados fueron recibidos — ¡gracias! Aún puedes subir más arriba si es necesario.",
+    "uploadedSecurely": "Subido de forma segura a través de ResumeTailored. Solo el remitente puede acceder a estos archivos.",
+    "linkNotValidTitle": "Este enlace no es válido",
+    "linkNotValidBody": "El enlace de carga puede haber caducado o estar mal escrito. Usa el enlace más reciente de tu correo, o pide al remitente que lo reenvíe.",
+    "errorInvalidFileType": "Sube un PDF, imagen (JPG/PNG) o documento de Word.",
+    "errorFileTooLarge": "Ese archivo es demasiado grande (máx. 10 MB).",
+    "errorUploadFailed": "Error al subir. Inténtalo de nuevo.",
+    "errorNetwork": "Error de red — inténtalo de nuevo.",
+    "receivedFile": "Recibido “{name}”. Se te ha enviado una confirmación por correo."
+  },
+  "publicShareable": {
+    "profileNotFoundHeading": "Perfil no encontrado",
+    "linkDoesntExist": "Este enlace aún no existe.",
+    "createYourFreeLink": "Crea tu enlace gratis →",
+    "linkedinLabel": "LinkedIn",
+    "websiteLabel": "Sitio web",
+    "buildFullWebsite": "✨ Crea un sitio web personal completo con ResumeTailored",
+    "multipleSectionsBody": "Múltiples secciones, video, diseño personalizado, tu propio dominio y más — gratis para empezar.",
+    "poweredBy": "Desarrollado por"
   }
 }

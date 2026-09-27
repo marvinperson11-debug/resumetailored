@@ -1041,5 +1041,67 @@
     "title": "Page carrières introuvable",
     "body": "Cette page carrières n'est pas disponible. L'adresse est peut-être mal orthographiée, ou la page a pu être retirée.",
     "browseAllJobs": "Voir toutes les offres"
+  },
+  "publicSignIn": {
+    "loadingSignIn": "Chargement de la connexion…",
+    "stillLoading": "Toujours en chargement. Si cela ne se résout pas, actualisez la page ou réessayez bientôt.",
+    "employeeLink": "Employé d'une entreprise ? Allez au portail employé →",
+    "downloadTheApp": "Télécharger l'application"
+  },
+  "publicSignUp": {
+    "loadingSignUp": "Chargement de l'inscription…",
+    "stillLoading": "Toujours en chargement. Si cela ne se résout pas, actualisez la page ou réessayez bientôt.",
+    "alreadyPartOfTeam": "Déjà membre d'une équipe sur ResumeTailored ?",
+    "signInInstead": "Connectez-vous plutôt",
+    "alreadyPartOfTeamSuffix": "— votre identifiant professionnel fonctionne aussi pour ces outils personnels de CV.",
+    "downloadTheApp": "Télécharger l'application"
+  },
+  "publicJoin": {
+    "invalidInviteTitle": "Invitation invalide",
+    "invalidInviteBody": "Ce lien d'invitation n'a pas de jeton. Demandez à votre administrateur de le renvoyer.",
+    "inviteNotFoundTitle": "Invitation introuvable",
+    "inviteNotFoundBody": "Cette invitation a peut-être déjà été utilisée ou retirée. Demandez à votre administrateur d'en envoyer une nouvelle.",
+    "goToApp": "Aller sur ResumeTailored"
+  },
+  "publicSign": {
+    "secureDocumentUpload": "Téléchargement sécurisé de documents",
+    "hiFirstName": "Bonjour {name},",
+    "uploadYourDocuments": "Téléchargez vos documents",
+    "theSender": "L'expéditeur",
+    "theSenderLower": "l'expéditeur",
+    "askedToUpload": "vous a demandé de télécharger quelques documents liés à",
+    "returnAnyTime": "Vous pouvez revenir sur cette page à tout moment en utilisant le même lien.",
+    "requestedDocuments": "Documents demandés",
+    "uploaded": "Téléchargé",
+    "chooseFile": "Choisir un fichier",
+    "otherDocuments": "Autres documents",
+    "addAnythingElse": "Ajoutez tout autre élément dont l'expéditeur a besoin. PDF, JPG, PNG ou Word · max 10 Mo chacun · jusqu'à {max} fichiers.",
+    "isThisOneOf": "« {fileName} » est-il l'un des documents demandés par {company} ?",
+    "yesItsMy": "Oui — c'est mon {name}",
+    "noItsSomethingElse": "Non — c'est autre chose",
+    "cancel": "Annuler",
+    "optionalNotePlaceholder": "Note facultative (qu'est-ce que c'est ?)",
+    "uploadAFile": "Télécharger un fichier",
+    "reachedFileLimit": "Vous avez atteint la limite de {max} fichiers pour ce lien.",
+    "yourUploads": "Vos téléchargements ({count})",
+    "allDocsReceived": "Tous les documents demandés ont été reçus — merci ! Vous pouvez encore en télécharger d'autres ci-dessus si besoin.",
+    "uploadedSecurely": "Téléchargé en toute sécurité via ResumeTailored. Seul l'expéditeur peut accéder à ces fichiers.",
+    "linkNotValidTitle": "Ce lien n'est pas valide",
+    "linkNotValidBody": "Le lien de téléchargement a peut-être expiré ou été mal saisi. Utilisez le lien le plus récent de votre e-mail, ou demandez à l'expéditeur de le renvoyer.",
+    "errorInvalidFileType": "Veuillez télécharger un PDF, une image (JPG/PNG) ou un document Word.",
+    "errorFileTooLarge": "Ce fichier est trop volumineux (max 10 Mo).",
+    "errorUploadFailed": "Échec du téléchargement. Veuillez réessayer.",
+    "errorNetwork": "Erreur réseau — veuillez réessayer.",
+    "receivedFile": "« {name} » reçu. Une confirmation vous a été envoyée par e-mail."
+  },
+  "publicShareable": {
+    "profileNotFoundHeading": "Profil introuvable",
+    "linkDoesntExist": "Ce lien n'existe pas encore.",
+    "createYourFreeLink": "Créez votre lien gratuit →",
+    "linkedinLabel": "LinkedIn",
+    "websiteLabel": "Site web",
+    "buildFullWebsite": "✨ Créez un site web personnel complet avec ResumeTailored",
+    "multipleSectionsBody": "Plusieurs sections, vidéo, design personnalisé, votre propre domaine et plus — gratuit pour commencer.",
+    "poweredBy": "Propulsé par"
   }
 }

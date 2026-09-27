@@ -1041,5 +1041,67 @@
     "title": "未找到该招聘页面",
     "body": "此招聘页面不可用。链接可能有误，或该页面已被下线。",
     "browseAllJobs": "浏览全部职位"
+  },
+  "publicSignIn": {
+    "loadingSignIn": "正在加载登录…",
+    "stillLoading": "仍在加载。如果一直这样，请刷新页面或稍后再试。",
+    "employeeLink": "公司员工？前往员工门户 →",
+    "downloadTheApp": "下载应用"
+  },
+  "publicSignUp": {
+    "loadingSignUp": "正在加载注册…",
+    "stillLoading": "仍在加载。如果一直这样，请刷新页面或稍后再试。",
+    "alreadyPartOfTeam": "已经是 ResumeTailored 团队的一员？",
+    "signInInstead": "直接登录",
+    "alreadyPartOfTeamSuffix": "——您的工作登录信息也适用于这些个人简历工具。",
+    "downloadTheApp": "下载应用"
+  },
+  "publicJoin": {
+    "invalidInviteTitle": "无效邀请",
+    "invalidInviteBody": "此邀请链接缺少令牌。请要求您的管理员重新发送。",
+    "inviteNotFoundTitle": "未找到邀请",
+    "inviteNotFoundBody": "此邀请可能已被使用或撤销。请要求您的管理员发送一份新的。",
+    "goToApp": "前往 ResumeTailored"
+  },
+  "publicSign": {
+    "secureDocumentUpload": "安全文件上传",
+    "hiFirstName": "你好，{name}，",
+    "uploadYourDocuments": "上传您的文件",
+    "theSender": "发送人",
+    "theSenderLower": "发送人",
+    "askedToUpload": "要求您上传若干文件，关于",
+    "returnAnyTime": "您可以随时使用同一个链接返回此页面。",
+    "requestedDocuments": "请求的文件",
+    "uploaded": "已上传",
+    "chooseFile": "选择文件",
+    "otherDocuments": "其他文件",
+    "addAnythingElse": "添加发送人需要的任何其他内容。PDF、JPG、PNG 或 Word · 每个最大 10MB · 最多 {max} 个文件。",
+    "isThisOneOf": "“{fileName}”是 {company} 请求的文件之一吗？",
+    "yesItsMy": "是——这是我的{name}",
+    "noItsSomethingElse": "不——是其他内容",
+    "cancel": "取消",
+    "optionalNotePlaceholder": "可选备注（这是什么？）",
+    "uploadAFile": "上传文件",
+    "reachedFileLimit": "您已达到此链接的 {max} 个文件上限。",
+    "yourUploads": "您的上传（{count}）",
+    "allDocsReceived": "所有请求的文件已收到——谢谢！如需要，您仍可在上方上传更多文件。",
+    "uploadedSecurely": "通过 ResumeTailored 安全上传。只有发送人可以访问这些文件。",
+    "linkNotValidTitle": "此链接无效",
+    "linkNotValidBody": "上传链接可能已过期或输入错误。请使用您邮件中最新的链接，或请发送人重新发送。",
+    "errorInvalidFileType": "请上传 PDF、图片（JPG/PNG）或 Word 文档。",
+    "errorFileTooLarge": "文件过大（最大 10MB）。",
+    "errorUploadFailed": "上传失败。请重试。",
+    "errorNetwork": "网络错误——请重试。",
+    "receivedFile": "已收到“{name}”。确认邮件已发送给您。"
+  },
+  "publicShareable": {
+    "profileNotFoundHeading": "未找到个人主页",
+    "linkDoesntExist": "此链接尚不存在。",
+    "createYourFreeLink": "创建您的免费链接 →",
+    "linkedinLabel": "LinkedIn",
+    "websiteLabel": "网站",
+    "buildFullWebsite": "✨ 使用 ResumeTailored 构建完整的个人网站",
+    "multipleSectionsBody": "多个部分、视频、自定义设计、您自己的域名等——免费开始。",
+    "poweredBy": "技术支持："
   }
 }

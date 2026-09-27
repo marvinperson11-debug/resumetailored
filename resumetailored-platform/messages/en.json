@@ -1041,5 +1041,67 @@
     "title": "Careers page not found",
     "body": "This careers page isn't available. The address may be misspelled, or the page may have been taken down.",
     "browseAllJobs": "Browse all jobs"
+  },
+  "publicSignIn": {
+    "loadingSignIn": "Loading sign-in…",
+    "stillLoading": "Still loading. If this doesn't clear, please refresh or try again shortly.",
+    "employeeLink": "Employee of a company? Go to the Employee portal →",
+    "downloadTheApp": "Download the app"
+  },
+  "publicSignUp": {
+    "loadingSignUp": "Loading sign-up…",
+    "stillLoading": "Still loading. If this doesn't clear, please refresh or try again shortly.",
+    "alreadyPartOfTeam": "Already part of a team on ResumeTailored?",
+    "signInInstead": "Sign in instead",
+    "alreadyPartOfTeamSuffix": "— your work login also works for these personal resume tools.",
+    "downloadTheApp": "Download the app"
+  },
+  "publicJoin": {
+    "invalidInviteTitle": "Invalid invite",
+    "invalidInviteBody": "This invite link is missing its token. Ask your admin to resend it.",
+    "inviteNotFoundTitle": "Invite not found",
+    "inviteNotFoundBody": "This invite may have already been used or withdrawn. Ask your admin to send a new one.",
+    "goToApp": "Go to ResumeTailored"
+  },
+  "publicSign": {
+    "secureDocumentUpload": "Secure document upload",
+    "hiFirstName": "Hi {name},",
+    "uploadYourDocuments": "Upload your documents",
+    "theSender": "The sender",
+    "theSenderLower": "the sender",
+    "askedToUpload": "asked you to upload a few documents related to",
+    "returnAnyTime": "You can return to this page any time using the same link.",
+    "requestedDocuments": "Requested documents",
+    "uploaded": "Uploaded",
+    "chooseFile": "Choose file",
+    "otherDocuments": "Other documents",
+    "addAnythingElse": "Add anything else the sender needs. PDF, JPG, PNG or Word · max 10 MB each · up to {max} files.",
+    "isThisOneOf": "Is “{fileName}” one of the documents {company} requested?",
+    "yesItsMy": "Yes — it's my {name}",
+    "noItsSomethingElse": "No — it's something else",
+    "cancel": "Cancel",
+    "optionalNotePlaceholder": "Optional note (what is this?)",
+    "uploadAFile": "Upload a file",
+    "reachedFileLimit": "You've reached the {max}-file limit for this link.",
+    "yourUploads": "Your uploads ({count})",
+    "allDocsReceived": "All requested documents received — thank you! You can still upload more above if needed.",
+    "uploadedSecurely": "Uploaded securely via ResumeTailored. Only the sender can access these files.",
+    "linkNotValidTitle": "This link isn't valid",
+    "linkNotValidBody": "The upload link may have expired or been mistyped. Please use the most recent link from your email, or ask the sender to resend it.",
+    "errorInvalidFileType": "Please upload a PDF, image (JPG/PNG), or Word document.",
+    "errorFileTooLarge": "That file is too large (max 10 MB).",
+    "errorUploadFailed": "Upload failed. Please try again.",
+    "errorNetwork": "Network error — please try again.",
+    "receivedFile": "Received “{name}”. A confirmation has been emailed to you."
+  },
+  "publicShareable": {
+    "profileNotFoundHeading": "Profile not found",
+    "linkDoesntExist": "This link doesn't exist yet.",
+    "createYourFreeLink": "Create your free link →",
+    "linkedinLabel": "LinkedIn",
+    "websiteLabel": "Website",
+    "buildFullWebsite": "✨ Build a full personal website with ResumeTailored",
+    "multipleSectionsBody": "Multiple sections, video, custom design, your own domain and more — free to start.",
+    "poweredBy": "Powered by"
   }
 }
