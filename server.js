@@ -1177,25 +1177,27 @@ function _injectSharedPublicNav(html, filePath) {
   return _insertBeforeLastBody(html, script);
 }
 
-// ── Site-wide UI translator (full-DOM 中文/EN) ────────────────────────────────
+// ── Site-wide UI translator (full-DOM, 5 languages) ──────────────────────────
 // The homepage and the app dashboard carry their own exhaustive, hand-authored
-// translators. Every OTHER page (the ~300 SEO/role pages, the marketing/tool
-// pages, the blog, the alternatives pages) previously had NO body translator —
-// clicking 中文 there only translated the shared nav chrome and left the entire
-// page in English. site-i18n.js fixes that generically: on toggle it walks the
-// whole DOM (text nodes + placeholder/title/aria-label/alt/value attributes),
-// sends the unique strings to /api/i18n/translate (cross-user cached, so cost is
-// one-time per unique string), and swaps them in — then restores the stored
-// originals instantly on switching back to EN. It CHAINS after a page's own
-// window.applyLang when one exists, so curated translations still run first.
-// Excluded: the homepage and the three app shells (their own systems own them).
+// translators (English/中文 only). Every page's body previously had no OTHER
+// translator, so switching to es/hi/fr only translated the shared nav chrome
+// (or, on the homepage, nothing) and left the rest of the page in English.
+// site-i18n.js fixes that generically: on a language switch it walks the whole
+// DOM (text nodes + placeholder/title/aria-label/alt/value attributes), sends
+// the unique strings to /api/i18n/translate (cross-user cached per language,
+// so cost is one-time per unique string per language), and swaps them in —
+// then restores the stored originals instantly on switching back to EN. It
+// CHAINS after a page's own window.applyLang when one exists (the homepage,
+// /score, /pro-tools), so their curated EN/中文 translations still run first
+// for those two languages; the other three (es/hi/fr) fall through entirely to
+// this generic pass, since those pages' own translators only branch on
+// Chinese. Excluded: the three app shells (their own, separate systems own
+// them entirely — not just the marketing chrome).
 function _injectSiteI18n(html, filePath) {
-  // Exclude the three app shells (own systems) and the HOMEPAGE specifically —
-  // matched by resolved path, NOT basename, or every directory index.html (blog,
-  // tools, …) would be wrongly excluded too.
+  // Exclude the three app shells (own systems), matched by basename — every
+  // OTHER page, including the homepage, gets the generic translator.
   const ownShells = new Set(['app.html', 'employer.html', 'portal.html']);
-  const isHomepage = path.resolve(filePath) === path.resolve(path.join(__dirname, 'public', 'index.html'));
-  if (isHomepage || ownShells.has(path.basename(filePath)) || /src=["']\/site-i18n\.js/.test(html)) return html;
+  if (ownShells.has(path.basename(filePath)) || /src=["']\/site-i18n\.js/.test(html)) return html;
   const script = `<script defer src="/site-i18n.js?v=${ASSET_VERSION}"></script>`;
   return _insertBeforeLastBody(html, script);
 }
@@ -7754,24 +7756,30 @@ app.post('/api/resume-video-render', async (req, res) => {
 
 // ─── API: Translate resume Chinese → English ──────────────────────────────────
 // ── Site-wide UI translation (powers site-i18n.js) ───────────────────────────
-// Batch-translates short UI strings to Simplified Chinese, cross-user cached in
-// i18n_cache so an identical string is only ever sent to Claude ONCE for the
-// whole user base (every later request — every other visitor, every other page
-// that reuses the phrase — is a free DB read). Fails OPEN: on any error, a
-// missing API key, or an unsupported language it returns whatever it has (often
+// Batch-translates short UI strings into any of I18N_TARGET_LANGS (zh/es/hi/fr),
+// cross-user cached in i18n_cache so an identical string is only ever sent to
+// Claude ONCE per language for the whole user base (every later request —
+// every other visitor, every other page that reuses the phrase — is a free DB
+// read). Fails OPEN: on any error, a missing API key, or an unsupported language
+// it returns whatever it has (often
 // nothing), and the client simply leaves those strings in English rather than
 // breaking the page.
 const _i18nGet = db.prepare('SELECT txt FROM i18n_cache WHERE hash = ? AND lang = ?');
 const _i18nPut = db.prepare('INSERT OR IGNORE INTO i18n_cache (hash, lang, src, txt) VALUES (?, ?, ?, ?)');
 
+// Supported non-English targets for the runtime UI translator (site-i18n.js).
+// 'en' is never a translation target — it's the source language.
+const I18N_TARGET_LANGS = { zh: 'Simplified Chinese', es: 'Spanish', hi: 'Hindi', fr: 'French' };
+
 // Translate an array of strings via Claude, in modest chunks so the JSON stays
 // reliable. Returns an array aligned 1:1 with the input; an element is null when
 // that chunk could not be translated (caller then leaves it in English).
 async function _mtBatch(strings, lang) {
-  if (!process.env.ANTHROPIC_API_KEY || lang !== 'zh' || !strings.length) return strings.map(() => null);
+  const langName = I18N_TARGET_LANGS[lang];
+  if (!process.env.ANTHROPIC_API_KEY || !langName || !strings.length) return strings.map(() => null);
   const CHUNK = 60;
   const out = new Array(strings.length).fill(null);
-  const system = 'You are a professional UI localizer for a résumé/career SaaS product. Translate each English UI string to natural, concise Simplified Chinese as used in software interfaces. Rules: keep brand and proper names unchanged (ResumeTailored, LinkedIn, ATS, Claude, Stripe, Indeed, Glassdoor, Jobscan, Rezi, Teal, Google, PDF, DOCX); keep URLs, email addresses, and placeholder tokens such as {n} or {t} unchanged; preserve any leading or trailing emoji, arrows (→, ↗) and punctuation; do not add quotes or explanations. Return ONLY a JSON array of strings, exactly the same length and order as the input.';
+  const system = `You are a professional UI localizer for a résumé/career SaaS product. Translate each English UI string to natural, concise ${langName} as used in software interfaces. Rules: keep brand and proper names unchanged (ResumeTailored, LinkedIn, ATS, Claude, Stripe, Indeed, Glassdoor, Jobscan, Rezi, Teal, Google, PDF, DOCX); keep URLs, email addresses, and placeholder tokens such as {n} or {t} unchanged; preserve any leading or trailing emoji, arrows (→, ↗) and punctuation; do not add quotes or explanations. Return ONLY a JSON array of strings, exactly the same length and order as the input.`;
   for (let i = 0; i < strings.length; i += CHUNK) {
     const chunk = strings.slice(i, i + CHUNK);
     try {
@@ -7796,7 +7804,7 @@ app.post('/api/i18n/translate', async (req, res) => {
   try {
     const lang = String((req.body && req.body.lang) || '').toLowerCase();
     let strings = req.body && req.body.strings;
-    if (lang !== 'zh' || !Array.isArray(strings)) return res.json({ translations: {} });
+    if (!I18N_TARGET_LANGS[lang] || !Array.isArray(strings)) return res.json({ translations: {} });
     // De-dupe + bound the request: short UI strings only, hard caps on count/size.
     const seen = new Set();
     strings = strings.filter((s) => {
