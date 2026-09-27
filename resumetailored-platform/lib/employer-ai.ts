@@ -341,11 +341,16 @@ export interface DocusignEnvelope {
   copiesSent: { name: string; email: string; sentAt: string }[];
 }
 
-/** A composed in-app document (Document Creator). */
+/** A composed in-app document (Document Creator). `kind: "chart"` marks a
+ *  document created by "Insert into a document" from the Office suite's
+ *  Charts tool — its body is an <img> embedding `assetUrl` (the office-assets
+ *  bucket PNG), editable and sendable-for-signature like any other document. */
 export interface EmployerDocument {
   id: number;
   title: string;
   bodyHtml: string;
+  kind: "html" | "chart";
+  assetUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }

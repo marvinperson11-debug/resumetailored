@@ -23,6 +23,7 @@ import {
   Link2,
   Heading1,
   Heading2,
+  BarChart3,
 } from "lucide-react";
 import { Panel, PageHeader, Btn, Badge, EmptyState, Input } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
@@ -186,8 +187,13 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
                 <tr key={d.id} className="border-b border-border-gold/60 last:border-0 hover:bg-white/[0.02]">
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-2">
-                      <FileText className="h-4 w-4 shrink-0 text-violet" />
+                      {d.kind === "chart" ? (
+                        <BarChart3 className="h-4 w-4 shrink-0 text-teal" />
+                      ) : (
+                        <FileText className="h-4 w-4 shrink-0 text-violet" />
+                      )}
                       <span className="text-cream">{d.title}</span>
+                      {d.kind === "chart" && <Badge tone="teal">Chart</Badge>}
                     </span>
                   </td>
                   <td className="hidden px-4 py-3 text-white/55 sm:table-cell">{fmtDate(d.updatedAt)}</td>
