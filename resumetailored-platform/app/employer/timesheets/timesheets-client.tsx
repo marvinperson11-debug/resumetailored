@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Clock, ChevronLeft, ChevronRight, Download, Check, X, Loader2 } from "lucide-react";
 import {
   weekStartISO,
@@ -10,9 +11,7 @@ import {
   entryHours,
   formatHM,
   roundHours,
-  REVIEW_STATUS_LABELS,
   REVIEW_TONE,
-  DOW_LABELS,
   type TimeEntry,
   type TimesheetReview,
   type ReviewStatus,
@@ -29,6 +28,7 @@ interface Row {
 /** Employer weekly timesheets: per-employee hours + approve/decline + CSV export.
  *  Raw hours only. */
 export function TimesheetsClient() {
+  const t = useTranslations("employerTimesheets");
   const [week, setWeek] = useState(() => weekStartISO());
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,32 +55,32 @@ export function TimesheetsClient() {
   return (
     <div>
       <PageHeader
-        title="Timesheets"
-        subtitle="Weekly hours from the time clock. Approve or decline each employee's week. Raw hours only — no overtime or wage math."
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           <a
             href={`/api/employer/timesheets/export?week=${week}`}
             className="inline-flex items-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-4 py-2 text-sm font-semibold text-cream transition-colors hover:bg-white/[0.08]"
           >
-            <Download className="h-4 w-4" /> Export CSV
+            <Download className="h-4 w-4" /> {t("exportCsv")}
           </a>
         }
       />
 
       {/* Week stepper */}
       <Panel className="mb-6 flex items-center justify-between !py-3">
-        <button onClick={() => setWeek((w) => addDaysISO(w, -7))} className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-cream" aria-label="Previous week">
+        <button onClick={() => setWeek((w) => addDaysISO(w, -7))} className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-cream" aria-label={t("previousWeek")}>
           <ChevronLeft className="h-4 w-4" />
         </button>
         <div className="text-center">
           <div className="text-sm font-medium text-cream">{weekLabel(week)}</div>
-          {isCurrent && <div className="text-[11px] text-white/40">This week</div>}
+          {isCurrent && <div className="text-[11px] text-white/40">{t("thisWeek")}</div>}
         </div>
         <button
           onClick={() => setWeek((w) => addDaysISO(w, 7))}
           disabled={isCurrent}
           className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-cream disabled:opacity-30"
-          aria-label="Next week"
+          aria-label={t("nextWeek")}
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -88,12 +88,12 @@ export function TimesheetsClient() {
 
       {loading ? (
         <Panel className="flex items-center gap-2 text-sm text-white/50">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t("loading")}
         </Panel>
       ) : rows.length === 0 ? (
-        <EmptyState icon={Clock} title="No employees yet" body="Add employees in the Employees tab. Their clocked hours will show up here each week." />
+        <EmptyState icon={Clock} title={t("noEmployeesYetTitle")} body={t("noEmployeesYetBody")} />
       ) : !anyHours ? (
-        <EmptyState icon={Clock} title="No hours this week" body="Nobody has clocked in for this week yet. Use the arrows to check another week." />
+        <EmptyState icon={Clock} title={t("noHoursTitle")} body={t("noHoursBody")} />
       ) : (
         <div className="space-y-3">
           {rows.map((row) => (
@@ -113,6 +113,7 @@ export function TimesheetsClient() {
 }
 
 function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; week: string; open: boolean; onToggle: () => void; onReviewed: () => void }) {
+  const t = useTranslations("employerTimesheets");
   const [note, setNote] = useState(row.review?.note || "");
   const [saving, setSaving] = useState<ReviewStatus | null>(null);
   const status = row.review?.status || "pending";
@@ -148,20 +149,20 @@ function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; wee
         </div>
         <div className="flex items-center gap-3">
           <span className="tabular-nums text-lg font-medium text-cream">{roundHours(row.totalHours)}h</span>
-          <Badge tone={REVIEW_TONE[status]}>{REVIEW_STATUS_LABELS[status]}</Badge>
+          <Badge tone={REVIEW_TONE[status]}>{t(`reviewStatus.${status}`)}</Badge>
         </div>
       </button>
 
       {open && (
         <div className="border-t border-border-gold px-5 py-4">
           {row.entries.length === 0 ? (
-            <p className="text-sm text-white/50">No hours clocked this week.</p>
+            <p className="text-sm text-white/50">{t("noHoursClockedThisWeek")}</p>
           ) : (
             <ul className="mb-4 divide-y divide-white/5">
               {weekDates(week).map((iso) => {
                 const entries = byDay.get(iso) || [];
                 if (entries.length === 0) return null;
-                const dow = DOW_LABELS[new Date(iso + "T00:00:00Z").getUTCDay()];
+                const dow = t(`dow.${new Date(iso + "T00:00:00Z").getUTCDay()}`);
                 const dayTotal = entries.reduce((a, e) => a + entryHours(e), 0);
                 return (
                   <li key={iso} className="py-2">
@@ -179,7 +180,7 @@ function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; wee
                         <li key={e.id} className="flex items-center justify-between text-xs text-white/50">
                           <span>
                             {new Date(e.clockIn).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} –{" "}
-                            {e.clockOut ? new Date(e.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "open"}
+                            {e.clockOut ? new Date(e.clockOut).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : t("open")}
                             {e.note ? <span className="text-white/35"> · {e.note}</span> : null}
                           </span>
                           <span className="tabular-nums">{formatHM(entryHours(e))}</span>
@@ -192,22 +193,22 @@ function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; wee
             </ul>
           )}
 
-          <Area value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Note to the employee (optional)" className="mb-3" />
+          <Area value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder={t("notePlaceholder")} className="mb-3" />
           <div className="flex flex-wrap gap-2">
             <Btn variant="primary" onClick={() => review("approved")} loading={saving === "approved"} disabled={!!saving}>
-              <Check className="h-4 w-4" /> Approve
+              <Check className="h-4 w-4" /> {t("approve")}
             </Btn>
             <Btn variant="danger" onClick={() => review("declined")} loading={saving === "declined"} disabled={!!saving}>
-              <X className="h-4 w-4" /> Decline
+              <X className="h-4 w-4" /> {t("decline")}
             </Btn>
             {status !== "pending" && (
               <Btn variant="ghost" onClick={() => review("pending")} loading={saving === "pending"} disabled={!!saving}>
-                Reset
+                {t("reset")}
               </Btn>
             )}
           </div>
           {row.review?.reviewedAt && (
-            <p className="mt-2 text-xs text-white/35">Last reviewed {new Date(row.review.reviewedAt).toLocaleString()}</p>
+            <p className="mt-2 text-xs text-white/35">{t("lastReviewed", { date: new Date(row.review.reviewedAt).toLocaleString() })}</p>
           )}
         </div>
       )}
