@@ -537,3 +537,112 @@ Write the report now.`;
 
   return { system, user };
 }
+
+// ── Presentation Builder (Scale+, Phase 6) ──────────────────────────────────
+
+export const PRESENTATION_SLIDE_COUNTS = [5, 10, 15] as const;
+export type PresentationSlideCount = (typeof PRESENTATION_SLIDE_COUNTS)[number];
+export const isPresentationSlideCount = (v: unknown): v is PresentationSlideCount =>
+  (PRESENTATION_SLIDE_COUNTS as readonly number[]).includes(Number(v));
+
+const PRESENTATION_MAX_TITLE = 100;
+const PRESENTATION_MAX_BULLET = 200;
+const PRESENTATION_MAX_BULLETS_PER_SLIDE = 6;
+
+export interface PresentationSlide {
+  title: string;
+  bullets: string[];
+}
+
+export interface PresentationDeck {
+  title: string;
+  slides: PresentationSlide[];
+}
+
+function clampTitle(v: unknown): string {
+  return String(v ?? "").slice(0, PRESENTATION_MAX_TITLE);
+}
+function clampBullet(v: unknown): string {
+  return String(v ?? "").slice(0, PRESENTATION_MAX_BULLET);
+}
+
+/** Clamp+coerce loosely-typed deck JSON (model output, or a client-submitted
+ *  body) into a valid `PresentationDeck` — or null if there's nothing usable.
+ *  Same never-trust-the-shape approach as `sanitizeGrid`: every string is
+ *  length-capped, every slide's bullet list is capped, and the whole deck is
+ *  capped at `maxSlides` (the slide count the user asked for). */
+export function sanitizeDeck(v: unknown, maxSlides: number, fallbackTitle = "Untitled presentation"): PresentationDeck | null {
+  if (!v || typeof v !== "object") return null;
+  const g = v as Record<string, unknown>;
+  const slidesRaw = Array.isArray(g.slides) ? g.slides : [];
+  const slides: PresentationSlide[] = slidesRaw.slice(0, Math.max(1, maxSlides)).map((s) => {
+    const slide = s && typeof s === "object" ? (s as Record<string, unknown>) : {};
+    const bulletsRaw = Array.isArray(slide.bullets) ? slide.bullets : [];
+    return {
+      title: clampTitle(slide.title) || "Untitled slide",
+      bullets: bulletsRaw
+        .slice(0, PRESENTATION_MAX_BULLETS_PER_SLIDE)
+        .map(clampBullet)
+        .filter(Boolean),
+    };
+  });
+  if (slides.length === 0) return null;
+  return { title: clampTitle(g.title) || fallbackTitle, slides };
+}
+
+/** Prompt for the Presentation Builder — one generation produces the whole
+ *  deck as strict JSON (no per-slide AI calls). Either a free-text `topic`,
+ *  or the same `source`/`range`/`data` triple the Report Writer uses (the
+ *  model sees only the pre-aggregated JSON there, never raw rows). */
+export function buildPresentationPrompt(args: {
+  topic?: string;
+  source?: ReportSource;
+  range?: ReportDateRange;
+  data?: ReportData;
+  slideCount: PresentationSlideCount;
+}): { system: string; user: string } {
+  const { topic, source, range, data, slideCount } = args;
+  const system = `You are a sharp business presentation writer who turns a topic — or a set of internal numbers — into a clean, scannable slide deck for a small company's owner or manager. Return ONLY valid JSON, no markdown, no explanation, nothing else, in this exact shape:
+{
+  "title": "<a short, specific deck title>",
+  "slides": [
+    { "title": "<slide title, at most ${PRESENTATION_MAX_TITLE} characters>", "bullets": [<2 to ${PRESENTATION_MAX_BULLETS_PER_SLIDE} short bullet strings, at most ${PRESENTATION_MAX_BULLET} characters each>] }
+  ]
+}
+Produce EXACTLY ${slideCount} slides: the first is a title/overview slide, the last is a closing takeaways slide. Every bullet is a short, punchy phrase — never a full paragraph, never a complete sentence with a period. Ground every claim in the data given (when data is given); never invent a figure that isn't there.`;
+
+  const user =
+    source && range && data
+      ? `## Presentation topic: ${REPORT_SOURCE_LABELS[source]}
+## Date range: ${reportRangeLabel(range)}
+## Data (JSON — the only facts you may cite):
+${JSON.stringify(data, null, 2)}
+
+Write the ${slideCount}-slide deck now.`
+      : `## Presentation topic:
+${(topic || "").trim() || "(no topic given — write a short generic business deck)"}
+
+Write the ${slideCount}-slide deck now.`;
+
+  return { system, user };
+}
+
+/** Render a deck as static, print-safe HTML for a Documents row's `body_html`
+ *  — one stacked block per slide (no JS, no per-slide viewport sizing), so it
+ *  opens in the Documents viewer as a scrollable deck rather than needing the
+ *  interactive Present mode. Inline styles only, matching `sanitizeDocumentHtml`'s
+ *  allowlist (no `<style>` block, no script). */
+export function presentationDeckToHtml(deck: PresentationDeck): string {
+  const slideStyle = "border:1px solid #ddd;border-radius:10px;padding:24px 28px;margin:0 0 20px;background:#fafafa;";
+  return deck.slides
+    .map(
+      (s, i) => `<div style="${slideStyle}">
+  <h2 style="margin:0 0 12px;font-size:1.3rem;">${escapeXml(s.title)}</h2>
+  <ul style="margin:0;padding-left:1.3rem;">
+    ${s.bullets.map((b) => `<li style="margin:0 0 6px;">${escapeXml(b)}</li>`).join("\n    ")}
+  </ul>
+  <div style="margin-top:14px;font-size:11px;color:#999;">Slide ${i + 1} of ${deck.slides.length}</div>
+</div>`
+    )
+    .join("\n");
+}
