@@ -2,11 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { Home, FileText, MessageSquare, CalendarClock, CalendarDays, Clock, GraduationCap, BookOpen, Rss, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export interface EmployeeNavItem {
+  /** An i18n key under the "employeeNav" namespace, resolved at render —
+   *  same convention as CandidateSidebar's `navItems`. */
   label: string;
   href: string;
   icon: LucideIcon;
@@ -15,15 +18,15 @@ export interface EmployeeNavItem {
 
 /** Single source of truth for the employee-portal nav. */
 export const EMPLOYEE_NAV: EmployeeNavItem[] = [
-  { label: "Home", href: "/employee", icon: Home, exact: true },
-  { label: "Feed", href: "/employee/feed", icon: Rss },
-  { label: "My schedule", href: "/employee/schedule", icon: CalendarDays },
-  { label: "My hours", href: "/employee/timesheet", icon: Clock },
-  { label: "Time off", href: "/employee/time-off", icon: CalendarClock },
-  { label: "My documents", href: "/employee/documents", icon: FileText },
-  { label: "Messages", href: "/employee/messages", icon: MessageSquare },
-  { label: "My training", href: "/employee/training", icon: GraduationCap },
-  { label: "Library", href: "/employee/library", icon: BookOpen },
+  { label: "home", href: "/employee", icon: Home, exact: true },
+  { label: "feed", href: "/employee/feed", icon: Rss },
+  { label: "schedule", href: "/employee/schedule", icon: CalendarDays },
+  { label: "hours", href: "/employee/timesheet", icon: Clock },
+  { label: "timeOff", href: "/employee/time-off", icon: CalendarClock },
+  { label: "documents", href: "/employee/documents", icon: FileText },
+  { label: "messages", href: "/employee/messages", icon: MessageSquare },
+  { label: "training", href: "/employee/training", icon: GraduationCap },
+  { label: "library", href: "/employee/library", icon: BookOpen },
 ];
 
 export function isEmployeeNavActive(pathname: string, href: string, exact?: boolean): boolean {
@@ -38,12 +41,13 @@ export function isEmployeeNavActive(pathname: string, href: string, exact?: bool
  */
 export function EmployeeSidebar({ company, name }: { company: string; name?: string }) {
   const pathname = usePathname();
+  const t = useTranslations("employeeNav");
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 shrink-0 items-center gap-2 border-b border-border-gold px-6">
         <span className="font-serif text-lg font-medium text-cream">ResumeTailored</span>
-        <span className="rounded bg-violet/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet">Portal</span>
+        <span className="rounded bg-violet/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet">{t("badge")}</span>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-6">
@@ -68,7 +72,7 @@ export function EmployeeSidebar({ company, name }: { company: string; name?: str
               )}
             >
               <Icon className="h-[18px] w-[18px] shrink-0" />
-              <span className="flex-1">{n.label}</span>
+              <span className="flex-1">{t(n.label)}</span>
             </Link>
           );
         })}
