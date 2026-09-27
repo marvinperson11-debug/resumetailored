@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Send, Loader2, Plane, Info } from "lucide-react";
 import {
   weekStartISO,
@@ -11,8 +12,6 @@ import {
   shiftHours,
   formatHM,
   availabilityDayLabel,
-  DOW_LABELS,
-  TIME_OFF_KIND_LABELS,
   parseISODate,
   type Shift,
   type AvailabilitySlot,
@@ -40,6 +39,7 @@ interface Data {
 /** Employer weekly shift grid: post shifts per employee/day, then publish. Shows
  *  each employee's submitted availability and approved time off as overlays. */
 export function ScheduleGridClient() {
+  const t = useTranslations("employerSchedule");
   const [week, setWeek] = useState(() => weekStartISO());
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +76,7 @@ export function ScheduleGridClient() {
         body: JSON.stringify({ weekStart: week }),
       });
       const d = (await r.json().catch(() => ({}))) as { published?: number };
-      setToast(d.published ? `Published ${d.published} shift${d.published === 1 ? "" : "s"}.` : "Schedule is up to date.");
+      setToast(d.published ? t("publishedShifts", { count: d.published }) : t("scheduleUpToDate"));
       setTimeout(() => setToast(""), 3000);
       load(week);
     } finally {
@@ -91,13 +91,13 @@ export function ScheduleGridClient() {
   // drafts; "Publish week" for a first publish; disabled + "Published" when there
   // is nothing pending. Editing/deleting an already-published shift is live
   // immediately, so it doesn't need this button.
-  const publishLabel = data?.hasDrafts ? (hasPublished ? "Publish updates" : "Publish week") : "Published";
+  const publishLabel = data?.hasDrafts ? (hasPublished ? t("publishUpdates") : t("publishWeek")) : t("published");
 
   return (
     <div>
       <PageHeader
-        title="Schedule"
-        subtitle="Post each employee's shifts for the week, then publish so they appear in the employee's portal. Published weeks stay editable — new shifts go live when you publish updates; edits to a live shift apply right away."
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           <Btn onClick={publish} loading={publishing} disabled={!data?.hasDrafts}>
             <Send className="h-4 w-4" /> {publishLabel}
@@ -109,24 +109,24 @@ export function ScheduleGridClient() {
 
       {/* Week stepper */}
       <Panel className="mb-6 flex items-center justify-between !py-3">
-        <button onClick={() => setWeek((w) => addDaysISO(w, -7))} className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-cream" aria-label="Previous week">
+        <button onClick={() => setWeek((w) => addDaysISO(w, -7))} className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-cream" aria-label={t("previousWeek")}>
           <ChevronLeft className="h-4 w-4" />
         </button>
         <div className="text-center">
           <div className="text-sm font-medium text-cream">{weekLabel(week)}</div>
-          {isCurrent && <div className="text-[11px] text-white/40">This week</div>}
+          {isCurrent && <div className="text-[11px] text-white/40">{t("thisWeek")}</div>}
         </div>
-        <button onClick={() => setWeek((w) => addDaysISO(w, 7))} className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-cream" aria-label="Next week">
+        <button onClick={() => setWeek((w) => addDaysISO(w, 7))} className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-cream" aria-label={t("nextWeek")}>
           <ChevronRight className="h-4 w-4" />
         </button>
       </Panel>
 
       {loading ? (
         <Panel className="flex items-center gap-2 text-sm text-white/50">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t("loading")}
         </Panel>
       ) : !data || data.employees.length === 0 ? (
-        <EmptyState icon={CalendarDays} title="No employees yet" body="Add employees in the Employees tab, then post their shifts here." />
+        <EmptyState icon={CalendarDays} title={t("noEmployeesYetTitle")} body={t("noEmployeesYetBody")} />
       ) : (
         <div className="space-y-4">
           {data.employees.map((emp) => (
@@ -136,7 +136,7 @@ export function ScheduleGridClient() {
               days={days}
               shifts={data.shifts.filter((s) => s.employeeId === emp.id)}
               availability={data.availability.filter((a) => a.employeeId === emp.id)}
-              timeOff={data.timeOff.filter((t) => t.employeeId === emp.id)}
+              timeOff={data.timeOff.filter((off) => off.employeeId === emp.id)}
               onAdd={(date) => setEditor({ employeeId: emp.id, date })}
               onEdit={(shift) => setEditor({ employeeId: emp.id, date: shift.shiftDate, shift })}
               onEditTimeOff={(request) => setTimeOffEditor({ request, employeeName: emp.name })}
@@ -192,6 +192,7 @@ function EmployeeRow({
   onEdit: (shift: Shift) => void;
   onEditTimeOff: (request: TimeOffRequest) => void;
 }) {
+  const t = useTranslations("employerSchedule");
   const weekHours = shifts.reduce((a, s) => a + shiftHours(s), 0);
 
   return (
@@ -201,21 +202,21 @@ function EmployeeRow({
           <span className="font-medium text-cream">{emp.name}</span>
           {emp.role && <span className="text-xs text-white/40">{emp.role}</span>}
         </div>
-        <span className="text-xs tabular-nums text-white/50">{weekHours > 0 ? formatHM(weekHours) : "—"} scheduled</span>
+        <span className="text-xs tabular-nums text-white/50">{t("scheduledSuffix", { hours: weekHours > 0 ? formatHM(weekHours) : "—" })}</span>
       </div>
 
       <div className="grid grid-cols-1 divide-y divide-white/5 sm:grid-cols-7 sm:divide-x sm:divide-y-0">
         {days.map((iso) => {
           const d = new Date(iso + "T00:00:00Z");
           const dayShifts = shifts.filter((s) => s.shiftDate === iso);
-          const off = timeOff.find((t) => t.startDate <= iso && iso <= t.endDate);
+          const off = timeOff.find((req) => req.startDate <= iso && iso <= req.endDate);
           const avail = availability.filter(
             (a) => (a.kind === "recurring" && a.weekday === d.getUTCDay()) || (a.kind === "date" && a.specificDate === iso)
           );
           return (
             <div key={iso} className="flex min-h-[128px] flex-col p-2">
               <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-white/40">
-                {DOW_LABELS[d.getUTCDay()]} {d.getUTCDate()}
+                {t(`dow.${d.getUTCDay()}`)} {d.getUTCDate()}
               </div>
 
               {off && (
@@ -223,9 +224,9 @@ function EmployeeRow({
                   type="button"
                   onClick={() => onEditTimeOff(off)}
                   className="mb-1 flex w-full items-center gap-1 rounded bg-gold/15 px-1.5 py-1 text-left text-[10px] font-medium text-gold transition hover:brightness-110"
-                  title={`${TIME_OFF_KIND_LABELS[off.kind]} — tap to change dates or withdraw`}
+                  title={t("timeOffTapToChange", { kind: t(`timeOffKind.${off.kind}`) })}
                 >
-                  <Plane className="h-3 w-3 shrink-0" /> <span className="truncate">{TIME_OFF_KIND_LABELS[off.kind]}</span>
+                  <Plane className="h-3 w-3 shrink-0" /> <span className="truncate">{t(`timeOffKind.${off.kind}`)}</span>
                 </button>
               )}
 
@@ -235,7 +236,7 @@ function EmployeeRow({
                     <div
                       key={a.id}
                       className={cn("truncate rounded px-1.5 py-0.5 text-[10px]", a.available ? "bg-teal/10 text-teal/90" : "bg-red-500/10 text-red-300/90")}
-                      title={`${a.available ? "Available" : "Unavailable"} ${availabilityDayLabel(a)} ${formatHHMM(a.startTime)}–${formatHHMM(a.endTime)}${a.note ? " · " + a.note : ""}`}
+                      title={`${a.available ? t("available") : t("unavailable")} ${availabilityDayLabel(a)} ${formatHHMM(a.startTime)}–${formatHHMM(a.endTime)}${a.note ? " · " + a.note : ""}`}
                     >
                       {a.available ? "✓" : "✗"} {formatHHMM(a.startTime)}–{formatHHMM(a.endTime)}
                     </div>
@@ -255,9 +256,9 @@ function EmployeeRow({
               <button
                 onClick={() => onAdd(iso)}
                 className="mt-1 flex min-h-[36px] flex-1 items-center justify-center gap-1 rounded-md border border-dashed border-white/15 text-[11px] font-medium text-white/45 transition hover:border-violet hover:bg-violet/10 hover:text-violet"
-                aria-label={`Add a shift on ${DOW_LABELS[d.getUTCDay()]} ${d.getUTCDate()} for ${emp.name}`}
+                aria-label={t("addShiftAriaLabel", { dow: t(`dow.${d.getUTCDay()}`), date: d.getUTCDate(), name: emp.name })}
               >
-                <Plus className="h-3.5 w-3.5" /> {dayShifts.length ? "Add" : "Add shift"}
+                <Plus className="h-3.5 w-3.5" /> {dayShifts.length ? t("add") : t("addShift")}
               </button>
             </div>
           );
@@ -268,6 +269,7 @@ function EmployeeRow({
 }
 
 function ShiftChip({ shift, onEdit }: { shift: Shift; onEdit: () => void }) {
+  const t = useTranslations("employerSchedule");
   // The whole chip is a tap target that opens the editor (start/end/note +
   // delete). Published = solid violet; draft = dashed gold. The pencil is a hint,
   // not the only hit area, so it works on touch.
@@ -279,7 +281,7 @@ function ShiftChip({ shift, onEdit }: { shift: Shift; onEdit: () => void }) {
         "flex w-full items-center justify-between gap-1 rounded px-1.5 py-1.5 text-left text-[11px] transition hover:brightness-110",
         shift.published ? "bg-violet/20 text-violet" : "border border-dashed border-gold/40 bg-gold/10 text-gold"
       )}
-      title={`${formatHHMM(shift.startTime)}–${formatHHMM(shift.endTime)}${shift.note ? " · " + shift.note : ""}${shift.published ? " (live)" : " (draft)"} — tap to edit`}
+      title={`${formatHHMM(shift.startTime)}–${formatHHMM(shift.endTime)}${shift.note ? " · " + shift.note : ""} (${shift.published ? t("live") : t("draft")}) — ${t("tapToEdit")}`}
     >
       <span className="truncate">
         {formatHHMM(shift.startTime)}–{formatHHMM(shift.endTime)}
@@ -302,6 +304,7 @@ function ShiftModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const t = useTranslations("employerSchedule");
   const editing = !!shift;
   const [startTime, setStartTime] = useState(shift?.startTime || "09:00");
   const [endTime, setEndTime] = useState(shift?.endTime || "17:00");
@@ -330,10 +333,10 @@ function ShiftModal({
             body: JSON.stringify({ employeeId: employee.id, shiftDate: date, startTime, endTime, note: note.trim() || undefined }),
           });
       const d = (await r.json().catch(() => ({}))) as { error?: string };
-      if (!r.ok) setErr(d.error || "Could not save the shift.");
+      if (!r.ok) setErr(d.error || t("errorCouldNotSaveShift"));
       else onSaved();
     } catch {
-      setErr("Network error.");
+      setErr(t("errorNetwork"));
     } finally {
       setSaving(false);
     }
@@ -346,39 +349,37 @@ function ShiftModal({
     try {
       const r = await fetch(`/api/employer/schedule/${shift!.id}`, { method: "DELETE" });
       if (!r.ok) {
-        setErr("Could not delete the shift.");
+        setErr(t("errorCouldNotDeleteShift"));
         setDeleting(false);
       } else {
         onSaved();
       }
     } catch {
-      setErr("Network error.");
+      setErr(t("errorNetwork"));
       setDeleting(false);
     }
   }
 
   // What happens on save, in plain terms: a live (published) shift edit is
   // instant; a draft (or a brand-new shift) goes live on the next "Publish".
-  const liveHint = editing && shift!.published
-    ? "This shift is live — your changes reach the employee right away."
-    : "New shifts are drafts until you publish updates for the week.";
+  const liveHint = editing && shift!.published ? t("shiftLiveHint") : t("shiftDraftHint");
 
   return (
-    <Modal title={`${editing ? "Edit" : "Add"} shift — ${employee.name}`} onClose={onClose}>
+    <Modal title={editing ? t("editShiftTitle", { name: employee.name }) : t("addShiftTitle", { name: employee.name })} onClose={onClose}>
       <div className="space-y-4">
         <div className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 text-sm text-white/70">
           <CalendarDays className="h-4 w-4 text-violet" /> {label}
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Start">
+          <Field label={t("start")}>
             <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
           </Field>
-          <Field label="End">
+          <Field label={t("end")}>
             <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
           </Field>
         </div>
-        <Field label="Note" hint="Optional — e.g. a station or location.">
-          <Input value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} placeholder="Front desk" />
+        <Field label={t("note")} hint={t("noteHint")}>
+          <Input value={note} onChange={(e) => setNote(e.target.value)} maxLength={300} placeholder={t("frontDeskExample")} />
         </Field>
         <div className="flex items-start gap-2 text-xs text-white/40">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {liveHint}
@@ -388,16 +389,16 @@ function ShiftModal({
           <div>
             {editing && (
               <Btn variant="danger" onClick={remove} loading={deleting} disabled={saving}>
-                <Trash2 className="h-4 w-4" /> Delete
+                <Trash2 className="h-4 w-4" /> {t("delete")}
               </Btn>
             )}
           </div>
           <div className="flex gap-2">
             <Btn variant="ghost" onClick={onClose} disabled={saving || deleting}>
-              Cancel
+              {t("cancel")}
             </Btn>
             <Btn onClick={save} loading={saving} disabled={deleting}>
-              {editing ? "Save shift" : (<><Plus className="h-4 w-4" /> Add shift</>)}
+              {editing ? t("saveShift") : (<><Plus className="h-4 w-4" /> {t("addShift")}</>)}
             </Btn>
           </div>
         </div>
@@ -417,6 +418,7 @@ function TimeOffEditModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const t = useTranslations("employerSchedule");
   const [startDate, setStartDate] = useState(request.startDate);
   const [endDate, setEndDate] = useState(request.endDate);
   const [saving, setSaving] = useState(false);
@@ -425,11 +427,11 @@ function TimeOffEditModal({
 
   async function save() {
     if (!parseISODate(startDate) || !parseISODate(endDate)) {
-      setErr("Enter valid dates.");
+      setErr(t("errorEnterValidDates"));
       return;
     }
     if (endDate < startDate) {
-      setErr("The end date can't be before the start date.");
+      setErr(t("errorEndBeforeStart"));
       return;
     }
     setSaving(true);
@@ -441,10 +443,10 @@ function TimeOffEditModal({
         body: JSON.stringify({ startDate, endDate }),
       });
       const d = (await r.json().catch(() => ({}))) as { error?: string };
-      if (!r.ok) setErr(d.error || "Could not save the dates.");
+      if (!r.ok) setErr(d.error || t("errorCouldNotSaveDates"));
       else onSaved();
     } catch {
-      setErr("Network error.");
+      setErr(t("errorNetwork"));
     } finally {
       setSaving(false);
     }
@@ -457,47 +459,46 @@ function TimeOffEditModal({
       const r = await fetch(`/api/employer/time-off/${request.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "declined", note: "Withdrawn from the schedule." }),
+        body: JSON.stringify({ status: "declined", note: t("withdrawnNote") }),
       });
       if (!r.ok) {
-        setErr("Could not withdraw the request.");
+        setErr(t("errorCouldNotWithdraw"));
         setWithdrawing(false);
       } else {
         onSaved();
       }
     } catch {
-      setErr("Network error.");
+      setErr(t("errorNetwork"));
       setWithdrawing(false);
     }
   }
 
   return (
-    <Modal title={`${TIME_OFF_KIND_LABELS[request.kind]} — ${employeeName}`} onClose={onClose}>
+    <Modal title={t("timeOffEditTitle", { kind: t(`timeOffKind.${request.kind}`), name: employeeName })} onClose={onClose}>
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Start">
+          <Field label={t("start")}>
             <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
           </Field>
-          <Field label="End">
+          <Field label={t("end")}>
             <Input type="date" value={endDate} min={startDate} onChange={(e) => setEndDate(e.target.value)} />
           </Field>
         </div>
         {request.reason && <p className="text-sm text-white/55">{request.reason}</p>}
         <div className="flex items-start gap-2 text-xs text-white/40">
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> This request is approved and live on the schedule — changes apply
-          right away.
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {t("timeOffLiveInfo")}
         </div>
         {err && <p className="text-sm text-red-300">{err}</p>}
         <div className="flex items-center justify-between gap-2">
           <Btn variant="danger" onClick={withdraw} loading={withdrawing} disabled={saving}>
-            <Trash2 className="h-4 w-4" /> Withdraw
+            <Trash2 className="h-4 w-4" /> {t("withdraw")}
           </Btn>
           <div className="flex gap-2">
             <Btn variant="ghost" onClick={onClose} disabled={saving || withdrawing}>
-              Cancel
+              {t("cancel")}
             </Btn>
             <Btn onClick={save} loading={saving} disabled={withdrawing}>
-              Save dates
+              {t("saveDates")}
             </Btn>
           </div>
         </div>
