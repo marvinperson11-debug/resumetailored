@@ -266,8 +266,12 @@ export function downloadDocx(opts: {
   signature?: string;
   docFont?: string;
   accentColor?: string;
+  // This is a plain function, not a component, so it can't call useTranslations()
+  // itself — the caller passes already-translated copy for the two failure
+  // strings it can return. Defaults keep old callers (and tests) working in English.
+  messages?: { emptyText?: string; failed?: string };
 }): string | null {
-  if (!opts.text || !opts.text.trim()) return "Nothing to export yet.";
+  if (!opts.text || !opts.text.trim()) return opts.messages?.emptyText ?? "Nothing to export yet.";
   try {
     const enc = new TextEncoder();
     const photo = decodePhoto(opts.photo);
@@ -317,6 +321,6 @@ export function downloadDocx(opts: {
     URL.revokeObjectURL(a.href);
     return null;
   } catch {
-    return "Word export failed. Please try again.";
+    return opts.messages?.failed ?? "Word export failed. Please try again.";
   }
 }

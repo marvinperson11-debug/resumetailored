@@ -1031,7 +1031,15 @@
         "emerald": "Esmeralda",
         "slate": "Pizarra",
         "coral": "Coral"
-      }
+      },
+      "exportDocTitle": "Currículum",
+      "errorNothingToExport": "Todavía no hay nada que exportar.",
+      "errorDocxFailed": "No se pudo exportar a Word. Inténtalo de nuevo."
     }
+  },
+  "careersNotFound": {
+    "title": "Página de empleo no encontrada",
+    "body": "Esta página de empleo no está disponible. La dirección puede estar mal escrita o la página puede haber sido retirada.",
+    "browseAllJobs": "Ver todos los empleos"
   }
 }
