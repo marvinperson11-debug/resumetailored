@@ -3,6 +3,8 @@ import { reminderWindowsDue } from "./cert-hub";
 import { sendEmail, emailShell, escapeHtml, resolveUserEmail } from "./email";
 import { getEmployerProfile } from "./employer-store";
 import { logActivityForEmployer, logActivityForEmployee } from "./notifications-store";
+import { getRecipientLocale } from "./locale-pref";
+import { certReminderEmployeeCopy, certReminderEmployerCopy, certDaysLabel } from "./email-i18n";
 
 /**
  * Daily scan: emails BOTH the employee and the employer 30 and 7 days before
@@ -25,42 +27,50 @@ export async function runCertReminderScan(now: number = Date.now()): Promise<{ s
 }
 
 async function sendCertReminder(cert: CertWithEmployee, which: "30" | "7"): Promise<void> {
-  const daysLabel = which === "30" ? "30 days" : "7 days";
+  const daysLabelEn = which === "30" ? "30 days" : "7 days";
   const expiry = cert.expiryDate || "";
   const profile = await getEmployerProfile(cert.employerId).catch(() => null);
   const companyName = profile?.companyName || "your employer";
 
   logActivityForEmployee(cert.employerId, cert.employeeId, {
     eventType: "cert_expiring",
-    title: `Your "${cert.name}" certification expires in ${daysLabel}`,
+    title: `Your "${cert.name}" certification expires in ${daysLabelEn}`,
     link: "/employee/profile",
   }).catch(() => {});
   logActivityForEmployer(cert.employerId, {
     eventType: "cert_expiring",
-    title: `${cert.employeeName || "An employee"}'s "${cert.name}" certification expires in ${daysLabel}`,
+    title: `${cert.employeeName || "An employee"}'s "${cert.name}" certification expires in ${daysLabelEn}`,
     link: "/employer/employees",
   }).catch(() => {});
 
   if (cert.employeeEmail) {
+    const locale = await getRecipientLocale(cert.employeeClerkUserId || null);
+    const copy = certReminderEmployeeCopy(locale);
+    const daysLabel = certDaysLabel(locale, which);
+    const firstName = escapeHtml((cert.employeeName || "there").split(" ")[0] || cert.employeeName || "there");
     await sendEmail({
       to: cert.employeeEmail,
-      subject: `Your "${cert.name}" certification expires in ${daysLabel}`,
+      subject: copy.subject(cert.name, daysLabel),
       html: emailShell(
-        `<p>Hi ${escapeHtml(cert.employeeName || "there")},</p>
-<p>Your certification <strong>${escapeHtml(cert.name)}</strong> expires on <strong>${escapeHtml(expiry)}</strong> — that's ${daysLabel} away.</p>
-<p>Renew it and add the new expiry date from your employee portal, or send it to ${escapeHtml(companyName)}.</p>`
+        `<p>${escapeHtml(copy.greeting(firstName))}</p>
+<p>${copy.body(escapeHtml(cert.name), escapeHtml(expiry), daysLabel)}</p>
+<p>${escapeHtml(copy.renewNote(companyName))}</p>`
       ),
     }).catch(() => false);
   }
 
   const employerEmail = await resolveUserEmail(cert.employerId).catch(() => null);
   if (employerEmail) {
+    const locale = await getRecipientLocale(cert.employerId);
+    const copy = certReminderEmployerCopy(locale);
+    const daysLabel = certDaysLabel(locale, which);
+    const employeeName = cert.employeeName || "An employee";
     await sendEmail({
       to: employerEmail,
-      subject: `${cert.employeeName || "An employee"}'s "${cert.name}" certification expires in ${daysLabel}`,
+      subject: copy.subject(employeeName, cert.name, daysLabel),
       html: emailShell(
-        `<p><strong>${escapeHtml(cert.employeeName || "An employee")}</strong>'s certification <strong>${escapeHtml(cert.name)}</strong> expires on <strong>${escapeHtml(expiry)}</strong> — that's ${daysLabel} away.</p>
-<p>Check the Employees tab to follow up.</p>`
+        `<p>${copy.body(escapeHtml(employeeName), escapeHtml(cert.name), escapeHtml(expiry), daysLabel)}</p>
+<p>${escapeHtml(copy.checkNote)}</p>`
       ),
     }).catch(() => false);
   }

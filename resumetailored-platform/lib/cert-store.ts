@@ -220,6 +220,10 @@ export interface CertWithEmployee extends EmployeeCert {
   employerId: string;
   employeeName: string;
   employeeEmail: string;
+  /** The employee's Clerk user id once they've accepted their portal invite,
+   *  else "" — used to look up their saved locale preference for the
+   *  reminder email (see getRecipientLocale in lib/locale-pref.ts). */
+  employeeClerkUserId: string;
 }
 
 /** Every cert with an expiry date, joined to its employee — for the daily
@@ -231,17 +235,18 @@ export async function listCertsForReminderScan(): Promise<CertWithEmployee[]> {
   try {
     const { data, error } = await c
       .from("employee_certs")
-      .select(`${COLS}, employer_id, employees(name, email)`)
+      .select(`${COLS}, employer_id, employees(name, email, clerk_user_id)`)
       .not("expiry_date", "is", null)
       .limit(10000);
     if (error || !data) return [];
     return data.map((r: Record<string, unknown>) => {
-      const emp = (r.employees as { name?: string; email?: string } | null) || null;
+      const emp = (r.employees as { name?: string; email?: string; clerk_user_id?: string } | null) || null;
       return {
         ...mapCert(r),
         employerId: r.employer_id as string,
         employeeName: emp?.name || "",
         employeeEmail: emp?.email || "",
+        employeeClerkUserId: emp?.clerk_user_id || "",
       };
     });
   } catch (e) {

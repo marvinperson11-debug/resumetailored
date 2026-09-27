@@ -7,13 +7,19 @@ import type { DocKind } from "./employee-hub";
  * `getRecipientLocale()` (lib/locale-pref.ts), which reads their saved
  * Settings preference off Clerk `publicMetadata.locale`.
  *
- * This file is a proof of concept, not full coverage: it localizes the one
- * email wired to it (the training reminder, see training-notify.ts). Every
- * other sender in employer-notify.ts / esign-delivery.ts / cert-cron.ts still
- * sends English only — see the coverage audit for the full list of what's
- * left. The pattern here (one small copy object per email, keyed by Locale,
- * with the same shape and a `parity` test target) is meant to be repeated
- * for those, not reinvented per email.
+ * Coverage: every email here goes to a recipient who can plausibly already
+ * have a Clerk account (and therefore a saved locale preference) at send
+ * time — an employer, an employee who has accepted their portal invite, or
+ * an interviewer/host on the employer's own team. Emails to a recipient who
+ * cannot have an account yet at send time (a pre-signup team/employee invite,
+ * a public job applicant with no portal, an arbitrary "send a copy"
+ * recipient the employer typed in) are left English-only: there is no
+ * locale to read for them, and defaulting them to the *employer's* locale
+ * would guess at a stranger's language rather than honor a saved
+ * preference. The pattern (one small copy object per email, keyed by
+ * Locale, with the same shape and a `parity` test target) is meant to be
+ * repeated for any future recipient-has-an-account email, not reinvented
+ * per email.
  */
 
 export interface TrainingReminderCopy {
@@ -70,6 +76,344 @@ const TRAINING_REMINDER: Record<Locale, TrainingReminderCopy> = {
 
 export function trainingReminderCopy(locale: Locale): TrainingReminderCopy {
   return TRAINING_REMINDER[locale] ?? TRAINING_REMINDER.en;
+}
+
+export interface CertReminderEmployeeCopy {
+  subject: (certName: string, daysLabel: string) => string;
+  greeting: (firstName: string) => string;
+  body: (certName: string, expiry: string, daysLabel: string) => string;
+  renewNote: (company: string) => string;
+}
+
+const CERT_REMINDER_EMPLOYEE: Record<Locale, CertReminderEmployeeCopy> = {
+  en: {
+    subject: (certName, daysLabel) => `Your "${certName}" certification expires in ${daysLabel}`,
+    greeting: (firstName) => `Hi ${firstName},`,
+    body: (certName, expiry, daysLabel) => `Your certification <strong>${certName}</strong> expires on <strong>${expiry}</strong> — that's ${daysLabel} away.`,
+    renewNote: (company) => `Renew it and add the new expiry date from your employee portal, or send it to ${company}.`,
+  },
+  zh: {
+    subject: (certName, daysLabel) => `您的“${certName}”证书将在${daysLabel}后到期`,
+    greeting: (firstName) => `您好 ${firstName}，`,
+    body: (certName, expiry, daysLabel) => `您的证书<strong>${certName}</strong>将于<strong>${expiry}</strong>到期——还有${daysLabel}。`,
+    renewNote: (company) => `请在员工门户续期并添加新的到期日期，或将其发送给${company}。`,
+  },
+  es: {
+    subject: (certName, daysLabel) => `Tu certificación "${certName}" vence en ${daysLabel}`,
+    greeting: (firstName) => `Hola ${firstName},`,
+    body: (certName, expiry, daysLabel) => `Tu certificación <strong>${certName}</strong> vence el <strong>${expiry}</strong> — eso es en ${daysLabel}.`,
+    renewNote: (company) => `Renuévala y añade la nueva fecha de vencimiento desde tu portal de empleado, o envíasela a ${company}.`,
+  },
+  hi: {
+    subject: (certName, daysLabel) => `आपका "${certName}" प्रमाणपत्र ${daysLabel} में समाप्त हो रहा है`,
+    greeting: (firstName) => `नमस्ते ${firstName},`,
+    body: (certName, expiry, daysLabel) => `आपका प्रमाणपत्र <strong>${certName}</strong> <strong>${expiry}</strong> को समाप्त हो रहा है —— यह ${daysLabel} दूर है।`,
+    renewNote: (company) => `इसे अपने कर्मचारी पोर्टल से रिन्यू करें और नई समाप्ति तिथि जोड़ें, या इसे ${company} को भेजें।`,
+  },
+  fr: {
+    subject: (certName, daysLabel) => `Votre certification « ${certName} » expire dans ${daysLabel}`,
+    greeting: (firstName) => `Bonjour ${firstName},`,
+    body: (certName, expiry, daysLabel) => `Votre certification <strong>${certName}</strong> expire le <strong>${expiry}</strong> — soit dans ${daysLabel}.`,
+    renewNote: (company) => `Renouvelez-la et ajoutez la nouvelle date d'expiration depuis votre portail employé, ou envoyez-la à ${company}.`,
+  },
+};
+
+export function certReminderEmployeeCopy(locale: Locale): CertReminderEmployeeCopy {
+  return CERT_REMINDER_EMPLOYEE[locale] ?? CERT_REMINDER_EMPLOYEE.en;
+}
+
+export interface CertReminderEmployerCopy {
+  subject: (employeeName: string, certName: string, daysLabel: string) => string;
+  body: (employeeName: string, certName: string, expiry: string, daysLabel: string) => string;
+  checkNote: string;
+}
+
+const CERT_REMINDER_EMPLOYER: Record<Locale, CertReminderEmployerCopy> = {
+  en: {
+    subject: (employeeName, certName, daysLabel) => `${employeeName}'s "${certName}" certification expires in ${daysLabel}`,
+    body: (employeeName, certName, expiry, daysLabel) => `<strong>${employeeName}</strong>'s certification <strong>${certName}</strong> expires on <strong>${expiry}</strong> — that's ${daysLabel} away.`,
+    checkNote: "Check the Employees tab to follow up.",
+  },
+  zh: {
+    subject: (employeeName, certName, daysLabel) => `${employeeName}的“${certName}”证书将在${daysLabel}后到期`,
+    body: (employeeName, certName, expiry, daysLabel) => `<strong>${employeeName}</strong>的证书<strong>${certName}</strong>将于<strong>${expiry}</strong>到期——还有${daysLabel}。`,
+    checkNote: "请前往“员工”标签页跟进。",
+  },
+  es: {
+    subject: (employeeName, certName, daysLabel) => `La certificación "${certName}" de ${employeeName} vence en ${daysLabel}`,
+    body: (employeeName, certName, expiry, daysLabel) => `La certificación <strong>${certName}</strong> de <strong>${employeeName}</strong> vence el <strong>${expiry}</strong> — eso es en ${daysLabel}.`,
+    checkNote: "Consulta la pestaña Empleados para dar seguimiento.",
+  },
+  hi: {
+    subject: (employeeName, certName, daysLabel) => `${employeeName} का "${certName}" प्रमाणपत्र ${daysLabel} में समाप्त हो रहा है`,
+    body: (employeeName, certName, expiry, daysLabel) => `<strong>${employeeName}</strong> का प्रमाणपत्र <strong>${certName}</strong> <strong>${expiry}</strong> को समाप्त हो रहा है —— यह ${daysLabel} दूर है।`,
+    checkNote: "आगे की कार्रवाई के लिए कर्मचारी टैब देखें।",
+  },
+  fr: {
+    subject: (employeeName, certName, daysLabel) => `La certification « ${certName} » de ${employeeName} expire dans ${daysLabel}`,
+    body: (employeeName, certName, expiry, daysLabel) => `La certification <strong>${certName}</strong> de <strong>${employeeName}</strong> expire le <strong>${expiry}</strong> — soit dans ${daysLabel}.`,
+    checkNote: "Consultez l'onglet Employés pour faire un suivi.",
+  },
+};
+
+export function certReminderEmployerCopy(locale: Locale): CertReminderEmployerCopy {
+  return CERT_REMINDER_EMPLOYER[locale] ?? CERT_REMINDER_EMPLOYER.en;
+}
+
+const CERT_DAYS_LABEL: Record<Locale, Record<"30" | "7", string>> = {
+  en: { "30": "30 days", "7": "7 days" },
+  zh: { "30": "30 天", "7": "7 天" },
+  es: { "30": "30 días", "7": "7 días" },
+  hi: { "30": "30 दिन", "7": "7 दिन" },
+  fr: { "30": "30 jours", "7": "7 jours" },
+};
+
+/** The "30 days" / "7 days" phrase used inside the cert-reminder copy above. */
+export function certDaysLabel(locale: Locale, which: "30" | "7"): string {
+  return CERT_DAYS_LABEL[locale]?.[which] ?? CERT_DAYS_LABEL.en[which];
+}
+
+export interface InterviewModeLabels {
+  video: string;
+  phone: string;
+  onsite: string;
+}
+
+const INTERVIEW_MODE_LABELS_I18N: Record<Locale, InterviewModeLabels> = {
+  en: { video: "Video call", phone: "Phone call", onsite: "On-site" },
+  zh: { video: "视频通话", phone: "电话", onsite: "现场" },
+  es: { video: "Videollamada", phone: "Llamada telefónica", onsite: "Presencial" },
+  hi: { video: "वीडियो कॉल", phone: "फ़ोन कॉल", onsite: "ऑन-साइट" },
+  fr: { video: "Appel vidéo", phone: "Appel téléphonique", onsite: "Sur site" },
+};
+
+export function interviewModeLabel(locale: Locale, mode: "video" | "phone" | "onsite"): string {
+  return INTERVIEW_MODE_LABELS_I18N[locale]?.[mode] ?? INTERVIEW_MODE_LABELS_I18N.en[mode];
+}
+
+/** "Interview scheduled — {title} with {candidate}" confirmation sent to the
+ *  interviewer/host (an employer-side team member, always a Clerk account). */
+export interface InterviewerConfirmationCopy {
+  subject: (title: string, candidateName: string) => string;
+  intro: string;
+  whatLabel: string;
+  candidateLabel: string;
+  whenLabel: string;
+  typeLabel: string;
+  openRoomCta: string;
+  hostNote: (candidateName: string) => string;
+  manageNote: (company: string) => string;
+}
+
+const INTERVIEWER_CONFIRMATION: Record<Locale, InterviewerConfirmationCopy> = {
+  en: {
+    subject: (title, candidateName) => `Interview scheduled — ${title} with ${candidateName}`,
+    intro: "Your interview is scheduled:",
+    whatLabel: "What",
+    candidateLabel: "Candidate",
+    whenLabel: "When",
+    typeLabel: "Type",
+    openRoomCta: "Open interview room (host)",
+    hostNote: (candidateName) => `You're the host. The same link was sent to ${candidateName}.`,
+    manageNote: (company) => `Manage this interview in ${company}'s Scheduler.`,
+  },
+  zh: {
+    subject: (title, candidateName) => `面试已安排 —— ${title}，与 ${candidateName}`,
+    intro: "您的面试已安排：",
+    whatLabel: "内容",
+    candidateLabel: "候选人",
+    whenLabel: "时间",
+    typeLabel: "类型",
+    openRoomCta: "打开面试房间（主持人）",
+    hostNote: (candidateName) => `您是主持人。相同的链接已发送给${candidateName}。`,
+    manageNote: (company) => `在${company}的排班工具中管理此次面试。`,
+  },
+  es: {
+    subject: (title, candidateName) => `Entrevista programada — ${title} con ${candidateName}`,
+    intro: "Tu entrevista está programada:",
+    whatLabel: "Qué",
+    candidateLabel: "Candidato",
+    whenLabel: "Cuándo",
+    typeLabel: "Tipo",
+    openRoomCta: "Abrir sala de entrevista (anfitrión)",
+    hostNote: (candidateName) => `Eres el anfitrión. Se envió el mismo enlace a ${candidateName}.`,
+    manageNote: (company) => `Gestiona esta entrevista en el Programador de ${company}.`,
+  },
+  hi: {
+    subject: (title, candidateName) => `इंटरव्यू शेड्यूल हुआ —— ${title}, ${candidateName} के साथ`,
+    intro: "आपका इंटरव्यू शेड्यूल हो गया है:",
+    whatLabel: "विषय",
+    candidateLabel: "उम्मीदवार",
+    whenLabel: "समय",
+    typeLabel: "प्रकार",
+    openRoomCta: "इंटरव्यू रूम खोलें (होस्ट)",
+    hostNote: (candidateName) => `आप होस्ट हैं। यही लिंक ${candidateName} को भी भेजा गया है।`,
+    manageNote: (company) => `इस इंटरव्यू को ${company} के शेड्यूलर में प्रबंधित करें।`,
+  },
+  fr: {
+    subject: (title, candidateName) => `Entretien programmé — ${title} avec ${candidateName}`,
+    intro: "Votre entretien est programmé :",
+    whatLabel: "Quoi",
+    candidateLabel: "Candidat",
+    whenLabel: "Quand",
+    typeLabel: "Type",
+    openRoomCta: "Ouvrir la salle d'entretien (hôte)",
+    hostNote: (candidateName) => `Vous êtes l'hôte. Le même lien a été envoyé à ${candidateName}.`,
+    manageNote: (company) => `Gérez cet entretien dans le planificateur de ${company}.`,
+  },
+};
+
+export function interviewerConfirmationCopy(locale: Locale): InterviewerConfirmationCopy {
+  return INTERVIEWER_CONFIRMATION[locale] ?? INTERVIEWER_CONFIRMATION.en;
+}
+
+/** "New document from {signer}: {filename}" sent to the employer when a
+ *  DocuSign envelope signer uploads a requested document. */
+export interface UploadNotifyEmployerCopy {
+  subject: (signerName: string, filename: string) => string;
+  uploadedLine: (signer: string, forWhat: string, documentName: string) => string;
+  forWhatWithRequest: (requestName: string) => string;
+  forWhatDefault: string;
+  fileLabel: (filename: string) => string;
+  openNote: string;
+}
+
+const UPLOAD_NOTIFY_EMPLOYER: Record<Locale, UploadNotifyEmployerCopy> = {
+  en: {
+    subject: (signerName, filename) => `New document from ${signerName}: ${filename}`,
+    uploadedLine: (signer, forWhat, documentName) => `<strong>${signer}</strong> uploaded a document${forWhat} on the envelope <strong>${documentName}</strong>.`,
+    forWhatWithRequest: (requestName) => ` (${requestName})`,
+    forWhatDefault: "",
+    fileLabel: (filename) => `File: <strong>${filename}</strong>`,
+    openNote: "Open the E-Signatures page in your ResumeTailored employer dashboard to view and download it.",
+  },
+  zh: {
+    subject: (signerName, filename) => `来自 ${signerName} 的新文档：${filename}`,
+    uploadedLine: (signer, forWhat, documentName) => `<strong>${signer}</strong> 在信封<strong>${documentName}</strong>上上传了一份文档${forWhat}。`,
+    forWhatWithRequest: (requestName) => `（${requestName}）`,
+    forWhatDefault: "",
+    fileLabel: (filename) => `文件：<strong>${filename}</strong>`,
+    openNote: "打开您 ResumeTailored 雇主仪表盘中的“电子签名”页面以查看和下载。",
+  },
+  es: {
+    subject: (signerName, filename) => `Nuevo documento de ${signerName}: ${filename}`,
+    uploadedLine: (signer, forWhat, documentName) => `<strong>${signer}</strong> subió un documento${forWhat} en el sobre <strong>${documentName}</strong>.`,
+    forWhatWithRequest: (requestName) => ` (${requestName})`,
+    forWhatDefault: "",
+    fileLabel: (filename) => `Archivo: <strong>${filename}</strong>`,
+    openNote: "Abre la página de Firmas electrónicas en tu panel de empleador de ResumeTailored para verlo y descargarlo.",
+  },
+  hi: {
+    subject: (signerName, filename) => `${signerName} से नया दस्तावेज़: ${filename}`,
+    uploadedLine: (signer, forWhat, documentName) => `<strong>${signer}</strong> ने एनवलप <strong>${documentName}</strong> पर एक दस्तावेज़${forWhat} अपलोड किया।`,
+    forWhatWithRequest: (requestName) => ` (${requestName})`,
+    forWhatDefault: "",
+    fileLabel: (filename) => `फ़ाइल: <strong>${filename}</strong>`,
+    openNote: "इसे देखने और डाउनलोड करने के लिए अपने ResumeTailored एम्प्लॉयर डैशबोर्ड में E-Signatures पेज खोलें।",
+  },
+  fr: {
+    subject: (signerName, filename) => `Nouveau document de ${signerName} : ${filename}`,
+    uploadedLine: (signer, forWhat, documentName) => `<strong>${signer}</strong> a téléchargé un document${forWhat} sur l'enveloppe <strong>${documentName}</strong>.`,
+    forWhatWithRequest: (requestName) => ` (${requestName})`,
+    forWhatDefault: "",
+    fileLabel: (filename) => `Fichier : <strong>${filename}</strong>`,
+    openNote: "Ouvrez la page Signatures électroniques de votre tableau de bord employeur ResumeTailored pour le consulter et le télécharger.",
+  },
+};
+
+export function uploadNotifyEmployerCopy(locale: Locale): UploadNotifyEmployerCopy {
+  return UPLOAD_NOTIFY_EMPLOYER[locale] ?? UPLOAD_NOTIFY_EMPLOYER.en;
+}
+
+/** "New applicant for {jobTitle}" sent to the employer on a public job-board
+ *  application. */
+export interface NewApplicantCopy {
+  subject: (jobTitle: string) => string;
+  body: (applicantName: string, jobTitle: string) => string;
+  reviewNote: (link: string) => string;
+}
+
+const NEW_APPLICANT: Record<Locale, NewApplicantCopy> = {
+  en: {
+    subject: (jobTitle) => `New applicant for ${jobTitle}`,
+    body: (applicantName, jobTitle) => `<strong>${applicantName}</strong> applied for <strong>${jobTitle}</strong> via your public job board.`,
+    reviewNote: (link) => `Review them in your <a href="${link}">Candidates dashboard</a>.`,
+  },
+  zh: {
+    subject: (jobTitle) => `${jobTitle} 收到新申请`,
+    body: (applicantName, jobTitle) => `<strong>${applicantName}</strong> 通过您的公开职位板申请了<strong>${jobTitle}</strong>。`,
+    reviewNote: (link) => `请在您的<a href="${link}">候选人仪表盘</a>中查看。`,
+  },
+  es: {
+    subject: (jobTitle) => `Nuevo candidato para ${jobTitle}`,
+    body: (applicantName, jobTitle) => `<strong>${applicantName}</strong> aplicó para <strong>${jobTitle}</strong> a través de tu portal de empleo público.`,
+    reviewNote: (link) => `Revísalo en tu <a href="${link}">panel de candidatos</a>.`,
+  },
+  hi: {
+    subject: (jobTitle) => `${jobTitle} के लिए नया आवेदक`,
+    body: (applicantName, jobTitle) => `<strong>${applicantName}</strong> ने आपके पब्लिक जॉब बोर्ड के माध्यम से <strong>${jobTitle}</strong> के लिए आवेदन किया।`,
+    reviewNote: (link) => `उन्हें अपने <a href="${link}">कैंडिडेट्स डैशबोर्ड</a> में देखें।`,
+  },
+  fr: {
+    subject: (jobTitle) => `Nouveau candidat pour ${jobTitle}`,
+    body: (applicantName, jobTitle) => `<strong>${applicantName}</strong> a postulé pour <strong>${jobTitle}</strong> via votre offre d'emploi publique.`,
+    reviewNote: (link) => `Consultez-le dans votre <a href="${link}">tableau de bord des candidats</a>.`,
+  },
+};
+
+export function newApplicantCopy(locale: Locale): NewApplicantCopy {
+  return NEW_APPLICANT[locale] ?? NEW_APPLICANT.en;
+}
+
+/** "New training assigned: {title}" sent to each pending assignee. */
+export interface NewTrainingAssignedCopy {
+  subject: (docTitle: string) => string;
+  greeting: (firstName: string) => string;
+  assignedLine: (docTitle: string) => string;
+  openNoteQuiz: string;
+  openNotePlain: string;
+}
+
+const NEW_TRAINING_ASSIGNED: Record<Locale, NewTrainingAssignedCopy> = {
+  en: {
+    subject: (docTitle) => `New training assigned: ${docTitle}`,
+    greeting: (firstName) => `Hi ${firstName},`,
+    assignedLine: (docTitle) => `You've been assigned a new training item: <strong>${docTitle}</strong>.`,
+    openNoteQuiz: "Open your employee portal → My training to review it and take the short quiz.",
+    openNotePlain: "Open your employee portal → My training to review it and mark it complete.",
+  },
+  zh: {
+    subject: (docTitle) => `新分配的培训：${docTitle}`,
+    greeting: (firstName) => `您好 ${firstName}，`,
+    assignedLine: (docTitle) => `您被分配了一个新的培训项目：<strong>${docTitle}</strong>。`,
+    openNoteQuiz: "打开您的员工门户 → 我的培训，查看并完成简短测验。",
+    openNotePlain: "打开您的员工门户 → 我的培训，查看并标记为完成。",
+  },
+  es: {
+    subject: (docTitle) => `Nueva capacitación asignada: ${docTitle}`,
+    greeting: (firstName) => `Hola ${firstName},`,
+    assignedLine: (docTitle) => `Se te ha asignado un nuevo elemento de capacitación: <strong>${docTitle}</strong>.`,
+    openNoteQuiz: "Abre tu portal de empleado → Mi capacitación para revisarlo y hacer el breve cuestionario.",
+    openNotePlain: "Abre tu portal de empleado → Mi capacitación para revisarlo y marcarlo como completado.",
+  },
+  hi: {
+    subject: (docTitle) => `नया प्रशिक्षण असाइन किया गया: ${docTitle}`,
+    greeting: (firstName) => `नमस्ते ${firstName},`,
+    assignedLine: (docTitle) => `आपको एक नया प्रशिक्षण आइटम असाइन किया गया है: <strong>${docTitle}</strong>।`,
+    openNoteQuiz: "इसे देखने और छोटी क्विज़ लेने के लिए अपना कर्मचारी पोर्टल → मेरा प्रशिक्षण खोलें।",
+    openNotePlain: "इसे देखने और पूर्ण के रूप में चिह्नित करने के लिए अपना कर्मचारी पोर्टल → मेरा प्रशिक्षण खोलें।",
+  },
+  fr: {
+    subject: (docTitle) => `Nouvelle formation assignée : ${docTitle}`,
+    greeting: (firstName) => `Bonjour ${firstName},`,
+    assignedLine: (docTitle) => `Un nouvel élément de formation vous a été assigné : <strong>${docTitle}</strong>.`,
+    openNoteQuiz: "Ouvrez votre portail employé → Ma formation pour le consulter et passer le petit quiz.",
+    openNotePlain: "Ouvrez votre portail employé → Ma formation pour le consulter et le marquer comme terminé.",
+  },
+};
+
+export function newTrainingAssignedCopy(locale: Locale): NewTrainingAssignedCopy {
+  return NEW_TRAINING_ASSIGNED[locale] ?? NEW_TRAINING_ASSIGNED.en;
 }
 
 const DOC_KIND_LABELS_I18N: Record<Locale, Record<DocKind, string>> = {

@@ -6,6 +6,8 @@ import { getPublicJob, createPublicApplicant } from "@/lib/employer-store";
 import { localMatchFallback } from "@/lib/employer-ai";
 import { sendEmail, resolveUserEmail, escapeHtml } from "@/lib/email";
 import { appUrl } from "@/lib/subdomain";
+import { getRecipientLocale } from "@/lib/locale-pref";
+import { newApplicantCopy } from "@/lib/email-i18n";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -76,12 +78,16 @@ export async function POST(req: Request, { params }: { params: { jobId: string }
   return NextResponse.json({ ok: true });
 }
 
+/** Localized per the employer's saved Settings language preference — the
+ *  recipient is always a Clerk account. */
 async function notifyEmployer(employerId: string, jobTitle: string, applicantName: string): Promise<void> {
   const to = await resolveUserEmail(employerId);
   if (!to) return;
+  const locale = await getRecipientLocale(employerId);
+  const copy = newApplicantCopy(locale);
   await sendEmail({
     to,
-    subject: `New applicant for ${jobTitle}`,
-    html: `<div style="font-family:system-ui,sans-serif"><p><strong>${escapeHtml(applicantName)}</strong> applied for <strong>${escapeHtml(jobTitle)}</strong> via your public job board.</p><p>Review them in your <a href="${appUrl("/employer/candidates")}">Candidates dashboard</a>.</p></div>`,
+    subject: copy.subject(jobTitle),
+    html: `<div style="font-family:system-ui,sans-serif"><p>${copy.body(escapeHtml(applicantName), escapeHtml(jobTitle))}</p><p>${copy.reviewNote(appUrl("/employer/candidates"))}</p></div>`,
   });
 }

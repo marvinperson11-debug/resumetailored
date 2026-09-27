@@ -2,6 +2,8 @@ import { getApplicant, getEmployerProfile } from "./employer-store";
 import { getCareerSiteCompanyName } from "./career-site-store";
 import { sendEmail, resolveUserEmail, escapeHtml, emailShell } from "./email";
 import { employerSignatureHtml } from "./employer-signature";
+import { getRecipientLocale } from "./locale-pref";
+import { interviewerConfirmationCopy, interviewModeLabel } from "./email-i18n";
 import type { Message, Interview, InterviewMode } from "./employer-ai";
 
 /**
@@ -144,35 +146,37 @@ ${joinBlock}
 }
 
 /** Email the scheduling user (interviewer/host) a confirmation with the join
- *  link + host note. Best-effort. */
+ *  link + host note. Best-effort. Localized per the host's saved Settings
+ *  language preference — they're always a Clerk account. */
 export async function notifyInterviewerOfInterview(employerId: string, userId: string, interview: Interview): Promise<void> {
   const to = await resolveUserEmail(userId);
   if (!to) return;
   const profile = await getEmployerProfile(employerId);
   const signature = await employerSignatureHtml(employerId);
-  const company = escapeHtml(profile?.companyName || "your company");
+  const locale = await getRecipientLocale(userId);
+  const copy = interviewerConfirmationCopy(locale);
   const title = escapeHtml(interview.title);
   const candidate = escapeHtml(interview.applicantName || "the candidate");
   const joinLink = interview.roomUrl || (interview.mode === "video" && /^https?:\/\//i.test(interview.location) ? interview.location : "");
   const joinBlock = joinLink
     ? `<div style="margin:20px 0">
-<a href="${escapeHtml(joinLink)}" style="display:inline-block;background:#7c5cff;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">Open interview room (host)</a>
-<p style="font-size:13px;color:#666;margin:8px 0 0">You're the host. The same link was sent to ${candidate}.<br/><a href="${escapeHtml(joinLink)}">${escapeHtml(joinLink)}</a></p>
+<a href="${escapeHtml(joinLink)}" style="display:inline-block;background:#7c5cff;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">${escapeHtml(copy.openRoomCta)}</a>
+<p style="font-size:13px;color:#666;margin:8px 0 0">${escapeHtml(copy.hostNote(interview.applicantName || "the candidate"))}<br/><a href="${escapeHtml(joinLink)}">${escapeHtml(joinLink)}</a></p>
 </div>`
     : "";
   await sendEmail({
     to,
-    subject: `Interview scheduled — ${interview.title} with ${interview.applicantName || "candidate"}`,
+    subject: copy.subject(interview.title, interview.applicantName || "candidate"),
     html: emailShell(
-      `<p>Your interview is scheduled:</p>
+      `<p>${escapeHtml(copy.intro)}</p>
 <table style="margin:16px 0;font-size:14px">
-<tr><td style="padding:4px 12px 4px 0;color:#888">What</td><td style="padding:4px 0"><strong>${title}</strong></td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#888">Candidate</td><td style="padding:4px 0">${candidate}</td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#888">When</td><td style="padding:4px 0">${fmtWhen(interview.scheduledAt)} (${interview.durationMin} min)</td></tr>
-<tr><td style="padding:4px 12px 4px 0;color:#888">Type</td><td style="padding:4px 0">${MODE_LABEL[interview.mode]}</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#888">${escapeHtml(copy.whatLabel)}</td><td style="padding:4px 0"><strong>${title}</strong></td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#888">${escapeHtml(copy.candidateLabel)}</td><td style="padding:4px 0">${candidate}</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#888">${escapeHtml(copy.whenLabel)}</td><td style="padding:4px 0">${fmtWhen(interview.scheduledAt)} (${interview.durationMin} min)</td></tr>
+<tr><td style="padding:4px 12px 4px 0;color:#888">${escapeHtml(copy.typeLabel)}</td><td style="padding:4px 0">${escapeHtml(interviewModeLabel(locale, interview.mode))}</td></tr>
 </table>
 ${joinBlock}
-<p style="font-size:13px;color:#666">Manage this interview in ${company}'s Scheduler.</p>`,
+<p style="font-size:13px;color:#666">${escapeHtml(copy.manageNote(profile?.companyName || "your company"))}</p>`,
       signature
     ),
   });
