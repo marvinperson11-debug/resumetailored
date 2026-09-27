@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { getPublicCareerSite } from "@/lib/career-site-store";
 import { resolveAlias } from "@/lib/tenant-resolve";
 import { careerSubdomainUrl } from "@/lib/subdomain";
@@ -33,9 +34,10 @@ export default async function CareersPage({ params }: { params: { slug: string }
     if (alias && alias.slug !== params.slug) permanentRedirect(`/careers/${alias.slug}`);
     notFound();
   }
+  const t = await getTranslations("careerSite");
   return (
     <div style={{ minHeight: "100vh", background: "#ffffff" }}>
-      <CareerSiteView site={data.site} jobs={data.jobs} industry={data.industry} bio={data.bio} />
+      <CareerSiteView site={data.site} jobs={data.jobs} industry={data.industry} bio={data.bio} t={t} />
     </div>
   );
 }

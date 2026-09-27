@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Globe, Plus, X, Check, Copy, ExternalLink, Upload, ImageIcon } from "lucide-react";
 import { Panel, PageHeader, Btn, Field, Input, Area } from "../components/ui";
 import { CareerSiteView } from "@/app/careers/[slug]/career-site-view";
@@ -110,6 +111,9 @@ function ImageField({
 }
 
 export function CareerSiteClient() {
+  // Same "careerSite" namespace as the public /careers/:slug page — this is
+  // a live preview of that exact component, not a separate translation.
+  const careerSiteT = useTranslations("careerSite");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -540,7 +544,7 @@ export function CareerSiteClient() {
           <div className="lg:sticky lg:top-20 lg:self-start">
             <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">Live preview</div>
             <div className="max-h-[calc(100vh-160px)] overflow-auto rounded-xl border border-border-gold bg-white">
-              <CareerSiteView site={previewSite} jobs={jobs} preview />
+              <CareerSiteView site={previewSite} jobs={jobs} preview t={careerSiteT} />
             </div>
           </div>
         </div>
