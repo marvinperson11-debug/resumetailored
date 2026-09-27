@@ -1,10 +1,13 @@
 /**
  * Office suite — shared types and pure helpers (no DB, no network). Mirrors the
- * `cert-hub.ts` convention: this file holds the calculator math and the
- * hand-rolled SVG chart builder (no chart library, per the brief), both fully
- * unit-testable without a browser. `office-store.ts` is the DB/service-role
- * counterpart (live chart data sources + the office-assets upload).
+ * `cert-hub.ts` convention: this file holds the calculator math, the
+ * hand-rolled SVG chart builder (no chart library, per the brief), the
+ * Spreadsheet Creator's grid parsing/validation, and the Report Writer's
+ * prompt builders — all fully unit-testable without a browser. `office-store.ts`
+ * is the DB/service-role counterpart (live chart data sources, the
+ * office-assets upload, and the report data gatherers).
  */
+import { parseISODate } from "./time-hub";
 
 // ── Calculators (all tiers) ─────────────────────────────────────────────────
 // Every calculator is a pure function: same inputs, same number out. The
@@ -105,7 +108,7 @@ export function parseCsvPoints(text: string): ChartPoint[] {
   return points.slice(0, 100);
 }
 
-function escapeXml(s: string): string {
+export function escapeXml(s: string): string {
   return String(s)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
@@ -309,4 +312,228 @@ function buildPieSvg(points: ChartPoint[], title: string): string {
     ${slices}
     ${legend}
   </svg>`;
+}
+
+// ── Spreadsheet Creator (Scale+, Phase 5) ───────────────────────────────────
+
+export interface SpreadsheetGrid {
+  title: string;
+  headers: string[];
+  rows: string[][];
+}
+
+const SPREADSHEET_MAX_COLS = 30;
+const SPREADSHEET_MAX_ROWS = 500;
+const SPREADSHEET_MAX_CELL = 300;
+
+function clampCell(v: unknown): string {
+  return String(v ?? "").slice(0, SPREADSHEET_MAX_CELL);
+}
+
+/** One-click presets for the "Describe it" box — the label IS the prompt (word
+ *  for word), so the user always sees exactly what will be sent before editing
+ *  or submitting it. */
+export const SPREADSHEET_PRESETS = [
+  {
+    key: "payroll",
+    label: "Payroll-ready hours sheet",
+    prompt:
+      "Build a payroll-ready hours sheet from last week's timesheets: one row per employee with columns for Employee, Role, Mon, Tue, Wed, Thu, Fri, Sat, Sun hours, Total hours, and Overtime hours (anything over 40 total). Use realistic sample data if none is provided.",
+  },
+  {
+    key: "candidates",
+    label: "Candidate comparison matrix",
+    prompt:
+      "Build a candidate comparison matrix for a hiring decision: one row per applicant with columns for Candidate, Role Applied For, Years of Experience, Key Skills, Interview Score (1-10), and Recommendation. Use realistic sample data if none is provided.",
+  },
+  {
+    key: "training",
+    label: "Training compliance report",
+    prompt:
+      "Build a training compliance sheet: one row per employee with columns for Employee, Required Training Docs (comma-separated), Completed Count, Status (Compliant / Overdue / Pending), and Last Completed Date. Use realistic sample data if none is provided.",
+  },
+] as const;
+
+/** Parse a generic multi-column CSV into a grid — the first row is the header,
+ *  every data row is padded/truncated to that width so the result is always
+ *  rectangular. Unlike `parseCsvPoints` (the Charts tab's 2-column label/value
+ *  parser), this keeps every column. Malformed rows are dropped, not thrown —
+ *  a partial paste/upload still produces a usable (if partial) sheet. */
+export function parseCsvTable(text: string): SpreadsheetGrid {
+  const lines = String(text || "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .slice(0, SPREADSHEET_MAX_ROWS + 1);
+  if (lines.length === 0) return { title: "Untitled sheet", headers: [], rows: [] };
+
+  const splitRow = (line: string): string[] =>
+    line
+      .split(",")
+      .map((c) => clampCell(c.trim().replace(/^"(.*)"$/, "$1")))
+      .slice(0, SPREADSHEET_MAX_COLS);
+
+  const headers = splitRow(lines[0]);
+  const rows = lines.slice(1).map((l) => {
+    const cols = splitRow(l);
+    return headers.map((_, i) => cols[i] ?? "");
+  });
+  return { title: "Untitled sheet", headers, rows };
+}
+
+/** Clamp+coerce a loosely-typed grid (model JSON, or a client-submitted body)
+ *  into a valid, rectangular `SpreadsheetGrid` — or null if there's nothing
+ *  usable at all. Never trusts the shape of model output or a request body:
+ *  every cell is stringified and length-capped, every row is padded/truncated
+ *  to the header width, and the whole grid is capped at the size limits above. */
+export function sanitizeGrid(v: unknown, fallbackTitle = "Untitled sheet"): SpreadsheetGrid | null {
+  if (!v || typeof v !== "object") return null;
+  const g = v as Record<string, unknown>;
+  const headersRaw = Array.isArray(g.headers) ? g.headers : [];
+  const headers = headersRaw.slice(0, SPREADSHEET_MAX_COLS).map((h, i) => clampCell(h) || `Column ${i + 1}`);
+  if (headers.length === 0) return null;
+  const rowsRaw = Array.isArray(g.rows) ? g.rows : [];
+  const rows = rowsRaw.slice(0, SPREADSHEET_MAX_ROWS).map((r) => {
+    const arr = Array.isArray(r) ? r : [];
+    return headers.map((_, i) => clampCell((arr as unknown[])[i]));
+  });
+  const title = clampCell(g.title) || fallbackTitle;
+  return { title, headers, rows };
+}
+
+/** Render a grid as a plain, print-safe HTML `<table>` for a Documents row's
+ *  `body_html` — inline styles only (no `<style>` block, no script), so it
+ *  survives `sanitizeDocumentHtml` untouched and renders identically in the
+ *  editor, the viewer, and a printed PDF. */
+export function spreadsheetGridToHtmlTable(grid: SpreadsheetGrid): string {
+  const cellStyle = "border:1px solid #ccc;padding:6px 10px;text-align:left;";
+  const thead = `<tr>${grid.headers.map((h) => `<th style="${cellStyle}background:#f3f3f3;font-weight:700;">${escapeXml(h)}</th>`).join("")}</tr>`;
+  const tbody = grid.rows.map((r) => `<tr>${r.map((c) => `<td style="${cellStyle}">${escapeXml(c)}</td>`).join("")}</tr>`).join("");
+  return `<table style="border-collapse:collapse;width:100%;font-size:13px;">${thead}${tbody}</table>`;
+}
+
+/** Prompt for the Spreadsheet Creator's "Describe it" and upload-structuring
+ *  paths — asks for strict JSON matching `SpreadsheetGrid` so the route can
+ *  parse it with `extractJson` (lib/tools-ai.ts) and clamp it with
+ *  `sanitizeGrid`. When `extractedText` is given (an uploaded PDF/DOCX/TXT),
+ *  the description becomes an instruction for how to structure that text
+ *  rather than a request to invent data from nothing. */
+export function buildSpreadsheetPrompt(args: { description: string; extractedText?: string }): { system: string; user: string } {
+  const { description, extractedText } = args;
+  const system = `You are a meticulous data-entry analyst who turns a plain-language request — and, when given, raw source text extracted from an uploaded file — into a clean, structured spreadsheet. Return ONLY valid JSON, no markdown, no explanation, nothing else, in this exact shape:
+{
+  "title": "<a short, specific sheet title>",
+  "headers": [<column names as strings, at most ${SPREADSHEET_MAX_COLS}>],
+  "rows": [[<one string per header, same order, same length as headers>], ...]
+}
+Every row array must have exactly as many strings as there are headers — use "" for a genuinely empty cell, never omit one. Keep numbers as plain strings ("42", "40.5"), not JSON numbers. Cap the sheet at ${SPREADSHEET_MAX_ROWS} rows.`;
+
+  let user = `Build a spreadsheet for this request:\n\n${description.trim() || "(no description given — infer a reasonable sheet from the source text below)"}`;
+  if (extractedText) {
+    user += `\n\n## Source text (extracted from an uploaded file — structure THIS data; do not invent rows that aren't grounded in it unless the request above explicitly asks you to fill gaps):\n${extractedText.slice(0, 12000)}`;
+  }
+  return { system, user };
+}
+
+// ── Report Writer (Scale+, Phase 5) ─────────────────────────────────────────
+
+export const REPORT_SOURCES = ["hiring", "timesheet", "training"] as const;
+export type ReportSource = (typeof REPORT_SOURCES)[number];
+export const isReportSource = (v: unknown): v is ReportSource => (REPORT_SOURCES as readonly string[]).includes(String(v));
+export const REPORT_SOURCE_LABELS: Record<ReportSource, string> = {
+  hiring: "Hiring activity",
+  timesheet: "Timesheet hours",
+  training: "Training compliance",
+};
+
+export interface ReportDateRange {
+  start: string; // YYYY-MM-DD
+  end: string; // YYYY-MM-DD, inclusive
+}
+
+/** A report range must be two real calendar dates, start on/before end, and no
+ *  more than a year — generous for "last 30/90 days" while still bounding how
+ *  much data (and prompt size) a single report can pull in. */
+export function isValidReportRange(r: unknown): r is ReportDateRange {
+  if (!r || typeof r !== "object") return false;
+  const { start, end } = r as Partial<ReportDateRange>;
+  if (typeof start !== "string" || typeof end !== "string") return false;
+  const s = parseISODate(start);
+  const e = parseISODate(end);
+  if (!s || !e) return false;
+  if (s.getTime() > e.getTime()) return false;
+  return (e.getTime() - s.getTime()) / 864e5 <= 366;
+}
+
+function fmtRangeDate(d: Date, withYear: boolean): string {
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(withYear ? { year: "numeric" } : {}), timeZone: "UTC" });
+}
+
+/** Human label for a range, e.g. "Aug 28 – Sep 27, 2026" (mirrors time-hub's
+ *  `weekLabel`). */
+export function reportRangeLabel(r: ReportDateRange): string {
+  const s = parseISODate(r.start);
+  const e = parseISODate(r.end);
+  if (!s || !e) return `${r.start} – ${r.end}`;
+  return `${fmtRangeDate(s, false)} – ${fmtRangeDate(e, true)}`;
+}
+
+/** "{Source} report — {date range}" — the title used both to auto-save the
+ *  generated report to Documents and to show in the Report Writer UI before
+ *  it's generated. */
+export function reportTitle(source: ReportSource, r: ReportDateRange): string {
+  return `${REPORT_SOURCE_LABELS[source]} report — ${reportRangeLabel(r)}`;
+}
+
+/** The three data shapes `office-store.ts`'s gatherers populate from the
+ *  platform's own tables — plain JSON handed to the model as the report's
+ *  only source of facts (the prompt instructs it never to cite a number
+ *  that isn't in here). */
+export interface HiringActivityData {
+  jobsPosted: number;
+  totalApplicants: number;
+  interviewed: number;
+  offersExtended: number;
+  hired: number;
+  topJobs: { title: string; applicants: number }[];
+}
+
+export interface TimesheetSummaryData {
+  totalHours: number;
+  employeeCount: number;
+  byEmployee: { name: string; hours: number }[];
+  /** Employees whose TOTAL hours across the whole range exceeded 40 — a rough
+   *  signal for a range that may span more than one week, not a per-week
+   *  overtime calculation (see `overtimePay` above for that). */
+  overtimeEmployees: { name: string; hours: number }[];
+}
+
+export interface TrainingComplianceData {
+  totalAssigned: number;
+  signed: number;
+  overdue: number;
+  pending: number;
+  compliancePct: number;
+  byDoc: { title: string; signed: number; total: number }[];
+}
+
+export type ReportData = HiringActivityData | TimesheetSummaryData | TrainingComplianceData;
+
+/** Prompt for the Report Writer — the model only ever sees the pre-aggregated
+ *  JSON, never raw rows, so it can't leak more than the numbers it's given and
+ *  can't be steered by anything in a resume/applicant/timesheet field. */
+export function buildReportPrompt(source: ReportSource, range: ReportDateRange, data: ReportData): { system: string; user: string } {
+  const system = `You are a sharp, plain-language business writer producing an internal report for a small company's owner or manager — never fluffy, never generic. Write in clear prose with short paragraphs and, where it clarifies the numbers, a simple HTML table. Ground every sentence in the data given; never invent a figure that isn't in it. If the data is essentially empty (all zeros, no rows), say so plainly instead of padding with generic advice.
+
+Return ONLY a fragment of HTML for the report body: a few <h2> section headings, <p> paragraphs, an optional <table>/<tr>/<td> table, and a short <ul>/<li> list of 2-4 concrete takeaways at the end. No <html>/<head>/<body> wrapper, no markdown, no inline <script> or <style>.`;
+
+  const user = `## Report: ${REPORT_SOURCE_LABELS[source]}
+## Date range: ${reportRangeLabel(range)}
+
+## Data (JSON — the only facts you may cite):
+${JSON.stringify(data, null, 2)}
+
+Write the report now.`;
+
+  return { system, user };
 }

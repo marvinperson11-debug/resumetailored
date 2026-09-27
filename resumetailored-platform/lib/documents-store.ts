@@ -1,5 +1,15 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { EmployerDocument } from "./employer-ai";
+import type { EmployerDocument, EmployerDocumentKind } from "./employer-ai";
+
+/** The full known set of `documents.kind` values. The column itself is
+ *  unconstrained text (added in migration 0040 with no CHECK), so adding
+ *  "spreadsheet"/"report" (Phase 5) needed no schema change — only this
+ *  validated set, so a row can never carry a `kind` the app doesn't know how
+ *  to render. */
+const DOCUMENT_KINDS: readonly EmployerDocumentKind[] = ["html", "chart", "spreadsheet", "report"];
+function normalizeDocKind(v: unknown): EmployerDocumentKind {
+  return (DOCUMENT_KINDS as readonly string[]).includes(String(v)) ? (v as EmployerDocumentKind) : "html";
+}
 
 /**
  * Document Creator persistence — one `documents` row per composed document,
@@ -24,7 +34,7 @@ function mapDoc(r: Record<string, unknown>): EmployerDocument {
     id: r.id as number,
     title: (r.title as string) || "Untitled document",
     bodyHtml: (r.body_html as string) || "",
-    kind: r.kind === "chart" ? "chart" : "html",
+    kind: normalizeDocKind(r.kind),
     assetUrl: (r.asset_url as string) || null,
     createdAt: (r.created_at as string) || "",
     updatedAt: (r.updated_at as string) || "",
@@ -78,7 +88,7 @@ export async function getDocument(employerId: string, id: number): Promise<Emplo
 
 export async function createDocument(
   employerId: string,
-  v: { title: string; bodyHtml: string; kind?: "html" | "chart"; assetUrl?: string }
+  v: { title: string; bodyHtml: string; kind?: EmployerDocumentKind; assetUrl?: string }
 ): Promise<EmployerDocument | null> {
   const c = db();
   if (!c || !employerId) return null;
@@ -89,7 +99,7 @@ export async function createDocument(
         employer_id: employerId,
         title: (v.title || "Untitled document").slice(0, 200),
         body_html: sanitizeDocumentHtml(v.bodyHtml),
-        kind: v.kind === "chart" ? "chart" : "html",
+        kind: normalizeDocKind(v.kind),
         asset_url: v.assetUrl || null,
       })
       .select(COLS)
