@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { BookOpen, PlayCircle, FileText, ExternalLink, Loader2, Plus } from "lucide-react";
 import type { TrainingLibraryItem } from "@/lib/employee-hub";
 
@@ -9,6 +10,7 @@ import type { TrainingLibraryItem } from "@/lib/employee-hub";
  *  employer sees and "Take this training" yourself — no employer action
  *  needed. Lands you in My training to watch/read + complete it. */
 export function LibraryClient() {
+  const t = useTranslations("employeeLibrary");
   const router = useRouter();
   const [items, setItems] = useState<TrainingLibraryItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -50,10 +52,8 @@ export function LibraryClient() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <header>
-        <h1 className="font-serif text-3xl font-medium text-cream">Library</h1>
-        <p className="mt-1 text-sm text-white/60">
-          Free workplace training from official US-government sources. Take anything here yourself — no need to wait to be assigned.
-        </p>
+        <h1 className="font-serif text-3xl font-medium text-cream">{t("title")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t("subtitle")}</p>
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -61,7 +61,7 @@ export function LibraryClient() {
           onClick={() => setCategory("all")}
           className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${category === "all" ? "bg-violet text-white" : "border border-white/15 text-white/60 hover:bg-white/5"}`}
         >
-          All
+          {t("all")}
         </button>
         {categories.map((c) => (
           <button
@@ -75,19 +75,19 @@ export function LibraryClient() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search library…"
+          placeholder={t("searchPlaceholder")}
           className="ml-auto w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-cream placeholder:text-white/35 focus:border-violet focus:outline-none sm:w-56"
         />
       </div>
 
       {loading ? (
         <div className="glass flex items-center gap-2 px-5 py-8 text-sm text-white/50">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t("loading")}
         </div>
       ) : items.length === 0 ? (
         <div className="glass flex flex-col items-center gap-2 px-5 py-12 text-center text-sm text-white/50">
           <BookOpen className="h-7 w-7 text-white/25" />
-          Nothing matches — try another category or clear the search.
+          {t("nothingMatches")}
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
@@ -101,14 +101,14 @@ export function LibraryClient() {
               <h3 className="font-medium text-cream">{item.title}</h3>
               <div className="mt-auto flex items-center justify-between gap-2 pt-1">
                 <a href={item.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-white/40 hover:text-cream">
-                  <ExternalLink className="h-3 w-3" /> Source
+                  <ExternalLink className="h-3 w-3" /> {t("source")}
                 </a>
                 <button
                   onClick={() => take(item)}
                   disabled={takingId === item.id}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-violet px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet/90 disabled:opacity-50"
                 >
-                  {takingId === item.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} Take this training
+                  {takingId === item.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />} {t("takeThisTraining")}
                 </button>
               </div>
             </div>

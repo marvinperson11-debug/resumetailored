@@ -1041,5 +1041,152 @@
     "title": "未找到该招聘页面",
     "body": "此招聘页面不可用。链接可能有误，或该页面已被下线。",
     "browseAllJobs": "浏览全部职位"
+  },
+  "employeeDocuments": {
+    "title": "我的文档",
+    "subtitle": "您的雇主发送给您审阅或签署的文档。",
+    "loading": "加载中…",
+    "emptyBody": "暂无文档。您的雇主发送给您签署的任何内容将显示在此处。",
+    "docType": {
+      "offer": "录用信",
+      "agreement": "协议",
+      "nda": "保密协议",
+      "custom": "文档"
+    },
+    "sentOn": "发送时间 {date}",
+    "completedOn": "完成时间 {date}",
+    "status": {
+      "completed": "已完成",
+      "signed": "已签署",
+      "sent": "已发送",
+      "delivered": "已送达",
+      "viewed": "已查阅",
+      "declined": "已拒绝",
+      "voided": "已作废"
+    },
+    "download": "下载"
+  },
+  "employeeFeed": {
+    "title": "团队动态",
+    "subtitle": "来自团队的动态、问题和成果。",
+    "feedKind": {
+      "post": "动态",
+      "issue": "问题",
+      "win": "成果"
+    },
+    "feedPlaceholder": "分享一个动态、标记一个问题或庆祝一个成果…",
+    "post": "发布",
+    "loading": "加载中…",
+    "noPostsYet": "暂无动态。成为第一个分享内容的人。",
+    "resolved": "已解决",
+    "commentCount": "{n, plural, other {# 条评论}}",
+    "reopen": "重新打开",
+    "markResolved": "标记为已解决",
+    "replyPlaceholder": "回复…",
+    "roleEmployee": "员工",
+    "roleEmployer": "雇主"
+  },
+  "employeePortalGate": {
+    "misconfiguredTitle": "无法加载您的门户",
+    "misconfiguredBody": "您的账户已设置为团队成员，但我们找不到您的员工记录。这通常意味着您的雇主需要重新发送邀请或完成添加您的操作。",
+    "misconfiguredContact": "请联络您的雇主解决此问题。",
+    "backToApp": "返回 ResumeTailored",
+    "explainTitle": "员工门户",
+    "explainIntroBefore": "此区域专为",
+    "invitedTeamMembers": "受邀团队成员",
+    "explainIntroAfter": "（使用 ResumeTailored 的公司）而设。如果您的雇主邀请了您，请按以下方法登录：",
+    "step1Title": "打开您的邀请邮件",
+    "step1Body": "您的雇主向您发送了一个包含链接和 6 位数字代码的邀请。",
+    "step2Title": "使用您受邀的邮箱登录",
+    "step2Body": "使用您雇主邀请时使用的同一个邮箱地址——这是匹配您账户的方式。",
+    "step3Title": "输入您的邀请代码",
+    "step3Body": "输入邮件中的 6 位数字代码以完成门户设置。",
+    "noInviteNote": "还没收到邀请？请要求您的雇主发送一份。此门户不能自行注册。"
+  },
+  "employeeProfile": {
+    "manageAccount": "管理账户",
+    "loading": "加载中…",
+    "mySkills": "我的技能",
+    "noSkillsRated": "您的雇主还未为您评定任何技能。",
+    "skillLevel": {
+      "1": "初学",
+      "2": "基础",
+      "3": "熏练",
+      "4": "高级",
+      "5": "专家"
+    }
+  },
+  "employeeCerts": {
+    "add": "添加",
+    "cancel": "取消",
+    "confirmRemove": "删除此证书？",
+    "errorCouldNotAdd": "无法添加证书。",
+    "errorNameRequired": "需要名称。",
+    "expiresOn": "有效期至 {date}",
+    "loading": "加载中…",
+    "myCertifications": "我的证书",
+    "namePlaceholder": "叶子板措车证",
+    "noCertsYet": "暂无存档证书。",
+    "noExpirySet": "未设置有效期",
+    "remove": "删除",
+    "certStatus": {
+      "ok": "有效",
+      "expiring": "即将到期",
+      "expired": "已过期",
+      "no_expiry": "无有效期"
+    }
+  },
+  "employeeLibrary": {
+    "title": "资源库",
+    "subtitle": "来自美国官方来源的免费职场培训。您可以自行完成任何内容——无需等待被分配。",
+    "all": "全部",
+    "loading": "加载中…",
+    "nothingMatches": "没有匹配项——请尝试其他类别或清除搜索。",
+    "searchPlaceholder": "搜索资源库…",
+    "source": "来源",
+    "takeThisTraining": "开始此培训"
+  },
+  "employeeMessages": {
+    "title": "消息",
+    "subtitle": "与您的雇主直接联系。",
+    "loading": "加载中…",
+    "noMessagesYet": "暂无消息。打个招呼吧 👋",
+    "send": "发送",
+    "writeMessagePlaceholder": "输入消息…"
+  },
+  "employeeSchedule": {
+    "title": "我的排班",
+    "subtitle": "您已发布的班次和已批准的休假。在下方设定您的可用时间。",
+    "loading": "加载中…",
+    "upcoming": "即将开始",
+    "noShiftsYet": "尚未发布班次。您的雇主将在此处发布您的排班。",
+    "dow": {
+      "0": "星期日",
+      "1": "星期一",
+      "2": "星期二",
+      "3": "星期三",
+      "4": "星期四",
+      "5": "星期五",
+      "6": "星期六"
+    },
+    "timeOffLabel": "休假—{kind}",
+    "timeOffKind": {
+      "vacation": "休假",
+      "sick": "病假",
+      "other": "其他"
+    },
+    "approvedTimeOffPrefix": "已批准休假：",
+    "myAvailability": "我的可用时间",
+    "availabilityIntro": "告知您的雇主您什么时候可以（或不可以）工作。他们在安排日程时会看到这些。",
+    "available": "可用",
+    "unavailable": "不可用",
+    "everyWeekday": "每周{day}",
+    "remove": "删除",
+    "everyWeek": "每周",
+    "specificDate": "指定日期",
+    "notePlaceholder": "备注（可选）",
+    "addAvailability": "添加可用时间",
+    "errorCouldNotSave": "无法保存。",
+    "errorNetwork": "网络错误。"
   }
 }

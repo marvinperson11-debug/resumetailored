@@ -1041,5 +1041,152 @@
     "title": "Page carrières introuvable",
     "body": "Cette page carrières n'est pas disponible. L'adresse est peut-être mal orthographiée, ou la page a pu être retirée.",
     "browseAllJobs": "Voir toutes les offres"
+  },
+  "employeeDocuments": {
+    "title": "Mes documents",
+    "subtitle": "Documents que votre employeur vous a envoyés pour examen ou signature.",
+    "loading": "Chargement…",
+    "emptyBody": "Aucun document pour l'instant. Tout ce que votre employeur vous envoie pour signature apparaîtra ici.",
+    "docType": {
+      "offer": "Lettre d'offre",
+      "agreement": "Contrat",
+      "nda": "NDA",
+      "custom": "Document"
+    },
+    "sentOn": "Envoyé le {date}",
+    "completedOn": "Terminé le {date}",
+    "status": {
+      "completed": "terminé",
+      "signed": "signé",
+      "sent": "envoyé",
+      "delivered": "livré",
+      "viewed": "consulté",
+      "declined": "refusé",
+      "voided": "annulé"
+    },
+    "download": "Télécharger"
+  },
+  "employeeFeed": {
+    "title": "Fil de l'équipe",
+    "subtitle": "Mises à jour, problèmes et réussites de votre équipe.",
+    "feedKind": {
+      "post": "Publication",
+      "issue": "Problème",
+      "win": "Réussite"
+    },
+    "feedPlaceholder": "Partagez une mise à jour, signalez un problème, ou célébrez une réussite…",
+    "post": "Publier",
+    "loading": "Chargement…",
+    "noPostsYet": "Aucune publication pour l'instant. Soyez le premier à partager quelque chose.",
+    "resolved": "Résolu",
+    "commentCount": "{n, plural, one {# commentaire} other {# commentaires}}",
+    "reopen": "Rouvrir",
+    "markResolved": "Marquer comme résolu",
+    "replyPlaceholder": "Répondre…",
+    "roleEmployee": "employé",
+    "roleEmployer": "employeur"
+  },
+  "employeePortalGate": {
+    "misconfiguredTitle": "Nous n'avons pas pu charger votre portail",
+    "misconfiguredBody": "Votre compte est configuré comme membre de l'équipe, mais nous n'avons pas pu trouver votre fiche employé. Cela signifie généralement que votre employeur doit renvoyer votre invitation ou terminer de vous ajouter.",
+    "misconfiguredContact": "Veuillez contacter votre employeur pour résoudre ce problème.",
+    "backToApp": "Retour à ResumeTailored",
+    "explainTitle": "Portail employé",
+    "explainIntroBefore": "Cet espace est destiné aux",
+    "invitedTeamMembers": "membres d'équipe invités",
+    "explainIntroAfter": "des entreprises qui utilisent ResumeTailored. Si votre employeur vous a invité, voici comment y accéder :",
+    "step1Title": "Ouvrez votre e-mail d'invitation",
+    "step1Body": "Votre employeur vous a envoyé une invitation avec un lien et un code à 6 chiffres.",
+    "step2Title": "Connectez-vous avec votre e-mail invité",
+    "step2Body": "Utilisez la même adresse e-mail que celle invitée par votre employeur — c'est ainsi que votre compte est reconnu.",
+    "step3Title": "Entrez votre code d'invitation",
+    "step3Body": "Saisissez le code à 6 chiffres de l'e-mail pour terminer la configuration de votre portail.",
+    "noInviteNote": "Vous n'avez pas reçu d'invitation ? Demandez à votre employeur de vous en envoyer une. Ce portail n'est pas quelque chose auquel on s'inscrit soi-même."
+  },
+  "employeeProfile": {
+    "manageAccount": "Gérer le compte",
+    "loading": "Chargement…",
+    "mySkills": "Mes compétences",
+    "noSkillsRated": "Votre employeur n'a pas encore évalué vos compétences.",
+    "skillLevel": {
+      "1": "Débutant",
+      "2": "Basique",
+      "3": "Compétent",
+      "4": "Avancé",
+      "5": "Expert"
+    }
+  },
+  "employeeCerts": {
+    "add": "Ajouter",
+    "cancel": "Annuler",
+    "confirmRemove": "Supprimer cette certification ?",
+    "errorCouldNotAdd": "Impossible d'ajouter la certification.",
+    "errorNameRequired": "Un nom est requis.",
+    "expiresOn": "Expire le {date}",
+    "loading": "Chargement…",
+    "myCertifications": "Mes certifications",
+    "namePlaceholder": "Certification de chariot élévateur",
+    "noCertsYet": "Aucune certification enregistrée pour l'instant.",
+    "noExpirySet": "Pas de date d'expiration",
+    "remove": "Supprimer",
+    "certStatus": {
+      "ok": "Valide",
+      "expiring": "Expire bientôt",
+      "expired": "Expirée",
+      "no_expiry": "Sans expiration"
+    }
+  },
+  "employeeLibrary": {
+    "title": "Bibliothèque",
+    "subtitle": "Formation professionnelle gratuite provenant de sources officielles du gouvernement américain. Suivez tout ici vous-même — pas besoin d'attendre qu'on vous l'assigne.",
+    "all": "Tout",
+    "loading": "Chargement…",
+    "nothingMatches": "Rien ne correspond — essayez une autre catégorie ou effacez la recherche.",
+    "searchPlaceholder": "Rechercher dans la bibliothèque…",
+    "source": "Source",
+    "takeThisTraining": "Suivre cette formation"
+  },
+  "employeeMessages": {
+    "title": "Messages",
+    "subtitle": "Une ligne directe avec votre employeur.",
+    "loading": "Chargement…",
+    "noMessagesYet": "Aucun message pour l'instant. Dites bonjour 👋",
+    "send": "Envoyer",
+    "writeMessagePlaceholder": "Écrivez un message…"
+  },
+  "employeeSchedule": {
+    "title": "Mon horaire",
+    "subtitle": "Vos quarts publiés et vos congés approuvés. Définissez votre disponibilité ci-dessous.",
+    "loading": "Chargement…",
+    "upcoming": "À venir",
+    "noShiftsYet": "Aucun quart publié pour l'instant. Votre employeur publiera votre horaire ici.",
+    "dow": {
+      "0": "dimanche",
+      "1": "lundi",
+      "2": "mardi",
+      "3": "mercredi",
+      "4": "jeudi",
+      "5": "vendredi",
+      "6": "samedi"
+    },
+    "timeOffLabel": "Congé — {kind}",
+    "timeOffKind": {
+      "vacation": "Vacances",
+      "sick": "Maladie",
+      "other": "Autre"
+    },
+    "approvedTimeOffPrefix": "Congés approuvés :",
+    "myAvailability": "Ma disponibilité",
+    "availabilityIntro": "Indiquez à votre employeur quand vous pouvez (ou ne pouvez pas) travailler. Ils le voient en créant l'horaire.",
+    "available": "Disponible",
+    "unavailable": "Non disponible",
+    "everyWeekday": "Chaque {day}",
+    "remove": "Supprimer",
+    "everyWeek": "Chaque semaine",
+    "specificDate": "Date spécifique",
+    "notePlaceholder": "Note (facultatif)",
+    "addAvailability": "Ajouter une disponibilité",
+    "errorCouldNotSave": "Impossible d'enregistrer.",
+    "errorNetwork": "Erreur réseau."
   }
 }

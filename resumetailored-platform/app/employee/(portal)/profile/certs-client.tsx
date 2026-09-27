@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Award, Plus, Trash2, Loader2 } from "lucide-react";
-import { certStatus, CERT_STATUS_LABELS, type EmployeeCert } from "@/lib/cert-hub";
+import { certStatus, type EmployeeCert } from "@/lib/cert-hub";
 
 const STATUS_STYLE: Record<string, string> = {
   ok: "bg-teal/20 text-teal",
@@ -15,6 +16,7 @@ const STATUS_STYLE: Record<string, string> = {
  *  file), see status, and remove one you added by mistake. Certifications
  *  your employer added stay theirs to manage. */
 export function MyCertifications() {
+  const t = useTranslations("employeeCerts");
   const [certs, setCerts] = useState<EmployeeCert[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -30,7 +32,7 @@ export function MyCertifications() {
   }, [load]);
 
   async function remove(id: number) {
-    if (!confirm("Remove this certification?")) return;
+    if (!confirm(t("confirmRemove"))) return;
     await fetch(`/api/employee/certs/${id}`, { method: "DELETE" });
     load();
   }
@@ -39,21 +41,21 @@ export function MyCertifications() {
     <div className="rounded-2xl border border-border-gold bg-white/[0.03] p-6">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-cream">
-          <Award className="h-4 w-4 text-violet" /> My certifications
+          <Award className="h-4 w-4 text-violet" /> {t("myCertifications")}
         </h2>
         {!adding && (
           <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5 text-xs font-medium text-violet hover:underline">
-            <Plus className="h-3.5 w-3.5" /> Add
+            <Plus className="h-3.5 w-3.5" /> {t("add")}
           </button>
         )}
       </div>
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-white/50">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin" /> {t("loading")}
         </div>
       ) : certs.length === 0 && !adding ? (
-        <p className="text-sm text-white/50">No certifications on file yet.</p>
+        <p className="text-sm text-white/50">{t("noCertsYet")}</p>
       ) : (
         <ul className="mb-3 space-y-1.5">
           {certs.map((c) => {
@@ -62,14 +64,14 @@ export function MyCertifications() {
               <li key={c.id} className="flex items-center justify-between gap-2 rounded-lg border border-border-gold bg-white/[0.02] px-3 py-2 text-sm">
                 <div className="min-w-0">
                   <div className="truncate text-cream">{c.name}</div>
-                  <div className="text-xs text-white/45">{c.expiryDate ? `Expires ${c.expiryDate}` : "No expiry set"}</div>
+                  <div className="text-xs text-white/45">{c.expiryDate ? t("expiresOn", { date: c.expiryDate }) : t("noExpirySet")}</div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${STATUS_STYLE[status]}`}>
-                    {CERT_STATUS_LABELS[status]}
+                    {t(`certStatus.${status}`)}
                   </span>
                   {c.addedBy === "employee" && (
-                    <button onClick={() => remove(c.id)} title="Remove" className="rounded-md p-1 text-red-300/80 hover:bg-red-500/10">
+                    <button onClick={() => remove(c.id)} title={t("remove")} className="rounded-md p-1 text-red-300/80 hover:bg-red-500/10">
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
@@ -86,6 +88,7 @@ export function MyCertifications() {
 }
 
 function AddForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => void }) {
+  const t = useTranslations("employeeCerts");
   const [name, setName] = useState("");
   const [issuedDate, setIssuedDate] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
@@ -95,7 +98,7 @@ function AddForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => voi
 
   async function submit() {
     if (!name.trim()) {
-      setErr("A name is required.");
+      setErr(t("errorNameRequired"));
       return;
     }
     setSaving(true);
@@ -108,7 +111,7 @@ function AddForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => voi
       });
       const d = (await res.json().catch(() => ({}))) as { cert?: { id: number }; error?: string };
       if (!res.ok || !d.cert) {
-        setErr(d.error || "Could not add the certification.");
+        setErr(d.error || t("errorCouldNotAdd"));
         return;
       }
       if (file) {
@@ -127,7 +130,7 @@ function AddForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => voi
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="Forklift certification"
+        placeholder={t("namePlaceholder")}
         className="w-full rounded-lg border border-border-gold bg-white/5 px-3 py-2 text-sm text-cream placeholder:text-white/35 focus:border-violet focus:outline-none"
       />
       <div className="grid grid-cols-2 gap-2">
@@ -157,10 +160,10 @@ function AddForm({ onDone, onCancel }: { onDone: () => void; onCancel: () => voi
           disabled={saving}
           className="inline-flex items-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet/90 disabled:opacity-50"
         >
-          {saving && <Loader2 className="h-4 w-4 animate-spin" />} Add
+          {saving && <Loader2 className="h-4 w-4 animate-spin" />} {t("add")}
         </button>
         <button onClick={onCancel} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/5">
-          Cancel
+          {t("cancel")}
         </button>
       </div>
     </div>

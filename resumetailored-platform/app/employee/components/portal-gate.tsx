@@ -1,3 +1,6 @@
+"use client";
+
+import { useTranslations } from "next-intl";
 import { Mail, LogIn, KeyRound } from "lucide-react";
 
 /**
@@ -12,42 +15,37 @@ import { Mail, LogIn, KeyRound } from "lucide-react";
  *     resolved: tell them to contact their employer.
  */
 export function EmployeePortalGate({ mode }: { mode: "explain" | "misconfigured" }) {
+  const t = useTranslations("employeePortalGate");
+
   if (mode === "misconfigured") {
     return (
-      <Shell title="We couldn't load your portal">
-        <p className="mt-3 text-sm text-white/70">
-          Your account is set up as a team member, but we couldn&rsquo;t find your employee record. This usually means your
-          employer needs to re-send your invite or finish adding you.
-        </p>
-        <p className="mt-4 text-sm text-white/70">Please contact your employer to sort this out.</p>
+      <Shell title={t("misconfiguredTitle")}>
+        <p className="mt-3 text-sm text-white/70">{t("misconfiguredBody")}</p>
+        <p className="mt-4 text-sm text-white/70">{t("misconfiguredContact")}</p>
         <a href="/" className="mt-6 inline-block rounded-xl bg-violet px-5 py-2.5 text-sm font-semibold text-white">
-          Back to ResumeTailored
+          {t("backToApp")}
         </a>
       </Shell>
     );
   }
 
   return (
-    <Shell title="Employee portal">
+    <Shell title={t("explainTitle")}>
       <p className="mt-3 text-sm text-white/70">
-        This area is for <strong className="text-cream">invited team members</strong> of companies that use ResumeTailored.
-        If your employer invited you, here&rsquo;s how to get in:
+        {t("explainIntroBefore")} <strong className="text-cream">{t("invitedTeamMembers")}</strong> {t("explainIntroAfter")}
       </p>
       <ol className="mt-6 space-y-4 text-left">
-        <Step icon={Mail} n={1} title="Open your invite email">
-          Your employer sent you an invite with a link and a 6-digit code.
+        <Step icon={Mail} n={1} title={t("step1Title")}>
+          {t("step1Body")}
         </Step>
-        <Step icon={LogIn} n={2} title="Sign in with your invited email">
-          Use the same email address your employer invited — that&rsquo;s how your account is matched.
+        <Step icon={LogIn} n={2} title={t("step2Title")}>
+          {t("step2Body")}
         </Step>
-        <Step icon={KeyRound} n={3} title="Enter your invite code">
-          Type the 6-digit code from the email to finish setting up your portal.
+        <Step icon={KeyRound} n={3} title={t("step3Title")}>
+          {t("step3Body")}
         </Step>
       </ol>
-      <p className="mt-6 text-xs text-white/45">
-        Haven&rsquo;t received an invite? Ask your employer to send you one. This portal isn&rsquo;t something you sign up for on
-        your own.
-      </p>
+      <p className="mt-6 text-xs text-white/45">{t("noInviteNote")}</p>
     </Shell>
   );
 }
