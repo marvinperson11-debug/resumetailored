@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, X, type LucideIcon } from "lucide-react";
+import { Loader2, X, Lock, type LucideIcon } from "lucide-react";
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -131,6 +131,30 @@ export function EmptyState({ icon: Icon, title, body, action }: { icon: LucideIc
       <h3 className="font-serif text-lg font-medium text-cream">{title}</h3>
       <p className="mt-1.5 max-w-sm text-sm text-white/55">{body}</p>
       {action && <div className="mt-5">{action}</div>}
+    </div>
+  );
+}
+
+/** A friendly, in-place upgrade prompt for a tab/panel gated to a higher tier
+ *  than the caller's — never a dead/disabled button with no explanation. Used
+ *  by the Office suite's Scale+ tools (Charts now; Spreadsheet Creator, Report
+ *  Writer, Presentation Builder in later phases). There's no in-app employer
+ *  tier checkout, so the CTA points at the same marketing link the whole
+ *  Employer Portal's own access gate (`LockedFeature`) uses. */
+export function TierUpgradeNote({ feature, tier = "Scale" }: { feature: string; tier?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gold/40 bg-gold/5 px-6 py-16 text-center">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/15">
+        <Lock className="h-5 w-5 text-gold" />
+      </div>
+      <h3 className="font-serif text-lg font-medium text-cream">{feature}</h3>
+      <p className="mt-1.5 max-w-sm text-sm text-white/55">{feature} is available on the {tier}+ plan.</p>
+      <a
+        href="https://resumetailored.com/for-employers"
+        className="mt-5 inline-block rounded-lg bg-violet px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet/90"
+      >
+        Learn about upgrading →
+      </a>
     </div>
   );
 }

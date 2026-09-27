@@ -66,6 +66,17 @@ export function canInterviewAiSummary(access: Access): boolean {
   return t === "scale" || t === "corporate";
 }
 
+// ── Office suite ───────────────────────────────────────────────────────────────
+/** Whether a tier is Scale or above (Scale, Corporate). Shared by every
+ *  Scale+ Office tool: Charts now, Spreadsheet Creator / Report Writer /
+ *  Presentation Builder in later phases. Calculators are on every tier and
+ *  don't call this. */
+export function isScalePlusTier(access: Access): boolean {
+  if (access.isAdmin) return true;
+  const t = normalizeTier(access.tier);
+  return t === "scale" || t === "corporate";
+}
+
 /** The monthly video-interview limit for a given access context. */
 export function videoMonthlyLimit(access: Access): number {
   if (access.isAdmin) return Infinity;

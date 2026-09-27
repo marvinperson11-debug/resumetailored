@@ -17,13 +17,15 @@ function db(): SupabaseClient | null {
   return cached;
 }
 
-const COLS = "id, title, body_html, created_at, updated_at";
+const COLS = "id, title, body_html, kind, asset_url, created_at, updated_at";
 
 function mapDoc(r: Record<string, unknown>): EmployerDocument {
   return {
     id: r.id as number,
     title: (r.title as string) || "Untitled document",
     bodyHtml: (r.body_html as string) || "",
+    kind: r.kind === "chart" ? "chart" : "html",
+    assetUrl: (r.asset_url as string) || null,
     createdAt: (r.created_at as string) || "",
     updatedAt: (r.updated_at as string) || "",
   };
@@ -74,13 +76,22 @@ export async function getDocument(employerId: string, id: number): Promise<Emplo
   }
 }
 
-export async function createDocument(employerId: string, v: { title: string; bodyHtml: string }): Promise<EmployerDocument | null> {
+export async function createDocument(
+  employerId: string,
+  v: { title: string; bodyHtml: string; kind?: "html" | "chart"; assetUrl?: string }
+): Promise<EmployerDocument | null> {
   const c = db();
   if (!c || !employerId) return null;
   try {
     const { data, error } = await c
       .from("documents")
-      .insert({ employer_id: employerId, title: (v.title || "Untitled document").slice(0, 200), body_html: sanitizeDocumentHtml(v.bodyHtml) })
+      .insert({
+        employer_id: employerId,
+        title: (v.title || "Untitled document").slice(0, 200),
+        body_html: sanitizeDocumentHtml(v.bodyHtml),
+        kind: v.kind === "chart" ? "chart" : "html",
+        asset_url: v.assetUrl || null,
+      })
       .select(COLS)
       .single();
     if (error || !data) {
