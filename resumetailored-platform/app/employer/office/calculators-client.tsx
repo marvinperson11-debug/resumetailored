@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { DollarSign, UserPlus, Users, Clock, ListPlus, Plus, Trash2 } from "lucide-react";
 import { Panel, Field, Input } from "../components/ui";
 import {
@@ -59,84 +60,89 @@ export function CalculatorsTab() {
 }
 
 function LaborCostCalc() {
+  const t = useTranslations("employerOffice.calculators");
   const [wage, setWage] = useState("22");
   const [hours, setHours] = useState("40");
   const [burden, setBurden] = useState("20");
   const result = laborMonthlyCost(num(wage), num(hours), num(burden));
   return (
-    <CalcCard icon={DollarSign} title="Labor Cost Estimator">
+    <CalcCard icon={DollarSign} title={t("laborTitle")}>
       <div className="grid grid-cols-3 gap-2">
-        <Field label="Hourly wage"><Input type="number" min={0} step="0.01" value={wage} onChange={(e) => setWage(e.target.value)} /></Field>
-        <Field label="Hours/week"><Input type="number" min={0} step="1" value={hours} onChange={(e) => setHours(e.target.value)} /></Field>
-        <Field label="Burden %"><Input type="number" min={0} step="1" value={burden} onChange={(e) => setBurden(e.target.value)} /></Field>
+        <Field label={t("hourlyWage")}><Input type="number" min={0} step="0.01" value={wage} onChange={(e) => setWage(e.target.value)} /></Field>
+        <Field label={t("hoursPerWeek")}><Input type="number" min={0} step="1" value={hours} onChange={(e) => setHours(e.target.value)} /></Field>
+        <Field label={t("burdenPercent")}><Input type="number" min={0} step="1" value={burden} onChange={(e) => setBurden(e.target.value)} /></Field>
       </div>
-      <Result label="Monthly cost" value={money(result)} />
+      <Result label={t("monthlyCost")} value={money(result)} />
       <Formula>
-        {money(num(wage))} × (1 + {num(burden)}%) × {num(hours)} hrs/wk × 52 ÷ 12 = {money(result)}
+        {t("laborFormula", { wage: money(num(wage)), burden: num(burden), hours: num(hours), result: money(result) })}
       </Formula>
     </CalcCard>
   );
 }
 
 function CostPerHireCalc() {
+  const t = useTranslations("employerOffice.calculators");
   const [spend, setSpend] = useState("5000");
   const [hires, setHires] = useState("2");
   const result = costPerHire(num(spend), num(hires));
   return (
-    <CalcCard icon={UserPlus} title="Cost-per-Hire">
+    <CalcCard icon={UserPlus} title={t("costPerHireTitle")}>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Total hiring spend"><Input type="number" min={0} step="0.01" value={spend} onChange={(e) => setSpend(e.target.value)} /></Field>
-        <Field label="Hires"><Input type="number" min={0} step="1" value={hires} onChange={(e) => setHires(e.target.value)} /></Field>
+        <Field label={t("totalHiringSpend")}><Input type="number" min={0} step="0.01" value={spend} onChange={(e) => setSpend(e.target.value)} /></Field>
+        <Field label={t("hires")}><Input type="number" min={0} step="1" value={hires} onChange={(e) => setHires(e.target.value)} /></Field>
       </div>
-      <Result label="Cost per hire" value={money(result)} />
+      <Result label={t("costPerHire")} value={money(result)} />
       <Formula>
-        {money(num(spend))} ÷ {num(hires)} hires = {money(result)}
+        {t("costPerHireFormula", { spend: money(num(spend)), hires: num(hires), result: money(result) })}
       </Formula>
     </CalcCard>
   );
 }
 
 function TurnoverCostCalc() {
+  const t = useTranslations("employerOffice.calculators");
   const [replacements, setReplacements] = useState("3");
   const [avgCost, setAvgCost] = useState("4000");
   const result = turnoverCost(num(replacements), num(avgCost));
   return (
-    <CalcCard icon={Users} title="Turnover Cost">
+    <CalcCard icon={Users} title={t("turnoverTitle")}>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Replacements needed"><Input type="number" min={0} step="1" value={replacements} onChange={(e) => setReplacements(e.target.value)} /></Field>
-        <Field label="Avg cost/replacement"><Input type="number" min={0} step="0.01" value={avgCost} onChange={(e) => setAvgCost(e.target.value)} /></Field>
+        <Field label={t("replacementsNeeded")}><Input type="number" min={0} step="1" value={replacements} onChange={(e) => setReplacements(e.target.value)} /></Field>
+        <Field label={t("avgCostPerReplacement")}><Input type="number" min={0} step="0.01" value={avgCost} onChange={(e) => setAvgCost(e.target.value)} /></Field>
       </div>
-      <Result label="Total turnover cost" value={money(result)} />
+      <Result label={t("totalTurnoverCost")} value={money(result)} />
       <Formula>
-        {num(replacements)} × {money(num(avgCost))} = {money(result)}
+        {t("turnoverFormula", { replacements: num(replacements), avgCost: money(num(avgCost)), result: money(result) })}
       </Formula>
     </CalcCard>
   );
 }
 
 function OvertimeCalc() {
+  const t = useTranslations("employerOffice.calculators");
   const [rate, setRate] = useState("22");
   const [baseHours, setBaseHours] = useState("40");
   const [otHours, setOtHours] = useState("8");
   const [multiplier, setMultiplier] = useState("1.5");
   const result = overtimePay(num(baseHours), num(otHours), num(rate), num(multiplier));
   return (
-    <CalcCard icon={Clock} title="Overtime Estimator">
+    <CalcCard icon={Clock} title={t("overtimeTitle")}>
       <div className="grid grid-cols-2 gap-2">
-        <Field label="Hourly rate"><Input type="number" min={0} step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} /></Field>
-        <Field label="Rate multiplier"><Input type="number" min={1} step="0.1" value={multiplier} onChange={(e) => setMultiplier(e.target.value)} /></Field>
-        <Field label="Base hours"><Input type="number" min={0} step="1" value={baseHours} onChange={(e) => setBaseHours(e.target.value)} /></Field>
-        <Field label="OT hours"><Input type="number" min={0} step="1" value={otHours} onChange={(e) => setOtHours(e.target.value)} /></Field>
+        <Field label={t("hourlyRate")}><Input type="number" min={0} step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} /></Field>
+        <Field label={t("rateMultiplier")}><Input type="number" min={1} step="0.1" value={multiplier} onChange={(e) => setMultiplier(e.target.value)} /></Field>
+        <Field label={t("baseHours")}><Input type="number" min={0} step="1" value={baseHours} onChange={(e) => setBaseHours(e.target.value)} /></Field>
+        <Field label={t("otHours")}><Input type="number" min={0} step="1" value={otHours} onChange={(e) => setOtHours(e.target.value)} /></Field>
       </div>
-      <Result label="Weekly pay" value={money(result)} />
+      <Result label={t("weeklyPay")} value={money(result)} />
       <Formula>
-        ({num(baseHours)} × {money(num(rate))}) + ({num(otHours)} × {money(num(rate))} × {num(multiplier)}) = {money(result)}
+        {t("overtimeFormula", { baseHours: num(baseHours), rate: money(num(rate)), otHours: num(otHours), multiplier: num(multiplier), result: money(result) })}
       </Formula>
     </CalcCard>
   );
 }
 
 function StaffingCostCalc() {
+  const t = useTranslations("employerOffice.calculators");
   const [lines, setLines] = useState<StaffingLine[]>([{ role: "Cashier", headcount: 3, hoursPerWeek: 30, hourlyWage: 16 }]);
 
   function update(i: number, patch: Partial<StaffingLine>) {
@@ -152,20 +158,20 @@ function StaffingCostCalc() {
   const weeklyTotal = staffingTotalWeeklyCost(lines);
 
   return (
-    <CalcCard icon={ListPlus} title="Staffing Cost">
+    <CalcCard icon={ListPlus} title={t("staffingTitle")}>
       <div className="space-y-2">
         {lines.map((l, i) => (
           <div key={i} className="grid grid-cols-[1fr_4.5rem_4.5rem_5rem_auto] items-end gap-1.5">
-            <Field label="Role"><Input value={l.role} onChange={(e) => update(i, { role: e.target.value })} placeholder="Role" /></Field>
-            <Field label="Count"><Input type="number" min={0} step="1" value={l.headcount} onChange={(e) => update(i, { headcount: num(e.target.value) })} /></Field>
-            <Field label="Hrs/wk"><Input type="number" min={0} step="1" value={l.hoursPerWeek} onChange={(e) => update(i, { hoursPerWeek: num(e.target.value) })} /></Field>
-            <Field label="Wage"><Input type="number" min={0} step="0.01" value={l.hourlyWage} onChange={(e) => update(i, { hourlyWage: num(e.target.value) })} /></Field>
+            <Field label={t("role")}><Input value={l.role} onChange={(e) => update(i, { role: e.target.value })} placeholder={t("role")} /></Field>
+            <Field label={t("count")}><Input type="number" min={0} step="1" value={l.headcount} onChange={(e) => update(i, { headcount: num(e.target.value) })} /></Field>
+            <Field label={t("hrsWk")}><Input type="number" min={0} step="1" value={l.hoursPerWeek} onChange={(e) => update(i, { hoursPerWeek: num(e.target.value) })} /></Field>
+            <Field label={t("wage")}><Input type="number" min={0} step="0.01" value={l.hourlyWage} onChange={(e) => update(i, { hourlyWage: num(e.target.value) })} /></Field>
             <button
               type="button"
               onClick={() => removeLine(i)}
               disabled={lines.length <= 1}
               className="mb-0.5 rounded-md p-2 text-red-300/80 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-30"
-              title="Remove line"
+              title={t("removeLine")}
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -173,13 +179,13 @@ function StaffingCostCalc() {
         ))}
       </div>
       <button type="button" onClick={addLine} className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline">
-        <Plus className="h-3.5 w-3.5" /> Add role
+        <Plus className="h-3.5 w-3.5" /> {t("addRole")}
       </button>
-      <Result label="Total weekly cost" value={money(weeklyTotal)} />
+      <Result label={t("totalWeeklyCost")} value={money(weeklyTotal)} />
       <Formula>
         {lines.map((l, i) => (
           <div key={i}>
-            {l.role || "Role"}: {l.headcount} × {l.hoursPerWeek}h × {money(l.hourlyWage)} = {money(staffingLineWeeklyCost(l))}
+            {t("staffingLineFormula", { role: l.role || t("role"), headcount: l.headcount, hours: l.hoursPerWeek, wage: money(l.hourlyWage), result: money(staffingLineWeeklyCost(l)) })}
           </div>
         ))}
       </Formula>

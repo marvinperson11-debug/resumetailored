@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Loader2, X, Lock, type LucideIcon } from "lucide-react";
 import type {
   ButtonHTMLAttributes,
@@ -142,18 +143,19 @@ export function EmptyState({ icon: Icon, title, body, action }: { icon: LucideIc
  *  tier checkout, so the CTA points at the same marketing link the whole
  *  Employer Portal's own access gate (`LockedFeature`) uses. */
 export function TierUpgradeNote({ feature, tier = "Scale" }: { feature: string; tier?: string }) {
+  const t = useTranslations("employerUi");
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gold/40 bg-gold/5 px-6 py-16 text-center">
       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gold/15">
         <Lock className="h-5 w-5 text-gold" />
       </div>
       <h3 className="font-serif text-lg font-medium text-cream">{feature}</h3>
-      <p className="mt-1.5 max-w-sm text-sm text-white/55">{feature} is available on the {tier}+ plan.</p>
+      <p className="mt-1.5 max-w-sm text-sm text-white/55">{t("availableOnPlan", { feature, tier })}</p>
       <a
         href="https://resumetailored.com/for-employers"
         className="mt-5 inline-block rounded-lg bg-violet px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet/90"
       >
-        Learn about upgrading →
+        {t("learnAboutUpgrading")}
       </a>
     </div>
   );
@@ -161,6 +163,7 @@ export function TierUpgradeNote({ feature, tier = "Scale" }: { feature: string; 
 
 /** Centered modal dialog. */
 export function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+  const t = useTranslations("employerUi");
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-navy/70 p-4 backdrop-blur-sm sm:items-center sm:p-8">
       {/* Cap the card to the (dynamic) viewport height and scroll the BODY
@@ -170,7 +173,7 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
       <div className={cn("flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-border-gold bg-navy shadow-2xl sm:max-h-[calc(100dvh-4rem)]", wide ? "max-w-3xl" : "max-w-lg")}>
         <div className="flex shrink-0 items-center justify-between border-b border-border-gold px-5 py-4">
           <h2 className="font-serif text-lg font-medium text-cream">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-muted-cream transition-colors hover:text-cream">
+          <button type="button" onClick={onClose} aria-label={t("close")} className="text-muted-cream transition-colors hover:text-cream">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -182,13 +185,14 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
 
 /** Right-side drawer (candidate detail). */
 export function Drawer({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  const t = useTranslations("employerUi");
   return (
     <div className="fixed inset-0 z-[60] flex justify-end bg-navy/60 backdrop-blur-sm">
       <div className="absolute inset-0" onClick={onClose} aria-hidden="true" />
       <div className="relative flex h-full w-full max-w-xl flex-col border-l border-border-gold bg-navy shadow-2xl">
         <div className="flex items-center justify-between border-b border-border-gold px-5 py-4">
           <h2 className="font-serif text-lg font-medium text-cream">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-muted-cream transition-colors hover:text-cream">
+          <button type="button" onClick={onClose} aria-label={t("close")} className="text-muted-cream transition-colors hover:text-cream">
             <X className="h-5 w-5" />
           </button>
         </div>

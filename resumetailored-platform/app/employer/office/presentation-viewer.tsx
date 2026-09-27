@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import type { PresentationDeck } from "@/lib/office-hub";
 
@@ -10,6 +11,7 @@ const SWIPE_THRESHOLD = 40;
  *  the rest of the Employer Portal, with arrow-key, swipe, and on-screen
  *  navigation plus a slide counter. Escape (or the × button) closes it. */
 export function PresentModeViewer({ deck, onClose }: { deck: PresentationDeck; onClose: () => void }) {
+  const t = useTranslations("employerOffice.presentation");
   const [index, setIndex] = useState(0);
   const total = deck.slides.length;
   const touchStartX = useRef(0);
@@ -49,7 +51,7 @@ export function PresentModeViewer({ deck, onClose }: { deck: PresentationDeck; o
       <button
         type="button"
         onClick={onClose}
-        aria-label="Close presentation"
+        aria-label={t("closePresentation")}
         className="absolute right-5 top-5 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white"
       >
         <X className="h-5 w-5" />
@@ -72,7 +74,7 @@ export function PresentModeViewer({ deck, onClose }: { deck: PresentationDeck; o
           type="button"
           onClick={prev}
           disabled={index === 0}
-          aria-label="Previous slide"
+          aria-label={t("previousSlide")}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white disabled:opacity-30"
         >
           <ChevronLeft className="h-5 w-5" />
@@ -84,7 +86,7 @@ export function PresentModeViewer({ deck, onClose }: { deck: PresentationDeck; o
           type="button"
           onClick={next}
           disabled={index === total - 1}
-          aria-label="Next slide"
+          aria-label={t("nextSlide")}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white/70 transition-colors hover:bg-white/20 hover:text-white disabled:opacity-30"
         >
           <ChevronRight className="h-5 w-5" />
