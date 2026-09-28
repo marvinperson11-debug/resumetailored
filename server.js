@@ -8161,12 +8161,27 @@ async function _syncPlanToClerk(email, { plan = 'pro', type = 'individual', tier
   const secret = process.env.CLERK_SECRET_KEY;
   if (!key || !secret) return;
   try {
-    const lookup = await fetch(`https://api.clerk.com/v1/users?email_address=${encodeURIComponent(key)}`, {
+    // Clerk's Backend API only recognizes this filter as an array param
+    // (`email_address[]=...`) — a bare `email_address=...` is silently
+    // dropped and the endpoint falls back to its default, UNFILTERED list
+    // (newest account first). That previously meant `users[0]` below was
+    // whichever Clerk account had most recently signed up — completely
+    // unrelated to `key` — and this function would patch a stranger's
+    // account with the real buyer's plan. Found live: a brand-new candidate
+    // signup got `plan:'employer', tier:'corporate'` written to it with zero
+    // user action, because an unrelated Corporate-tier checkout happened to
+    // complete moments after that candidate's account was created.
+    const lookup = await fetch(`https://api.clerk.com/v1/users?email_address[]=${encodeURIComponent(key)}`, {
       headers: { Authorization: `Bearer ${secret}` }
     });
     if (!lookup.ok) { console.error('[clerk] user lookup failed:', lookup.status); return; }
     const users = await lookup.json();
-    const user = Array.isArray(users) ? users[0] : (users && Array.isArray(users.data) ? users.data[0] : null);
+    const list = Array.isArray(users) ? users : (users && Array.isArray(users.data) ? users.data : []);
+    // Defense in depth: even with the correct filter, never trust index 0
+    // blindly — require the returned account's own email to match `key`
+    // before writing anything to it.
+    const user = list.find(u => Array.isArray(u && u.email_addresses) &&
+      u.email_addresses.some(a => String(a && a.email_address || '').toLowerCase() === key));
     if (!user || !user.id) { console.log(`[clerk] no account yet for ${key} — will backfill on sign-in`); return; }
     const public_metadata = { plan, type, subscribedAt: new Date().toISOString(), stripeCustomerId: stripeCustomerId || undefined };
     if (tier) public_metadata.tier = tier;

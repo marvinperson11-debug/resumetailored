@@ -5,6 +5,17 @@ import { getAccess, canUseEmployerPortal, isStaffEmployee } from "@/lib/plan";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { StaffWhichDoor } from "@/components/staff-which-door";
 
+// Every other route that computes a redirect from `getAccess()` opts out of
+// static/ISR caching explicitly (app/candidate/page.tsx, app/employer/page.tsx,
+// app/employer/layout.tsx, app/jobs/page.tsx, app/join/page.tsx all set this).
+// This root route — the one every post-auth flow funnels through — was the
+// only one missing it. Next's own build analysis and the live response headers
+// both already show this route as dynamic/no-store even without the explicit
+// flag (verified: `cache-control: private, no-cache, no-store` on
+// app.resumetailored.com/), so this is defensive consistency with its
+// siblings, not a fix confirmed to change runtime behavior today.
+export const dynamic = "force-dynamic";
+
 /**
  * The dashboard app has no marketing landing page — resumetailored.com is the
  * only marketing site. Root routes people where their ROLE belongs, carrying a
