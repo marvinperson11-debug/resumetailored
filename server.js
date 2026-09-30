@@ -1531,23 +1531,6 @@ app.get(['/preview', '/preview.html'], (req, res) => {
   if (!email || !isSubscriber(email)) return res.redirect(302, '/resume-video');
   return _sendVersionedHtml(res, resumeVideoPreviewHtml);
 });
-// ── Role separation (job-seeker vs employer) ────────────────────────────────
-// A logged-in user is routed to the dashboard that matches their subscription.
-// A pure job-seeker (Pro/Lifetime, no employer plan) is kept off the employer
-// side; a pure paid employer is kept off the job-seeker dashboard. Owner/comped
-// accounts (isSubscriber AND isEmployerSubscriber are both true for them),
-// dual-subscription users, and free accounts keep access to both sides so the
-// employer sign-up funnel and both-sides owner login are preserved. Redirects,
-// not hard 403s, so nobody is locked out. Registered before the HTML catch-all
-// (which would otherwise serve employer.html unguarded).
-const _employerHtmlPath = path.join(__dirname, 'public', 'employer.html');
-app.get('/employer', (req, res) => {
-  const email = getSessionEmail(req);
-  if (email && isSubscriber(email) && !isEmployerSubscriber(email)) {
-    return res.redirect(302, '/dashboard');
-  }
-  return _sendVersionedHtml(res, _employerHtmlPath);
-});
 // The workforce Employee Portal lives entirely in the app (app.resumetailored.com,
 // Clerk auth). Marketing links and invited employees may land on
 // resumetailored.com/employee — 301 them across to the app so the emailed invite
@@ -1580,9 +1563,26 @@ app.get('/tools', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'pu
 // the old app.html tool (and the old-site OAuth callbacks that redirect to
 // /dashboard) are no longer reachable here — the product now lives at
 // app.resumetailored.com (Clerk auth).
-for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score', '/signup', '/cancel', '/cancel.html']) {
+for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score', '/cancel', '/cancel.html']) {
   app.get(_deprecatedRoute, (req, res) => res.redirect(301, 'https://app.resumetailored.com'));
 }
+// Legacy auth (candidate `/login`/`/signup`/`/forgot-password` against the
+// bcrypt `users` table, and the whole employer.html portal behind its own
+// "Recruiter sign in" gate) is fully retired — nobody can create or sign into
+// an account in the old system anymore. Every entry point 301s straight to
+// the matching Clerk page; there is no longer a legacy fallback for an
+// existing legacy account that hasn't already created a Clerk account (a
+// known, deliberate tradeoff — see the migration plan). `/employer` used to
+// conditionally serve employer.html; it now always redirects.
+// The .html variants are covered too — otherwise a literal /login.html or
+// /employer.html request would fall through to _resolveHtmlFile below and
+// serve the raw legacy page directly, unredirected.
+app.get(['/signup', '/signup.html'], (req, res) => res.redirect(301, 'https://app.resumetailored.com/sign-up'));
+app.get(['/login', '/login.html', '/forgot-password'], (req, res) => res.redirect(301, 'https://app.resumetailored.com/sign-in'));
+app.get(['/employer', '/employer.html'], (req, res) => {
+  const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  res.redirect(301, `https://app.resumetailored.com/employer${qs}`);
+});
 app.get(/.*/, (req, res, next) => {
   if (req.method !== 'GET') return next();
   const file = _resolveHtmlFile(req.path);
@@ -1649,7 +1649,6 @@ app.use('/videos', express.static(renderedVideoDir, {
 // career-hub.js/style.css it references) would go right back to being
 // unversioned on exactly the pages this bug was reported on.
 const appHtml = path.join(__dirname, 'public', 'app.html');
-const loginHtml = path.join(__dirname, 'public', 'login.html');
 const landingHtml = path.join(__dirname, 'public', 'index.html');
 const webStudioLandingHtml = path.join(__dirname, 'public', 'web-studio-landing.html');
 app.get('/dashboard',    (req, res) => {
@@ -1662,10 +1661,6 @@ app.get('/dashboard',    (req, res) => {
   return _sendVersionedHtml(res, appHtml);
 });
 app.get('/web-studio',   (req, res) => _sendVersionedHtml(res, webStudioLandingHtml));
-// /login and /signup serve the dedicated login page (not the app). It reads
-// ?redirect= and sends the user back where they came from after signing in.
-app.get('/login',        (req, res) => _sendVersionedHtml(res, loginHtml));
-app.get('/signup',       (req, res) => _sendVersionedHtml(res, loginHtml));
 // Stable deep links used by marketing pages, bookmarks, and older clients.
 // This app is a tab-driven SPA rather than a framework router, so serve the
 // correct shell here and let app.html select the tab from the pathname. Keeping
@@ -1677,7 +1672,6 @@ for (const route of [
   app.get(route, (req, res) => _sendVersionedHtml(res, appHtml));
 }
 app.get(['/pricing', '/checkout'], (req, res) => _sendVersionedHtml(res, landingHtml));
-app.get('/forgot-password', (req, res) => _sendVersionedHtml(res, loginHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
 app.get('/blog',         (req, res) => _sendVersionedHtml(res, blogIndexHtml));

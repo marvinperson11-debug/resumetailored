@@ -64,26 +64,22 @@ const server = app.listen(0, async () => {
     check('/tailor versions career-hub.js', /src="\/career-hub\.js\?v=[^"]+"/.test(dashboard.body));
     check('/tailor versions career-hub.css', /href="\/career-hub\.css\?v=[^"]+"/.test(dashboard.body));
     check('/tailor versions app-theme.css', /href="\/app-theme\.css\?v=[^"]+"/.test(dashboard.body));
-    // /login still serves the dedicated login page (versioned). /signup is now a
-    // deprecated-route redirect to the standalone app (Clerk sign-up lives there).
+    // Legacy auth is fully retired: /login and /signup both 301 to the
+    // standalone app's Clerk pages, so there is no longer a local page here to
+    // version at all.
     const login = await req('GET', '/login');
-    check('/login serves the login page, versioned', /Log in \/ Sign up/.test(login.body) && /src="\/login-redirect\.js\?v=[^"]+"/.test(login.body) && /href="\/theme\.css\?v=[^"]+"/.test(login.body), login.body.slice(0, 100));
+    check('/login 301s to the standalone app sign-in', login.status === 301 && login.headers.location === 'https://app.resumetailored.com/sign-in', `HTTP ${login.status} → ${login.headers.location}`);
     const signup = await req('GET', '/signup');
-    check('/signup 301s to the standalone app', signup.status === 301 && signup.headers.location === 'https://app.resumetailored.com', `HTTP ${signup.status} → ${signup.headers.location}`);
+    check('/signup 301s to the standalone app sign-up', signup.status === 301 && signup.headers.location === 'https://app.resumetailored.com/sign-up', `HTTP ${signup.status} → ${signup.headers.location}`);
 
     const blog = await req('GET', '/blog');
     check('/blog (explicit sendFile-replacement route) versions theme.css', /href="\/theme\.css\?v=[^"]+"/.test(blog.body));
 
-    // The Employer Portal page is self-contained (inline styles, no shared local
-    // stylesheet/script), so there is nothing to version — which sidesteps the
-    // stale-cache problem entirely. Assert it serves and has no UNVERSIONED
-    // local .css/.js reference (guards against a future asset being added
-    // without a version stamp).
+    // The Employer Portal is fully retired too — /employer now 301s straight to
+    // the standalone app's employer dashboard, so there is nothing local left
+    // to version here either.
     const employer = await req('GET', '/employer');
-    check('/employer serves', employer.status === 200);
-    // A local asset ref with no ?v= query would be unversioned (cache-stale risk).
-    const empUnversioned = /(?:href|src)="\/[^"?]+\.(?:css|js)"/.test(employer.body);
-    check('/employer has no unversioned local .css/.js reference', !empUnversioned);
+    check('/employer 301s to the standalone app', employer.status === 301 && employer.headers.location === 'https://app.resumetailored.com/employer', `HTTP ${employer.status} → ${employer.headers.location}`);
 
     // ── the version is the SAME across pages in one boot (one ASSET_VERSION) ──
     const v1 = (score.body.match(/theme\.css\?v=([^"]+)"/) || [])[1];

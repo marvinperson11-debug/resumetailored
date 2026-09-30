@@ -1103,7 +1103,13 @@
     <a href="/career-hub" data-i18n="eco_m_careerhub">Career Hub</a>
     <a href="/job-finder" data-i18n="eco_m_jobfinder">Job Finder</a>
     <a href="/tools/autoapply" data-i18n="eco_m_autoapply">AutoApply</a>
-    <a class="club-mobile-menu__account" href="/signup" data-i18n="eco_m_account">Create Account</a>
+    <div class="club-mobile-menu__divider" data-i18n="eco_m_employer_head">Employer</div>
+    <a href="/for-employers" data-i18n="eco_m_emp_portal">Employer Portal</a>
+    <a href="https://app.resumetailored.com/employer" data-i18n="eco_m_emp_decoder">Recruitment Decoder</a>
+    <a href="https://app.resumetailored.com/employer" data-i18n="eco_m_emp_dashboard">Employer Dashboard</a>
+    <a href="/corporate" data-i18n="eco_m_emp_corporate">Corporate Ecosystem</a>
+    <a href="https://app.resumetailored.com/sign-in" data-i18n="eco_m_login">Log In</a>
+    <a class="club-mobile-menu__account" href="https://app.resumetailored.com/sign-up" data-i18n="eco_m_account">Create Account</a>
     <button class="club-mobile-menu__lang" type="button" data-club-lang onclick="void 0">中文 <span aria-hidden="true">→</span></button>
   </nav>
 </div>
@@ -1176,33 +1182,6 @@
   <button type="button" class="btn btn-ghost btn-lg" onclick="document.querySelector('.mobile-menu').classList.remove('open');toggleLang()">中文</button>
 </div>
 
-<!-- Login chooser: pick which side to sign in to -->
-<div id="loginChooser" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(25,21,18,.5);align-items:center;justify-content:center;padding:22px;" onclick="if(event.target===this)closeLoginChooser()">
-  <div style="background:#0d1e30;border:1px solid rgba(201,162,39,.28);border-radius:20px;max-width:400px;width:100%;padding:30px 26px;box-shadow:0 30px 70px rgba(0,0,0,.5);position:relative;font-family:'Inter',sans-serif;">
-    <button onclick="closeLoginChooser()" aria-label="Close" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:26px;color:#9eb2aa;cursor:pointer;line-height:1;">&times;</button>
-    <h2 data-i18n="eco_login_title" style="font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:26px;letter-spacing:-.02em;margin:0 0 4px;color:#f5f1e8;">Log in</h2>
-    <p data-i18n="eco_login_prompt" style="color:#9eb2aa;font-size:14px;margin:0 0 20px;">Are you logging in as a Job Seeker or an Employer?</p>
-    <a href="https://app.resumetailored.com" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#0a1628;border:1px solid rgba(201,162,39,.3);border-radius:14px;padding:16px;margin-bottom:12px;transition:border-color .12s,background .12s;" onmouseover="this.style.borderColor='#c9a227';this.style.background='#123a2b'" onmouseout="this.style.borderColor='rgba(201,162,39,.3)';this.style.background='#0a1628'">
-      <span style="font-size:26px;">👤</span>
-      <span><span data-i18n="eco_login_seeker" style="display:block;font-weight:800;color:#f5f1e8;font-size:16px;">Job Seeker</span><span data-i18n="eco_login_seeker_sub" style="display:block;color:#9eb2aa;font-size:13px;">Tailor resumes, cover letters &amp; more</span></span>
-    </a>
-    <a href="https://app.resumetailored.com" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#0a1628;border:1px solid rgba(201,162,39,.3);border-radius:14px;padding:16px;transition:border-color .12s,background .12s;" onmouseover="this.style.borderColor='#c9a227';this.style.background='#12233a'" onmouseout="this.style.borderColor='rgba(201,162,39,.3)';this.style.background='#0a1628'">
-      <span style="font-size:26px;">💼</span>
-      <span><span data-i18n="eco_login_employer" style="display:block;font-weight:800;color:#f5f1e8;font-size:16px;">Employer</span><span data-i18n="eco_login_employer_sub" style="display:block;color:#9eb2aa;font-size:13px;">Post jobs &amp; hire candidates</span></span>
-    </a>
-    <a href="https://app.resumetailored.com/employee" style="display:flex;align-items:center;gap:14px;text-decoration:none;background:#0a1628;border:1px solid rgba(201,162,39,.3);border-radius:14px;padding:16px;margin-top:12px;transition:border-color .12s,background .12s;" onmouseover="this.style.borderColor='#c9a227';this.style.background='#241238'" onmouseout="this.style.borderColor='rgba(201,162,39,.3)';this.style.background='#0a1628'">
-      <span style="font-size:26px;">🪪</span>
-      <span><span data-i18n="eco_login_employee" style="display:block;font-weight:800;color:#f5f1e8;font-size:16px;">Employee</span><span data-i18n="eco_login_employee_sub" style="display:block;color:#9eb2aa;font-size:13px;">Your team portal — schedule, hours &amp; time off</span></span>
-    </a>
-    <p data-i18n="eco_login_newemp" style="text-align:center;margin:18px 0 0;font-size:13px;color:#9eb2aa;">New employer? <a href="https://app.resumetailored.com" style="color:#c9a227;font-weight:700;">See employer plans →</a></p>
-  </div>
-</div>
-<script>
-  function openLoginChooser(){ document.getElementById('loginChooser').style.display='flex'; document.body.style.overflow='hidden'; }
-  function closeLoginChooser(){ document.getElementById('loginChooser').style.display='none'; document.body.style.overflow=''; }
-  document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeLoginChooser(); });
-</script>
-
 <!-- HERO -->
 <main id="main-content">
 <section class="ecosystem-home" aria-labelledby="ecosystem-title">
@@ -1210,7 +1189,7 @@
     <div class="club-kicker" data-i18n="eco_kicker">Career intelligence, privately delivered</div>
     <h1 id="ecosystem-title" data-i18n="eco_title">Your next move,<br><em>properly considered.</em></h1>
     <p class="ecosystem-home__lead" data-i18n="eco_lead">A private digital office for ambitious candidates and exacting employers—combining resume intelligence, cinematic presentation, recruiting operations, and an editorial web studio.</p>
-    <div class="ecosystem-doors">
+    <div class="ecosystem-doors" id="ecosystem-pricing">
       <a class="ecosystem-door" href="/how-it-works" data-context="job-seeker">
         <span class="ecosystem-door__index" data-i18n="eco_door1_index">For candidates · 01</span>
         <h2 data-i18n="eco_door1_h">Tailor My Resume</h2>
@@ -3251,11 +3230,9 @@
       eco_m_explore: 'Explore the office', eco_m_cover: 'Cover Letter', eco_m_ats: 'ATS Scanner',
       eco_m_linkedin: 'LinkedIn Optimizer', eco_m_video: 'Resume Video', eco_m_webstudio: 'Web Studio',
       eco_m_decoder: 'Decoder Key', eco_m_interview: 'Interview Coach', eco_m_careerhub: 'Career Hub',
-      eco_m_account: 'Create Account',
-      eco_login_title: 'Log in', eco_login_prompt: 'Are you logging in as a Job Seeker or an Employer?',
-      eco_login_seeker: 'Job Seeker', eco_login_seeker_sub: 'Tailor resumes, cover letters &amp; more',
-      eco_login_employer: 'Employer', eco_login_employer_sub: 'Post jobs &amp; hire candidates',
-      eco_login_newemp: 'New employer? <a href="https://app.resumetailored.com" style="color:#c9a227;font-weight:700;">See employer plans →</a>',
+      eco_m_account: 'Create Account', eco_m_login: 'Log In',
+      eco_m_employer_head: 'Employer', eco_m_emp_portal: 'Employer Portal', eco_m_emp_decoder: 'Recruitment Decoder',
+      eco_m_emp_dashboard: 'Employer Dashboard', eco_m_emp_corporate: 'Corporate Ecosystem',
       eco_kicker: 'Career intelligence, privately delivered',
       eco_title: 'Your next move,<br><em>properly considered.</em>',
       eco_lead: 'A private digital office for ambitious candidates and exacting employers—combining resume intelligence, cinematic presentation, recruiting operations, and an editorial web studio.',
@@ -3356,11 +3333,9 @@
       eco_m_explore: '探索办公室', eco_m_cover: '求职信', eco_m_ats: 'ATS 扫描',
       eco_m_linkedin: 'LinkedIn 优化', eco_m_video: '简历视频', eco_m_webstudio: '网站工作室',
       eco_m_decoder: '解码钥匙', eco_m_interview: '面试教练', eco_m_careerhub: '职业中心',
-      eco_m_account: '创建账户',
-      eco_login_title: '登录', eco_login_prompt: '您是以求职者还是雇主身份登录？',
-      eco_login_seeker: '求职者', eco_login_seeker_sub: '定制简历、求职信及更多',
-      eco_login_employer: '雇主', eco_login_employer_sub: '发布职位并招聘人才',
-      eco_login_newemp: '新雇主？<a href="https://app.resumetailored.com" style="color:#c9a227;font-weight:700;">查看雇主方案 →</a>',
+      eco_m_account: '创建账户', eco_m_login: '登录',
+      eco_m_employer_head: '雇主', eco_m_emp_portal: '雇主门户', eco_m_emp_decoder: '招聘解码器',
+      eco_m_emp_dashboard: '雇主控制台', eco_m_emp_corporate: '企业生态系统',
       eco_kicker: '职业智慧，私密呈现',
       eco_title: '你的下一步，<br><em>深思熟虑。</em>',
       eco_lead: '一间为进取的求职者与严选的雇主打造的私人数字办公室——融合简历智能、影院级呈现、招聘运营与编辑级网站工作室。',
