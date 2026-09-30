@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
   const used = (await listDocuments(ctx.employerId)).length;
   const allowance = checkDocumentAllowance(ctx.access, used);
-  if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "limit_reached" }, { status: 402 });
+  if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "limit_reached", kind: "documents", limit: allowance.limit, tier: allowance.tier }, { status: 402 });
 
   const b = (await req.json().catch(() => ({}))) as { title?: string; bodyHtml?: string };
   const title = (b.title || "").trim() || "Untitled document";

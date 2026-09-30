@@ -70,7 +70,9 @@
     "careerSite": "Site carrière",
     "team": "Équipe",
     "settings": "Paramètres",
-    "upgradeRequired": "Mise à niveau requise"
+    "upgradeRequired": "Mise à niveau requise",
+    "planName": "Formule {plan}",
+    "sendsUsed": "{used} envois sur {limit} utilisés · Passer à l'offre supérieure"
   },
   "employeeNav": {
     "badge": "Portail",
@@ -254,7 +256,73 @@
   "employerUi": {
     "availableOnPlan": "{feature} est disponible avec la formule {tier}+.",
     "learnAboutUpgrading": "En savoir plus sur la mise à niveau →",
-    "close": "Fermer"
+    "close": "Fermer",
+    "tierNames": {
+      "free": "Gratuit",
+      "portal": "Portal",
+      "scale": "Scale",
+      "corporate": "Corporate"
+    },
+    "features": {
+      "employeesHub": "Espace employés",
+      "timesheets": "Feuilles de temps",
+      "careerSiteBuilder": "Créateur de site carrières",
+      "timeOff": "Congés",
+      "videoInterviews": "Entretiens vidéo",
+      "shiftScheduling": "Planification des horaires"
+    },
+    "lockedBanner": {
+      "body": "<strong>{feature}</strong> fait partie de la formule {tier}. Passez à l'offre supérieure pour l'activer : tout ce que vous aurez configuré vous attendra.",
+      "upgrade": "Passer à l'offre supérieure →"
+    },
+    "snackbar": {
+      "body": "<strong>{feature}</strong> est disponible avec la formule {tier} — <link>Passer à l'offre supérieure</link>",
+      "dismiss": "Fermer"
+    },
+    "quota": {
+      "usedOf": {
+        "jobs": "{used} postes actifs sur {limit} utilisés",
+        "seats": "{used} sièges d'équipe sur {limit} utilisés",
+        "candidates": "{used} places de candidats sur {limit} utilisées",
+        "video": "{used} entretiens vidéo sur {limit} utilisés ce mois-ci",
+        "esign": "{used} envois de signature électronique sur {limit} utilisés ce mois-ci",
+        "documents": "{used} documents sur {limit} utilisés"
+      },
+      "unlimited": {
+        "jobs": "{used} postes actifs · illimité",
+        "seats": "{used} sièges d'équipe · illimité",
+        "candidates": "{used} places de candidats · illimité",
+        "video": "{used} entretiens vidéo ce mois-ci · illimité",
+        "esign": "{used} envois de signature électronique ce mois-ci · illimité",
+        "documents": "{used} documents · illimité"
+      },
+      "upgradeTo": "Passer à {tier} →"
+    },
+    "upgradeCard": {
+      "body": "Vous êtes sur la formule <strong>{plan}</strong> — {used} envois sur {limit} utilisés. {pitch}",
+      "cta": "Passer à l'offre supérieure →",
+      "pitch": {
+        "free": "Passez à Portal pour des offres et candidats illimités, plus d'envois et les entretiens vidéo.",
+        "portal": "Passez à Scale pour plus d'envois, des résumés d'entretien par IA et la suite Office.",
+        "scale": "Passez à Corporate pour des envois illimités et des pages carrières en marque blanche."
+      }
+    },
+    "limit": {
+      "documents": "Vous avez utilisé les {limit} documents inclus dans la formule {plan}. Passez à {next} pour en créer davantage, ou supprimez d'abord un document existant.",
+      "esign": "Vous avez utilisé les {limit} envois de lettres d'offre inclus dans votre formule {plan} ce mois-ci. Passez à {next} pour en envoyer davantage, ou attendez le mois prochain, quand votre quota sera réinitialisé.",
+      "next": {
+        "documents": {
+          "free": "Portal (50 documents)",
+          "portal": "Scale (200 documents)",
+          "scale": "Corporate (documents illimités)"
+        },
+        "esign": {
+          "free": "Portal (10/mois)",
+          "portal": "Scale (50/mois)",
+          "scale": "Corporate (illimité)"
+        }
+      }
+    }
   },
   "employerEmployees": {
     "title": "Employés",
@@ -1167,7 +1235,8 @@
     "errorGeneric": "Une erreur s'est produite.",
     "errorNeedTitle": "Donnez un titre au poste.",
     "errorNeedDescription": "Ajoutez une description de poste (ou utilisez Améliorer pour en rédiger une).",
-    "errorCouldNotSave": "Impossible d'enregistrer l'offre."
+    "errorCouldNotSave": "Impossible d'enregistrer l'offre.",
+    "errorCouldNotUpdate": "Impossible de mettre à jour l'offre."
   },
   "employerCandidates": {
     "title": "Candidats",
@@ -1566,6 +1635,572 @@
     "errorCouldNotSave": "Impossible d'enregistrer.",
     "errorGeneric": "Une erreur s'est produite.",
     "errorUploadFailed": "Le téléchargement a échoué."
+  },
+  "employerSendCopy": {
+    "sendCopy": "Envoyer une copie",
+    "namePlaceholder": "Nom",
+    "emailPlaceholder": "email@entreprise.com",
+    "send": "Envoyer",
+    "cancel": "Annuler",
+    "couldntSend": "Impossible d'envoyer la copie.",
+    "sent": "Copie envoyée à {email}."
+  },
+  "employerEsign": {
+    "title": "Signatures électroniques",
+    "subtitle": "Envoyez des lettres d'offre, des contrats, des accords de confidentialité ou tout document à signer électroniquement avec DocuSign et suivez leur statut.",
+    "uploadAndSend": "Téléverser et envoyer pour signature",
+    "refresh": "Actualiser",
+    "docTypes": {
+      "offer": "Lettre d'offre",
+      "agreement": "Contrat de travail",
+      "nda": "Accord de confidentialité",
+      "writeup": "Avertissement à l'employé",
+      "custom": "Document personnalisé"
+    },
+    "status": {
+      "sent": "envoyé",
+      "delivered": "remis",
+      "viewed": "consulté",
+      "signed": "signé",
+      "completed": "terminé",
+      "declined": "refusé",
+      "voided": "annulé"
+    },
+    "connectedBanner": "DocuSign est connecté. Vous pouvez désormais envoyer des lettres d'offre pour signature.",
+    "errors": {
+      "generic": "Une erreur s'est produite lors de la connexion à DocuSign.",
+      "not_configured": "DocuSign n'est pas encore configuré sur ce déploiement. Ajoutez les identifiants DocuSign pour vous connecter.",
+      "consent_denied": "Le consentement DocuSign a été annulé. Vous pouvez réessayer de vous connecter.",
+      "state_mismatch": "La demande de connexion a expiré ou ne correspondait pas. Veuillez réessayer.",
+      "auth_failed": "DocuSign n'a pas renvoyé les jetons nécessaires. Veuillez réessayer.",
+      "account_failed": "Nous n'avons pas pu lire les informations de votre compte DocuSign. Veuillez réessayer.",
+      "save_failed": "Nous n'avons pas pu enregistrer la connexion. Veuillez réessayer."
+    },
+    "confirmDisconnect": "Déconnecter DocuSign ? Vous devrez vous reconnecter pour envoyer d'autres offres.",
+    "disconnected": "DocuSign est déconnecté.",
+    "notConfigured": {
+      "title": "DocuSign non configuré",
+      "body": "Ce déploiement n'a pas ses identifiants DocuSign. Une fois configurés, vous pourrez connecter votre compte ici."
+    },
+    "connection": {
+      "connected": "DocuSign connecté",
+      "accountFallback": "Compte connecté",
+      "usageUnlimited": "{used} envoyés ce mois-ci · illimité",
+      "usageLimited": "{used} envois mensuels sur {limit} utilisés",
+      "disconnect": "Déconnecter"
+    },
+    "connect": {
+      "title": "Connecter DocuSign",
+      "body": "Autorisez votre compte DocuSign pour envoyer des lettres d'offre à signer."
+    },
+    "empty": {
+      "title": "Aucun document envoyé pour l'instant",
+      "body": "Téléversez n'importe quel PDF — formulaire fiscal, contrat, courrier de l'administration — et envoyez-le à signer en une seule étape. Ou envoyez une lettre d'offre, un contrat ou un accord de confidentialité depuis le profil d'un candidat. Il apparaîtra ici avec son statut de signature en direct."
+    },
+    "cols": {
+      "recipient": "Destinataire",
+      "type": "Type",
+      "document": "Document",
+      "sent": "Envoyé",
+      "status": "Statut",
+      "files": "Fichiers",
+      "certificate": "Certificat"
+    },
+    "showDetails": "Afficher les détails",
+    "hideDetails": "Masquer les détails",
+    "requestedCount": "{count} demandés",
+    "download": "Télécharger",
+    "detail": {
+      "complete": "Ce document est terminé.",
+      "viewDocuments": "Voir les documents",
+      "certificate": "Certificat",
+      "sendCopy": "Envoyer une copie",
+      "sendCopyHint": "Envoie par e-mail le PDF signé combiné et le certificat à n'importe qui — aucune signature requise de sa part.",
+      "copiesSent": "Copies envoyées : {list}",
+      "requestedDocs": "Documents demandés",
+      "noneRequested": "Aucun document demandé au signataire.",
+      "received": "reçu",
+      "markPlaceholder": "Marquer comme reçu avec un fichier téléversé…",
+      "markReceived": "Marquer comme reçu",
+      "requestPlaceholder": "Demander un autre document…",
+      "request": "Demander",
+      "allAttachments": "Toutes les pièces jointes",
+      "noFiles": "Aucun fichier téléversé pour l'instant.",
+      "attachFile": "Joindre un fichier",
+      "privateFiles": "Les fichiers que vous joignez sont privés pour votre équipe — le signataire ne les voit jamais."
+    },
+    "you": "vous",
+    "signer": "signataire",
+    "msg": {
+      "couldntAddRequest": "Impossible d'ajouter la demande.",
+      "requestAdded": "Demande ajoutée — un lien de téléversement a été envoyé par e-mail au signataire.",
+      "uploadFailed": "Échec du téléversement.",
+      "fileAttached": "Fichier joint à cette enveloppe.",
+      "couldntUpdateRequest": "Impossible de mettre à jour la demande.",
+      "markedReceived": "« {name} » marqué comme reçu."
+    }
+  },
+  "employerDocuments": {
+    "title": "Documents",
+    "subtitle": "Rédigez des documents à envoyer pour signature et consultez tout ce qui a été reçu et signé.",
+    "tabs": {
+      "mine": "Mes documents",
+      "received": "Reçus et signés"
+    },
+    "kinds": {
+      "chart": "Graphique",
+      "spreadsheet": "Tableur",
+      "report": "Rapport",
+      "presentation": "Présentation"
+    },
+    "newDocument": "Nouveau document",
+    "startFromTemplate": "Partir d'un modèle",
+    "blankDocument": "Document vierge",
+    "untitled": "Document sans titre",
+    "templates": {
+      "offer": "Lettre d'offre",
+      "agreement": "Contrat de travail",
+      "nda": "Accord de confidentialité",
+      "writeup": "Avertissement à l'employé"
+    },
+    "empty": {
+      "title": "Aucun document pour l'instant",
+      "body": "Créez un document à partir d'un modèle (lettre d'offre, contrat, accord de confidentialité, avertissement) ou d'une page vierge, modifiez le texte, puis envoyez-le à signer."
+    },
+    "cols": {
+      "title": "Titre",
+      "updated": "Mis à jour",
+      "actions": "Actions"
+    },
+    "view": "Voir",
+    "edit": "Modifier",
+    "sendForSignature": "Envoyer pour signature",
+    "delete": "Supprimer",
+    "confirmDelete": "Supprimer ce document ? Cette action est irréversible.",
+    "back": "Retour",
+    "save": "Enregistrer",
+    "titlePlaceholder": "Titre du document",
+    "toolbar": {
+      "h1": "Titre 1",
+      "h2": "Titre 2",
+      "paragraph": "Paragraphe",
+      "bold": "Gras",
+      "italic": "Italique",
+      "underline": "Souligné",
+      "bullets": "Liste à puces",
+      "numbered": "Liste numérotée",
+      "alignLeft": "Aligner à gauche",
+      "alignCenter": "Centrer",
+      "link": "Insérer un lien"
+    },
+    "linkPrompt": "URL du lien (https://…)",
+    "couldNotSave": "Impossible d'enregistrer le document.",
+    "network": "Erreur réseau — veuillez réessayer.",
+    "tip": "Astuce : utilisez la barre d'outils pour les titres, le gras/l'italique, les listes, l'alignement et les liens. Une ligne de signature est ajoutée automatiquement à l'envoi.",
+    "exportPdf": "Exporter en PDF",
+    "received": {
+      "emptyTitle": "Rien de reçu pour l'instant",
+      "emptyBody": "Les PDF signés terminés et tous les fichiers téléversés par les signataires ou joints par votre équipe apparaîtront ici, prêts à être consultés ou téléchargés.",
+      "recipient": "Destinataire",
+      "document": "Document",
+      "date": "Date",
+      "files": "Fichiers",
+      "status": "Statut",
+      "show": "Afficher les détails",
+      "hide": "Masquer les détails",
+      "signedDocs": "Documents signés (PDF + certificat)",
+      "download": "Télécharger",
+      "allFiles": "Tous les fichiers",
+      "allFilesCount": "Tous les fichiers ({count})",
+      "noFiles": "Aucun fichier téléversé pour cette enveloppe.",
+      "requestedTag": "demandé",
+      "awaiting": "En attente du signataire : {names}",
+      "you": "vous",
+      "signer": "signataire"
+    }
+  },
+  "employerSendDocument": {
+    "title": "Envoyer un document pour signature",
+    "sent": {
+      "title": "Envoyé pour signature",
+      "body": "{name} recevra un e-mail de DocuSign pour consulter et signer.",
+      "uploadLink": "Il ou elle recevra aussi un lien sécurisé pour téléverser les documents demandés.",
+      "track": "Suivez son statut sur la page Signatures électroniques.",
+      "recipientFallback": "Le destinataire"
+    },
+    "viewDocuments": "Voir les documents",
+    "done": "Terminé",
+    "document": "Document",
+    "documentType": "Type de document",
+    "recipientFallback": "Destinataire",
+    "noEmail": "Aucun e-mail enregistré",
+    "employeeName": "Nom de l'employé",
+    "employeeEmail": "E-mail de l'employé",
+    "namePlaceholder": "Jordan Lee",
+    "emailPlaceholder": "jordan@email.com",
+    "recipient": "Destinataire",
+    "recipientHint": "Choisissez un candidat pour renseigner automatiquement son nom et son e-mail.",
+    "pickCandidate": "Choisir un candidat…",
+    "someoneElse": "Quelqu'un d'autre (saisie manuelle)",
+    "recipientName": "Nom du destinataire",
+    "recipientEmail": "E-mail du destinataire",
+    "validEmailRequired": "Une adresse e-mail valide du signataire est requise pour que DocuSign puisse le joindre.",
+    "documentName": "Nom du document",
+    "documentNamePlaceholder": "Formulaire d'adhésion à l'assurance",
+    "pdfToSign": "PDF à signer",
+    "pdfHint": "N'importe quel PDF · 10 Mo max — nous plaçons automatiquement un champ de signature et de date.",
+    "uploading": "Téléversement…",
+    "pdfReady": "✓ PDF prêt à envoyer.",
+    "noFile": "Aucun fichier choisi.",
+    "incidentDate": "Date de l'incident",
+    "dateExample": "3 mars 2026",
+    "policyViolated": "Politique enfreinte",
+    "policyPlaceholder": "Politique d'assiduité §4.2",
+    "incidentDescription": "Description de l'incident",
+    "incidentPlaceholder": "Ce qui s'est passé…",
+    "correctiveAction": "Mesure corrective",
+    "correctivePlaceholder": "Changement attendu et échéance…",
+    "additionalNotes": "Notes supplémentaires",
+    "optional": "Facultatif",
+    "ndaNote": "Votre modèle d'accord de confidentialité sera généré et envoyé pour signature. Modifiez son texte dans l'onglet Modèles.",
+    "position": "Poste",
+    "positionPlaceholder": "Designer produit senior",
+    "annualSalary": "Salaire annuel",
+    "salaryPlaceholder": "140 000 $",
+    "startDate": "Date de début",
+    "additionalTerms": "Conditions supplémentaires",
+    "additionalTermsHint": "Prime, actions, avantages, conditions — ajoutés au document.",
+    "additionalTermsPlaceholder": "p. ex. objectif de prime annuelle de 15 %, 20 jours de congés.",
+    "personalMessage": "Message personnel",
+    "personalMessageHint": "Un court message inclus dans l'e-mail et le document.",
+    "personalMessagePlaceholder": "Nous sommes ravis de vous accueillir dans l'équipe !",
+    "requestDocs": "Demander des documents au signataire",
+    "requestDocsHint": "Facultatif — chacun devient un emplacement de téléversement sur la page du signataire. Un emplacement libre « Autres documents » lui est aussi toujours proposé.",
+    "requestDocsPlaceholder": "p. ex. pièce d'identité avec photo, W-4 signé, certification",
+    "add": "Ajouter",
+    "removeItem": "Retirer {name}",
+    "connectDocusign": "Connecter DocuSign",
+    "cancel": "Annuler",
+    "send": "Envoyer pour signature",
+    "errors": {
+      "chooseRecipient": "Choisissez un destinataire.",
+      "enterEmployeeName": "Saisissez le nom de l'employé.",
+      "enterRecipientName": "Saisissez le nom du destinataire.",
+      "enterPosition": "Saisissez l'intitulé du poste.",
+      "describeIncident": "Décrivez l'incident.",
+      "nameDocument": "Donnez un nom au document.",
+      "uploadPdf": "Téléversez un PDF à envoyer.",
+      "uploadFailed": "Échec du téléversement.",
+      "uploadFailedRetry": "Échec du téléversement. Veuillez réessayer.",
+      "sendFailed": "Impossible d'envoyer le document.",
+      "network": "Erreur réseau — veuillez réessayer.",
+      "notConnected": "DocuSign n'est pas connecté. Connectez d'abord votre compte DocuSign."
+    }
+  },
+  "employeeCommon": {
+    "loading": "Chargement…",
+    "networkError": "Erreur réseau.",
+    "remove": "Retirer",
+    "cancel": "Annuler",
+    "days": "{count, plural, one {# jour} other {# jours}}",
+    "timeOffKinds": {
+      "vacation": "Congés payés",
+      "sick": "Maladie",
+      "other": "Autre"
+    },
+    "reviewStatus": {
+      "pending": "En attente",
+      "approved": "Approuvé",
+      "declined": "Refusé"
+    }
+  },
+  "employeePortal": {
+    "workplaceFallback": "Votre lieu de travail",
+    "gate": {
+      "misconfiguredTitle": "Nous n'avons pas pu charger votre portail",
+      "misconfiguredBody": "Votre compte est configuré comme membre de l'équipe, mais nous n'avons pas trouvé votre fiche employé. Cela signifie généralement que votre employeur doit renvoyer votre invitation ou terminer de vous ajouter.",
+      "contactEmployer": "Veuillez contacter votre employeur pour régler cela.",
+      "backToSite": "Retour à ResumeTailored",
+      "title": "Portail employé",
+      "intro": "Cet espace est réservé aux <strong>membres d'équipe invités</strong> des entreprises qui utilisent ResumeTailored. Si votre employeur vous a invité, voici comment y accéder :",
+      "step1Title": "Ouvrez votre e-mail d'invitation",
+      "step1Body": "Votre employeur vous a envoyé une invitation avec un lien et un code à 6 chiffres.",
+      "step2Title": "Connectez-vous avec l'e-mail invité",
+      "step2Body": "Utilisez la même adresse e-mail que celle invitée par votre employeur : c'est ainsi que votre compte est associé.",
+      "step3Title": "Saisissez votre code d'invitation",
+      "step3Body": "Saisissez le code à 6 chiffres reçu par e-mail pour terminer la configuration de votre portail.",
+      "noInvite": "Vous n'avez pas reçu d'invitation ? Demandez à votre employeur de vous en envoyer une. Ce portail ne permet pas de s'inscrire soi-même."
+    }
+  },
+  "employeeHome": {
+    "greeting": "Bonjour {name} 👋",
+    "greetingFallback": "là",
+    "welcome": "Bienvenue sur votre portail employé.",
+    "percentComplete": "{percent} % terminé",
+    "announcements": "Annonces",
+    "noAnnouncements": "Aucune annonce pour le moment.",
+    "cards": {
+      "scheduleTitle": "Mon planning",
+      "scheduleBody": "Vos horaires publiés, et définissez vos heures de disponibilité.",
+      "hoursTitle": "Mes heures",
+      "hoursBody": "Vos heures hebdomadaires et leur statut d'approbation.",
+      "timeOffTitle": "Congés",
+      "timeOffBody": "Demandez des congés payés, un arrêt maladie ou d'autres jours de congé.",
+      "documentsTitle": "Mes documents",
+      "documentsBody": "Offres, contrats et tout ce qui vous est envoyé à signer.",
+      "messagesTitle": "Messages",
+      "messagesBody": "Discutez directement avec votre employeur."
+    }
+  },
+  "employeeClock": {
+    "title": "Pointeuse",
+    "since": "En poste depuis {time}",
+    "clockedOut": "Vous êtes pointé(e) hors service.",
+    "notePlaceholder": "Ajouter une note (facultatif)",
+    "clockOut": "Pointer la sortie",
+    "clockIn": "Pointer l'entrée",
+    "today": "Aujourd'hui",
+    "now": "maintenant",
+    "error": "Une erreur s'est produite.",
+    "networkError": "Erreur réseau. Veuillez réessayer."
+  },
+  "employeeSchedule": {
+    "title": "Mon planning",
+    "subtitle": "Vos horaires publiés et vos congés approuvés. Indiquez vos disponibilités ci-dessous.",
+    "upcoming": "À venir",
+    "empty": "Aucun horaire publié pour l'instant. Votre employeur publiera votre planning ici.",
+    "timeOffEntry": "Congé — {kind}",
+    "approvedTimeOff": "Congés approuvés : {list}",
+    "availability": {
+      "title": "Mes disponibilités",
+      "intro": "Indiquez à votre employeur quand vous pouvez (ou ne pouvez pas) travailler. Il le voit en construisant le planning.",
+      "available": "Disponible",
+      "unavailable": "Indisponible",
+      "everyWeek": "Chaque semaine",
+      "specificDate": "Date précise",
+      "weekdayRecurring": "Chaque {day}",
+      "notePlaceholder": "Note (facultatif)",
+      "add": "Ajouter une disponibilité",
+      "couldNotSave": "Impossible d'enregistrer."
+    }
+  },
+  "employeeHours": {
+    "title": "Mes heures",
+    "subtitle": "Vos heures hebdomadaires issues de la pointeuse. Heures brutes uniquement — sans calcul d'heures supplémentaires.",
+    "previousWeek": "Semaine précédente",
+    "nextWeek": "Semaine suivante",
+    "thisWeek": "Cette semaine",
+    "totalThisWeek": "Total de la semaine",
+    "status": "Statut",
+    "employerNote": "Note de votre employeur : ",
+    "submit": "Soumettre pour approbation",
+    "open": "en cours",
+    "empty": "Aucune heure enregistrée cette semaine. Pointez l'entrée depuis l'accueil de votre portail."
+  },
+  "employeeTimeOff": {
+    "title": "Congés",
+    "subtitle": "Demandez des congés payés, un arrêt maladie ou d'autres jours de congé.",
+    "request": "Demander un congé",
+    "empty": "Aucune demande de congé pour l'instant.",
+    "employerNote": "Note de l'employeur : ",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "type": "Type",
+    "reason": "Motif (facultatif)",
+    "reasonPlaceholder": "Tout ce que votre employeur doit savoir",
+    "submit": "Envoyer la demande",
+    "couldNotSubmit": "Impossible d'envoyer.",
+    "status": {
+      "pending": "En attente",
+      "approved": "Approuvé",
+      "declined": "Refusé"
+    }
+  },
+  "employeeDocuments": {
+    "title": "Mes documents",
+    "subtitle": "Documents que votre employeur vous a envoyés pour relecture ou signature.",
+    "empty": "Aucun document pour l'instant. Tout ce que votre employeur vous envoie à signer apparaîtra ici.",
+    "docTypes": {
+      "offer": "Lettre d'offre",
+      "agreement": "Contrat",
+      "nda": "Accord de confidentialité",
+      "custom": "Document",
+      "writeup": "Avertissement"
+    },
+    "sentOn": "Envoyé le {date}",
+    "completedOn": "Terminé le {date}",
+    "status": {
+      "completed": "terminé",
+      "signed": "signé",
+      "sent": "envoyé",
+      "delivered": "remis",
+      "viewed": "consulté",
+      "declined": "refusé",
+      "voided": "annulé"
+    },
+    "download": "Télécharger"
+  },
+  "employeeMessages": {
+    "title": "Messages",
+    "subtitle": "Une ligne directe avec votre employeur.",
+    "empty": "Aucun message pour l'instant. Dites bonjour 👋",
+    "placeholder": "Écrire un message…",
+    "send": "Envoyer"
+  },
+  "employeeFeed": {
+    "title": "Fil d'équipe",
+    "subtitle": "Actualités, problèmes et réussites de votre équipe.",
+    "kinds": {
+      "post": "Publication",
+      "issue": "Problème",
+      "win": "Réussite"
+    },
+    "placeholder": "Partagez une actualité, signalez quelque chose ou célébrez une réussite…",
+    "post": "Publier",
+    "empty": "Aucune publication pour l'instant. Soyez le premier à partager quelque chose.",
+    "employee": "employé",
+    "employer": "employeur",
+    "resolved": "Résolu",
+    "comments": "{count, plural, one {# commentaire} other {# commentaires}}",
+    "reopen": "Rouvrir",
+    "markResolved": "Marquer comme résolu",
+    "replyPlaceholder": "Répondre…",
+    "reply": "Envoyer la réponse"
+  },
+  "employeeLibrary": {
+    "title": "Bibliothèque",
+    "subtitle": "Formations gratuites en milieu de travail issues de sources officielles du gouvernement américain. Suivez ce que vous voulez vous-même — inutile d'attendre qu'on vous l'attribue.",
+    "all": "Tous",
+    "search": "Rechercher dans la bibliothèque…",
+    "empty": "Aucun résultat — essayez une autre catégorie ou effacez la recherche.",
+    "source": "Source",
+    "take": "Suivre cette formation",
+    "categories": {
+      "Cleaning & Janitorial": "Nettoyage et entretien",
+      "Construction": "Construction",
+      "Emergency Preparedness": "Préparation aux urgences",
+      "Healthcare": "Santé",
+      "Hospitality & Food Service": "Hôtellerie et restauration",
+      "Manufacturing": "Fabrication",
+      "Office & Ergonomics": "Bureau et ergonomie",
+      "Warehouse & Logistics": "Entrepôt et logistique",
+      "Workplace Conduct": "Conduite au travail"
+    }
+  },
+  "employeeTraining": {
+    "title": "Ma formation",
+    "subtitle": "Regardez, lisez et terminez ce qui vous est attribué.",
+    "empty": "Rien d'attribué pour l'instant. Consultez l'onglet Bibliothèque pour suivre quelque chose vous-même.",
+    "quizTag": "quiz",
+    "best": "meilleur {score} %",
+    "docKinds": {
+      "sop": "PON",
+      "safety": "Sécurité",
+      "policy": "Politique",
+      "training": "Formation"
+    },
+    "states": {
+      "signed": "Signé",
+      "waived": "Dispensé",
+      "pending": "En attente",
+      "overdue": "En retard"
+    },
+    "back": "Ma formation",
+    "notFound": "Introuvable.",
+    "source": "Source : {provider}",
+    "openPdf": "Ouvrir le PDF",
+    "completed": "Terminé.",
+    "completedWithScore": "Terminé — score au quiz : {score} %.",
+    "markComplete": "Marquer comme terminé",
+    "takeQuiz": "Passer le quiz ({count, plural, one {# question} other {# questions}}, {threshold} % pour réussir)",
+    "passed": "Réussi — {score} %",
+    "notYet": "Pas encore — {score} % ({threshold} % requis)",
+    "retake": "Repasser",
+    "submit": "Envoyer"
+  },
+  "employeeProfile": {
+    "title": "Profil",
+    "subtitle": "Vos informations chez {company}.",
+    "companyFallback": "votre lieu de travail",
+    "name": "Nom",
+    "email": "E-mail",
+    "role": "Poste",
+    "startDate": "Date de début",
+    "status": "Statut",
+    "statuses": {
+      "active": "Actif",
+      "on_leave": "En congé",
+      "offboarded": "Sorti(e)"
+    },
+    "managedNote": "Votre poste et votre date de début sont gérés par votre employeur. Pour les corriger, écrivez-lui depuis l'onglet Messages.",
+    "account": "Compte",
+    "accountHint": "Mettez à jour votre photo, votre nom ou votre e-mail dans le panneau de votre compte.",
+    "manageAccount": "Gérer le compte",
+    "certs": {
+      "title": "Mes certifications",
+      "add": "Ajouter",
+      "empty": "Aucune certification enregistrée pour l'instant.",
+      "expires": "Expire le {date}",
+      "noExpiry": "Aucune date d'expiration",
+      "status": {
+        "ok": "Valide",
+        "expiring": "Bientôt expirée",
+        "expired": "Expirée",
+        "no_expiry": "Sans expiration"
+      },
+      "confirmRemove": "Retirer cette certification ?",
+      "remove": "Retirer",
+      "nameRequired": "Un nom est requis.",
+      "couldNotAdd": "Impossible d'ajouter la certification.",
+      "namePlaceholder": "Certification de cariste",
+      "issuedDate": "Date de délivrance",
+      "expiryDate": "Date d'expiration",
+      "cancel": "Annuler"
+    },
+    "skills": {
+      "title": "Mes compétences",
+      "empty": "Votre employeur n'a pas encore évalué vos compétences.",
+      "levels": {
+        "1": "Débutant",
+        "2": "Élémentaire",
+        "3": "Compétent",
+        "4": "Avancé",
+        "5": "Expert"
+      }
+    },
+    "loading": "Chargement…"
+  },
+  "notificationBell": {
+    "title": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "loading": "Chargement…",
+    "caughtUp": "Vous êtes à jour.",
+    "anEmployee": "Un employé",
+    "events": {
+      "certExpiringSelf": "Votre certification « {cert} » expire dans {days, plural, one {# jour} other {# jours}}",
+      "certExpiringEmployer": "La certification « {cert} » de {employee} expire dans {days, plural, one {# jour} other {# jours}}",
+      "trainingCompleted": "{employee} a terminé la formation : {doc}",
+      "trainingCompletedScore": "{employee} a terminé la formation : {doc} ({score} %)",
+      "timeOffRequested": "{employee} a demandé un congé ({range})",
+      "timesheetSubmitted": "{employee} a soumis sa feuille de temps pour {week}",
+      "inviteAccepted": "{employee} a accepté son invitation au portail",
+      "messageFromEmployee": "Nouveau message de {employee}",
+      "messageFromEmployer": "Nouveau message de votre employeur",
+      "feedPostByEmployee": "{employee} a publié sur le fil d'équipe",
+      "feedReplyByEmployee": "{employee} a répondu sur le fil d'équipe",
+      "trainingAssigned": "Nouvelle formation attribuée : {doc}",
+      "timesheetApproved": "Votre feuille de temps pour {week} a été approuvée",
+      "timesheetDeclined": "Votre feuille de temps pour {week} a été refusée",
+      "timeOffApproved": "Votre congé ({range}) a été approuvé",
+      "timeOffDeclined": "Votre congé ({range}) a été refusé",
+      "shiftChanged": "Votre horaire du {date} a changé : {from}–{to}",
+      "shiftRemoved": "Votre horaire du {date} a été supprimé",
+      "schedulePublished": "Votre planning pour {week} a été publié",
+      "announcementPosted": "Nouvelle annonce : {title}",
+      "feedPostNew": "Nouveau sur le fil d'équipe : {text}",
+      "feedReplyToYou": "Nouvelle réponse à votre publication sur le fil d'équipe"
+    },
+    "anEmployeeLower": "un employé"
   },
   "publicJobs": {
     "brandJobs": "Emplois",

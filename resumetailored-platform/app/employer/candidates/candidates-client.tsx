@@ -97,7 +97,7 @@ export function CandidatesClient({ initialJobId, pipelineLimit = null }: { initi
       />
 
       {pipelineLimit !== null && (
-        <QuotaBar label="candidate slots" used={pipelineUsed} limit={pipelineLimit} nextTierLabel="Employer Portal" />
+        <QuotaBar kind="candidates" used={pipelineUsed} limit={pipelineLimit} nextTierLabel="Employer Portal" />
       )}
 
       {/* Filters */}

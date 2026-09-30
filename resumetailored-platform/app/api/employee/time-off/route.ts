@@ -37,6 +37,7 @@ export async function POST(req: Request) {
   logActivityForEmployer(ctx.employerId, {
     eventType: "time_off_requested",
     title: `${ctx.employee.name || "An employee"} requested time off (${timeOffRangeLabel(request)})`,
+    msg: { key: "timeOffRequested", params: { employee: ctx.employee.name || "", start: request.startDate, end: request.endDate } },
     link: "/employer/time-off",
   }).catch(() => {});
 

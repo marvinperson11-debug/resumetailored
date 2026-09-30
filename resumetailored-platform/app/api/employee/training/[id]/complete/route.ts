@@ -25,6 +25,7 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
   logActivityForEmployer(ctx.employerId, {
     eventType: "training_completed",
     title: `${ctx.employee.name || "An employee"} completed training: ${doc?.title || "Untitled"}`,
+    msg: { key: "trainingCompleted", params: { employee: ctx.employee.name || "", doc: doc?.title || "" } },
     link: `/employer/employees?tab=training&doc=${docId}`,
   }).catch(() => {});
 

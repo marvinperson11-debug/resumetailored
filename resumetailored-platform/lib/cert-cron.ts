@@ -35,11 +35,13 @@ async function sendCertReminder(cert: CertWithEmployee, which: "30" | "7"): Prom
   logActivityForEmployee(cert.employerId, cert.employeeId, {
     eventType: "cert_expiring",
     title: `Your "${cert.name}" certification expires in ${daysLabelEn}`,
+    msg: { key: "certExpiringSelf", params: { cert: cert.name, days: Number(which) } },
     link: "/employee/profile",
   }).catch(() => {});
   logActivityForEmployer(cert.employerId, {
     eventType: "cert_expiring",
     title: `${cert.employeeName || "An employee"}'s "${cert.name}" certification expires in ${daysLabelEn}`,
+    msg: { key: "certExpiringEmployer", params: { employee: cert.employeeName || "", cert: cert.name, days: Number(which) } },
     link: "/employer/employees",
   }).catch(() => {});
 

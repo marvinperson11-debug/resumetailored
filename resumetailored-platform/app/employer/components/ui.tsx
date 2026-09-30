@@ -162,6 +162,11 @@ export function TierUpgradeNote({ feature, tier = "Scale" }: { feature: string; 
   );
 }
 
+/** Closed set of module names the locked-module banner/snackbar can label by
+ *  key (`employerUi.features.*`), so callers don't need their own `t()`. Office
+ *  tools pass an already-translated `feature` string instead. */
+export type LockedFeatureKey = "employeesHub" | "timesheets" | "careerSiteBuilder" | "timeOff" | "videoInterviews" | "shiftScheduling";
+
 /**
  * Persistent, always-visible banner at the top of a module that's locked at
  * the caller's current tier — used by Video Interviews, the Employees hub,
@@ -169,18 +174,24 @@ export function TierUpgradeNote({ feature, tier = "Scale" }: { feature: string; 
  * still renders (never a full-page block), so the visitor sees exactly what
  * they'd get, clearly marked as not yet active.
  */
-export function LockedModuleBanner({ feature, tier }: { feature: string; tier: string }) {
+export function LockedModuleBanner({ feature, featureKey, tier }: { feature?: string; featureKey?: LockedFeatureKey; tier: string }) {
+  const t = useTranslations("employerUi");
+  const name = featureKey ? t(`features.${featureKey}`) : feature ?? "";
   return (
     <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3">
       <Lock className="h-4 w-4 shrink-0 text-gold" />
       <p className="flex-1 text-sm text-cream">
-        <strong className="font-semibold">{feature}</strong> is part of the {tier} plan. Upgrade to activate — everything you set up will be waiting.
+        {t.rich("lockedBanner.body", {
+          feature: name,
+          tier,
+          strong: (chunks) => <strong className="font-semibold">{chunks}</strong>,
+        })}
       </p>
       <a
         href="https://resumetailored.com/for-employers"
         className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
       >
-        Upgrade →
+        {t("lockedBanner.upgrade")}
       </a>
     </div>
   );
@@ -213,16 +224,39 @@ export function useFirstTouch(locked: boolean) {
  * not anchored to one field, but never requiring a scroll back to the top
  * banner either. Shown only after `useFirstTouch` reports a real interaction.
  */
-export function FirstTouchSnackbar({ show, feature, tier, onDismiss }: { show: boolean; feature: string; tier: string; onDismiss: () => void }) {
+export function FirstTouchSnackbar({
+  show,
+  feature,
+  featureKey,
+  tier,
+  onDismiss,
+}: {
+  show: boolean;
+  feature?: string;
+  featureKey?: LockedFeatureKey;
+  tier: string;
+  onDismiss: () => void;
+}) {
+  const t = useTranslations("employerUi");
   if (!show) return null;
+  const name = featureKey ? t(`features.${featureKey}`) : feature ?? "";
   return (
     <div className="fixed inset-x-0 bottom-4 z-[70] flex justify-center px-4">
       <div className="flex max-w-md items-center gap-3 rounded-xl border border-gold/40 bg-navy px-4 py-3 shadow-2xl">
         <Lock className="h-4 w-4 shrink-0 text-gold" />
         <p className="flex-1 text-xs text-cream">
-          <strong>{feature}</strong> is available on the {tier} plan — <a href="https://resumetailored.com/for-employers" className="font-bold text-gold underline underline-offset-2">Upgrade</a>
+          {t.rich("snackbar.body", {
+            feature: name,
+            tier,
+            strong: (chunks) => <strong>{chunks}</strong>,
+            link: (chunks) => (
+              <a href="https://resumetailored.com/for-employers" className="font-bold text-gold underline underline-offset-2">
+                {chunks}
+              </a>
+            ),
+          })}
         </p>
-        <button type="button" onClick={onDismiss} aria-label="Dismiss" className="shrink-0 text-white/40 hover:text-white/70">
+        <button type="button" onClick={onDismiss} aria-label={t("snackbar.dismiss")} className="shrink-0 text-white/40 hover:text-white/70">
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
@@ -236,33 +270,37 @@ export function FirstTouchSnackbar({ show, feature, tier, onDismiss }: { show: b
  * visit (never a surprise only encountered at the limit), with an upgrade CTA
  * that appears once the limit is actually hit.
  */
+export type QuotaKind = "jobs" | "seats" | "candidates" | "video" | "esign" | "documents";
+
 export function QuotaBar({
-  label,
+  kind,
   used,
   limit,
   nextTierLabel,
 }: {
-  label: string;
+  /** Which metered feature this counts — picks the translated sentence. */
+  kind: QuotaKind;
   used: number;
   /** `null` = unlimited (no bar, just a plain count). */
   limit: number | null;
   /** e.g. "Employer Portal" — shown in the upgrade CTA once the limit is hit. */
   nextTierLabel?: string;
 }) {
+  const t = useTranslations("employerUi");
   const atLimit = limit !== null && used >= limit;
   const pct = limit !== null && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   return (
     <div className="mb-5 rounded-xl border border-border-gold bg-white/[0.03] px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={cn("text-sm font-medium", atLimit ? "text-gold" : "text-white/75")}>
-          {limit === null ? `${used} ${label} · unlimited` : `${used} of ${limit} ${label} used`}
+          {limit === null ? t(`quota.unlimited.${kind}`, { used }) : t(`quota.usedOf.${kind}`, { used, limit })}
         </span>
         {atLimit && nextTierLabel && (
           <a
             href="https://resumetailored.com/for-employers"
             className="rounded-lg bg-gold px-3 py-1 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
           >
-            Upgrade to {nextTierLabel} →
+            {t("quota.upgradeTo", { tier: nextTierLabel })}
           </a>
         )}
       </div>
@@ -276,6 +314,8 @@ export function QuotaBar({
 }
 
 interface UpgradeCardData {
+  /** "free" | "portal" | "scale" — picks the translated plan name + pitch. */
+  tier: "free" | "portal" | "scale";
   planLabel: string;
   used: number;
   limit: number;
@@ -293,6 +333,7 @@ interface UpgradeCardData {
  * blocking — it renders in normal page flow, after everything else.
  */
 export function UpgradeCard() {
+  const t = useTranslations("employerUi");
   const [data, setData] = useState<UpgradeCardData | null | undefined>(undefined);
 
   useEffect(() => {
@@ -315,13 +356,19 @@ export function UpgradeCard() {
   return (
     <div className="mt-8 flex flex-wrap items-center gap-3 rounded-xl border border-border-gold bg-white/[0.03] px-4 py-3 text-sm">
       <p className="flex-1 text-white/70">
-        You&apos;re on the <strong className="font-semibold text-cream">{data.planLabel}</strong> plan — {data.used} of {data.limit} sends used. {data.pitch}
+        {t.rich("upgradeCard.body", {
+          plan: t(`tierNames.${data.tier}`),
+          used: data.used,
+          limit: data.limit,
+          pitch: t(`upgradeCard.pitch.${data.tier}`),
+          strong: (chunks) => <strong className="font-semibold text-cream">{chunks}</strong>,
+        })}
       </p>
       <a
         href="https://resumetailored.com/for-employers"
         className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
       >
-        Upgrade →
+        {t("upgradeCard.cta")}
       </a>
     </div>
   );

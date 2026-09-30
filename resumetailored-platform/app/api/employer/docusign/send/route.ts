@@ -132,7 +132,7 @@ export async function POST(req: Request) {
     // documentId) never re-checks this, only signing's own e-sig quota.
     const docsUsed = (await listDocuments(ctx.employerId)).length;
     const docAllowance = checkDocumentAllowance(ctx.access, docsUsed);
-    if (!docAllowance.allowed) return NextResponse.json({ error: docAllowance.message, code: "limit_reached" }, { status: 402 });
+    if (!docAllowance.allowed) return NextResponse.json({ error: docAllowance.message, code: "limit_reached", kind: "documents", limit: docAllowance.limit, tier: docAllowance.tier }, { status: 402 });
     customPdfBase64 = (await downloadEsignDocumentBase64(ctx.employerId, b.documentPath)) || undefined;
     if (!customPdfBase64) return NextResponse.json({ error: "Couldn't read the uploaded document. Please re-upload." }, { status: 400 });
     documentName = name;
@@ -180,7 +180,7 @@ export async function POST(req: Request) {
   const used = await monthlySendCount(ctx.employerId);
   const allowance = checkSendAllowance(ctx.access, used);
   if (!allowance.allowed) {
-    return NextResponse.json({ error: allowance.message, code: "limit_reached" }, { status: 402 });
+    return NextResponse.json({ error: allowance.message, code: "limit_reached", kind: "esign", limit: allowance.limit, tier: allowance.tier }, { status: 402 });
   }
 
   const access = await getValidAccessToken(ctx.employerId);

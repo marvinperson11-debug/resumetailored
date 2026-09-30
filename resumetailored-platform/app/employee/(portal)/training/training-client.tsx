@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { GraduationCap, PlayCircle, FileText, ExternalLink, Loader2, CheckCircle2, XCircle, ChevronLeft } from "lucide-react";
-import { complianceState, COMPLIANCE_TONE, DOC_KIND_LABELS, type Acknowledgment, type TrainingLibraryItem } from "@/lib/employee-hub";
+import { complianceState, COMPLIANCE_TONE, type Acknowledgment, type TrainingLibraryItem } from "@/lib/employee-hub";
 import type { QuizQuestionPublic } from "@/lib/quiz-hub";
 
 const TONE_STYLE: Record<string, string> = {
@@ -28,6 +29,8 @@ interface DocDetail {
 /** Employee "My training": watch/read assigned content, then mark it
  *  complete or take its quiz — entirely in-house, no DocuSign. */
 export function TrainingClient() {
+  const t = useTranslations("employeeTraining");
+  const tc = useTranslations("employeeCommon");
   const searchParams = useSearchParams();
   const [items, setItems] = useState<ListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,18 +56,18 @@ export function TrainingClient() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <header>
-        <h1 className="font-serif text-3xl font-medium text-cream">My training</h1>
-        <p className="mt-1 text-sm text-white/60">Watch, read, and complete what&apos;s assigned to you.</p>
+        <h1 className="font-serif text-3xl font-medium text-cream">{t("title")}</h1>
+        <p className="mt-1 text-sm text-white/60">{t("subtitle")}</p>
       </header>
 
       {loading ? (
         <div className="glass flex items-center gap-2 px-5 py-8 text-sm text-white/50">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin" /> {tc("loading")}
         </div>
       ) : items.length === 0 ? (
         <div className="glass flex flex-col items-center gap-2 px-5 py-12 text-center text-sm text-white/50">
           <GraduationCap className="h-7 w-7 text-white/25" />
-          Nothing assigned yet. Check the Library tab to take something yourself.
+          {t("empty")}
         </div>
       ) : (
         <ul className="space-y-2">
@@ -76,12 +79,12 @@ export function TrainingClient() {
                   <div className="min-w-0">
                     <div className="font-medium text-cream">{doc.title}</div>
                     <div className="text-xs text-white/40">
-                      {DOC_KIND_LABELS[doc.docKind as keyof typeof DOC_KIND_LABELS] || doc.docKind}
-                      {hasQuiz ? " · quiz" : ""}
-                      {typeof ack.score === "number" ? ` · best ${ack.score}%` : ""}
+                      {["sop", "safety", "policy", "training"].includes(doc.docKind) ? t(`docKinds.${doc.docKind}`) : doc.docKind}
+                      {hasQuiz ? ` · ${t("quizTag")}` : ""}
+                      {typeof ack.score === "number" ? ` · ${t("best", { score: ack.score })}` : ""}
                     </div>
                   </div>
-                  <span className={`inline-flex shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${TONE_STYLE[COMPLIANCE_TONE[state]]}`}>{state}</span>
+                  <span className={`inline-flex shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${TONE_STYLE[COMPLIANCE_TONE[state]]}`}>{t(`states.${state}`)}</span>
                 </button>
               </li>
             );
@@ -93,6 +96,8 @@ export function TrainingClient() {
 }
 
 function TrainingDetail({ docId, onBack }: { docId: number; onBack: () => void }) {
+  const t = useTranslations("employeeTraining");
+  const tc = useTranslations("employeeCommon");
   const [detail, setDetail] = useState<DocDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [taking, setTaking] = useState(false);
@@ -120,15 +125,15 @@ function TrainingDetail({ docId, onBack }: { docId: number; onBack: () => void }
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-cream">
-        <ChevronLeft className="h-4 w-4" /> My training
+        <ChevronLeft className="h-4 w-4" /> {t("back")}
       </button>
 
       {loading ? (
         <div className="glass flex items-center gap-2 px-5 py-8 text-sm text-white/50">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+          <Loader2 className="h-4 w-4 animate-spin" /> {tc("loading")}
         </div>
       ) : !detail ? (
-        <div className="glass px-5 py-8 text-sm text-white/50">Not found.</div>
+        <div className="glass px-5 py-8 text-sm text-white/50">{t("notFound")}</div>
       ) : (
         <div className="space-y-5">
           <h1 className="font-serif text-2xl font-medium text-cream">{detail.doc.title}</h1>
@@ -145,7 +150,7 @@ function TrainingDetail({ docId, onBack }: { docId: number; onBack: () => void }
                 />
               </div>
               <a href={detail.libraryItem.sourceUrl} target="_blank" rel="noreferrer" className="mt-1.5 inline-flex items-center gap-1 text-xs text-white/40 hover:text-cream">
-                <ExternalLink className="h-3 w-3" /> Source: {detail.libraryItem.provider}
+                <ExternalLink className="h-3 w-3" /> {t("source", { provider: detail.libraryItem.provider })}
               </a>
             </div>
           ) : (
@@ -157,13 +162,13 @@ function TrainingDetail({ docId, onBack }: { docId: number; onBack: () => void }
 
           {detail.doc.pdfUrl && (
             <a href={detail.doc.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-violet hover:underline">
-              <FileText className="h-4 w-4" /> Open PDF
+              <FileText className="h-4 w-4" /> {t("openPdf")}
             </a>
           )}
 
           {detail.ack.status === "signed" ? (
             <div className="glass flex items-center gap-2 px-5 py-4 text-sm text-teal">
-              <CheckCircle2 className="h-5 w-5" /> Completed{typeof detail.ack.score === "number" ? ` — quiz score ${detail.ack.score}%` : ""}.
+              <CheckCircle2 className="h-5 w-5" /> {typeof detail.ack.score === "number" ? t("completedWithScore", { score: detail.ack.score }) : t("completed")}
             </div>
           ) : detail.quiz ? (
             <Quiz docId={docId} quiz={detail.quiz} onPassed={load} />
@@ -173,7 +178,7 @@ function TrainingDetail({ docId, onBack }: { docId: number; onBack: () => void }
               disabled={taking}
               className="inline-flex items-center gap-2 rounded-lg bg-violet px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet/90 disabled:opacity-50"
             >
-              {taking && <Loader2 className="h-4 w-4 animate-spin" />} Mark complete
+              {taking && <Loader2 className="h-4 w-4 animate-spin" />} {t("markComplete")}
             </button>
           )}
         </div>
@@ -191,6 +196,7 @@ function Quiz({
   quiz: { questions: QuizQuestionPublic[]; passThreshold: number };
   onPassed: () => void;
 }) {
+  const t = useTranslations("employeeTraining");
   const [started, setStarted] = useState(false);
   const [answers, setAnswers] = useState<number[]>(() => quiz.questions.map(() => -1));
   const [submitting, setSubmitting] = useState(false);
@@ -223,7 +229,7 @@ function Quiz({
         onClick={() => setStarted(true)}
         className="inline-flex items-center gap-2 rounded-lg bg-violet px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet/90"
       >
-        <PlayCircle className="h-4 w-4" /> Take the quiz ({quiz.questions.length} question{quiz.questions.length === 1 ? "" : "s"}, {quiz.passThreshold}% to pass)
+        <PlayCircle className="h-4 w-4" /> {t("takeQuiz", { count: quiz.questions.length, threshold: quiz.passThreshold })}
       </button>
     );
   }
@@ -233,7 +239,7 @@ function Quiz({
       <div className="glass space-y-3 px-5 py-5">
         <div className={`flex items-center gap-2 text-sm font-semibold ${result.passed ? "text-teal" : "text-red-300"}`}>
           {result.passed ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
-          {result.passed ? `Passed — ${result.score}%` : `Not yet — ${result.score}% (need ${quiz.passThreshold}%)`}
+          {result.passed ? t("passed", { score: result.score }) : t("notYet", { score: result.score, threshold: quiz.passThreshold })}
         </div>
         <ul className="space-y-1.5 text-sm">
           {quiz.questions.map((q, i) => (
@@ -245,7 +251,7 @@ function Quiz({
         </ul>
         {!result.passed && (
           <button onClick={retake} className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/70 transition hover:bg-white/5">
-            Retake
+            {t("retake")}
           </button>
         )}
       </div>
@@ -278,7 +284,7 @@ function Quiz({
         disabled={submitting || answers.some((a) => a < 0)}
         className="inline-flex items-center gap-2 rounded-lg bg-violet px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet/90 disabled:opacity-50"
       >
-        {submitting && <Loader2 className="h-4 w-4 animate-spin" />} Submit
+        {submitting && <Loader2 className="h-4 w-4 animate-spin" />} {t("submit")}
       </button>
     </div>
   );

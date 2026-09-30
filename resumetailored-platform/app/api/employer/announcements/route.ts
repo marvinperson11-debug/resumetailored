@@ -32,6 +32,7 @@ export async function POST(req: Request) {
   logActivityForEmployees(ctx.employerId, active.map((e) => e.id), {
     eventType: "announcement_posted",
     title: `New announcement: ${created.title}`,
+    msg: { key: "announcementPosted", params: { title: created.title } },
     link: "/employee",
   }).catch(() => {});
 

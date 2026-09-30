@@ -140,6 +140,7 @@ async function notifyAssignees(
     logActivityForEmployee(employerId, employee.id, {
       eventType: "training_assigned",
       title: `New training assigned: ${docTitle}`,
+      msg: { key: "trainingAssigned", params: { doc: docTitle } },
       link: `/employee/training?open=${docId}`,
     }).catch(() => {});
 
