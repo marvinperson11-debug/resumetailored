@@ -8608,6 +8608,45 @@ app.get('/api/admin/users-list', requireAdminSecret, (req, res) => {
   res.json({ total: rows.length, users: rows });
 });
 
+// Incident cleanup tool (see the _syncPlanToClerk wrong-user-lookup fix):
+// residual rows an affected email picked up before that fix went live keep
+// getting served back out by employerTier()'s DB fallback on every future
+// entitlement backfill, so clearing Clerk publicMetadata alone isn't enough
+// — the legacy row has to go too. Scoped to exactly the three tables that
+// feed employer/subscriber entitlement, one email and one table per call —
+// no bulk or wildcard delete, so a mistyped param can't wipe more than the
+// one row it names.
+const ADMIN_SUBSCRIBER_TABLES = Object.freeze(['subscribers', 'employer_subscribers', 'employer_profiles']);
+
+// GET /api/admin/subscribers?secret=ADMIN_SECRET&email=... — view-only: what
+// (if anything) each of the three tables holds for this email.
+app.get('/api/admin/subscribers', requireAdminSecret, (req, res) => {
+  const email = String(req.query.email || '').toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: 'email_required' });
+  writeAuditLog(req, 'admin', 'admin.subscribers_view', { targetType: 'email', targetId: email });
+  const rows = {};
+  for (const table of ADMIN_SUBSCRIBER_TABLES) {
+    rows[table] = db.prepare(`SELECT * FROM ${table} WHERE email = ?`).get(email) || null;
+  }
+  res.json({ email, rows });
+});
+
+// POST /api/admin/subscribers/delete  { secret, email, table }
+// Deletes the one row for `email` in the named table. `table` must be one of
+// ADMIN_SUBSCRIBER_TABLES — rejects anything else rather than deleting from
+// an unintended table off a typo.
+app.post('/api/admin/subscribers/delete', authRateLimiter, requireAdminSecret, (req, res) => {
+  const email = String(req.body.email || '').toLowerCase().trim();
+  const table = String(req.body.table || '').trim();
+  if (!email) return res.status(400).json({ error: 'email_required' });
+  if (!ADMIN_SUBSCRIBER_TABLES.includes(table)) {
+    return res.status(400).json({ error: 'bad_table', allowed: ADMIN_SUBSCRIBER_TABLES });
+  }
+  const result = db.prepare(`DELETE FROM ${table} WHERE email = ?`).run(email);
+  writeAuditLog(req, 'admin', 'admin.subscribers_delete', { targetType: table, targetId: email, meta: { deleted: result.changes } });
+  res.json({ email, table, deleted: result.changes > 0 });
+});
+
 function broadcastEmailHtml(username) {
   return `<!DOCTYPE html>
 <html lang="en">
