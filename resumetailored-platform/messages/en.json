@@ -1103,6 +1103,25 @@
       "exportDocTitle": "Resume",
       "errorNothingToExport": "Nothing to export yet.",
       "errorDocxFailed": "Word export failed. Please try again."
+    },
+    "myResumes": {
+      "title": "My Resumes",
+      "subtitle": "Every resume you build is saved here automatically.",
+      "refresh": "Refresh",
+      "buildNew": "Build new",
+      "emptyTitle": "No saved resumes yet",
+      "emptyBody": "Build your first resume and it'll appear here.",
+      "buildMyResume": "Build My Resume",
+      "untitled": "Untitled resume",
+      "updated": "Updated {date}",
+      "reopen": "Reopen",
+      "pdf": "PDF",
+      "downloadPdf": "Download PDF",
+      "buildFirst": "Build this resume first to enable PDF",
+      "pdfTitle": "Resume",
+      "deleteAria": "Delete resume",
+      "loadError": "Could not load your resumes.",
+      "genericError": "Something went wrong."
     }
   },
   "careersNotFound": {

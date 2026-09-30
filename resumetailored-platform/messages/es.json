@@ -1103,6 +1103,25 @@
       "exportDocTitle": "Currículum",
       "errorNothingToExport": "Todavía no hay nada que exportar.",
       "errorDocxFailed": "No se pudo exportar a Word. Inténtalo de nuevo."
+    },
+    "myResumes": {
+      "title": "Mis currículums",
+      "subtitle": "Cada currículum que creas se guarda aquí automáticamente.",
+      "refresh": "Actualizar",
+      "buildNew": "Crear nuevo",
+      "emptyTitle": "Aún no hay currículums guardados",
+      "emptyBody": "Crea tu primer currículum y aparecerá aquí.",
+      "buildMyResume": "Crear mi currículum",
+      "untitled": "Currículum sin título",
+      "updated": "Actualizado {date}",
+      "reopen": "Reabrir",
+      "pdf": "PDF",
+      "downloadPdf": "Descargar PDF",
+      "buildFirst": "Crea primero este currículum para habilitar el PDF",
+      "pdfTitle": "Currículum",
+      "deleteAria": "Eliminar currículum",
+      "loadError": "No se pudieron cargar tus currículums.",
+      "genericError": "Algo salió mal."
     }
   },
   "careersNotFound": {
