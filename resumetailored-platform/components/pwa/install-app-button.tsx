@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Download, X, Share, Plus } from "lucide-react";
 import { usePWA } from "./pwa-context";
 
@@ -12,7 +13,8 @@ import { usePWA } from "./pwa-context";
  * a captured prompt yet, it shows a one-time-per-open instructional card
  * instead of failing silently.
  */
-export function InstallAppButton({ className, label = "Install app" }: { className?: string; label?: string }) {
+export function InstallAppButton({ className, label }: { className?: string; label?: string }) {
+  const t = useTranslations("pwa");
   const { canInstall, isIOS, isStandalone, promptInstall } = usePWA();
   const [showHelp, setShowHelp] = useState(false);
 
@@ -29,7 +31,7 @@ export function InstallAppButton({ className, label = "Install app" }: { classNa
   return (
     <>
       <button type="button" onClick={handleClick} className={className}>
-        <Download className="h-4 w-4" /> {label}
+        <Download className="h-4 w-4" /> {label ?? t("install")}
       </button>
       {showHelp && <InstallHelpCard isIOS={isIOS} onClose={() => setShowHelp(false)} />}
     </>
@@ -37,6 +39,8 @@ export function InstallAppButton({ className, label = "Install app" }: { classNa
 }
 
 export function InstallHelpCard({ isIOS, onClose }: { isIOS: boolean; onClose: () => void }) {
+  const t = useTranslations("pwa");
+  const strong = (chunks: React.ReactNode) => <strong>{chunks}</strong>;
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-navy/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
@@ -44,7 +48,7 @@ export function InstallHelpCard({ isIOS, onClose }: { isIOS: boolean; onClose: (
         className="w-full max-w-sm rounded-2xl border border-border-gold bg-navy p-6 text-center shadow-2xl"
       >
         <div className="mb-3 flex justify-end">
-          <button type="button" onClick={onClose} aria-label="Close" className="text-muted-cream hover:text-cream">
+          <button type="button" onClick={onClose} aria-label={t("close")} className="text-muted-cream hover:text-cream">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -53,18 +57,16 @@ export function InstallHelpCard({ isIOS, onClose }: { isIOS: boolean; onClose: (
         </div>
         {isIOS ? (
           <>
-            <h3 className="font-serif text-lg font-medium text-cream">Add to Home Screen</h3>
+            <h3 className="font-serif text-lg font-medium text-cream">{t("iosTitle")}</h3>
             <p className="mt-2 text-sm text-white/65">
-              Tap <Share className="mb-0.5 inline h-4 w-4" /> <strong>Share</strong> in Safari&rsquo;s toolbar, then scroll down and choose{" "}
-              <strong>Add to Home Screen</strong>.
+              {t.rich("iosBody", { share: () => <Share className="mb-0.5 inline h-4 w-4" />, strong })}
             </p>
           </>
         ) : (
           <>
-            <h3 className="font-serif text-lg font-medium text-cream">Install ResumeTailored</h3>
+            <h3 className="font-serif text-lg font-medium text-cream">{t("installTitle")}</h3>
             <p className="mt-2 text-sm text-white/65">
-              Open your browser&rsquo;s menu and look for <strong>Install app</strong> or <Plus className="mb-0.5 inline h-4 w-4" />{" "}
-              <strong>Add to Home Screen</strong>.
+              {t.rich("installBody", { plus: () => <Plus className="mb-0.5 inline h-4 w-4" />, strong })}
             </p>
           </>
         )}
@@ -73,7 +75,7 @@ export function InstallHelpCard({ isIOS, onClose }: { isIOS: boolean; onClose: (
           onClick={onClose}
           className="mt-5 inline-flex items-center justify-center rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet/90"
         >
-          Got it
+          {t("gotIt")}
         </button>
       </div>
     </div>

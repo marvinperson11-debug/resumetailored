@@ -1,11 +1,12 @@
+import { getTranslations } from "next-intl/server";
 import { SignClient } from "./sign-client";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Upload documents — ResumeTailored",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata() {
+  const t = await getTranslations("publicSign");
+  return { title: t("metaTitle"), robots: { index: false, follow: false } };
+}
 
 /**
  * Public, login-less signer upload page: /sign/{envelopeId}?key={token}.

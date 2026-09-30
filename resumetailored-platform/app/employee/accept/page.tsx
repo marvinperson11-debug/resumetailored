@@ -1,4 +1,5 @@
 import { clerkClient } from "@clerk/nextjs/server";
+import { getTranslations } from "next-intl/server";
 import { getEmployeeByInviteToken } from "@/lib/employees-store";
 import { getEmployerProfile } from "@/lib/employer-store";
 import { AcceptClient } from "./accept-client";
@@ -18,16 +19,17 @@ export const dynamic = "force-dynamic";
  * email link to inside the portal is one uninterrupted branded experience.
  */
 export default async function AcceptEmployeeInvitePage({ searchParams }: { searchParams: { token?: string } }) {
+  const t = await getTranslations("employeeAccept");
   const token = (searchParams?.token || "").trim();
-  if (!token) return <Message title="Invalid invite" body="This invite link is missing its token. Ask your employer to resend it." />;
+  if (!token) return <Message title={t("invalidTitle")} body={t("missingToken")} cta={t("goHome")} />;
 
   const invite = await getEmployeeByInviteToken(token);
   if (!invite || !invite.employerId || !invite.email) {
-    return <Message title="Invite not found" body="This invite may have already been used or withdrawn. Ask your employer to send a new one." />;
+    return <Message title={t("notFoundTitle")} body={t("notFoundBody")} cta={t("goHome")} />;
   }
 
   const profile = await getEmployerProfile(invite.employerId);
-  const company = profile?.companyName || "your team";
+  const company = profile?.companyName || t("yourTeam");
 
   // Does an account already exist for this email? Picks the sign-in vs. create
   // form. On lookup failure default to the create path — the create endpoint
@@ -44,14 +46,14 @@ export default async function AcceptEmployeeInvitePage({ searchParams }: { searc
   return <AcceptClient token={token} email={invite.email} company={company} accountExists={accountExists} />;
 }
 
-function Message({ title, body }: { title: string; body: string }) {
+function Message({ title, body, cta }: { title: string; body: string; cta: string }) {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-navy px-6 py-12 text-center">
       <div className="w-full max-w-md rounded-2xl border border-border-gold bg-white/5 p-8">
         <h1 className="font-serif text-2xl font-medium text-cream">{title}</h1>
         <p className="mt-3 text-sm text-white/70">{body}</p>
         <a href="/" className="mt-6 inline-block rounded-xl bg-violet px-5 py-2.5 text-sm font-semibold text-white">
-          Go to ResumeTailored
+          {cta}
         </a>
       </div>
     </main>
