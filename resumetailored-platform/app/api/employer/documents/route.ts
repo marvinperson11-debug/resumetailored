@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { isEmployer } from "@/lib/plan";
+import { checkDocumentAllowance } from "@/lib/employer-plan";
 import { listDocuments, createDocument } from "@/lib/documents-store";
 
 export const runtime = "nodejs";
@@ -18,6 +19,10 @@ export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can create documents." }, { status: 403 });
+
+  const used = (await listDocuments(ctx.employerId)).length;
+  const allowance = checkDocumentAllowance(ctx.access, used);
+  if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "limit_reached" }, { status: 402 });
 
   const b = (await req.json().catch(() => ({}))) as { title?: string; bodyHtml?: string };
   const title = (b.title || "").trim() || "Untitled document";

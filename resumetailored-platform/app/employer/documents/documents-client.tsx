@@ -29,7 +29,7 @@ import {
   FileDown,
   Presentation,
 } from "lucide-react";
-import { Panel, PageHeader, Btn, Badge, EmptyState, Input, QuotaBar } from "../components/ui";
+import { Panel, PageHeader, Btn, Badge, EmptyState, Input, QuotaBar, UpgradeCard } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
 import { SendCopyControl } from "../components/send-copy-control";
 import { DOC_TYPE_LABELS, type DocusignEnvelope, type DocusignStatus, type EmployerDocument, type EmployerDocumentKind } from "@/lib/employer-ai";
@@ -67,7 +67,15 @@ function fmtDate(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-export function DocumentsClient({ canManage }: { canManage: boolean }) {
+export function DocumentsClient({
+  canManage,
+  documentLimit = null,
+  documentNextTierLabel = "Employer Portal",
+}: {
+  canManage: boolean;
+  documentLimit?: number | null;
+  documentNextTierLabel?: string;
+}) {
   const [tab, setTab] = useState<"mine" | "received">("mine");
   return (
     <div>
@@ -86,13 +94,27 @@ export function DocumentsClient({ canManage }: { canManage: boolean }) {
           </button>
         ))}
       </div>
-      {tab === "mine" ? <MyDocuments canManage={canManage} /> : <ReceivedDocuments />}
+      {tab === "mine" ? (
+        <MyDocuments canManage={canManage} documentLimit={documentLimit} documentNextTierLabel={documentNextTierLabel} />
+      ) : (
+        <ReceivedDocuments />
+      )}
+
+      <UpgradeCard />
     </div>
   );
 }
 
 // ── My documents: list + Document Creator ─────────────────────────────────────
-function MyDocuments({ canManage }: { canManage: boolean }) {
+function MyDocuments({
+  canManage,
+  documentLimit,
+  documentNextTierLabel,
+}: {
+  canManage: boolean;
+  documentLimit: number | null;
+  documentNextTierLabel: string;
+}) {
   const [docs, setDocs] = useState<EmployerDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<{ id?: number; title: string; bodyHtml: string } | null>(null);
@@ -146,9 +168,7 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
 
   return (
     <div>
-      {/* Document storage isn't metered by tier — say so explicitly rather
-          than showing nothing and letting a user wonder if there's a cap. */}
-      {!loading && <QuotaBar label="documents" used={docs.length} limit={null} />}
+      {!loading && <QuotaBar label="documents" used={docs.length} limit={documentLimit} nextTierLabel={documentNextTierLabel} />}
 
       {canManage && (
         <div className="mb-4 flex items-center gap-2">

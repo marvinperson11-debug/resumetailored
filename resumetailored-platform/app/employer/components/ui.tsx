@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2, X, Lock, type LucideIcon } from "lucide-react";
 import type {
   ButtonHTMLAttributes,
@@ -271,6 +271,58 @@ export function QuotaBar({
           <div className={cn("h-full rounded-full transition-all", atLimit ? "bg-gold" : "bg-violet")} style={{ width: `${pct}%` }} />
         </div>
       )}
+    </div>
+  );
+}
+
+interface UpgradeCardData {
+  planLabel: string;
+  used: number;
+  limit: number;
+  pitch: string;
+}
+
+/**
+ * Slim, persistent upgrade card for the bottom of every non-locked employer
+ * page (Dashboard, Hire, Candidates, Messages, Shortlists, E-Signatures,
+ * Documents, Team — locked modules already show `LockedModuleBanner`, so
+ * they never render this too). Self-fetching: every host page just drops in
+ * `<UpgradeCard />`, and it decides on its own whether there's anything to
+ * show — nothing for Corporate or the admin bypass, since both have
+ * unlimited sends and nowhere further to upgrade. Never a popup, never
+ * blocking — it renders in normal page flow, after everything else.
+ */
+export function UpgradeCard() {
+  const [data, setData] = useState<UpgradeCardData | null | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/employer/upgrade-card", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { data: null }))
+      .then((d: { data?: UpgradeCardData | null }) => {
+        if (!cancelled) setData(d.data ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setData(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!data) return null;
+
+  return (
+    <div className="mt-8 flex flex-wrap items-center gap-3 rounded-xl border border-border-gold bg-white/[0.03] px-4 py-3 text-sm">
+      <p className="flex-1 text-white/70">
+        You&apos;re on the <strong className="font-semibold text-cream">{data.planLabel}</strong> plan — {data.used} of {data.limit} sends used. {data.pitch}
+      </p>
+      <a
+        href="https://resumetailored.com/for-employers"
+        className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
+      >
+        Upgrade →
+      </a>
     </div>
   );
 }
