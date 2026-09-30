@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { isEmployer } from "@/lib/plan";
-import { isScalePlusTier } from "@/lib/employer-plan";
+import { isScalePlusTier, checkDocumentAllowance } from "@/lib/employer-plan";
 import { gatherHiringActivityData, gatherTimesheetSummaryData, gatherTrainingComplianceData } from "@/lib/office-store";
-import { createDocument } from "@/lib/documents-store";
+import { listDocuments, createDocument } from "@/lib/documents-store";
 import { getAnthropic, CLAUDE_MODEL, isProviderUnavailable } from "@/lib/ai";
 import { isReportSource, isValidReportRange, buildReportPrompt, reportTitle, type ReportSource, type ReportDateRange } from "@/lib/office-hub";
 
@@ -28,6 +28,10 @@ export async function POST(req: Request) {
   const source: ReportSource = b.source;
   const range: ReportDateRange = { start: b.start || "", end: b.end || "" };
   if (!isValidReportRange(range)) return NextResponse.json({ error: "Pick a valid date range (up to a year)." }, { status: 400 });
+
+  const used = (await listDocuments(ctx.employerId)).length;
+  const allowance = checkDocumentAllowance(ctx.access, used);
+  if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "limit_reached" }, { status: 402 });
 
   const anthropic = getAnthropic();
   if (!anthropic) return NextResponse.json({ error: "not_configured", message: "AI generation isn't configured on this server." }, { status: 501 });

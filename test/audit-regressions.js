@@ -88,7 +88,7 @@ const server = app.listen(0, async () => {
       check(`${route} serves the pricing landing shell`, r.status === 200 && r.text.includes('id="pricing"'), `HTTP ${r.status}`);
     }
     const forgot = await request('GET', '/forgot-password');
-    check('/forgot-password serves the login shell', forgot.status === 200 && forgot.text.includes('Forgot password?'), `HTTP ${forgot.status}`);
+    check('/forgot-password 301s to the standalone app sign-in (legacy auth retired)', forgot.status === 301 && forgot.headers.location === 'https://app.resumetailored.com/sign-in', `HTTP ${forgot.status}`);
     const health = await request('GET', '/api/health');
     check('/api/health returns JSON without an internal error', health.status === 200 && health.json && health.json.status, health.text);
 

@@ -375,13 +375,22 @@ const server = app.listen(0, async () => {
     check('access: an employer-account holder gets full access', empStatus.json.access === 'full', empStatus.body);
 
     // The public employer landing page is served. Its employer CTAs route to the
-    // app (sign-up-first) rather than initiating Stripe checkout on the marketing
-    // site, and the contextual free-quota CTA is preserved. No data-checkout-plan
-    // trigger should remain on this landing page.
+    // app's /employer-checkout bridge with the chosen plan carried in the URL
+    // (sign-up-first, plan intent survives the round-trip) rather than
+    // initiating Stripe checkout on the marketing site itself, and the
+    // contextual free-quota CTA is preserved. No data-checkout-plan trigger
+    // should remain on this landing page.
     const landing = await new Promise((resolve) => {
       http.get({ host: '127.0.0.1', port: PORT, path: '/for-employers' }, (r) => { let b = ''; r.on('data', d => b += d); r.on('end', () => resolve({ status: r.statusCode, body: b })); });
     });
-    check('/for-employers landing routes employer CTAs to the app and keeps the free quota, with no on-site Stripe checkout', landing.status === 200 && /href="https:\/\/app\.resumetailored\.com"/.test(landing.body) && /free employer quota/.test(landing.body) && !/data-checkout-plan/.test(landing.body), String(landing.status));
+    check('/for-employers landing routes employer CTAs to the app\'s checkout bridge and keeps the free quota, with no on-site Stripe checkout',
+      landing.status === 200
+      && /href="https:\/\/app\.resumetailored\.com\/employer-checkout\?plan=free"/.test(landing.body)
+      && /href="https:\/\/app\.resumetailored\.com\/employer-checkout\?plan=portal"/.test(landing.body)
+      && /href="https:\/\/app\.resumetailored\.com\/employer-checkout\?plan=scale"/.test(landing.body)
+      && /href="https:\/\/app\.resumetailored\.com\/employer-checkout\?plan=corporate"/.test(landing.body)
+      && /free employer quota/.test(landing.body)
+      && !/data-checkout-plan/.test(landing.body), String(landing.status));
 
   } catch (err) {
     failures++;

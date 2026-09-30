@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireEmployerId } from "@/lib/employer-auth";
+import { requireEmployerId, employerContext } from "@/lib/employer-auth";
+import { checkCandidateAllowance } from "@/lib/employer-plan";
 import { listApplicants, createApplicant, type ApplicantFilters } from "@/lib/employer-store";
 import { isApplicantStatus } from "@/lib/employer-ai";
 
@@ -26,10 +27,12 @@ export async function GET(req: Request) {
 }
 
 /** POST — manually add an applicant to one of this employer's jobs. (Applicants
- *  normally arrive from a public job page; this supports manual entry too.) */
+ *  normally arrive from a public job page — never blocked by this limit, see
+ *  createPublicApplicant — this manual entry path is the one gated.) */
 export async function POST(req: Request) {
-  const employerId = await requireEmployerId();
-  if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const ctx = await employerContext();
+  const employerId = ctx?.employerId || null;
+  if (!ctx || !employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const b = (await req.json().catch(() => ({}))) as {
     jobId?: number;
     name?: string;
@@ -41,6 +44,10 @@ export async function POST(req: Request) {
   if (!Number.isFinite(jobId)) return NextResponse.json({ error: "Pick a job for this applicant." }, { status: 400 });
   if (!(b.name || "").trim() || !(b.email || "").trim())
     return NextResponse.json({ error: "Name and email are required." }, { status: 400 });
+
+  const pipelineCount = (await listApplicants(employerId)).filter((a) => a.status !== "rejected").length;
+  const allowance = checkCandidateAllowance(ctx.access, pipelineCount);
+  if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "candidate_limit" }, { status: 402 });
 
   const applicant = await createApplicant(employerId, {
     jobId,

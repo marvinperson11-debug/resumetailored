@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { isEmployer } from "@/lib/plan";
-import { isScalePlusTier } from "@/lib/employer-plan";
+import { isScalePlusTier, checkDocumentAllowance } from "@/lib/employer-plan";
 import { uploadOfficeChartPng } from "@/lib/office-store";
-import { createDocument } from "@/lib/documents-store";
+import { listDocuments, createDocument } from "@/lib/documents-store";
 
 export const runtime = "nodejs";
 
@@ -18,6 +18,10 @@ export async function POST(req: Request) {
   if (!ctx) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   if (!isScalePlusTier(ctx.access)) return NextResponse.json({ error: "Charts are available on the Scale+ plan." }, { status: 403 });
   if (!isEmployer(ctx.access)) return NextResponse.json({ error: "Only the account owner can save documents." }, { status: 403 });
+
+  const used = (await listDocuments(ctx.employerId)).length;
+  const allowance = checkDocumentAllowance(ctx.access, used);
+  if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "limit_reached" }, { status: 402 });
 
   const b = (await req.json().catch(() => ({}))) as { title?: string; pngDataUrl?: string };
   const title = (b.title || "Chart").trim().slice(0, 200);

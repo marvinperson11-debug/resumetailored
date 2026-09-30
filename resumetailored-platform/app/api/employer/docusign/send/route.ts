@@ -12,7 +12,7 @@ import {
   getEnvelopeByEnvelopeId,
 } from "@/lib/docusign-store";
 import { notifySignerOfDocRequest } from "@/lib/esign-delivery";
-import { getDocument, sanitizeDocumentHtml } from "@/lib/documents-store";
+import { getDocument, sanitizeDocumentHtml, listDocuments } from "@/lib/documents-store";
 import {
   isDocusignConfigured,
   buildEnvelope,
@@ -25,7 +25,7 @@ import {
   createEnvelope,
   normalizeEnvelopeStatus,
 } from "@/lib/docusign";
-import { checkSendAllowance } from "@/lib/employer-plan";
+import { checkSendAllowance, checkDocumentAllowance } from "@/lib/employer-plan";
 import {
   isDocType,
   isEditableDocType,
@@ -127,6 +127,12 @@ export async function POST(req: Request) {
     const name = (b.documentName || "").trim();
     if (!b.documentPath) return NextResponse.json({ error: "Upload a PDF to send." }, { status: 400 });
     if (!name) return NextResponse.json({ error: "Give the document a name." }, { status: 400 });
+    // A brand-new uploaded PDF counts as a document, same as composing one in
+    // the Document Creator — an EXISTING document (the branch above, with
+    // documentId) never re-checks this, only signing's own e-sig quota.
+    const docsUsed = (await listDocuments(ctx.employerId)).length;
+    const docAllowance = checkDocumentAllowance(ctx.access, docsUsed);
+    if (!docAllowance.allowed) return NextResponse.json({ error: docAllowance.message, code: "limit_reached" }, { status: 402 });
     customPdfBase64 = (await downloadEsignDocumentBase64(ctx.employerId, b.documentPath)) || undefined;
     if (!customPdfBase64) return NextResponse.json({ error: "Couldn't read the uploaded document. Please re-upload." }, { status: 400 });
     documentName = name;

@@ -50,7 +50,7 @@ check('shared hamburger contains the complete tool directory', navMenuRoutes.eve
 // 中文 has been MOVED OUT of the hamburger and onto the always-visible top-nav
 // actions cluster (beside Login + the hamburger), on both the homepage's
 // club-nav and the shared site-nav. Account creation still lives in the hamburger.
-check('nav offers account creation in the hamburger and language switching on the top bar', /club-mobile-menu__account[^>]+href="\/signup"/.test(index) && /data-snav-account/.test(siteNav) && /class="club-nav__lang"[^>]*data-club-lang-top/.test(index) && /id="langToggleBtn"/.test(siteNav) && /class="snav-lang"/.test(siteNav) && !/id="langToggleBtnMobile"/.test(siteNav));
+check('nav offers account creation in the hamburger and language switching on the top bar', /club-mobile-menu__account[^>]+href="https:\/\/app\.resumetailored\.com\/sign-up"/.test(index) && /data-snav-account/.test(siteNav) && /class="club-nav__lang"[^>]*data-club-lang-top/.test(index) && /id="langToggleBtn"/.test(siteNav) && /class="snav-lang"/.test(siteNav) && !/id="langToggleBtnMobile"/.test(siteNav));
 check('hamburger menus do not expose Pricing', !/club-mobile-menu[\s\S]{0,2500}href="#pricing"/.test(index) && !/snavMenu[\s\S]{0,2500}href=["']#pricing/.test(siteNav));
 // Mobile header hides the horizontal LINKS but keeps the actions cluster
 // (中文 + Login) visible beside the hamburger at every width.

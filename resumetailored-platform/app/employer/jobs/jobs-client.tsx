@@ -12,7 +12,7 @@ import {
   type RemoteType,
   type EmploymentType,
 } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
 
 const STATUS_TONE: Record<JobStatus, "neutral" | "teal" | "gold" | "red"> = {
   draft: "neutral",
@@ -21,13 +21,14 @@ const STATUS_TONE: Record<JobStatus, "neutral" | "teal" | "gold" | "red"> = {
   closed: "red",
 };
 
-export function JobsClient({ openNew }: { openNew: boolean }) {
+export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; activeLimit?: number | null }) {
   const t = useTranslations("employerJobs");
   const router = useRouter();
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<JobPosting | "new" | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,8 +50,14 @@ export function JobsClient({ openNew }: { openNew: boolean }) {
 
   async function patch(id: number, body: Record<string, unknown>) {
     setBusyId(id);
+    setNotice(null);
     try {
-      await fetch(`/api/employer/jobs/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch(`/api/employer/jobs/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setNotice(d.error || "Could not update the job.");
+        return;
+      }
       await load();
     } finally {
       setBusyId(null);
@@ -78,6 +85,16 @@ export function JobsClient({ openNew }: { openNew: boolean }) {
           </Btn>
         }
       />
+
+      {activeLimit !== null && (
+        <QuotaBar
+          label="active job slots"
+          used={jobs.filter((j) => j.status === "active").length}
+          limit={activeLimit}
+          nextTierLabel="Employer Portal"
+        />
+      )}
+      {notice && <div className="mb-4 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 text-sm text-gold">{notice}</div>}
 
       {loading ? (
         <Panel className="text-sm text-white/50">{t("loadingJobs")}</Panel>
@@ -173,6 +190,8 @@ export function JobsClient({ openNew }: { openNew: boolean }) {
           }}
         />
       )}
+
+      <UpgradeCard />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireEmployerId } from "@/lib/employer-auth";
-import { updateJob, deleteJob, duplicateJob, getJob } from "@/lib/employer-store";
+import { requireEmployerId, employerContext } from "@/lib/employer-auth";
+import { checkJobAllowance } from "@/lib/employer-plan";
+import { updateJob, deleteJob, duplicateJob, getJob, listJobs } from "@/lib/employer-store";
 import { isJobStatus, REMOTE_TYPES, EMPLOYMENT_TYPES } from "@/lib/employer-ai";
 
 export const runtime = "nodejs";
@@ -13,8 +14,9 @@ const arr = (v: unknown): string[] => (Array.isArray(v) ? v.map((x) => String(x)
 /** PATCH — edit a job, change its status (pause/close/activate), or duplicate it.
  *  `{ action: "duplicate" }` clones the job; `{ status }` alone flips status. */
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
-  const employerId = await requireEmployerId();
-  if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  const ctx = await employerContext();
+  const employerId = ctx?.employerId || null;
+  if (!ctx || !employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const id = Number(params.id);
   if (!Number.isFinite(id)) return NextResponse.json({ error: "bad id" }, { status: 400 });
 
@@ -24,6 +26,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const job = await duplicateJob(employerId, id);
     if (!job) return NextResponse.json({ error: "Could not duplicate." }, { status: 500 });
     return NextResponse.json({ job });
+  }
+
+  // Reactivating/publishing a job (status → active) counts against the Free
+  // job-slot limit the same as creating one active from scratch.
+  if (b.status !== undefined && isJobStatus(b.status) && b.status === "active") {
+    const current = await getJob(employerId, id);
+    if (current && current.status !== "active") {
+      const existing = await listJobs(employerId);
+      const activeCount = existing.filter((j) => j.status === "active" && j.id !== id).length;
+      const allowance = checkJobAllowance(ctx.access, activeCount);
+      if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "job_limit" }, { status: 402 });
+    }
   }
 
   const patch: Record<string, unknown> = {};
