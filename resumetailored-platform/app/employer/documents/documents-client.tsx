@@ -29,7 +29,7 @@ import {
   FileDown,
   Presentation,
 } from "lucide-react";
-import { Panel, PageHeader, Btn, Badge, EmptyState, Input } from "../components/ui";
+import { Panel, PageHeader, Btn, Badge, EmptyState, Input, QuotaBar } from "../components/ui";
 import { SendDocumentModal } from "../components/send-document-modal";
 import { SendCopyControl } from "../components/send-copy-control";
 import { DOC_TYPE_LABELS, type DocusignEnvelope, type DocusignStatus, type EmployerDocument, type EmployerDocumentKind } from "@/lib/employer-ai";
@@ -146,6 +146,10 @@ function MyDocuments({ canManage }: { canManage: boolean }) {
 
   return (
     <div>
+      {/* Document storage isn't metered by tier — say so explicitly rather
+          than showing nothing and letting a user wonder if there's a cap. */}
+      {!loading && <QuotaBar label="documents" used={docs.length} limit={null} />}
+
       {canManage && (
         <div className="mb-4 flex items-center gap-2">
           <Btn onClick={() => setPicking((v) => !v)}>

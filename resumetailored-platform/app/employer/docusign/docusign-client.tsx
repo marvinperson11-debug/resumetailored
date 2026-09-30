@@ -16,7 +16,7 @@ import {
   Check,
   Circle,
 } from "lucide-react";
-import { Panel, PageHeader, Btn, Badge, EmptyState, Input } from "../components/ui";
+import { Panel, PageHeader, Btn, Badge, EmptyState, Input, QuotaBar } from "../components/ui";
 import type { DocusignConnection, DocusignEnvelope, DocusignStatus } from "@/lib/employer-ai";
 import { DOC_TYPE_LABELS } from "@/lib/employer-ai";
 import { SendDocumentModal } from "../components/send-document-modal";
@@ -53,6 +53,14 @@ function typeBadgeTone(status: DocusignStatus): "gold" | "teal" | "red" {
   if (status === "completed" || status === "signed") return "teal";
   if (status === "declined" || status === "voided") return "red";
   return "gold";
+}
+
+/** Where "Upgrade to ___" points, one tier up from the caller's current one. */
+function nextSendTierLabel(tier: string): string | undefined {
+  if (tier === "free") return "Employer Portal";
+  if (tier === "portal") return "Scale";
+  if (tier === "scale") return "Corporate";
+  return undefined;
 }
 
 const ERROR_COPY: Record<string, string> = {
@@ -158,6 +166,18 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
           {banner.tone === "ok" ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}
           <span>{banner.text}</span>
         </div>
+      )}
+
+      {/* Live from first visit for EVERY employer, not just the admin who
+          manages the DocuSign connection below — a non-admin never had any
+          way to see this count before hitting the cap. */}
+      {usage && (
+        <QuotaBar
+          label="e-signature sends this month"
+          used={usage.used}
+          limit={usage.limit}
+          nextTierLabel={nextSendTierLabel(usage.tier)}
+        />
       )}
 
       {/* Connection status — platform admin only. Regular employers send through

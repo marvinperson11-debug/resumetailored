@@ -55,6 +55,7 @@ export function EmployerSidebar({
   isAdmin,
   planLabel = "Portal",
   lockedHrefs = [],
+  quota,
 }: {
   company: string;
   isAdmin?: boolean;
@@ -63,6 +64,12 @@ export function EmployerSidebar({
    *  tier — rendered with a small lock badge instead of blocking the link
    *  entirely, since the page itself shows the real upgrade prompt. */
   lockedHrefs?: string[];
+  /** The always-on upgrade path (shell-level, every page): a quiet one-line
+   *  usage readout + upgrade link in the sidebar footer, so a Free/Portal/
+   *  Scale employer never has to hit a wall to discover they can upgrade.
+   *  `limit` is always a real number here — Corporate (the only unlimited
+   *  tier) omits `quota` entirely, since there's nowhere further to go. */
+  quota?: { used: number; limit: number } | null;
 }) {
   const pathname = usePathname();
   const t = useTranslations("employerNav");
@@ -118,10 +125,23 @@ export function EmployerSidebar({
         <SignOutButton className="flex w-full items-center gap-3 rounded-md border-l-2 border-transparent px-4 py-2.5 text-sm text-muted-cream transition-all duration-200 hover:bg-white/5 hover:text-cream" />
       </div>
 
-      <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
-        <Building2 className="h-4 w-4 text-gold" />
-        <span className="text-xs font-medium text-gold">{planLabel}</span>
-      </div>
+      {quota ? (
+        <a
+          href="https://resumetailored.com/for-employers"
+          className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4 transition-colors hover:bg-white/5"
+        >
+          <Building2 className="h-4 w-4 shrink-0 text-gold" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-medium text-gold">{planLabel} plan</span>
+            <span className="block text-[11px] text-white/45">{quota.used} of {quota.limit} sends used · Upgrade</span>
+          </span>
+        </a>
+      ) : (
+        <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
+          <Building2 className="h-4 w-4 text-gold" />
+          <span className="text-xs font-medium text-gold">{planLabel}</span>
+        </div>
+      )}
     </div>
   );
 }
