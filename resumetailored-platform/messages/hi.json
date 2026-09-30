@@ -562,7 +562,8 @@
       "defaultLabel": "URL से जॉब पोस्टिंग इम्पोर्ट करें",
       "placeholder": "https://…  (LinkedIn, Indeed, Greenhouse, …)",
       "import": "इम्पोर्ट करें",
-      "error": "वह URL इम्पोर्ट नहीं हो सका।"
+      "error": "वह URL इम्पोर्ट नहीं हो सका।",
+      "unsupported": "Paste a full https link from a supported job board — LinkedIn, Indeed, Glassdoor, ZipRecruiter, Greenhouse, Lever, Workday or Ashby — or paste the job description text instead."
     },
     "docPreview": {
       "placeholder": "अभी प्रीव्यू के लिए कुछ नहीं है।"
@@ -2374,7 +2375,7 @@
     "signInLoading": "साइन-इन लोड हो रहा है…",
     "signUpLoading": "साइन-अप लोड हो रहा है…",
     "stillLoading": "अभी भी लोड हो रहा है। यदि यह ठीक न हो, तो कृपया रीफ़्रेश करें या थोड़ी देर बाद पुनः प्रयास करें।",
-    "employeePortalLink": "किसी कंपनी के कर्मचारी हैं? कर्मचारी पोर्टल पर जाएँ →",
+    "employeePortalLink": "किसी कंपनी के कर्मचारी हैं? ऊपर उसी ईमेल से साइन इन करें जिस पर आपको आमंत्रित किया गया था — आप कर्मचारी पोर्टल में पहुँचेंगे।",
     "downloadApp": "ऐप डाउनलोड करें",
     "alreadyTeam": "क्या आप पहले से ResumeTailored पर किसी टीम का हिस्सा हैं? <link>इसके बजाय साइन इन करें</link> — आपका कार्य लॉगिन इन व्यक्तिगत रिज़्यूमे टूल के लिए भी काम करता है।"
   },

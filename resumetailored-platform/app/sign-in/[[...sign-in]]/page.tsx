@@ -52,15 +52,10 @@ function SignInInner() {
           fallbackRedirectUrl={dest}
           signUpForceRedirectUrl={dest}
         />
-        {/* Invited workforce employees sign in the same way, then land in their
-            scoped portal. This link points them at it (and their invite email
-            drops them on /employee/accept directly). */}
-        <a
-          href="/employee"
-          className="mt-6 text-sm text-white/50 underline-offset-4 transition-colors hover:text-white/80 hover:underline"
-        >
-          {t("employeePortalLink")}
-        </a>
+        {/* /employee is behind the same sign-in, so a link to it from here only
+            looped back to this page. Signing in above already lands invited
+            employees in their scoped portal; say so instead of linking. */}
+        <p className="mt-6 max-w-xs text-center text-sm text-white/50">{t("employeePortalLink")}</p>
         <InstallAppButton
           label={t("downloadApp")}
           className="mt-4 inline-flex items-center gap-2 rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-white"

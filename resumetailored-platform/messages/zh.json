@@ -562,7 +562,8 @@
       "defaultLabel": "从网址导入职位信息",
       "placeholder": "https://…（LinkedIn、Indeed、Greenhouse 等）",
       "import": "导入",
-      "error": "无法导入该网址。"
+      "error": "无法导入该网址。",
+      "unsupported": "Paste a full https link from a supported job board — LinkedIn, Indeed, Glassdoor, ZipRecruiter, Greenhouse, Lever, Workday or Ashby — or paste the job description text instead."
     },
     "docPreview": {
       "placeholder": "暂无预览内容。"
@@ -2374,7 +2375,7 @@
     "signInLoading": "正在加载登录…",
     "signUpLoading": "正在加载注册…",
     "stillLoading": "仍在加载。如果长时间没有反应，请刷新页面或稍后重试。",
-    "employeePortalLink": "公司员工？前往员工门户 →",
+    "employeePortalLink": "公司员工？请使用受邀邮箱在上方登录——登录后将进入员工门户。",
     "downloadApp": "下载应用",
     "alreadyTeam": "已经是 ResumeTailored 上某个团队的成员？<link>请改为登录</link>——您的工作账号同样适用于这些个人简历工具。"
   },

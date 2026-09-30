@@ -562,7 +562,8 @@
       "defaultLabel": "Import job posting from URL",
       "placeholder": "https://…  (LinkedIn, Indeed, Greenhouse, …)",
       "import": "Import",
-      "error": "Could not import that URL."
+      "error": "Could not import that URL.",
+      "unsupported": "Paste a full https link from a supported job board — LinkedIn, Indeed, Glassdoor, ZipRecruiter, Greenhouse, Lever, Workday or Ashby — or paste the job description text instead."
     },
     "docPreview": {
       "placeholder": "Nothing to preview yet."
@@ -2374,7 +2375,7 @@
     "signInLoading": "Loading sign-in…",
     "signUpLoading": "Loading sign-up…",
     "stillLoading": "Still loading. If this doesn't clear, please refresh or try again shortly.",
-    "employeePortalLink": "Employee of a company? Go to the Employee portal →",
+    "employeePortalLink": "Employee of a company? Sign in above with the email you were invited at — you'll land in your Employee portal.",
     "downloadApp": "Download the app",
     "alreadyTeam": "Already part of a team on ResumeTailored? <link>Sign in instead</link> — your work login also works for these personal resume tools."
   },

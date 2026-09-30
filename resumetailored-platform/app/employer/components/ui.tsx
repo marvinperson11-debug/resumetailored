@@ -194,7 +194,7 @@ export function LockedModuleBanner({ feature, featureKey, tier }: { feature?: st
   return (
     <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3">
       <Lock className="h-4 w-4 shrink-0 text-gold" />
-      <p className="flex-1 text-sm text-cream">
+      <p className="min-w-[14rem] flex-1 break-words text-sm text-cream">
         {t.rich("lockedBanner.body", {
           feature: name,
           tier,

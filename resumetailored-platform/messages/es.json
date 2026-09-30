@@ -562,7 +562,8 @@
       "defaultLabel": "Importar oferta de empleo desde una URL",
       "placeholder": "https://…  (LinkedIn, Indeed, Greenhouse, …)",
       "import": "Importar",
-      "error": "No se pudo importar esa URL."
+      "error": "No se pudo importar esa URL.",
+      "unsupported": "Paste a full https link from a supported job board — LinkedIn, Indeed, Glassdoor, ZipRecruiter, Greenhouse, Lever, Workday or Ashby — or paste the job description text instead."
     },
     "docPreview": {
       "placeholder": "Nada para previsualizar todavía."
@@ -2374,7 +2375,7 @@
     "signInLoading": "Cargando inicio de sesión…",
     "signUpLoading": "Cargando registro…",
     "stillLoading": "Sigue cargando. Si no se resuelve, actualiza la página o inténtalo de nuevo en un momento.",
-    "employeePortalLink": "¿Eres empleado de una empresa? Ve al portal del empleado →",
+    "employeePortalLink": "¿Eres empleado de una empresa? Inicia sesión arriba con el correo con el que te invitaron: irás directo al portal del empleado.",
     "downloadApp": "Descargar la app",
     "alreadyTeam": "¿Ya formas parte de un equipo en ResumeTailored? <link>Inicia sesión</link>: tu acceso de trabajo también sirve para estas herramientas personales de currículum."
   },
