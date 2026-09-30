@@ -75,7 +75,7 @@
   function run() {
     if (document.getElementById('snav')) return;
     var path = (location.pathname || '/').replace(/\/+$/, '') || '/';
-    var employerSide = /^\/(?:for-employers|corporate|company(?:\/|$))/.test(path);
+    var employerSide = /^\/(?:for-employers|corporate|company(?:\/|$)|features(?:\/|$))/.test(path);
     var menuLinks = employerSide ? EMPLOYER_LINKS : LINKS;
     // "Log In" goes straight to the platform's Clerk sign-in — no role chooser,
     // no legacy /login page. Clerk itself routes a signed-in user by role
