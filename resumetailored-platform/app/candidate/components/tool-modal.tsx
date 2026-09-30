@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { X, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -21,6 +22,7 @@ export function ToolModal({
   footer?: ReactNode;
   children: ReactNode;
 }) {
+  const ts = useTranslations("shell");
   return (
     <div className="fixed inset-0 z-[80] flex items-stretch justify-center sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
       <div className="absolute inset-0 bg-navy/80 backdrop-blur-sm" onClick={onClose} aria-hidden="true" />
@@ -34,7 +36,7 @@ export function ToolModal({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close"
+            aria-label={ts("close")}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-cream transition-colors hover:bg-white/10 hover:text-cream"
           >
             <X className="h-5 w-5" />

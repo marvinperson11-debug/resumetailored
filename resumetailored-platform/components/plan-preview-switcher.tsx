@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 /**
@@ -31,6 +32,7 @@ function readCookie(): string {
 }
 
 export function PlanPreviewSwitcher() {
+  const t = useTranslations("planPreview");
   const pathname = usePathname();
   const router = useRouter();
   const side: "employer" | "candidate" = pathname.startsWith("/employer") ? "employer" : "candidate";
@@ -56,7 +58,7 @@ export function PlanPreviewSwitcher() {
 
   return (
     <div className="mt-2 rounded-lg border border-gold/30 bg-gold/5 p-1.5">
-      <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-gold/80">Preview plan</div>
+      <div className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-wide text-gold/80">{t("previewPlan")}</div>
       <div className="flex flex-wrap gap-1">
         {opts.map((o) => (
           <button

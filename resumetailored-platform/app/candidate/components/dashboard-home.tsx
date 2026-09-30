@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { FileText, ScanLine, PenTool, Sparkles, ArrowRight, type LucideIcon } from "lucide-react";
 import { useTools, type ToolId } from "./tools-context";
 import type { GenerationStats } from "@/lib/generations";
 
-const QUICK: { id: ToolId; label: string; icon: LucideIcon; desc: string }[] = [
-  { id: "resume", label: "Build My Resume", icon: Sparkles, desc: "Rewrite your resume for any job" },
-  { id: "ats", label: "ATS Scan", icon: ScanLine, desc: "Score your match & find gaps" },
-  { id: "cover", label: "Cover Letter", icon: PenTool, desc: "Generate a matching letter" },
+const QUICK: { id: ToolId; labelKey: string; icon: LucideIcon; descKey: string }[] = [
+  { id: "resume", labelKey: "quick.resume", icon: Sparkles, descKey: "quick.resumeDesc" },
+  { id: "ats", labelKey: "quick.ats", icon: ScanLine, descKey: "quick.atsDesc" },
+  { id: "cover", labelKey: "quick.cover", icon: PenTool, descKey: "quick.coverDesc" },
 ];
 
 /**
@@ -19,15 +20,16 @@ const QUICK: { id: ToolId; label: string; icon: LucideIcon; desc: string }[] = [
  */
 export function DashboardHome({ stats }: { stats: GenerationStats }) {
   const { openTool, openResume, isPro } = useTools();
+  const t = useTranslations("candidateDashboard");
 
   // Each stat card is tappable to its section, mirroring the employer
   // dashboard's cards. Two navigate (real routes); two open the matching
   // tool modal (there's no standalone route for ATS/Cover, they're modals).
   const statCards: { label: string; value: string; icon: LucideIcon; href?: string; onClick?: () => void }[] = [
-    { label: "Resumes built", value: String(stats.resumes), icon: FileText, href: "/candidate/resumes" },
-    { label: "ATS scans today", value: String(stats.atsToday), icon: ScanLine, onClick: () => openTool("ats") },
-    { label: "Cover letters", value: String(stats.coverLetters), icon: PenTool, onClick: () => openTool("cover") },
-    { label: "Templates unlocked", value: isPro ? "104" : "6", icon: Sparkles, href: "/candidate/templates" },
+    { label: t("stats.resumes"), value: String(stats.resumes), icon: FileText, href: "/candidate/resumes" },
+    { label: t("stats.ats"), value: String(stats.atsToday), icon: ScanLine, onClick: () => openTool("ats") },
+    { label: t("stats.cover"), value: String(stats.coverLetters), icon: PenTool, onClick: () => openTool("cover") },
+    { label: t("stats.templates"), value: isPro ? "104" : "6", icon: Sparkles, href: "/candidate/templates" },
   ];
 
   return (
@@ -56,7 +58,7 @@ export function DashboardHome({ stats }: { stats: GenerationStats }) {
       </section>
 
       <section className="space-y-4">
-        <h2 className="font-serif text-xl font-medium text-white">Quick actions</h2>
+        <h2 className="font-serif text-xl font-medium text-white">{t("quickActions")}</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {QUICK.map((q) => {
             const Icon = q.icon;
@@ -71,10 +73,10 @@ export function DashboardHome({ stats }: { stats: GenerationStats }) {
                   <Icon className="h-5 w-5 text-violet" />
                 </div>
                 <div className="flex w-full items-center justify-between">
-                  <span className="font-medium text-white">{q.label}</span>
+                  <span className="font-medium text-white">{t(q.labelKey)}</span>
                   <ArrowRight className="h-4 w-4 text-white/40 transition-transform group-hover:translate-x-0.5 group-hover:text-violet" />
                 </div>
-                <span className="mt-1 text-sm text-white/55">{q.desc}</span>
+                <span className="mt-1 text-sm text-white/55">{t(q.descKey)}</span>
               </button>
             );
           })}

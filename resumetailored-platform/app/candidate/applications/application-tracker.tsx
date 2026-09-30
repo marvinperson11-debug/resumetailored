@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plus, Search, Pencil, Trash2, Loader2, X, ExternalLink, CalendarClock, Briefcase } from "lucide-react";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { formatDate, formatMoney } from "@/lib/format";
 import { Label, TextInput, TextArea, Select, PrimaryButton, SecondaryButton } from "../components/ui";
@@ -21,19 +21,31 @@ const STATUS_TONE: Record<ApplicationStatus, string> = {
 
 type SortKey = "date" | "company" | "status" | "days";
 
-/** "3 days ago" / "2 weeks ago" / "1 month ago" from an ISO timestamp. */
-function daysSince(iso: string): string {
+type Tr = ReturnType<typeof useTranslations>;
+
+const STATUS_KEY: Record<ApplicationStatus, string> = {
+  Applied: "applied",
+  "Phone Screen": "phoneScreen",
+  Interview: "interview",
+  Offer: "offer",
+  Rejected: "rejected",
+  Ghosted: "ghosted",
+  Withdrawn: "withdrawn",
+};
+
+/** "3 days ago" / "2 weeks ago" / "1 month ago" from an ISO timestamp (ICU plurals per locale). */
+function daysSince(iso: string, t: Tr): string {
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return "";
   const days = Math.floor((Date.now() - then) / 86400000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 7) return `${days} days ago`;
-  if (days < 14) return "1 week ago";
-  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-  if (days < 60) return "1 month ago";
-  if (days < 365) return `${Math.floor(days / 30)} months ago`;
-  return `${Math.floor(days / 365)}y ago`;
+  if (days <= 0) return t("ago.today");
+  if (days === 1) return t("ago.yesterday");
+  if (days < 7) return t("ago.days", { n: days });
+  if (days < 14) return t("ago.weeks", { n: 1 });
+  if (days < 30) return t("ago.weeks", { n: Math.floor(days / 7) });
+  if (days < 60) return t("ago.months", { n: 1 });
+  if (days < 365) return t("ago.months", { n: Math.floor(days / 30) });
+  return t("ago.years", { n: Math.floor(days / 365) });
 }
 function daysNum(iso: string): number {
   const then = new Date(iso).getTime();
@@ -42,11 +54,11 @@ function daysNum(iso: string): number {
 function fmtDate(iso: string, locale: string): string {
   return formatDate(iso, locale, "medium", iso);
 }
-function followUpLabel(d: string | null, locale: string): { text: string; overdue: boolean } | null {
+function followUpLabel(d: string | null, locale: string, t: Tr): { text: string; overdue: boolean } | null {
   if (!d) return null;
   const due = new Date(d + "T12:00:00").getTime();
   if (!Number.isFinite(due)) return null;
-  return { text: `Follow up ${formatDate(d, locale, "monthDay")}`, overdue: due < Date.now() };
+  return { text: t("followUp", { date: formatDate(d, locale, "monthDay") }), overdue: due < Date.now() };
 }
 
 const EMPTY: ApplicationInput = {
@@ -65,6 +77,9 @@ const EMPTY: ApplicationInput = {
 
 export function ApplicationTracker() {
   const locale = useLocale();
+  const t = useTranslations("applicationTracker");
+  const tRef = useRef(t);
+  tRef.current = t;
   const [apps, setApps] = useState<Application[] | null>(null);
   const [resumes, setResumes] = useState<ResumeDraft[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -82,10 +97,10 @@ export function ApplicationTracker() {
     try {
       const res = await fetch("/api/applications", { cache: "no-store" });
       const data = (await res.json().catch(() => ({}))) as { applications?: Application[]; error?: string };
-      if (!res.ok) throw new Error(data.error || "Could not load your applications.");
+      if (!res.ok) throw new Error(data.error || tRef.current("errors.load"));
       setApps(data.applications || []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : tRef.current("errors.generic"));
       setApps([]);
     }
   }, []);
@@ -125,11 +140,11 @@ export function ApplicationTracker() {
     <div className="mx-auto max-w-6xl space-y-6 pb-12">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-serif text-2xl font-medium text-white sm:text-3xl">Application Tracker</h1>
-          <p className="mt-1 text-sm text-white/55">Every role you&apos;ve applied for, in one place.</p>
+          <h1 className="font-serif text-2xl font-medium text-white sm:text-3xl">{t("title")}</h1>
+          <p className="mt-1 text-sm text-white/55">{t("subtitle")}</p>
         </div>
         <PrimaryButton onClick={() => setCreating(true)} className="self-start sm:self-auto">
-          <Plus className="h-4 w-4" /> Add application
+          <Plus className="h-4 w-4" /> {t("add")}
         </PrimaryButton>
       </header>
 
@@ -140,7 +155,7 @@ export function ApplicationTracker() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search company or role…"
+            placeholder={t("searchPlaceholder")}
             className="w-full rounded-xl border border-border-gold bg-white/5 py-2.5 pl-9 pr-3 text-sm text-cream placeholder:text-white/35 outline-none focus:border-violet"
           />
         </div>
@@ -149,10 +164,10 @@ export function ApplicationTracker() {
           onChange={(e) => setStatusFilter(e.target.value as "all" | ApplicationStatus)}
           className="rounded-xl border border-border-gold bg-white/5 px-3 py-2.5 text-sm text-cream outline-none focus:border-violet [&>option]:bg-navy"
         >
-          <option value="all">All statuses</option>
+          <option value="all">{t("allStatuses")}</option>
           {APPLICATION_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {t(`statuses.${STATUS_KEY[s]}`)}
             </option>
           ))}
         </select>
@@ -161,10 +176,10 @@ export function ApplicationTracker() {
           onChange={(e) => setSort(e.target.value as SortKey)}
           className="rounded-xl border border-border-gold bg-white/5 px-3 py-2.5 text-sm text-cream outline-none focus:border-violet [&>option]:bg-navy"
         >
-          <option value="date">Sort: Date submitted</option>
-          <option value="company">Sort: Company</option>
-          <option value="status">Sort: Status</option>
-          <option value="days">Sort: Days since applied</option>
+          <option value="date">{t("sort.date")}</option>
+          <option value="company">{t("sort.company")}</option>
+          <option value="status">{t("sort.status")}</option>
+          <option value="days">{t("sort.days")}</option>
         </select>
       </div>
 
@@ -176,11 +191,11 @@ export function ApplicationTracker() {
         <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border-gold bg-white/5 px-6 py-16 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet/15"><Briefcase className="h-6 w-6 text-violet" /></div>
           <div>
-            <p className="font-medium text-cream">{apps.length === 0 ? "No applications tracked yet" : "No matches"}</p>
-            <p className="mt-1 text-sm text-white/55">{apps.length === 0 ? "Add your first application to start tracking." : "Try a different search or filter."}</p>
+            <p className="font-medium text-cream">{apps.length === 0 ? t("empty.noneTitle") : t("empty.noMatchTitle")}</p>
+            <p className="mt-1 text-sm text-white/55">{apps.length === 0 ? t("empty.noneBody") : t("empty.noMatchBody")}</p>
           </div>
           {apps.length === 0 && (
-            <PrimaryButton onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> Add application</PrimaryButton>
+            <PrimaryButton onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> {t("add")}</PrimaryButton>
           )}
         </div>
       ) : (
@@ -190,17 +205,17 @@ export function ApplicationTracker() {
             <table className="w-full min-w-[820px] text-left text-sm">
               <thead className="border-b border-border-gold bg-white/5 text-xs uppercase tracking-wide text-white/50">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Company / Role</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Submitted</th>
-                  <th className="px-4 py-3 font-semibold">Resume</th>
-                  <th className="px-4 py-3 font-semibold">Follow-up</th>
+                  <th className="px-4 py-3 font-semibold">{t("cols.companyRole")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("cols.status")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("cols.submitted")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("cols.resume")}</th>
+                  <th className="px-4 py-3 font-semibold">{t("cols.followUp")}</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody>
                 {visible.map((a) => {
-                  const fu = followUpLabel(a.followUpDate, locale);
+                  const fu = followUpLabel(a.followUpDate, locale, t);
                   return (
                     <tr key={a.id} className="border-b border-border-gold/50 transition-colors hover:bg-white/5">
                       <td className="px-4 py-3">
@@ -211,7 +226,7 @@ export function ApplicationTracker() {
                       <td className="px-4 py-3"><StatusBadge status={a.status} /></td>
                       <td className="px-4 py-3">
                         <div className="text-white/80">{fmtDate(a.appliedAt, locale)}</div>
-                        <div className="text-xs text-white/45">{daysSince(a.appliedAt)}</div>
+                        <div className="text-xs text-white/45">{daysSince(a.appliedAt, t)}</div>
                       </td>
                       <td className="px-4 py-3 text-white/70">{resumeTitle(a.resumeId)}</td>
                       <td className="px-4 py-3">
@@ -219,8 +234,8 @@ export function ApplicationTracker() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex justify-end gap-1">
-                          <IconBtn label="Edit" onClick={() => setEditing(a)}><Pencil className="h-4 w-4" /></IconBtn>
-                          <IconBtn label="Delete" onClick={() => setConfirmDelete(a)} danger><Trash2 className="h-4 w-4" /></IconBtn>
+                          <IconBtn label={t("edit")} onClick={() => setEditing(a)}><Pencil className="h-4 w-4" /></IconBtn>
+                          <IconBtn label={t("delete")} onClick={() => setConfirmDelete(a)} danger><Trash2 className="h-4 w-4" /></IconBtn>
                         </div>
                       </td>
                     </tr>
@@ -233,7 +248,7 @@ export function ApplicationTracker() {
           {/* Mobile cards */}
           <div className="space-y-3 lg:hidden">
             {visible.map((a) => {
-              const fu = followUpLabel(a.followUpDate, locale);
+              const fu = followUpLabel(a.followUpDate, locale, t);
               return (
                 <div key={a.id} className="glass p-4">
                   <div className="flex items-start justify-between gap-2">
@@ -244,13 +259,13 @@ export function ApplicationTracker() {
                     <StatusBadge status={a.status} />
                   </div>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/50">
-                    <span>{fmtDate(a.appliedAt, locale)} · {daysSince(a.appliedAt)}</span>
+                    <span>{fmtDate(a.appliedAt, locale)} · {daysSince(a.appliedAt, t)}</span>
                     {a.location && <span>{a.location}</span>}
-                    {a.resumeId && <span>Resume: {resumeTitle(a.resumeId)}</span>}
+                    {a.resumeId && <span>{t("resumeUsed", { title: resumeTitle(a.resumeId) })}</span>}
                     {fu && <span className={fu.overdue ? "text-red-300" : "text-white/60"}>{fu.text}</span>}
                   </div>
                   <div className="mt-3 flex gap-2">
-                    <SecondaryButton onClick={() => setEditing(a)} className="flex-1 py-2 text-xs"><Pencil className="h-3.5 w-3.5" /> Edit</SecondaryButton>
+                    <SecondaryButton onClick={() => setEditing(a)} className="flex-1 py-2 text-xs"><Pencil className="h-3.5 w-3.5" /> {t("edit")}</SecondaryButton>
                     <SecondaryButton onClick={() => setConfirmDelete(a)} className="py-2 text-xs"><Trash2 className="h-3.5 w-3.5" /></SecondaryButton>
                   </div>
                 </div>
@@ -284,18 +299,18 @@ export function ApplicationTracker() {
 
       {confirmDelete && (
         <Overlay onClose={() => setConfirmDelete(null)}>
-          <h3 className="font-serif text-lg text-white">Delete this application?</h3>
+          <h3 className="font-serif text-lg text-white">{t("deleteTitle")}</h3>
           <p className="mt-2 text-sm text-white/60">
-            {confirmDelete.company} — {confirmDelete.role}. This can&apos;t be undone.
+            {t("deleteBody", { company: confirmDelete.company, role: confirmDelete.role })}
           </p>
           <div className="mt-5 flex justify-end gap-2">
-            <SecondaryButton onClick={() => setConfirmDelete(null)}>Cancel</SecondaryButton>
+            <SecondaryButton onClick={() => setConfirmDelete(null)}>{t("cancel")}</SecondaryButton>
             <button
               type="button"
               onClick={() => remove(confirmDelete)}
               className="rounded-xl bg-red-500/90 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-red-500"
             >
-              Delete
+              {t("delete")}
             </button>
           </div>
         </Overlay>
@@ -305,7 +320,8 @@ export function ApplicationTracker() {
 }
 
 function StatusBadge({ status }: { status: ApplicationStatus }) {
-  return <span className={cn("inline-block rounded-full px-2.5 py-1 text-xs font-semibold", STATUS_TONE[status])}>{status}</span>;
+  const t = useTranslations("applicationTracker");
+  return <span className={cn("inline-block rounded-full px-2.5 py-1 text-xs font-semibold", STATUS_TONE[status])}>{t(`statuses.${STATUS_KEY[status]}`)}</span>;
 }
 
 function IconBtn({ children, label, onClick, danger }: { children: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
@@ -351,6 +367,7 @@ function ApplicationForm({
   onSaved: (a: Application) => void;
 }) {
   const locale = useLocale();
+  const t = useTranslations("applicationTracker");
   const [form, setForm] = useState<ApplicationInput>(
     initial
       ? {
@@ -379,7 +396,7 @@ function ApplicationForm({
 
   async function save() {
     if (!form.company?.trim() || !form.role?.trim()) {
-      setErr("Company and role are required.");
+      setErr(t("errors.required"));
       return;
     }
     setSaving(true);
@@ -392,10 +409,10 @@ function ApplicationForm({
         body: JSON.stringify(form),
       });
       const data = (await res.json().catch(() => ({}))) as { application?: Application; error?: string };
-      if (!res.ok || !data.application) throw new Error(data.error || "Could not save.");
+      if (!res.ok || !data.application) throw new Error(data.error || t("errors.save"));
       onSaved(data.application);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Something went wrong.");
+      setErr(e instanceof Error ? e.message : t("errors.generic"));
     } finally {
       setSaving(false);
     }
@@ -404,41 +421,41 @@ function ApplicationForm({
   return (
     <Overlay onClose={onClose}>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-serif text-lg text-white">{initial ? "Edit application" : "Add application"}</h3>
-        <button type="button" onClick={onClose} aria-label="Close" className="text-white/50 hover:text-cream"><X className="h-5 w-5" /></button>
+        <h3 className="font-serif text-lg text-white">{initial ? t("form.editTitle") : t("add")}</h3>
+        <button type="button" onClick={onClose} aria-label={t("close")} className="text-white/50 hover:text-cream"><X className="h-5 w-5" /></button>
       </div>
       <div className="max-h-[70vh] space-y-3 overflow-y-auto pr-1">
         <div className="grid grid-cols-2 gap-3">
-          <div><Label>Company *</Label><TextInput value={form.company} onChange={(e) => set("company", e.target.value)} placeholder="Stripe" /></div>
-          <div><Label>Role *</Label><TextInput value={form.role} onChange={(e) => set("role", e.target.value)} placeholder="Product Manager" /></div>
+          <div><Label>{t("form.company")}</Label><TextInput value={form.company} onChange={(e) => set("company", e.target.value)} placeholder={t("form.companyPh")} /></div>
+          <div><Label>{t("form.role")}</Label><TextInput value={form.role} onChange={(e) => set("role", e.target.value)} placeholder={t("form.rolePh")} /></div>
           <div>
-            <Label>Status</Label>
+            <Label>{t("form.status")}</Label>
             <Select value={form.status} onChange={(e) => set("status", e.target.value as ApplicationStatus)}>
-              {APPLICATION_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              {APPLICATION_STATUSES.map((s) => <option key={s} value={s}>{t(`statuses.${STATUS_KEY[s]}`)}</option>)}
             </Select>
           </div>
-          <div><Label>Date submitted</Label><TextInput type="date" value={appliedDateValue} onChange={(e) => set("appliedAt", e.target.value ? new Date(e.target.value + "T12:00:00").toISOString() : "")} /></div>
-          <div><Label>Contact name</Label><TextInput value={form.contactName || ""} onChange={(e) => set("contactName", e.target.value)} placeholder="Recruiter" /></div>
-          <div><Label>Contact email</Label><TextInput type="email" value={form.contactEmail || ""} onChange={(e) => set("contactEmail", e.target.value)} placeholder="name@company.com" /></div>
-          <div><Label>Salary range</Label><TextInput value={form.salary || ""} onChange={(e) => set("salary", e.target.value)} placeholder={`${formatMoney(120000, locale, { compact: true })}–${formatMoney(150000, locale, { compact: true })}`} /></div>
-          <div><Label>Location</Label><TextInput value={form.location || ""} onChange={(e) => set("location", e.target.value)} placeholder="Remote / NYC" /></div>
+          <div><Label>{t("form.dateSubmitted")}</Label><TextInput type="date" value={appliedDateValue} onChange={(e) => set("appliedAt", e.target.value ? new Date(e.target.value + "T12:00:00").toISOString() : "")} /></div>
+          <div><Label>{t("form.contactName")}</Label><TextInput value={form.contactName || ""} onChange={(e) => set("contactName", e.target.value)} placeholder={t("form.contactNamePh")} /></div>
+          <div><Label>{t("form.contactEmail")}</Label><TextInput type="email" value={form.contactEmail || ""} onChange={(e) => set("contactEmail", e.target.value)} placeholder={t("form.contactEmailPh")} /></div>
+          <div><Label>{t("form.salary")}</Label><TextInput value={form.salary || ""} onChange={(e) => set("salary", e.target.value)} placeholder={`${formatMoney(120000, locale, { compact: true })}–${formatMoney(150000, locale, { compact: true })}`} /></div>
+          <div><Label>{t("form.location")}</Label><TextInput value={form.location || ""} onChange={(e) => set("location", e.target.value)} placeholder={t("form.locationPh")} /></div>
           <div>
-            <Label>Resume used</Label>
+            <Label>{t("form.resumeUsed")}</Label>
             <Select value={form.resumeId || ""} onChange={(e) => set("resumeId", e.target.value)}>
-              <option value="">— None —</option>
+              <option value="">{t("form.none")}</option>
               {resumes.map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}
             </Select>
           </div>
-          <div><Label>Follow-up date</Label><TextInput type="date" value={form.followUpDate || ""} onChange={(e) => set("followUpDate", e.target.value)} /></div>
+          <div><Label>{t("form.followUpDate")}</Label><TextInput type="date" value={form.followUpDate || ""} onChange={(e) => set("followUpDate", e.target.value)} /></div>
         </div>
-        <div><Label>Job posting URL</Label><TextInput value={form.url || ""} onChange={(e) => set("url", e.target.value)} placeholder="https://…" /></div>
-        <div><Label>Notes</Label><TextArea rows={3} value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} placeholder="Anything worth remembering…" /></div>
-        {form.url && <a href={form.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-violet hover:underline"><ExternalLink className="h-3 w-3" /> Open posting</a>}
+        <div><Label>{t("form.url")}</Label><TextInput value={form.url || ""} onChange={(e) => set("url", e.target.value)} placeholder="https://…" /></div>
+        <div><Label>{t("form.notes")}</Label><TextArea rows={3} value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} placeholder={t("form.notesPh")} /></div>
+        {form.url && <a href={form.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-violet hover:underline"><ExternalLink className="h-3 w-3" /> {t("form.openPosting")}</a>}
         {err && <p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300">{err}</p>}
       </div>
       <div className="mt-4 flex justify-end gap-2">
-        <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
-        <PrimaryButton onClick={save} loading={saving}>{initial ? "Save changes" : "Add application"}</PrimaryButton>
+        <SecondaryButton onClick={onClose}>{t("cancel")}</SecondaryButton>
+        <PrimaryButton onClick={save} loading={saving}>{initial ? t("form.save") : t("add")}</PrimaryButton>
       </div>
     </Overlay>
   );

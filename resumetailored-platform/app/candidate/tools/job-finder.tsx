@@ -304,7 +304,7 @@ export function JobFinderTool({ onClose, isPro }: { onClose: () => void; isPro: 
                           </div>
                           <div className="flex shrink-0 flex-col items-end gap-1.5">
                             {typeof job.matchScore === "number" && <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: `${scoreColor(job.matchScore)}22`, color: scoreColor(job.matchScore) }}>{job.matchScore}%</span>}
-                            <span onClick={(e) => { e.stopPropagation(); save(job); }} role="button" aria-label="Save" className="text-white/50 hover:text-gold">{savedIds.has(job.id) ? <BookmarkCheck className="h-4 w-4 text-gold" /> : <Bookmark className="h-4 w-4" />}</span>
+                            <span onClick={(e) => { e.stopPropagation(); save(job); }} role="button" aria-label={t("save")} className="text-white/50 hover:text-gold">{savedIds.has(job.id) ? <BookmarkCheck className="h-4 w-4 text-gold" /> : <Bookmark className="h-4 w-4" />}</span>
                           </div>
                         </div>
                       </button>

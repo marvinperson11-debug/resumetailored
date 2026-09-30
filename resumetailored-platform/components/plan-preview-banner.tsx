@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { X } from "lucide-react";
 
 /**
@@ -22,6 +23,7 @@ function readCookie(): string {
 
 export function PlanPreviewBanner() {
   const router = useRouter();
+  const t = useTranslations("planPreview");
   const [preview, setPreview] = useState<{ side: string; plan: string } | null>(null);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function PlanPreviewBanner() {
 
   if (!preview) return null;
   const planLabel = LABELS[preview.plan] || preview.plan;
-  const sideLabel = preview.side === "employer" ? "Employer" : "Candidate";
+  const sideLabel = preview.side === "employer" ? t("side.employer") : t("side.candidate");
 
   function exit() {
     document.cookie = `${COOKIE}=; path=/; max-age=0; samesite=lax`;
@@ -43,14 +45,14 @@ export function PlanPreviewBanner() {
   return (
     <div className="fixed inset-x-0 top-0 z-[100] flex items-center justify-center gap-3 bg-gold px-4 py-1.5 text-center text-xs font-semibold text-navy shadow-md">
       <span>
-        Previewing as {planLabel} {sideLabel}
+        {t("previewingAs", { plan: planLabel, side: sideLabel })}
       </span>
       <button
         type="button"
         onClick={exit}
         className="inline-flex items-center gap-1 rounded-md bg-navy/15 px-2 py-0.5 font-semibold text-navy transition-colors hover:bg-navy/25"
       >
-        <X className="h-3 w-3" /> Exit preview
+        <X className="h-3 w-3" /> {t("exit")}
       </button>
     </div>
   );

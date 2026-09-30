@@ -2503,6 +2503,315 @@
     },
     "loading": "Chargement…",
     "metaDescription": "Un bureau privé pour vos ambitions. Recrutement pour les employeurs, carrières sur mesure pour les candidats.",
-    "back": "Retour"
+    "back": "Retour",
+    "close": "Fermer"
+  },
+  "applicationTracker": {
+    "ago": {
+      "today": "aujourd'hui",
+      "yesterday": "hier",
+      "days": "{n, plural, one {il y a # jour} other {il y a # jours}}",
+      "weeks": "{n, plural, one {il y a # semaine} other {il y a # semaines}}",
+      "months": "{n, plural, one {il y a # mois} other {il y a # mois}}",
+      "years": "{n, plural, one {il y a # an} other {il y a # ans}}"
+    },
+    "followUp": "Relance : {date}",
+    "errors": {
+      "load": "Impossible de charger vos candidatures.",
+      "generic": "Une erreur s'est produite.",
+      "save": "Impossible d'enregistrer.",
+      "required": "L'entreprise et le poste sont obligatoires."
+    },
+    "title": "Suivi des candidatures",
+    "subtitle": "Tous les postes auxquels vous avez postulé, au même endroit.",
+    "add": "Ajouter une candidature",
+    "searchPlaceholder": "Rechercher une entreprise ou un poste…",
+    "allStatuses": "Tous les statuts",
+    "sort": {
+      "date": "Tri : date d'envoi",
+      "company": "Tri : entreprise",
+      "status": "Tri : statut",
+      "days": "Tri : jours depuis la candidature"
+    },
+    "empty": {
+      "noneTitle": "Aucune candidature suivie pour l'instant",
+      "noMatchTitle": "Aucun résultat",
+      "noneBody": "Ajoutez votre première candidature pour commencer le suivi.",
+      "noMatchBody": "Essayez une autre recherche ou un autre filtre."
+    },
+    "cols": {
+      "companyRole": "Entreprise / Poste",
+      "status": "Statut",
+      "submitted": "Envoyée",
+      "resume": "CV",
+      "followUp": "Relance"
+    },
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "resumeUsed": "CV : {title}",
+    "deleteTitle": "Supprimer cette candidature ?",
+    "deleteBody": "{company} — {role}. Cette action est irréversible.",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "statuses": {
+      "applied": "Postulé",
+      "phoneScreen": "Entretien téléphonique",
+      "interview": "Entretien",
+      "offer": "Offre",
+      "rejected": "Refusé",
+      "ghosted": "Sans réponse",
+      "withdrawn": "Retiré"
+    },
+    "form": {
+      "editTitle": "Modifier la candidature",
+      "company": "Entreprise *",
+      "role": "Poste *",
+      "status": "Statut",
+      "dateSubmitted": "Date d'envoi",
+      "contactName": "Nom du contact",
+      "contactEmail": "E-mail du contact",
+      "salary": "Fourchette salariale",
+      "location": "Lieu",
+      "resumeUsed": "CV utilisé",
+      "none": "— Aucun —",
+      "followUpDate": "Date de relance",
+      "url": "URL de l'offre d'emploi",
+      "notes": "Notes",
+      "companyPh": "Stripe",
+      "rolePh": "Chef de produit",
+      "contactNamePh": "Recruteur",
+      "contactEmailPh": "nom@entreprise.com",
+      "locationPh": "À distance / New York",
+      "notesPh": "Tout ce qui mérite d'être retenu…",
+      "openPosting": "Ouvrir l'offre",
+      "save": "Enregistrer les modifications"
+    }
+  },
+  "candidateSettings": {
+    "title": "Paramètres",
+    "subtitle": "Gérez votre compte, votre offre et vos préférences.",
+    "plan": {
+      "title": "Offre et facturation",
+      "sub": "Votre offre actuelle et les options de mise à niveau.",
+      "proDesc": "Exports sans filigrane, tous les modèles, vidéo et site web.",
+      "freeDesc": "Adaptation de CV et lettres de motivation illimitées, avec un petit filigrane à l'export.",
+      "upgrade": "Passer à Pro",
+      "billingNote": "L'historique de facturation et les reçus sont gérés par notre prestataire de paiement (Stripe). Contactez le support pour récupérer d'anciennes factures."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "sub": "Choisissez les e-mails que vous recevez.",
+      "product": "Mises à jour du produit",
+      "productHint": "Nouvelles fonctionnalités et changements importants.",
+      "tips": "Conseils et orientation de carrière",
+      "tipsHint": "Conseils occasionnels sur le CV et la recherche d'emploi."
+    },
+    "appearance": {
+      "title": "Apparence",
+      "sub": "ResumeTailored utilise un thème sombre dans toute l'application.",
+      "reduceMotion": "Réduire les animations",
+      "reduceMotionHint": "Désactive l'arrière-plan animé et les transitions."
+    },
+    "privacy": {
+      "title": "Confidentialité",
+      "sub": "Contrôlez si votre profil peut être affiché publiquement.",
+      "public": "Rendre mon profil public",
+      "publicHint": "Autorise l'affichage d'une page de profil publique. Désactivé par défaut."
+    },
+    "prefsSaved": "Préférences enregistrées",
+    "connected": {
+      "title": "Comptes connectés",
+      "sub": "Méthodes de connexion liées à votre compte.",
+      "none": "Aucun compte social connecté. Vous vous connectez avec e-mail et mot de passe.",
+      "connected": "Connecté",
+      "confirm": "Déconnecter ce compte ?",
+      "disconnecting": "Déconnexion…",
+      "disconnect": "Déconnecter"
+    },
+    "account": {
+      "title": "Compte",
+      "sub": "Modifiez votre mot de passe ou supprimez votre compte.",
+      "currentPassword": "Mot de passe actuel",
+      "newPassword": "Nouveau mot de passe (8 caractères min.)",
+      "updatePassword": "Mettre à jour le mot de passe",
+      "passwordShort": "Le nouveau mot de passe doit comporter au moins 8 caractères.",
+      "passwordUpdated": "Mot de passe mis à jour.",
+      "passwordFailed": "Impossible de mettre à jour le mot de passe.",
+      "dangerZone": "Zone de danger",
+      "dangerBody": "La suppression de votre compte est définitive et efface vos CV, brouillons et paramètres.",
+      "deletePlaceholder": "Saisissez « {word} » pour confirmer",
+      "deleteAccount": "Supprimer le compte",
+      "deleteFailed": "Impossible de supprimer le compte. Veuillez contacter le support."
+    }
+  },
+  "shareableLinks": {
+    "imageTooLarge": "Image trop volumineuse (8 Mo max).",
+    "errors": {
+      "save": "Impossible d'enregistrer.",
+      "generic": "Une erreur s'est produite."
+    },
+    "loading": "Chargement de votre lien…",
+    "title": "Lien partageable",
+    "subtitle": "Votre page de profil publique et gratuite : un seul lien à partager partout. Simple par conception.",
+    "freeLink": "Lien partageable gratuit",
+    "pickUsername": "Choisissez un nom d'utilisateur et enregistrez pour obtenir votre lien.",
+    "fullSite": "Site web complet (Pro)",
+    "buildSite": "Créer un site web personnel complet →",
+    "username": "Nom d'utilisateur",
+    "usernamePh": "votre-nom",
+    "avail": {
+      "checking": "Vérification…",
+      "ok": "✓ Disponible",
+      "taken": "Déjà pris — essayez-en un autre.",
+      "invalid": "3 à 30 lettres, chiffres ou tirets.",
+      "idle": "Votre adresse publique. Modifiable à tout moment."
+    },
+    "name": "Nom",
+    "namePh": "Votre nom complet",
+    "headline": "Titre",
+    "headlinePh": "Designer produit",
+    "photo": "Photo",
+    "remove": "Retirer",
+    "uploadPhoto": "Téléverser une photo",
+    "bio": "Bio",
+    "bioPh": "Une courte présentation de vous…",
+    "email": "E-mail",
+    "emailPh": "vous@exemple.fr",
+    "phone": "Téléphone",
+    "phonePh": "+33 6 00 00 00 00",
+    "location": "Lieu",
+    "locationPh": "Ville, Pays",
+    "linkedin": "LinkedIn",
+    "linkedinPh": "linkedin.com/in/…",
+    "website": "Site web",
+    "websitePh": "https://…",
+    "theme": "Thème",
+    "themes": {
+      "aurora": "Aurore",
+      "cream": "Crème",
+      "mint": "Menthe",
+      "rose": "Rose",
+      "slate": "Ardoise"
+    },
+    "saved": "Enregistré",
+    "update": "Mettre à jour le lien",
+    "create": "Créer mon lien",
+    "view": "Voir →",
+    "cta": {
+      "title": "Envie de plus qu'une simple page ?",
+      "body": "Créez un site web personnel complet : sections, vidéo, design sur mesure, votre propre adresse.",
+      "openBuilder": "Ouvrir l'éditeur",
+      "goPro": "Passer à Pro"
+    }
+  },
+  "candidateProfile": {
+    "title": "Profil",
+    "subtitle": "Vos informations — utilisées pour préremplir vos CV, lettres de motivation et votre site personnel.",
+    "importLinkedin": "Importer depuis LinkedIn",
+    "changePhoto": "Changer la photo",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "contactTitle": "Contact et liens",
+    "email": "E-mail",
+    "emailHint": "Géré par votre compte — modifiez-le dans Paramètres.",
+    "phone": "Téléphone",
+    "phonePh": "(555) 012-3456",
+    "location": "Lieu",
+    "locationPh": "Ville, Région",
+    "linkedinUrl": "URL LinkedIn",
+    "website": "Portfolio / Site web",
+    "aboutTitle": "À propos de moi",
+    "bioPh": "Une courte bio professionnelle : une ou deux phrases sur qui vous êtes et ce que vous faites.",
+    "viewSite": "Voir mon site public",
+    "save": "Enregistrer le profil",
+    "saved": "Enregistré",
+    "errors": {
+      "photo": "Impossible de téléverser cette photo. Essayez un PNG ou JPG plus petit.",
+      "save": "Impossible d'enregistrer votre profil.",
+      "generic": "Une erreur s'est produite."
+    }
+  },
+  "linkedinImport": {
+    "title": "Importer depuis LinkedIn",
+    "close": "Fermer",
+    "foundIntro": "Voici ce que nous avons trouvé. Vérifiez, puis appliquez.",
+    "name": "Nom",
+    "headline": "Titre",
+    "location": "Lieu",
+    "summary": "Résumé",
+    "experience": "Expérience ({count})",
+    "education": "Formation ({count})",
+    "skills": "Compétences ({count})",
+    "back": "Retour",
+    "apply": "Appliquer l'import",
+    "step1": "1. Sur LinkedIn, allez dans <b>Paramètres → Confidentialité des données → Obtenir une copie de vos données → Télécharger</b>.",
+    "step2": "2. Téléversez le ZIP ci-dessous ou collez le JSON de votre profil.",
+    "upload": "Téléverser l'export LinkedIn (.zip ou .json)",
+    "orPaste": "ou collez le JSON",
+    "parse": "Analyser le JSON",
+    "errors": {
+      "read": "Impossible de lire cet export.",
+      "generic": "Une erreur s'est produite.",
+      "tooLarge": "Ce fichier est trop volumineux (25 Mo max)."
+    }
+  },
+  "candidateDashboard": {
+    "quick": {
+      "resume": "Créer mon CV",
+      "resumeDesc": "Réécrivez votre CV pour n'importe quel poste",
+      "ats": "Analyse ATS",
+      "atsDesc": "Évaluez votre adéquation et repérez les lacunes",
+      "cover": "Lettre de motivation",
+      "coverDesc": "Générez une lettre adaptée"
+    },
+    "stats": {
+      "resumes": "CV créés",
+      "ats": "Analyses ATS aujourd'hui",
+      "cover": "Lettres de motivation",
+      "templates": "Modèles débloqués"
+    },
+    "quickActions": "Actions rapides"
+  },
+  "candidateTools.coverLetter": {
+    "namePlaceholder": "Camille Martin",
+    "rolePlaceholder": "Chef de produit"
+  },
+  "planPreview": {
+    "previewingAs": "Aperçu en tant que {side} {plan}",
+    "exit": "Quitter l'aperçu",
+    "previewPlan": "Aperçu de l'offre",
+    "side": {
+      "employer": "Employeur",
+      "candidate": "Candidat"
+    }
+  },
+  "manifest": {
+    "description": "Un bureau privé pour vos ambitions."
+  },
+  "publicShareable": {
+    "notFoundTitle": "Profil introuvable · ResumeTailored",
+    "notFound": "Profil introuvable",
+    "notFoundBody": "Ce lien n'existe pas encore.",
+    "createLink": "Créez votre lien gratuit →",
+    "linkedin": "LinkedIn",
+    "website": "Site web",
+    "cta": "✨ Créez un site web personnel complet avec ResumeTailored",
+    "ctaBody": "Plusieurs sections, vidéo, design sur mesure, votre propre domaine et plus — gratuit pour commencer.",
+    "poweredBy": "Propulsé par <link>ResumeTailored</link>"
+  },
+  "employerSlug": {
+    "hire": "Recruter",
+    "people": "Personnes",
+    "candidates": "Recherche de candidats",
+    "shortlists": "Présélections",
+    "messages": "Messages",
+    "scheduler": "Planificateur d'entretiens",
+    "time": "Temps",
+    "payroll": "Paie",
+    "reports": "Rapports",
+    "career-site": "Créateur de site carrière",
+    "documents": "Documents",
+    "compliance": "Conformité",
+    "settings": "Paramètres"
   }
 }
