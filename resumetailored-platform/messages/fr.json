@@ -2169,5 +2169,37 @@
       }
     },
     "loading": "Chargement…"
+  },
+  "notificationBell": {
+    "title": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "loading": "Chargement…",
+    "caughtUp": "Vous êtes à jour.",
+    "anEmployee": "Un employé",
+    "events": {
+      "certExpiringSelf": "Votre certification « {cert} » expire dans {days, plural, one {# jour} other {# jours}}",
+      "certExpiringEmployer": "La certification « {cert} » de {employee} expire dans {days, plural, one {# jour} other {# jours}}",
+      "trainingCompleted": "{employee} a terminé la formation : {doc}",
+      "trainingCompletedScore": "{employee} a terminé la formation : {doc} ({score} %)",
+      "timeOffRequested": "{employee} a demandé un congé ({range})",
+      "timesheetSubmitted": "{employee} a soumis sa feuille de temps pour {week}",
+      "inviteAccepted": "{employee} a accepté son invitation au portail",
+      "messageFromEmployee": "Nouveau message de {employee}",
+      "messageFromEmployer": "Nouveau message de votre employeur",
+      "feedPostByEmployee": "{employee} a publié sur le fil d'équipe",
+      "feedReplyByEmployee": "{employee} a répondu sur le fil d'équipe",
+      "trainingAssigned": "Nouvelle formation attribuée : {doc}",
+      "timesheetApproved": "Votre feuille de temps pour {week} a été approuvée",
+      "timesheetDeclined": "Votre feuille de temps pour {week} a été refusée",
+      "timeOffApproved": "Votre congé ({range}) a été approuvé",
+      "timeOffDeclined": "Votre congé ({range}) a été refusé",
+      "shiftChanged": "Votre horaire du {date} a changé : {from}–{to}",
+      "shiftRemoved": "Votre horaire du {date} a été supprimé",
+      "schedulePublished": "Votre planning pour {week} a été publié",
+      "announcementPosted": "Nouvelle annonce : {title}",
+      "feedPostNew": "Nouveau sur le fil d'équipe : {text}",
+      "feedReplyToYou": "Nouvelle réponse à votre publication sur le fil d'équipe"
+    },
+    "anEmployeeLower": "un employé"
   }
 }

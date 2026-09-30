@@ -31,6 +31,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     logActivityForEmployee(ctx.employerId, shift.employeeId, {
       eventType: "schedule_published",
       title: `Your shift on ${shift.shiftDate} changed: ${formatHHMM(shift.startTime)}–${formatHHMM(shift.endTime)}`,
+      msg: { key: "shiftChanged", params: { date: shift.shiftDate, from: shift.startTime, to: shift.endTime } },
       link: "/employee/schedule",
     }).catch(() => {});
   }
@@ -51,6 +52,7 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     logActivityForEmployee(ctx.employerId, deleted.employeeId, {
       eventType: "schedule_published",
       title: `Your shift on ${deleted.shiftDate} was removed`,
+      msg: { key: "shiftRemoved", params: { date: deleted.shiftDate } },
       link: "/employee/schedule",
     }).catch(() => {});
   }

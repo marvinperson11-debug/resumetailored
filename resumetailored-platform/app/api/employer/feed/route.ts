@@ -40,6 +40,7 @@ export async function POST(req: Request) {
   logActivityForEmployees(ctx.employerId, active.map((e) => e.id), {
     eventType: "feed_post",
     title: `New on the team feed: ${post.body.slice(0, 80)}`,
+    msg: { key: "feedPostNew", params: { text: post.body.slice(0, 80) } },
     link: "/employee/feed",
   }).catch(() => {});
 

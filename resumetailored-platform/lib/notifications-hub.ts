@@ -24,6 +24,15 @@ export const NOTIFICATION_TYPES = [
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
+/** Structured form of an event's title: a message id under
+ *  `notificationBell.events.*` plus its parameters, so the bell can render it
+ *  in the viewer's language. Dates are ISO (`YYYY-MM-DD`) and times `HH:MM`;
+ *  the bell formats them for the locale. `title` stays as the English fallback. */
+export interface NotificationMsg {
+  key: string;
+  params?: Record<string, string | number>;
+}
+
 export type NotificationAudience = "employer" | "employee";
 
 export interface ActivityEvent {
@@ -34,6 +43,8 @@ export interface ActivityEvent {
   title: string;
   body: string | null;
   link: string;
+  /** Null for events logged before structured messages (render `title`). */
+  msg: NotificationMsg | null;
   createdAt: string;
 }
 
@@ -44,6 +55,8 @@ export interface NotificationItem extends ActivityEvent {
 export interface LogActivityInput {
   eventType: NotificationType;
   title: string;
+  /** Translatable form of `title`; see `NotificationMsg`. */
+  msg?: NotificationMsg;
   body?: string;
   link: string;
 }
