@@ -93,7 +93,7 @@ export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; 
           kind="jobs"
           used={jobs.filter((j) => j.status === "active").length}
           limit={activeLimit}
-          nextTierLabel="Employer Portal"
+          nextTierLabel="Portal"
         />
       )}
       {notice && <div className="mb-4 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 text-sm text-gold">{notice}</div>}

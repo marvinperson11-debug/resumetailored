@@ -1,3 +1,4 @@
+import { isPublishableListing } from "./job-quality";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   type EmployerProfile,
@@ -393,7 +394,7 @@ export async function listPublicJobs(f: PublicJobFilters = {}): Promise<JobPosti
     if (error || !data) return [];
     const rows = data as unknown as Record<string, unknown>[];
     const names = await companyNameMap(c, rows.map((r) => r.employer_id as string));
-    let jobs = rows.map((r) => ({ ...mapJob(r), company: names.get(r.employer_id as string) || "" }));
+    let jobs = rows.map((r) => ({ ...mapJob(r), company: names.get(r.employer_id as string) || "" })).filter(isPublishableListing);
     // Free-text filter (title/description/company) + location, in JS.
     const qq = (f.q || "").toLowerCase().trim();
     const loc = (f.location || "").toLowerCase().trim();
@@ -419,6 +420,7 @@ export async function getPublicJob(id: number): Promise<JobPosting | null> {
       .maybeSingle();
     if (!data) return null;
     const row = data as unknown as Record<string, unknown>;
+    if (!isPublishableListing(mapJob(row))) return null;
     const employerId = row.employer_id as string;
     const names = await companyNameMap(c, [employerId]);
     // Career-site slug (if any) so the public job page can link "About {company}".

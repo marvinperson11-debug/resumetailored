@@ -8,7 +8,7 @@ export default async function DocumentsPage() {
   const access = await getAccess();
   const limit = documentLimit(access);
   const tier = normalizeTier(access.tier);
-  const nextTierLabel = tier === "free" ? "Employer Portal" : tier === "portal" ? "Scale" : "Corporate";
+  const nextTierLabel = tier === "free" ? "Portal" : tier === "portal" ? "Scale" : "Corporate";
   return (
     <DocumentsClient
       canManage={isEmployer(access)}

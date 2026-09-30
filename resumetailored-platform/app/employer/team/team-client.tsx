@@ -39,7 +39,10 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
     load();
   }, [load]);
   useEffect(() => {
-    if (openInvite && canManage) (seatLimit !== null && team.length >= seatLimit ? setSeatGuard(true) : setInviting(true));
+    if (!openInvite || !canManage) return;
+    if (seatLimit !== null && team.length >= seatLimit) setSeatGuard(true);
+    else setInviting(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openInvite, canManage]);
 
   async function changeRole(id: number, role: TeamRole) {
@@ -94,7 +97,7 @@ export function TeamClient({ canManage, openInvite, seatLimit = null }: { canMan
       />
 
       {seatLimit !== null && (
-        <QuotaBar kind="seats" used={team.length} limit={seatLimit} nextTierLabel="Employer Portal" />
+        <QuotaBar kind="seats" used={team.length} limit={seatLimit} nextTierLabel="Portal" />
       )}
 
       {loading ? (

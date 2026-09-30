@@ -2453,7 +2453,7 @@
   "employerCheckout": {
     "plan": {
       "free": "the free Employer tier",
-      "portal": "Employer Portal ({price}/mo)",
+      "portal": "Portal plan ({price}/mo)",
       "scale": "Scale ({price}/mo)",
       "corporate": "Corporate ({price}/mo)"
     },

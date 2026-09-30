@@ -9,7 +9,7 @@ import { saveDecoderAnalysis, decodesToday } from "@/lib/decoder-store";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-export const FREE_PER_DAY = 3;
+const FREE_PER_DAY = 3;
 
 /** Current decode quota for the signed-in user, so the UI can show "2 of 3 left"
  *  before the wall is ever hit. `limit: null` = unlimited (Pro). */

@@ -58,7 +58,7 @@ function typeBadgeTone(status: DocusignStatus): "gold" | "teal" | "red" {
 
 /** Where "Upgrade to ___" points, one tier up from the caller's current one. */
 function nextSendTierLabel(tier: string): string | undefined {
-  if (tier === "free") return "Employer Portal";
+  if (tier === "free") return "Portal";
   if (tier === "portal") return "Scale";
   if (tier === "scale") return "Corporate";
   return undefined;
