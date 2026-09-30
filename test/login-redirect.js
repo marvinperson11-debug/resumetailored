@@ -5,9 +5,12 @@
  * Two layers:
  *  1. The pure redirect sanitizer (public/login-redirect.js) — same code the
  *     browser runs — is unit-tested directly (open-redirect / loop protection).
- *  2. The real Express app is booted to prove /login now serves the dedicated
- *     login page (NOT the dashboard app), /signup too, and that email login +
- *     signup still return a session the login page can store.
+ *  2. The real Express app is booted to prove /login and /signup both now 301
+ *     to the standalone app's Clerk pages (legacy auth is fully retired — see
+ *     the marketing-site migration), and that the underlying /api/auth/login +
+ *     /api/auth/signup endpoints themselves are untouched by that page-level
+ *     cutover (no page reaches them anymore, but they're not additionally
+ *     locked down here).
  *
  * Usage: node test/login-redirect.js
  */
@@ -67,13 +70,13 @@ const server = app.listen(0, async () => {
   PORT = server.address().port;
   try {
     const login = await req('GET', '/login');
-    check('/login responds 200', login.status === 200, String(login.status));
-    check('/login serves the dedicated login page (not the app)',
-      /Log in \/ Sign up/.test(login.body) && /login-redirect\.js/.test(login.body) && !/id="jtDashRoot"/.test(login.body), login.body.slice(0, 120));
-    // /signup is now a deprecated-route redirect to the standalone app, where
-    // Clerk sign-up lives; the old-site login page remains at /login.
+    check('/login 301s to the standalone app sign-in', login.status === 301 && login.headers.location === 'https://app.resumetailored.com/sign-in', `HTTP ${login.status} → ${login.headers.location}`);
     const signupPage = await req('GET', '/signup');
-    check('/signup 301s to the standalone app', signupPage.status === 301 && signupPage.headers.location === 'https://app.resumetailored.com', `HTTP ${signupPage.status} → ${signupPage.headers.location}`);
+    check('/signup 301s to the standalone app sign-up', signupPage.status === 301 && signupPage.headers.location === 'https://app.resumetailored.com/sign-up', `HTTP ${signupPage.status} → ${signupPage.headers.location}`);
+    const forgot = await req('GET', '/forgot-password');
+    check('/forgot-password 301s to the standalone app sign-in too', forgot.status === 301 && forgot.headers.location === 'https://app.resumetailored.com/sign-in', `HTTP ${forgot.status} → ${forgot.headers.location}`);
+    const employerPage = await req('GET', '/employer');
+    check('/employer 301s to the standalone app', employerPage.status === 301 && employerPage.headers.location === 'https://app.resumetailored.com/employer', `HTTP ${employerPage.status} → ${employerPage.headers.location}`);
 
     // Email signup + login still return a session (what the page stores).
     const su = await req('POST', '/api/auth/signup', { email: 'red@x.com', username: 'Red', password: 'Sup3r-Secret-Pw-9!' });
