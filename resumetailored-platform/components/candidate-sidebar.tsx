@@ -57,10 +57,13 @@ const navItems: NavItem[] = [
   { label: "coverLetters", opens: "cover", icon: PenTool },
   { label: "atsScanner", opens: "ats", icon: ScanLine },
   { label: "linkedin", opens: "linkedin", icon: Contact },
-  { label: "interview", opens: "interview", icon: MessageSquare, pro: true },
+  // Interview, Career, and Decoder are free-with-limits (a capped free tier,
+  // upgrade prompt inside at the limit) — not hard-blocked — so no PRO pill.
+  // Only Resume Video and Personal Website are hard-blocked for free users.
+  { label: "interview", opens: "interview", icon: MessageSquare },
   { label: "jobs", opens: "jobs", icon: Zap },
-  { label: "career", opens: "career", icon: Briefcase, pro: true },
-  { label: "decoder", opens: "decoder", icon: FileSearch, pro: true },
+  { label: "career", opens: "career", icon: Briefcase },
+  { label: "decoder", opens: "decoder", icon: FileSearch },
   { label: "applications", href: "/candidate/applications", icon: Send },
   { label: "shareable", href: "/candidate/shareable-links", icon: LinkIcon },
   { label: "resumeVideo", opens: "video", icon: Video, pro: true },
