@@ -760,10 +760,23 @@ export interface EmployerStats {
   teamCount: number;
 }
 
+/** One dashboard "Recent activity" row. Structured, not prose: the page turns
+ *  `event` + `params` into the viewer's language at render time
+ *  (messages → employerDashboard.activity.<event>). Only user-entered values
+ *  (job title, person name, email) travel in `params`; `null` means "not
+ *  known" and the page substitutes a translated placeholder. */
 export interface ActivityEntry {
   kind: "applicant" | "expiring" | "team" | "training";
-  text: string;
-  meta?: string;
+  event: "applicant" | "expiring" | "teamJoined" | "trainingSigned" | "trainingOverdue";
+  params: {
+    job?: string | null;
+    name?: string | null;
+    score?: number | null;
+    email?: string | null;
+    doc?: string | null;
+    /** ISO date (YYYY-MM-DD or full timestamp) the page formats with Intl. */
+    due?: string | null;
+  };
   date: string;
 }
 
@@ -795,8 +808,12 @@ export async function getDashboard(employerId: string): Promise<{ stats: Employe
       for (const r of rows.slice(0, 6)) {
         activity.push({
           kind: "applicant",
-          text: `New applicant for ${titleMap.get(r.job_id as number) || "a role"}`,
-          meta: `${r.name as string}${typeof r.match_score === "number" ? ` · ${r.match_score}% match` : ""}`,
+          event: "applicant",
+          params: {
+            job: titleMap.get(r.job_id as number) || null,
+            name: (r.name as string) || null,
+            score: typeof r.match_score === "number" ? (r.match_score as number) : null,
+          },
           date: (r.created_at as string) || "",
         });
       }
@@ -807,14 +824,14 @@ export async function getDashboard(employerId: string): Promise<{ stats: Employe
     const today = new Date().toISOString().slice(0, 10);
     for (const j of jobs) {
       if (j.status === "active" && j.deadline && j.deadline >= today && j.deadline <= soon) {
-        activity.push({ kind: "expiring", text: `Job posting expires soon: ${j.title}`, meta: `Closes ${j.deadline}`, date: j.deadline });
+        activity.push({ kind: "expiring", event: "expiring", params: { job: j.title, due: j.deadline }, date: j.deadline });
       }
     }
 
     // Recently joined team members.
     const team = await listTeam(employerId);
     for (const m of team.filter((t) => t.status === "active" && t.role !== "owner").slice(-3)) {
-      activity.push({ kind: "team", text: `Team member joined`, meta: m.email, date: m.createdAt });
+      activity.push({ kind: "team", event: "teamJoined", params: { email: m.email }, date: m.createdAt });
     }
 
     // Training & acknowledgment activity (signed recently / overdue). Best-effort
@@ -831,8 +848,8 @@ export async function getDashboard(employerId: string): Promise<{ stats: Employe
           c.from("training_docs").select("id, title").eq("employer_id", employerId),
           c.from("employees").select("id, name").eq("employer_id", employerId),
         ]);
-        const docTitle = new Map((docRows || []).map((d) => [d.id as number, (d.title as string) || "a document"] as const));
-        const empName = new Map((empRows || []).map((e) => [e.id as number, (e.name as string) || "an employee"] as const));
+        const docTitle = new Map((docRows || []).map((d) => [d.id as number, (d.title as string) || null] as const));
+        const empName = new Map((empRows || []).map((e) => [e.id as number, (e.name as string) || null] as const));
         const nowIso = new Date().toISOString();
         const signed = ackRows
           .filter((r) => r.status === "signed" && r.acknowledged_at)
@@ -841,8 +858,8 @@ export async function getDashboard(employerId: string): Promise<{ stats: Employe
         for (const r of signed) {
           activity.push({
             kind: "training",
-            text: `Training signed: ${docTitle.get(r.training_doc_id as number)}`,
-            meta: empName.get(r.employee_id as number),
+            event: "trainingSigned",
+            params: { doc: docTitle.get(r.training_doc_id as number) ?? null, name: empName.get(r.employee_id as number) ?? null },
             date: (r.acknowledged_at as string) || "",
           });
         }
@@ -850,8 +867,12 @@ export async function getDashboard(employerId: string): Promise<{ stats: Employe
         for (const r of overdue) {
           activity.push({
             kind: "training",
-            text: `Training overdue: ${docTitle.get(r.training_doc_id as number)}`,
-            meta: `${empName.get(r.employee_id as number)} · due ${(r.due_at as string).slice(0, 10)}`,
+            event: "trainingOverdue",
+            params: {
+              doc: docTitle.get(r.training_doc_id as number) ?? null,
+              name: empName.get(r.employee_id as number) ?? null,
+              due: (r.due_at as string).slice(0, 10),
+            },
             date: (r.due_at as string) || "",
           });
         }

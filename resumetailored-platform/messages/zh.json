@@ -3324,6 +3324,19 @@
       "minutesAgo": "{n} 分钟前",
       "hoursAgo": "{n} 小时前",
       "daysAgo": "{n} 天前"
+    },
+    "activity": {
+      "applicant": "{job} 有新申请人",
+      "applicantMeta": "{name} · 匹配度 {score}%",
+      "expiring": "职位即将到期：{job}",
+      "closes": "截止 {date}",
+      "teamJoined": "团队成员已加入",
+      "trainingSigned": "培训已签署：{doc}",
+      "trainingOverdue": "培训已逾期：{doc}",
+      "overdueMeta": "{name} · 截止 {date}",
+      "fallbackRole": "某个职位",
+      "fallbackDoc": "某份文档",
+      "fallbackEmployee": "某位员工"
     }
   }
 }

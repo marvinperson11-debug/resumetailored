@@ -3324,6 +3324,19 @@
       "minutesAgo": "{n}m ago",
       "hoursAgo": "{n}h ago",
       "daysAgo": "{n}d ago"
+    },
+    "activity": {
+      "applicant": "New applicant for {job}",
+      "applicantMeta": "{name} · {score}% match",
+      "expiring": "Job posting expires soon: {job}",
+      "closes": "Closes {date}",
+      "teamJoined": "Team member joined",
+      "trainingSigned": "Training signed: {doc}",
+      "trainingOverdue": "Training overdue: {doc}",
+      "overdueMeta": "{name} · due {date}",
+      "fallbackRole": "a role",
+      "fallbackDoc": "a document",
+      "fallbackEmployee": "an employee"
     }
   }
 }
