@@ -3324,6 +3324,19 @@
       "minutesAgo": "{n} मिनट पहले",
       "hoursAgo": "{n} घंटे पहले",
       "daysAgo": "{n} दिन पहले"
+    },
+    "activity": {
+      "applicant": "{job} के लिए नया आवेदक",
+      "applicantMeta": "{name} · {score}% मिलान",
+      "expiring": "जॉब पोस्टिंग जल्द समाप्त हो रही है: {job}",
+      "closes": "अंतिम तिथि {date}",
+      "teamJoined": "टीम का नया सदस्य जुड़ा",
+      "trainingSigned": "प्रशिक्षण पर हस्ताक्षर हुए: {doc}",
+      "trainingOverdue": "प्रशिक्षण की समय-सीमा बीत गई: {doc}",
+      "overdueMeta": "{name} · देय {date}",
+      "fallbackRole": "एक पद",
+      "fallbackDoc": "एक दस्तावेज़",
+      "fallbackEmployee": "एक कर्मचारी"
     }
   }
 }

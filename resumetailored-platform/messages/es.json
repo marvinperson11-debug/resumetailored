@@ -3324,6 +3324,19 @@
       "minutesAgo": "hace {n} min",
       "hoursAgo": "hace {n} h",
       "daysAgo": "hace {n} d"
+    },
+    "activity": {
+      "applicant": "Nuevo candidato para {job}",
+      "applicantMeta": "{name} · {score}% de coincidencia",
+      "expiring": "La oferta vence pronto: {job}",
+      "closes": "Cierra el {date}",
+      "teamJoined": "Se unió un miembro del equipo",
+      "trainingSigned": "Capacitación firmada: {doc}",
+      "trainingOverdue": "Capacitación vencida: {doc}",
+      "overdueMeta": "{name} · vence el {date}",
+      "fallbackRole": "un puesto",
+      "fallbackDoc": "un documento",
+      "fallbackEmployee": "un empleado"
     }
   }
 }

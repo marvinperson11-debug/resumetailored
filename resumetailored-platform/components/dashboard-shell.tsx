@@ -73,7 +73,12 @@ export function DashboardShell({ sidebar, title, bell, children }: DashboardShel
 
       <div className="lg:pl-[260px]">
         {/* Top bar: RT logo (left) · language switcher (center) · admin toggle + avatar (right) */}
-        <header className="relative flex h-16 items-center justify-between gap-3 border-b border-border-gold bg-white/5 px-4 backdrop-blur-xl sm:px-6">
+        {/* z-40: the header's backdrop-blur makes it its own stacking context, so the
+            language / bell / profile dropdowns inside it are only ever as high as the
+            header itself. Without an explicit z-index it paints at z-auto and every
+            positioned card later in <main> (stat cards etc.) covers the menus.
+            Stays below the z-50 mobile drawer and modals. */}
+        <header className="relative z-40 flex h-16 items-center justify-between gap-3 border-b border-border-gold bg-white/5 px-4 backdrop-blur-xl sm:px-6">
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => setDrawerOpen(true)} aria-label={t("menu")} className="text-muted-cream transition-colors hover:text-cream lg:hidden">
               <Menu className="h-5 w-5" />

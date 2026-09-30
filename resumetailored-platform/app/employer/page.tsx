@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getFormatter, getTranslations } from "next-intl/server";
 import { Briefcase, Users, UserPlus, UserCog, Bell, Clock, TrendingUp, type LucideIcon } from "lucide-react";
 import { requireEmployerId } from "@/lib/employer-auth";
 import { getDashboard, type ActivityEntry } from "@/lib/employer-store";
+import { describeActivity } from "@/lib/dashboard-activity";
 import { Panel, UpgradeCard } from "./components/ui";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 /** Employer dashboard home — stats row, quick actions, recent activity feed. */
 export default async function EmployerHome() {
   const t = await getTranslations("employerDashboard");
+  const format = await getFormatter();
   const employerId = await requireEmployerId();
   const { stats, activity } = employerId
     ? await getDashboard(employerId)
@@ -73,7 +75,7 @@ export default async function EmployerHome() {
         ) : (
           <div className="space-y-2.5">
             {activity.map((a, i) => (
-              <ActivityRow key={i} entry={a} t={t} />
+              <ActivityRow key={i} entry={a} t={t} format={format} />
             ))}
           </div>
         )}
@@ -84,23 +86,27 @@ export default async function EmployerHome() {
   );
 }
 
-function ActivityRow({ entry, t }: { entry: ActivityEntry; t: Awaited<ReturnType<typeof getTranslations>> }) {
+type T = Awaited<ReturnType<typeof getTranslations>>;
+type Fmt = Awaited<ReturnType<typeof getFormatter>>;
+
+function ActivityRow({ entry, t, format }: { entry: ActivityEntry; t: T; format: Fmt }) {
   const icon = entry.kind === "applicant" ? Users : entry.kind === "expiring" ? Clock : Bell;
   const Icon = icon;
   const tint = entry.kind === "expiring" ? "text-gold" : entry.kind === "team" ? "text-teal" : "text-violet";
+  const { text, meta } = describeActivity(entry, t, format);
   return (
     <Panel className="flex items-center gap-3 py-3.5">
       <Icon className={`h-4 w-4 shrink-0 ${tint}`} />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm text-cream">{entry.text}</div>
-        {entry.meta && <div className="truncate text-xs text-white/50">{entry.meta}</div>}
+        <div className="truncate text-sm text-cream">{text}</div>
+        {meta && <div className="truncate text-xs text-white/50">{meta}</div>}
       </div>
       <span className="shrink-0 text-xs text-white/40">{relativeDate(entry.date, t)}</span>
     </Panel>
   );
 }
 
-function relativeDate(iso: string, t: Awaited<ReturnType<typeof getTranslations>>): string {
+function relativeDate(iso: string, t: T): string {
   if (!iso) return "";
   const then = new Date(iso).getTime();
   if (!Number.isFinite(then)) return "";

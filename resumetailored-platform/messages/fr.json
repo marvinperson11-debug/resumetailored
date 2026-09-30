@@ -3324,6 +3324,19 @@
       "minutesAgo": "il y a {n} min",
       "hoursAgo": "il y a {n} h",
       "daysAgo": "il y a {n} j"
+    },
+    "activity": {
+      "applicant": "Nouveau candidat pour {job}",
+      "applicantMeta": "{name} · {score} % de correspondance",
+      "expiring": "L'offre expire bientôt : {job}",
+      "closes": "Clôture le {date}",
+      "teamJoined": "Un membre a rejoint l'équipe",
+      "trainingSigned": "Formation signée : {doc}",
+      "trainingOverdue": "Formation en retard : {doc}",
+      "overdueMeta": "{name} · échéance le {date}",
+      "fallbackRole": "un poste",
+      "fallbackDoc": "un document",
+      "fallbackEmployee": "un employé"
     }
   }
 }
