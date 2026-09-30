@@ -2447,5 +2447,62 @@
     "cancel": "取消",
     "switch": "切换到雇主版",
     "backHome": "返回首页"
+  },
+  "shell": {
+    "signOut": "退出登录",
+    "closeMenu": "关闭菜单",
+    "loadingApp": "正在加载 ResumeTailored…",
+    "loadingSlow": "加载时间比预期更长。",
+    "refresh": "刷新",
+    "installApp": "安装应用",
+    "uploadPhoto": "上传照片",
+    "toolLoading": "正在加载工具",
+    "toolComingSoon": "此工具即将推出。接下来我们会把它迁移到您的新职业办公室。",
+    "comingSoonTitle": "{feature} —— 即将推出",
+    "comingSoonBody": "我们正在为您打造此功能。请下周再来看看。",
+    "backToDashboard": "返回仪表盘",
+    "backToEmployeePortal": "← 返回员工门户",
+    "yourTeam": "您的团队",
+    "yourCompany": "您的公司",
+    "yourCompanyLower": "您的公司",
+    "checkout": {
+      "welcome": "欢迎使用 Pro！🎉",
+      "cancelled": "付款已取消——您未被扣款。",
+      "signInFirst": "请先登录，然后重试。",
+      "openFailed": "无法打开安全结账页面。请重试。",
+      "unavailable": "结账功能暂时不可用。"
+    },
+    "whichDoor": {
+      "title": "要进入哪里？",
+      "body": "您当前使用的是<strong>{company}</strong>的团队账户登录。您想做什么？",
+      "portal": "前往您的员工门户",
+      "portalSub": "文档、消息、培训、排班。",
+      "tools": "使用职业与简历工具",
+      "toolsSub": "同一登录——定制简历、撰写求职信等。",
+      "separate": "创建单独的个人账户",
+      "separateSub": "先退出登录，然后使用不同的邮箱地址重新注册。"
+    },
+    "languagePref": {
+      "description": "设置您在所有设备上的默认语言，包括我们发送给您的邮件。您仍可通过顶部栏仅为当前设备切换语言。",
+      "saved": "语言偏好已保存"
+    },
+    "plan": {
+      "pro": "Pro",
+      "proViaTeam": "Pro（通过您的团队）",
+      "employer": "雇主",
+      "free": "免费版"
+    },
+    "chart": {
+      "canvasUnsupported": "不支持 Canvas",
+      "renderFailed": "无法渲染图表。"
+    },
+    "messages": {
+      "subtitle": "在一个地方与候选人和您的团队沟通。",
+      "noEmployeeMessagesTitle": "还没有员工消息",
+      "noEmployeeMessagesBody": "当受邀员工从其门户给您发消息时，对话会显示在这里。"
+    },
+    "loading": "加载中…",
+    "metaDescription": "为您的抱负打造的私人办公室。雇主高效招聘，候选人定制职业发展。",
+    "back": "返回"
   }
 }

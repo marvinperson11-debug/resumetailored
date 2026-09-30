@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, type LucideIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -106,6 +107,7 @@ export function UpgradeNote({ children }: { children: ReactNode }) {
 
 /** In-modal placeholder for Phase 2/3 tools. */
 export function ComingSoonBody({ feature, icon: Icon, note }: { feature: string; icon?: LucideIcon; note?: string }) {
+  const ts = useTranslations("shell");
   return (
     <div className="flex h-full min-h-[300px] flex-col items-center justify-center px-6 py-12 text-center">
       {Icon && (
@@ -114,7 +116,7 @@ export function ComingSoonBody({ feature, icon: Icon, note }: { feature: string;
         </div>
       )}
       <h3 className="font-serif text-2xl font-medium text-cream">{feature}</h3>
-      <p className="mt-3 max-w-sm text-sm text-white/60">{note || "This tool is coming soon. We're porting it into your new career office next."}</p>
+      <p className="mt-3 max-w-sm text-sm text-white/60">{note || ts("toolComingSoon")}</p>
     </div>
   );
 }

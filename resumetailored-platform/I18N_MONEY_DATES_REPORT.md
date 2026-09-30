@@ -39,7 +39,10 @@ Converted: employer Jobs, Candidates, Team, Scheduler, Messages (+ employee thre
 - **Invoices / receipts:** this app has none (Stripe-hosted), so there was nothing to format. Adding an in-app billing history would just reuse `formatMoney/formatDate`.
 - The Application Tracker's surrounding copy is still English (page never translated); only its dates/amounts changed.
 
-## Decisions for you
+## Decisions (resolved — defaults kept)
+You chose to keep all three defaults. Guardrails and the string audit are in `I18N_AUDIT_AND_GUARDRAILS_REPORT.md`.
+
+## Original decision notes
 1. **"US$" in zh/es/fr.** `Intl` writes USD as `US$` / `$US` in locales whose own currency is not the dollar, to avoid ambiguity with e.g. pesos/francs. That is the correct, standard rendering and what you asked for (locale decides symbol placement). If you would rather always show a bare `$`, it is one option (`currencyDisplay: "narrowSymbol"`) in `lib/format.ts`.
 2. **Hindi months.** Stock `Intl` abbreviates Hindi months ("31 अग॰ 2026"); to get your exact example, `lib/format.ts` uses the full month name for `hi` only (`optionsFor`). Remove that function for stock behaviour.
 3. Compact filter labels ("$60K") come from `Intl` compact notation, so they read "US$6万" / "60 mil US$" — say if you'd prefer full numbers there.

@@ -27,6 +27,7 @@ export function ProfileButton() {
   const locale = useLocale() as Locale;
   const t = useTranslations("topbar");
   const tl = useTranslations("lang");
+  const ts = useTranslations("shell");
   const { canInstall, isIOS, isStandalone, promptInstall } = usePWA();
   const [showInstallHelp, setShowInstallHelp] = useState(false);
 
@@ -85,7 +86,7 @@ export function ProfileButton() {
         <UserButton.MenuItems>
           <UserButton.Action label={t("profile")} labelIcon={<User className="h-4 w-4" />} onClick={() => router.push(profileHref)} />
           <UserButton.Action label={t("settings")} labelIcon={<Settings className="h-4 w-4" />} onClick={() => router.push(settingsHref)} />
-          {!isStandalone && <UserButton.Action label="Install app" labelIcon={<Download className="h-4 w-4" />} onClick={installApp} />}
+          {!isStandalone && <UserButton.Action label={ts("installApp")} labelIcon={<Download className="h-4 w-4" />} onClick={installApp} />}
           {LOCALES.map((code) => (
             <UserButton.Action
               key={code}
@@ -94,7 +95,7 @@ export function ProfileButton() {
               onClick={() => setLang(code)}
             />
           ))}
-          <UserButton.Action label="Upload photo" labelIcon={<Camera className="h-4 w-4" />} onClick={() => openUserProfile()} />
+          <UserButton.Action label={ts("uploadPhoto")} labelIcon={<Camera className="h-4 w-4" />} onClick={() => openUserProfile()} />
         </UserButton.MenuItems>
       </UserButton>
       {showInstallHelp && <InstallHelpCard isIOS={isIOS} onClose={() => setShowInstallHelp(false)} />}

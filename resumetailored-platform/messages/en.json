@@ -2447,5 +2447,62 @@
     "cancel": "Cancel",
     "switch": "Switch to Employer",
     "backHome": "Back home"
+  },
+  "shell": {
+    "signOut": "Sign out",
+    "closeMenu": "Close menu",
+    "loadingApp": "Loading ResumeTailored…",
+    "loadingSlow": "This is taking longer than expected.",
+    "refresh": "Refresh",
+    "installApp": "Install app",
+    "uploadPhoto": "Upload photo",
+    "toolLoading": "Loading tool",
+    "toolComingSoon": "This tool is coming soon. We're porting it into your new career office next.",
+    "comingSoonTitle": "{feature} — Coming Soon",
+    "comingSoonBody": "We're building this for you. Check back next week.",
+    "backToDashboard": "Go Back to Dashboard",
+    "backToEmployeePortal": "← Back to employee portal",
+    "yourTeam": "your team",
+    "yourCompany": "Your company",
+    "yourCompanyLower": "your company",
+    "checkout": {
+      "welcome": "Welcome to Pro! 🎉",
+      "cancelled": "Payment cancelled — you have not been charged.",
+      "signInFirst": "Please sign in first, then try again.",
+      "openFailed": "Secure checkout could not be opened. Please try again.",
+      "unavailable": "Checkout is temporarily unavailable."
+    },
+    "whichDoor": {
+      "title": "Which door?",
+      "body": "You're signed in with your <strong>{company}</strong> team account. What would you like to do?",
+      "portal": "Go to your employee portal",
+      "portalSub": "Documents, messages, training, schedule.",
+      "tools": "Use the career & resume tools",
+      "toolsSub": "Same login — tailor a resume, write a cover letter, and more.",
+      "separate": "Create a separate personal account",
+      "separateSub": "Sign out, then sign up again with a different email address."
+    },
+    "languagePref": {
+      "description": "Sets your default language across devices, including any emails we send you. You can still switch for just this device from the top bar.",
+      "saved": "Language preference saved"
+    },
+    "plan": {
+      "pro": "Pro",
+      "proViaTeam": "Pro (via your team)",
+      "employer": "Employer",
+      "free": "Free"
+    },
+    "chart": {
+      "canvasUnsupported": "Canvas not supported",
+      "renderFailed": "Could not render the chart."
+    },
+    "messages": {
+      "subtitle": "Talk to candidates and your team in one place.",
+      "noEmployeeMessagesTitle": "No employee messages yet",
+      "noEmployeeMessagesBody": "When an invited employee messages you from their portal, the conversation shows up here."
+    },
+    "loading": "Loading…",
+    "metaDescription": "A private office for your ambitions. Hiring for employers, tailored careers for candidates.",
+    "back": "Back"
   }
 }

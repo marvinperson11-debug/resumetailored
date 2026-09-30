@@ -95,6 +95,7 @@ export function CandidateSidebar({ role = { plan: "free" }, isAdmin }: { role?: 
   const { openResume, openTool } = useTools();
   const t = useTranslations("nav");
   const tp = useTranslations("plan");
+  const ts = useTranslations("shell");
   const plan = role.plan ?? "free";
   const proish = plan === "pro" || plan === "employee";
 
@@ -174,7 +175,7 @@ export function CandidateSidebar({ role = { plan: "free" }, isAdmin }: { role?: 
             href="/employee"
             className="flex w-full items-center gap-3 rounded-md border-l-2 border-transparent px-4 py-2.5 text-sm text-muted-cream transition-all duration-200 hover:bg-white/5 hover:text-cream"
           >
-            ← Back to employee portal
+            {ts("backToEmployeePortal")}
           </Link>
         </div>
       )}
@@ -188,7 +189,7 @@ export function CandidateSidebar({ role = { plan: "free" }, isAdmin }: { role?: 
         {plan === "pro" ? (
           <span className="text-xs font-medium text-gold">{tp("proActive")}</span>
         ) : plan === "employee" ? (
-          <span className="text-xs font-medium text-gold">{tp("proVia", { name: role.employerName || "your team" })}</span>
+          <span className="text-xs font-medium text-gold">{tp("proVia", { name: role.employerName || ts("yourTeam") })}</span>
         ) : (
           <a href="/candidate?upgrade=pro" className="text-xs font-medium text-muted-cream transition-colors hover:text-gold">
             {tp("freeUpgrade")}

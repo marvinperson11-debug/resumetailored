@@ -21,6 +21,7 @@ const FLAGS: Record<Locale, string> = { en: "🇺🇸", zh: "🇨🇳", es: "�
 export function LanguageSettingsSection() {
   const locale = useLocale() as Locale;
   const t = useTranslations("lang");
+  const ts = useTranslations("shell.languagePref");
   const router = useRouter();
   const [saving, setSaving] = useState<Locale | null>(null);
   const [saved, setSaved] = useState(false);
@@ -51,7 +52,7 @@ export function LanguageSettingsSection() {
         <Languages className="h-4 w-4 text-violet" /> {t("label")}
       </h2>
       <p className="mb-4 text-xs text-white/50">
-        Sets your default language across devices, including any emails we send you. You can still switch for just this device from the top bar.
+        {ts("description")}
       </p>
       <div className="flex flex-wrap gap-2">
         {LOCALES.map((code) => (
@@ -70,7 +71,7 @@ export function LanguageSettingsSection() {
           </button>
         ))}
       </div>
-      {saved && <p className="mt-3 flex items-center gap-1 text-xs text-teal"><Check className="h-3.5 w-3.5" /> Language preference saved</p>}
+      {saved && <p className="mt-3 flex items-center gap-1 text-xs text-teal"><Check className="h-3.5 w-3.5" /> {ts("saved")}</p>}
     </div>
   );
 }

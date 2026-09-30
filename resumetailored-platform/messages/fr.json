@@ -2447,5 +2447,62 @@
     "cancel": "Annuler",
     "switch": "Passer à Employeur",
     "backHome": "Retour à l'accueil"
+  },
+  "shell": {
+    "signOut": "Se déconnecter",
+    "closeMenu": "Fermer le menu",
+    "loadingApp": "Chargement de ResumeTailored…",
+    "loadingSlow": "Cela prend plus de temps que prévu.",
+    "refresh": "Actualiser",
+    "installApp": "Installer l'application",
+    "uploadPhoto": "Téléverser une photo",
+    "toolLoading": "Chargement de l'outil",
+    "toolComingSoon": "Cet outil arrive bientôt. Nous le transférons ensuite dans votre nouveau bureau de carrière.",
+    "comingSoonTitle": "{feature} — Bientôt disponible",
+    "comingSoonBody": "Nous le construisons pour vous. Revenez la semaine prochaine.",
+    "backToDashboard": "Retour au tableau de bord",
+    "backToEmployeePortal": "← Retour au portail employé",
+    "yourTeam": "votre équipe",
+    "yourCompany": "Votre entreprise",
+    "yourCompanyLower": "votre entreprise",
+    "checkout": {
+      "welcome": "Bienvenue dans Pro ! 🎉",
+      "cancelled": "Paiement annulé — vous n'avez pas été débité.",
+      "signInFirst": "Veuillez d'abord vous connecter, puis réessayer.",
+      "openFailed": "Le paiement sécurisé n'a pas pu s'ouvrir. Veuillez réessayer.",
+      "unavailable": "Le paiement est temporairement indisponible."
+    },
+    "whichDoor": {
+      "title": "Quelle porte ?",
+      "body": "Vous êtes connecté(e) avec votre compte d'équipe <strong>{company}</strong>. Que souhaitez-vous faire ?",
+      "portal": "Aller à votre portail employé",
+      "portalSub": "Documents, messages, formation, planning.",
+      "tools": "Utiliser les outils carrière et CV",
+      "toolsSub": "Même identifiant — adaptez un CV, rédigez une lettre de motivation, et plus.",
+      "separate": "Créer un compte personnel distinct",
+      "separateSub": "Déconnectez-vous, puis inscrivez-vous à nouveau avec une autre adresse e-mail."
+    },
+    "languagePref": {
+      "description": "Définit votre langue par défaut sur tous vos appareils, y compris les e-mails que nous vous envoyons. Vous pouvez toujours la changer pour cet appareil seulement depuis la barre du haut.",
+      "saved": "Préférence de langue enregistrée"
+    },
+    "plan": {
+      "pro": "Pro",
+      "proViaTeam": "Pro (via votre équipe)",
+      "employer": "Employeur",
+      "free": "Gratuit"
+    },
+    "chart": {
+      "canvasUnsupported": "Canvas non pris en charge",
+      "renderFailed": "Impossible d'afficher le graphique."
+    },
+    "messages": {
+      "subtitle": "Échangez avec les candidats et votre équipe au même endroit.",
+      "noEmployeeMessagesTitle": "Aucun message d'employé pour l'instant",
+      "noEmployeeMessagesBody": "Lorsqu'un employé invité vous écrira depuis son portail, la conversation apparaîtra ici."
+    },
+    "loading": "Chargement…",
+    "metaDescription": "Un bureau privé pour vos ambitions. Recrutement pour les employeurs, carrières sur mesure pour les candidats.",
+    "back": "Retour"
   }
 }

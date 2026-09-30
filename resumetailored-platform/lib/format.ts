@@ -15,6 +15,12 @@
 
 export const DISPLAY_CURRENCY = "USD" as const;
 
+/** BCP-47 tag for APIs that want a region (speech recognition, etc.) — one per supported UI locale. */
+const REGION_TAGS: Record<string, string> = { en: "en-US", zh: "zh-CN", es: "es-ES", hi: "hi-IN", fr: "fr-FR" };
+export function regionTag(locale: string): string {
+  return REGION_TAGS[locale] ?? "en-US";
+}
+
 /** List prices, display only. Checkout amounts live in Stripe and are never read from here. */
 export const PRICES_USD = {
   pro: 19,

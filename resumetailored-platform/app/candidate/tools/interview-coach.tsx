@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { regionTag } from "@/lib/format";
 import {
   MessageSquare, Sparkles, Loader2, Check, X, Mic, Lock, Play, Award, ChevronDown,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const scoreColor = (n: number) => (n >= 75 ? "#14B8A6" : n >= 50 ? "#F59E0B" : "
 
 export function InterviewCoachTool({ onClose, isPro }: { onClose: () => void; isPro: boolean }) {
   const t = useTranslations("candidateTools.interviewCoach");
+  const locale = useLocale();
   const router = useRouter();
   const [resumes, setResumes] = useState<ResumeDraft[]>([]);
   const [jobText, setJobText] = useState("");
@@ -75,7 +77,7 @@ export function InterviewCoachTool({ onClose, isPro }: { onClose: () => void; is
         onresult: (e: { results: ArrayLike<ArrayLike<{ transcript: string }>> & { [i: number]: { isFinal: boolean } } }) => void;
         onend: () => void; start: () => void; stop: () => void;
       })();
-      rec.lang = "en-US"; rec.continuous = true; rec.interimResults = false;
+      rec.lang = regionTag(locale); rec.continuous = true; rec.interimResults = false;
       rec.onresult = (e) => {
         let t = "";
         for (let i = 0; i < e.results.length; i++) if (e.results[i].isFinal) t += (e.results[i] as ArrayLike<{ transcript: string }>)[0].transcript + " ";

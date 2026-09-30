@@ -1,3 +1,45 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "rules": {
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "CallExpression[callee.property.name=/^toLocale(Date|Time)?String$/]",
+        "message": "Format dates/times/numbers through lib/format.ts (Intl.DateTimeFormat / Intl.NumberFormat with the viewer's locale), not toLocale*String()."
+      },
+      {
+        "selector": "Literal[value='en-US']",
+        "message": "Don't hard-code a locale. Use the viewer's locale (useLocale()/getLocale()) via lib/format.ts."
+      },
+      {
+        "selector": "BinaryExpression[operator='+'][left.value='$']",
+        "message": "Never build a price by concatenating '$'. Use formatMoney() from lib/format.ts (Intl.NumberFormat, USD, viewer's locale)."
+      },
+      {
+        "selector": "Literal[value=/^\\$\\s?(\\d{2,}|\\d[.,]\\d)/]",
+        "message": "Don't hard-code a price string. Use formatMoney(amount, locale) from lib/format.ts."
+      },
+      {
+        "selector": "JSXText[value=/\\$\\s?(\\d{2,}|\\d[.,]\\d)/]",
+        "message": "Don't hard-code a price in JSX text. Use formatMoney(amount, locale) from lib/format.ts."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["lib/format.ts"],
+      "rules": { "no-restricted-syntax": "off" }
+    },
+    {
+      "files": [
+        "lib/time-hub.ts",
+        "lib/office-hub.ts",
+        "lib/resume-templates.ts",
+        "lib/docusign.ts",
+        "lib/employer-notify.ts",
+        "lib/training-notify.ts"
+      ],
+      "rules": { "no-restricted-syntax": "off" }
+    }
+  ]
 }

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { auth } from "@clerk/nextjs/server";
+import { getTranslations } from "next-intl/server";
 import { LockedFeature } from "@/components/locked-feature";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { NotificationBell } from "@/components/notification-bell";
@@ -36,7 +37,8 @@ export default async function EmployerLayout({ children }: { children: ReactNode
   const [profile, sendsUsed] = await Promise.all([getEmployerProfile(employerId), monthlySendCount(employerId)]);
   // Employees join an already-onboarded company, so never block them on setup.
   const needsOnboarding = access.plan === "employer" && !profile;
-  const company = profile?.companyName || "Your company";
+  const ts = await getTranslations("shell");
+  const company = profile?.companyName || ts("yourCompany");
   // Tier NAME for the sidebar badge — Free / Portal / Scale / Corporate. The
   // admin bypass is treated as Corporate everywhere else (checkSendAllowance,
   // isScalePlusTier, …), so it's labeled the same way here.

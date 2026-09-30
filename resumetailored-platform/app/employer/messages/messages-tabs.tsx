@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Users, UserCheck } from "lucide-react";
 import { MessagesClient } from "./messages-client";
@@ -23,11 +24,13 @@ export function MessagesTabs({
   initialMode?: Mode;
   initialEmployeeId?: number;
 }) {
+  const tn = useTranslations("employerNav");
+  const ts = useTranslations("shell");
   const [mode, setMode] = useState<Mode>(initialMode ?? "candidates");
 
   return (
     <div>
-      <PageHeader title="Messages" subtitle="Talk to candidates and your team in one place." />
+      <PageHeader title={tn("messages")} subtitle={ts("messages.subtitle")} />
       <div className="mb-6 inline-flex rounded-lg border border-border-gold bg-white/[0.03] p-1">
         <button
           onClick={() => setMode("candidates")}

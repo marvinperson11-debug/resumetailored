@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, XCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { ProUpgradeModal } from "@/components/pro-upgrade-modal";
 
 type Toast = { kind: "success" | "info"; text: string } | null;
@@ -18,6 +19,7 @@ type Toast = { kind: "success" | "info"; text: string } | null;
  * stripping the query params after handling so a refresh does not re-trigger.
  */
 function UpgradeFlowInner() {
+  const ts = useTranslations("shell");
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -42,7 +44,7 @@ function UpgradeFlowInner() {
     const payment = params.get("payment");
     if (payment === "success") {
       setOpen(false);
-      setToast({ kind: "success", text: "Welcome to Pro! 🎉" });
+      setToast({ kind: "success", text: ts("checkout.welcome") });
       stripParams();
       // The webhook grants Pro server-side; re-run the server components so the
       // sidebar flips to "Pro · active". A short delay covers propagation.
@@ -51,10 +53,10 @@ function UpgradeFlowInner() {
     }
     if (payment === "cancelled") {
       setOpen(false);
-      setToast({ kind: "info", text: "Payment cancelled — you have not been charged." });
+      setToast({ kind: "info", text: ts("checkout.cancelled") });
       stripParams();
     }
-  }, [params, router, stripParams]);
+  }, [params, router, stripParams, ts]);
 
   // Auto-dismiss the toast.
   useEffect(() => {
@@ -77,16 +79,16 @@ function UpgradeFlowInner() {
       if (!res.ok || !data.url) {
         throw new Error(
           data.error === "not_signed_in"
-            ? "Please sign in first, then try again."
-            : "Secure checkout could not be opened. Please try again."
+            ? ts("checkout.signInFirst")
+            : ts("checkout.openFailed")
         );
       }
       window.location.assign(data.url);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Checkout is temporarily unavailable.");
+      setError(e instanceof Error ? e.message : ts("checkout.unavailable"));
       setLoading(false);
     }
-  }, []);
+  }, [ts]);
 
   return (
     <>

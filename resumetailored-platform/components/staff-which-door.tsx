@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Building2, FileText, LogOut } from "lucide-react";
@@ -24,6 +25,7 @@ function markSeen() {
  * cookie so returning staff who just want their portal aren't nagged again.
  */
 export function StaffWhichDoor({ company }: { company: string }) {
+  const ts = useTranslations("shell.whichDoor");
   const router = useRouter();
   const { signOut } = useClerk();
 
@@ -35,9 +37,9 @@ export function StaffWhichDoor({ company }: { company: string }) {
   return (
     <main style={{ backgroundColor: "#0B0F19" }} className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-md rounded-2xl border border-border-gold bg-navy p-8 shadow-2xl">
-        <h1 className="text-center font-serif text-2xl font-medium text-cream">Which door?</h1>
+        <h1 className="text-center font-serif text-2xl font-medium text-cream">{ts("title")}</h1>
         <p className="mt-2 text-center text-sm text-white/60">
-          You&rsquo;re signed in with your <strong className="text-cream">{company}</strong> team account. What would you like to do?
+          {ts.rich("body", { company, strong: (chunks) => <strong className="text-cream">{chunks}</strong> })}
         </p>
 
         <div className="mt-6 space-y-3">
@@ -48,8 +50,8 @@ export function StaffWhichDoor({ company }: { company: string }) {
           >
             <Building2 className="h-5 w-5 shrink-0 text-violet" />
             <span>
-              <span className="block font-medium text-cream">Go to your employee portal</span>
-              <span className="block text-xs text-white/50">Documents, messages, training, schedule.</span>
+              <span className="block font-medium text-cream">{ts("portal")}</span>
+              <span className="block text-xs text-white/50">{ts("portalSub")}</span>
             </span>
           </button>
 
@@ -60,8 +62,8 @@ export function StaffWhichDoor({ company }: { company: string }) {
           >
             <FileText className="h-5 w-5 shrink-0 text-violet" />
             <span>
-              <span className="block font-medium text-cream">Use the career &amp; resume tools</span>
-              <span className="block text-xs text-white/50">Same login — tailor a resume, write a cover letter, and more.</span>
+              <span className="block font-medium text-cream">{ts("tools")}</span>
+              <span className="block text-xs text-white/50">{ts("toolsSub")}</span>
             </span>
           </button>
 
@@ -72,8 +74,8 @@ export function StaffWhichDoor({ company }: { company: string }) {
           >
             <LogOut className="h-5 w-5 shrink-0" />
             <span>
-              <span className="block font-medium">Create a separate personal account</span>
-              <span className="block text-xs text-white/40">Sign out, then sign up again with a different email address.</span>
+              <span className="block font-medium">{ts("separate")}</span>
+              <span className="block text-xs text-white/40">{ts("separateSub")}</span>
             </span>
           </button>
         </div>
