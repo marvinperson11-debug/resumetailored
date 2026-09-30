@@ -73,6 +73,11 @@ export function EmployerSidebar({
 }) {
   const pathname = usePathname();
   const t = useTranslations("employerNav");
+  const tUi = useTranslations("employerUi");
+  // `planLabel` arrives from the server as the English tier name; map the known
+  // tiers to their translated names and pass anything else through untouched.
+  const tierKey = (planLabel || "").toLowerCase();
+  const tierName = ["free", "portal", "scale", "corporate"].includes(tierKey) ? tUi(`tierNames.${tierKey}`) : planLabel;
 
   return (
     <div className="flex h-full flex-col">
@@ -132,14 +137,14 @@ export function EmployerSidebar({
         >
           <Building2 className="h-4 w-4 shrink-0 text-gold" />
           <span className="min-w-0 flex-1">
-            <span className="block text-xs font-medium text-gold">{planLabel} plan</span>
-            <span className="block text-[11px] text-white/45">{quota.used} of {quota.limit} sends used · Upgrade</span>
+            <span className="block text-xs font-medium text-gold">{t("planName", { plan: tierName })}</span>
+            <span className="block text-[11px] text-white/45">{t("sendsUsed", { used: quota.used, limit: quota.limit })}</span>
           </span>
         </a>
       ) : (
         <div className="flex shrink-0 items-center gap-2 border-t border-border-gold px-6 py-4">
           <Building2 className="h-4 w-4 text-gold" />
-          <span className="text-xs font-medium text-gold">{planLabel}</span>
+          <span className="text-xs font-medium text-gold">{tierName}</span>
         </div>
       )}
     </div>

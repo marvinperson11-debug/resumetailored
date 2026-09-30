@@ -51,8 +51,8 @@ export function TimeOffClient({ locked = false }: { locked?: boolean }) {
 
   return (
     <div {...handlers}>
-      {locked && <LockedModuleBanner feature="Time Off" tier="Portal" />}
-      <FirstTouchSnackbar show={touched} feature="Time Off" tier="Portal" onDismiss={dismiss} />
+      {locked && <LockedModuleBanner featureKey="timeOff" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} featureKey="timeOff" tier="Portal" onDismiss={dismiss} />
       <PageHeader title="Time off" subtitle="Review your team's time-off requests. Approved days show up on the schedule. No accrual balances." />
 
       <div className="mb-6 inline-flex rounded-lg border border-border-gold bg-white/[0.03] p-1">

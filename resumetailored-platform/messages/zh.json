@@ -70,7 +70,9 @@
     "careerSite": "招聘官网",
     "team": "团队",
     "settings": "设置",
-    "upgradeRequired": "需要升级"
+    "upgradeRequired": "需要升级",
+    "planName": "{plan}套餐",
+    "sendsUsed": "已使用 {used}/{limit} 次发送 · 升级"
   },
   "employeeNav": {
     "badge": "员工门户",
@@ -254,7 +256,73 @@
   "employerUi": {
     "availableOnPlan": "{feature}功能仅限{tier}+套餐使用。",
     "learnAboutUpgrading": "了解升级详情 →",
-    "close": "关闭"
+    "close": "关闭",
+    "tierNames": {
+      "free": "免费版",
+      "portal": "Portal",
+      "scale": "Scale",
+      "corporate": "Corporate"
+    },
+    "features": {
+      "employeesHub": "员工中心",
+      "timesheets": "工时表",
+      "careerSiteBuilder": "招聘网站构建器",
+      "timeOff": "休假",
+      "videoInterviews": "视频面试",
+      "shiftScheduling": "排班"
+    },
+    "lockedBanner": {
+      "body": "<strong>{feature}</strong>属于{tier}套餐。升级即可启用——您设置的所有内容都会保留。",
+      "upgrade": "升级 →"
+    },
+    "snackbar": {
+      "body": "<strong>{feature}</strong>在{tier}套餐中提供——<link>升级</link>",
+      "dismiss": "关闭"
+    },
+    "quota": {
+      "usedOf": {
+        "jobs": "已使用 {used}/{limit} 个在招职位名额",
+        "seats": "已使用 {used}/{limit} 个团队席位",
+        "candidates": "已使用 {used}/{limit} 个候选人名额",
+        "video": "本月已使用 {used}/{limit} 次视频面试",
+        "esign": "本月已使用 {used}/{limit} 次电子签名发送",
+        "documents": "已使用 {used}/{limit} 份文档"
+      },
+      "unlimited": {
+        "jobs": "{used} 个在招职位 · 不限量",
+        "seats": "{used} 个团队席位 · 不限量",
+        "candidates": "{used} 个候选人名额 · 不限量",
+        "video": "本月 {used} 次视频面试 · 不限量",
+        "esign": "本月 {used} 次电子签名发送 · 不限量",
+        "documents": "{used} 份文档 · 不限量"
+      },
+      "upgradeTo": "升级到{tier} →"
+    },
+    "upgradeCard": {
+      "body": "您当前使用的是<strong>{plan}</strong>套餐——已使用 {used}/{limit} 次发送。{pitch}",
+      "cta": "升级 →",
+      "pitch": {
+        "free": "升级到 Portal，即可享受不限量职位与候选人、更多发送次数以及视频面试。",
+        "portal": "升级到 Scale，即可获得更多发送次数、AI 面试摘要和办公套件。",
+        "scale": "升级到 Corporate，即可享受不限量发送和白标招聘页面。"
+      }
+    },
+    "limit": {
+      "documents": "您已用完{plan}套餐包含的全部 {limit} 份文档。请升级到{next}以创建更多，或先删除现有文档。",
+      "esign": "您本月已用完{plan}套餐包含的全部 {limit} 次录用通知书发送额度。请升级到{next}以发送更多，或等到下月额度重置。",
+      "next": {
+        "documents": {
+          "free": "Portal（50 份文档）",
+          "portal": "Scale（200 份文档）",
+          "scale": "Corporate（不限量文档）"
+        },
+        "esign": {
+          "free": "Portal（10 次/月）",
+          "portal": "Scale（50 次/月）",
+          "scale": "Corporate（不限量）"
+        }
+      }
+    }
   },
   "employerEmployees": {
     "title": "员工",
@@ -1167,7 +1235,8 @@
     "errorGeneric": "出了点问题。",
     "errorNeedTitle": "请为该职位填写名称。",
     "errorNeedDescription": "请添加职位描述（或使用“优化”功能生成一份）。",
-    "errorCouldNotSave": "无法保存该职位。"
+    "errorCouldNotSave": "无法保存该职位。",
+    "errorCouldNotUpdate": "无法更新该职位。"
   },
   "employerCandidates": {
     "title": "候选人",
@@ -1566,5 +1635,266 @@
     "errorCouldNotSave": "无法保存。",
     "errorGeneric": "出了点问题。",
     "errorUploadFailed": "上传失败。"
+  },
+  "employerSendCopy": {
+    "sendCopy": "发送副本",
+    "namePlaceholder": "姓名",
+    "emailPlaceholder": "email@company.com",
+    "send": "发送",
+    "cancel": "取消",
+    "couldntSend": "无法发送副本。",
+    "sent": "副本已发送至 {email}。"
+  },
+  "employerEsign": {
+    "title": "电子签名",
+    "subtitle": "通过 DocuSign 发送录用通知书、协议、保密协议或任何文档以供电子签名，并跟踪其状态。",
+    "uploadAndSend": "上传并发送签名",
+    "refresh": "刷新",
+    "docTypes": {
+      "offer": "录用通知书",
+      "agreement": "劳动合同",
+      "nda": "保密协议",
+      "writeup": "员工警告书",
+      "custom": "自定义文档"
+    },
+    "status": {
+      "sent": "已发送",
+      "delivered": "已送达",
+      "viewed": "已查看",
+      "signed": "已签署",
+      "completed": "已完成",
+      "declined": "已拒绝",
+      "voided": "已作废"
+    },
+    "connectedBanner": "DocuSign 已连接。您现在可以发送录用通知书以供签名了。",
+    "errors": {
+      "generic": "连接 DocuSign 时出现问题。",
+      "not_configured": "此部署尚未配置 DocuSign。请添加 DocuSign 凭据后再连接。",
+      "consent_denied": "DocuSign 授权已取消。您可以重新尝试连接。",
+      "state_mismatch": "连接请求已过期或不匹配。请重新尝试连接。",
+      "auth_failed": "DocuSign 未返回所需的令牌。请重试。",
+      "account_failed": "我们无法读取您的 DocuSign 账户信息。请重试。",
+      "save_failed": "我们无法保存该连接。请重试。"
+    },
+    "confirmDisconnect": "要断开 DocuSign 吗？之后需要重新连接才能发送更多录用通知书。",
+    "disconnected": "DocuSign 已断开。",
+    "notConfigured": {
+      "title": "DocuSign 未配置",
+      "body": "此部署缺少 DocuSign 凭据。设置完成后，您就可以在此连接账户。"
+    },
+    "connection": {
+      "connected": "DocuSign 已连接",
+      "accountFallback": "账户已连接",
+      "usageUnlimited": "本月已发送 {used} 次 · 不限量",
+      "usageLimited": "已使用 {used}/{limit} 次月度发送",
+      "disconnect": "断开连接"
+    },
+    "connect": {
+      "title": "连接 DocuSign",
+      "body": "授权您的 DocuSign 账户，以发送录用通知书供签名。"
+    },
+    "empty": {
+      "title": "尚未发送任何文档",
+      "body": "上传任意 PDF——税表、协议、税务局函件——一步即可发送签名。也可以从候选人的个人资料中发送录用通知书、协议或保密协议。它会连同实时签名状态显示在这里。"
+    },
+    "cols": {
+      "recipient": "收件人",
+      "type": "类型",
+      "document": "文档",
+      "sent": "发送时间",
+      "status": "状态",
+      "files": "文件",
+      "certificate": "证书"
+    },
+    "showDetails": "显示详情",
+    "hideDetails": "隐藏详情",
+    "requestedCount": "已请求 {count} 份",
+    "download": "下载",
+    "detail": {
+      "complete": "此文档已完成。",
+      "viewDocuments": "查看文档",
+      "certificate": "证书",
+      "sendCopy": "发送副本",
+      "sendCopyHint": "将合并后的已签署 PDF 和证书通过邮件发送给任何人——对方无需签名。",
+      "copiesSent": "已发送副本：{list}",
+      "requestedDocs": "已请求的文档",
+      "noneRequested": "未向签署人请求任何文档。",
+      "received": "已收到",
+      "markPlaceholder": "用已上传的文件标记为已收到…",
+      "markReceived": "标记为已收到",
+      "requestPlaceholder": "请求其他文档…",
+      "request": "请求",
+      "allAttachments": "所有附件",
+      "noFiles": "尚未上传文件。",
+      "attachFile": "附加文件",
+      "privateFiles": "您附加的文件仅对您的团队可见——签署人永远看不到。"
+    },
+    "you": "您",
+    "signer": "签署人",
+    "msg": {
+      "couldntAddRequest": "无法添加请求。",
+      "requestAdded": "请求已添加——已通过邮件向签署人发送上传链接。",
+      "uploadFailed": "上传失败。",
+      "fileAttached": "文件已附加到此信封。",
+      "couldntUpdateRequest": "无法更新请求。",
+      "markedReceived": "已将“{name}”标记为已收到。"
+    }
+  },
+  "employerDocuments": {
+    "title": "文档",
+    "subtitle": "撰写文档以发送签名，并查看所有已收到和已签署的内容。",
+    "tabs": {
+      "mine": "我的文档",
+      "received": "已收到与已签署"
+    },
+    "kinds": {
+      "chart": "图表",
+      "spreadsheet": "电子表格",
+      "report": "报告",
+      "presentation": "演示文稿"
+    },
+    "newDocument": "新建文档",
+    "startFromTemplate": "从模板开始",
+    "blankDocument": "空白文档",
+    "untitled": "未命名文档",
+    "templates": {
+      "offer": "录用通知书",
+      "agreement": "劳动合同",
+      "nda": "保密协议",
+      "writeup": "员工警告书"
+    },
+    "empty": {
+      "title": "还没有文档",
+      "body": "从模板（录用通知书、协议、保密协议、警告书）或空白页创建文档，编辑文本，然后发送签名。"
+    },
+    "cols": {
+      "title": "标题",
+      "updated": "更新时间",
+      "actions": "操作"
+    },
+    "view": "查看",
+    "edit": "编辑",
+    "sendForSignature": "发送签名",
+    "delete": "删除",
+    "confirmDelete": "要删除此文档吗？此操作无法撤销。",
+    "back": "返回",
+    "save": "保存",
+    "titlePlaceholder": "文档标题",
+    "toolbar": {
+      "h1": "标题 1",
+      "h2": "标题 2",
+      "paragraph": "段落",
+      "bold": "加粗",
+      "italic": "斜体",
+      "underline": "下划线",
+      "bullets": "项目符号列表",
+      "numbered": "编号列表",
+      "alignLeft": "左对齐",
+      "alignCenter": "居中对齐",
+      "link": "插入链接"
+    },
+    "linkPrompt": "链接地址 (https://…)",
+    "couldNotSave": "无法保存文档。",
+    "network": "网络错误——请重试。",
+    "tip": "提示：使用工具栏设置标题、粗体/斜体、列表、对齐方式和链接。发送时会自动添加签名行。",
+    "exportPdf": "导出 PDF",
+    "received": {
+      "emptyTitle": "还没有收到任何内容",
+      "emptyBody": "已完成签署的 PDF，以及签署人上传或您团队附加的所有文件，都会显示在这里，可随时查看或下载。",
+      "recipient": "收件人",
+      "document": "文档",
+      "date": "日期",
+      "files": "文件",
+      "status": "状态",
+      "show": "显示详情",
+      "hide": "隐藏详情",
+      "signedDocs": "已签署文档（PDF + 证书）",
+      "download": "下载",
+      "allFiles": "所有文件",
+      "allFilesCount": "所有文件（{count}）",
+      "noFiles": "此信封尚未上传文件。",
+      "requestedTag": "已请求",
+      "awaiting": "等待签署人提供：{names}",
+      "you": "您",
+      "signer": "签署人"
+    }
+  },
+  "employerSendDocument": {
+    "title": "发送文档以供签名",
+    "sent": {
+      "title": "已发送签名",
+      "body": "{name}将收到 DocuSign 发来的邮件，用于审阅和签署。",
+      "uploadLink": "对方还会收到一个安全链接，用于上传您请求的文档。",
+      "track": "可在“电子签名”页面跟踪其状态。",
+      "recipientFallback": "收件人"
+    },
+    "viewDocuments": "查看文档",
+    "done": "完成",
+    "document": "文档",
+    "documentType": "文档类型",
+    "recipientFallback": "收件人",
+    "noEmail": "未登记邮箱",
+    "employeeName": "员工姓名",
+    "employeeEmail": "员工邮箱",
+    "namePlaceholder": "李明",
+    "emailPlaceholder": "jordan@email.com",
+    "recipient": "收件人",
+    "recipientHint": "选择一位候选人即可自动填写其姓名和邮箱。",
+    "pickCandidate": "选择候选人…",
+    "someoneElse": "其他人（手动输入）",
+    "recipientName": "收件人姓名",
+    "recipientEmail": "收件人邮箱",
+    "validEmailRequired": "需要有效的签署人邮箱，DocuSign 才能联系到对方。",
+    "documentName": "文档名称",
+    "documentNamePlaceholder": "保险登记表",
+    "pdfToSign": "待签署的 PDF",
+    "pdfHint": "任意 PDF · 最大 10MB —— 我们会自动放置签名和日期栏。",
+    "uploading": "上传中…",
+    "pdfReady": "✓ PDF 已可发送。",
+    "noFile": "尚未选择文件。",
+    "incidentDate": "事件日期",
+    "dateExample": "2026年3月3日",
+    "policyViolated": "违反的政策",
+    "policyPlaceholder": "考勤制度第 4.2 条",
+    "incidentDescription": "事件描述",
+    "incidentPlaceholder": "发生了什么…",
+    "correctiveAction": "纠正措施",
+    "correctivePlaceholder": "期望的改进及时间表…",
+    "additionalNotes": "补充说明",
+    "optional": "可选",
+    "ndaNote": "将生成您的保密协议模板并发送签名。可在“模板”标签页中修改其措辞。",
+    "position": "职位",
+    "positionPlaceholder": "高级产品设计师",
+    "annualSalary": "年薪",
+    "salaryPlaceholder": "$140,000",
+    "startDate": "入职日期",
+    "additionalTerms": "附加条款",
+    "additionalTermsHint": "奖金、股权、福利、条件——将附加到文档中。",
+    "additionalTermsPlaceholder": "例如：15% 年度奖金目标，20 天带薪休假。",
+    "personalMessage": "个人留言",
+    "personalMessageHint": "随邮件和文档一起附上的简短留言。",
+    "personalMessagePlaceholder": "我们非常高兴您加入团队！",
+    "requestDocs": "向签署人请求文档",
+    "requestDocsHint": "可选——每一项都会成为签署人页面上的一个上传位。他们还始终有一个自由填写的“其他文档”上传位。",
+    "requestDocsPlaceholder": "例如：身份证件、已签署的 W-4、资格证书",
+    "add": "添加",
+    "removeItem": "移除 {name}",
+    "connectDocusign": "连接 DocuSign",
+    "cancel": "取消",
+    "send": "发送签名",
+    "errors": {
+      "chooseRecipient": "请选择收件人。",
+      "enterEmployeeName": "请输入员工姓名。",
+      "enterRecipientName": "请输入收件人姓名。",
+      "enterPosition": "请输入职位名称。",
+      "describeIncident": "请描述该事件。",
+      "nameDocument": "请为文档命名。",
+      "uploadPdf": "请上传要发送的 PDF。",
+      "uploadFailed": "上传失败。",
+      "uploadFailedRetry": "上传失败。请重试。",
+      "sendFailed": "无法发送文档。",
+      "network": "网络错误——请重试。",
+      "notConnected": "DocuSign 未连接。请先连接您的 DocuSign 账户。"
+    }
   }
 }
