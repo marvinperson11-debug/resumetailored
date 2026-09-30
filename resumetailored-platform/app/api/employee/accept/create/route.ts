@@ -100,6 +100,7 @@ export async function POST(req: Request) {
   logActivityForEmployer(invite.employerId, {
     eventType: "invite_accepted",
     title: `${invite.name || "An employee"} accepted their portal invite`,
+    msg: { key: "inviteAccepted", params: { employee: invite.name || "" } },
     link: "/employer/employees",
   }).catch(() => {});
 

@@ -1566,5 +1566,37 @@
     "errorCouldNotSave": "无法保存。",
     "errorGeneric": "出了点问题。",
     "errorUploadFailed": "上传失败。"
+  },
+  "notificationBell": {
+    "title": "通知",
+    "markAllRead": "全部标为已读",
+    "loading": "加载中…",
+    "caughtUp": "您已查看全部通知。",
+    "anEmployee": "一位员工",
+    "events": {
+      "certExpiringSelf": "您的“{cert}”证书将在 {days} 天后到期",
+      "certExpiringEmployer": "{employee}的“{cert}”证书将在 {days} 天后到期",
+      "trainingCompleted": "{employee}已完成培训：{doc}",
+      "trainingCompletedScore": "{employee}已完成培训：{doc}（{score}%）",
+      "timeOffRequested": "{employee}申请休假（{range}）",
+      "timesheetSubmitted": "{employee}已提交{week}的工时表",
+      "inviteAccepted": "{employee}已接受门户邀请",
+      "messageFromEmployee": "来自{employee}的新消息",
+      "messageFromEmployer": "来自您雇主的新消息",
+      "feedPostByEmployee": "{employee}在团队动态中发布了内容",
+      "feedReplyByEmployee": "{employee}在团队动态中回复了",
+      "trainingAssigned": "已分配新培训：{doc}",
+      "timesheetApproved": "您{week}的工时表已获批准",
+      "timesheetDeclined": "您{week}的工时表已被拒绝",
+      "timeOffApproved": "您的休假（{range}）已获批准",
+      "timeOffDeclined": "您的休假（{range}）已被拒绝",
+      "shiftChanged": "您在{date}的班次已更改：{from}–{to}",
+      "shiftRemoved": "您在{date}的班次已被移除",
+      "schedulePublished": "您{week}的排班已发布",
+      "announcementPosted": "新公告：{title}",
+      "feedPostNew": "团队动态有新内容：{text}",
+      "feedReplyToYou": "您的团队动态帖子有新回复"
+    },
+    "anEmployeeLower": "一位员工"
   }
 }

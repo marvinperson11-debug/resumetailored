@@ -1566,5 +1566,37 @@
     "errorCouldNotSave": "Could not save.",
     "errorGeneric": "Something went wrong.",
     "errorUploadFailed": "Upload failed."
+  },
+  "notificationBell": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "loading": "Loading…",
+    "caughtUp": "You're all caught up.",
+    "anEmployee": "An employee",
+    "events": {
+      "certExpiringSelf": "Your “{cert}” certification expires in {days, plural, one {# day} other {# days}}",
+      "certExpiringEmployer": "{employee}'s “{cert}” certification expires in {days, plural, one {# day} other {# days}}",
+      "trainingCompleted": "{employee} completed training: {doc}",
+      "trainingCompletedScore": "{employee} completed training: {doc} ({score}%)",
+      "timeOffRequested": "{employee} requested time off ({range})",
+      "timesheetSubmitted": "{employee} submitted their timesheet for {week}",
+      "inviteAccepted": "{employee} accepted their portal invite",
+      "messageFromEmployee": "New message from {employee}",
+      "messageFromEmployer": "New message from your employer",
+      "feedPostByEmployee": "{employee} posted on the team feed",
+      "feedReplyByEmployee": "{employee} replied on the team feed",
+      "trainingAssigned": "New training assigned: {doc}",
+      "timesheetApproved": "Your timesheet for {week} was approved",
+      "timesheetDeclined": "Your timesheet for {week} was declined",
+      "timeOffApproved": "Your time off ({range}) was approved",
+      "timeOffDeclined": "Your time off ({range}) was declined",
+      "shiftChanged": "Your shift on {date} changed: {from}–{to}",
+      "shiftRemoved": "Your shift on {date} was removed",
+      "schedulePublished": "Your schedule for {week} was published",
+      "announcementPosted": "New announcement: {title}",
+      "feedPostNew": "New on the team feed: {text}",
+      "feedReplyToYou": "New reply on your team feed post"
+    },
+    "anEmployeeLower": "an employee"
   }
 }

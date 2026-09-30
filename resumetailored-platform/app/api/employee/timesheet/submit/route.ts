@@ -21,6 +21,7 @@ export async function POST(req: Request) {
   logActivityForEmployer(ctx.employerId, {
     eventType: "timesheet_submitted",
     title: `${ctx.employee.name || "An employee"} submitted their timesheet for ${weekLabel(weekStart)}`,
+    msg: { key: "timesheetSubmitted", params: { employee: ctx.employee.name || "", week: weekStart } },
     link: "/employer/timesheets",
   }).catch(() => {});
 

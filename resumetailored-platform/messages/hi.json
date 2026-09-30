@@ -1566,5 +1566,37 @@
     "errorCouldNotSave": "सहेजा नहीं जा सका।",
     "errorGeneric": "कुछ गलत हो गया।",
     "errorUploadFailed": "अपलोड विफल हुआ।"
+  },
+  "notificationBell": {
+    "title": "सूचनाएँ",
+    "markAllRead": "सभी पढ़ा हुआ चिह्नित करें",
+    "loading": "लोड हो रहा है…",
+    "caughtUp": "आप सब कुछ देख चुके हैं।",
+    "anEmployee": "एक कर्मचारी",
+    "events": {
+      "certExpiringSelf": "आपका “{cert}” प्रमाणपत्र {days} दिन में समाप्त हो रहा है",
+      "certExpiringEmployer": "{employee} का “{cert}” प्रमाणपत्र {days} दिन में समाप्त हो रहा है",
+      "trainingCompleted": "{employee} ने प्रशिक्षण पूरा किया: {doc}",
+      "trainingCompletedScore": "{employee} ने प्रशिक्षण पूरा किया: {doc} ({score}%)",
+      "timeOffRequested": "{employee} ने छुट्टी का अनुरोध किया ({range})",
+      "timesheetSubmitted": "{employee} ने {week} के लिए अपनी टाइमशीट जमा की",
+      "inviteAccepted": "{employee} ने अपना पोर्टल आमंत्रण स्वीकार किया",
+      "messageFromEmployee": "{employee} का नया संदेश",
+      "messageFromEmployer": "आपके नियोक्ता का नया संदेश",
+      "feedPostByEmployee": "{employee} ने टीम फ़ीड पर पोस्ट किया",
+      "feedReplyByEmployee": "{employee} ने टीम फ़ीड पर जवाब दिया",
+      "trainingAssigned": "नया प्रशिक्षण सौंपा गया: {doc}",
+      "timesheetApproved": "{week} की आपकी टाइमशीट स्वीकृत हो गई",
+      "timesheetDeclined": "{week} की आपकी टाइमशीट अस्वीकृत कर दी गई",
+      "timeOffApproved": "आपकी छुट्टी ({range}) स्वीकृत हो गई",
+      "timeOffDeclined": "आपकी छुट्टी ({range}) अस्वीकृत कर दी गई",
+      "shiftChanged": "{date} की आपकी शिफ़्ट बदल गई: {from}–{to}",
+      "shiftRemoved": "{date} की आपकी शिफ़्ट हटा दी गई",
+      "schedulePublished": "{week} के लिए आपका शेड्यूल प्रकाशित हो गया",
+      "announcementPosted": "नई घोषणा: {title}",
+      "feedPostNew": "टीम फ़ीड पर नया: {text}",
+      "feedReplyToYou": "आपकी टीम फ़ीड पोस्ट पर नया जवाब"
+    },
+    "anEmployeeLower": "एक कर्मचारी"
   }
 }

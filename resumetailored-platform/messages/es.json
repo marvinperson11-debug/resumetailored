@@ -1566,5 +1566,37 @@
     "errorCouldNotSave": "No se pudo guardar.",
     "errorGeneric": "Algo salió mal.",
     "errorUploadFailed": "Falló la carga."
+  },
+  "notificationBell": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar todo como leído",
+    "loading": "Cargando…",
+    "caughtUp": "Estás al día.",
+    "anEmployee": "Un empleado",
+    "events": {
+      "certExpiringSelf": "Tu certificación «{cert}» caduca en {days, plural, one {# día} other {# días}}",
+      "certExpiringEmployer": "La certificación «{cert}» de {employee} caduca en {days, plural, one {# día} other {# días}}",
+      "trainingCompleted": "{employee} completó la formación: {doc}",
+      "trainingCompletedScore": "{employee} completó la formación: {doc} ({score} %)",
+      "timeOffRequested": "{employee} solicitó tiempo libre ({range})",
+      "timesheetSubmitted": "{employee} envió su hoja de horas de {week}",
+      "inviteAccepted": "{employee} aceptó su invitación al portal",
+      "messageFromEmployee": "Nuevo mensaje de {employee}",
+      "messageFromEmployer": "Nuevo mensaje de tu empleador",
+      "feedPostByEmployee": "{employee} publicó en el muro del equipo",
+      "feedReplyByEmployee": "{employee} respondió en el muro del equipo",
+      "trainingAssigned": "Nueva formación asignada: {doc}",
+      "timesheetApproved": "Tu hoja de horas de {week} fue aprobada",
+      "timesheetDeclined": "Tu hoja de horas de {week} fue rechazada",
+      "timeOffApproved": "Tu tiempo libre ({range}) fue aprobado",
+      "timeOffDeclined": "Tu tiempo libre ({range}) fue rechazado",
+      "shiftChanged": "Tu turno del {date} cambió: {from}–{to}",
+      "shiftRemoved": "Tu turno del {date} fue eliminado",
+      "schedulePublished": "Tu horario de {week} fue publicado",
+      "announcementPosted": "Nuevo anuncio: {title}",
+      "feedPostNew": "Novedad en el muro del equipo: {text}",
+      "feedReplyToYou": "Nueva respuesta en tu publicación del muro del equipo"
+    },
+    "anEmployeeLower": "un empleado"
   }
 }
