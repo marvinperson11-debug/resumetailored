@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { employerContext } from "@/lib/employer-auth";
+import { checkSeatAllowance } from "@/lib/employer-plan";
 import { listTeam, inviteMember, getEmployerProfile } from "@/lib/employer-store";
 import { isTeamRole } from "@/lib/employer-ai";
 import { appUrl } from "@/lib/subdomain";
@@ -28,6 +29,10 @@ export async function POST(req: Request) {
   const email = (b.email || "").trim().toLowerCase();
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return NextResponse.json({ error: "Enter a valid email." }, { status: 400 });
   const role = isTeamRole(b.role) && b.role !== "owner" ? b.role : "viewer";
+
+  const seatsUsed = (await listTeam(ctx.employerId)).length;
+  const allowance = checkSeatAllowance(ctx.access, seatsUsed);
+  if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "seat_limit" }, { status: 402 });
 
   const token = randomUUID();
   const member = await inviteMember(ctx.employerId, email, role, token);

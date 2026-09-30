@@ -28,7 +28,7 @@ import {
 import { certStatus, hasExpiringCert, CERT_STATUS_TONE, type EmployeeCert } from "@/lib/cert-hub";
 import { FEED_KIND_LABELS, type FeedPost, type FeedComment, type FeedPostKind } from "@/lib/feed-hub";
 import { SKILL_LEVEL_COLORS, MAX_SKILL_LEVEL, type Skill, type EmployeeSkill } from "@/lib/skills-hub";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, Drawer, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 
 const STATUS_TONE: Record<EmployeeStatus, "teal" | "gold" | "neutral"> = { active: "teal", on_leave: "gold", offboarded: "neutral" };
 const INVITE_TONE: Record<InviteStatus, "teal" | "gold" | "neutral"> = { none: "neutral", invited: "gold", accepted: "teal" };
@@ -62,15 +62,21 @@ interface QuizQuestionDraft {
 
 export function EmployeesClient({
   canManage,
+  locked = false,
   initialTab,
   initialDocId,
 }: {
   canManage: boolean;
+  /** True when the Employees Hub isn't available at the current tier (below
+   *  Portal) — the whole hub stays VISIBLE and usable for setup/drafting; only
+   *  adding a real employee (server-enforced) is blocked until upgrade. */
+  locked?: boolean;
   initialTab?: Tab;
   initialDocId?: number;
 }) {
   const t = useTranslations("employerEmployees");
   const [tab, setTab] = useState<Tab>(initialTab ?? "directory");
+  const { touched, dismiss, handlers } = useFirstTouch(locked);
   // "Use in training" from the Library switches to the Training tab and opens
   // the composer prefilled; the nonce lets the same item be re-picked.
   const [preset, setPreset] = useState<TrainingLibraryItem | null>(null);
@@ -101,7 +107,9 @@ export function EmployeesClient({
   }
 
   return (
-    <div>
+    <div {...handlers}>
+      {locked && <LockedModuleBanner feature="Employees Hub" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} feature="Employees Hub" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}

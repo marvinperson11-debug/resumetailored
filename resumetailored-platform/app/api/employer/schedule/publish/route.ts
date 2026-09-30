@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { canUseEmployerPortal } from "@/lib/plan";
+import { canUseTimeSuite } from "@/lib/employer-plan";
 import { publishWeek } from "@/lib/time-store";
 import { weekStartISO, weekLabel } from "@/lib/time-hub";
 import { logActivityForEmployees } from "@/lib/notifications-store";
@@ -11,6 +12,12 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx || !canUseEmployerPortal(ctx.access)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!canUseTimeSuite(ctx.access)) {
+    return NextResponse.json(
+      { error: "The Time suite is part of the Portal plan. Upgrade to publish schedules to your employees — everything you've set up will be waiting." },
+      { status: 403 }
+    );
+  }
   const b = (await req.json().catch(() => ({}))) as { weekStart?: string };
   const weekStart = weekStartISO(b.weekStart || undefined);
   const result = await publishWeek(ctx.employerId, weekStart);

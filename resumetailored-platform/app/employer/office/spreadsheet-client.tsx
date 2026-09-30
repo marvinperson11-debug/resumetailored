@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Sparkles, Upload, Download, FileText, CheckCircle2, Plus, Trash2 } from "lucide-react";
-import { Panel, Field, Input, Area, Btn, TierUpgradeNote } from "../components/ui";
+import { Panel, Field, Input, Area, Btn, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { SPREADSHEET_PRESETS, type SpreadsheetGrid } from "@/lib/office-hub";
 
 type Mode = "describe" | "upload";
@@ -37,7 +37,8 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
   const fileRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState("");
 
-  if (!canSpreadsheet) return <TierUpgradeNote feature={t("spreadsheetCreatorFeature")} />;
+  const locked = !canSpreadsheet;
+  const { touched, dismiss, handlers } = useFirstTouch(locked);
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -147,7 +148,10 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
+    <div {...handlers}>
+      {locked && <LockedModuleBanner feature={t("spreadsheetCreatorFeature")} tier="Scale" />}
+      <FirstTouchSnackbar show={touched} feature={t("spreadsheetCreatorFeature")} tier="Scale" onDismiss={dismiss} />
+      <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <div className="space-y-5">
         <Panel>
           <h3 className="mb-3 text-sm font-semibold text-cream">{t("buildASpreadsheet")}</h3>
@@ -296,6 +300,7 @@ export function SpreadsheetTab({ canSpreadsheet, canManage }: { canSpreadsheet: 
             </div>
           )}
         </Panel>
+      </div>
       </div>
     </div>
   );

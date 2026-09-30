@@ -18,7 +18,7 @@ import {
   type AvailabilitySlot,
   type TimeOffRequest,
 } from "@/lib/time-hub";
-import { PageHeader, Panel, Btn, EmptyState, Modal, Field, Input } from "../components/ui";
+import { PageHeader, Panel, Btn, EmptyState, Modal, Field, Input, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { cn } from "@/lib/utils";
 
 interface Emp {
@@ -39,12 +39,13 @@ interface Data {
 
 /** Employer weekly shift grid: post shifts per employee/day, then publish. Shows
  *  each employee's submitted availability and approved time off as overlays. */
-export function ScheduleGridClient() {
+export function ScheduleGridClient({ locked = false }: { locked?: boolean }) {
   const [week, setWeek] = useState(() => weekStartISO());
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [toast, setToast] = useState("");
+  const { touched, dismiss, handlers } = useFirstTouch(locked);
   // A single editor target: adding a new shift on (employeeId, date), or editing
   // an existing one. Published weeks stay fully editable through this.
   const [editor, setEditor] = useState<{ employeeId: number; date: string; shift?: Shift } | null>(null);
@@ -75,10 +76,14 @@ export function ScheduleGridClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ weekStart: week }),
       });
-      const d = (await r.json().catch(() => ({}))) as { published?: number };
-      setToast(d.published ? `Published ${d.published} shift${d.published === 1 ? "" : "s"}.` : "Schedule is up to date.");
-      setTimeout(() => setToast(""), 3000);
-      load(week);
+      const d = (await r.json().catch(() => ({}))) as { published?: number; error?: string };
+      if (!r.ok) {
+        setToast(d.error || "Could not publish the schedule.");
+      } else {
+        setToast(d.published ? `Published ${d.published} shift${d.published === 1 ? "" : "s"}.` : "Schedule is up to date.");
+        load(week);
+      }
+      setTimeout(() => setToast(""), 4000);
     } finally {
       setPublishing(false);
     }
@@ -94,7 +99,9 @@ export function ScheduleGridClient() {
   const publishLabel = data?.hasDrafts ? (hasPublished ? "Publish updates" : "Publish week") : "Published";
 
   return (
-    <div>
+    <div {...handlers}>
+      {locked && <LockedModuleBanner feature="Shift Scheduling" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} feature="Shift Scheduling" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title="Schedule"
         subtitle="Post each employee's shifts for the week, then publish so they appear in the employee's portal. Published weeks stay editable — new shifts go live when you publish updates; edits to a live shift apply right away."

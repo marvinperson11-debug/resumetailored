@@ -17,7 +17,7 @@ import {
   type TimesheetReview,
   type ReviewStatus,
 } from "@/lib/time-hub";
-import { PageHeader, Panel, Btn, Badge, EmptyState, Area } from "../components/ui";
+import { PageHeader, Panel, Btn, Badge, EmptyState, Area, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 
 interface Row {
   employee: { id: number; name: string; email: string; role: string; inviteStatus: string };
@@ -28,11 +28,12 @@ interface Row {
 
 /** Employer weekly timesheets: per-employee hours + approve/decline + CSV export.
  *  Raw hours only. */
-export function TimesheetsClient() {
+export function TimesheetsClient({ locked = false }: { locked?: boolean }) {
   const [week, setWeek] = useState(() => weekStartISO());
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<number | null>(null);
+  const { touched, dismiss, handlers } = useFirstTouch(locked);
 
   const load = useCallback(async (w: string) => {
     setLoading(true);
@@ -53,7 +54,9 @@ export function TimesheetsClient() {
   const anyHours = rows.some((r) => r.entries.length > 0);
 
   return (
-    <div>
+    <div {...handlers}>
+      {locked && <LockedModuleBanner feature="Timesheets" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} feature="Timesheets" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title="Timesheets"
         subtitle="Weekly hours from the time clock. Approve or decline each employee's week. Raw hours only — no overtime or wage math."
@@ -115,16 +118,23 @@ export function TimesheetsClient() {
 function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; week: string; open: boolean; onToggle: () => void; onReviewed: () => void }) {
   const [note, setNote] = useState(row.review?.note || "");
   const [saving, setSaving] = useState<ReviewStatus | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const status = row.review?.status || "pending";
 
   async function review(next: ReviewStatus) {
     setSaving(next);
+    setError(null);
     try {
-      await fetch("/api/employer/timesheets/review", {
+      const r = await fetch("/api/employer/timesheets/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ employeeId: row.employee.id, weekStart: week, status: next, note: note.trim() || undefined }),
       });
+      const d = (await r.json().catch(() => ({}))) as { error?: string };
+      if (!r.ok) {
+        setError(d.error || "Could not save the review.");
+        return;
+      }
       onReviewed();
     } finally {
       setSaving(null);
@@ -193,6 +203,7 @@ function TimesheetRow({ row, week, open, onToggle, onReviewed }: { row: Row; wee
           )}
 
           <Area value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="Note to the employee (optional)" className="mb-3" />
+          {error && <p className="mb-3 text-sm text-gold">{error}</p>}
           <div className="flex flex-wrap gap-2">
             <Btn variant="primary" onClick={() => review("approved")} loading={saving === "approved"} disabled={!!saving}>
               <Check className="h-4 w-4" /> Approve

@@ -1,22 +1,33 @@
 /**
- * Employer plan / tier limits.
+ * Employer plan / tier limits — the full pricing matrix.
  *
  * The employer plan is one role (`plan: "employer"`) with a free-form `tier`
  * string on Clerk `publicMetadata` (see lib/plan.ts). This module maps that tier
- * to feature quotas. Today it governs DocuSign offer-letter sends, which are
- * capped per calendar month, across ALL employers:
+ * to every feature quota and module lock in the matrix:
  *
- *   Free       →  3 sends / month
- *   Portal     → 10 sends / month
- *   Scale      → 50 sends / month
- *   Corporate  → unlimited
+ *   Free       → 1 active job · 10 candidates in pipeline · 1 team seat
+ *                E-Sig 3/mo · Career site BASIC · Video/Employees hub/Time
+ *                suite/Office all LOCKED (visible with an upgrade banner, not
+ *                hidden — see the LockedModule* components in components/ui.tsx)
+ *   Portal $49 → unlimited jobs + candidates · 3 seats · E-Sig 10/mo ·
+ *                Video 10/mo + recording · Career site FULL builder ·
+ *                Employees hub FULL · Time suite FULL · Office still LOCKED
+ *   Scale $99  → 10 seats · E-Sig 50/mo · Video 50/mo + AI summaries ·
+ *                Office FULL (Calculators are free at every tier)
+ *   Corporate  → unlimited sends/interviews/seats · white-label (custom
+ *                careers domain + no "Powered by" badge) · SSO-ready
  *
  * An employer with no tier set (or an unrecognized tier) falls back to Free, the
- * safe floor. The admin bypasses the cap entirely (treated as unlimited).
+ * safe floor. The admin bypasses every cap and lock (treated as Corporate).
  */
 import type { Access } from "./plan";
 
 export type EmployerTier = "free" | "portal" | "scale" | "corporate";
+const TIER_RANK: Record<EmployerTier, number> = { free: 0, portal: 1, scale: 2, corporate: 3 };
+function atLeast(access: Access, tier: EmployerTier): boolean {
+  if (access.isAdmin) return true;
+  return TIER_RANK[normalizeTier(access.tier)] >= TIER_RANK[tier];
+}
 
 /** Monthly DocuSign send limits by tier. `Infinity` means unlimited. */
 export const DOCUSIGN_MONTHLY_SENDS: Record<EmployerTier, number> = {
@@ -84,24 +95,46 @@ export function videoMonthlyLimit(access: Access): number {
 }
 
 /**
- * Whether an employer's tier includes AI interview summaries — resolved by
- * userId (Clerk publicMetadata.tier), for server contexts without a session
- * (the Daily webhook). Best-effort: any failure resolves to false. The admin
- * account always qualifies.
+ * Resolve an employer's tier by their Clerk userId (publicMetadata.tier) —
+ * for server contexts with no session to call getAccess() from: a webhook,
+ * or a PUBLIC page (the careers site, resolving its OWNER's tier to decide
+ * what's live). Best-effort: any failure resolves to "free", the safe floor.
+ * The admin account always resolves to "corporate".
  */
-export async function canUseAiSummaryForTier(userId: string): Promise<boolean> {
-  if (!userId) return false;
+export async function resolveTierForUserId(userId: string): Promise<EmployerTier> {
+  if (!userId) return "free";
   try {
     const { isAdminId } = await import("./admin");
-    if (isAdminId(userId)) return true;
+    if (isAdminId(userId)) return "corporate";
     const { clerkClient } = await import("@clerk/nextjs/server");
     const client = await clerkClient();
     const user = await client.users.getUser(userId);
-    const tier = normalizeTier((user?.publicMetadata as { tier?: string })?.tier);
-    return tier === "scale" || tier === "corporate";
+    return normalizeTier((user?.publicMetadata as { tier?: string })?.tier);
   } catch {
-    return false;
+    return "free";
   }
+}
+
+/** Whether an employer's tier includes AI interview summaries — resolved by
+ *  userId, for server contexts without a session (the Daily webhook). */
+export async function canUseAiSummaryForTier(userId: string): Promise<boolean> {
+  const tier = await resolveTierForUserId(userId);
+  return tier === "scale" || tier === "corporate";
+}
+
+/** Whether an employer's career site should render the FULL builder (vs the
+ *  Free BASIC page) — resolved by userId, for the public /careers/:slug page,
+ *  which has no employer session of its own. */
+export async function canUseCareerSiteBuilderForTier(userId: string): Promise<boolean> {
+  const tier = await resolveTierForUserId(userId);
+  return tier !== "free";
+}
+
+/** Whether an employer's career site should hide the "Powered by
+ *  ResumeTailored" badge — resolved by userId, for the public page. */
+export async function canUseWhiteLabelForTier(userId: string): Promise<boolean> {
+  const tier = await resolveTierForUserId(userId);
+  return tier === "corporate";
 }
 
 export interface VideoAllowance {
@@ -166,4 +199,145 @@ export function checkSendAllowance(access: Access, used: number): SendAllowance 
         tier
       )} plan this month. Upgrade to ${nextTier} to send more, or wait until next month when your allowance resets.`;
   return { allowed, limit, used, remaining, tier, message };
+}
+
+// ── Job postings ───────────────────────────────────────────────────────────────
+/** Active job posting limits by tier. `Infinity` = unlimited. Free counts only
+ *  postings with status "active" — a draft doesn't consume the slot, so a free
+ *  employer can draft freely and publish one at a time. */
+export const JOB_POSTING_LIMITS: Record<EmployerTier, number> = {
+  free: 1,
+  portal: Infinity,
+  scale: Infinity,
+  corporate: Infinity,
+};
+
+export function jobPostingLimit(access: Access): number {
+  if (access.isAdmin) return Infinity;
+  return JOB_POSTING_LIMITS[normalizeTier(access.tier)];
+}
+
+export interface JobAllowance {
+  allowed: boolean;
+  limit: number;
+  used: number;
+  remaining: number;
+  tier: EmployerTier;
+  message: string;
+}
+
+/** Decide whether one more ACTIVE job posting is allowed, given the count of
+ *  currently-active postings this employer already has. */
+export function checkJobAllowance(access: Access, activeUsed: number): JobAllowance {
+  const tier = access.isAdmin ? "corporate" : normalizeTier(access.tier);
+  const limit = jobPostingLimit(access);
+  const remaining = limit === Infinity ? Infinity : Math.max(0, limit - activeUsed);
+  const allowed = limit === Infinity ? true : remaining > 0;
+  const message = allowed
+    ? ""
+    : `You've used your ${limit} free active job posting. Upgrade to Employer Portal for unlimited job postings, or close an existing one first.`;
+  return { allowed, limit, used: activeUsed, remaining, tier, message };
+}
+
+// ── Candidate pipeline ────────────────────────────────────────────────────────
+/** Total candidates-in-pipeline limits by tier (across all jobs, any status
+ *  except explicitly rejected — a candidate the employer has passed on
+ *  shouldn't keep occupying a slot). `Infinity` = unlimited. */
+export const CANDIDATE_PIPELINE_LIMITS: Record<EmployerTier, number> = {
+  free: 10,
+  portal: Infinity,
+  scale: Infinity,
+  corporate: Infinity,
+};
+
+export function candidatePipelineLimit(access: Access): number {
+  if (access.isAdmin) return Infinity;
+  return CANDIDATE_PIPELINE_LIMITS[normalizeTier(access.tier)];
+}
+
+export interface CandidateAllowance {
+  allowed: boolean;
+  limit: number;
+  used: number;
+  remaining: number;
+  tier: EmployerTier;
+  message: string;
+}
+
+/** Decide whether one more candidate can be added to the pipeline, given the
+ *  count already there. This gates the employer's own manual "add candidate"
+ *  action — a real applicant arriving through the public job-application form
+ *  is never rejected for the employer's plan; see createPublicApplicant. */
+export function checkCandidateAllowance(access: Access, used: number): CandidateAllowance {
+  const tier = access.isAdmin ? "corporate" : normalizeTier(access.tier);
+  const limit = candidatePipelineLimit(access);
+  const remaining = limit === Infinity ? Infinity : Math.max(0, limit - used);
+  const allowed = limit === Infinity ? true : remaining > 0;
+  const message = allowed
+    ? ""
+    : `You've used all ${limit} candidate slots included in the Free plan. Upgrade to Employer Portal for an unlimited pipeline.`;
+  return { allowed, limit, used, remaining, tier, message };
+}
+
+// ── Team seats ─────────────────────────────────────────────────────────────────
+/** Team seat limits by tier, INCLUDING the owner's own seat. `Infinity` =
+ *  unlimited. */
+export const TEAM_SEAT_LIMITS: Record<EmployerTier, number> = {
+  free: 1,
+  portal: 3,
+  scale: 10,
+  corporate: Infinity,
+};
+
+export function teamSeatLimit(access: Access): number {
+  if (access.isAdmin) return Infinity;
+  return TEAM_SEAT_LIMITS[normalizeTier(access.tier)];
+}
+
+export interface SeatAllowance {
+  allowed: boolean;
+  limit: number;
+  used: number;
+  remaining: number;
+  tier: EmployerTier;
+  message: string;
+}
+
+/** Decide whether one more team seat (an active member or a pending invite —
+ *  both hold the seat) can be filled, given the count already used. */
+export function checkSeatAllowance(access: Access, used: number): SeatAllowance {
+  const tier = access.isAdmin ? "corporate" : normalizeTier(access.tier);
+  const limit = teamSeatLimit(access);
+  const remaining = limit === Infinity ? Infinity : Math.max(0, limit - used);
+  const allowed = limit === Infinity ? true : remaining > 0;
+  const nextTier = tier === "free" ? "Portal (3 seats)" : tier === "portal" ? "Scale (10 seats)" : "Corporate (unlimited seats)";
+  const message = allowed
+    ? ""
+    : `You've used all ${limit} team seat${limit === 1 ? "" : "s"} on the ${tierLabel(tier)} plan. Upgrade to ${nextTier} to invite more teammates.`;
+  return { allowed, limit, used, remaining, tier, message };
+}
+
+// ── Locked modules (Free-tier: Video is quota-gated above; these four are
+//    fully module-locked below a tier, but stay VISIBLE — see
+//    LockedModuleBanner/useFirstTouchGate in components/ui.tsx) ────────────────
+/** Employees hub (training, quizzes, onboarding, certs, feed, skills):
+ *  Portal and above. */
+export function canUseEmployeesHub(access: Access): boolean {
+  return atLeast(access, "portal");
+}
+/** Time suite (schedule, clock in/out, timesheets, time off): Portal and above. */
+export function canUseTimeSuite(access: Access): boolean {
+  return atLeast(access, "portal");
+}
+/** Career site FULL builder (custom layout/branding beyond the basic subdomain
+ *  page every tier gets): Portal and above. */
+export function canUseCareerSiteBuilder(access: Access): boolean {
+  return atLeast(access, "portal");
+}
+
+// ── White-label (Corporate) ──────────────────────────────────────────────────
+/** Custom careers domain (careers.yourco.com via CNAME) + removal of the
+ *  "Powered by ResumeTailored" footer badge: Corporate only. */
+export function canUseWhiteLabel(access: Access): boolean {
+  return atLeast(access, "corporate");
 }

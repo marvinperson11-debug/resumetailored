@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Clipboard, Upload, Database, Download, FileText, Loader2, CheckCircle2 } from "lucide-react";
-import { Panel, Field, Input, Picker, Btn, TierUpgradeNote } from "../components/ui";
+import { Panel, Field, Input, Picker, Btn, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import {
   buildChartSvg,
   parseCsvPoints,
@@ -81,7 +81,8 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
     [type, title, points, xLabel, yLabel]
   );
 
-  if (!canCharts) return <TierUpgradeNote feature={t("chartsFeature")} />;
+  const locked = !canCharts;
+  const { touched, dismiss, handlers } = useFirstTouch(locked);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -128,7 +129,10 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
+    <div {...handlers}>
+      {locked && <LockedModuleBanner feature={t("chartsFeature")} tier="Scale" />}
+      <FirstTouchSnackbar show={touched} feature={t("chartsFeature")} tier="Scale" onDismiss={dismiss} />
+      <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <div className="space-y-5">
         <Panel>
           <h3 className="mb-3 text-sm font-semibold text-cream">{t("dataSource")}</h3>
@@ -241,6 +245,7 @@ export function ChartsTab({ canCharts, canManage }: { canCharts: boolean; canMan
             )}
           </div>
         </Panel>
+      </div>
       </div>
     </div>
   );
