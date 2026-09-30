@@ -1,3 +1,5 @@
+import { getAccess } from "@/lib/plan";
+import { canUseTimeSuite } from "@/lib/employer-plan";
 import { ScheduleGridClient } from "./schedule-grid-client";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +9,7 @@ export const dynamic = "force-dynamic";
  * /employer/scheduler (video-interview scheduling); this one posts and
  * publishes work shifts.
  */
-export default function EmployerSchedulePage() {
-  return <ScheduleGridClient />;
+export default async function EmployerSchedulePage() {
+  const access = await getAccess();
+  return <ScheduleGridClient locked={!canUseTimeSuite(access)} />;
 }

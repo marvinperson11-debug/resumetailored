@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { UserPlus, Copy, Check, RefreshCw, Trash2 } from "lucide-react";
 import { TEAM_ROLES, type TeamMember, type TeamRole } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Picker, Badge, EmptyState, Modal } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
 
 const ROLE_TONE: Record<TeamRole, "gold" | "violet" | "teal" | "neutral"> = {
   owner: "gold",
@@ -13,7 +13,7 @@ const ROLE_TONE: Record<TeamRole, "gold" | "violet" | "teal" | "neutral"> = {
   viewer: "neutral",
 };
 
-export function TeamClient({ canManage, openInvite }: { canManage: boolean; openInvite: boolean }) {
+export function TeamClient({ canManage, openInvite, seatLimit = null }: { canManage: boolean; openInvite: boolean; seatLimit?: number | null }) {
   const t = useTranslations("employerTeam");
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +88,10 @@ export function TeamClient({ canManage, openInvite }: { canManage: boolean; open
         }
       />
 
+      {seatLimit !== null && (
+        <QuotaBar label="team seats" used={team.length} limit={seatLimit} nextTierLabel="Employer Portal" />
+      )}
+
       {loading ? (
         <Panel className="text-sm text-white/50">{t("loadingTeam")}</Panel>
       ) : team.length === 0 ? (
@@ -151,6 +155,8 @@ export function TeamClient({ canManage, openInvite }: { canManage: boolean; open
       )}
 
       {inviting && <InviteModal onClose={() => setInviting(false)} onSaved={async () => { await load(); }} />}
+
+      <UpgradeCard />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { getAccess, isEmployer } from "@/lib/plan";
+import { canUseEmployeesHub } from "@/lib/employer-plan";
 import { EmployeesClient, type Tab } from "./employees-client";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: { 
   return (
     <EmployeesClient
       canManage={isEmployer(access)}
+      locked={!canUseEmployeesHub(access)}
       initialTab={initialTab}
       initialDocId={Number.isFinite(docId) && docId > 0 ? docId : undefined}
     />

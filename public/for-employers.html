@@ -28,7 +28,9 @@
   .cta.lg{font-size:19px;padding:18px 34px;}
   .note{font-size:14px;color:var(--luxury-muted);font-weight:600;margin-top:12px;}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:30px 0;}
-  .feat{background:rgba(16,31,51,.82);border:1px solid var(--luxury-line);border-radius:4px;padding:22px;}
+  .feat{display:block;background:rgba(16,31,51,.82);border:1px solid var(--luxury-line);border-radius:4px;padding:22px;transition:border-color .15s,background .15s;}
+  a.feat:hover{border-color:var(--luxury-gold);background:rgba(16,31,51,1);}
+  .feat .go{display:inline-block;margin-top:10px;font-size:12.5px;font-weight:800;color:var(--luxury-gold-soft);}
   .feat .ic{width:44px;height:44px;border:1px solid var(--luxury-line);background:var(--luxury-emerald);display:grid;place-items:center;font-size:22px;margin-bottom:12px;}
   .feat h3{font-size:18px;font-weight:800;letter-spacing:-.01em;margin-bottom:5px;}
   .feat p{font-size:14.5px;color:var(--luxury-muted);}
@@ -80,15 +82,18 @@
 <body>
   <nav class="nav">
     <a class="brand" href="/"><span class="mk">R</span><span><b>Resume</b>Tailored <span class="ai">Employers</span></span></a>
-    <a class="home" href="/">← Back to job seekers</a>
+    <span style="display:flex;align-items:center;gap:18px;">
+      <a class="home" href="https://app.resumetailored.com/sign-in">Log In</a>
+      <a class="home" href="/">← Back to job seekers</a>
+    </span>
   </nav>
 
   <header class="hero">
     <div class="eyebrow">For Employers &amp; Recruiters</div>
     <h1>Hire faster with <em>AI-ranked</em> candidates.</h1>
     <p class="sub">Post a job, let AI score every applicant against it, and move people through a drag-and-drop pipeline — all in one place.</p>
-    <a class="cta" href="https://app.resumetailored.com">Choose Employer Portal · $49/mo →</a>
-    <div class="note">Create your free account to get started. Employer plans are available after sign-up.</div>
+    <a class="cta" href="https://app.resumetailored.com/employer-checkout?plan=free">Start free — no credit card →</a>
+    <div class="note">Create your free account to get started. Employer plans are available any time from inside the Portal.</div>
   </header>
 
   <section class="wrap">
@@ -145,12 +150,12 @@
 
   <section class="wrap">
     <div class="grid">
-      <div class="feat"><div class="ic">📋</div><h3>Post jobs in minutes</h3><p>A clean posting flow with screener questions. Your roles also surface in the job-seeker feed.</p></div>
-      <div class="feat"><div class="ic">🤖</div><h3>AI candidate matching</h3><p>Every applicant's resume is scored against the role — matched and missing keywords, ranked best-first.</p></div>
-      <div class="feat"><div class="ic">🗂️</div><h3>Drag-and-drop pipeline</h3><p>Move candidates New → Reviewed → Interview → Hired, with in-app messaging and one-click reject emails.</p></div>
-      <div class="feat"><div class="ic">📊</div><h3>Analytics &amp; CSV</h3><p>Hiring funnel, time-to-hire, and a full CSV export of your applicants whenever you need it.</p></div>
-      <div class="feat"><div class="ic">🌐</div><h3>Public company page</h3><p>A branded, shareable careers page listing your open roles at <code>/company/your-name</code>.</p></div>
-      <div class="feat"><div class="ic">👥</div><h3>Team seats</h3><p>Bring your recruiters onto one plan and one invoice as you scale.</p></div>
+      <a class="feat" href="/features/job-posting"><div class="ic">📋</div><h3>Post jobs in minutes</h3><p>A clean posting flow with screener questions. Your roles also surface in the job-seeker feed.</p><span class="go">Learn more →</span></a>
+      <a class="feat" href="/features/ai-candidate-matching"><div class="ic">🤖</div><h3>AI candidate matching</h3><p>Every applicant's resume is scored against the role — matched and missing keywords, ranked best-first.</p><span class="go">Learn more →</span></a>
+      <a class="feat" href="/features/hiring-pipeline"><div class="ic">🗂️</div><h3>Drag-and-drop pipeline</h3><p>Move candidates New → Reviewed → Interview → Hired, with in-app messaging and one-click reject emails.</p><span class="go">Learn more →</span></a>
+      <a class="feat" href="/features/hiring-analytics"><div class="ic">📊</div><h3>Analytics &amp; CSV</h3><p>Hiring funnel, time-to-hire, and a full CSV export of your applicants whenever you need it.</p><span class="go">Learn more →</span></a>
+      <a class="feat" href="/features/company-careers-page"><div class="ic">🌐</div><h3>Public company page</h3><p>A branded, shareable careers page listing your open roles at <code>/company/your-name</code>.</p><span class="go">Learn more →</span></a>
+      <a class="feat" href="/features/team-hiring-seats"><div class="ic">👥</div><h3>Team seats</h3><p>Bring your recruiters onto one plan and one invoice as you scale.</p><span class="go">Learn more →</span></a>
     </div>
   </section>
 
@@ -162,14 +167,14 @@
         <div class="tag">THE PORTAL</div>
         <div class="pn">Employer Portal</div><div class="pp">$49<span>/mo</span></div>
         <ul class="pf"><li>AI candidate screening for 3 candidates</li><li>Custom landing pages</li><li>Candidate pipeline</li></ul>
-        <a class="plan-cta" href="https://app.resumetailored.com">Choose Employer Portal</a>
+        <a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=portal">Choose Employer Portal</a>
       </div>
       <div class="plan">
         <div class="pn">Scale</div><div class="pp">$99<span>/mo</span></div>
         <ul class="pf"><li>Base collaboration layer</li><li>Choose and retain any 5 modules</li><li>API access · unlimited seats</li></ul>
-        <a class="plan-cta" href="https://app.resumetailored.com">Choose Scale</a>
+        <a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=scale">Choose Scale</a>
       </div>
-      <div class="plan"><div class="pn">Corporate</div><div class="pp">$299<span>/mo</span></div><ul class="pf"><li>All 21 operational modules</li><li>Recruitment Decoder</li><li>White-labeling · employee portal · SSO-ready</li></ul><a class="plan-cta" href="https://app.resumetailored.com">Choose Corporate</a></div>
+      <div class="plan"><div class="pn">Corporate</div><div class="pp">$299<span>/mo</span></div><ul class="pf"><li>All 21 operational modules</li><li>Recruitment Decoder</li><li>White-labeling · employee portal · SSO-ready</li></ul><a class="plan-cta" href="https://app.resumetailored.com/employer-checkout?plan=corporate">Choose Corporate</a></div>
     </div>
   </section>
 
@@ -177,7 +182,7 @@
     <div class="closer">
       <h2>Ready to start hiring?</h2>
       <p>Choose the room your team needs today. The underlying Portal is ready when you are.</p>
-      <a class="cta lg" href="/employer?intent=free">Continue with the free employer quota →</a>
+      <a class="cta lg" href="https://app.resumetailored.com/employer-checkout?plan=free">Continue with the free employer quota →</a>
     </div>
   </section>
 

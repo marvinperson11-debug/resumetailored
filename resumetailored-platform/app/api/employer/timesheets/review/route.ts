@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { employerContext } from "@/lib/employer-auth";
 import { canUseEmployerPortal } from "@/lib/plan";
+import { canUseTimeSuite } from "@/lib/employer-plan";
 import { getEmployee } from "@/lib/employees-store";
 import { setReview } from "@/lib/time-store";
 import { isReviewStatus, weekStartISO, weekLabel } from "@/lib/time-hub";
@@ -13,6 +14,12 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   const ctx = await employerContext();
   if (!ctx || !canUseEmployerPortal(ctx.access)) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!canUseTimeSuite(ctx.access)) {
+    return NextResponse.json(
+      { error: "The Time suite is part of the Portal plan. Upgrade to review timesheets — everything you've set up will be waiting." },
+      { status: 403 }
+    );
+  }
 
   const b = (await req.json().catch(() => ({}))) as { employeeId?: number; weekStart?: string; status?: string; note?: string };
   const employeeId = Number(b.employeeId);

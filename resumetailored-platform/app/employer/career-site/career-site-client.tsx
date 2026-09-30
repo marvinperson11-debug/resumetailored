@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Globe, Plus, X, Check, Copy, ExternalLink, Upload, ImageIcon } from "lucide-react";
-import { Panel, PageHeader, Btn, Field, Input, Area } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { CareerSiteView } from "@/app/careers/[slug]/career-site-view";
 import { careerSubdomainUrl, normalizeSlug, isValidSlug, ROOT_DOMAIN } from "@/lib/subdomain";
 import type { CareerSite, Testimonial, PublicCareerJob, JobPosting } from "@/lib/employer-ai";
@@ -111,8 +111,9 @@ function ImageField({
   );
 }
 
-export function CareerSiteClient() {
+export function CareerSiteClient({ locked = false, whiteLabel = false }: { locked?: boolean; whiteLabel?: boolean }) {
   const t = useTranslations("employerCareerSite");
+  const { touched, dismiss, handlers } = useFirstTouch(locked);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -337,7 +338,9 @@ export function CareerSiteClient() {
   const setToggle = (k: Toggle) => setToggles((prev) => ({ ...prev, [k]: !prev[k] }));
 
   return (
-    <div>
+    <div {...handlers}>
+      {locked && <LockedModuleBanner feature="Career Site Builder" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} feature="Career Site Builder" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
@@ -375,6 +378,32 @@ export function CareerSiteClient() {
         {pathUrl && (
           <p className="mt-2 pl-7 text-xs text-white/40">
             {t("alsoReachableAt")} <span className="text-white/55">{pathUrl}</span>
+          </p>
+        )}
+      </Panel>
+
+      {/* White-label: custom domain. Corporate only — the CNAME setup itself is
+          manual for now (a settings note, not automated DNS provisioning); the
+          "Powered by ResumeTailored" footer badge removal IS automatic and
+          already live on the public page for Corporate. */}
+      <Panel className="mb-4">
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 shrink-0 text-violet" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">Custom domain</span>
+          {!whiteLabel && <span className="ml-auto rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold uppercase text-gold">Corporate plan</span>}
+        </div>
+        {whiteLabel ? (
+          <div className="mt-3 space-y-2 text-sm text-white/70">
+            <p>
+              Point your own domain at this careers page: add a CNAME record for the subdomain you want (e.g. <code className="rounded bg-white/5 px-1.5 py-0.5">careers</code>) pointing to{" "}
+              <code className="rounded bg-white/5 px-1.5 py-0.5">{ROOT_DOMAIN}</code>. Once your DNS provider confirms the record, contact support to finish activating it on our side — automatic self-serve activation is coming soon.
+            </p>
+            <p className="text-xs text-white/45">The &ldquo;Powered by ResumeTailored&rdquo; badge is already removed from your public page.</p>
+          </div>
+        ) : (
+          <p className="mt-3 text-sm text-white/50">
+            Custom careers domain (e.g. careers.yourco.com) and removing the &ldquo;Powered by ResumeTailored&rdquo; badge are part of the Corporate plan.{" "}
+            <a href="https://resumetailored.com/for-employers" className="font-semibold text-gold underline underline-offset-2">Upgrade →</a>
           </p>
         )}
       </Panel>

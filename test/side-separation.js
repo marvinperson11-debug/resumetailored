@@ -20,7 +20,10 @@ check('corporate back office contains employer navigation only', !/href="\/dashb
 check('Corporate mobile menu contains no job-seeker tools', !/cpHeaderMenu[\s\S]{0,1500}href="\/(?:ai-resume-tailor|ai-cover-letter-generator|free-ats-resume-checker|linkedin-optimizer|resume-video|web-studio|decoder-key|interview-coach|career-hub)"/.test(corporate));
 check('shared mobile directory switches to employer-only links on employer pages', /var EMPLOYER_LINKS/.test(nav) && /employerSide \? EMPLOYER_LINKS : LINKS/.test(nav));
 check('job-seeker homepage pillars contain no employer tool card', !/class="pillar-card" href="\/corporate"/.test(index));
-check('Employer Decoder deep link stays inside the employer portal', /Recruitment Decoder', '\/employer\?view=decoder'/.test(nav) && /requestedView==='decoder'\?'decoder':'dashboard'/.test(employer));
+// The legacy employer.html portal (and its ?view=decoder deep link) is fully
+// retired — /employer now 301s straight to the platform, so the hamburger's
+// Recruitment Decoder entry points there directly instead.
+check('Employer Decoder entry links to the platform employer dashboard', /Recruitment Decoder', 'https:\/\/app\.resumetailored\.com\/employer'/.test(nav));
 
 if (failures) { console.error(`\nFAILED (${failures})`); process.exit(1); }
 console.log('\nALL PASS (0 failures)');

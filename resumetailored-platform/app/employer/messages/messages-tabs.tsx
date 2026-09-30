@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Users, UserCheck } from "lucide-react";
 import { MessagesClient } from "./messages-client";
 import { EmployeeThreads } from "./employee-threads";
-import { PageHeader } from "../components/ui";
+import { PageHeader, UpgradeCard } from "../components/ui";
 
 type Mode = "candidates" | "employees";
 
@@ -55,6 +55,8 @@ export function MessagesTabs({
       <div className={mode === "employees" ? "" : "hidden"}>
         <EmployeeThreads initialEmployeeId={initialEmployeeId} />
       </div>
+
+      <UpgradeCard />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { FileBarChart, ArrowRight, CheckCircle2 } from "lucide-react";
-import { Panel, Field, Input, Picker, Btn, TierUpgradeNote } from "../components/ui";
+import { Panel, Field, Input, Picker, Btn, LockedModuleBanner, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { REPORT_SOURCES, type ReportSource } from "@/lib/office-hub";
 import type { EmployerDocument } from "@/lib/employer-ai";
 
@@ -25,7 +25,8 @@ export function ReportTab({ canReport, canManage }: { canReport: boolean; canMan
   const [doc, setDoc] = useState<EmployerDocument | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (!canReport) return <TierUpgradeNote feature={t("reportWriterFeature")} />;
+  const locked = !canReport;
+  const { touched, dismiss, handlers } = useFirstTouch(locked);
 
   async function generate() {
     setGenerating(true);
@@ -51,7 +52,10 @@ export function ReportTab({ canReport, canManage }: { canReport: boolean; canMan
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
+    <div {...handlers}>
+      {locked && <LockedModuleBanner feature={t("reportWriterFeature")} tier="Scale" />}
+      <FirstTouchSnackbar show={touched} feature={t("reportWriterFeature")} tier="Scale" onDismiss={dismiss} />
+      <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
       <div className="space-y-5">
         <Panel>
           <h3 className="mb-3 text-sm font-semibold text-cream">{t("reportHeading")}</h3>
@@ -107,6 +111,7 @@ export function ReportTab({ canReport, canManage }: { canReport: boolean; canMan
             </div>
           )}
         </Panel>
+      </div>
       </div>
     </div>
   );

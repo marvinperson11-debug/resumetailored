@@ -11,7 +11,7 @@ import {
   type InterviewRecommendation,
   type Applicant,
 } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, LockedModuleBanner, QuotaBar, useFirstTouch, FirstTouchSnackbar } from "../components/ui";
 import { cn } from "@/lib/utils";
 
 export interface SchedulerGating {
@@ -41,6 +41,8 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
   const [scheduling, setScheduling] = useState(!!initialApplicantId);
   const [editing, setEditing] = useState<Interview | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const videoLocked = gating.videoLimit === 0;
+  const { touched, dismiss, handlers } = useFirstTouch(videoLocked);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -112,7 +114,9 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
   }
 
   return (
-    <div>
+    <div {...handlers}>
+      {videoLocked && <LockedModuleBanner feature="Video Interviews" tier="Portal" />}
+      <FirstTouchSnackbar show={touched} feature="Video Interviews" tier="Portal" onDismiss={dismiss} />
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
@@ -132,13 +136,18 @@ export function SchedulerClient({ initialApplicantId, gating }: { initialApplica
         </div>
       )}
 
-      {gating.videoLimit !== null && (
-        <p className="mb-4 text-xs text-white/45">
-          {t("videoInterviewsThisMonth")} <span className="text-white/70">{gating.videoUsed}</span>
-          {" / "}
-          {t("videoLimitPlan", { limit: gating.videoLimit, tier: gating.tier })}
-          {!gating.canRecord && t("recordingIsPortalPlus")}
-          {gating.canRecord && !gating.canSummary && t("summariesAreScalePlus")}
+      {!videoLocked && gating.videoLimit !== null && (
+        <QuotaBar
+          label="video interviews this month"
+          used={gating.videoUsed}
+          limit={gating.videoLimit}
+          nextTierLabel={gating.tier === "portal" ? "Scale" : gating.tier === "scale" ? "Corporate" : undefined}
+        />
+      )}
+      {!videoLocked && gating.videoLimit !== null && (!gating.canRecord || !gating.canSummary) && (
+        <p className="-mt-2 mb-4 text-xs text-white/45">
+          {!gating.canRecord && t("recordingHint")}
+          {gating.canRecord && !gating.canSummary && t("summariesHint")}
         </p>
       )}
 

@@ -41,6 +41,14 @@ db.prepare('INSERT INTO shared_resumes (slug,name,text,created_at,owner_email) V
   .run('test-share-slug', 'Existing User', 'Shared resume text', Date.now(), 'exists@x.com');
 db.prepare('INSERT INTO employer_profiles (email,company_name,created_at) VALUES (?,?,?)')
   .run('exists@x.com', 'Acme Test Co', Date.now());
+// A stray row left behind under a DIFFERENT email — the residual-data shape
+// the _syncPlanToClerk wrong-user-lookup incident produced: nothing in
+// `subscribers`, but rows in both employer tables under an email that never
+// actually bought anything.
+db.prepare('INSERT INTO employer_subscribers (email,customer_id,tier,status) VALUES (?,?,?,?)')
+  .run('stray@x.com', 'cus_stray', 'corporate', 'active');
+db.prepare('INSERT INTO employer_profiles (email,company_name,created_at) VALUES (?,?,?)')
+  .run('stray@x.com', 'Stray Co', Date.now());
 db.prepare(`INSERT INTO job_postings (id,employer_email,title,location,work_mode,job_type,status,created_at,updated_at)
             VALUES (?,?,?,?,?,?,?,?,?)`).run(9001, 'exists@x.com', 'Test Job', 'Remote', 'remote', 'full_time', 'active', Date.now(), Date.now());
 db.prepare(`INSERT INTO job_feed (source,external_id,title,company,location,url,posted_at,fetched_at)
@@ -114,6 +122,32 @@ const server = app.listen(0, async () => {
     const goodAdmin = await req('GET', `/api/admin/users-list?secret=${process.env.ADMIN_SECRET}`);
     check('correct admin secret is accepted', goodAdmin.status === 200 && Array.isArray(goodAdmin.json.users), goodAdmin.body);
     check('admin action was audit-logged', !!db.prepare("SELECT 1 FROM audit_log WHERE action='admin.users_list_export'").get());
+
+    // ── Admin: view/delete stray subscriber rows (incident cleanup tool) ────
+    const viewNoAuth = await req('GET', '/api/admin/subscribers?email=stray@x.com');
+    check('subscribers view requires the admin secret', viewNoAuth.status === 403);
+
+    const view = await req('GET', `/api/admin/subscribers?secret=${process.env.ADMIN_SECRET}&email=stray@x.com`);
+    check('subscribers view returns 200', view.status === 200, view.body);
+    check('subscribers view shows the employer_subscribers row', view.json.rows.employer_subscribers && view.json.rows.employer_subscribers.tier === 'corporate', view.body);
+    check('subscribers view shows the employer_profiles row', view.json.rows.employer_profiles && view.json.rows.employer_profiles.company_name === 'Stray Co', view.body);
+    check('subscribers view shows null for a table with no row for this email', view.json.rows.subscribers === null, view.body);
+    check('subscribers view was audit-logged', !!db.prepare("SELECT 1 FROM audit_log WHERE action='admin.subscribers_view' AND target_id='stray@x.com'").get());
+
+    const deleteNoAuth = await req('POST', '/api/admin/subscribers/delete', { body: { email: 'stray@x.com', table: 'employer_subscribers' } });
+    check('subscribers delete requires the admin secret', deleteNoAuth.status === 403);
+
+    const deleteBadTable = await req('POST', '/api/admin/subscribers/delete', { body: { secret: process.env.ADMIN_SECRET, email: 'stray@x.com', table: 'users' } });
+    check('subscribers delete rejects a table outside the allow-list (never lets an off-menu table name through)', deleteBadTable.status === 400, deleteBadTable.body);
+    check('the off-menu attempt deleted nothing — users row untouched', !!db.prepare('SELECT 1 FROM users WHERE email=?').get('exists@x.com'));
+
+    const deleteOne = await req('POST', '/api/admin/subscribers/delete', { body: { secret: process.env.ADMIN_SECRET, email: 'stray@x.com', table: 'employer_subscribers' } });
+    check('subscribers delete succeeds for an allow-listed table', deleteOne.status === 200 && deleteOne.json.deleted === true, deleteOne.body);
+    check('the targeted row is actually gone', !db.prepare('SELECT 1 FROM employer_subscribers WHERE email=?').get('stray@x.com'));
+    check('a DIFFERENT table for the same email is untouched by a one-table delete', !!db.prepare('SELECT 1 FROM employer_profiles WHERE email=?').get('stray@x.com'));
+    check('a delete for an email/table with nothing to delete reports deleted:false, not an error',
+      (await req('POST', '/api/admin/subscribers/delete', { body: { secret: process.env.ADMIN_SECRET, email: 'stray@x.com', table: 'subscribers' } })).json.deleted === false);
+    check('subscribers delete was audit-logged', !!db.prepare("SELECT 1 FROM audit_log WHERE action='admin.subscribers_delete' AND target_id='stray@x.com' AND target_type='employer_subscribers'").get());
 
     // ── Webhook signature verification (still correct) ──────────────────────
     const badWebhook = await req('POST', '/webhook', { body: { type: 'checkout.session.completed' }, headers: { 'stripe-signature': 'bogus' } });

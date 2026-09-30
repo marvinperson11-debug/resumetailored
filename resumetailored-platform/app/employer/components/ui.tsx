@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2, X, Lock, type LucideIcon } from "lucide-react";
 import type {
   ButtonHTMLAttributes,
@@ -156,6 +157,171 @@ export function TierUpgradeNote({ feature, tier = "Scale" }: { feature: string; 
         className="mt-5 inline-block rounded-lg bg-violet px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet/90"
       >
         {t("learnAboutUpgrading")}
+      </a>
+    </div>
+  );
+}
+
+/**
+ * Persistent, always-visible banner at the top of a module that's locked at
+ * the caller's current tier — used by Video Interviews, the Employees hub,
+ * the Time suite, and Office, matching the tier-gating spec: the page itself
+ * still renders (never a full-page block), so the visitor sees exactly what
+ * they'd get, clearly marked as not yet active.
+ */
+export function LockedModuleBanner({ feature, tier }: { feature: string; tier: string }) {
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-gold/40 bg-gold/10 px-4 py-3">
+      <Lock className="h-4 w-4 shrink-0 text-gold" />
+      <p className="flex-1 text-sm text-cream">
+        <strong className="font-semibold">{feature}</strong> is part of the {tier} plan. Upgrade to activate — everything you set up will be waiting.
+      </p>
+      <a
+        href="https://resumetailored.com/for-employers"
+        className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
+      >
+        Upgrade →
+      </a>
+    </div>
+  );
+}
+
+/**
+ * Fires once a locked module's content is actually touched (typing, clicking
+ * any control) — not on page load, and never withheld until a final
+ * Save/submit. Spread `handlers` onto the module's outer content wrapper;
+ * `touched` flips true (and stays true) on the first click/keydown/focus
+ * inside it while `locked` is true. Pair with `<FirstTouchSnackbar/>`.
+ */
+export function useFirstTouch(locked: boolean) {
+  const [touched, setTouched] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const mark = useCallback(() => {
+    if (locked) setTouched(true);
+  }, [locked]);
+  return {
+    /** True once the snackbar should render (first touch, not yet dismissed). */
+    touched: touched && !dismissed,
+    dismiss: useCallback(() => setDismissed(true), []),
+    handlers: locked ? { onClickCapture: mark, onKeyDownCapture: mark, onFocusCapture: mark } : {},
+  };
+}
+
+/**
+ * The inline gate itself: a dismissible toast fixed near the bottom of the
+ * viewport, so it appears immediately wherever the visitor is on the page —
+ * not anchored to one field, but never requiring a scroll back to the top
+ * banner either. Shown only after `useFirstTouch` reports a real interaction.
+ */
+export function FirstTouchSnackbar({ show, feature, tier, onDismiss }: { show: boolean; feature: string; tier: string; onDismiss: () => void }) {
+  if (!show) return null;
+  return (
+    <div className="fixed inset-x-0 bottom-4 z-[70] flex justify-center px-4">
+      <div className="flex max-w-md items-center gap-3 rounded-xl border border-gold/40 bg-navy px-4 py-3 shadow-2xl">
+        <Lock className="h-4 w-4 shrink-0 text-gold" />
+        <p className="flex-1 text-xs text-cream">
+          <strong>{feature}</strong> is available on the {tier} plan — <a href="https://resumetailored.com/for-employers" className="font-bold text-gold underline underline-offset-2">Upgrade</a>
+        </p>
+        <button type="button" onClick={onDismiss} aria-label="Dismiss" className="shrink-0 text-white/40 hover:text-white/70">
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Persistent visible usage counter for a metered (not fully locked) feature —
+ * job slots, candidate pipeline, e-sig sends, team seats. Shown from first
+ * visit (never a surprise only encountered at the limit), with an upgrade CTA
+ * that appears once the limit is actually hit.
+ */
+export function QuotaBar({
+  label,
+  used,
+  limit,
+  nextTierLabel,
+}: {
+  label: string;
+  used: number;
+  /** `null` = unlimited (no bar, just a plain count). */
+  limit: number | null;
+  /** e.g. "Employer Portal" — shown in the upgrade CTA once the limit is hit. */
+  nextTierLabel?: string;
+}) {
+  const atLimit = limit !== null && used >= limit;
+  const pct = limit !== null && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
+  return (
+    <div className="mb-5 rounded-xl border border-border-gold bg-white/[0.03] px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className={cn("text-sm font-medium", atLimit ? "text-gold" : "text-white/75")}>
+          {limit === null ? `${used} ${label} · unlimited` : `${used} of ${limit} ${label} used`}
+        </span>
+        {atLimit && nextTierLabel && (
+          <a
+            href="https://resumetailored.com/for-employers"
+            className="rounded-lg bg-gold px-3 py-1 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
+          >
+            Upgrade to {nextTierLabel} →
+          </a>
+        )}
+      </div>
+      {limit !== null && (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+          <div className={cn("h-full rounded-full transition-all", atLimit ? "bg-gold" : "bg-violet")} style={{ width: `${pct}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface UpgradeCardData {
+  planLabel: string;
+  used: number;
+  limit: number;
+  pitch: string;
+}
+
+/**
+ * Slim, persistent upgrade card for the bottom of every non-locked employer
+ * page (Dashboard, Hire, Candidates, Messages, Shortlists, E-Signatures,
+ * Documents, Team — locked modules already show `LockedModuleBanner`, so
+ * they never render this too). Self-fetching: every host page just drops in
+ * `<UpgradeCard />`, and it decides on its own whether there's anything to
+ * show — nothing for Corporate or the admin bypass, since both have
+ * unlimited sends and nowhere further to upgrade. Never a popup, never
+ * blocking — it renders in normal page flow, after everything else.
+ */
+export function UpgradeCard() {
+  const [data, setData] = useState<UpgradeCardData | null | undefined>(undefined);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/employer/upgrade-card", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : { data: null }))
+      .then((d: { data?: UpgradeCardData | null }) => {
+        if (!cancelled) setData(d.data ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setData(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!data) return null;
+
+  return (
+    <div className="mt-8 flex flex-wrap items-center gap-3 rounded-xl border border-border-gold bg-white/[0.03] px-4 py-3 text-sm">
+      <p className="flex-1 text-white/70">
+        You&apos;re on the <strong className="font-semibold text-cream">{data.planLabel}</strong> plan — {data.used} of {data.limit} sends used. {data.pitch}
+      </p>
+      <a
+        href="https://resumetailored.com/for-employers"
+        className="shrink-0 rounded-lg bg-gold px-3.5 py-1.5 text-xs font-bold text-navy transition-colors hover:bg-gold/90"
+      >
+        Upgrade →
       </a>
     </div>
   );

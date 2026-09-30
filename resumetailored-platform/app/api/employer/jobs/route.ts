@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireEmployerId } from "@/lib/employer-auth";
+import { requireEmployerId, employerContext } from "@/lib/employer-auth";
+import { checkJobAllowance } from "@/lib/employer-plan";
 import { listJobs, createJob } from "@/lib/employer-store";
 import { isJobStatus, REMOTE_TYPES, EMPLOYMENT_TYPES } from "@/lib/employer-ai";
 
@@ -20,14 +21,23 @@ export async function GET() {
 
 /** POST a new job posting (draft or published). */
 export async function POST(req: Request) {
-  const employerId = await requireEmployerId();
+  const ctx = await employerContext();
+  const employerId = ctx?.employerId || null;
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   console.log("[jobs POST] userId:", employerId, "title:", String(b.title || "").slice(0, 80));
-  if (!employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!ctx || !employerId) return NextResponse.json({ error: "forbidden" }, { status: 403 });
   const title = String(b.title || "").trim();
   const description = String(b.description || "").trim();
   if (title.length < 2) return NextResponse.json({ error: "Job title is required." }, { status: 400 });
   if (description.length < 10) return NextResponse.json({ error: "A job description is required." }, { status: 400 });
+
+  const status = isJobStatus(b.status) ? b.status : "draft";
+  if (status === "active") {
+    const existing = await listJobs(employerId);
+    const activeCount = existing.filter((j) => j.status === "active").length;
+    const allowance = checkJobAllowance(ctx.access, activeCount);
+    if (!allowance.allowed) return NextResponse.json({ error: allowance.message, code: "job_limit" }, { status: 402 });
+  }
 
   try {
     const job = await createJob(employerId, {
@@ -43,7 +53,7 @@ export async function POST(req: Request) {
       requirements: arr(b.requirements),
       niceToHaves: arr(b.niceToHaves),
       deadline: b.deadline ? String(b.deadline) : null,
-      status: isJobStatus(b.status) ? b.status : "draft",
+      status,
       publicListed: !!b.publicListed,
     });
     if (!job) return NextResponse.json({ error: "Could not create the job. Please try again." }, { status: 500 });

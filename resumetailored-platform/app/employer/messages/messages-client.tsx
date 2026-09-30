@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { MessageSquare, Send, Paperclip, Search, X, FileText, ImageIcon, ArrowLeft } from "lucide-react";
 import {
   MESSAGE_TEMPLATES,
@@ -16,6 +17,7 @@ type FilterTab = "all" | "unread" | "sent";
 const MAX_ATTACH_BYTES = 1_500_000; // ~1.5MB per file (stored inline as a data URL)
 
 export function MessagesClient({ initialApplicantId, hideHeader }: { initialApplicantId?: number; hideHeader?: boolean }) {
+  const t = useTranslations("employerMessages");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<FilterTab>("all");
@@ -88,7 +90,7 @@ export function MessagesClient({ initialApplicantId, hideHeader }: { initialAppl
 
   return (
     <div>
-      {!hideHeader && <PageHeader title="Messages" subtitle="In-app conversations with your candidates." />}
+      {!hideHeader && <PageHeader title={t("title")} subtitle={t("subtitle")} />}
 
       <Panel className="overflow-hidden p-0">
         <div className="grid min-h-[560px] grid-cols-1 md:grid-cols-[320px_1fr]">
@@ -101,23 +103,23 @@ export function MessagesClient({ initialApplicantId, hideHeader }: { initialAppl
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by name…"
+                  placeholder={t("searchPlaceholder")}
                   className="w-full rounded-lg border border-border-gold bg-white/5 py-2 pl-9 pr-3 text-sm text-cream placeholder:text-white/35 outline-none focus:border-violet focus:ring-1 focus:ring-violet"
                 />
               </div>
               <div className="flex gap-1 text-xs">
-                {(["all", "unread", "sent"] as FilterTab[]).map((t) => (
+                {(["all", "unread", "sent"] as FilterTab[]).map((ft) => (
                   <button
-                    key={t}
+                    key={ft}
                     type="button"
-                    onClick={() => setTab(t)}
+                    onClick={() => setTab(ft)}
                     className={cn(
-                      "flex-1 rounded-md px-2 py-1.5 font-semibold capitalize transition-colors",
-                      tab === t ? "bg-violet/20 text-cream" : "text-white/55 hover:bg-white/5"
+                      "flex-1 rounded-md px-2 py-1.5 font-semibold transition-colors",
+                      tab === ft ? "bg-violet/20 text-cream" : "text-white/55 hover:bg-white/5"
                     )}
                   >
-                    {t}
-                    {t === "unread" && totalUnread > 0 ? ` (${totalUnread})` : ""}
+                    {t(`tabs.${ft}`)}
+                    {ft === "unread" && totalUnread > 0 ? ` (${totalUnread})` : ""}
                   </button>
                 ))}
               </div>
@@ -126,10 +128,10 @@ export function MessagesClient({ initialApplicantId, hideHeader }: { initialAppl
             {/* List */}
             <div className="flex-1 overflow-y-auto">
               {loading ? (
-                <p className="p-4 text-sm text-white/50">Loading…</p>
+                <p className="p-4 text-sm text-white/50">{t("loading")}</p>
               ) : filtered.length === 0 && !(pending && tab === "all" && !search) ? (
                 <p className="p-4 text-sm text-white/45">
-                  {conversations.length === 0 ? "No messages yet." : "No conversations match."}
+                  {conversations.length === 0 ? t("noMessagesYet") : t("noConversationsMatch")}
                 </p>
               ) : (
                 <ul>
@@ -162,8 +164,8 @@ export function MessagesClient({ initialApplicantId, hideHeader }: { initialAppl
               <div className="flex flex-1 items-center justify-center p-6">
                 <EmptyState
                   icon={MessageSquare}
-                  title="No messages yet"
-                  body="Start a conversation from the Candidates page, or pick a conversation on the left."
+                  title={t("emptyStateTitle")}
+                  body={t("emptyStateBody")}
                 />
               </div>
             )}
@@ -175,6 +177,7 @@ export function MessagesClient({ initialApplicantId, hideHeader }: { initialAppl
 }
 
 function ConversationRow({ c, active, onClick }: { c: Conversation; active: boolean; onClick: () => void }) {
+  const t = useTranslations("employerMessages");
   return (
     <li>
       <button
@@ -185,15 +188,15 @@ function ConversationRow({ c, active, onClick }: { c: Conversation; active: bool
           active && "bg-white/[0.05]"
         )}
       >
-        <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: c.unread > 0 ? "#3B82F6" : "transparent" }} aria-label={c.unread > 0 ? "Unread" : undefined} />
+        <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full" style={{ background: c.unread > 0 ? "#3B82F6" : "transparent" }} aria-label={c.unread > 0 ? t("unread") : undefined} />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <span className={cn("truncate text-sm", c.unread > 0 ? "font-bold text-cream" : "font-medium text-cream/90")}>{c.name || "Candidate"}</span>
+            <span className={cn("truncate text-sm", c.unread > 0 ? "font-bold text-cream" : "font-medium text-cream/90")}>{c.name || t("candidateFallback")}</span>
             <span className="shrink-0 text-[11px] text-white/40">{fmtShort(c.lastAt)}</span>
           </div>
           <p className="truncate text-xs text-white/50">
-            {c.lastSender === "employer" && c.lastMessage ? "You: " : ""}
-            {c.lastMessage || "No messages yet"}
+            {c.lastSender === "employer" && c.lastMessage ? t("youPrefix") : ""}
+            {c.lastMessage || t("noMessagesYetRow")}
           </p>
         </div>
       </button>
@@ -203,6 +206,7 @@ function ConversationRow({ c, active, onClick }: { c: Conversation; active: bool
 
 // ── Conversation thread ─────────────────────────────────────────────────────
 function Thread({ conversation, onBack, onSent }: { conversation: Conversation; onBack: () => void; onSent: () => void }) {
+  const t = useTranslations("employerMessages");
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
@@ -236,13 +240,13 @@ function Thread({ conversation, onBack, onSent }: { conversation: Conversation; 
     setError(null);
     for (const f of Array.from(files).slice(0, 5)) {
       if (f.size > MAX_ATTACH_BYTES) {
-        setError(`"${f.name}" is over 1.5MB — attach a smaller file or share a link.`);
+        setError(t("errorFileTooLarge", { name: f.name }));
         continue;
       }
       const isImage = f.type.startsWith("image/");
       const isPdf = f.type === "application/pdf";
       if (!isImage && !isPdf) {
-        setError("Only PDF and image attachments are supported.");
+        setError(t("errorUnsupportedType"));
         continue;
       }
       // eslint-disable-next-line no-await-in-loop
@@ -268,13 +272,13 @@ function Thread({ conversation, onBack, onSent }: { conversation: Conversation; 
         body: JSON.stringify({ applicantId: conversation.applicantId, content: text, attachments }),
       });
       const d = (await res.json().catch(() => ({}))) as { message?: Message; error?: string };
-      if (!res.ok || !d.message) throw new Error(d.error || "Could not send.");
+      if (!res.ok || !d.message) throw new Error(d.error || t("errorCouldNotSend"));
       setMessages((prev) => [...prev, d.message!]);
       setText("");
       setAttachments([]);
       onSent();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setSending(false);
     }
@@ -282,19 +286,19 @@ function Thread({ conversation, onBack, onSent }: { conversation: Conversation; 
 
   function applyTemplate(body: string) {
     if (!body) return;
-    const first = (conversation.name || "").split(" ")[0] || conversation.name || "there";
-    setText(`Hi ${first},\n\n${body}`);
+    const first = (conversation.name || "").split(" ")[0] || conversation.name || t("templateGreetingFallbackName");
+    setText(t("templateGreeting", { name: first, body }));
   }
 
   return (
     <>
       {/* Thread header */}
       <div className="flex items-center gap-3 border-b border-border-gold px-4 py-3">
-        <button type="button" onClick={onBack} className="text-muted-cream hover:text-cream md:hidden" aria-label="Back">
+        <button type="button" onClick={onBack} className="text-muted-cream hover:text-cream md:hidden" aria-label={t("back")}>
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="min-w-0">
-          <div className="truncate font-medium text-cream">{conversation.name || "Candidate"}</div>
+          <div className="truncate font-medium text-cream">{conversation.name || t("candidateFallback")}</div>
           <div className="truncate text-xs text-white/45">
             {conversation.email}
             {conversation.jobTitle ? ` · ${conversation.jobTitle}` : ""}
@@ -305,9 +309,9 @@ function Thread({ conversation, onBack, onSent }: { conversation: Conversation; 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
         {loading ? (
-          <p className="text-sm text-white/50">Loading…</p>
+          <p className="text-sm text-white/50">{t("loading")}</p>
         ) : messages.length === 0 ? (
-          <p className="mt-8 text-center text-sm text-white/45">No messages yet. Say hello 👋</p>
+          <p className="mt-8 text-center text-sm text-white/45">{t("noMessagesYetSayHello")}</p>
         ) : (
           messages.map((m) => <Bubble key={m.id} m={m} />)
         )}
@@ -322,7 +326,7 @@ function Thread({ conversation, onBack, onSent }: { conversation: Conversation; 
               <span key={i} className="inline-flex items-center gap-1.5 rounded-md border border-border-gold bg-white/[0.04] px-2 py-1 text-xs text-cream">
                 {a.kind === "pdf" ? <FileText className="h-3.5 w-3.5 text-violet" /> : <ImageIcon className="h-3.5 w-3.5 text-violet" />}
                 <span className="max-w-[140px] truncate">{a.name}</span>
-                <button type="button" onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))} aria-label="Remove">
+                <button type="button" onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))} aria-label={t("remove")}>
                   <X className="h-3 w-3 text-white/50 hover:text-cream" />
                 </button>
               </span>
@@ -330,11 +334,18 @@ function Thread({ conversation, onBack, onSent }: { conversation: Conversation; 
           </div>
         )}
         <div className="mb-2">
-          <Picker defaultValue="" onChange={(e) => { applyTemplate(e.target.value); e.target.value = ""; }}>
-            <option value="">Insert a template…</option>
-            {MESSAGE_TEMPLATES.map((t) => (
-              <option key={t.label} value={t.body}>
-                {t.label}
+          <Picker
+            defaultValue=""
+            onChange={(e) => {
+              const item = MESSAGE_TEMPLATES.find((m) => m.id === e.target.value);
+              if (item) applyTemplate(t(`templates.${item.id}.body`));
+              e.target.value = "";
+            }}
+          >
+            <option value="">{t("insertTemplate")}</option>
+            {MESSAGE_TEMPLATES.map((item) => (
+              <option key={item.id} value={item.id}>
+                {t(`templates.${item.id}.label`)}
               </option>
             ))}
           </Picker>
@@ -344,8 +355,8 @@ function Thread({ conversation, onBack, onSent }: { conversation: Conversation; 
             type="button"
             onClick={() => fileRef.current?.click()}
             className="shrink-0 rounded-lg border border-border-gold bg-white/[0.03] p-2.5 text-muted-cream hover:bg-white/[0.08] hover:text-cream"
-            aria-label="Attach a file"
-            title="Attach a PDF or image"
+            aria-label={t("attachFile")}
+            title={t("attachFileTitle")}
           >
             <Paperclip className="h-4 w-4" />
           </button>
@@ -360,11 +371,11 @@ function Thread({ conversation, onBack, onSent }: { conversation: Conversation; 
                 send();
               }
             }}
-            placeholder="Write a message…  (⌘/Ctrl + Enter to send)"
+            placeholder={t("composerPlaceholder")}
             className="flex-1"
           />
           <Btn onClick={send} loading={sending} disabled={!text.trim() && attachments.length === 0} className="shrink-0">
-            <Send className="h-4 w-4" /> Send
+            <Send className="h-4 w-4" /> {t("send")}
           </Btn>
         </div>
       </div>

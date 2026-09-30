@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { Briefcase, Plus, Pencil, Pause, Play, XCircle, Copy, Users, Trash2, Sparkles, X } from "lucide-react";
 import {
@@ -11,7 +12,7 @@ import {
   type RemoteType,
   type EmploymentType,
 } from "@/lib/employer-ai";
-import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal } from "../components/ui";
+import { Panel, PageHeader, Btn, Field, Input, Area, Picker, Badge, EmptyState, Modal, QuotaBar, UpgradeCard } from "../components/ui";
 
 const STATUS_TONE: Record<JobStatus, "neutral" | "teal" | "gold" | "red"> = {
   draft: "neutral",
@@ -20,12 +21,14 @@ const STATUS_TONE: Record<JobStatus, "neutral" | "teal" | "gold" | "red"> = {
   closed: "red",
 };
 
-export function JobsClient({ openNew }: { openNew: boolean }) {
+export function JobsClient({ openNew, activeLimit = null }: { openNew: boolean; activeLimit?: number | null }) {
+  const t = useTranslations("employerJobs");
   const router = useRouter();
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<JobPosting | "new" | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,15 +50,21 @@ export function JobsClient({ openNew }: { openNew: boolean }) {
 
   async function patch(id: number, body: Record<string, unknown>) {
     setBusyId(id);
+    setNotice(null);
     try {
-      await fetch(`/api/employer/jobs/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const res = await fetch(`/api/employer/jobs/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setNotice(d.error || "Could not update the job.");
+        return;
+      }
       await load();
     } finally {
       setBusyId(null);
     }
   }
   async function remove(id: number) {
-    if (!confirm("Delete this job and all its applicants? This cannot be undone.")) return;
+    if (!confirm(t("confirmDelete"))) return;
     setBusyId(id);
     try {
       await fetch(`/api/employer/jobs/${id}`, { method: "DELETE" });
@@ -68,25 +77,35 @@ export function JobsClient({ openNew }: { openNew: boolean }) {
   return (
     <div>
       <PageHeader
-        title="Jobs"
-        subtitle="Create, publish, and manage your open roles."
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           <Btn onClick={() => setEditing("new")}>
-            <Plus className="h-4 w-4" /> Post new job
+            <Plus className="h-4 w-4" /> {t("postNewJob")}
           </Btn>
         }
       />
 
+      {activeLimit !== null && (
+        <QuotaBar
+          label="active job slots"
+          used={jobs.filter((j) => j.status === "active").length}
+          limit={activeLimit}
+          nextTierLabel="Employer Portal"
+        />
+      )}
+      {notice && <div className="mb-4 rounded-lg border border-gold/40 bg-gold/10 px-4 py-2 text-sm text-gold">{notice}</div>}
+
       {loading ? (
-        <Panel className="text-sm text-white/50">Loading jobs…</Panel>
+        <Panel className="text-sm text-white/50">{t("loadingJobs")}</Panel>
       ) : jobs.length === 0 ? (
         <EmptyState
           icon={Briefcase}
-          title="No jobs yet"
-          body="Post your first role to start collecting and scoring applicants."
+          title={t("emptyStateTitle")}
+          body={t("emptyStateBody")}
           action={
             <Btn onClick={() => setEditing("new")}>
-              <Plus className="h-4 w-4" /> Post new job
+              <Plus className="h-4 w-4" /> {t("postNewJob")}
             </Btn>
           }
         />
@@ -95,12 +114,12 @@ export function JobsClient({ openNew }: { openNew: boolean }) {
           <table className="w-full min-w-[760px] text-sm">
             <thead>
               <tr className="border-b border-border-gold text-left text-xs uppercase tracking-wide text-white/45">
-                <th className="px-4 py-3 font-semibold">Title</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Applicants</th>
-                <th className="px-4 py-3 font-semibold">Posted</th>
-                <th className="px-4 py-3 font-semibold">Expires</th>
-                <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                <th className="px-4 py-3 font-semibold">{t("colTitle")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colStatus")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colApplicants")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colPosted")}</th>
+                <th className="px-4 py-3 font-semibold">{t("colExpires")}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t("colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -111,7 +130,7 @@ export function JobsClient({ openNew }: { openNew: boolean }) {
                     <div className="text-xs text-white/45">{[j.department, j.location].filter(Boolean).join(" · ") || "—"}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <Badge tone={STATUS_TONE[j.status]}>{j.status}</Badge>
+                    <Badge tone={STATUS_TONE[j.status]}>{t(`jobStatus.${j.status}`)}</Badge>
                   </td>
                   <td className="px-4 py-3">
                     <a href={`/employer/candidates?jobId=${j.id}`} className="inline-flex items-center gap-1 text-cream hover:text-violet">
@@ -122,30 +141,30 @@ export function JobsClient({ openNew }: { openNew: boolean }) {
                   <td className="px-4 py-3 text-white/60">{j.deadline ? fmtDate(j.deadline) : "—"}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <IconBtn title="Edit" onClick={() => setEditing(j)} disabled={busyId === j.id}>
+                      <IconBtn title={t("actionEdit")} onClick={() => setEditing(j)} disabled={busyId === j.id}>
                         <Pencil className="h-4 w-4" />
                       </IconBtn>
                       {j.status === "active" ? (
-                        <IconBtn title="Pause" onClick={() => patch(j.id, { status: "paused" })} disabled={busyId === j.id}>
+                        <IconBtn title={t("actionPause")} onClick={() => patch(j.id, { status: "paused" })} disabled={busyId === j.id}>
                           <Pause className="h-4 w-4" />
                         </IconBtn>
                       ) : (
-                        <IconBtn title="Activate" onClick={() => patch(j.id, { status: "active" })} disabled={busyId === j.id}>
+                        <IconBtn title={t("actionActivate")} onClick={() => patch(j.id, { status: "active" })} disabled={busyId === j.id}>
                           <Play className="h-4 w-4" />
                         </IconBtn>
                       )}
                       {j.status !== "closed" && (
-                        <IconBtn title="Close" onClick={() => patch(j.id, { status: "closed" })} disabled={busyId === j.id}>
+                        <IconBtn title={t("actionClose")} onClick={() => patch(j.id, { status: "closed" })} disabled={busyId === j.id}>
                           <XCircle className="h-4 w-4" />
                         </IconBtn>
                       )}
-                      <IconBtn title="Duplicate" onClick={() => patch(j.id, { action: "duplicate" })} disabled={busyId === j.id}>
+                      <IconBtn title={t("actionDuplicate")} onClick={() => patch(j.id, { action: "duplicate" })} disabled={busyId === j.id}>
                         <Copy className="h-4 w-4" />
                       </IconBtn>
-                      <IconBtn title="View applicants" onClick={() => router.push(`/employer/candidates?jobId=${j.id}`)}>
+                      <IconBtn title={t("actionViewApplicants")} onClick={() => router.push(`/employer/candidates?jobId=${j.id}`)}>
                         <Users className="h-4 w-4" />
                       </IconBtn>
-                      <IconBtn title="Delete" onClick={() => remove(j.id)} disabled={busyId === j.id} danger>
+                      <IconBtn title={t("actionDelete")} onClick={() => remove(j.id)} disabled={busyId === j.id} danger>
                         <Trash2 className="h-4 w-4" />
                       </IconBtn>
                     </div>
@@ -171,6 +190,8 @@ export function JobsClient({ openNew }: { openNew: boolean }) {
           }}
         />
       )}
+
+      <UpgradeCard />
     </div>
   );
 }
@@ -192,6 +213,7 @@ function IconBtn({ children, title, onClick, disabled, danger }: { children: Rea
 
 // ── Job editor modal ──────────────────────────────────────────────────────────
 function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose: () => void; onSaved: () => void }) {
+  const t = useTranslations("employerJobs");
   const [title, setTitle] = useState(job?.title || "");
   const [department, setDepartment] = useState(job?.department || "");
   const [locCity, setLocCity] = useState(job?.location || "");
@@ -221,10 +243,10 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
         body: JSON.stringify({ title, notes: description, department, location: locCity, employmentType }),
       });
       const d = (await res.json().catch(() => ({}))) as { description?: string; error?: string };
-      if (!res.ok || !d.description) throw new Error(d.error || "Could not improve the description.");
+      if (!res.ok || !d.description) throw new Error(d.error || t("errorCouldNotImprove"));
       setDescription(d.description);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
     } finally {
       setAssisting(false);
     }
@@ -232,11 +254,11 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
 
   async function save(status: JobStatus) {
     if (title.trim().length < 2) {
-      setError("Give the role a title.");
+      setError(t("errorNeedTitle"));
       return;
     }
     if (description.trim().length < 10) {
-      setError("Add a job description (or use Improve to draft one).");
+      setError(t("errorNeedDescription"));
       return;
     }
     setSaving(status);
@@ -262,89 +284,89 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
         ? await fetch(`/api/employer/jobs/${job.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         : await fetch("/api/employer/jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(d.error || "Could not save the job.");
+      if (!res.ok) throw new Error(d.error || t("errorCouldNotSave"));
       onSaved();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : t("errorGeneric"));
       setSaving(null);
     }
   }
 
   return (
-    <Modal title={job ? "Edit job" : "Post a job"} onClose={onClose} wide>
+    <Modal title={job ? t("editJob") : t("postAJob")} onClose={onClose} wide>
       <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
-        <Field label="Job title">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Senior Product Designer" />
+        <Field label={t("fieldJobTitle")}>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("placeholderJobTitle")} />
         </Field>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Department">
-            <Input value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="Design" />
+          <Field label={t("fieldDepartment")}>
+            <Input value={department} onChange={(e) => setDepartment(e.target.value)} placeholder={t("placeholderDepartment")} />
           </Field>
-          <Field label="Location (city)">
-            <Input value={locCity} onChange={(e) => setLocCity(e.target.value)} placeholder="San Francisco, CA" />
+          <Field label={t("fieldLocation")}>
+            <Input value={locCity} onChange={(e) => setLocCity(e.target.value)} placeholder={t("placeholderLocation")} />
           </Field>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Work model">
+          <Field label={t("fieldWorkModel")}>
             <Picker value={remoteType} onChange={(e) => setRemoteType(e.target.value as RemoteType | "")}>
-              <option value="">Select…</option>
+              <option value="">{t("selectEllipsis")}</option>
               {REMOTE_TYPES.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {t(`remoteType.${r}`)}
                 </option>
               ))}
             </Picker>
           </Field>
-          <Field label="Employment type">
+          <Field label={t("fieldEmploymentType")}>
             <Picker value={employmentType} onChange={(e) => setEmploymentType(e.target.value as EmploymentType | "")}>
-              <option value="">Select…</option>
-              {EMPLOYMENT_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
+              <option value="">{t("selectEllipsis")}</option>
+              {EMPLOYMENT_TYPES.map((et) => (
+                <option key={et} value={et}>
+                  {t(`employmentType.${et}`)}
                 </option>
               ))}
             </Picker>
           </Field>
         </div>
         <div className="grid grid-cols-3 gap-3">
-          <Field label="Salary min">
+          <Field label={t("fieldSalaryMin")}>
             <Input value={salaryMin} onChange={(e) => setSalaryMin(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" placeholder="90000" />
           </Field>
-          <Field label="Salary max">
+          <Field label={t("fieldSalaryMax")}>
             <Input value={salaryMax} onChange={(e) => setSalaryMax(e.target.value.replace(/[^0-9]/g, ""))} inputMode="numeric" placeholder="130000" />
           </Field>
-          <Field label="Currency">
+          <Field label={t("fieldCurrency")}>
             <Input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase().slice(0, 3))} placeholder="USD" />
           </Field>
         </div>
 
         <div>
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">Job description</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("fieldJobDescription")}</span>
             <button
               type="button"
               onClick={assist}
               disabled={assisting}
               className="inline-flex items-center gap-1.5 rounded-md border border-violet/40 bg-violet/10 px-2.5 py-1 text-xs font-semibold text-violet transition-colors hover:bg-violet/20 disabled:opacity-50"
             >
-              <Sparkles className="h-3.5 w-3.5" /> {assisting ? "Improving…" : "Improve with AI"}
+              <Sparkles className="h-3.5 w-3.5" /> {assisting ? t("improving") : t("improveWithAi")}
             </button>
           </div>
-          <Area rows={7} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Rough notes are fine — hit “Improve with AI” to turn them into a polished, inclusive description." />
+          <Area rows={7} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t("placeholderDescription")} />
         </div>
 
-        <BulletEditor label="Requirements" items={requirements} setItems={setRequirements} placeholder="5+ years in product design" />
-        <BulletEditor label="Nice-to-haves" items={niceToHaves} setItems={setNiceToHaves} placeholder="Experience with design systems" />
+        <BulletEditor label={t("fieldRequirements")} addLabel={t("addRequirement")} items={requirements} setItems={setRequirements} placeholder={t("placeholderRequirement")} />
+        <BulletEditor label={t("fieldNiceToHaves")} addLabel={t("addNiceToHave")} items={niceToHaves} setItems={setNiceToHaves} placeholder={t("placeholderNiceToHave")} />
 
-        <Field label="Application deadline" hint="Optional">
+        <Field label={t("fieldDeadline")} hint={t("optional")}>
           <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
         </Field>
 
         <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border-gold bg-white/[0.03] p-3">
           <input type="checkbox" checked={!publicListed} onChange={(e) => setPublicListed(!e.target.checked)} className="mt-0.5 h-4 w-4 accent-violet" />
           <span className="text-sm text-cream">
-            Hide this job from the public careers page and /jobs
-            <span className="mt-0.5 block text-xs text-white/50">Active jobs are public by default — they appear on your careers page and the /jobs board where candidates can apply directly. Check this to keep this role off both, even while Active. Draft and closed jobs are never public.</span>
+            {t("hideFromPublic")}
+            <span className="mt-0.5 block text-xs text-white/50">{t("hideFromPublicHint")}</span>
           </span>
         </label>
 
@@ -353,17 +375,30 @@ function JobEditor({ job, onClose, onSaved }: { job: JobPosting | null; onClose:
 
       <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-border-gold pt-4">
         <Btn variant="ghost" onClick={() => save("draft")} loading={saving === "draft"}>
-          Save draft
+          {t("saveDraft")}
         </Btn>
         <Btn onClick={() => save("active")} loading={saving === "active"}>
-          {job ? "Save & publish" : "Publish now"}
+          {job ? t("saveAndPublish") : t("publishNow")}
         </Btn>
       </div>
     </Modal>
   );
 }
 
-function BulletEditor({ label, items, setItems, placeholder }: { label: string; items: string[]; setItems: (v: string[]) => void; placeholder: string }) {
+function BulletEditor({
+  label,
+  addLabel,
+  items,
+  setItems,
+  placeholder,
+}: {
+  label: string;
+  addLabel: string;
+  items: string[];
+  setItems: (v: string[]) => void;
+  placeholder: string;
+}) {
+  const t = useTranslations("employerJobs");
   const set = (i: number, v: string) => setItems(items.map((x, idx) => (idx === i ? v : x)));
   const add = () => setItems([...items, ""]);
   const del = (i: number) => setItems(items.length > 1 ? items.filter((_, idx) => idx !== i) : [""]);
@@ -374,14 +409,14 @@ function BulletEditor({ label, items, setItems, placeholder }: { label: string; 
         {items.map((v, i) => (
           <div key={i} className="flex items-center gap-2">
             <Input value={v} onChange={(e) => set(i, e.target.value)} placeholder={placeholder} />
-            <button type="button" onClick={() => del(i)} aria-label="Remove" className="shrink-0 rounded-md p-2 text-muted-cream hover:bg-white/8 hover:text-cream">
+            <button type="button" onClick={() => del(i)} aria-label={t("remove")} className="shrink-0 rounded-md p-2 text-muted-cream hover:bg-white/8 hover:text-cream">
               <X className="h-4 w-4" />
             </button>
           </div>
         ))}
       </div>
       <button type="button" onClick={add} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-violet hover:text-violet/80">
-        <Plus className="h-3.5 w-3.5" /> Add {label.toLowerCase().replace(/s$/, "")}
+        <Plus className="h-3.5 w-3.5" /> {addLabel}
       </button>
     </div>
   );

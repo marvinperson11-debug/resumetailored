@@ -1531,23 +1531,6 @@ app.get(['/preview', '/preview.html'], (req, res) => {
   if (!email || !isSubscriber(email)) return res.redirect(302, '/resume-video');
   return _sendVersionedHtml(res, resumeVideoPreviewHtml);
 });
-// ── Role separation (job-seeker vs employer) ────────────────────────────────
-// A logged-in user is routed to the dashboard that matches their subscription.
-// A pure job-seeker (Pro/Lifetime, no employer plan) is kept off the employer
-// side; a pure paid employer is kept off the job-seeker dashboard. Owner/comped
-// accounts (isSubscriber AND isEmployerSubscriber are both true for them),
-// dual-subscription users, and free accounts keep access to both sides so the
-// employer sign-up funnel and both-sides owner login are preserved. Redirects,
-// not hard 403s, so nobody is locked out. Registered before the HTML catch-all
-// (which would otherwise serve employer.html unguarded).
-const _employerHtmlPath = path.join(__dirname, 'public', 'employer.html');
-app.get('/employer', (req, res) => {
-  const email = getSessionEmail(req);
-  if (email && isSubscriber(email) && !isEmployerSubscriber(email)) {
-    return res.redirect(302, '/dashboard');
-  }
-  return _sendVersionedHtml(res, _employerHtmlPath);
-});
 // The workforce Employee Portal lives entirely in the app (app.resumetailored.com,
 // Clerk auth). Marketing links and invited employees may land on
 // resumetailored.com/employee — 301 them across to the app so the emailed invite
@@ -1580,9 +1563,26 @@ app.get('/tools', (req, res) => _sendVersionedHtml(res, path.join(__dirname, 'pu
 // the old app.html tool (and the old-site OAuth callbacks that redirect to
 // /dashboard) are no longer reachable here — the product now lives at
 // app.resumetailored.com (Clerk auth).
-for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score', '/signup', '/cancel', '/cancel.html']) {
+for (const _deprecatedRoute of ['/dashboard', '/cover-letter', '/ai-resume-tailor', '/score', '/cancel', '/cancel.html']) {
   app.get(_deprecatedRoute, (req, res) => res.redirect(301, 'https://app.resumetailored.com'));
 }
+// Legacy auth (candidate `/login`/`/signup`/`/forgot-password` against the
+// bcrypt `users` table, and the whole employer.html portal behind its own
+// "Recruiter sign in" gate) is fully retired — nobody can create or sign into
+// an account in the old system anymore. Every entry point 301s straight to
+// the matching Clerk page; there is no longer a legacy fallback for an
+// existing legacy account that hasn't already created a Clerk account (a
+// known, deliberate tradeoff — see the migration plan). `/employer` used to
+// conditionally serve employer.html; it now always redirects.
+// The .html variants are covered too — otherwise a literal /login.html or
+// /employer.html request would fall through to _resolveHtmlFile below and
+// serve the raw legacy page directly, unredirected.
+app.get(['/signup', '/signup.html'], (req, res) => res.redirect(301, 'https://app.resumetailored.com/sign-up'));
+app.get(['/login', '/login.html', '/forgot-password'], (req, res) => res.redirect(301, 'https://app.resumetailored.com/sign-in'));
+app.get(['/employer', '/employer.html'], (req, res) => {
+  const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+  res.redirect(301, `https://app.resumetailored.com/employer${qs}`);
+});
 app.get(/.*/, (req, res, next) => {
   if (req.method !== 'GET') return next();
   const file = _resolveHtmlFile(req.path);
@@ -1649,7 +1649,6 @@ app.use('/videos', express.static(renderedVideoDir, {
 // career-hub.js/style.css it references) would go right back to being
 // unversioned on exactly the pages this bug was reported on.
 const appHtml = path.join(__dirname, 'public', 'app.html');
-const loginHtml = path.join(__dirname, 'public', 'login.html');
 const landingHtml = path.join(__dirname, 'public', 'index.html');
 const webStudioLandingHtml = path.join(__dirname, 'public', 'web-studio-landing.html');
 app.get('/dashboard',    (req, res) => {
@@ -1662,10 +1661,6 @@ app.get('/dashboard',    (req, res) => {
   return _sendVersionedHtml(res, appHtml);
 });
 app.get('/web-studio',   (req, res) => _sendVersionedHtml(res, webStudioLandingHtml));
-// /login and /signup serve the dedicated login page (not the app). It reads
-// ?redirect= and sends the user back where they came from after signing in.
-app.get('/login',        (req, res) => _sendVersionedHtml(res, loginHtml));
-app.get('/signup',       (req, res) => _sendVersionedHtml(res, loginHtml));
 // Stable deep links used by marketing pages, bookmarks, and older clients.
 // This app is a tab-driven SPA rather than a framework router, so serve the
 // correct shell here and let app.html select the tab from the pathname. Keeping
@@ -1677,7 +1672,6 @@ for (const route of [
   app.get(route, (req, res) => _sendVersionedHtml(res, appHtml));
 }
 app.get(['/pricing', '/checkout'], (req, res) => _sendVersionedHtml(res, landingHtml));
-app.get('/forgot-password', (req, res) => _sendVersionedHtml(res, loginHtml));
 app.get('/about',        (req, res) => res.redirect(301, '/how-it-works'));
 const blogIndexHtml = path.join(__dirname, 'public', 'blog', 'index.html');
 app.get('/blog',         (req, res) => _sendVersionedHtml(res, blogIndexHtml));
@@ -8082,6 +8076,54 @@ app.post('/api/app-checkout', async (req, res) => {
   }
 });
 
+// ─── API: Create an Employer checkout session ON BEHALF OF the new Clerk app ──
+// Same server-to-server shape as /api/app-checkout above, for the employer
+// Portal/Scale/Corporate tiers. Called only from the app's own
+// /api/create-employer-checkout-session route, never the browser directly.
+// Reuses the exact price-id resolution /api/employer/subscribe already uses,
+// and the exact metadata shape ({ plan: 'employer', employerTier }) that
+// _fulfillCheckoutSession + the webhook already know how to fulfill and sync
+// to Clerk — so no webhook change is needed for this to activate correctly.
+app.post('/api/app-employer-checkout', async (req, res) => {
+  const secret = process.env.ENTITLEMENT_SYNC_SECRET;
+  if (!secret) return res.status(404).json({ error: 'not_configured' });
+  if (String(req.headers.authorization || '') !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
+  const email = String((req.body && req.body.email) || '').toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: 'email_required', message: 'A signed-in email is required to start checkout.' });
+  const requestedPlan = String((req.body && req.body.plan) || 'portal').toLowerCase();
+  const plan = requestedPlan === 'portal' ? 'pro' : requestedPlan;
+  if (!['pro', 'scale', 'corporate'].includes(plan)) return res.status(400).json({ error: 'bad_request', message: 'Choose Employer Portal, Scale, or Corporate.' });
+  if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'not_configured', message: 'Employer checkout is not configured.' });
+  const priceId = plan === 'corporate'
+    ? _configuredPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID, STRIPE_PRICE_IDS.corporate)
+    : plan === 'scale'
+      ? _configuredPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, STRIPE_PRICE_IDS.scale)
+      : _configuredPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID, STRIPE_PRICE_IDS.portal);
+  // Only allow bouncing back to the app itself; never an attacker-supplied URL.
+  const APP_ORIGIN = 'https://app.resumetailored.com';
+  let returnUrl = String((req.body && req.body.returnUrl) || `${APP_ORIGIN}/employer`);
+  if (!returnUrl.startsWith(APP_ORIGIN)) returnUrl = `${APP_ORIGIN}/employer`;
+  const sep = returnUrl.includes('?') ? '&' : '?';
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer_email: email,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${returnUrl}${sep}payment=success`,
+      cancel_url: `${returnUrl}${sep}payment=cancelled`,
+      metadata: { email, plan: 'employer', employerTier: plan, source: 'app' }
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    if (err && err.code === 'resource_missing' && err.param === 'line_items[0][price]') {
+      return res.status(503).json({ error: 'not_configured', message: 'Employer checkout is not configured.' });
+    }
+    console.error('[stripe] app-employer-checkout error:', err);
+    res.status(500).json({ error: 'Could not create checkout session.' });
+  }
+});
+
 // ─── Stripe webhook: activate subscription ────────────────────────────────────
 // After a successful Stripe payment, a guest who checked out by email has a
 // `subscribers` row but no way to LOG IN — no `users` account exists yet. Give
@@ -8161,12 +8203,27 @@ async function _syncPlanToClerk(email, { plan = 'pro', type = 'individual', tier
   const secret = process.env.CLERK_SECRET_KEY;
   if (!key || !secret) return;
   try {
-    const lookup = await fetch(`https://api.clerk.com/v1/users?email_address=${encodeURIComponent(key)}`, {
+    // Clerk's Backend API only recognizes this filter as an array param
+    // (`email_address[]=...`) — a bare `email_address=...` is silently
+    // dropped and the endpoint falls back to its default, UNFILTERED list
+    // (newest account first). That previously meant `users[0]` below was
+    // whichever Clerk account had most recently signed up — completely
+    // unrelated to `key` — and this function would patch a stranger's
+    // account with the real buyer's plan. Found live: a brand-new candidate
+    // signup got `plan:'employer', tier:'corporate'` written to it with zero
+    // user action, because an unrelated Corporate-tier checkout happened to
+    // complete moments after that candidate's account was created.
+    const lookup = await fetch(`https://api.clerk.com/v1/users?email_address[]=${encodeURIComponent(key)}`, {
       headers: { Authorization: `Bearer ${secret}` }
     });
     if (!lookup.ok) { console.error('[clerk] user lookup failed:', lookup.status); return; }
     const users = await lookup.json();
-    const user = Array.isArray(users) ? users[0] : (users && Array.isArray(users.data) ? users.data[0] : null);
+    const list = Array.isArray(users) ? users : (users && Array.isArray(users.data) ? users.data : []);
+    // Defense in depth: even with the correct filter, never trust index 0
+    // blindly — require the returned account's own email to match `key`
+    // before writing anything to it.
+    const user = list.find(u => Array.isArray(u && u.email_addresses) &&
+      u.email_addresses.some(a => String(a && a.email_address || '').toLowerCase() === key));
     if (!user || !user.id) { console.log(`[clerk] no account yet for ${key} — will backfill on sign-in`); return; }
     const public_metadata = { plan, type, subscribedAt: new Date().toISOString(), stripeCustomerId: stripeCustomerId || undefined };
     if (tier) public_metadata.tier = tier;
@@ -8591,6 +8648,45 @@ app.get('/api/admin/users-list', requireAdminSecret, (req, res) => {
   writeAuditLog(req, 'admin', 'admin.users_list_export');
   const rows = db.prepare('SELECT email, username FROM users ORDER BY email').all();
   res.json({ total: rows.length, users: rows });
+});
+
+// Incident cleanup tool (see the _syncPlanToClerk wrong-user-lookup fix):
+// residual rows an affected email picked up before that fix went live keep
+// getting served back out by employerTier()'s DB fallback on every future
+// entitlement backfill, so clearing Clerk publicMetadata alone isn't enough
+// — the legacy row has to go too. Scoped to exactly the three tables that
+// feed employer/subscriber entitlement, one email and one table per call —
+// no bulk or wildcard delete, so a mistyped param can't wipe more than the
+// one row it names.
+const ADMIN_SUBSCRIBER_TABLES = Object.freeze(['subscribers', 'employer_subscribers', 'employer_profiles']);
+
+// GET /api/admin/subscribers?secret=ADMIN_SECRET&email=... — view-only: what
+// (if anything) each of the three tables holds for this email.
+app.get('/api/admin/subscribers', requireAdminSecret, (req, res) => {
+  const email = String(req.query.email || '').toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: 'email_required' });
+  writeAuditLog(req, 'admin', 'admin.subscribers_view', { targetType: 'email', targetId: email });
+  const rows = {};
+  for (const table of ADMIN_SUBSCRIBER_TABLES) {
+    rows[table] = db.prepare(`SELECT * FROM ${table} WHERE email = ?`).get(email) || null;
+  }
+  res.json({ email, rows });
+});
+
+// POST /api/admin/subscribers/delete  { secret, email, table }
+// Deletes the one row for `email` in the named table. `table` must be one of
+// ADMIN_SUBSCRIBER_TABLES — rejects anything else rather than deleting from
+// an unintended table off a typo.
+app.post('/api/admin/subscribers/delete', authRateLimiter, requireAdminSecret, (req, res) => {
+  const email = String(req.body.email || '').toLowerCase().trim();
+  const table = String(req.body.table || '').trim();
+  if (!email) return res.status(400).json({ error: 'email_required' });
+  if (!ADMIN_SUBSCRIBER_TABLES.includes(table)) {
+    return res.status(400).json({ error: 'bad_table', allowed: ADMIN_SUBSCRIBER_TABLES });
+  }
+  const result = db.prepare(`DELETE FROM ${table} WHERE email = ?`).run(email);
+  writeAuditLog(req, 'admin', 'admin.subscribers_delete', { targetType: table, targetId: email, meta: { deleted: result.changes } });
+  res.json({ email, table, deleted: result.changes > 0 });
 });
 
 function broadcastEmailHtml(username) {

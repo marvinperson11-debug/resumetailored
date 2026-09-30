@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Briefcase, Users, UserPlus, UserCog, Bell, Clock, TrendingUp, type LucideIcon } from "lucide-react";
 import { requireEmployerId } from "@/lib/employer-auth";
 import { getDashboard, type ActivityEntry } from "@/lib/employer-store";
-import { Panel } from "./components/ui";
+import { Panel, UpgradeCard } from "./components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +76,8 @@ export default async function EmployerHome() {
           </div>
         )}
       </section>
+
+      <UpgradeCard />
     </div>
   );
 }

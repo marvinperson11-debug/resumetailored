@@ -26,10 +26,22 @@ async function resolveLabel(
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/employer(.*)",
+  "/employer-checkout",
   "/candidate(.*)",
   "/employee(.*)",
 ]);
 const isPublicEmployeeRoute = createRouteMatcher(["/employee/accept"]);
+// The employer sign-up entry point (marketing site "Choose Employer Portal" /
+// "Continue free" CTAs land here with a ?plan= query param). It's deliberately
+// NOT nested under /employer — app/employer/layout.tsx gates on already
+// HAVING employer access, which a brand-new visitor claiming free access or
+// mid-checkout never does yet, so nesting there would show the locked-feature
+// page instead of this one. Every other protected route bounces a signed-out
+// visitor to the marketing landing page, which would drop the chosen plan.
+// This one instead sends them to sign-up with the whole URL (plan included)
+// preserved as redirect_url, so the plan survives the signup round-trip in
+// the URL itself rather than client storage.
+const isEmployerCheckoutRoute = createRouteMatcher(["/employer-checkout"]);
 
 export default clerkMiddleware(async (auth, req) => {
   // Career-site subdomains: {slug}.resumetailored.com → render /careers/{slug}
@@ -80,6 +92,10 @@ export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req) && !isPublicEmployeeRoute(req)) {
     const { userId } = await auth();
     if (!userId) {
+      if (isEmployerCheckoutRoute(req)) {
+        const back = req.nextUrl.pathname + req.nextUrl.search;
+        return NextResponse.redirect(new URL(`/sign-up?redirect_url=${encodeURIComponent(back)}`, req.url));
+      }
       // Unauthenticated visitors are sent back to the public landing page.
       return NextResponse.redirect(new URL("/", req.url));
     }
