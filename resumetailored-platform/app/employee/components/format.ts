@@ -50,3 +50,9 @@ export function clockTime(hhmm: string, locale: string): string {
 export function timeOfDay(iso: string, locale: string): string {
   return new Date(iso).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 }
+
+/** A full calendar date ("Jan 5, 2026") for a YYYY-MM-DD string; falls back to the raw value. */
+export function fullDate(iso: string, locale: string): string {
+  const d = parseISODate(iso);
+  return d ? d.toLocaleDateString(locale, { dateStyle: "medium", timeZone: "UTC" }) : iso;
+}

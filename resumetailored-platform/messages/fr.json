@@ -2046,5 +2046,128 @@
     "empty": "Aucun message pour l'instant. Dites bonjour 👋",
     "placeholder": "Écrire un message…",
     "send": "Envoyer"
+  },
+  "employeeFeed": {
+    "title": "Fil d'équipe",
+    "subtitle": "Actualités, problèmes et réussites de votre équipe.",
+    "kinds": {
+      "post": "Publication",
+      "issue": "Problème",
+      "win": "Réussite"
+    },
+    "placeholder": "Partagez une actualité, signalez quelque chose ou célébrez une réussite…",
+    "post": "Publier",
+    "empty": "Aucune publication pour l'instant. Soyez le premier à partager quelque chose.",
+    "employee": "employé",
+    "employer": "employeur",
+    "resolved": "Résolu",
+    "comments": "{count, plural, one {# commentaire} other {# commentaires}}",
+    "reopen": "Rouvrir",
+    "markResolved": "Marquer comme résolu",
+    "replyPlaceholder": "Répondre…",
+    "reply": "Envoyer la réponse"
+  },
+  "employeeLibrary": {
+    "title": "Bibliothèque",
+    "subtitle": "Formations gratuites en milieu de travail issues de sources officielles du gouvernement américain. Suivez ce que vous voulez vous-même — inutile d'attendre qu'on vous l'attribue.",
+    "all": "Tous",
+    "search": "Rechercher dans la bibliothèque…",
+    "empty": "Aucun résultat — essayez une autre catégorie ou effacez la recherche.",
+    "source": "Source",
+    "take": "Suivre cette formation",
+    "categories": {
+      "Cleaning & Janitorial": "Nettoyage et entretien",
+      "Construction": "Construction",
+      "Emergency Preparedness": "Préparation aux urgences",
+      "Healthcare": "Santé",
+      "Hospitality & Food Service": "Hôtellerie et restauration",
+      "Manufacturing": "Fabrication",
+      "Office & Ergonomics": "Bureau et ergonomie",
+      "Warehouse & Logistics": "Entrepôt et logistique",
+      "Workplace Conduct": "Conduite au travail"
+    }
+  },
+  "employeeTraining": {
+    "title": "Ma formation",
+    "subtitle": "Regardez, lisez et terminez ce qui vous est attribué.",
+    "empty": "Rien d'attribué pour l'instant. Consultez l'onglet Bibliothèque pour suivre quelque chose vous-même.",
+    "quizTag": "quiz",
+    "best": "meilleur {score} %",
+    "docKinds": {
+      "sop": "PON",
+      "safety": "Sécurité",
+      "policy": "Politique",
+      "training": "Formation"
+    },
+    "states": {
+      "signed": "Signé",
+      "waived": "Dispensé",
+      "pending": "En attente",
+      "overdue": "En retard"
+    },
+    "back": "Ma formation",
+    "notFound": "Introuvable.",
+    "source": "Source : {provider}",
+    "openPdf": "Ouvrir le PDF",
+    "completed": "Terminé.",
+    "completedWithScore": "Terminé — score au quiz : {score} %.",
+    "markComplete": "Marquer comme terminé",
+    "takeQuiz": "Passer le quiz ({count, plural, one {# question} other {# questions}}, {threshold} % pour réussir)",
+    "passed": "Réussi — {score} %",
+    "notYet": "Pas encore — {score} % ({threshold} % requis)",
+    "retake": "Repasser",
+    "submit": "Envoyer"
+  },
+  "employeeProfile": {
+    "title": "Profil",
+    "subtitle": "Vos informations chez {company}.",
+    "companyFallback": "votre lieu de travail",
+    "name": "Nom",
+    "email": "E-mail",
+    "role": "Poste",
+    "startDate": "Date de début",
+    "status": "Statut",
+    "statuses": {
+      "active": "Actif",
+      "on_leave": "En congé",
+      "offboarded": "Sorti(e)"
+    },
+    "managedNote": "Votre poste et votre date de début sont gérés par votre employeur. Pour les corriger, écrivez-lui depuis l'onglet Messages.",
+    "account": "Compte",
+    "accountHint": "Mettez à jour votre photo, votre nom ou votre e-mail dans le panneau de votre compte.",
+    "manageAccount": "Gérer le compte",
+    "certs": {
+      "title": "Mes certifications",
+      "add": "Ajouter",
+      "empty": "Aucune certification enregistrée pour l'instant.",
+      "expires": "Expire le {date}",
+      "noExpiry": "Aucune date d'expiration",
+      "status": {
+        "ok": "Valide",
+        "expiring": "Bientôt expirée",
+        "expired": "Expirée",
+        "no_expiry": "Sans expiration"
+      },
+      "confirmRemove": "Retirer cette certification ?",
+      "remove": "Retirer",
+      "nameRequired": "Un nom est requis.",
+      "couldNotAdd": "Impossible d'ajouter la certification.",
+      "namePlaceholder": "Certification de cariste",
+      "issuedDate": "Date de délivrance",
+      "expiryDate": "Date d'expiration",
+      "cancel": "Annuler"
+    },
+    "skills": {
+      "title": "Mes compétences",
+      "empty": "Votre employeur n'a pas encore évalué vos compétences.",
+      "levels": {
+        "1": "Débutant",
+        "2": "Élémentaire",
+        "3": "Compétent",
+        "4": "Avancé",
+        "5": "Expert"
+      }
+    },
+    "loading": "Chargement…"
   }
 }
