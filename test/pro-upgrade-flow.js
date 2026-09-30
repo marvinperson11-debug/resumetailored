@@ -7,7 +7,8 @@
  * plan: its Pro/lifetime CTAs send the visitor to the dashboard app
  * (?upgrade=pro), which signs them in first and then calls the shared-secret
  * /api/app-checkout endpoint here to mint the Stripe session for their known
- * email. Employer plans still check out on-site.
+ * email. The employer Portal/Scale/Corporate CTAs mirror the same pattern via
+ * /api/app-employer-checkout (see the tests below).
  */
 const fs = require('fs');
 const os = require('os');
@@ -79,6 +80,28 @@ const server = app.listen(0, async () => {
 
     const lifetime = await req('POST', '/api/app-checkout', { Authorization: `Bearer ${SECRET}` }, { email: 'buyer@example.com', plan: 'lifetime' });
     check('lifetime plan passes gating (not 401/400/404)', ![401, 400, 404].includes(lifetime.status), `HTTP ${lifetime.status}`);
+
+    // ── /api/app-employer-checkout mirrors /api/app-checkout for employer plans ──
+    const empNoAuth = await req('POST', '/api/app-employer-checkout', {}, { email: 'a@b.com', plan: 'scale' });
+    check('employer checkout: rejects a request with no bearer secret (401)', empNoAuth.status === 401, `HTTP ${empNoAuth.status}`);
+
+    const empBadAuth = await req('POST', '/api/app-employer-checkout', { Authorization: 'Bearer wrong' }, { email: 'a@b.com', plan: 'scale' });
+    check('employer checkout: rejects a wrong bearer secret (401)', empBadAuth.status === 401, `HTTP ${empBadAuth.status}`);
+
+    const empNoEmail = await req('POST', '/api/app-employer-checkout', { Authorization: `Bearer ${SECRET}` }, { plan: 'scale' });
+    check('employer checkout: requires an email even when authorized (400)', empNoEmail.status === 400, `HTTP ${empNoEmail.status}`);
+
+    const empBadPlan = await req('POST', '/api/app-employer-checkout', { Authorization: `Bearer ${SECRET}` }, { email: 'buyer@example.com', plan: 'free' });
+    check('employer checkout: rejects a non-paid plan like "free" (400)', empBadPlan.status === 400, `HTTP ${empBadPlan.status}`);
+
+    const empPortal = await req('POST', '/api/app-employer-checkout', { Authorization: `Bearer ${SECRET}` }, { email: 'buyer@example.com', plan: 'portal', returnUrl: 'https://evil.example/x' });
+    check('employer checkout: portal plan passes gating (not 401/400/404)', ![401, 400, 404].includes(empPortal.status), `HTTP ${empPortal.status}`);
+
+    const empScale = await req('POST', '/api/app-employer-checkout', { Authorization: `Bearer ${SECRET}` }, { email: 'buyer@example.com', plan: 'scale' });
+    check('employer checkout: scale plan passes gating (not 401/400/404)', ![401, 400, 404].includes(empScale.status), `HTTP ${empScale.status}`);
+
+    const empCorporate = await req('POST', '/api/app-employer-checkout', { Authorization: `Bearer ${SECRET}` }, { email: 'buyer@example.com', plan: 'corporate' });
+    check('employer checkout: corporate plan passes gating (not 401/400/404)', ![401, 400, 404].includes(empCorporate.status), `HTTP ${empCorporate.status}`);
 
     // ── /api/entitlement returns role (plan + type) for the app to segregate ──
     const entMissing = await req('GET', '/api/entitlement?email=nobody@example.com', { Authorization: `Bearer ${SECRET}` });

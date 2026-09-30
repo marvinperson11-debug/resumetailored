@@ -8082,6 +8082,54 @@ app.post('/api/app-checkout', async (req, res) => {
   }
 });
 
+// ─── API: Create an Employer checkout session ON BEHALF OF the new Clerk app ──
+// Same server-to-server shape as /api/app-checkout above, for the employer
+// Portal/Scale/Corporate tiers. Called only from the app's own
+// /api/create-employer-checkout-session route, never the browser directly.
+// Reuses the exact price-id resolution /api/employer/subscribe already uses,
+// and the exact metadata shape ({ plan: 'employer', employerTier }) that
+// _fulfillCheckoutSession + the webhook already know how to fulfill and sync
+// to Clerk — so no webhook change is needed for this to activate correctly.
+app.post('/api/app-employer-checkout', async (req, res) => {
+  const secret = process.env.ENTITLEMENT_SYNC_SECRET;
+  if (!secret) return res.status(404).json({ error: 'not_configured' });
+  if (String(req.headers.authorization || '') !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
+  const email = String((req.body && req.body.email) || '').toLowerCase().trim();
+  if (!email) return res.status(400).json({ error: 'email_required', message: 'A signed-in email is required to start checkout.' });
+  const requestedPlan = String((req.body && req.body.plan) || 'portal').toLowerCase();
+  const plan = requestedPlan === 'portal' ? 'pro' : requestedPlan;
+  if (!['pro', 'scale', 'corporate'].includes(plan)) return res.status(400).json({ error: 'bad_request', message: 'Choose Employer Portal, Scale, or Corporate.' });
+  if (!process.env.STRIPE_SECRET_KEY) return res.status(503).json({ error: 'not_configured', message: 'Employer checkout is not configured.' });
+  const priceId = plan === 'corporate'
+    ? _configuredPriceId(process.env.STRIPE_EMPLOYER_CORPORATE_PRICE_ID, STRIPE_PRICE_IDS.corporate)
+    : plan === 'scale'
+      ? _configuredPriceId(process.env.STRIPE_EMPLOYER_SCALE_PRICE_ID, STRIPE_PRICE_IDS.scale)
+      : _configuredPriceId(process.env.STRIPE_EMPLOYER_PRO_PRICE_ID || process.env.STRIPE_EMPLOYER_PRICE_ID, STRIPE_PRICE_IDS.portal);
+  // Only allow bouncing back to the app itself; never an attacker-supplied URL.
+  const APP_ORIGIN = 'https://app.resumetailored.com';
+  let returnUrl = String((req.body && req.body.returnUrl) || `${APP_ORIGIN}/employer`);
+  if (!returnUrl.startsWith(APP_ORIGIN)) returnUrl = `${APP_ORIGIN}/employer`;
+  const sep = returnUrl.includes('?') ? '&' : '?';
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'subscription',
+      customer_email: email,
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${returnUrl}${sep}payment=success`,
+      cancel_url: `${returnUrl}${sep}payment=cancelled`,
+      metadata: { email, plan: 'employer', employerTier: plan, source: 'app' }
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    if (err && err.code === 'resource_missing' && err.param === 'line_items[0][price]') {
+      return res.status(503).json({ error: 'not_configured', message: 'Employer checkout is not configured.' });
+    }
+    console.error('[stripe] app-employer-checkout error:', err);
+    res.status(500).json({ error: 'Could not create checkout session.' });
+  }
+});
+
 // ─── Stripe webhook: activate subscription ────────────────────────────────────
 // After a successful Stripe payment, a guest who checked out by email has a
 // `subscribers` row but no way to LOG IN — no `users` account exists yet. Give
