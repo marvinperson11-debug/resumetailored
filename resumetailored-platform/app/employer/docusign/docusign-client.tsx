@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import {
   FileSignature,
@@ -18,7 +19,6 @@ import {
 } from "lucide-react";
 import { Panel, PageHeader, Btn, Badge, EmptyState, Input, QuotaBar, UpgradeCard } from "../components/ui";
 import type { DocusignConnection, DocusignEnvelope, DocusignStatus } from "@/lib/employer-ai";
-import { DOC_TYPE_LABELS } from "@/lib/employer-ai";
 import { SendDocumentModal } from "../components/send-document-modal";
 import { SendCopyControl } from "../components/send-copy-control";
 
@@ -63,16 +63,12 @@ function nextSendTierLabel(tier: string): string | undefined {
   return undefined;
 }
 
-const ERROR_COPY: Record<string, string> = {
-  not_configured: "DocuSign isn't configured on this deployment yet. Add the DocuSign credentials to connect.",
-  consent_denied: "DocuSign consent was cancelled. You can try connecting again.",
-  state_mismatch: "The connection request expired or didn't match. Please try connecting again.",
-  auth_failed: "DocuSign didn't return the tokens we need. Please try again.",
-  account_failed: "We couldn't read your DocuSign account details. Please try again.",
-  save_failed: "We couldn't save the connection. Please try again.",
-};
+/** OAuth-callback error codes with a message under `employerEsign.errors.*`. */
+const KNOWN_ERRORS = ["not_configured", "consent_denied", "state_mismatch", "auth_failed", "account_failed", "save_failed"];
 
 export function DocusignClient({ connected, error, isAdmin = false }: { connected: boolean; error?: string; isAdmin?: boolean }) {
+  const t = useTranslations("employerEsign");
+  const locale = useLocale();
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [envelopes, setEnvelopes] = useState<DocusignEnvelope[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,9 +78,9 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
   const [expanded, setExpanded] = useState<number | null>(null);
   const [banner, setBanner] = useState<{ tone: "ok" | "err"; text: string } | null>(
     connected
-      ? { tone: "ok", text: "DocuSign connected. You can now send offer letters for signature." }
+      ? { tone: "ok", text: t("connectedBanner") }
       : error
-        ? { tone: "err", text: ERROR_COPY[error] || "Something went wrong connecting DocuSign." }
+        ? { tone: "err", text: t(KNOWN_ERRORS.includes(error) ? `errors.${error}` : "errors.generic") }
         : null
   );
 
@@ -124,12 +120,12 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
   }
 
   async function disconnect() {
-    if (!confirm("Disconnect DocuSign? You'll need to reconnect to send more offers.")) return;
+    if (!confirm(t("confirmDisconnect"))) return;
     setDisconnecting(true);
     try {
       await fetch("/api/employer/docusign/disconnect", { method: "POST" });
       await loadStatus();
-      setBanner({ tone: "ok", text: "DocuSign disconnected." });
+      setBanner({ tone: "ok", text: t("disconnected") });
     } finally {
       setDisconnecting(false);
     }
@@ -141,15 +137,15 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
   return (
     <div>
       <PageHeader
-        title="E-Signatures"
-        subtitle="Send offer letters, agreements, NDAs, or any document for e-signature with DocuSign and track their status."
+        title={t("title")}
+        subtitle={t("subtitle")}
         action={
           <div className="flex items-center gap-2">
             <Btn onClick={() => setShowSend(true)}>
-              <UploadCloud className="h-4 w-4" /> Upload &amp; send for signature
+              <UploadCloud className="h-4 w-4" /> {t("uploadAndSend")}
             </Btn>
             <Btn variant="ghost" onClick={refresh} loading={refreshing}>
-              <RefreshCw className="h-4 w-4" /> Refresh
+              <RefreshCw className="h-4 w-4" /> {t("refresh")}
             </Btn>
           </div>
         }
@@ -173,7 +169,7 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
           way to see this count before hitting the cap. */}
       {usage && (
         <QuotaBar
-          label="e-signature sends this month"
+          kind="esign"
           used={usage.used}
           limit={usage.limit}
           nextTierLabel={nextSendTierLabel(usage.tier)}
@@ -191,10 +187,9 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-gold" />
             <div>
-              <h2 className="text-sm font-semibold text-cream">DocuSign not configured</h2>
+              <h2 className="text-sm font-semibold text-cream">{t("notConfigured.title")}</h2>
               <p className="mt-1 text-sm text-white/55">
-                This deployment is missing its DocuSign credentials. Once they&apos;re set, you&apos;ll be able to
-                connect your account here.
+                {t("notConfigured.body")}
               </p>
             </div>
           </div>
@@ -205,22 +200,22 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
                 <CheckCircle2 className="h-5 w-5 text-teal" />
               </div>
               <div>
-                <div className="text-sm font-semibold text-cream">DocuSign connected</div>
+                <div className="text-sm font-semibold text-cream">{t("connection.connected")}</div>
                 <div className="text-xs text-white/55">
-                  {conn.accountEmail || conn.accountName || "Account connected"}
+                  {conn.accountEmail || conn.accountName || t("connection.accountFallback")}
                   {usage && (
                     <>
                       {" · "}
                       {usage.limit === null
-                        ? `${usage.used} sent this month · unlimited`
-                        : `${usage.used} of ${usage.limit} monthly sends used`}
+                        ? t("connection.usageUnlimited", { used: usage.used })
+                        : t("connection.usageLimited", { used: usage.used, limit: usage.limit })}
                     </>
                   )}
                 </div>
               </div>
             </div>
             <Btn variant="ghost" onClick={disconnect} loading={disconnecting}>
-              Disconnect
+              {t("connection.disconnect")}
             </Btn>
           </div>
         ) : (
@@ -230,9 +225,9 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
                 <Link2 className="h-5 w-5 text-violet" />
               </div>
               <div>
-                <div className="text-sm font-semibold text-cream">Connect DocuSign</div>
+                <div className="text-sm font-semibold text-cream">{t("connect.title")}</div>
                 <div className="text-xs text-white/55">
-                  Authorize your DocuSign account to send offer letters for signature.
+                  {t("connect.body")}
                 </div>
               </div>
             </div>
@@ -240,7 +235,7 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
               href="/api/employer/docusign/connect"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet/90"
             >
-              <Link2 className="h-4 w-4" /> Connect DocuSign
+              <Link2 className="h-4 w-4" /> {t("connect.title")}
             </a>
           </div>
         )}
@@ -257,11 +252,11 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
       ) : envelopes.length === 0 ? (
         <EmptyState
           icon={FileSignature}
-          title="No documents sent yet"
-          body="Upload any PDF — a tax form, an agreement, an IRS letter — and send it for signature in one step. Or send an offer letter, agreement, or NDA from a candidate's profile. It'll appear here with its live signing status."
+          title={t("empty.title")}
+          body={t("empty.body")}
           action={
             <Btn onClick={() => setShowSend(true)}>
-              <UploadCloud className="h-4 w-4" /> Upload &amp; send for signature
+              <UploadCloud className="h-4 w-4" /> {t("uploadAndSend")}
             </Btn>
           }
         />
@@ -275,13 +270,13 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
           <table className="w-full min-w-[420px] text-sm">
             <thead>
               <tr className="border-b border-border-gold bg-white/[0.03] text-left text-xs uppercase tracking-wide text-muted-cream">
-                <th className="px-4 py-3 font-semibold">Recipient</th>
-                <th className="hidden px-4 py-3 font-semibold sm:table-cell">Type</th>
-                <th className="hidden px-4 py-3 font-semibold lg:table-cell">Document</th>
-                <th className="hidden px-4 py-3 font-semibold md:table-cell">Sent</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="hidden px-4 py-3 font-semibold sm:table-cell">Files</th>
-                <th className="px-4 py-3 font-semibold text-right">Certificate</th>
+                <th className="px-4 py-3 font-semibold">{t("cols.recipient")}</th>
+                <th className="hidden px-4 py-3 font-semibold sm:table-cell">{t("cols.type")}</th>
+                <th className="hidden px-4 py-3 font-semibold lg:table-cell">{t("cols.document")}</th>
+                <th className="hidden px-4 py-3 font-semibold md:table-cell">{t("cols.sent")}</th>
+                <th className="px-4 py-3 font-semibold">{t("cols.status")}</th>
+                <th className="hidden px-4 py-3 font-semibold sm:table-cell">{t("cols.files")}</th>
+                <th className="px-4 py-3 font-semibold text-right">{t("cols.certificate")}</th>
               </tr>
             </thead>
             <tbody>
@@ -292,7 +287,7 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
                   <Fragment key={e.id}>
                     <tr
                       onClick={() => setExpanded(isOpen ? null : e.id)}
-                      title={isOpen ? "Hide details" : "Show details"}
+                      title={isOpen ? t("hideDetails") : t("showDetails")}
                       aria-expanded={isOpen}
                       className={`group cursor-pointer border-b border-border-gold/60 last:border-0 transition-colors hover:bg-white/[0.06] ${isOpen ? "bg-white/[0.04]" : ""}`}
                     >
@@ -306,12 +301,12 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
                         </div>
                       </td>
                       <td className="hidden px-4 py-3 sm:table-cell">
-                        <Badge tone={typeBadgeTone(e.status)}>{DOC_TYPE_LABELS[e.docType]}</Badge>
+                        <Badge tone={typeBadgeTone(e.status)}>{t(`docTypes.${e.docType}`)}</Badge>
                       </td>
-                      <td className="hidden px-4 py-3 text-white/75 lg:table-cell">{e.documentName || e.offer.position || DOC_TYPE_LABELS[e.docType]}</td>
-                      <td className="hidden px-4 py-3 text-white/55 md:table-cell">{fmtDate(e.sentAt)}</td>
+                      <td className="hidden px-4 py-3 text-white/75 lg:table-cell">{e.documentName || e.offer.position || t(`docTypes.${e.docType}`)}</td>
+                      <td className="hidden px-4 py-3 text-white/55 md:table-cell">{fmtDate(e.sentAt, locale)}</td>
                       <td className="px-4 py-3">
-                        <Badge tone={STATUS_TONE[e.status]}>{e.status}</Badge>
+                        <Badge tone={STATUS_TONE[e.status]}>{t(`status.${e.status}`)}</Badge>
                       </td>
                       <td className="hidden px-4 py-3 sm:table-cell">
                         {e.attachments.length > 0 ? (
@@ -320,7 +315,7 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
                           </span>
                         ) : pendingReq > 0 ? (
                           <span className="inline-flex items-center gap-1 rounded-md bg-gold/15 px-2 py-0.5 text-xs font-semibold text-gold">
-                            {pendingReq} requested
+                            {t("requestedCount", { count: pendingReq })}
                           </span>
                         ) : (
                           <span className="text-xs text-white/30">—</span>
@@ -335,7 +330,7 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
                             onClick={(ev) => ev.stopPropagation()}
                             className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet hover:underline"
                           >
-                            <Download className="h-3.5 w-3.5" /> Download
+                            <Download className="h-3.5 w-3.5" /> {t("download")}
                           </a>
                         ) : (
                           <span className="text-xs text-white/30">—</span>
@@ -376,6 +371,8 @@ export function DocusignClient({ connected, error, isAdmin = false }: { connecte
 // ── Envelope detail (expanded row): requested-docs checklist, attachments,
 //    employer upload, and "request more documents" ─────────────────────────────
 function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; onChanged: () => void }) {
+  const t = useTranslations("employerEsign");
+  const locale = useLocale();
   const [reqInput, setReqInput] = useState("");
   const [addingReq, setAddingReq] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -400,11 +397,11 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setMsg({ tone: "err", text: d.error || "Couldn't add the request." });
+        setMsg({ tone: "err", text: d.error || t("msg.couldntAddRequest") });
         return;
       }
       setReqInput("");
-      setMsg({ tone: "ok", text: "Request added — the signer was emailed an upload link." });
+      setMsg({ tone: "ok", text: t("msg.requestAdded") });
       onChanged();
     } finally {
       setAddingReq(false);
@@ -421,10 +418,10 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
       const res = await fetch(`/api/employer/docusign/envelopes/${envelope.id}/attachments`, { method: "POST", body: fd });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setMsg({ tone: "err", text: d.error || "Upload failed." });
+        setMsg({ tone: "err", text: d.error || t("msg.uploadFailed") });
         return;
       }
-      setMsg({ tone: "ok", text: "File attached to this envelope." });
+      setMsg({ tone: "ok", text: t("msg.fileAttached") });
       onChanged();
     } finally {
       setUploading(false);
@@ -443,10 +440,10 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
       });
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setMsg({ tone: "err", text: d.error || "Couldn't update the request." });
+        setMsg({ tone: "err", text: d.error || t("msg.couldntUpdateRequest") });
         return;
       }
-      setMsg({ tone: "ok", text: `Marked “${name}” as received.` });
+      setMsg({ tone: "ok", text: t("msg.markedReceived", { name }) });
       onChanged();
     } finally {
       setMarkingReq(null);
@@ -462,7 +459,7 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
       {isDone && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-teal/30 bg-teal/[0.06] px-4 py-3">
           <CheckCircle2 className="h-5 w-5 shrink-0 text-teal" />
-          <span className="mr-auto text-sm text-cream">This document is complete.</span>
+          <span className="mr-auto text-sm text-cream">{t("detail.complete")}</span>
           {/* View: the combined signed PDF + certificate, inline in the browser. */}
           <a
             href={`/api/employer/docusign/envelopes/${envelope.id}/documents`}
@@ -470,13 +467,13 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-violet px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet/90"
           >
-            <Eye className="h-4 w-4" /> View documents
+            <Eye className="h-4 w-4" /> {t("detail.viewDocuments")}
           </a>
           <a
             href={`/api/employer/docusign/envelopes/${envelope.id}/documents?download=1`}
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-4 py-2 text-sm font-semibold text-cream transition-colors hover:bg-white/[0.08]"
           >
-            <Download className="h-4 w-4" /> Download
+            <Download className="h-4 w-4" /> {t("download")}
           </a>
           <a
             href={`/api/employer/docusign/envelopes/${envelope.id}/certificate`}
@@ -484,7 +481,7 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
             rel="noreferrer"
             className="inline-flex items-center justify-center gap-2 rounded-lg border border-border-gold bg-white/[0.03] px-4 py-2 text-sm font-semibold text-cream transition-colors hover:bg-white/[0.08]"
           >
-            <Download className="h-4 w-4" /> Certificate
+            <Download className="h-4 w-4" /> {t("detail.certificate")}
           </a>
         </div>
       )}
@@ -493,15 +490,15 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
       {isDone && (
         <div className="rounded-xl border border-border-gold bg-white/[0.02] px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-auto text-xs font-semibold uppercase tracking-wide text-muted-cream">Send a copy</span>
+            <span className="mr-auto text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("detail.sendCopy")}</span>
             <SendCopyControl envelopeId={envelope.id} onSent={onChanged} />
           </div>
           <p className="mt-1 text-[11px] text-white/40">
-            Emails the combined signed PDF + certificate to anyone — no signature needed from them.
+            {t("detail.sendCopyHint")}
           </p>
           {envelope.copiesSent.length > 0 && (
             <p className="mt-2 text-[11px] text-white/45">
-              Copies sent: {envelope.copiesSent.map((c) => `${c.email} (${fmtDate(c.sentAt)})`).join(", ")}
+              {t("detail.copiesSent", { list: envelope.copiesSent.map((c) => `${c.email} (${fmtDate(c.sentAt, locale)})`).join(", ") })}
             </p>
           )}
         </div>
@@ -510,9 +507,9 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
       <div className="grid gap-5 md:grid-cols-2">
       {/* Requested documents checklist */}
       <div>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">Requested documents</h3>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("detail.requestedDocs")}</h3>
         {envelope.requestedDocs.length === 0 ? (
-          <p className="text-xs text-white/40">No documents requested from the signer.</p>
+          <p className="text-xs text-white/40">{t("detail.noneRequested")}</p>
         ) : (
           <ul className="space-y-2">
             {envelope.requestedDocs.map((d) => (
@@ -524,7 +521,7 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
                     <Circle className="h-4 w-4 text-white/30" />
                   )}
                   <span className={d.uploaded ? "text-cream" : "text-white/60"}>{d.name}</span>
-                  {d.uploaded && <span className="text-[11px] font-semibold text-teal">received</span>}
+                  {d.uploaded && <span className="text-[11px] font-semibold text-teal">{t("detail.received")}</span>}
                 </div>
                 {/* Manually satisfy a pending slot with an existing attachment. */}
                 {!d.uploaded && envelope.attachments.length > 0 && (
@@ -534,15 +531,15 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
                       onChange={(e) => setPickByReq((m) => ({ ...m, [d.name]: e.target.value }))}
                       className="min-w-0 flex-1 rounded-lg border border-border-gold bg-white/5 px-2 py-1.5 text-xs text-cream outline-none focus:border-violet [&>option]:bg-navy [&>option]:text-cream"
                     >
-                      <option value="">Mark received with an uploaded file…</option>
+                      <option value="">{t("detail.markPlaceholder")}</option>
                       {envelope.attachments.map((a, i) => (
                         <option key={`${a.url}-${i}`} value={a.url}>
-                          {a.name} ({a.by === "employer" ? "you" : "signer"})
+                          {a.name} ({a.by === "employer" ? t("you") : t("signer")})
                         </option>
                       ))}
                     </select>
                     <Btn variant="ghost" onClick={() => void markSatisfied(d.name)} loading={markingReq === d.name} disabled={!pickByReq[d.name]}>
-                      <Check className="h-4 w-4" /> Mark received
+                      <Check className="h-4 w-4" /> {t("detail.markReceived")}
                     </Btn>
                   </div>
                 )}
@@ -562,19 +559,19 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
                 void addRequest();
               }
             }}
-            placeholder="Request another document…"
+            placeholder={t("detail.requestPlaceholder")}
           />
           <Btn variant="ghost" onClick={() => void addRequest()} loading={addingReq} disabled={!reqInput.trim()}>
-            <Plus className="h-4 w-4" /> Request
+            <Plus className="h-4 w-4" /> {t("detail.request")}
           </Btn>
         </div>
       </div>
 
       {/* Attachments + employer upload */}
       <div>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">All attachments</h3>
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-cream">{t("detail.allAttachments")}</h3>
         {envelope.attachments.length === 0 ? (
-          <p className="text-xs text-white/40">No files uploaded yet.</p>
+          <p className="text-xs text-white/40">{t("detail.noFiles")}</p>
         ) : (
           <ul className="space-y-1.5">
             {envelope.attachments.map((a, i) => (
@@ -582,10 +579,10 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
                 <span className="flex min-w-0 items-center gap-2">
                   <Paperclip className="h-3.5 w-3.5 shrink-0 text-white/40" />
                   <span className="truncate text-cream">{a.name}</span>
-                  <span className="shrink-0 text-[11px] text-white/40">{a.by === "employer" ? "you" : "signer"}</span>
+                  <span className="shrink-0 text-[11px] text-white/40">{a.by === "employer" ? t("you") : t("signer")}</span>
                 </span>
                 <a href={dl(a.url)} className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-violet hover:underline">
-                  <Download className="h-3.5 w-3.5" /> Download
+                  <Download className="h-3.5 w-3.5" /> {t("download")}
                 </a>
               </li>
             ))}
@@ -601,11 +598,11 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
             onChange={(e) => void uploadOwn(e.target.files?.[0])}
           />
           <Btn variant="ghost" onClick={() => fileRef.current?.click()} loading={uploading}>
-            <UploadCloud className="h-4 w-4" /> Attach a file
+            <UploadCloud className="h-4 w-4" /> {t("detail.attachFile")}
           </Btn>
         </div>
         {employerFiles.length > 0 && (
-          <p className="mt-1 text-[11px] text-white/35">Files you attach are private to your team — the signer never sees them.</p>
+          <p className="mt-1 text-[11px] text-white/35">{t("detail.privateFiles")}</p>
         )}
       </div>
 
@@ -617,9 +614,9 @@ function EnvelopeDetail({ envelope, onChanged }: { envelope: DocusignEnvelope; o
   );
 }
 
-function fmtDate(iso: string): string {
+function fmtDate(iso: string, locale: string): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString(locale, { month: "short", day: "numeric", year: "numeric" });
 }

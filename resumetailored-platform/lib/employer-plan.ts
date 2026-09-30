@@ -387,6 +387,9 @@ export function checkDocumentAllowance(access: Access, used: number): DocumentAl
 
 // ── Persistent in-page upgrade card ─────────────────────────────────────────
 export interface UpgradeCardData {
+  /** Machine tier so the client can render the plan name and pitch in the
+   *  user's language; `planLabel`/`pitch` stay as the English fallback. */
+  tier: "free" | "portal" | "scale";
   planLabel: string;
   used: number;
   limit: number;
@@ -414,5 +417,5 @@ export async function getUpgradeCardData(access: Access, employerId: string): Pr
   const used = await monthlySendCount(employerId);
   const allowance = checkSendAllowance(access, used);
   if (allowance.limit === Infinity) return null;
-  return { planLabel: tierLabel(tier), used: allowance.used, limit: allowance.limit, pitch: UPGRADE_PITCH[tier] };
+  return { tier, planLabel: tierLabel(tier), used: allowance.used, limit: allowance.limit, pitch: UPGRADE_PITCH[tier] };
 }
